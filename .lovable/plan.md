@@ -1,74 +1,121 @@
+# Minimalistički redizajn kartica u ActiveProjectsStrip
 
-# Earned Value & Margin-aware Health Score
+Mijenja se **samo** `src/components/home/ActiveProjectsStrip.tsx` + dodaju se i18n ključevi.
 
-Odluke korisnika: zadržati `contract_value`, auto-fill iz estimate-a samo ako prazan, alert kad marža padne ispod 10% ugovora.
+## Nova struktura kartice
 
-## 1. Schema / data flow
-- **Bez nove kolone.** `contract_value` ostaje single source of truth.
-- U `useProjectEstimates.acceptEstimate`: ako je `project.contract_value` null/0, postavi ga na `estimate.total`. Inače ne dirati.
-
-## 2. `src/lib/projectHealthScore.ts` — Margin komponenta
-- Nova `calculateMarginScore(contract, spent)`:
-  - margin% = (contract − spent) / contract × 100
-  - ≥30 → 100, 15–30 → 80, 5–15 → 50, 0–5 → 25, <0 → 0
-- Težine kad `contract > 0`: **40% Margin + 30% Budget + 20% Timeline + 10% Milestone**
-- Fallback kad `contract = 0`: stara formula 40/35/25 + `marginUnknown: true`
-- Pragovi level-a (80/50) ostaju. `reason` može vratiti 'margin'.
-- Vraćamo nova polja: `marginPct`, `marginAmount`, `eac`, `marginUnknown`.
-- **EAC** = `timeProgressPct > 5` ? `spent / (timeProgressPct/100)` : `spent` (bez projekcije kad nemamo timeline).
-
-## 3. UI — `ProjectCard.tsx` (treća metrika)
-- Pored cashflow i health badge-a dodati **"Marža: X%"** badge s `getHealthBgClass(level)` bojom.
-- Ako `marginUnknown` → "Marža: —" (neutralna boja) + tooltip "Unesite ugovoreni iznos za točniju analizu".
-
-## 4. `ActiveProjectsStrip.tsx` — uskladiti s health helperom
-- Sad ima vlastiti margin/health compute (10%/30%) — zamijeniti pozivom na `calculateProjectHealth` (uklanja duplikaciju, priority rule #3). Vizualni izgled (chip + traffic light) ostaje isti.
-
-## 5. ProjectFullScreenView — Earned Value sekcija
-- Nova komponenta `ProjectEarnedValueCard.tsx`:
-  - Ugovoreno / Trošak / Marža € / Marža % / EAC / Status badge (zdravo/rizik/gubitak)
-- Ako `contract_value` nije postavljen → prikaži prompt karticu s gumbom "Unesi ugovoreni iznos" koja otvara `ProjectDialog` fokusirano na to polje.
-
-## 6. Push alert "Zona gubitka"
-- Novi hook/util koji se okida nakon mutacija expense-a (kroz postojeću TanStack Query invalidation u `useExpenseCRUD`):
-  - Uvjet: `contract_value > 0` AND `spent >= 0.9 * contract_value` (marža pala ispod 10%)
-  - Throttle: provjeriti `notifications` tablicu — nema istog `type='project_loss_zone'` za isti `project_id` u zadnja 24h
-  - Šalje preko postojeće `notifyHelper` / `notifyProjectActivity` infrastrukture (in-app + push prema `notification_preferences.projects_enabled`)
-- i18n: `projects.alerts.lossZone` = "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže"
-
-## 7. i18n (HR/EN/DE)
-Novi ključevi pod `projects.*`:
-- `health.marginUnknown`
-- `earnedValue.title`, `.contracted`, `.spent`, `.marginAmount`, `.marginPct`, `.eac`, `.eacHint`
-- `earnedValue.status.healthy | risk | loss`
-- `earnedValue.promptTitle`, `.promptDesc`, `.promptCta`
-- `alerts.lossZone`
-
-## 8. PDF (`projectReportExport.ts`)
-Dodati Earned Value blok (Ugovoreno / Trošak / Marža € / Marža % / EAC / Status), HR+EN+DE.
-
-## Težine — sažetak
-
-```text
-┌──────────────┬─────────┬──────────────────────────┐
-│ Komponenta   │ Težina  │ Aktivna kada             │
-├──────────────┼─────────┼──────────────────────────┤
-│ Margin       │  40%    │ contract_value > 0       │
-│ Budget       │  30%    │ total_budget > 0         │
-│ Timeline     │  20%    │ end_date postavljen      │
-│ Milestone    │  10%    │ milestones.length > 0    │
-└──────────────┴─────────┴──────────────────────────┘
-Fallback (bez contract_value): 0 / 40 / 35 / 25
+```
+┌──────────────────────────────┐
+│ 📁  Naziv projekta        🟢 │
+│                              │
+│            42%               │
+│       STVARNA MARŽA          │
+│                              │
+│ Naplaćeno         12.000 €   │
+│ Potrošeno          7.000 €   │
+│ Profit            +5.000 €   │
+└──────────────────────────────┘
 ```
 
-## Što NE diram
-- `contract_value` naziv kolone, postojeću P&L logiku, personal mode projekata, pragove level-a (80/50), izgled traffic-light badgeova.
+### Header (jedan red)
+- Ikona projekta (`project.icon || '📁'`)
+- Naziv (`truncate`, `font-semibold text-sm`)
+- Mali kružić semafora desno (~10 px, jedna boja po health-u, blagi glow)
 
-## Redoslijed implementacije
-1. `projectHealthScore.ts` (margin + EAC + fallback težine) + test
-2. `useProjectEstimates.acceptEstimate` auto-fill
-3. `ProjectCard` treći badge
-4. `ActiveProjectsStrip` migracija na isti helper
-5. `ProjectEarnedValueCard` + ugradnja u `ProjectFullScreenView`
-6. Loss-zone alert (hook + throttle)
-7. i18n + PDF
+### Centerpiece
+- Postotak marže — `text-3xl font-bold tabular-nums`, boja po health-u (`text-income` / `text-warning` / `text-destructive`)
+- Label ispod — `text-[10px] uppercase tracking-wider text-muted-foreground`
+
+### Footer (3 linije)
+Svaka: label lijevo (muted), iznos desno (tabular-nums). Iznosi formatirani preko `formatAmount`.
+
+## Logika
+
+```ts
+const income = entry?.income ?? 0;
+const spent  = entry?.spent  ?? 0;
+const budget = project.total_budget || 0;
+
+if (income > 0) {
+  // SLUČAJ A — naplaćen
+  margin = (income - spent) / income;
+  label  = t('projects.card.realMargin');           // "STVARNA MARŽA"
+  lines  = [
+    { label: t('projects.card.collected'),  value: income          },  // "Naplaćeno"
+    { label: t('projects.card.spent'),      value: spent           },
+    { label: t('projects.card.profit'),     value: income - spent, signed: true },
+  ];
+} else if (budget > 0) {
+  // SLUČAJ B — još nije naplaćen
+  margin = (budget - spent) / budget;
+  label  = t('projects.card.expectedMargin');       // "PREDVIĐENA MARŽA"
+  lines  = [
+    { label: t('projects.card.contracted'), value: budget          },  // "Ugovoreno"
+    { label: t('projects.card.spent'),      value: spent           },
+    { label: t('projects.card.remaining'),  value: budget - spent, signed: true },
+  ];
+} else {
+  // SLUČAJ C — fallback CTA
+  margin = null;
+}
+```
+
+### Semafor
+- `margin >= 0.30` → zeleno (`hsl(var(--income))`)
+- `0.10 <= margin < 0.30` → žuto (`hsl(var(--warning))`)
+- `margin < 0.10` → crveno (`hsl(var(--destructive))`)
+- Nema marže (slučaj C) → neutralno sivo
+
+### Signed line (Profit / Preostalo)
+- `value >= 0` → `text-income`, prefix `+`
+- `value < 0`  → `text-destructive`, prefix `−` (apsolutna vrijednost u `formatAmount`)
+
+### Slučaj C — CTA umjesto centerpiece-a
+- Tekst gumba: `t('projects.card.setBudget')` — "Postavi budžet projekta"
+- Klik na karticu i dalje vodi na detalj projekta (`openProjectId`); CTA je vizualni hint, ne zaseban handler.
+- Footer linije se sakriju.
+
+## Klikabilnost
+Cijela `motion.button` ostaje klikabilna → `handleNav('/projects', { openProjectId: project.id, from: '/home' })` (postojeće ponašanje).
+
+`aria-label`:
+- Slučaj A: `"{name}: stvarna marža {pct}%, {trafficLabel}"`
+- Slučaj B: `"{name}: predviđena marža {pct}%, {trafficLabel}"`
+- Slučaj C: `"{name}: postavi budžet projekta"`
+
+## Što se uklanja iz komponente
+- `BigTrafficLight` (multi-dot pill) → zamijenjen malim kružićem inline u headeru
+- `renderProfitBlock` (KPI varijante profit/loss/remaining/overBudget/items)
+- `renderAiWarning` (žuti/crveni footer poruka)
+- `renderStatusLine` + import `getProjectStatusLine`, `STATUS_ICON_MAP`
+- Expected-profit / awaiting-payment downgrade-panic logika (contract_value override)
+- Polja u `ProjectCardData`: `kpiKind`, `kpiValue`, `statusLine`, `expectedProfit`, `expectedMargin`, `profit`, `remaining`
+- Importi koji više nisu potrebni: `AlertTriangle, AlertOctagon, Sparkles, Clock, Pause, Info, AlertCircle`, `getProjectStatusLine`
+
+`src/lib/projectStatusLine.ts` ostaje u repo-u (nedirano) ali se ne importa ovdje.
+
+## Dimenzije
+- Širina kartice ostaje `min-w-[200px] max-w-[220px]`
+- Visina raste s `min-h-[170px]` na ~`min-h-[210px]` zbog 3-line footer-a
+- Loading skeleton se prilagodi istoj visini
+
+## i18n — novi ključevi (HR / EN / DE) pod `projects.card.*`
+- `realMargin` — "STVARNA MARŽA" / "ACTUAL MARGIN" / "TATSÄCHLICHE MARGE"
+- `expectedMargin` — "PREDVIĐENA MARŽA" / "EXPECTED MARGIN" / "ERWARTETE MARGE"
+- `collected` — "Naplaćeno" / "Collected" / "Eingenommen"
+- `contracted` — "Ugovoreno" / "Contracted" / "Vereinbart"
+- `spent` — "Potrošeno" / "Spent" / "Ausgegeben"
+- `profit` — "Profit" / "Profit" / "Gewinn"
+- `remaining` — "Preostalo" / "Remaining" / "Verbleibend"
+- `setBudget` — "Postavi budžet projekta" / "Set project budget" / "Projektbudget festlegen"
+- `ariaRealMargin`, `ariaExpectedMargin` — za screen-reader labele
+
+Postojeći `projects.health.trafficLight.{green|yellow|red}` se reuse-a za aria-label kružića.
+
+## Što NE diramo
+- `ProjectCard.tsx` (koristi se na /projects stranici, ima drugačiju namjenu)
+- `useActiveProjectsSummary`, `projectHealthScore.ts`, `projectStatusLine.ts`
+- Empty state ("Kreiraj prvi projekt") i "Add new project" CTA kartica na kraju strip-a
+- Header strip-a ("Aktivni projekti" + "Pogledaj sve")
+- Margin pragovi (30% / 10%)
+- Logika koji projekti se prikazuju (active/draft, top 5)
