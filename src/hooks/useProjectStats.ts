@@ -51,7 +51,7 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
       while (true) {
         const { data, error } = await (supabase
           .from('expenses')
-          .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source') as any)
+          .select('id, user_id, amount, description, category, date, type, milestone_id, status, submitted_by, expense_nature, payment_source, is_advance, collaborator_id, linked_advance_ids') as any)
           .eq('project_id', projectId)
           .eq('status', 'approved')
           .order('date', { ascending: false })
