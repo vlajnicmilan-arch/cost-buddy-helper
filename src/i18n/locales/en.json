@@ -122,14 +122,11 @@
   "projects": {
     "noPaymentSource": "No source",
     "card": {
-      "realMargin": "ACTUAL MARGIN",
-      "expectedMargin": "EXPECTED MARGIN",
-      "collected": "Collected",
+      "margin": "MARGIN",
       "contracted": "Contracted",
-      "spent": "Spent",
+      "spent": "Cost",
       "profit": "Profit",
-      "remaining": "Remaining",
-      "setBudget": "Set project budget"
+      "setContracted": "Set contracted amount"
     },
     "onboarding": {
       "title": "Quick start",
