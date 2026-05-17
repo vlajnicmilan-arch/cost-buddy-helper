@@ -100,6 +100,18 @@ export const MilestoneBudgetChangeSection = ({
     }
   }, [shouldSuggestReserve, coverage, onCoverageChange]);
 
+  // When user switches TO scope_change, pre-fill amendment amount with cost delta (cisti trosak)
+  const lastScopeChangeRef = useRef(false);
+  useEffect(() => {
+    if (isScopeChange && isIncrease && !lastScopeChangeRef.current) {
+      if (!amendmentAmount || amendmentAmount === '0') {
+        onAmendmentAmountChange(delta.toFixed(2));
+      }
+    }
+    lastScopeChangeRef.current = isScopeChange;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScopeChange, isIncrease, delta]);
+
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
