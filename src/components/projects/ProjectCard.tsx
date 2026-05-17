@@ -64,10 +64,11 @@ export const ProjectCard = ({
   const health = useMemo(() => calculateProjectHealth({
     spent,
     budget,
+    contractValue: project.contract_value,
     startDate: project.start_date,
     endDate: project.end_date,
     milestones: milestones as any,
-  }), [spent, budget, project.start_date, project.end_date, milestones]);
+  }), [spent, budget, project.contract_value, project.start_date, project.end_date, milestones]);
 
   const healthLabel = t(`projects.health.${health.level}`,
     health.level === 'on_track' ? 'Na vrijeme' :
@@ -145,6 +146,23 @@ export const ProjectCard = ({
               >
                 <Activity className="w-2.5 h-2.5" />
                 {healthLabel} · {health.score}
+              </Badge>
+            )}
+            {health.marginPct !== null ? (
+              <Badge
+                variant="outline"
+                className={cn("text-[10px] gap-1 h-5 border", getHealthBgClass(health.level))}
+                title={t('projects.health.margin', 'Marža')}
+              >
+                {t('projects.health.margin', 'Marža')}: {health.marginPct.toFixed(0)}%
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-[10px] gap-1 h-5 border bg-muted text-muted-foreground border-border"
+                title={t('projects.health.marginUnknown', 'Unesite ugovoreni iznos za točniju analizu')}
+              >
+                {t('projects.health.margin', 'Marža')}: —
               </Badge>
             )}
           </div>

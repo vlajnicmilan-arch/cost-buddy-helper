@@ -142,7 +142,9 @@ export const useProjectEstimates = () => {
           color: '#3b82f6',
           status: 'active',
           total_budget: estimate.total_amount,
-        })
+          // Auto-fill contract_value from accepted estimate (only on create — never overwrites existing)
+          contract_value: estimate.total_amount,
+        } as any)
         .select()
         .single();
       if (projErr) throw projErr;
