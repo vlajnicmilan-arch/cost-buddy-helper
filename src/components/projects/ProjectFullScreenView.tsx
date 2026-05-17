@@ -187,18 +187,56 @@ export const ProjectFullScreenView = ({
   if (!project) return null;
 
   const budget = project.total_budget || 0;
-  
+
   // Use actual transaction-based spending from useProjectStats
   const totalSpent = stats.totalSpent;
   const completedMilestones = milestones.filter(m => m.status === 'completed').length;
-  
-  // Remaining = Allocated (received funds) - Spent (from real transactions)
-  const remaining = totalAllocated - totalSpent;
-  const budgetUsedPercentage = totalAllocated > 0 
-    ? (totalSpent / totalAllocated) * 100 
-    : 0;
-  const budgetWarning = budgetUsedPercentage >= 90;
   const overdueMilestones = milestones.filter(m => m.status === 'overdue').length;
+
+  // Total received = income transactions + funding allocations
+  const totalReceived = (stats.totalIncome || 0) + totalAllocated;
+
+  // Margin — identical formula to ActiveProjectsStrip home card: (budget - spent) / budget
+  const marginPct = budget > 0 ? ((budget - totalSpent) / budget) * 100 : null;
+  const marginStatusKey: 'healthy' | 'attention' | 'critical' | 'neutral' =
+    marginPct === null ? 'neutral'
+    : marginPct >= 30 ? 'healthy'
+    : marginPct >= 10 ? 'attention'
+    : 'critical';
+
+  const costPct = budget > 0 ? (totalSpent / budget) * 100 : 0;
+  const collectionPct = budget > 0 ? (totalReceived / budget) * 100 : 0;
+
+  // Independent alarms (only when contracted budget exists)
+  const showBudgetAlarm = budget > 0 && costPct >= 80;
+  const daysSinceStart = project.start_date
+    ? Math.floor((Date.now() - new Date(project.start_date).getTime()) / 86400000)
+    : 0;
+  const showCollectionAlarm = budget > 0 && collectionPct < 50 && daysSinceStart > 30;
+
+  // Status token maps
+  const marginDotClass = {
+    healthy: 'bg-income',
+    attention: 'bg-warning',
+    critical: 'bg-destructive',
+    neutral: 'bg-muted-foreground',
+  }[marginStatusKey];
+  const marginTextClass = {
+    healthy: 'text-income',
+    attention: 'text-warning',
+    critical: 'text-destructive',
+    neutral: 'text-muted-foreground',
+  }[marginStatusKey];
+  const marginBarClass = {
+    healthy: '[&>div]:bg-income',
+    attention: '[&>div]:bg-warning',
+    critical: '[&>div]:bg-destructive',
+    neutral: '',
+  }[marginStatusKey];
+  const marginStatusLabel = t(`projects.marginStatus.${marginStatusKey}`,
+    marginStatusKey === 'healthy' ? 'Zdrav'
+    : marginStatusKey === 'attention' ? 'Pažnja'
+    : marginStatusKey === 'critical' ? 'Kritično' : '—');
 
   return (
     <AnimatePresence>
