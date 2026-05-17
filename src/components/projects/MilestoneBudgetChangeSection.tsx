@@ -100,6 +100,18 @@ export const MilestoneBudgetChangeSection = ({
     }
   }, [shouldSuggestReserve, coverage, onCoverageChange]);
 
+  // Auto-preselect 'scope_change' as the most common case when budget INCREASES and nothing picked yet.
+  // (User can still switch to overrun/correction/saving — but the default matches the most frequent intent
+  //  and ensures the contract amendment flow can run.)
+  const autoTypeRef = useRef(false);
+  useEffect(() => {
+    if (autoTypeRef.current) return;
+    if (isIncrease && changeType === null) {
+      onChangeTypeChange('scope_change');
+      autoTypeRef.current = true;
+    }
+  }, [isIncrease, changeType, onChangeTypeChange]);
+
   // When user switches TO scope_change, pre-fill amendment amount with cost delta (cisti trosak)
   const lastScopeChangeRef = useRef(false);
   useEffect(() => {
