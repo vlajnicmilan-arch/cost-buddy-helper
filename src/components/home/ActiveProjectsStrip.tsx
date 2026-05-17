@@ -242,9 +242,9 @@ export const ActiveProjectsStrip = React.memo(({
           const renderCenter = () => {
             if (!hasMargin) {
               return (
-                <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center mb-2">
-                    <Wallet className="w-5 h-5 text-primary" />
+                <div className="flex flex-col items-center justify-center text-center px-2 py-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center mb-1.5">
+                    <Wallet className="w-4 h-4 text-primary" />
                   </div>
                   <p className="text-xs font-semibold text-primary leading-snug">
                     {t('projects.card.setContracted', 'Postavi ugovoreni iznos')}
@@ -254,11 +254,11 @@ export const ActiveProjectsStrip = React.memo(({
             }
             const pct = `${Math.round((margin ?? 0) * 100)}%`;
             return (
-              <div className="flex-1 flex flex-col items-center justify-center py-0.5">
+              <div className="flex flex-col items-center justify-center py-1.5">
                 <p className={cn('text-2xl font-bold leading-none tabular-nums', HEALTH_TEXT_CLASS[health])}>
                   {pct}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5 text-center">
                   {t('projects.card.margin', 'MARŽA')}
                 </p>
               </div>
