@@ -89,6 +89,14 @@ export const ProjectFullScreenView = ({
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
+
+  // Loss-zone alert: fires in-app notification when spent crosses 90% of contract_value
+  useProjectLossZoneAlert({
+    projectId: project?.id,
+    projectName: project?.name,
+    contractValue: project?.contract_value,
+    spent: stats.totalSpent,
+  });
   
   const currentUserRole = project?.role || 'viewer';
   const isWorkerOnly = currentUserRole === 'worker' && !isManager;
