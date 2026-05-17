@@ -1485,6 +1485,22 @@ export const ProjectTransactionsTab = ({
               </Select>
             </div>
 
+            {/* Advance / Collaborator */}
+            {editType === 'expense' && editingExpense && (
+              <AdvanceLinkSection
+                projectId={projectId}
+                type={editType}
+                amount={editAmount}
+                isAdvance={editIsAdvance}
+                onIsAdvanceChange={setEditIsAdvance}
+                collaboratorId={editCollaboratorId}
+                onCollaboratorIdChange={setEditCollaboratorId}
+                linkedAdvanceIds={editLinkedAdvanceIds}
+                onLinkedAdvanceIdsChange={setEditLinkedAdvanceIds}
+                editingExpenseId={editingExpense.id}
+              />
+            )}
+
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
