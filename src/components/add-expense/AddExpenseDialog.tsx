@@ -148,6 +148,10 @@ export const AddExpenseDialog = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
+  // Collaborator advance fields (see mem://features/collaborator-advances)
+  const [isAdvance, setIsAdvance] = useState(false);
+  const [collaboratorId, setCollaboratorId] = useState<string | null>(null);
+  const [linkedAdvanceIds, setLinkedAdvanceIds] = useState<string[]>([]);
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
   const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -761,6 +765,9 @@ export const AddExpenseDialog = ({
     setSelectedProjectId(null);
     setSelectedBudgetId(null);
     setExpenseNature('regular');
+    setIsAdvance(false);
+    setCollaboratorId(null);
+    setLinkedAdvanceIds([]);
     setIsInstallment(false);
     setInstallmentCount(12);
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
