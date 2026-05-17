@@ -200,19 +200,83 @@ export const useProjectMilestones = (projectId: string | null) => {
         }
 
         // Step 2: insert the primary revision for the edited milestone
-        await supabase.from('milestone_budget_revisions' as any).insert({
-          milestone_id: milestone.id,
-          project_id: projectId,
-          user_id: user.id,
-          previous_amount: previousBudget,
-          new_amount: newBudget,
-          reason: revision.reason,
-          change_type: revision.change_type,
-          coverage: revision.coverage,
-          linked_milestone_id:
-            revision.coverage === 'transfer' ? revision.linked_milestone_id : null,
-          linked_revision_id: linkedRevisionId,
-        } as any);
+        const { data: primaryRev, error: primaryErr } = await supabase
+          .from('milestone_budget_revisions' as any)
+          .insert({
+            milestone_id: milestone.id,
+            project_id: projectId,
+            user_id: user.id,
+            previous_amount: previousBudget,
+            new_amount: newBudget,
+            reason: revision.reason,
+            change_type: revision.change_type,
+            coverage: revision.coverage,
+            linked_milestone_id:
+              revision.coverage === 'transfer' ? revision.linked_milestone_id : null,
+            linked_revision_id: linkedRevisionId,
+          } as any)
+          .select('id')
+          .single();
+
+        if (primaryErr) {
+          console.error('Failed to insert milestone revision:', primaryErr);
+        }
+
+        // Step 3: if scope_change carries a contract amendment, log it and bump project.contract_value
+        if (
+          revision.amendment &&
+          revision.amendment.amount > 0 &&
+          revision.change_type === 'scope_change'
+        ) {
+          const primaryRevId = (primaryRev as any)?.id || null;
+          const { error: amendmentErr } = await supabase
+            .from('project_contract_amendments' as any)
+            .insert({
+              project_id: projectId,
+              user_id: user.id,
+              amendment_amount: revision.amendment.amount,
+              note: revision.amendment.note || null,
+              linked_revision_id: primaryRevId,
+              linked_milestone_id: milestone.id,
+            } as any);
+
+          if (amendmentErr) {
+            console.error('Failed to insert contract amendment:', amendmentErr);
+            showError(
+              t(
+                'projects.contractAmendment.saveFailed',
+                'Nije moguće spremiti aneks ugovora.'
+              )
+            );
+          } else {
+            // Bump projects.contract_value by amendment amount
+            const { data: projRow, error: projFetchErr } = await supabase
+              .from('projects')
+              .select('contract_value')
+              .eq('id', projectId)
+              .single();
+
+            if (!projFetchErr && projRow) {
+              const currentContract = Number((projRow as any).contract_value || 0);
+              const newContract = currentContract + revision.amendment.amount;
+              const { error: projUpdateErr } = await supabase
+                .from('projects')
+                .update({ contract_value: newContract })
+                .eq('id', projectId);
+
+              if (projUpdateErr) {
+                console.error('Failed to bump contract_value:', projUpdateErr);
+              } else {
+                // Notify any listener (project header / amendments hook) to refetch
+                window.dispatchEvent(
+                  new CustomEvent('contract-amendment-added', {
+                    detail: { projectId, amount: revision.amendment.amount },
+                  })
+                );
+              }
+            }
+          }
+        }
       }
 
       setMilestones(prev => prev.map(m => 

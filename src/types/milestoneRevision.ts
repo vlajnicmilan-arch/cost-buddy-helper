@@ -22,6 +22,15 @@ export interface PendingRevisionInput {
   change_type: MilestoneRevisionType | null;
   coverage: MilestoneRevisionCoverage;
   linked_milestone_id?: string | null;
+  /**
+   * Optional contract amendment (aneks ugovora) — only meaningful for scope_change.
+   * When present, projects.contract_value is bumped by `amount` and a row
+   * is inserted into project_contract_amendments for audit.
+   */
+  amendment?: {
+    amount: number;
+    note?: string | null;
+  } | null;
 }
 
 export const REVISION_TYPE_META: Record<MilestoneRevisionType, { emoji: string; colorClass: string }> = {

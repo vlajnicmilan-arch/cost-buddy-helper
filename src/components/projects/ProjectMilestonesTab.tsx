@@ -73,6 +73,10 @@ export const ProjectMilestonesTab = ({
   const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
   const [revisionCoverage, setRevisionCoverage] = useState<MilestoneRevisionCoverage>('increase_total');
   const [revisionLinkedId, setRevisionLinkedId] = useState<string | null>(null);
+  // Contract amendment (aneks ugovora) — only used for scope_change
+  const [amendmentEnabled, setAmendmentEnabled] = useState(true);
+  const [amendmentAmount, setAmendmentAmount] = useState('');
+  const [amendmentNote, setAmendmentNote] = useState('');
 
   const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
   const previousBudget = editingMilestone ? editingMilestone.budget : 0;
@@ -115,6 +119,9 @@ export const ProjectMilestonesTab = ({
     setRevisionType(null);
     setRevisionCoverage('increase_total');
     setRevisionLinkedId(null);
+    setAmendmentEnabled(true);
+    setAmendmentAmount('');
+    setAmendmentNote('');
     setDialogOpen(true);
   };
 
@@ -163,12 +170,41 @@ export const ProjectMilestonesTab = ({
       };
 
       if (editingMilestone) {
+        // Build amendment payload only when scope_change + user enabled it + valid positive amount
+        const amendmentAmt = parseFloat(amendmentAmount) || 0;
+        const includeAmendment =
+          budgetChanged &&
+          revisionType === 'scope_change' &&
+          newBudgetNum > previousBudget &&
+          amendmentEnabled &&
+          amendmentAmt > 0;
+
+        if (
+          budgetChanged &&
+          revisionType === 'scope_change' &&
+          newBudgetNum > previousBudget &&
+          amendmentEnabled &&
+          amendmentAmt <= 0
+        ) {
+          showError(
+            t(
+              'projects.contractAmendment.amountRequired',
+              'Iznos aneksa ugovora mora biti veći od 0.'
+            )
+          );
+          setSaving(false);
+          return;
+        }
+
         const revisionInput = budgetChanged
           ? {
               reason: revisionReason.trim(),
               change_type: revisionType,
               coverage: revisionCoverage,
               linked_milestone_id: revisionCoverage === 'transfer' ? revisionLinkedId : null,
+              amendment: includeAmendment
+                ? { amount: amendmentAmt, note: amendmentNote.trim() || null }
+                : null,
             }
           : undefined;
         await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
@@ -464,6 +500,12 @@ export const ProjectMilestonesTab = ({
                 contingencyMilestone={contingencyMilestone}
                 currentMilestoneId={editingMilestone.id}
                 currentUsagePct={editingMilestone.budget > 0 ? ((editingMilestone.spent || 0) / editingMilestone.budget) * 100 : undefined}
+                amendmentEnabled={amendmentEnabled}
+                onAmendmentEnabledChange={setAmendmentEnabled}
+                amendmentAmount={amendmentAmount}
+                onAmendmentAmountChange={setAmendmentAmount}
+                amendmentNote={amendmentNote}
+                onAmendmentNoteChange={setAmendmentNote}
               />
             )}
 

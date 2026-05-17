@@ -1,56 +1,65 @@
 ## Problem
-
-Avans polja (`is_advance`, `collaborator_id`, `linked_advance_ids`) integrirana su samo u `ManualExpenseForm` / `AddExpenseDialog` (globalni unos). Međutim, **transakcije unutar projekta** (`ProjectTransactionsTab`) koriste **vlastite inline dijaloge** za dodavanje i uređivanje koji uopće ne učitavaju ni ne spremaju ta polja.
-
-Posljedica:
-- Pri otvaranju postojeće avans transakcije nema checkboxa "Avans", padajućeg izbornika suradnika ni sekcije za vezanje
-- Pri kreiranju iz projekta isto ne postoji UI za avans (iako spec kaže da je avans dopušten **samo** iz projektnih transakcija)
+Kad se faza poveća u obujmu (dogovoreni dodatni rad s klijentom), trenutno se može zabilježiti `scope_change` revizija koja diže **interni trošak faze**, ali se **`contract_value`** (dogovoreni iznos s klijentom) ne mijenja. Posljedica: P&L kriv, „loss zone" alarm se okida lažno, povijest aneksa ugovora ne postoji.
 
 ## Rješenje
 
-Ubaciti `AdvanceLinkSection` u oba inline dijaloga unutar `ProjectTransactionsTab.tsx` i proširiti add/edit handlere da rade s tim poljima.
+### A. Proširiti `MilestoneBudgetChangeSection` (samo za `scope_change`)
+Kad korisnik odabere tip revizije **`scope_change`**, ispod iznosa pojavi se nova sekcija:
 
-### 1. Add dialog (kreiranje)
+```
+┌─ Aneks ugovora s klijentom ─────────────────┐
+│ ☑ Naplati klijentu dodatno                 │
+│   Iznos koji naplaćuješ: [ 500,00 ] €      │
+│   (predloženo = čisti trošak povećanja)    │
+│   Napomena: [____________________________] │
+└─────────────────────────────────────────────┘
+```
 
-- Dodati state: `isAdvance`, `collaboratorId`, `linkedAdvanceIds`
-- Renderirati `<AdvanceLinkSection>` ispod postojećih polja, **samo kad je `expenseType === 'expense'`** (avans nema smisla za prihod)
-- `resetForm()` resetira nova polja
-- `handleAddExpense` u `insert` payloadu dodaje:
-  ```ts
-  is_advance: isAdvance,
-  collaborator_id: collaboratorId || null,
-  linked_advance_ids: linkedAdvanceIds.length ? linkedAdvanceIds : null,
-  ```
+- Sekcija vidljiva SAMO za `type === 'scope_change'`.
+- Checkbox **default uključen**.
+- Default iznos = delta troška (čisti trošak, bez automatske marže). Korisnik može mijenjati.
+- Za `overrun` / `saving` / `correction` — sekcija se ne prikazuje.
 
-### 2. Edit dialog (uređivanje postojeće)
+### B. Nova tablica `project_contract_amendments` (audit log)
+- Kolone: `id`, `project_id`, `amendment_amount`, `note`, `linked_revision_id` (FK na `milestone_budget_revisions`, nullable), `created_at`, `created_by`
+- RLS: identično `milestone_budget_revisions` (vlasnik + članovi projekta).
+- Na spremanje scope_change revizije s uključenim checkboxom:
+  1. Insert u `milestone_budget_revisions` (kao sada)
+  2. Insert u `project_contract_amendments`
+  3. Update `projects.contract_value += amendment_amount`
 
-- Dodati state: `editIsAdvance`, `editCollaboratorId`, `editLinkedAdvanceIds`
-- U `handleOpenEdit` (oko linije 379) prepuniti vrijednosti iz `editingExpense` (`is_advance`, `collaborator_id`, `linked_advance_ids`)
-- Renderirati `<AdvanceLinkSection>` u edit dijalogu (samo za `expense` tip)
-- `handleSaveEdit` (oko linije 392) u `update` payload dodaje ta tri polja
-- Kad se transakcija mijenja u/iz avansa, neto iznos projekta se automatski preračunava jer `projectCalculations.calculateNetExpenseAmount` već poznaje logiku
+Sve tri operacije idu u jednu transakciju preko nove DB funkcije `apply_scope_change_with_amendment(...)` da se izbjegne djelomični commit.
 
-### 3. Validacija (UI sloj)
+### C. Prikaz aneksa na pregledu projekta
+U postojećoj „Ugovor s klijentom" kartici (gdje se prikazuje `contract_value`), ako postoji ≥1 aneks:
 
-- Ako je `isAdvance === true` i `collaboratorId` nije odabran → disable Save + inline poruka (`projects.advances.collaboratorRequired`)
-- Ako su `linkedAdvanceIds` postavljeni, automatski isključiti `isAdvance` (već čuva DB trigger, ali UI mora biti konzistentan — `AdvanceLinkSection` to već radi)
+```
+Originalni iznos:    10.000,00 €
+Aneksi (2):          +1.250,00 €   [Vidi]
+─────────────────────────────────
+Ažurirano:           11.250,00 €
+```
 
-### 4. Vidljivost u listi transakcija
+- „Originalni iznos" = `contract_value - SUM(amendments)`.
+- „Vidi" → mali dialog s listom aneksa (datum, iznos, faza, napomena).
+- Ako nema aneksa → prikaz ostaje kao sada (samo „Dogovoreni iznos").
 
-Već postoji infrastruktura (badge "Avans"), ali brzo provjeriti da se `is_advance` prikazuje pored transakcije u tabu — ako ne, dodati mali `Badge` u redu liste.
+## Datoteke za izmjenu / kreiranje
+- **Migracija:** tablica `project_contract_amendments` + RLS + funkcija `apply_scope_change_with_amendment`
+- `src/components/projects/MilestoneBudgetChangeSection.tsx` — nova „Aneks ugovora" sekcija
+- `src/hooks/useMilestoneRevisions.ts` — proširiti save da poziva novu DB funkciju kad je checkbox uključen
+- `src/hooks/useProjectContractAmendments.ts` — novi hook (fetch + total)
+- `src/components/projects/ProjectFullScreenView.tsx` (ili gdje god je „Ugovor" kartica) — prikaz aneksa
+- `src/components/projects/ContractAmendmentsDialog.tsx` — novi mali dialog za listu aneksa
+- `src/i18n/locales/{hr,en,de}.json` — `projects.contractAmendment.*`
 
-## Što se NE mijenja
+## Što se NE dira
+- `contract_value` polje na `projects` (samo se inkrementira)
+- Avans logika
+- `MilestoneBudgetChangeSection` za ostale tipove revizija
+- `useProjectLossZoneAlert` — automatski se ispravno ponaša jer `contract_value` raste
 
-- DB shema, trigger `validate_advance_links`, hook `useCollaboratorAdvances`, `projectCalculations` — sve već postoji i radi
-- Globalni `AddExpenseDialog` / `ManualExpenseForm` — ostaje kakvi jesu
-- Edit/add iz drugih tabova (Home, Business) — avans ostaje isključivo projektni koncept
-
-## Tehnički detalji
-
-**Fajl:** `src/components/projects/ProjectTransactionsTab.tsx` (jedini)
-**Import:** `AdvanceLinkSection` iz `@/components/add-expense/AdvanceLinkSection`
-**Props koje komponenta očekuje:** `projectId`, `isAdvance`, `setIsAdvance`, `collaboratorId`, `setCollaboratorId`, `linkedAdvanceIds`, `setLinkedAdvanceIds`, `amount`, `type` — provjeriti potpis prije integracije i, ako odstupa, prilagoditi pozive bez modificiranja same komponente.
-
-**i18n:** ključevi `projects.advances.*` već postoje u hr/en/de.
-
-**Mobilni layout:** sekcija mora poštivati 384px breakpoint i 44px touch targets (već riješeno u `AdvanceLinkSection`).
+## Odluke potvrđene s korisnikom
+- Checkbox „Naplati klijentu" default **uključen**, korisnik može isključiti.
+- Default iznos = **čisti trošak** povećanja (bez automatske marže).
+- Funkcionalnost **samo za `scope_change`**, ne i za `overrun`.
