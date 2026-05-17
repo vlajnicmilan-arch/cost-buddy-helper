@@ -239,6 +239,9 @@ export const ProjectTransactionsTab = ({
     setMilestoneId('none');
     setPaymentSourceValue('none');
     setExpenseNature('regular');
+    setIsAdvance(false);
+    setCollaboratorId(null);
+    setLinkedAdvanceIds([]);
   };
 
   // Quick milestone change handler
