@@ -523,6 +523,37 @@ export const NotificationsDropdown = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm delete all */}
+      <AlertDialog open={confirmDeleteAllOpen} onOpenChange={setConfirmDeleteAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('notifications.confirmDeleteAllTitle', 'Obrisati sve obavijesti?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('notifications.confirmDeleteAllDesc', 'Sve obavijesti će biti trajno uklonjene s popisa. Postojeće pozivnice ostaju aktivne i možeš ih prihvatiti preko linka koji ti je vlasnik poslao.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const ok = await deleteAllNotifications();
+                if (ok) {
+                  showSuccess(t('notifications.allDeleted', 'Sve obavijesti obrisane'));
+                  setOpen(false);
+                } else {
+                  showError(t('common.error', 'Greška'));
+                }
+              }}
+            >
+              {t('notifications.deleteAll', 'Obriši sve')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
