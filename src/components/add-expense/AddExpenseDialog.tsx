@@ -853,6 +853,23 @@ export const AddExpenseDialog = ({
     e.preventDefault();
     if (!amount) return;
 
+    // Validate advance + collaborator combo
+    if (selectedProjectId && isAdvance && !collaboratorId) {
+      showError(t('projects.advances.errors.noCollaborator', 'Odaberi suradnika kojem se isplaćuje avans.'));
+      return;
+    }
+    // Surplus warning: linked advances exceed invoice amount
+    if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
+      const parsedAmt = parseFloat(amount.replace(',', '.')) || 0;
+      // Recompute linkedSum from current expenses cache via the prop snapshot.
+      // Best-effort: use a synchronous fetch via the global expenses cache is not available here,
+      // so we rely on the trigger to validate and let the user proceed. The UI shows warning live.
+      if (parsedAmt === 0) {
+        showError(t('projects.advances.errors.zeroAmountWithLinks', 'Iznos računa ne smije biti 0 ako su vezani avansi.'));
+        return;
+      }
+    }
+
     // Validate amount > 0 (works for expense, income and transfer)
     const { valid: amountValid } = validateAmountInput(amount);
     if (!amountValid) {
