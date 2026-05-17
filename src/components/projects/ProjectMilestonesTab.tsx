@@ -142,6 +142,11 @@ export const ProjectMilestonesTab = ({
       showError(t('projects.revisions.reasonRequired', 'Razlog promjene budžeta je obavezan.'));
       return;
     }
+    // When budget INCREASES, require a change type so downstream logic (aneks) can run
+    if (budgetChanged && newBudgetNum > previousBudget && !revisionType) {
+      showError(t('projects.revisions.typeRequired', 'Odaberite tip promjene (Promjena obima, Prekoračenje, …).'));
+      return;
+    }
     // For increases via transfer, require source selection
     if (
       budgetChanged &&
