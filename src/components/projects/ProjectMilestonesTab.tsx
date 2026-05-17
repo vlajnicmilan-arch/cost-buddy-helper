@@ -119,6 +119,9 @@ export const ProjectMilestonesTab = ({
     setRevisionType(null);
     setRevisionCoverage('increase_total');
     setRevisionLinkedId(null);
+    setAmendmentEnabled(true);
+    setAmendmentAmount('');
+    setAmendmentNote('');
     setDialogOpen(true);
   };
 
