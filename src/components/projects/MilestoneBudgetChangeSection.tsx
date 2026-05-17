@@ -33,6 +33,13 @@ interface Props {
   currentMilestoneId: string | null;
   /** Current spent / previousAmount * 100. Drives the auto-suggestion to pull from reserve. */
   currentUsagePct?: number;
+  // Contract amendment (aneks ugovora) — only used when changeType === 'scope_change'
+  amendmentEnabled: boolean;
+  onAmendmentEnabledChange: (v: boolean) => void;
+  amendmentAmount: string;
+  onAmendmentAmountChange: (v: string) => void;
+  amendmentNote: string;
+  onAmendmentNoteChange: (v: string) => void;
 }
 
 const TYPE_OPTIONS: MilestoneRevisionType[] = ['overrun', 'saving', 'scope_change', 'correction'];
