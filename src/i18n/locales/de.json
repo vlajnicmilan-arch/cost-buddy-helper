@@ -346,6 +346,7 @@
       "overdueDays_other": "{{count}} T überfällig",
       "dueToday": "Heute fällig",
       "margin": "Marge",
+      "marginUnknown": "Vertragswert eingeben für genauere Analyse",
       "profit": "Gewinn",
       "noIncomeYet": "Noch keine Einnahmen",
       "trafficLight": {
@@ -359,6 +360,27 @@
       },
       "daysLeft_few": "{{count}} T verbleibend",
       "overdueDays_few": "{{count}} T überfällig"
+    },
+    "earnedValue": {
+      "title": "Earned Value",
+      "contracted": "Vertragswert",
+      "spent": "Kosten",
+      "marginAmount": "Marge",
+      "marginPct": "Marge %",
+      "eac": "Voraussichtliche Endkosten",
+      "eacHint": "Hochrechnung anhand der aktuellen Ausgabenrate",
+      "scoreLabel": "Zustand",
+      "status": {
+        "healthy": "Gesund",
+        "risk": "Risiko",
+        "loss": "Verlust"
+      },
+      "promptTitle": "Vertragswert eingeben",
+      "promptDesc": "Ohne Vertragswert können wir Marge, EAC oder Verlustrisiko nicht berechnen.",
+      "promptCta": "Vertragswert eingeben"
+    },
+    "alerts": {
+      "lossZone": "Projekt {{name}} gerät in die Verlustzone — nur noch {{pct}}% Marge übrig"
     },
     "statusLine": {
       "paused": "Pausiert",

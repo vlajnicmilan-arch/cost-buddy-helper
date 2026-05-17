@@ -350,6 +350,7 @@
       "overdueDays_other": "{{count}} d overdue",
       "dueToday": "Due today",
       "margin": "Margin",
+      "marginUnknown": "Enter the contract value for accurate analysis",
       "profit": "Profit",
       "noIncomeYet": "No income yet",
       "trafficLight": {
@@ -363,6 +364,27 @@
       },
       "daysLeft_few": "{{count}} d left",
       "overdueDays_few": "{{count}} d overdue"
+    },
+    "earnedValue": {
+      "title": "Earned Value",
+      "contracted": "Contracted",
+      "spent": "Spent",
+      "marginAmount": "Margin",
+      "marginPct": "Margin %",
+      "eac": "Estimate at completion",
+      "eacHint": "Projection based on current spend rate",
+      "scoreLabel": "Health",
+      "status": {
+        "healthy": "Healthy",
+        "risk": "At risk",
+        "loss": "Loss"
+      },
+      "promptTitle": "Enter the contract value",
+      "promptDesc": "Without a contract value we can't calculate margin, EAC or loss risk.",
+      "promptCta": "Enter contract value"
+    },
+    "alerts": {
+      "lossZone": "Project {{name}} is entering the loss zone — only {{pct}}% margin left"
     },
     "statusLine": {
       "paused": "Paused",
