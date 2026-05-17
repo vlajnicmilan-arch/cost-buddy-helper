@@ -120,6 +120,16 @@
     "shareDialogTitle": "Datei teilen"
   },
   "projects": {
+    "card": {
+      "realMargin": "TATSÄCHLICHE MARGE",
+      "expectedMargin": "ERWARTETE MARGE",
+      "collected": "Eingenommen",
+      "contracted": "Vereinbart",
+      "spent": "Ausgegeben",
+      "profit": "Gewinn",
+      "remaining": "Verbleibend",
+      "setBudget": "Projektbudget festlegen"
+    },
     "templates": {
       "startFrom": "Aus Vorlage starten (optional)",
       "suggestedPhases": "Vorgeschlagene Phasen für diesen Projekttyp (optional)",
