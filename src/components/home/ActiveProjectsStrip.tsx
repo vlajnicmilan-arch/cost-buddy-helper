@@ -216,7 +216,7 @@ export const ActiveProjectsStrip = React.memo(({
               { label: t('projects.card.profit', 'Zarada'), value: profit, signed: true },
             ];
             return (
-              <div className="mt-auto space-y-1 pt-2 border-t border-border/40">
+              <div className="space-y-1 pt-1.5 border-t border-border/40">
                 {lines.map((ln, i) => {
                   const positive = ln.value >= 0;
                   const valueClass = ln.signed
