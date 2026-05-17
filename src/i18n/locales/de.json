@@ -180,8 +180,7 @@
       "collection": "Eingang"
     },
     "alerts": {
-      "budgetHigh": "⚠️ Du hast {{pct}}% des vereinbarten Budgets ausgegeben",
-      "collectionLow": "💰 Nur {{pct}}% eingenommen. Erinnerung an den Kunden senden?"
+      "lossZone": "Projekt {{name}} gerät in die Verlustzone — nur noch {{pct}}% Marge übrig"
     },
     "forecast": {
       "title": "🔮 Prognose — beim aktuellen Tempo",
@@ -411,9 +410,6 @@
       "promptDesc": "Ohne Vertragswert können wir Marge, EAC oder Verlustrisiko nicht berechnen.",
       "promptCta": "Vertragswert eingeben"
     },
-    "alerts": {
-      "lossZone": "Projekt {{name}} gerät in die Verlustzone — nur noch {{pct}}% Marge übrig"
-    },
     "statusLine": {
       "paused": "Pausiert",
       "waitingStart": "Wartet auf Start · {{date}}",
@@ -573,6 +569,32 @@
       "work": "Arbeit",
       "people": "Personen",
       "money": "Finanzen"
+    },
+    "advances": {
+      "sectionTitle": "Vorschuss / Mitarbeiter",
+      "advanceBadge": "Vorschuss",
+      "isAdvance": "Dies ist ein Vorschuss an einen Mitarbeiter",
+      "isAdvanceHelp": "Aktivieren, wenn dieser Betrag später von einer Schlussrechnung abgezogen wird",
+      "collaborator": "Mitarbeiter",
+      "optional": "(optional)",
+      "selectCollaborator": "Mitarbeiter auswählen",
+      "noCollaborators": "Keine Mitarbeiter im Projekt",
+      "addNewCollaborator": "Neuen Mitarbeiter hinzufügen",
+      "newCollaborator": "Neuer Mitarbeiter",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "serviceDescription": "Leistungsbeschreibung (z. B. Parkettleger)",
+      "defaultService": "Projektmitarbeit",
+      "unlinkedAdvances": "Nicht verknüpfte Vorschüsse für diesen Mitarbeiter",
+      "noUnlinked": "Keine nicht verknüpften Vorschüsse für diesen Mitarbeiter.",
+      "gross": "Bruttobetrag",
+      "minusAdvances": "Vorschüsse abziehen",
+      "netBooked": "Netto gebucht",
+      "surplusWarning": "Vorschüsse überschreiten Rechnung um {{amount}} — Forderung an Mitarbeiter wird erstellt.",
+      "errors": {
+        "noCollaborator": "Mitarbeiter auswählen, der den Vorschuss erhält.",
+        "zeroAmountWithLinks": "Rechnungsbetrag darf nicht 0 sein, wenn Vorschüsse verknüpft sind."
+      }
     }
   },
   "estimates": {

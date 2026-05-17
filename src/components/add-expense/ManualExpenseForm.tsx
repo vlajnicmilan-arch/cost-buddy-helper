@@ -13,6 +13,7 @@ import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { CustomCategory } from '@/types/customCategory';
 import { CustomIncomeCategory } from '@/types/customIncomeCategory';
 import { ReceiptCaptureButtons } from './ReceiptCaptureButtons';
+import { AdvanceLinkSection } from './AdvanceLinkSection';
 import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
@@ -58,6 +59,13 @@ interface ManualExpenseFormProps {
   onSelectedBudgetIdChange: (id: string | null) => void;
   expenseNature: 'regular' | 'extraordinary';
   onExpenseNatureChange: (nature: 'regular' | 'extraordinary') => void;
+  // Collaborator advances (see mem://features/collaborator-advances)
+  isAdvance: boolean;
+  onIsAdvanceChange: (v: boolean) => void;
+  collaboratorId: string | null;
+  onCollaboratorIdChange: (id: string | null) => void;
+  linkedAdvanceIds: string[];
+  onLinkedAdvanceIdsChange: (ids: string[]) => void;
   // Location
   locationName: string | null;
   locationLoading: boolean;
@@ -473,6 +481,21 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Collaborator advance section — only for projects + expense type */}
+          {props.selectedProjectId && props.type === 'expense' && (
+            <AdvanceLinkSection
+              projectId={props.selectedProjectId}
+              type={props.type}
+              amount={props.amount}
+              isAdvance={props.isAdvance}
+              onIsAdvanceChange={props.onIsAdvanceChange}
+              collaboratorId={props.collaboratorId}
+              onCollaboratorIdChange={props.onCollaboratorIdChange}
+              linkedAdvanceIds={props.linkedAdvanceIds}
+              onLinkedAdvanceIdsChange={props.onLinkedAdvanceIdsChange}
+            />
           )}
 
           {/* Location toggle */}

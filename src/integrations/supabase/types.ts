@@ -1137,6 +1137,7 @@ export type Database = {
           business_profile_id: string | null
           cash_register_id: string | null
           category: string
+          collaborator_id: string | null
           created_at: string
           currency: string | null
           date: string
@@ -1145,6 +1146,8 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
+          is_advance: boolean
+          linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
           merchant_name: string | null
@@ -1172,6 +1175,7 @@ export type Database = {
           business_profile_id?: string | null
           cash_register_id?: string | null
           category?: string
+          collaborator_id?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -1180,6 +1184,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          is_advance?: boolean
+          linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
           merchant_name?: string | null
@@ -1207,6 +1213,7 @@ export type Database = {
           business_profile_id?: string | null
           cash_register_id?: string | null
           category?: string
+          collaborator_id?: string | null
           created_at?: string
           currency?: string | null
           date?: string
@@ -1215,6 +1222,8 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          is_advance?: boolean
+          linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
           merchant_name?: string | null
@@ -1260,6 +1269,13 @@ export type Database = {
             columns: ["cash_register_id"]
             isOneToOne: false
             referencedRelation: "cash_registers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "project_collaborators"
             referencedColumns: ["id"]
           },
           {

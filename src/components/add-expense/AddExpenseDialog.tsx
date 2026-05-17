@@ -148,6 +148,10 @@ export const AddExpenseDialog = ({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
+  // Collaborator advance fields (see mem://features/collaborator-advances)
+  const [isAdvance, setIsAdvance] = useState(false);
+  const [collaboratorId, setCollaboratorId] = useState<string | null>(null);
+  const [linkedAdvanceIds, setLinkedAdvanceIds] = useState<string[]>([]);
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
   const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -645,6 +649,9 @@ export const AddExpenseDialog = ({
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+        collaborator_id: selectedProjectId ? collaboratorId : null,
+        is_advance: selectedProjectId ? isAdvance : false,
+        linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
         business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
@@ -761,6 +768,9 @@ export const AddExpenseDialog = ({
     setSelectedProjectId(null);
     setSelectedBudgetId(null);
     setExpenseNature('regular');
+    setIsAdvance(false);
+    setCollaboratorId(null);
+    setLinkedAdvanceIds([]);
     setIsInstallment(false);
     setInstallmentCount(12);
     setFirstPaymentDate(new Date().toISOString().split('T')[0]);
@@ -842,6 +852,23 @@ export const AddExpenseDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount) return;
+
+    // Validate advance + collaborator combo
+    if (selectedProjectId && isAdvance && !collaboratorId) {
+      showError(t('projects.advances.errors.noCollaborator', 'Odaberi suradnika kojem se isplaćuje avans.'));
+      return;
+    }
+    // Surplus warning: linked advances exceed invoice amount
+    if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
+      const parsedAmt = parseFloat(amount.replace(',', '.')) || 0;
+      // Recompute linkedSum from current expenses cache via the prop snapshot.
+      // Best-effort: use a synchronous fetch via the global expenses cache is not available here,
+      // so we rely on the trigger to validate and let the user proceed. The UI shows warning live.
+      if (parsedAmt === 0) {
+        showError(t('projects.advances.errors.zeroAmountWithLinks', 'Iznos računa ne smije biti 0 ako su vezani avansi.'));
+        return;
+      }
+    }
 
     // Validate amount > 0 (works for expense, income and transfer)
     const { valid: amountValid } = validateAmountInput(amount);
@@ -948,6 +975,9 @@ export const AddExpenseDialog = ({
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
+      collaborator_id: selectedProjectId ? collaboratorId : null,
+      is_advance: selectedProjectId ? isAdvance : false,
+      linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
       business_profile_id: effectiveBusinessProfileId || null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
@@ -1124,6 +1154,12 @@ export const AddExpenseDialog = ({
               onSelectedBudgetIdChange={setSelectedBudgetId}
               expenseNature={expenseNature}
               onExpenseNatureChange={setExpenseNature}
+              isAdvance={isAdvance}
+              onIsAdvanceChange={setIsAdvance}
+              collaboratorId={collaboratorId}
+              onCollaboratorIdChange={setCollaboratorId}
+              linkedAdvanceIds={linkedAdvanceIds}
+              onLinkedAdvanceIdsChange={setLinkedAdvanceIds}
               locationName={locationName}
               locationLoading={locationLoading}
               onGetLocation={handleGetLocation}

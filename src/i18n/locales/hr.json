@@ -184,8 +184,7 @@
       "collection": "Naplata"
     },
     "alerts": {
-      "budgetHigh": "⚠️ Potrošio si {{pct}}% ugovorenog budžeta",
-      "collectionLow": "💰 Naplaćeno samo {{pct}}%. Razmisli o podsjetniku klijentu."
+      "lossZone": "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže"
     },
     "forecast": {
       "title": "🔮 Prognoza — po trenutnom tempu",
@@ -415,9 +414,6 @@
       "promptDesc": "Bez ugovorenog iznosa ne možemo izračunati maržu, EAC ni rizik gubitka.",
       "promptCta": "Unesi ugovoreni iznos"
     },
-    "alerts": {
-      "lossZone": "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže"
-    },
     "statusLine": {
       "paused": "Pauzirano",
       "waitingStart": "Čeka početak · {{date}}",
@@ -573,6 +569,32 @@
       "recommended": "Preporučeno",
       "finishCta": "Završi projekt",
       "success": "Projekt završen"
+    },
+    "advances": {
+      "sectionTitle": "Avans / suradnik",
+      "advanceBadge": "Avans",
+      "isAdvance": "Ovo je avans suradniku",
+      "isAdvanceHelp": "Označi ako se ovaj iznos kasnije oduzima od konačnog računa",
+      "collaborator": "Suradnik",
+      "optional": "(opcionalno)",
+      "selectCollaborator": "Odaberi suradnika",
+      "noCollaborators": "Nema suradnika u projektu",
+      "addNewCollaborator": "Dodaj novog suradnika",
+      "newCollaborator": "Novi suradnik",
+      "firstName": "Ime",
+      "lastName": "Prezime",
+      "serviceDescription": "Opis usluge (npr. parketar)",
+      "defaultService": "Suradnja na projektu",
+      "unlinkedAdvances": "Nepovezani avansi za ovog suradnika",
+      "noUnlinked": "Nema nepovezanih avansa za ovog suradnika.",
+      "gross": "Bruto iznos",
+      "minusAdvances": "Oduzeti avansi",
+      "netBooked": "Neto knjiženo",
+      "surplusWarning": "Avansi premašuju iznos računa za {{amount}} — kreirat će se potraživanje od suradnika.",
+      "errors": {
+        "noCollaborator": "Odaberi suradnika kojem se isplaćuje avans.",
+        "zeroAmountWithLinks": "Iznos računa ne smije biti 0 ako su vezani avansi."
+      }
     }
   },
   "estimates": {
