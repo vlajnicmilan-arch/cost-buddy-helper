@@ -118,7 +118,7 @@ export const ActiveProjectsStrip = React.memo(({
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="min-w-[200px] h-[190px] bg-muted/30 rounded-2xl animate-pulse" />
+            <div key={i} className="min-w-[200px] h-[150px] bg-muted/30 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -216,7 +216,7 @@ export const ActiveProjectsStrip = React.memo(({
               { label: t('projects.card.profit', 'Zarada'), value: profit, signed: true },
             ];
             return (
-              <div className="mt-auto space-y-1 pt-2 border-t border-border/40">
+              <div className="space-y-1 pt-1.5 border-t border-border/40">
                 {lines.map((ln, i) => {
                   const positive = ln.value >= 0;
                   const valueClass = ln.signed
@@ -242,9 +242,9 @@ export const ActiveProjectsStrip = React.memo(({
           const renderCenter = () => {
             if (!hasMargin) {
               return (
-                <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center mb-2">
-                    <Wallet className="w-5 h-5 text-primary" />
+                <div className="flex flex-col items-center justify-center text-center px-2 py-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center mb-1.5">
+                    <Wallet className="w-4 h-4 text-primary" />
                   </div>
                   <p className="text-xs font-semibold text-primary leading-snug">
                     {t('projects.card.setContracted', 'Postavi ugovoreni iznos')}
@@ -254,11 +254,11 @@ export const ActiveProjectsStrip = React.memo(({
             }
             const pct = `${Math.round((margin ?? 0) * 100)}%`;
             return (
-              <div className="flex-1 flex flex-col items-center justify-center py-0.5">
+              <div className="flex flex-col items-center justify-center py-1.5">
                 <p className={cn('text-2xl font-bold leading-none tabular-nums', HEALTH_TEXT_CLASS[health])}>
                   {pct}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5 text-center">
                   {t('projects.card.margin', 'MARŽA')}
                 </p>
               </div>
@@ -274,7 +274,7 @@ export const ActiveProjectsStrip = React.memo(({
               whileTap={{ scale: 0.97 }}
               onClick={() => handleNav('/projects', { openProjectId: project.id, from: '/home' })}
               aria-label={ariaLabel}
-              className="snap-start min-w-[200px] max-w-[220px] min-h-[190px] p-3 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-2 relative overflow-hidden"
+              className="snap-start min-w-[200px] max-w-[220px] p-2.5 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-1.5 relative overflow-hidden"
               style={{
                 borderLeftWidth: 3,
                 borderLeftColor: color,
@@ -317,7 +317,7 @@ export const ActiveProjectsStrip = React.memo(({
           transition={{ delay: activeProjects.length * 0.04 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
-          className="snap-start min-w-[200px] max-w-[220px] min-h-[190px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
+          className="snap-start min-w-[200px] max-w-[220px] p-2.5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
             <Plus className="w-6 h-6 text-primary" />
