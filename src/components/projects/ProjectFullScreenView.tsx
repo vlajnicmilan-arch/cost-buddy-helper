@@ -600,7 +600,7 @@ export const ProjectFullScreenView = ({
                   {isBusinessView && (
                     <ProjectEarnedValueCard
                       project={project}
-                      spent={stats.spent}
+                      spent={stats.totalSpent}
                       milestones={milestones}
                       onEnterContract={() => onRequestEdit?.(project)}
                     />
