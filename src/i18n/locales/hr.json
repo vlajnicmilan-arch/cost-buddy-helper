@@ -122,14 +122,11 @@
   "projects": {
     "noPaymentSource": "Bez izvora",
     "card": {
-      "realMargin": "STVARNA MARŽA",
-      "expectedMargin": "PREDVIĐENA MARŽA",
-      "collected": "Naplaćeno",
+      "margin": "MARŽA",
       "contracted": "Ugovoreno",
-      "spent": "Potrošeno",
-      "profit": "Profit",
-      "remaining": "Preostalo",
-      "setBudget": "Postavi budžet projekta"
+      "spent": "Trošak",
+      "profit": "Zarada",
+      "setContracted": "Postavi ugovoreni iznos"
     },
     "onboarding": {
       "title": "Brzi početak",
