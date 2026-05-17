@@ -36,6 +36,7 @@ import { TransactionItemsExpander } from '@/components/TransactionItemsExpander'
 import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
 
 interface ProjectExpense {
   id: string;
@@ -51,6 +52,9 @@ interface ProjectExpense {
   expense_nature?: string | null;
   payment_source?: string | null;
   work_type?: 'material' | 'labor' | 'equipment' | 'other' | null;
+  is_advance?: boolean | null;
+  collaborator_id?: string | null;
+  linked_advance_ids?: string[] | null;
 }
 
 interface ProjectTransactionsTabProps {
@@ -202,6 +206,16 @@ export const ProjectTransactionsTab = ({
   const [editPaymentSourceValue, setEditPaymentSourceValue] = useState<string>('none');
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
 
+  // Advance / collaborator state — add dialog
+  const [isAdvance, setIsAdvance] = useState(false);
+  const [collaboratorId, setCollaboratorId] = useState<string | null>(null);
+  const [linkedAdvanceIds, setLinkedAdvanceIds] = useState<string[]>([]);
+
+  // Advance / collaborator state — edit dialog
+  const [editIsAdvance, setEditIsAdvance] = useState(false);
+  const [editCollaboratorId, setEditCollaboratorId] = useState<string | null>(null);
+  const [editLinkedAdvanceIds, setEditLinkedAdvanceIds] = useState<string[]>([]);
+
   // Calendar popover open states (auto-close on select)
   const [filterDateOpen, setFilterDateOpen] = useState(false);
   const [addDateOpen, setAddDateOpen] = useState(false);
@@ -225,6 +239,9 @@ export const ProjectTransactionsTab = ({
     setMilestoneId('none');
     setPaymentSourceValue('none');
     setExpenseNature('regular');
+    setIsAdvance(false);
+    setCollaboratorId(null);
+    setLinkedAdvanceIds([]);
   };
 
   // Quick milestone change handler
@@ -275,7 +292,10 @@ export const ProjectTransactionsTab = ({
           date: date.toISOString(),
           status,
           submitted_by: needsApproval ? user.id : null,
-          expense_nature: expenseNature
+          expense_nature: expenseNature,
+          is_advance: expenseType === 'expense' ? isAdvance : false,
+          collaborator_id: expenseType === 'expense' ? collaboratorId : null,
+          linked_advance_ids: expenseType === 'expense' && !isAdvance && linkedAdvanceIds.length > 0 ? linkedAdvanceIds : null,
         } as any)
         .select()
         .single();
@@ -386,6 +406,9 @@ export const ProjectTransactionsTab = ({
     setEditDate(new Date(expense.date));
     setEditMilestoneId(expense.milestone_id || 'none');
     setEditPaymentSourceValue(expense.payment_source || 'none');
+    setEditIsAdvance(!!expense.is_advance);
+    setEditCollaboratorId(expense.collaborator_id || null);
+    setEditLinkedAdvanceIds(Array.isArray(expense.linked_advance_ids) ? expense.linked_advance_ids : []);
     setEditDialogOpen(true);
   };
 
@@ -411,7 +434,10 @@ export const ProjectTransactionsTab = ({
           date: editDate.toISOString(),
           milestone_id: editMilestoneId !== 'none' ? editMilestoneId : null,
           business_profile_id: activeBusinessProfileId || null,
-          payment_source: newPaymentSource
+          payment_source: newPaymentSource,
+          is_advance: editType === 'expense' ? editIsAdvance : false,
+          collaborator_id: editType === 'expense' ? editCollaboratorId : null,
+          linked_advance_ids: editType === 'expense' && !editIsAdvance && editLinkedAdvanceIds.length > 0 ? editLinkedAdvanceIds : null,
         } as any)
         .eq('id', editingExpense.id);
 
@@ -1186,6 +1212,21 @@ export const ProjectTransactionsTab = ({
               </div>
             </div>
 
+            {/* Advance / Collaborator */}
+            {expenseType === 'expense' && (
+              <AdvanceLinkSection
+                projectId={projectId}
+                type={expenseType}
+                amount={amount}
+                isAdvance={isAdvance}
+                onIsAdvanceChange={setIsAdvance}
+                collaboratorId={collaboratorId}
+                onCollaboratorIdChange={setCollaboratorId}
+                linkedAdvanceIds={linkedAdvanceIds}
+                onLinkedAdvanceIdsChange={setLinkedAdvanceIds}
+              />
+            )}
+
             {/* Actions */}
             <div className="flex gap-2 pt-2">
               <Button 
@@ -1201,7 +1242,7 @@ export const ProjectTransactionsTab = ({
               <Button 
                 className="flex-1" 
                 onClick={handleAddExpense}
-                disabled={saving || !amount || !description.trim()}
+                disabled={saving || !amount || !description.trim() || (isAdvance && !collaboratorId)}
               >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.add')}
@@ -1444,6 +1485,22 @@ export const ProjectTransactionsTab = ({
               </Select>
             </div>
 
+            {/* Advance / Collaborator */}
+            {editType === 'expense' && editingExpense && (
+              <AdvanceLinkSection
+                projectId={projectId}
+                type={editType}
+                amount={editAmount}
+                isAdvance={editIsAdvance}
+                onIsAdvanceChange={setEditIsAdvance}
+                collaboratorId={editCollaboratorId}
+                onCollaboratorIdChange={setEditCollaboratorId}
+                linkedAdvanceIds={editLinkedAdvanceIds}
+                onLinkedAdvanceIdsChange={setEditLinkedAdvanceIds}
+                editingExpenseId={editingExpense.id}
+              />
+            )}
+
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
@@ -1451,7 +1508,7 @@ export const ProjectTransactionsTab = ({
               </Button>
               <Button
                 onClick={handleSaveEdit}
-                disabled={saving || !editAmount || !editDescription.trim()}
+                disabled={saving || !editAmount || !editDescription.trim() || (editIsAdvance && !editCollaboratorId)}
               >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
