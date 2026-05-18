@@ -73,6 +73,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
       setIssueDate(invoice.issue_date || todayIso());
       setDueDate(invoice.due_date || '');
       setNotes(invoice.notes || '');
+      setClientEmail(invoice.client_email || '');
+      setAutoReminders(!!invoice.auto_reminders_enabled);
       return;
     }
 
