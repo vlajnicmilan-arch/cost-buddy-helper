@@ -32,15 +32,24 @@ export const FileSavedDialog = () => {
   const [detail, setDetail] = useState<FileSavedDetail | null>(null);
 
   useEffect(() => {
+    const pending = (window as any).__pendingSavedFileDetail as FileSavedDetail | undefined;
+    if (pending?.uri) setDetail(pending);
+
     const handler = (e: Event) => {
       const ce = e as CustomEvent<FileSavedDetail>;
-      if (ce?.detail?.uri) setDetail(ce.detail);
+      if (ce?.detail?.uri) {
+        (window as any).__pendingSavedFileDetail = ce.detail;
+        setDetail(ce.detail);
+      }
     };
     window.addEventListener(FILE_SAVED_EVENT, handler);
     return () => window.removeEventListener(FILE_SAVED_EVENT, handler);
   }, []);
 
-  const close = () => setDetail(null);
+  const close = () => {
+    (window as any).__pendingSavedFileDetail = null;
+    setDetail(null);
+  };
 
   const handleOpen = async () => {
     if (!detail) return;
@@ -70,7 +79,7 @@ export const FileSavedDialog = () => {
 
   return (
     <Dialog open={!!detail} onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent className="z-[60] max-w-sm">
+      <DialogContent showBackButton={false} className="z-[90] max-w-sm">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />

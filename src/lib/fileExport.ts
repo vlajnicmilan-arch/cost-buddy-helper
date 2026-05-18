@@ -24,6 +24,7 @@ export type ExportMode = 'save' | 'share';
  */
 function emitFileSaved(detail: { uri: string; fileName: string; mime: string }) {
   if (typeof window === 'undefined') return;
+  (window as any).__pendingSavedFileDetail = detail;
   window.dispatchEvent(new CustomEvent('file-saved', { detail }));
 }
 
@@ -115,8 +116,10 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
         emitFileSaved({ uri: result.uri, fileName, mime });
         return true;
       } catch (saveErr: any) {
-        console.error('SaveToDownloads failed, falling back to share:', saveErr);
-        return shareFromCache(base64Data, fileName, tx('fileExport.shareDialogTitle', 'Podijeli datoteku'));
+        console.error('SaveToDownloads failed, falling back to cache open dialog:', saveErr);
+        const cacheUri = await writeToCache(base64Data, fileName);
+        emitFileSaved({ uri: cacheUri, fileName, mime });
+        return true;
       }
     }
 
@@ -130,18 +133,12 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
 
 async function shareFromCache(base64Data: string, fileName: string, dialogTitle: string): Promise<boolean> {
   try {
-    const { Filesystem, Directory } = await import('@capacitor/filesystem');
     const { Share } = await import('@capacitor/share');
-
-    const writeResult = await Filesystem.writeFile({
-      path: fileName,
-      data: base64Data,
-      directory: Directory.Cache,
-    });
+    const uri = await writeToCache(base64Data, fileName);
 
     await Share.share({
       title: fileName,
-      files: [writeResult.uri],
+      files: [uri],
       dialogTitle,
     });
     return true;
@@ -153,6 +150,16 @@ async function shareFromCache(base64Data: string, fileName: string, dialogTitle:
     showError(tx('errors.files.shareFailed', 'Dijeljenje nije uspjelo'));
     return false;
   }
+}
+
+async function writeToCache(base64Data: string, fileName: string): Promise<string> {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+  const writeResult = await Filesystem.writeFile({
+    path: fileName,
+    data: base64Data,
+    directory: Directory.Cache,
+  });
+  return writeResult.uri;
 }
 
 /**

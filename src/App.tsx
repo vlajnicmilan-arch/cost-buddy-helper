@@ -136,7 +136,14 @@ const RouteAwareGlobalOverlays = () => {
     }
     // StatusFeedback must remain available on public routes (e.g. /auth)
     // so login errors and other inline feedback are visible.
-    return <StatusFeedback />;
+    // FileSavedDialog is event-driven and safe on all routes; keeping it
+    // mounted prevents lost export events during redirects/transient /app state.
+    return (
+      <>
+        <StatusFeedback />
+        <FileSavedDialog />
+      </>
+    );
   }
 
   return (
