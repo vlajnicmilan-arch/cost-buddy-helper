@@ -29,20 +29,20 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Trial is 7 days. Find users created exactly 5 days ago (2 days remaining)
+    // Trial is 30 days. Find users created exactly 28 days ago (2 days remaining)
     const now = new Date();
-    const fiveDaysAgo = new Date(now);
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const targetDate = new Date(now);
+    targetDate.setDate(targetDate.getDate() - 28);
     
-    // Window: users created between 5 days ago 00:00 and 5 days ago 23:59
-    const startOfDay = new Date(fiveDaysAgo);
+    // Window: users created between 28 days ago 00:00 and 28 days ago 23:59
+    const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(fiveDaysAgo);
+    const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     logStep("Checking users created between", { start: startOfDay.toISOString(), end: endOfDay.toISOString() });
 
-    // Get users created 5 days ago via auth.admin
+    // Get users created 28 days ago via auth.admin
     const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers({
       page: 1,
       perPage: 1000,
@@ -55,7 +55,7 @@ serve(async (req) => {
       return createdAt >= startOfDay && createdAt <= endOfDay;
     });
 
-    logStep(`Found ${eligibleUsers.length} users in trial day 5`);
+    logStep(`Found ${eligibleUsers.length} users in trial day 28`);
 
     if (eligibleUsers.length === 0) {
       return new Response(JSON.stringify({ sent: 0, message: "No users need reminders today" }), {

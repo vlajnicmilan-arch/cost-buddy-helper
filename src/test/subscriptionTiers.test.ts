@@ -22,7 +22,7 @@ describe('subscriptionTiers', () => {
   });
 
   it('isTrialExpired returns true for old date', () => {
-    const old = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const old = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
     expect(isTrialExpired(old)).toBe(true);
   });
 
