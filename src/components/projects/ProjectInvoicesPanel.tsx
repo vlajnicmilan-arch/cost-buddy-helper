@@ -40,6 +40,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
+  const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
 
   const visibleInvoices = useMemo(() => {
     if (!projectId) return invoices;
