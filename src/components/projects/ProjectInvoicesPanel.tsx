@@ -5,13 +5,14 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
-import { Plus, FileText, Loader2, Edit, Trash2, Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, FileText, Loader2, Edit, Trash2, Download, AlertTriangle, CheckCircle2, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
+import { SendInvoiceReminderDialog } from '@/components/business/SendInvoiceReminderDialog';
 
 // Lazy heavy dialog
 const InvoiceDialog = lazy(() => import('./InvoiceDialog').then(m => ({ default: m.InvoiceDialog })));
@@ -39,6 +40,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
+  const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
 
   const visibleInvoices = useMemo(() => {
     if (!projectId) return invoices;
@@ -144,14 +146,24 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
                     PDF
                   </Button>
                   {inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => updateInvoice(inv.id, { status: 'paid' })}
-                      title={t('invoices.markPaid', 'Označi plaćeno')}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('invoices.markPaid', 'Plaćeno')}
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReminderInvoice(inv)}
+                        title={t('invoices.reminder.send', 'Pošalji podsjetnik')}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateInvoice(inv.id, { status: 'paid' })}
+                        title={t('invoices.markPaid', 'Označi plaćeno')}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('invoices.markPaid', 'Plaćeno')}
+                      </Button>
+                    </>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => { setEditingInvoice(inv); setDialogOpen(true); }}>
                     <Edit className="w-3.5 h-3.5" />
@@ -194,6 +206,11 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendInvoiceReminderDialog
+        invoice={reminderInvoice ? { ...reminderInvoice, remaining: (Number(reminderInvoice.total_amount) || 0) - (payments[reminderInvoice.id]?.paid || 0) } : null}
+        onOpenChange={(o) => !o && setReminderInvoice(null)}
+      />
     </div>
   );
 };

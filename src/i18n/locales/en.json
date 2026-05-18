@@ -707,6 +707,22 @@
       "lineTotal": "Amount",
       "nonVatNote": "Issuer is not a VAT payer.",
       "disclaimer": "Internal invoice overview for your records and client communication. Not a fiscalised tax invoice or an official document under tax and accounting regulations."
+    },
+    "widget": {
+      "title": "Unpaid invoices",
+      "allPaid": "All invoices are paid 🎉",
+      "overdueDays": "{{n}} d"
+    },
+    "reminder": {
+      "send": "Send reminder",
+      "sendBtn": "Send",
+      "sent": "Reminder sent",
+      "title": "Payment reminder",
+      "clientEmail": "Client email",
+      "message": "Message",
+      "defaultMessage": "Kindly remit the outstanding amount of this invoice.",
+      "invalidEmail": "Enter a valid client email address.",
+      "disclaimer": "We send an informal reminder with your message and basic invoice data. Not an official notice."
     }
   },
   "settings": {
