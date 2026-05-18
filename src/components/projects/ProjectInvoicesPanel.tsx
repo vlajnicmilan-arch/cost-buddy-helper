@@ -14,6 +14,7 @@ import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
 import { SendInvoiceReminderDialog } from '@/components/business/SendInvoiceReminderDialog';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 
 // Lazy heavy dialog
 const InvoiceDialog = lazy(() => import('./InvoiceDialog').then(m => ({ default: m.InvoiceDialog })));
