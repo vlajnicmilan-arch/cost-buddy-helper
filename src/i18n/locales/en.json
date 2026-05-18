@@ -117,7 +117,15 @@
     "saveError": "Failed to save file",
     "shareError": "Sharing failed",
     "saveDialogTitle": "Save file",
-    "shareDialogTitle": "Share file"
+    "shareDialogTitle": "Share file",
+    "openFailed": "Open failed",
+    "savedDialog": {
+      "title": "File saved",
+      "description": "{{fileName}} is in the Downloads folder.",
+      "open": "Open",
+      "share": "Share",
+      "close": "Close"
+    }
   },
   "projects": {
     "noPaymentSource": "No source",

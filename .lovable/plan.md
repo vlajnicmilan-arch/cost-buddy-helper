@@ -1,83 +1,99 @@
 ## Cilj
 
-Bez pisanja novih testova: zabilježiti prioritetnu listu što treba pokriti, i dodati GitHub Actions korak koji gate-a build na padu postojećih testova.
+Nakon što app generira PDF (ili CSV/ICS/ZIP) na native (Android), korisnik dobije gumb **"Otvori"** odmah u UI-u — bez traženja po File Manageru. Na webu se ne mijenja ništa (preglednik već pokazuje download bar).
 
 ---
 
-## 1. Novi memory fajl: `mem://architecture/testing-priorities`
+## Pristup
 
-Sadržaj:
-
-- **Trenutno stanje** (8 test fajlova, popis).
-- **Visok prioritet** s kratkim razlogom *zašto* boli ako pukne:
-  1. `transferMatching.ts` — krivi par = duplo računanje balansa.
-  2. `paymentSourceMatching.ts` — card lookup po zadnje 4 znamenke; bug = transakcija na pogrešnom računu.
-  3. `useRecurringMatcher` (0.1% tolerance, temp 0, backward date) — već postoji historijski bug.
-  4. `useProjectProfitLoss` — dual-view cash vs accrual s contract fallbackom; ekstrahirati pure compute.
-  5. `csvParsers.ts` — bankovni CSV import, format varijacije po banci.
-- **Srednji prioritet:** `ownerLoanLogic.ts`, `dateValidation.ts` + `holidays.ts`, `useFreeLimits` / `useFeatureAccess`.
-- **Eksplicitno NE testirati:** Deno edge functions (radije edge function logs), shadcn dialog/sheet render testovi (low ROI), Supabase chain mocking u hookovima (krhko).
-- **Pravilo:** kad fix-aš bug u pure logici, prvo ekstrahiraj helper pa napiši regresijski test (kao kod `applyContractAmendment`).
-
-Dodaje se i u `mem://index.md` pod Memories.
+1. **Novi plugin:** `@capacitor-community/file-opener@8.0.0` (matcha Capacitor `^8.0.1` u projektu — verified).
+2. **`SaveToDownloads` već vraća `uri`** (verified u `src/lib/nativeSaveToDownloads.ts`) — koristim taj URI direktno za otvaranje.
+3. **Globalni "File saved" dialog** mountan u `RouteAwareGlobalOverlays` (već postoji pattern za `FeedbackFAB`). Sluša event `file-saved` koji emitira `exportFile`. Prikazuje:
+   - Naziv datoteke
+   - Gumb **Otvori** → `FileOpener.open({ filePath: uri, contentType: mime })`
+   - Gumb **Podijeli** → `Share.share({ files: [uri] })` (reuse postojeće logike)
+   - Gumb **Zatvori**
+4. **Dialog se NE prikazuje** na webu i kad je `mode === 'share'` (jer share sheet već daje "Open with"). Samo na native + `mode === 'save'`.
+5. **`StatusFeedback` 1200ms toast se uklanja iz save flow-a** kad se prikaže dialog (inače bi se preklapali). Memory pravilo o StatusFeedbacku ostaje važiti za sve druge slučajeve.
 
 ---
 
-## 2. Ažurirati `mem://index.md` Core
+## Tehničke promjene
 
-Dodati jednu Core liniju:
-- `Testovi: vitest. Prije release-a obavezno proći test suite (CI gate na PR-ovima). Novi pure helperi = novi unit test.`
+### A. Dependencies
+- `npm install @capacitor-community/file-opener@8.0.0 --legacy-peer-deps`
+
+### B. Novi fajl: `src/lib/nativeFileOpener.ts`
+- Thin wrapper: `openSavedFile(uri: string, mime: string): Promise<boolean>`
+- Na webu noop (return false), na native poziva `FileOpener.open`.
+- Catch + `showError(t('fileExport.openFailed', ...))`.
+
+### C. Edit: `src/lib/fileExport.ts`
+- `exportFileNative` (save grana): nakon uspješnog `SaveToDownloads.saveBlob`, umjesto `showSuccess` zove `emitFileSaved({ uri, fileName, mime })`.
+- Novi modul-level helper `emitFileSaved` koji dispatcha `CustomEvent('file-saved', { detail })` na `window`.
+- Share grana ostaje netaknuta (Share sheet već radi posao).
+- Web grana ostaje netaknuta.
+
+### D. Novi fajl: `src/components/FileSavedDialog.tsx`
+- shadcn `Dialog`, z-[60] (memory: Dialog Layering).
+- `useEffect` registrira `window` listener na `file-saved`, drži `useState<{ uri, fileName, mime } | null>`.
+- 3 gumba (Otvori / Podijeli / Zatvori) — min 44px touch (memory: Coding Conventions).
+- Sav text preko `t()` — novi i18n ključ namespace `fileExport.savedDialog.*`.
+
+### E. Edit: `src/App.tsx`
+- Import `FileSavedDialog`.
+- Mount unutar `RouteAwareGlobalOverlays` pored `<FeedbackFAB />` (samo na privatnim rutama — public auth ne treba).
+
+### F. i18n (`src/i18n/locales/{hr,en,de}.json`)
+- `fileExport.savedDialog.title` — "Datoteka spremljena" / "File saved" / "Datei gespeichert"
+- `fileExport.savedDialog.description` — "{{fileName}} je u Downloads mapi."
+- `fileExport.savedDialog.open` — "Otvori" / "Open" / "Öffnen"
+- `fileExport.savedDialog.share` — "Podijeli" / "Share" / "Teilen"
+- `fileExport.savedDialog.close` — "Zatvori" / "Close" / "Schließen"
+- `fileExport.openFailed` — "Otvaranje nije uspjelo" / "Open failed" / "Öffnen fehlgeschlagen"
+
+### G. Native version bump (memory pravilo: native promjena = obavezan bump)
+- `public/version.json`: `2.0.7` → `2.0.8`, ažurirati `apkUrl` na `vmbalance-2.0.8.apk`.
+- `android/app/build.gradle`: `versionCode 14` → `15`, `versionName "2.0.7"` → `"2.0.8"`.
+
+### H. Update memory
+- `mem://features/post-export-open-action` (novi feature memory)
+- Dodati u `mem://index.md` pod Memories.
 
 ---
 
-## 3. Novi GitHub Actions workflow: `.github/workflows/test.yml`
+## Što NE radim
 
-```yaml
-name: Tests
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-jobs:
-  vitest:
-    name: Run vitest suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci --legacy-peer-deps
-      - run: npm test
-```
-
-Napomene:
-- `npm test` već postoji u `package.json` kao `vitest run` (verified).
-- `--legacy-peer-deps` zato što tako i lokalno radiš (memory: Native Build).
-- Trigger na `push: main` + svaki PR prema `main` + manual.
-- Bez path filtera (testovi su brzi, ~3.5s lokalno).
-- Workflow ne dira `android-build.yml` — to je odvojen pipeline.
+- Ne mijenjam `StatusFeedback` API (memory: 1200ms zabranjeno produljiti).
+- Ne diram `ExportButton` dropdown UI (Download/Share grane ostaju iste).
+- Ne diram nijedan call-site `exportPDFDoc` / `exportFile` (19+ mjesta). Sve radi automatski preko eventa.
+- Ne mijenjam web ponašanje.
+- Ne dodajem opciju "Otvori" u ExportButton dropdown (premalo prostora; korisnik prvo spremi, pa odluči).
 
 ---
 
-## Što se NE radi u ovom planu
+## Verifikacija nakon implementacije
 
-- Ne pišu se novi testovi za stavke s prioritetne liste — to je sljedeća iteracija po tvojoj odluci.
-- Ne dira se postojeći `android-build.yml`.
-- Bez izmjena `package.json` (test script već postoji).
-- Bez native version bump-a (nema native promjene).
+1. `npm test` — sve postojeće prolazi (workflow `.github/workflows/test.yml` će to gate-ati).
+2. Build prolazi.
+3. Manual smoke (kad korisnik git pull + `cap sync` + APK): generiraj P&L PDF → dialog se pojavi → Otvori → otvara se u sistemskom PDF viewer-u.
 
 ---
 
 ## Fajlovi koji se mijenjaju
 
-1. **Novo:** `mem://architecture/testing-priorities` (memory fajl)
-2. **Edit:** `mem://index.md` (Core linija + referenca na novi memory)
-3. **Novo:** `.github/workflows/test.yml`
+**Novo (3):**
+- `src/lib/nativeFileOpener.ts`
+- `src/components/FileSavedDialog.tsx`
+- `mem://features/post-export-open-action`
 
-3 fajla, bez aplikacijskog koda.
+**Edit (7):**
+- `package.json` (+ lockfile, kroz `npm install`)
+- `src/lib/fileExport.ts`
+- `src/App.tsx`
+- `src/i18n/locales/hr.json`
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/de.json`
+- `public/version.json`
+- `android/app/build.gradle`
+- `mem://index.md`

@@ -117,7 +117,15 @@
     "saveError": "Datei konnte nicht gespeichert werden",
     "shareError": "Teilen fehlgeschlagen",
     "saveDialogTitle": "Datei speichern",
-    "shareDialogTitle": "Datei teilen"
+    "shareDialogTitle": "Datei teilen",
+    "openFailed": "Öffnen fehlgeschlagen",
+    "savedDialog": {
+      "title": "Datei gespeichert",
+      "description": "{{fileName}} befindet sich im Downloads-Ordner.",
+      "open": "Öffnen",
+      "share": "Teilen",
+      "close": "Schließen"
+    }
   },
   "projects": {
     "card": {
