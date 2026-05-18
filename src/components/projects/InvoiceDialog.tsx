@@ -127,6 +127,10 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
 
   const handleSave = async () => {
     if (!clientName.trim()) return;
+    if (!activeBusinessProfileId) {
+      showError(t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.'));
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -154,6 +158,10 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
         saved = { ...invoice, ...payload } as ProjectInvoice;
       } else {
         saved = await addInvoice(payload);
+        if (!saved) {
+          // addInvoice already surfaced an error toast; keep dialog open so user can retry.
+          return;
+        }
       }
 
       // If auto-reminders are enabled, upload a PDF snapshot so the cron
