@@ -1,7 +1,7 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Img, Preview, Text,
+  Body, Button, Container, Head, Heading, Html, Img, Preview, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
@@ -16,10 +16,11 @@ interface InvoiceReminderProps {
   amount?: string
   daysOverdue?: string
   customMessage?: string
+  pdfUrl?: string
 }
 
 const InvoiceReminderEmail = ({
-  clientName, invoiceNumber, issueDate, dueDate, amount, daysOverdue, customMessage,
+  clientName, invoiceNumber, issueDate, dueDate, amount, daysOverdue, customMessage, pdfUrl,
 }: InvoiceReminderProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
@@ -51,6 +52,10 @@ const InvoiceReminderEmail = ({
             <Text style={overdue}>Kašnjenje: {daysOverdue} dana</Text>
           ) : null}
         </div>
+
+        {pdfUrl ? (
+          <Button href={pdfUrl} style={button}>Preuzmi PDF računa</Button>
+        ) : null}
 
         <Text style={text}>
           Ako ste uplatu već izvršili, molimo zanemarite ovu poruku. Hvala na suradnji.
@@ -100,3 +105,8 @@ const highlightMeta = { fontSize: '12px', color: 'hsl(170, 15%, 35%)', margin: '
 const overdue = { fontSize: '12px', fontWeight: 'bold' as const, color: 'hsl(0, 70%, 45%)', margin: '4px 0 0' }
 const footer = { fontSize: '12px', color: 'hsl(170, 15%, 45%)', margin: '24px 0 12px', opacity: '0.8' }
 const disclaimer = { fontSize: '10px', color: 'hsl(170, 15%, 55%)', fontStyle: 'italic' as const, margin: '12px 0 0', opacity: '0.7' }
+const button = {
+  backgroundColor: 'hsl(172, 66%, 40%)', color: '#ffffff', fontSize: '14px',
+  fontWeight: 'bold' as const, borderRadius: '12px', padding: '12px 24px',
+  textDecoration: 'none', display: 'inline-block', margin: '0 0 20px',
+}

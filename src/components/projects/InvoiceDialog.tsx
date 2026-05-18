@@ -9,7 +9,8 @@ import { useProjectInvoices, ProjectInvoice, InvoiceItem } from '@/hooks/useProj
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Trash2, Loader2, Info } from 'lucide-react';
+import { Plus, Trash2, Loader2, Info, Mail } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
@@ -58,6 +59,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
   const [issueDate, setIssueDate] = useState<string>(todayIso());
   const [dueDate, setDueDate] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [autoReminders, setAutoReminders] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -70,6 +73,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
       setIssueDate(invoice.issue_date || todayIso());
       setDueDate(invoice.due_date || '');
       setNotes(invoice.notes || '');
+      setClientEmail(invoice.client_email || '');
+      setAutoReminders(!!invoice.auto_reminders_enabled);
       return;
     }
 
@@ -100,6 +105,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
       setIssueDate(todayIso());
       setDueDate('');
       setNotes(!isVatPayer && vatExemptionNote ? vatExemptionNote : '');
+      setClientEmail('');
+      setAutoReminders(false);
     };
     void prefill();
   }, [open, invoice, prefillFromEstimateId, DEFAULT_VAT, isVatPayer, vatExemptionNote]);
@@ -137,6 +144,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
         notes: notes.trim() || null,
         project_id: invoice?.project_id ?? projectId ?? null,
         estimate_id: invoice?.estimate_id ?? prefillFromEstimateId ?? null,
+        client_email: clientEmail.trim() || null,
+        auto_reminders_enabled: autoReminders,
       };
 
       if (invoice) {
@@ -180,6 +189,33 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
             <Label>{t('invoices.clientAddress', 'Adresa')}</Label>
             <Input value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} />
           </div>
+          <div className="space-y-1">
+            <Label className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+              {t('invoices.clientEmail', 'Email klijenta')}
+            </Label>
+            <Input
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="klijent@example.com"
+              autoComplete="off"
+            />
+          </div>
+          <label className="flex items-start gap-2 cursor-pointer p-2.5 rounded-md bg-muted/30 border border-border/40">
+            <Checkbox
+              checked={autoReminders}
+              onCheckedChange={(v) => setAutoReminders(!!v)}
+              className="mt-0.5"
+              disabled={!clientEmail.trim()}
+            />
+            <div className="text-xs">
+              <p className="font-medium">{t('invoices.autoReminders.title', 'Automatski podsjetnici')}</p>
+              <p className="text-muted-foreground mt-0.5">
+                {t('invoices.autoReminders.hint', 'Šalji email klijentu 3., 7. i 14. dan kašnjenja (zahtjeva email).')}
+              </p>
+            </div>
+          </label>
 
           {/* Items */}
           <div>

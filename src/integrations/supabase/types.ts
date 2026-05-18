@@ -2145,6 +2145,44 @@ export type Database = {
           },
         ]
       }
+      invoice_reminders: {
+        Row: {
+          id: string
+          invoice_id: string
+          message_id: string | null
+          recipient_email: string
+          sent_at: string
+          stage: number
+          trigger: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          message_id?: string | null
+          recipient_email: string
+          sent_at?: string
+          stage: number
+          trigger: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          message_id?: string | null
+          recipient_email?: string
+          sent_at?: string
+          stage?: number
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "project_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           business_profile_id: string
@@ -3220,8 +3258,10 @@ export type Database = {
       }
       project_invoices: {
         Row: {
+          auto_reminders_enabled: boolean
           business_profile_id: string
           client_address: string | null
+          client_email: string | null
           client_name: string
           client_oib: string | null
           created_at: string
@@ -3242,8 +3282,10 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          auto_reminders_enabled?: boolean
           business_profile_id: string
           client_address?: string | null
+          client_email?: string | null
           client_name: string
           client_oib?: string | null
           created_at?: string
@@ -3264,8 +3306,10 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          auto_reminders_enabled?: boolean
           business_profile_id?: string
           client_address?: string | null
+          client_email?: string | null
           client_name?: string
           client_oib?: string | null
           created_at?: string

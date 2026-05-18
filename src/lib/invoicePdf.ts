@@ -58,12 +58,14 @@ export interface GenerateInvoicePdfOpts {
   mode?: ExportMode;
   /** Optional already-computed payment summary (paid amount + payment rows). */
   paid?: number;
+  /** If true, returns the PDF as a Blob instead of saving/sharing. */
+  returnBlob?: boolean;
 }
 
 export async function generateInvoicePdf(
   invoice: ProjectInvoice,
   opts: GenerateInvoicePdfOpts = {}
-): Promise<boolean> {
+): Promise<boolean | Blob> {
   const { jsPDF, autoTable } = await loadJsPdf();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   applyBrandFont(doc);
@@ -238,5 +240,8 @@ export async function generateInvoicePdf(
   addNotOfficialFooter(doc);
 
   const fileName = `Racun_${invoice.invoice_number.replace(/[^\w-]/g, '_')}.pdf`;
+  if (opts.returnBlob) {
+    return doc.output('blob') as Blob;
+  }
   return exportPDFDoc(doc, fileName, opts.mode || 'save');
 }
