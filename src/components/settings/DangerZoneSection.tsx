@@ -28,7 +28,28 @@ export const DangerZoneSection = ({
         <h3 className="text-sm font-semibold text-destructive uppercase tracking-wide">
           {t('settings.dangerZone', 'Opasna zona')}
         </h3>
-        
+
+        {/* Trash (Koš za smeće) */}
+        {onNavigateToTrash && (
+          <button
+            onClick={onNavigateToTrash}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+              <Trash2 className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+              <Label className="text-sm font-medium cursor-pointer">
+                {t('trash.title', 'Koš za smeće')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('trash.settingsDesc', 'Vraćanje obrisanih transakcija, projekata, faktura i ponuda.')}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
+
         {/* Clear receipt image cache */}
         <div className="p-3 border border-border rounded-xl">
           <div className="flex items-center gap-3 mb-3">
