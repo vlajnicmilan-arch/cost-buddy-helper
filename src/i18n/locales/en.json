@@ -654,6 +654,61 @@
       "disclaimer": "Working document for client communication only. Not a tax invoice or a formal quote under tax regulations."
     }
   },
+  "invoices": {
+    "title": "Invoices (tracker)",
+    "add": "New invoice",
+    "edit": "Edit invoice",
+    "empty": "No invoices",
+    "emptyHint": "Track issued invoices and incoming payments. Link payments via income transactions.",
+    "emptyForProject": "No invoices linked to this project.",
+    "forProject": "Invoices for this project",
+    "deleteTitle": "Delete invoice?",
+    "downloadPdf": "Download PDF",
+    "markPaid": "Paid",
+    "clientName": "Client name",
+    "clientOib": "Tax ID",
+    "clientAddress": "Address",
+    "items": "Items",
+    "addItem": "Add",
+    "itemDescription": "Description",
+    "subtotal": "Subtotal",
+    "vat": "VAT",
+    "total": "Total",
+    "notes": "Note",
+    "issueDate": "Issue date",
+    "dueDate": "Due date",
+    "dueShort": "due",
+    "paid": "Paid",
+    "remaining": "Remaining",
+    "nonVatPreset": "You are not a VAT payer — all items default to 0% VAT and the exemption note is added automatically.",
+    "toasts": {
+      "created": "Invoice created",
+      "updated": "Invoice updated",
+      "deleted": "Invoice deleted"
+    },
+    "status": {
+      "issued": "Issued",
+      "partially_paid": "Partially paid",
+      "paid": "Paid",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    },
+    "pdf": {
+      "title": "INVOICE OVERVIEW",
+      "issueDate": "Issue date",
+      "dueDate": "Due date",
+      "issuer": "ISSUER",
+      "client": "RECIPIENT",
+      "itemDescription": "Description",
+      "qty": "Qty",
+      "unit": "Unit",
+      "unitPrice": "Price",
+      "vatPct": "VAT%",
+      "lineTotal": "Amount",
+      "nonVatNote": "Issuer is not a VAT payer.",
+      "disclaimer": "Internal invoice overview for your records and client communication. Not a fiscalised tax invoice or an official document under tax and accounting regulations."
+    }
+  },
   "settings": {
     "legal": {
       "title": "Legal documents (GDPR)",
