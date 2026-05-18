@@ -359,7 +359,7 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
 
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Odustani')}</Button>
-            <Button className="flex-1" onClick={handleSave} disabled={saving || !clientName.trim()}>
+            <Button className="flex-1" onClick={handleSave} disabled={saving || !clientName.trim() || !activeBusinessProfileId}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {invoice ? t('common.save', 'Spremi') : t('common.create', 'Kreiraj')}
             </Button>
