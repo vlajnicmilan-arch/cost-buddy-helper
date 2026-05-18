@@ -146,14 +146,24 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
                     PDF
                   </Button>
                   {inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => updateInvoice(inv.id, { status: 'paid' })}
-                      title={t('invoices.markPaid', 'Označi plaćeno')}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('invoices.markPaid', 'Plaćeno')}
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReminderInvoice(inv)}
+                        title={t('invoices.reminder.send', 'Pošalji podsjetnik')}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateInvoice(inv.id, { status: 'paid' })}
+                        title={t('invoices.markPaid', 'Označi plaćeno')}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('invoices.markPaid', 'Plaćeno')}
+                      </Button>
+                    </>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => { setEditingInvoice(inv); setDialogOpen(true); }}>
                     <Edit className="w-3.5 h-3.5" />
