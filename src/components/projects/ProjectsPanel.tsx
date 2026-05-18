@@ -382,7 +382,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       </AlertDialog>
 
       {/* Migrate to Business Confirmation */}
-      <AlertDialog open={migrateConfirmOpen} onOpenChange={setMigrateConfirmOpen}>
+      <AlertDialog open={migrateConfirmOpen} onOpenChange={(o) => { setMigrateConfirmOpen(o); if (!o) { setProjectToMigrate(null); setMigrateTargetProfileId(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('projects.migrateConfirmTitle', 'Premjesti u poslovni mod?')}</AlertDialogTitle>
@@ -390,9 +390,28 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
               {t('projects.migrateConfirmMessage', 'Projekt će postati vidljiv u poslovnom modu s naprednim funkcijama (radnici, suradnici, P&L). Svi postojeći podaci će biti sačuvani.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {businessProfiles.length > 1 ? (
+            <div className="space-y-2 py-2">
+              <Label className="text-sm">{t('projects.migrateChooseProfile', 'Odaberi tvrtku')}</Label>
+              <Select value={migrateTargetProfileId} onValueChange={setMigrateTargetProfileId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('projects.migrateChooseProfile', 'Odaberi tvrtku')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessProfiles.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : businessProfiles.length === 1 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              {t('projects.migrateTargetCompany', 'Ciljna tvrtka:')} <strong>{businessProfiles[0].name}</strong>
+            </p>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmMigrate}>
+            <AlertDialogAction onClick={confirmMigrate} disabled={!migrateTargetProfileId}>
               <Briefcase className="w-4 h-4 mr-2" />
               {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
             </AlertDialogAction>
