@@ -20,7 +20,9 @@ interface Props {
 
 export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterContract }: Props) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
+  const { showSuccess, showError } = useStatusFeedback();
+  const [exporting, setExporting] = useState(false);
 
   // Fallback to total_budget matches the hint in ProjectDialog: if contract_value
   // isn't set, total_budget is used as the expected revenue.
