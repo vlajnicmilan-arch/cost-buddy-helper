@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
