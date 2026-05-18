@@ -1,59 +1,97 @@
+## Strateški okvir (vrijedi za sve faze)
 
-# Plan: 3 prioriteta iz audita projektnih kartica
+App je **interni alat** za praćenje novca, projekata i odnosa s klijentima — **nije** službena evidencija. Svaki dokument koji generiramo nosi disclaimer footer (već postoji `src/lib/pdfFooter.ts`).
 
-## 1. ProjectCard header – pojednostavljenje
+**EKSPLICITNO ne radimo nikad:**
+- Fiskalizacija (JIR/ZKI, komunikacija s PU)
+- eRačun (UBL/XML, FINA servis)
+- Kontni plan, temeljnice
+- PDV obrasci (PDV-S, ZP, JOPPD)
 
-**Cilj:** smanjiti vizualni šum u zaglavlju kartice u listi projekata.
+**Posljedica:** ponuda i "račun" u našoj app su radni dokumenti — pomažu korisniku da zna gdje stoji, ne zamjenjuju Minimax/Pantheon/sl.
 
-- Zaglavlje zadržava: naziv projekta, **status badge**, **health badge** (s tooltipom koji objašnjava broj, npr. "78/100 – stabilno").
-- **Marža badge** se uklanja iz headera kartice i seli u "Pregled" tab unutar `ProjectFullScreenView`.
-- **Role badge** (manager/member) se zadržava ali manji i sekundarni (muted), desno poravnat.
-- Kada je marža `—` (nema ugovora), umjesto zbunjujućeg "Marža: —" prikazuje se subtilan CTA chip u Pregledu: "Dodaj ugovor" → otvara MilestoneBudgetChangeSection / contract dialog.
-- Sve preko `t()` ključeva (`projects.card.health`, `projects.card.addContract`).
+---
 
-**Datoteke:** `src/components/projects/ProjectCard.tsx`, `src/components/projects/ProjectOverviewTab.tsx` (ili gdje god je Pregled), i18n hr/en/de.
+## Roadmap (3 faze, gradimo redom)
 
-## 2. Posao grupa – spajanje Timeline + Faze, čišćenje quick-stats
+### Faza 1 — Polish Ponuda (ovaj plan)
+Postojeći `project_estimates` + `ProjectEstimatesPanel` + `EstimateDialog` rade osnovno. Treba ih dotjerati: UX, PDF, integracija s projektom, podsjetnici klijentu.
 
-**Cilj:** smanjiti broj tabova s 6 na 4, ukloniti redundantne quick-stat kartice.
+### Faza 2 — Računi (evidencija) — *zasebna tablica, dolazi nakon Faze 1*
+Nova tablica `project_invoices` (broj, datum, dospijeće, klijent, projekt, iznos, status: `issued/partially_paid/paid/overdue/cancelled`). Interni PDF "Pregled računa" s disclaimerom. Uplata = income u `expenses` s `invoice_id` linkom.
 
-- **Ukloniti 4 quick-stat kartice** na vrhu Posao grupe (broj faza, dokumenata, itd.) – isti brojevi već su badgeovi na tabovima.
-- **Spojiti Timeline + Faze** u jedan tab `phases` s view switcher segmentom na vrhu: `Lista | Timeline`.
-  - Default: Lista (postojeći `ProjectMilestonesTab`).
-  - Timeline view: postojeća timeline komponenta.
-  - State `phasesView` lokalno u tab komponenti (`useState<'list'|'timeline'>('list')`).
-- **Spojiti Aktivnost + Dnevnik** u jedan tab `activity` s istim view switcherom: `Dnevnik | Aktivnost`.
-- Rezultat: Posao ima 4 taba umjesto 6: Pregled, Faze (s view switch), Dokumenti, Aktivnost (s view switch).
-- Mapirati legacy `initialTab` vrijednosti (`timeline`, `worklog`) → novi tab + `initialSubView` (isti pattern kao `project-team-unified-tab`).
+### Faza 3 — Cashflow i naplata
+Aging report, dashboard widget "Neplaćeno", auto-email podsjetnici klijentu, P&L po projektu uz ponudu→račun→uplata vidljivost.
 
-**Datoteke:** `src/components/projects/ProjectFullScreenView.tsx`, nova `ProjectPhasesTab.tsx` wrapper, nova `ProjectActivityTab.tsx` wrapper, i18n.
+---
 
-## 3. Novac grupa – sažetak + semantičke boje
+## FAZA 1 — Detaljan plan (ovaj sprint)
 
-**Cilj:** jasan sažetak na vrhu Financiranja + ispravne semantičke boje.
+### 1.1 Vidljivost i pristup ponudama
+Trenutno: `ProjectEstimatesPanel` postoji samo u `BusinessMore` (skriveno u "Više"). Korisnik teško dolazi.
 
-- **Dodati kompaktni "Sažetak novca"** na vrh `ProjectFundingTab`:
-  ```
-  Ukupno alocirano: X €   |   Prihodi: Y €   |   Preostalo: Z €
-  ```
-  - 3-stupčani grid (mobile: stacked), brojevi naglašeni, label muted.
-  - Preostalo: `totalAllocated - totalSpent`, semantička boja (income ako >0, expense ako <0).
-- **Semantička korekcija "Završene faze":**
-  - Trenutno prikazuje `-{amount}` u `text-expense` boji – pogrešno jer to nije gubitak nego planirani trošak.
-  - Promijeniti u neutralnu boju (`text-foreground`) bez minus znaka, label: "Planirani trošak".
-  - Boja ostaje suptilna; zelena/crvena rezervirana za stvarni prihod/gubitak.
+- Dodati "Ponude" kao **istaknutu karticu** unutar Business mode "Posao" sekcije (ili kao podsekcija na projektu).
+- Na `ProjectFullScreenView` u tabu "Novac" dodati malu sekciju **"Ponude za ovaj projekt"** koja filtrira `project_estimates` po `accepted_project_id`.
+- Sa stranice projekta (prije nego postane projekt) ostaviti globalni popis u Business → Ponude.
 
-**Datoteke:** `src/components/projects/ProjectFundingTab.tsx`, i18n ključevi (`projects.funding.summaryAllocated`, `summaryIncome`, `summaryRemaining`, `plannedCost`).
+### 1.2 EstimateDialog — UX dotjerivanje
+Trenutno radi, ali:
+- Dodati polje **"Projekt"** (opcionalno) — ako je ponuda vezana na postojeći projekt prije prihvaćanja (npr. dodatna ponuda za istog klijenta).
+- Klijent dropdown: predložiti postojeće klijente iz prijašnjih ponuda/projekata (autocomplete iz `project_estimates.client_name` + `projects.client_name`).
+- "Kopiraj iz postojeće ponude" — duplicira stavke iz druge ponude.
+- Validacija: barem 1 stavka, klijent obavezan (već postoji).
 
-## Ne dirati
+### 1.3 PDF ponude (novi modul)
+Postoji `src/lib/pdfFooter.ts` i `src/lib/pdfBranding.ts`. Treba kreirati `src/lib/estimatePdf.ts`:
+- Generira PDF ponude s logom korisničke tvrtke (iz `business_profiles`), klijent podaci, stavke, osnovica/PDV/ukupno, valjanost, napomena.
+- **Footer:** "Ovo je radna ponuda za internu komunikaciju. Nije porezni dokument." + standardni `addNotOfficialFooter`.
+- Gumb "PDF" pored "Označi poslano" u `ProjectEstimatesPanel` redovima.
+- Spremanje preko `fileExport.ts` (native + web).
 
-- Bez DB migracija.
-- Bez izmjena `useProjects`, `useProjectFunding`, `useProjectMilestones` logike.
-- `ProjectTransactionsTab` refactor (1564 linije) ostaje za poseban zadatak – nije u ovom planu.
-- Ljudi tab ostaje kakav je (8/10 iz audita, sitne preporuke se odgađaju).
+### 1.4 Slanje ponude klijentu e-mailom
+Reuse `send-transactional-email` edge funkcije.
+- Gumb "Pošalji e-mailom" → dijalog s e-mail klijenta + porukom (template).
+- PDF generiran client-side, postavljen kao attachment ili upload u storage + link.
+- Po slanju: status `draft → sent`, log u `project_activity_log`.
 
-## Redoslijed implementacije
+### 1.5 Status flow i podsjetnici
+- Trenutno: `draft/sent/accepted/rejected`. Dodati **`expired`** computed status (kad `valid_until < today` i status je `sent`).
+- Vizualno upozorenje "Istječe za N dana" 7 dana prije.
+- Lagani podsjetnik (push notif) korisniku 3 dana prije isteka.
 
-1. Novac (najmanji rizik, izolirana komponenta).
-2. ProjectCard header (samo presentational).
-3. Posao tab merge (najveći refactor, legacy mapping).
+### 1.6 Sitnice
+- "Pretvori u projekt" gumb sada uvijek vidljiv samo na `sent` — dopusti i na `draft` (UX olakšica).
+- Brojač ponuda po godini (`generateEstimateNumber`) trenutno koristi `estimates.length` — to nije pouzdano kroz godine. Promijeniti u count po godini iz baze.
+- i18n: sve nove stringove u `estimates.*` namespace (HR/EN/DE).
+
+---
+
+## Tehnički detalji
+
+**Datoteke koje mijenjamo (Faza 1):**
+- `src/hooks/useProjectEstimates.ts` — popraviti `generateEstimateNumber` (count by year iz DB), dodati filter po `project_id`.
+- `src/components/projects/EstimateDialog.tsx` — polje Projekt, autocomplete klijenta, "Kopiraj iz".
+- `src/components/projects/ProjectEstimatesPanel.tsx` — PDF gumb, e-mail gumb, "Istječe za N dana" badge.
+- `src/components/projects/ProjectFundingTab.tsx` — sekcija "Ponude za ovaj projekt".
+- `src/components/business/BusinessMore.tsx` — ostaje, ali dodati istaknutiju ulaznu točku u "Posao".
+
+**Nove datoteke:**
+- `src/lib/estimatePdf.ts` — PDF generator (jsPDF, reuse pdfBranding + pdfFooter).
+- `src/components/projects/SendEstimateEmailDialog.tsx` — dijalog za slanje.
+
+**Bez DB migracija u Fazi 1** — tablica `project_estimates` već ima sva potrebna polja. Eventualno dodati `project_id` (osim `accepted_project_id`) ako želimo vezati prije prihvaćanja — ovisi o odluci u 1.2.
+
+**i18n keys (novi):**
+- `estimates.pdf`, `estimates.sendEmail`, `estimates.copyFrom`, `estimates.expiringIn`, `estimates.expired`, `estimates.projectLink`
+- `estimates.pdf.disclaimer` — footer tekst
+
+---
+
+## Što NE radimo u Fazi 1 (eksplicitno odgađa)
+- Tablicu `project_invoices` i UI za račune (Faza 2)
+- Cashflow widget za naplatu (Faza 3)
+- Auto-email podsjetnik **klijentu** za neplaćenu fakturu (Faza 3)
+
+---
+
+**Pitanje prije implementacije:** ide li ti ovaj redoslijed (Faza 1 prvo) ili želiš da odmah skiciram i Fazu 2 (računi) u istom planu da imaš cijeli pregled?
