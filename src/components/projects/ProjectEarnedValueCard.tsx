@@ -20,7 +20,9 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
 
-  const contractValue = Number(project.contract_value || 0);
+  // Fallback to total_budget matches the hint in ProjectDialog: if contract_value
+  // isn't set, total_budget is used as the expected revenue.
+  const contractValue = Number(project.contract_value || project.total_budget || 0);
   const hasContract = contractValue > 0;
 
   const health = useMemo(() => calculateProjectHealth({
