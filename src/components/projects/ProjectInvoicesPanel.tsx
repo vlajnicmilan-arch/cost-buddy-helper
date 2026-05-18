@@ -35,12 +35,14 @@ interface ProjectInvoicesPanelProps {
 export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
   const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus } = useProjectInvoices();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
+  const noBusinessCtx = !activeBusinessProfileId;
 
   const visibleInvoices = useMemo(() => {
     if (!projectId) return invoices;
