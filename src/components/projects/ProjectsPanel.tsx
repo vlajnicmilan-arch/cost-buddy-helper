@@ -55,7 +55,9 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
+  const [migrateTargetProfileId, setMigrateTargetProfileId] = useState<string>('');
   const [showArchived, setShowArchived] = useState(false);
+  const { profiles: businessProfiles } = useBusinessProfiles();
 
   const handleOpenBlankDialog = () => {
     setEditingProject(null);
