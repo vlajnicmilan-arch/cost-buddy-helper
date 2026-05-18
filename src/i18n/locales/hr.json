@@ -707,6 +707,22 @@
       "lineTotal": "Iznos",
       "nonVatNote": "Izdavatelj nije obveznik PDV-a.",
       "disclaimer": "Interni pregled računa za vlastitu evidenciju i komunikaciju s klijentom. Nije fiskalizirani porezni račun niti službeni dokument u smislu poreznih i računovodstvenih propisa."
+    },
+    "widget": {
+      "title": "Neplaćeni računi",
+      "allPaid": "Svi računi su plaćeni 🎉",
+      "overdueDays": "{{n}} d"
+    },
+    "reminder": {
+      "send": "Pošalji podsjetnik",
+      "sendBtn": "Pošalji",
+      "sent": "Podsjetnik poslan",
+      "title": "Podsjetnik za naplatu",
+      "clientEmail": "Email klijenta",
+      "message": "Poruka",
+      "defaultMessage": "Ljubazno Vas molimo da podmirite preostali iznos računa.",
+      "invalidEmail": "Unesite valjanu email adresu klijenta.",
+      "disclaimer": "Šaljemo neformalni podsjetnik s vašom porukom i osnovnim podacima računa. Nije službena opomena."
     }
   },
   "settings": {

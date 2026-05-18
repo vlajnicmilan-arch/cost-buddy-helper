@@ -707,6 +707,22 @@
       "lineTotal": "Betrag",
       "nonVatNote": "Aussteller ist kein USt-Pflichtiger.",
       "disclaimer": "Interne Rechnungsübersicht für Ihre Aufzeichnungen und die Kundenkommunikation. Keine fiskalisierte Steuerrechnung und kein offizielles Dokument im Sinne der Steuer- und Buchführungsvorschriften."
+    },
+    "widget": {
+      "title": "Unbezahlte Rechnungen",
+      "allPaid": "Alle Rechnungen sind bezahlt 🎉",
+      "overdueDays": "{{n}} T"
+    },
+    "reminder": {
+      "send": "Erinnerung senden",
+      "sendBtn": "Senden",
+      "sent": "Erinnerung gesendet",
+      "title": "Zahlungserinnerung",
+      "clientEmail": "Kunden-E-Mail",
+      "message": "Nachricht",
+      "defaultMessage": "Wir bitten höflich um Begleichung des offenen Betrags.",
+      "invalidEmail": "Bitte eine gültige Kunden-E-Mail eingeben.",
+      "disclaimer": "Wir senden eine informelle Erinnerung mit Ihrer Nachricht und den Eckdaten der Rechnung. Keine offizielle Mahnung."
     }
   },
   "settings": {
