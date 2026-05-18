@@ -42,7 +42,8 @@ interface ProjectEstimatesPanelProps {
 export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEstimatesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { estimates, loading, deleteEstimate, convertToProject, updateEstimate } = useProjectEstimates();
+  const { estimates, loading, deleteEstimate, convertToProject, updateEstimate, refetch } = useProjectEstimates();
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<ProjectEstimate | null>(null);
   const [toDelete, setToDelete] = useState<ProjectEstimate | null>(null);
