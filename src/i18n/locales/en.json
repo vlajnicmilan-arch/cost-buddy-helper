@@ -607,7 +607,52 @@
   },
   "estimates": {
     "title": "Quotes & Estimates",
-    "menuDesc": "Prepare a quote and convert it into a project"
+    "menuDesc": "Prepare a quote and convert it into a project",
+    "add": "New quote",
+    "edit": "Edit quote",
+    "empty": "No quotes yet",
+    "emptyHint": "Create a quote and send it to your client. Once accepted, convert it into a project.",
+    "emptyForProject": "No quotes linked to this project.",
+    "forProject": "Quotes for this project",
+    "downloadPdf": "Download PDF",
+    "markSent": "Mark as sent",
+    "convertToProject": "Convert to project",
+    "deleteTitle": "Delete quote?",
+    "expired": "Expired",
+    "expiringIn": "Expires in {{n}} d",
+    "validUntil": "valid until",
+    "clientName": "Client name",
+    "clientOib": "Tax ID",
+    "clientAddress": "Address",
+    "items": "Items",
+    "addItem": "Add",
+    "itemDescription": "Description",
+    "subtotal": "Subtotal",
+    "vat": "VAT",
+    "total": "Total",
+    "notes": "Notes",
+    "nonVatPreset": "You are not a VAT payer — all items default to 0% VAT and an exemption note is added automatically.",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "pdf": {
+      "title": "QUOTE",
+      "date": "Date",
+      "validUntil": "Valid until",
+      "issuer": "ISSUER",
+      "client": "RECIPIENT",
+      "itemDescription": "Description",
+      "qty": "Qty",
+      "unit": "Unit",
+      "unitPrice": "Price",
+      "vatPct": "VAT%",
+      "lineTotal": "Amount",
+      "nonVatNote": "Issuer is not a VAT payer.",
+      "disclaimer": "Working document for client communication only. Not a tax invoice or a formal quote under tax regulations."
+    }
   },
   "settings": {
     "legal": {

@@ -67,10 +67,31 @@ export const useProjectEstimates = () => {
 
   useEffect(() => { fetchEstimates(); }, [fetchEstimates]);
 
-  const generateEstimateNumber = (): string => {
+  // Year-based numbering: counts existing P-YYYY-* numbers for current year
+  // within active business profile. Avoids collisions across years and matches
+  // common Croatian numbering convention (P-2026-001).
+  const generateEstimateNumber = async (): Promise<string> => {
     const year = new Date().getFullYear();
-    const seq = (estimates.length + 1).toString().padStart(3, '0');
-    return `P-${year}-${seq}`;
+    const prefix = `P-${year}-`;
+    let nextSeq = 1;
+    if (activeBusinessProfileId) {
+      const { data } = await (supabase
+        .from('project_estimates') as any)
+        .select('estimate_number')
+        .eq('business_profile_id', activeBusinessProfileId)
+        .like('estimate_number', `${prefix}%`);
+      if (Array.isArray(data) && data.length > 0) {
+        const maxSeq = data.reduce((mx: number, row: any) => {
+          const m = String(row.estimate_number || '').match(/-(\d+)$/);
+          const n = m ? parseInt(m[1], 10) : 0;
+          return Number.isFinite(n) && n > mx ? n : mx;
+        }, 0);
+        nextSeq = maxSeq + 1;
+      }
+    } else {
+      nextSeq = estimates.length + 1;
+    }
+    return `${prefix}${String(nextSeq).padStart(3, '0')}`;
   };
 
   const addEstimate = async (
@@ -82,7 +103,7 @@ export const useProjectEstimates = () => {
         ...payload,
         user_id: user.id,
         business_profile_id: activeBusinessProfileId,
-        estimate_number: payload.estimate_number || generateEstimateNumber(),
+        estimate_number: payload.estimate_number || (await generateEstimateNumber()),
       };
       const { data, error } = await (supabase
         .from('project_estimates') as any)
