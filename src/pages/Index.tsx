@@ -473,7 +473,7 @@ const Index = () => {
     allCards,
     // Actions
     onUpdateExpense: updateExpense,
-    onDeleteExpense: deleteExpense,
+    onDeleteExpense: deleteExpenseWithUndo,
     importFromCSV: importWithRecurringCheck,
     onReplaceAutoGen: handleReplaceAutoGen,
     findDuplicates,
