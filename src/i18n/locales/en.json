@@ -3166,7 +3166,7 @@
       "free": "Limited to 30 transactions/month, 1 wallet, 1 budget",
       "pro": "Unlimited transactions, advanced features, priority support",
       "business": "Everything in Pro + business modules, invoicing, inventory",
-      "p2": "New users receive a 14-day free trial with full access to all features. After the trial expires, access is limited to the Free tier unless you activate a subscription.",
+      "p2": "New users receive a 30-day free trial with full access to all features. After the trial expires, access is limited to the Free tier unless you activate a subscription.",
       "p3": "Payments are processed via Stripe. Subscriptions automatically renew at the end of each billing period (monthly or annually). Annual plans include a 17% discount."
     },
     "s4": {
