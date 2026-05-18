@@ -117,7 +117,15 @@
     "saveError": "Greška pri spremanju datoteke",
     "shareError": "Dijeljenje nije uspjelo",
     "saveDialogTitle": "Spremi datoteku",
-    "shareDialogTitle": "Podijeli datoteku"
+    "shareDialogTitle": "Podijeli datoteku",
+    "openFailed": "Otvaranje nije uspjelo",
+    "savedDialog": {
+      "title": "Datoteka spremljena",
+      "description": "{{fileName}} je u Downloads mapi.",
+      "open": "Otvori",
+      "share": "Podijeli",
+      "close": "Zatvori"
+    }
   },
   "projects": {
     "noPaymentSource": "Bez izvora",

@@ -29,6 +29,7 @@ import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { FeedbackFAB } from "@/components/feedback/FeedbackFAB";
+import { FileSavedDialog } from "@/components/FileSavedDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
@@ -147,6 +148,7 @@ const RouteAwareGlobalOverlays = () => {
       <LockScreen />
       <CookieConsentBanner />
       <FeedbackFAB />
+      <FileSavedDialog />
     </>
   );
 };
