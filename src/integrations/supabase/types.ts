@@ -1141,6 +1141,8 @@ export type Database = {
           created_at: string
           currency: string | null
           date: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string
           expense_nature: string | null
           id: string
@@ -1180,6 +1182,8 @@ export type Database = {
           created_at?: string
           currency?: string | null
           date?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description: string
           expense_nature?: string | null
           id?: string
@@ -1219,6 +1223,8 @@ export type Database = {
           created_at?: string
           currency?: string | null
           date?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string
           expense_nature?: string | null
           id?: string
@@ -3078,6 +3084,8 @@ export type Database = {
           client_name: string
           client_oib: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           estimate_number: string
           id: string
           items: Json
@@ -3097,6 +3105,8 @@ export type Database = {
           client_name: string
           client_oib?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           estimate_number: string
           id?: string
           items?: Json
@@ -3116,6 +3126,8 @@ export type Database = {
           client_name?: string
           client_oib?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           estimate_number?: string
           id?: string
           items?: Json
@@ -3266,6 +3278,8 @@ export type Database = {
           client_oib: string | null
           created_at: string
           currency: string
+          deleted_at: string | null
+          deleted_by: string | null
           due_date: string | null
           estimate_id: string | null
           id: string
@@ -3291,6 +3305,8 @@ export type Database = {
           client_oib?: string | null
           created_at?: string
           currency?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           due_date?: string | null
           estimate_id?: string | null
           id?: string
@@ -3316,6 +3332,8 @@ export type Database = {
           client_oib?: string | null
           created_at?: string
           currency?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           due_date?: string | null
           estimate_id?: string | null
           id?: string
@@ -3444,6 +3462,8 @@ export type Database = {
           color: string | null
           completed_at: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           depends_on_milestone_id: string | null
           description: string | null
           due_date: string | null
@@ -3462,6 +3482,8 @@ export type Database = {
           color?: string | null
           completed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           depends_on_milestone_id?: string | null
           description?: string | null
           due_date?: string | null
@@ -3480,6 +3502,8 @@ export type Database = {
           color?: string | null
           completed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           depends_on_milestone_id?: string | null
           description?: string | null
           due_date?: string | null
@@ -3811,6 +3835,8 @@ export type Database = {
           color: string | null
           contract_value: number | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           end_date: string | null
           icon: string | null
@@ -3830,6 +3856,8 @@ export type Database = {
           color?: string | null
           contract_value?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           end_date?: string | null
           icon?: string | null
@@ -3849,6 +3877,8 @@ export type Database = {
           color?: string | null
           contract_value?: number | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           end_date?: string | null
           icon?: string | null
@@ -4676,6 +4706,18 @@ export type Database = {
         Args: { _user_id: string; _worker_id: string }
         Returns: Json
       }
+      list_trash: {
+        Args: never
+        Returns: {
+          deleted_at: string
+          deleted_by: string
+          deleter_name: string
+          entity_type: string
+          id: string
+          project_id: string
+          title: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -4685,6 +4727,11 @@ export type Database = {
         }
         Returns: number
       }
+      purge_old_trash: { Args: { p_older_than_days?: number }; Returns: Json }
+      purge_trash_item: {
+        Args: { p_entity: string; p_id: string }
+        Returns: undefined
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -4692,6 +4739,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      restore_trash_item: {
+        Args: { p_entity: string; p_id: string }
+        Returns: undefined
       }
     }
     Enums: {

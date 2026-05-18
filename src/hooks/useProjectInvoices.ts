@@ -180,7 +180,7 @@ export const useProjectInvoices = () => {
     try {
       const { error } = await (supabase
         .from('project_invoices') as any)
-        .delete()
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
         .eq('id', id);
       if (error) throw error;
       showSuccess(t('invoices.toasts.deleted', 'Račun obrisan'));

@@ -301,9 +301,9 @@ export const useProjects = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('projects')
-        .delete()
+      const { error } = await (supabase
+        .from('projects') as any)
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
         .eq('id', id);
 
       if (error) throw error;

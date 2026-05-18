@@ -143,7 +143,7 @@ export const useProjectEstimates = () => {
     try {
       const { error } = await (supabase
         .from('project_estimates') as any)
-        .delete()
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
         .eq('id', id);
       if (error) throw error;
       showSuccess(t('toasts.estimateDeleted'));
