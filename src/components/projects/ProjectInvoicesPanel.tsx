@@ -216,7 +216,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => { if (toDelete) { await deleteInvoice(toDelete.id); setToDelete(null); } }}
+              onClick={async () => { if (toDelete) { const id = toDelete.id; await wrapDeleteWithUndo(() => deleteInvoice(id), 'invoice', id); setToDelete(null); } }}
               className="bg-destructive text-destructive-foreground"
             >
               {t('common.delete', 'Obriši')}
