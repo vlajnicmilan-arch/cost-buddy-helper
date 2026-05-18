@@ -1118,6 +1118,9 @@
     }
   },
   "common": {
+    "exportPdf": "Izvoz u PDF",
+    "exportSuccess": "Izvezeno",
+    "exportFailed": "Izvoz nije uspio",
     "save": "Spremi",
     "create": "Kreiraj",
     "select": "Odaberi",
