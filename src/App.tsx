@@ -63,6 +63,7 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
+const Trash = lazy(() => import("./pages/Trash"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -296,6 +297,7 @@ const AppRoutes = () => {
       <Route path="/terms-of-service" element={<Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/impressum" element={<Suspense fallback={<PageLoader />}><Impressum /></Suspense>} />
       <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
+      <Route path="/trash" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Trash />)}</Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
