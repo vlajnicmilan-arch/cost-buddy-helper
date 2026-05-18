@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useProjects } from '@/hooks/useProjects';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { useProjectStats } from '@/hooks/useProjectStats';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
@@ -147,9 +148,11 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setDeleteConfirmOpen(true);
   };
 
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const confirmDelete = async () => {
     if (projectToDelete) {
-      await deleteProject(projectToDelete);
+      const id = projectToDelete;
+      await wrapDeleteWithUndo(() => deleteProject(id), 'project', id);
       setDeleteConfirmOpen(false);
       setProjectToDelete(null);
     }

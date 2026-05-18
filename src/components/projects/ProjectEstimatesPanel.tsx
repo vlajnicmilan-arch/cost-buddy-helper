@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { generateEstimatePdf } from '@/lib/estimatePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 
 const STATUS_LABELS: Record<EstimateStatus, string> = {
   draft: 'Radna verzija',
@@ -41,7 +42,8 @@ interface ProjectEstimatesPanelProps {
 export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEstimatesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { estimates, loading, deleteEstimate, convertToProject, updateEstimate } = useProjectEstimates();
+  const { estimates, loading, deleteEstimate, convertToProject, updateEstimate, refetch } = useProjectEstimates();
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<ProjectEstimate | null>(null);
   const [toDelete, setToDelete] = useState<ProjectEstimate | null>(null);
@@ -204,7 +206,7 @@ export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEst
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => { if (toDelete) { await deleteEstimate(toDelete.id); setToDelete(null); } }}
+              onClick={async () => { if (toDelete) { const id = toDelete.id; await wrapDeleteWithUndo(() => deleteEstimate(id), 'estimate', id); setToDelete(null); } }}
               className="bg-destructive text-destructive-foreground"
             >
               {t('common.delete', 'Obriši')}

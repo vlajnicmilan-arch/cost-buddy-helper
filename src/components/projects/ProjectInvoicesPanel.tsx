@@ -14,6 +14,7 @@ import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
 import { SendInvoiceReminderDialog } from '@/components/business/SendInvoiceReminderDialog';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 
 // Lazy heavy dialog
 const InvoiceDialog = lazy(() => import('./InvoiceDialog').then(m => ({ default: m.InvoiceDialog })));
@@ -37,7 +38,8 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
-  const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus } = useProjectInvoices();
+  const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus, refetch } = useProjectInvoices();
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
@@ -214,7 +216,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => { if (toDelete) { await deleteInvoice(toDelete.id); setToDelete(null); } }}
+              onClick={async () => { if (toDelete) { const id = toDelete.id; await wrapDeleteWithUndo(() => deleteInvoice(id), 'invoice', id); setToDelete(null); } }}
               className="bg-destructive text-destructive-foreground"
             >
               {t('common.delete', 'Obriši')}
