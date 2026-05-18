@@ -144,6 +144,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
         notes: notes.trim() || null,
         project_id: invoice?.project_id ?? projectId ?? null,
         estimate_id: invoice?.estimate_id ?? prefillFromEstimateId ?? null,
+        client_email: clientEmail.trim() || null,
+        auto_reminders_enabled: autoReminders,
       };
 
       if (invoice) {
