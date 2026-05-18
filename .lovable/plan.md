@@ -1,74 +1,83 @@
-## Problem (verificirano u bazi)
+## Cilj
 
-Projekt "Duje Grčić" (`01574b03-61b4-4b8d-ad28-4a907d6a52ac`):
-- `total_budget` = 30 000 € ✓
-- `contract_value` = **3 040 €** ← krivo
-- `project_contract_amendments`: 2 zapisa (2400 + 640 = 3040)
+Bez pisanja novih testova: zabilježiti prioritetnu listu što treba pokriti, i dodati GitHub Actions korak koji gate-a build na padu postojećih testova.
 
-Originalni ugovor (30 000 €) nikad nije zapisan u `contract_value` jer je polje pri kreiranju projekta ostavljeno prazno. Korisnikov model: **contract_value = originalni ugovor + amandmani = 30 000 + 3 040 = 33 040 €**.
+---
 
-Posljedica: Earned Value, marža, EAC, Loss-Zone alert i P&L "Očekivano" krivo izračunati.
+## 1. Novi memory fajl: `mem://architecture/testing-priorities`
 
-## Root cause u kodu
+Sadržaj:
 
-`src/hooks/useProjectMilestones.ts` (linije 252–268) kod dodavanja scope_change amandmana:
-```ts
-const currentContract = Number(proj.contract_value || 0);
-const newContract = currentContract + amendmentAmount;
+- **Trenutno stanje** (8 test fajlova, popis).
+- **Visok prioritet** s kratkim razlogom *zašto* boli ako pukne:
+  1. `transferMatching.ts` — krivi par = duplo računanje balansa.
+  2. `paymentSourceMatching.ts` — card lookup po zadnje 4 znamenke; bug = transakcija na pogrešnom računu.
+  3. `useRecurringMatcher` (0.1% tolerance, temp 0, backward date) — već postoji historijski bug.
+  4. `useProjectProfitLoss` — dual-view cash vs accrual s contract fallbackom; ekstrahirati pure compute.
+  5. `csvParsers.ts` — bankovni CSV import, format varijacije po banci.
+- **Srednji prioritet:** `ownerLoanLogic.ts`, `dateValidation.ts` + `holidays.ts`, `useFreeLimits` / `useFeatureAccess`.
+- **Eksplicitno NE testirati:** Deno edge functions (radije edge function logs), shadcn dialog/sheet render testovi (low ROI), Supabase chain mocking u hookovima (krhko).
+- **Pravilo:** kad fix-aš bug u pure logici, prvo ekstrahiraj helper pa napiši regresijski test (kao kod `applyContractAmendment`).
+
+Dodaje se i u `mem://index.md` pod Memories.
+
+---
+
+## 2. Ažurirati `mem://index.md` Core
+
+Dodati jednu Core liniju:
+- `Testovi: vitest. Prije release-a obavezno proći test suite (CI gate na PR-ovima). Novi pure helperi = novi unit test.`
+
+---
+
+## 3. Novi GitHub Actions workflow: `.github/workflows/test.yml`
+
+```yaml
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  vitest:
+    name: Run vitest suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: npm test
 ```
-Kad je polazni `contract_value` `null`, baseline = 0 → amandmani se zbrajaju "u prazno".
 
-Drugi nesklad: `ProjectEarnedValueCard.tsx` koristi `Number(project.contract_value || 0)` bez fallbacka na `total_budget`, iako hint u `ProjectDialog.tsx` (linija 363) tvrdi: *"Ako prazno, koristi se ukupan budžet kao očekivani prihod."*
+Napomene:
+- `npm test` već postoji u `package.json` kao `vitest run` (verified).
+- `--legacy-peer-deps` zato što tako i lokalno radiš (memory: Native Build).
+- Trigger na `push: main` + svaki PR prema `main` + manual.
+- Bez path filtera (testovi su brzi, ~3.5s lokalno).
+- Workflow ne dira `android-build.yml` — to je odvojen pipeline.
 
-## Plan popravka
+---
 
-### 1. Backfill projekta "Duje Grčić" (migracija)
-```sql
-UPDATE public.projects
-SET contract_value = 33040
-WHERE id = '01574b03-61b4-4b8d-ad28-4a907d6a52ac';
-```
-Amandmani u `project_contract_amendments` ostaju netaknuti (audit log).
+## Što se NE radi u ovom planu
 
-### 2. Code fix — `src/hooks/useProjectMilestones.ts` (linije 252–268)
+- Ne pišu se novi testovi za stavke s prioritetne liste — to je sljedeća iteracija po tvojoj odluci.
+- Ne dira se postojeći `android-build.yml`.
+- Bez izmjena `package.json` (test script već postoji).
+- Bez native version bump-a (nema native promjene).
 
-Prije zbrajanja amandmana, ako je `contract_value` `null` ili 0, koristiti `total_budget` kao baseline:
-```ts
-const cv = Number((projRow as any).contract_value || 0);
-const tb = Number((projRow as any).total_budget || 0);
-const baseline = cv > 0 ? cv : tb;
-const newContract = baseline + amendmentAmount;
-```
-Tako amandmani uvijek imaju smislenu polaznu vrijednost.
+---
 
-### 3. Uskladiti UI fallback s hintom u dialogu
+## Fajlovi koji se mijenjaju
 
-U sljedećim datotekama promijeniti `project.contract_value || 0` u `project.contract_value || project.total_budget || 0`:
-- `src/components/projects/ProjectEarnedValueCard.tsx` (linija 23)
-- `src/components/projects/ProjectCard.tsx` (linija 67 — proslijeđena vrijednost)
-- `src/hooks/useProjectLossZoneAlert.ts` (linija 66)
-- `src/hooks/useProjectProfitLoss.ts` (linija 82)
+1. **Novo:** `mem://architecture/testing-priorities` (memory fajl)
+2. **Edit:** `mem://index.md` (Core linija + referenca na novi memory)
+3. **Novo:** `.github/workflows/test.yml`
 
-Time je prikaz "Ugovoreno" konzistentan s obećanim ponašanjem iz dijaloga, čak i kad korisnik ne popuni eksplicitno contract_value.
-
-### 4. Memory zapis
-
-Append u `mem://features/comprehensive-project-management`:
-> `contract_value` semantika: originalni ugovor + svi `project_contract_amendments`. Kod (`useProjectMilestones`) i UI (`ProjectEarnedValueCard`, `ProjectCard`, `useProjectLossZoneAlert`, `useProjectProfitLoss`) moraju kao baseline koristiti `total_budget` kad `contract_value` nije eksplicitno postavljen, inače se amandmani zbrajaju na 0.
-
-## Datoteke koje će se promijeniti
-
-- `supabase/migrations/<timestamp>_backfill_project_duje_grcic_contract_value.sql`
-- `src/hooks/useProjectMilestones.ts`
-- `src/components/projects/ProjectEarnedValueCard.tsx`
-- `src/components/projects/ProjectCard.tsx`
-- `src/hooks/useProjectLossZoneAlert.ts`
-- `src/hooks/useProjectProfitLoss.ts`
-- `mem://features/comprehensive-project-management`
-
-## Što NE radim
-
-- Ne diram `project_contract_amendments` zapise.
-- Ne mijenjam `total_budget` (ostaje 30 000 — to je interna planska brojka troška, ne ugovor).
-- Ne mijenjam `ProjectDialog` hint — on je već točan.
-- Ne mijenjam UI labele ni i18n.
+3 fajla, bez aplikacijskog koda.
