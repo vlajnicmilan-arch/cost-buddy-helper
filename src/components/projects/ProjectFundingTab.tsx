@@ -40,7 +40,10 @@ export const ProjectFundingTab = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { estimates: allEstimates } = useProjectEstimates();
+  const { invoices: allInvoices } = useProjectInvoices();
   const projectEstimates = allEstimates.filter(e => e.accepted_project_id === projectId);
+  const projectInvoices = allInvoices.filter(i => i.project_id === projectId);
+
 
   const completedMilestones = milestones.filter(m => m.status === 'completed');
   
