@@ -3,17 +3,22 @@ import { useProjectProfitLoss } from '@/hooks/useProjectProfitLoss';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature } from 'lucide-react';
+import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { exportProfitLossPdf } from '@/lib/projectFinancePdfExport';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface ProjectProfitLossCardProps {
   projectId: string;
+  projectName?: string;
 }
 
-export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps) => {
+export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitLossCardProps) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
   const pl = useProjectProfitLoss(projectId);
   const [expanded, setExpanded] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   if (pl.loading) {
     return (
@@ -38,11 +43,59 @@ export const ProjectProfitLossCard = ({ projectId }: ProjectProfitLossCardProps)
   const cashBalance = pl.totalIncome - totalCosts;
   const hasContract = pl.contractValue > 0;
 
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportProfitLossPdf({
+        projectName: projectName || 'Projekt',
+        currency: { code: currency.code, locale: currency.locale },
+        totalIncome: pl.totalIncome,
+        totalExpenses: pl.totalExpenses,
+        laborCost: pl.laborCost,
+        collaboratorCost: pl.collaboratorCost,
+        materialCost: pl.materialCost,
+        netProfit: pl.netProfit,
+        margin: pl.margin,
+        contractValue: pl.contractValue,
+        expectedProfit: pl.expectedProfit,
+        expectedMargin: pl.expectedMargin,
+        remainingToCollect: pl.remainingToCollect,
+        workers: pl.workers.map((w) => ({ name: w.name, hours: w.hours, rate: w.rate, cost: w.cost })),
+        collaborators: pl.collaborators.map((c) => ({
+          name: c.name,
+          totalPrice: c.totalPrice,
+          paidAmount: c.paidAmount,
+        })),
+      });
+      showSuccess(t('common.exportSuccess', 'Izvezeno'));
+    } catch (e) {
+      console.error('[P&L PDF] export failed', e);
+      showError(t('common.exportFailed', 'Izvoz nije uspio'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="p-4 rounded-lg border space-y-4">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="w-4 h-4 text-muted-foreground" />
-        <span className="font-medium">{t('projects.profitLoss', 'Profitabilnost (P&L)')}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          <span className="font-medium">{t('projects.profitLoss', 'Profitabilnost (P&L)')}</span>
+        </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={handleExport}
+          disabled={exporting}
+          aria-label={t('common.exportPdf', 'Izvoz u PDF')}
+          title={t('common.exportPdf', 'Izvoz u PDF')}
+        >
+          <Download className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* Dual View Grid */}
