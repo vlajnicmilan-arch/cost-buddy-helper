@@ -108,9 +108,10 @@ export const ProjectFundingTab = ({
                   </p>
                 )}
               </div>
-              <p className="text-lg font-semibold text-expense">
-                -{formatAmount(m.budget || 0)}
+              <p className="text-lg font-semibold tabular-nums">
+                {formatAmount(m.budget || 0)}
               </p>
+              <p className="text-[10px] text-muted-foreground sr-only">{t('projects.funding.plannedCost', 'Planirani trošak')}</p>
             </div>
           ))}
         </div>
