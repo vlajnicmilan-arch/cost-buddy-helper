@@ -17,6 +17,16 @@ import { SaveToDownloads } from './nativeSaveToDownloads';
 
 export type ExportMode = 'save' | 'share';
 
+/**
+ * Emits a global `file-saved` event consumed by <FileSavedDialog />.
+ * Mounted globally in RouteAwareGlobalOverlays. Lets the user immediately
+ * open or share the file without hunting through the file manager.
+ */
+function emitFileSaved(detail: { uri: string; fileName: string; mime: string }) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('file-saved', { detail }));
+}
+
 async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -101,8 +111,8 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
 
     if (mode === 'save') {
       try {
-        await SaveToDownloads.saveBlob({ base64: base64Data, fileName, mime });
-        showSuccess(tx('fileExport.savedToDownloads', 'Spremljeno u Downloads'));
+        const result = await SaveToDownloads.saveBlob({ base64: base64Data, fileName, mime });
+        emitFileSaved({ uri: result.uri, fileName, mime });
         return true;
       } catch (saveErr: any) {
         console.error('SaveToDownloads failed, falling back to share:', saveErr);
