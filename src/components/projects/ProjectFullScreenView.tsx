@@ -699,7 +699,7 @@ export const ProjectFullScreenView = ({
 
                   {/* P&L Card - only in business view */}
                   {canAccessBusinessTabs && (
-                    <ProjectProfitLossCard projectId={project.id} />
+                    <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
                   )}
                 </TabsContent>
 

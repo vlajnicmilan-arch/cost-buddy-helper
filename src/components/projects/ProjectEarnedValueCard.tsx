@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
+import { exportEarnedValuePdf } from '@/lib/projectFinancePdfExport';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { Project } from '@/types/project';
 import type { ProjectMilestone } from '@/types/project';
 import { cn } from '@/lib/utils';
@@ -18,7 +20,8 @@ interface Props {
 
 export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterContract }: Props) => {
   const { t } = useTranslation();
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency } = useCurrency();
+  const [exporting, setExporting] = useState(false);
 
   // Fallback to total_budget matches the hint in ProjectDialog: if contract_value
   // isn't set, total_budget is used as the expected revenue.
@@ -68,19 +71,58 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
     statusKey === 'healthy' ? 'Zdravo' : statusKey === 'risk' ? 'Rizik' : 'Gubitak'
   );
 
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportEarnedValuePdf({
+        projectName: project.name,
+        currency: { code: currency.code, locale: currency.locale },
+        contractValue,
+        spent,
+        marginAmount,
+        marginPct,
+        eac,
+        healthScore: health.score,
+        healthLevel: health.level,
+        statusLabel,
+      });
+      showSuccess(t('common.exportSuccess', 'Izvezeno'));
+    } catch (e) {
+      console.error('[EarnedValue PDF] export failed', e);
+      showError(t('common.exportFailed', 'Izvoz nije uspio'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-2">
         <h3 className="font-semibold text-sm flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-primary" />
           {t('projects.earnedValue.title', 'Earned Value')}
         </h3>
-        <Badge
-          variant="outline"
-          className={cn('text-[10px] gap-1 h-5 border', getHealthBgClass(health.level))}
-        >
-          {statusLabel}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn('text-[10px] gap-1 h-5 border', getHealthBgClass(health.level))}
+          >
+            {statusLabel}
+          </Badge>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={handleExport}
+            disabled={exporting}
+            aria-label={t('common.exportPdf', 'Izvoz u PDF')}
+            title={t('common.exportPdf', 'Izvoz u PDF')}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">

@@ -1119,6 +1119,9 @@
     }
   },
   "common": {
+    "exportPdf": "Export to PDF",
+    "exportSuccess": "Exported",
+    "exportFailed": "Export failed",
     "save": "Save",
     "create": "Create",
     "select": "Select",
