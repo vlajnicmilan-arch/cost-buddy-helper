@@ -78,7 +78,7 @@ const Wallet = () => {
         paymentSource={selectedPaymentSource}
         expenses={rawExpenses}
         onUpdate={updateExpense}
-        onDelete={deleteExpense}
+        onDelete={deleteExpenseWithUndo}
         onImportCSV={importFromCSV}
         findDuplicates={findDuplicates}
       />
