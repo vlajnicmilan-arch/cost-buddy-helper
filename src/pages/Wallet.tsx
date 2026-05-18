@@ -29,6 +29,11 @@ const Wallet = () => {
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
 
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
+  const deleteExpenseWithUndo = useCallback(async (id: string) => {
+    await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
+  }, [wrapDeleteWithUndo, deleteExpense]);
+
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
       navigate('/', { replace: true });
