@@ -69,7 +69,12 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
             <FileText className="w-5 h-5 text-primary" />
             {t('invoices.title', 'Računi (evidencija)')}
           </h3>
-          <Button size="sm" onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}>
+          <Button
+            size="sm"
+            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={noBusinessCtx}
+            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+          >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
           </Button>
@@ -77,7 +82,13 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
       )}
       {compact && (
         <div className="flex items-center justify-end">
-          <Button size="sm" variant="outline" onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={noBusinessCtx}
+            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+          >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
           </Button>
@@ -92,9 +103,11 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
         <EmptyState
           variant="generic"
           title={t('invoices.empty', 'Nema računa')}
-          description={projectId
-            ? t('invoices.emptyForProject', 'Nema računa vezanih za ovaj projekt.')
-            : t('invoices.emptyHint', 'Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.')}
+          description={noBusinessCtx
+            ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')
+            : projectId
+              ? t('invoices.emptyForProject', 'Nema računa vezanih za ovaj projekt.')
+              : t('invoices.emptyHint', 'Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.')}
         />
       ) : (
         <div className="space-y-2">
