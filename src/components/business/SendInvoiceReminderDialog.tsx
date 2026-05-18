@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
+import { uploadInvoicePdfAndSign } from '@/lib/invoicePdfUpload';
 import type { ProjectInvoice } from '@/hooks/useProjectInvoices';
 
 interface Props {
@@ -23,12 +25,14 @@ export const SendInvoiceReminderDialog = ({ invoice, onOpenChange }: Props) => {
   const { formatAmount } = useCurrency();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [attachPdf, setAttachPdf] = useState(true);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!invoice) return;
-    setEmail('');
+    setEmail(invoice.client_email || '');
     setMessage(t('invoices.reminder.defaultMessage', 'Ljubazno Vas molimo da podmirite preostali iznos računa.'));
+    setAttachPdf(true);
   }, [invoice, t]);
 
   if (!invoice) return null;
@@ -45,11 +49,24 @@ export const SendInvoiceReminderDialog = ({ invoice, onOpenChange }: Props) => {
     }
     setSending(true);
     try {
+      let pdfUrl: string | undefined;
+      if (attachPdf) {
+        try {
+          const uploaded = await uploadInvoicePdfAndSign(invoice, invoice.remaining !== undefined
+            ? (Number(invoice.total_amount) || 0) - (invoice.remaining || 0)
+            : 0);
+          pdfUrl = uploaded?.url;
+        } catch (e) {
+          console.warn('PDF attach failed, sending without it', e);
+        }
+      }
+
+      const idempotencyKey = `invoice-reminder-${invoice.id}-manual-${Date.now()}`;
       const { error } = await supabase.functions.invoke('send-transactional-email', {
         body: {
           templateName: 'invoice-payment-reminder',
           recipientEmail: email.trim(),
-          idempotencyKey: `invoice-reminder-${invoice.id}-${Date.now()}`,
+          idempotencyKey,
           templateData: {
             clientName: invoice.client_name,
             invoiceNumber: invoice.invoice_number,
@@ -58,10 +75,28 @@ export const SendInvoiceReminderDialog = ({ invoice, onOpenChange }: Props) => {
             amount: formatAmount(remaining),
             daysOverdue: daysOverdue > 0 ? String(daysOverdue) : '',
             customMessage: message.trim(),
+            pdfUrl: pdfUrl || '',
           },
         },
       });
       if (error) throw error;
+
+      // Log to invoice_reminders (best-effort)
+      await (supabase.from('invoice_reminders') as any).insert({
+        invoice_id: invoice.id,
+        stage: 0,
+        trigger: 'manual',
+        recipient_email: email.trim(),
+        message_id: idempotencyKey,
+      });
+
+      // Persist client_email back to invoice for future auto-reminders
+      if (email.trim() !== (invoice.client_email || '')) {
+        await (supabase.from('project_invoices') as any)
+          .update({ client_email: email.trim() })
+          .eq('id', invoice.id);
+      }
+
       showSuccess(t('invoices.reminder.sent', 'Podsjetnik poslan'));
       onOpenChange(false);
     } catch (err: any) {
@@ -105,6 +140,13 @@ export const SendInvoiceReminderDialog = ({ invoice, onOpenChange }: Props) => {
               rows={4}
             />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox checked={attachPdf} onCheckedChange={(v) => setAttachPdf(!!v)} />
+            <span className="text-sm flex items-center gap-1.5">
+              <Paperclip className="w-3.5 h-3.5" />
+              {t('invoices.reminder.attachPdf', 'Priloži PDF računa (link valjan 7 dana)')}
+            </span>
+          </label>
           <p className="text-[11px] text-muted-foreground">
             {t('invoices.reminder.disclaimer', 'Šaljemo neformalni podsjetnik s vašom porukom i osnovnim podacima računa. Nije službena opomena.')}
           </p>
