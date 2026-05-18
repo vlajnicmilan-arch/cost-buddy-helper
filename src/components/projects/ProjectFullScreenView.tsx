@@ -69,7 +69,7 @@ export const ProjectFullScreenView = ({
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [activeTab, setActiveTab] = useState(initialTab || 'timeline');
+  const [activeTab, setActiveTab] = useState(initialTab || 'phases');
   const [activeGroup, setActiveGroup] = useState<TabGroup>('work');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
@@ -77,6 +77,8 @@ export const ProjectFullScreenView = ({
   const [shareOpen, setShareOpen] = useState(false);
   const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [phasesView, setPhasesView] = useState<'list' | 'timeline'>('list');
+  const [activityView, setActivityView] = useState<'worklog' | 'activity'>('worklog');
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -130,7 +132,7 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab(isWorkerOnly ? 'worklog' : 'timeline');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'phases');
       setActiveGroup('work');
     } else if (isWorkerOnly) {
       setActiveTab('worklog');
@@ -141,13 +143,14 @@ export const ProjectFullScreenView = ({
   // Map tab to its group (for auto-switching group when initialTab is set)
   const TAB_TO_GROUP: Record<string, TabGroup> = {
     overview: 'work',
+    phases: 'work',
+    // legacy aliases — resolved to phases/activity below
     timeline: 'work',
     milestones: 'work',
     documents: 'work',
     activity: 'work',
     worklog: 'work',
     team: 'people',
-    // legacy aliases — still resolve to people group, ProjectTeamTab opens the right sub-tab
     members: 'people',
     workers: 'people',
     collaborators: 'people',
@@ -155,13 +158,24 @@ export const ProjectFullScreenView = ({
     transactions: 'money',
   };
 
-  // Resolve legacy tab keys to the unified team tab
-  const resolvedActiveTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
-    ? 'team'
-    : activeTab;
+  // Resolve legacy tab keys to the unified tabs
+  const resolvedActiveTab = (() => {
+    if (['members', 'workers', 'collaborators'].includes(activeTab)) return 'team';
+    if (['timeline', 'milestones'].includes(activeTab)) return 'phases';
+    if (activeTab === 'worklog' && !isWorkerOnly) return 'activity';
+    return activeTab;
+  })();
   const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
     ? (activeTab as 'members' | 'workers' | 'collaborators')
     : undefined;
+
+  // Sync internal view-switchers when arriving via legacy initialTab
+  useEffect(() => {
+    if (activeTab === 'timeline') setPhasesView('timeline');
+    else if (activeTab === 'milestones') setPhasesView('list');
+    if (activeTab === 'worklog' && !isWorkerOnly) setActivityView('worklog');
+    else if (activeTab === 'activity') setActivityView('activity');
+  }, [activeTab, isWorkerOnly]);
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
@@ -560,14 +574,8 @@ export const ProjectFullScreenView = ({
                             <TrendingUp className="w-3.5 h-3.5" />
                             {t('projects.overview', 'Pregled')}
                           </TabsTrigger>
-                          {canSeeTab('timeline') && (
-                            <TabsTrigger value="timeline" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <GanttChart className="w-3.5 h-3.5" />
-                              {t('projects.timeline', 'Timeline')}
-                            </TabsTrigger>
-                          )}
-                          {canSeeTab('milestones') && (
-                            <TabsTrigger value="milestones" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                          {(canSeeTab('milestones') || canSeeTab('timeline')) && (
+                            <TabsTrigger value="phases" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <Target className="w-3.5 h-3.5" />
                               {labels.milestonesLabel}
                               {milestones.length > 0 && (
@@ -582,10 +590,6 @@ export const ProjectFullScreenView = ({
                           <TabsTrigger value="activity" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Activity className="w-3.5 h-3.5" />
                             {t('projects.activity.tab', 'Aktivnost')}
-                          </TabsTrigger>
-                          <TabsTrigger value="worklog" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            {t('workLog.tab', 'Dnevnik')}
                           </TabsTrigger>
                         </>
                       )}
@@ -636,25 +640,6 @@ export const ProjectFullScreenView = ({
                 )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Quick stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{stats.transactionCount}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.transactions')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{milestones.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.milestones')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{members.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.members')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{totalSourcesCount}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.fundingSources')}</p>
-                    </div>
-                  </div>
 
                   {/* Timeline */}
                   {(project.start_date || project.end_date) && (
@@ -718,27 +703,50 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
-                {canSeeTab('timeline') && (
-                <TabsContent value="timeline" className="m-0">
-                  <ProjectTimelineTab
-                    projectId={project.id}
-                    milestones={milestones}
-                    projectStartDate={project.start_date}
-                    projectEndDate={project.end_date}
-                    loading={milestonesLoading}
-                  />
-                </TabsContent>
-                )}
-
-                {canSeeTab('milestones') && (
-                <TabsContent value="milestones" className="m-0">
-                  <ProjectMilestonesTab 
-                    projectId={project.id}
-                    milestones={milestones}
-                    isManager={isManager}
-                    loading={milestonesLoading}
-                    onRefetch={refetchMilestones}
-                  />
+                {(canSeeTab('milestones') || canSeeTab('timeline')) && (
+                <TabsContent value="phases" className="m-0 space-y-3">
+                  {canSeeTab('timeline') && (
+                    <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
+                      <button
+                        type="button"
+                        onClick={() => setPhasesView('list')}
+                        className={cn(
+                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                          phasesView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        {t('projects.kanban.list', 'Lista')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPhasesView('timeline')}
+                        className={cn(
+                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                          phasesView === 'timeline' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        <GanttChart className="w-3 h-3" />
+                        {t('projects.timeline', 'Timeline')}
+                      </button>
+                    </div>
+                  )}
+                  {phasesView === 'timeline' && canSeeTab('timeline') ? (
+                    <ProjectTimelineTab
+                      projectId={project.id}
+                      milestones={milestones}
+                      projectStartDate={project.start_date}
+                      projectEndDate={project.end_date}
+                      loading={milestonesLoading}
+                    />
+                  ) : (
+                    <ProjectMilestonesTab
+                      projectId={project.id}
+                      milestones={milestones}
+                      isManager={isManager}
+                      loading={milestonesLoading}
+                      onRefetch={refetchMilestones}
+                    />
+                  )}
                 </TabsContent>
                 )}
 
@@ -764,13 +772,44 @@ export const ProjectFullScreenView = ({
                   <ProjectDocumentsTab projectId={project.id} />
                 </TabsContent>
 
-                <TabsContent value="activity" className="m-0">
-                  <ProjectActivityTab projectId={project.id} />
+                <TabsContent value="activity" className="m-0 space-y-3">
+                  <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
+                    <button
+                      type="button"
+                      onClick={() => setActivityView('worklog')}
+                      className={cn(
+                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                        activityView === 'worklog' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                      )}
+                    >
+                      <BookOpen className="w-3 h-3" />
+                      {t('workLog.tab', 'Dnevnik')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivityView('activity')}
+                      className={cn(
+                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                        activityView === 'activity' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                      )}
+                    >
+                      <Activity className="w-3 h-3" />
+                      {t('projects.activity.tab', 'Aktivnost')}
+                    </button>
+                  </div>
+                  {activityView === 'activity' ? (
+                    <ProjectActivityTab projectId={project.id} />
+                  ) : (
+                    <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
+                  )}
                 </TabsContent>
 
+                {/* Worker-only standalone worklog (restricted role) */}
+                {isWorkerOnly && (
                 <TabsContent value="worklog" className="m-0">
                   <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
                 </TabsContent>
+                )}
 
                 {canSeeTab('funding') && (
                 <TabsContent value="funding" className="m-0">

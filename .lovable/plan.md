@@ -1,38 +1,59 @@
-## Problem
 
-U `ProjectsPanel.confirmMigrate` (linije 157-187) odabir ciljne tvrtke je nepouzdan:
+# Plan: 3 prioriteta iz audita projektnih kartica
 
-1. Prvo se čita `localStorage.getItem('finmate.businessProfiles')` — taj ključ se ne koristi nigdje u kodu (mrtav fallback iz starije verzije).
-2. Fallback na DB poziv `business_profiles` filtrira samo `is_active=true` i koristi `.single()` — baca grešku ako korisnik ima 0 ili >1 aktivnih tvrtki (a `is_active` default je `false`, pa je 0 čest slučaj).
-3. Ako ništa nije nađeno, dialog se tiho zatvori bez ikakve poruke — točno simptom koji opisuješ ("ne radi").
-4. Korisnik s više tvrtki nema mogućnost izbora.
+## 1. ProjectCard header – pojednostavljenje
 
-`migrateToBusinessMode` (useProjects.ts) sam po sebi radi ispravno (UPDATE-a `projects` i pripadne `expenses`).
+**Cilj:** smanjiti vizualni šum u zaglavlju kartice u listi projekata.
 
-## Rješenje
+- Zaglavlje zadržava: naziv projekta, **status badge**, **health badge** (s tooltipom koji objašnjava broj, npr. "78/100 – stabilno").
+- **Marža badge** se uklanja iz headera kartice i seli u "Pregled" tab unutar `ProjectFullScreenView`.
+- **Role badge** (manager/member) se zadržava ali manji i sekundarni (muted), desno poravnat.
+- Kada je marža `—` (nema ugovora), umjesto zbunjujućeg "Marža: —" prikazuje se subtilan CTA chip u Pregledu: "Dodaj ugovor" → otvara MilestoneBudgetChangeSection / contract dialog.
+- Sve preko `t()` ključeva (`projects.card.health`, `projects.card.addContract`).
 
-Zamijeniti logiku odabira tvrtke u `ProjectsPanel.tsx`:
+**Datoteke:** `src/components/projects/ProjectCard.tsx`, `src/components/projects/ProjectOverviewTab.tsx` (ili gdje god je Pregled), i18n hr/en/de.
 
-1. Koristiti postojeći hook `useBusinessProfiles()` koji već vraća sve tvrtke trenutnog korisnika (filtrirano per user, sortirano po imenu).
-2. Logika na klik "Premjesti u poslovni mod":
-   - **0 tvrtki**: prikaži `showError` s porukom da prvo treba kreirati tvrtku u Postavkama → Poslovne tvrtke.
-   - **1 tvrtka**: prikaži postojeći confirm dialog s imenom te tvrtke i nakon potvrde migriraj.
-   - **>1 tvrtke**: prikaži novi izbornik (Select/RadioGroup) unutar dialoga za odabir ciljne tvrtke, gumb "Premjesti" aktivan tek nakon izbora.
-3. Ukloniti mrtvi `localStorage` fallback i `.single()` poziv.
-4. Po uspjehu pozvati `refetch()` + `fetchAllStats()` da se kartica osvježi i nestane iz osobnog popisa.
-5. Dodati `showError` u catch granu `confirmMigrate` da se buduće tihe greške vide.
+## 2. Posao grupa – spajanje Timeline + Faze, čišćenje quick-stats
 
-## i18n
+**Cilj:** smanjiti broj tabova s 6 na 4, ukloniti redundantne quick-stat kartice.
 
-Dodati ključeve u `hr.json`, `en.json`, `de.json` pod `projects.*`:
-- `migrateNoProfiles` — "Nemaš nijednu tvrtku. Kreiraj je u Postavkama → Poslovne tvrtke."
-- `migrateChooseProfile` — "Odaberi tvrtku"
-- `migrateConfirmTitle` — "Premjesti projekt u poslovni mod"
-- `migrateConfirmDesc` — "Projekt '{{name}}' i sve njegove transakcije bit će premješteni u tvrtku '{{company}}'. Ova radnja se može poništiti ručno."
+- **Ukloniti 4 quick-stat kartice** na vrhu Posao grupe (broj faza, dokumenata, itd.) – isti brojevi već su badgeovi na tabovima.
+- **Spojiti Timeline + Faze** u jedan tab `phases` s view switcher segmentom na vrhu: `Lista | Timeline`.
+  - Default: Lista (postojeći `ProjectMilestonesTab`).
+  - Timeline view: postojeća timeline komponenta.
+  - State `phasesView` lokalno u tab komponenti (`useState<'list'|'timeline'>('list')`).
+- **Spojiti Aktivnost + Dnevnik** u jedan tab `activity` s istim view switcherom: `Dnevnik | Aktivnost`.
+- Rezultat: Posao ima 4 taba umjesto 6: Pregled, Faze (s view switch), Dokumenti, Aktivnost (s view switch).
+- Mapirati legacy `initialTab` vrijednosti (`timeline`, `worklog`) → novi tab + `initialSubView` (isti pattern kao `project-team-unified-tab`).
 
-## Datoteke
+**Datoteke:** `src/components/projects/ProjectFullScreenView.tsx`, nova `ProjectPhasesTab.tsx` wrapper, nova `ProjectActivityTab.tsx` wrapper, i18n.
 
-- `src/components/projects/ProjectsPanel.tsx` — zamijeniti `confirmMigrate`, proširiti migrate dialog s biračem tvrtke kad ih je >1, uvesti `useBusinessProfiles`.
-- `src/i18n/locales/{hr,en,de}.json` — dodati gore navedene ključeve.
+## 3. Novac grupa – sažetak + semantičke boje
 
-Bez izmjena baze i bez izmjena `useProjects.migrateToBusinessMode`.
+**Cilj:** jasan sažetak na vrhu Financiranja + ispravne semantičke boje.
+
+- **Dodati kompaktni "Sažetak novca"** na vrh `ProjectFundingTab`:
+  ```
+  Ukupno alocirano: X €   |   Prihodi: Y €   |   Preostalo: Z €
+  ```
+  - 3-stupčani grid (mobile: stacked), brojevi naglašeni, label muted.
+  - Preostalo: `totalAllocated - totalSpent`, semantička boja (income ako >0, expense ako <0).
+- **Semantička korekcija "Završene faze":**
+  - Trenutno prikazuje `-{amount}` u `text-expense` boji – pogrešno jer to nije gubitak nego planirani trošak.
+  - Promijeniti u neutralnu boju (`text-foreground`) bez minus znaka, label: "Planirani trošak".
+  - Boja ostaje suptilna; zelena/crvena rezervirana za stvarni prihod/gubitak.
+
+**Datoteke:** `src/components/projects/ProjectFundingTab.tsx`, i18n ključevi (`projects.funding.summaryAllocated`, `summaryIncome`, `summaryRemaining`, `plannedCost`).
+
+## Ne dirati
+
+- Bez DB migracija.
+- Bez izmjena `useProjects`, `useProjectFunding`, `useProjectMilestones` logike.
+- `ProjectTransactionsTab` refactor (1564 linije) ostaje za poseban zadatak – nije u ovom planu.
+- Ljudi tab ostaje kakav je (8/10 iz audita, sitne preporuke se odgađaju).
+
+## Redoslijed implementacije
+
+1. Novac (najmanji rizik, izolirana komponenta).
+2. ProjectCard header (samo presentational).
+3. Posao tab merge (najveći refactor, legacy mapping).

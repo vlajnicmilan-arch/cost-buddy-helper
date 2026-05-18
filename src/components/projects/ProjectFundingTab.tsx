@@ -52,9 +52,31 @@ export const ProjectFundingTab = ({
     );
   }
 
+  const totalIncome = incomeSources.reduce((sum, inc) => sum + inc.amount, 0);
+  const remaining = totalAllocated - totalSpent;
+
   return (
     <div className="space-y-6">
-      {/* Reserved for pending milestones - only show this summary info, main financial overview is in header */}
+      {/* Compact money summary */}
+      <div className="grid grid-cols-3 gap-2 p-3 rounded-lg border bg-card">
+        <div className="text-center">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryAllocated', 'Alocirano')}</p>
+          <p className="text-sm sm:text-base font-semibold tabular-nums truncate">{formatAmount(totalAllocated)}</p>
+        </div>
+        <div className="text-center border-x border-border/50">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryIncome', 'Primljeno')}</p>
+          <p className="text-sm sm:text-base font-semibold tabular-nums truncate text-income">{formatAmount(totalIncome)}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">{t('projects.funding.summaryRemaining', 'Preostalo')}</p>
+          <p className={cn(
+            "text-sm sm:text-base font-semibold tabular-nums truncate",
+            remaining < 0 ? "text-destructive" : "text-foreground"
+          )}>{formatAmount(remaining)}</p>
+        </div>
+      </div>
+
+      {/* Reserved for pending milestones */}
       {reservedForPending > 0 && (
         <div className="flex items-center justify-between text-sm p-3 rounded-lg bg-warning/10 border border-warning/20">
           <span className="flex items-center gap-2 text-muted-foreground">
@@ -86,9 +108,10 @@ export const ProjectFundingTab = ({
                   </p>
                 )}
               </div>
-              <p className="text-lg font-semibold text-expense">
-                -{formatAmount(m.budget || 0)}
+              <p className="text-lg font-semibold tabular-nums">
+                {formatAmount(m.budget || 0)}
               </p>
+              <p className="text-[10px] text-muted-foreground sr-only">{t('projects.funding.plannedCost', 'Planirani trošak')}</p>
             </div>
           ))}
         </div>
