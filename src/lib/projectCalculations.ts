@@ -166,3 +166,28 @@ export const calculateRemainingToCollect = (
   const collected = calculateProjectIncome(expenses, funding);
   return Math.max(contract - collected, 0);
 };
+
+/**
+ * Computes the new contract value after applying a scope-change amendment.
+ *
+ * Baseline rule (regression test target):
+ * - When contract_value > 0, amendments stack on top of it.
+ * - When contract_value is null/0, total_budget is used as the baseline so the
+ *   original contract isn't lost (otherwise amendments would accumulate from 0).
+ * - When both are missing/0, baseline is 0 and only the amendment remains.
+ *
+ * Amendments are signed: positive grows the contract, negative reduces it.
+ * Result is clamped at 0 so the contract can never go below zero.
+ */
+export const applyContractAmendment = (
+  contractValue: number | string | null | undefined,
+  totalBudget: number | string | null | undefined,
+  amendmentAmount: number | string | null | undefined
+): number => {
+  const cv = Number(contractValue || 0);
+  const tb = Number(totalBudget || 0);
+  const delta = Number(amendmentAmount || 0);
+  const baseline = cv > 0 ? cv : tb;
+  return Math.max(baseline + delta, 0);
+};
+
