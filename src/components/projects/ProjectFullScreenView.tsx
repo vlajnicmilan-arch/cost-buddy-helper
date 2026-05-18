@@ -689,27 +689,50 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
-                {canSeeTab('timeline') && (
-                <TabsContent value="timeline" className="m-0">
-                  <ProjectTimelineTab
-                    projectId={project.id}
-                    milestones={milestones}
-                    projectStartDate={project.start_date}
-                    projectEndDate={project.end_date}
-                    loading={milestonesLoading}
-                  />
-                </TabsContent>
-                )}
-
-                {canSeeTab('milestones') && (
-                <TabsContent value="milestones" className="m-0">
-                  <ProjectMilestonesTab 
-                    projectId={project.id}
-                    milestones={milestones}
-                    isManager={isManager}
-                    loading={milestonesLoading}
-                    onRefetch={refetchMilestones}
-                  />
+                {(canSeeTab('milestones') || canSeeTab('timeline')) && (
+                <TabsContent value="phases" className="m-0 space-y-3">
+                  {canSeeTab('timeline') && (
+                    <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
+                      <button
+                        type="button"
+                        onClick={() => setPhasesView('list')}
+                        className={cn(
+                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                          phasesView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        {t('projects.kanban.list', 'Lista')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPhasesView('timeline')}
+                        className={cn(
+                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                          phasesView === 'timeline' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                        )}
+                      >
+                        <GanttChart className="w-3 h-3" />
+                        {t('projects.timeline', 'Timeline')}
+                      </button>
+                    </div>
+                  )}
+                  {phasesView === 'timeline' && canSeeTab('timeline') ? (
+                    <ProjectTimelineTab
+                      projectId={project.id}
+                      milestones={milestones}
+                      projectStartDate={project.start_date}
+                      projectEndDate={project.end_date}
+                      loading={milestonesLoading}
+                    />
+                  ) : (
+                    <ProjectMilestonesTab
+                      projectId={project.id}
+                      milestones={milestones}
+                      isManager={isManager}
+                      loading={milestonesLoading}
+                      onRefetch={refetchMilestones}
+                    />
+                  )}
                 </TabsContent>
                 )}
 
