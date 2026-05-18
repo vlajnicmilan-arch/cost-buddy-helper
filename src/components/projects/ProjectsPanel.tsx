@@ -21,6 +21,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppState } from '@/contexts/AppStateContext';
 import { applyTemplateToProject } from '@/lib/projectTemplateApply';
 import type { ProjectTemplate } from '@/hooks/useProjectTemplates';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
