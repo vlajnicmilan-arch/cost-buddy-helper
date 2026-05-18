@@ -148,11 +148,25 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
         auto_reminders_enabled: autoReminders,
       };
 
+      let saved: ProjectInvoice | null = null;
       if (invoice) {
         await updateInvoice(invoice.id, payload);
+        saved = { ...invoice, ...payload } as ProjectInvoice;
       } else {
-        await addInvoice(payload);
+        saved = await addInvoice(payload);
       }
+
+      // If auto-reminders are enabled, upload a PDF snapshot so the cron
+      // dispatcher can sign and attach a download link. Best-effort.
+      if (saved && autoReminders && clientEmail.trim()) {
+        try {
+          const { uploadInvoicePdfSnapshot } = await import('@/lib/invoicePdfUpload');
+          await uploadInvoicePdfSnapshot(saved);
+        } catch (e) {
+          console.warn('PDF snapshot upload failed', e);
+        }
+      }
+
       onOpenChange(false);
     } finally {
       setSaving(false);

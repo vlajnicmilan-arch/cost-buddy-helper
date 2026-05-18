@@ -3273,6 +3273,7 @@ export type Database = {
           issue_date: string
           items: Json
           notes: string | null
+          pdf_path: string | null
           project_id: string | null
           status: string
           subtotal: number
@@ -3297,6 +3298,7 @@ export type Database = {
           issue_date?: string
           items?: Json
           notes?: string | null
+          pdf_path?: string | null
           project_id?: string | null
           status?: string
           subtotal?: number
@@ -3321,6 +3323,7 @@ export type Database = {
           issue_date?: string
           items?: Json
           notes?: string | null
+          pdf_path?: string | null
           project_id?: string | null
           status?: string
           subtotal?: number

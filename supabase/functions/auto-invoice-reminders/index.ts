@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   // Pull all candidate invoices in one query.
   const { data: invoices, error } = await supabase
     .from('project_invoices')
-    .select('id, user_id, business_profile_id, invoice_number, client_name, client_email, issue_date, due_date, total_amount, currency, status, auto_reminders_enabled')
+    .select('id, user_id, business_profile_id, invoice_number, client_name, client_email, issue_date, due_date, total_amount, currency, status, auto_reminders_enabled, pdf_path')
     .eq('auto_reminders_enabled', true)
     .not('client_email', 'is', null)
     .not('due_date', 'is', null)
@@ -115,6 +115,15 @@ Deno.serve(async (req) => {
 
     const idempotencyKey = `invoice-reminder-${inv.id}-auto-${stageToSend}`
     try {
+      // Sign PDF snapshot if available (7 days)
+      let pdfUrl = ''
+      if (inv.pdf_path) {
+        const { data: signed } = await supabase.storage
+          .from('invoice-pdfs')
+          .createSignedUrl(inv.pdf_path, 60 * 60 * 24 * 7)
+        if (signed?.signedUrl) pdfUrl = signed.signedUrl
+      }
+
       const { error: sendErr } = await supabase.functions.invoke('send-transactional-email', {
         body: {
           templateName: 'invoice-payment-reminder',
@@ -128,7 +137,7 @@ Deno.serve(async (req) => {
             amount: formatAmount(remaining, inv.currency || 'EUR'),
             daysOverdue: String(daysOverdue),
             customMessage: '',
-            pdfUrl: '',
+            pdfUrl,
           },
         },
       })

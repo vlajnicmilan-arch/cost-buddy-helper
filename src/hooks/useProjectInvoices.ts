@@ -37,6 +37,7 @@ export interface ProjectInvoice {
   notes: string | null;
   client_email: string | null;
   auto_reminders_enabled: boolean;
+  pdf_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,8 +130,8 @@ export const useProjectInvoices = () => {
 
   type NewInvoice = Omit<
     ProjectInvoice,
-    'id' | 'user_id' | 'created_at' | 'updated_at' | 'business_profile_id' | 'invoice_number'
-  > & { invoice_number?: string };
+    'id' | 'user_id' | 'created_at' | 'updated_at' | 'business_profile_id' | 'invoice_number' | 'pdf_path'
+  > & { invoice_number?: string; pdf_path?: string | null };
 
   const addInvoice = async (payload: NewInvoice) => {
     if (!user || !activeBusinessProfileId) return null;
