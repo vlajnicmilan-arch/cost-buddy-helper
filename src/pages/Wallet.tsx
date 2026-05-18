@@ -17,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
+import { useCallback } from 'react';
 
 const Wallet = () => {
   const { t } = useTranslation();
