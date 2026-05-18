@@ -607,7 +607,52 @@
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
-    "menuDesc": "Angebot erstellen und in ein Projekt umwandeln"
+    "menuDesc": "Angebot erstellen und in ein Projekt umwandeln",
+    "add": "Neues Angebot",
+    "edit": "Angebot bearbeiten",
+    "empty": "Noch keine Angebote",
+    "emptyHint": "Erstellen Sie ein Angebot und senden Sie es dem Kunden. Nach Annahme können Sie es in ein Projekt umwandeln.",
+    "emptyForProject": "Keine Angebote mit diesem Projekt verknüpft.",
+    "forProject": "Angebote für dieses Projekt",
+    "downloadPdf": "PDF herunterladen",
+    "markSent": "Als gesendet markieren",
+    "convertToProject": "In Projekt umwandeln",
+    "deleteTitle": "Angebot löschen?",
+    "expired": "Abgelaufen",
+    "expiringIn": "Läuft in {{n}} T ab",
+    "validUntil": "gültig bis",
+    "clientName": "Kundenname",
+    "clientOib": "USt-IdNr.",
+    "clientAddress": "Adresse",
+    "items": "Positionen",
+    "addItem": "Hinzufügen",
+    "itemDescription": "Beschreibung",
+    "subtotal": "Nettobetrag",
+    "vat": "MwSt.",
+    "total": "Gesamt",
+    "notes": "Notiz",
+    "nonVatPreset": "Sie sind kein USt-Pflichtiger — alle Positionen haben 0% MwSt., und ein Hinweis wird automatisch hinzugefügt.",
+    "status": {
+      "draft": "Entwurf",
+      "sent": "Gesendet",
+      "accepted": "Angenommen",
+      "rejected": "Abgelehnt"
+    },
+    "pdf": {
+      "title": "ANGEBOT",
+      "date": "Datum",
+      "validUntil": "Gültig bis",
+      "issuer": "AUSSTELLER",
+      "client": "EMPFÄNGER",
+      "itemDescription": "Beschreibung",
+      "qty": "Menge",
+      "unit": "Einh.",
+      "unitPrice": "Preis",
+      "vatPct": "MwSt%",
+      "lineTotal": "Betrag",
+      "nonVatNote": "Aussteller ist kein USt-Pflichtiger.",
+      "disclaimer": "Arbeitsdokument zur Kundenkommunikation. Keine Steuerrechnung und kein formelles Angebot im Sinne der Steuervorschriften."
+    }
   },
   "settings": {
     "legal": {
