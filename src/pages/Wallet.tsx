@@ -17,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
+import { useCallback } from 'react';
 
 const Wallet = () => {
   const { t } = useTranslation();
@@ -26,6 +28,11 @@ const Wallet = () => {
   const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
+
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
+  const deleteExpenseWithUndo = useCallback(async (id: string) => {
+    await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
+  }, [wrapDeleteWithUndo, deleteExpense]);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -71,7 +78,7 @@ const Wallet = () => {
         paymentSource={selectedPaymentSource}
         expenses={rawExpenses}
         onUpdate={updateExpense}
-        onDelete={deleteExpense}
+        onDelete={deleteExpenseWithUndo}
         onImportCSV={importFromCSV}
         findDuplicates={findDuplicates}
       />

@@ -14,6 +14,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useBulkActions } from '@/hooks/useBulkActions';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 // BusinessModeView removed: business chip is now a contextual filter on PersonalModeView.
@@ -300,6 +301,13 @@ const Index = () => {
     deleteExpense,
   });
 
+  // Soft-delete s UNDO toastom — koristi se isključivo na glavnoj listi transakcija
+  // (Dashboard). Bulk akcije i detail dijalozi koriste direktni deleteExpense.
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: () => { refetch(); refetchPaymentSources(); } });
+  const deleteExpenseWithUndo = useCallback(async (id: string) => {
+    await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
+  }, [wrapDeleteWithUndo, deleteExpense]);
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedTransactionIds(new Set());
@@ -465,7 +473,7 @@ const Index = () => {
     allCards,
     // Actions
     onUpdateExpense: updateExpense,
-    onDeleteExpense: deleteExpense,
+    onDeleteExpense: deleteExpenseWithUndo,
     importFromCSV: importWithRecurringCheck,
     onReplaceAutoGen: handleReplaceAutoGen,
     findDuplicates,

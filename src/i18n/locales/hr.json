@@ -3896,5 +3896,29 @@
       "revoked": "Prekinuto",
       "failed": "Neuspješno"
     }
+  },
+  "trash": {
+    "title": "Koš za smeće",
+    "empty": "Koš je prazan",
+    "autoPurgeInfo": "Stavke se automatski trajno brišu nakon 30 dana.",
+    "restore": "Vrati",
+    "restored": "Vraćeno",
+    "purge": "Obriši trajno",
+    "purged": "Trajno obrisano",
+    "deletedAgo": "Obrisano",
+    "confirmPurgeTitle": "Trajno obrisati?",
+    "confirmPurgeDesc": "Ova radnja se ne može poništiti.",
+    "cancel": "Odustani",
+    "settingsDesc": "Vraćanje obrisanih transakcija, projekata, faktura i ponuda.",
+    "groups": {
+      "expense": "Transakcije",
+      "project": "Projekti",
+      "invoice": "Fakture",
+      "estimate": "Ponude"
+    },
+    "undoToast": {
+      "message": "Premješteno u koš",
+      "undo": "Poništi"
+    }
   }
 }

@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { listTrash, restoreTrashItem, purgeTrashItem, type TrashItem, type TrashEntity } from '@/lib/softDelete';
+import { listTrash, restoreTrashItem, restoreExpenseFull, purgeTrashItem, type TrashItem, type TrashEntity } from '@/lib/softDelete';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
@@ -52,7 +52,11 @@ export default function Trash() {
   const handleRestore = async (item: TrashItem) => {
     setBusyId(item.id);
     try {
-      await restoreTrashItem(item.entity_type, item.id);
+      if (item.entity_type === 'expense') {
+        await restoreExpenseFull(item.id);
+      } else {
+        await restoreTrashItem(item.entity_type, item.id);
+      }
       toast({ title: t('trash.restored', 'Vraćeno') });
       await load();
     } catch (e: any) {
