@@ -240,5 +240,8 @@ export async function generateInvoicePdf(
   addNotOfficialFooter(doc);
 
   const fileName = `Racun_${invoice.invoice_number.replace(/[^\w-]/g, '_')}.pdf`;
+  if (opts.returnBlob) {
+    return doc.output('blob') as Blob;
+  }
   return exportPDFDoc(doc, fileName, opts.mode || 'save');
 }
