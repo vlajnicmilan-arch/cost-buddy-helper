@@ -37,6 +37,7 @@ export interface ProjectInvoice {
   notes: string | null;
   client_email: string | null;
   auto_reminders_enabled: boolean;
+  pdf_path: string | null;
   created_at: string;
   updated_at: string;
 }
