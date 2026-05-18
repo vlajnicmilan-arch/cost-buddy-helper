@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useProjectEstimates } from '@/hooks/useProjectEstimates';
+import { useProjectInvoices } from '@/hooks/useProjectInvoices';
 import { ProjectEstimatesPanel } from './ProjectEstimatesPanel';
+import { ProjectInvoicesPanel } from './ProjectInvoicesPanel';
 
 interface ProjectFundingTabProps {
   projectId: string;
