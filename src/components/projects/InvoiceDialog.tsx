@@ -9,7 +9,8 @@ import { useProjectInvoices, ProjectInvoice, InvoiceItem } from '@/hooks/useProj
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Trash2, Loader2, Info } from 'lucide-react';
+import { Plus, Trash2, Loader2, Info, Mail } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
