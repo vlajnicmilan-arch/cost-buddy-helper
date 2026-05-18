@@ -302,6 +302,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
+        {/* Unpaid invoices widget — business chip only */}
+        {isBusinessChip && <UnpaidInvoicesWidget />}
+
         {/* Cashflow Forecast */}
         <Collapsible className="group mb-3">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
