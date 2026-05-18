@@ -105,6 +105,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
       setIssueDate(todayIso());
       setDueDate('');
       setNotes(!isVatPayer && vatExemptionNote ? vatExemptionNote : '');
+      setClientEmail('');
+      setAutoReminders(false);
     };
     void prefill();
   }, [open, invoice, prefillFromEstimateId, DEFAULT_VAT, isVatPayer, vatExemptionNote]);
