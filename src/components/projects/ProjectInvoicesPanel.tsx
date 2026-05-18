@@ -2,6 +2,7 @@ import { useState, lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectInvoices, ProjectInvoice, InvoiceStatus } from '@/hooks/useProjectInvoices';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
