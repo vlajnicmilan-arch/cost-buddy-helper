@@ -2,11 +2,13 @@ import { ProjectFunding, ProjectMilestone } from '@/types/project';
 import { ProjectIncomeSource } from '@/hooks/useProjectFunding';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Wallet, Loader2, TrendingUp, TrendingDown, PiggyBank, CheckCircle2, Clock } from 'lucide-react';
+import { Wallet, Loader2, TrendingUp, TrendingDown, PiggyBank, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useProjectEstimates } from '@/hooks/useProjectEstimates';
+import { ProjectEstimatesPanel } from './ProjectEstimatesPanel';
 
 interface ProjectFundingTabProps {
   projectId: string;
@@ -35,6 +37,8 @@ export const ProjectFundingTab = ({
 }: ProjectFundingTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { estimates: allEstimates } = useProjectEstimates();
+  const projectEstimates = allEstimates.filter(e => e.accepted_project_id === projectId);
 
   const completedMilestones = milestones.filter(m => m.status === 'completed');
   
@@ -189,6 +193,17 @@ export const ProjectFundingTab = ({
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {/* Estimates linked to this project */}
+      {projectEstimates.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            {t('estimates.forProject', 'Ponude za ovaj projekt')} ({projectEstimates.length})
+          </h4>
+          <ProjectEstimatesPanel projectId={projectId} compact />
         </div>
       )}
     </div>
