@@ -21,6 +21,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppState } from '@/contexts/AppStateContext';
 import { applyTemplateToProject } from '@/lib/projectTemplateApply';
 import type { ProjectTemplate } from '@/hooks/useProjectTemplates';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -51,7 +55,9 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
+  const [migrateTargetProfileId, setMigrateTargetProfileId] = useState<string>('');
   const [showArchived, setShowArchived] = useState(false);
+  const { profiles: businessProfiles } = useBusinessProfiles();
 
   const handleOpenBlankDialog = () => {
     setEditingProject(null);
@@ -150,39 +156,35 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   };
 
   const handleMigrateToBusiness = (project: ProjectWithOwnership) => {
+    if (businessProfiles.length === 0) {
+      showError(t('projects.migrateNoProfiles', 'Nemaš nijednu tvrtku. Kreiraj je u Postavkama → Poslovne tvrtke.'));
+      return;
+    }
     setProjectToMigrate(project);
+    setMigrateTargetProfileId(businessProfiles.length === 1 ? businessProfiles[0].id : '');
     setMigrateConfirmOpen(true);
   };
 
   const confirmMigrate = async () => {
-    if (projectToMigrate) {
-      // Get the first active business profile id from localStorage
-      const storedProfiles = localStorage.getItem('finmate.businessProfiles');
-      let targetProfileId: string | null = null;
-      
-      if (storedProfiles) {
-        try {
-          const profiles = JSON.parse(storedProfiles);
-          if (profiles.length > 0) targetProfileId = profiles[0].id;
-        } catch {}
+    if (!projectToMigrate) return;
+    if (!migrateTargetProfileId) {
+      showError(t('projects.migrateChooseProfile', 'Odaberi tvrtku'));
+      return;
+    }
+    try {
+      const ok = await migrateToBusinessMode(projectToMigrate.id, migrateTargetProfileId);
+      if (ok) {
+        setMigrateConfirmOpen(false);
+        setProjectToMigrate(null);
+        setMigrateTargetProfileId('');
+        refetch();
+        fetchAllStats();
+      } else {
+        showError(t('common.error', 'Greška'));
       }
-      
-      // If not in localStorage, try fetching from DB
-      if (!targetProfileId) {
-        const { data } = await supabase
-          .from('business_profiles')
-          .select('id')
-          .eq('is_active', true)
-          .limit(1)
-          .single();
-        if (data) targetProfileId = data.id;
-      }
-      
-      if (targetProfileId) {
-        await migrateToBusinessMode(projectToMigrate.id, targetProfileId);
-      }
-      setMigrateConfirmOpen(false);
-      setProjectToMigrate(null);
+    } catch (err) {
+      console.error('[ProjectsPanel] migrate failed', err);
+      showError(t('common.error', 'Greška'));
     }
   };
 
@@ -380,7 +382,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       </AlertDialog>
 
       {/* Migrate to Business Confirmation */}
-      <AlertDialog open={migrateConfirmOpen} onOpenChange={setMigrateConfirmOpen}>
+      <AlertDialog open={migrateConfirmOpen} onOpenChange={(o) => { setMigrateConfirmOpen(o); if (!o) { setProjectToMigrate(null); setMigrateTargetProfileId(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('projects.migrateConfirmTitle', 'Premjesti u poslovni mod?')}</AlertDialogTitle>
@@ -388,9 +390,28 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
               {t('projects.migrateConfirmMessage', 'Projekt će postati vidljiv u poslovnom modu s naprednim funkcijama (radnici, suradnici, P&L). Svi postojeći podaci će biti sačuvani.')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {businessProfiles.length > 1 ? (
+            <div className="space-y-2 py-2">
+              <Label className="text-sm">{t('projects.migrateChooseProfile', 'Odaberi tvrtku')}</Label>
+              <Select value={migrateTargetProfileId} onValueChange={setMigrateTargetProfileId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('projects.migrateChooseProfile', 'Odaberi tvrtku')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessProfiles.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : businessProfiles.length === 1 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              {t('projects.migrateTargetCompany', 'Ciljna tvrtka:')} <strong>{businessProfiles[0].name}</strong>
+            </p>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmMigrate}>
+            <AlertDialogAction onClick={confirmMigrate} disabled={!migrateTargetProfileId}>
               <Briefcase className="w-4 h-4 mr-2" />
               {t('projects.migrateToBusiness', 'Premjesti u poslovni mod')}
             </AlertDialogAction>
