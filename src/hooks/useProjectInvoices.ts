@@ -35,6 +35,8 @@ export interface ProjectInvoice {
   issue_date: string;
   due_date: string | null;
   notes: string | null;
+  client_email: string | null;
+  auto_reminders_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
