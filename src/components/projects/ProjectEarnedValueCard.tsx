@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
 import { exportEarnedValuePdf } from '@/lib/projectFinancePdfExport';
-import { useStatusFeedback } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { Project } from '@/types/project';
 import type { ProjectMilestone } from '@/types/project';
 import { cn } from '@/lib/utils';
