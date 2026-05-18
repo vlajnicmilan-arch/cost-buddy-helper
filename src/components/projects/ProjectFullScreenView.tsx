@@ -560,14 +560,8 @@ export const ProjectFullScreenView = ({
                             <TrendingUp className="w-3.5 h-3.5" />
                             {t('projects.overview', 'Pregled')}
                           </TabsTrigger>
-                          {canSeeTab('timeline') && (
-                            <TabsTrigger value="timeline" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                              <GanttChart className="w-3.5 h-3.5" />
-                              {t('projects.timeline', 'Timeline')}
-                            </TabsTrigger>
-                          )}
-                          {canSeeTab('milestones') && (
-                            <TabsTrigger value="milestones" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                          {(canSeeTab('milestones') || canSeeTab('timeline')) && (
+                            <TabsTrigger value="phases" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                               <Target className="w-3.5 h-3.5" />
                               {labels.milestonesLabel}
                               {milestones.length > 0 && (
@@ -582,10 +576,6 @@ export const ProjectFullScreenView = ({
                           <TabsTrigger value="activity" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
                             <Activity className="w-3.5 h-3.5" />
                             {t('projects.activity.tab', 'Aktivnost')}
-                          </TabsTrigger>
-                          <TabsTrigger value="worklog" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            {t('workLog.tab', 'Dnevnik')}
                           </TabsTrigger>
                         </>
                       )}
