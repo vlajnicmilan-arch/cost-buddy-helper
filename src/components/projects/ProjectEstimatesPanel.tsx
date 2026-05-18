@@ -206,7 +206,7 @@ export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEst
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => { if (toDelete) { await deleteEstimate(toDelete.id); setToDelete(null); } }}
+              onClick={async () => { if (toDelete) { const id = toDelete.id; await wrapDeleteWithUndo(() => deleteEstimate(id), 'estimate', id); setToDelete(null); } }}
               className="bg-destructive text-destructive-foreground"
             >
               {t('common.delete', 'Obriši')}
