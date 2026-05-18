@@ -654,6 +654,61 @@
       "disclaimer": "Arbeitsdokument zur Kundenkommunikation. Keine Steuerrechnung und kein formelles Angebot im Sinne der Steuervorschriften."
     }
   },
+  "invoices": {
+    "title": "Rechnungen (Tracker)",
+    "add": "Neue Rechnung",
+    "edit": "Rechnung bearbeiten",
+    "empty": "Keine Rechnungen",
+    "emptyHint": "Erfassen Sie ausgestellte Rechnungen und Zahlungseingänge. Zahlungen verknüpfen Sie über Einnahmen-Transaktionen.",
+    "emptyForProject": "Keine Rechnungen für dieses Projekt.",
+    "forProject": "Rechnungen zu diesem Projekt",
+    "deleteTitle": "Rechnung löschen?",
+    "downloadPdf": "PDF herunterladen",
+    "markPaid": "Bezahlt",
+    "clientName": "Kundenname",
+    "clientOib": "Steuer-ID",
+    "clientAddress": "Adresse",
+    "items": "Positionen",
+    "addItem": "Hinzufügen",
+    "itemDescription": "Beschreibung",
+    "subtotal": "Nettobetrag",
+    "vat": "MwSt",
+    "total": "Gesamt",
+    "notes": "Notiz",
+    "issueDate": "Rechnungsdatum",
+    "dueDate": "Fälligkeit",
+    "dueShort": "fällig",
+    "paid": "Bezahlt",
+    "remaining": "Offen",
+    "nonVatPreset": "Sie sind kein USt-Pflichtiger — alle Positionen haben 0% MwSt und der Befreiungshinweis wird automatisch eingefügt.",
+    "toasts": {
+      "created": "Rechnung erstellt",
+      "updated": "Rechnung aktualisiert",
+      "deleted": "Rechnung gelöscht"
+    },
+    "status": {
+      "issued": "Ausgestellt",
+      "partially_paid": "Teilweise bezahlt",
+      "paid": "Bezahlt",
+      "cancelled": "Storniert",
+      "overdue": "Überfällig"
+    },
+    "pdf": {
+      "title": "RECHNUNGSÜBERSICHT",
+      "issueDate": "Rechnungsdatum",
+      "dueDate": "Fälligkeit",
+      "issuer": "AUSSTELLER",
+      "client": "EMPFÄNGER",
+      "itemDescription": "Beschreibung",
+      "qty": "Menge",
+      "unit": "Einh.",
+      "unitPrice": "Preis",
+      "vatPct": "MwSt%",
+      "lineTotal": "Betrag",
+      "nonVatNote": "Aussteller ist kein USt-Pflichtiger.",
+      "disclaimer": "Interne Rechnungsübersicht für Ihre Aufzeichnungen und die Kundenkommunikation. Keine fiskalisierte Steuerrechnung und kein offizielles Dokument im Sinne der Steuer- und Buchführungsvorschriften."
+    }
+  },
   "settings": {
     "legal": {
       "title": "Rechtsdokumente (DSGVO)",
