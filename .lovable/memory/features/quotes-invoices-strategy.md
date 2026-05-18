@@ -24,11 +24,13 @@ App je **interni tracker** za ponude i račune. **NIKAD** fiskalizacija/eRačun/
 - Embedded u `ProjectFundingTab` ("Računi za ovaj projekt")
 - i18n namespace `invoices.*` u hr/en/de
 
-## Faza 3 — Cashflow & naplata (TODO)
-- Aging report (overdue invoices widget)
-- "Neplaćeno" dashboard widget
-- Auto-email podsjetnici klijentima
-- P&L per project (već postoji `ProjectProfitLossCard`, treba integrirati invoice income)
+## Faza 3 — Cashflow & naplata (IMPLEMENTIRANO)
+- `useUnpaidInvoices` hook — outstanding total, overdue count + aging buckets (0-30/31-60/61-90/90+)
+- `UnpaidInvoicesWidget` — dashboard widget (samo business chip view), klik otvara Sheet s `UnpaidInvoicesList`
+- `SendInvoiceReminderDialog` — neformalni email podsjetnik klijentu (custom poruka + osnovni podaci računa)
+- Email template `invoice-payment-reminder` (registriran u `registry.ts`) — šalje se kroz `send-transactional-email`
+- Reminder gumb dostupan iz `ProjectInvoicesPanel` (svaki unpaid invoice) i iz dashboard sheeta
+- P&L per project: plaćanja kroz `expenses.invoice_id` automatski idu u project income (već radi kroz `ProjectProfitLossCard`)
 
 ## Granice (anti-scope-creep, dogovoreno s userom)
 - NEMA fiskalizacije/JIR/ZKI
