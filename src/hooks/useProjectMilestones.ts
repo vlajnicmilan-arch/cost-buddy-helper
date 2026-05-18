@@ -252,13 +252,17 @@ export const useProjectMilestones = (projectId: string | null) => {
             // Bump projects.contract_value by amendment amount
             const { data: projRow, error: projFetchErr } = await supabase
               .from('projects')
-              .select('contract_value')
+              .select('contract_value, total_budget')
               .eq('id', projectId)
               .single();
 
             if (!projFetchErr && projRow) {
               const currentContract = Number((projRow as any).contract_value || 0);
-              const newContract = currentContract + revision.amendment.amount;
+              const totalBudget = Number((projRow as any).total_budget || 0);
+              // If contract_value isn't explicitly set, use total_budget as baseline
+              // so amendments don't accumulate from 0 (would lose the original contract).
+              const baseline = currentContract > 0 ? currentContract : totalBudget;
+              const newContract = baseline + revision.amendment.amount;
               const { error: projUpdateErr } = await supabase
                 .from('projects')
                 .update({ contract_value: newContract })

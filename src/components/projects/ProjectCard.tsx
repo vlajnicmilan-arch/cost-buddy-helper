@@ -64,7 +64,7 @@ export const ProjectCard = ({
   const health = useMemo(() => calculateProjectHealth({
     spent,
     budget,
-    contractValue: project.contract_value,
+    contractValue: project.contract_value || project.total_budget,
     startDate: project.start_date,
     endDate: project.end_date,
     milestones: milestones as any,

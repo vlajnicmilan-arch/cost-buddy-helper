@@ -98,7 +98,7 @@ export const ProjectFullScreenView = ({
   useProjectLossZoneAlert({
     projectId: project?.id,
     projectName: project?.name,
-    contractValue: project?.contract_value,
+    contractValue: project?.contract_value || project?.total_budget,
     spent: stats.totalSpent,
   });
   
