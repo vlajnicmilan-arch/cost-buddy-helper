@@ -636,25 +636,6 @@ export const ProjectFullScreenView = ({
                 )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Quick stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{stats.transactionCount}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.transactions')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{milestones.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.milestones')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{members.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.members')}</p>
-                    </div>
-                    <div className="p-4 rounded-lg border text-center">
-                      <p className="text-3xl font-bold">{totalSourcesCount}</p>
-                      <p className="text-sm text-muted-foreground">{t('projects.fundingSources')}</p>
-                    </div>
-                  </div>
 
                   {/* Timeline */}
                   {(project.start_date || project.end_date) && (
