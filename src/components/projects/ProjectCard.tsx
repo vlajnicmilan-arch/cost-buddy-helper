@@ -236,7 +236,7 @@ export const ProjectCard = ({
               {milestoneCount} {t('projects.milestones')}
             </div>
             {!project.isOwner && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-muted-foreground border-border/50">
                 {t(`projectRoles.${project.role}`, PROJECT_ROLE_LABELS[project.role])}
               </Badge>
             )}
