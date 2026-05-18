@@ -3896,5 +3896,29 @@
       "revoked": "Widerrufen",
       "failed": "Fehlgeschlagen"
     }
+  },
+  "trash": {
+    "title": "Papierkorb",
+    "empty": "Papierkorb ist leer",
+    "autoPurgeInfo": "Elemente werden nach 30 Tagen endgültig gelöscht.",
+    "restore": "Wiederherstellen",
+    "restored": "Wiederhergestellt",
+    "purge": "Endgültig löschen",
+    "purged": "Endgültig gelöscht",
+    "deletedAgo": "Gelöscht",
+    "confirmPurgeTitle": "Endgültig löschen?",
+    "confirmPurgeDesc": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "cancel": "Abbrechen",
+    "settingsDesc": "Gelöschte Transaktionen, Projekte, Rechnungen und Angebote wiederherstellen.",
+    "groups": {
+      "expense": "Transaktionen",
+      "project": "Projekte",
+      "invoice": "Rechnungen",
+      "estimate": "Angebote"
+    },
+    "undoToast": {
+      "message": "In den Papierkorb verschoben",
+      "undo": "Rückgängig"
+    }
   }
 }

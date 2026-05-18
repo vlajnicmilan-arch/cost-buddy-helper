@@ -3896,5 +3896,29 @@
       "revoked": "Revoked",
       "failed": "Failed"
     }
+  },
+  "trash": {
+    "title": "Trash",
+    "empty": "Trash is empty",
+    "autoPurgeInfo": "Items are permanently deleted after 30 days.",
+    "restore": "Restore",
+    "restored": "Restored",
+    "purge": "Delete permanently",
+    "purged": "Permanently deleted",
+    "deletedAgo": "Deleted",
+    "confirmPurgeTitle": "Delete permanently?",
+    "confirmPurgeDesc": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "settingsDesc": "Restore deleted transactions, projects, invoices and estimates.",
+    "groups": {
+      "expense": "Transactions",
+      "project": "Projects",
+      "invoice": "Invoices",
+      "estimate": "Estimates"
+    },
+    "undoToast": {
+      "message": "Moved to trash",
+      "undo": "Undo"
+    }
   }
 }
