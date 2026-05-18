@@ -1,97 +1,47 @@
-## Strateški okvir (vrijedi za sve faze)
+## Uzrok
 
-App je **interni alat** za praćenje novca, projekata i odnosa s klijentima — **nije** službena evidencija. Svaki dokument koji generiramo nosi disclaimer footer (već postoji `src/lib/pdfFooter.ts`).
+`useProjectInvoices.addInvoice` na samom početku ima:
 
-**EKSPLICITNO ne radimo nikad:**
-- Fiskalizacija (JIR/ZKI, komunikacija s PU)
-- eRačun (UBL/XML, FINA servis)
-- Kontni plan, temeljnice
-- PDV obrasci (PDV-S, ZP, JOPPD)
+```ts
+if (!user || !activeBusinessProfileId) return null;
+```
 
-**Posljedica:** ponuda i "račun" u našoj app su radni dokumenti — pomažu korisniku da zna gdje stoji, ne zamjenjuju Minimax/Pantheon/sl.
+Ako nije aktivan nijedan business profile, `INSERT` se nikad ne pošalje, dialog se zatvori, i korisnik nema feedback. Provjera baze potvrđuje:
 
----
+- `project_invoices` tablica je prazna (0 redaka).
+- RLS policies (`SELECT/INSERT/UPDATE/DELETE` po `auth.uid() = user_id`) su ispravne.
+- U `business_profiles` postoje 2 profila za usera, **oba s `is_active = false`** → nijedan nije aktivan kao kontekst.
 
-## Roadmap (3 faze, gradimo redom)
+Korisnik je na `/index` (Dashboard), vjerojatno u Personal modu, i otvorio je račun unutar projekta (`ProjectFundingTab` embeda `ProjectInvoicesPanel`). Projekt se može vidjeti u oba moda, ali `project_invoices` je strogo vezan uz `business_profile_id` (NOT NULL u tablici + RLS preko `business_profile_id`).
 
-### Faza 1 — Polish Ponuda (ovaj plan)
-Postojeći `project_estimates` + `ProjectEstimatesPanel` + `EstimateDialog` rade osnovno. Treba ih dotjerati: UX, PDF, integracija s projektom, podsjetnici klijentu.
+## Plan popravka
 
-### Faza 2 — Računi (evidencija) — *zasebna tablica, dolazi nakon Faze 1*
-Nova tablica `project_invoices` (broj, datum, dospijeće, klijent, projekt, iznos, status: `issued/partially_paid/paid/overdue/cancelled`). Interni PDF "Pregled računa" s disclaimerom. Uplata = income u `expenses` s `invoice_id` linkom.
+1. **InvoiceDialog: guard prije save-a**
+   - Ako je `activeBusinessProfileId` null kad korisnik klikne "Kreiraj", prikaži jasan `showError(t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo unutar business konteksta. Aktiviraj tvrtku u postavkama.'))` i ne zatvaraj dialog.
+   - Onemogući gumb "Kreiraj" (`disabled`) kad nema business konteksta + prikaži info chip iznad forme s istom porukom i prečacem na switcher/postavke tvrtke.
 
-### Faza 3 — Cashflow i naplata
-Aging report, dashboard widget "Neplaćeno", auto-email podsjetnici klijentu, P&L po projektu uz ponudu→račun→uplata vidljivost.
+2. **useProjectInvoices.addInvoice: pretvori tihi return u explicit error**
+   - Umjesto `return null` baciti `throw new Error('no_business_context')` ili pozvati `showError(...)` prije return-a, da se isti slučaj ne ponovi ni iz drugog poziva (npr. iz auto-reminders flow-a).
 
----
+3. **ProjectInvoicesPanel: gate na razini panela (UX)**
+   - Ako `!activeBusinessProfileId`, sakrij gumb "Novi račun" i prikaži `EmptyState` s porukom "Računi su dostupni u business modu" + CTA "Aktiviraj tvrtku" (otvara `BusinessProfileSwitcher` / postavke).
 
-## FAZA 1 — Detaljan plan (ovaj sprint)
+4. **i18n ključevi** (hr/en/de)
+   - `invoices.errors.noBusinessContext`
+   - `invoices.emptyBusinessMode`
+   - `invoices.activateBusiness`
 
-### 1.1 Vidljivost i pristup ponudama
-Trenutno: `ProjectEstimatesPanel` postoji samo u `BusinessMore` (skriveno u "Više"). Korisnik teško dolazi.
+5. **Memory update**
+   - Dopuniti `quotes-invoices-strategy.md`: "Računi/ponude zahtijevaju aktivan business_profile_id; UI mora to enforcati prije submit-a."
 
-- Dodati "Ponude" kao **istaknutu karticu** unutar Business mode "Posao" sekcije (ili kao podsekcija na projektu).
-- Na `ProjectFullScreenView` u tabu "Novac" dodati malu sekciju **"Ponude za ovaj projekt"** koja filtrira `project_estimates` po `accepted_project_id`.
-- Sa stranice projekta (prije nego postane projekt) ostaviti globalni popis u Business → Ponude.
+## Što NE diramo
 
-### 1.2 EstimateDialog — UX dotjerivanje
-Trenutno radi, ali:
-- Dodati polje **"Projekt"** (opcionalno) — ako je ponuda vezana na postojeći projekt prije prihvaćanja (npr. dodatna ponuda za istog klijenta).
-- Klijent dropdown: predložiti postojeće klijente iz prijašnjih ponuda/projekata (autocomplete iz `project_estimates.client_name` + `projects.client_name`).
-- "Kopiraj iz postojeće ponude" — duplicira stavke iz druge ponude.
-- Validacija: barem 1 stavka, klijent obavezan (već postoji).
-
-### 1.3 PDF ponude (novi modul)
-Postoji `src/lib/pdfFooter.ts` i `src/lib/pdfBranding.ts`. Treba kreirati `src/lib/estimatePdf.ts`:
-- Generira PDF ponude s logom korisničke tvrtke (iz `business_profiles`), klijent podaci, stavke, osnovica/PDV/ukupno, valjanost, napomena.
-- **Footer:** "Ovo je radna ponuda za internu komunikaciju. Nije porezni dokument." + standardni `addNotOfficialFooter`.
-- Gumb "PDF" pored "Označi poslano" u `ProjectEstimatesPanel` redovima.
-- Spremanje preko `fileExport.ts` (native + web).
-
-### 1.4 Slanje ponude klijentu e-mailom
-Reuse `send-transactional-email` edge funkcije.
-- Gumb "Pošalji e-mailom" → dijalog s e-mail klijenta + porukom (template).
-- PDF generiran client-side, postavljen kao attachment ili upload u storage + link.
-- Po slanju: status `draft → sent`, log u `project_activity_log`.
-
-### 1.5 Status flow i podsjetnici
-- Trenutno: `draft/sent/accepted/rejected`. Dodati **`expired`** computed status (kad `valid_until < today` i status je `sent`).
-- Vizualno upozorenje "Istječe za N dana" 7 dana prije.
-- Lagani podsjetnik (push notif) korisniku 3 dana prije isteka.
-
-### 1.6 Sitnice
-- "Pretvori u projekt" gumb sada uvijek vidljiv samo na `sent` — dopusti i na `draft` (UX olakšica).
-- Brojač ponuda po godini (`generateEstimateNumber`) trenutno koristi `estimates.length` — to nije pouzdano kroz godine. Promijeniti u count po godini iz baze.
-- i18n: sve nove stringove u `estimates.*` namespace (HR/EN/DE).
-
----
+- RLS policies (ispravne).
+- Tablicu `project_invoices` (schema OK).
+- Logiku PDF snapshot/auto-reminders (radi nakon što insert prođe).
 
 ## Tehnički detalji
 
-**Datoteke koje mijenjamo (Faza 1):**
-- `src/hooks/useProjectEstimates.ts` — popraviti `generateEstimateNumber` (count by year iz DB), dodati filter po `project_id`.
-- `src/components/projects/EstimateDialog.tsx` — polje Projekt, autocomplete klijenta, "Kopiraj iz".
-- `src/components/projects/ProjectEstimatesPanel.tsx` — PDF gumb, e-mail gumb, "Istječe za N dana" badge.
-- `src/components/projects/ProjectFundingTab.tsx` — sekcija "Ponude za ovaj projekt".
-- `src/components/business/BusinessMore.tsx` — ostaje, ali dodati istaknutiju ulaznu točku u "Posao".
-
-**Nove datoteke:**
-- `src/lib/estimatePdf.ts` — PDF generator (jsPDF, reuse pdfBranding + pdfFooter).
-- `src/components/projects/SendEstimateEmailDialog.tsx` — dijalog za slanje.
-
-**Bez DB migracija u Fazi 1** — tablica `project_estimates` već ima sva potrebna polja. Eventualno dodati `project_id` (osim `accepted_project_id`) ako želimo vezati prije prihvaćanja — ovisi o odluci u 1.2.
-
-**i18n keys (novi):**
-- `estimates.pdf`, `estimates.sendEmail`, `estimates.copyFrom`, `estimates.expiringIn`, `estimates.expired`, `estimates.projectLink`
-- `estimates.pdf.disclaimer` — footer tekst
-
----
-
-## Što NE radimo u Fazi 1 (eksplicitno odgađa)
-- Tablicu `project_invoices` i UI za račune (Faza 2)
-- Cashflow widget za naplatu (Faza 3)
-- Auto-email podsjetnik **klijentu** za neplaćenu fakturu (Faza 3)
-
----
-
-**Pitanje prije implementacije:** ide li ti ovaj redoslijed (Faza 1 prvo) ili želiš da odmah skiciram i Fazu 2 (računi) u istom planu da imaš cijeli pregled?
+- Fajlovi: `src/hooks/useProjectInvoices.ts`, `src/components/projects/InvoiceDialog.tsx`, `src/components/projects/ProjectInvoicesPanel.tsx`, `src/i18n/locales/{hr,en,de}.json`.
+- Bez DB migracije.
+- Isti pattern primijeniti i na `useProjectEstimates` ako ima isti tihi return (provjeriti pri implementaciji).
