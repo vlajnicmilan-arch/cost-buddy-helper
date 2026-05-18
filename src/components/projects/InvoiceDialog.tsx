@@ -188,6 +188,14 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
           <DialogTitle>{invoice ? t('invoices.edit', 'Uredi račun') : t('invoices.add', 'Novi račun')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {!activeBusinessProfileId && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-destructive/10 border border-destructive/30 text-xs">
+              <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-destructive" />
+              <span className="text-foreground">
+                {t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')}
+              </span>
+            </div>
+          )}
           {!isVatPayer && (
             <div className="flex items-start gap-2 p-2.5 rounded-md bg-muted/60 border border-border text-xs">
               <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary" />
