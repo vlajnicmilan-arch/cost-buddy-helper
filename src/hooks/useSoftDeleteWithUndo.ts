@@ -1,19 +1,16 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showUndoToast } from '@/lib/undoToast';
-import { restoreTrashItem, type TrashEntity } from '@/lib/softDelete';
+import { restoreTrashItem, restoreExpenseFull, type TrashEntity } from '@/lib/softDelete';
 
 interface UseSoftDeleteWithUndoOptions {
   onRestored?: () => void;
 }
 
 /**
- * Wrappa postojeću delete akciju u sekvencu:
- * 1) izvrši delete (soft delete via postojeći hook)
- * 2) prikaži UNDO toast (10s) — klik na Undo zove restore_trash_item RPC
- *
- * Koristi se isključivo na glavnim listama (Dashboard, Wallet, Projects,
- * Invoices, Estimates). Ostala mjesta brisanja pozivaju delete direktno.
+ * Wrappa soft-delete akciju u UNDO toast (10s).
+ * Za 'expense' entitet automatski pri restore reaplicira balance side-effect.
+ * Koristi se isključivo na glavnim listama (Dashboard, Wallet, Projects, Invoices, Estimates).
  */
 export function useSoftDeleteWithUndo(opts?: UseSoftDeleteWithUndoOptions) {
   const { t } = useTranslation();
@@ -30,7 +27,11 @@ export function useSoftDeleteWithUndo(opts?: UseSoftDeleteWithUndoOptions) {
         undoLabel: t('trash.undoToast.undo', 'Poništi'),
         onUndo: async () => {
           try {
-            await restoreTrashItem(entity, id);
+            if (entity === 'expense') {
+              await restoreExpenseFull(id);
+            } else {
+              await restoreTrashItem(entity, id);
+            }
             opts?.onRestored?.();
           } catch (e) {
             console.error('[useSoftDeleteWithUndo] restore failed:', e);
