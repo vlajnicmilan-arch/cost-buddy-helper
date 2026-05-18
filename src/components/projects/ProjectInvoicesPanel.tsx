@@ -38,7 +38,8 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
-  const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus } = useProjectInvoices();
+  const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus, refetch } = useProjectInvoices();
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
