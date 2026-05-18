@@ -3166,7 +3166,7 @@
       "free": "Ograničeno na 30 transakcija mjesečno, 1 novčanik, 1 budžet",
       "pro": "Neograničene transakcije, napredne značajke, prioritetna podrška",
       "business": "Sve iz Pro plana + poslovni moduli, fakturiranje, inventar",
-      "p2": "Novi korisnici dobivaju 7-dnevni besplatni probni period s pristupom svim značajkama. Nakon isteka probnog perioda, pristup se ograničava na Free razinu osim ako ne aktivirate pretplatu.",
+      "p2": "Novi korisnici dobivaju 30-dnevni besplatni probni period s pristupom svim značajkama. Nakon isteka probnog perioda, pristup se ograničava na Free razinu osim ako ne aktivirate pretplatu.",
       "p3": "Plaćanje se obrađuje putem Stripe platforme. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje). Godišnji planovi uključuju 17% popusta."
     },
     "s4": {
