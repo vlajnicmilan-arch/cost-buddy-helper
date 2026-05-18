@@ -686,6 +686,9 @@
       "updated": "Invoice updated",
       "deleted": "Invoice deleted"
     },
+    "errors": {
+      "noBusinessContext": "Invoices can only be created in a company context. Switch to a company on the dashboard."
+    },
     "status": {
       "issued": "Issued",
       "partially_paid": "Partially paid",
