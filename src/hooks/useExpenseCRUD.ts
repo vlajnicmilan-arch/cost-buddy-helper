@@ -399,9 +399,12 @@ export const useExpenseCRUD = ({
       if (isLocalMode) {
         await deleteLocalExpense(id);
       } else {
-        // Delete linked owner-loan first (if any)
+        // Delete linked owner-loan first (if any) — owner-loan se hard deleta
         deleteOwnerLoanForExpense(id).catch(e => console.error('Owner-loan delete failed:', e));
-        const { error } = await supabase.from('expenses').delete().eq('id', id);
+        // Soft delete (Koš za smeće): RLS će sakriti red iz svih SELECT-ova
+        const { error } = await (supabase.from('expenses') as any)
+          .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
+          .eq('id', id);
         if (error) throw error;
       }
 
