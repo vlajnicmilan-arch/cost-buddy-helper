@@ -11,12 +11,13 @@ interface DangerZoneSectionProps {
   onShowDeleteConfirm: () => void;
   user: { id: string } | null;
   onNavigateToPrivacy: () => void;
+  onNavigateToTrash?: () => void;
   onShareApp: () => void;
 }
 
 export const DangerZoneSection = ({
   onShowResetConfirm, onShowDeleteConfirm,
-  user, onNavigateToPrivacy, onShareApp
+  user, onNavigateToPrivacy, onNavigateToTrash, onShareApp
 }: DangerZoneSectionProps) => {
   const { t } = useTranslation();
 
