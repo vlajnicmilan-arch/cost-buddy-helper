@@ -33,6 +33,7 @@ import { useReceiptScan } from '@/contexts/ReceiptScanContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
+import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useEffect, useState } from 'react';
 
