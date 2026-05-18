@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useProjectEstimates } from '@/hooks/useProjectEstimates';
+import { useProjectInvoices } from '@/hooks/useProjectInvoices';
 import { ProjectEstimatesPanel } from './ProjectEstimatesPanel';
+import { ProjectInvoicesPanel } from './ProjectInvoicesPanel';
 
 interface ProjectFundingTabProps {
   projectId: string;
@@ -38,7 +40,10 @@ export const ProjectFundingTab = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { estimates: allEstimates } = useProjectEstimates();
+  const { invoices: allInvoices } = useProjectInvoices();
   const projectEstimates = allEstimates.filter(e => e.accepted_project_id === projectId);
+  const projectInvoices = allInvoices.filter(i => i.project_id === projectId);
+
 
   const completedMilestones = milestones.filter(m => m.status === 'completed');
   
@@ -206,6 +211,16 @@ export const ProjectFundingTab = ({
           <ProjectEstimatesPanel projectId={projectId} compact />
         </div>
       )}
+
+      {/* Invoices (internal tracker) for this project — always visible so user can add the first one */}
+      <div className="space-y-2 pt-2">
+        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          {t('invoices.forProject', 'Računi za ovaj projekt')}
+          {projectInvoices.length > 0 && ` (${projectInvoices.length})`}
+        </h4>
+        <ProjectInvoicesPanel projectId={projectId} compact />
+      </div>
     </div>
   );
 };

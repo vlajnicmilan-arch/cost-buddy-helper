@@ -1146,6 +1146,7 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
+          invoice_id: string | null
           is_advance: boolean
           linked_advance_ids: string[]
           location_coords: string | null
@@ -1184,6 +1185,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          invoice_id?: string | null
           is_advance?: boolean
           linked_advance_ids?: string[]
           location_coords?: string | null
@@ -1222,6 +1224,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          invoice_id?: string | null
           is_advance?: boolean
           linked_advance_ids?: string[]
           location_coords?: string | null
@@ -1276,6 +1279,13 @@ export type Database = {
             columns: ["collaborator_id"]
             isOneToOne: false
             referencedRelation: "project_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "project_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -3204,6 +3214,90 @@ export type Database = {
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "project_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_invoices: {
+        Row: {
+          business_profile_id: string
+          client_address: string | null
+          client_name: string
+          client_oib: string | null
+          created_at: string
+          currency: string
+          due_date: string | null
+          estimate_id: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          items: Json
+          notes: string | null
+          project_id: string | null
+          status: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+          vat_amount: number
+        }
+        Insert: {
+          business_profile_id: string
+          client_address?: string | null
+          client_name: string
+          client_oib?: string | null
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          estimate_id?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+          vat_amount?: number
+        }
+        Update: {
+          business_profile_id?: string
+          client_address?: string | null
+          client_name?: string
+          client_oib?: string | null
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          estimate_id?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          items?: Json
+          notes?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invoices_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "project_estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
