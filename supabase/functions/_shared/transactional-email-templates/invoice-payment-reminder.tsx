@@ -53,6 +53,10 @@ const InvoiceReminderEmail = ({
           ) : null}
         </div>
 
+        {pdfUrl ? (
+          <Button href={pdfUrl} style={button}>Preuzmi PDF računa</Button>
+        ) : null}
+
         <Text style={text}>
           Ako ste uplatu već izvršili, molimo zanemarite ovu poruku. Hvala na suradnji.
         </Text>
