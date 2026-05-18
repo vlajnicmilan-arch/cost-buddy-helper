@@ -654,7 +654,61 @@
       "disclaimer": "Radni dokument za internu komunikaciju s klijentom. Nije porezni račun niti službena ponuda u smislu poreznih propisa."
     }
   },
-  "settings": {
+  "invoices": {
+    "title": "Računi (evidencija)",
+    "add": "Novi račun",
+    "edit": "Uredi račun",
+    "empty": "Nema računa",
+    "emptyHint": "Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.",
+    "emptyForProject": "Nema računa vezanih za ovaj projekt.",
+    "forProject": "Računi za ovaj projekt",
+    "deleteTitle": "Obriši račun?",
+    "downloadPdf": "Preuzmi PDF",
+    "markPaid": "Plaćeno",
+    "clientName": "Naziv klijenta",
+    "clientOib": "OIB",
+    "clientAddress": "Adresa",
+    "items": "Stavke",
+    "addItem": "Dodaj",
+    "itemDescription": "Opis",
+    "subtotal": "Osnovica",
+    "vat": "PDV",
+    "total": "Ukupno",
+    "notes": "Napomena",
+    "issueDate": "Datum izdavanja",
+    "dueDate": "Dospijeće",
+    "dueShort": "dospijeće",
+    "paid": "Plaćeno",
+    "remaining": "Preostalo",
+    "nonVatPreset": "Niste obveznik PDV-a — sve stavke imaju 0% PDV-a, a napomena o izuzeću automatski je dodana.",
+    "toasts": {
+      "created": "Račun kreiran",
+      "updated": "Račun ažuriran",
+      "deleted": "Račun obrisan"
+    },
+    "status": {
+      "issued": "Izdan",
+      "partially_paid": "Djelomično plaćen",
+      "paid": "Plaćen",
+      "cancelled": "Storniran",
+      "overdue": "Dospio"
+    },
+    "pdf": {
+      "title": "PREGLED RAČUNA",
+      "issueDate": "Datum izdavanja",
+      "dueDate": "Dospijeće",
+      "issuer": "IZDAVATELJ",
+      "client": "PRIMATELJ",
+      "itemDescription": "Opis",
+      "qty": "Kol.",
+      "unit": "Jed.",
+      "unitPrice": "Cijena",
+      "vatPct": "PDV%",
+      "lineTotal": "Iznos",
+      "nonVatNote": "Izdavatelj nije obveznik PDV-a.",
+      "disclaimer": "Interni pregled računa za vlastitu evidenciju i komunikaciju s klijentom. Nije fiskalizirani porezni račun niti službeni dokument u smislu poreznih i računovodstvenih propisa."
+    }
+  },
     "title": "Postavke",
     "legal": {
       "title": "Pravna dokumentacija (GDPR)",
