@@ -132,7 +132,7 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab(isWorkerOnly ? 'worklog' : 'timeline');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'phases');
       setActiveGroup('work');
     } else if (isWorkerOnly) {
       setActiveTab('worklog');
@@ -143,13 +143,14 @@ export const ProjectFullScreenView = ({
   // Map tab to its group (for auto-switching group when initialTab is set)
   const TAB_TO_GROUP: Record<string, TabGroup> = {
     overview: 'work',
+    phases: 'work',
+    // legacy aliases — resolved to phases/activity below
     timeline: 'work',
     milestones: 'work',
     documents: 'work',
     activity: 'work',
     worklog: 'work',
     team: 'people',
-    // legacy aliases — still resolve to people group, ProjectTeamTab opens the right sub-tab
     members: 'people',
     workers: 'people',
     collaborators: 'people',
@@ -157,13 +158,24 @@ export const ProjectFullScreenView = ({
     transactions: 'money',
   };
 
-  // Resolve legacy tab keys to the unified team tab
-  const resolvedActiveTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
-    ? 'team'
-    : activeTab;
+  // Resolve legacy tab keys to the unified tabs
+  const resolvedActiveTab = (() => {
+    if (['members', 'workers', 'collaborators'].includes(activeTab)) return 'team';
+    if (['timeline', 'milestones'].includes(activeTab)) return 'phases';
+    if (activeTab === 'worklog' && !isWorkerOnly) return 'activity';
+    return activeTab;
+  })();
   const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
     ? (activeTab as 'members' | 'workers' | 'collaborators')
     : undefined;
+
+  // Sync internal view-switchers when arriving via legacy initialTab
+  useEffect(() => {
+    if (activeTab === 'timeline') setPhasesView('timeline');
+    else if (activeTab === 'milestones') setPhasesView('list');
+    if (activeTab === 'worklog' && !isWorkerOnly) setActivityView('worklog');
+    else if (activeTab === 'activity') setActivityView('activity');
+  }, [activeTab, isWorkerOnly]);
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
