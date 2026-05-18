@@ -16,10 +16,11 @@ interface InvoiceReminderProps {
   amount?: string
   daysOverdue?: string
   customMessage?: string
+  pdfUrl?: string
 }
 
 const InvoiceReminderEmail = ({
-  clientName, invoiceNumber, issueDate, dueDate, amount, daysOverdue, customMessage,
+  clientName, invoiceNumber, issueDate, dueDate, amount, daysOverdue, customMessage, pdfUrl,
 }: InvoiceReminderProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
