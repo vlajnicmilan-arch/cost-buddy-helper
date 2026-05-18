@@ -1,99 +1,37 @@
 ## Cilj
+Produžiti trial period s 14 na 30 dana. Postojeći korisnici automatski dobiju produženje (trial se računa iz `auth.users.created_at`, nema DB kolone).
 
-Nakon što app generira PDF (ili CSV/ICS/ZIP) na native (Android), korisnik dobije gumb **"Otvori"** odmah u UI-u — bez traženja po File Manageru. Na webu se ne mijenja ništa (preglednik već pokazuje download bar).
+## Pronađene reference
 
----
+**Kod:**
+- `src/lib/subscriptionTiers.ts` — `TRIAL_DURATION_DAYS = 14` (jedini izvor istine, koristi se u `isTrialExpired` i `getTrialDaysRemaining`; sve frontend logike (`SubscriptionContext`, `TrialBanner`, `useFeatureAccess`, guards) idu kroz tu konstantu — bez dodatnih izmjena)
 
-## Pristup
+**i18n (`hr`, `en`, `de`):**
+- `auth.trialExpiredTitle` — "14-dnevni / 14-day / 14-tägige"
+- `termsOfService.s3.p2` — opis trial perioda (HR trenutno netočno kaže "7-dnevni", EN/DE "14-day")
 
-1. **Novi plugin:** `@capacitor-community/file-opener@8.0.0` (matcha Capacitor `^8.0.1` u projektu — verified).
-2. **`SaveToDownloads` već vraća `uri`** (verified u `src/lib/nativeSaveToDownloads.ts`) — koristim taj URI direktno za otvaranje.
-3. **Globalni "File saved" dialog** mountan u `RouteAwareGlobalOverlays` (već postoji pattern za `FeedbackFAB`). Sluša event `file-saved` koji emitira `exportFile`. Prikazuje:
-   - Naziv datoteke
-   - Gumb **Otvori** → `FileOpener.open({ filePath: uri, contentType: mime })`
-   - Gumb **Podijeli** → `Share.share({ files: [uri] })` (reuse postojeće logike)
-   - Gumb **Zatvori**
-4. **Dialog se NE prikazuje** na webu i kad je `mode === 'share'` (jer share sheet već daje "Open with"). Samo na native + `mode === 'save'`.
-5. **`StatusFeedback` 1200ms toast se uklanja iz save flow-a** kad se prikaže dialog (inače bi se preklapali). Memory pravilo o StatusFeedbacku ostaje važiti za sve druge slučajeve.
+**Edge function:**
+- `supabase/functions/trial-reminder/index.ts` — cron koji sad gađa "5. dan" (= 2 dana preostalo na 7-dnevnom trialu, komentar u kodu kaže "Trial is 7 days" što je zastarjelo). Treba ga uskladiti s novim 30-dnevnim trialom: slati podsjetnik na dan 28 (2 dana preostalo). Subject i HTML email sadrže hardkodirano "2 dana" što ostaje točno.
 
----
+**Bez izmjena (nepovezano — EU zakonska obveza refunda 14 dana):**
+- `privacyPolicy` / `termsOfService` refund tekstovi
+- `auto-invoice-reminders` (3/7/14 dana kašnjenja fakture)
 
-## Tehničke promjene
+## Migracija postojećih korisnika
+Nije potrebna DB migracija. Trial se izračunava on-the-fly iz `auth.users.created_at + TRIAL_DURATION_DAYS`. Promjena konstante automatski:
+- produžuje sve aktivne trialove za +16 dana
+- vraća na trial korisnike kojima je istekao u zadnjih 16 dana (osim ako su već konvertirani na plaćeni plan — `useFeatureAccess` i guards prvo provjeravaju `subscribed`/`tier`)
 
-### A. Dependencies
-- `npm install @capacitor-community/file-opener@8.0.0 --legacy-peer-deps`
+## Izmjene
 
-### B. Novi fajl: `src/lib/nativeFileOpener.ts`
-- Thin wrapper: `openSavedFile(uri: string, mime: string): Promise<boolean>`
-- Na webu noop (return false), na native poziva `FileOpener.open`.
-- Catch + `showError(t('fileExport.openFailed', ...))`.
+1. **`src/lib/subscriptionTiers.ts`** — `TRIAL_DURATION_DAYS = 30`
+2. **`src/i18n/locales/hr.json`** — `trialExpiredTitle` → "30-dnevni", `s3.p2` → "30-dnevni"
+3. **`src/i18n/locales/en.json`** — `trialExpiredTitle` → "30-day", `s3.p2` → "30-day"
+4. **`src/i18n/locales/de.json`** — `trialExpiredTitle` → "30-tägige", `s3.p2` → "30-tägige"
+5. **`supabase/functions/trial-reminder/index.ts`** — promijeniti prozor s "5 dana nakon kreiranja" na "28 dana nakon kreiranja" + ažurirati zastarjeli komentar
+6. **`src/test/subscriptionTiers.test.ts`** — test "isTrialExpired returns true for old date" trenutno koristi 30 dana; promijeniti na npr. 45 dana da ostane validan
 
-### C. Edit: `src/lib/fileExport.ts`
-- `exportFileNative` (save grana): nakon uspješnog `SaveToDownloads.saveBlob`, umjesto `showSuccess` zove `emitFileSaved({ uri, fileName, mime })`.
-- Novi modul-level helper `emitFileSaved` koji dispatcha `CustomEvent('file-saved', { detail })` na `window`.
-- Share grana ostaje netaknuta (Share sheet već radi posao).
-- Web grana ostaje netaknuta.
+## Napomena
+Postoji cron job koji poziva `trial-reminder` (vjerojatno svakodnevno). Ne treba ga mijenjati — funkcija interno odlučuje koje korisnike obavještava.
 
-### D. Novi fajl: `src/components/FileSavedDialog.tsx`
-- shadcn `Dialog`, z-[60] (memory: Dialog Layering).
-- `useEffect` registrira `window` listener na `file-saved`, drži `useState<{ uri, fileName, mime } | null>`.
-- 3 gumba (Otvori / Podijeli / Zatvori) — min 44px touch (memory: Coding Conventions).
-- Sav text preko `t()` — novi i18n ključ namespace `fileExport.savedDialog.*`.
-
-### E. Edit: `src/App.tsx`
-- Import `FileSavedDialog`.
-- Mount unutar `RouteAwareGlobalOverlays` pored `<FeedbackFAB />` (samo na privatnim rutama — public auth ne treba).
-
-### F. i18n (`src/i18n/locales/{hr,en,de}.json`)
-- `fileExport.savedDialog.title` — "Datoteka spremljena" / "File saved" / "Datei gespeichert"
-- `fileExport.savedDialog.description` — "{{fileName}} je u Downloads mapi."
-- `fileExport.savedDialog.open` — "Otvori" / "Open" / "Öffnen"
-- `fileExport.savedDialog.share` — "Podijeli" / "Share" / "Teilen"
-- `fileExport.savedDialog.close` — "Zatvori" / "Close" / "Schließen"
-- `fileExport.openFailed` — "Otvaranje nije uspjelo" / "Open failed" / "Öffnen fehlgeschlagen"
-
-### G. Native version bump (memory pravilo: native promjena = obavezan bump)
-- `public/version.json`: `2.0.7` → `2.0.8`, ažurirati `apkUrl` na `vmbalance-2.0.8.apk`.
-- `android/app/build.gradle`: `versionCode 14` → `15`, `versionName "2.0.7"` → `"2.0.8"`.
-
-### H. Update memory
-- `mem://features/post-export-open-action` (novi feature memory)
-- Dodati u `mem://index.md` pod Memories.
-
----
-
-## Što NE radim
-
-- Ne mijenjam `StatusFeedback` API (memory: 1200ms zabranjeno produljiti).
-- Ne diram `ExportButton` dropdown UI (Download/Share grane ostaju iste).
-- Ne diram nijedan call-site `exportPDFDoc` / `exportFile` (19+ mjesta). Sve radi automatski preko eventa.
-- Ne mijenjam web ponašanje.
-- Ne dodajem opciju "Otvori" u ExportButton dropdown (premalo prostora; korisnik prvo spremi, pa odluči).
-
----
-
-## Verifikacija nakon implementacije
-
-1. `npm test` — sve postojeće prolazi (workflow `.github/workflows/test.yml` će to gate-ati).
-2. Build prolazi.
-3. Manual smoke (kad korisnik git pull + `cap sync` + APK): generiraj P&L PDF → dialog se pojavi → Otvori → otvara se u sistemskom PDF viewer-u.
-
----
-
-## Fajlovi koji se mijenjaju
-
-**Novo (3):**
-- `src/lib/nativeFileOpener.ts`
-- `src/components/FileSavedDialog.tsx`
-- `mem://features/post-export-open-action`
-
-**Edit (7):**
-- `package.json` (+ lockfile, kroz `npm install`)
-- `src/lib/fileExport.ts`
-- `src/App.tsx`
-- `src/i18n/locales/hr.json`
-- `src/i18n/locales/en.json`
-- `src/i18n/locales/de.json`
-- `public/version.json`
-- `android/app/build.gradle`
-- `mem://index.md`
+Za korisnike koji su trenutno na dan 6-27 trial-a u trenutku deploya, podsjetnik im neće biti poslan (preskočili su dan 28). To je jednokratan side-effect i smatram ga prihvatljivim; alternativa je jednokratno ručno pokrenuti reminder za "stare" trialove — javi ako želiš da to dodam.
