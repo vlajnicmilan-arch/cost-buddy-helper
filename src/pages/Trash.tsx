@@ -52,7 +52,11 @@ export default function Trash() {
   const handleRestore = async (item: TrashItem) => {
     setBusyId(item.id);
     try {
-      await restoreTrashItem(item.entity_type, item.id);
+      if (item.entity_type === 'expense') {
+        await restoreExpenseFull(item.id);
+      } else {
+        await restoreTrashItem(item.entity_type, item.id);
+      }
       toast({ title: t('trash.restored', 'Vraćeno') });
       await load();
     } catch (e: any) {
