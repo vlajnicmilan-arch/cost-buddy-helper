@@ -48,7 +48,7 @@ export const LIFETIME_CONFIG = {
   amount: 129.00,
 } as const;
 
-export const TRIAL_DURATION_DAYS = 14;
+export const TRIAL_DURATION_DAYS = 30;
 
 export function isTrialExpired(createdAt: string): boolean {
   const created = new Date(createdAt);
