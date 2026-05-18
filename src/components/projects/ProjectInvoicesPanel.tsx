@@ -2,6 +2,7 @@ import { useState, lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectInvoices, ProjectInvoice, InvoiceStatus } from '@/hooks/useProjectInvoices';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
@@ -35,12 +36,14 @@ interface ProjectInvoicesPanelProps {
 export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { activeBusinessProfileId } = useAppState();
   const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus } = useProjectInvoices();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
+  const noBusinessCtx = !activeBusinessProfileId;
 
   const visibleInvoices = useMemo(() => {
     if (!projectId) return invoices;
@@ -66,7 +69,12 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
             <FileText className="w-5 h-5 text-primary" />
             {t('invoices.title', 'Računi (evidencija)')}
           </h3>
-          <Button size="sm" onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}>
+          <Button
+            size="sm"
+            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={noBusinessCtx}
+            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+          >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
           </Button>
@@ -74,7 +82,13 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
       )}
       {compact && (
         <div className="flex items-center justify-end">
-          <Button size="sm" variant="outline" onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={noBusinessCtx}
+            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+          >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
           </Button>
@@ -89,9 +103,11 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
         <EmptyState
           variant="generic"
           title={t('invoices.empty', 'Nema računa')}
-          description={projectId
-            ? t('invoices.emptyForProject', 'Nema računa vezanih za ovaj projekt.')
-            : t('invoices.emptyHint', 'Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.')}
+          description={noBusinessCtx
+            ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')
+            : projectId
+              ? t('invoices.emptyForProject', 'Nema računa vezanih za ovaj projekt.')
+              : t('invoices.emptyHint', 'Evidentirajte izdane račune i pratite uplate. Plaćanja vežite na transakcije prihoda.')}
         />
       ) : (
         <div className="space-y-2">

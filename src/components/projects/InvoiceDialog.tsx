@@ -127,6 +127,10 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
 
   const handleSave = async () => {
     if (!clientName.trim()) return;
+    if (!activeBusinessProfileId) {
+      showError(t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.'));
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -154,6 +158,10 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
         saved = { ...invoice, ...payload } as ProjectInvoice;
       } else {
         saved = await addInvoice(payload);
+        if (!saved) {
+          // addInvoice already surfaced an error toast; keep dialog open so user can retry.
+          return;
+        }
       }
 
       // If auto-reminders are enabled, upload a PDF snapshot so the cron
@@ -180,6 +188,14 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
           <DialogTitle>{invoice ? t('invoices.edit', 'Uredi račun') : t('invoices.add', 'Novi račun')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {!activeBusinessProfileId && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-destructive/10 border border-destructive/30 text-xs">
+              <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-destructive" />
+              <span className="text-foreground">
+                {t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')}
+              </span>
+            </div>
+          )}
           {!isVatPayer && (
             <div className="flex items-start gap-2 p-2.5 rounded-md bg-muted/60 border border-border text-xs">
               <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary" />
@@ -343,7 +359,7 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
 
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Odustani')}</Button>
-            <Button className="flex-1" onClick={handleSave} disabled={saving || !clientName.trim()}>
+            <Button className="flex-1" onClick={handleSave} disabled={saving || !clientName.trim() || !activeBusinessProfileId}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {invoice ? t('common.save', 'Spremi') : t('common.create', 'Kreiraj')}
             </Button>

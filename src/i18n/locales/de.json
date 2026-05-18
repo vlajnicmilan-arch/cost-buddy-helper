@@ -686,6 +686,9 @@
       "updated": "Rechnung aktualisiert",
       "deleted": "Rechnung gelöscht"
     },
+    "errors": {
+      "noBusinessContext": "Rechnungen können nur im Unternehmenskontext erstellt werden. Wechsle auf dem Dashboard zum Unternehmen."
+    },
     "status": {
       "issued": "Ausgestellt",
       "partially_paid": "Teilweise bezahlt",

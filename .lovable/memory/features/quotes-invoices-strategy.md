@@ -47,3 +47,10 @@ App je **interni tracker** za ponude i račune. **NIKAD** fiskalizacija/eRačun/
 - NEMA kontnog plana ni temeljnica
 - NEMA PDV obrazaca (PDV-S, ZP, JOPPD)
 - Svaki generirani PDF ima disclaimer "Nije fiskalizirani porezni račun"
+
+## Business context requirement (KRITIČNO)
+- `project_invoices` i `project_estimates` su strogo vezani uz `business_profile_id` (NOT NULL).
+- `addInvoice`/`addEstimate` u hookovima MORAJU pokazati `showError(t('invoices.errors.noBusinessContext'))` i vratiti `null` ako `activeBusinessProfileId` nedostaje — NIKAD tihi return.
+- UI (InvoiceDialog, ProjectInvoicesPanel) disabla "Kreiraj"/"Novi račun" i prikazuje warning chip / empty state kad nema business konteksta.
+- InvoiceDialog NE zatvara dialog ako `addInvoice` vrati null (korisnik može retry).
+

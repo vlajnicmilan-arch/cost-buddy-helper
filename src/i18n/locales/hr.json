@@ -686,6 +686,9 @@
       "updated": "Račun ažuriran",
       "deleted": "Račun obrisan"
     },
+    "errors": {
+      "noBusinessContext": "Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu."
+    },
     "status": {
       "issued": "Izdan",
       "partially_paid": "Djelomično plaćen",
