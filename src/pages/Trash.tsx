@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { listTrash, restoreTrashItem, purgeTrashItem, type TrashItem, type TrashEntity } from '@/lib/softDelete';
+import { listTrash, restoreTrashItem, restoreExpenseFull, purgeTrashItem, type TrashItem, type TrashEntity } from '@/lib/softDelete';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
