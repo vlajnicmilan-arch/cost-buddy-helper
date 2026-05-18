@@ -148,9 +148,11 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setDeleteConfirmOpen(true);
   };
 
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const confirmDelete = async () => {
     if (projectToDelete) {
-      await deleteProject(projectToDelete);
+      const id = projectToDelete;
+      await wrapDeleteWithUndo(() => deleteProject(id), 'project', id);
       setDeleteConfirmOpen(false);
       setProjectToDelete(null);
     }
