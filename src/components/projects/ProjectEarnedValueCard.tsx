@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
+import { exportEarnedValuePdf } from '@/lib/projectFinancePdfExport';
+import { useStatusFeedback } from '@/hooks/useStatusFeedback';
 import type { Project } from '@/types/project';
 import type { ProjectMilestone } from '@/types/project';
 import { cn } from '@/lib/utils';
