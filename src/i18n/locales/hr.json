@@ -709,6 +709,7 @@
       "disclaimer": "Interni pregled računa za vlastitu evidenciju i komunikaciju s klijentom. Nije fiskalizirani porezni račun niti službeni dokument u smislu poreznih i računovodstvenih propisa."
     }
   },
+  "settings": {
     "title": "Postavke",
     "legal": {
       "title": "Pravna dokumentacija (GDPR)",
