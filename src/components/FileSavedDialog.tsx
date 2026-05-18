@@ -70,7 +70,7 @@ export const FileSavedDialog = () => {
 
   return (
     <Dialog open={!!detail} onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent className="z-[60] max-w-sm">
+      <DialogContent showBackButton={false} className="z-[90] max-w-sm">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
