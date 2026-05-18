@@ -5,13 +5,14 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/EmptyState';
-import { Plus, FileText, Loader2, Edit, Trash2, Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, FileText, Loader2, Edit, Trash2, Download, AlertTriangle, CheckCircle2, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
+import { SendInvoiceReminderDialog } from '@/components/business/SendInvoiceReminderDialog';
 
 // Lazy heavy dialog
 const InvoiceDialog = lazy(() => import('./InvoiceDialog').then(m => ({ default: m.InvoiceDialog })));
