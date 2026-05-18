@@ -211,6 +211,16 @@ export const ProjectFundingTab = ({
           <ProjectEstimatesPanel projectId={projectId} compact />
         </div>
       )}
+
+      {/* Invoices (internal tracker) for this project — always visible so user can add the first one */}
+      <div className="space-y-2 pt-2">
+        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          {t('invoices.forProject', 'Računi za ovaj projekt')}
+          {projectInvoices.length > 0 && ` (${projectInvoices.length})`}
+        </h4>
+        <ProjectInvoicesPanel projectId={projectId} compact />
+      </div>
     </div>
   );
 };
