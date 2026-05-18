@@ -97,7 +97,11 @@ export const useProjectEstimates = () => {
   const addEstimate = async (
     payload: Omit<ProjectEstimate, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'estimate_number' | 'business_profile_id'> & { estimate_number?: string }
   ) => {
-    if (!user || !activeBusinessProfileId) return null;
+    if (!user) return null;
+    if (!activeBusinessProfileId) {
+      showError(t('invoices.errors.noBusinessContext', 'Ponude se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.'));
+      return null;
+    }
     try {
       const insertData = {
         ...payload,
