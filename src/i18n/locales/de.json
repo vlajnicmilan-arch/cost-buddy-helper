@@ -722,7 +722,12 @@
       "message": "Nachricht",
       "defaultMessage": "Wir bitten höflich um Begleichung des offenen Betrags.",
       "invalidEmail": "Bitte eine gültige Kunden-E-Mail eingeben.",
-      "disclaimer": "Wir senden eine informelle Erinnerung mit Ihrer Nachricht und den Eckdaten der Rechnung. Keine offizielle Mahnung."
+      "disclaimer": "Wir senden eine informelle Erinnerung mit Ihrer Nachricht und den Eckdaten der Rechnung. Keine offizielle Mahnung.",
+      "attachPdf": "Rechnungs-PDF anhängen (Link 7 Tage gültig)"
+    },
+    "autoReminders": {
+      "title": "Automatische Erinnerungen",
+      "hint": "E-Mail an Kunden 3, 7 und 14 Tage nach Fälligkeit (E-Mail erforderlich)."
     }
   },
   "settings": {

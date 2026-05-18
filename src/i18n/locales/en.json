@@ -722,7 +722,12 @@
       "message": "Message",
       "defaultMessage": "Kindly remit the outstanding amount of this invoice.",
       "invalidEmail": "Enter a valid client email address.",
-      "disclaimer": "We send an informal reminder with your message and basic invoice data. Not an official notice."
+      "disclaimer": "We send an informal reminder with your message and basic invoice data. Not an official notice.",
+      "attachPdf": "Attach invoice PDF (link valid 7 days)"
+    },
+    "autoReminders": {
+      "title": "Automatic reminders",
+      "hint": "Email the client 3, 7 and 14 days after due date (requires email)."
     }
   },
   "settings": {

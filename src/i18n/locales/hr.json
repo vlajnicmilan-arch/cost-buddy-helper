@@ -722,7 +722,12 @@
       "message": "Poruka",
       "defaultMessage": "Ljubazno Vas molimo da podmirite preostali iznos računa.",
       "invalidEmail": "Unesite valjanu email adresu klijenta.",
-      "disclaimer": "Šaljemo neformalni podsjetnik s vašom porukom i osnovnim podacima računa. Nije službena opomena."
+      "disclaimer": "Šaljemo neformalni podsjetnik s vašom porukom i osnovnim podacima računa. Nije službena opomena.",
+      "attachPdf": "Priloži PDF računa (link valjan 7 dana)"
+    },
+    "autoReminders": {
+      "title": "Automatski podsjetnici",
+      "hint": "Šalji email klijentu 3., 7. i 14. dan kašnjenja (zahtjeva email)."
     }
   },
   "settings": {
