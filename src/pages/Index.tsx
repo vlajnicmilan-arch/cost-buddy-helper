@@ -301,6 +301,13 @@ const Index = () => {
     deleteExpense,
   });
 
+  // Soft-delete s UNDO toastom — koristi se isključivo na glavnoj listi transakcija
+  // (Dashboard). Bulk akcije i detail dijalozi koriste direktni deleteExpense.
+  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: () => { refetch(); refetchPaymentSources(); } });
+  const deleteExpenseWithUndo = useCallback(async (id: string) => {
+    await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
+  }, [wrapDeleteWithUndo, deleteExpense]);
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedTransactionIds(new Set());
