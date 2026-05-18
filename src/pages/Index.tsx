@@ -14,6 +14,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useBulkActions } from '@/hooks/useBulkActions';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
 // BusinessModeView removed: business chip is now a contextual filter on PersonalModeView.
