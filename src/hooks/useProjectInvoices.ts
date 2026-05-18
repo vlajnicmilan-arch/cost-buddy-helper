@@ -134,7 +134,11 @@ export const useProjectInvoices = () => {
   > & { invoice_number?: string; pdf_path?: string | null };
 
   const addInvoice = async (payload: NewInvoice) => {
-    if (!user || !activeBusinessProfileId) return null;
+    if (!user) return null;
+    if (!activeBusinessProfileId) {
+      showError(t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.'));
+      return null;
+    }
     try {
       const insertData = {
         ...payload,
