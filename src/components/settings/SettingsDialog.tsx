@@ -725,6 +725,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onShowDeleteConfirm={() => setShowDeleteConfirm1(true)}
               user={user}
               onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
+              onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
               onShareApp={handleShareApp}
             />
           </div>
