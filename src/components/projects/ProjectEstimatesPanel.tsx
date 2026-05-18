@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { generateEstimatePdf } from '@/lib/estimatePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
+import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 
 const STATUS_LABELS: Record<EstimateStatus, string> = {
   draft: 'Radna verzija',
