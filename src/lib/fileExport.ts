@@ -24,6 +24,7 @@ export type ExportMode = 'save' | 'share';
  */
 function emitFileSaved(detail: { uri: string; fileName: string; mime: string }) {
   if (typeof window === 'undefined') return;
+  (window as any).__pendingSavedFileDetail = detail;
   window.dispatchEvent(new CustomEvent('file-saved', { detail }));
 }
 
