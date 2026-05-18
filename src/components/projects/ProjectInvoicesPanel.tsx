@@ -206,6 +206,11 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendInvoiceReminderDialog
+        invoice={reminderInvoice ? { ...reminderInvoice, remaining: (Number(reminderInvoice.total_amount) || 0) - (payments[reminderInvoice.id]?.paid || 0) } : null}
+        onOpenChange={(o) => !o && setReminderInvoice(null)}
+      />
     </div>
   );
 };
