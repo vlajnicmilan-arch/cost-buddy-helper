@@ -59,6 +59,8 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
   const [issueDate, setIssueDate] = useState<string>(todayIso());
   const [dueDate, setDueDate] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [autoReminders, setAutoReminders] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
