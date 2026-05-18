@@ -105,3 +105,8 @@ const highlightMeta = { fontSize: '12px', color: 'hsl(170, 15%, 35%)', margin: '
 const overdue = { fontSize: '12px', fontWeight: 'bold' as const, color: 'hsl(0, 70%, 45%)', margin: '4px 0 0' }
 const footer = { fontSize: '12px', color: 'hsl(170, 15%, 45%)', margin: '24px 0 12px', opacity: '0.8' }
 const disclaimer = { fontSize: '10px', color: 'hsl(170, 15%, 55%)', fontStyle: 'italic' as const, margin: '12px 0 0', opacity: '0.7' }
+const button = {
+  backgroundColor: 'hsl(172, 66%, 40%)', color: '#ffffff', fontSize: '14px',
+  fontWeight: 'bold' as const, borderRadius: '12px', padding: '12px 24px',
+  textDecoration: 'none', display: 'inline-block', margin: '0 0 20px',
+}
