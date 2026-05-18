@@ -156,39 +156,35 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   };
 
   const handleMigrateToBusiness = (project: ProjectWithOwnership) => {
+    if (businessProfiles.length === 0) {
+      showError(t('projects.migrateNoProfiles', 'Nemaš nijednu tvrtku. Kreiraj je u Postavkama → Poslovne tvrtke.'));
+      return;
+    }
     setProjectToMigrate(project);
+    setMigrateTargetProfileId(businessProfiles.length === 1 ? businessProfiles[0].id : '');
     setMigrateConfirmOpen(true);
   };
 
   const confirmMigrate = async () => {
-    if (projectToMigrate) {
-      // Get the first active business profile id from localStorage
-      const storedProfiles = localStorage.getItem('finmate.businessProfiles');
-      let targetProfileId: string | null = null;
-      
-      if (storedProfiles) {
-        try {
-          const profiles = JSON.parse(storedProfiles);
-          if (profiles.length > 0) targetProfileId = profiles[0].id;
-        } catch {}
+    if (!projectToMigrate) return;
+    if (!migrateTargetProfileId) {
+      showError(t('projects.migrateChooseProfile', 'Odaberi tvrtku'));
+      return;
+    }
+    try {
+      const ok = await migrateToBusinessMode(projectToMigrate.id, migrateTargetProfileId);
+      if (ok) {
+        setMigrateConfirmOpen(false);
+        setProjectToMigrate(null);
+        setMigrateTargetProfileId('');
+        refetch();
+        fetchAllStats();
+      } else {
+        showError(t('common.error', 'Greška'));
       }
-      
-      // If not in localStorage, try fetching from DB
-      if (!targetProfileId) {
-        const { data } = await supabase
-          .from('business_profiles')
-          .select('id')
-          .eq('is_active', true)
-          .limit(1)
-          .single();
-        if (data) targetProfileId = data.id;
-      }
-      
-      if (targetProfileId) {
-        await migrateToBusinessMode(projectToMigrate.id, targetProfileId);
-      }
-      setMigrateConfirmOpen(false);
-      setProjectToMigrate(null);
+    } catch (err) {
+      console.error('[ProjectsPanel] migrate failed', err);
+      showError(t('common.error', 'Greška'));
     }
   };
 
