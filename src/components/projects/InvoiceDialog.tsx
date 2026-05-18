@@ -236,7 +236,7 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
             <div className="space-y-1">
               <Label>{t('invoices.issueDate', 'Datum izdavanja')} *</Label>
               {(() => {
-                const r = getDateRange('estimate');
+                const r = getDateRange('budget');
                 return (
                   <Input
                     type="date"
@@ -260,7 +260,7 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
             <div className="space-y-1">
               <Label>{t('invoices.dueDate', 'Dospijeće')}</Label>
               {(() => {
-                const r = getDateRange('estimate');
+                const r = getDateRange('budget');
                 return (
                   <Input
                     type="date"
