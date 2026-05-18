@@ -148,25 +148,8 @@ export const ProjectCard = ({
                 {healthLabel} · {health.score}
               </Badge>
             )}
-            {health.marginPct !== null ? (
-              <Badge
-                variant="outline"
-                className={cn("text-[10px] gap-1 h-5 border", getHealthBgClass(health.level))}
-                title={t('projects.health.margin', 'Marža')}
-              >
-                {t('projects.health.margin', 'Marža')}: {health.marginPct.toFixed(0)}%
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className="text-[10px] gap-1 h-5 border bg-muted text-muted-foreground border-border"
-                title={t('projects.health.marginUnknown', 'Unesite ugovoreni iznos za točniju analizu')}
-              >
-                {t('projects.health.margin', 'Marža')}: —
-              </Badge>
-            )}
           </div>
-          
+
           {project.description && (
             <p className="text-sm text-muted-foreground truncate mb-2">{project.description}</p>
           )}
