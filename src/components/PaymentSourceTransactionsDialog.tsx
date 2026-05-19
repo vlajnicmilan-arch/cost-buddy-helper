@@ -742,10 +742,10 @@ export const PaymentSourceTransactionsDialog = ({
                         variant="outline"
                         size="sm"
                         onClick={() => openFilePickerWithGuard(pdfInputRef, 'pdf')}
-                        disabled={parsing}
+                        disabled={parsing || isPdfProcessing}
                         className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                       >
-                        {parsing ? (
+                        {parsing || isPdfProcessing ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <FileText className="w-3.5 h-3.5" />
@@ -1206,7 +1206,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Parsing Overlay */}
       <AnimatePresence>
-        {parsing && (
+        {(parsing || isPdfProcessing) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1223,9 +1223,11 @@ export const PaymentSourceTransactionsDialog = ({
                 <FileText className="w-8 h-8 text-primary animate-pulse" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Analiziram izvod...</h3>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {pdfJobPhase === 'starting' ? t('import.pdfStarting') : t('import.pdfProcessing')}
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  AI obrađuje PDF i prepoznaje transakcije. To može potrajati do 30 sekundi.
+                  {t('import.pdfProcessingDescription')}
                 </p>
               </div>
               <div className="w-48">
