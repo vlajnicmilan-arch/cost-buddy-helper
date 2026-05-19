@@ -306,7 +306,13 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         const result = await parsePDF(base64);
+        console.info('[PDF Import] parse result', {
+          transactionCount: result?.transactions.length ?? 0,
+          detectedBank: result?.detected_bank ?? null,
+          paymentSourceId: paymentSource?.id ?? null,
+        });
         if (result && result.transactions.length > 0) {
+          console.info('[PDF Import] opening preview overlay');
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
           toast.warning(t('toasts.pdfNoTransactions'));
