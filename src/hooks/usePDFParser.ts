@@ -165,26 +165,6 @@ export const usePDFParser = () => {
     return job as PDFParseJobRow | null;
   };
 
-  const fetchLatestPDFParseJob = async (): Promise<{ id: string; job: PDFParseJobRow } | null> => {
-    const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    const { data: job, error } = await (supabase as any)
-      .from('pdf_parse_jobs')
-      .select('id,status,result,error,created_at')
-      .gte('created_at', since)
-      .in('status', ['processing', 'completed'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      logDiagnostic('pdf_parse_latest_job_error', { message: error.message });
-      throw new Error(error.message || 'Greška pri dohvaćanju zadnje obrade');
-    }
-
-    if (!job?.id) return null;
-    return { id: job.id, job: job as PDFParseJobRow };
-  };
-
   const waitForPDFParseJob = async (
     jobId: string,
     options?: { onStatus?: (status: PDFParseJobStatus, attempt: number) => void }
@@ -329,7 +309,6 @@ export const usePDFParser = () => {
     startPDFParseJob,
     waitForPDFParseJob,
     fetchPDFParseJob,
-    fetchLatestPDFParseJob,
     parsePDF,
     parsePhoto,
     parseHTML,
