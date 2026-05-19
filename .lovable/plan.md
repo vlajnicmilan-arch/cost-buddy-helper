@@ -1,55 +1,40 @@
-Provjerio sam kod i bazu. Ovo više nije nagađanje.
-
-## Što je stvarno potvrđeno
-
-- PDF parser radi: zadnji posao `40185654...` je u bazi `completed` i ima 37 transakcija.
-- Frontend je pokrenuo obradu u 16:53:02 i polling u 16:53:04.
-- Nakon toga nema client-side eventa `pdf_parse_job_completed`, `payment_source_pdf_preview_opened` ni `payment_source_pdf_import_clicked`.
-- U kodu postoji konkretna greška: recovery logika za spremljeni PDF posao briše posao ako je već `completed`, umjesto da uzme `result` i otvori preview. To znači: ako se app reload-a, WebView se obnovi ili komponenta izgubi stanje dok AI obrada traje, završeni posao se izgubi iz UI-ja.
-
-Problem nije u AI parseru. Problem je u lifecycle/recovery dijelu između završenog `pdf_parse_jobs.result` i prikaza/importa u UI.
+## Što je stvarno viđeno
+- Backend parser je za isti Aircash izvod vratio različite brojeve redaka: 57, 48 i 49 transakcija.
+- Baza je nakon importova dobila različite batch-eve: 31, 13 i 8 novih redaka u zadnja tri pokušaja.
+- Postoji DB unique zaštita samo za `bank_transaction_id`, ali PDF/HTML import ga uopće ne puni, pa zaštita ne radi.
+- Trenutni duplicate check je samo aplikacijski i namjerno preblag za bulk import; zato isti izvod može više puta dodavati redove.
 
 ## Plan popravka
 
-1. **Popraviti recovery za završene PDF poslove**
-   - U `PaymentSourceTransactionsDialog.tsx` recovery više ne smije brisati `completed` job.
-   - Ako spremljeni job ima `status = completed` i `result`, treba ga pretvoriti u isti format kao normalni parser rezultat i pozvati postojeći preview flow.
-   - Tek nakon uspješnog otvaranja previewa smije se očistiti localStorage ključ.
+### 1. Deterministički identitet transakcije
+- Dodati centralni helper za import fingerprint transakcije.
+- Fingerprint će se računati iz stabilnih polja: korisnik + payment source + datum + tip + iznos + normalizirani opis/merchant.
+- PDF/HTML import će svakoj transakciji dodijeliti `bank_transaction_id` iz tog fingerprinta.
+- Time postojeći DB unique index `user_id + bank_transaction_id` konačno postaje aktivan za PDF/HTML import.
 
-2. **Ukloniti ovisnost o komponentnom stateu za završeni rezultat**
-   - Spremiti minimalni PDF import state po izvoru plaćanja: `jobId`, `sourceId`, `startedAt`, `phase`.
-   - Recovery mora raditi i nakon povratka iz file pickera, reload-a, route remounta ili native lifecycle promjene.
-   - Ne uvoditi globalni “latest job” fallback jer je već dokazano opasan za krivi izvor plaćanja.
+### 2. Import bez dvostrukog upisa
+- Promijeniti `importFromCSV` da za transakcije s `bank_transaction_id` koristi upsert/ignore duplicates umjesto slijepog insert-a.
+- Balans ažurirati samo za stvarno umetnute redove, ne za preskočene duplikate.
+- UI poruka treba prikazati stvarno uvezen broj, ne broj pokušanih redaka.
 
-3. **Osigurati da parsing hook izlaže sigurnu funkciju za pretvorbu rezultata**
-   - `usePDFParser` trenutno ima interni `toParseResult`, ali dialog ga ne može koristiti za recovery completed joba.
-   - Izložiti funkciju ili helper za normalizaciju `pdf_parse_jobs.result` → `PDFParseResult` bez dupliciranja logike.
+### 3. Ujednačiti lokalni i globalni PDF tok
+- Ukloniti zastarjeli lokalni PDF import tok iz `PaymentSourceTransactionsDialog` koji je ostao paralelno uz globalni host.
+- Jedan izvor istine ostaje `GlobalPDFImportHost` + `PdfImportContext`.
+- Time smanjujemo rizik da se isti posao obradi dva puta ili da se recovery veže na krivi tok.
 
-4. **Dodati durable dijagnostiku za lifecycle prekid**
-   - Dodati evente za: recovery completed job, recovery opened preview, recovery cleared job, polling abandoned/unmounted.
-   - Kritične PDF evente zapisati tako da se ne izgube ako app/reload ubije 2s buffer.
+### 4. Pojačati duplicate detekciju za uvoz izvoda
+- Za PDF/HTML/CSV bulk import promijeniti pravilo: isti datum + isti iznos + isti izvor + vrlo sličan opis/merchant mora biti hard duplicate, ne “suspicious”.
+- Zadržati postojeću zaštitu da dvije realne iste kupnje istog dana ne budu automatski blokirane samo po iznosu bez opisa/merchant matcha.
 
-5. **Popraviti import feedback i osvježavanje liste**
-   - Nakon PDF importa pozvati `refetch` ili postojeći refresh callback tako da se lista izvora plaćanja sigurno osvježi iz baze.
-   - `importFromCSV` trenutno ažurira lokalni state, ali u ovom toku želim dodatno zatvoriti rupu između stvarnog DB inserta i prikaza u dijalogu.
+### 5. Parser: zaustaviti “različit broj svaki put” koliko je moguće
+- Za HTML izvode: koristiti postojeći deterministički table pre-parser kao primarni izvor kad su redovi jasno izvučeni, a AI samo za klasifikaciju/opis ako treba.
+- Za PDF gdje ovisimo o AI-u: dodati strožu validaciju rezultata i upozorenje/prekid kad broj redaka očito varira ili je sumnjivo nizak, umjesto da se polovičan rezultat odmah može uvesti.
 
-6. **Verifikacija nakon implementacije**
-   - Provjeriti da novi tok daje slijed:
-     - picker open
-     - file selected
-     - job started
-     - job completed u bazi
-     - preview opened iz normalnog toka ili recovery toka
-     - import clicked
-     - import success
-     - novi `import_batch_id` u `expenses`
-   - Posebno provjeriti slučaj: pokreni PDF obradu → izađi iz novčanika / vrati se → završeni job otvara preview, ne spinner.
+### 6. Testovi
+- Dodati regresijske testove za fingerprint i duplicate scoring.
+- Testirati da ponovni import istog skupa vraća 0 novih redaka na logičkoj razini.
 
-## Tehnički zahvat
-
-- Datoteke:
-  - `src/hooks/usePDFParser.ts`
-  - `src/components/PaymentSourceTransactionsDialog.tsx`
-  - po potrebi `src/pages/Wallet.tsx` samo za refresh nakon importa
-- Bez database migracije.
-- Bez promjena u parser edge funkciji jer parser već vraća ispravan rezultat.
+## Tehnički detalji
+- Ne dirati `src/integrations/supabase/client.ts` ni `types.ts`.
+- Ako `ParsedTransaction` dobije `bank_transaction_id`, tip proširiti u aplikacijskom kodu, a ne ručno u generated backend typovima.
+- Ako bude potrebna nova DB kolona za dodatni fingerprint, ide isključivo migracijom; trenutno izgleda da postojeći `bank_transaction_id` može poslužiti.

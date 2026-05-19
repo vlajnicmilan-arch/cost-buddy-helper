@@ -1,0 +1,86 @@
+/**
+ * Deterministic import fingerprint for bulk-imported transactions (PDF/HTML/CSV).
+ *
+ * Stored in `expenses.bank_transaction_id`. Backed by the DB unique index
+ * `uniq_expenses_user_bank_tx (user_id, bank_transaction_id)` — re-importing
+ * the same statement therefore cannot create duplicates even if the AI parser
+ * returns a slightly different set of rows on a retry.
+ *
+ * Pure module — no React, no Supabase. Browser-only (uses Web Crypto).
+ */
+
+const PREFIX = 'imp';
+
+function normalizeDescription(desc: string | null | undefined): string {
+  if (!desc) return '';
+  return desc
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function toDateKey(d: Date | string): string {
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return 'invalid';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function toAmountKey(amount: number): string {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return '0.00';
+  return n.toFixed(2);
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subtle: SubtleCrypto | undefined = (globalThis as any).crypto?.subtle;
+  if (subtle) {
+    const hash = await subtle.digest('SHA-256', buf);
+    const bytes = new Uint8Array(hash);
+    let out = '';
+    for (let i = 0; i < bytes.length; i += 1) out += bytes[i].toString(16).padStart(2, '0');
+    return out;
+  }
+  // Fallback: FNV-1a 32-bit (good enough scoped to a single user)
+  let h = 0x811c9dc5;
+  for (let i = 0; i < buf.length; i += 1) {
+    h ^= buf[i];
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+export interface FingerprintInput {
+  userId: string;
+  paymentSource?: string | null;
+  date: Date | string;
+  type: string;
+  amount: number;
+  description?: string | null;
+  merchantName?: string | null;
+}
+
+/**
+ * Returns a stable string suitable for `expenses.bank_transaction_id`.
+ * Same logical transaction (same user + source + day + type + amount + text)
+ * yields the same value across imports.
+ */
+export async function computeImportFingerprint(input: FingerprintInput): Promise<string> {
+  const text = normalizeDescription(input.description) || normalizeDescription(input.merchantName);
+  const parts = [
+    input.userId,
+    String(input.paymentSource ?? ''),
+    toDateKey(input.date),
+    String(input.type ?? ''),
+    toAmountKey(input.amount),
+    text,
+  ];
+  const hash = await sha256Hex(parts.join('|'));
+  return `${PREFIX}:${hash}`;
+}
