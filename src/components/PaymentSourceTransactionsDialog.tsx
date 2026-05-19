@@ -42,6 +42,7 @@ interface PaymentSourceTransactionsDialogProps {
   onDelete: (id: string) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
+  onPdfProcessingChange?: (processing: boolean) => void;
 }
 
 type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
@@ -54,7 +55,8 @@ export const PaymentSourceTransactionsDialog = ({
   onUpdate,
   onDelete,
   onImportCSV,
-  findDuplicates
+  findDuplicates,
+  onPdfProcessingChange
 }: PaymentSourceTransactionsDialogProps) => {
   const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -92,6 +94,10 @@ export const PaymentSourceTransactionsDialog = ({
   const { parsing, startPDFParseJob, waitForPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+
+  useEffect(() => {
+    onPdfProcessingChange?.(isPdfProcessing);
+  }, [isPdfProcessing, onPdfProcessingChange]);
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
