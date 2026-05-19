@@ -42,7 +42,10 @@ interface PaymentSourceTransactionsDialogProps {
   onDelete: (id: string) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
+  onPdfProcessingChange?: (processing: boolean) => void;
 }
+
+type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
 
 export const PaymentSourceTransactionsDialog = ({
   open,
@@ -52,7 +55,8 @@ export const PaymentSourceTransactionsDialog = ({
   onUpdate,
   onDelete,
   onImportCSV,
-  findDuplicates
+  findDuplicates,
+  onPdfProcessingChange
 }: PaymentSourceTransactionsDialogProps) => {
   const { t } = useTranslation();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -72,6 +76,8 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
+  const [pdfJobPhase, setPdfJobPhase] = useState<PdfJobPhase>('idle');
+  const [pdfJobId, setPdfJobId] = useState<string | null>(null);
   // Local mirror of the parse result, set synchronously from the parsePDF/parseHTML
   // return value. The preview overlay reads from this state instead of the hook's
   // internal `parsedData`, so the overlay does not depend on an unrelated async
@@ -81,11 +87,17 @@ export const PaymentSourceTransactionsDialog = ({
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePdfJobIdRef = useRef<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, parsedData, parsePDF, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchLatestPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
+  const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+
+  useEffect(() => {
+    onPdfProcessingChange?.(isPdfProcessing);
+  }, [isPdfProcessing, onPdfProcessingChange]);
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
@@ -139,6 +151,10 @@ export const PaymentSourceTransactionsDialog = ({
   }, [clearFilePickerGuardRelease]);
 
   const handleClose = () => {
+    if (isPdfProcessing) {
+      try { logDiagnostic('payment_source_close_blocked_pdf_processing', { job_id: pdfJobId, phase: pdfJobPhase }); } catch {}
+      return;
+    }
     clearSelection();
     setSearchTerm('');
     setFilters(defaultFilters);
@@ -273,6 +289,127 @@ export const PaymentSourceTransactionsDialog = ({
   const selectAll = () => setSelectedIds(new Set(filteredSourceExpenses.map(e => e.id)));
   const clearSelection = () => setSelectedIds(new Set());
 
+  const getPdfJobStorageKey = useCallback(() => (
+    paymentSource ? `vmb-pdf-parse-job:${paymentSource.id}` : null
+  ), [paymentSource]);
+
+  const clearStoredPdfJob = useCallback(() => {
+    const key = getPdfJobStorageKey();
+    if (!key) return;
+    try { localStorage.removeItem(key); } catch {}
+  }, [getPdfJobStorageKey]);
+
+  const handlePdfJobResult = useCallback((result: LocalParsedData, jobId: string | null) => {
+    try {
+      logDiagnostic('payment_source_pdf_parse_result', {
+        job_id: jobId,
+        has_result: true,
+        count: result.transactions.length,
+        detected_bank: result.detected_bank ?? null,
+        route: window.location.pathname,
+      });
+    } catch {}
+
+    if (result.transactions.length > 0) {
+      setSourceParsedData(result);
+      setPdfPreviewOpen(true);
+      setPdfJobPhase('completed');
+      try { logDiagnostic('payment_source_pdf_preview_opened', { job_id: jobId, count: result.transactions.length }); } catch {}
+    } else {
+      setPdfJobPhase('idle');
+      toast.warning(t('toasts.pdfNoTransactions'));
+    }
+  }, [t]);
+
+  const runPdfJob = useCallback(async (jobId: string, options?: { releaseGuard?: boolean; recovered?: boolean }) => {
+    activePdfJobIdRef.current = jobId;
+    setPdfJobId(jobId);
+    setPdfJobPhase('processing');
+    try { logDiagnostic('payment_source_pdf_polling_started', { job_id: jobId, recovered: !!options?.recovered }); } catch {}
+
+    try {
+      const result = await waitForPDFParseJob(jobId, {
+        onStatus: (status, attempt) => {
+          if (status === 'processing' || status === 'pending') setPdfJobPhase('processing');
+          try {
+            if (attempt === 0 || attempt % 10 === 0) {
+              logDiagnostic('payment_source_pdf_polling_status', { job_id: jobId, status, attempt });
+            }
+          } catch {}
+        },
+      });
+
+      if (activePdfJobIdRef.current !== jobId || !result) return;
+      clearStoredPdfJob();
+      handlePdfJobResult(result, jobId);
+    } catch (err) {
+      if (activePdfJobIdRef.current !== jobId) return;
+      setPdfJobPhase('failed');
+      const message = err instanceof Error ? err.message : String(err);
+      try { logDiagnostic('payment_source_pdf_job_failed', { job_id: jobId, message, recovered: !!options?.recovered }); } catch {}
+      showError(t('toasts.pdfAnalysisError'));
+    } finally {
+      if (activePdfJobIdRef.current === jobId) {
+        activePdfJobIdRef.current = null;
+        setPdfJobId(null);
+      }
+      if (options?.releaseGuard) releaseFilePickerGuardSoon();
+    }
+  }, [clearStoredPdfJob, handlePdfJobResult, releaseFilePickerGuardSoon, t, waitForPDFParseJob]);
+
+  useEffect(() => {
+    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+    const key = getPdfJobStorageKey();
+    if (!key) return;
+
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const stored = JSON.parse(raw) as { jobId?: string; startedAt?: string };
+      if (!stored.jobId) return;
+
+      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
+      if (!startedAt || Date.now() - startedAt > 15 * 60 * 1000) {
+        localStorage.removeItem(key);
+        return;
+      }
+
+      logDiagnostic('payment_source_pdf_recovery_started', { job_id: stored.jobId, source_id: paymentSource.id });
+      void runPdfJob(stored.jobId, { recovered: true });
+    } catch (err) {
+      try { logDiagnostic('payment_source_pdf_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
+      try { localStorage.removeItem(key); } catch {}
+    }
+  }, [getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+
+  useEffect(() => {
+    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+
+    let cancelled = false;
+    const recoverLatestJob = async () => {
+      try {
+        const latest = await fetchLatestPDFParseJob();
+        if (cancelled || !latest) return;
+        if (latest.job.status === 'completed' && latest.job.result) {
+          logDiagnostic('payment_source_pdf_latest_completed_recovered', { job_id: latest.id, source_id: paymentSource.id });
+          void runPdfJob(latest.id, { recovered: true });
+          return;
+        }
+        if (latest.job.status === 'processing') {
+          logDiagnostic('payment_source_pdf_latest_processing_recovered', { job_id: latest.id, source_id: paymentSource.id });
+          const key = getPdfJobStorageKey();
+          if (key) localStorage.setItem(key, JSON.stringify({ jobId: latest.id, startedAt: new Date().toISOString() }));
+          void runPdfJob(latest.id, { recovered: true });
+        }
+      } catch (err) {
+        try { logDiagnostic('payment_source_pdf_latest_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
+      }
+    };
+
+    void recoverLatestJob();
+    return () => { cancelled = true; };
+  }, [clearStoredPdfJob, fetchLatestPDFParseJob, getPdfJobStorageKey, handlePdfJobResult, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let count = 0;
@@ -364,29 +501,18 @@ export const PaymentSourceTransactionsDialog = ({
         return;
       }
       try {
-        const result = await parsePDF(base64);
-        try {
-          logDiagnostic('payment_source_pdf_parse_result', {
-            has_result: !!result,
-            count: result?.transactions.length ?? 0,
-            detected_bank: result?.detected_bank ?? null,
-            route: window.location.pathname,
-          });
-        } catch {}
-        if (result && result.transactions.length > 0) {
-          // Mirror result into local state SYNCHRONOUSLY before opening preview,
-          // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
-          // on the same render where we flip the open flag.
-          setSourceParsedData(result);
-          setPdfPreviewOpen(true);
-          try { logDiagnostic('payment_source_pdf_preview_opened', { count: result.transactions.length }); } catch {}
-        } else if (result && result.transactions.length === 0) {
-          toast.warning(t('toasts.pdfNoTransactions'));
+        setPdfJobPhase('starting');
+        const jobId = await startPDFParseJob(base64);
+        const key = getPdfJobStorageKey();
+        if (key) {
+          try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
         }
+        void runPdfJob(jobId, { releaseGuard: true });
       } catch (err) {
         console.error('PDF parse error:', err);
+        setPdfJobPhase('failed');
+        try { logDiagnostic('payment_source_pdf_start_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
         showError(t('toasts.pdfAnalysisError'));
-      } finally {
         releaseFilePickerGuardSoon();
       }
     };
@@ -428,6 +554,10 @@ export const PaymentSourceTransactionsDialog = ({
 
   const resetPdfImportState = () => {
     setSourceParsedData(null);
+    setPdfJobPhase('idle');
+    setPdfJobId(null);
+    activePdfJobIdRef.current = null;
+    clearStoredPdfJob();
     clearParsedData();
   };
 
@@ -646,10 +776,10 @@ export const PaymentSourceTransactionsDialog = ({
                         variant="outline"
                         size="sm"
                         onClick={() => openFilePickerWithGuard(pdfInputRef, 'pdf')}
-                        disabled={parsing}
+                        disabled={parsing || isPdfProcessing}
                         className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                       >
-                        {parsing ? (
+                        {parsing || isPdfProcessing ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <FileText className="w-3.5 h-3.5" />
@@ -1110,7 +1240,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Parsing Overlay */}
       <AnimatePresence>
-        {parsing && (
+        {(parsing || isPdfProcessing) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1127,9 +1257,11 @@ export const PaymentSourceTransactionsDialog = ({
                 <FileText className="w-8 h-8 text-primary animate-pulse" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Analiziram izvod...</h3>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {pdfJobPhase === 'starting' ? t('import.pdfStarting') : t('import.pdfProcessing')}
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  AI obrađuje PDF i prepoznaje transakcije. To može potrajati do 30 sekundi.
+                  {t('import.pdfProcessingDescription')}
                 </p>
               </div>
               <div className="w-48">

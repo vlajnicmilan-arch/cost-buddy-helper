@@ -29,8 +29,12 @@ const Wallet = () => {
   const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
+  const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
 
-  useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
+  useBackButton(paymentSourceDialogOpen, () => {
+    if (paymentSourcePdfProcessing) return;
+    setPaymentSourceDialogOpen(false);
+  });
 
   const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const deleteExpenseWithUndo = useCallback(async (id: string) => {
@@ -84,6 +88,7 @@ const Wallet = () => {
         onDelete={deleteExpenseWithUndo}
         onImportCSV={importFromCSV}
         findDuplicates={findDuplicates}
+        onPdfProcessingChange={setPaymentSourcePdfProcessing}
       />
 
       <BottomNav />

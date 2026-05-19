@@ -29,6 +29,14 @@ interface PDFParseResult {
   } | null;
 }
 
+type PDFParseJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+interface PDFParseJobRow {
+  status: PDFParseJobStatus;
+  result: any | null;
+  error: string | null;
+}
+
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
 
 const toParseResult = (data: any): PDFParseResult => ({
@@ -101,81 +109,123 @@ export const usePDFParser = () => {
   const [parsing, setParsing] = useState(false);
   const [parsedData, setParsedData] = useState<PDFParseResult | null>(null);
 
+  const getAccessToken = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      throw new Error(t('errors.pdf.loginRequired', 'Moraš biti prijavljen za analizu izvoda'));
+    }
+    return token;
+  };
+
+  const startPDFParseJob = async (base64Data: string, bankType?: string, isImage?: boolean): Promise<string> => {
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf-statement`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pdfBase64: base64Data,
+          bankType,
+          isImage: isImage || false,
+          async: true,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 429) throw new Error(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
+      if (response.status === 402) throw new Error(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Greška pri analizi izvoda');
+    }
+
+    const data = await response.json();
+    if (!data?.jobId) throw new Error('Obrada izvoda nije vratila identifikator posla');
+    logDiagnostic('pdf_parse_job_started', { job_id: data.jobId, is_image: !!isImage });
+    return data.jobId;
+  };
+
+  const fetchPDFParseJob = async (jobId: string): Promise<PDFParseJobRow | null> => {
+    const { data: job, error } = await (supabase as any)
+      .from('pdf_parse_jobs')
+      .select('status,result,error')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    if (error) {
+      logDiagnostic('pdf_parse_job_poll_error', { job_id: jobId, message: error.message });
+      throw new Error(error.message || 'Greška pri dohvaćanju rezultata obrade');
+    }
+
+    return job as PDFParseJobRow | null;
+  };
+
+  const fetchLatestPDFParseJob = async (): Promise<{ id: string; job: PDFParseJobRow } | null> => {
+    const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    const { data: job, error } = await (supabase as any)
+      .from('pdf_parse_jobs')
+      .select('id,status,result,error,created_at')
+      .gte('created_at', since)
+      .in('status', ['processing', 'completed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      logDiagnostic('pdf_parse_latest_job_error', { message: error.message });
+      throw new Error(error.message || 'Greška pri dohvaćanju zadnje obrade');
+    }
+
+    if (!job?.id) return null;
+    return { id: job.id, job: job as PDFParseJobRow };
+  };
+
+  const waitForPDFParseJob = async (
+    jobId: string,
+    options?: { onStatus?: (status: PDFParseJobStatus, attempt: number) => void }
+  ): Promise<PDFParseResult | null> => {
+    let lastStatus: PDFParseJobStatus | null = null;
+    logDiagnostic('pdf_parse_job_poll_started', { job_id: jobId });
+
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      await wait(attempt < 10 ? 1000 : 2000);
+      const job = await fetchPDFParseJob(jobId);
+      if (!job) continue;
+
+      if (job.status !== lastStatus || attempt === 0 || attempt % 10 === 0) {
+        logDiagnostic('pdf_parse_job_poll_status', { job_id: jobId, status: job.status, attempt });
+      }
+      lastStatus = job.status;
+      options?.onStatus?.(job.status, attempt);
+
+      if (job.status === 'failed') throw new Error(job.error || 'Greška pri analizi izvoda');
+      if (job.status === 'completed' && job.result) {
+        const result = toParseResult(job.result);
+        setParsedData(result);
+        logDiagnostic('pdf_parse_job_completed', {
+          job_id: jobId,
+          count: result.transactions.length,
+        });
+        return result;
+      }
+    }
+
+    logDiagnostic('pdf_parse_job_poll_timeout', { job_id: jobId },);
+    throw new Error('Isteklo je vrijeme čekanja rezultata obrade izvoda');
+  };
+
   const parseStatement = async (base64Data: string, bankType?: string, isImage?: boolean): Promise<PDFParseResult | null> => {
     setParsing(true);
     
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData?.session?.access_token) {
-        showError(t('errors.pdf.loginRequired', 'Moraš biti prijavljen za analizu izvoda'));
-        return null;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf-statement`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            pdfBase64: base64Data, 
-            bankType,
-            isImage: isImage || false,
-            async: true
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
-          return null;
-        }
-        if (response.status === 402) {
-          showError(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
-          return null;
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Greška pri analizi izvoda');
-      }
-
-      const data = await response.json();
-      let completedData = data;
-
-      if (response.status === 202 && data.jobId) {
-        logDiagnostic('pdf_parse_job_started', { job_id: data.jobId, is_image: !!isImage });
-        for (let attempt = 0; attempt < 75; attempt += 1) {
-          await wait(attempt < 10 ? 1000 : 2000);
-          const { data: job, error } = await (supabase as any)
-            .from('pdf_parse_jobs')
-            .select('status,result,error')
-            .eq('id', data.jobId)
-            .maybeSingle();
-
-          if (error) throw new Error(error.message || 'Greška pri dohvaćanju rezultata obrade');
-          if (!job) continue;
-          if (job.status === 'failed') throw new Error(job.error || 'Greška pri analizi izvoda');
-          if (job.status === 'completed' && job.result) {
-            completedData = job.result;
-            logDiagnostic('pdf_parse_job_completed', {
-              job_id: data.jobId,
-              count: Array.isArray(job.result.transactions) ? job.result.transactions.length : 0,
-            });
-            break;
-          }
-        }
-
-        if (completedData === data) {
-          throw new Error('Isteklo je vrijeme čekanja rezultata obrade izvoda');
-        }
-      }
-
-      const result: PDFParseResult = toParseResult(completedData);
-
-      setParsedData(result);
+      const jobId = await startPDFParseJob(base64Data, bankType, isImage);
+      const result = await waitForPDFParseJob(jobId);
+      if (!result) return null;
       
       const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
       const cardInfo = result.cards_detected.length > 0 ? `, ${result.cards_detected.length} kartica` : '';
@@ -276,6 +326,10 @@ export const usePDFParser = () => {
   return {
     parsing,
     parsedData,
+    startPDFParseJob,
+    waitForPDFParseJob,
+    fetchPDFParseJob,
+    fetchLatestPDFParseJob,
     parsePDF,
     parsePhoto,
     parseHTML,
