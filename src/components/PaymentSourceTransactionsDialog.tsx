@@ -1061,216 +1061,259 @@ export const PaymentSourceTransactionsDialog = ({
         )}
       </AnimatePresence>
 
-      {/* PDF Preview Dialog */}
-      <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
-        <DialogContent showBackButton={false} overlayClassName="z-[65]" className="z-[70] sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              {t('import.foundTransactions')} → {paymentSource?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {parsedData && (
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
-                <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
-                  {parsedData.detected_bank && (
-                    <p className="font-medium">🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span></p>
-                  )}
-                  {parsedData.account_iban && (
-                    <p className="text-muted-foreground text-xs font-mono">{t('import.account')}: {parsedData.account_iban}</p>
-                  )}
-                  {parsedData.cards_detected.length > 0 && (
-                    <p className="text-muted-foreground text-xs">💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}</p>
-                  )}
-                </div>
-              )}
-              {parsedData.summary && (
-                <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
-                  <div className="text-center">
-                    <p className="text-muted-foreground">{t('import.income')}</p>
-                    <p className="font-bold text-income">{formatAmount(parsedData.summary.total_income)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-muted-foreground">{t('import.expenses')}</p>
-                    <p className="font-bold text-expense">{formatAmount(parsedData.summary.total_expenses)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-muted-foreground">{t('import.total')}</p>
-                    <p className="font-bold">{parsedData.summary.transaction_count}</p>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {parsedData.transactions.map((tx, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-background/50 rounded-xl text-sm">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{tx.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {tx.date.toLocaleDateString()} • {tx.merchant_name || tx.category}
-                        {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
-                      </p>
-                    </div>
-                    <p className={cn("font-mono font-bold", 
-                      tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
-                    )}>
-                      {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
-                    </p>
-                  </div>
-                ))}
+      {/* PDF Preview Overlay */}
+      <AnimatePresence>
+        {pdfPreviewOpen && parsedData && (
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-background/90 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="w-full max-w-lg max-h-[88dvh] bg-background border border-border/50 shadow-2xl rounded-xl flex flex-col overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-3 p-4 border-b border-border/50">
+                <h2 className="flex items-center gap-2 text-base font-semibold min-w-0">
+                  <Upload className="w-5 h-5 text-primary shrink-0" />
+                  <span className="truncate">{t('import.foundTransactions')} → {paymentSource?.name}</span>
+                </h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPdfPreviewOpen(false)}
+                  className="h-10 w-10 shrink-0"
+                  aria-label={t('common.close', 'Zatvori')}
+                >
+                  <XIcon className="h-5 w-5" />
+                </Button>
               </div>
-              <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
-                ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
-              </div>
-              <Button
-                onClick={handleImportPDFTransactions}
-                disabled={isImportingPdf}
-                className="w-full rounded-xl"
-              >
-                {isImportingPdf ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Uvozim...
-                  </>
-                ) : (
-                  t('import.importCount', { count: parsedData.transactions.length })
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
+                  <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
+                    {parsedData.detected_bank && (
+                      <p className="font-medium">🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span></p>
+                    )}
+                    {parsedData.account_iban && (
+                      <p className="text-muted-foreground text-xs font-mono">{t('import.account')}: {parsedData.account_iban}</p>
+                    )}
+                    {parsedData.cards_detected.length > 0 && (
+                      <p className="text-muted-foreground text-xs">💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}</p>
+                    )}
+                  </div>
                 )}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Duplicate Warning Dialog */}
-      <Dialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
-        <DialogContent showBackButton={false} overlayClassName="z-[65]" className="z-[70] sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              {t('import.duplicatesFound')}
-            </DialogTitle>
-          </DialogHeader>
-          {duplicateInfo && (
-            <div className="flex-1 overflow-y-auto space-y-4">
-              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
-                <p className="font-medium text-orange-600 dark:text-orange-400">
-                  {duplicateInfo.duplicates.length > 0 && `${duplicateInfo.duplicates.length} sigurnih duplikata`}
-                  {duplicateInfo.duplicates.length > 0 && duplicateInfo.fuzzyDuplicates.length > 0 && ' • '}
-                  {duplicateInfo.fuzzyDuplicates.length > 0 && `${duplicateInfo.fuzzyDuplicates.length} mogućih duplikata (±3 dana)`}
-                </p>
-                <p className="text-muted-foreground text-xs mt-1">
-                  {t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}
-                </p>
-              </div>
-
-              {/* Strict duplicates */}
-              {duplicateInfo.duplicates.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-destructive/80">🚫 Sigurni duplikati (isti datum i iznos):</p>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {duplicateInfo.duplicates.map((tx, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-destructive/5 rounded-lg text-sm border border-destructive/10 opacity-60">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-xs">{tx.description}</p>
-                          <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
-                        </div>
-                        <p className={cn("font-mono text-xs", tx.type === 'income' ? 'text-income' : 'text-expense')}>
-                          {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                {parsedData.summary && (
+                  <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">{t('import.income')}</p>
+                      <p className="font-bold text-income">{formatAmount(parsedData.summary.total_income)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground">{t('import.expenses')}</p>
+                      <p className="font-bold text-expense">{formatAmount(parsedData.summary.total_expenses)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground">{t('import.total')}</p>
+                      <p className="font-bold">{parsedData.summary.transaction_count}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {parsedData.transactions.map((tx, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{tx.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {tx.date.toLocaleDateString()} • {tx.merchant_name || tx.category}
+                          {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
                         </p>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
-                    <Checkbox id="include-strict-dups-source" checked={includeDuplicates} onCheckedChange={(checked) => setIncludeDuplicates(checked === true)} />
-                    <label htmlFor="include-strict-dups-source" className="text-xs cursor-pointer text-muted-foreground">
-                      Ipak uvezi sigurne duplikate ({duplicateInfo.duplicates.length})
-                    </label>
-                  </div>
+                      <p className={cn("font-mono font-bold shrink-0", 
+                        tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
+                      )}>
+                        {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              )}
+                <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
+                  ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
+                </div>
+              </div>
+              <div className="p-4 border-t border-border/50">
+                <Button
+                  onClick={handleImportPDFTransactions}
+                  disabled={isImportingPdf}
+                  className="w-full rounded-xl min-h-11"
+                >
+                  {isImportingPdf ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uvozim...
+                    </>
+                  ) : (
+                    t('import.importCount', { count: parsedData.transactions.length })
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-              {/* Fuzzy duplicates - comparison view with individual checkboxes */}
-              {duplicateInfo.fuzzyDuplicates.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">⚠️ Mogući duplikati (±3 dana, isti iznos):</p>
-                  <p className="text-xs text-muted-foreground">Usporedi i odaberi koje želiš uvesti:</p>
-                  <div className="max-h-64 overflow-y-auto space-y-2">
-                    {duplicateInfo.fuzzyDuplicates.map((tx, idx) => {
-                      const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[idx];
-                      return (
-                        <div 
-                          key={idx} 
-                          className={`rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden ${
-                            selectedFuzzy.has(idx) 
-                              ? 'border-primary/30' 
-                              : 'border-amber-500/20'
-                          }`}
-                          onClick={() => {
-                            const next = new Set(selectedFuzzy);
-                            next.has(idx) ? next.delete(idx) : next.add(idx);
-                            setSelectedFuzzy(next);
-                          }}
-                        >
-                          {/* Existing transaction */}
-                          <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
-                            <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">Postojeća</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
-                              <p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p>
-                            </div>
-                            <p className={cn("font-mono text-xs shrink-0", matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>
-                              {matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}
-                            </p>
-                          </div>
-                          {/* New transaction */}
-                          <div className={`flex items-center gap-2 p-2 ${selectedFuzzy.has(idx) ? 'bg-primary/5' : 'bg-amber-500/5'}`}>
-                            <Checkbox 
-                              checked={selectedFuzzy.has(idx)}
-                              className="ml-0.5"
-                              onCheckedChange={() => {
-                                const next = new Set(selectedFuzzy);
-                                next.has(idx) ? next.delete(idx) : next.add(idx);
-                                setSelectedFuzzy(next);
-                              }}
-                            />
-                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">Nova</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate text-xs">{tx.description}</p>
-                              <p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p>
-                            </div>
-                            <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
-                              {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+      {/* Duplicate Warning Overlay */}
+      <AnimatePresence>
+        {duplicateWarningOpen && duplicateInfo && (
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-background/90 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="w-full max-w-lg max-h-[88dvh] bg-background border border-border/50 shadow-2xl rounded-xl flex flex-col overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-3 p-4 border-b border-border/50">
+                <h2 className="flex items-center gap-2 text-base font-semibold min-w-0">
+                  <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0" />
+                  <span className="truncate">{t('import.duplicatesFound')}</span>
+                </h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }}
+                  className="h-10 w-10 shrink-0"
+                  aria-label={t('common.close', 'Zatvori')}
+                >
+                  <XIcon className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
+                  <p className="font-medium text-orange-600 dark:text-orange-400">
+                    {duplicateInfo.duplicates.length > 0 && `${duplicateInfo.duplicates.length} sigurnih duplikata`}
+                    {duplicateInfo.duplicates.length > 0 && duplicateInfo.fuzzyDuplicates.length > 0 && ' • '}
+                    {duplicateInfo.fuzzyDuplicates.length > 0 && `${duplicateInfo.fuzzyDuplicates.length} mogućih duplikata (±3 dana)`}
+                  </p>
+                  <p className="text-muted-foreground text-xs mt-1">
+                    {t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-          <DialogFooter className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }} className="rounded-xl">
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleConfirmImportWithDuplicates} disabled={isImportingPdf} className="rounded-xl">
-              {isImportingPdf ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uvozim...
-                </>
-              ) : (
-                t('import.importCount', { 
-                  count: (duplicateInfo?.unique.length || 0) + 
-                         selectedFuzzy.size + 
-                         (includeDuplicates ? (duplicateInfo?.duplicates.length || 0) : 0)
-                })
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+                {duplicateInfo.duplicates.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-destructive/80">🚫 Sigurni duplikati (isti datum i iznos):</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {duplicateInfo.duplicates.map((tx, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-destructive/5 rounded-lg text-sm border border-destructive/10 opacity-60">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate text-xs">{tx.description}</p>
+                            <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                          </div>
+                          <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
+                            {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
+                      <Checkbox id="include-strict-dups-source" checked={includeDuplicates} onCheckedChange={(checked) => setIncludeDuplicates(checked === true)} />
+                      <label htmlFor="include-strict-dups-source" className="text-xs cursor-pointer text-muted-foreground">
+                        Ipak uvezi sigurne duplikate ({duplicateInfo.duplicates.length})
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {duplicateInfo.fuzzyDuplicates.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">⚠️ Mogući duplikati (±3 dana, isti iznos):</p>
+                    <p className="text-xs text-muted-foreground">Usporedi i odaberi koje želiš uvesti:</p>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {duplicateInfo.fuzzyDuplicates.map((tx, idx) => {
+                        const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[idx];
+                        return (
+                          <button
+                            type="button"
+                            key={idx}
+                            className={cn(
+                              "w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              selectedFuzzy.has(idx) ? 'border-primary/30' : 'border-amber-500/20'
+                            )}
+                            onClick={() => {
+                              const next = new Set(selectedFuzzy);
+                              next.has(idx) ? next.delete(idx) : next.add(idx);
+                              setSelectedFuzzy(next);
+                            }}
+                          >
+                            <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
+                              <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">Postojeća</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
+                                <p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p>
+                              </div>
+                              <p className={cn("font-mono text-xs shrink-0", matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>
+                                {matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}
+                              </p>
+                            </div>
+                            <div className={`flex items-center gap-2 p-2 ${selectedFuzzy.has(idx) ? 'bg-primary/5' : 'bg-amber-500/5'}`}>
+                              <Checkbox 
+                                checked={selectedFuzzy.has(idx)}
+                                className="ml-0.5 pointer-events-none"
+                              />
+                              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">Nova</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-xs">{tx.description}</p>
+                                <p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p>
+                              </div>
+                              <p className={cn("font-mono text-xs shrink-0", tx.type === 'income' ? 'text-income' : 'text-expense')}>
+                                {tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
+                <Button variant="outline" onClick={() => { setDuplicateWarningOpen(false); clearParsedData(); setDuplicateInfo(null); }} className="rounded-xl min-h-11">
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleConfirmImportWithDuplicates} disabled={isImportingPdf} className="rounded-xl min-h-11">
+                  {isImportingPdf ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uvozim...
+                    </>
+                  ) : (
+                    t('import.importCount', { 
+                      count: (duplicateInfo.unique.length || 0) + 
+                             selectedFuzzy.size + 
+                             (includeDuplicates ? (duplicateInfo.duplicates.length || 0) : 0)
+                    })
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CSV Import Dialog */}
       {onImportCSV && paymentSource && (
