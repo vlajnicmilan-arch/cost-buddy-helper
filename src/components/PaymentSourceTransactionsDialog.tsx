@@ -327,10 +327,12 @@ export const PaymentSourceTransactionsDialog = ({
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
+      try { logDiagnostic('payment_source_pdf_file_missing', { route: window.location.pathname }); } catch {}
       releaseFilePickerGuardSoon(500);
       return;
     }
     clearFilePickerGuardRelease();
+    try { logDiagnostic('payment_source_pdf_file_selected', { name: file.name, type: file.type, size: file.size }); } catch {}
     // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
@@ -363,12 +365,21 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         const result = await parsePDF(base64);
+        try {
+          logDiagnostic('payment_source_pdf_parse_result', {
+            has_result: !!result,
+            count: result?.transactions.length ?? 0,
+            detected_bank: result?.detected_bank ?? null,
+            route: window.location.pathname,
+          });
+        } catch {}
         if (result && result.transactions.length > 0) {
           // Mirror result into local state SYNCHRONOUSLY before opening preview,
           // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
           // on the same render where we flip the open flag.
           setSourceParsedData(result);
           setPdfPreviewOpen(true);
+          try { logDiagnostic('payment_source_pdf_preview_opened', { count: result.transactions.length }); } catch {}
         } else if (result && result.transactions.length === 0) {
           toast.warning(t('toasts.pdfNoTransactions'));
         }
