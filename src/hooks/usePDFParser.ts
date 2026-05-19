@@ -203,77 +203,9 @@ export const usePDFParser = () => {
     setParsing(true);
     
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData?.session?.access_token) {
-        showError(t('errors.pdf.loginRequired', 'Moraš biti prijavljen za analizu izvoda'));
-        return null;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf-statement`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionData.session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            pdfBase64: base64Data, 
-            bankType,
-            isImage: isImage || false,
-            async: true
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
-          return null;
-        }
-        if (response.status === 402) {
-          showError(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
-          return null;
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Greška pri analizi izvoda');
-      }
-
-      const data = await response.json();
-      let completedData = data;
-
-      if (response.status === 202 && data.jobId) {
-        logDiagnostic('pdf_parse_job_started', { job_id: data.jobId, is_image: !!isImage });
-        for (let attempt = 0; attempt < 75; attempt += 1) {
-          await wait(attempt < 10 ? 1000 : 2000);
-          const { data: job, error } = await (supabase as any)
-            .from('pdf_parse_jobs')
-            .select('status,result,error')
-            .eq('id', data.jobId)
-            .maybeSingle();
-
-          if (error) throw new Error(error.message || 'Greška pri dohvaćanju rezultata obrade');
-          if (!job) continue;
-          if (job.status === 'failed') throw new Error(job.error || 'Greška pri analizi izvoda');
-          if (job.status === 'completed' && job.result) {
-            completedData = job.result;
-            logDiagnostic('pdf_parse_job_completed', {
-              job_id: data.jobId,
-              count: Array.isArray(job.result.transactions) ? job.result.transactions.length : 0,
-            });
-            break;
-          }
-        }
-
-        if (completedData === data) {
-          throw new Error('Isteklo je vrijeme čekanja rezultata obrade izvoda');
-        }
-      }
-
-      const result: PDFParseResult = toParseResult(completedData);
-
-      setParsedData(result);
+      const jobId = await startPDFParseJob(base64Data, bankType, isImage);
+      const result = await waitForPDFParseJob(jobId);
+      if (!result) return null;
       
       const bankInfo = result.detected_bank ? ` (${result.detected_bank})` : '';
       const cardInfo = result.cards_detected.length > 0 ? `, ${result.cards_detected.length} kartica` : '';
@@ -374,6 +306,9 @@ export const usePDFParser = () => {
   return {
     parsing,
     parsedData,
+    startPDFParseJob,
+    waitForPDFParseJob,
+    fetchPDFParseJob,
     parsePDF,
     parsePhoto,
     parseHTML,
