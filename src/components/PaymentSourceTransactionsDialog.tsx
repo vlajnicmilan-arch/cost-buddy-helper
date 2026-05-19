@@ -47,6 +47,14 @@ interface PaymentSourceTransactionsDialogProps {
 
 type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
 
+type StoredPdfJob = {
+  jobId?: string;
+  sourceId?: string;
+  startedAt?: string;
+};
+
+const PDF_JOB_TTL_MS = 15 * 60 * 1000;
+
 export const PaymentSourceTransactionsDialog = ({
   open,
   onOpenChange,
@@ -299,6 +307,25 @@ export const PaymentSourceTransactionsDialog = ({
     try { localStorage.removeItem(key); } catch {}
   }, [getPdfJobStorageKey]);
 
+  const readStoredPdfJob = useCallback((): StoredPdfJob | null => {
+    const key = getPdfJobStorageKey();
+    if (!key || !paymentSource) return null;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const stored = JSON.parse(raw) as StoredPdfJob;
+      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
+      if (!stored.jobId || stored.sourceId !== paymentSource.id || !startedAt || Date.now() - startedAt > PDF_JOB_TTL_MS) {
+        localStorage.removeItem(key);
+        return null;
+      }
+      return stored;
+    } catch {
+      try { localStorage.removeItem(key); } catch {}
+      return null;
+    }
+  }, [getPdfJobStorageKey, paymentSource]);
+
   const handlePdfJobResult = useCallback((result: LocalParsedData, jobId: string | null) => {
     try {
       logDiagnostic('payment_source_pdf_parse_result', {
@@ -370,38 +397,22 @@ export const PaymentSourceTransactionsDialog = ({
 
   useEffect(() => {
     if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
-    const key = getPdfJobStorageKey();
-    if (!key) return;
 
     let cancelled = false;
     const recoverStoredJob = async () => {
-      let stored: { jobId?: string; startedAt?: string } | null = null;
-      try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return;
-        stored = JSON.parse(raw) as { jobId?: string; startedAt?: string };
-      } catch {
-        try { localStorage.removeItem(key); } catch {}
-        return;
-      }
-      if (!stored?.jobId) { try { localStorage.removeItem(key); } catch {} return; }
-
-      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
-      if (!startedAt || Date.now() - startedAt > 15 * 60 * 1000) {
-        try { localStorage.removeItem(key); } catch {}
-        return;
-      }
+      const stored = readStoredPdfJob();
+      if (!stored?.jobId) return;
 
       try {
         const job = await fetchPDFParseJob(stored.jobId);
         if (cancelled) return;
         if (!job) {
-          try { localStorage.removeItem(key); } catch {}
+          clearStoredPdfJob();
           try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'missing', source_id: paymentSource.id }); } catch {}
           return;
         }
         if (job.status === 'failed') {
-          try { localStorage.removeItem(key); } catch {}
+          clearStoredPdfJob();
           try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'failed', source_id: paymentSource.id }); } catch {}
           return;
         }
@@ -412,7 +423,7 @@ export const PaymentSourceTransactionsDialog = ({
             const normalized = normalizeJobResult(job.result) as LocalParsedData;
             handlePdfJobResult(normalized, stored.jobId);
           } catch (err) {
-            try { localStorage.removeItem(key); } catch {}
+            clearStoredPdfJob();
             try { logDiagnostic('payment_source_pdf_recovery_normalize_failed', { job_id: stored.jobId, message: err instanceof Error ? err.message : String(err) }); } catch {}
           }
           return;
@@ -422,13 +433,13 @@ export const PaymentSourceTransactionsDialog = ({
         void runPdfJob(stored.jobId, { recovered: true });
       } catch (err) {
         try { logDiagnostic('payment_source_pdf_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-        try { localStorage.removeItem(key); } catch {}
+        clearStoredPdfJob();
       }
     };
 
     void recoverStoredJob();
     return () => { cancelled = true; };
-  }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData, normalizeJobResult, handlePdfJobResult]);
+  }, [fetchPDFParseJob, isPdfProcessing, open, paymentSource, readStoredPdfJob, runPdfJob, sourceParsedData, normalizeJobResult, handlePdfJobResult]);
 
   // NOTE: "latest job" auto-recovery removed. It could attach a job created in
   // a different payment source. Recovery now relies only on the per-source
@@ -532,7 +543,7 @@ export const PaymentSourceTransactionsDialog = ({
         try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
         const key = getPdfJobStorageKey();
         if (key) {
-          try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
+          try { localStorage.setItem(key, JSON.stringify({ jobId, sourceId: paymentSource?.id ?? null, startedAt: new Date().toISOString() })); } catch {}
         }
         void runPdfJob(jobId, { releaseGuard: true });
       } catch (err) {
