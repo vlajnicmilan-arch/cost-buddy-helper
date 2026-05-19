@@ -31,6 +31,7 @@ import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -111,16 +112,24 @@ export const PaymentSourceTransactionsDialog = ({
     }, delay);
   }, [clearFilePickerGuardRelease]);
 
-  const openFilePickerWithGuard = useCallback((inputRef: React.RefObject<HTMLInputElement>) => {
+  const openFilePickerWithGuard = useCallback((inputRef: React.RefObject<HTMLInputElement>, kind: 'pdf' | 'html') => {
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     clearFilePickerGuardRelease();
     setNativeFlowActive(true);
+    try {
+      logDiagnostic('payment_source_import_picker_open', {
+        kind,
+        dialog_open: open,
+        has_payment_source: !!paymentSource,
+        route: window.location.pathname,
+      });
+    } catch {}
     filePickerGuardReleaseRef.current = setTimeout(() => {
       setNativeFlowActive(false);
       filePickerGuardReleaseRef.current = null;
     }, 20000);
     inputRef.current?.click();
-  }, [clearFilePickerGuardRelease]);
+  }, [clearFilePickerGuardRelease, open, paymentSource]);
 
   useEffect(() => {
     return () => {
