@@ -1,45 +1,34 @@
-## Problem
+## Što je provjereno
 
-Uvoz PDF transakcija ne radi kada se pokrene iz dialoga izvora plaćanja (npr. AirCash). Edge function uredno parsira PDF (log: "Extracted 48 transactions from Aircash"), ali korisnik vidi samo kratku poruku i ništa dalje.
+- Backend `parse-pdf-statement` radi: zadnji log pokazuje `Extracted 42 transactions from Aircash` u 04:25:15.
+- Nema runtime errora u trenutnom snapshotu.
+- Nema network zapisa za zadnji pokušaj u snapshotu, pa ne mogu potvrditi browser response.
+- Trenutni z-index fix postoji na `DialogContent`, ali `DialogOverlay` u `src/components/ui/dialog.tsx` i dalje ostaje default `z-50`.
 
-## Root cause
+## Najvjerojatniji uzrok
 
-`PaymentSourceTransactionsDialog` je full-screen `motion.div` sa `z-[60]` (custom modal, ne Radix). Unutar njega je ugniježđen shadcn `<Dialog>` za PDF preview, čiji `DialogContent` i overlay koriste default Radix `z-50`.
+PDF rezultat se vrati, ali preview dialog je i dalje slojno neispravan jer je `PaymentSourceTransactionsDialog` fullscreen layer `z-[60]`, a Radix overlay ostaje `z-50`. To može blokirati ili sakriti interakciju/preview u nested dialog scenariju.
 
-Rezultat: preview dialog se mounta i otvara, ali ostaje **ispod** parent containera. Korisnik vidi samo toast "Učitavam PDF" / "Pronađeno X transakcija" pa ništa.
+## Plan implementacije
 
-Identičan problem postoji i za:
-- Duplicate warning dialog (`duplicateWarningOpen`)
-- Sve ostale ugniježđene shadcn `<Dialog>` instance unutar istog komponenta
+1. U `src/components/ui/dialog.tsx` proširiti `DialogContent` da opcionalno prima `overlayClassName`.
+   - Ne mijenjati globalni default.
+   - Ako se ništa ne proslijedi, svi postojeći dialozi ostaju `z-50` kao dosad.
 
-`BankConnection` na `/wallet` stranici radi jer nije unutar drugog modala.
+2. U `src/components/PaymentSourceTransactionsDialog.tsx` za nested dialoge postaviti:
+   - `DialogContent className="z-[70] ..."`
+   - `overlayClassName="z-[65]"`
 
-Ovo je već dokumentirano u memoriji: **Mobile Dialog Layering — z-[60] main, z-[70] popovers**.
+3. Obuhvatiti oba nested dialoga:
+   - PDF preview (`pdfPreviewOpen`)
+   - duplicate warning (`duplicateWarningOpen`)
 
-## Fix
-
-Podići z-index ugniježđenih dialoga iznad `z-[60]` parent containera:
-
-1. **`src/components/PaymentSourceTransactionsDialog.tsx`** — za sve interne `<DialogContent>` (PDF preview, duplicate warning, i ostali ugniježđeni dialozi koji se otvaraju iz ovog ekrana):
-   - Dodati `className="... z-[70]"` na `DialogContent`
-   - Provjeriti i `DialogOverlay` ako se eksplicitno koristi; ako ne, overlay iz `dialog.tsx` ostaje `z-50` što je OK jer parent ionako prekriva sve ispod
-
-2. **Verifikacija ostalih ugniježđenih dialoga** u istoj komponenti:
-   - `pdfPreviewOpen` (linija 1066)
-   - `duplicateWarningOpen`
-   - svi drugi `<Dialog>` unutar `motion.div z-[60]`
-
-3. **Bez izmjena globalnog `dialog.tsx`** — drugi (ne-ugniježđeni) dialozi moraju ostati na z-50.
-
-## Što NIJE u opsegu
-
-- Edge function `parse-pdf-statement` — radi ispravno
-- `BankConnection` flow — radi ispravno
-- Tekstovi / i18n — bez promjena
-- Logika parsiranja / dedupe — bez promjena
+4. Dodati eksplicitno korisničko stanje za slučaj da parser vrati rezultat bez transakcija ili se request ne završi greškom:
+   - zadržati postojeće `pdfNoTransactions` ponašanje
+   - ne dirati backend parser jer log potvrđuje da za AirCash vraća transakcije
 
 ## Verifikacija
 
-- Otvoriti izvor plaćanja (AirCash) → Uvezi PDF → odabrati isti PDF → preview se mora pojaviti iznad parent modala
-- Confirm import → duplicate warning (ako postoji) mora se pojaviti iznad parent modala
-- Provjeriti da drugi (samostalni) dialozi u app-u i dalje rade normalno
+- Provjeriti da su samo nested dialogi u `PaymentSourceTransactionsDialog` dobili viši overlay/content z-index.
+- Provjeriti da globalni `dialog.tsx` default nije promijenio ponašanje drugih dialoga.
+- Nakon implementacije: AirCash izvor → PDF import → preview mora biti vidljiv iznad fullscreen izvora plaćanja.
