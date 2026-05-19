@@ -317,12 +317,17 @@ export const PaymentSourceTransactionsDialog = ({
   // PDF import handlers
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    clearFilePickerGuardRelease();
     // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
       showError(t('import.selectPDF'));
       if (pdfInputRef.current) pdfInputRef.current.value = '';
+      releaseFilePickerGuardSoon(500);
       return;
     }
     
@@ -338,11 +343,13 @@ export const PaymentSourceTransactionsDialog = ({
     const reader = new FileReader();
     reader.onerror = () => {
       showError(t('toasts.fileReadError'));
+      releaseFilePickerGuardSoon(500);
     };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
       if (!base64) {
         showError(t('toasts.fileReadError'));
+        releaseFilePickerGuardSoon(500);
         return;
       }
       try {
@@ -359,6 +366,8 @@ export const PaymentSourceTransactionsDialog = ({
       } catch (err) {
         console.error('PDF parse error:', err);
         showError(t('toasts.pdfAnalysisError'));
+      } finally {
+        releaseFilePickerGuardSoon();
       }
     };
     reader.readAsDataURL(fileBlob);
@@ -366,11 +375,16 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    clearFilePickerGuardRelease();
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
       showError(t('toasts.selectHtmlFile'));
       if (htmlInputRef.current) htmlInputRef.current.value = '';
+      releaseFilePickerGuardSoon(500);
       return;
     }
     if (htmlInputRef.current) htmlInputRef.current.value = '';
@@ -387,6 +401,8 @@ export const PaymentSourceTransactionsDialog = ({
     } catch (err) {
       console.error('HTML parse error:', err);
       showError(t('toasts.htmlAnalysisError'));
+    } finally {
+      releaseFilePickerGuardSoon();
     }
   };
 
