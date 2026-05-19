@@ -1476,6 +1476,8 @@
     "total": "Gesamt",
     "importCount": "{{count}} Transaktionen importieren",
     "importedFromPDF": "{{count}} Transaktionen aus PDF importiert",
+    "importing": "Importiere...",
+    "allAssignedToSource": "ℹ️ Alle Transaktionen werden der Quelle zugewiesen: {{name}}",
     "duplicatesFound": "Duplikate gefunden",
     "duplicatesExist": "{{count}} Transaktionen existieren bereits in der Datenbank",
     "newTransactionsReady": "{{count}} neue Transaktionen bereit zum Import",

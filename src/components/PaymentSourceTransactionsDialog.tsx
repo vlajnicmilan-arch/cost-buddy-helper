@@ -70,6 +70,12 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
+  // Local mirror of the parse result, set synchronously from the parsePDF/parseHTML
+  // return value. The preview overlay reads from this state instead of the hook's
+  // internal `parsedData`, so the overlay does not depend on an unrelated async
+  // setState landing before our `setPdfPreviewOpen(true)`.
+  type LocalParsedData = NonNullable<ReturnType<typeof usePDFParser>['parsedData']>;
+  const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -306,13 +312,11 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         const result = await parsePDF(base64);
-        console.info('[PDF Import] parse result', {
-          transactionCount: result?.transactions.length ?? 0,
-          detectedBank: result?.detected_bank ?? null,
-          paymentSourceId: paymentSource?.id ?? null,
-        });
         if (result && result.transactions.length > 0) {
-          console.info('[PDF Import] opening preview overlay');
+          // Mirror result into local state SYNCHRONOUSLY before opening preview,
+          // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
+          // on the same render where we flip the open flag.
+          setSourceParsedData(result);
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
           toast.warning(t('toasts.pdfNoTransactions'));
@@ -340,6 +344,7 @@ export const PaymentSourceTransactionsDialog = ({
       const content = await file.text();
       const result = await parseHTML(content);
       if (result && result.transactions.length > 0) {
+        setSourceParsedData(result);
         setPdfPreviewOpen(true);
       } else if (result && result.transactions.length === 0) {
         toast.warning(t('toasts.htmlNoTransactions'));
@@ -350,11 +355,16 @@ export const PaymentSourceTransactionsDialog = ({
     }
   };
 
+  const resetPdfImportState = () => {
+    setSourceParsedData(null);
+    clearParsedData();
+  };
+
   const handleImportPDFTransactions = async () => {
-    if (!parsedData || !onImportCSV || !paymentSource) return;
+    if (!sourceParsedData || !onImportCSV || !paymentSource) return;
 
     const paymentSourceValue = `custom:${paymentSource.id}`;
-    const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+    const transactions: ParsedTransaction[] = sourceParsedData.transactions.map(tx => ({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
@@ -375,7 +385,7 @@ export const PaymentSourceTransactionsDialog = ({
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
-            clearParsedData();
+            resetPdfImportState();
             return;
           }
 
@@ -390,7 +400,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       await onImportCSV(transactions);
       setPdfPreviewOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
@@ -408,7 +418,7 @@ export const PaymentSourceTransactionsDialog = ({
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       setDuplicateInfo(null);
       return;
     }
@@ -417,7 +427,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
       await onImportCSV(transactionsToImport);
       setDuplicateWarningOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       setDuplicateInfo(null);
       showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
@@ -427,6 +437,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(false);
     }
   };
+
 
   // Print handler
   const handlePrint = () => {
@@ -1069,7 +1080,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Preview Overlay */}
       <AnimatePresence>
-        {pdfPreviewOpen && parsedData && (
+        {pdfPreviewOpen && sourceParsedData && (
           <motion.div
             role="dialog"
             aria-modal="true"
@@ -1094,7 +1105,7 @@ export const PaymentSourceTransactionsDialog = ({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => setPdfPreviewOpen(false)}
+                  onClick={() => { setPdfPreviewOpen(false); resetPdfImportState(); }}
                   className="h-10 w-10 shrink-0"
                   aria-label={t('common.close', 'Zatvori')}
                 >
@@ -1102,37 +1113,37 @@ export const PaymentSourceTransactionsDialog = ({
                 </Button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
+                {(sourceParsedData.detected_bank || sourceParsedData.account_iban || sourceParsedData.cards_detected.length > 0) && (
                   <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
-                    {parsedData.detected_bank && (
-                      <p className="font-medium">🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span></p>
+                    {sourceParsedData.detected_bank && (
+                      <p className="font-medium">🏦 {t('import.bank')}: <span className="text-primary">{sourceParsedData.detected_bank}</span></p>
                     )}
-                    {parsedData.account_iban && (
-                      <p className="text-muted-foreground text-xs font-mono">{t('import.account')}: {parsedData.account_iban}</p>
+                    {sourceParsedData.account_iban && (
+                      <p className="text-muted-foreground text-xs font-mono">{t('import.account')}: {sourceParsedData.account_iban}</p>
                     )}
-                    {parsedData.cards_detected.length > 0 && (
-                      <p className="text-muted-foreground text-xs">💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}</p>
+                    {sourceParsedData.cards_detected.length > 0 && (
+                      <p className="text-muted-foreground text-xs">💳 {t('import.cards')}: {sourceParsedData.cards_detected.map(c => `*${c}`).join(', ')}</p>
                     )}
                   </div>
                 )}
-                {parsedData.summary && (
+                {sourceParsedData.summary && (
                   <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                     <div className="text-center">
                       <p className="text-muted-foreground">{t('import.income')}</p>
-                      <p className="font-bold text-income">{formatAmount(parsedData.summary.total_income)}</p>
+                      <p className="font-bold text-income">{formatAmount(sourceParsedData.summary.total_income)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-muted-foreground">{t('import.expenses')}</p>
-                      <p className="font-bold text-expense">{formatAmount(parsedData.summary.total_expenses)}</p>
+                      <p className="font-bold text-expense">{formatAmount(sourceParsedData.summary.total_expenses)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-muted-foreground">{t('import.total')}</p>
-                      <p className="font-bold">{parsedData.summary.transaction_count}</p>
+                      <p className="font-bold">{sourceParsedData.summary.transaction_count}</p>
                     </div>
                   </div>
                 )}
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {parsedData.transactions.map((tx, idx) => (
+                  {sourceParsedData.transactions.map((tx, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{tx.description}</p>
@@ -1141,7 +1152,7 @@ export const PaymentSourceTransactionsDialog = ({
                           {tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}
                         </p>
                       </div>
-                      <p className={cn("font-mono font-bold shrink-0", 
+                      <p className={cn("font-mono font-bold shrink-0",
                         tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense'
                       )}>
                         {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}
@@ -1150,7 +1161,7 @@ export const PaymentSourceTransactionsDialog = ({
                   ))}
                 </div>
                 <div className="p-2 bg-primary/5 rounded-lg text-xs text-muted-foreground text-center">
-                  ℹ️ Sve transakcije će biti dodijeljene izvoru: <strong className="text-foreground">{paymentSource?.name}</strong>
+                  {t('import.allAssignedToSource', { name: paymentSource?.name ?? '' })}
                 </div>
               </div>
               <div className="p-4 border-t border-border/50">
@@ -1162,10 +1173,10 @@ export const PaymentSourceTransactionsDialog = ({
                   {isImportingPdf ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Uvozim...
+                      {t('import.importing', 'Uvozim...')}
                     </>
                   ) : (
-                    t('import.importCount', { count: parsedData.transactions.length })
+                    t('import.importCount', { count: sourceParsedData.transactions.length })
                   )}
                 </Button>
               </div>
