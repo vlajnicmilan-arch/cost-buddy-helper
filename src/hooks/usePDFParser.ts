@@ -16,7 +16,7 @@ export interface ParsedPDFTransaction {
   card_last4?: string | null;
 }
 
-interface PDFParseResult {
+export interface PDFParseResult {
   transactions: ParsedPDFTransaction[];
   detected_bank: string | null;
   account_iban: string | null;
@@ -29,7 +29,7 @@ interface PDFParseResult {
   } | null;
 }
 
-type PDFParseJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type PDFParseJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 interface PDFParseJobRow {
   status: PDFParseJobStatus;
