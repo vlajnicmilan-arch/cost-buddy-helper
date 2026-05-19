@@ -10,6 +10,8 @@ import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { ReceiptScanProvider } from "@/contexts/ReceiptScanContext";
 import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptScanHost";
+import { PdfImportProvider } from "@/contexts/PdfImportContext";
+import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
@@ -320,22 +322,25 @@ const App = () => (
                   <SubscriptionProvider>
                     <TutorialProvider>
                       <ReceiptScanProvider>
-                        <NativeInit />
-                        <Toaster />
-                        <Sonner />
-                        <BrowserRouter>
-                          <BackButtonProvider>
-                            <ScrollToTop />
-                            <DeepLinkInit />
-                            <PushAutoRegister />
-                            <DiagnosticRouteTracker />
-                            <BusinessModeGuard />
-                            <RouteAwareGlobalOverlays />
-                            <GlobalReceiptScanHost />
-                            <CrispChat />
-                            <AppRoutes />
-                          </BackButtonProvider>
-                        </BrowserRouter>
+                        <PdfImportProvider>
+                          <NativeInit />
+                          <Toaster />
+                          <Sonner />
+                          <BrowserRouter>
+                            <BackButtonProvider>
+                              <ScrollToTop />
+                              <DeepLinkInit />
+                              <PushAutoRegister />
+                              <DiagnosticRouteTracker />
+                              <BusinessModeGuard />
+                              <RouteAwareGlobalOverlays />
+                              <GlobalReceiptScanHost />
+                              <GlobalPDFImportHost />
+                              <CrispChat />
+                              <AppRoutes />
+                            </BackButtonProvider>
+                          </BrowserRouter>
+                        </PdfImportProvider>
                       </ReceiptScanProvider>
                     </TutorialProvider>
                   </SubscriptionProvider>
