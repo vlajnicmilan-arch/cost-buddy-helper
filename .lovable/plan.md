@@ -1,34 +1,48 @@
-## Što je provjereno
+## Stvarno provjereno
 
-- Backend `parse-pdf-statement` radi: zadnji log pokazuje `Extracted 42 transactions from Aircash` u 04:25:15.
-- Nema runtime errora u trenutnom snapshotu.
-- Nema network zapisa za zadnji pokušaj u snapshotu, pa ne mogu potvrditi browser response.
-- Trenutni z-index fix postoji na `DialogContent`, ali `DialogOverlay` u `src/components/ui/dialog.tsx` i dalje ostaje default `z-50`.
+- `parse-pdf-statement` backend nije problem: zadnji logovi pokazuju:
+  - `2026-05-19T04:33:21Z INFO Extracted 42 transactions from Aircash`
+  - raniji pokušaji također vraćaju 42 transakcije
+- Nema logova s `Error` u toj edge funkciji.
+- Trenutni browser snapshot ne sadrži `parse-pdf-statement` network zapis, pa ne mogu potvrditi konkretan response iz tvog zadnjeg klika.
+- UI kod trenutno otvara PDF preview kao nested shadcn/Radix `<Dialog>` unutar custom fullscreen modala `PaymentSourceTransactionsDialog`.
 
-## Najvjerojatniji uzrok
+## Do I know what the issue is?
 
-PDF rezultat se vrati, ali preview dialog je i dalje slojno neispravan jer je `PaymentSourceTransactionsDialog` fullscreen layer `z-[60]`, a Radix overlay ostaje `z-50`. To može blokirati ili sakriti interakciju/preview u nested dialog scenariju.
+Da, dovoljno za popravak bez nagađanja: parser vraća transakcije, ali preview UI se ne prikazuje korisniku. Prethodni z-index popravak nije dovoljan jer je problem u samom obrascu renderiranja: nested Radix dialog portal unutar custom fullscreen modala je krhak u ovom flowu.
 
-## Plan implementacije
+## Točan popravak
 
-1. U `src/components/ui/dialog.tsx` proširiti `DialogContent` da opcionalno prima `overlayClassName`.
-   - Ne mijenjati globalni default.
-   - Ako se ništa ne proslijedi, svi postojeći dialozi ostaju `z-50` kao dosad.
+Umjesto nested Radix `<Dialog>` za PDF preview i duplicate warning u `PaymentSourceTransactionsDialog`, prebaciti ih u stabilan inline fullscreen overlay unutar istog `z-[60]` konteksta:
 
-2. U `src/components/PaymentSourceTransactionsDialog.tsx` za nested dialoge postaviti:
-   - `DialogContent className="z-[70] ..."`
-   - `overlayClassName="z-[65]"`
+1. Ukloniti ovisnost PDF previewa o portalu/nested dialogu.
+2. Renderirati PDF preview kao `AnimatePresence`/`motion.div` direktno u `PaymentSourceTransactionsDialog`:
+   - `fixed inset-0 z-[80]`
+   - vlastiti backdrop
+   - vlastiti panel
+   - isti sadržaj i isti gumb “Uvezi”
+3. Isto primijeniti na duplicate warning overlay:
+   - ostaje isti dedupe flow
+   - samo se mijenja način prikaza
+4. Zadržati postojeću import logiku:
+   - `parsePDF`
+   - `setPdfPreviewOpen(true)`
+   - `handleImportPDFTransactions`
+   - `handleConfirmImportWithDuplicates`
+5. Dodati minimalne dev dijagnostičke logove u PDF select flow:
+   - nakon parsiranja: broj transakcija
+   - kad se otvara preview
+   Ovo pomaže ako se problem ponovi, bez utjecaja na korisnički UI.
 
-3. Obuhvatiti oba nested dialoga:
-   - PDF preview (`pdfPreviewOpen`)
-   - duplicate warning (`duplicateWarningOpen`)
+## Što se ne dira
 
-4. Dodati eksplicitno korisničko stanje za slučaj da parser vrati rezultat bez transakcija ili se request ne završi greškom:
-   - zadržati postojeće `pdfNoTransactions` ponašanje
-   - ne dirati backend parser jer log potvrđuje da za AirCash vraća transakcije
+- Backend parser se ne mijenja jer je dokazano vratio transakcije.
+- Import u `expenses` se ne mijenja.
+- Deduplikacija se ne mijenja.
+- Globalni shadcn dialog se ne dira više.
 
 ## Verifikacija
 
-- Provjeriti da su samo nested dialogi u `PaymentSourceTransactionsDialog` dobili viši overlay/content z-index.
-- Provjeriti da globalni `dialog.tsx` default nije promijenio ponašanje drugih dialoga.
-- Nakon implementacije: AirCash izvor → PDF import → preview mora biti vidljiv iznad fullscreen izvora plaćanja.
+- Provjeriti da `PaymentSourceTransactionsDialog` više nema PDF/duplicate nested Radix dialoge.
+- Provjeriti da se PDF preview renderira iznad izvora plaćanja (`z-[80]`).
+- Provjeriti dev-server logove nakon izmjene.
