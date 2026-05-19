@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 export interface ParsedPDFTransaction {
   date: Date;
@@ -27,6 +28,24 @@ interface PDFParseResult {
     transaction_count: number;
   } | null;
 }
+
+const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+
+const toParseResult = (data: any): PDFParseResult => ({
+  transactions: (data.transactions || []).map((tx: any) => ({
+    ...tx,
+    date: new Date(tx.date),
+    category: tx.category as Category,
+    type: tx.type as TransactionType,
+    payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
+    card_last4: tx.card_last4 || null
+  })),
+  detected_bank: data.detected_bank || null,
+  account_iban: data.account_iban || null,
+  holder_name: data.holder_name || null,
+  cards_detected: data.cards_detected || [],
+  summary: data.summary
+});
 
 // Detect payment source from description, card_type, or detected bank
 function detectPaymentSource(
@@ -104,7 +123,8 @@ export const usePDFParser = () => {
           body: JSON.stringify({ 
             pdfBase64: base64Data, 
             bankType,
-            isImage: isImage || false
+            isImage: isImage || false,
+            async: true
           }),
         }
       );
@@ -118,27 +138,42 @@ export const usePDFParser = () => {
           showError(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
           return null;
         }
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Greška pri analizi izvoda');
       }
 
       const data = await response.json();
-      
-      const result: PDFParseResult = {
-        transactions: (data.transactions || []).map((tx: any) => ({
-          ...tx,
-          date: new Date(tx.date),
-          category: tx.category as Category,
-          type: tx.type as TransactionType,
-          payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-          card_last4: tx.card_last4 || null
-        })),
-        detected_bank: data.detected_bank || null,
-        account_iban: data.account_iban || null,
-        holder_name: data.holder_name || null,
-        cards_detected: data.cards_detected || [],
-        summary: data.summary
-      };
+      let completedData = data;
+
+      if (response.status === 202 && data.jobId) {
+        logDiagnostic('pdf_parse_job_started', { job_id: data.jobId, is_image: !!isImage });
+        for (let attempt = 0; attempt < 75; attempt += 1) {
+          await wait(attempt < 10 ? 1000 : 2000);
+          const { data: job, error } = await (supabase as any)
+            .from('pdf_parse_jobs')
+            .select('status,result,error')
+            .eq('id', data.jobId)
+            .maybeSingle();
+
+          if (error) throw new Error(error.message || 'Greška pri dohvaćanju rezultata obrade');
+          if (!job) continue;
+          if (job.status === 'failed') throw new Error(job.error || 'Greška pri analizi izvoda');
+          if (job.status === 'completed' && job.result) {
+            completedData = job.result;
+            logDiagnostic('pdf_parse_job_completed', {
+              job_id: data.jobId,
+              count: Array.isArray(job.result.transactions) ? job.result.transactions.length : 0,
+            });
+            break;
+          }
+        }
+
+        if (completedData === data) {
+          throw new Error('Isteklo je vrijeme čekanja rezultata obrade izvoda');
+        }
+      }
+
+      const result: PDFParseResult = toParseResult(completedData);
 
       setParsedData(result);
       
@@ -148,6 +183,10 @@ export const usePDFParser = () => {
       return result;
     } catch (error) {
       console.error('Error parsing statement:', error);
+      logDiagnostic('pdf_parse_failed', {
+        message: error instanceof Error ? error.message : String(error),
+        is_image: !!isImage,
+      });
       showError(t('errors.pdf.parseFailed', 'Greška pri analizi izvoda'));
       return null;
     } finally {
