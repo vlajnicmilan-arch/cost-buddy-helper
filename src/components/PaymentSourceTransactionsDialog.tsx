@@ -32,7 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
-import { usePdfImport, PDF_IMPORT_STORAGE_PREFIX, PDF_IMPORT_TTL_MS, type StoredPdfJob, type ParsedPDFData } from '@/contexts/PdfImportContext';
+import { usePdfImport } from '@/contexts/PdfImportContext';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
