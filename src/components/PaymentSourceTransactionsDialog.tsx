@@ -91,7 +91,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData, normalizeJobResult } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
@@ -395,12 +395,29 @@ export const PaymentSourceTransactionsDialog = ({
       try {
         const job = await fetchPDFParseJob(stored.jobId);
         if (cancelled) return;
-        if (!job || job.status === 'completed' || job.status === 'failed') {
+        if (!job) {
           try { localStorage.removeItem(key); } catch {}
-          try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: job?.status ?? 'missing', source_id: paymentSource.id }); } catch {}
+          try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'missing', source_id: paymentSource.id }); } catch {}
           return;
         }
-        // Only processing/pending jobs get re-polled.
+        if (job.status === 'failed') {
+          try { localStorage.removeItem(key); } catch {}
+          try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'failed', source_id: paymentSource.id }); } catch {}
+          return;
+        }
+        if (job.status === 'completed' && job.result) {
+          // Completed before UI could open preview — normalize & show now.
+          try { logDiagnostic('payment_source_pdf_recovery_completed', { job_id: stored.jobId, source_id: paymentSource.id }); } catch {}
+          try {
+            const normalized = normalizeJobResult(job.result) as LocalParsedData;
+            handlePdfJobResult(normalized, stored.jobId);
+          } catch (err) {
+            try { localStorage.removeItem(key); } catch {}
+            try { logDiagnostic('payment_source_pdf_recovery_normalize_failed', { job_id: stored.jobId, message: err instanceof Error ? err.message : String(err) }); } catch {}
+          }
+          return;
+        }
+        // pending/processing → re-poll
         logDiagnostic('payment_source_pdf_recovery_started', { job_id: stored.jobId, status: job.status, source_id: paymentSource.id });
         void runPdfJob(stored.jobId, { recovered: true });
       } catch (err) {
@@ -411,7 +428,7 @@ export const PaymentSourceTransactionsDialog = ({
 
     void recoverStoredJob();
     return () => { cancelled = true; };
-  }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+  }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData, normalizeJobResult, handlePdfJobResult]);
 
   // NOTE: "latest job" auto-recovery removed. It could attach a job created in
   // a different payment source. Recovery now relies only on the per-source

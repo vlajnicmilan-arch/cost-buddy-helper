@@ -41,6 +41,12 @@ const Wallet = () => {
     await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
   }, [wrapDeleteWithUndo, deleteExpense]);
 
+  // Wrap importFromCSV so wallet list (balances, transactions) refetches after a successful import.
+  const importFromCSVWithRefetch = useCallback(async (txs: Parameters<typeof importFromCSV>[0]) => {
+    await importFromCSV(txs);
+    refetch();
+  }, [importFromCSV, refetch]);
+
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
       navigate('/', { replace: true });
@@ -86,7 +92,7 @@ const Wallet = () => {
         expenses={rawExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpenseWithUndo}
-        onImportCSV={importFromCSV}
+        onImportCSV={importFromCSVWithRefetch}
         findDuplicates={findDuplicates}
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
       />
