@@ -311,17 +311,30 @@ export const PaymentSourceTransactionsDialog = ({
     } catch {}
 
     if (result.transactions.length > 0) {
+      // Order: clear storage → set data → open preview → clear processing.
+      clearStoredPdfJob();
       setSourceParsedData(result);
       setPdfPreviewOpen(true);
       setPdfJobPhase('completed');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
       try { logDiagnostic('payment_source_pdf_preview_opened', { job_id: jobId, count: result.transactions.length }); } catch {}
     } else {
+      clearStoredPdfJob();
       setPdfJobPhase('idle');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
+      try { logDiagnostic('payment_source_pdf_no_transactions', { job_id: jobId }); } catch {}
       toast.warning(t('toasts.pdfNoTransactions'));
     }
-  }, [t]);
+  }, [clearStoredPdfJob, t]);
 
   const runPdfJob = useCallback(async (jobId: string, options?: { releaseGuard?: boolean; recovered?: boolean }) => {
+    // Guard: same job already actively polling → skip duplicate.
+    if (activePdfJobIdRef.current === jobId) {
+      try { logDiagnostic('payment_source_pdf_polling_skipped_duplicate', { job_id: jobId, recovered: !!options?.recovered }); } catch {}
+      return;
+    }
     activePdfJobIdRef.current = jobId;
     setPdfJobId(jobId);
     setPdfJobPhase('processing');
@@ -340,19 +353,17 @@ export const PaymentSourceTransactionsDialog = ({
       });
 
       if (activePdfJobIdRef.current !== jobId || !result) return;
-      clearStoredPdfJob();
       handlePdfJobResult(result, jobId);
     } catch (err) {
       if (activePdfJobIdRef.current !== jobId) return;
       setPdfJobPhase('failed');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
+      clearStoredPdfJob();
       const message = err instanceof Error ? err.message : String(err);
       try { logDiagnostic('payment_source_pdf_job_failed', { job_id: jobId, message, recovered: !!options?.recovered }); } catch {}
       showError(t('toasts.pdfAnalysisError'));
     } finally {
-      if (activePdfJobIdRef.current === jobId) {
-        activePdfJobIdRef.current = null;
-        setPdfJobId(null);
-      }
       if (options?.releaseGuard) releaseFilePickerGuardSoon();
     }
   }, [clearStoredPdfJob, handlePdfJobResult, releaseFilePickerGuardSoon, t, waitForPDFParseJob]);

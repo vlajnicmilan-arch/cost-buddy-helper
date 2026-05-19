@@ -1,32 +1,61 @@
-## Nalaz
+Da, vidi se. Problem je bio vremenska zona: ja sam gledao UTC i krivo komunicirao.
 
-Stvarni logovi od prije par minuta potvrđuju problem:
+Provjereno sada:
 
-- PDF job `77f08771-...` pokrenut je u 16:29 i završen u 16:30 s 82 transakcije.
-- Nakon izlaska i povratka u izvor plaćanja aplikacija je u 16:31 napravila `payment_source_pdf_recovery_started` za isti job iz `localStorage`.
-- Zato se opet prikazuje overlay “Obrađujem PDF”, pa tek onda ponovno otvara preview.
+- Hrvatsko vrijeme 18:xx = UTC 16:xx.
+- PDF jobovi poslije 18:00 postoje:
+  - 18:29:19 — completed, 82 transakcije
+  - 18:32:36 — completed, 57 transakcija
+  - 18:35:25 — completed, 55 transakcija
+  - 18:37:03 — completed, 55 transakcija
+- Import batch-evi poslije 18:00 postoje:
+  - 18:32:03 — 65 redaka uvezeno
+  - 18:34:40 — 43 retka uvezeno
+- Za jobove 18:35 i 18:37 vidim da su PDF-ovi obrađeni, ali ne vidim kasniji import batch u `expenses`.
+- Za job 18:37 postoji log `payment_source_pdf_preview_opened` u 18:38:54.
+- Za kasnije korake trenutno nemamo dovoljno precizan log: ne postoji pouzdan zapis “korisnik kliknuo Uvezi”, “import krenuo”, “duplicate dialog otvoren”, “import završen”, “import resetirao state”.
 
-Root cause nije više `fetchLatestPDFParseJob`, nego per-source recovery iz `localStorage`: spremljeni job ostaje aktivan kad korisnik napusti dijalog prije nego je rezultat prikazan/konzumiran.
+Što to znači:
 
-## Plan implementacije
+- PDF parser radi: jobovi završavaju.
+- Dio importa radi: postoje stvarni batch-evi u `expenses`.
+- Problem je između završene PDF obrade, preview/duplicate flowa i finalnog importa u `expenses`.
+- Trenutna dijagnostika nije dovoljna da dokaže točno gdje nestaje zadnji korak.
 
-1. U `PaymentSourceTransactionsDialog.tsx` dodati recovery samo za stvarno nedovršene jobove:
-   - kod čitanja `vmb-pdf-parse-job:<sourceId>` prvo dohvatiti job po ID-u preko `fetchPDFParseJob`
-   - ako je status `completed` ili `failed`, odmah obrisati storage key i ne pokretati `runPdfJob`
-   - ako je status `processing` ili `pending`, tek tada nastaviti polling
+Plan:
 
-2. U `usePDFParser.ts` izložiti `fetchPDFParseJob` u komponenti već postoji u hook returnu, samo ga treba koristiti u destrukturiranju.
+1. Popraviti postojeći potvrđeni bug
+- Spriječiti višestruki polling/recovery istog PDF joba.
+- Ukloniti `fetchLatestPDFParseJob` recovery iz Payment Source dialoga jer može zakačiti krivi/stari processing job.
+- Recovery smije koristiti samo `vmb-pdf-parse-job:<sourceId>` i samo za konkretni job.
 
-3. Zadržati “latest job” recovery samo za `processing`, ali uskladiti s istim pravilom:
-   - ne zapisivati u storage i ne vrtjeti completed jobove
-   - dugoročno nema automatskog re-show previewa nakon što korisnik napusti izvor plaćanja
+2. Dodati precizne dijagnostičke evente za nedostajući dio toka
+- PDF gumb kliknut.
+- File picker otvoren.
+- `input.onChange` pozvan, uključujući slučaj bez filea.
+- File odabran.
+- Job startan.
+- Polling startan/skipped jer već postoji aktivni job.
+- Preview otvoren.
+- Uvezi kliknut.
+- Duplicate dialog otvoren.
+- Import pozvan s brojem transakcija.
+- Import uspio / import greška / nema novih transakcija.
+- Svaki reset PDF statea.
 
-4. Dodati dijagnostiku za slučajeve:
-   - stored job skipped jer je `completed`
-   - stored job skipped jer je `failed`
-   - stored job stvarno oporavljen jer je `processing/pending`
+3. Stabilizirati završetak joba
+- Kad job završi: očistiti storage key, postaviti `sourceParsedData`, otvoriti preview, pa tek onda maknuti processing state.
+- Processing overlay ne smije ostati iznad previewa.
 
-5. Verifikacija nakon promjene:
-   - otvoriti izvor plaćanja nakon završenog joba: ne smije se pojaviti “Obrađujem PDF”
-   - upload PDF-a: dok job traje overlay se smije prikazati
-   - ako korisnik izađe dok job stvarno još traje i vrati se: recovery smije nastaviti polling
+4. Provjera nakon implementacije
+- Nakon novog pokušaja gledamo po Zagreb vremenu.
+- Mora se vidjeti cijeli lanac: klik → file → job → preview → uvoz/duplikati → batch ili jasna poruka.
+- Ako se prekine, točno ćemo znati na kojem eventu.
+
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
+
+<presentation-actions>
+<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>
