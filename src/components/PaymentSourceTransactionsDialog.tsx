@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,6 +30,7 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -78,6 +79,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
+  const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
@@ -93,6 +95,39 @@ export const PaymentSourceTransactionsDialog = ({
       return ps === `custom:${paymentSource.id}` || ps === paymentSource.id;
     });
   }, [plans, paymentSource]);
+
+  const clearFilePickerGuardRelease = useCallback(() => {
+    if (filePickerGuardReleaseRef.current) {
+      clearTimeout(filePickerGuardReleaseRef.current);
+      filePickerGuardReleaseRef.current = null;
+    }
+  }, []);
+
+  const releaseFilePickerGuardSoon = useCallback((delay = 2500) => {
+    clearFilePickerGuardRelease();
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, delay);
+  }, [clearFilePickerGuardRelease]);
+
+  const openFilePickerWithGuard = useCallback((inputRef: React.RefObject<HTMLInputElement>) => {
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    clearFilePickerGuardRelease();
+    setNativeFlowActive(true);
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, 20000);
+    inputRef.current?.click();
+  }, [clearFilePickerGuardRelease]);
+
+  useEffect(() => {
+    return () => {
+      clearFilePickerGuardRelease();
+      setNativeFlowActive(false);
+    };
+  }, [clearFilePickerGuardRelease]);
 
   const handleClose = () => {
     clearSelection();
