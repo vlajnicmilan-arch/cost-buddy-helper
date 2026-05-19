@@ -1,55 +1,69 @@
-Provjerio sam kod i bazu. Ovo više nije nagađanje.
+Fakti koje sam sad provjerio:
 
-## Što je stvarno potvrđeno
+- PDF backend radi: zadnji poslovi se završavaju kao `completed` i imaju 37–82 transakcije.
+- Aplikacija je stvarno pokrenula verziju `2.0.9` na Androidu.
+- Za job `221e1678...` recovery je čak zapisao `payment_source_pdf_preview_opened` u 17:24:29.
+- Nakon toga nema `payment_source_pdf_import_clicked` i nema novih redaka u `expenses` nakon 17:00.
 
-- PDF parser radi: zadnji posao `40185654...` je u bazi `completed` i ima 37 transakcija.
-- Frontend je pokrenuo obradu u 16:53:02 i polling u 16:53:04.
-- Nakon toga nema client-side eventa `pdf_parse_job_completed`, `payment_source_pdf_preview_opened` ni `payment_source_pdf_import_clicked`.
-- U kodu postoji konkretna greška: recovery logika za spremljeni PDF posao briše posao ako je već `completed`, umjesto da uzme `result` i otvori preview. To znači: ako se app reload-a, WebView se obnovi ili komponenta izgubi stanje dok AI obrada traje, završeni posao se izgubi iz UI-ja.
+Zaključak: problem više nije parser. Problem je UI/lifecycle tok nakon rezultata: preview/import živi u `PaymentSourceTransactionsDialog`, a taj dijalog se gasi, remounta ili ostaje u krivom sloju nakon native/WebView prekida. Dosadašnje promjene su liječile polling i localStorage, ali nisu maknule stvarni uzrok: PDF import ne smije ovisiti o životu tog dijaloga.
 
-Problem nije u AI parseru. Problem je u lifecycle/recovery dijelu između završenog `pdf_parse_jobs.result` i prikaza/importa u UI.
+Plan popravka:
 
-## Plan popravka
+1. Uvesti stabilan globalni PDF import host
+   - Napraviti tok po uzoru na postojeći `ReceiptScanContext` + globalni host.
+   - PDF posao, rezultat, preview i import stanje držati izvan `PaymentSourceTransactionsDialog`.
+   - Host mountati jednom u globalnim overlayima, tako da preživi `/home`, `/wallet`, remount i Android lifecycle.
 
-1. **Popraviti recovery za završene PDF poslove**
-   - U `PaymentSourceTransactionsDialog.tsx` recovery više ne smije brisati `completed` job.
-   - Ako spremljeni job ima `status = completed` i `result`, treba ga pretvoriti u isti format kao normalni parser rezultat i pozvati postojeći preview flow.
-   - Tek nakon uspješnog otvaranja previewa smije se očistiti localStorage ključ.
+2. Dijalog izvora plaćanja svesti na trigger
+   - `PaymentSourceTransactionsDialog` više neće držati `pdfJobPhase`, `pdfJobId`, `sourceParsedData`, `pdfPreviewOpen`.
+   - Gumb PDF samo šalje: source id, source name, file i import callback u globalni PDF import tok.
+   - Time se uklanja ovisnost o tome je li dijalog još otvoren kad obrada završi.
 
-2. **Ukloniti ovisnost o komponentnom stateu za završeni rezultat**
-   - Spremiti minimalni PDF import state po izvoru plaćanja: `jobId`, `sourceId`, `startedAt`, `phase`.
-   - Recovery mora raditi i nakon povratka iz file pickera, reload-a, route remounta ili native lifecycle promjene.
-   - Ne uvoditi globalni “latest job” fallback jer je već dokazano opasan za krivi izvor plaćanja.
+3. Preview prikazivati iz globalnog overlay sloja
+   - Preview overlay ide u isti globalni sloj kao ostali app overlayi, s jednim odgovornim z-indexom.
+   - Import gumb ostaje dostupan čak i ako se stranica promijeni ili se izvorni dijalog remounta.
+   - Processing overlay i preview više neće biti dva odvojena stanja unutar istog nestabilnog dijaloga.
 
-3. **Osigurati da parsing hook izlaže sigurnu funkciju za pretvorbu rezultata**
-   - `usePDFParser` trenutno ima interni `toParseResult`, ali dialog ga ne može koristiti za recovery completed joba.
-   - Izložiti funkciju ili helper za normalizaciju `pdf_parse_jobs.result` → `PDFParseResult` bez dupliciranja logike.
+4. Recovery raditi iz globalnog toka, ne iz dijaloga
+   - Per-source job zapis ostaje, ali ga globalni host čita pri bootu/resumeu.
+   - Ako je job `completed`, host otvara preview direktno.
+   - Ako je `processing`, host nastavlja poll.
+   - Nema “latest job” fallbacka.
 
-4. **Dodati durable dijagnostiku za lifecycle prekid**
-   - Dodati evente za: recovery completed job, recovery opened preview, recovery cleared job, polling abandoned/unmounted.
-   - Kritične PDF evente zapisati tako da se ne izgube ako app/reload ubije 2s buffer.
-
-5. **Popraviti import feedback i osvježavanje liste**
-   - Nakon PDF importa pozvati `refetch` ili postojeći refresh callback tako da se lista izvora plaćanja sigurno osvježi iz baze.
-   - `importFromCSV` trenutno ažurira lokalni state, ali u ovom toku želim dodatno zatvoriti rupu između stvarnog DB inserta i prikaza u dijalogu.
-
-6. **Verifikacija nakon implementacije**
-   - Provjeriti da novi tok daje slijed:
-     - picker open
-     - file selected
-     - job started
-     - job completed u bazi
-     - preview opened iz normalnog toka ili recovery toka
+5. Import nakon previewa mora biti dokaziv
+   - Nakon klika Import logirati:
      - import clicked
-     - import success
-     - novi `import_batch_id` u `expenses`
-   - Posebno provjeriti slučaj: pokreni PDF obradu → izađi iz novčanika / vrati se → završeni job otvara preview, ne spinner.
+     - duplicate result
+     - insert started
+     - insert success/failure
+     - import batch id
+   - Nakon uspješnog importa pozvati refetch/update za Home i Wallet.
+   - Potvrditi u bazi da se pojavio novi `import_batch_id` u `expenses`.
 
-## Tehnički zahvat
+6. Ukloniti prethodne krpice koje su pogrešan smjer
+   - Maknuti timeout/guard logiku gdje samo maskira problem.
+   - Zadržati samo nužan abort za zaglavljeni network zahtjev ako ostane u hooku, ali glavni fix mora biti stabilan owner stanja.
 
-- Datoteke:
-  - `src/hooks/usePDFParser.ts`
-  - `src/components/PaymentSourceTransactionsDialog.tsx`
-  - po potrebi `src/pages/Wallet.tsx` samo za refresh nakon importa
-- Bez database migracije.
-- Bez promjena u parser edge funkciji jer parser već vraća ispravan rezultat.
+7. Verifikacija prije tvrdnje da je riješeno
+   - Provjeriti stvarni slijed u logovima:
+
+```text
+file_selected
+job_started
+job_completed
+global_preview_opened
+import_clicked
+expenses_insert_success
+new import_batch_id in expenses
+```
+
+- Bez `expenses_insert_success` i novog batcha ne smijem reći da je riješeno.
+
+Datoteke koje treba dirati:
+
+- `src/hooks/usePDFParser.ts` — ostaviti kao servis za start/fetch/normalize, bez UI ownershipa.
+- novi context/host za PDF import — globalni lifecycle-safe owner.
+- `src/components/PaymentSourceTransactionsDialog.tsx` — ukloniti PDF state i spojiti samo trigger.
+- `src/components/home/SharedDialogs.tsx`, `src/pages/Wallet.tsx`, moguće globalni overlay mount u `src/App.tsx`.
+- i18n datoteke samo ako treba novi tekst.
+- `public/version.json` i `android/app/build.gradle` — obavezan version bump jer je native promjena.
