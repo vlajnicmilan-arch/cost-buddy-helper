@@ -183,6 +183,10 @@ export const usePDFParser = () => {
       return result;
     } catch (error) {
       console.error('Error parsing statement:', error);
+      logDiagnostic('pdf_parse_failed', {
+        message: error instanceof Error ? error.message : String(error),
+        is_image: !!isImage,
+      });
       showError(t('errors.pdf.parseFailed', 'Greška pri analizi izvoda'));
       return null;
     } finally {
