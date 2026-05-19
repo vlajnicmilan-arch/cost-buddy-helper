@@ -44,6 +44,8 @@ interface PaymentSourceTransactionsDialogProps {
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
 }
 
+type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
+
 export const PaymentSourceTransactionsDialog = ({
   open,
   onOpenChange,
@@ -72,6 +74,8 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
+  const [pdfJobPhase, setPdfJobPhase] = useState<PdfJobPhase>('idle');
+  const [pdfJobId, setPdfJobId] = useState<string | null>(null);
   // Local mirror of the parse result, set synchronously from the parsePDF/parseHTML
   // return value. The preview overlay reads from this state instead of the hook's
   // internal `parsedData`, so the overlay does not depend on an unrelated async
@@ -81,10 +85,11 @@ export const PaymentSourceTransactionsDialog = ({
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePdfJobIdRef = useRef<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, parsedData, parsePDF, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, parsedData, startPDFParseJob, waitForPDFParseJob, parsePDF, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
 
   // Filter installment plans for this payment source
