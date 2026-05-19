@@ -413,34 +413,10 @@ export const PaymentSourceTransactionsDialog = ({
     return () => { cancelled = true; };
   }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
-  useEffect(() => {
-    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+  // NOTE: "latest job" auto-recovery removed. It could attach a job created in
+  // a different payment source. Recovery now relies only on the per-source
+  // localStorage key handled by the previous effect.
 
-    let cancelled = false;
-    const recoverLatestJob = async () => {
-      try {
-        const latest = await fetchLatestPDFParseJob();
-        if (cancelled || !latest) return;
-        // Only auto-recover jobs that are still PROCESSING (client started a job
-        // and got disconnected before result). Completed jobs MUST NOT be
-        // auto-recovered here, otherwise every dialog open re-shows the last
-        // import preview indefinitely. Completed jobs are picked up only when
-        // this client has the matching jobId stored in localStorage (handled
-        // by the previous effect).
-        if (latest.job.status === 'processing') {
-          logDiagnostic('payment_source_pdf_latest_processing_recovered', { job_id: latest.id, source_id: paymentSource.id });
-          const key = getPdfJobStorageKey();
-          if (key) localStorage.setItem(key, JSON.stringify({ jobId: latest.id, startedAt: new Date().toISOString() }));
-          void runPdfJob(latest.id, { recovered: true });
-        }
-      } catch (err) {
-        try { logDiagnostic('payment_source_pdf_latest_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-      }
-    };
-
-    void recoverLatestJob();
-    return () => { cancelled = true; };
-  }, [fetchLatestPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
