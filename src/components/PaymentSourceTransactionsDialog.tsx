@@ -108,7 +108,8 @@ export const PaymentSourceTransactionsDialog = ({
     registerHandlers: registerPdfImportHandlers,
   } = usePdfImport();
   const { customCategories } = useCustomCategories();
-  const isPdfProcessing = isGlobalPdfImportBusy || pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+  const isLocalPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+  const isPdfProcessing = isGlobalPdfImportBusy || isLocalPdfProcessing;
 
   useEffect(() => {
     onPdfProcessingChange?.(isPdfProcessing);
@@ -1266,7 +1267,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Parsing Overlay */}
       <AnimatePresence>
-        {(parsing || isPdfProcessing) && (
+        {(parsing || isLocalPdfProcessing) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
