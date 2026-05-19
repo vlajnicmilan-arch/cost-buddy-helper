@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { useCallback } from 'react';
+import { useBackButton } from '@/hooks/useBackButton';
 
 const Wallet = () => {
   const { t } = useTranslation();
@@ -28,6 +29,8 @@ const Wallet = () => {
   const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
+
+  useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
 
   const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
   const deleteExpenseWithUndo = useCallback(async (id: string) => {

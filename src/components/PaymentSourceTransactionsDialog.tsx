@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,6 +30,8 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -78,6 +80,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
+  const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
@@ -93,6 +96,47 @@ export const PaymentSourceTransactionsDialog = ({
       return ps === `custom:${paymentSource.id}` || ps === paymentSource.id;
     });
   }, [plans, paymentSource]);
+
+  const clearFilePickerGuardRelease = useCallback(() => {
+    if (filePickerGuardReleaseRef.current) {
+      clearTimeout(filePickerGuardReleaseRef.current);
+      filePickerGuardReleaseRef.current = null;
+    }
+  }, []);
+
+  const releaseFilePickerGuardSoon = useCallback((delay = 2500) => {
+    clearFilePickerGuardRelease();
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, delay);
+  }, [clearFilePickerGuardRelease]);
+
+  const openFilePickerWithGuard = useCallback((inputRef: React.RefObject<HTMLInputElement>, kind: 'pdf' | 'html') => {
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    clearFilePickerGuardRelease();
+    setNativeFlowActive(true);
+    try {
+      logDiagnostic('payment_source_import_picker_open', {
+        kind,
+        dialog_open: open,
+        has_payment_source: !!paymentSource,
+        route: window.location.pathname,
+      });
+    } catch {}
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, 20000);
+    inputRef.current?.click();
+  }, [clearFilePickerGuardRelease, open, paymentSource]);
+
+  useEffect(() => {
+    return () => {
+      clearFilePickerGuardRelease();
+      setNativeFlowActive(false);
+    };
+  }, [clearFilePickerGuardRelease]);
 
   const handleClose = () => {
     clearSelection();
@@ -282,12 +326,19 @@ export const PaymentSourceTransactionsDialog = ({
   // PDF import handlers
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      try { logDiagnostic('payment_source_pdf_file_missing', { route: window.location.pathname }); } catch {}
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    clearFilePickerGuardRelease();
+    try { logDiagnostic('payment_source_pdf_file_selected', { name: file.name, type: file.type, size: file.size }); } catch {}
     // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
       showError(t('import.selectPDF'));
       if (pdfInputRef.current) pdfInputRef.current.value = '';
+      releaseFilePickerGuardSoon(500);
       return;
     }
     
@@ -303,27 +354,40 @@ export const PaymentSourceTransactionsDialog = ({
     const reader = new FileReader();
     reader.onerror = () => {
       showError(t('toasts.fileReadError'));
+      releaseFilePickerGuardSoon(500);
     };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
       if (!base64) {
         showError(t('toasts.fileReadError'));
+        releaseFilePickerGuardSoon(500);
         return;
       }
       try {
         const result = await parsePDF(base64);
+        try {
+          logDiagnostic('payment_source_pdf_parse_result', {
+            has_result: !!result,
+            count: result?.transactions.length ?? 0,
+            detected_bank: result?.detected_bank ?? null,
+            route: window.location.pathname,
+          });
+        } catch {}
         if (result && result.transactions.length > 0) {
           // Mirror result into local state SYNCHRONOUSLY before opening preview,
           // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
           // on the same render where we flip the open flag.
           setSourceParsedData(result);
           setPdfPreviewOpen(true);
+          try { logDiagnostic('payment_source_pdf_preview_opened', { count: result.transactions.length }); } catch {}
         } else if (result && result.transactions.length === 0) {
           toast.warning(t('toasts.pdfNoTransactions'));
         }
       } catch (err) {
         console.error('PDF parse error:', err);
         showError(t('toasts.pdfAnalysisError'));
+      } finally {
+        releaseFilePickerGuardSoon();
       }
     };
     reader.readAsDataURL(fileBlob);
@@ -331,11 +395,16 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    clearFilePickerGuardRelease();
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
       showError(t('toasts.selectHtmlFile'));
       if (htmlInputRef.current) htmlInputRef.current.value = '';
+      releaseFilePickerGuardSoon(500);
       return;
     }
     if (htmlInputRef.current) htmlInputRef.current.value = '';
@@ -352,6 +421,8 @@ export const PaymentSourceTransactionsDialog = ({
     } catch (err) {
       console.error('HTML parse error:', err);
       showError(t('toasts.htmlAnalysisError'));
+    } finally {
+      releaseFilePickerGuardSoon();
     }
   };
 
@@ -574,7 +645,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => pdfInputRef.current?.click()}
+                        onClick={() => openFilePickerWithGuard(pdfInputRef, 'pdf')}
                         disabled={parsing}
                         className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                       >
@@ -595,7 +666,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => htmlInputRef.current?.click()}
+                        onClick={() => openFilePickerWithGuard(htmlInputRef, 'html')}
                         disabled={parsing}
                         className="h-7 text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
                       >
