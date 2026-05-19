@@ -21,6 +21,9 @@ interface DuplicateWarningDialogProps {
   } | null;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Optional centralized match metadata for richer messaging. */
+  level?: 'strict' | 'fuzzy' | 'suspicious';
+  reasonKey?: string;
 }
 
 export const DuplicateWarningDialog = ({
@@ -29,7 +32,9 @@ export const DuplicateWarningDialog = ({
   duplicateOf,
   newTransaction,
   onConfirm,
-  onCancel
+  onCancel,
+  level,
+  reasonKey,
 }: DuplicateWarningDialogProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -47,6 +52,9 @@ export const DuplicateWarningDialog = ({
   const existingCategoryInfo = getCategoryInfo(duplicateOf.category);
   const newCategoryInfo = getCategoryInfo(newTransaction.category as Category | IncomeCategory);
 
+  const levelLabel = level ? t(`duplicates.level.${level}`, level) : null;
+  const reasonText = reasonKey ? t(reasonKey, '') : '';
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="sm:max-w-md">
@@ -54,11 +62,17 @@ export const DuplicateWarningDialog = ({
           <AlertDialogTitle className="flex items-center gap-2 text-warning">
             <AlertTriangle className="w-5 h-5" />
             {t('duplicates.possibleDuplicate', 'Moguća duplirana transakcija')}
+            {levelLabel && (
+              <Badge variant="outline" className="ml-1 text-[10px] uppercase">
+                {levelLabel}
+              </Badge>
+            )}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left space-y-4">
             <p className="text-sm text-muted-foreground">
-              {t('duplicates.foundSimilar', 'Pronašli smo sličnu transakciju u vašoj evidenciji. Jeste li sigurni da želite dodati novu?')}
+              {reasonText || t('duplicates.foundSimilar', 'Pronašli smo sličnu transakciju u vašoj evidenciji. Jeste li sigurni da želite dodati novu?')}
             </p>
+
             
             {/* Existing transaction */}
             <div className="p-3 bg-muted/50 rounded-lg border space-y-2">
