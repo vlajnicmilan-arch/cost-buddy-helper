@@ -48,6 +48,8 @@ interface PdfImportContextValue {
   _setImporting: (importing: boolean) => void;
   _runImport: (transactions: ParsedTransaction[]) => Promise<void>;
   _runFindDuplicates: FindPdfDuplicatesHandler | null;
+  _pendingPdfRef: React.MutableRefObject<StartPdfImportOptions | null>;
+  _pendingHtmlRef: React.MutableRefObject<StartHtmlImportOptions | null>;
 }
 
 const noop = () => {};
@@ -151,10 +153,9 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     _setImporting,
     _runImport,
     _runFindDuplicates,
+    _pendingPdfRef: pendingPdfRef,
+    _pendingHtmlRef: pendingHtmlRef,
   }), [phase, source, jobId, result, hasHandlers, startPdfImport, startHtmlImport, registerHandlers, _setProcessing, _setPreview, _setIdle, _setImporting, _runImport, _runFindDuplicates]);
-
-  (value as any)._pendingPdf = pendingPdfRef;
-  (value as any)._pendingHtml = pendingHtmlRef;
 
   return <PdfImportContext.Provider value={value}>{children}</PdfImportContext.Provider>;
 };
@@ -178,6 +179,8 @@ export const usePdfImport = (): PdfImportContextValue => {
       _setImporting: noop,
       _runImport: async () => {},
       _runFindDuplicates: null,
+      _pendingPdfRef: { current: null },
+      _pendingHtmlRef: { current: null },
     };
   }
   return ctx;
