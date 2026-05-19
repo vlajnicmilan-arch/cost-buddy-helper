@@ -91,7 +91,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, startPDFParseJob, waitForPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchLatestPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
@@ -381,6 +381,35 @@ export const PaymentSourceTransactionsDialog = ({
       try { localStorage.removeItem(key); } catch {}
     }
   }, [getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+
+  useEffect(() => {
+    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+
+    let cancelled = false;
+    const recoverLatestJob = async () => {
+      try {
+        const latest = await fetchLatestPDFParseJob();
+        if (cancelled || !latest) return;
+        if (latest.job.status === 'completed' && latest.job.result) {
+          logDiagnostic('payment_source_pdf_latest_completed_recovered', { job_id: latest.id, source_id: paymentSource.id });
+          clearStoredPdfJob();
+          handlePdfJobResult((latest.job.result as LocalParsedData), latest.id);
+          return;
+        }
+        if (latest.job.status === 'processing') {
+          logDiagnostic('payment_source_pdf_latest_processing_recovered', { job_id: latest.id, source_id: paymentSource.id });
+          const key = getPdfJobStorageKey();
+          if (key) localStorage.setItem(key, JSON.stringify({ jobId: latest.id, startedAt: new Date().toISOString() }));
+          void runPdfJob(latest.id, { recovered: true });
+        }
+      } catch (err) {
+        try { logDiagnostic('payment_source_pdf_latest_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
+      }
+    };
+
+    void recoverLatestJob();
+    return () => { cancelled = true; };
+  }, [clearStoredPdfJob, fetchLatestPDFParseJob, getPdfJobStorageKey, handlePdfJobResult, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
