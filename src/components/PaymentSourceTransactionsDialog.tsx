@@ -347,6 +347,31 @@ export const PaymentSourceTransactionsDialog = ({
     }
   }, [clearStoredPdfJob, handlePdfJobResult, releaseFilePickerGuardSoon, t, waitForPDFParseJob]);
 
+  useEffect(() => {
+    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+    const key = getPdfJobStorageKey();
+    if (!key) return;
+
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const stored = JSON.parse(raw) as { jobId?: string; startedAt?: string };
+      if (!stored.jobId) return;
+
+      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
+      if (!startedAt || Date.now() - startedAt > 15 * 60 * 1000) {
+        localStorage.removeItem(key);
+        return;
+      }
+
+      logDiagnostic('payment_source_pdf_recovery_started', { job_id: stored.jobId, source_id: paymentSource.id });
+      void runPdfJob(stored.jobId, { recovered: true });
+    } catch (err) {
+      try { logDiagnostic('payment_source_pdf_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
+      try { localStorage.removeItem(key); } catch {}
+    }
+  }, [getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let count = 0;
