@@ -435,7 +435,7 @@ export const useExpenseCRUD = ({
   const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
     try {
       const batchId = crypto.randomUUID();
-      
+
       if (isLocalMode) {
         for (const tx of transactions) {
           await saveLocalExpense({
@@ -449,7 +449,6 @@ export const useExpenseCRUD = ({
             ai_extracted: false,
             import_batch_id: batchId
           });
-          // Update balance for each imported transaction
           const txType = tx.type as TransactionType;
           if (txType === 'transfer') {
             await updateBalance(tx.payment_source || 'other', tx.amount, 'transfer');
@@ -465,51 +464,54 @@ export const useExpenseCRUD = ({
         if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('errors.mustBeLoggedIn', 'Moraš biti prijavljen')); return; }
 
-        const rows = transactions.map(tx => ({
-          user_id: user.id,
-          amount: tx.amount,
-          description: tx.description,
-          category: tx.category,
-          type: tx.type,
-          date: tx.date.toISOString(),
-          payment_source: tx.payment_source || 'other',
-          merchant_name: tx.merchant_name || null,
-          ai_extracted: false,
-          import_batch_id: batchId,
-          business_profile_id: activeBusinessProfileId || null
+        // Compute deterministic fingerprint for rows missing one. Backed by
+        // unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`
+        // so re-importing the same statement cannot create duplicates.
+        const { computeImportFingerprint } = await import('@/lib/importFingerprint');
+        const rows = await Promise.all(transactions.map(async (tx) => {
+          const fingerprint = tx.bank_transaction_id
+            || await computeImportFingerprint({
+              userId: user.id,
+              paymentSource: tx.payment_source,
+              date: tx.date,
+              type: tx.type,
+              amount: tx.amount,
+              description: tx.description,
+              merchantName: tx.merchant_name,
+            });
+          return {
+            user_id: user.id,
+            amount: tx.amount,
+            description: tx.description,
+            category: tx.category,
+            type: tx.type,
+            date: tx.date.toISOString(),
+            payment_source: tx.payment_source || 'other',
+            merchant_name: tx.merchant_name || null,
+            ai_extracted: false,
+            import_batch_id: batchId,
+            business_profile_id: activeBusinessProfileId || null,
+            bank_transaction_id: fingerprint,
+          };
         }));
 
-        // Try bulk insert first; on failure, fall back to individual inserts
+        // Upsert with ignoreDuplicates: rows with a fingerprint that already
+        // exists for this user are silently skipped. `.select()` returns only
+        // newly inserted rows.
         const { data, error } = await supabase
           .from('expenses')
-          .insert(rows)
+          .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
           .select();
 
-        let insertedData = data;
-
         if (error) {
-          console.warn('Bulk insert failed, falling back to individual inserts:', error.message);
-          insertedData = [];
-          let failCount = 0;
-          for (const row of rows) {
-            const { data: single, error: singleErr } = await supabase
-              .from('expenses')
-              .insert(row)
-              .select()
-              .single();
-            if (singleErr) {
-              console.error('Individual insert failed:', singleErr.message, row.description);
-              failCount++;
-            } else if (single) {
-              insertedData.push(single);
-            }
-          }
-          if (failCount > 0) {
-            toast.warning(`${failCount} transakcija nije uspjelo uvesti`);
-          }
+          console.error('Bulk upsert failed:', error.message);
+          throw error;
         }
 
-        const newExpenses: Expense[] = (insertedData || []).map(e => ({
+        const insertedData = data || [];
+        const skippedCount = rows.length - insertedData.length;
+
+        const newExpenses: Expense[] = insertedData.map(e => ({
           ...e,
           date: new Date(e.date),
           category: e.category as Category,
@@ -518,7 +520,7 @@ export const useExpenseCRUD = ({
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         }));
 
-        // Update balances for all imported transactions
+        // Update balance ONLY for actually inserted rows.
         for (const tx of newExpenses) {
           const txType = tx.type as TransactionType;
           if (txType === 'transfer') {
@@ -535,14 +537,21 @@ export const useExpenseCRUD = ({
         setExpenses(prev => [...newExpenses, ...prev].sort(
           (a, b) => b.date.getTime() - a.date.getTime()
         ));
-        showSuccess(`Uvezeno ${newExpenses.length} transakcija`);
+
+        if (insertedData.length === 0) {
+          toast.info(`Nema novih transakcija — svih ${rows.length} već postoji.`);
+        } else if (skippedCount > 0) {
+          showSuccess(`Uvezeno ${insertedData.length} novih, ${skippedCount} već postoji.`);
+        } else {
+          showSuccess(`Uvezeno ${insertedData.length} transakcija`);
+        }
       }
     } catch (error) {
       console.error('Error importing CSV:', error);
       showError(t('toasts.importError'));
       throw error;
     }
-  }, [isLocalMode, user, setExpenses, updateBalance, onBalanceUpdated]);
+  }, [isLocalMode, user, authReady, activeBusinessProfileId, setExpenses, updateBalance, onBalanceUpdated, t]);
 
   return { addExpense, updateExpense, bulkUpdateExpenses, deleteExpense, importFromCSV };
 };
