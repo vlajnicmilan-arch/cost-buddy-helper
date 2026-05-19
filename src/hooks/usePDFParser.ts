@@ -38,6 +38,13 @@ interface PDFParseJobRow {
 }
 
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+const POLL_REQUEST_TIMEOUT_MS = 12_000;
+
+const isAbortLikeError = (error: unknown) => {
+  if (error instanceof DOMException && error.name === 'AbortError') return true;
+  if (error instanceof Error && error.name === 'AbortError') return true;
+  return String(error).toLowerCase().includes('abort');
+};
 
 const toParseResult = (data: any): PDFParseResult => ({
   transactions: (data.transactions || []).map((tx: any) => ({
@@ -198,7 +205,18 @@ export const usePDFParser = () => {
 
     for (let attempt = 0; attempt < 90; attempt += 1) {
       await wait(attempt < 10 ? 1000 : 2000);
-      const job = await fetchPDFParseJob(jobId);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), POLL_REQUEST_TIMEOUT_MS);
+      let job: PDFParseJobRow | null = null;
+      try {
+        job = await fetchPDFParseJob(jobId, controller.signal);
+      } catch (error) {
+        if (!isAbortLikeError(error)) throw error;
+        logDiagnostic('pdf_parse_job_poll_request_timeout', { job_id: jobId, attempt });
+        continue;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
       if (!job) continue;
 
       if (job.status !== lastStatus || attempt === 0 || attempt % 10 === 0) {
