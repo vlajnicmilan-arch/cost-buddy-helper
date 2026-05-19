@@ -437,29 +437,18 @@ export const PaymentSourceTransactionsDialog = ({
         return;
       }
       try {
-        const result = await parsePDF(base64);
-        try {
-          logDiagnostic('payment_source_pdf_parse_result', {
-            has_result: !!result,
-            count: result?.transactions.length ?? 0,
-            detected_bank: result?.detected_bank ?? null,
-            route: window.location.pathname,
-          });
-        } catch {}
-        if (result && result.transactions.length > 0) {
-          // Mirror result into local state SYNCHRONOUSLY before opening preview,
-          // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
-          // on the same render where we flip the open flag.
-          setSourceParsedData(result);
-          setPdfPreviewOpen(true);
-          try { logDiagnostic('payment_source_pdf_preview_opened', { count: result.transactions.length }); } catch {}
-        } else if (result && result.transactions.length === 0) {
-          toast.warning(t('toasts.pdfNoTransactions'));
+        setPdfJobPhase('starting');
+        const jobId = await startPDFParseJob(base64);
+        const key = getPdfJobStorageKey();
+        if (key) {
+          try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
         }
+        void runPdfJob(jobId, { releaseGuard: true });
       } catch (err) {
         console.error('PDF parse error:', err);
+        setPdfJobPhase('failed');
+        try { logDiagnostic('payment_source_pdf_start_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
         showError(t('toasts.pdfAnalysisError'));
-      } finally {
         releaseFilePickerGuardSoon();
       }
     };
