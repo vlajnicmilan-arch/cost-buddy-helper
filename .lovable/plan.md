@@ -1,48 +1,28 @@
-## Stvarno provjereno
+## Provjerene činjenice
 
-- `parse-pdf-statement` backend nije problem: zadnji logovi pokazuju:
-  - `2026-05-19T04:33:21Z INFO Extracted 42 transactions from Aircash`
-  - raniji pokušaji također vraćaju 42 transakcije
-- Nema logova s `Error` u toj edge funkciji.
-- Trenutni browser snapshot ne sadrži `parse-pdf-statement` network zapis, pa ne mogu potvrditi konkretan response iz tvog zadnjeg klika.
-- UI kod trenutno otvara PDF preview kao nested shadcn/Radix `<Dialog>` unutar custom fullscreen modala `PaymentSourceTransactionsDialog`.
+- Backend funkcija `parse-pdf-statement` radi: zadnji log pokazuje `Extracted 42 transactions from Aircash` i nema `Error` logova.
+- Snapshot browsera/replay koji je trenutno dostupan nije iz tvog AirCash pokušaja nego s `/auth`/landing stanja, pa ga ne koristim kao dokaz.
+- U `PaymentSourceTransactionsDialog.tsx` PDF tok radi ovako: `parsePDF()` vrati rezultat, hook interno pozove `setParsedData(result)`, parent zatim pozove `setPdfPreviewOpen(true)`.
+- Preview overlay se renderira samo ako su istovremeno true: `pdfPreviewOpen && parsedData`.
+- To je krhko jer se prikaz oslanja na state iz hooka koji se ažurira asinkrono, dok parent otvara overlay iz drugog statea.
+- U komponenti još postoje hardkodani tekstovi u PDF overlayu, što je protiv i18n pravila.
 
-## Do I know what the issue is?
+## Problem koji treba popraviti
 
-Da, dovoljno za popravak bez nagađanja: parser vraća transakcije, ali preview UI se ne prikazuje korisniku. Prethodni z-index popravak nije dovoljan jer je problem u samom obrascu renderiranja: nested Radix dialog portal unutar custom fullscreen modala je krhak u ovom flowu.
+PDF parser vraća transakcije, ali UI ne pokazuje preview nakon učitavanja. Treba ukloniti ovisnost previewa o tom asinkronom hook-state paru i vezati prikaz na rezultat koji je stvarno vraćen iz `parsePDF()`.
 
-## Točan popravak
+## Plan implementacije
 
-Umjesto nested Radix `<Dialog>` za PDF preview i duplicate warning u `PaymentSourceTransactionsDialog`, prebaciti ih u stabilan inline fullscreen overlay unutar istog `z-[60]` konteksta:
+1. U `PaymentSourceTransactionsDialog.tsx` dodati lokalni state za rezultat koji se koristi isključivo za ovaj dijalog, npr. `sourceParsedData`.
+2. U `handlePDFSelect` i `handleHTMLSelect`, nakon uspješnog `parsePDF/parseHTML`, spremiti vraćeni `result` direktno u lokalni state i tek onda otvoriti preview overlay.
+3. Sve reference u preview/import toku prebaciti s `parsedData` na lokalni `sourceParsedData`.
+4. Pri zatvaranju previewa, završetku importa i duplicate toku očistiti i lokalni state i hook state (`clearParsedData`) da nema starog rezultata.
+5. Ukloniti privremene `console.info` debug logove iz prethodnog pokušaja.
+6. Zamijeniti hardkodane vidljive tekstove u PDF overlayu postojećim ili novim i18n ključevima u HR/EN/DE.
 
-1. Ukloniti ovisnost PDF previewa o portalu/nested dialogu.
-2. Renderirati PDF preview kao `AnimatePresence`/`motion.div` direktno u `PaymentSourceTransactionsDialog`:
-   - `fixed inset-0 z-[80]`
-   - vlastiti backdrop
-   - vlastiti panel
-   - isti sadržaj i isti gumb “Uvezi”
-3. Isto primijeniti na duplicate warning overlay:
-   - ostaje isti dedupe flow
-   - samo se mijenja način prikaza
-4. Zadržati postojeću import logiku:
-   - `parsePDF`
-   - `setPdfPreviewOpen(true)`
-   - `handleImportPDFTransactions`
-   - `handleConfirmImportWithDuplicates`
-5. Dodati minimalne dev dijagnostičke logove u PDF select flow:
-   - nakon parsiranja: broj transakcija
-   - kad se otvara preview
-   Ovo pomaže ako se problem ponovi, bez utjecaja na korisnički UI.
+## Verifikacija nakon izmjene
 
-## Što se ne dira
-
-- Backend parser se ne mijenja jer je dokazano vratio transakcije.
-- Import u `expenses` se ne mijenja.
-- Deduplikacija se ne mijenja.
-- Globalni shadcn dialog se ne dira više.
-
-## Verifikacija
-
-- Provjeriti da `PaymentSourceTransactionsDialog` više nema PDF/duplicate nested Radix dialoge.
-- Provjeriti da se PDF preview renderira iznad izvora plaćanja (`z-[80]`).
-- Provjeriti dev-server logove nakon izmjene.
+- Provjeriti da u kodu više nema uvjeta `pdfPreviewOpen && parsedData` za ovaj dijalog.
+- Provjeriti da nema TypeScript/Vite grešaka u dev-server logu.
+- Provjeriti da nema `console.info('[PDF Import]...')` debug ostataka.
+- Backend ne dirati jer je logovima potvrđeno da parser radi.

@@ -70,6 +70,12 @@ export const PaymentSourceTransactionsDialog = ({
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
   const [isImportingPdf, setIsImportingPdf] = useState(false);
+  // Local mirror of the parse result, set synchronously from the parsePDF/parseHTML
+  // return value. The preview overlay reads from this state instead of the hook's
+  // internal `parsedData`, so the overlay does not depend on an unrelated async
+  // setState landing before our `setPdfPreviewOpen(true)`.
+  type LocalParsedData = NonNullable<ReturnType<typeof usePDFParser>['parsedData']>;
+  const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
