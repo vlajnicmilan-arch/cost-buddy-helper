@@ -80,7 +80,8 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { pdfBase64, bankType, isImage, htmlContent } = await req.json();
+    const body = await req.json();
+    const { pdfBase64, bankType, isImage, htmlContent } = body;
 
     const isHTML = !!htmlContent;
 
@@ -88,6 +89,61 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'No file provided' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (body.async === true) {
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
+
+      const admin = createClient(supabaseUrl, serviceKey);
+      const { data: job, error: jobError } = await admin
+        .from('pdf_parse_jobs')
+        .insert({ user_id: userId, status: 'processing' })
+        .select('id')
+        .single();
+
+      if (jobError || !job?.id) {
+        console.error('Failed to create PDF parse job:', jobError);
+        return new Response(
+          JSON.stringify({ error: 'Nije moguće pokrenuti obradu izvoda' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const processJob = async () => {
+        try {
+          const directBody = { ...body, async: false };
+          const resultResponse = await fetch(`${supabaseUrl}/functions/v1/parse-pdf-statement`, {
+            method: 'POST',
+            headers: {
+              Authorization: authHeader,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(directBody),
+          });
+
+          const result = await resultResponse.json().catch(() => null);
+          if (!resultResponse.ok) {
+            const message = result?.error || `PDF parse failed (${resultResponse.status})`;
+            await admin.from('pdf_parse_jobs').update({ status: 'failed', error: message }).eq('id', job.id);
+            return;
+          }
+
+          await admin.from('pdf_parse_jobs').update({ status: 'completed', result }).eq('id', job.id);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown PDF parse job error';
+          console.error('PDF parse job failed:', message);
+          await admin.from('pdf_parse_jobs').update({ status: 'failed', error: message }).eq('id', job.id);
+        }
+      };
+
+      const edgeRuntime = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void } }).EdgeRuntime;
+      edgeRuntime?.waitUntil ? edgeRuntime.waitUntil(processJob()) : void processJob();
+
+      return new Response(
+        JSON.stringify({ jobId: job.id, status: 'processing' }),
+        { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
