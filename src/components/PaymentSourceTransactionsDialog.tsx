@@ -625,7 +625,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => pdfInputRef.current?.click()}
+                        onClick={() => openFilePickerWithGuard(pdfInputRef)}
                         disabled={parsing}
                         className="h-7 text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                       >
@@ -646,7 +646,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => htmlInputRef.current?.click()}
+                        onClick={() => openFilePickerWithGuard(htmlInputRef)}
                         disabled={parsing}
                         className="h-7 text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
                       >
