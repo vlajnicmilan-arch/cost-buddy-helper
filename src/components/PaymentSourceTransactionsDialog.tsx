@@ -392,8 +392,7 @@ export const PaymentSourceTransactionsDialog = ({
         if (cancelled || !latest) return;
         if (latest.job.status === 'completed' && latest.job.result) {
           logDiagnostic('payment_source_pdf_latest_completed_recovered', { job_id: latest.id, source_id: paymentSource.id });
-          clearStoredPdfJob();
-          handlePdfJobResult((latest.job.result as LocalParsedData), latest.id);
+          void runPdfJob(latest.id, { recovered: true });
           return;
         }
         if (latest.job.status === 'processing') {
