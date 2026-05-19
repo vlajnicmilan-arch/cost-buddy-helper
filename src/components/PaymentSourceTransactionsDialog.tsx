@@ -47,6 +47,14 @@ interface PaymentSourceTransactionsDialogProps {
 
 type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
 
+type StoredPdfJob = {
+  jobId?: string;
+  sourceId?: string;
+  startedAt?: string;
+};
+
+const PDF_JOB_TTL_MS = 15 * 60 * 1000;
+
 export const PaymentSourceTransactionsDialog = ({
   open,
   onOpenChange,
