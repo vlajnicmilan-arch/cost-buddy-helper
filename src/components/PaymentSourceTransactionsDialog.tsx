@@ -91,7 +91,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, fetchLatestPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
@@ -311,17 +311,30 @@ export const PaymentSourceTransactionsDialog = ({
     } catch {}
 
     if (result.transactions.length > 0) {
+      // Order: clear storage → set data → open preview → clear processing.
+      clearStoredPdfJob();
       setSourceParsedData(result);
       setPdfPreviewOpen(true);
       setPdfJobPhase('completed');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
       try { logDiagnostic('payment_source_pdf_preview_opened', { job_id: jobId, count: result.transactions.length }); } catch {}
     } else {
+      clearStoredPdfJob();
       setPdfJobPhase('idle');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
+      try { logDiagnostic('payment_source_pdf_no_transactions', { job_id: jobId }); } catch {}
       toast.warning(t('toasts.pdfNoTransactions'));
     }
-  }, [t]);
+  }, [clearStoredPdfJob, t]);
 
   const runPdfJob = useCallback(async (jobId: string, options?: { releaseGuard?: boolean; recovered?: boolean }) => {
+    // Guard: same job already actively polling → skip duplicate.
+    if (activePdfJobIdRef.current === jobId) {
+      try { logDiagnostic('payment_source_pdf_polling_skipped_duplicate', { job_id: jobId, recovered: !!options?.recovered }); } catch {}
+      return;
+    }
     activePdfJobIdRef.current = jobId;
     setPdfJobId(jobId);
     setPdfJobPhase('processing');
@@ -340,19 +353,17 @@ export const PaymentSourceTransactionsDialog = ({
       });
 
       if (activePdfJobIdRef.current !== jobId || !result) return;
-      clearStoredPdfJob();
       handlePdfJobResult(result, jobId);
     } catch (err) {
       if (activePdfJobIdRef.current !== jobId) return;
       setPdfJobPhase('failed');
+      activePdfJobIdRef.current = null;
+      setPdfJobId(null);
+      clearStoredPdfJob();
       const message = err instanceof Error ? err.message : String(err);
       try { logDiagnostic('payment_source_pdf_job_failed', { job_id: jobId, message, recovered: !!options?.recovered }); } catch {}
       showError(t('toasts.pdfAnalysisError'));
     } finally {
-      if (activePdfJobIdRef.current === jobId) {
-        activePdfJobIdRef.current = null;
-        setPdfJobId(null);
-      }
       if (options?.releaseGuard) releaseFilePickerGuardSoon();
     }
   }, [clearStoredPdfJob, handlePdfJobResult, releaseFilePickerGuardSoon, t, waitForPDFParseJob]);
@@ -402,34 +413,10 @@ export const PaymentSourceTransactionsDialog = ({
     return () => { cancelled = true; };
   }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
-  useEffect(() => {
-    if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
+  // NOTE: "latest job" auto-recovery removed. It could attach a job created in
+  // a different payment source. Recovery now relies only on the per-source
+  // localStorage key handled by the previous effect.
 
-    let cancelled = false;
-    const recoverLatestJob = async () => {
-      try {
-        const latest = await fetchLatestPDFParseJob();
-        if (cancelled || !latest) return;
-        // Only auto-recover jobs that are still PROCESSING (client started a job
-        // and got disconnected before result). Completed jobs MUST NOT be
-        // auto-recovered here, otherwise every dialog open re-shows the last
-        // import preview indefinitely. Completed jobs are picked up only when
-        // this client has the matching jobId stored in localStorage (handled
-        // by the previous effect).
-        if (latest.job.status === 'processing') {
-          logDiagnostic('payment_source_pdf_latest_processing_recovered', { job_id: latest.id, source_id: paymentSource.id });
-          const key = getPdfJobStorageKey();
-          if (key) localStorage.setItem(key, JSON.stringify({ jobId: latest.id, startedAt: new Date().toISOString() }));
-          void runPdfJob(latest.id, { recovered: true });
-        }
-      } catch (err) {
-        try { logDiagnostic('payment_source_pdf_latest_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-      }
-    };
-
-    void recoverLatestJob();
-    return () => { cancelled = true; };
-  }, [fetchLatestPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
@@ -523,7 +510,9 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         setPdfJobPhase('starting');
+        try { logDiagnostic('payment_source_pdf_start_attempt', { source_id: paymentSource?.id ?? null, file_size: fileBlob.size }); } catch {}
         const jobId = await startPDFParseJob(base64);
+        try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
         const key = getPdfJobStorageKey();
         if (key) {
           try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
@@ -583,7 +572,10 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleImportPDFTransactions = async () => {
-    if (!sourceParsedData || !onImportCSV || !paymentSource) return;
+    if (!sourceParsedData || !onImportCSV || !paymentSource) {
+      try { logDiagnostic('payment_source_pdf_import_blocked', { has_data: !!sourceParsedData, has_handler: !!onImportCSV, has_source: !!paymentSource }); } catch {}
+      return;
+    }
 
     const paymentSourceValue = `custom:${paymentSource.id}`;
     const transactions: ParsedTransaction[] = sourceParsedData.transactions.map(tx => ({
@@ -597,14 +589,18 @@ export const PaymentSourceTransactionsDialog = ({
       payment_source: paymentSourceValue as any
     }));
 
+    try { logDiagnostic('payment_source_pdf_import_clicked', { source_id: paymentSource.id, count: transactions.length }); } catch {}
+
     try {
       setIsImportingPdf(true);
 
       if (findDuplicates) {
         const { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique } = findDuplicates(transactions);
+        try { logDiagnostic('payment_source_pdf_import_dedup', { source_id: paymentSource.id, duplicates: duplicates.length, fuzzy: fuzzyDuplicates.length, unique: unique.length }); } catch {}
 
         if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
+            try { logDiagnostic('payment_source_pdf_import_all_duplicates', { source_id: paymentSource.id, count: transactions.length }); } catch {}
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
             resetPdfImportState();
@@ -616,16 +612,19 @@ export const PaymentSourceTransactionsDialog = ({
           setSelectedFuzzy(new Set());
           setPdfPreviewOpen(false);
           setDuplicateWarningOpen(true);
+          try { logDiagnostic('payment_source_pdf_duplicate_dialog_opened', { source_id: paymentSource.id, duplicates: duplicates.length, fuzzy: fuzzyDuplicates.length }); } catch {}
           return;
         }
       }
 
       await onImportCSV(transactions);
+      try { logDiagnostic('payment_source_pdf_import_success', { source_id: paymentSource.id, count: transactions.length }); } catch {}
       setPdfPreviewOpen(false);
       resetPdfImportState();
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
+      try { logDiagnostic('payment_source_pdf_import_failed', { source_id: paymentSource.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
       showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
@@ -633,10 +632,14 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleConfirmImportWithDuplicates = async () => {
-    if (!duplicateInfo || !onImportCSV) return;
+    if (!duplicateInfo || !onImportCSV) {
+      try { logDiagnostic('payment_source_pdf_duplicate_confirm_blocked', { has_info: !!duplicateInfo, has_handler: !!onImportCSV }); } catch {}
+      return;
+    }
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, i) => selectedFuzzy.has(i));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
     const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
+    try { logDiagnostic('payment_source_pdf_duplicate_confirm_clicked', { count: transactionsToImport.length, unique: duplicateInfo.unique.length, fuzzy_selected: fuzzyToInclude.length, strict_selected: strictToInclude.length }); } catch {}
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
@@ -648,17 +651,21 @@ export const PaymentSourceTransactionsDialog = ({
     try {
       setIsImportingPdf(true);
       await onImportCSV(transactionsToImport);
+      try { logDiagnostic('payment_source_pdf_duplicate_import_success', { count: transactionsToImport.length }); } catch {}
       setDuplicateWarningOpen(false);
       resetPdfImportState();
       setDuplicateInfo(null);
       showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
       console.error('Error importing duplicate-reviewed transactions:', error);
+      try { logDiagnostic('payment_source_pdf_duplicate_import_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
       showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }
   };
+
+
 
 
   // Print handler

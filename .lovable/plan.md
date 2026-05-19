@@ -1,32 +1,44 @@
-## Nalaz
+# PDF uvoz — popravak i dijagnostika (19.5.2026)
 
-Stvarni logovi od prije par minuta potvrđuju problem:
+Status: implementirano, čeka korisnikov test pokušaj.
 
-- PDF job `77f08771-...` pokrenut je u 16:29 i završen u 16:30 s 82 transakcije.
-- Nakon izlaska i povratka u izvor plaćanja aplikacija je u 16:31 napravila `payment_source_pdf_recovery_started` za isti job iz `localStorage`.
-- Zato se opet prikazuje overlay “Obrađujem PDF”, pa tek onda ponovno otvara preview.
+Promjene u `src/components/PaymentSourceTransactionsDialog.tsx`:
+1. `runPdfJob` guard: ako je isti `jobId` već aktivan (`activePdfJobIdRef`), drugi poziv se preskače i logira `payment_source_pdf_polling_skipped_duplicate`. Sprječava dvostruko polling za isti job.
+2. Uklonjen `fetchLatestPDFParseJob` recovery iz dialoga (mogao je vratiti tuđi `processing` job). Recovery sada ide samo preko per-source localStorage ključa `vmb-pdf-parse-job:<sourceId>`.
+3. `handlePdfJobResult`: novi redoslijed — `clearStoredPdfJob` → `setSourceParsedData` → `setPdfPreviewOpen(true)` → `setPdfJobPhase('completed')` → reset `activePdfJobIdRef`/`pdfJobId`. Processing overlay više ne ostaje iznad previewa.
+4. Pri grešci u jobu: čisti storage key i job state odmah, ne ostavlja zaglavljeno `pdfJobId`.
+5. Dodani dijagnostički eventi:
+   - `payment_source_pdf_start_attempt`, `payment_source_pdf_start_ok`
+   - `payment_source_pdf_polling_skipped_duplicate`
+   - `payment_source_pdf_no_transactions`
+   - `payment_source_pdf_import_blocked`, `payment_source_pdf_import_clicked`
+   - `payment_source_pdf_import_dedup`
+   - `payment_source_pdf_import_all_duplicates`
+   - `payment_source_pdf_duplicate_dialog_opened`
+   - `payment_source_pdf_import_success`, `payment_source_pdf_import_failed`
+   - `payment_source_pdf_duplicate_confirm_blocked`, `payment_source_pdf_duplicate_confirm_clicked`
+   - `payment_source_pdf_duplicate_import_success`, `payment_source_pdf_duplicate_import_failed`
 
-Root cause nije više `fetchLatestPDFParseJob`, nego per-source recovery iz `localStorage`: spremljeni job ostaje aktivan kad korisnik napusti dijalog prije nego je rezultat prikazan/konzumiran.
+Verifikacijski upit (Zagreb vrijeme):
+```sql
+select created_at at time zone 'Europe/Zagreb' as t, event, details
+from public.app_diagnostics_logs
+where created_at > now() - interval '1 hour'
+  and event ilike 'payment_source_pdf%'
+order by created_at asc;
+```
 
-## Plan implementacije
-
-1. U `PaymentSourceTransactionsDialog.tsx` dodati recovery samo za stvarno nedovršene jobove:
-   - kod čitanja `vmb-pdf-parse-job:<sourceId>` prvo dohvatiti job po ID-u preko `fetchPDFParseJob`
-   - ako je status `completed` ili `failed`, odmah obrisati storage key i ne pokretati `runPdfJob`
-   - ako je status `processing` ili `pending`, tek tada nastaviti polling
-
-2. U `usePDFParser.ts` izložiti `fetchPDFParseJob` u komponenti već postoji u hook returnu, samo ga treba koristiti u destrukturiranju.
-
-3. Zadržati “latest job” recovery samo za `processing`, ali uskladiti s istim pravilom:
-   - ne zapisivati u storage i ne vrtjeti completed jobove
-   - dugoročno nema automatskog re-show previewa nakon što korisnik napusti izvor plaćanja
-
-4. Dodati dijagnostiku za slučajeve:
-   - stored job skipped jer je `completed`
-   - stored job skipped jer je `failed`
-   - stored job stvarno oporavljen jer je `processing/pending`
-
-5. Verifikacija nakon promjene:
-   - otvoriti izvor plaćanja nakon završenog joba: ne smije se pojaviti “Obrađujem PDF”
-   - upload PDF-a: dok job traje overlay se smije prikazati
-   - ako korisnik izađe dok job stvarno još traje i vrati se: recovery smije nastaviti polling
+Očekivani slijed za jedan PDF uvoz:
+`pdf_button_click` (postojeći `payment_source_import_picker_open`) →
+`payment_source_pdf_file_selected` →
+`payment_source_pdf_start_attempt` →
+`payment_source_pdf_start_ok` →
+`payment_source_pdf_polling_started` (jednom) →
+`payment_source_pdf_polling_status` (status: completed) →
+`payment_source_pdf_parse_result` →
+`payment_source_pdf_preview_opened` →
+`payment_source_pdf_import_clicked` →
+`payment_source_pdf_import_dedup` →
+(`payment_source_pdf_duplicate_dialog_opened` → `payment_source_pdf_duplicate_confirm_clicked` → `payment_source_pdf_duplicate_import_success`)
+ili
+`payment_source_pdf_import_success`.
