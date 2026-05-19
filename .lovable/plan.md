@@ -1,106 +1,52 @@
-# Faza A — Centralizacija duplicate detectiona + testovi
+## Problem
 
-Bank-sync dio (DIO 3, 4, 6) i suspicious badge (DIO 5) odgađamo dok ne bude prave banke (sandbox = numeričke reference, nema smisla flagati duplikate). Ovaj plan pokriva DIO 1, 2, 7.
+Kad otvoriš novčanik i klikneš izvor plaćanja, dijalog odmah pokazuje "Obrađujem izvod..." i nakon "Uvezi" se cijela petlja ponavlja u nedogled.
 
-## Što ćemo dobiti
+## Uzrok (potvrđen čitanjem koda)
 
-- **Jedan izvor istine** za prepoznavanje duplikata (helper modul).
-- **Jasne razine** umjesto sadašnjeg 2/3 skoringa: `strict` / `fuzzy` / `suspicious` / `unique`.
-- **Konzistentno ponašanje** u ručnom unosu, CSV-u i PDF-u (sva tri trenutno koriste različite kombinacije pravila).
-- **Regresijski testovi** koji garantiraju da edge case "isti merchant + isti iznos + isti dan = SUSPICIOUS badge, ne duplikat".
+U `src/components/PaymentSourceTransactionsDialog.tsx` postoje **dva** recovery efekta koji se okidaju kad se dijalog otvori:
 
-## Razine (koje korisnik vidi)
+1. **Lines 360–383** — čita `localStorage` ključ po izvoru (`vmb-pdf-parse-job:<sourceId>`). Ispravno: oslanja se na ID koji je ovaj klijent sam pokrenuo. Nakon `resetPdfImportState()` ovaj ključ se briše.
 
-| Razina | Confidence | Pravila |
-|---|---|---|
-| `strict` | 90–100 | isti payment_source_id + iznos ±0.01 + datum ±1 dan + merchant match (ili vrlo sličan opis) + isti type |
-| `fuzzy` | 60–89 | isti iznos (±0.01) + isti type + datum ±3 dana + merchant ILI opis fuzzy match |
-| `suspicious` | 30–59 | iznos ±5% + isti tjedan + merchant Levenshtein < 3 ILI opis preklapanje |
-| `unique` | 0–29 | bez ostalog |
+2. **Lines 385–411** — poziva `fetchLatestPDFParseJob()` (u `src/hooks/usePDFParser.ts:168`) koji vraća **bilo koji** `processing` ili `completed` red iz `pdf_parse_jobs` u zadnjih 6 sati, **bez vezivanja na payment_source**. Ako je status `completed`, odmah pokreće `runPdfJob(...)` → polling → otvara preview s tim transakcijama.
 
-Edge case (odluka korisnika): **Konzum 50€ ujutro + Konzum 50€ navečer u istom danu = `suspicious`** (ne strict, ne fuzzy). Ručni unos zadržava postojeću strict zaštitu od dvoklika preko zasebnog poziva — vidi DIO 2.
+Bug: nakon što korisnik klikne "Uvezi", `resetPdfImportState()` briše lokalni state i localStorage, ali red u `pdf_parse_jobs` ostaje `completed`. Sljedeće otvaranje dijaloga → drugi efekt opet pronađe taj isti red → preview se opet otvara → endless loop. Isto se događa i pri prvom otvaranju aplikacije ako je u DB-u zaostao stari completed posao (npr. od ranije sesije).
 
-## DIO 1 — `src/lib/duplicateDetection.ts`
+Dodatno: `fetchLatestPDFParseJob` nije scoped na payment_source, pa "latest completed" iz potpuno drugog izvora kraduje fokus.
 
-Pure modul, bez React/Supabase importa.
+## Rješenje (minimalno, bez patch-flagova)
+
+### A. `src/components/PaymentSourceTransactionsDialog.tsx` (efekt 385–411)
+
+Ukloniti granu koja recoverira `completed` jobove. Auto-recovery preko "latest" smije postojati **samo** za `processing` stanje — to je legitiman scenario (klijent je startao posao pa pao prije nego što je dobio rezultat). `completed` jobove pokriva isključivo prvi efekt koji čita localStorage (povezuje job s konkretnim izvorom koji ga je pokrenuo).
 
 ```ts
-export type DuplicateLevel = 'strict' | 'fuzzy' | 'suspicious' | 'unique';
-
-export type DuplicateMatch = {
-  level: DuplicateLevel;
-  match: Expense | null;
-  confidence: number;           // 0–100
-  reason: string;               // i18n key, npr. 'duplicates.reason.sameAmountSameDay'
-};
-
-export type DetectOptions = {
-  ignoreSameDayDuplicateGuard?: boolean; // CSV/PDF = true, ručni unos = false
-  paymentSourceId?: string | null;
-};
-
-export function detectDuplicate(
-  newTx: NewTxInput,
-  existing: Expense[],
-  options?: DetectOptions
-): DuplicateMatch;
+// zadrži samo:
+if (latest.job.status === 'processing') {
+  // upiši u localStorage i polling
+}
+// obriši cijelu granu za status === 'completed'
 ```
 
-Helperi koji se ekstraktiraju iz `useExpenses.ts` (sada postoje kao closure):
+### B. Garancija da se isti completed job ne reaktivira
 
-- `normalizeMerchant(s)` — lowercase, trim, makni dijakritike, makni česte sufikse ("d.o.o.", "j.d.o.o.", "Zagreb", brojeve poslovnica).
-- `areMerchantsSimilar(a, b)` — postojeća logika (substring + ≥50% zajedničkih riječi ≥3 znaka).
-- `levenshtein(a, b)` — mala implementacija za suspicious razinu.
-- `descriptionsOverlap(a, b)` — tokenizacija opisa, ≥60% preklapanje ili jedan sadrži drugog.
-- `daysBetween(a, b)`.
+Da budemo sigurni da i `processing`-grana ne završi otvaranjem prozora ako u međuvremenu drugi tab/uređaj već potroši rezultat, dodati provjeru: po završetku `runPdfJob` u `handlePdfJobResult` zapisati `consumed:<jobId>` u `sessionStorage` i u recovery efektu preskočiti job ID koji već postoji u toj listi unutar iste sesije.
 
-`detectDuplicate` vraća **prvi najjači match** (sortira existing po confidence DESC i vraća najveći). `reason` je i18n ključ pa ga UI sloj formatira.
+(Trajno označavanje u DB-u — kolona `consumed_at` na `pdf_parse_jobs` — namjerno ostavljamo za kasnije; nije nužno za otkloniti petlju, a tražilo bi migraciju.)
 
-Postojeći `findDuplicates(transactions)` u `useExpenses.ts` postaje **tanki wrapper** koji za svaki tx zove `detectDuplicate` i razvrsta:
-- `level === 'strict'` → `duplicates` (auto-skip, kao do sada)
-- `level === 'fuzzy'` → `fuzzyDuplicates` (review dialog)
-- `level === 'strict'` ali postojeća je auto-generated (`expense_nature: 'auto_recurring'`) → `autoGenMatches` (replace ponuda)
-- ostalo → `unique`
+### C. Sanity: scoping `fetchLatestPDFParseJob`
 
-`suspicious` razina u Fazi A **ne mijenja flow** (nema badge još, to je DIO 5). Ostavlja se hook za buduće: helper već vraća `suspicious`, ali wrapper ga tretira kao `unique` da ništa ne pukne.
+Ostaje kakav je za sada (vraća samo `processing` nakon promjene u A). Ako kasnije bude problema s "tuđim" jobovima između izvora, dodajemo `payment_source_id` u tablicu kroz migraciju — ne sada.
 
-## DIO 2 — Refaktor postojećih pozivatelja
+## Što NEĆE biti dirano
 
-- **`src/hooks/useExpenses.ts`** — ukloni `areMerchantsSimilar`, `scoreDuplicate`, inline pravila. `findDuplicates` i `checkDuplicate` zovu `detectDuplicate` iz lib-a. `checkDuplicate` (ručni unos) prosljeđuje `ignoreSameDayDuplicateGuard: false` → tretira "isti dan + isti iznos + isti merchant" kao `strict` (anti-dvoklik ostaje).
-- **`src/components/CSVImportDialog.tsx`** — zamijeni inline "isti iznos + isti dan" detekciju (linije ~78-95) potpunim `findDuplicates` pozivom. Više nema dva paralelna puta.
-- **`src/components/add-expense/AddExpenseDialog.tsx`** — `checkDuplicate` props i dalje vraća `Expense | null`, ali interno prima `DuplicateMatch`. `DuplicateWarningDialog` poziv dobiva cijeli match objekt (vidi sljedeću točku).
-- **`src/components/DuplicateWarningDialog.tsx`** — promijeniti props iz `(existingExpense, newTransaction)` u `(match: DuplicateMatch, newTransaction)`. UI prikazuje `match.level` kao značku (Strict/Fuzzy) + lokalizirani `reason`. Side-by-side ostaje isti. Dodaju se i18n ključevi `duplicates.level.strict|fuzzy|suspicious` i `duplicates.reason.*`.
+- `src/hooks/usePDFParser.ts` API (`fetchLatestPDFParseJob`, `waitForPDFParseJob`) — samo poziv u dijalogu se mijenja
+- DB shema (`pdf_parse_jobs`)
+- i18n stringovi
+- Ostali dijalozi (Wallet, BusinessWallet, FamilyGroupDetailView) — koriste isti komponent, fix se naslijedi automatski
 
-Bez promjene PDF parsera, edge funkcija, native verzije, DB migracija, version bumpa.
+## Verifikacija
 
-## DIO 7 — Testovi (`vitest`)
-
-Novi `src/lib/duplicateDetection.test.ts` s minimalno:
-
-1. **strict** — identičan iznos + isti payment_source + datum ±1 + isti merchant → `level === 'strict'`, confidence ≥ 90.
-2. **fuzzy** — isti iznos, isti type, datum +3 dana, merchant fuzzy → `'fuzzy'`, confidence 60–89.
-3. **suspicious** — iznos +3%, isti tjedan, merchant Levenshtein=2 → `'suspicious'`, confidence 30–59.
-4. **unique** — različit iznos i merchant → `'unique'`, confidence < 30.
-5. **edge case "Konzum 2x isti dan"** — dva identična txa istog dana s `ignoreSameDayDuplicateGuard: true` (CSV/PDF kontekst) → `'suspicious'`, NE `strict` i NE `fuzzy`. Potvrđuje da bulk import neće tiho preskočiti drugu kupnju.
-6. **edge case ručni dvoklik** — isti slučaj s `ignoreSameDayDuplicateGuard: false` (ručni unos) → `'strict'`. Štiti od slučajnog dvostrukog spremanja.
-7. **merchant normalizacija** — "Konzum d.o.o. Zagreb" vs "KONZUM ZAGREB 045" → match.
-8. **različite poslovnice istog lanca + različit iznos** → `'unique'` (ne smije lažno spojiti).
-9. **transfer ne matcha expense** — različit `type` nikad nije strict.
-
-Wrapper `findDuplicates` (useExpenses) testovi nisu nužni — pokrivenost ide kroz pure helper.
-
-CI gate (`.github/workflows/test.yml`) već postoji i pokriva nove testove automatski.
-
-## Ne radimo u ovoj fazi
-
-- DIO 3 — `bank-sync-transactions` edge funkcija (čeka pravu banku, sandbox = numeričke ref).
-- DIO 4 — `/review-duplicates` stranica.
-- DIO 5 — `is_suspicious_duplicate` kolona i badge u listi.
-- DIO 6 — toast nakon sync-a.
-- DB migracija (`potential_duplicate_of`, `is_suspicious_duplicate`).
-
-Sve gore navedeno otključavamo u Fazi B kad bude live banka i kad helper bude provjeren u produkciji.
-
-## Memory update nakon implementacije
-
-Ažurirati `mem://features/transaction-duplicate-detection-v2` s novim modulom, razinama i edge case-om (Konzum istog dana = suspicious u importu, strict u ručnom unosu).
+1. Otvoriti novčanik → klik na izvor → ne smije se pojaviti "Obrađujem izvod" ako korisnik ništa nije uploadao u toj sesiji.
+2. Uploadati PDF, sačekati preview, kliknuti "Uvezi" → dijalog se zatvori, drugo otvaranje ne reaktivira isti job.
+3. Pokrenuti upload, force-reload prije nego što završi → recovery (`processing`) opet hvata posao i prikaže preview kad bude gotov.

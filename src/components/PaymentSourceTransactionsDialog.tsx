@@ -390,11 +390,12 @@ export const PaymentSourceTransactionsDialog = ({
       try {
         const latest = await fetchLatestPDFParseJob();
         if (cancelled || !latest) return;
-        if (latest.job.status === 'completed' && latest.job.result) {
-          logDiagnostic('payment_source_pdf_latest_completed_recovered', { job_id: latest.id, source_id: paymentSource.id });
-          void runPdfJob(latest.id, { recovered: true });
-          return;
-        }
+        // Only auto-recover jobs that are still PROCESSING (client started a job
+        // and got disconnected before result). Completed jobs MUST NOT be
+        // auto-recovered here, otherwise every dialog open re-shows the last
+        // import preview indefinitely. Completed jobs are picked up only when
+        // this client has the matching jobId stored in localStorage (handled
+        // by the previous effect).
         if (latest.job.status === 'processing') {
           logDiagnostic('payment_source_pdf_latest_processing_recovered', { job_id: latest.id, source_id: paymentSource.id });
           const key = getPdfJobStorageKey();
@@ -408,7 +409,7 @@ export const PaymentSourceTransactionsDialog = ({
 
     void recoverLatestJob();
     return () => { cancelled = true; };
-  }, [clearStoredPdfJob, fetchLatestPDFParseJob, getPdfJobStorageKey, handlePdfJobResult, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
+  }, [fetchLatestPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData]);
 
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
