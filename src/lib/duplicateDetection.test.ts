@@ -65,7 +65,7 @@ describe('duplicateDetection — levels', () => {
   });
 
   it('FUZZY: exact amount + same merchant but 3 days apart', () => {
-    const existing = baseExpense({ date: new Date('2026-05-07T10:00:00Z') });
+    const existing = baseExpense({ date: new Date('2026-05-08T10:00:00Z') });
     const result = detectDuplicate(baseTx({}), [existing], { ignoreSameDayDuplicateGuard: true });
     expect(result.level).toBe('fuzzy');
     expect(result.confidence).toBeGreaterThanOrEqual(60);
