@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -17,6 +17,8 @@ import { DetectedPartnersDialog } from './DetectedPartnersDialog';
 import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -55,9 +57,47 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
+  const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { parsing, parsedData, parsePDF, parsePhoto, parseHTML, clearParsedData } = usePDFParser();
+  type LocalParsedData = NonNullable<ReturnType<typeof usePDFParser>['parsedData']>;
+  const [localParsedData, setLocalParsedData] = useState<LocalParsedData | null>(null);
+  const activeParsedData = localParsedData ?? parsedData;
   const { detectLoans } = useLoanDetection();
   const { addDebt } = useBusinessDebts();
+
+  const clearFilePickerGuardRelease = useCallback(() => {
+    if (filePickerGuardReleaseRef.current) {
+      clearTimeout(filePickerGuardReleaseRef.current);
+      filePickerGuardReleaseRef.current = null;
+    }
+  }, []);
+
+  const releaseFilePickerGuardSoon = useCallback((delay = 2500) => {
+    clearFilePickerGuardRelease();
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, delay);
+  }, [clearFilePickerGuardRelease]);
+
+  const openFilePickerWithGuard = useCallback((inputRef: React.RefObject<HTMLInputElement>, kind: 'pdf' | 'html' | 'photo' | 'camera') => {
+    try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
+    clearFilePickerGuardRelease();
+    setNativeFlowActive(true);
+    try { logDiagnostic('bank_import_picker_open', { kind, route: window.location.pathname }); } catch {}
+    filePickerGuardReleaseRef.current = setTimeout(() => {
+      setNativeFlowActive(false);
+      filePickerGuardReleaseRef.current = null;
+    }, 20000);
+    inputRef.current?.click();
+  }, [clearFilePickerGuardRelease]);
+
+  useEffect(() => {
+    return () => {
+      clearFilePickerGuardRelease();
+      setNativeFlowActive(false);
+    };
+  }, [clearFilePickerGuardRelease]);
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
