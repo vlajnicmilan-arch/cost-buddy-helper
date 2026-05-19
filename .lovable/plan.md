@@ -1,52 +1,32 @@
-## Problem
+## Nalaz
 
-Kad otvoriš novčanik i klikneš izvor plaćanja, dijalog odmah pokazuje "Obrađujem izvod..." i nakon "Uvezi" se cijela petlja ponavlja u nedogled.
+Stvarni logovi od prije par minuta potvrđuju problem:
 
-## Uzrok (potvrđen čitanjem koda)
+- PDF job `77f08771-...` pokrenut je u 16:29 i završen u 16:30 s 82 transakcije.
+- Nakon izlaska i povratka u izvor plaćanja aplikacija je u 16:31 napravila `payment_source_pdf_recovery_started` za isti job iz `localStorage`.
+- Zato se opet prikazuje overlay “Obrađujem PDF”, pa tek onda ponovno otvara preview.
 
-U `src/components/PaymentSourceTransactionsDialog.tsx` postoje **dva** recovery efekta koji se okidaju kad se dijalog otvori:
+Root cause nije više `fetchLatestPDFParseJob`, nego per-source recovery iz `localStorage`: spremljeni job ostaje aktivan kad korisnik napusti dijalog prije nego je rezultat prikazan/konzumiran.
 
-1. **Lines 360–383** — čita `localStorage` ključ po izvoru (`vmb-pdf-parse-job:<sourceId>`). Ispravno: oslanja se na ID koji je ovaj klijent sam pokrenuo. Nakon `resetPdfImportState()` ovaj ključ se briše.
+## Plan implementacije
 
-2. **Lines 385–411** — poziva `fetchLatestPDFParseJob()` (u `src/hooks/usePDFParser.ts:168`) koji vraća **bilo koji** `processing` ili `completed` red iz `pdf_parse_jobs` u zadnjih 6 sati, **bez vezivanja na payment_source**. Ako je status `completed`, odmah pokreće `runPdfJob(...)` → polling → otvara preview s tim transakcijama.
+1. U `PaymentSourceTransactionsDialog.tsx` dodati recovery samo za stvarno nedovršene jobove:
+   - kod čitanja `vmb-pdf-parse-job:<sourceId>` prvo dohvatiti job po ID-u preko `fetchPDFParseJob`
+   - ako je status `completed` ili `failed`, odmah obrisati storage key i ne pokretati `runPdfJob`
+   - ako je status `processing` ili `pending`, tek tada nastaviti polling
 
-Bug: nakon što korisnik klikne "Uvezi", `resetPdfImportState()` briše lokalni state i localStorage, ali red u `pdf_parse_jobs` ostaje `completed`. Sljedeće otvaranje dijaloga → drugi efekt opet pronađe taj isti red → preview se opet otvara → endless loop. Isto se događa i pri prvom otvaranju aplikacije ako je u DB-u zaostao stari completed posao (npr. od ranije sesije).
+2. U `usePDFParser.ts` izložiti `fetchPDFParseJob` u komponenti već postoji u hook returnu, samo ga treba koristiti u destrukturiranju.
 
-Dodatno: `fetchLatestPDFParseJob` nije scoped na payment_source, pa "latest completed" iz potpuno drugog izvora kraduje fokus.
+3. Zadržati “latest job” recovery samo za `processing`, ali uskladiti s istim pravilom:
+   - ne zapisivati u storage i ne vrtjeti completed jobove
+   - dugoročno nema automatskog re-show previewa nakon što korisnik napusti izvor plaćanja
 
-## Rješenje (minimalno, bez patch-flagova)
+4. Dodati dijagnostiku za slučajeve:
+   - stored job skipped jer je `completed`
+   - stored job skipped jer je `failed`
+   - stored job stvarno oporavljen jer je `processing/pending`
 
-### A. `src/components/PaymentSourceTransactionsDialog.tsx` (efekt 385–411)
-
-Ukloniti granu koja recoverira `completed` jobove. Auto-recovery preko "latest" smije postojati **samo** za `processing` stanje — to je legitiman scenario (klijent je startao posao pa pao prije nego što je dobio rezultat). `completed` jobove pokriva isključivo prvi efekt koji čita localStorage (povezuje job s konkretnim izvorom koji ga je pokrenuo).
-
-```ts
-// zadrži samo:
-if (latest.job.status === 'processing') {
-  // upiši u localStorage i polling
-}
-// obriši cijelu granu za status === 'completed'
-```
-
-### B. Garancija da se isti completed job ne reaktivira
-
-Da budemo sigurni da i `processing`-grana ne završi otvaranjem prozora ako u međuvremenu drugi tab/uređaj već potroši rezultat, dodati provjeru: po završetku `runPdfJob` u `handlePdfJobResult` zapisati `consumed:<jobId>` u `sessionStorage` i u recovery efektu preskočiti job ID koji već postoji u toj listi unutar iste sesije.
-
-(Trajno označavanje u DB-u — kolona `consumed_at` na `pdf_parse_jobs` — namjerno ostavljamo za kasnije; nije nužno za otkloniti petlju, a tražilo bi migraciju.)
-
-### C. Sanity: scoping `fetchLatestPDFParseJob`
-
-Ostaje kakav je za sada (vraća samo `processing` nakon promjene u A). Ako kasnije bude problema s "tuđim" jobovima između izvora, dodajemo `payment_source_id` u tablicu kroz migraciju — ne sada.
-
-## Što NEĆE biti dirano
-
-- `src/hooks/usePDFParser.ts` API (`fetchLatestPDFParseJob`, `waitForPDFParseJob`) — samo poziv u dijalogu se mijenja
-- DB shema (`pdf_parse_jobs`)
-- i18n stringovi
-- Ostali dijalozi (Wallet, BusinessWallet, FamilyGroupDetailView) — koriste isti komponent, fix se naslijedi automatski
-
-## Verifikacija
-
-1. Otvoriti novčanik → klik na izvor → ne smije se pojaviti "Obrađujem izvod" ako korisnik ništa nije uploadao u toj sesiji.
-2. Uploadati PDF, sačekati preview, kliknuti "Uvezi" → dijalog se zatvori, drugo otvaranje ne reaktivira isti job.
-3. Pokrenuti upload, force-reload prije nego što završi → recovery (`processing`) opet hvata posao i prikaže preview kad bude gotov.
+5. Verifikacija nakon promjene:
+   - otvoriti izvor plaćanja nakon završenog joba: ne smije se pojaviti “Obrađujem PDF”
+   - upload PDF-a: dok job traje overlay se smije prikazati
+   - ako korisnik izađe dok job stvarno još traje i vrati se: recovery smije nastaviti polling
