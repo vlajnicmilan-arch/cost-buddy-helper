@@ -1993,7 +1993,21 @@
     "foundSimilar": "Pronašli smo sličnu transakciju u vašoj evidenciji. Jeste li sigurni da želite dodati novu?",
     "existingTransaction": "Postojeća transakcija",
     "newTransaction": "Nova transakcija",
-    "addAnyway": "Dodaj svejedno"
+    "addAnyway": "Dodaj svejedno",
+    "level": {
+      "strict": "Vrlo vjerojatno",
+      "fuzzy": "Slično",
+      "suspicious": "Sumnjivo"
+    },
+    "reason": {
+      "exactAmountSameDayMerchant": "Identičan iznos, isti dan i isti trgovac kao postojeća transakcija.",
+      "exactAmountDifferentSource": "Identičan iznos i datum, ali drugi izvor plaćanja.",
+      "sameAmountNearDate": "Isti iznos i sličan trgovac/opis unutar 3 dana.",
+      "sameAmountSameDay": "Dvije identične kupnje u istom danu — provjeri jesu li stvarno različite.",
+      "similarAmountSameWeek": "Sličan iznos i trgovac unutar istog tjedna.",
+      "differentType": "Različit tip transakcije.",
+      "noMatch": "Nema poklapanja."
+    }
   },
   "tutorial": {
     "start": "Pokreni vodič",
