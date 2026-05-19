@@ -1993,7 +1993,21 @@
     "foundSimilar": "Wir haben eine ähnliche Transaktion in Ihren Aufzeichnungen gefunden. Sind Sie sicher, dass Sie eine neue hinzufügen möchten?",
     "existingTransaction": "Bestehende Transaktion",
     "newTransaction": "Neue Transaktion",
-    "addAnyway": "Trotzdem hinzufügen"
+    "addAnyway": "Trotzdem hinzufügen",
+    "level": {
+      "strict": "Sehr wahrscheinlich",
+      "fuzzy": "Ähnlich",
+      "suspicious": "Verdächtig"
+    },
+    "reason": {
+      "exactAmountSameDayMerchant": "Identischer Betrag, gleicher Tag und gleicher Händler wie eine bestehende Transaktion.",
+      "exactAmountDifferentSource": "Identischer Betrag und Datum, aber andere Zahlungsquelle.",
+      "sameAmountNearDate": "Gleicher Betrag und ähnlicher Händler/Beschreibung innerhalb von 3 Tagen.",
+      "sameAmountSameDay": "Zwei identische Käufe am selben Tag — bitte prüfen, ob sie tatsächlich unterschiedlich sind.",
+      "similarAmountSameWeek": "Ähnlicher Betrag und Händler innerhalb derselben Woche.",
+      "differentType": "Anderer Transaktionstyp.",
+      "noMatch": "Keine Übereinstimmung."
+    }
   },
   "tutorial": {
     "start": "Anleitung starten",
