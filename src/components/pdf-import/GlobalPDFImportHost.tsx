@@ -33,7 +33,7 @@ export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const pdfImport = usePdfImport();
-  const { startPDFParseJob, waitForPDFParseJob, parseHTML } = usePDFParser();
+  const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
@@ -53,7 +53,7 @@ export const GlobalPDFImportHost = () => {
     setIncludeDuplicates(false);
     setSelectedFuzzy(new Set());
     pdfImport._setIdle();
-  }, [clearStoredJob, pdfImport]);
+  }, [clearStoredJob, pdfImport._setIdle]);
 
   const toParsedTransactions = useCallback((): ParsedTransaction[] => {
     if (!pdfImport.result || !pdfImport.source) return [];
@@ -79,25 +79,25 @@ export const GlobalPDFImportHost = () => {
     pdfImport._pendingHtmlRef.current = null;
     if (!pendingPdf && !pendingHtml) return;
 
-    let cancelled = false;
     const source = pdfImport.source;
 
     const run = async () => {
       try {
         if (pendingPdf) {
           const base64 = await readAsDataUrl(pendingPdf.file);
-          if (!base64 || cancelled) throw new Error('file_read_failed');
+          if (!base64) throw new Error('file_read_failed');
           const jobId = await startPDFParseJob(base64);
           try {
             localStorage.setItem(`vmb-pdf-parse-job:${source.id}`, JSON.stringify({
               jobId,
               sourceId: source.id,
+              source,
               startedAt: new Date().toISOString(),
             }));
           } catch {}
           pdfImport._setProcessing(source, jobId);
           const result = await waitForPDFParseJob(jobId);
-          if (cancelled || !result) return;
+          if (!result) return;
           if (result.transactions.length === 0) {
             toast.warning(t('toasts.pdfNoTransactions'));
             resetAll();
@@ -112,7 +112,7 @@ export const GlobalPDFImportHost = () => {
         if (pendingHtml) {
           const content = await pendingHtml.file.text();
           const result = await parseHTML(content);
-          if (cancelled || !result) return;
+          if (!result) return;
           if (result.transactions.length === 0) {
             toast.warning(t('toasts.htmlNoTransactions'));
             resetAll();
@@ -133,8 +133,57 @@ export const GlobalPDFImportHost = () => {
     };
 
     void run();
-    return () => { cancelled = true; };
-  }, [clearStoredJob, parseHTML, pdfImport, resetAll, startPDFParseJob, t, waitForPDFParseJob]);
+  }, [clearStoredJob, parseHTML, pdfImport._pendingHtmlRef, pdfImport._pendingPdfRef, pdfImport._setPreview, pdfImport._setProcessing, pdfImport.phase, pdfImport.source, resetAll, startPDFParseJob, t, waitForPDFParseJob]);
+
+  useEffect(() => {
+    if (pdfImport.phase !== 'idle') return;
+
+    const recover = async () => {
+      const prefix = 'vmb-pdf-parse-job:';
+      const storedJobs: Array<{ jobId: string; sourceId: string; source: any; startedAt: string }> = [];
+      try {
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const key = localStorage.key(i);
+          if (!key?.startsWith(prefix)) continue;
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          const parsed = JSON.parse(raw);
+          const startedAt = parsed.startedAt ? new Date(parsed.startedAt).getTime() : 0;
+          if (!parsed.jobId || !parsed.sourceId || !parsed.source || !startedAt || Date.now() - startedAt > PDF_JOB_TTL_MS) {
+            localStorage.removeItem(key);
+            continue;
+          }
+          storedJobs.push(parsed);
+        }
+      } catch {}
+
+      const stored = storedJobs.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
+      if (!stored) return;
+
+      try {
+        const source = stored.source as import('@/types/customPaymentSource').CustomPaymentSource;
+        const job = await fetchPDFParseJob(stored.jobId);
+        if (!job || job.status === 'failed') {
+          try { localStorage.removeItem(`${prefix}${stored.sourceId}`); } catch {}
+          return;
+        }
+        if (job.status === 'completed' && job.result) {
+          const result = normalizeJobResult(job.result);
+          try { localStorage.removeItem(`${prefix}${stored.sourceId}`); } catch {}
+          if (result.transactions.length > 0) pdfImport._setPreview(result, stored.jobId);
+          return;
+        }
+        pdfImport._setProcessing(source, stored.jobId);
+        const result = await waitForPDFParseJob(stored.jobId);
+        try { localStorage.removeItem(`${prefix}${stored.sourceId}`); } catch {}
+        if (result?.transactions.length) pdfImport._setPreview(result, stored.jobId);
+      } catch (error) {
+        try { logDiagnostic('global_pdf_import_recovery_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
+      }
+    };
+
+    void recover();
+  }, [fetchPDFParseJob, normalizeJobResult, pdfImport, waitForPDFParseJob]);
 
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result) return;
