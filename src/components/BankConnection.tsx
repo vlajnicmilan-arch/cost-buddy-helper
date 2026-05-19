@@ -180,12 +180,18 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
 
   const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
 
     if (!file.type.startsWith('image/')) {
       showError(t('toasts.selectImageFile'));
+      releaseFilePickerGuardSoon(500);
       return;
     }
+
+    clearFilePickerGuardRelease();
 
     // Resize image for efficiency
     const reader = new FileReader();
@@ -206,12 +212,18 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         
         const result = await parsePhoto(compressed);
         if (result && result.transactions.length > 0) {
+          setLocalParsedData(result);
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
           showError(t('toasts.noTransactionsInPhoto'));
         }
+        releaseFilePickerGuardSoon();
       };
       img.src = base64;
+    };
+    reader.onerror = () => {
+      showError(t('toasts.fileReadError'));
+      releaseFilePickerGuardSoon(500);
     };
     reader.readAsDataURL(file);
 
@@ -396,7 +408,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
           <Button
             variant="outline"
             className="gap-2 rounded-xl border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => openFilePickerWithGuard(cameraInputRef, 'camera')}
             disabled={parsing}
           >
             {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -405,7 +417,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
           <Button
             variant="outline"
             className="gap-2 rounded-xl border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10"
-            onClick={() => photoInputRef.current?.click()}
+            onClick={() => openFilePickerWithGuard(photoInputRef, 'photo')}
             disabled={parsing}
           >
             {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
@@ -417,7 +429,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         <input
           ref={pdfInputRef}
           type="file"
-          accept="application/pdf"
+          accept=".pdf,application/pdf"
           onChange={handlePDFSelect}
           className="hidden"
           id="pdf-input"
@@ -425,7 +437,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         <Button
           variant="outline"
           className="w-full gap-2 rounded-xl"
-          onClick={() => pdfInputRef.current?.click()}
+          onClick={() => openFilePickerWithGuard(pdfInputRef, 'pdf')}
           disabled={parsing}
         >
           {parsing ? (
@@ -448,7 +460,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         <Button
           variant="outline"
           className="w-full gap-2 rounded-xl border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
-          onClick={() => htmlInputRef.current?.click()}
+          onClick={() => openFilePickerWithGuard(htmlInputRef, 'html')}
           disabled={parsing}
         >
           {parsing ? (
