@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, TransactionType } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 export interface ParsedPDFTransaction {
   date: Date;
@@ -27,6 +28,24 @@ interface PDFParseResult {
     transaction_count: number;
   } | null;
 }
+
+const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+
+const toParseResult = (data: any): PDFParseResult => ({
+  transactions: (data.transactions || []).map((tx: any) => ({
+    ...tx,
+    date: new Date(tx.date),
+    category: tx.category as Category,
+    type: tx.type as TransactionType,
+    payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
+    card_last4: tx.card_last4 || null
+  })),
+  detected_bank: data.detected_bank || null,
+  account_iban: data.account_iban || null,
+  holder_name: data.holder_name || null,
+  cards_detected: data.cards_detected || [],
+  summary: data.summary
+});
 
 // Detect payment source from description, card_type, or detected bank
 function detectPaymentSource(
