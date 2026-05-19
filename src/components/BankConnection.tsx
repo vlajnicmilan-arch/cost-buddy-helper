@@ -482,31 +482,31 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
             <DialogTitle>{t('import.foundTransactions')}</DialogTitle>
           </DialogHeader>
           
-          {parsedData && (
+          {activeParsedData && (
             <div className="flex-1 overflow-y-auto space-y-4">
               {/* Detected bank and account info */}
-              {(parsedData.detected_bank || parsedData.account_iban || parsedData.cards_detected.length > 0) && (
+              {(activeParsedData.detected_bank || activeParsedData.account_iban || activeParsedData.cards_detected.length > 0) && (
                 <div className="p-3 bg-primary/10 rounded-xl text-sm space-y-1">
-                  {parsedData.detected_bank && (
+                  {activeParsedData.detected_bank && (
                     <p className="font-medium">
-                      🏦 {t('import.bank')}: <span className="text-primary">{parsedData.detected_bank}</span>
+                      🏦 {t('import.bank')}: <span className="text-primary">{activeParsedData.detected_bank}</span>
                     </p>
                   )}
-                  {parsedData.account_iban && (
+                  {activeParsedData.account_iban && (
                     <p className="text-muted-foreground text-xs font-mono">
-                      {t('import.account')}: {parsedData.account_iban}
+                      {t('import.account')}: {activeParsedData.account_iban}
                     </p>
                   )}
-                  {parsedData.cards_detected.length > 0 && (
+                  {activeParsedData.cards_detected.length > 0 && (
                     <p className="text-muted-foreground text-xs">
-                      💳 {t('import.cards')}: {parsedData.cards_detected.map(c => `*${c}`).join(', ')}
+                      💳 {t('import.cards')}: {activeParsedData.cards_detected.map(c => `*${c}`).join(', ')}
                     </p>
                   )}
                 </div>
               )}
 
               {/* Business profile mismatch warning */}
-              {activeBusinessProfileId && parsedData.holder_name && (
+              {activeBusinessProfileId && activeParsedData.holder_name && (
                 <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                   <div>
@@ -514,7 +514,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
                       Provjeri vlasnika računa
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Izvod glasi na: <strong>{parsedData.holder_name}</strong>. 
+                      Izvod glasi na: <strong>{activeParsedData.holder_name}</strong>. 
                       Trenutno uvoziš u <strong>poslovni profil</strong>. Je li to ispravno?
                     </p>
                   </div>
@@ -522,8 +522,8 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
               )}
 
               {/* Duplicate detection warning */}
-              {findDuplicates && parsedData.transactions.length > 0 && (() => {
-                const txForCheck: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+              {findDuplicates && activeParsedData.transactions.length > 0 && (() => {
+                const txForCheck: ParsedTransaction[] = activeParsedData.transactions.map(tx => ({
                   date: tx.date,
                   description: tx.description,
                   amount: tx.amount,
@@ -553,25 +553,25 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
                 );
               })()}
 
-              {parsedData.summary && (
+              {activeParsedData.summary && (
                 <div className="grid grid-cols-3 gap-2 p-3 bg-muted/50 rounded-xl text-sm">
                   <div className="text-center">
                     <p className="text-muted-foreground">{t('import.income')}</p>
-                    <p className="font-bold text-income">€{parsedData.summary.total_income.toFixed(2)}</p>
+                    <p className="font-bold text-income">€{activeParsedData.summary.total_income.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground">{t('import.expenses')}</p>
-                    <p className="font-bold text-expense">€{parsedData.summary.total_expenses.toFixed(2)}</p>
+                    <p className="font-bold text-expense">€{activeParsedData.summary.total_expenses.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground">{t('import.total')}</p>
-                    <p className="font-bold">{parsedData.summary.transaction_count}</p>
+                    <p className="font-bold">{activeParsedData.summary.transaction_count}</p>
                   </div>
                 </div>
               )}
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {parsedData.transactions.map((tx, idx) => (
+                {activeParsedData.transactions.map((tx, idx) => (
                   <div 
                     key={idx} 
                     className="flex items-center justify-between p-3 bg-background/50 rounded-xl text-sm"
@@ -597,7 +597,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
                 onClick={handleImportPDFTransactions}
                 className="w-full rounded-xl"
               >
-                {t('import.importCount', { count: parsedData.transactions.length })}
+                {t('import.importCount', { count: activeParsedData.transactions.length })}
               </Button>
             </div>
           )}
