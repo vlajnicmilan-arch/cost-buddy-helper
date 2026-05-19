@@ -1,28 +1,38 @@
-## Provjerene činjenice
+Provjereni nalazi iz dijagnostike
 
-- Backend funkcija `parse-pdf-statement` radi: zadnji log pokazuje `Extracted 42 transactions from Aircash` i nema `Error` logova.
-- Snapshot browsera/replay koji je trenutno dostupan nije iz tvog AirCash pokušaja nego s `/auth`/landing stanja, pa ga ne koristim kao dokaz.
-- U `PaymentSourceTransactionsDialog.tsx` PDF tok radi ovako: `parsePDF()` vrati rezultat, hook interno pozove `setParsedData(result)`, parent zatim pozove `setPdfPreviewOpen(true)`.
-- Preview overlay se renderira samo ako su istovremeno true: `pdfPreviewOpen && parsedData`.
-- To je krhko jer se prikaz oslanja na state iz hooka koji se ažurira asinkrono, dok parent otvara overlay iz drugog statea.
-- U komponenti još postoje hardkodani tekstovi u PDF overlayu, što je protiv i18n pravila.
+- Telefon je otvorio Wallet i odabrao PDF u 07:25:28.
+- Frontend je pokrenuo async PDF job `9823147d-398a-499b-855b-7448ed382ae8` u 07:25:31.
+- Backend job je stvarno završio u bazi u 07:26:18, nakon 47 sekundi.
+- Job ima status `completed` i rezultat s 42 transakcije.
+- Nakon `pdf_parse_job_started` nema nijednog zapisa s telefona: nema `pdf_parse_job_completed`, nema `payment_source_pdf_parse_result`, nema `payment_source_pdf_preview_opened`, nema `pdf_parse_failed`.
 
-## Problem koji treba popraviti
+Zaključak
 
-PDF parser vraća transakcije, ali UI ne pokazuje preview nakon učitavanja. Treba ukloniti ovisnost previewa o tom asinkronom hook-state paru i vezati prikaz na rezultat koji je stvarno vraćen iz `parsePDF()`.
+- Problem više nije u backend parsiranju PDF-a: backend je odradio posao.
+- Problem je u frontend polling/UI toku nakon pokretanja joba: telefon ne dođe do koda koji čita gotov rezultat i otvara preview/import dijalog.
+- Trenutni UI i dalje prikazuje tekst “do 30 sekundi”, a stvarni job traje 47 sekundi; to samo po sebi ne ruši job, ali potvrđuje da frontend tok nije dobro dizajniran za dulje native/mobile obrade.
 
-## Plan implementacije
+Plan popravka
 
-1. U `PaymentSourceTransactionsDialog.tsx` dodati lokalni state za rezultat koji se koristi isključivo za ovaj dijalog, npr. `sourceParsedData`.
-2. U `handlePDFSelect` i `handleHTMLSelect`, nakon uspješnog `parsePDF/parseHTML`, spremiti vraćeni `result` direktno u lokalni state i tek onda otvoriti preview overlay.
-3. Sve reference u preview/import toku prebaciti s `parsedData` na lokalni `sourceParsedData`.
-4. Pri zatvaranju previewa, završetku importa i duplicate toku očistiti i lokalni state i hook state (`clearParsedData`) da nema starog rezultata.
-5. Ukloniti privremene `console.info` debug logove iz prethodnog pokušaja.
-6. Zamijeniti hardkodane vidljive tekstove u PDF overlayu postojećim ili novim i18n ključevima u HR/EN/DE.
+1. Ukloniti oslanjanje na jedan dug `await parsePDF(...)` unutar `PaymentSourceTransactionsDialog`.
+   - Umjesto toga, PDF import treba imati eksplicitno stanje joba: `starting`, `processing`, `completed`, `failed`.
+   - UI dijalog izvora plaćanja ostaje otvoren, a obrada se nastavlja neovisno o file-picker/native lifecycleu.
 
-## Verifikacija nakon izmjene
+2. Premjestiti PDF polling u stabilniji tok koji logira svaki ključni korak.
+   - Logirati: početak pollinga, svaki veći status prijelaz, RLS/REST grešku, timeout, uspješno otvaranje previewa.
+   - Trenutno nema dovoljno dijagnostike poslije `pdf_parse_job_started`, zato ne vidimo gdje točno pukne.
 
-- Provjeriti da u kodu više nema uvjeta `pdfPreviewOpen && parsedData` za ovaj dijalog.
-- Provjeriti da nema TypeScript/Vite grešaka u dev-server logu.
-- Provjeriti da nema `console.info('[PDF Import]...')` debug ostataka.
-- Backend ne dirati jer je logovima potvrđeno da parser radi.
+3. Dodati recovery za već završene jobove.
+   - Ako je job završen u bazi, aplikacija mora moći ponovno dohvatiti zadnji `completed` job za korisnika i otvoriti rezultat, umjesto da rezultat “nestane” ako se komponenta/native WebView prekine tijekom čekanja.
+   - Ovo direktno pokriva provjereni slučaj: job završen, ali UI nije otvorio rezultat.
+
+4. Popraviti loading poruku i zadržati dijalog.
+   - Ne zatvarati postojeći dijalog dok se job obrađuje.
+   - Prikazati stvarni status: “Obrada traje, može potrajati oko minute” umjesto netočnih 30 sekundi.
+   - Sav UI tekst ide kroz i18n, bez hardkodiranja.
+
+5. Validirati nakon implementacije.
+   - Provjeriti da `pdf_parse_jobs` ima završen job i da frontend može dohvatiti rezultat.
+   - Provjeriti dijagnostiku: očekivani slijed mora biti `payment_source_pdf_file_selected` → `pdf_parse_job_started` → `pdf_parse_job_completed` → `payment_source_pdf_parse_result` → `payment_source_pdf_preview_opened`.
+
+Neću dirati verziju APK-a u ovom planu.
