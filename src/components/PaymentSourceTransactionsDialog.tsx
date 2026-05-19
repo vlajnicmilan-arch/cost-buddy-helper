@@ -572,7 +572,10 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleImportPDFTransactions = async () => {
-    if (!sourceParsedData || !onImportCSV || !paymentSource) return;
+    if (!sourceParsedData || !onImportCSV || !paymentSource) {
+      try { logDiagnostic('payment_source_pdf_import_blocked', { has_data: !!sourceParsedData, has_handler: !!onImportCSV, has_source: !!paymentSource }); } catch {}
+      return;
+    }
 
     const paymentSourceValue = `custom:${paymentSource.id}`;
     const transactions: ParsedTransaction[] = sourceParsedData.transactions.map(tx => ({
@@ -586,14 +589,18 @@ export const PaymentSourceTransactionsDialog = ({
       payment_source: paymentSourceValue as any
     }));
 
+    try { logDiagnostic('payment_source_pdf_import_clicked', { source_id: paymentSource.id, count: transactions.length }); } catch {}
+
     try {
       setIsImportingPdf(true);
 
       if (findDuplicates) {
         const { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, unique } = findDuplicates(transactions);
+        try { logDiagnostic('payment_source_pdf_import_dedup', { source_id: paymentSource.id, duplicates: duplicates.length, fuzzy: fuzzyDuplicates.length, unique: unique.length }); } catch {}
 
         if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
+            try { logDiagnostic('payment_source_pdf_import_all_duplicates', { source_id: paymentSource.id, count: transactions.length }); } catch {}
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
             resetPdfImportState();
@@ -605,16 +612,19 @@ export const PaymentSourceTransactionsDialog = ({
           setSelectedFuzzy(new Set());
           setPdfPreviewOpen(false);
           setDuplicateWarningOpen(true);
+          try { logDiagnostic('payment_source_pdf_duplicate_dialog_opened', { source_id: paymentSource.id, duplicates: duplicates.length, fuzzy: fuzzyDuplicates.length }); } catch {}
           return;
         }
       }
 
       await onImportCSV(transactions);
+      try { logDiagnostic('payment_source_pdf_import_success', { source_id: paymentSource.id, count: transactions.length }); } catch {}
       setPdfPreviewOpen(false);
       resetPdfImportState();
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
+      try { logDiagnostic('payment_source_pdf_import_failed', { source_id: paymentSource.id, message: error instanceof Error ? error.message : String(error) }); } catch {}
       showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
@@ -622,10 +632,14 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   const handleConfirmImportWithDuplicates = async () => {
-    if (!duplicateInfo || !onImportCSV) return;
+    if (!duplicateInfo || !onImportCSV) {
+      try { logDiagnostic('payment_source_pdf_duplicate_confirm_blocked', { has_info: !!duplicateInfo, has_handler: !!onImportCSV }); } catch {}
+      return;
+    }
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, i) => selectedFuzzy.has(i));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
     const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
+    try { logDiagnostic('payment_source_pdf_duplicate_confirm_clicked', { count: transactionsToImport.length, unique: duplicateInfo.unique.length, fuzzy_selected: fuzzyToInclude.length, strict_selected: strictToInclude.length }); } catch {}
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
@@ -637,17 +651,21 @@ export const PaymentSourceTransactionsDialog = ({
     try {
       setIsImportingPdf(true);
       await onImportCSV(transactionsToImport);
+      try { logDiagnostic('payment_source_pdf_duplicate_import_success', { count: transactionsToImport.length }); } catch {}
       setDuplicateWarningOpen(false);
       resetPdfImportState();
       setDuplicateInfo(null);
       showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
       console.error('Error importing duplicate-reviewed transactions:', error);
+      try { logDiagnostic('payment_source_pdf_duplicate_import_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
       showError(t('toasts.importError'));
     } finally {
       setIsImportingPdf(false);
     }
   };
+
+
 
 
   // Print handler
