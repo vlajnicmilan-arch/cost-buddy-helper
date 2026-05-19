@@ -10,6 +10,13 @@ export interface ParsedTransaction {
   merchant_name?: string;
   source: string;
   payment_source: PaymentSource;
+  /**
+   * Optional pre-computed deterministic fingerprint stored as
+   * `expenses.bank_transaction_id`. When set, importFromCSV upserts on
+   * `(user_id, bank_transaction_id)` so re-imports cannot create duplicates.
+   * Computed in `src/lib/importFingerprint.ts`.
+   */
+  bank_transaction_id?: string;
 }
 
 // Detect if transaction is an internal transfer between own accounts
