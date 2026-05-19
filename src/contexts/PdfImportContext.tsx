@@ -44,10 +44,11 @@ interface PdfImportContextValue {
   registerHandlers: (handlers: PdfImportHandlers) => () => void;
   _setProcessing: (source: CustomPaymentSource, jobId: string) => void;
   _setPreview: (result: PDFParseResult, jobId: string | null) => void;
+  _setDuplicates: () => void;
   _setIdle: () => void;
   _setImporting: (importing: boolean) => void;
   _runImport: (transactions: ParsedTransaction[]) => Promise<void>;
-  _runFindDuplicates: FindPdfDuplicatesHandler | null;
+  _runFindDuplicates: (transactions: ParsedTransaction[]) => ReturnType<FindPdfDuplicatesHandler> | null;
   _pendingPdfRef: MutableRefObject<StartPdfImportOptions | null>;
   _pendingHtmlRef: MutableRefObject<StartHtmlImportOptions | null>;
 }
@@ -111,6 +112,10 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setPhase('preview');
   }, []);
 
+  const _setDuplicates = useCallback(() => {
+    setPhase('duplicates');
+  }, []);
+
   const _setIdle = useCallback(() => {
     pendingPdfRef.current = null;
     pendingHtmlRef.current = null;
@@ -133,9 +138,9 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     await handlers.onImportCSV(transactions);
   }, []);
 
-  const _runFindDuplicates = useMemo(() => {
-    return handlersRef.current?.findDuplicates ?? null;
-  }, [hasHandlers]);
+  const _runFindDuplicates = useCallback((transactions: ParsedTransaction[]) => {
+    return handlersRef.current?.findDuplicates?.(transactions) ?? null;
+  }, []);
 
   const value = useMemo<PdfImportContextValue>(() => ({
     phase,
@@ -149,13 +154,14 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     registerHandlers,
     _setProcessing,
     _setPreview,
+    _setDuplicates,
     _setIdle,
     _setImporting,
     _runImport,
     _runFindDuplicates,
     _pendingPdfRef: pendingPdfRef,
     _pendingHtmlRef: pendingHtmlRef,
-  }), [phase, source, jobId, result, hasHandlers, startPdfImport, startHtmlImport, registerHandlers, _setProcessing, _setPreview, _setIdle, _setImporting, _runImport, _runFindDuplicates]);
+  }), [phase, source, jobId, result, hasHandlers, startPdfImport, startHtmlImport, registerHandlers, _setProcessing, _setPreview, _setDuplicates, _setIdle, _setImporting, _runImport, _runFindDuplicates]);
 
   return <PdfImportContext.Provider value={value}>{children}</PdfImportContext.Provider>;
 };
@@ -175,10 +181,11 @@ export const usePdfImport = (): PdfImportContextValue => {
       registerHandlers: () => noop,
       _setProcessing: noop,
       _setPreview: noop,
+      _setDuplicates: noop,
       _setIdle: noop,
       _setImporting: noop,
       _runImport: async () => {},
-      _runFindDuplicates: null,
+      _runFindDuplicates: () => null,
       _pendingPdfRef: { current: null },
       _pendingHtmlRef: { current: null },
     };
