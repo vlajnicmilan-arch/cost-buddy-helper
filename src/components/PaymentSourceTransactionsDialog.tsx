@@ -518,7 +518,6 @@ export const PaymentSourceTransactionsDialog = ({
     }
     clearFilePickerGuardRelease();
     try { logDiagnostic('payment_source_pdf_file_selected', { name: file.name, type: file.type, size: file.size }); } catch {}
-    // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
       showError(t('import.selectPDF'));
@@ -526,47 +525,15 @@ export const PaymentSourceTransactionsDialog = ({
       releaseFilePickerGuardSoon(500);
       return;
     }
-    
-    // Clone the file into a Blob before resetting input — on mobile, resetting
-    // the input can invalidate the File reference before FileReader finishes.
-    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
-    
-    // Reset input so same file can be re-selected next time
-    if (pdfInputRef.current) pdfInputRef.current.value = '';
-    
-    toast.info(t('toasts.loadingPdf'));
-    
-    const reader = new FileReader();
-    reader.onerror = () => {
-      showError(t('toasts.fileReadError'));
+    if (!paymentSource) {
       releaseFilePickerGuardSoon(500);
-    };
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      if (!base64) {
-        showError(t('toasts.fileReadError'));
-        releaseFilePickerGuardSoon(500);
-        return;
-      }
-      try {
-        setPdfJobPhase('starting');
-        try { logDiagnostic('payment_source_pdf_start_attempt', { source_id: paymentSource?.id ?? null, file_size: fileBlob.size }); } catch {}
-        const jobId = await startPDFParseJob(base64);
-        try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
-        const key = getPdfJobStorageKey();
-        if (key) {
-          try { localStorage.setItem(key, JSON.stringify({ jobId, sourceId: paymentSource?.id ?? null, startedAt: new Date().toISOString() })); } catch {}
-        }
-        void runPdfJob(jobId, { releaseGuard: true });
-      } catch (err) {
-        console.error('PDF parse error:', err);
-        setPdfJobPhase('failed');
-        try { logDiagnostic('payment_source_pdf_start_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-        showError(t('toasts.pdfAnalysisError'));
-        releaseFilePickerGuardSoon();
-      }
-    };
-    reader.readAsDataURL(fileBlob);
+      return;
+    }
+
+    const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'application/pdf' });
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
+    toast.info(t('toasts.loadingPdf'));
+    await startPdfImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
   const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -583,23 +550,14 @@ export const PaymentSourceTransactionsDialog = ({
       releaseFilePickerGuardSoon(500);
       return;
     }
+    if (!paymentSource) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'text/html' });
     if (htmlInputRef.current) htmlInputRef.current.value = '';
     toast.info(t('toasts.loadingHtml'));
-    try {
-      const content = await file.text();
-      const result = await parseHTML(content);
-      if (result && result.transactions.length > 0) {
-        setSourceParsedData(result);
-        setPdfPreviewOpen(true);
-      } else if (result && result.transactions.length === 0) {
-        toast.warning(t('toasts.htmlNoTransactions'));
-      }
-    } catch (err) {
-      console.error('HTML parse error:', err);
-      showError(t('toasts.htmlAnalysisError'));
-    } finally {
-      releaseFilePickerGuardSoon();
-    }
+    await startHtmlImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
   const resetPdfImportState = () => {
