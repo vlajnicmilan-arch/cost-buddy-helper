@@ -101,50 +101,80 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
 
   const handlePDFSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      showError(t('import.selectPDF'));
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
       return;
     }
 
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPDF) {
+      showError(t('import.selectPDF'));
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+
+    clearFilePickerGuardRelease();
+    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
+    toast.info(t('toasts.loadingPdf'));
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      showError(t('toasts.fileReadError'));
+      releaseFilePickerGuardSoon(500);
+    };
     reader.onload = async (e) => {
       const base64 = e.target?.result as string;
-      const result = await parsePDF(base64);
-      
-      if (result && result.transactions.length > 0) {
-        setPdfPreviewOpen(true);
+      if (!base64) {
+        showError(t('toasts.fileReadError'));
+        releaseFilePickerGuardSoon(500);
+        return;
+      }
+      try {
+        const result = await parsePDF(base64);
+        try { logDiagnostic('bank_import_pdf_parse_result', { has_result: !!result, count: result?.transactions.length ?? 0, detected_bank: result?.detected_bank ?? null }); } catch {}
+        if (result && result.transactions.length > 0) {
+          setLocalParsedData(result);
+          setPdfPreviewOpen(true);
+          try { logDiagnostic('bank_import_pdf_preview_opened', { count: result.transactions.length }); } catch {}
+        } else if (result && result.transactions.length === 0) {
+          showError(t('toasts.pdfNoTransactions'));
+        }
+      } finally {
+        releaseFilePickerGuardSoon();
       }
     };
-    reader.readAsDataURL(file);
-
-    if (pdfInputRef.current) {
-      pdfInputRef.current.value = '';
-    }
+    reader.readAsDataURL(fileBlob);
   };
 
   const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
 
     const isHTMLFile = file.type === 'text/html' || file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
     if (!isHTMLFile) {
       showError(t('toasts.selectHtmlFile'));
+      releaseFilePickerGuardSoon(500);
       return;
     }
 
-    const content = await file.text();
-    const result = await parseHTML(content);
-    
-    if (result && result.transactions.length > 0) {
-      setPdfPreviewOpen(true);
-    } else if (result && result.transactions.length === 0) {
-      showError(t('toasts.noTransactionsInHtml'));
-    }
+    clearFilePickerGuardRelease();
+    if (htmlInputRef.current) htmlInputRef.current.value = '';
 
-    if (htmlInputRef.current) {
-      htmlInputRef.current.value = '';
+    try {
+      const content = await file.text();
+      const result = await parseHTML(content);
+      if (result && result.transactions.length > 0) {
+        setLocalParsedData(result);
+        setPdfPreviewOpen(true);
+      } else if (result && result.transactions.length === 0) {
+        showError(t('toasts.noTransactionsInHtml'));
+      }
+    } finally {
+      releaseFilePickerGuardSoon();
     }
   };
 
