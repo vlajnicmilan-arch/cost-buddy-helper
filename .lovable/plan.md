@@ -1,61 +1,44 @@
-Da, vidi se. Problem je bio vremenska zona: ja sam gledao UTC i krivo komunicirao.
+# PDF uvoz — popravak i dijagnostika (19.5.2026)
 
-Provjereno sada:
+Status: implementirano, čeka korisnikov test pokušaj.
 
-- Hrvatsko vrijeme 18:xx = UTC 16:xx.
-- PDF jobovi poslije 18:00 postoje:
-  - 18:29:19 — completed, 82 transakcije
-  - 18:32:36 — completed, 57 transakcija
-  - 18:35:25 — completed, 55 transakcija
-  - 18:37:03 — completed, 55 transakcija
-- Import batch-evi poslije 18:00 postoje:
-  - 18:32:03 — 65 redaka uvezeno
-  - 18:34:40 — 43 retka uvezeno
-- Za jobove 18:35 i 18:37 vidim da su PDF-ovi obrađeni, ali ne vidim kasniji import batch u `expenses`.
-- Za job 18:37 postoji log `payment_source_pdf_preview_opened` u 18:38:54.
-- Za kasnije korake trenutno nemamo dovoljno precizan log: ne postoji pouzdan zapis “korisnik kliknuo Uvezi”, “import krenuo”, “duplicate dialog otvoren”, “import završen”, “import resetirao state”.
+Promjene u `src/components/PaymentSourceTransactionsDialog.tsx`:
+1. `runPdfJob` guard: ako je isti `jobId` već aktivan (`activePdfJobIdRef`), drugi poziv se preskače i logira `payment_source_pdf_polling_skipped_duplicate`. Sprječava dvostruko polling za isti job.
+2. Uklonjen `fetchLatestPDFParseJob` recovery iz dialoga (mogao je vratiti tuđi `processing` job). Recovery sada ide samo preko per-source localStorage ključa `vmb-pdf-parse-job:<sourceId>`.
+3. `handlePdfJobResult`: novi redoslijed — `clearStoredPdfJob` → `setSourceParsedData` → `setPdfPreviewOpen(true)` → `setPdfJobPhase('completed')` → reset `activePdfJobIdRef`/`pdfJobId`. Processing overlay više ne ostaje iznad previewa.
+4. Pri grešci u jobu: čisti storage key i job state odmah, ne ostavlja zaglavljeno `pdfJobId`.
+5. Dodani dijagnostički eventi:
+   - `payment_source_pdf_start_attempt`, `payment_source_pdf_start_ok`
+   - `payment_source_pdf_polling_skipped_duplicate`
+   - `payment_source_pdf_no_transactions`
+   - `payment_source_pdf_import_blocked`, `payment_source_pdf_import_clicked`
+   - `payment_source_pdf_import_dedup`
+   - `payment_source_pdf_import_all_duplicates`
+   - `payment_source_pdf_duplicate_dialog_opened`
+   - `payment_source_pdf_import_success`, `payment_source_pdf_import_failed`
+   - `payment_source_pdf_duplicate_confirm_blocked`, `payment_source_pdf_duplicate_confirm_clicked`
+   - `payment_source_pdf_duplicate_import_success`, `payment_source_pdf_duplicate_import_failed`
 
-Što to znači:
+Verifikacijski upit (Zagreb vrijeme):
+```sql
+select created_at at time zone 'Europe/Zagreb' as t, event, details
+from public.app_diagnostics_logs
+where created_at > now() - interval '1 hour'
+  and event ilike 'payment_source_pdf%'
+order by created_at asc;
+```
 
-- PDF parser radi: jobovi završavaju.
-- Dio importa radi: postoje stvarni batch-evi u `expenses`.
-- Problem je između završene PDF obrade, preview/duplicate flowa i finalnog importa u `expenses`.
-- Trenutna dijagnostika nije dovoljna da dokaže točno gdje nestaje zadnji korak.
-
-Plan:
-
-1. Popraviti postojeći potvrđeni bug
-- Spriječiti višestruki polling/recovery istog PDF joba.
-- Ukloniti `fetchLatestPDFParseJob` recovery iz Payment Source dialoga jer može zakačiti krivi/stari processing job.
-- Recovery smije koristiti samo `vmb-pdf-parse-job:<sourceId>` i samo za konkretni job.
-
-2. Dodati precizne dijagnostičke evente za nedostajući dio toka
-- PDF gumb kliknut.
-- File picker otvoren.
-- `input.onChange` pozvan, uključujući slučaj bez filea.
-- File odabran.
-- Job startan.
-- Polling startan/skipped jer već postoji aktivni job.
-- Preview otvoren.
-- Uvezi kliknut.
-- Duplicate dialog otvoren.
-- Import pozvan s brojem transakcija.
-- Import uspio / import greška / nema novih transakcija.
-- Svaki reset PDF statea.
-
-3. Stabilizirati završetak joba
-- Kad job završi: očistiti storage key, postaviti `sourceParsedData`, otvoriti preview, pa tek onda maknuti processing state.
-- Processing overlay ne smije ostati iznad previewa.
-
-4. Provjera nakon implementacije
-- Nakon novog pokušaja gledamo po Zagreb vremenu.
-- Mora se vidjeti cijeli lanac: klik → file → job → preview → uvoz/duplikati → batch ili jasna poruka.
-- Ako se prekine, točno ćemo znati na kojem eventu.
-
-<presentation-actions>
-  <presentation-open-history>View History</presentation-open-history>
-</presentation-actions>
-
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+Očekivani slijed za jedan PDF uvoz:
+`pdf_button_click` (postojeći `payment_source_import_picker_open`) →
+`payment_source_pdf_file_selected` →
+`payment_source_pdf_start_attempt` →
+`payment_source_pdf_start_ok` →
+`payment_source_pdf_polling_started` (jednom) →
+`payment_source_pdf_polling_status` (status: completed) →
+`payment_source_pdf_parse_result` →
+`payment_source_pdf_preview_opened` →
+`payment_source_pdf_import_clicked` →
+`payment_source_pdf_import_dedup` →
+(`payment_source_pdf_duplicate_dialog_opened` → `payment_source_pdf_duplicate_confirm_clicked` → `payment_source_pdf_duplicate_import_success`)
+ili
+`payment_source_pdf_import_success`.
