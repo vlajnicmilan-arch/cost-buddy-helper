@@ -276,9 +276,9 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
   };
 
   const handleImportPDFTransactions = async () => {
-    if (!parsedData || !onImportCSV) return;
+    if (!activeParsedData || !onImportCSV) return;
 
-    const transactions: ParsedTransaction[] = overrideToBusinessSource(parsedData.transactions.map(tx => ({
+    const transactions: ParsedTransaction[] = overrideToBusinessSource(activeParsedData.transactions.map(tx => ({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
@@ -313,6 +313,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       setPartnersDialogOpen(true);
     }
     clearParsedData();
+    setLocalParsedData(null);
     showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     // Loan detection after successful import (business mode only)
     void runLoanDetection(transactions);
@@ -330,6 +331,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
       clearParsedData();
+      setLocalParsedData(null);
       setDuplicateInfo(null);
       return;
     }
@@ -343,6 +345,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       setPartnersDialogOpen(true);
     }
     clearParsedData();
+    setLocalParsedData(null);
     setDuplicateInfo(null);
     showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     // Loan detection after successful import (business mode only)
