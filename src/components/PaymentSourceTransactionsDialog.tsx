@@ -278,6 +278,74 @@ export const PaymentSourceTransactionsDialog = ({
   const selectAll = () => setSelectedIds(new Set(filteredSourceExpenses.map(e => e.id)));
   const clearSelection = () => setSelectedIds(new Set());
 
+  const getPdfJobStorageKey = useCallback(() => (
+    paymentSource ? `vmb-pdf-parse-job:${paymentSource.id}` : null
+  ), [paymentSource]);
+
+  const clearStoredPdfJob = useCallback(() => {
+    const key = getPdfJobStorageKey();
+    if (!key) return;
+    try { localStorage.removeItem(key); } catch {}
+  }, [getPdfJobStorageKey]);
+
+  const handlePdfJobResult = useCallback((result: LocalParsedData, jobId: string | null) => {
+    try {
+      logDiagnostic('payment_source_pdf_parse_result', {
+        job_id: jobId,
+        has_result: true,
+        count: result.transactions.length,
+        detected_bank: result.detected_bank ?? null,
+        route: window.location.pathname,
+      });
+    } catch {}
+
+    if (result.transactions.length > 0) {
+      setSourceParsedData(result);
+      setPdfPreviewOpen(true);
+      setPdfJobPhase('completed');
+      try { logDiagnostic('payment_source_pdf_preview_opened', { job_id: jobId, count: result.transactions.length }); } catch {}
+    } else {
+      setPdfJobPhase('idle');
+      toast.warning(t('toasts.pdfNoTransactions'));
+    }
+  }, [t]);
+
+  const runPdfJob = useCallback(async (jobId: string, options?: { releaseGuard?: boolean; recovered?: boolean }) => {
+    activePdfJobIdRef.current = jobId;
+    setPdfJobId(jobId);
+    setPdfJobPhase('processing');
+    try { logDiagnostic('payment_source_pdf_polling_started', { job_id: jobId, recovered: !!options?.recovered }); } catch {}
+
+    try {
+      const result = await waitForPDFParseJob(jobId, {
+        onStatus: (status, attempt) => {
+          if (status === 'processing' || status === 'pending') setPdfJobPhase('processing');
+          try {
+            if (attempt === 0 || attempt % 10 === 0) {
+              logDiagnostic('payment_source_pdf_polling_status', { job_id: jobId, status, attempt });
+            }
+          } catch {}
+        },
+      });
+
+      if (activePdfJobIdRef.current !== jobId || !result) return;
+      clearStoredPdfJob();
+      handlePdfJobResult(result, jobId);
+    } catch (err) {
+      if (activePdfJobIdRef.current !== jobId) return;
+      setPdfJobPhase('failed');
+      const message = err instanceof Error ? err.message : String(err);
+      try { logDiagnostic('payment_source_pdf_job_failed', { job_id: jobId, message, recovered: !!options?.recovered }); } catch {}
+      showError(t('toasts.pdfAnalysisError'));
+    } finally {
+      if (activePdfJobIdRef.current === jobId) {
+        activePdfJobIdRef.current = null;
+        setPdfJobId(null);
+      }
+      if (options?.releaseGuard) releaseFilePickerGuardSoon();
+    }
+  }, [clearStoredPdfJob, handlePdfJobResult, releaseFilePickerGuardSoon, t, waitForPDFParseJob]);
+
   const handleBulkCategoryChange = async (category: Category) => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
     let count = 0;
