@@ -32,6 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { usePdfImport, PDF_IMPORT_STORAGE_PREFIX, PDF_IMPORT_TTL_MS, type StoredPdfJob, type ParsedPDFData } from '@/contexts/PdfImportContext';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -45,15 +46,7 @@ interface PaymentSourceTransactionsDialogProps {
   onPdfProcessingChange?: (processing: boolean) => void;
 }
 
-type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
 
-type StoredPdfJob = {
-  jobId?: string;
-  sourceId?: string;
-  startedAt?: string;
-};
-
-const PDF_JOB_TTL_MS = 15 * 60 * 1000;
 
 export const PaymentSourceTransactionsDialog = ({
   open,
