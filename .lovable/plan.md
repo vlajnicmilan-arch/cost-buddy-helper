@@ -1,44 +1,55 @@
-# PDF uvoz — popravak i dijagnostika (19.5.2026)
+Provjerio sam kod i bazu. Ovo više nije nagađanje.
 
-Status: implementirano, čeka korisnikov test pokušaj.
+## Što je stvarno potvrđeno
 
-Promjene u `src/components/PaymentSourceTransactionsDialog.tsx`:
-1. `runPdfJob` guard: ako je isti `jobId` već aktivan (`activePdfJobIdRef`), drugi poziv se preskače i logira `payment_source_pdf_polling_skipped_duplicate`. Sprječava dvostruko polling za isti job.
-2. Uklonjen `fetchLatestPDFParseJob` recovery iz dialoga (mogao je vratiti tuđi `processing` job). Recovery sada ide samo preko per-source localStorage ključa `vmb-pdf-parse-job:<sourceId>`.
-3. `handlePdfJobResult`: novi redoslijed — `clearStoredPdfJob` → `setSourceParsedData` → `setPdfPreviewOpen(true)` → `setPdfJobPhase('completed')` → reset `activePdfJobIdRef`/`pdfJobId`. Processing overlay više ne ostaje iznad previewa.
-4. Pri grešci u jobu: čisti storage key i job state odmah, ne ostavlja zaglavljeno `pdfJobId`.
-5. Dodani dijagnostički eventi:
-   - `payment_source_pdf_start_attempt`, `payment_source_pdf_start_ok`
-   - `payment_source_pdf_polling_skipped_duplicate`
-   - `payment_source_pdf_no_transactions`
-   - `payment_source_pdf_import_blocked`, `payment_source_pdf_import_clicked`
-   - `payment_source_pdf_import_dedup`
-   - `payment_source_pdf_import_all_duplicates`
-   - `payment_source_pdf_duplicate_dialog_opened`
-   - `payment_source_pdf_import_success`, `payment_source_pdf_import_failed`
-   - `payment_source_pdf_duplicate_confirm_blocked`, `payment_source_pdf_duplicate_confirm_clicked`
-   - `payment_source_pdf_duplicate_import_success`, `payment_source_pdf_duplicate_import_failed`
+- PDF parser radi: zadnji posao `40185654...` je u bazi `completed` i ima 37 transakcija.
+- Frontend je pokrenuo obradu u 16:53:02 i polling u 16:53:04.
+- Nakon toga nema client-side eventa `pdf_parse_job_completed`, `payment_source_pdf_preview_opened` ni `payment_source_pdf_import_clicked`.
+- U kodu postoji konkretna greška: recovery logika za spremljeni PDF posao briše posao ako je već `completed`, umjesto da uzme `result` i otvori preview. To znači: ako se app reload-a, WebView se obnovi ili komponenta izgubi stanje dok AI obrada traje, završeni posao se izgubi iz UI-ja.
 
-Verifikacijski upit (Zagreb vrijeme):
-```sql
-select created_at at time zone 'Europe/Zagreb' as t, event, details
-from public.app_diagnostics_logs
-where created_at > now() - interval '1 hour'
-  and event ilike 'payment_source_pdf%'
-order by created_at asc;
-```
+Problem nije u AI parseru. Problem je u lifecycle/recovery dijelu između završenog `pdf_parse_jobs.result` i prikaza/importa u UI.
 
-Očekivani slijed za jedan PDF uvoz:
-`pdf_button_click` (postojeći `payment_source_import_picker_open`) →
-`payment_source_pdf_file_selected` →
-`payment_source_pdf_start_attempt` →
-`payment_source_pdf_start_ok` →
-`payment_source_pdf_polling_started` (jednom) →
-`payment_source_pdf_polling_status` (status: completed) →
-`payment_source_pdf_parse_result` →
-`payment_source_pdf_preview_opened` →
-`payment_source_pdf_import_clicked` →
-`payment_source_pdf_import_dedup` →
-(`payment_source_pdf_duplicate_dialog_opened` → `payment_source_pdf_duplicate_confirm_clicked` → `payment_source_pdf_duplicate_import_success`)
-ili
-`payment_source_pdf_import_success`.
+## Plan popravka
+
+1. **Popraviti recovery za završene PDF poslove**
+   - U `PaymentSourceTransactionsDialog.tsx` recovery više ne smije brisati `completed` job.
+   - Ako spremljeni job ima `status = completed` i `result`, treba ga pretvoriti u isti format kao normalni parser rezultat i pozvati postojeći preview flow.
+   - Tek nakon uspješnog otvaranja previewa smije se očistiti localStorage ključ.
+
+2. **Ukloniti ovisnost o komponentnom stateu za završeni rezultat**
+   - Spremiti minimalni PDF import state po izvoru plaćanja: `jobId`, `sourceId`, `startedAt`, `phase`.
+   - Recovery mora raditi i nakon povratka iz file pickera, reload-a, route remounta ili native lifecycle promjene.
+   - Ne uvoditi globalni “latest job” fallback jer je već dokazano opasan za krivi izvor plaćanja.
+
+3. **Osigurati da parsing hook izlaže sigurnu funkciju za pretvorbu rezultata**
+   - `usePDFParser` trenutno ima interni `toParseResult`, ali dialog ga ne može koristiti za recovery completed joba.
+   - Izložiti funkciju ili helper za normalizaciju `pdf_parse_jobs.result` → `PDFParseResult` bez dupliciranja logike.
+
+4. **Dodati durable dijagnostiku za lifecycle prekid**
+   - Dodati evente za: recovery completed job, recovery opened preview, recovery cleared job, polling abandoned/unmounted.
+   - Kritične PDF evente zapisati tako da se ne izgube ako app/reload ubije 2s buffer.
+
+5. **Popraviti import feedback i osvježavanje liste**
+   - Nakon PDF importa pozvati `refetch` ili postojeći refresh callback tako da se lista izvora plaćanja sigurno osvježi iz baze.
+   - `importFromCSV` trenutno ažurira lokalni state, ali u ovom toku želim dodatno zatvoriti rupu između stvarnog DB inserta i prikaza u dijalogu.
+
+6. **Verifikacija nakon implementacije**
+   - Provjeriti da novi tok daje slijed:
+     - picker open
+     - file selected
+     - job started
+     - job completed u bazi
+     - preview opened iz normalnog toka ili recovery toka
+     - import clicked
+     - import success
+     - novi `import_batch_id` u `expenses`
+   - Posebno provjeriti slučaj: pokreni PDF obradu → izađi iz novčanika / vrati se → završeni job otvara preview, ne spinner.
+
+## Tehnički zahvat
+
+- Datoteke:
+  - `src/hooks/usePDFParser.ts`
+  - `src/components/PaymentSourceTransactionsDialog.tsx`
+  - po potrebi `src/pages/Wallet.tsx` samo za refresh nakon importa
+- Bez database migracije.
+- Bez promjena u parser edge funkciji jer parser već vraća ispravan rezultat.
