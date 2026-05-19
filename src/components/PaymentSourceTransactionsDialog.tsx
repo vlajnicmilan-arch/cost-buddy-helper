@@ -510,7 +510,9 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         setPdfJobPhase('starting');
+        try { logDiagnostic('payment_source_pdf_start_attempt', { source_id: paymentSource?.id ?? null, file_size: fileBlob.size }); } catch {}
         const jobId = await startPDFParseJob(base64);
+        try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
         const key = getPdfJobStorageKey();
         if (key) {
           try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
