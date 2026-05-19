@@ -312,13 +312,11 @@ export const PaymentSourceTransactionsDialog = ({
       }
       try {
         const result = await parsePDF(base64);
-        console.info('[PDF Import] parse result', {
-          transactionCount: result?.transactions.length ?? 0,
-          detectedBank: result?.detected_bank ?? null,
-          paymentSourceId: paymentSource?.id ?? null,
-        });
         if (result && result.transactions.length > 0) {
-          console.info('[PDF Import] opening preview overlay');
+          // Mirror result into local state SYNCHRONOUSLY before opening preview,
+          // so the overlay's `pdfPreviewOpen && sourceParsedData` guard is true
+          // on the same render where we flip the open flag.
+          setSourceParsedData(result);
           setPdfPreviewOpen(true);
         } else if (result && result.transactions.length === 0) {
           toast.warning(t('toasts.pdfNoTransactions'));
