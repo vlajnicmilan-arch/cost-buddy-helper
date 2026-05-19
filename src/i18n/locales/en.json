@@ -1993,7 +1993,21 @@
     "foundSimilar": "We found a similar transaction in your records. Are you sure you want to add a new one?",
     "existingTransaction": "Existing transaction",
     "newTransaction": "New transaction",
-    "addAnyway": "Add anyway"
+    "addAnyway": "Add anyway",
+    "level": {
+      "strict": "Very likely",
+      "fuzzy": "Similar",
+      "suspicious": "Suspicious"
+    },
+    "reason": {
+      "exactAmountSameDayMerchant": "Identical amount, same day and same merchant as an existing transaction.",
+      "exactAmountDifferentSource": "Identical amount and date but a different payment source.",
+      "sameAmountNearDate": "Same amount and similar merchant/description within 3 days.",
+      "sameAmountSameDay": "Two identical purchases on the same day — verify they are actually different.",
+      "similarAmountSameWeek": "Similar amount and merchant within the same week.",
+      "differentType": "Different transaction type.",
+      "noMatch": "No match."
+    }
   },
   "tutorial": {
     "start": "Start guide",
