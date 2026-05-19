@@ -34,6 +34,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
 import { autoRegisterIfEnabled } from "@/lib/nativePush";
+import { PdfImportProvider } from "@/contexts/PdfImportContext";
+import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 
 const Index = lazy(() => import("./pages/Index"));
 
@@ -157,6 +159,7 @@ const RouteAwareGlobalOverlays = () => {
       <CookieConsentBanner />
       <FeedbackFAB />
       <FileSavedDialog />
+      <GlobalPDFImportHost />
     </>
   );
 };
@@ -320,6 +323,7 @@ const App = () => (
                   <SubscriptionProvider>
                     <TutorialProvider>
                       <ReceiptScanProvider>
+                      <PdfImportProvider>
                         <NativeInit />
                         <Toaster />
                         <Sonner />
@@ -336,6 +340,7 @@ const App = () => (
                             <AppRoutes />
                           </BackButtonProvider>
                         </BrowserRouter>
+                      </PdfImportProvider>
                       </ReceiptScanProvider>
                     </TutorialProvider>
                   </SubscriptionProvider>
