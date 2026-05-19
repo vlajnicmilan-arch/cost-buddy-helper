@@ -35,19 +35,18 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   showBackButton?: boolean;
-  overlayClassName?: string;
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, showBackButton = true, overlayClassName, ...props }, ref) => {
+>(({ className, children, showBackButton = true, ...props }, ref) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
 
   return (
     <DialogPortal>
-      <DialogOverlay className={overlayClassName} />
+      <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
