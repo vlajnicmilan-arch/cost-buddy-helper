@@ -145,6 +145,10 @@ export const PaymentSourceTransactionsDialog = ({
   }, [clearFilePickerGuardRelease]);
 
   const handleClose = () => {
+    if (isPdfProcessing) {
+      try { logDiagnostic('payment_source_close_blocked_pdf_processing', { job_id: pdfJobId, phase: pdfJobPhase }); } catch {}
+      return;
+    }
     clearSelection();
     setSearchTerm('');
     setFilters(defaultFilters);
@@ -516,6 +520,10 @@ export const PaymentSourceTransactionsDialog = ({
 
   const resetPdfImportState = () => {
     setSourceParsedData(null);
+    setPdfJobPhase('idle');
+    setPdfJobId(null);
+    activePdfJobIdRef.current = null;
+    clearStoredPdfJob();
     clearParsedData();
   };
 
