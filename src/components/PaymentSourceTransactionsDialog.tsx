@@ -26,6 +26,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';
+import { usePdfImport } from '@/contexts/PdfImportContext';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -100,12 +101,23 @@ export const PaymentSourceTransactionsDialog = ({
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData, normalizeJobResult } = usePDFParser();
+  const {
+    isBusy: isGlobalPdfImportBusy,
+    startPdfImport,
+    startHtmlImport,
+    registerHandlers: registerPdfImportHandlers,
+  } = usePdfImport();
   const { customCategories } = useCustomCategories();
-  const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+  const isPdfProcessing = isGlobalPdfImportBusy || pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
   useEffect(() => {
     onPdfProcessingChange?.(isPdfProcessing);
   }, [isPdfProcessing, onPdfProcessingChange]);
+
+  useEffect(() => {
+    if (!onImportCSV) return;
+    return registerPdfImportHandlers({ onImportCSV, findDuplicates });
+  }, [findDuplicates, onImportCSV, registerPdfImportHandlers]);
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
