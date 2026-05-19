@@ -1064,7 +1064,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
-        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+        <DialogContent showBackButton={false} className="z-[70] sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-primary" />
@@ -1144,7 +1144,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* Duplicate Warning Dialog */}
       <Dialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
-        <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
+        <DialogContent showBackButton={false} className="z-[70] sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
