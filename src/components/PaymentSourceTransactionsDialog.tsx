@@ -397,27 +397,11 @@ export const PaymentSourceTransactionsDialog = ({
 
   useEffect(() => {
     if (!open || !paymentSource || sourceParsedData || isPdfProcessing) return;
-    const key = getPdfJobStorageKey();
-    if (!key) return;
 
     let cancelled = false;
     const recoverStoredJob = async () => {
-      let stored: { jobId?: string; startedAt?: string } | null = null;
-      try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return;
-        stored = JSON.parse(raw) as { jobId?: string; startedAt?: string };
-      } catch {
-        try { localStorage.removeItem(key); } catch {}
-        return;
-      }
-      if (!stored?.jobId) { try { localStorage.removeItem(key); } catch {} return; }
-
-      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
-      if (!startedAt || Date.now() - startedAt > 15 * 60 * 1000) {
-        try { localStorage.removeItem(key); } catch {}
-        return;
-      }
+      const stored = readStoredPdfJob();
+      if (!stored?.jobId) return;
 
       try {
         const job = await fetchPDFParseJob(stored.jobId);
@@ -455,7 +439,7 @@ export const PaymentSourceTransactionsDialog = ({
 
     void recoverStoredJob();
     return () => { cancelled = true; };
-  }, [fetchPDFParseJob, getPdfJobStorageKey, isPdfProcessing, open, paymentSource, runPdfJob, sourceParsedData, normalizeJobResult, handlePdfJobResult]);
+  }, [fetchPDFParseJob, isPdfProcessing, open, paymentSource, readStoredPdfJob, runPdfJob, sourceParsedData, normalizeJobResult, handlePdfJobResult]);
 
   // NOTE: "latest job" auto-recovery removed. It could attach a job created in
   // a different payment source. Recovery now relies only on the per-source
