@@ -355,11 +355,16 @@ export const PaymentSourceTransactionsDialog = ({
     }
   };
 
+  const resetPdfImportState = () => {
+    setSourceParsedData(null);
+    clearParsedData();
+  };
+
   const handleImportPDFTransactions = async () => {
-    if (!parsedData || !onImportCSV || !paymentSource) return;
+    if (!sourceParsedData || !onImportCSV || !paymentSource) return;
 
     const paymentSourceValue = `custom:${paymentSource.id}`;
-    const transactions: ParsedTransaction[] = parsedData.transactions.map(tx => ({
+    const transactions: ParsedTransaction[] = sourceParsedData.transactions.map(tx => ({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
@@ -380,7 +385,7 @@ export const PaymentSourceTransactionsDialog = ({
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
             toast.info(t('import.noNewTransactions'));
             setPdfPreviewOpen(false);
-            clearParsedData();
+            resetPdfImportState();
             return;
           }
 
@@ -395,7 +400,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       await onImportCSV(transactions);
       setPdfPreviewOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
     } catch (error) {
       console.error('Error importing PDF transactions:', error);
@@ -413,7 +418,7 @@ export const PaymentSourceTransactionsDialog = ({
     if (transactionsToImport.length === 0) {
       toast.info(t('import.noNewTransactions'));
       setDuplicateWarningOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       setDuplicateInfo(null);
       return;
     }
@@ -422,7 +427,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(true);
       await onImportCSV(transactionsToImport);
       setDuplicateWarningOpen(false);
-      clearParsedData();
+      resetPdfImportState();
       setDuplicateInfo(null);
       showSuccess(t('import.importedTransactions', { count: transactionsToImport.length }));
     } catch (error) {
@@ -432,6 +437,7 @@ export const PaymentSourceTransactionsDialog = ({
       setIsImportingPdf(false);
     }
   };
+
 
   // Print handler
   const handlePrint = () => {
