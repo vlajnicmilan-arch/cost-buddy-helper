@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import type { Expense } from '@/types/expense';
 import type { CustomPaymentSource } from '@/types/customPaymentSource';
 import type { ParsedTransaction } from '@/lib/csvParsers';
@@ -48,8 +48,8 @@ interface PdfImportContextValue {
   _setImporting: (importing: boolean) => void;
   _runImport: (transactions: ParsedTransaction[]) => Promise<void>;
   _runFindDuplicates: FindPdfDuplicatesHandler | null;
-  _pendingPdfRef: React.MutableRefObject<StartPdfImportOptions | null>;
-  _pendingHtmlRef: React.MutableRefObject<StartHtmlImportOptions | null>;
+  _pendingPdfRef: MutableRefObject<StartPdfImportOptions | null>;
+  _pendingHtmlRef: MutableRefObject<StartHtmlImportOptions | null>;
 }
 
 const noop = () => {};
