@@ -1475,6 +1475,8 @@
     "total": "Ukupno",
     "importCount": "Uvezi {{count}} transakcija",
     "importedFromPDF": "Uvezeno {{count}} transakcija iz PDF-a",
+    "importing": "Uvozim...",
+    "allAssignedToSource": "ℹ️ Sve transakcije će biti dodijeljene izvoru: {{name}}",
     "duplicatesFound": "Pronađeni duplikati",
     "duplicatesExist": "{{count}} transakcija već postoji u bazi",
     "newTransactionsReady": "{{count}} novih transakcija je spremno za uvoz",
