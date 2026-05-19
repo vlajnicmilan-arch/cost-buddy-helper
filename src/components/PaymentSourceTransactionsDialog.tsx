@@ -26,13 +26,13 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';
+import { usePdfImport } from '@/contexts/PdfImportContext';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
-import { usePdfImport } from '@/contexts/PdfImportContext';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -55,9 +55,6 @@ type StoredPdfJob = {
 };
 
 const PDF_JOB_TTL_MS = 15 * 60 * 1000;
-
-
-
 
 export const PaymentSourceTransactionsDialog = ({
   open,
@@ -90,6 +87,10 @@ export const PaymentSourceTransactionsDialog = ({
   const [isImportingPdf, setIsImportingPdf] = useState(false);
   const [pdfJobPhase, setPdfJobPhase] = useState<PdfJobPhase>('idle');
   const [pdfJobId, setPdfJobId] = useState<string | null>(null);
+  // Local mirror of the parse result, set synchronously from the parsePDF/parseHTML
+  // return value. The preview overlay reads from this state instead of the hook's
+  // internal `parsedData`, so the overlay does not depend on an unrelated async
+  // setState landing before our `setPdfPreviewOpen(true)`.
   type LocalParsedData = NonNullable<ReturnType<typeof usePDFParser>['parsedData']>;
   const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -100,15 +101,24 @@ export const PaymentSourceTransactionsDialog = ({
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
   const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData, normalizeJobResult } = usePDFParser();
+  const {
+    isBusy: isGlobalPdfImportBusy,
+    startPdfImport,
+    startHtmlImport,
+    registerHandlers: registerPdfImportHandlers,
+  } = usePdfImport();
   const { customCategories } = useCustomCategories();
-  const pdfImport = usePdfImport();
-  const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+  const isLocalPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
+  const isPdfProcessing = isGlobalPdfImportBusy || isLocalPdfProcessing;
 
   useEffect(() => {
     onPdfProcessingChange?.(isPdfProcessing);
   }, [isPdfProcessing, onPdfProcessingChange]);
 
-
+  useEffect(() => {
+    if (!onImportCSV) return;
+    return registerPdfImportHandlers({ onImportCSV, findDuplicates });
+  }, [findDuplicates, onImportCSV, registerPdfImportHandlers]);
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
@@ -509,7 +519,6 @@ export const PaymentSourceTransactionsDialog = ({
     }
     clearFilePickerGuardRelease();
     try { logDiagnostic('payment_source_pdf_file_selected', { name: file.name, type: file.type, size: file.size }); } catch {}
-    // Accept PDF by MIME type or file extension (mobile browsers may not set type correctly)
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     if (!isPDF) {
       showError(t('import.selectPDF'));
@@ -517,47 +526,15 @@ export const PaymentSourceTransactionsDialog = ({
       releaseFilePickerGuardSoon(500);
       return;
     }
-    
-    // Clone the file into a Blob before resetting input — on mobile, resetting
-    // the input can invalidate the File reference before FileReader finishes.
-    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
-    
-    // Reset input so same file can be re-selected next time
-    if (pdfInputRef.current) pdfInputRef.current.value = '';
-    
-    toast.info(t('toasts.loadingPdf'));
-    
-    const reader = new FileReader();
-    reader.onerror = () => {
-      showError(t('toasts.fileReadError'));
+    if (!paymentSource) {
       releaseFilePickerGuardSoon(500);
-    };
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      if (!base64) {
-        showError(t('toasts.fileReadError'));
-        releaseFilePickerGuardSoon(500);
-        return;
-      }
-      try {
-        setPdfJobPhase('starting');
-        try { logDiagnostic('payment_source_pdf_start_attempt', { source_id: paymentSource?.id ?? null, file_size: fileBlob.size }); } catch {}
-        const jobId = await startPDFParseJob(base64);
-        try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
-        const key = getPdfJobStorageKey();
-        if (key) {
-          try { localStorage.setItem(key, JSON.stringify({ jobId, sourceId: paymentSource?.id ?? null, startedAt: new Date().toISOString() })); } catch {}
-        }
-        void runPdfJob(jobId, { releaseGuard: true });
-      } catch (err) {
-        console.error('PDF parse error:', err);
-        setPdfJobPhase('failed');
-        try { logDiagnostic('payment_source_pdf_start_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-        showError(t('toasts.pdfAnalysisError'));
-        releaseFilePickerGuardSoon();
-      }
-    };
-    reader.readAsDataURL(fileBlob);
+      return;
+    }
+
+    const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'application/pdf' });
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
+    toast.info(t('toasts.loadingPdf'));
+    await startPdfImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
   const handleHTMLSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -574,23 +551,14 @@ export const PaymentSourceTransactionsDialog = ({
       releaseFilePickerGuardSoon(500);
       return;
     }
+    if (!paymentSource) {
+      releaseFilePickerGuardSoon(500);
+      return;
+    }
+    const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'text/html' });
     if (htmlInputRef.current) htmlInputRef.current.value = '';
     toast.info(t('toasts.loadingHtml'));
-    try {
-      const content = await file.text();
-      const result = await parseHTML(content);
-      if (result && result.transactions.length > 0) {
-        setSourceParsedData(result);
-        setPdfPreviewOpen(true);
-      } else if (result && result.transactions.length === 0) {
-        toast.warning(t('toasts.htmlNoTransactions'));
-      }
-    } catch (err) {
-      console.error('HTML parse error:', err);
-      showError(t('toasts.htmlAnalysisError'));
-    } finally {
-      releaseFilePickerGuardSoon();
-    }
+    await startHtmlImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
   const resetPdfImportState = () => {
@@ -1299,7 +1267,7 @@ export const PaymentSourceTransactionsDialog = ({
 
       {/* PDF Parsing Overlay */}
       <AnimatePresence>
-        {(parsing || isPdfProcessing) && (
+        {(parsing || isLocalPdfProcessing) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

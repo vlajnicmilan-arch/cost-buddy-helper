@@ -10,6 +10,8 @@ import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
 import { ReceiptScanProvider } from "@/contexts/ReceiptScanContext";
 import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptScanHost";
+import { PdfImportProvider } from "@/contexts/PdfImportContext";
+import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
@@ -34,8 +36,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
 import { autoRegisterIfEnabled } from "@/lib/nativePush";
-import { PdfImportProvider } from "@/contexts/PdfImportContext";
-import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 
 const Index = lazy(() => import("./pages/Index"));
 
@@ -159,7 +159,6 @@ const RouteAwareGlobalOverlays = () => {
       <CookieConsentBanner />
       <FeedbackFAB />
       <FileSavedDialog />
-      <GlobalPDFImportHost />
     </>
   );
 };
@@ -323,24 +322,25 @@ const App = () => (
                   <SubscriptionProvider>
                     <TutorialProvider>
                       <ReceiptScanProvider>
-                      <PdfImportProvider>
-                        <NativeInit />
-                        <Toaster />
-                        <Sonner />
-                        <BrowserRouter>
-                          <BackButtonProvider>
-                            <ScrollToTop />
-                            <DeepLinkInit />
-                            <PushAutoRegister />
-                            <DiagnosticRouteTracker />
-                            <BusinessModeGuard />
-                            <RouteAwareGlobalOverlays />
-                            <GlobalReceiptScanHost />
-                            <CrispChat />
-                            <AppRoutes />
-                          </BackButtonProvider>
-                        </BrowserRouter>
-                      </PdfImportProvider>
+                        <PdfImportProvider>
+                          <NativeInit />
+                          <Toaster />
+                          <Sonner />
+                          <BrowserRouter>
+                            <BackButtonProvider>
+                              <ScrollToTop />
+                              <DeepLinkInit />
+                              <PushAutoRegister />
+                              <DiagnosticRouteTracker />
+                              <BusinessModeGuard />
+                              <RouteAwareGlobalOverlays />
+                              <GlobalReceiptScanHost />
+                              <GlobalPDFImportHost />
+                              <CrispChat />
+                              <AppRoutes />
+                            </BackButtonProvider>
+                          </BrowserRouter>
+                        </PdfImportProvider>
                       </ReceiptScanProvider>
                     </TutorialProvider>
                   </SubscriptionProvider>
