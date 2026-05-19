@@ -46,6 +46,17 @@ interface PaymentSourceTransactionsDialogProps {
   onPdfProcessingChange?: (processing: boolean) => void;
 }
 
+type PdfJobPhase = 'idle' | 'starting' | 'processing' | 'completed' | 'failed';
+
+type StoredPdfJob = {
+  jobId?: string;
+  sourceId?: string;
+  startedAt?: string;
+};
+
+const PDF_JOB_TTL_MS = 15 * 60 * 1000;
+
+
 
 
 export const PaymentSourceTransactionsDialog = ({
@@ -71,24 +82,32 @@ export const PaymentSourceTransactionsDialog = ({
    const [installmentsExpanded, setInstallmentsExpanded] = useState(false);
   const [importBatchDialogOpen, setImportBatchDialogOpen] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [includeDuplicates, setIncludeDuplicates] = useState(false);
+  const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
+  const [duplicateInfo, setDuplicateInfo] = useState<{ duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] } | null>(null);
+  const [isImportingPdf, setIsImportingPdf] = useState(false);
+  const [pdfJobPhase, setPdfJobPhase] = useState<PdfJobPhase>('idle');
+  const [pdfJobId, setPdfJobId] = useState<string | null>(null);
+  type LocalParsedData = NonNullable<ReturnType<typeof usePDFParser>['parsedData']>;
+  const [sourceParsedData, setSourceParsedData] = useState<LocalParsedData | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const filePickerGuardReleaseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePdfJobIdRef = useRef<string | null>(null);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, startPDFParseJob, fetchPDFParseJob, parseHTML, normalizeJobResult } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData, normalizeJobResult } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const pdfImport = usePdfImport();
-  // PDF import lifecycle now lives in the global PdfImportProvider so it survives
-  // dialog unmount, route changes, and Android WebView pauses.
-  const isPdfProcessingForThisSource = !!paymentSource && pdfImport.source?.id === paymentSource.id && (pdfImport.phase === 'starting' || pdfImport.phase === 'processing');
-  const isAnyPdfActive = pdfImport.phase !== 'idle';
+  const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
   useEffect(() => {
-    // Closing the dialog must NOT interrupt the global PDF flow.
-    onPdfProcessingChange?.(false);
-  }, [onPdfProcessingChange]);
+    onPdfProcessingChange?.(isPdfProcessing);
+  }, [isPdfProcessing, onPdfProcessingChange]);
+
 
 
   // Filter installment plans for this payment source
