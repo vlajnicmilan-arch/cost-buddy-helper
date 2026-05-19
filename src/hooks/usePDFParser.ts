@@ -150,12 +150,16 @@ export const usePDFParser = () => {
     return data.jobId;
   };
 
-  const fetchPDFParseJob = async (jobId: string): Promise<PDFParseJobRow | null> => {
-    const { data: job, error } = await (supabase as any)
+  const fetchPDFParseJob = async (jobId: string, abortSignal?: AbortSignal): Promise<PDFParseJobRow | null> => {
+    let query = (supabase as any)
       .from('pdf_parse_jobs')
       .select('status,result,error')
       .eq('id', jobId)
       .maybeSingle();
+
+    if (abortSignal) query = query.abortSignal(abortSignal);
+
+    const { data: job, error } = await query;
 
     if (error) {
       logDiagnostic('pdf_parse_job_poll_error', { job_id: jobId, message: error.message });
