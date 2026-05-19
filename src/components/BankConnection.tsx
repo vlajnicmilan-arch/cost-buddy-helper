@@ -219,6 +219,10 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
         }
         releaseFilePickerGuardSoon();
       };
+      img.onerror = () => {
+        showError(t('toasts.fileReadError'));
+        releaseFilePickerGuardSoon(500);
+      };
       img.src = base64;
     };
     reader.onerror = () => {
@@ -476,7 +480,13 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
       </div>
 
       {/* PDF Preview Dialog */}
-      <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
+      <Dialog open={pdfPreviewOpen} onOpenChange={(open) => {
+        setPdfPreviewOpen(open);
+        if (!open) {
+          clearParsedData();
+          setLocalParsedData(null);
+        }
+      }}>
         <DialogContent showBackButton={false} className="sm:max-w-lg glass-card border-border/50 max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('import.foundTransactions')}</DialogTitle>
