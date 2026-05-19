@@ -307,6 +307,25 @@ export const PaymentSourceTransactionsDialog = ({
     try { localStorage.removeItem(key); } catch {}
   }, [getPdfJobStorageKey]);
 
+  const readStoredPdfJob = useCallback((): StoredPdfJob | null => {
+    const key = getPdfJobStorageKey();
+    if (!key || !paymentSource) return null;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const stored = JSON.parse(raw) as StoredPdfJob;
+      const startedAt = stored.startedAt ? new Date(stored.startedAt).getTime() : 0;
+      if (!stored.jobId || stored.sourceId !== paymentSource.id || !startedAt || Date.now() - startedAt > PDF_JOB_TTL_MS) {
+        localStorage.removeItem(key);
+        return null;
+      }
+      return stored;
+    } catch {
+      try { localStorage.removeItem(key); } catch {}
+      return null;
+    }
+  }, [getPdfJobStorageKey, paymentSource]);
+
   const handlePdfJobResult = useCallback((result: LocalParsedData, jobId: string | null) => {
     try {
       logDiagnostic('payment_source_pdf_parse_result', {
@@ -540,7 +559,7 @@ export const PaymentSourceTransactionsDialog = ({
         try { logDiagnostic('payment_source_pdf_start_ok', { job_id: jobId, source_id: paymentSource?.id ?? null }); } catch {}
         const key = getPdfJobStorageKey();
         if (key) {
-          try { localStorage.setItem(key, JSON.stringify({ jobId, startedAt: new Date().toISOString() })); } catch {}
+          try { localStorage.setItem(key, JSON.stringify({ jobId, sourceId: paymentSource?.id ?? null, startedAt: new Date().toISOString() })); } catch {}
         }
         void runPdfJob(jobId, { releaseGuard: true });
       } catch (err) {
