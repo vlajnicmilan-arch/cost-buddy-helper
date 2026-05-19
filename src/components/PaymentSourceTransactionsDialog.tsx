@@ -91,7 +91,7 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, fetchLatestPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
   const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
