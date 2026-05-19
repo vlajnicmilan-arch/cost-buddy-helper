@@ -333,6 +333,7 @@ export const usePDFParser = () => {
     parsePDF,
     parsePhoto,
     parseHTML,
-    clearParsedData
+    clearParsedData,
+    normalizeJobResult: toParseResult,
   };
 };
