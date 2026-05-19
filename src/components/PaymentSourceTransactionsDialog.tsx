@@ -407,12 +407,12 @@ export const PaymentSourceTransactionsDialog = ({
         const job = await fetchPDFParseJob(stored.jobId);
         if (cancelled) return;
         if (!job) {
-          try { localStorage.removeItem(key); } catch {}
+          clearStoredPdfJob();
           try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'missing', source_id: paymentSource.id }); } catch {}
           return;
         }
         if (job.status === 'failed') {
-          try { localStorage.removeItem(key); } catch {}
+          clearStoredPdfJob();
           try { logDiagnostic('payment_source_pdf_recovery_skipped', { job_id: stored.jobId, status: 'failed', source_id: paymentSource.id }); } catch {}
           return;
         }
@@ -423,7 +423,7 @@ export const PaymentSourceTransactionsDialog = ({
             const normalized = normalizeJobResult(job.result) as LocalParsedData;
             handlePdfJobResult(normalized, stored.jobId);
           } catch (err) {
-            try { localStorage.removeItem(key); } catch {}
+            clearStoredPdfJob();
             try { logDiagnostic('payment_source_pdf_recovery_normalize_failed', { job_id: stored.jobId, message: err instanceof Error ? err.message : String(err) }); } catch {}
           }
           return;
@@ -433,7 +433,7 @@ export const PaymentSourceTransactionsDialog = ({
         void runPdfJob(stored.jobId, { recovered: true });
       } catch (err) {
         try { logDiagnostic('payment_source_pdf_recovery_failed', { message: err instanceof Error ? err.message : String(err) }); } catch {}
-        try { localStorage.removeItem(key); } catch {}
+        clearStoredPdfJob();
       }
     };
 
