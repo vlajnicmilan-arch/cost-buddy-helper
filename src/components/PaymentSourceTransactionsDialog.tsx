@@ -344,6 +344,7 @@ export const PaymentSourceTransactionsDialog = ({
       const content = await file.text();
       const result = await parseHTML(content);
       if (result && result.transactions.length > 0) {
+        setSourceParsedData(result);
         setPdfPreviewOpen(true);
       } else if (result && result.transactions.length === 0) {
         toast.warning(t('toasts.htmlNoTransactions'));
