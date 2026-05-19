@@ -89,8 +89,9 @@ export const PaymentSourceTransactionsDialog = ({
   const [csvImportOpen, setCsvImportOpen] = useState(false);
   const { formatAmount, currency } = useCurrency();
   const { plans } = useInstallments();
-  const { parsing, parsedData, startPDFParseJob, waitForPDFParseJob, parsePDF, parseHTML, clearParsedData } = usePDFParser();
+  const { parsing, startPDFParseJob, waitForPDFParseJob, parseHTML, clearParsedData } = usePDFParser();
   const { customCategories } = useCustomCategories();
+  const isPdfProcessing = pdfJobPhase === 'starting' || pdfJobPhase === 'processing' || !!pdfJobId;
 
   // Filter installment plans for this payment source
   const sourceInstallments = useMemo(() => {
