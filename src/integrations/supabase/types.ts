@@ -4778,6 +4778,7 @@ export type Database = {
         Args: { p_id: string; p_table: string }
         Returns: undefined
       }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
