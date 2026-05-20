@@ -61,44 +61,54 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[70] bg-background flex flex-col"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => onOpenChange(false)}
         >
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.96 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md max-h-[85vh] bg-background rounded-2xl shadow-xl flex flex-col overflow-hidden"
+          >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0 bg-destructive/15 text-destructive">
-                <FileText className="w-5 h-5" />
+          <div className="flex items-center justify-between px-3 py-2 border-b bg-background/95 backdrop-blur-sm shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-destructive/15 text-destructive">
+                <FileText className="w-4 h-4" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-base font-semibold truncate">{t('importBatch.title')}</h1>
-                <p className="text-xs text-muted-foreground">
+                <h1 className="text-sm font-semibold truncate">{t('importBatch.title')}</h1>
+                <p className="text-[11px] text-muted-foreground">
                   {format(importDate, 'd. MMM yyyy', { locale: hr })} • {batchExpenses.length} {t('importBatch.transactions')}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {onDeleteBatch && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }} 
-                  className="h-10 w-10 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-5 w-5" />
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onOpenChange(false); }} className="h-10 w-10 min-h-[44px] min-w-[44px]">
-                <XIcon className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onOpenChange(false); }} className="h-11 w-11">
+                <XIcon className="h-5 w-5" />
               </Button>
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="max-w-2xl mx-auto w-full px-4 py-4 space-y-4">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="w-full px-3 py-3 space-y-3">
+
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-muted/50">
