@@ -4774,6 +4774,10 @@ export type Database = {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      soft_delete_record: {
+        Args: { p_id: string; p_table: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
