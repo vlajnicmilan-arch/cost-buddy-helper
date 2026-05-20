@@ -1781,6 +1781,51 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_statements: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          file_hash: string | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          import_batch_id: string | null
+          imported_at: string
+          mime_type: string | null
+          payment_source_id: string | null
+          transactions_count: number | null
+          user_id: string
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string
+          mime_type?: string | null
+          payment_source_id?: string | null
+          transactions_count?: number | null
+          user_id: string
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string
+          mime_type?: string | null
+          payment_source_id?: string | null
+          transactions_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       income_source_invitations: {
         Row: {
           created_at: string
