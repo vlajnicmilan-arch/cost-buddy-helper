@@ -3514,6 +3514,12 @@
       "contact": "E-Mail: support@vmbalance.com — wir antworten innerhalb von 24 Stunden. Sie können auch das Kontaktformular auf dieser Seite verwenden (Schaltfläche \"Support kontaktieren\" unten) — Sie erhalten sofort eine E-Mail-Bestätigung."
     }
   },
+  "statementDuplicate": {
+    "title": "Dieser Auszug wurde bereits importiert",
+    "descriptionWithCount": "Wir haben diesen Auszug am {{date}} bereits importiert ({{count}} Transaktionen). Trotzdem erneut verarbeiten?",
+    "cancel": "Abbrechen",
+    "continueAnyway": "Trotzdem fortfahren"
+  },
   "feedbackForm": {
     "fabLabel": "Feedback senden",
     "title": "Feedback senden",
