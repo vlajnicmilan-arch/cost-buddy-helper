@@ -18,7 +18,9 @@ async function sha256HexFromBuffer(buf: ArrayBuffer | Uint8Array): Promise<strin
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subtle: SubtleCrypto | undefined = (globalThis as any).crypto?.subtle;
   if (subtle) {
-    const hash = await subtle.digest('SHA-256', bytes);
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const hash = await subtle.digest('SHA-256', copy.buffer);
     const out = new Uint8Array(hash);
     let hex = '';
     for (let i = 0; i < out.length; i += 1) hex += out[i].toString(16).padStart(2, '0');
