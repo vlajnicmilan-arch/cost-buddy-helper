@@ -481,6 +481,7 @@ const Index = () => {
     // Actions
     onUpdateExpense: updateExpense,
     onDeleteExpense: deleteExpenseWithUndo,
+    onDeleteExpenseDirect: deleteExpense,
     onBulkDeleteExpense: bulkDeleteWithoutUndo,
     importFromCSV: importWithRecurringCheck,
     onReplaceAutoGen: handleReplaceAutoGen,
