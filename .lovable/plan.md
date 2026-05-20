@@ -1,55 +1,96 @@
 ## Problem
 
-Klikom na "Uvezi X transakcija" baca generičku `import.importError`. Postgres logovi pokazuju pravi razlog:
+Ponovni uvoz istog izvoda i dalje upisuje nove transakcije iako fingerprint dedup postoji. Provjera baze pokazuje **zašto**:
 
 ```
-ERROR: there is no unique or exclusion constraint matching the ON CONFLICT specification
+created_at 19:32 (stari batch): bank_transaction_id = NULL
+created_at 04:41 (današnji):    bank_transaction_id = imp:248487...
 ```
 
-## Root cause
+**Sve transakcije uvezene prije nego što je fingerprint logika puštena u rad imaju `bank_transaction_id = NULL`.** ON CONFLICT na `(user_id, bank_transaction_id)` ih ne vidi (NULL ≠ NULL u unique indexu), pa svaki re-import izgleda kao "potpuno nov set".
 
-`importFromCSV` u `src/hooks/useExpenseCRUD.ts` (linije 506–509) radi:
+Brojke iz baze (zadnja 2 dana):
 
-```ts
-supabase.from('expenses')
-  .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
-```
+| Batch | Mjesec | Cnt | Imao FP? |
+|---|---|---|---|
+| 904a2465, 77008c7f | Feb | 65 + 43 | NE |
+| 1fb95869 (danas)   | Feb | 72       | DA, ali 0 preklapanja s NULL-ovima |
+| 07d23036, 77fbe5e3, 660cf47a | Jan | 42+13+8 | NE |
+| 9f89ea8b (danas)   | Jan | 44       | DA |
 
-Index `uniq_expenses_user_bank_tx` postoji, ali je **parcijalan**:
-
-```
-CREATE UNIQUE INDEX uniq_expenses_user_bank_tx
-  ON public.expenses (user_id, bank_transaction_id)
-  WHERE (bank_transaction_id IS NOT NULL);
-```
-
-PostgreSQL za ON CONFLICT na parcijalnom indexu zahtijeva da query sadrži isti `WHERE` predikat. Supabase JS klijent ne podržava slanje tog predikata — pa baza ne pronalazi odgovarajući constraint i baca grešku. Svaki uvoz (i CSV i PDF) trenutno puca na ovom koraku.
-
-Ovo nije bilo uzrokovano današnjim bulk-delete fixom — fingerprint upsert flow je stariji, ali greška je postala vidljivijia jer korisnik sad ponovno pokušava uvoz.
+Dakle dedup logika u kodu **radi** (sve nove transakcije imaju FP), ali ne može matchat povijesne redove bez FP-a.
 
 ## Fix
 
-Migracija: zamijeniti parcijalni unique index običnim (bez WHERE klauzule). PostgreSQL i dalje dozvoljava više `NULL` vrijednosti u unique indexu po defaultu, pa povijesni redovi bez `bank_transaction_id` ostaju ispravni; novi redovi (svi imaju fingerprint) i dalje su deduplicirani po `(user_id, bank_transaction_id)`.
+### 1. SQL backfill (migracija)
 
-```sql
-DROP INDEX IF EXISTS public.uniq_expenses_user_bank_tx;
+Za sve `expenses` redove gdje je `import_batch_id IS NOT NULL AND bank_transaction_id IS NULL`, izračunati fingerprint istom formulom kao TS koristi:
 
-CREATE UNIQUE INDEX uniq_expenses_user_bank_tx
-  ON public.expenses (user_id, bank_transaction_id);
+```
+imp:sha256(user_id|payment_source|YYYY-MM-DD|type|amount.toFixed(2)|normalized_text)
 ```
 
-Nije potrebna promjena u app kodu — `onConflict: 'user_id,bank_transaction_id'` će raditi s običnim unique indexom.
+Normalizacija opisa (mora 1:1 matchati `src/lib/importFingerprint.ts`):
+- lowercase
+- NFD → strip diakritike (`unaccent` extension)
+- collapse whitespace → single space
+- trim
+- fallback na `merchant_name` ako je opis prazan
 
-## Verifikacija
+SQL (skica):
 
-1. Ponoviti isti PDF uvoz (Aircash izvod, 48 transakcija).
-2. Provjeriti da se dijalog zatvori s "Uvezeno N transakcija".
-3. Drugi put uvesti isti PDF → očekivati "Nema novih transakcija — svih N već postoji."
-4. Provjeriti da je saldo izvora plaćanja ažuriran za točan zbroj prihoda/rashoda novih transakcija.
-5. Postgres logovi ne smiju više sadržavati `there is no unique or exclusion constraint`.
+```sql
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+UPDATE public.expenses e SET bank_transaction_id =
+  'imp:' || encode(digest(
+    e.user_id::text || '|' ||
+    COALESCE(e.payment_source,'') || '|' ||
+    to_char(e.date AT TIME ZONE 'UTC', 'YYYY-MM-DD') || '|' ||
+    COALESCE(e.type::text,'') || '|' ||
+    to_char(e.amount, 'FM9999999990.00') || '|' ||
+    trim(regexp_replace(lower(unaccent(COALESCE(NULLIF(e.description,''), e.merchant_name, ''))), '\s+', ' ', 'g'))
+  , 'sha256'), 'hex')
+WHERE e.import_batch_id IS NOT NULL
+  AND e.bank_transaction_id IS NULL;
+```
+
+Ako više starih redova generira isti fingerprint (true duplikati iz prijašnjih re-importa), zadržati najstariji i obrisati ostale prije UPDATE-a kako ne bi razbio unique index.
+
+### 2. Čišćenje današnjih duplikata
+
+Današnja 2 batcha (`1fb95869`, `9f89ea8b`) većinski su duplikati starijih NULL-FP redova. Nakon što backfill svim starijima dodijeli FP, današnji redovi s istim FP-om su pravi duplikati i mogu se brisati:
+
+```sql
+DELETE FROM expenses
+ WHERE id IN (...rows from new batches whose FP already existed before created_at...);
+```
+
+Konkretno: za svaki par s istim `bank_transaction_id`, zadržati onaj sa starijim `created_at`. Saldo izvora plaćanja je ažuriran 2x → potrebna korekcija.
+
+### 3. Korekcija salda izvora plaćanja
+
+Za svaki izbrisani duplikat, revertirati efekt na saldo: `expense` vraća iznos, `income` oduzima. Najsigurnije ručno preko `updateBalance` per izvor (sumirati po `payment_source`).
+
+Alternativno: skripta u browseru poziva isti `updateBalance` helper kao kod `bulkDelete`. Ali pošto je čišćenje jednokratno, najjednostavnije je u istoj migraciji izračunati delta po izvoru i pozvati `updateBalance` ručno kroz UI dialog "Korekcija salda" (jedan klik po izvoru).
 
 ## Što se NE mijenja
 
-- `importFromCSV` logika ostaje ista.
-- Fingerprint izračun ostaje isti.
-- Soft-delete RLS, bulk delete serijalizacija, `useBalanceUpdater` — netaknuto.
+- `importFromCSV` logika
+- `computeImportFingerprint` izračun
+- Unique index `uniq_expenses_user_bank_tx`
+
+## Verifikacija
+
+1. Nakon migracije: `SELECT COUNT(*) FROM expenses WHERE import_batch_id IS NOT NULL AND bank_transaction_id IS NULL` → 0
+2. Ponovni uvoz istog Feb PDF-a → "Nema novih transakcija — svih X već postoji."
+3. Saldo izvora plaćanja odgovara ručnom zbroju.
+
+## Pitanje za odluku
+
+Za korak 3 (korekcija salda nakon brisanja duplikata):
+- **A)** Ručno preko postojećeg "Korekcija salda" dijaloga (sigurno, 1 klik po izvoru)
+- **B)** Automatski u istoj SQL migraciji preko UPDATE na `custom_payment_sources.current_balance` (brže, ali bypassa app-level logiku)
+
+Preporučam A jer je RLS-sigurno i u skladu s postojećim flow-om.
