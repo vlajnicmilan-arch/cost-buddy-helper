@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,10 +8,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { usePdfImport } from '@/contexts/PdfImportContext';
 import { usePDFParser } from '@/hooks/usePDFParser';
+import { useAuth } from '@/hooks/useAuth';
 import type { ParsedTransaction } from '@/lib/csvParsers';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import {
+  computeFileHash,
+  computeContentHash,
+  findExistingStatement,
+  recordImportedStatement,
+  type ExistingStatement,
+} from '@/lib/statementFingerprint';
+import { format } from 'date-fns';
+import { hr } from 'date-fns/locale';
+import type { CustomPaymentSource } from '@/types/customPaymentSource';
 
 const PDF_JOB_TTL_MS = 15 * 60 * 1000;
 
@@ -20,6 +31,11 @@ type DuplicateInfo = {
   fuzzyDuplicates: ParsedTransaction[];
   fuzzyMatchedExpenses: import('@/types/expense').Expense[];
   unique: ParsedTransaction[];
+};
+
+type StatementDuplicate = {
+  existing: ExistingStatement;
+  retry: () => void;
 };
 
 const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
