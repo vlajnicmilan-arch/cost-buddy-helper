@@ -20,6 +20,7 @@ import { motion } from 'framer-motion';
 import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 const Wallet = () => {
   const { t } = useTranslation();
@@ -46,6 +47,12 @@ const Wallet = () => {
     await importFromCSV(txs);
     refetch();
   }, [importFromCSV, refetch]);
+
+  const bulkDeleteWithoutUndo = useCallback(async (ids: string[]) => {
+    await Promise.all(ids.map(id => deleteExpense(id, { silent: true })));
+    refetch();
+    showSuccess(t('transactions.bulkDeleted', { count: ids.length }));
+  }, [deleteExpense, refetch, t]);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -92,7 +99,7 @@ const Wallet = () => {
         expenses={rawExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpenseWithUndo}
-        onBulkDelete={async (ids) => { await Promise.all(ids.map(id => deleteExpense(id))); refetch(); }}
+        onBulkDelete={bulkDeleteWithoutUndo}
         onImportCSV={importFromCSVWithRefetch}
         findDuplicates={findDuplicates}
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
