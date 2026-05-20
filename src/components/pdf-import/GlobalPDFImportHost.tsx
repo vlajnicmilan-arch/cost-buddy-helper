@@ -519,6 +519,33 @@ export const GlobalPDFImportHost = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {statementDup && (
+          <motion.div role="dialog" aria-modal="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[95] bg-background/90 backdrop-blur-sm p-4 flex items-center justify-center">
+            <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} transition={{ duration: 0.18 }} className="w-full max-w-sm bg-background border border-border/50 shadow-2xl rounded-xl flex flex-col overflow-hidden">
+              <div className="p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h2 className="text-base font-semibold">{t('statementDuplicate.title')}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {t('statementDuplicate.descriptionWithCount', {
+                        date: format(new Date(statementDup.existing.imported_at), 'd. MMM yyyy', { locale: hr }),
+                        count: statementDup.existing.transactions_count ?? 0,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-border/50 flex flex-col gap-2">
+                <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('statementDuplicate.cancel')}</Button>
+                <Button onClick={statementDup.retry} variant="default" className="rounded-xl min-h-11">{t('statementDuplicate.continueAnyway')}</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
