@@ -309,11 +309,20 @@ const Index = () => {
   }, [wrapDeleteWithUndo, deleteExpense]);
 
   const bulkDeleteWithoutUndo = useCallback(async (ids: string[]) => {
-    const results = await Promise.allSettled(ids.map(id => deleteExpense(id, { silent: true })));
+    // Serijalizirano: paralelni delete-i bi pročitali isti currentBalance prije upisa
+    // i izgubili sve osim zadnje korekcije (lost-update race za isti payment_source).
+    let ok = 0;
+    let fail = 0;
+    for (const id of ids) {
+      try {
+        await deleteExpense(id, { silent: true });
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
     refetch();
     refetchPaymentSources();
-    const ok = results.filter(r => r.status === 'fulfilled').length;
-    const fail = results.length - ok;
     if (fail === 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
     else if (ok === 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
     else showError(t('transactions.bulkDeletePartial', { ok, fail }));
