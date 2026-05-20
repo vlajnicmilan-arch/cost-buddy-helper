@@ -1,97 +1,55 @@
 ## Problem
 
-Kod brisanja transakcija javlja se greška ("greška u brisanju") i ništa se ne briše, ali odmah zatim ide "Uspješno obrisano N" jer bulk wrapper proguta pojedinačne greške i prikaže summary.
+Kod bulk brisanja transakcija (npr. iz `PaymentSourceTransactionsDialog` ili `ImportBatchDialog`) saldo izvora plaćanja se NE ažurira točno.
 
-## Korijenski uzrok (potvrđeno iz Postgres logova)
+## Root cause
 
-`hide_soft_deleted` je **RESTRICTIVE SELECT** policy s qualom `(deleted_at IS NULL)`. Kad `softDelete()` napravi `UPDATE expenses SET deleted_at = now()`, PostgREST (supabase-js v2) traži `return=representation` (RETURNING *). Postgres tada provjeri novi red protiv SELECT policy-ja — novi red ima `deleted_at != NULL` → **WITH CHECK violation** → cijela transakcija se rollbacka. Rezultat: greška + ništa nije obrisano.
-
-DB log potvrđuje: `new row violates row-level security policy "hide_soft_deleted" for table "expenses"` (desetci puta tijekom korisnikovog brisanja).
-
-Bonus problem: `deleteExpense` u `useExpenseCRUD.ts` hvata grešku, prikazuje error toast, ali **NE rethrowa**. `bulkDeleteWithoutUndo` koristi `Promise.all(ids.map(deleteExpense))` koji uspijeva i zatim ide `showSuccess(...)` — odatle dva proturječna feedbacka.
-
-## Rješenje
-
-### 1) DB migracija — SECURITY DEFINER RPC za soft-delete
-
-Dodati funkciju koja zaobilazi RLS RETURNING problem:
-
-```sql
-create or replace function public.soft_delete_record(
-  p_table text,
-  p_id uuid
-) returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-begin
-  if v_uid is null then
-    raise exception 'not_authenticated';
-  end if;
-  if p_table not in ('expenses','projects','project_invoices','project_estimates','project_milestones') then
-    raise exception 'invalid_table';
-  end if;
-  -- vlasništvo se provjerava per-tablica
-  execute format(
-    'update public.%I set deleted_at = now(), deleted_by = $1
-       where id = $2 and deleted_at is null
-         and (user_id = $1 or exists (
-           select 1 from public.user_roles where user_id = $1 and role = ''admin''
-         ))',
-    p_table
-  ) using v_uid, p_id;
-end;
-$$;
-
-grant execute on function public.soft_delete_record(text, uuid) to authenticated;
-```
-
-(Za `expenses` se može proširiti provjera vlasništva preko `income_source_id`/`project_id` člana, ali za sada strogo `user_id`.)
-
-### 2) Helper `src/lib/softDelete.ts`
-
-Promijeniti `softDelete()` da koristi RPC umjesto direktnog UPDATE:
+`bulkDeleteWithoutUndo` u `src/pages/Wallet.tsx` i `src/pages/Index.tsx` poziva:
 
 ```ts
-export async function softDelete(table: SoftDeleteTable, id: string, _userId: string) {
-  const { error } = await (supabase.rpc as any)('soft_delete_record', { p_table: table, p_id: id });
-  if (error) throw error;
-}
+await Promise.allSettled(ids.map(id => deleteExpense(id, { silent: true })));
 ```
 
-### 3) `src/hooks/useExpenseCRUD.ts`
+Sve `deleteExpense` pozive pali paralelno. Svaki interno radi (`useBalanceUpdater.updateBalance`):
+1. `SELECT balance FROM custom_payment_sources WHERE id = X`
+2. izračuna `newBalance = currentBalance + delta`
+3. `UPDATE custom_payment_sources SET balance = newBalance`
 
-- U cloud grani `deleteExpense` zamijeniti raw `.update({ deleted_at })` pozivom `softDelete('expenses', id, user.id)`.
-- U `catch` bloku **rethrow-ati** grešku da bulk wrapper zna da je pala (`throw error;` na kraju catcha).
+Pošto sve transakcije u dijalogu pripadaju **istom izvoru**, svi paralelni pozivi pročitaju **isti `currentBalance`** prije nego ijedan zapiše. Posljedica: last-write-wins, saldo se vrati samo za jednu transakciju (ili nijednu), iako su sve obrisane iz baze. Klasičan lost-update race; nema veze s RLS / RPC fixom.
 
-### 4) `src/pages/Wallet.tsx` i `src/pages/Index.tsx`
+Isti rizik postoji u `Index.tsx` (Dashboard bulk delete) i bilo gdje gdje `onBulkDeleteExpense` mapira na isti izvor.
 
-`bulkDeleteWithoutUndo`: koristiti `Promise.allSettled` umjesto `Promise.all`, brojati uspjehe/greške i pokazati točan feedback:
+## Fix
 
-```ts
-const results = await Promise.allSettled(ids.map(id => deleteExpense(id, { silent: true })));
-refetch();
-const ok = results.filter(r => r.status === 'fulfilled').length;
-const fail = results.length - ok;
-if (fail === 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
-else if (ok === 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
-else showError(t('transactions.bulkDeletePartial', { ok, fail }));
-```
+Serijalizirati pozive (`for...of await`) u oba bulk wrappera. Dovoljno je jer:
+- `deleteExpense` već ispravno radi reversal balansa (`updateBalance(..., true)`)
+- Sekvencijalno = nema preklapanja čitanja/upisa za isti `custom_payment_source`
+- Performance-impact je minimalan (tipično <50 transakcija po batchu)
+- Nema guarda/timeouta/hacka — uklanja se paralelizam koji je arhitekturno krivi izbor
 
-(Dodati i18n ključeve `transactions.bulkDeleteFailed` i `transactions.bulkDeletePartial` u hr/en/de.)
+### Izmjene
 
-## Što ovaj plan NE dira
+**`src/pages/Wallet.tsx`** — `bulkDeleteWithoutUndo`:
+- zamijeniti `Promise.allSettled(...)` s `for (const id of ids) { try { await deleteExpense(id, { silent: true }); succeeded++ } catch { failed++ } }`
+- zadržati postojeću `showError` poruku za parcijalne greške i `refetch` na kraju
 
-- RLS `hide_soft_deleted` ostaje (zero-touch SELECT hiding radi kako treba).
-- UI dijaloga za import batch ostaje isti.
-- Trash/restore flow ostaje isti (već koristi RPC).
-- Nema izmjena business logike, samo putanja brisanja.
+**`src/pages/Index.tsx`** — `bulkDeleteWithoutUndo`:
+- ista izmjena, ista logika brojanja
+- zadržati `refetch()` i `refetchPaymentSources()` na kraju (tek nakon svih)
 
-## Verifikacija nakon implementacije
+### Što se NE dira
 
-1. Otvoriti import batch, kliknuti delete → potvrditi → samo "Uspješno obrisano N", transakcije nestaju.
-2. Provjeriti Postgres logove — nema više `hide_soft_deleted` violationa.
-3. Provjeriti `/trash` da su obrisane transakcije vidljive za restore.
+- `useBalanceUpdater` (logika reversala je točna)
+- `softDelete` RPC i `hide_soft_deleted` RLS politika
+- `useExpenseCRUD.deleteExpense` (single delete tok je već ispravan)
+- `restoreExpenseFull` u Trash flow-u (već reaplicira balans pri vraćanju)
+- Single delete (s undo) — ide jedan po jedan pa nije pogođen
+- Bez re-sync skripte za prošle slučajeve (po dogovoru — koristi se "Korekcija salda" ako negdje primijetiš krivi saldo)
+
+## Verifikacija
+
+1. Otvoriti izvor plaćanja s npr. 5 transakcija, zapamtiti saldo
+2. Bulk obrisati svih 5
+3. Saldo izvora mora se ažurirati za točan zbroj svih obrisanih iznosa
+4. Ponoviti za import batch brisanje
+5. Vraćanje iz Smeća (`restoreExpenseFull`) mora vratiti saldo na originalnu vrijednost
