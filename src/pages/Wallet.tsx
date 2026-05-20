@@ -92,6 +92,7 @@ const Wallet = () => {
         expenses={rawExpenses}
         onUpdate={updateExpense}
         onDelete={deleteExpenseWithUndo}
+        onBulkDelete={async (ids) => { await Promise.all(ids.map(id => deleteExpense(id))); refetch(); }}
         onImportCSV={importFromCSVWithRefetch}
         findDuplicates={findDuplicates}
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
