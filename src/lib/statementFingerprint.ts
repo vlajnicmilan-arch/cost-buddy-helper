@@ -49,10 +49,18 @@ export async function computeFileHash(file: File): Promise<string> {
  *   SHA-256( sorted bank_transaction_id values joined with '|' )
  * Since bank_transaction_id == computeImportFingerprint(...), we compute it the same way here.
  */
+export interface ContentHashTransaction {
+  date: Date | string;
+  type: string;
+  amount: number;
+  description?: string | null;
+  merchant_name?: string | null;
+}
+
 export async function computeContentHash(
   userId: string,
   paymentSource: string | null,
-  transactions: ParsedTransaction[],
+  transactions: ContentHashTransaction[],
 ): Promise<string> {
   if (transactions.length === 0) return '';
   const fps = await Promise.all(
