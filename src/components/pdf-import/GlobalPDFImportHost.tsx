@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,10 +8,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { usePdfImport } from '@/contexts/PdfImportContext';
 import { usePDFParser } from '@/hooks/usePDFParser';
+import { useAuth } from '@/hooks/useAuth';
 import type { ParsedTransaction } from '@/lib/csvParsers';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import {
+  computeFileHash,
+  computeContentHash,
+  findExistingStatement,
+  recordImportedStatement,
+  type ExistingStatement,
+} from '@/lib/statementFingerprint';
+import { format } from 'date-fns';
+import { hr } from 'date-fns/locale';
+import type { CustomPaymentSource } from '@/types/customPaymentSource';
 
 const PDF_JOB_TTL_MS = 15 * 60 * 1000;
 
@@ -20,6 +31,11 @@ type DuplicateInfo = {
   fuzzyDuplicates: ParsedTransaction[];
   fuzzyMatchedExpenses: import('@/types/expense').Expense[];
   unique: ParsedTransaction[];
+};
+
+type StatementDuplicate = {
+  existing: ExistingStatement;
+  retry: () => void;
 };
 
 const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
@@ -33,10 +49,15 @@ export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const pdfImport = usePdfImport();
+  const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
+  const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
+  const fileHashRef = useRef<string | null>(null);
+  const contentHashRef = useRef<string | null>(null);
+  const fileMetaRef = useRef<{ name: string; size: number; type: string } | null>(null);
 
   const storageKey = useMemo(() => (
     pdfImport.source ? `vmb-pdf-parse-job:${pdfImport.source.id}` : null
@@ -52,6 +73,10 @@ export const GlobalPDFImportHost = () => {
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setSelectedFuzzy(new Set());
+    setStatementDup(null);
+    fileHashRef.current = null;
+    contentHashRef.current = null;
+    fileMetaRef.current = null;
     pdfImport._setIdle();
   }, [clearStoredJob, pdfImport._setIdle]);
 
@@ -81,9 +106,52 @@ export const GlobalPDFImportHost = () => {
 
     const source = pdfImport.source;
 
+    const showStatementDuplicate = (
+      existing: ExistingStatement,
+      retryOptions:
+        | { kind: 'pdf'; opts: typeof pendingPdf }
+        | { kind: 'html'; opts: typeof pendingHtml },
+    ) => {
+      pendingPdf?.releaseGuard?.();
+      pendingHtml?.releaseGuard?.();
+      const retry = () => {
+        setStatementDup(null);
+        if (retryOptions.kind === 'pdf' && retryOptions.opts) {
+          void pdfImport.startPdfImport({ ...retryOptions.opts, forceImport: true });
+        } else if (retryOptions.kind === 'html' && retryOptions.opts) {
+          void pdfImport.startHtmlImport({ ...retryOptions.opts, forceImport: true });
+        }
+      };
+      setStatementDup({ existing, retry });
+      // Reset phase but keep the dialog open via statementDup state.
+      pdfImport._setIdle();
+    };
+
     const run = async () => {
       try {
         if (pendingPdf) {
+          fileMetaRef.current = {
+            name: pendingPdf.file.name,
+            size: pendingPdf.file.size,
+            type: pendingPdf.file.type || 'application/pdf',
+          };
+
+          // Guard 1: file-hash check before parsing.
+          if (user?.id && !pendingPdf.forceImport) {
+            try {
+              const fileHash = await computeFileHash(pendingPdf.file);
+              fileHashRef.current = fileHash;
+              const existing = await findExistingStatement(user.id, { fileHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
+                return;
+              }
+            } catch (e) {
+              // Hash failure should not block import.
+              fileHashRef.current = null;
+            }
+          }
+
           const base64 = await readAsDataUrl(pendingPdf.file);
           if (!base64) throw new Error('file_read_failed');
           const jobId = await startPDFParseJob(base64);
@@ -103,6 +171,24 @@ export const GlobalPDFImportHost = () => {
             resetAll();
             return;
           }
+
+          // Guard 2: content-hash check after parsing.
+          if (user?.id && !pendingPdf.forceImport) {
+            try {
+              const paymentSourceValue = `custom:${source.id}`;
+              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              contentHashRef.current = contentHash;
+              const existing = await findExistingStatement(user.id, { contentHash });
+              if (existing) {
+                clearStoredJob();
+                showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
+                return;
+              }
+            } catch (e) {
+              contentHashRef.current = null;
+            }
+          }
+
           clearStoredJob();
           pdfImport._setPreview(result, jobId);
           try { logDiagnostic('global_pdf_import_preview_opened', { job_id: jobId, source_id: source.id, count: result.transactions.length }); } catch {}
@@ -110,6 +196,26 @@ export const GlobalPDFImportHost = () => {
         }
 
         if (pendingHtml) {
+          fileMetaRef.current = {
+            name: pendingHtml.file.name,
+            size: pendingHtml.file.size,
+            type: pendingHtml.file.type || 'text/html',
+          };
+
+          if (user?.id && !pendingHtml.forceImport) {
+            try {
+              const fileHash = await computeFileHash(pendingHtml.file);
+              fileHashRef.current = fileHash;
+              const existing = await findExistingStatement(user.id, { fileHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
+                return;
+              }
+            } catch (e) {
+              fileHashRef.current = null;
+            }
+          }
+
           const content = await pendingHtml.file.text();
           const result = await parseHTML(content);
           if (!result) return;
@@ -118,6 +224,22 @@ export const GlobalPDFImportHost = () => {
             resetAll();
             return;
           }
+
+          if (user?.id && !pendingHtml.forceImport) {
+            try {
+              const paymentSourceValue = `custom:${source.id}`;
+              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              contentHashRef.current = contentHash;
+              const existing = await findExistingStatement(user.id, { contentHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
+                return;
+              }
+            } catch (e) {
+              contentHashRef.current = null;
+            }
+          }
+
           pdfImport._setPreview(result, null);
           try { logDiagnostic('global_html_import_preview_opened', { source_id: source.id, count: result.transactions.length }); } catch {}
         }
@@ -185,6 +307,34 @@ export const GlobalPDFImportHost = () => {
     void recover();
   }, [fetchPDFParseJob, normalizeJobResult, pdfImport, waitForPDFParseJob]);
 
+  const persistStatementRecord = useCallback(async (count: number) => {
+    if (!user?.id || !pdfImport.source) return;
+    // Ensure we have a content hash even if guard 2 was skipped (force re-import path).
+    let contentHash = contentHashRef.current;
+    if (!contentHash && pdfImport.result) {
+      try {
+        contentHash = await computeContentHash(
+          user.id,
+          `custom:${pdfImport.source.id}`,
+          pdfImport.result.transactions,
+        );
+      } catch {
+        contentHash = null;
+      }
+    }
+    await recordImportedStatement({
+      userId: user.id,
+      paymentSourceId: pdfImport.source.id,
+      fileHash: fileHashRef.current,
+      contentHash,
+      fileName: fileMetaRef.current?.name ?? null,
+      fileSize: fileMetaRef.current?.size ?? null,
+      mimeType: fileMetaRef.current?.type ?? null,
+      transactionsCount: count,
+      importBatchId: null,
+    });
+  }, [user?.id, pdfImport.source, pdfImport.result]);
+
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result) return;
     const transactions = toParsedTransactions();
@@ -206,6 +356,7 @@ export const GlobalPDFImportHost = () => {
         return;
       }
       await pdfImport._runImport(transactions);
+      await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
       resetAll();
     } catch (error) {
@@ -228,6 +379,7 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
       await pdfImport._runImport(transactions);
+      await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedTransactions', { count: transactions.length }));
       resetAll();
     } catch (error) {
@@ -362,6 +514,33 @@ export const GlobalPDFImportHost = () => {
               <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
                 <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">{isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: duplicateInfo.unique.length + selectedFuzzy.size + (includeDuplicates ? duplicateInfo.duplicates.length : 0) })}</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {statementDup && (
+          <motion.div role="dialog" aria-modal="true" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[95] bg-background/90 backdrop-blur-sm p-4 flex items-center justify-center">
+            <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} transition={{ duration: 0.18 }} className="w-full max-w-sm bg-background border border-border/50 shadow-2xl rounded-xl flex flex-col overflow-hidden">
+              <div className="p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h2 className="text-base font-semibold">{t('statementDuplicate.title')}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {t('statementDuplicate.descriptionWithCount', {
+                        date: format(new Date(statementDup.existing.imported_at), 'd. MMM yyyy', { locale: hr }),
+                        count: statementDup.existing.transactions_count ?? 0,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-border/50 flex flex-col gap-2">
+                <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('statementDuplicate.cancel')}</Button>
+                <Button onClick={statementDup.retry} variant="default" className="rounded-xl min-h-11">{t('statementDuplicate.continueAnyway')}</Button>
               </div>
             </motion.div>
           </motion.div>

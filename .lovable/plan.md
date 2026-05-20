@@ -1,96 +1,91 @@
-## Problem
+## Cilj
 
-Ponovni uvoz istog izvoda i dalje upisuje nove transakcije iako fingerprint dedup postoji. Provjera baze pokazuje **zašto**:
+Spriječiti ponavljanje cijelog parse pipeline-a (PDF→base64→edge job→AI→preview dialog) kad korisnik odabere izvod koji je već uvozio. Detekcija se događa **prije** slanja na parser.
 
+## Strategija
+
+Dvoslojni hash izračunat u browseru:
+1. **File hash** (SHA-256 sirovih bytes) — instant, hvata identične downloade.
+2. **Content hash** (SHA-256 normaliziranog teksta nakon PDF/HTML ekstrakcije) — fallback, hvata iste izvode s različitim PDF metadatima.
+
+Provjera ide redom: file hash → ako miss, parse → content hash → ako miss, nastavi normalno.
+
+Pri pogotku: **soft warning** dialog s podacima starog importa (datum, broj transakcija) i opcijom "Ipak nastavi" koja preskače guard.
+
+## DB promjene (migracija)
+
+Nova tablica `imported_statements`:
+- `user_id`, `payment_source_id`
+- `file_hash` text, `content_hash` text (oba nullable, jedan UNIQUE per user)
+- `file_name`, `file_size`, `mime_type`
+- `transactions_count`, `import_batch_id` (FK ka prvom expenseu tog batcha, soft)
+- `imported_at`
+
+Indeksi: `UNIQUE (user_id, file_hash)` partial WHERE file_hash IS NOT NULL, isto za `content_hash`. RLS: vlastiti redovi (`auth.uid() = user_id`).
+
+## Backfill
+
+SQL migracija za postojeće `expenses` s `import_batch_id IS NOT NULL`:
+- Grupiranje po `(user_id, import_batch_id)`.
+- Pseudo-content-hash = SHA-256 sortiranog spoja `fingerprint`-ova (već postoje od ranije) ili `bank_transaction_id`-jeva.
+- INSERT u `imported_statements` s `file_hash = NULL`, `content_hash = <pseudo>`, `imported_at = MIN(created_at)`.
+
+Aproksimacija je dovoljna jer pri novom uploadu izračunamo content_hash iste forme nakon parsiranja i match-amo na to.
+
+## Frontend promjene
+
+**Novi helper** `src/lib/statementFingerprint.ts`:
+- `computeFileHash(file: File): Promise<string>` — `crypto.subtle.digest('SHA-256', arrayBuffer)`.
+- `computeContentHash(transactions: ParsedTransaction[]): Promise<string>` — sortirani join `date|amount|type|normalizedDesc`, pa SHA-256. Identično formuli koju koristi backfill.
+- `findExistingStatement(userId, sourceId, { fileHash?, contentHash? })` — query `imported_statements`.
+
+**`GlobalPDFImportHost.tsx`** (oba grana, PDF i HTML):
+1. Prije `startPDFParseJob` / `parseHTML`: izračunaj file hash, pozovi `findExistingStatement`. Ako hit i nije set "force" flag → otvori `DuplicateStatementDialog`, prekini.
+2. Nakon successful parse (prije `_setPreview`): izračunaj content hash, ponovi check. Ako hit → isti dialog.
+3. Pri stvarnoj kreaciji transakcija (`importFromCSV` callsite) — INSERT u `imported_statements` s oba hash-a i počistii `force` flag.
+
+**Novi komponent** `DuplicateStatementDialog.tsx`:
+- Naslov: `statementDuplicate.title`
+- Body: "Ovaj izvod je već uvezen DD.MM.YYYY (N transakcija). Želite li ponovo uvesti?"
+- Akcije: `Otkaži` (default), `Ipak nastavi` (postavlja `forceImport` u context, ponovo trigger pendingPdf flow).
+
+**`PdfImportContext`** dobiva `forceImport: boolean` flag koji guard preskače pri sljedećem pokušaju, resetira se nakon completion.
+
+## i18n
+
+Novi ključevi pod `statementDuplicate.*` u `hr/en/de`:
+- `title`, `descriptionWithCount`, `cancel`, `continueAnyway`, `previouslyImportedOn`.
+
+## Tehnički detalji
+
+```text
+File selected
+  │
+  ├─ computeFileHash(file)
+  ├─ findExistingStatement(userId, sourceId, fileHash)
+  │    └─ HIT → DuplicateStatementDialog → cancel / force
+  │
+  ├─ startPDFParseJob(base64) ──> edge function
+  │
+  ├─ result received
+  ├─ computeContentHash(result.transactions)
+  ├─ findExistingStatement(userId, sourceId, contentHash)
+  │    └─ HIT → DuplicateStatementDialog → cancel / force
+  │
+  ├─ _setPreview → korisnik klikne "Uvezi N"
+  ├─ importFromCSV (postojeća logika + row-level fingerprint dedup ostaje)
+  └─ INSERT imported_statements (fileHash, contentHash, count, batchId)
 ```
-created_at 19:32 (stari batch): bank_transaction_id = NULL
-created_at 04:41 (današnji):    bank_transaction_id = imp:248487...
-```
 
-**Sve transakcije uvezene prije nego što je fingerprint logika puštena u rad imaju `bank_transaction_id = NULL`.** ON CONFLICT na `(user_id, bank_transaction_id)` ih ne vidi (NULL ≠ NULL u unique indexu), pa svaki re-import izgleda kao "potpuno nov set".
+Row-level fingerprint dedup u `importFromCSV` **ostaje netaknut** kao druga linija obrane (npr. za pojedinačne CSV-ove ili force-ane importe).
 
-Brojke iz baze (zadnja 2 dana):
+## Što ostaje nepromijenjeno
 
-| Batch | Mjesec | Cnt | Imao FP? |
-|---|---|---|---|
-| 904a2465, 77008c7f | Feb | 65 + 43 | NE |
-| 1fb95869 (danas)   | Feb | 72       | DA, ali 0 preklapanja s NULL-ovima |
-| 07d23036, 77fbe5e3, 660cf47a | Jan | 42+13+8 | NE |
-| 9f89ea8b (danas)   | Jan | 44       | DA |
+- `importFromCSV`, `computeImportFingerprint`, `uniq_expenses_user_bank_tx`.
+- Edge funkcija za PDF parsing.
+- UI tijek odabira payment sourcea i preview dialog.
 
-Dakle dedup logika u kodu **radi** (sve nove transakcije imaju FP), ali ne može matchat povijesne redove bez FP-a.
+## Test scope (vitest)
 
-## Fix
-
-### 1. SQL backfill (migracija)
-
-Za sve `expenses` redove gdje je `import_batch_id IS NOT NULL AND bank_transaction_id IS NULL`, izračunati fingerprint istom formulom kao TS koristi:
-
-```
-imp:sha256(user_id|payment_source|YYYY-MM-DD|type|amount.toFixed(2)|normalized_text)
-```
-
-Normalizacija opisa (mora 1:1 matchati `src/lib/importFingerprint.ts`):
-- lowercase
-- NFD → strip diakritike (`unaccent` extension)
-- collapse whitespace → single space
-- trim
-- fallback na `merchant_name` ako je opis prazan
-
-SQL (skica):
-
-```sql
-CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-UPDATE public.expenses e SET bank_transaction_id =
-  'imp:' || encode(digest(
-    e.user_id::text || '|' ||
-    COALESCE(e.payment_source,'') || '|' ||
-    to_char(e.date AT TIME ZONE 'UTC', 'YYYY-MM-DD') || '|' ||
-    COALESCE(e.type::text,'') || '|' ||
-    to_char(e.amount, 'FM9999999990.00') || '|' ||
-    trim(regexp_replace(lower(unaccent(COALESCE(NULLIF(e.description,''), e.merchant_name, ''))), '\s+', ' ', 'g'))
-  , 'sha256'), 'hex')
-WHERE e.import_batch_id IS NOT NULL
-  AND e.bank_transaction_id IS NULL;
-```
-
-Ako više starih redova generira isti fingerprint (true duplikati iz prijašnjih re-importa), zadržati najstariji i obrisati ostale prije UPDATE-a kako ne bi razbio unique index.
-
-### 2. Čišćenje današnjih duplikata
-
-Današnja 2 batcha (`1fb95869`, `9f89ea8b`) većinski su duplikati starijih NULL-FP redova. Nakon što backfill svim starijima dodijeli FP, današnji redovi s istim FP-om su pravi duplikati i mogu se brisati:
-
-```sql
-DELETE FROM expenses
- WHERE id IN (...rows from new batches whose FP already existed before created_at...);
-```
-
-Konkretno: za svaki par s istim `bank_transaction_id`, zadržati onaj sa starijim `created_at`. Saldo izvora plaćanja je ažuriran 2x → potrebna korekcija.
-
-### 3. Korekcija salda izvora plaćanja
-
-Za svaki izbrisani duplikat, revertirati efekt na saldo: `expense` vraća iznos, `income` oduzima. Najsigurnije ručno preko `updateBalance` per izvor (sumirati po `payment_source`).
-
-Alternativno: skripta u browseru poziva isti `updateBalance` helper kao kod `bulkDelete`. Ali pošto je čišćenje jednokratno, najjednostavnije je u istoj migraciji izračunati delta po izvoru i pozvati `updateBalance` ručno kroz UI dialog "Korekcija salda" (jedan klik po izvoru).
-
-## Što se NE mijenja
-
-- `importFromCSV` logika
-- `computeImportFingerprint` izračun
-- Unique index `uniq_expenses_user_bank_tx`
-
-## Verifikacija
-
-1. Nakon migracije: `SELECT COUNT(*) FROM expenses WHERE import_batch_id IS NOT NULL AND bank_transaction_id IS NULL` → 0
-2. Ponovni uvoz istog Feb PDF-a → "Nema novih transakcija — svih X već postoji."
-3. Saldo izvora plaćanja odgovara ručnom zbroju.
-
-## Pitanje za odluku
-
-Za korak 3 (korekcija salda nakon brisanja duplikata):
-- **A)** Ručno preko postojećeg "Korekcija salda" dijaloga (sigurno, 1 klik po izvoru)
-- **B)** Automatski u istoj SQL migraciji preko UPDATE na `custom_payment_sources.current_balance` (brže, ali bypassa app-level logiku)
-
-Preporučam A jer je RLS-sigurno i u skladu s postojećim flow-om.
+- `computeContentHash` — determinističnost (isti unos u različitom redoslijedu → isti hash), normalizacija opisa, stabilnost preko 3 jezika.
+- Backfill SQL kao manual SQL spec u migraciji (komentar).

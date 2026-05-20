@@ -24,12 +24,14 @@ interface StartPdfImportOptions {
   file: File;
   source: CustomPaymentSource;
   releaseGuard?: () => void;
+  forceImport?: boolean;
 }
 
 interface StartHtmlImportOptions {
   file: File;
   source: CustomPaymentSource;
   releaseGuard?: () => void;
+  forceImport?: boolean;
 }
 
 interface PdfImportContextValue {

@@ -3514,6 +3514,12 @@
       "contact": "Email: support@vmbalance.com — odgovaramo unutar 24 sata. Možete koristiti i kontakt formu na ovoj stranici (gumb \"Kontaktirajte podršku\" ispod) — dobit ćete trenutnu email potvrdu."
     }
   },
+  "statementDuplicate": {
+    "title": "Ovaj izvod je već uvezen",
+    "descriptionWithCount": "Već smo uvezli ovaj izvod {{date}} ({{count}} transakcija). Želite li ipak nastaviti i obraditi ga ponovo?",
+    "cancel": "Odustani",
+    "continueAnyway": "Ipak nastavi"
+  },
   "feedbackForm": {
     "fabLabel": "Pošalji povratnu informaciju",
     "title": "Pošalji povratnu informaciju",
