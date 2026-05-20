@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { showSuccess } from '@/hooks/useStatusFeedback';
@@ -36,11 +35,6 @@ const Wallet = () => {
     if (paymentSourcePdfProcessing) return;
     setPaymentSourceDialogOpen(false);
   });
-
-  const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
-  const deleteExpenseWithUndo = useCallback(async (id: string) => {
-    await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
-  }, [wrapDeleteWithUndo, deleteExpense]);
 
   // Wrap importFromCSV so wallet list (balances, transactions) refetches after a successful import.
   const importFromCSVWithRefetch = useCallback(async (txs: Parameters<typeof importFromCSV>[0]) => {
@@ -98,7 +92,7 @@ const Wallet = () => {
         paymentSource={selectedPaymentSource}
         expenses={rawExpenses}
         onUpdate={updateExpense}
-        onDelete={deleteExpenseWithUndo}
+        onDelete={deleteExpense}
         onBulkDelete={bulkDeleteWithoutUndo}
         onImportCSV={importFromCSVWithRefetch}
         findDuplicates={findDuplicates}
