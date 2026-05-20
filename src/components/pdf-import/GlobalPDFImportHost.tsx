@@ -49,10 +49,15 @@ export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const pdfImport = usePdfImport();
+  const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
+  const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
+  const fileHashRef = useRef<string | null>(null);
+  const contentHashRef = useRef<string | null>(null);
+  const fileMetaRef = useRef<{ name: string; size: number; type: string } | null>(null);
 
   const storageKey = useMemo(() => (
     pdfImport.source ? `vmb-pdf-parse-job:${pdfImport.source.id}` : null
@@ -68,6 +73,10 @@ export const GlobalPDFImportHost = () => {
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setSelectedFuzzy(new Set());
+    setStatementDup(null);
+    fileHashRef.current = null;
+    contentHashRef.current = null;
+    fileMetaRef.current = null;
     pdfImport._setIdle();
   }, [clearStoredJob, pdfImport._setIdle]);
 
