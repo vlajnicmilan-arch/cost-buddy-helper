@@ -401,11 +401,11 @@ export const useExpenseCRUD = ({
       } else {
         // Delete linked owner-loan first (if any) — owner-loan se hard deleta
         deleteOwnerLoanForExpense(id).catch(e => console.error('Owner-loan delete failed:', e));
-        // Soft delete (Koš za smeće): RLS će sakriti red iz svih SELECT-ova
-        const { error } = await (supabase.from('expenses') as any)
-          .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
-          .eq('id', id);
-        if (error) throw error;
+        // Soft delete (Koš za smeće) preko SECURITY DEFINER RPC —
+        // direktan UPDATE pada jer `hide_soft_deleted` RESTRICTIVE SELECT policy
+        // ne dopušta RETURNING red kojem je deleted_at != NULL.
+        const { softDelete } = await import('@/lib/softDelete');
+        await softDelete('expenses', id, user?.id ?? '');
       }
 
       setExpenses(prev => prev.filter(e => e.id !== id));
@@ -430,7 +430,10 @@ export const useExpenseCRUD = ({
       }
     } catch (error) {
       console.error('Error deleting expense:', error);
-      showError(t('toasts.cashRegisterDeleteError'));
+      if (!options?.silent) {
+        showError(t('toasts.cashRegisterDeleteError'));
+      }
+      throw error; // bulk wrapper mora znati da je pala
     }
   }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated, emitAvatarEvent, t]);
 
