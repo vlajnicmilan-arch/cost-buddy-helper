@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 const Wallet = () => {
   const { t } = useTranslation();
