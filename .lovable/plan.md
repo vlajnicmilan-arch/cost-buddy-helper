@@ -1,40 +1,37 @@
-## Što je stvarno viđeno
-- Backend parser je za isti Aircash izvod vratio različite brojeve redaka: 57, 48 i 49 transakcija.
-- Baza je nakon importova dobila različite batch-eve: 31, 13 i 8 novih redaka u zadnja tri pokušaja.
-- Postoji DB unique zaštita samo za `bank_transaction_id`, ali PDF/HTML import ga uopće ne puni, pa zaštita ne radi.
-- Trenutni duplicate check je samo aplikacijski i namjerno preblag za bulk import; zato isti izvod može više puta dodavati redove.
+## Problem
 
-## Plan popravka
+Klik na crveni badge "Uvoz • N tr." u listi transakcija izvora plaćanja ne otvara `ImportBatchDialog` (dijalog s gumbom "Obriši cijeli uvoz").
 
-### 1. Deterministički identitet transakcije
-- Dodati centralni helper za import fingerprint transakcije.
-- Fingerprint će se računati iz stabilnih polja: korisnik + payment source + datum + tip + iznos + normalizirani opis/merchant.
-- PDF/HTML import će svakoj transakciji dodijeliti `bank_transaction_id` iz tog fingerprinta.
-- Time postojeći DB unique index `user_id + bank_transaction_id` konačno postaje aktivan za PDF/HTML import.
+## Root cause
 
-### 2. Import bez dvostrukog upisa
-- Promijeniti `importFromCSV` da za transakcije s `bank_transaction_id` koristi upsert/ignore duplicates umjesto slijepog insert-a.
-- Balans ažurirati samo za stvarno umetnute redove, ne za preskočene duplikate.
-- UI poruka treba prikazati stvarno uvezen broj, ne broj pokušanih redaka.
+- `PaymentSourceTransactionsDialog` koristi `z-[60]`
+- `ImportBatchDialog` (`src/components/ImportBatchDialog.tsx`, linija 68) koristi `z-50`
+- Dijalog se zapravo **otvara** (state se mijenja), ali ostaje **ispod** parent dijaloga pa korisnik vidi da se "ništa ne događa"
 
-### 3. Ujednačiti lokalni i globalni PDF tok
-- Ukloniti zastarjeli lokalni PDF import tok iz `PaymentSourceTransactionsDialog` koji je ostao paralelno uz globalni host.
-- Jedan izvor istine ostaje `GlobalPDFImportHost` + `PdfImportContext`.
-- Time smanjujemo rizik da se isti posao obradi dva puta ili da se recovery veže na krivi tok.
+Isti scenarij vrijedi i ako se badge klikne unutar `TransactionListDialog` ili `BusinessTransactions`.
 
-### 4. Pojačati duplicate detekciju za uvoz izvoda
-- Za PDF/HTML/CSV bulk import promijeniti pravilo: isti datum + isti iznos + isti izvor + vrlo sličan opis/merchant mora biti hard duplicate, ne “suspicious”.
-- Zadržati postojeću zaštitu da dvije realne iste kupnje istog dana ne budu automatski blokirane samo po iznosu bez opisa/merchant matcha.
+Memory `mobile-dialog-layering-v2` već propisuje konvenciju: glavni dijalog `z-[60]`, nested popover/sub-dialog `z-[70]`.
 
-### 5. Parser: zaustaviti “različit broj svaki put” koliko je moguće
-- Za HTML izvode: koristiti postojeći deterministički table pre-parser kao primarni izvor kad su redovi jasno izvučeni, a AI samo za klasifikaciju/opis ako treba.
-- Za PDF gdje ovisimo o AI-u: dodati strožu validaciju rezultata i upozorenje/prekid kad broj redaka očito varira ili je sumnjivo nizak, umjesto da se polovičan rezultat odmah može uvesti.
+## Fix
 
-### 6. Testovi
-- Dodati regresijske testove za fingerprint i duplicate scoring.
-- Testirati da ponovni import istog skupa vraća 0 novih redaka na logičkoj razini.
+`src/components/ImportBatchDialog.tsx`, linija 68:
 
-## Tehnički detalji
-- Ne dirati `src/integrations/supabase/client.ts` ni `types.ts`.
-- Ako `ParsedTransaction` dobije `bank_transaction_id`, tip proširiti u aplikacijskom kodu, a ne ručno u generated backend typovima.
-- Ako bude potrebna nova DB kolona za dodatni fingerprint, ide isključivo migracijom; trenutno izgleda da postojeći `bank_transaction_id` može poslužiti.
+```diff
+- className="fixed inset-0 z-50 bg-background flex flex-col"
++ className="fixed inset-0 z-[70] bg-background flex flex-col"
+```
+
+To je jedna izmjena. Nema promjene logike, ni DB, ni i18n.
+
+## Verifikacija
+
+1. Otvori novčanik → klikni izvor plaćanja → otvori se `PaymentSourceTransactionsDialog`.
+2. Skrolaj do bloka transakcija s crvenim "Uvoz • N tr." badge-om.
+3. Klik na badge mora otvoriti full-screen `ImportBatchDialog` s listom uvezenih transakcija i kantom u zaglavlju.
+4. Klik na kantu otvara `AlertDialog` "Obriši cijeli uvoz" — potvrda briše sve transakcije iz batcha.
+
+## Što NE radim
+
+- Ne diram funkcionalnost brisanja, fingerprint logiku, niti UI badge-a.
+- Ne diram druga dva mjesta (`TransactionListDialog`, `BusinessTransactions`) — isti fix automatski rješava i njih jer dijele isti `ImportBatchDialog`.
+- Bez version bump-a (nema native promjene).
