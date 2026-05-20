@@ -1029,6 +1029,8 @@
     "bulkCategoryChanged": "Kategorie für {{count}} Transaktionen geändert",
     "bulkSourceChanged": "Zahlungsquelle für {{count}} Transaktionen geändert",
     "bulkDeleted": "{{count}} Transaktionen gelöscht",
+    "bulkDeleteFailed": "Fehler beim Löschen von {{count}} Transaktionen",
+    "bulkDeletePartial": "{{ok}} gelöscht, Fehler bei {{fail}}",
     "bulkBudgetChanged": "Budget {{count}} Transaktionen zugewiesen",
     "bulkProjectChanged": "Projekt {{count}} Transaktionen zugewiesen",
     "toAccountLabel": "📥 Auf Konto (Ziel)",

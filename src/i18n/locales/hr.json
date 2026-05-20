@@ -1026,6 +1026,8 @@
     "bulkCategoryChanged": "Kategorija promijenjena za {{count}} transakcija",
     "bulkSourceChanged": "Izvor plaćanja promijenjen za {{count}} transakcija",
     "bulkDeleted": "Obrisano {{count}} transakcija",
+    "bulkDeleteFailed": "Greška pri brisanju {{count}} transakcija",
+    "bulkDeletePartial": "Obrisano {{ok}}, greška za {{fail}}",
     "bulkBudgetChanged": "Budžet dodijeljen za {{count}} transakcija",
     "bulkProjectChanged": "Projekt dodijeljen za {{count}} transakcija",
     "expenseNature": "Vrsta troška",

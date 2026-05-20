@@ -27,7 +27,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 
 import { useTranslation } from 'react-i18next';
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 const Index = () => {
   const { t } = useTranslation();
@@ -309,11 +309,16 @@ const Index = () => {
   }, [wrapDeleteWithUndo, deleteExpense]);
 
   const bulkDeleteWithoutUndo = useCallback(async (ids: string[]) => {
-    await Promise.all(ids.map(id => deleteExpense(id, { silent: true })));
+    const results = await Promise.allSettled(ids.map(id => deleteExpense(id, { silent: true })));
     refetch();
     refetchPaymentSources();
-    showSuccess(t('transactions.bulkDeleted', { count: ids.length }));
+    const ok = results.filter(r => r.status === 'fulfilled').length;
+    const fail = results.length - ok;
+    if (fail === 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
+    else if (ok === 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
+    else showError(t('transactions.bulkDeletePartial', { ok, fail }));
   }, [deleteExpense, refetch, refetchPaymentSources, t]);
+
 
   // Clear selection when filters change
   useEffect(() => {

@@ -10,11 +10,14 @@ export type TrashEntity = 'expense' | 'project' | 'invoice' | 'estimate';
 export async function softDelete(
   table: SoftDeleteTable,
   id: string,
-  userId: string
+  _userId: string
 ): Promise<void> {
-  const { error } = await (supabase.from(table) as any)
-    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
-    .eq('id', id);
+  // Koristi SECURITY DEFINER RPC da zaobiđe RESTRICTIVE `hide_soft_deleted`
+  // SELECT policy koja PostgREST tretira kao WITH CHECK na RETURNING redu.
+  const { error } = await (supabase.rpc as any)('soft_delete_record', {
+    p_table: table,
+    p_id: id,
+  });
   if (error) throw error;
 }
 
