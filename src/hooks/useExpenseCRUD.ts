@@ -379,7 +379,7 @@ export const useExpenseCRUD = ({
     }
   }, [isLocalMode, user, setExpenses]);
 
-  const deleteExpense = useCallback(async (id: string) => {
+  const deleteExpense = useCallback(async (id: string, options?: { silent?: boolean }) => {
     try {
       // Look up from local state first; if not found (e.g. shared/member transaction), fetch from DB
       let expenseToDelete = expenses.find(e => e.id === id);
@@ -424,13 +424,15 @@ export const useExpenseCRUD = ({
         console.warn('[deleteExpense] Could not find expense to reverse balance for id:', id);
       }
 
-      emitAvatarEvent('thinking', 'Uklonjeno... 🗑️');
-      showSuccess(t('feedback.deleted'));
+      if (!options?.silent) {
+        emitAvatarEvent('thinking', 'Uklonjeno... 🗑️');
+        showSuccess(t('feedback.deleted'));
+      }
     } catch (error) {
       console.error('Error deleting expense:', error);
       showError(t('toasts.cashRegisterDeleteError'));
     }
-  }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated]);
+  }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated, emitAvatarEvent, t]);
 
   const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
     try {
