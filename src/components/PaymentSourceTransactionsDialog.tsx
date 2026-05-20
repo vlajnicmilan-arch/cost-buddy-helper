@@ -1258,14 +1258,17 @@ export const PaymentSourceTransactionsDialog = ({
           batchId={selectedBatchId}
           allExpenses={expenses}
           onDeleteBatch={async (ids) => {
-            for (const id of ids) {
-              await onDelete(id);
+            if (onBulkDelete) {
+              await onBulkDelete(ids);
+            } else {
+              await Promise.all(ids.map(id => onDelete(id)));
             }
             setImportBatchDialogOpen(false);
             setSelectedBatchId(null);
           }}
         />
       )}
+
 
       {/* PDF Parsing Overlay */}
       <AnimatePresence>
