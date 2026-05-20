@@ -27,7 +27,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 
 import { useTranslation } from 'react-i18next';
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 const Index = () => {
   const { t } = useTranslation();
