@@ -308,6 +308,13 @@ const Index = () => {
     await wrapDeleteWithUndo(() => deleteExpense(id), 'expense', id);
   }, [wrapDeleteWithUndo, deleteExpense]);
 
+  const bulkDeleteWithoutUndo = useCallback(async (ids: string[]) => {
+    await Promise.all(ids.map(id => deleteExpense(id, { silent: true })));
+    refetch();
+    refetchPaymentSources();
+    showSuccess(t('transactions.bulkDeleted', { count: ids.length }));
+  }, [deleteExpense, refetch, refetchPaymentSources, t]);
+
   // Clear selection when filters change
   useEffect(() => {
     setSelectedTransactionIds(new Set());
@@ -474,6 +481,7 @@ const Index = () => {
     // Actions
     onUpdateExpense: updateExpense,
     onDeleteExpense: deleteExpenseWithUndo,
+    onBulkDeleteExpense: bulkDeleteWithoutUndo,
     importFromCSV: importWithRecurringCheck,
     onReplaceAutoGen: handleReplaceAutoGen,
     findDuplicates,
