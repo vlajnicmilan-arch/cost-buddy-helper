@@ -307,6 +307,34 @@ export const GlobalPDFImportHost = () => {
     void recover();
   }, [fetchPDFParseJob, normalizeJobResult, pdfImport, waitForPDFParseJob]);
 
+  const persistStatementRecord = useCallback(async (count: number) => {
+    if (!user?.id || !pdfImport.source) return;
+    // Ensure we have a content hash even if guard 2 was skipped (force re-import path).
+    let contentHash = contentHashRef.current;
+    if (!contentHash && pdfImport.result) {
+      try {
+        contentHash = await computeContentHash(
+          user.id,
+          `custom:${pdfImport.source.id}`,
+          pdfImport.result.transactions,
+        );
+      } catch {
+        contentHash = null;
+      }
+    }
+    await recordImportedStatement({
+      userId: user.id,
+      paymentSourceId: pdfImport.source.id,
+      fileHash: fileHashRef.current,
+      contentHash,
+      fileName: fileMetaRef.current?.name ?? null,
+      fileSize: fileMetaRef.current?.size ?? null,
+      mimeType: fileMetaRef.current?.type ?? null,
+      transactionsCount: count,
+      importBatchId: null,
+    });
+  }, [user?.id, pdfImport.source, pdfImport.result]);
+
   const handleImport = async () => {
     if (!pdfImport.source || !pdfImport.result) return;
     const transactions = toParsedTransactions();
@@ -328,6 +356,7 @@ export const GlobalPDFImportHost = () => {
         return;
       }
       await pdfImport._runImport(transactions);
+      await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedFromPDF', { count: transactions.length }));
       resetAll();
     } catch (error) {
@@ -350,6 +379,7 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
       await pdfImport._runImport(transactions);
+      await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedTransactions', { count: transactions.length }));
       resetAll();
     } catch (error) {
