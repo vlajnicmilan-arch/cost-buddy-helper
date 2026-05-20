@@ -167,12 +167,14 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
               </div>
             </div>
           </ScrollArea>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
 
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-      <AlertDialogContent>
+      <AlertDialogContent className="z-[80]">
+
         <AlertDialogHeader>
           <AlertDialogTitle>{t('importBatch.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
