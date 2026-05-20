@@ -11,9 +11,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
-import type { ParsedTransaction } from '@/lib/csvParsers';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _Unused = ParsedTransaction;
+import { computeImportFingerprint } from '@/lib/importFingerprint';
 
 async function sha256HexFromBuffer(buf: ArrayBuffer | Uint8Array): Promise<string> {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
