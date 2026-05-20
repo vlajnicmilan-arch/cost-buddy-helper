@@ -21,6 +21,8 @@ interface SharedDialogsProps {
   totalExpenses: number;
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onDeleteExpenseDirect?: (id: string) => Promise<void>;
+  onBulkDeleteExpense?: (ids: string[]) => Promise<void>;
   // Transfer dialog
   transferDialogOpen: boolean;
   onTransferDialogChange: (open: boolean) => void;
@@ -60,6 +62,8 @@ export const SharedDialogs = ({
   totalExpenses,
   onUpdateExpense,
   onDeleteExpense,
+  onDeleteExpenseDirect,
+  onBulkDeleteExpense,
   transferDialogOpen,
   onTransferDialogChange,
   allTransfers,
@@ -128,7 +132,8 @@ export const SharedDialogs = ({
         paymentSource={selectedPaymentSource}
         expenses={allExpenses}
         onUpdate={onUpdateExpense}
-        onDelete={onDeleteExpense}
+        onDelete={onDeleteExpenseDirect ?? onDeleteExpense}
+        onBulkDelete={onBulkDeleteExpense}
         onImportCSV={onImportCSV}
         findDuplicates={findDuplicates}
       />

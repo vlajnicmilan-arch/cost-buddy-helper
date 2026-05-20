@@ -503,11 +503,12 @@ export const PaymentSourceTransactionsDialog = ({
 
   const handleBulkDelete = async () => {
     const selected = filteredSourceExpenses.filter(e => selectedIds.has(e.id));
-    let count = 0;
-    for (const expense of selected) {
-      try { await onDelete(expense.id); count++; } catch {}
+    if (onBulkDelete) {
+      await onBulkDelete(selected.map(e => e.id));
+    } else {
+      await Promise.all(selected.map(expense => onDelete(expense.id)));
+      showSuccess(t('transactions.bulkDeleted', { count: selected.length }));
     }
-    showSuccess(t('transactions.deleted', { count }));
     clearSelection();
   };
 
@@ -1262,6 +1263,7 @@ export const PaymentSourceTransactionsDialog = ({
               await onBulkDelete(ids);
             } else {
               await Promise.all(ids.map(id => onDelete(id)));
+              showSuccess(t('transactions.bulkDeleted', { count: ids.length }));
             }
             setImportBatchDialogOpen(false);
             setSelectedBatchId(null);
