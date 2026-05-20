@@ -106,9 +106,52 @@ export const GlobalPDFImportHost = () => {
 
     const source = pdfImport.source;
 
+    const showStatementDuplicate = (
+      existing: ExistingStatement,
+      retryOptions:
+        | { kind: 'pdf'; opts: typeof pendingPdf }
+        | { kind: 'html'; opts: typeof pendingHtml },
+    ) => {
+      pendingPdf?.releaseGuard?.();
+      pendingHtml?.releaseGuard?.();
+      const retry = () => {
+        setStatementDup(null);
+        if (retryOptions.kind === 'pdf' && retryOptions.opts) {
+          void pdfImport.startPdfImport({ ...retryOptions.opts, forceImport: true });
+        } else if (retryOptions.kind === 'html' && retryOptions.opts) {
+          void pdfImport.startHtmlImport({ ...retryOptions.opts, forceImport: true });
+        }
+      };
+      setStatementDup({ existing, retry });
+      // Reset phase but keep the dialog open via statementDup state.
+      pdfImport._setIdle();
+    };
+
     const run = async () => {
       try {
         if (pendingPdf) {
+          fileMetaRef.current = {
+            name: pendingPdf.file.name,
+            size: pendingPdf.file.size,
+            type: pendingPdf.file.type || 'application/pdf',
+          };
+
+          // Guard 1: file-hash check before parsing.
+          if (user?.id && !pendingPdf.forceImport) {
+            try {
+              const fileHash = await computeFileHash(pendingPdf.file);
+              fileHashRef.current = fileHash;
+              const existing = await findExistingStatement(user.id, { fileHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
+                return;
+              }
+            } catch (e) {
+              // Hash failure should not block import.
+              fileHashRef.current = null;
+            }
+          }
+
           const base64 = await readAsDataUrl(pendingPdf.file);
           if (!base64) throw new Error('file_read_failed');
           const jobId = await startPDFParseJob(base64);
@@ -128,6 +171,24 @@ export const GlobalPDFImportHost = () => {
             resetAll();
             return;
           }
+
+          // Guard 2: content-hash check after parsing.
+          if (user?.id && !pendingPdf.forceImport) {
+            try {
+              const paymentSourceValue = `custom:${source.id}`;
+              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              contentHashRef.current = contentHash;
+              const existing = await findExistingStatement(user.id, { contentHash });
+              if (existing) {
+                clearStoredJob();
+                showStatementDuplicate(existing, { kind: 'pdf', opts: pendingPdf });
+                return;
+              }
+            } catch (e) {
+              contentHashRef.current = null;
+            }
+          }
+
           clearStoredJob();
           pdfImport._setPreview(result, jobId);
           try { logDiagnostic('global_pdf_import_preview_opened', { job_id: jobId, source_id: source.id, count: result.transactions.length }); } catch {}
@@ -135,6 +196,26 @@ export const GlobalPDFImportHost = () => {
         }
 
         if (pendingHtml) {
+          fileMetaRef.current = {
+            name: pendingHtml.file.name,
+            size: pendingHtml.file.size,
+            type: pendingHtml.file.type || 'text/html',
+          };
+
+          if (user?.id && !pendingHtml.forceImport) {
+            try {
+              const fileHash = await computeFileHash(pendingHtml.file);
+              fileHashRef.current = fileHash;
+              const existing = await findExistingStatement(user.id, { fileHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
+                return;
+              }
+            } catch (e) {
+              fileHashRef.current = null;
+            }
+          }
+
           const content = await pendingHtml.file.text();
           const result = await parseHTML(content);
           if (!result) return;
@@ -143,6 +224,22 @@ export const GlobalPDFImportHost = () => {
             resetAll();
             return;
           }
+
+          if (user?.id && !pendingHtml.forceImport) {
+            try {
+              const paymentSourceValue = `custom:${source.id}`;
+              const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+              contentHashRef.current = contentHash;
+              const existing = await findExistingStatement(user.id, { contentHash });
+              if (existing) {
+                showStatementDuplicate(existing, { kind: 'html', opts: pendingHtml });
+                return;
+              }
+            } catch (e) {
+              contentHashRef.current = null;
+            }
+          }
+
           pdfImport._setPreview(result, null);
           try { logDiagnostic('global_html_import_preview_opened', { source_id: source.id, count: result.transactions.length }); } catch {}
         }
