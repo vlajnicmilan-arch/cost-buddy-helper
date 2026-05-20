@@ -64,6 +64,7 @@ export const PaymentSourceTransactionsDialog = ({
   expenses,
   onUpdate,
   onDelete,
+  onBulkDelete,
   onImportCSV,
   findDuplicates,
   onPdfProcessingChange
