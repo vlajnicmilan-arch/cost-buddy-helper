@@ -41,6 +41,7 @@ interface PaymentSourceTransactionsDialogProps {
   expenses: Expense[];
   onUpdate: (expense: Expense) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onBulkDelete?: (ids: string[]) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
   onPdfProcessingChange?: (processing: boolean) => void;
