@@ -43,9 +43,13 @@ const Wallet = () => {
   }, [importFromCSV, refetch]);
 
   const bulkDeleteWithoutUndo = useCallback(async (ids: string[]) => {
-    await Promise.all(ids.map(id => deleteExpense(id, { silent: true })));
+    const results = await Promise.allSettled(ids.map(id => deleteExpense(id, { silent: true })));
     refetch();
-    showSuccess(t('transactions.bulkDeleted', { count: ids.length }));
+    const ok = results.filter(r => r.status === 'fulfilled').length;
+    const fail = results.length - ok;
+    if (fail === 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
+    else if (ok === 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
+    else showError(t('transactions.bulkDeletePartial', { ok, fail }));
   }, [deleteExpense, refetch, t]);
 
   useEffect(() => {
