@@ -49,6 +49,7 @@ interface PersonalModeViewProps {
   onAddExpense: (expense: any) => Promise<void>;
   onUpdateExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onBulkDeleteExpense?: (ids: string[]) => Promise<void>;
   bulkUpdateExpenses: (expenses: Expense[]) => Promise<void>;
   importFromCSV: (transactions: ParsedTransaction[]) => Promise<void>;
   findDuplicates: any;
@@ -384,6 +385,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         totalExpenses={props.totalExpenses}
         onUpdateExpense={props.onUpdateExpense}
         onDeleteExpense={props.onDeleteExpense}
+        onBulkDeleteExpense={props.onBulkDeleteExpense}
         transferDialogOpen={props.transferDialogOpen}
         onTransferDialogChange={props.onTransferDialogChange}
         allTransfers={props.allTransfers}
