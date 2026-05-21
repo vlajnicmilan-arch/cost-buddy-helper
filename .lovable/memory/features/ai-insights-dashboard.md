@@ -8,7 +8,7 @@ Sekcija "AI uvidi" ispod SummarySection u `PersonalModeView` (samo ako `!isLocal
 
 ## Arhitektura
 - **Tablica** `ai_insights_cache (user_id, generated_on, insights jsonb, expense_count_at_generation, language)` — PK (user_id, generated_on), RLS per user.
-- **Edge function** `generate-ai-insights`: filter personal expenses (no business_profile, exclude correction); izračuna kandidate (anomalija WoW po kategoriji ≥30% i ≥10€, mjesečna projekcija vs budget_plans, recurring fallback); pošalje top 3 na Lovable AI Gateway (`google/gemini-2.5-flash-lite`) s tool-call schema `{ titles: string[] }` da formulira na korisnikovom jeziku; upsert cache.
+- **Edge function** `generate-ai-insights`: filter personal expenses (no business_profile, exclude correction); generira kandidate s `priority` poljem. **Operativni (prio 80-100):** overdue invoices, project margin warning (<10%), project budget burn (>85% trošak / <60% vrijeme), 30d cashflow risk (recurring odljev > priljev). **Personal (prio 20-50, samo ako ≥10 personal expenses):** WoW anomalija po kategoriji, mjesečna projekcija vs budget_plans, recurring count fallback. Sort po priority desc, top 3 idu na Lovable AI Gateway (`google/gemini-2.5-flash-lite`) s tool-call `{ titles: string[] }` za formulaciju u korisnikovom jeziku. Operativne provjere ne traže personal signal (rade i za business-only korisnike).
 - **Hook** `useAIInsights(enabled)` — invoke edge function jednom po mountu, instantCache snapshot (`ai-insights:v1`).
 - **Komponente** `AIInsightsSection` + `AIInsightCard` (teal, Lightbulb/TrendingUp/TrendingDown ikona po severity).
 
