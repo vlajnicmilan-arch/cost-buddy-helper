@@ -139,7 +139,7 @@ export const useRecurringTransactions = () => {
 
   // Process due recurring transactions - generates actual expenses
   const processDueTransactions = useCallback(async (
-    addExpense: (expense: any) => Promise<void>
+    addExpense: (expense: any, items?: any, isPending?: any, entrySource?: any) => Promise<void>
   ) => {
     if (!user || isLocalMode) return 0;
 
