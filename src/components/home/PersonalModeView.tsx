@@ -236,14 +236,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
-        {/* Payment Sources */}
-        <PaymentSourcesSection
-          customPaymentSources={props.customPaymentSources}
-          onSourceClick={props.onPaymentSourceClick}
-        />
-
-        {/* Active Projects Strip — primary feature highlight (hidden for finance-only profile) */}
-        {!projectsHidden && (
+        {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
+        {v2 && !projectsHidden && (
           <ActiveProjectsStrip
             projects={props.projects}
             isLocalMode={props.isLocalMode}
@@ -253,7 +247,24 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
         )}
 
-        {/* Summary Cards */}
+        {/* Payment Sources */}
+        <PaymentSourcesSection
+          customPaymentSources={props.customPaymentSources}
+          onSourceClick={props.onPaymentSourceClick}
+        />
+
+        {/* V1: Active Projects below sources */}
+        {!v2 && !projectsHidden && (
+          <ActiveProjectsStrip
+            projects={props.projects}
+            isLocalMode={props.isLocalMode}
+            simpleModeEnabled={props.simpleModeEnabled}
+            isBusinessMode={props.isBusinessMode}
+            loading={props.expensesLoading}
+          />
+        )}
+
+        {/* Summary Cards — compact in V2 (only month income+expense) */}
         <SummarySection
           balance={accountBalance}
           netWorth={props.netWorth}
@@ -274,7 +285,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onExpenseClick={() => props.onExpenseDialogChange(true)}
           onTransferClick={() => props.onTransferDialogChange(true)}
           onRecurringClick={props.onRecurringPanelOpen}
+          compact={v2}
         />
+
 
         {/* AI Insights — daily, deterministic + AI-formulated */}
         {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
