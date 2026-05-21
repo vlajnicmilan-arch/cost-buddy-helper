@@ -476,7 +476,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       generated_on: today,
       insights: final,
-      expense_count_at_generation: personalExpenses.length,
+      expense_count_at_generation: personalExpenseCount,
       language,
     }, { onConflict: "user_id,generated_on" });
 
