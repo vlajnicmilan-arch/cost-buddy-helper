@@ -1132,6 +1132,7 @@ export type Database = {
           ai_extracted: boolean | null
           amount: number
           bank_account_id: string | null
+          bank_match_status: string
           bank_transaction_id: string | null
           budget_id: string | null
           business_profile_id: string | null
@@ -1158,6 +1159,7 @@ export type Database = {
           note: string | null
           payment_source: string | null
           payment_source_card_id: string | null
+          possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
@@ -1173,6 +1175,7 @@ export type Database = {
           ai_extracted?: boolean | null
           amount: number
           bank_account_id?: string | null
+          bank_match_status?: string
           bank_transaction_id?: string | null
           budget_id?: string | null
           business_profile_id?: string | null
@@ -1199,6 +1202,7 @@ export type Database = {
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
+          possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
@@ -1214,6 +1218,7 @@ export type Database = {
           ai_extracted?: boolean | null
           amount?: number
           bank_account_id?: string | null
+          bank_match_status?: string
           bank_transaction_id?: string | null
           budget_id?: string | null
           business_profile_id?: string | null
@@ -1240,6 +1245,7 @@ export type Database = {
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
+          possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
@@ -1306,6 +1312,13 @@ export type Database = {
             columns: ["payment_source_card_id"]
             isOneToOne: false
             referencedRelation: "payment_source_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_possible_duplicate_of_fkey"
+            columns: ["possible_duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {
