@@ -271,13 +271,15 @@ Deno.serve(async (req) => {
 
       if (outflow > 0 && expectedInflow > 0 && outflow > expectedInflow * 0.9) {
         const gap = outflow - expectedInflow;
+        const isCritical = gap > expectedInflow * 0.5;
         candidates.push({
           id: "cashflow-risk-30d",
           type: "cashflow_risk",
-          priority: 90,
+          priority: isCritical ? 105 : 90,
           factsHr: `Sljedećih 30 dana: ${outflow.toFixed(2)} € predviđenih odljeva nasuprot ${expectedInflow.toFixed(2)} € priljeva (manjak ${gap.toFixed(2)} €)`,
           followupHr: `Sljedećih 30 dana predviđam ${outflow.toFixed(0)} € odljeva i samo ${expectedInflow.toFixed(0)} € priljeva. Pomozi mi prioritizirati troškove i pronaći način da pokrijem manjak.`,
-          severity: "warning",
+          severity: isCritical ? "critical" : "warning",
+          action: { type: "ask_ai" },
         });
       }
     } catch (e) { console.error("cashflow check failed", e); }
