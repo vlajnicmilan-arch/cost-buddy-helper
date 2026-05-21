@@ -112,6 +112,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
+    dashboardV2Enabled, setDashboardV2Enabled,
     familyModeEnabled, setFamilyModeEnabled,
     businessFeatureEnabled, setBusinessFeatureEnabled,
     emitFinancialReset,
