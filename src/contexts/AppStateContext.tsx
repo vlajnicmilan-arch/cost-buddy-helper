@@ -87,6 +87,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     const v = localStorage.getItem('usage_profile');
     return v === 'finance_only' || v === 'finance_projects' ? v : null;
   });
+  // Dashboard V2 default ON; only OFF if user explicitly opts out.
+  const [dashboardV2Enabled, setDashboardV2EnabledState] = useState<boolean>(
+    () => localStorage.getItem('dashboard_v2_enabled') !== 'false'
+  );
   const [appStateReady, setAppStateReady] = useState(false);
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
