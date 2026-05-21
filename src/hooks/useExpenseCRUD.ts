@@ -43,7 +43,8 @@ export const useExpenseCRUD = ({
   const addExpense = useCallback(async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
     items?: ReceiptItem[],
-    isPendingMemberTransaction?: boolean
+    isPendingMemberTransaction?: boolean,
+    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
     const normalizedDescription = (expense.description ?? '').trim()
       || expense.merchant_name?.trim()
@@ -115,7 +116,7 @@ export const useExpenseCRUD = ({
           (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
         );
         const bankMatchStatus = getInitialBankMatchStatus({
-          source: normalizedExpense.ai_extracted ? 'ocr' : 'manual',
+          source: entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual'),
           paymentSource: normalizedExpense.payment_source,
           bankLinkedSourceIds,
         });

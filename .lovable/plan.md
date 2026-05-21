@@ -1,146 +1,55 @@
-# Hybrid bank-first model — finalna verzija
+## Preostale faze hibridnog bank-first modela
 
-Cilj: pripremiti `expenses` tablicu, helper i UI za buduću bank sync match logiku. **Zero impact na trenutni rad dok nema prave bank konekcije.**
+F1 (migracija), F2 (helper + testovi), F3a (CSV/PDF → `bank_only`), F3b (manual/OCR helper) — **gotovo**.
 
----
-
-## Konceptualni model
-
-```
-Banka  = istina o novcu       → bank_only / confirmed
-Račun  = istina o sadržaju    → samo enrichment, ne mijenja status
-Ručno  = privremeno           → manual ili pending_bank
-```
+Ostaje 3 koraka, bez utjecaja na trenutni UI dok nema žive bank konekcije.
 
 ---
 
-## Status enum
+### Korak 1 — Recurring transakcije ostaju `manual`
 
-`expenses.bank_match_status` (text, default `'manual'`):
+**Fajl:** `src/hooks/useRecurringTransactions.ts` (funkcija `processDueTransactions`)
 
-| Status | Kada se postavlja | Badge |
-|---|---|---|
-| `manual` | Ručni unos gotovine, ručni unos kartice **bez** bank konekcije, recurring auto-generate, **OCR/slikani račun**, backfill postojećih | — |
-| `pending_bank` | Ručni unos kartice kad payment_source **ima** aktivnu bank konekciju | ⏳ |
-| `confirmed` | Bank sync pronašao siguran match | ✅ |
-| `bank_only` | Bank sync insert bez match-a + **CSV/PDF uvoz bankovnog izvoda** | — |
-
-Pomoćna kolona: `possible_duplicate_of UUID NULL` — **samo fallback** kad sync ne može odlučiti.
+- Auto-generirane transakcije iz recurring templatea uvijek dobivaju `bank_match_status: 'manual'`, čak i ako je payment_source vezan na banku.
+- Razlog: recurring je predviđanje, ne potvrda. Banka će ih kasnije matchati.
+- Match logika (Korak 2) će ih sama prebaciti u `confirmed` kad stigne pravi izvod.
 
 ---
 
-## Faza 1 — Migracija (zero impact)
+### Korak 2 — Match logika u `bank-sync-transactions` (dormant)
 
-```sql
-ALTER TABLE expenses
-  ADD COLUMN bank_match_status text NOT NULL DEFAULT 'manual',
-  ADD COLUMN possible_duplicate_of uuid NULL REFERENCES expenses(id) ON DELETE SET NULL;
+**Fajl:** `supabase/functions/bank-sync-transactions/index.ts`
 
-CREATE INDEX idx_expenses_bank_match_status
-  ON expenses(user_id, bank_match_status)
-  WHERE bank_match_status IN ('pending_bank','bank_only');
-```
+Za svaku novu bank transakciju iz Enable Banking API-ja:
 
-Postojeće transakcije → `manual` (default).
+1. Query kandidata: `expenses` istog `user_id`, isti `payment_source` (`custom:UUID`), `amount` ±0.01, `bank_transaction_id IS NULL`, `bank_match_status IN ('pending_bank','bank_only','manual')`, `deleted_at IS NULL`.
+2. Vremenski prozor: <10€ strict (isti dan), 10–50€ ±1 dan, >50€ ±3 dana.
+3. Odluka:
+   - **0 kandidata** → INSERT novi expense, `bank_only`, sa `bank_transaction_id` + `bank_account_id`.
+   - **1 kandidat** → UPDATE postojeći: dodaj `bank_transaction_id`+`bank_account_id`, `bank_match_status = 'confirmed'`. Pokriva i CSV/PDF (`bank_only`) i karticu (`pending_bank`) i ručno (`manual`).
+   - **>1 ili nesiguran** → INSERT novi `bank_only` + `possible_duplicate_of = <id najbližeg kandidata>`. Fallback samo za stvarno dvojbene slučajeve.
 
----
-
-## Faza 2 — Centralni helper
-
-`src/lib/bankMatchStatus.ts`:
-
-```ts
-type Source = 'manual' | 'csv' | 'pdf' | 'recurring' | 'ocr';
-
-getInitialBankMatchStatus({
-  source,
-  paymentSource,
-  hasBankConnection,
-}): 'manual' | 'pending_bank' | 'bank_only'
-```
-
-Pravila:
-- `csv` | `pdf` → `bank_only` (izvod = potvrda novca)
-- `recurring` → `manual`
-- `ocr` → koristi istu logiku kao `manual` (račun nije bank dokaz)
-- `manual`:
-  - gotovina → `manual`
-  - kartica/custom bez bank konekcije → `manual`
-  - kartica/custom s bank konekcijom → `pending_bank`
-
-`bank_sync` ne ide kroz helper — odluku donosi edge funkcija (match logika).
-
-Vitest pokrivenost svih grana.
+Dormant jer se cron sync aktivira tek kad bude prava banka — sandbox sad ima numeričke reference koje ionako ne matchaju.
 
 ---
 
-## Faza 3 — Integracija
+### Korak 3 — UI badge + "Možda duplikat" sheet
 
-1. **Ručni unos** (`useExpenseCRUD`) — helper s `source='manual'`
-2. **OCR scanner** (Personal + Business) — helper s `source='ocr'`; ako se payment_source promijeni u edit modu, ponovno pozvati helper
-3. **CSV uvoz** (`CSVImportDialog.tsx:218`) — eksplicitno `'bank_only'`
-4. **PDF uvoz** (`GlobalPDFImportHost.tsx:94`) — eksplicitno `'bank_only'`
-5. **Recurring auto-generate** — `'manual'`
-6. **`bank-sync-transactions` edge** — match logika prije inserta:
-   - traži kandidate: isti `user_id`, isti `payment_source` (`custom:UUID`), amount ±0.01, `bank_transaction_id IS NULL`, `bank_match_status IN ('pending_bank', 'bank_only')`
-   - prozor: <10€ same day · 10–50€ ±1 day · >50€ ±3 days
-   - **0 kandidata** → INSERT `bank_only`
-   - **1 siguran kandidat** → UPDATE postojeći: `bank_transaction_id`, `bank_account_id`, status=`confirmed` (radi i za `pending_bank` i za `bank_only` iz CSV/PDF uvoza → izbjegnut duplikat)
-   - **>1 kandidata ili nesiguran** → INSERT `bank_only` + `possible_duplicate_of` na najbliži (fallback)
+**Fajl:** `src/components/TransactionListItem.tsx` + novi `BankDuplicateSheet.tsx`
+
+- Conditional badge:
+  - `pending_bank` → ⏳ ikona (mali, muted, tooltip "Čeka potvrdu banke")
+  - `confirmed` → ✅ ikona (teal, tooltip "Potvrđeno bankom")
+  - `bank_only`, `manual` → ništa (zero visual noise)
+- `possible_duplicate_of` postavljen → "Možda duplikat" badge (amber); klik otvara bottom sheet s usporedbom dvije transakcije + akcije "Spoji" (UPDATE matched → confirmed, DELETE bank_only) / "Nisu isto" (clear `possible_duplicate_of`).
+- i18n: `bankMatch.pendingBank`, `bankMatch.confirmed`, `bankMatch.maybeDuplicate`, `bankMatch.merge`, `bankMatch.notSame` (hr/en/de).
 
 ---
 
-## Faza 4 — UI badge (suptilno, dormant dok nema bank synca)
+### Završno
 
-`TransactionListItem`:
-- `pending_bank` → mali ⏳ icon uz iznos, tooltip "Čeka potvrdu banke"
-- `confirmed` → ✅ uz iznos, tooltip "Potvrđeno bankom"
-- `possible_duplicate_of != null` → suptilan badge "Možda duplikat", klik → bottom sheet "Spoji" / "Nisu isto"
-- `manual`, `bank_only` → ništa
+- Update `mem://features/bank-sync-roadmap` da reflektira novi status.
+- Bez version bumpa (nema native promjene).
+- Bez utjecaja na cashflow, balance, dashboard, recurring matching, soft delete, receipt scanner.
 
-i18n (`src/i18n/locales/*`):
-- `bankMatch.pending`, `bankMatch.confirmed`, `bankMatch.possibleDuplicate`, `bankMatch.merge`, `bankMatch.notSame`
-
----
-
-## Što NIJE dirano
-
-- Cash flow, balance updater, dashboard, izvještaji
-- Personal/Business mode, business profile isolation
-- `duplicateDetection.ts` (samo se reuse-aju tolerance konstante)
-- Soft delete, trash flow
-- Payment source format (`custom:UUID`)
-- Receipt scanner flow
-
----
-
-## Utjecaj na trenutni rad
-
-| Scenarij | Status | Vidljiva promjena |
-|---|---|---|
-| Stare transakcije (backfill) | `manual` | nema |
-| Ručni unos gotovine | `manual` | nema |
-| Ručni unos kartice (nema banke) | `manual` | nema |
-| Slikani račun / OCR | `manual` | nema |
-| CSV uvoz izvoda | `bank_only` | nema |
-| PDF uvoz izvoda | `bank_only` | nema |
-| Recurring auto | `manual` | nema |
-| Bank sync (sandbox ručni klik) | `bank_only` | nema (nema match kandidata) |
-
-Dok netko ne spoji **pravu banku** + ručno unese karticu iz tog izvora, ⏳ badge se nikad ne pojavljuje. Match logika je dormant.
-
-**Bonus:** Kad jednog dana spoji pravu banku, postojeći `bank_only` redovi iz CSV/PDF uvoza automatski se mogu upgrade-ati u `confirmed` (bez duplikata).
-
----
-
-## Redoslijed implementacije
-
-1. **F1** — Migracija (kolone + indeks)
-2. **F2** — `bankMatchStatus.ts` helper + vitest
-3. **F3a** — CSV/PDF eksplicitno `bank_only`
-4. **F3b** — Ručni unos i OCR koriste helper
-5. **F3c** — `bank-sync-transactions` match logika (0/1/N kandidata, search za `pending_bank` + `bank_only`)
-6. **F4** — UI badge + "Možda duplikat" bottom sheet + i18n (HR/EN/DE)
-7. Update mem: `hybrid-bank-match-model` + ažurirati `bank-sync-roadmap`
-
-Bez native promjena → bez version bumpa.
+Krećem?

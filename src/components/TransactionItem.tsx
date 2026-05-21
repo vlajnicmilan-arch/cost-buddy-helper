@@ -3,14 +3,15 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle, CreditCard, Camera } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { TransferTransactionItem } from './TransferTransactionItem';
+import { BankDuplicateSheet } from './bank/BankDuplicateSheet';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
@@ -37,6 +38,8 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const [duplicateSheetOpen, setDuplicateSheetOpen] = useState(false);
+
 
   // Resolve category: check custom categories first, then system ones
   const category = useMemo(() => {
@@ -278,7 +281,39 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {expense.bank_match_status === 'pending_bank' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('bankMatch.pendingBank')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {expense.bank_match_status === 'confirmed' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('bankMatch.confirmed')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {expense.possible_duplicate_of && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setDuplicateSheetOpen(true); }}
+                className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] font-semibold shrink-0 min-h-[16px]"
+                aria-label={t('bankMatch.maybeDuplicate')}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" />
+                {t('bankMatch.maybeDuplicate')}
+              </button>
+            )}
           </div>
+
 
           {/* Info Row */}
           <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground leading-tight">
@@ -372,6 +407,11 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </motion.div>
+      <BankDuplicateSheet
+        open={duplicateSheetOpen}
+        bankExpense={duplicateSheetOpen ? expense : null}
+        onClose={() => setDuplicateSheetOpen(false)}
+      />
     </div>
   );
 };
@@ -401,6 +441,8 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.currency === next.expense.currency &&
     prev.expense.receipt_url === next.expense.receipt_url &&
     prev.expense.date.getTime() === next.expense.date.getTime() &&
+    prev.expense.bank_match_status === next.expense.bank_match_status &&
+    prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
     prev.onClick === next.onClick

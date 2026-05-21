@@ -210,6 +210,11 @@ export interface Expense {
   collaborator_id?: string | null;
   is_advance?: boolean | null;
   linked_advance_ids?: string[] | null;
+  // Hybrid bank-first model — vidi mem://features/bank-sync-roadmap
+  bank_match_status?: string | null;
+  bank_transaction_id?: string | null;
+  bank_account_id?: string | null;
+  possible_duplicate_of?: string | null;
 }
 
 // Helper to get transaction type display info
