@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AlertCircle } from "lucide-react";
 import { useAIInsights, type AIInsight, type AISeverity } from "@/hooks/useAIInsights";
@@ -10,10 +11,6 @@ interface Props {
   enabled: boolean;
   allExpenses?: Expense[];
 }
-
-const dispatchAsk = (prompt: string) => {
-  window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt } }));
-};
 
 const SEVERITY_RANK: Record<AISeverity, number> = {
   critical: 0,
@@ -44,6 +41,7 @@ const mergeAndCap = (ai: AIInsight[], local: AIInsight[]): AIInsight[] => {
 
 export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { insights: aiInsights, loading } = useAIInsights(enabled);
   const localInsights = useLocalAttentionInsights(allExpenses ?? []);
 
@@ -52,8 +50,21 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
     [aiInsights, localInsights],
   );
 
+  const handleAction = useCallback((insight: AIInsight) => {
+    const action = insight.action;
+    if (action?.type === "open_project" && action.target_id) {
+      navigate("/projects", { state: { openProjectId: action.target_id, from: "/home" } });
+      return;
+    }
+    if (action?.type === "open_invoice" && action.target_id) {
+      // Nemamo direktnu rutu za fakturu — fallback na AI chat s kontekstom.
+      window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: insight.prompt } }));
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: insight.prompt } }));
+  }, [navigate]);
+
   if (!enabled) return null;
-  // Skrij sekciju ako nema ničega i još nema lokalnih signala
   if (!loading && merged.length === 0) return null;
 
   return (
@@ -71,7 +82,7 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
       ) : (
         <div className="space-y-1.5">
           {merged.map((ins) => (
-            <AIInsightCard key={ins.id} insight={ins} onClick={(i) => dispatchAsk(i.prompt)} />
+            <AIInsightCard key={ins.id} insight={ins} onAction={handleAction} />
           ))}
         </div>
       )}

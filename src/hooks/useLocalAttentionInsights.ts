@@ -31,6 +31,7 @@ export const useLocalAttentionInsights = (expenses: Expense[]): AIInsight[] => {
         prompt: t("attention.dataQuality.uncategorizedPrompt"),
         severity: "info",
         source: "local",
+        action: { type: "ask_ai" },
       });
     }
 

@@ -13,13 +13,19 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
+type InsightAction =
+  | { type: "open_project"; target_id: string }
+  | { type: "open_invoice"; target_id: string }
+  | { type: "ask_ai" };
+
 interface InsightCandidate {
   id: string;
   type: "anomaly" | "projection" | "recurring" | "info" | "invoice_overdue" | "project_margin" | "cashflow_risk" | "project_budget_burn";
   priority: number; // higher first; operational > anomaly > projection > recurring
   factsHr: string;
   followupHr: string;
-  severity: "info" | "positive" | "warning";
+  severity: "info" | "positive" | "warning" | "critical";
+  action: InsightAction;
 }
 
 interface FinalInsight {
@@ -28,6 +34,7 @@ interface FinalInsight {
   title: string;
   prompt: string;
   severity: string;
+  action: InsightAction;
 }
 
 const startOfMonthUTC = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
@@ -127,7 +134,7 @@ Deno.serve(async (req) => {
     try {
       const { data: overdue } = await admin
         .from("project_invoices")
-        .select("id, invoice_number, total_amount, currency, due_date, client_name, status")
+        .select("id, invoice_number, total_amount, currency, due_date, client_name, status, project_id")
         .eq("user_id", user.id)
         .is("deleted_at", null)
         .in("status", ["issued", "sent", "overdue"])
@@ -139,13 +146,18 @@ Deno.serve(async (req) => {
         const oldest = overdue.reduce((a: any, b: any) =>
           new Date(a.due_date) < new Date(b.due_date) ? a : b);
         const daysLate = Math.floor((Date.now() - new Date(oldest.due_date).getTime()) / 86400000);
+        const isCritical = daysLate > 60 || overdue.length >= 5;
+        const action: InsightAction = oldest.project_id
+          ? { type: "open_project", target_id: oldest.project_id }
+          : { type: "ask_ai" };
         candidates.push({
           id: "invoice-overdue",
           type: "invoice_overdue",
-          priority: 100,
+          priority: isCritical ? 110 : 100,
           factsHr: `${overdue.length} faktura van valute, ukupno ${total.toFixed(2)} ${cur}. Najstarija (${oldest.invoice_number}, ${oldest.client_name}) kasni ${daysLate} dana`,
           followupHr: `Imam ${overdue.length} neplaćenih faktura ukupno ${total.toFixed(0)} ${cur}. Predloži mi konkretne sljedeće korake naplate i prioritet po klijentu.`,
-          severity: "warning",
+          severity: isCritical ? "critical" : "warning",
+          action,
         });
       }
     } catch (e) { console.error("overdue check failed", e); }
@@ -169,8 +181,8 @@ Deno.serve(async (req) => {
           .in("project_id", projectIds)
           .eq("user_id", user.id);
 
-        const marginRisks: { name: string; revenue: number; cost: number; marginPct: number }[] = [];
-        const burnRisks: { name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
+        const marginRisks: { id: string; name: string; revenue: number; cost: number; marginPct: number }[] = [];
+        const burnRisks: { id: string; name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
 
         for (const p of activeProjects as any[]) {
           const rows = (projectExpenses || []).filter((e: any) =>
@@ -184,7 +196,7 @@ Deno.serve(async (req) => {
           if (contractRef > 0 && cost > 0) {
             const marginPct = (contractRef - cost) / contractRef;
             if (marginPct < 0.10) {
-              marginRisks.push({ name: p.name, revenue: contractRef, cost, marginPct });
+              marginRisks.push({ id: p.id, name: p.name, revenue: contractRef, cost, marginPct });
             }
           }
           const budget = Number(p.total_budget || 0);
@@ -197,7 +209,7 @@ Deno.serve(async (req) => {
               if (e > s) pctTime = Math.min(1, Math.max(0, (Date.now() - s) / (e - s)));
             }
             if (pctSpent > 0.85 && pctTime < 0.6) {
-              burnRisks.push({ name: p.name, spent: cost, budget, pctSpent, pctTime });
+              burnRisks.push({ id: p.id, name: p.name, spent: cost, budget, pctSpent, pctTime });
             }
           }
         }
@@ -207,14 +219,15 @@ Deno.serve(async (req) => {
           const pct = Math.round(m.marginPct * 100);
           const negative = m.marginPct < 0;
           candidates.push({
-            id: `project-margin-${m.name}`,
+            id: `project-margin-${m.id}`,
             type: "project_margin",
             priority: negative ? 95 : 85,
             factsHr: negative
               ? `Projekt "${m.name}" trenutno u gubitku: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} € (marža ${pct}%)`
               : `Projekt "${m.name}" ima nisku maržu ${pct}%: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} €`,
             followupHr: `Projekt "${m.name}" ima maržu ${pct}% (prihod ${m.revenue.toFixed(0)} €, trošak ${m.cost.toFixed(0)} €). Analiziraj koje kategorije troškova najviše jedu maržu i predloži korektivne akcije.`,
-            severity: "warning",
+            severity: negative ? "critical" : "warning",
+            action: { type: "open_project", target_id: m.id },
           });
         }
 
@@ -223,12 +236,13 @@ Deno.serve(async (req) => {
           const pctS = Math.round(b.pctSpent * 100);
           const pctT = Math.round(b.pctTime * 100);
           candidates.push({
-            id: `project-burn-${b.name}`,
+            id: `project-burn-${b.id}`,
             type: "project_budget_burn",
             priority: 80,
             factsHr: `Projekt "${b.name}" potrošio ${pctS}% budžeta (${b.spent.toFixed(2)} € / ${b.budget.toFixed(2)} €) iako je prošlo tek ${pctT}% vremena`,
             followupHr: `Projekt "${b.name}" je na ${pctS}% budžeta, a tek ${pctT}% vremena je prošlo. Pokaži mi najveće troškove i predloži kako zaustaviti curenje.`,
             severity: "warning",
+            action: { type: "open_project", target_id: b.id },
           });
         }
       }
@@ -257,13 +271,15 @@ Deno.serve(async (req) => {
 
       if (outflow > 0 && expectedInflow > 0 && outflow > expectedInflow * 0.9) {
         const gap = outflow - expectedInflow;
+        const isCritical = gap > expectedInflow * 0.5;
         candidates.push({
           id: "cashflow-risk-30d",
           type: "cashflow_risk",
-          priority: 90,
+          priority: isCritical ? 105 : 90,
           factsHr: `Sljedećih 30 dana: ${outflow.toFixed(2)} € predviđenih odljeva nasuprot ${expectedInflow.toFixed(2)} € priljeva (manjak ${gap.toFixed(2)} €)`,
           followupHr: `Sljedećih 30 dana predviđam ${outflow.toFixed(0)} € odljeva i samo ${expectedInflow.toFixed(0)} € priljeva. Pomozi mi prioritizirati troškove i pronaći način da pokrijem manjak.`,
-          severity: "warning",
+          severity: isCritical ? "critical" : "warning",
+          action: { type: "ask_ai" },
         });
       }
     } catch (e) { console.error("cashflow check failed", e); }
@@ -310,6 +326,7 @@ Deno.serve(async (req) => {
         factsHr: `Zadnjih 7 dana potrošio ${pctRound}% ${dir} na "${a.cat}" (${a.current.toFixed(2)} €) nego prethodnih 7 dana (${a.prev.toFixed(2)} €)`,
         followupHr: `Zašto sam zadnjih 7 dana potrošio ${pctRound}% ${dir} na kategoriju "${a.cat}" nego prethodnih 7 dana? Daj mi konkretnu analizu.`,
         severity: a.diff > 0 ? "warning" : "positive",
+        action: { type: "ask_ai" },
       });
     }
 
@@ -341,6 +358,7 @@ Deno.serve(async (req) => {
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesec ćeš završiti na ~${projection.toFixed(2)} €, što je ${positive ? "unutar" : "preko"} budžeta od ${monthBudget.toFixed(2)} € za ${Math.abs(overUnder).toFixed(2)} €`,
           followupHr: `Po trenutnom tempu mjesec završavam ~${projection.toFixed(0)} €, budžet je ${monthBudget.toFixed(0)} €. Što mogu napraviti da ostanem unutar budžeta?`,
           severity: positive ? "positive" : "warning",
+          action: { type: "ask_ai" },
         });
       } else {
         candidates.push({
@@ -350,6 +368,7 @@ Deno.serve(async (req) => {
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesečna projekcija je ~${projection.toFixed(2)} €`,
           followupHr: `Mjesečna projekcija mi je ~${projection.toFixed(0)} €. Je li to razumna razina za moj profil potrošnje? Predloži budžet.`,
           severity: "info",
+          action: { type: "ask_ai" },
         });
       }
     }
@@ -375,6 +394,7 @@ Deno.serve(async (req) => {
           factsHr: `${recurring.length} pretplata/recurring transakcija obnavlja se ovaj mjesec, ukupno ~${total.toFixed(2)} €`,
           followupHr: `Imam ${recurring.length} pretplata ovaj mjesec u ukupnom iznosu ${total.toFixed(0)} €. Pokaži mi detalje i predloži koje bih mogao otkazati.`,
           severity: "info",
+          action: { type: "ask_ai" },
         });
       }
     }
@@ -447,7 +467,7 @@ Deno.serve(async (req) => {
       console.error("AI gateway error:", aiResp.status, txt);
       // Fallback to raw HR facts
       const fallback: FinalInsight[] = top.map(c => ({
-        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity,
+        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity, action: c.action,
       }));
       return new Response(JSON.stringify({ insights: fallback, fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -469,6 +489,7 @@ Deno.serve(async (req) => {
       title: titles[i] || c.factsHr,
       prompt: c.followupHr,
       severity: c.severity,
+      action: c.action,
     }));
 
     // Upsert cache

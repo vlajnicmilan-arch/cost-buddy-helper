@@ -1,12 +1,12 @@
-import { Lightbulb, TrendingDown, TrendingUp, AlertTriangle, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
+import { Lightbulb, TrendingDown, TrendingUp, AlertTriangle, AlertCircle, Sparkles, CheckCircle2, FolderOpen, FileText, MessageCircle, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { clickableProps } from "@/lib/a11y";
-import type { AIInsight, AISeverity } from "@/hooks/useAIInsights";
+import type { AIInsight, AISeverity, AIInsightAction } from "@/hooks/useAIInsights";
 
 interface Props {
   insight: AIInsight;
-  onClick: (insight: AIInsight) => void;
+  onAction: (insight: AIInsight) => void;
 }
 
 const iconFor = (insight: AIInsight) => {
@@ -25,27 +25,41 @@ const SEVERITY: Record<AISeverity, { border: string; icon: string; bg: string }>
   positive: { border: "border-l-income",      icon: "text-income",      bg: "bg-income/5" },
 };
 
-export const AIInsightCard = ({ insight, onClick }: Props) => {
+const getActionMeta = (
+  action: AIInsightAction | undefined,
+  t: (k: string) => string,
+): { label: string; Icon: typeof FolderOpen } => {
+  switch (action?.type) {
+    case "open_project": return { label: t("attention.actions.openProject"), Icon: FolderOpen };
+    case "open_invoice": return { label: t("attention.actions.openInvoice"), Icon: FileText };
+    case "ask_ai":
+    default:             return { label: t("attention.actions.askAi"),       Icon: MessageCircle };
+  }
+};
+
+export const AIInsightCard = ({ insight, onAction }: Props) => {
   const { t } = useTranslation();
   const Icon = iconFor(insight);
   const sev = SEVERITY[insight.severity] ?? SEVERITY.info;
   const sourceLabel = insight.source === "local" ? t("attention.local") : t("attention.ai");
   const SourceIcon = insight.source === "local" ? CheckCircle2 : Sparkles;
+  const action = getActionMeta(insight.action, t);
+  const ActionIcon = action.Icon;
 
   return (
     <div
-      {...clickableProps(() => onClick(insight), {
+      {...clickableProps(() => onAction(insight), {
         label: insight.title,
         className: cn(
           "min-h-[44px] w-full rounded-xl px-3 py-2 text-left transition-colors",
           "border border-border/40 border-l-4",
           sev.border,
           sev.bg,
-          "hover:bg-muted/40 flex items-start gap-2.5",
+          "hover:bg-muted/40 flex items-center gap-2.5",
         ),
       })}
     >
-      <div className={cn("shrink-0 mt-0.5", sev.icon)}>
+      <div className={cn("shrink-0", sev.icon)}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
@@ -54,6 +68,17 @@ export const AIInsightCard = ({ insight, onClick }: Props) => {
           <SourceIcon className="w-2.5 h-2.5" />
           <span>{sourceLabel}</span>
         </p>
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "shrink-0 flex items-center gap-1 text-[11px] font-medium",
+          sev.icon,
+        )}
+      >
+        <ActionIcon className="w-3 h-3" />
+        <span className="hidden xs:inline">{action.label}</span>
+        <ChevronRight className="w-3 h-3 opacity-60" />
       </div>
     </div>
   );

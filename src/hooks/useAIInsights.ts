@@ -4,6 +4,11 @@ import { instantCache } from "@/lib/instantCache";
 
 export type AISeverity = "info" | "positive" | "warning" | "critical";
 
+export type AIInsightAction =
+  | { type: "open_project"; target_id: string }
+  | { type: "open_invoice"; target_id: string }
+  | { type: "ask_ai" };
+
 export interface AIInsight {
   id: string;
   type: string;
@@ -11,6 +16,7 @@ export interface AIInsight {
   prompt: string;
   severity: AISeverity;
   source?: "ai" | "local";
+  action?: AIInsightAction;
 }
 
 interface State {
