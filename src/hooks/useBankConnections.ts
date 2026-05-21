@@ -90,6 +90,11 @@ export const useBankConnections = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['bank-connections'] });
       qc.invalidateQueries({ queryKey: ['bank-accounts'] });
+      // Invalidiraj bank-linked cache koji koristi useExpenseCRUD za odluku
+      // pending_bank vs manual prilikom novog unosa.
+      import('@/lib/bankLinkedSources').then(({ invalidateBankLinkedSourceIds }) => {
+        invalidateBankLinkedSourceIds();
+      });
     },
   });
 
