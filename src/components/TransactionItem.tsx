@@ -5,7 +5,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
