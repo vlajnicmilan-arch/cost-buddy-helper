@@ -3,7 +3,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle, CreditCard, Camera } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import React, { useMemo, useRef } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
