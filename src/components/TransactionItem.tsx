@@ -38,6 +38,8 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const [duplicateSheetOpen, setDuplicateSheetOpen] = useState(false);
+
 
   // Resolve category: check custom categories first, then system ones
   const category = useMemo(() => {
