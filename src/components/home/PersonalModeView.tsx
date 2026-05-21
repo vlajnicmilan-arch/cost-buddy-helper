@@ -370,7 +370,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             contextLookup={props.contextLookup}
             allCards={props.allCards}
             showScopeFilter={!props.isLocalMode}
-            className="lg:col-span-2"
+            className={v2 ? "" : "lg:col-span-2"}
             dataTutorial="transactions"
           />
 
