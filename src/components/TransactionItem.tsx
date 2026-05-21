@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { TransferTransactionItem } from './TransferTransactionItem';
+import { BankDuplicateSheet } from './bank/BankDuplicateSheet';
+import { useState } from 'react';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
