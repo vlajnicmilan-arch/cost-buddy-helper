@@ -13,6 +13,7 @@ import { PulseAISummary } from './PulseAISummary';
 import { PulseTopIssuesSection } from './PulseTopIssuesSection';
 import { PulseActivationFunnel } from './PulseActivationFunnel';
 import { PulseFunnelEvents } from './PulseFunnelEvents';
+import { PulseDashboardSections } from './PulseDashboardSections';
 import { SentryControlsCard } from './SentryControlsCard';
 
 export const PulseTab = () => {
@@ -48,6 +49,9 @@ export const PulseTab = () => {
       />
 
       <PulseFunnelEvents />
+
+      <PulseDashboardSections />
+
 
       <PulseActivationFunnel />
 

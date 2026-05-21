@@ -4769,6 +4769,23 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_dashboard_scroll_distribution: {
+        Args: { p_days?: number }
+        Returns: {
+          depth: number
+          hits: number
+          unique_users: number
+        }[]
+      }
+      get_dashboard_section_stats: {
+        Args: { p_days?: number }
+        Returns: {
+          clicks: number
+          section: string
+          unique_users: number
+          views: number
+        }[]
+      }
       get_founding_member_count: { Args: never; Returns: number }
       get_next_founding_member_number: { Args: never; Returns: number }
       has_full_payment_source_access: {
