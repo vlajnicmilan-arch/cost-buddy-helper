@@ -7,6 +7,11 @@
     "empty": "All clear",
     "ai": "AI",
     "local": "Check",
+    "actions": {
+      "openProject": "Open",
+      "openInvoice": "Invoice",
+      "askAi": "Ask AI"
+    },
     "dataQuality": {
       "uncategorized": "{{count}} expenses without description in last 30 days",
       "uncategorizedPrompt": "Which expenses from the last 30 days need a description?"
