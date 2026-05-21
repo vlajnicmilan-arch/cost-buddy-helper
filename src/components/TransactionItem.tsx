@@ -441,6 +441,8 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.currency === next.expense.currency &&
     prev.expense.receipt_url === next.expense.receipt_url &&
     prev.expense.date.getTime() === next.expense.date.getTime() &&
+    prev.expense.bank_match_status === next.expense.bank_match_status &&
+    prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
     prev.onClick === next.onClick
