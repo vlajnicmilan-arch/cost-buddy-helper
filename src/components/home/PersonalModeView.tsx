@@ -344,7 +344,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={v2 ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
           <TransactionListSection
             transactionsOpen={props.transactionsOpen}
             onTransactionsOpenChange={props.onTransactionsOpenChange}
