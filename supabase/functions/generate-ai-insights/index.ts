@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     try {
       const { data: overdue } = await admin
         .from("project_invoices")
-        .select("id, invoice_number, total_amount, currency, due_date, client_name, status")
+        .select("id, invoice_number, total_amount, currency, due_date, client_name, status, project_id")
         .eq("user_id", user.id)
         .is("deleted_at", null)
         .in("status", ["issued", "sent", "overdue"])
@@ -146,13 +146,18 @@ Deno.serve(async (req) => {
         const oldest = overdue.reduce((a: any, b: any) =>
           new Date(a.due_date) < new Date(b.due_date) ? a : b);
         const daysLate = Math.floor((Date.now() - new Date(oldest.due_date).getTime()) / 86400000);
+        const isCritical = daysLate > 60 || overdue.length >= 5;
+        const action: InsightAction = oldest.project_id
+          ? { type: "open_project", target_id: oldest.project_id }
+          : { type: "ask_ai" };
         candidates.push({
           id: "invoice-overdue",
           type: "invoice_overdue",
-          priority: 100,
+          priority: isCritical ? 110 : 100,
           factsHr: `${overdue.length} faktura van valute, ukupno ${total.toFixed(2)} ${cur}. Najstarija (${oldest.invoice_number}, ${oldest.client_name}) kasni ${daysLate} dana`,
           followupHr: `Imam ${overdue.length} neplaćenih faktura ukupno ${total.toFixed(0)} ${cur}. Predloži mi konkretne sljedeće korake naplate i prioritet po klijentu.`,
-          severity: "warning",
+          severity: isCritical ? "critical" : "warning",
+          action,
         });
       }
     } catch (e) { console.error("overdue check failed", e); }
