@@ -188,6 +188,8 @@ export const SummarySection = React.memo(({
         </motion.div>
       </div>
 
+      {!compact && (
+      <>
       {/* Transfers Summary */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
