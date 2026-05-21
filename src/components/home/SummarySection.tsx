@@ -118,6 +118,7 @@ export const SummarySection = React.memo(({
             {formatAmount(netWorth)}
           </p>
         </motion.div>
+        </>
         )}
 
         <motion.div
