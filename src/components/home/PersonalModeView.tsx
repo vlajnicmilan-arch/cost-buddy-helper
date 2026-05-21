@@ -360,34 +360,35 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Main Content Grid */}
         <div className={v2 ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
-          <TransactionListSection
-            transactionsOpen={props.transactionsOpen}
-            onTransactionsOpenChange={props.onTransactionsOpenChange}
-            filters={props.dashboardFilters}
-            onFiltersChange={props.onDashboardFiltersChange}
-            filteredExpenses={props.filteredDashboardExpenses}
-            totalExpensesCount={props.expenses.length}
-            monthlyTransactionsCount={props.monthlyTransactionsCount}
-            expensesLoading={props.expensesLoading}
-            visibleCount={props.visibleCount}
-            onShowMore={props.onShowMore}
-            selectedTransactionIds={props.selectedTransactionIds}
-            onToggleSelect={props.onToggleSelect}
-            onSelectAll={props.onSelectAll}
-            onClearSelection={props.onClearSelection}
-            onBulkCategoryChange={props.onBulkCategoryChange}
-            onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
-            onBulkBudgetChange={props.onBulkBudgetChange}
-            onBulkProjectChange={props.onBulkProjectChange}
-            onBulkDelete={props.onBulkDelete}
-            onTransactionClick={props.onTransactionClick}
-            onDeleteExpense={props.onDeleteExpense}
-            contextLookup={props.contextLookup}
-            allCards={props.allCards}
-            showScopeFilter={!props.isLocalMode}
-            className={v2 ? "" : "lg:col-span-2"}
-            dataTutorial="transactions"
-          />
+          <TrackSection name="transactions" className={v2 ? "" : "lg:col-span-2"}>
+            <TransactionListSection
+              transactionsOpen={props.transactionsOpen}
+              onTransactionsOpenChange={props.onTransactionsOpenChange}
+              filters={props.dashboardFilters}
+              onFiltersChange={props.onDashboardFiltersChange}
+              filteredExpenses={props.filteredDashboardExpenses}
+              totalExpensesCount={props.expenses.length}
+              monthlyTransactionsCount={props.monthlyTransactionsCount}
+              expensesLoading={props.expensesLoading}
+              visibleCount={props.visibleCount}
+              onShowMore={props.onShowMore}
+              selectedTransactionIds={props.selectedTransactionIds}
+              onToggleSelect={props.onToggleSelect}
+              onSelectAll={props.onSelectAll}
+              onClearSelection={props.onClearSelection}
+              onBulkCategoryChange={props.onBulkCategoryChange}
+              onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
+              onBulkBudgetChange={props.onBulkBudgetChange}
+              onBulkProjectChange={props.onBulkProjectChange}
+              onBulkDelete={props.onBulkDelete}
+              onTransactionClick={props.onTransactionClick}
+              onDeleteExpense={props.onDeleteExpense}
+              contextLookup={props.contextLookup}
+              allCards={props.allCards}
+              showScopeFilter={!props.isLocalMode}
+              dataTutorial="transactions"
+            />
+          </TrackSection>
 
           {/* QuickLinks — V1 only (BottomNav covers this in V2) */}
           {!v2 && (
