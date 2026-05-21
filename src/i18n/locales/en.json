@@ -914,6 +914,21 @@
       "enableModule": "Enable module"
     }
   },
+  "bankMatch": {
+    "pendingBank": "Awaiting bank confirmation",
+    "confirmed": "Confirmed by bank",
+    "maybeDuplicate": "Possible duplicate",
+    "duplicateTitle": "Review possible duplicate",
+    "duplicateDescription": "A bank transaction looks like an existing one. Merge them or confirm they're different.",
+    "bankTransaction": "Bank transaction",
+    "existingTransaction": "Existing transaction",
+    "merge": "Merge",
+    "notSame": "Not the same",
+    "merged": "Transactions merged",
+    "mergeError": "Merge failed",
+    "dismissed": "Marked as different",
+    "dismissError": "Action failed"
+  },
   "transactions": {
     "title": "Transactions",
     "expense": "Expense",
