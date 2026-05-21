@@ -914,6 +914,21 @@
       "enableModule": "Uključi modul"
     }
   },
+  "bankMatch": {
+    "pendingBank": "Čeka potvrdu banke",
+    "confirmed": "Potvrđeno bankom",
+    "maybeDuplicate": "Možda duplikat",
+    "duplicateTitle": "Provjeri duplikat",
+    "duplicateDescription": "Bankovna transakcija liči na već postojeću. Spoji ih u jednu ili potvrdi da nisu iste.",
+    "bankTransaction": "Bankovna transakcija",
+    "existingTransaction": "Postojeća transakcija",
+    "merge": "Spoji",
+    "notSame": "Nisu isto",
+    "merged": "Transakcije spojene",
+    "mergeError": "Spajanje nije uspjelo",
+    "dismissed": "Označeno kao različito",
+    "dismissError": "Akcija nije uspjela"
+  },
   "transactions": {
     "title": "Transakcije",
     "expense": "Trošak",
