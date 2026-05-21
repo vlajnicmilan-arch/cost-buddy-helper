@@ -261,6 +261,8 @@ export const SummarySection = React.memo(({
           </div>
         </motion.div>
       )}
+      </>
+      )}
     </>
   );
 });
