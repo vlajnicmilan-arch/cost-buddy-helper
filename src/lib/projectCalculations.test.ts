@@ -206,12 +206,14 @@ describe('calculateNetExpenseAmount — advance/invoice netting', () => {
     expect(calculateNetExpenseAmount(invoice, [invoice])).toBe(3640);
   });
 
-  it('full project sum: advance + invoice nets to invoice total', () => {
+  it('full project sum: advance + invoice nets correctly (no double-count)', () => {
+    // advance(linked)=0 + invoice(3640-500)=3140 → total 3140 (not 4140)
     const advance = exp({ id: 'a1', amount: 500, is_advance: true });
     const invoice = exp({ id: 'inv', amount: 3640, linked_advance_ids: ['a1'] });
-    expect(calculateProjectSpent([advance, invoice])).toBe(3640);
+    expect(calculateProjectSpent([advance, invoice])).toBe(3140);
   });
 });
+
 
 describe('calculateContractValue', () => {
   it('returns 0 for null/undefined project', () => {
