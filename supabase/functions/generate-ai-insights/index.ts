@@ -358,6 +358,7 @@ Deno.serve(async (req) => {
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesec ćeš završiti na ~${projection.toFixed(2)} €, što je ${positive ? "unutar" : "preko"} budžeta od ${monthBudget.toFixed(2)} € za ${Math.abs(overUnder).toFixed(2)} €`,
           followupHr: `Po trenutnom tempu mjesec završavam ~${projection.toFixed(0)} €, budžet je ${monthBudget.toFixed(0)} €. Što mogu napraviti da ostanem unutar budžeta?`,
           severity: positive ? "positive" : "warning",
+          action: { type: "ask_ai" },
         });
       } else {
         candidates.push({
@@ -367,6 +368,7 @@ Deno.serve(async (req) => {
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesečna projekcija je ~${projection.toFixed(2)} €`,
           followupHr: `Mjesečna projekcija mi je ~${projection.toFixed(0)} €. Je li to razumna razina za moj profil potrošnje? Predloži budžet.`,
           severity: "info",
+          action: { type: "ask_ai" },
         });
       }
     }
