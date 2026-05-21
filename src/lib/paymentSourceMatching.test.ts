@@ -21,7 +21,7 @@ describe('matchCustomByMethod', () => {
 
   it('is case-insensitive and strips diacritics', () => {
     expect(matchCustomByMethod('cash', [src('GOTOVINA')])?.name).toBe('GOTOVINA');
-    expect(matchCustomByMethod('bank', [src('ŽirorAčun')])?.name).toBe('Žirorčun');
+    expect(matchCustomByMethod('bank', [src('ŽirorAčun')])?.name).toBe('ŽirorAčun');
   });
 
   it('matches card synonyms (visa, maestro, kreditna…)', () => {
