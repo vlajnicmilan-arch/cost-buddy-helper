@@ -394,6 +394,7 @@ Deno.serve(async (req) => {
           factsHr: `${recurring.length} pretplata/recurring transakcija obnavlja se ovaj mjesec, ukupno ~${total.toFixed(2)} €`,
           followupHr: `Imam ${recurring.length} pretplata ovaj mjesec u ukupnom iznosu ${total.toFixed(0)} €. Pokaži mi detalje i predloži koje bih mogao otkazati.`,
           severity: "info",
+          action: { type: "ask_ai" },
         });
       }
     }
