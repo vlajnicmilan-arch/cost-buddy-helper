@@ -37,6 +37,7 @@ export const NotificationsSection = ({
   pushEnabled, onPushToggle,
   aiAssistantEnabled, onAiAssistantChange,
   simpleModeEnabled, onSimpleModeChange,
+  classicDashboard, onClassicDashboardChange,
   familyModeEnabled, onFamilyModeToggle,
   businessModeEnabled, onBusinessModeChange,
   onShowBusinessProfile, isLocalMode
