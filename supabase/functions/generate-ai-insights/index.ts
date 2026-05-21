@@ -13,13 +13,19 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
+type InsightAction =
+  | { type: "open_project"; target_id: string }
+  | { type: "open_invoice"; target_id: string }
+  | { type: "ask_ai" };
+
 interface InsightCandidate {
   id: string;
   type: "anomaly" | "projection" | "recurring" | "info" | "invoice_overdue" | "project_margin" | "cashflow_risk" | "project_budget_burn";
   priority: number; // higher first; operational > anomaly > projection > recurring
   factsHr: string;
   followupHr: string;
-  severity: "info" | "positive" | "warning";
+  severity: "info" | "positive" | "warning" | "critical";
+  action: InsightAction;
 }
 
 interface FinalInsight {
@@ -28,6 +34,7 @@ interface FinalInsight {
   title: string;
   prompt: string;
   severity: string;
+  action: InsightAction;
 }
 
 const startOfMonthUTC = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
