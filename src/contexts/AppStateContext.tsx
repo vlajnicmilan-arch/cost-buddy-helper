@@ -274,6 +274,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const setDashboardV2Enabled = useCallback((enabled: boolean) => {
+    setDashboardV2EnabledState(enabled);
+    localStorage.setItem('dashboard_v2_enabled', enabled.toString());
+  }, []);
+
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
