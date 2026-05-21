@@ -467,7 +467,7 @@ Deno.serve(async (req) => {
       console.error("AI gateway error:", aiResp.status, txt);
       // Fallback to raw HR facts
       const fallback: FinalInsight[] = top.map(c => ({
-        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity,
+        id: c.id, type: c.type, title: c.factsHr, prompt: c.followupHr, severity: c.severity, action: c.action,
       }));
       return new Response(JSON.stringify({ insights: fallback, fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -489,6 +489,7 @@ Deno.serve(async (req) => {
       title: titles[i] || c.factsHr,
       prompt: c.followupHr,
       severity: c.severity,
+      action: c.action,
     }));
 
     // Upsert cache
