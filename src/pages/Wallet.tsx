@@ -20,6 +20,11 @@ import { motion } from 'framer-motion';
 import { useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { SavingsGoalsSection } from '@/components/savings';
+import { CashflowForecast } from '@/components/CashflowForecast';
+import { useAppState } from '@/contexts/AppStateContext';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 
 const Wallet = () => {
   const { t } = useTranslation();
