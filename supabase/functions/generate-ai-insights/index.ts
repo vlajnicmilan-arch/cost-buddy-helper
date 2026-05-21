@@ -110,7 +110,11 @@ Deno.serve(async (req) => {
       if (cached) {
         const drift = Math.abs((personalExpenseCount - (cached.expense_count_at_generation || 0)) /
           Math.max(1, cached.expense_count_at_generation || 1));
-        if (drift < 0.2 && cached.language === language) {
+        const cachedInsights = Array.isArray(cached.insights) ? cached.insights : [];
+        // Invalidate cache from before Phase B (insights without `action` field)
+        const hasActionShape = cachedInsights.length === 0 ||
+          cachedInsights.every((i: any) => i && typeof i.action === "object" && typeof i.action.type === "string");
+        if (drift < 0.2 && cached.language === language && hasActionShape) {
           return new Response(JSON.stringify({ insights: cached.insights, cached: true }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
