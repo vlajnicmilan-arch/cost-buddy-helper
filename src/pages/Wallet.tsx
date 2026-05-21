@@ -32,6 +32,7 @@ const Wallet = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
+  const { dashboardV2Enabled } = useAppState();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
