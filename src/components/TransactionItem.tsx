@@ -407,6 +407,11 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </motion.div>
+      <BankDuplicateSheet
+        open={duplicateSheetOpen}
+        bankExpense={duplicateSheetOpen ? expense : null}
+        onClose={() => setDuplicateSheetOpen(false)}
+      />
     </div>
   );
 };
