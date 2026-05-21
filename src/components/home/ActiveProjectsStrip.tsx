@@ -2,14 +2,30 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { FolderKanban, Plus, ChevronRight, Wallet } from 'lucide-react';
+import { FolderKanban, Plus, ChevronRight, Wallet, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
+import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLine';
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
+
+const STATUS_ICON_MAP = {
+  Sparkles,
+  Clock,
+  Pause,
+  Info,
+  AlertCircle,
+} as const;
+
+const STATUS_TONE_CLASS: Record<StatusLineTone, string> = {
+  success: 'text-income',
+  info: 'text-primary',
+  warning: 'text-warning',
+  muted: 'text-muted-foreground',
+};
 
 interface ActiveProjectsStripProps {
   projects: ProjectWithOwnership[];
