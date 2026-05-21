@@ -140,8 +140,9 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { usageProfile, activeBusinessProfileId } = useAppState();
+  const { usageProfile, activeBusinessProfileId, dashboardV2Enabled } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
+  const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
