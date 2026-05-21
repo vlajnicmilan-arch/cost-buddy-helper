@@ -35,6 +35,10 @@ interface AppStateContextValue {
   // Usage profile: 'finance_only' | 'finance_projects' | null (legacy)
   usageProfile: UsageProfile;
   setUsageProfile: (p: UsageProfile) => void;
+  // Dashboard V2 layout (refocused: hero=projects-or-balance, no cashflow/savings/quicklinks
+  // on home). Default ON; opt-out via Settings → "Klasični prikaz".
+  dashboardV2Enabled: boolean;
+  setDashboardV2Enabled: (enabled: boolean) => void;
   appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
