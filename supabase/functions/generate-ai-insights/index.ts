@@ -181,8 +181,8 @@ Deno.serve(async (req) => {
           .in("project_id", projectIds)
           .eq("user_id", user.id);
 
-        const marginRisks: { name: string; revenue: number; cost: number; marginPct: number }[] = [];
-        const burnRisks: { name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
+        const marginRisks: { id: string; name: string; revenue: number; cost: number; marginPct: number }[] = [];
+        const burnRisks: { id: string; name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
 
         for (const p of activeProjects as any[]) {
           const rows = (projectExpenses || []).filter((e: any) =>
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
           if (contractRef > 0 && cost > 0) {
             const marginPct = (contractRef - cost) / contractRef;
             if (marginPct < 0.10) {
-              marginRisks.push({ name: p.name, revenue: contractRef, cost, marginPct });
+              marginRisks.push({ id: p.id, name: p.name, revenue: contractRef, cost, marginPct });
             }
           }
           const budget = Number(p.total_budget || 0);
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
               if (e > s) pctTime = Math.min(1, Math.max(0, (Date.now() - s) / (e - s)));
             }
             if (pctSpent > 0.85 && pctTime < 0.6) {
-              burnRisks.push({ name: p.name, spent: cost, budget, pctSpent, pctTime });
+              burnRisks.push({ id: p.id, name: p.name, spent: cost, budget, pctSpent, pctTime });
             }
           }
         }
@@ -219,14 +219,15 @@ Deno.serve(async (req) => {
           const pct = Math.round(m.marginPct * 100);
           const negative = m.marginPct < 0;
           candidates.push({
-            id: `project-margin-${m.name}`,
+            id: `project-margin-${m.id}`,
             type: "project_margin",
             priority: negative ? 95 : 85,
             factsHr: negative
               ? `Projekt "${m.name}" trenutno u gubitku: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} € (marža ${pct}%)`
               : `Projekt "${m.name}" ima nisku maržu ${pct}%: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} €`,
             followupHr: `Projekt "${m.name}" ima maržu ${pct}% (prihod ${m.revenue.toFixed(0)} €, trošak ${m.cost.toFixed(0)} €). Analiziraj koje kategorije troškova najviše jedu maržu i predloži korektivne akcije.`,
-            severity: "warning",
+            severity: negative ? "critical" : "warning",
+            action: { type: "open_project", target_id: m.id },
           });
         }
 
@@ -235,12 +236,13 @@ Deno.serve(async (req) => {
           const pctS = Math.round(b.pctSpent * 100);
           const pctT = Math.round(b.pctTime * 100);
           candidates.push({
-            id: `project-burn-${b.name}`,
+            id: `project-burn-${b.id}`,
             type: "project_budget_burn",
             priority: 80,
             factsHr: `Projekt "${b.name}" potrošio ${pctS}% budžeta (${b.spent.toFixed(2)} € / ${b.budget.toFixed(2)} €) iako je prošlo tek ${pctT}% vremena`,
             followupHr: `Projekt "${b.name}" je na ${pctS}% budžeta, a tek ${pctT}% vremena je prošlo. Pokaži mi najveće troškove i predloži kako zaustaviti curenje.`,
             severity: "warning",
+            action: { type: "open_project", target_id: b.id },
           });
         }
       }
