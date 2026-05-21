@@ -18,6 +18,8 @@ import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { AIInsightsSection } from '@/components/dashboard/AIInsightsSection';
+import { TrackSection } from '@/components/dashboard/TrackSection';
+import { useDashboardScrollDepth } from '@/hooks/useDashboardScrollDepth';
 import { BottomNav } from '@/components/BottomNav';
 import { ActiveProjectsStrip } from '@/components/home/ActiveProjectsStrip';
 import { ProjectWithOwnership } from '@/types/project';
@@ -150,6 +152,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
 
+  // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
+  useDashboardScrollDepth(v2);
+
   // Register this page's add/dup handlers so the global scan dialog
   // dispatches saves to the right place when the user is on Home.
   useEffect(() => {
@@ -238,60 +243,70 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
         {v2 && !projectsHidden && (
-          <ActiveProjectsStrip
-            projects={props.projects}
-            isLocalMode={props.isLocalMode}
-            simpleModeEnabled={props.simpleModeEnabled}
-            isBusinessMode={props.isBusinessMode}
-            loading={props.expensesLoading}
-          />
+          <TrackSection name="projects_hero">
+            <ActiveProjectsStrip
+              projects={props.projects}
+              isLocalMode={props.isLocalMode}
+              simpleModeEnabled={props.simpleModeEnabled}
+              isBusinessMode={props.isBusinessMode}
+              loading={props.expensesLoading}
+            />
+          </TrackSection>
         )}
 
         {/* Payment Sources */}
-        <PaymentSourcesSection
-          customPaymentSources={props.customPaymentSources}
-          onSourceClick={props.onPaymentSourceClick}
-        />
+        <TrackSection name="payment_sources">
+          <PaymentSourcesSection
+            customPaymentSources={props.customPaymentSources}
+            onSourceClick={props.onPaymentSourceClick}
+          />
+        </TrackSection>
 
         {/* V1: Active Projects below sources */}
         {!v2 && !projectsHidden && (
-          <ActiveProjectsStrip
-            projects={props.projects}
-            isLocalMode={props.isLocalMode}
-            simpleModeEnabled={props.simpleModeEnabled}
-            isBusinessMode={props.isBusinessMode}
-            loading={props.expensesLoading}
-          />
+          <TrackSection name="projects_strip">
+            <ActiveProjectsStrip
+              projects={props.projects}
+              isLocalMode={props.isLocalMode}
+              simpleModeEnabled={props.simpleModeEnabled}
+              isBusinessMode={props.isBusinessMode}
+              loading={props.expensesLoading}
+            />
+          </TrackSection>
         )}
 
         {/* Summary Cards — compact in V2 (only month income+expense) */}
-        <SummarySection
-          balance={accountBalance}
-          netWorth={props.netWorth}
-          totalIncome={props.totalIncome}
-          totalExpenses={props.totalExpenses}
-          totalTransfers={props.totalTransfers}
-          monthlyTransfers={props.monthlyTransfers}
-          monthlyTransferCount={props.monthlyTransferCount}
-          allTransfers={props.allTransfers}
-          recurringCount={props.activeRecurringCount}
-          isLocalMode={props.isLocalMode}
-          simpleModeEnabled={props.simpleModeEnabled}
-          prevMonthIncome={props.prevMonthIncome ?? 0}
-          prevMonthExpenses={props.prevMonthExpenses ?? 0}
-          curMonthIncome={props.curMonthIncome ?? 0}
-          curMonthExpenses={props.curMonthExpenses ?? 0}
-          onIncomeClick={() => props.onIncomeDialogChange(true)}
-          onExpenseClick={() => props.onExpenseDialogChange(true)}
-          onTransferClick={() => props.onTransferDialogChange(true)}
-          onRecurringClick={props.onRecurringPanelOpen}
-          compact={v2}
-        />
+        <TrackSection name="summary">
+          <SummarySection
+            balance={accountBalance}
+            netWorth={props.netWorth}
+            totalIncome={props.totalIncome}
+            totalExpenses={props.totalExpenses}
+            totalTransfers={props.totalTransfers}
+            monthlyTransfers={props.monthlyTransfers}
+            monthlyTransferCount={props.monthlyTransferCount}
+            allTransfers={props.allTransfers}
+            recurringCount={props.activeRecurringCount}
+            isLocalMode={props.isLocalMode}
+            simpleModeEnabled={props.simpleModeEnabled}
+            prevMonthIncome={props.prevMonthIncome ?? 0}
+            prevMonthExpenses={props.prevMonthExpenses ?? 0}
+            curMonthIncome={props.curMonthIncome ?? 0}
+            curMonthExpenses={props.curMonthExpenses ?? 0}
+            onIncomeClick={() => props.onIncomeDialogChange(true)}
+            onExpenseClick={() => props.onExpenseDialogChange(true)}
+            onTransferClick={() => props.onTransferDialogChange(true)}
+            onRecurringClick={props.onRecurringPanelOpen}
+            compact={v2}
+          />
+        </TrackSection>
 
 
         {/* AI Insights — daily, deterministic + AI-formulated */}
         {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
-          <AIInsightsSection enabled={props.allExpenses.length >= 10} />
+          <TrackSection name="ai_insights">
+            <AIInsightsSection enabled={props.allExpenses.length >= 10} />
+          </TrackSection>
         )}
 
         {/* Owner-loan / business debts strip — only in business chip view */}
@@ -345,34 +360,35 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Main Content Grid */}
         <div className={v2 ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
-          <TransactionListSection
-            transactionsOpen={props.transactionsOpen}
-            onTransactionsOpenChange={props.onTransactionsOpenChange}
-            filters={props.dashboardFilters}
-            onFiltersChange={props.onDashboardFiltersChange}
-            filteredExpenses={props.filteredDashboardExpenses}
-            totalExpensesCount={props.expenses.length}
-            monthlyTransactionsCount={props.monthlyTransactionsCount}
-            expensesLoading={props.expensesLoading}
-            visibleCount={props.visibleCount}
-            onShowMore={props.onShowMore}
-            selectedTransactionIds={props.selectedTransactionIds}
-            onToggleSelect={props.onToggleSelect}
-            onSelectAll={props.onSelectAll}
-            onClearSelection={props.onClearSelection}
-            onBulkCategoryChange={props.onBulkCategoryChange}
-            onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
-            onBulkBudgetChange={props.onBulkBudgetChange}
-            onBulkProjectChange={props.onBulkProjectChange}
-            onBulkDelete={props.onBulkDelete}
-            onTransactionClick={props.onTransactionClick}
-            onDeleteExpense={props.onDeleteExpense}
-            contextLookup={props.contextLookup}
-            allCards={props.allCards}
-            showScopeFilter={!props.isLocalMode}
-            className={v2 ? "" : "lg:col-span-2"}
-            dataTutorial="transactions"
-          />
+          <TrackSection name="transactions" className={v2 ? "" : "lg:col-span-2"}>
+            <TransactionListSection
+              transactionsOpen={props.transactionsOpen}
+              onTransactionsOpenChange={props.onTransactionsOpenChange}
+              filters={props.dashboardFilters}
+              onFiltersChange={props.onDashboardFiltersChange}
+              filteredExpenses={props.filteredDashboardExpenses}
+              totalExpensesCount={props.expenses.length}
+              monthlyTransactionsCount={props.monthlyTransactionsCount}
+              expensesLoading={props.expensesLoading}
+              visibleCount={props.visibleCount}
+              onShowMore={props.onShowMore}
+              selectedTransactionIds={props.selectedTransactionIds}
+              onToggleSelect={props.onToggleSelect}
+              onSelectAll={props.onSelectAll}
+              onClearSelection={props.onClearSelection}
+              onBulkCategoryChange={props.onBulkCategoryChange}
+              onBulkPaymentSourceChange={props.onBulkPaymentSourceChange}
+              onBulkBudgetChange={props.onBulkBudgetChange}
+              onBulkProjectChange={props.onBulkProjectChange}
+              onBulkDelete={props.onBulkDelete}
+              onTransactionClick={props.onTransactionClick}
+              onDeleteExpense={props.onDeleteExpense}
+              contextLookup={props.contextLookup}
+              allCards={props.allCards}
+              showScopeFilter={!props.isLocalMode}
+              dataTutorial="transactions"
+            />
+          </TrackSection>
 
           {/* QuickLinks — V1 only (BottomNav covers this in V2) */}
           {!v2 && (
