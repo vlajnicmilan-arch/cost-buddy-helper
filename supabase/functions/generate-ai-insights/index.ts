@@ -268,8 +268,8 @@ Deno.serve(async (req) => {
       }
     } catch (e) { console.error("cashflow check failed", e); }
 
-    // ===== EXISTING PERSONAL CANDIDATES (lower priority) =====
-
+    // ===== EXISTING PERSONAL CANDIDATES (lower priority, only if enough personal signal) =====
+    if (hasPersonalSignal) {
     // 1) Week-over-week anomaly per category
     const last7 = new Date(); last7.setUTCDate(last7.getUTCDate() - 7);
     const prev7Start = new Date(); prev7Start.setUTCDate(prev7Start.getUTCDate() - 14);
@@ -278,6 +278,7 @@ Deno.serve(async (req) => {
     const sumByCat = (from: Date, to: Date) => {
       const map = new Map<string, number>();
       for (const e of personalExpenses) {
+        if (e.type !== "expense") continue;
         const d = new Date(e.date);
         if (d >= from && d < to) {
           map.set(e.category, (map.get(e.category) || 0) + Number(e.amount));
@@ -352,6 +353,8 @@ Deno.serve(async (req) => {
         });
       }
     }
+    } // end hasPersonalSignal
+
 
     // 3) Recurring count fallback
     if (candidates.length < 3) {
