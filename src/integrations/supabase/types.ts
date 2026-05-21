@@ -1001,6 +1001,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_telemetry: {
+        Row: {
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          platform: string | null
+          section: string
+          session_id: string | null
+          user_id: string | null
+          value: number | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          platform?: string | null
+          section: string
+          session_id?: string | null
+          user_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          platform?: string | null
+          section?: string
+          session_id?: string | null
+          user_id?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       dpa_requests: {
         Row: {
           company_address: string | null
