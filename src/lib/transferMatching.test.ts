@@ -42,7 +42,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('resolves custom UUID directly (without "custom:" prefix)', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'uuid-1', income_source_id: 'uuid-2' }),
+      makeTransfer({ payment_source: 'uuid-1' as any, income_source_id: 'uuid-2' }),
       customSources
     );
     expect(r?.from.name).toBe('Erste tekući');
@@ -52,7 +52,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('resolves "custom:UUID" prefixed format', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'custom:uuid-2', income_source_id: 'custom:uuid-1' }),
+      makeTransfer({ payment_source: 'custom:uuid-2' as any, income_source_id: 'custom:uuid-1' }),
       customSources
     );
     expect(r?.from.name).toBe('Revolut');
@@ -80,7 +80,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('unknown ids fall back to cash', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'unknown-x', income_source_id: 'also-unknown' }),
+      makeTransfer({ payment_source: 'unknown-x' as any, income_source_id: 'also-unknown' }),
       customSources
     );
     expect(r?.from.name).toBe('Gotovina');
