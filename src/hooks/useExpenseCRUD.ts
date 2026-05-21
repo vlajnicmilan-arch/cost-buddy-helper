@@ -116,7 +116,7 @@ export const useExpenseCRUD = ({
           (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
         );
         const bankMatchStatus = getInitialBankMatchStatus({
-          source: normalizedExpense.ai_extracted ? 'ocr' : 'manual',
+          source: entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual'),
           paymentSource: normalizedExpense.payment_source,
           bankLinkedSourceIds,
         });
