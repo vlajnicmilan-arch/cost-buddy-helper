@@ -321,7 +321,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
 
-        {/* Cashflow Forecast */}
+        {/* Cashflow Forecast — V1 only (moved to Wallet tab in V2) */}
+        {!v2 && (
         <Collapsible className="group mb-3">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
             <CollapsibleTrigger asChild>
@@ -340,6 +341,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             </CollapsibleContent>
           </div>
         </Collapsible>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
