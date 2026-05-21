@@ -100,10 +100,14 @@ describe('localMatch — backward date logic', () => {
     expect(m).not.toBeNull();
   });
 
-  it('rejects dates more than 5 days from any due date', () => {
+  it('returns medium confidence (not null) when date is far from any due date', () => {
+    // Date proximity is a confidence booster only — it does not reject the match
     const tx = { description: 'Netflix', amount: 12.99, type: 'expense', date: '2026-05-01' };
-    expect(localMatch(tx, [rec({ next_due_date: '2026-06-15', frequency: 'monthly' })])).toBeNull();
+    const m = localMatch(tx, [rec({ next_due_date: '2026-06-15', frequency: 'monthly' })]);
+    expect(m).not.toBeNull();
+    expect(m?.confidence).toBe('medium');
   });
+
 
   it('downgrades to medium confidence when date is far from due', () => {
     // No next_due_date → dateClose stays false → medium even with exact desc+amount
