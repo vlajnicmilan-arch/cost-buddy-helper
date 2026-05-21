@@ -4,9 +4,15 @@ import {
   calculateProjectIncomeFromTransactions,
   calculateProjectBalance,
   calculateProjectProgress,
+  calculateNetExpenseAmount,
+  calculateContractValue,
+  calculateExpectedProfit,
+  calculateCollectionProgress,
+  calculateRemainingToCollect,
   RawProjectExpense,
   RawFundingRow,
 } from './projectCalculations';
+
 
 const exp = (over: Partial<RawProjectExpense> = {}): RawProjectExpense => ({
   amount: 100,
