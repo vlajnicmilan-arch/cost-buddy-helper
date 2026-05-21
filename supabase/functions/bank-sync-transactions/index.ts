@@ -216,6 +216,36 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Helper: pronađi kandidate za match.
+    // Strict window: <10€ isti dan; 10–50€ ±1 dan; >50€ ±3 dana.
+    async function findCandidates(absAmount: number, txDate: string, type: "expense" | "income") {
+      let windowDays = 0;
+      if (absAmount > 50) windowDays = 3;
+      else if (absAmount >= 10) windowDays = 1;
+      const center = new Date(txDate);
+      const from = new Date(center.getTime() - windowDays * 86400000).toISOString();
+      const to = new Date(center.getTime() + (windowDays + 1) * 86400000).toISOString();
+
+      const { data, error } = await admin
+        .from("expenses")
+        .select("id, amount, date, bank_match_status")
+        .eq("user_id", userId)
+        .eq("payment_source", paymentSourceRef)
+        .eq("type", type)
+        .is("bank_transaction_id", null)
+        .is("deleted_at", null)
+        .in("bank_match_status", ["manual", "pending_bank", "bank_only"])
+        .gte("amount", absAmount - 0.01)
+        .lte("amount", absAmount + 0.01)
+        .gte("date", from)
+        .lte("date", to);
+      if (error) {
+        console.warn("[bank-sync-transactions] candidates query err", error.message);
+        return [];
+      }
+      return data || [];
+    }
+
     for (const tx of allTx) {
       const stableId = pickStableId(tx);
       if (!stableId) { skipped += 1; continue; }
@@ -230,8 +260,34 @@ Deno.serve(async (req) => {
 
       const isIncome = tx.credit_debit_indicator === "CRDT";
       const description = pickDescription(tx);
+      const type = isIncome ? "income" : "expense";
 
-      // AI categorization for expenses only (income → other)
+      // Hybrid bank-first match logika.
+      const candidates = await findCandidates(absAmount, txDate, type);
+      const center = new Date(txDate).getTime();
+
+      if (candidates.length === 1) {
+        // 1 jasan kandidat — UPDATE postojeći expense u 'confirmed'.
+        const cand = candidates[0];
+        const { error: updErr } = await admin
+          .from("expenses")
+          .update({
+            bank_transaction_id: stableId,
+            bank_account_id: account.id,
+            bank_match_status: "confirmed",
+          })
+          .eq("id", cand.id);
+        if (updErr) {
+          if ((updErr as any).code === "23505") { skipped += 1; }
+          else { console.warn("[bank-sync-transactions] confirm update err", updErr.message); errors += 1; }
+        } else {
+          imported += 1;
+        }
+        continue;
+      }
+
+      // 0 ili >1 kandidata — INSERT novi bank_only.
+      // AI categorization (samo expense, samo ako nemamo kandidata).
       let category = "other";
       if (!isIncome) {
         const aiCat = await categorizeViaAI(description);
@@ -241,12 +297,24 @@ Deno.serve(async (req) => {
         }
       }
 
+      let possibleDuplicateOf: string | null = null;
+      if (candidates.length > 1) {
+        // Fallback: nesiguran match → bank_only + possible_duplicate_of na najbliži kandidat.
+        const sorted = [...candidates].sort((a, b) => {
+          const da = Math.abs(new Date(a.date).getTime() - center);
+          const db = Math.abs(new Date(b.date).getTime() - center);
+          if (da !== db) return da - db;
+          return Math.abs(a.amount - absAmount) - Math.abs(b.amount - absAmount);
+        });
+        possibleDuplicateOf = sorted[0].id;
+      }
+
       const row = {
         user_id: userId,
         amount: absAmount,
         description,
         category,
-        type: isIncome ? "income" : "expense",
+        type,
         date: new Date(txDate).toISOString(),
         payment_source: paymentSourceRef,
         currency: tx.transaction_amount.currency || account.currency || "EUR",
@@ -254,11 +322,12 @@ Deno.serve(async (req) => {
         bank_transaction_id: stableId,
         bank_account_id: account.id,
         ai_extracted: category !== "other",
+        bank_match_status: "bank_only",
+        possible_duplicate_of: possibleDuplicateOf,
       };
 
       const { error: insErr } = await admin.from("expenses").insert(row);
       if (insErr) {
-        // unique constraint = duplicate, OK
         if ((insErr as any).code === "23505") {
           skipped += 1;
         } else {
