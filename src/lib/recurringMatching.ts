@@ -45,7 +45,8 @@ export function calculatePreviousDueDate(nextDue: string, frequency: string): Da
 
 /**
  * Local fast matching: same type, identical amount (±0.1% float tolerance),
- * similar description, within ±5 days of next or previous due date.
+ * similar description. Date proximity (±5 days of next/previous due date)
+ * boosts confidence to 'high'; absence lowers it to 'medium' but never rejects.
  */
 export function localMatch(
   tx: RecurringMatchTx,
