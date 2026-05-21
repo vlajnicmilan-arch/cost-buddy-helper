@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useMotionValue, useAnimation, type PanInfo } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -76,7 +76,7 @@ export const SwipeableRow = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const handleDragEnd = (_: PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | globalThis.PointerEvent, info: PanInfo) => {
     const clamped = clampSwipeOffset(info.offset.x + (isOpen ? -totalReveal : 0), totalReveal);
     const snap = resolveSwipeSnap(clamped, { actionWidth: totalReveal });
     if (snap === 'open') open();
