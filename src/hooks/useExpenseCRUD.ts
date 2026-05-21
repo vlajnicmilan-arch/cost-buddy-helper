@@ -497,6 +497,10 @@ export const useExpenseCRUD = ({
             import_batch_id: batchId,
             business_profile_id: activeBusinessProfileId || null,
             bank_transaction_id: fingerprint,
+            // Hybrid bank-first: CSV/PDF uvoz JE bankovni izvod = potvrda novca,
+            // pa redovi idu kao `bank_only`. Kasniji bank sync može upgrade-ati
+            // u `confirmed` ako match-a po amount/date/payment_source.
+            bank_match_status: 'bank_only',
           };
         }));
 
