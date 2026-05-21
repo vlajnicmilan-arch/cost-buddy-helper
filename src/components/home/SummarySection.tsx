@@ -52,6 +52,7 @@ export const SummarySection = React.memo(({
   onExpenseClick,
   onTransferClick,
   onRecurringClick,
+  compact = false,
 }: SummarySectionProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
