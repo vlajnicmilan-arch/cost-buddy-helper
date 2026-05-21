@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TransactionItem, TransactionContextLookup } from '@/components/TransactionItem';
+import { SwipeableRow } from '@/components/SwipeableRow';
 import { Expense } from '@/types/expense';
 
 interface VirtualTransactionListProps {
@@ -65,18 +66,24 @@ export const VirtualTransactionList = ({
                   className="shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <TransactionItem
-                    expense={expense}
-                    onDelete={onDelete}
-                    onClick={(e) => {
-                      if (selectedIds.size === 0) {
-                        onClickDetail(e);
-                      } else {
-                        onToggleSelect(e.id);
-                      }
-                    }}
-                    contextLookup={contextLookup}
-                  />
+                  <SwipeableRow
+                    disabled={selectedIds.size > 0}
+                    onEdit={() => onClickDetail(expense)}
+                    onDelete={() => onDelete(expense.id)}
+                  >
+                    <TransactionItem
+                      expense={expense}
+                      onDelete={onDelete}
+                      onClick={(e) => {
+                        if (selectedIds.size === 0) {
+                          onClickDetail(e);
+                        } else {
+                          onToggleSelect(e.id);
+                        }
+                      }}
+                      contextLookup={contextLookup}
+                    />
+                  </SwipeableRow>
                 </div>
               </div>
             </div>

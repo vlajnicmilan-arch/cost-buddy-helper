@@ -931,6 +931,12 @@
   },
   "transactions": {
     "title": "Transactions",
+    "swipe": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "editAria": "Edit transaction",
+      "deleteAria": "Delete transaction"
+    },
     "expense": "Expense",
     "income": "Income",
     "transfer": "Transfer",

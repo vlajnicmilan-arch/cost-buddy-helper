@@ -931,6 +931,12 @@
   },
   "transactions": {
     "title": "Transakcije",
+    "swipe": {
+      "edit": "Uredi",
+      "delete": "Obriši",
+      "editAria": "Uredi transakciju",
+      "deleteAria": "Obriši transakciju"
+    },
     "expense": "Trošak",
     "income": "Prihod",
     "transfer": "Prijenos",

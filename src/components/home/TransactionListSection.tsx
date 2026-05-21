@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Receipt, ChevronDown } from 'lucide-react';
+import { SwipeableRow } from '@/components/SwipeableRow';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr as hrLocale, enUS, de as deLocale } from 'date-fns/locale';
@@ -158,18 +159,24 @@ export const TransactionListSection = ({
                     className="shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <TransactionItem
-                      expense={expense}
-                      onDelete={onDeleteExpense}
-                      onClick={(e) => {
-                        if (selectedTransactionIds.size === 0) {
-                          onTransactionClick(e);
-                        } else {
-                          onToggleSelect(e.id);
-                        }
-                      }}
-                      contextLookup={contextLookup}
-                    />
+                    <SwipeableRow
+                      disabled={selectedTransactionIds.size > 0}
+                      onEdit={() => onTransactionClick(expense)}
+                      onDelete={() => { void onDeleteExpense(expense.id); }}
+                    >
+                      <TransactionItem
+                        expense={expense}
+                        onDelete={onDeleteExpense}
+                        onClick={(e) => {
+                          if (selectedTransactionIds.size === 0) {
+                            onTransactionClick(e);
+                          } else {
+                            onToggleSelect(e.id);
+                          }
+                        }}
+                        contextLookup={contextLookup}
+                      />
+                    </SwipeableRow>
                   </div>
                 </div>
               ))}
