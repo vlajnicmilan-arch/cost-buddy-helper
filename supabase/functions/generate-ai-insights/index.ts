@@ -82,18 +82,15 @@ Deno.serve(async (req) => {
 
     if (expErr) throw expErr;
 
-    // Filter: only personal expenses (no business profile), exclude corrections, exclude income
-    const personalExpenses = (expenses || []).filter((e: any) =>
-      e.type === "expense" &&
-      !e.business_profile_id &&
-      e.expense_nature !== "correction"
+    // Personal (non-business) rows, no corrections. Includes both income & expense so
+    // operational candidates (cashflow) can read income. Personal-only candidates re-filter to type='expense'.
+    const personalRows = (expenses || []).filter((e: any) =>
+      !e.business_profile_id && e.expense_nature !== "correction"
     );
+    const personalExpenses = personalRows; // legacy alias used by personal candidates (they filter type internally below)
+    const personalExpenseCount = personalRows.filter((e: any) => e.type === "expense").length;
+    const hasPersonalSignal = personalExpenseCount >= 10;
 
-    if (personalExpenses.length < 10) {
-      return new Response(JSON.stringify({ insights: [], reason: "not_enough_data" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Cache check
     if (!force) {
