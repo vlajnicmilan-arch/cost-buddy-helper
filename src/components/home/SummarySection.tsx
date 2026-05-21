@@ -74,6 +74,7 @@ export const SummarySection = React.memo(({
       {/* Summary Cards */}
       <div className={`grid ${compact ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'} gap-3 mb-4`} data-tutorial="summary-cards">
         {!compact && (
+        <>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
