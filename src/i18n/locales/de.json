@@ -931,6 +931,12 @@
   },
   "transactions": {
     "title": "Transaktionen",
+    "swipe": {
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "editAria": "Transaktion bearbeiten",
+      "deleteAria": "Transaktion löschen"
+    },
     "expense": "Ausgabe",
     "income": "Einnahme",
     "transfer": "Überweisung",
