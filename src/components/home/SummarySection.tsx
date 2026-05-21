@@ -27,6 +27,9 @@ interface SummarySectionProps {
   onExpenseClick: () => void;
   onTransferClick: () => void;
   onRecurringClick: () => void;
+  /** V2 dashboard: hide Available/NetWorth cards (hero shows balance/projects)
+   *  and hide Transfers + Recurring rows (moved to Wallet tab). */
+  compact?: boolean;
 }
 
 export const SummarySection = React.memo(({
@@ -49,6 +52,7 @@ export const SummarySection = React.memo(({
   onExpenseClick,
   onTransferClick,
   onRecurringClick,
+  compact = false,
 }: SummarySectionProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -68,7 +72,9 @@ export const SummarySection = React.memo(({
   return (
     <>
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" data-tutorial="summary-cards">
+      <div className={`grid ${compact ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'} gap-3 mb-4`} data-tutorial="summary-cards">
+        {!compact && (
+        <>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -112,6 +118,8 @@ export const SummarySection = React.memo(({
             {formatAmount(netWorth)}
           </p>
         </motion.div>
+        </>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -180,6 +188,8 @@ export const SummarySection = React.memo(({
         </motion.div>
       </div>
 
+      {!compact && (
+      <>
       {/* Transfers Summary */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -250,6 +260,8 @@ export const SummarySection = React.memo(({
             </div>
           </div>
         </motion.div>
+      )}
+      </>
       )}
     </>
   );

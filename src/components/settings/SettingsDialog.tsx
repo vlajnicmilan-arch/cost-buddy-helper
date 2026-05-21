@@ -112,6 +112,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
+    dashboardV2Enabled, setDashboardV2Enabled,
     familyModeEnabled, setFamilyModeEnabled,
     businessFeatureEnabled, setBusinessFeatureEnabled,
     emitFinancialReset,
@@ -693,6 +694,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onAiAssistantChange={setAiAssistantEnabled}
               simpleModeEnabled={simpleModeEnabled}
               onSimpleModeChange={setSimpleModeEnabled}
+              classicDashboard={!dashboardV2Enabled}
+              onClassicDashboardChange={(v) => setDashboardV2Enabled(!v)}
               familyModeEnabled={familyModeEnabled}
               onFamilyModeToggle={(checked) => {
                 if (!checked) {

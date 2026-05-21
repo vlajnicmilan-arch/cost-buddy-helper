@@ -22,6 +22,8 @@ interface NotificationsSectionProps {
   onAiAssistantChange: (v: boolean) => void;
   simpleModeEnabled: boolean;
   onSimpleModeChange: (v: boolean) => void;
+  classicDashboard: boolean;
+  onClassicDashboardChange: (v: boolean) => void;
   familyModeEnabled: boolean;
   onFamilyModeToggle: (checked: boolean) => void;
   businessModeEnabled: boolean;
@@ -35,6 +37,7 @@ export const NotificationsSection = ({
   pushEnabled, onPushToggle,
   aiAssistantEnabled, onAiAssistantChange,
   simpleModeEnabled, onSimpleModeChange,
+  classicDashboard, onClassicDashboardChange,
   familyModeEnabled, onFamilyModeToggle,
   businessModeEnabled, onBusinessModeChange,
   onShowBusinessProfile, isLocalMode
@@ -278,6 +281,32 @@ export const NotificationsSection = ({
               ? t('settings.simpleModeEnabled', 'Jednostavni način uključen') 
               : t('settings.simpleModeDisabled', 'Puni način vraćen')
             );
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <Label htmlFor="classic-dashboard" className="text-sm font-medium cursor-pointer">
+              {t('settings.classicDashboard', 'Klasični prikaz početne')}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t('settings.classicDashboardDesc', 'Vrati stari raspored s Cashflow, Ciljevima i prečacima na ploči')}
+            </p>
+          </div>
+        </div>
+        <Switch
+          id="classic-dashboard"
+          checked={classicDashboard}
+          onCheckedChange={(checked) => {
+            onClassicDashboardChange(checked);
+            showSuccess(checked
+              ? t('settings.classicDashboardEnabled', 'Klasični prikaz uključen')
+              : t('settings.classicDashboardDisabled', 'Novi fokusirani prikaz vraćen'));
           }}
         />
       </div>

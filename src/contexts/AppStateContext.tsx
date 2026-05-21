@@ -35,6 +35,10 @@ interface AppStateContextValue {
   // Usage profile: 'finance_only' | 'finance_projects' | null (legacy)
   usageProfile: UsageProfile;
   setUsageProfile: (p: UsageProfile) => void;
+  // Dashboard V2 layout (refocused: hero=projects-or-balance, no cashflow/savings/quicklinks
+  // on home). Default ON; opt-out via Settings → "Klasični prikaz".
+  dashboardV2Enabled: boolean;
+  setDashboardV2Enabled: (enabled: boolean) => void;
   appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
@@ -83,6 +87,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     const v = localStorage.getItem('usage_profile');
     return v === 'finance_only' || v === 'finance_projects' ? v : null;
   });
+  // Dashboard V2 default ON; only OFF if user explicitly opts out.
+  const [dashboardV2Enabled, setDashboardV2EnabledState] = useState<boolean>(
+    () => localStorage.getItem('dashboard_v2_enabled') !== 'false'
+  );
   const [appStateReady, setAppStateReady] = useState(false);
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
@@ -266,6 +274,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const setDashboardV2Enabled = useCallback((enabled: boolean) => {
+    setDashboardV2EnabledState(enabled);
+    localStorage.setItem('dashboard_v2_enabled', enabled.toString());
+  }, []);
+
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
@@ -312,6 +325,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingCompleted,
     usageProfile,
     setUsageProfile,
+    dashboardV2Enabled,
+    setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent,
     emitAvatarEvent,
@@ -329,6 +344,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,
     usageProfile, setUsageProfile,
+    dashboardV2Enabled, setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,
     onFinancialReset, emitFinancialReset,

@@ -140,8 +140,9 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { usageProfile, activeBusinessProfileId } = useAppState();
+  const { usageProfile, activeBusinessProfileId, dashboardV2Enabled } = useAppState();
   const projectsHidden = usageProfile === 'finance_only';
+  const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
@@ -235,14 +236,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
-        {/* Payment Sources */}
-        <PaymentSourcesSection
-          customPaymentSources={props.customPaymentSources}
-          onSourceClick={props.onPaymentSourceClick}
-        />
-
-        {/* Active Projects Strip — primary feature highlight (hidden for finance-only profile) */}
-        {!projectsHidden && (
+        {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
+        {v2 && !projectsHidden && (
           <ActiveProjectsStrip
             projects={props.projects}
             isLocalMode={props.isLocalMode}
@@ -252,7 +247,24 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
         )}
 
-        {/* Summary Cards */}
+        {/* Payment Sources */}
+        <PaymentSourcesSection
+          customPaymentSources={props.customPaymentSources}
+          onSourceClick={props.onPaymentSourceClick}
+        />
+
+        {/* V1: Active Projects below sources */}
+        {!v2 && !projectsHidden && (
+          <ActiveProjectsStrip
+            projects={props.projects}
+            isLocalMode={props.isLocalMode}
+            simpleModeEnabled={props.simpleModeEnabled}
+            isBusinessMode={props.isBusinessMode}
+            loading={props.expensesLoading}
+          />
+        )}
+
+        {/* Summary Cards — compact in V2 (only month income+expense) */}
         <SummarySection
           balance={accountBalance}
           netWorth={props.netWorth}
@@ -273,7 +285,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           onExpenseClick={() => props.onExpenseDialogChange(true)}
           onTransferClick={() => props.onTransferDialogChange(true)}
           onRecurringClick={props.onRecurringPanelOpen}
+          compact={v2}
         />
+
 
         {/* AI Insights — daily, deterministic + AI-formulated */}
         {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
@@ -307,7 +321,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
 
-        {/* Cashflow Forecast */}
+        {/* Cashflow Forecast — V1 only (moved to Wallet tab in V2) */}
+        {!v2 && (
         <Collapsible className="group mb-3">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
             <CollapsibleTrigger asChild>
@@ -326,9 +341,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             </CollapsibleContent>
           </div>
         </Collapsible>
+        )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={v2 ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
           <TransactionListSection
             transactionsOpen={props.transactionsOpen}
             onTransactionsOpenChange={props.onTransactionsOpenChange}
@@ -354,10 +370,12 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             contextLookup={props.contextLookup}
             allCards={props.allCards}
             showScopeFilter={!props.isLocalMode}
-            className="lg:col-span-2"
+            className={v2 ? "" : "lg:col-span-2"}
             dataTutorial="transactions"
           />
 
+          {/* QuickLinks — V1 only (BottomNav covers this in V2) */}
+          {!v2 && (
           <QuickLinksSection
             simpleModeEnabled={props.simpleModeEnabled}
             isLocalMode={props.isLocalMode}
@@ -367,6 +385,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onUpdateExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
           />
+          )}
         </div>
 
         {/* Footer */}
