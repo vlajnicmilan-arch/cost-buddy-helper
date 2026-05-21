@@ -2,6 +2,16 @@
   "aiInsights": {
     "title": "AI insights"
   },
+  "attention": {
+    "title": "Needs attention",
+    "empty": "All clear",
+    "ai": "AI",
+    "local": "Check",
+    "dataQuality": {
+      "uncategorized": "{{count}} expenses without description in last 30 days",
+      "uncategorizedPrompt": "Which expenses from the last 30 days need a description?"
+    }
+  },
   "paywall": {
     "trialExpiredTitle": "Your 30-day trial has ended",
     "chooseToContinue": "Choose a plan to keep using V&M Balance",
