@@ -26,7 +26,7 @@ interface State {
   error?: string | null;
 }
 
-const CACHE_KEY = "ai-insights:v1";
+const CACHE_KEY = "ai-insights:v2";
 
 export const useAIInsights = (enabled: boolean) => {
   const [state, setState] = useState<State>(() => {
