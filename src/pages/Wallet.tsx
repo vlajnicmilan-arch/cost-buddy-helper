@@ -99,6 +99,29 @@ const Wallet = () => {
           refetch();
         }} />
         <InstallmentsPanel />
+        {dashboardV2Enabled && (
+          <>
+            <SavingsGoalsSection />
+            <Collapsible className="group">
+              <div className="glass-card rounded-2xl animate-fade-in p-4">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
+                    <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      {t('dashboard.cashflow.title')}
+                    </h3>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-3">
+                    <CashflowForecast />
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          </>
+        )}
         <CustomCategoriesPanel />
         <OpenBankingPanel />
         <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
