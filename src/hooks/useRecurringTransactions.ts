@@ -152,7 +152,8 @@ export const useRecurringTransactions = () => {
 
     for (const recurring of dueTransactions) {
       try {
-        // Create the expense
+        // Create the expense — entrySource='recurring' forsira bank_match_status='manual'
+        // bez obzira na to je li payment_source vezan na banku (banka kasnije matcha).
         await addExpense({
           amount: recurring.amount,
           description: recurring.description,
@@ -164,7 +165,7 @@ export const useRecurringTransactions = () => {
           income_source_id: recurring.type === 'transfer' ? recurring.transfer_to_source : recurring.income_source_id,
           merchant_name: recurring.merchant_name,
           note: recurring.note ? `${recurring.note} (auto)` : '(ponavljajuća transakcija)',
-        });
+        }, undefined, undefined, 'recurring');
 
         // Calculate next due date
         const nextDate = calculateNextDueDate(
