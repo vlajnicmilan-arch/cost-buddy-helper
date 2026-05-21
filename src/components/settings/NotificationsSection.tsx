@@ -22,6 +22,8 @@ interface NotificationsSectionProps {
   onAiAssistantChange: (v: boolean) => void;
   simpleModeEnabled: boolean;
   onSimpleModeChange: (v: boolean) => void;
+  classicDashboard: boolean;
+  onClassicDashboardChange: (v: boolean) => void;
   familyModeEnabled: boolean;
   onFamilyModeToggle: (checked: boolean) => void;
   businessModeEnabled: boolean;
