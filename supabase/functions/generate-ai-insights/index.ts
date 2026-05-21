@@ -116,7 +116,162 @@ Deno.serve(async (req) => {
 
     // ===== Deterministic candidates =====
     const now = new Date();
+    const todayISO = now.toISOString().slice(0, 10);
+    const monthStart = startOfMonthUTC(now);
+    const monthEnd = endOfMonthUTC(now);
+    const dayOfMonth = now.getUTCDate();
+    const daysInMonth = monthEnd.getUTCDate();
+    const in30 = new Date(now); in30.setUTCDate(in30.getUTCDate() + 30);
     const candidates: InsightCandidate[] = [];
+
+    // ===== OPERATIONAL CANDIDATES (highest priority) =====
+
+    // OP1) Overdue invoices
+    try {
+      const { data: overdue } = await admin
+        .from("project_invoices")
+        .select("id, invoice_number, total_amount, currency, due_date, client_name, status")
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .in("status", ["issued", "sent", "overdue"])
+        .lt("due_date", todayISO);
+
+      if (overdue && overdue.length > 0) {
+        const total = overdue.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+        const cur = overdue[0].currency || "EUR";
+        const oldest = overdue.reduce((a: any, b: any) =>
+          new Date(a.due_date) < new Date(b.due_date) ? a : b);
+        const daysLate = Math.floor((Date.now() - new Date(oldest.due_date).getTime()) / 86400000);
+        candidates.push({
+          id: "invoice-overdue",
+          type: "invoice_overdue",
+          priority: 100,
+          factsHr: `${overdue.length} faktura van valute, ukupno ${total.toFixed(2)} ${cur}. Najstarija (${oldest.invoice_number}, ${oldest.client_name}) kasni ${daysLate} dana`,
+          followupHr: `Imam ${overdue.length} neplaćenih faktura ukupno ${total.toFixed(0)} ${cur}. Predloži mi konkretne sljedeće korake naplate i prioritet po klijentu.`,
+          severity: "warning",
+        });
+      }
+    } catch (e) { console.error("overdue check failed", e); }
+
+    // OP2) Project margin & budget burn (active, non-archived, non-deleted)
+    try {
+      const { data: activeProjects } = await admin
+        .from("projects")
+        .select("id, name, total_budget, contract_value, status, start_date, end_date")
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .is("archived_at", null)
+        .not("status", "in", "(completed,cancelled)");
+
+      if (activeProjects && activeProjects.length > 0) {
+        const projectIds = activeProjects.map((p: any) => p.id);
+        // Pull ALL expenses for these projects (lifetime)
+        const { data: projectExpenses } = await admin
+          .from("expenses")
+          .select("project_id, type, amount, expense_nature")
+          .in("project_id", projectIds)
+          .eq("user_id", user.id);
+
+        const marginRisks: { name: string; revenue: number; cost: number; marginPct: number }[] = [];
+        const burnRisks: { name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
+
+        for (const p of activeProjects as any[]) {
+          const rows = (projectExpenses || []).filter((e: any) =>
+            e.project_id === p.id && e.expense_nature !== "correction"
+          );
+          const revenue = rows.filter((e: any) => e.type === "income")
+            .reduce((s: number, e: any) => s + Number(e.amount), 0);
+          const cost = rows.filter((e: any) => e.type === "expense")
+            .reduce((s: number, e: any) => s + Number(e.amount), 0);
+          const contractRef = Number(p.contract_value || 0) || revenue;
+          if (contractRef > 0 && cost > 0) {
+            const marginPct = (contractRef - cost) / contractRef;
+            if (marginPct < 0.10) {
+              marginRisks.push({ name: p.name, revenue: contractRef, cost, marginPct });
+            }
+          }
+          const budget = Number(p.total_budget || 0);
+          if (budget > 0 && cost > 0) {
+            const pctSpent = cost / budget;
+            let pctTime = 0;
+            if (p.start_date && p.end_date) {
+              const s = new Date(p.start_date).getTime();
+              const e = new Date(p.end_date).getTime();
+              if (e > s) pctTime = Math.min(1, Math.max(0, (Date.now() - s) / (e - s)));
+            }
+            if (pctSpent > 0.85 && pctTime < 0.6) {
+              burnRisks.push({ name: p.name, spent: cost, budget, pctSpent, pctTime });
+            }
+          }
+        }
+
+        marginRisks.sort((a, b) => a.marginPct - b.marginPct);
+        for (const m of marginRisks.slice(0, 1)) {
+          const pct = Math.round(m.marginPct * 100);
+          const negative = m.marginPct < 0;
+          candidates.push({
+            id: `project-margin-${m.name}`,
+            type: "project_margin",
+            priority: negative ? 95 : 85,
+            factsHr: negative
+              ? `Projekt "${m.name}" trenutno u gubitku: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} € (marža ${pct}%)`
+              : `Projekt "${m.name}" ima nisku maržu ${pct}%: prihod ${m.revenue.toFixed(2)} €, trošak ${m.cost.toFixed(2)} €`,
+            followupHr: `Projekt "${m.name}" ima maržu ${pct}% (prihod ${m.revenue.toFixed(0)} €, trošak ${m.cost.toFixed(0)} €). Analiziraj koje kategorije troškova najviše jedu maržu i predloži korektivne akcije.`,
+            severity: "warning",
+          });
+        }
+
+        burnRisks.sort((a, b) => b.pctSpent - a.pctSpent);
+        for (const b of burnRisks.slice(0, 1)) {
+          const pctS = Math.round(b.pctSpent * 100);
+          const pctT = Math.round(b.pctTime * 100);
+          candidates.push({
+            id: `project-burn-${b.name}`,
+            type: "project_budget_burn",
+            priority: 80,
+            factsHr: `Projekt "${b.name}" potrošio ${pctS}% budžeta (${b.spent.toFixed(2)} € / ${b.budget.toFixed(2)} €) iako je prošlo tek ${pctT}% vremena`,
+            followupHr: `Projekt "${b.name}" je na ${pctS}% budžeta, a tek ${pctT}% vremena je prošlo. Pokaži mi najveće troškove i predloži kako zaustaviti curenje.`,
+            severity: "warning",
+          });
+        }
+      }
+    } catch (e) { console.error("project metrics failed", e); }
+
+    // OP3) 30d cashflow risk: upcoming recurring expenses vs upcoming recurring income
+    try {
+      const { data: upcomingRec } = await admin
+        .from("recurring_transactions")
+        .select("amount, type, next_due_date, description")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .gte("next_due_date", todayISO)
+        .lte("next_due_date", in30.toISOString().slice(0, 10));
+
+      const outflow = (upcomingRec || []).filter((r: any) => r.type === "expense")
+        .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+      const inflow = (upcomingRec || []).filter((r: any) => r.type === "income")
+        .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+
+      // Last-30d realized income avg as fallback inflow comparator
+      const realIncomeLast30 = personalExpenses
+        .filter((e: any) => e.type === "income")
+        .reduce((s: number, e: any) => s + Number(e.amount), 0);
+      const expectedInflow = inflow > 0 ? inflow : realIncomeLast30;
+
+      if (outflow > 0 && expectedInflow > 0 && outflow > expectedInflow * 0.9) {
+        const gap = outflow - expectedInflow;
+        candidates.push({
+          id: "cashflow-risk-30d",
+          type: "cashflow_risk",
+          priority: 90,
+          factsHr: `Sljedećih 30 dana: ${outflow.toFixed(2)} € predviđenih odljeva nasuprot ${expectedInflow.toFixed(2)} € priljeva (manjak ${gap.toFixed(2)} €)`,
+          followupHr: `Sljedećih 30 dana predviđam ${outflow.toFixed(0)} € odljeva i samo ${expectedInflow.toFixed(0)} € priljeva. Pomozi mi prioritizirati troškove i pronaći način da pokrijem manjak.`,
+          severity: "warning",
+        });
+      }
+    } catch (e) { console.error("cashflow check failed", e); }
+
+    // ===== EXISTING PERSONAL CANDIDATES (lower priority) =====
 
     // 1) Week-over-week anomaly per category
     const last7 = new Date(); last7.setUTCDate(last7.getUTCDate() - 7);
@@ -153,6 +308,7 @@ Deno.serve(async (req) => {
       candidates.push({
         id: `anomaly-${a.cat}`,
         type: "anomaly",
+        priority: 50,
         factsHr: `Zadnjih 7 dana potrošio ${pctRound}% ${dir} na "${a.cat}" (${a.current.toFixed(2)} €) nego prethodnih 7 dana (${a.prev.toFixed(2)} €)`,
         followupHr: `Zašto sam zadnjih 7 dana potrošio ${pctRound}% ${dir} na kategoriju "${a.cat}" nego prethodnih 7 dana? Daj mi konkretnu analizu.`,
         severity: a.diff > 0 ? "warning" : "positive",
@@ -160,16 +316,11 @@ Deno.serve(async (req) => {
     }
 
     // 2) Month projection
-    const monthStart = startOfMonthUTC(now);
-    const monthEnd = endOfMonthUTC(now);
-    const dayOfMonth = now.getUTCDate();
-    const daysInMonth = monthEnd.getUTCDate();
     const monthSpend = personalExpenses
-      .filter((e: any) => new Date(e.date) >= monthStart)
+      .filter((e: any) => e.type === "expense" && new Date(e.date) >= monthStart)
       .reduce((s: number, e: any) => s + Number(e.amount), 0);
     const projection = (monthSpend / Math.max(1, dayOfMonth)) * daysInMonth;
 
-    // Active monthly budget (sum of budget_plans active this month, type expense-tracking)
     const { data: budgetRows } = await admin
       .from("budget_plans")
       .select("total_amount, period_type, is_active, start_date, end_date")
@@ -188,6 +339,7 @@ Deno.serve(async (req) => {
         candidates.push({
           id: "projection-budget",
           type: "projection",
+          priority: 40,
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesec ćeš završiti na ~${projection.toFixed(2)} €, što je ${positive ? "unutar" : "preko"} budžeta od ${monthBudget.toFixed(2)} € za ${Math.abs(overUnder).toFixed(2)} €`,
           followupHr: `Po trenutnom tempu mjesec završavam ~${projection.toFixed(0)} €, budžet je ${monthBudget.toFixed(0)} €. Što mogu napraviti da ostanem unutar budžeta?`,
           severity: positive ? "positive" : "warning",
@@ -196,6 +348,7 @@ Deno.serve(async (req) => {
         candidates.push({
           id: "projection-no-budget",
           type: "projection",
+          priority: 30,
           factsHr: `Po trenutnom tempu (${monthSpend.toFixed(2)} € u ${dayOfMonth} dana) mjesečna projekcija je ~${projection.toFixed(2)} €`,
           followupHr: `Mjesečna projekcija mi je ~${projection.toFixed(0)} €. Je li to razumna razina za moj profil potrošnje? Predloži budžet.`,
           severity: "info",
@@ -207,17 +360,18 @@ Deno.serve(async (req) => {
     if (candidates.length < 3) {
       const { data: recurring } = await admin
         .from("recurring_transactions")
-        .select("id, name, amount, next_occurrence_date")
+        .select("id, description, amount, next_due_date")
         .eq("user_id", user.id)
         .eq("is_active", true)
-        .gte("next_occurrence_date", monthStart.toISOString().slice(0, 10))
-        .lte("next_occurrence_date", monthEnd.toISOString().slice(0, 10));
+        .gte("next_due_date", monthStart.toISOString().slice(0, 10))
+        .lte("next_due_date", monthEnd.toISOString().slice(0, 10));
 
       if (recurring && recurring.length > 0) {
         const total = recurring.reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
         candidates.push({
           id: "recurring-count",
           type: "recurring",
+          priority: 20,
           factsHr: `${recurring.length} pretplata/recurring transakcija obnavlja se ovaj mjesec, ukupno ~${total.toFixed(2)} €`,
           followupHr: `Imam ${recurring.length} pretplata ovaj mjesec u ukupnom iznosu ${total.toFixed(0)} €. Pokaži mi detalje i predloži koje bih mogao otkazati.`,
           severity: "info",
@@ -230,6 +384,9 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Sort by priority desc, then keep top 3
+    candidates.sort((a, b) => b.priority - a.priority);
 
     const top = candidates.slice(0, 3);
 
