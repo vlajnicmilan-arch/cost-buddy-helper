@@ -255,6 +255,28 @@ export const ActiveProjectsStrip = React.memo(({
             );
           };
 
+          const renderProgressBar = () => {
+            if (!hasMargin || budget <= 0) return null;
+            const usedPct = Math.max(0, Math.min(100, (spent / budget) * 100));
+            const barColor =
+              health === 'red' ? 'hsl(var(--destructive))'
+              : health === 'yellow' ? 'hsl(var(--warning))'
+              : 'hsl(var(--income))';
+            return (
+              <div className="px-0.5">
+                <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${usedPct}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut', delay: idx * 0.05 }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: barColor }}
+                  />
+                </div>
+              </div>
+            );
+          };
+
           const renderCenter = () => {
             if (!hasMargin) {
               return (
@@ -270,13 +292,42 @@ export const ActiveProjectsStrip = React.memo(({
             }
             const pct = `${Math.round((margin ?? 0) * 100)}%`;
             return (
-              <div className="flex flex-col items-center justify-center py-1.5">
-                <p className={cn('text-2xl font-bold leading-none tabular-nums', HEALTH_TEXT_CLASS[health])}>
+              <div className="flex flex-col items-center justify-center py-1">
+                <p className={cn('text-3xl font-bold leading-none tabular-nums tracking-tight', HEALTH_TEXT_CLASS[health])}>
                   {pct}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 text-center">
                   {t('projects.card.margin', 'MARŽA')}
                 </p>
+              </div>
+            );
+          };
+
+          const statusLine = getProjectStatusLine(
+            {
+              status: project.status,
+              start_date: project.start_date,
+              end_date: project.end_date,
+              income: summary.get(project.id)?.income ?? 0,
+              spent,
+              budget,
+              margin,
+              txCount: summary.get(project.id)?.txCount ?? 0,
+              health: health === 'neutral' ? 'green' : health,
+            },
+            t,
+          );
+
+          const renderStatusLine = () => {
+            if (!statusLine) return null;
+            const Icon = STATUS_ICON_MAP[statusLine.icon];
+            return (
+              <div className={cn(
+                'flex items-center gap-1.5 pt-1.5 mt-0.5 border-t border-border/40 text-[10.5px] leading-tight',
+                STATUS_TONE_CLASS[statusLine.tone],
+              )}>
+                <Icon className="w-3 h-3 shrink-0" />
+                <span className="truncate font-medium">{statusLine.text}</span>
               </div>
             );
           };
@@ -290,14 +341,14 @@ export const ActiveProjectsStrip = React.memo(({
               whileTap={{ scale: 0.97 }}
               onClick={() => handleNav('/projects', { openProjectId: project.id, from: '/home' })}
               aria-label={ariaLabel}
-              className="snap-start min-w-[200px] max-w-[220px] p-2.5 rounded-2xl border border-border/50 bg-card hover:shadow-md transition-all text-left flex flex-col gap-1.5 relative overflow-hidden"
+              className="snap-start min-w-[220px] max-w-[240px] p-3 rounded-2xl border border-border/50 bg-card hover:shadow-lg hover:border-border transition-all text-left flex flex-col gap-2 relative overflow-hidden"
               style={{
                 borderLeftWidth: 3,
                 borderLeftColor: color,
               }}
             >
               <div
-                className="absolute -top-8 -right-8 w-20 h-20 rounded-full opacity-[0.08] pointer-events-none"
+                className="absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-[0.10] pointer-events-none"
                 style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
               />
 
@@ -320,8 +371,14 @@ export const ActiveProjectsStrip = React.memo(({
               {/* Centerpiece: margin % or CTA */}
               {renderCenter()}
 
+              {/* Progress bar: budget burn */}
+              {renderProgressBar()}
+
               {/* Footer: 3 amount lines */}
               {renderFooterLines()}
+
+              {/* Status line: deterministic short sentence */}
+              {renderStatusLine()}
             </motion.button>
           );
         })}
@@ -333,7 +390,7 @@ export const ActiveProjectsStrip = React.memo(({
           transition={{ delay: activeProjects.length * 0.04 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
-          className="snap-start min-w-[200px] max-w-[220px] p-2.5 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
+          className="snap-start min-w-[220px] max-w-[240px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
         >
           <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
             <Plus className="w-6 h-6 text-primary" />
@@ -342,6 +399,7 @@ export const ActiveProjectsStrip = React.memo(({
             {t('nav.newProject', 'Novi projekt')}
           </p>
         </motion.button>
+
       </div>
     </motion.div>
   );
