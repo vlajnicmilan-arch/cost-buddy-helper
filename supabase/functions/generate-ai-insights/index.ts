@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         .eq("generated_on", today)
         .maybeSingle();
       if (cached) {
-        const drift = Math.abs((personalExpenses.length - (cached.expense_count_at_generation || 0)) /
+        const drift = Math.abs((personalExpenseCount - (cached.expense_count_at_generation || 0)) /
           Math.max(1, cached.expense_count_at_generation || 1));
         if (drift < 0.2 && cached.language === language) {
           return new Response(JSON.stringify({ insights: cached.insights, cached: true }), {
