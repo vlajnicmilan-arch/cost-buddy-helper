@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { instantCache } from "@/lib/instantCache";
 
+export type AISeverity = "info" | "positive" | "warning" | "critical";
+
 export interface AIInsight {
   id: string;
   type: string;
   title: string;
   prompt: string;
-  severity: "info" | "positive" | "warning";
+  severity: AISeverity;
+  source?: "ai" | "local";
 }
 
 interface State {
