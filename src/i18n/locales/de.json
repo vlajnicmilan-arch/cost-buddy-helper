@@ -914,6 +914,21 @@
       "enableModule": "Modul aktivieren"
     }
   },
+  "bankMatch": {
+    "pendingBank": "Warte auf Bankbestätigung",
+    "confirmed": "Von Bank bestätigt",
+    "maybeDuplicate": "Möglicher Duplikat",
+    "duplicateTitle": "Möglichen Duplikat prüfen",
+    "duplicateDescription": "Eine Banktransaktion sieht wie eine bestehende aus. Zusammenführen oder als unterschiedlich bestätigen.",
+    "bankTransaction": "Banktransaktion",
+    "existingTransaction": "Bestehende Transaktion",
+    "merge": "Zusammenführen",
+    "notSame": "Nicht gleich",
+    "merged": "Transaktionen zusammengeführt",
+    "mergeError": "Zusammenführen fehlgeschlagen",
+    "dismissed": "Als unterschiedlich markiert",
+    "dismissError": "Aktion fehlgeschlagen"
+  },
   "transactions": {
     "title": "Transaktionen",
     "expense": "Ausgabe",
