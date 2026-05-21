@@ -43,7 +43,8 @@ export const useExpenseCRUD = ({
   const addExpense = useCallback(async (
     expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
     items?: ReceiptItem[],
-    isPendingMemberTransaction?: boolean
+    isPendingMemberTransaction?: boolean,
+    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
     const normalizedDescription = (expense.description ?? '').trim()
       || expense.merchant_name?.trim()
