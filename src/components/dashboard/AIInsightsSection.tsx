@@ -1,39 +1,76 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Lightbulb } from "lucide-react";
-import { useAIInsights, type AIInsight } from "@/hooks/useAIInsights";
+import { AlertCircle } from "lucide-react";
+import { useAIInsights, type AIInsight, type AISeverity } from "@/hooks/useAIInsights";
+import { useLocalAttentionInsights } from "@/hooks/useLocalAttentionInsights";
 import { AIInsightCard } from "./AIInsightCard";
+import type { Expense } from "@/types/expense";
 
 interface Props {
   enabled: boolean;
+  allExpenses?: Expense[];
 }
 
 const dispatchAsk = (prompt: string) => {
   window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt } }));
 };
 
-export const AIInsightsSection = ({ enabled }: Props) => {
+const SEVERITY_RANK: Record<AISeverity, number> = {
+  critical: 0,
+  warning: 1,
+  info: 2,
+  positive: 3,
+};
+
+const HARD_CAP = 5;
+const MAX_CRITICAL = 1;
+
+const mergeAndCap = (ai: AIInsight[], local: AIInsight[]): AIInsight[] => {
+  const all = [...ai, ...local].sort(
+    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],
+  );
+  const result: AIInsight[] = [];
+  let critCount = 0;
+  for (const ins of all) {
+    if (result.length >= HARD_CAP) break;
+    if (ins.severity === "critical") {
+      if (critCount >= MAX_CRITICAL) continue;
+      critCount++;
+    }
+    result.push(ins);
+  }
+  return result;
+};
+
+export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   const { t } = useTranslation();
-  const { insights, loading, reason } = useAIInsights(enabled);
+  const { insights: aiInsights, loading } = useAIInsights(enabled);
+  const localInsights = useLocalAttentionInsights(allExpenses ?? []);
+
+  const merged = useMemo(
+    () => mergeAndCap(aiInsights, localInsights),
+    [aiInsights, localInsights],
+  );
 
   if (!enabled) return null;
-  if (reason === "not_enough_data") return null;
-  if (!loading && insights.length === 0) return null;
+  // Skrij sekciju ako nema ničega i još nema lokalnih signala
+  if (!loading && merged.length === 0) return null;
 
   return (
     <section className="mb-4">
       <div className="flex items-center gap-2 mb-2 px-1">
-        <Lightbulb className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">{t("aiInsights.title")}</h2>
+        <AlertCircle className="w-4 h-4 text-primary" />
+        <h2 className="text-sm font-semibold text-foreground">{t("attention.title")}</h2>
       </div>
-      {loading && insights.length === 0 ? (
-        <div className="space-y-2">
+      {loading && merged.length === 0 ? (
+        <div className="space-y-1.5">
           {[0, 1, 2].map(i => (
-            <div key={i} className="h-16 rounded-2xl bg-primary/5 animate-pulse border border-primary/10" />
+            <div key={i} className="h-12 rounded-xl bg-muted/40 animate-pulse border border-border/30" />
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
-          {insights.map((ins: AIInsight) => (
+        <div className="space-y-1.5">
+          {merged.map((ins) => (
             <AIInsightCard key={ins.id} insight={ins} onClick={(i) => dispatchAsk(i.prompt)} />
           ))}
         </div>
