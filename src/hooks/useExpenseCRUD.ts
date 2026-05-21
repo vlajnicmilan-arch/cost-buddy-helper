@@ -103,6 +103,23 @@ export const useExpenseCRUD = ({
           // Best-effort: never block insert because of diagnostics.
         }
 
+        // Hybrid bank-first: odredi početni bank_match_status.
+        // - OCR/slikani račun (ai_extracted=true) → 'ocr' source
+        // - Sve ostalo (ručni unos) → 'manual' source
+        // Helper sam odlučuje pending_bank vs manual ovisno o tome je li
+        // payment_source spojen na bank konekciju.
+        const { getInitialBankMatchStatus } = await import('@/lib/bankMatchStatus');
+        const { getBankLinkedSourceIds } = await import('@/lib/bankLinkedSources');
+        const bankLinkedSourceIds = await getBankLinkedSourceIds(
+          user.id,
+          (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+        );
+        const bankMatchStatus = getInitialBankMatchStatus({
+          source: normalizedExpense.ai_extracted ? 'ocr' : 'manual',
+          paymentSource: normalizedExpense.payment_source,
+          bankLinkedSourceIds,
+        });
+
         const { data, error } = await supabase
           .from('expenses')
           .insert({
@@ -127,6 +144,7 @@ export const useExpenseCRUD = ({
             business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
             
             currency: (normalizedExpense as any).currency || null,
+            bank_match_status: bankMatchStatus,
           })
           .select()
           .single();
@@ -497,6 +515,10 @@ export const useExpenseCRUD = ({
             import_batch_id: batchId,
             business_profile_id: activeBusinessProfileId || null,
             bank_transaction_id: fingerprint,
+            // Hybrid bank-first: CSV/PDF uvoz JE bankovni izvod = potvrda novca,
+            // pa redovi idu kao `bank_only`. Kasniji bank sync može upgrade-ati
+            // u `confirmed` ako match-a po amount/date/payment_source.
+            bank_match_status: 'bank_only',
           };
         }));
 
