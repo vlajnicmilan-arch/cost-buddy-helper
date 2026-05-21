@@ -325,6 +325,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingCompleted,
     usageProfile,
     setUsageProfile,
+    dashboardV2Enabled,
+    setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent,
     emitAvatarEvent,
