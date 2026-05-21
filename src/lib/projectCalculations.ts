@@ -42,7 +42,7 @@ const isCounted = (e: RawProjectExpense): boolean => {
  * - For everything else: returns raw amount.
  *
  * This eliminates double-counting when both an advance and a final invoice exist for the
- * same job (e.g. 500 advance + 3640 final invoice should count as 3640, not 4140).
+ * same job (e.g. 500 advance + 3640 final invoice → net 3141, not 4140).
  */
 export const calculateNetExpenseAmount = (
   expense: RawProjectExpense,
