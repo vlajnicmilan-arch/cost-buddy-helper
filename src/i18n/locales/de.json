@@ -2,6 +2,16 @@
   "aiInsights": {
     "title": "KI-Einblicke"
   },
+  "attention": {
+    "title": "Zu beachten",
+    "empty": "Alles im Griff",
+    "ai": "KI",
+    "local": "Prüfen",
+    "dataQuality": {
+      "uncategorized": "{{count}} Ausgaben ohne Beschreibung in den letzten 30 Tagen",
+      "uncategorizedPrompt": "Welche Ausgaben der letzten 30 Tage brauchen eine Beschreibung?"
+    }
+  },
   "paywall": {
     "trialExpiredTitle": "Ihre 30-tägige Testphase ist abgelaufen",
     "chooseToContinue": "Wählen Sie einen Plan, um V&M Balance weiter zu nutzen",
