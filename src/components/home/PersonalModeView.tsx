@@ -305,7 +305,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* AI Insights — daily, deterministic + AI-formulated */}
         {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
           <TrackSection name="ai_insights">
-            <AIInsightsSection enabled={props.allExpenses.length >= 10} />
+            <AIInsightsSection enabled={props.allExpenses.length >= 10} allExpenses={props.allExpenses} />
           </TrackSection>
         )}
 
