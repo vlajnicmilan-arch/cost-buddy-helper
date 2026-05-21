@@ -285,6 +285,32 @@ export const NotificationsSection = ({
         />
       </div>
 
+      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <Label htmlFor="classic-dashboard" className="text-sm font-medium cursor-pointer">
+              {t('settings.classicDashboard', 'Klasični prikaz početne')}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t('settings.classicDashboardDesc', 'Vrati stari raspored s Cashflow, Ciljevima i prečacima na ploči')}
+            </p>
+          </div>
+        </div>
+        <Switch
+          id="classic-dashboard"
+          checked={classicDashboard}
+          onCheckedChange={(checked) => {
+            onClassicDashboardChange(checked);
+            showSuccess(checked
+              ? t('settings.classicDashboardEnabled', 'Klasični prikaz uključen')
+              : t('settings.classicDashboardDisabled', 'Novi fokusirani prikaz vraćen'));
+          }}
+        />
+      </div>
+
       {!isLocalMode && (
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
           <div className="flex items-center gap-3">
