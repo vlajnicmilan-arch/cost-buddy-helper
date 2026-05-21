@@ -15,10 +15,10 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 interface InsightCandidate {
   id: string;
-  type: "anomaly" | "projection" | "recurring" | "info";
-  // raw deterministic facts (for prompt)
+  type: "anomaly" | "projection" | "recurring" | "info" | "invoice_overdue" | "project_margin" | "cashflow_risk" | "project_budget_burn";
+  priority: number; // higher first; operational > anomaly > projection > recurring
   factsHr: string;
-  followupHr: string; // pre-seeded chat prompt (HR base, AI translates)
+  followupHr: string;
   severity: "info" | "positive" | "warning";
 }
 
