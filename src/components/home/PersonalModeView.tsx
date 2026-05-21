@@ -374,6 +374,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             dataTutorial="transactions"
           />
 
+          {/* QuickLinks — V1 only (BottomNav covers this in V2) */}
+          {!v2 && (
           <QuickLinksSection
             simpleModeEnabled={props.simpleModeEnabled}
             isLocalMode={props.isLocalMode}
@@ -383,6 +385,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onUpdateExpense={props.onUpdateExpense}
             onDeleteExpense={props.onDeleteExpense}
           />
+          )}
         </div>
 
         {/* Footer */}
