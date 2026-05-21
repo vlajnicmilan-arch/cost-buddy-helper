@@ -326,6 +326,7 @@ Deno.serve(async (req) => {
         factsHr: `Zadnjih 7 dana potrošio ${pctRound}% ${dir} na "${a.cat}" (${a.current.toFixed(2)} €) nego prethodnih 7 dana (${a.prev.toFixed(2)} €)`,
         followupHr: `Zašto sam zadnjih 7 dana potrošio ${pctRound}% ${dir} na kategoriju "${a.cat}" nego prethodnih 7 dana? Daj mi konkretnu analizu.`,
         severity: a.diff > 0 ? "warning" : "positive",
+        action: { type: "ask_ai" },
       });
     }
 
