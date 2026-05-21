@@ -27,6 +27,9 @@ interface SummarySectionProps {
   onExpenseClick: () => void;
   onTransferClick: () => void;
   onRecurringClick: () => void;
+  /** V2 dashboard: hide Available/NetWorth cards (hero shows balance/projects)
+   *  and hide Transfers + Recurring rows (moved to Wallet tab). */
+  compact?: boolean;
 }
 
 export const SummarySection = React.memo(({
