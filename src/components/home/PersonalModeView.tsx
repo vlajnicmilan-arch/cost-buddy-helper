@@ -302,10 +302,14 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         </TrackSection>
 
 
-        {/* AI Insights — daily, deterministic + AI-formulated */}
-        {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
-          <TrackSection name="ai_insights">
-            <AIInsightsSection enabled={props.allExpenses.length >= 10} allExpenses={props.allExpenses} />
+        {/* Active Issues — event-driven, persistent, deterministic detectors */}
+        {!props.isLocalMode && !props.simpleModeEnabled && (
+          <TrackSection name="active_issues">
+            <ActiveIssuesSection
+              enabled={true}
+              projects={props.projects}
+              allExpenses={props.allExpenses}
+            />
           </TrackSection>
         )}
 
