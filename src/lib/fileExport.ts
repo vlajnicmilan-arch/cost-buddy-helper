@@ -116,14 +116,23 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
     const mime = blob.type || getMimeType(fileName);
 
     if (mode === 'save') {
+      // Always write a cache copy first so Share has a file:// URI to use —
+      // the Share plugin can't handle MediaStore content:// URIs.
+      let shareUri: string | undefined;
+      try {
+        shareUri = await writeToCache(base64Data, fileName);
+      } catch (cacheErr) {
+        console.warn('Cache copy for share failed (Share will be unavailable):', cacheErr);
+      }
+
       try {
         const result = await SaveToDownloads.saveBlob({ base64: base64Data, fileName, mime });
-        emitFileSaved({ uri: result.uri, fileName, mime });
+        emitFileSaved({ uri: result.uri, fileName, mime, shareUri });
         return true;
       } catch (saveErr: any) {
         console.error('SaveToDownloads failed, falling back to cache open dialog:', saveErr);
-        const cacheUri = await writeToCache(base64Data, fileName);
-        emitFileSaved({ uri: cacheUri, fileName, mime });
+        const cacheUri = shareUri ?? await writeToCache(base64Data, fileName);
+        emitFileSaved({ uri: cacheUri, fileName, mime, shareUri: cacheUri });
         return true;
       }
     }
