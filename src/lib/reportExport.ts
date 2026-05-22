@@ -241,23 +241,34 @@ export interface IncomeReportData {
   currency?: CurrencyConfig;
 }
 
-export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima', mode: ExportMode = 'save'): Promise<void> => {
+export const generateIncomePDFReport = async (
+  data: IncomeReportData,
+  reportTitle: string = 'Izvješće o prihodima',
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
+): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   applyBrandFont(doc);
-  
-  doc.setFontSize(20);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii(reportTitle), 14, 20);
-  
-  doc.setFontSize(10);
-  doc.setFont('Inter', 'normal');
-  doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
-  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
-  doc.setFontSize(14);
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const subtitle = brand.subtitle || `${i18n.t('reports.period')}: ${formatDate(data.dateRange.start)} – ${formatDate(data.dateRange.end)}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality || 'none', subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: reportTitle,
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
+
+  doc.setFontSize(11);
   doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Sazetak prihoda'), 14, 46);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii('Sažetak prihoda'), REPORT_MARGIN_X, bodyStartY + 2);
 
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totalIncome, data.currency)],
@@ -265,13 +276,11 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
   ];
 
   brandAutoTable(doc, autoTable, {
-    startY: 50,
+    startY: bodyStartY + 5,
     head: [['Stavka', 'Vrijednost']],
     body: summaryData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    tableWidth: 80,
+    margin: { left: REPORT_MARGIN_X },
+    tableWidth: 90,
   });
 
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
