@@ -144,7 +144,10 @@ export const NotificationsDropdown = () => {
       case 'note_added':
         return { path: '/projects', state: { openProjectId: data.project_id, openExpenseId: data.expense_id } };
       case 'budget_alert':
+      case 'budget_burn':
         return { path: '/budgets', state: { openBudgetId: data.budget_id } };
+      case 'project_loss_zone':
+        return { path: '/projects', state: { openProjectId: data.project_id, from: '/home' } };
       case 'payment_source_transaction':
         return { path: '/', state: { openExpenseId: data.expense_id } };
       case 'family_message':
@@ -187,11 +190,22 @@ export const NotificationsDropdown = () => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }
-    
+
     const target = getNavigationTarget(notification.type, data);
     if (target) {
       setOpen(false);
       navigate(target.path, { state: target.state });
+      return;
+    }
+
+    // Fallback for issue-type notifications without a direct route (overdue_invoice, cashflow_risk)
+    if (notification.type === 'overdue_invoice' || notification.type === 'cashflow_risk') {
+      const titleVars = (data?.title_vars as Record<string, unknown>) ?? {};
+      const messageVars = (data?.message_vars as Record<string, unknown>) ?? {};
+      const title = resolveNotificationText(notification.title, titleVars, t);
+      const message = resolveNotificationText(notification.message, messageVars, t);
+      setOpen(false);
+      window.dispatchEvent(new CustomEvent('ai-assistant:ask', { detail: { prompt: `${title} — ${message}` } }));
     }
   };
 
