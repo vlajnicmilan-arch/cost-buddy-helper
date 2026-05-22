@@ -44,7 +44,7 @@ import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
 import { buildReportFileName } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
-import i18n from '@/i18n';
+import i18nDefault from '@/i18n';
 
 interface ProjectExpense {
   id: string;
@@ -87,6 +87,8 @@ export const ProjectTransactionsTab = ({
   onRefetch
 }: ProjectTransactionsTabProps) => {
   const { t, i18n } = useTranslation();
+  const reportOwner = useReportOwner();
+  const [confidentiality, setConfidentiality] = useConfidentialityLevel();
   const { formatAmount, currency } = useCurrency();
   const { user } = useAuth();
   const { customCategories } = useCustomCategories();
