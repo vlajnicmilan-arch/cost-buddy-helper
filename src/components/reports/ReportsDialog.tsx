@@ -662,7 +662,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
           {t('bulk.reports')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto w-[calc(100vw-1rem)] sm:w-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-1rem)] sm:w-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <FileText className="w-5 h-5" />
