@@ -110,28 +110,24 @@ export const generateProjectPDFReport = async (
     },
   });
 
-  // Budget Summary
-  doc.setFontSize(11);
-  doc.setFont('Inter', 'bold');
-  
-  // Title
-  doc.setFontSize(20);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii(`Izvjestaj: ${data.projectName}`), 14, 20);
-  
-  // Metadata
-  doc.setFontSize(10);
+  // Status + description below header
+  let cursorY = bodyStartY;
+  doc.setFontSize(9.5);
   doc.setFont('Inter', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text(`${i18n.t('common.status', 'Status')}: ${toAscii(data.projectStatus)}`, REPORT_MARGIN_X, cursorY);
+  cursorY += 5;
   if (data.projectDescription) {
-    doc.text(toAscii(data.projectDescription.substring(0, 80)), 14, 28);
+    doc.text(toAscii(data.projectDescription.substring(0, 100)), REPORT_MARGIN_X, cursorY);
+    cursorY += 5;
   }
-  doc.text(`Status: ${toAscii(data.projectStatus)}`, 14, 34);
-  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 40);
+  cursorY += 4;
 
-  // Budget Summary
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Budzet'), 14, 52);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii('Budzet'), REPORT_MARGIN_X, cursorY);
+  cursorY += 2;
 
   const remaining = data.totalBudget - data.totalSpent;
   const usedPercent = data.totalBudget > 0 
