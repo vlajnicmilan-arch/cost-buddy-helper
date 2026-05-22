@@ -37,6 +37,7 @@ import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
+import { printHtmlDocument } from '@/lib/printHtml';
 
 interface ProjectExpense {
   id: string;
