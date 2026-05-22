@@ -1579,7 +1579,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                 <ArrowUpDown className="w-4 h-4" />
                 {t('reports.difference', 'Razlika')}
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('reports.income', 'Prihodi')}</p>
                   <div className={cn("flex items-center gap-1 font-mono font-bold", getDiffColor(compareStats1.income - compareStats2.income))}>
