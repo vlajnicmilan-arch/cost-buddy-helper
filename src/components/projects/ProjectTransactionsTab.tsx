@@ -44,6 +44,7 @@ import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
 import { buildReportFileName } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 interface ProjectExpense {
