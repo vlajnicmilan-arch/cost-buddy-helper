@@ -40,6 +40,11 @@ import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection'
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
+import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { buildReportFileName } from '@/lib/reportDesign';
+import { useReportOwner } from '@/hooks/useReportOwner';
+import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
+import i18n from '@/i18n';
 
 interface ProjectExpense {
   id: string;
@@ -539,41 +544,62 @@ export const ProjectTransactionsTab = ({
   }, [filteredExpenses]);
 
   const handlePrintFiltered = () => {
-    const rows = filteredExpenses.map(e => {
+    const rowsHtml = filteredExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
+      const cls = e.type === 'income' ? 'pos' : 'neg';
       return `<tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(new Date(e.date), 'dd.MM.yyyy')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.description}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${cat.name}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${milestone || '-'}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.expense_nature === 'extraordinary' ? t('projects.extraordinary', 'Vanredni') : t('projects.regular', 'Redovni')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:${e.type === 'income' ? '#16a34a' : '#dc2626'}">${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}</td>
+        <td>${format(new Date(e.date), 'dd.MM.yyyy')}</td>
+        <td>${e.description}</td>
+        <td>${cat.name}</td>
+        <td>${milestone || '-'}</td>
+        <td>${e.expense_nature === 'extraordinary' ? t('projects.extraordinary', 'Vanredni') : t('projects.regular', 'Redovni')}</td>
+        <td class="num ${cls}">${e.type === 'income' ? '+' : '-'}${formatAmount(e.amount)}</td>
       </tr>`;
     }).join('');
 
-    const html = `<!DOCTYPE html><html><head><title>${projectName || ''} - ${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
-      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
-      ${projectName ? `<h1>${projectName}</h1>` : ''}
-      <h2>${hasActiveFilters ? t('projects.filteredTransactions', 'Filtrirane transakcije') : t('projects.allTransactions', 'Sve transakcije')} (${filteredExpenses.length})</h2>
-      <table><thead><tr>
-        <th>${t('common.date', 'Datum')}</th>
-        <th>${t('common.description', 'Opis')}</th>
-        <th>${t('common.category', 'Kategorija')}</th>
-        <th>${t('projects.milestone', 'Faza')}</th>
-        <th>${t('projects.expenseNature', 'Vrsta')}</th>
-        <th style="text-align:right">${t('common.amount', 'Iznos')}</th>
-      </tr></thead><tbody>${rows}</tbody></table>
-      <div class="summary">
-        <strong>${t('transactions.expense', 'Troškovi')}:</strong> ${formatAmount(filteredTotals.totalExpenses)} &nbsp;|&nbsp;
-        <strong>${t('transactions.income', 'Prihodi')}:</strong> ${formatAmount(filteredTotals.totalIncome)} &nbsp;|&nbsp;
-        <strong>${t('common.balance', 'Razlika')}:</strong> ${formatAmount(filteredTotals.net)}
-      </div></body></html>`;
+    const kpiStrip = renderHtmlKpiStrip([
+      { label: t('transactions.income', 'Prihodi'), value: formatAmount(filteredTotals.totalIncome) },
+      { label: t('transactions.expense', 'Troškovi'), value: formatAmount(filteredTotals.totalExpenses) },
+      { label: t('common.balance', 'Razlika'), value: formatAmount(filteredTotals.net) },
+      { label: t('common.count', 'Broj'), value: String(filteredExpenses.length) },
+    ]);
 
-    // Native WebView ignores window.print() silently. Save HTML so the user
-    // can open it in a system browser/viewer and print from there.
+    const bodyHtml = `${kpiStrip}
+      <h2>${hasActiveFilters ? t('projects.filteredTransactions', 'Filtrirane transakcije') : t('projects.allTransactions', 'Sve transakcije')}</h2>
+      <table>
+        <thead><tr>
+          <th>${t('common.date', 'Datum')}</th>
+          <th>${t('common.description', 'Opis')}</th>
+          <th>${t('common.category', 'Kategorija')}</th>
+          <th>${t('projects.milestone', 'Faza')}</th>
+          <th>${t('projects.expenseNature', 'Vrsta')}</th>
+          <th class="num">${t('common.amount', 'Iznos')}</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
+
+    const html = buildReportHtml({
+      title: projectName || t('projects.project', 'Projekt'),
+      brand: {
+        owner: reportOwner,
+        language: (i18n.language as any) || 'hr',
+        confidentiality,
+        subtitle: hasActiveFilters ? t('projects.filteredTransactions', 'Filtrirane transakcije') : t('projects.allTransactions', 'Sve transakcije'),
+      },
+      bodyHtml,
+      confidentialityLabel: {
+        internal: t('reportBranding.confidentiality.internal'),
+        confidential: t('reportBranding.confidentiality.confidential'),
+      },
+      intendedForLabel: confidentiality !== 'none' && reportOwner
+        ? `${t('reportBranding.intendedFor')}: ${reportOwner}`
+        : undefined,
+    });
+
     if (Capacitor.isNativePlatform()) {
-      exportTextFile(html, `${projectName || 'projekt'}.html`, 'text/html', false, 'save');
+      const fileName = buildReportFileName({ type: 'projekt', owner: reportOwner, period: projectName || undefined, ext: 'html' });
+      exportTextFile(html, fileName, 'text/html', false, 'save');
       return;
     }
     printHtmlDocument(html);
