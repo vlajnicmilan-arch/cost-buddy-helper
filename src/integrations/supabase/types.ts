@@ -2684,9 +2684,17 @@ export type Database = {
         Row: {
           created_at: string
           data: Json | null
+          dedup_key: string | null
+          dismissed_at: string | null
+          entity_id: string | null
+          entity_type: string | null
           id: string
+          last_seen_at: string
           message: string
           read: boolean
+          resolved_at: string | null
+          severity: string
+          status: string
           title: string
           type: string
           user_id: string
@@ -2694,9 +2702,17 @@ export type Database = {
         Insert: {
           created_at?: string
           data?: Json | null
+          dedup_key?: string | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
+          last_seen_at?: string
           message: string
           read?: boolean
+          resolved_at?: string | null
+          severity?: string
+          status?: string
           title: string
           type: string
           user_id: string
@@ -2704,9 +2720,17 @@ export type Database = {
         Update: {
           created_at?: string
           data?: Json | null
+          dedup_key?: string | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
+          last_seen_at?: string
           message?: string
           read?: boolean
+          resolved_at?: string | null
+          severity?: string
+          status?: string
           title?: string
           type?: string
           user_id?: string
@@ -4765,6 +4789,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      dismiss_notification: { Args: { p_id: string }; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -4881,6 +4906,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      resolve_stale_issues: {
+        Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
+        Returns: number
+      }
       restore_trash_item: {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
@@ -4890,6 +4919,19 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      upsert_active_issue: {
+        Args: {
+          p_data?: Json
+          p_dedup_key: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_message: string
+          p_severity: string
+          p_title: string
+          p_type: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"
