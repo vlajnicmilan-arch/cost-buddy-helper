@@ -26,16 +26,31 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 
+import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
+import { TransferListDialog } from '@/components/TransferListDialog';
+import { useMemo } from 'react';
+
 const Wallet = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
-  const { importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses, updateExpense, deleteExpense } = useExpenses();
+  const {
+    importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses,
+    updateExpense, deleteExpense, monthlyTransfers, monthlyTransferCount, totalTransfers,
+  } = useExpenses();
   const { dashboardV2Enabled } = useAppState();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+
+  const allTransfers = useMemo(
+    () => allExpenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [allExpenses]
+  );
+
+  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false));
 
   useBackButton(paymentSourceDialogOpen, () => {
     if (paymentSourcePdfProcessing) return;
@@ -98,6 +113,11 @@ const Wallet = () => {
           setPaymentSourceDialogOpen(true);
           refetch();
         }} />
+        <WalletTransfersCard
+          monthlyTransfers={monthlyTransfers}
+          monthlyTransferCount={monthlyTransferCount}
+          onClick={() => setTransferDialogOpen(true)}
+        />
         <InstallmentsPanel />
         {dashboardV2Enabled && (
           <>
@@ -139,6 +159,13 @@ const Wallet = () => {
         onImportCSV={importFromCSVWithRefetch}
         findDuplicates={findDuplicates}
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
+      />
+
+      <TransferListDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        transfers={allTransfers}
+        totalAmount={totalTransfers}
       />
 
       <BottomNav />
