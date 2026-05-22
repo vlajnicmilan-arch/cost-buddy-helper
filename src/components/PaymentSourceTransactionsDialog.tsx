@@ -788,7 +788,12 @@ export const PaymentSourceTransactionsDialog = ({
   const handleExportPDF = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     const data = buildReportData();
-    await generatePDFReport(data, `${paymentSource.name} - ${t('transactions.transactions')}`);
+    await generatePDFReport(
+      data,
+      `${paymentSource.name} – ${t('transactions.transactions')}`,
+      'save',
+      { owner: reportOwner, confidentiality, language: (i18n.language as any) || 'hr' },
+    );
     showSuccess(t('reports.pdfExported', 'PDF izvoz završen'));
   };
 
