@@ -19,6 +19,7 @@ import {
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/ui/export-button';
+import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
 import type { ExportMode } from '@/lib/fileExport';
 import { 
   FileText, Download, Wallet, Target, Users, 
@@ -72,6 +73,7 @@ export const ProjectReportsDialog = ({
   const { t, i18n } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
+  const [confidentiality, setConfidentiality] = useConfidentialityLevel();
 
   // Fetch workers and collaborators for exports
   const [reportWorkers, setReportWorkers] = useState<{ name: string; hours: number; rate: number; cost: number }[]>([]);
@@ -230,7 +232,7 @@ export const ProjectReportsDialog = ({
     try {
       switch (format) {
         case 'pdf':
-          await generateProjectPDFReport(reportData, mode);
+          await generateProjectPDFReport(reportData, mode, { confidentiality });
           if (mode === 'share') showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
           break;
         case 'csv':
@@ -334,7 +336,7 @@ export const ProjectReportsDialog = ({
         fromDate,
         toDate,
         entries,
-      }, mode);
+      }, mode, { confidentiality });
       if (mode === 'share') showSuccess(t('reports.pdfGenerated', 'PDF izvještaj generiran'));
     } catch (error) {
       console.error('Work log export error:', error);
@@ -390,6 +392,9 @@ export const ProjectReportsDialog = ({
                 onExport={(mode) => handleExport('pdf', mode)}
               />
             </div>
+          </div>
+          <div className="px-1">
+            <ConfidentialityPicker value={confidentiality} onChange={setConfidentiality} />
           </div>
         </DialogHeader>
 

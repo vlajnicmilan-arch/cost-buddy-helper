@@ -8,7 +8,7 @@ import { sanitizeCsvField } from '@/lib/csvSecurity';
 import { applyBrandFont, brandAutoTable } from '@/lib/pdfBranding';
 import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
 import { ensureReportLogo } from '@/lib/reportLogo';
-import { buildReportFileName, type ReportBrandOptions } from '@/lib/reportDesign';
+import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
@@ -76,7 +76,7 @@ export const generatePDFReport = async (
   const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
   const owner = brand.owner ?? (await getReportOwner());
   const subtitle = brand.subtitle || `${i18n.t('reports.period')}: ${formatDate(data.dateRange.start)} – ${formatDate(data.dateRange.end)}`;
-  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality || 'none', subtitle };
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality ?? loadLastConfidentiality(), subtitle };
 
   const bodyStartY = drawReportHeader(doc, {
     title: reportTitle,
@@ -257,7 +257,7 @@ export const generateIncomePDFReport = async (
   const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
   const owner = brand.owner ?? (await getReportOwner());
   const subtitle = brand.subtitle || `${i18n.t('reports.period')}: ${formatDate(data.dateRange.start)} – ${formatDate(data.dateRange.end)}`;
-  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality || 'none', subtitle };
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality ?? loadLastConfidentiality(), subtitle };
 
   const bodyStartY = drawReportHeader(doc, {
     title: reportTitle,
