@@ -1,7 +1,12 @@
+import i18n from '@/i18n';
 import { loadJsPdf } from './loadJsPdf';
 import { exportFile } from './fileExport';
 import { sanitizeCsvField } from './csvSecurity';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT } from '@/lib/pdfBranding';
+import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
+import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
+import { ensureReportLogo } from '@/lib/reportLogo';
+import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
+import { getReportOwner } from '@/hooks/useReportOwner';
 
 export interface WorkExportConfig {
   workers: Array<{
