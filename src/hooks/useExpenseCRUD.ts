@@ -492,7 +492,7 @@ export const useExpenseCRUD = ({
         // unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`
         // so re-importing the same statement cannot create duplicates.
         const { computeImportFingerprint } = await import('@/lib/importFingerprint');
-        const rows = await Promise.all(transactions.map(async (tx) => {
+        const fingerprinted = await Promise.all(transactions.map(async (tx) => {
           const fingerprint = tx.bank_transaction_id
             || await computeImportFingerprint({
               userId: user.id,
@@ -503,7 +503,93 @@ export const useExpenseCRUD = ({
               description: tx.description,
               merchantName: tx.merchant_name,
             });
-          return {
+          return { tx, fingerprint };
+        }));
+
+        // === Auto-merge: spoji izvod redove s postojećim ručnim unosima ===
+        // Match scope: ±1 dan, isti payment_source, isti type, isti iznos.
+        // Mergeani redovi ostaju isti DB redovi (zadržavaju saldo efekt),
+        // dobivaju bank_transaction_id + bank_match_status='confirmed' + import_batch_id.
+        let mergedCount = 0;
+        const mergedFingerprints = new Set<string>();
+        try {
+          const sources = Array.from(new Set(fingerprinted
+            .map(r => r.tx.payment_source || 'other')
+            .filter(Boolean))) as string[];
+
+          const dates = fingerprinted.map(r => r.tx.date.getTime());
+          if (dates.length > 0 && sources.length > 0) {
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            const minIso = new Date(minDate.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            const maxIso = new Date(maxDate.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+            const { data: manualRows, error: manualErr } = await supabase
+              .from('expenses')
+              .select('id, payment_source, type, amount, date, bank_match_status, bank_transaction_id')
+              .eq('user_id', user.id)
+              .in('payment_source', sources)
+              .in('type', ['income', 'expense'])
+              .in('bank_match_status', ['manual', 'pending_bank'])
+              .is('bank_transaction_id', null)
+              .is('deleted_at', null)
+              .gte('date', minIso)
+              .lte('date', maxIso);
+
+            if (manualErr) {
+              console.warn('[importFromCSV] manual candidate query failed, skipping auto-merge:', manualErr.message);
+            } else if (manualRows && manualRows.length > 0) {
+              const { matchManualToImported } = await import('@/lib/manualMatchForImport');
+              const matchResult = matchManualToImported({
+                imported: fingerprinted.map((r, idx) => ({
+                  index: idx,
+                  paymentSource: r.tx.payment_source || 'other',
+                  type: r.tx.type,
+                  amount: r.tx.amount,
+                  date: r.tx.date,
+                })),
+                manualCandidates: manualRows.map(m => ({
+                  id: m.id,
+                  paymentSource: m.payment_source,
+                  type: m.type,
+                  amount: Number(m.amount),
+                  date: m.date,
+                })),
+                maxDayDiff: 1,
+              });
+
+              const updates = await Promise.allSettled(matchResult.matches.map(async (m) => {
+                const row = fingerprinted[m.importedIndex];
+                const { error: updErr, data: updData } = await supabase
+                  .from('expenses')
+                  .update({
+                    bank_transaction_id: row.fingerprint,
+                    bank_match_status: 'confirmed',
+                    import_batch_id: batchId,
+                    merchant_name: row.tx.merchant_name || null,
+                  })
+                  .eq('id', m.manualId)
+                  .eq('user_id', user.id)
+                  .is('bank_transaction_id', null) // race-guard
+                  .select('id');
+                if (updErr) throw updErr;
+                if (updData && updData.length > 0) {
+                  mergedFingerprints.add(row.fingerprint);
+                  return true;
+                }
+                return false;
+              }));
+              mergedCount = updates.filter(u => u.status === 'fulfilled' && u.value === true).length;
+            }
+          }
+        } catch (mergeErr) {
+          console.warn('[importFromCSV] auto-merge step failed, falling back to plain insert:', mergeErr);
+        }
+
+        // Redovi za upsert = svi osim onih koji su uspješno mergeani.
+        const rows = fingerprinted
+          .filter(r => !mergedFingerprints.has(r.fingerprint))
+          .map(({ tx, fingerprint }) => ({
             user_id: user.id,
             amount: tx.amount,
             description: tx.description,
@@ -520,23 +606,25 @@ export const useExpenseCRUD = ({
             // pa redovi idu kao `bank_only`. Kasniji bank sync može upgrade-ati
             // u `confirmed` ako match-a po amount/date/payment_source.
             bank_match_status: 'bank_only',
-          };
-        }));
+          }));
 
         // Upsert with ignoreDuplicates: rows with a fingerprint that already
         // exists for this user are silently skipped. `.select()` returns only
         // newly inserted rows.
-        const { data, error } = await supabase
-          .from('expenses')
-          .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
-          .select();
+        let insertedData: any[] = [];
+        if (rows.length > 0) {
+          const { data, error } = await supabase
+            .from('expenses')
+            .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
+            .select();
 
-        if (error) {
-          console.error('Bulk upsert failed:', error.message);
-          throw error;
+          if (error) {
+            console.error('Bulk upsert failed:', error.message);
+            throw error;
+          }
+          insertedData = data || [];
         }
 
-        const insertedData = data || [];
         const skippedCount = rows.length - insertedData.length;
 
         const newExpenses: Expense[] = insertedData.map(e => ({
@@ -548,7 +636,8 @@ export const useExpenseCRUD = ({
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         }));
 
-        // Update balance ONLY for actually inserted rows.
+        // Update balance ONLY for actually inserted rows. Mergeani NE diraju
+        // balans jer je ručni unos već utjecao prije merge-a.
         for (const tx of newExpenses) {
           const txType = tx.type as TransactionType;
           if (txType === 'transfer') {
@@ -566,14 +655,19 @@ export const useExpenseCRUD = ({
           (a, b) => b.date.getTime() - a.date.getTime()
         ));
 
-        if (insertedData.length === 0) {
-          toast.info(`Nema novih transakcija — svih ${rows.length} već postoji.`);
+        if (insertedData.length === 0 && mergedCount === 0) {
+          toast.info(t('import.allAlreadyExists', { count: transactions.length, defaultValue: `Nema novih transakcija — svih ${transactions.length} već postoji.` }));
+        } else if (mergedCount > 0 && skippedCount > 0) {
+          showSuccess(t('import.summaryFull', { inserted: insertedData.length, merged: mergedCount, skipped: skippedCount, defaultValue: `Uvezeno ${insertedData.length} novih, spojeno ${mergedCount} s ručnim, ${skippedCount} već postoji.` }));
+        } else if (mergedCount > 0) {
+          showSuccess(t('import.summaryWithMerged', { inserted: insertedData.length, merged: mergedCount, defaultValue: `Uvezeno ${insertedData.length} novih, spojeno ${mergedCount} s ručnim unosima.` }));
         } else if (skippedCount > 0) {
-          showSuccess(`Uvezeno ${insertedData.length} novih, ${skippedCount} već postoji.`);
+          showSuccess(t('import.summaryWithSkipped', { inserted: insertedData.length, skipped: skippedCount, defaultValue: `Uvezeno ${insertedData.length} novih, ${skippedCount} već postoji.` }));
         } else {
-          showSuccess(`Uvezeno ${insertedData.length} transakcija`);
+          showSuccess(t('import.importedTransactions', { count: insertedData.length }));
         }
       }
+
     } catch (error) {
       console.error('Error importing CSV:', error);
       showError(t('toasts.importError'));
