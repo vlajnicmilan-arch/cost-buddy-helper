@@ -19,6 +19,7 @@ import {
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/ui/export-button';
+import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
 import type { ExportMode } from '@/lib/fileExport';
 import { 
   FileText, Download, Wallet, Target, Users, 
