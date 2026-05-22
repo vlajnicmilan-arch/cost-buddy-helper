@@ -1,24 +1,15 @@
-import { Capacitor } from '@capacitor/core';
-import { exportFile } from './fileExport';
-
 /**
- * Prints an HTML document.
+ * Prints an HTML document using a hidden iframe (web only).
  *
- * Web: renders into a hidden iframe and triggers `iframe.contentWindow.print()`,
- * which opens the browser print dialog without navigating away.
+ * Native (Capacitor Android/iOS) WebView ignores `window.print()` silently —
+ * callers must detect `Capacitor.isNativePlatform()` and route to a PDF
+ * export instead (which the user can then print from a system PDF viewer).
  *
- * Native (Capacitor Android/iOS): the system WebView does NOT honor
- * `window.print()` — calling it from JS is a silent no-op. Instead we save
- * the HTML as a file and let `FileSavedDialog` offer Open/Share, so the user
- * can open it in a system viewer that exposes its own print action.
+ * The iframe approach avoids the broken `window.open('', '_blank')` flow,
+ * which inside Capacitor created a chrome-less in-app tab the user couldn't
+ * exit without killing the app.
  */
-export async function printHtmlDocument(html: string, fileName = 'ispis.html'): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    await exportFile(blob, fileName, 'save');
-    return;
-  }
-
+export function printHtmlDocument(html: string): void {
   if (typeof document === 'undefined') return;
 
   const iframe = document.createElement('iframe');
