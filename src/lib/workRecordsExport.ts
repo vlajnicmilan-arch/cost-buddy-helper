@@ -93,68 +93,83 @@ export async function generateWorkRecordsJSON(config: WorkExportConfig): Promise
   await exportFile(blob, `${safeFilename(config.projectName)}_radni_sati.json`, "save");
 }
 
-export async function generateWorkRecordsPDF(config: WorkExportConfig): Promise<void> {
+export async function generateWorkRecordsPDF(
+  config: WorkExportConfig,
+  brand: ReportBrandOptions = {},
+): Promise<void> {
   const { workers, entries, milestones, projectName, currency } = config;
-  const { jsPDF } = await loadJsPdf();
+  const { jsPDF, autoTable } = await loadJsPdf();
+  await ensureReportLogo();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   applyBrandFont(doc);
+
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const confidentiality = brand.confidentiality ?? loadLastConfidentiality();
+  const subtitle = brand.subtitle || `${i18n.t('projects.project', 'Projekt')}: ${projectName}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality, subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: i18n.t('workers.title', 'Radni sati'),
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
 
   const msMap = new Map(milestones.map(m => [m.id, m.name]));
   const wMap = new Map(workers.map(w => [w.id, `${w.first_name} ${w.last_name}`.trim()]));
 
-  let y = 15;
-  doc.setFontSize(14);
-  doc.text(`Radni sati — ${projectName}`, 15, y);
-  y += 8;
-  doc.setFontSize(9);
-  doc.text(`Generirano: ${new Date().toLocaleString('hr-HR')}`, 15, y);
-  y += 8;
+  doc.setFontSize(12);
+  doc.setFont('Inter', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('Sažetak po radniku', REPORT_MARGIN_X, bodyStartY);
 
-  // Per-worker summary
-  doc.setFontSize(11);
-  doc.text('Sažetak po radniku', 15, y);
-  y += 6;
-  doc.setFontSize(9);
-  doc.text('Radnik', 15, y);
-  doc.text('Sati', 120, y, { align: 'right' });
-  doc.text('Trošak', 190, y, { align: 'right' });
-  y += 5;
-  doc.line(15, y - 2, 195, y - 2);
-  for (const w of workers) {
-    if (y > 280) { doc.addPage(); y = 15; }
-    doc.text(`${w.first_name} ${w.last_name}`.trim(), 15, y);
-    doc.text(w.actualHoursTotal.toFixed(2), 120, y, { align: 'right' });
-    doc.text(fmtCurrency(w.actualCostTotal, currency), 190, y, { align: 'right' });
-    y += 5;
-  }
+  brandAutoTable(doc, autoTable, {
+    startY: bodyStartY + 2,
+    head: [['Radnik', 'Sati', 'Trošak']],
+    body: workers.map(w => [
+      `${w.first_name} ${w.last_name}`.trim(),
+      w.actualHoursTotal.toFixed(2),
+      fmtCurrency(w.actualCostTotal, currency),
+    ]),
+    margin: { left: REPORT_MARGIN_X },
+    tableWidth: 170,
+  });
 
-  // Entries
-  y += 6;
-  if (y > 270) { doc.addPage(); y = 15; }
-  doc.setFontSize(11);
-  doc.text('Detaljni unosi', 15, y);
-  y += 6;
-  doc.setFontSize(8);
-  doc.text('Radnik', 15, y);
-  doc.text('Datum', 70, y);
-  doc.text('h plan', 100, y, { align: 'right' });
-  doc.text('h stvarno', 125, y, { align: 'right' });
-  doc.text('Faze', 130, y);
-  y += 4;
-  doc.line(15, y - 2, 195, y - 2);
+  const detailY = (doc as any).lastAutoTable.finalY + 10;
+  doc.setFontSize(12);
+  doc.setFont('Inter', 'bold');
+  doc.text('Detaljni unosi', REPORT_MARGIN_X, detailY);
 
   const sorted = [...entries].sort((a, b) => a.work_date.localeCompare(b.work_date));
-  for (const e of sorted) {
-    if (y > 285) { doc.addPage(); y = 15; }
-    const phases = (e.milestone_ids || []).map(id => msMap.get(id) || '').filter(Boolean).join(', ');
-    doc.text((wMap.get(e.worker_id) || '').slice(0, 28), 15, y);
-    doc.text(e.work_date, 70, y);
-    doc.text(e.scheduled_hours.toFixed(2), 100, y, { align: 'right' });
-    doc.text(e.actual_hours.toFixed(2), 125, y, { align: 'right' });
-    doc.text(phases.slice(0, 40), 130, y);
-    y += 4.5;
-  }
+  brandAutoTable(doc, autoTable, {
+    startY: detailY + 2,
+    head: [['Radnik', 'Datum', 'h plan', 'h stvarno', 'Faze']],
+    body: sorted.map(e => {
+      const phases = (e.milestone_ids || []).map(id => msMap.get(id) || '').filter(Boolean).join(', ');
+      return [
+        wMap.get(e.worker_id) || '',
+        e.work_date,
+        e.scheduled_hours.toFixed(2),
+        e.actual_hours.toFixed(2),
+        phases,
+      ];
+    }),
+    styles: { fontSize: 8 },
+    margin: { left: REPORT_MARGIN_X },
+  });
+
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
 
   const blob = doc.output('blob');
-  await exportFile(blob, `${safeFilename(projectName)}_radni_sati.pdf`, "save");
+  const fileName = buildReportFileName({ type: `radni-sati-${projectName}`, owner, ext: 'pdf' });
+  await exportFile(blob, fileName, 'save');
 }
