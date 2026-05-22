@@ -335,7 +335,7 @@ export const NotificationsDropdown = () => {
                       key={notification.id}
                       role="button"
                       tabIndex={0}
-                      aria-label={notification.title || notification.message || 'Obavijest'}
+                      aria-label={resolveNotificationText(notification.title, (notification.data as any)?.title_vars, t) || resolveNotificationText(notification.message, (notification.data as any)?.message_vars, t) || 'Obavijest'}
                       className={cn(
                         'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                         !notification.read && 'bg-primary/5'
@@ -354,10 +354,10 @@ export const NotificationsDropdown = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={cn('text-sm', !notification.read && 'font-medium')}>
-                            {notification.title}
+                            {resolveNotificationText(notification.title, (notification.data as any)?.title_vars, t)}
                           </p>
                           <p className="text-xs text-muted-foreground line-clamp-2">
-                            {notification.message}
+                            {resolveNotificationText(notification.message, (notification.data as any)?.message_vars, t)}
                           </p>
                           {isInvitation && (
                             <p className="text-xs text-primary font-medium mt-1">
