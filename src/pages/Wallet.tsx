@@ -26,9 +26,6 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 
-import { useAppState } from '@/contexts/AppStateContext';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowRight, ChevronDown } from 'lucide-react';
 import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { useMemo } from 'react';
