@@ -681,8 +681,9 @@ export const PaymentSourceTransactionsDialog = ({
 
 
   // Print handler
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
+    await ensureReportLogo();
 
     const rowsHtml = filteredSourceExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
