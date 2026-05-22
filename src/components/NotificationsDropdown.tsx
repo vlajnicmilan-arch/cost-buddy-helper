@@ -436,9 +436,9 @@ export const NotificationsDropdown = () => {
       <AlertDialog open={!!invitationDialog} onOpenChange={(open) => !open && setInvitationDialog(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{resolveNotificationText(invitationDialog?.notification.title, (invitationDialog?.notification.data as any)?.title_vars, t)}</AlertDialogTitle>
+            <AlertDialogTitle>{resolveNotificationText(invitationDialog?.notification.title, (parseNotificationData(invitationDialog?.notification.data) as any)?.title_vars, t)}</AlertDialogTitle>
             <AlertDialogDescription>
-              {resolveNotificationText(invitationDialog?.notification.message, (invitationDialog?.notification.data as any)?.message_vars, t)}
+              {resolveNotificationText(invitationDialog?.notification.message, (parseNotificationData(invitationDialog?.notification.data) as any)?.message_vars, t)}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
