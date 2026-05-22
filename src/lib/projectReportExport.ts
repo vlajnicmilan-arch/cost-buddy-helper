@@ -301,9 +301,15 @@ export const generateProjectPDFReport = async (
     });
   }
 
-  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `projekt_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  addNotOfficialFooter(doc);
+  const period = formatDate(new Date()).replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: `projekt-${data.projectName}`, owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
