@@ -37,6 +37,7 @@ import { DateRange } from 'react-day-picker';
 import { enUS, de } from 'date-fns/locale';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
+import { printHtmlDocument } from '@/lib/printHtml';
 
 interface ProjectExpense {
   id: string;
@@ -536,9 +537,6 @@ export const ProjectTransactionsTab = ({
   }, [filteredExpenses]);
 
   const handlePrintFiltered = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
     const rows = filteredExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
@@ -552,7 +550,7 @@ export const ProjectTransactionsTab = ({
       </tr>`;
     }).join('');
 
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>${projectName || ''} - ${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
+    const html = `<!DOCTYPE html><html><head><title>${projectName || ''} - ${t('projects.filteredTransactions', 'Filtrirane transakcije')}</title>
       <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
       ${projectName ? `<h1>${projectName}</h1>` : ''}
       <h2>${hasActiveFilters ? t('projects.filteredTransactions', 'Filtrirane transakcije') : t('projects.allTransactions', 'Sve transakcije')} (${filteredExpenses.length})</h2>
@@ -568,9 +566,9 @@ export const ProjectTransactionsTab = ({
         <strong>${t('transactions.expense', 'Troškovi')}:</strong> ${formatAmount(filteredTotals.totalExpenses)} &nbsp;|&nbsp;
         <strong>${t('transactions.income', 'Prihodi')}:</strong> ${formatAmount(filteredTotals.totalIncome)} &nbsp;|&nbsp;
         <strong>${t('common.balance', 'Razlika')}:</strong> ${formatAmount(filteredTotals.net)}
-      </div></body></html>`);
-    printWindow.document.close();
-    printWindow.print();
+      </div></body></html>`;
+
+    printHtmlDocument(html);
   };
 
   if (loading) {

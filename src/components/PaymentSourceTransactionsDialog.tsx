@@ -33,6 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { printHtmlDocument } from '@/lib/printHtml';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -673,8 +674,6 @@ export const PaymentSourceTransactionsDialog = ({
   // Print handler
   const handlePrint = () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
 
     const rows = filteredSourceExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
@@ -690,7 +689,7 @@ export const PaymentSourceTransactionsDialog = ({
       </tr>`;
     }).join('');
 
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>${paymentSource.name} - ${t('transactions.transactions')}</title>
+    const html = `<!DOCTYPE html><html><head><title>${paymentSource.name} - ${t('transactions.transactions')}</title>
       <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
       <h1>${paymentSource.icon} ${paymentSource.name}</h1>
       <h2>${t('summary.balance')}: ${formatAmount(paymentSource.balance)} | ${filteredSourceExpenses.length} ${t('transactions.transactions')}</h2>
@@ -705,9 +704,9 @@ export const PaymentSourceTransactionsDialog = ({
         <strong>${t('summary.totalIncome')}:</strong> ${formatAmount(totalIncome)} &nbsp;|&nbsp;
         <strong>${t('summary.totalExpenses')}:</strong> ${formatAmount(totalExp)} &nbsp;|&nbsp;
         <strong>${t('transactions.transfers', 'Prijenosi')}:</strong> ${formatAmount(totalTransfers)}
-      </div></body></html>`);
-    printWindow.document.close();
-    printWindow.print();
+      </div></body></html>`;
+
+    printHtmlDocument(html);
   };
 
   // Export handlers
