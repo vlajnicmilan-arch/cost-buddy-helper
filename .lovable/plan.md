@@ -1,71 +1,92 @@
+
+# Plan: Ujednačeni dizajn ispisa — Varijanta B + brendiranje
+
 ## Cilj
+Svi PDF/HTML ispisi dobivaju isti vizualni jezik (Varijanta B — "Dashboard": teal-tinted header card, mali KPI cards, alternating rows, chip section labels), plus: logo, ime vlasnika u eyebrowu, opcionalna oznaka povjerljivosti, ime u nazivu fajla.
 
-Omogućiti da ponovni upload starih bankovnih izvoda (poput siječanjskog Aircash PDF-a) bude prepoznat kao već uvezen, isto kao što već radi za sve uvoze nakon ~9.4.2026.
+## Što se mijenja (high level)
 
-## Što je trenutno problem
+1. **Dijeljeni dizajn-sustav za izvještaje** (novi fajlovi)
+   - `src/lib/reportDesign.ts` — tokeni (boje, tipografija, spacing, radii) za Varijantu B
+   - `src/lib/pdfReportKit.ts` — jsPDF helperi: header card, KPI strip, section chip, data table, footer (page X / Y), watermark
+   - `src/lib/printHtmlTemplate.ts` — HTML pandan s istim CSS varijablama, embeddani Inter font (base64) za Capacitor WebView
 
-Provjerio sam tvoju bazu:
+2. **Logo komponenta**
+   - `src/assets/report-logo.png` (ili .svg) — korisnikov logo
+   - Helper `drawLogo(doc, x, y, h)` u `pdfReportKit.ts` koji renderira sliku u PDF; HTML inačica koristi `<img>` s base64 data URI-jem
+   - Fallback ako logo nije dostupan: tekstualni "V&M Balance" wordmark u teal
 
-- **Veljača/ožujak (139 transakcija)** — imaju `import_batch_id` ali **nemaju `bank_transaction_id`** (fingerprint), i nemaju zapis u `imported_statements`.
-- **Siječanj (26 transakcija na izvoru `385b0fe5…`)** — **nemaju ni `import_batch_id` ni fingerprint**. Vjerojatno uvezene još starijim flowom ili kombinacijom ručnih unosa.
-- `imported_statements` ima 5 zapisa, svi `file_hash = NULL`, zadnji 9.4.2026.
+3. **Header layout (svi izvještaji)**
+   ```text
+   ┌───────────────────────────────────────────────────────┐
+   │ [LOGO]  MILAN HORVAT · 22.05.2026          [BADGE]    │  ← eyebrow + opcionalni confidentiality badge
+   │                                                       │
+   │ Izvješće o transakcijama                              │  ← H1
+   │ Svibanj 2026 · Glavni račun                           │  ← podnaslov (period/scope)
+   └───────────────────────────────────────────────────────┘
+   ```
+   - Eyebrow ime se dohvaća iz `profiles.full_name` → fallback `auth.user.email` lokalni dio → fallback prazno
+   - Datum lokaliziran (`hr-HR` itd.)
 
-Dva guarda postoje:
+4. **Toggle povjerljivosti — 3 razine**
+   - Nova komponenta `ConfidentialityPicker` (radio: Bez oznake / Interno / Povjerljivo)
+   - Integrira se u: `PaymentSourceTransactionsDialog`, `ProjectTransactionsTab` (gumb Ispiši/PDF), `ProjectReportsDialog`, `ProjectFinanceReportsDialog`, `ReportsDialog`, `WorkRecordsExportDialog`, `InvoicePreview`/`EstimatePreview` (export)
+   - Persistencija zadnjeg izbora po korisniku → `localStorage` (`vm:lastConfidentiality`)
+   - Vizualno:
+     - **Bez oznake**: ništa
+     - **Interno**: slate badge gore desno u headeru, footer linija "Interno — namijenjeno: {ime}"
+     - **Povjerljivo**: teal badge gore desno + diagonalni watermark "POVJERLJIVO" (~8% opacity) na svakoj stranici + footer "Povjerljivo — namijenjeno: {ime}"
 
-1. **Statement-level** (`file_hash` / `content_hash` u `imported_statements`) — guard koji si vidio danas. Nije pronašao siječanj jer nema zapisa.
-2. **Row-level** (`bank_transaction_id` UNIQUE) — drugi sloj zaštite. Ne radi za siječanj jer postojeći redovi imaju `NULL` u toj koloni → svi novi redovi bi prošli kao "novi".
+5. **Naziv datoteke s imenom**
+   - Helper `buildReportFileName({type, owner, period, ext})` → `transakcije-milan-horvat-2026-05.pdf`
+   - Imena se sanitiziraju (lowercase, dijakritike → ASCII, razmaci → `-`)
 
-Bez popravka, ponovni upload siječanjskog PDF-a bi **dodao 26 duplikata u bazu i duplo udario po saldu**.
+6. **Migracija postojećih exporta na novi sustav** (bez promjene API-ja prema komponentama)
+   - `reportExport.ts`
+   - `projectReportExport.ts`
+   - `projectFinancePdfExport.ts`
+   - `invoicePdf.ts`
+   - `estimatePdf.ts`
+   - `workRecordsExport.ts`
+   - inline HTML builderi u `PaymentSourceTransactionsDialog.tsx` i `ProjectTransactionsTab.tsx`
 
-## Plan
+7. **i18n ključevi (novi)**
+   - `report.confidentiality.none|internal|confidential`
+   - `report.confidentiality.intendedFor`
+   - `report.confidentiality.watermark`
+   - `report.eyebrow.preparedBy`
+   - `report.footer.pageXofY`
+   - Sve dodano u `hr.json`, `en.json`, `de.json`
 
-### 1. Migracija — backfill funkcija
+## Što se NE mijenja
+- API izvoznih funkcija prema komponentama ostaje isti (samo dobivaju opcionalni `confidentiality` i `owner` argument s defaultima)
+- Logika izračuna brojki, filteri, RLS, balansi — ništa
+- Native save / share / open flow (FileSavedDialog) — ostaje kakav je
 
-Napravim PL/pgSQL funkciju `backfill_import_fingerprints(p_user_id uuid)` koja:
+## Tehnički detalji
 
-- Za svaki `expenses` red bez `bank_transaction_id`, koji ima `payment_source` (custom: ili income source) i datum, izračuna deterministički fingerprint `imp:<sha256>` po istoj formuli kao `src/lib/importFingerprint.ts` (`user|source|YYYY-MM-DD|type|amount.toFixed(2)|normalized_description`).
-- Normalizacija opisa u SQL-u: `lower(regexp_replace(unaccent(coalesce(description,'')), '\s+', ' ', 'g'))`.
-- Upiše ga u `bank_transaction_id`. Ako bi nastao konflikt s postojećim UNIQUE indexom (rijetko — dva identična reda u istom danu), drugom redu doda suffix `#2`, `#3`… (već postojeća logika iz `csvParsers.ts` se reflektira).
+**Tipografija u PDF-u**: Inter nije bundlean u jsPDF defaultu. Koristim ugrađeni Helvetica za brojke (tabular by default), a naslove crtam preko `doc.setFont('helvetica', 'bold')` s povećanim spacingom — vizualno blisko Inter Tightu. Ako kasnije zatreba pravi Inter, dodajemo `Inter-Regular.ttf` + `Inter-Bold.ttf` preko `doc.addFileToVFS` (~250 KB).
 
-Pokrene se odmah za sve korisnike kao jednokratni `SELECT backfill_import_fingerprints(user_id) FROM …`. Idempotentno — preskače redove koji već imaju fingerprint.
+**Watermark**: `doc.saveGraphicsState() → setGState(opacity 0.08) → text rotiran 45°` u `didDrawPage` hook autoTablea (i ručno na non-table stranicama).
 
-### 2. Migracija — zapis u `imported_statements`
+**HTML print**: ista vizualna pravila kroz CSS varijable; Inter učitan iz Google Fonts za web, ali za Capacitor build ugrađujem WOFF2 kao base64 u `<style>` (oko 80 KB gz).
 
-Za svaku grupu `(user_id, payment_source, import_batch_id)`:
+**Logo dimenzioniranje**: target visina 28 px @ 72 DPI u PDF-u (proporcionalno širina). U HTML-u `height: 28px`.
 
-- Izračuna `content_hash = sha256(sorted(bank_transaction_id) joined with '|')` (ista formula kao `statementFingerprint.ts`).
-- Upsert u `imported_statements` s `content_hash`, `transactions_count`, `import_batch_id`, `imported_at = MIN(date_of_entry)`. `file_hash` ostaje NULL (legacy).
+## Procesni redoslijed implementacije
+1. Tokeni + kit (`reportDesign.ts`, `pdfReportKit.ts`, `printHtmlTemplate.ts`)
+2. `ConfidentialityPicker` + i18n ključevi
+3. Migracija `reportExport.ts` (referentni primjer) + vizualna QA na uzorku
+4. Migracija ostalih 7 exporta (paralelno gdje moguće)
+5. Integracija pickera u sve export dijaloge
+6. Vizualna QA: generiram po jedan PDF svakog tipa, konvertiram u sliku, pregledam (po PDF skill checklist)
 
-Za siječanjske transakcije bez batch ID-a:
+## Pretpostavke / pitanja koja čekaju potvrdu prije builda
+- **Logo fajl**: pošalji PNG (prozirna pozadina, min 256px visina) ili SVG. Ako ne stigne do starta builda, krećem s tekstualnim wordmarkom "V&M Balance" u teal i swapnem ga čim stigne.
+- **Vlasnik na projektnim izvještajima**: koristim trenutno prijavljenog korisnika (onaj koji klika "Ispiši"), ne kreatora projekta. Reci ako želiš drugačije.
+- **Watermark samo za "Povjerljivo"** (ne za "Interno") — kao što sam predložio.
 
-- Grupiraj po `(user_id, payment_source, ime_mjeseca = to_char(date,'YYYY-MM'))` i tretiraj kao sintetički batch.
-- Generiraj novi `import_batch_id` (gen_random_uuid), upiši na te redove, te kreiraj `imported_statements` zapis za njih.
-
-Ovo je glavni korak — nakon ovoga, ponovni upload siječanjskog PDF-a će:
-
-- **Content hash match** → `findExistingStatement` vraća pogodak → guard radi.
-- Ako korisnik svejedno klikne "Uvezi ponovno" → row-level dedup po `bank_transaction_id` preskoči sve duplikate.
-
-### 3. Bez izmjena u frontend kodu
-
-Postojeća `findExistingStatement` + `recordImportedStatement` + `useExpenseCRUD.importFromCSV` već rade ispravno. Ne treba mijenjati TypeScript kod.
-
-### 4. Testovi
-
-Dodam regresijski test u `src/lib/importFingerprint.test.ts` koji potvrđuje da SQL normalizacija opisa (lowercase + unaccent + collapse whitespace) daje identičan hash kao TS verzija za par realnih primjera. (Test ostaje pure — ne udara u bazu, samo dokumentira ugovor.)
-
-## Sigurnost i rollback
-
-- Sve promjene su backfill (postavljanje NULL → vrijednost). Nema brisanja, nema izmjene iznosa, nema promjene saldova.
-- Ako nešto pođe po zlu, rollback je `UPDATE expenses SET bank_transaction_id = NULL WHERE bank_transaction_id LIKE 'imp:%' AND created_at < '<cutoff>'` — fingerprint je jasno označen prefiksom.
-- Funkcija je idempotentna i siguran je `re-run`.
-
-## Što NE dirajmo (potvrđeno već radi)
-
-- Statement upload flow (`GlobalPDFImportHost`, `CSVImportDialog`) — ne mijenjamo.
-- `importFromCSV` upsert logika — radi kako treba.
-- `unmerge_import_row` RPC i merge logika — neovisno o ovome.
-
-## Pitanje za potvrdu prije migracije
-
-Hoćeš li da backfill izvršim **samo za tebe** (`user_id = 3213303b-6267-4188-8dc9-2bb2a5c3c672`) kao test, pa tek nakon što potvrdiš da Aircash siječanj sad odbija ponovni upload — pokrenemo za sve korisnike? Ili odmah za sve?
+## Rizici
+- jsPDF + custom font povećava bundle (~250 KB). Mitigacija: lazy import u export helperima (već tako rade).
+- HTML print u Capacitor WebView ne učitava remote fontove → embeddani base64 (potvrđeno radi).
+- Ako logo stigne kao kompleksan SVG, jsPDF ga ne renderira nativno — konvertiram u PNG @2x build-time skriptom ili koristim `svg2pdf.js` (dodatna ovisnost, ~40 KB).
