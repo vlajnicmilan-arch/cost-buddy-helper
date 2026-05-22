@@ -546,7 +546,8 @@ export const ProjectTransactionsTab = ({
     return { totalExpenses, totalIncome, net: totalIncome - totalExpenses, totalMaterial, totalLabor };
   }, [filteredExpenses]);
 
-  const handlePrintFiltered = () => {
+  const handlePrintFiltered = async () => {
+    await ensureReportLogo();
     const rowsHtml = filteredExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
