@@ -1,105 +1,146 @@
-# Dashboard Refokus — Plan
 
-Cilj: pretvoriti dashboard iz "feature wall" u "operational command center". **Ništa se ne briše** — samo se premješta s glavnog ekrana u logičnije ulaze. Sve dosadašnje funkcionalnosti ostaju dostupne, 1 tap dalje.
+# Plan: Notifications → Active Issues sustav
 
-## Odluke (iz prethodnog razgovora)
+## Cilj
+Notifications postaju "issues" s lifecycleom. Dashboard pokazuje samo `active`, automatski auto-resolva kad detektor ne vidi problem. AI se ne zove na svaki uvid — samo opcionalno za nijansirane.
 
-1. **Hero = Aktivni Projekti** ako ih korisnik ima (bez obzira na `usage_profile`). Fallback: Saldo + izvori.
-2. **Sekundarni ulazi = miks** (logički raspoređeno, ne sve u jedan tab).
-3. **Telemetrija paralelno** s redizajnom (ne čekamo 2 tjedna).
+---
 
-## Novi raspored dashboarda
+## 1. DB migracija — proširenje `notifications`
 
-```text
-┌─────────────────────────────────┐
-│ HomeHeader (search, +, settings)│
-│ WalletViewModeChips             │
-│ TrialBanner                     │
-├─────────────────────────────────┤
-│ HERO:                           │
-│  ako ima aktivnih projekata →   │
-│    ActiveProjectsStrip (veliki) │
-│  inače →                        │
-│    Saldo + Izvori plaćanja      │
-├─────────────────────────────────┤
-│ AI Insights (operativni)        │
-├─────────────────────────────────┤
-│ Saldo kompaktno (ako hero=proj.)│
-│ ili Aktivni projekti kompaktno  │
-│ (ako hero=saldo, a ima ih)      │
-├─────────────────────────────────┤
-│ Zadnje transakcije (5)          │
-│ → "Sve transakcije" link        │
-├─────────────────────────────────┤
-│ Footer                          │
-└─────────────────────────────────┘
+Dodati kolone:
+- `status` text DEFAULT 'active' CHECK IN ('active','resolved','dismissed')
+- `severity` text DEFAULT 'info' CHECK IN ('info','warning','critical')
+- `dedup_key` text (npr. `project_loss_zone:<projectId>`)
+- `entity_type` text NULL (npr. `project`, `invoice`, `budget`)
+- `entity_id` uuid NULL
+- `resolved_at` timestamptz NULL
+- `dismissed_at` timestamptz NULL
+- `last_seen_at` timestamptz DEFAULT now() (za "ponovno detektiran" bez stvaranja duplikata)
+
+Indeksi:
+- `(user_id, status)` za brzi dohvat aktivnih
+- UNIQUE `(user_id, dedup_key) WHERE status = 'active'` — sprječava duplikate
+
+Backfill: postojeće notifikacije dobiju `status='active'`, `severity` izvedeno iz `type` (npr. `project_loss_zone` → `warning`).
+
+RLS: postojeće policies se zadržavaju (user vidi svoje); dodati RPC `dismiss_notification(id)` i `resolve_notification_by_dedup(dedup_key)` (SECURITY DEFINER) — usklađeno s ostalim RPC-jevima u projektu.
+
+---
+
+## 2. Helper sloj — `src/lib/issueDetection.ts` (novi)
+
+Pure funkcije, testabilne s vitest (slijedi Testing Priorities):
+
+```ts
+type IssueCandidate = {
+  dedup_key: string;
+  type: string;
+  severity: 'info'|'warning'|'critical';
+  title: string;          // template (i18n key)
+  message: string;        // template (i18n key + vars)
+  entity_type?: string;
+  entity_id?: string;
+  data?: Record<string, unknown>;
+};
+
+detectProjectLossZone(projects, expenses) → IssueCandidate[]
+detectOverdueInvoices(invoices, today) → IssueCandidate[]
+detectBudgetBurn(budgets, expenses) → IssueCandidate[]
+detectCashflowRisk(recurring, balance, horizon=30d) → IssueCandidate[]
 ```
 
-**Što se MIČE s dashboarda** (i kamo):
+Razlog: detekcija je pure logika → vitest pokrivenost (pravilo "bug → helper → test").
 
-| Sekcija | Trenutno | Novo mjesto |
-|---|---|---|
-| SummarySection (4 velike kartice: Prihodi/Rashodi/Prijenosi/Recurring) | Dashboard | Kompaktna verzija (2 kartice: Prihodi/Rashodi). Prijenosi+Recurring → ulaz u Novčanik tab. |
-| CashflowForecast Collapsible | Dashboard | Izvještaji tab (postoji već) + kratki "Cashflow" link iz Novčanika. |
-| QuickLinksSection (Wallet/Projects/Budgets shortcuts) | Dashboard desni stupac | BottomNav već pokriva — ukloniti. |
-| SavingsGoalsSection | Dashboard (importan, vidim u importima) | Novčanik tab → sekcija "Ciljevi". |
-| BusinessDebts strip + UnpaidInvoicesWidget | Dashboard (samo business) | Ostaje na dashboardu u business chip viewu — to JE operativno za poduzetnika. |
-| Uvoz CSV/PDF | HomeHeader meni | Ostaje (već nije na ploči). |
-| Budžeti preview | QuickLinks | Budžeti tab (postoji). |
+---
 
-**Što OSTAJE na dashboardu:**
-- HomeHeader, WalletViewModeChips, TrialBanner
-- Hero (Projekti ili Saldo, adaptivno)
-- AI Insights (samo formulacija postaje operativnija — vidi sljedeću fazu)
-- Sekundarni info blok (kompaktni Saldo ili kompaktni Projekti)
-- Zadnjih 5 transakcija + "Vidi sve"
-- Business: Debts + UnpaidInvoices (kontekstualno)
+## 3. Reconciler hook — `useIssueReconciler.ts` (novi)
 
-## Telemetrija (paralelno)
+Pokreće se 1× na load dashboarda (i kad se invalidiraju expense/project queries).
 
-Dodati `dashboard_section_click` i `dashboard_section_view` u `funnel_events` (postojeća tablica + `logFunnelEvent` helper). Eventi:
-- `dashboard.section.view` s `{section: 'projects'|'balance'|'insights'|'transactions'|'cashflow'|'goals'|...}`
-- `dashboard.section.click` s istim payloadom
-- `dashboard.scroll_depth` (25/50/75/100%)
+Tok:
+1. Pokupi sve `active` notifikacije s `dedup_key IS NOT NULL` za usera.
+2. Pokreni svih 4 detektora → skup `detected` (Map po `dedup_key`).
+3. Za svaki `detected`:
+   - Ako postoji aktivna s istim `dedup_key` → UPDATE `last_seen_at` + `data` (bez stvaranja nove, bez push spamanja).
+   - Ako ne postoji → INSERT novu `active`.
+4. Za svaki `active` koji **nije** u `detected` (i ima dedup_key iz naših detektora) → UPDATE `status='resolved', resolved_at=now()`.
 
-Dodati prikaz u admin `PulseFunnelEvents` widget kao agregirani heatmap po sekcijama. Za 2 tjedna imamo podatke da validiramo (ili revertamo) odluku o premještanju.
+Bez AI poziva u MVP-u. Tekst dolazi iz i18n templatea.
 
-## Reverzibilnost
+`useProjectLossZoneAlert` postaje deprecated → zamijenjen ovim reconcilerom (isti dedup_key format).
 
-Iza feature-flaga `dashboard_v2` (localStorage + Admin toggle). Po defaultu uključeno za nove korisnike, opcionalno za postojeće u Postavkama → "Klasični prikaz". Tako da:
-- ne razbijemo workflow postojećim korisnicima preko noći
-- možemo A/B usporediti engagement metrike
-- ako podaci pokažu da je odluka loša, jednim toggle-om vraćamo
+---
 
-## Implementacijski koraci
+## 4. UI — `AIInsightsSection` → `ActiveIssuesSection`
 
-1. **Feature flag** `dashboard_v2` u `useAppState` + toggle u Settings → Display.
-2. **Novi `PersonalModeView` raspored** iza flaga (alternativna grana renderiranja, ista props površina, bez novih hookova).
-3. **Hero komponenta** `<DashboardHero>` koja interno bira: Projekti hero (ako `projects.filter(p => p.status==='active').length > 0`) ili Saldo hero.
-4. **Premještanje sekcija** u postojeće tabove:
-   - `SavingsGoalsSection` → ubaciti u `Wallet.tsx` ispod izvora plaćanja
-   - `CashflowForecast` → ubaciti u `Dashboard`/Izvještaji ekran (provjeriti postoji li tab)
-   - Brisanje `QuickLinksSection` iz dashboarda (BottomNav pokriva)
-5. **Kompaktna `SummarySection` varijanta** (prop `compact`) — samo Prihodi/Rashodi, bez Prijenosa/Recurringa (oni ostaju dostupni u Novčaniku).
-6. **Telemetrija** — wrap-helper `<TrackSection name="...">` koji emitira view i delegira click eventove.
-7. **i18n** — novi ključevi `dashboard.v2.*` (HR/EN/DE), ništa hardkodirano.
-8. **Bez DB migracije** za sam redizajn. Telemetrija koristi postojeću `funnel_events` tablicu.
+Rename + refactor:
+- Izvor podataka: `useActiveIssues()` (query `notifications WHERE status='active'`, ORDER BY severity desc, created_at desc).
+- Zadržati postojeći `AIInsightCard` izgled (border-l po severity), ikona po `type`.
+- Naslov: `t('attention.title')` već postoji.
+- Klik → akcija (open_project/open_invoice) ostaje ista kao sad.
+- Dodati **Dismiss** gumb (X) → poziva `dismiss_notification` RPC + optimistic update.
+- `useAIInsights` hook + edge function `generate-ai-insights` + tablica `ai_insights_cache` → **ne brisati u ovoj fazi**, samo prestati koristiti na dashboardu. Označiti kao deprecated; uklanjanje u zasebnom commitu nakon validacije.
 
-## Što NIJE u opsegu (zaseban plan kasnije)
+Cap: max 5 prikazanih, ostalo "Prikaži još" expandable.
 
-- **AI Insights operativizacija** ("Projekt Duje gubi maržu" umjesto "83% manje na transport"). Veći zahvat u `generate-ai-insights` edge funkciji. Predlažem zasebno nakon što ovaj refokus bude live.
-- **Promjena BottomNav-a** — ne diramo.
-- **Brisanje feature-a** — ništa se ne briše.
+---
 
-## Rizici
+## 5. i18n
 
-- Postojeći power-useri koji su navikli na Cashflow/Recurring/Goals direktno na ploči — mitigacija: feature flag + Postavke toggle + telemetrija.
-- `usage_profile=finance_only` korisnici nemaju projekte → automatski dobiju Saldo hero (već pokriveno fallback logikom).
-- Business chip view ima dodatne widgete (Debts, UnpaidInvoices) — oni ostaju jer su operativni za business kontekst.
+Novi keyovi pod `attention.issues.*`:
+- `lossZone.title` / `lossZone.message` (vars: projectName, marginPct)
+- `overdueInvoice.title` / `.message` (vars: invoiceNumber, daysOverdue, amount)
+- `budgetBurn.title` / `.message` (vars: budgetName, spentPct)
+- `cashflowRisk.title` / `.message` (vars: daysAhead, shortageAmount)
+- `actions.dismiss`
 
-## Verifikacija
+HR primarno, EN/DE odmah.
 
-- Manual QA na 384px viewportu: oba hero varijanta, sa i bez projekata, personal i business chip.
-- Provjeriti da SavingsGoals i CashflowForecast još uvijek rade nakon premještanja.
-- Provjeriti da `funnel_events` dobiva nove eventove (preko `supabase--read_query`).
-- Toggle "Klasični prikaz" mora reverzibilno vratiti staru ploču bez gubitka stanja.
+---
+
+## 6. Što NE radim u ovoj fazi
+
+- **Bez nove `issues` tablice** (odluka A).
+- **Bez cron edge funkcije** — samo client-side reconciler. Server-side detekcija + push dolazi u sljedećoj fazi (može se nakalemiti na postojeći `send-daily-summary` cron koji već prolazi po userima).
+- **Bez AI formulacije** — sve poruke su templateirane. AI sloj se može dodati kasnije kao opcionalna obogaćivanja (`enriched_message` polje).
+- **Bez brisanja** `generate-ai-insights` edge / `ai_insights_cache` — ostaju dok ne validiramo da novi sustav radi.
+
+---
+
+## 7. Test plan
+
+Vitest:
+- `issueDetection.test.ts` — svaka detektor funkcija, edge caseovi (nema podataka, granične vrijednosti marže, datumi).
+- Reconciler logika ekstrahirana u pure funkciju `reconcileIssues(active, detected) → {toInsert, toTouch, toResolve}` → unit testovi.
+
+Manualno:
+- Kreiraj projekt s maržom < 10% → issue se pojavi.
+- Promijeni `contract_value` da marža naraste > 10% → issue auto-resolve.
+- Dismiss issue → nestaje, ne vraća se na sljedeći reload (dok ne resolved + ponovo detected).
+
+---
+
+## 8. Redoslijed implementacije
+
+1. Migracija notifications (status, severity, dedup_key, entity_*, *_at, last_seen_at, indeksi, RPCs)
+2. `issueDetection.ts` helpers + vitest
+3. `useIssueReconciler.ts` + `useActiveIssues.ts`
+4. Refactor `AIInsightsSection` → `ActiveIssuesSection` (rename file, swap data source, dodaj Dismiss)
+5. i18n keyovi (HR/EN/DE)
+6. Deprecate `useProjectLossZoneAlert` (alert se sad generira kroz reconciler)
+7. Update memory: nova `mem://features/active-issues-system` + ažuriraj `ai-insights-dashboard` (status: superseded)
+
+---
+
+## Tehnički detalji
+
+**Dedup key format:** `<detector_type>:<entity_id>` (npr. `project_loss_zone:abc-123`, `overdue_invoice:inv-456`). UNIQUE samo za `status='active'` → nakon resolve može se ponovno kreirati nova ako problem opet nastupi.
+
+**Reconciler trigger:** mount `Index.tsx` + invalidacija `useExpenseFetch` / `useProjects` queryja. Throttle: ne pokretati češće od 30s (lokalni ref).
+
+**Severity mapping detektora:**
+- `project_loss_zone`: critical ako margin < 0%, warning ako 0–10%
+- `overdue_invoice`: warning > 7 dana, critical > 30 dana
+- `budget_burn`: warning > 85%, critical > 100%
+- `cashflow_risk`: warning ako 30d projekcija < 0
