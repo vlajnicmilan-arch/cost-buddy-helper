@@ -2730,8 +2730,11 @@
     "expenses": "Rashodi",
     "deleteTitle": "Obriši cijeli uvoz?",
     "deleteDesc": "Ovo će trajno obrisati svih {{count}} transakcija iz ovog uvoza. Ova radnja se ne može poništiti.",
+    "deleteDescWithMerged": "Briše {{deleteCount}} uvezenih transakcija. {{mergedCount}} transakcija koje su spojene s ručnim unosima NEĆE biti obrisane — vratit će se u prvotno stanje (kao ručni unos).",
     "deleting": "Brisanje...",
-    "deleteCount": "Obriši {{count}} transakcija"
+    "deleteCount": "Obriši {{count}} transakcija",
+    "mergedWithManual": "Spojeno s ručnim unosom",
+    "mergedBadge": "Spojeno"
   },
   "install": {
     "installed": "Aplikacija je instalirana!",

@@ -2730,8 +2730,11 @@
     "expenses": "Expenses",
     "deleteTitle": "Delete entire import?",
     "deleteDesc": "This will permanently delete all {{count}} transactions from this import. This action cannot be undone.",
+    "deleteDescWithMerged": "Deletes {{deleteCount}} imported transactions. {{mergedCount}} transactions that were merged with manual entries will NOT be deleted — they will revert to their original state (as a manual entry).",
     "deleting": "Deleting...",
-    "deleteCount": "Delete {{count}} transactions"
+    "deleteCount": "Delete {{count}} transactions",
+    "mergedWithManual": "Merged with manual entry",
+    "mergedBadge": "Merged"
   },
   "install": {
     "installed": "App is installed!",
