@@ -4919,6 +4919,7 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      unmerge_import_row: { Args: { p_id: string }; Returns: undefined }
       upsert_active_issue: {
         Args: {
           p_data?: Json
