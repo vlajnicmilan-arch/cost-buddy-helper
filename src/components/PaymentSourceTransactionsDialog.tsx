@@ -36,6 +36,11 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
+import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesign';
+import { useReportOwner } from '@/hooks/useReportOwner';
+import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
+import i18n from '@/i18n';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -78,6 +83,8 @@ export const PaymentSourceTransactionsDialog = ({
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const reportOwner = useReportOwner();
+  const [confidentiality, setConfidentiality] = useConfidentialityLevel();
    const [searchTerm, setSearchTerm] = useState('');
    const [filters, setFilters] = useState<FilterState>(defaultFilters);
    const [visibleCount, setVisibleCount] = useState(50);
