@@ -1,9 +1,13 @@
 // Fokusirani PDF izvoz za Earned Value i P&L kartice na projektu.
 // Loader se dijeli s ostatkom aplikacije preko loadJsPdf.
+import i18n from '@/i18n';
 import { loadJsPdf } from '@/lib/loadJsPdf';
 import { exportPDFDoc, type ExportMode } from '@/lib/fileExport';
-import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { applyBrandFont, brandAutoTable } from '@/lib/pdfBranding';
+import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
+import { ensureReportLogo } from '@/lib/reportLogo';
+import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
+import { getReportOwner } from '@/hooks/useReportOwner';
 
 export interface FinanceCurrency {
   code: string;
@@ -16,15 +20,31 @@ const fmt = (n: number, c?: FinanceCurrency) =>
     currency: c?.code || 'EUR',
   }).format(n);
 
-const today = () => new Date().toLocaleDateString('hr-HR');
+const resolveBrand = async (
+  projectName: string,
+  brand: ReportBrandOptions = {},
+): Promise<ReportBrandOptions> => {
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const confidentiality = brand.confidentiality ?? loadLastConfidentiality();
+  const subtitle = brand.subtitle || `${i18n.t('projects.project', 'Projekt')}: ${projectName}`;
+  return { owner, language, confidentiality, subtitle };
+};
 
-const slug = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase() || 'projekt';
+const drawFooter = (doc: any, fullBrand: ReportBrandOptions) => {
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && fullBrand.owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${fullBrand.owner}`
+      : undefined,
+  });
+};
+
+const confidentialityLabel = () => ({
+  internal: i18n.t('reportBranding.confidentiality.internal'),
+  confidential: i18n.t('reportBranding.confidentiality.confidential'),
+});
 
 export interface EarnedValueExportData {
   projectName: string;
@@ -41,21 +61,27 @@ export interface EarnedValueExportData {
 
 export const exportEarnedValuePdf = async (
   data: EarnedValueExportData,
-  mode: ExportMode = 'save'
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
 ): Promise<boolean> => {
   const { jsPDF, autoTable } = await loadJsPdf();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
 
-  doc.setFontSize(18);
-  doc.setFont('Inter', 'bold');
-  doc.text('Earned Value', 14, 20);
+  const fullBrand = await resolveBrand(data.projectName, brand);
+  const bodyStartY = drawReportHeader(doc, {
+    title: i18n.t('projects.earnedValue.title', 'Earned Value'),
+    brand: fullBrand,
+    confidentialityLabel: confidentialityLabel(),
+  });
 
-  doc.setFontSize(11);
+  let y = bodyStartY;
+  doc.setFontSize(9.5);
   doc.setFont('Inter', 'normal');
-  doc.text(`Projekt: ${data.projectName}`, 14, 28);
-  doc.text(`Generirano: ${today()}`, 14, 34);
-  doc.text(`Status: ${data.statusLabel}`, 14, 40);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`${i18n.t('common.status', 'Status')}: ${data.statusLabel}`, REPORT_MARGIN_X, y);
+  y += 6;
 
   const rows = [
     ['Ugovoreno', fmt(data.contractValue, data.currency)],
@@ -70,17 +96,20 @@ export const exportEarnedValuePdf = async (
   ];
 
   brandAutoTable(doc, autoTable, {
-    startY: 48,
+    startY: y,
     head: [['Stavka', 'Vrijednost']],
     body: rows,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
+    margin: { left: REPORT_MARGIN_X },
     tableWidth: 170,
   });
 
-  addNotOfficialFooter(doc);
-  return exportPDFDoc(doc, `earned-value-${slug(data.projectName)}.pdf`, mode);
+  drawFooter(doc, fullBrand);
+  const fileName = buildReportFileName({
+    type: `earned-value-${data.projectName}`,
+    owner: fullBrand.owner,
+    ext: 'pdf',
+  });
+  return exportPDFDoc(doc, fileName, mode);
 };
 
 export interface ProfitLossExportData {
@@ -103,32 +132,33 @@ export interface ProfitLossExportData {
 
 export const exportProfitLossPdf = async (
   data: ProfitLossExportData,
-  mode: ExportMode = 'save'
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
 ): Promise<boolean> => {
   const { jsPDF, autoTable } = await loadJsPdf();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
 
-  doc.setFontSize(18);
-  doc.setFont('Inter', 'bold');
-  doc.text('Profitabilnost (P&L)', 14, 20);
-
-  doc.setFontSize(11);
-  doc.setFont('Inter', 'normal');
-  doc.text(`Projekt: ${data.projectName}`, 14, 28);
-  doc.text(`Generirano: ${today()}`, 14, 34);
+  const fullBrand = await resolveBrand(data.projectName, brand);
+  const bodyStartY = drawReportHeader(doc, {
+    title: i18n.t('projects.profitLoss', 'Profitabilnost (P&L)'),
+    brand: fullBrand,
+    confidentialityLabel: confidentialityLabel(),
+  });
 
   const totalCosts = data.laborCost + data.collaboratorCost + data.materialCost;
   const cashBalance = data.totalIncome - totalCosts;
   const hasContract = data.contractValue > 0;
 
   // Trenutno stanje (cash)
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setFont('Inter', 'bold');
-  doc.text('Trenutno stanje (gotovina)', 14, 46);
+  doc.setTextColor(15, 23, 42);
+  doc.text('Trenutno stanje (gotovina)', REPORT_MARGIN_X, bodyStartY);
 
   brandAutoTable(doc, autoTable, {
-    startY: 50,
+    startY: bodyStartY + 2,
     head: [['Stavka', 'Iznos']],
     body: [
       ['Naplaceno', fmt(data.totalIncome, data.currency)],
@@ -137,20 +167,18 @@ export const exportProfitLossPdf = async (
       ['Neto profit', fmt(data.netProfit, data.currency)],
       ['Marza %', `${data.margin.toFixed(1)}%`],
     ],
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
+    margin: { left: REPORT_MARGIN_X },
     tableWidth: 170,
   });
 
   if (hasContract) {
     const y = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setFont('Inter', 'bold');
-    doc.text('Ocekivano (ugovor)', 14, y);
+    doc.text('Ocekivano (ugovor)', REPORT_MARGIN_X, y);
 
     brandAutoTable(doc, autoTable, {
-      startY: y + 4,
+      startY: y + 2,
       head: [['Stavka', 'Iznos']],
       body: [
         ['Ugovoreno', fmt(data.contractValue, data.currency)],
@@ -159,40 +187,36 @@ export const exportProfitLossPdf = async (
         ['Ocekivana marza', `${data.expectedMargin.toFixed(1)}%`],
         ['Za naplatu', fmt(data.remainingToCollect, data.currency)],
       ],
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
-      margin: { left: 14 },
+      margin: { left: REPORT_MARGIN_X },
       tableWidth: 170,
     });
   }
 
   // Razrada troskova
   const yBreakdown = (doc as any).lastAutoTable.finalY + 10;
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setFont('Inter', 'bold');
-  doc.text('Razrada troskova', 14, yBreakdown);
+  doc.text('Razrada troskova', REPORT_MARGIN_X, yBreakdown);
 
   brandAutoTable(doc, autoTable, {
-    startY: yBreakdown + 4,
+    startY: yBreakdown + 2,
     head: [['Kategorija', 'Iznos']],
     body: [
       ['Radna snaga', fmt(data.laborCost, data.currency)],
       ['Suradnici', fmt(data.collaboratorCost, data.currency)],
       ['Materijalni troskovi', fmt(data.materialCost, data.currency)],
     ],
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
+    margin: { left: REPORT_MARGIN_X },
     tableWidth: 170,
   });
 
   if (data.workers.length > 0) {
     const y = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setFont('Inter', 'bold');
-    doc.text('Radnici', 14, y);
+    doc.text('Radnici', REPORT_MARGIN_X, y);
     brandAutoTable(doc, autoTable, {
-      startY: y + 4,
+      startY: y + 2,
       head: [['Ime', 'Sati', 'Satnica', 'Trosak']],
       body: data.workers.map((w) => [
         w.name,
@@ -200,31 +224,32 @@ export const exportProfitLossPdf = async (
         `${fmt(w.rate, data.currency)}/h`,
         fmt(w.cost, data.currency),
       ]),
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
-      margin: { left: 14 },
+      margin: { left: REPORT_MARGIN_X },
     });
   }
 
   if (data.collaborators.length > 0) {
     const y = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setFont('Inter', 'bold');
-    doc.text('Suradnici', 14, y);
+    doc.text('Suradnici', REPORT_MARGIN_X, y);
     brandAutoTable(doc, autoTable, {
-      startY: y + 4,
+      startY: y + 2,
       head: [['Ime', 'Ugovoreno', 'Placeno']],
       body: data.collaborators.map((c) => [
         c.name,
         fmt(c.totalPrice, data.currency),
         fmt(c.paidAmount, data.currency),
       ]),
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
-      margin: { left: 14 },
+      margin: { left: REPORT_MARGIN_X },
     });
   }
 
-  addNotOfficialFooter(doc);
-  return exportPDFDoc(doc, `p-and-l-${slug(data.projectName)}.pdf`, mode);
+  drawFooter(doc, fullBrand);
+  const fileName = buildReportFileName({
+    type: `p-and-l-${data.projectName}`,
+    owner: fullBrand.owner,
+    ext: 'pdf',
+  });
+  return exportPDFDoc(doc, fileName, mode);
 };
