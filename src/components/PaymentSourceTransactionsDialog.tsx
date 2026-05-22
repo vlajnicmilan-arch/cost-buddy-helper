@@ -34,6 +34,8 @@ import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
+import { Capacitor } from '@capacitor/core';
+import { exportTextFile } from '@/lib/fileExport';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -706,6 +708,12 @@ export const PaymentSourceTransactionsDialog = ({
         <strong>${t('transactions.transfers', 'Prijenosi')}:</strong> ${formatAmount(totalTransfers)}
       </div></body></html>`;
 
+    // Native WebView ignores window.print() silently. Save HTML so the user
+    // can open it in a system browser/viewer and print from there.
+    if (Capacitor.isNativePlatform()) {
+      exportTextFile(html, `${paymentSource.name}.html`, 'text/html', false, 'save');
+      return;
+    }
     printHtmlDocument(html);
   };
 

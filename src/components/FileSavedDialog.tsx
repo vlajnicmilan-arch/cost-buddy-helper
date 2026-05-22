@@ -17,6 +17,8 @@ interface FileSavedDetail {
   uri: string;
   fileName: string;
   mime: string;
+  /** file:// path in Cache used by Share (content:// from MediaStore can't be shared directly). */
+  shareUri?: string;
 }
 
 export const FILE_SAVED_EVENT = 'file-saved';
@@ -59,11 +61,15 @@ export const FileSavedDialog = () => {
 
   const handleShare = async () => {
     if (!detail) return;
+    // Capacitor Share plugin requires file:// or http(s):// — content:// from
+    // MediaStore Downloads is not accepted. fileExport emits a cache copy as
+    // shareUri specifically for this. Fall back to uri if missing.
+    const fileForShare = detail.shareUri ?? detail.uri;
     try {
       const { Share } = await import('@capacitor/share');
       await Share.share({
         title: detail.fileName,
-        files: [detail.uri],
+        files: [fileForShare],
         dialogTitle: t('fileExport.shareDialogTitle', 'Podijeli datoteku') as string,
       });
       close();

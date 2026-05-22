@@ -21,8 +21,13 @@ export type ExportMode = 'save' | 'share';
  * Emits a global `file-saved` event consumed by <FileSavedDialog />.
  * Mounted globally in RouteAwareGlobalOverlays. Lets the user immediately
  * open or share the file without hunting through the file manager.
+ *
+ * `uri` is the user-visible save location (Downloads content:// URI on
+ * Android 10+) used by Open. `shareUri` is a file:// path in Cache used by
+ * Share, because the Capacitor Share plugin cannot share MediaStore content
+ * URIs directly — it requires a file:// path or a web URL.
  */
-function emitFileSaved(detail: { uri: string; fileName: string; mime: string }) {
+function emitFileSaved(detail: { uri: string; fileName: string; mime: string; shareUri?: string }) {
   if (typeof window === 'undefined') return;
   (window as any).__pendingSavedFileDetail = detail;
   window.dispatchEvent(new CustomEvent('file-saved', { detail }));
@@ -111,14 +116,23 @@ async function exportFileNative(blob: Blob, fileName: string, mode: ExportMode):
     const mime = blob.type || getMimeType(fileName);
 
     if (mode === 'save') {
+      // Always write a cache copy first so Share has a file:// URI to use —
+      // the Share plugin can't handle MediaStore content:// URIs.
+      let shareUri: string | undefined;
+      try {
+        shareUri = await writeToCache(base64Data, fileName);
+      } catch (cacheErr) {
+        console.warn('Cache copy for share failed (Share will be unavailable):', cacheErr);
+      }
+
       try {
         const result = await SaveToDownloads.saveBlob({ base64: base64Data, fileName, mime });
-        emitFileSaved({ uri: result.uri, fileName, mime });
+        emitFileSaved({ uri: result.uri, fileName, mime, shareUri });
         return true;
       } catch (saveErr: any) {
         console.error('SaveToDownloads failed, falling back to cache open dialog:', saveErr);
-        const cacheUri = await writeToCache(base64Data, fileName);
-        emitFileSaved({ uri: cacheUri, fileName, mime });
+        const cacheUri = shareUri ?? await writeToCache(base64Data, fileName);
+        emitFileSaved({ uri: cacheUri, fileName, mime, shareUri: cacheUri });
         return true;
       }
     }

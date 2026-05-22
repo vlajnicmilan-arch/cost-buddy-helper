@@ -38,6 +38,8 @@ import { enUS, de } from 'date-fns/locale';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { AdvanceLinkSection } from '@/components/add-expense/AdvanceLinkSection';
 import { printHtmlDocument } from '@/lib/printHtml';
+import { Capacitor } from '@capacitor/core';
+import { exportTextFile } from '@/lib/fileExport';
 
 interface ProjectExpense {
   id: string;
@@ -568,6 +570,12 @@ export const ProjectTransactionsTab = ({
         <strong>${t('common.balance', 'Razlika')}:</strong> ${formatAmount(filteredTotals.net)}
       </div></body></html>`;
 
+    // Native WebView ignores window.print() silently. Save HTML so the user
+    // can open it in a system browser/viewer and print from there.
+    if (Capacitor.isNativePlatform()) {
+      exportTextFile(html, `${projectName || 'projekt'}.html`, 'text/html', false, 'save');
+      return;
+    }
     printHtmlDocument(html);
   };
 
