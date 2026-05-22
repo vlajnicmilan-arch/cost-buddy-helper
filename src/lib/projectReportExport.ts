@@ -393,29 +393,35 @@ export interface WorkLogReportData {
   entries: WorkLogEntry[];
 }
 
-export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: ExportMode = 'save'): Promise<void> => {
+export const generateWorkLogPDFReport = async (
+  data: WorkLogReportData,
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
+): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 14;
+  const margin = REPORT_MARGIN_X;
 
-  // Title
-  doc.setFontSize(18);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Dnevnik rada'), margin, 18);
-
-  // Subtitle
-  doc.setFontSize(11);
-  doc.setFont('Inter', 'normal');
-  doc.text(toAscii(`Projekt: ${data.projectName}`), margin, 26);
-
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const confidentiality = brand.confidentiality ?? loadLastConfidentiality();
   const range =
     data.fromDate && data.toDate
-      ? `${formatDate(data.fromDate)} - ${formatDate(data.toDate)}`
+      ? `${formatDate(data.fromDate)} – ${formatDate(data.toDate)}`
       : `${toAscii('Generirano')}: ${formatDate(new Date())}`;
-  doc.setFontSize(9);
-  doc.text(range, margin, 32);
+  const subtitle = brand.subtitle || `${i18n.t('projects.project', 'Projekt')}: ${data.projectName} · ${range}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality, subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: i18n.t('workLog.title', 'Dnevnik rada'),
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
 
   // Sort entries: newest first
   const sorted = [...data.entries].sort((a, b) =>
@@ -424,7 +430,9 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
 
   if (sorted.length === 0) {
     doc.setFontSize(11);
-    doc.text(toAscii('Nema zapisa za odabrano razdoblje.'), margin, 50);
+    doc.setFont('Inter', 'normal');
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii('Nema zapisa za odabrano razdoblje.'), margin, bodyStartY + 6);
   } else {
     const rows = sorted.map((e) => {
       const dateLabel = (() => {
@@ -450,7 +458,7 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
     });
 
     brandAutoTable(doc, autoTable, {
-      startY: 38,
+      startY: bodyStartY,
       head: [
         [
           'Datum',
@@ -462,8 +470,6 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
         ],
       ],
       body: rows,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145], fontSize: 9 },
       styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
       columnStyles: {
         0: { cellWidth: 22 },
@@ -477,23 +483,15 @@ export const generateWorkLogPDFReport = async (data: WorkLogReportData, mode: Ex
     });
   }
 
-  // Footer page numbers
-  const totalPages = (doc as any).internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont('Inter', 'normal');
-    doc.text(
-      `${i} / ${totalPages}`,
-      pageWidth - margin,
-      doc.internal.pageSize.getHeight() - 8,
-      { align: 'right' }
-    );
-  }
-
-  const safeName = data.projectName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `dnevnik_${safeName}_${formatDate(new Date()).replace(/\./g, '-')}.pdf`;
-  addNotOfficialFooter(doc);
+  const period = formatDate(new Date()).replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: `dnevnik-rada-${data.projectName}`, owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
