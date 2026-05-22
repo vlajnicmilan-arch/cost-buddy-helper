@@ -10,11 +10,32 @@
     "actions": {
       "openProject": "Otvori",
       "openInvoice": "Faktura",
-      "askAi": "Pitaj AI"
+      "askAi": "Pitaj AI",
+      "dismiss": "Odbaci"
     },
     "dataQuality": {
       "uncategorized": "{{count}} troškova bez opisa u zadnjih 30 dana",
       "uncategorizedPrompt": "Koje troškove iz zadnjih 30 dana trebam dopuniti opisom?"
+    },
+    "issues": {
+      "lossZone": {
+        "title": "Projekt {{projectName}} ulazi u zonu gubitka",
+        "message": "Preostalo samo {{marginPct}}% marže",
+        "messageOver": "Projekt prelazi ugovorenu vrijednost ({{marginPct}}% marže)"
+      },
+      "overdueInvoice": {
+        "title": "Faktura {{invoiceNumber}} u kašnjenju",
+        "message": "Kasni {{daysOverdue}} dana — {{amount}} €"
+      },
+      "budgetBurn": {
+        "title": "Budžet {{budgetName}} pri kraju",
+        "message": "Iskorišteno {{spentPct}}%",
+        "messageOver": "Premašen budžet ({{spentPct}}%)"
+      },
+      "cashflowRisk": {
+        "title": "Mogući manjak gotovine",
+        "message": "Sljedećih {{daysAhead}} dana — manjak {{shortage}} €"
+      }
     }
   },
   "paywall": {
