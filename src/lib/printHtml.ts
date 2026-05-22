@@ -1,15 +1,24 @@
+import { Capacitor } from '@capacitor/core';
+import { exportFile } from './fileExport';
+
 /**
- * Prints an HTML document using a hidden iframe instead of `window.open('', '_blank')`.
+ * Prints an HTML document.
  *
- * `window.open` inside the Capacitor Android WebView creates a new blank in-app tab
- * with no chrome — the user lands on a blank page, then tapping "back" reveals the
- * generated HTML but there's no way to dismiss it without killing the app.
+ * Web: renders into a hidden iframe and triggers `iframe.contentWindow.print()`,
+ * which opens the browser print dialog without navigating away.
  *
- * The iframe approach renders silently in the current document, triggers the
- * system print dialog (Android PrintManager on native, browser print on web),
- * and self-cleans afterwards. No navigation, no new window.
+ * Native (Capacitor Android/iOS): the system WebView does NOT honor
+ * `window.print()` — calling it from JS is a silent no-op. Instead we save
+ * the HTML as a file and let `FileSavedDialog` offer Open/Share, so the user
+ * can open it in a system viewer that exposes its own print action.
  */
-export function printHtmlDocument(html: string): void {
+export async function printHtmlDocument(html: string, fileName = 'ispis.html'): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    await exportFile(blob, fileName, 'save');
+    return;
+  }
+
   if (typeof document === 'undefined') return;
 
   const iframe = document.createElement('iframe');
