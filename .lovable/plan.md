@@ -1,91 +1,71 @@
 ## Cilj
-Auto-merge ručno unesenih transakcija s redovima iz bankovnog izvoda (CSV/PDF) pri uvozu, uz **±1 dan + isti iznos + isti izvor + isti tip**. Mergeani redovi ostaju vidljivi u dijalogu "Izvod" s posebnom oznakom. Brisanje izvoda unmerga ručne unose umjesto da ih briše.
 
-## A) Auto-merge logika pri uvozu
+Omogućiti da ponovni upload starih bankovnih izvoda (poput siječanjskog Aircash PDF-a) bude prepoznat kao već uvezen, isto kao što već radi za sve uvoze nakon ~9.4.2026.
 
-**Helper** `src/lib/manualMatchForImport.ts` (pure, no React/Supabase):
-- `matchManualToImported({imported, manualCandidates, maxDayDiff: 1})` → `{matches: [{importedIdx, manualId}], ambiguous: number[], unmatched: number[]}`
-- Match kriteriji: isti `payment_source`, isti `type` (expense/income, transfer preskoči), isti `amount` (`.toFixed(2)`), `|date − importedDate| ≤ 1 dan`.
-- 1:1 match → merge. 0 ili ≥2 kandidata → ne spaja (ide kao novi).
+## Što je trenutno problem
 
-**Test** `src/lib/manualMatchForImport.test.ts` — pokriva same-day, ±1d granicu, 2d → no match, ambiguous (2 kandidata), transfer skip, različit izvor.
+Provjerio sam tvoju bazu:
 
-**Patch** `src/hooks/useExpenseCRUD.ts` (cloud grana `importFromCSV`, ~459–580):
-1. Prije `upsert`: SELECT manual kandidata iz DB (jedan query za cijeli batch):
-   - `user_id = me`, `payment_source IN (importedSources)`, `type IN ('income','expense')`,
-   - `date BETWEEN minDate-1 AND maxDate+1`,
-   - `bank_transaction_id IS NULL`, `bank_match_status IN ('manual','pending_bank')`, `deleted_at IS NULL`.
-2. Pozovi helper → `matches` / `ambiguous` / `unmatched`.
-3. Za svaki match → UPDATE s guardom:
-   ```
-   UPDATE expenses
-   SET bank_transaction_id = <fp>,
-       bank_match_status = 'confirmed',
-       import_batch_id = <batchId>,                    -- da bude vidljiv u "Izvod" dijalogu
-       merchant_name = COALESCE(merchant_name, imported.merchant_name)
-   WHERE id = <manualId> AND bank_transaction_id IS NULL
-   ```
-   - `Promise.allSettled` za bulk.
-   - **Bez** balance update-a (manual je već utjecao).
-4. `unmatched` + `ambiguous` → postojeći `upsert(..., ignoreDuplicates: true)`. Balance update samo za stvarno umetnute (postojeća logika).
-5. Vrati `{inserted, merged, skipped}`.
+- **Veljača/ožujak (139 transakcija)** — imaju `import_batch_id` ali **nemaju `bank_transaction_id`** (fingerprint), i nemaju zapis u `imported_statements`.
+- **Siječanj (26 transakcija na izvoru `385b0fe5…`)** — **nemaju ni `import_batch_id` ni fingerprint**. Vjerojatno uvezene još starijim flowom ili kombinacijom ručnih unosa.
+- `imported_statements` ima 5 zapisa, svi `file_hash = NULL`, zadnji 9.4.2026.
 
-**UI poruka** — koristi postojeći `showSuccess`:
-- `t('transactions.import.summaryFull', { inserted, merged, skipped })` = "Uvezeno X novih, spojeno Y s ručnim unosima, Z već postoji" (+ EN/DE).
+Dva guarda postoje:
 
-## B) Vizualna oznaka u "Izvod" dijalogu
+1. **Statement-level** (`file_hash` / `content_hash` u `imported_statements`) — guard koji si vidio danas. Nije pronašao siječanj jer nema zapisa.
+2. **Row-level** (`bank_transaction_id` UNIQUE) — drugi sloj zaštite. Ne radi za siječanj jer postojeći redovi imaju `NULL` u toj koloni → svi novi redovi bi prošli kao "novi".
 
-`src/components/ImportBatchDialog.tsx`:
-- Mergeani red (`bank_match_status === 'confirmed'`) dobiva **mali badge** uz iznos: zelena `Link2` ili `CheckCircle2` ikona + tekst `t('importBatch.mergedWithManual')` = "Spojeno s ručnim unosom".
-- Sortiraj normalno; ne pravi posebnu sekciju.
+Bez popravka, ponovni upload siječanjskog PDF-a bi **dodao 26 duplikata u bazu i duplo udario po saldu**.
 
-Globalna lista (`TransactionItem.tsx`) — već postoji `CheckCircle2` ikona za `confirmed`, ništa novo.
+## Plan
 
-## C) Brisanje izvoda — UNMERGE umjesto delete za mergeane
+### 1. Migracija — backfill funkcija
 
-**Novi RPC** (migracija) `unmerge_import_row(p_id uuid)` SECURITY DEFINER:
-- Provjeri `auth.uid() = expenses.user_id`.
-- `UPDATE expenses SET bank_transaction_id = NULL, bank_match_status = 'manual', import_batch_id = NULL WHERE id = p_id AND bank_match_status = 'confirmed' AND user_id = auth.uid()`.
-- Bez balance promjene.
+Napravim PL/pgSQL funkciju `backfill_import_fingerprints(p_user_id uuid)` koja:
 
-**Patch** `src/components/TransactionListDialog.tsx` `handleDeleteBatch` (linije 97-103) i `PaymentSourceTransactionsDialog.tsx` (isti pattern):
-- Za svaki id u batchu pročitaj `bank_match_status` iz `filteredExpenses`.
-- `confirmed` → RPC `unmerge_import_row(id)` (ne `onDelete`, balans ostaje).
-- `bank_only` (ili bilo što drugo) → postojeći `onDelete(id)` (briše + vraća balans).
-- `Promise.allSettled`, partial fail → `t('transactions.bulkDeleteFailed/bulkDeletePartial')`.
+- Za svaki `expenses` red bez `bank_transaction_id`, koji ima `payment_source` (custom: ili income source) i datum, izračuna deterministički fingerprint `imp:<sha256>` po istoj formuli kao `src/lib/importFingerprint.ts` (`user|source|YYYY-MM-DD|type|amount.toFixed(2)|normalized_description`).
+- Normalizacija opisa u SQL-u: `lower(regexp_replace(unaccent(coalesce(description,'')), '\s+', ' ', 'g'))`.
+- Upiše ga u `bank_transaction_id`. Ako bi nastao konflikt s postojećim UNIQUE indexom (rijetko — dva identična reda u istom danu), drugom redu doda suffix `#2`, `#3`… (već postojeća logika iz `csvParsers.ts` se reflektira).
 
-**Confirm dialog tekst** (`ImportBatchDialog.tsx` AlertDialog):
-- Ako batch sadrži ≥1 `confirmed` red, prošireni opis:
-  `t('importBatch.deleteDescWithMerged', { count, mergedCount })` = "Briše X redaka. Y redaka koji su spojeni s ručnim unosima neće biti obrisani — vratit će se u prvotno stanje."
+Pokrene se odmah za sve korisnike kao jednokratni `SELECT backfill_import_fingerprints(user_id) FROM …`. Idempotentno — preskače redove koji već imaju fingerprint.
 
-## D) Što NE diramo
-- Local mode (IndexedDB) — nepromijenjeno.
-- `bank-sync-transactions` edge — vlastita logika.
-- `duplicateDetection.ts`, `useRecurringMatcher`, `transferMatching` — nepromijenjeni.
-- `getInitialBankMatchStatus`, `TransactionItem` confirmed ikona — već rade.
-- DB šema za expenses kolone — sve već postoji. Samo dodajemo 1 RPC funkciju.
+### 2. Migracija — zapis u `imported_statements`
 
-## E) Datoteke (sažeto)
+Za svaku grupu `(user_id, payment_source, import_batch_id)`:
 
-**Nove:**
-- `src/lib/manualMatchForImport.ts`
-- `src/lib/manualMatchForImport.test.ts`
-- Migracija: RPC `unmerge_import_row`
+- Izračuna `content_hash = sha256(sorted(bank_transaction_id) joined with '|')` (ista formula kao `statementFingerprint.ts`).
+- Upsert u `imported_statements` s `content_hash`, `transactions_count`, `import_batch_id`, `imported_at = MIN(date_of_entry)`. `file_hash` ostaje NULL (legacy).
 
-**Izmjene:**
-- `src/hooks/useExpenseCRUD.ts` (cloud grana `importFromCSV`)
-- `src/components/ImportBatchDialog.tsx` (badge + prošireni delete confirm)
-- `src/components/TransactionListDialog.tsx` (handleDeleteBatch split)
-- `src/components/PaymentSourceTransactionsDialog.tsx` (handleDeleteBatch split)
-- `src/components/business/BusinessTransactions.tsx` (ako ima handleDeleteBatch — provjeriti)
-- i18n: `hr.json` / `en.json` / `de.json` → `transactions.import.summaryFull`, `importBatch.mergedWithManual`, `importBatch.deleteDescWithMerged`
+Za siječanjske transakcije bez batch ID-a:
 
-**Memory:**
-- `mem://features/import-manual-merge` (nova) — ±1d, single-match-only, `import_batch_id` na mergeani, unmerge RPC pri brisanju batcha.
-- Update `mem://index.md` u "Memories".
+- Grupiraj po `(user_id, payment_source, ime_mjeseca = to_char(date,'YYYY-MM'))` i tretiraj kao sintetički batch.
+- Generiraj novi `import_batch_id` (gen_random_uuid), upiši na te redove, te kreiraj `imported_statements` zapis za njih.
 
-## F) Rizici
-- **Race condition** (paralelni uvoz) → `WHERE bank_transaction_id IS NULL` guard.
-- **Ambiguous (2 manual ista iznosa unutar 48h na istom izvoru)** → svjesno ne spajamo, ide kao novi (`bank_only`), korisnik može ručno.
-- **Performance ≥500 redaka** → jedan range SELECT za cijeli batch.
-- **Unmerge na isti mergeani red dvaput** → RPC ima `WHERE bank_match_status = 'confirmed'`, drugi poziv je no-op.
+Ovo je glavni korak — nakon ovoga, ponovni upload siječanjskog PDF-a će:
+
+- **Content hash match** → `findExistingStatement` vraća pogodak → guard radi.
+- Ako korisnik svejedno klikne "Uvezi ponovno" → row-level dedup po `bank_transaction_id` preskoči sve duplikate.
+
+### 3. Bez izmjena u frontend kodu
+
+Postojeća `findExistingStatement` + `recordImportedStatement` + `useExpenseCRUD.importFromCSV` već rade ispravno. Ne treba mijenjati TypeScript kod.
+
+### 4. Testovi
+
+Dodam regresijski test u `src/lib/importFingerprint.test.ts` koji potvrđuje da SQL normalizacija opisa (lowercase + unaccent + collapse whitespace) daje identičan hash kao TS verzija za par realnih primjera. (Test ostaje pure — ne udara u bazu, samo dokumentira ugovor.)
+
+## Sigurnost i rollback
+
+- Sve promjene su backfill (postavljanje NULL → vrijednost). Nema brisanja, nema izmjene iznosa, nema promjene saldova.
+- Ako nešto pođe po zlu, rollback je `UPDATE expenses SET bank_transaction_id = NULL WHERE bank_transaction_id LIKE 'imp:%' AND created_at < '<cutoff>'` — fingerprint je jasno označen prefiksom.
+- Funkcija je idempotentna i siguran je `re-run`.
+
+## Što NE dirajmo (potvrđeno već radi)
+
+- Statement upload flow (`GlobalPDFImportHost`, `CSVImportDialog`) — ne mijenjamo.
+- `importFromCSV` upsert logika — radi kako treba.
+- `unmerge_import_row` RPC i merge logika — neovisno o ovome.
+
+## Pitanje za potvrdu prije migracije
+
+Hoćeš li da backfill izvršim **samo za tebe** (`user_id = 3213303b-6267-4188-8dc9-2bb2a5c3c672`) kao test, pa tek nakon što potvrdiš da Aircash siječanj sad odbija ponovni upload — pokrenemo za sve korisnike? Ili odmah za sve?
