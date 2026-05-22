@@ -947,15 +947,25 @@ export const ProjectTransactionsTab = ({
                   : `${filteredExpenses.length} ${t('projects.transactions', 'transakcija')}`
                 }
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={handlePrintFiltered}
-              >
-                <Printer className="w-3.5 h-3.5" />
-                {t('common.print', 'Ispis')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5">
+                      <Printer className="w-3.5 h-3.5" />
+                      {t('common.print', 'Ispis')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <div className="px-2 py-1.5 border-b mb-1">
+                      <ConfidentialityPicker value={confidentiality} onChange={setConfidentiality} />
+                    </div>
+                    <DropdownMenuItem onClick={handlePrintFiltered}>
+                      <Printer className="w-4 h-4 mr-2" />
+                      {t('common.print', 'Ispis')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           )}
 
