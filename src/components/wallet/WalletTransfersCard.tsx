@@ -28,13 +28,15 @@ export const WalletTransfersCard = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.01, boxShadow: '0 4px 20px hsl(var(--muted-foreground) / 0.1)' }}
-      className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer relative overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       style={{
         borderLeftWidth: 3,
         borderLeftColor: 'hsl(var(--muted-foreground))',
         background: 'linear-gradient(135deg, hsl(var(--muted-foreground) / 0.04) 0%, transparent 100%)',
       }}
-      {...clickableProps(onClick)}
+      {...clickableProps(onClick, {
+        label: t('transactions.transfers'),
+        className: 'p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer relative overflow-hidden transition-all duration-300',
+      })}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
