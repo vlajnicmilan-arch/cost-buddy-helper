@@ -4768,6 +4768,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backfill_import_fingerprints: { Args: never; Returns: Json }
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
       cleanup_old_health_summaries: { Args: never; Returns: undefined }
