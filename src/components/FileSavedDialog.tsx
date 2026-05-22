@@ -17,6 +17,8 @@ interface FileSavedDetail {
   uri: string;
   fileName: string;
   mime: string;
+  /** file:// path in Cache used by Share (content:// from MediaStore can't be shared directly). */
+  shareUri?: string;
 }
 
 export const FILE_SAVED_EVENT = 'file-saved';
