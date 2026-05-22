@@ -12,6 +12,7 @@ import {
   type ConfidentialityLevel,
   type ReportBrandOptions,
 } from '@/lib/reportDesign';
+import { getReportLogoDataUrl } from '@/lib/reportLogo';
 
 const hexToRgb = (hex: string): [number, number, number] => {
   const m = hex.replace('#', '');
