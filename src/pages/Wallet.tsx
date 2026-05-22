@@ -161,6 +161,13 @@ const Wallet = () => {
         onPdfProcessingChange={setPaymentSourcePdfProcessing}
       />
 
+      <TransferListDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        transfers={allTransfers}
+        totalAmount={totalTransfers}
+      />
+
       <BottomNav />
     </div>
   );
