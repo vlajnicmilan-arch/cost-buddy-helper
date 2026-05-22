@@ -662,7 +662,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
           {t('bulk.reports')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto w-[calc(100vw-1rem)] sm:w-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-1rem)] sm:w-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <FileText className="w-5 h-5" />
@@ -1519,7 +1519,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
             </div>
 
             {/* Comparison Summary */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Period 1 */}
               <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                 <h3 className="font-semibold text-sm mb-3 text-primary">
@@ -1579,7 +1579,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                 <ArrowUpDown className="w-4 h-4" />
                 {t('reports.difference', 'Razlika')}
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">{t('reports.income', 'Prihodi')}</p>
                   <div className={cn("flex items-center gap-1 font-mono font-bold", getDiffColor(compareStats1.income - compareStats2.income))}>
@@ -1661,17 +1661,17 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
                   {categoryComparison.map(({ category, amount1, amount2, diff, diffPercent }) => {
                     const info = resolveCategory(category, customCategories);
                     return (
-                      <div key={category} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                        <div className="w-8 text-center">{info.icon}</div>
+                      <div key={category} className="flex items-start gap-3 p-2 rounded-lg bg-muted/30">
+                        <div className="w-8 shrink-0 text-center">{info.icon}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{info.name}</p>
-                          <div className="flex gap-3 text-xs text-muted-foreground">
-                            <span>{compareDateRanges.period1.label}: {formatCurrency(amount1)}</span>
-                            <span>{compareDateRanges.period2.label}: {formatCurrency(amount2)}</span>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                            <span className="truncate">{compareDateRanges.period1.label}: {formatCurrency(amount1)}</span>
+                            <span className="truncate">{compareDateRanges.period2.label}: {formatCurrency(amount2)}</span>
                           </div>
                         </div>
-                        <div className={cn("text-right", getDiffColor(diff, true))}>
-                          <div className="flex items-center gap-1 font-mono text-sm font-bold">
+                        <div className={cn("text-right shrink-0", getDiffColor(diff, true))}>
+                          <div className="flex items-center justify-end gap-1 font-mono text-sm font-bold">
                             {getDiffIcon(diff)}
                             <span>{formatCurrency(Math.abs(diff))}</span>
                           </div>
