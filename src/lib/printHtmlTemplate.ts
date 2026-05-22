@@ -59,9 +59,10 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
 
   .vmb-header { position: relative; background: var(--teal-tint); border-radius: 10px; padding: 18px 22px 18px 28px; margin-bottom: 18px; overflow: hidden; }
   .vmb-header::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--teal); border-radius: 6px 0 0 6px; }
-  .vmb-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .vmb-logo-mark { width: 28px; height: 28px; border-radius: 6px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; letter-spacing: -0.02em; }
-  .vmb-logo-word { color: var(--teal-deep); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+  .vmb-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .vmb-logo-img { width: 36px; height: 36px; border-radius: 8px; object-fit: contain; display: block; }
+  .vmb-logo-mark { width: 32px; height: 32px; border-radius: 7px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; letter-spacing: -0.02em; }
+  .vmb-logo-word { color: var(--teal-deep); font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
   .vmb-eyebrow { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 6px; }
   .vmb-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 4px; color: var(--ink); }
   .vmb-subtitle { color: var(--muted); font-size: 14px; }
