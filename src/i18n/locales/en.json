@@ -4069,5 +4069,16 @@
       "message": "Moved to trash",
       "undo": "Undo"
     }
+  },
+  "reportBranding": {
+    "confidentialityTitle": "Confidentiality level",
+    "confidentiality": {
+      "none": "No marker",
+      "internal": "Internal",
+      "confidential": "Confidential"
+    },
+    "intendedFor": "Intended for",
+    "pageXofY": "Page {{n}} of {{total}}",
+    "preparedBy": "Prepared by"
   }
 }

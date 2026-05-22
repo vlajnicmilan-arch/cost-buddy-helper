@@ -4069,5 +4069,16 @@
       "message": "Premješteno u koš",
       "undo": "Poništi"
     }
+  },
+  "reportBranding": {
+    "confidentialityTitle": "Razina povjerljivosti",
+    "confidentiality": {
+      "none": "Bez oznake",
+      "internal": "Interno",
+      "confidential": "Povjerljivo"
+    },
+    "intendedFor": "Namijenjeno",
+    "pageXofY": "Stranica {{n}} / {{total}}",
+    "preparedBy": "Pripremio"
   }
 }
