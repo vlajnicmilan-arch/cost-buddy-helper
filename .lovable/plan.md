@@ -1,40 +1,44 @@
 ## Problem
 
-Na V2 dashboardu `SummarySection` skriva karticu Prijenosi (`compact=true`, komentar kaže "moved to Wallet tab"), ali u `src/pages/Wallet.tsx` zapravo NEMA ničega vezanog za transfere. Premjestaj je ostao polovičan — kartica je nestala s dashboarda, a nikad nije dodana u Novčanik.
+Notifikacija u zvonu prikazuje sirove i18n ključeve:
 
-## Plan
+```
+attention.issues.budgetBurn.title
+attention.issues.budgetBurn.message
+```
 
-Dodati u `src/pages/Wallet.tsx` istu vizualnu karticu Prijenosa kakva je bila na dashboardu i otvoriti postojeći `TransferListDialog` (reuse, ne duplicirati).
+## Uzrok (verificirano)
 
-### Konkretno
+- `useIssueReconciler` poziva RPC `upsert_active_issue` i u `notifications.title`/`message` sprema **i18n ključeve** (`attention.issues.budgetBurn.title`), a varijable u `data.title_vars` / `data.message_vars` (vidi `src/lib/issueDetection.ts` 162‑173 i `src/hooks/useIssueReconciler.ts` 71‑84).
+- Ključevi postoje u `src/i18n/locales/hr.json|en.json|de.json` pod `attention.issues.*`.
+- `NotificationsDropdown.tsx` (linije 356, 359) renderira `notification.title` / `notification.message` **sirovo**, bez `t()` — pa korisnik vidi ključ.
+- Druge notifikacije (npr. `milestone_deadline`) imaju već-prevedeni tekst spremljen u DB iz edge funkcije, pa su izgledale ispravno i problem je ostao nezamijećen.
 
-1. **`src/pages/Wallet.tsx`**
-   - Dohvatiti transfere preko `useExpenses()` (već imamo `allExpenses` / `rawExpenses`) — filtrirati `type === 'transfer'` u memo helperu.
-   - Izračunati `monthlyTransfers` (suma za tekući mjesec), `monthlyTransferCount`, `totalTransfers` (apsolutna ovomjesečna suma za prikaz u dialogu).
-   - Dodati state `transferDialogOpen`, `useBackButton` integraciju.
-   - Renderati karticu (ista struktura kao u `SummarySection` lines 193–228, ali kao zaseban mali komponent radi čistoće) odmah **ispod `CustomPaymentSourcesPanel`**, prije `InstallmentsPanel` — logički susjedna s izvorima plaćanja.
-   - Otvarati postojeći `TransferListDialog` (`@/components/TransferListDialog`) — isti koji koristi `SharedDialogs`.
+## Rješenje
 
-2. **Mali wrapper komponent** `src/components/wallet/WalletTransfersCard.tsx`
-   - Props: `monthlyTransfers`, `monthlyTransferCount`, `onClick`.
-   - Reuse iste klase/stylinga kao postojeća kartica u `SummarySection` (semantic tokens, `ArrowLeftRight` ikona, i18n ključevi `transactions.transfers`, `transactions.noTransfers`, `common.clickForDetails`).
-   - Cilj: jedinstven izvor istine ako se kasnije ukloni iz `SummarySection`.
+Render-time lokalizacija u `NotificationsDropdown.tsx`. Ne diramo DB ni reconciler — strategija "sprema ključ, prevedi pri prikazu" je ispravna jer prati promjenu jezika korisnika bez backfilla.
 
-3. **Bez novih i18n ključeva** — koristimo postojeće (`transactions.transfers`, `transactions.transfer`, `transactions.noTransfers`, `common.clickForDetails`).
+### Koraci
 
-4. **Bez izmjena dashboarda** — V2 ostaje compact; jedino vraćamo dostupnost prijenosa kroz Novčanik.
+1. **Helper** `src/lib/notificationI18n.ts`:
+   - `resolveNotificationText(raw: string | null, vars: Record<string, unknown> | undefined, t): string`
+   - Ako `raw` izgleda kao i18n ključ (regex `^[a-zA-Z][\w]*(\.[\w]+)+$` i `i18n.exists(raw)`), vrati `t(raw, vars)`.
+   - Inače vrati `raw` nepromijenjeno (back-compat za `milestone_deadline` itd.).
+   - Vars dolaze iz `notification.data.title_vars` / `notification.data.message_vars`.
 
-5. **Bez DB migracija, bez business logike**.
+2. **NotificationsDropdown.tsx**:
+   - Linija 356: `{resolveNotificationText(notification.title, notification.data?.title_vars, t)}`
+   - Linija 359: `{resolveNotificationText(notification.message, notification.data?.message_vars, t)}`
+   - Linija 337 (`aria-label`) i 418/420 (AlertDialog za pozivnicu) — isto.
 
-### Što NE radim
+3. **Backfill postojećih redova** — preskačemo. Postojeća budget_burn obavijest će se sama resolveati pri sljedećem renderu jer ključevi postoje. Korisnik može obrisati staru i nova će biti odmah ispravna.
 
-- Ne diram `SummarySection` ni V2 layout dashboarda.
-- Ne duplicira se logika transfera — koristi se isti `TransferListDialog`.
-- Ne radi se nova tablica/kontekst.
+### Što ne dirati
 
-### Provjera nakon implementacije
+- `useIssueReconciler`, `issueDetection.ts`, RPC `upsert_active_issue`, DB shema, edge funkcije, ostali tipovi notifikacija.
 
-- Otvoriti `/wallet` → kartica Prijenosi vidljiva ispod izvora plaćanja, prikazuje mjesečni broj i sumu.
-- Klik → otvara `TransferListDialog` s listom transfera.
-- Back button zatvara dialog.
-- Personal + Business view rade jednako (Novčanik već dijeli komponente).
+## Validacija
+
+- Otvoriti zvono → budget_burn obavijest prikazuje "Budžet … pri kraju" / "Iskorišteno X%".
+- Promijeniti jezik (EN/DE) → tekst se mijenja bez novog DB upisa.
+- `milestone_deadline` i `family_message` ostaju nepromijenjeni.
