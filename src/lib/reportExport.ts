@@ -68,6 +68,7 @@ export const generatePDFReport = async (
   brand: ReportBrandOptions = {},
 ): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
 
