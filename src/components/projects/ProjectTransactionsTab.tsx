@@ -44,7 +44,7 @@ import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
 import { buildReportFileName } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
-import i18nDefault from '@/i18n';
+
 
 interface ProjectExpense {
   id: string;
