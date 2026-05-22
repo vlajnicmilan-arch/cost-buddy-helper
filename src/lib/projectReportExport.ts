@@ -155,13 +155,11 @@ export const generateProjectPDFReport = async (
   ];
 
   brandAutoTable(doc, autoTable, {
-    startY: 56,
+    startY: cursorY + 2,
     head: [['Stavka', 'Iznos']],
     body: budgetData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    tableWidth: 100,
+    margin: { left: REPORT_MARGIN_X },
+    tableWidth: 110,
   });
 
   // Milestones
