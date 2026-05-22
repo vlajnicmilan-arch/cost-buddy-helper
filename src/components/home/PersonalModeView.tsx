@@ -17,7 +17,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
-import { AIInsightsSection } from '@/components/dashboard/AIInsightsSection';
+import { ActiveIssuesSection } from '@/components/dashboard/ActiveIssuesSection';
 import { TrackSection } from '@/components/dashboard/TrackSection';
 import { useDashboardScrollDepth } from '@/hooks/useDashboardScrollDepth';
 import { BottomNav } from '@/components/BottomNav';
