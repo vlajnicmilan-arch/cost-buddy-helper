@@ -37,6 +37,7 @@ import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
 import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
@@ -681,8 +682,9 @@ export const PaymentSourceTransactionsDialog = ({
 
 
   // Print handler
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
+    await ensureReportLogo();
 
     const rowsHtml = filteredSourceExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);

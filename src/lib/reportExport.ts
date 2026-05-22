@@ -7,6 +7,7 @@ import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport'
 import { sanitizeCsvField } from '@/lib/csvSecurity';
 import { applyBrandFont, brandAutoTable } from '@/lib/pdfBranding';
 import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
+import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
 
@@ -67,6 +68,7 @@ export const generatePDFReport = async (
   brand: ReportBrandOptions = {},
 ): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
 
@@ -248,6 +250,7 @@ export const generateIncomePDFReport = async (
   brand: ReportBrandOptions = {},
 ): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
 

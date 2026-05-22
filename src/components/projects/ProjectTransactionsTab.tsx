@@ -41,6 +41,7 @@ import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
 import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
@@ -546,7 +547,8 @@ export const ProjectTransactionsTab = ({
     return { totalExpenses, totalIncome, net: totalIncome - totalExpenses, totalMaterial, totalLabor };
   }, [filteredExpenses]);
 
-  const handlePrintFiltered = () => {
+  const handlePrintFiltered = async () => {
+    await ensureReportLogo();
     const rowsHtml = filteredExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const milestone = getMilestoneName(e.milestone_id);
