@@ -3941,6 +3941,60 @@
       "other": "Other"
     }
   },
+  "onboardingV3": {
+    "finishLater": "Finish later",
+    "saving": "Saving...",
+    "finish": "Open the app",
+    "doneToast": "Your app is ready!",
+    "defaultBudgetName": "Monthly budget",
+    "greeting": {
+      "title": "Hi there!",
+      "titleNamed": "Nice to meet you, {{name}}!",
+      "intro": "I'll help you see where your money goes and suggest how to manage it more efficiently.",
+      "askName": "What should I call you?",
+      "namePlaceholder": "e.g. Alex"
+    },
+    "usage": {
+      "title": "What will you use the app for?",
+      "subtitle": "I'll tailor the app to you. You can change this later.",
+      "financeOnly": {
+        "title": "Just my finances",
+        "desc": "I track salary, expenses and savings."
+      },
+      "financeProjects": {
+        "title": "Finances + projects",
+        "desc": "I run a small business, renovate, manage clients..."
+      }
+    },
+    "income": {
+      "title": "Let's start with the good part — roughly how much do you earn each month?",
+      "hint": "Doesn't have to be exact — you can change every amount later.",
+      "saved": "Income saved"
+    },
+    "sliders": {
+      "title": "Drag the sliders to rough percentages",
+      "hintWithIncome": "The euro amount is calculated from your income.",
+      "hintNoIncome": "Without income we only save percentages. Add amounts later.",
+      "totalExpense": "Total expenses",
+      "savings": "Left to save",
+      "over100": "You went over 100% of your income.",
+      "cats": {
+        "rent": "Housing",
+        "food": "Food",
+        "car": "Car / transport",
+        "utilities": "Utilities",
+        "other": "Other"
+      }
+    },
+    "ready": {
+      "title": "Your app is ready!",
+      "titleNamed": "{{name}}, your app is ready!",
+      "subtitle": "Everything is set up. Let's go.",
+      "budget": "Monthly budget created",
+      "cats": "{{count}} expense categories added",
+      "income": "Income set"
+    }
+  },
   "openBanking": {
     "title": "Connect bank (Open Banking)",
     "subtitle": "Secure PSD2 connection. No passwords required.",
