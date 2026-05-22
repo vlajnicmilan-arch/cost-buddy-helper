@@ -171,8 +171,15 @@ export const generatePDFReport = async (
     },
   });
 
-  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  addNotOfficialFooter(doc);
+  const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: 'izvjestaj', owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
