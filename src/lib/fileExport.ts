@@ -21,8 +21,13 @@ export type ExportMode = 'save' | 'share';
  * Emits a global `file-saved` event consumed by <FileSavedDialog />.
  * Mounted globally in RouteAwareGlobalOverlays. Lets the user immediately
  * open or share the file without hunting through the file manager.
+ *
+ * `uri` is the user-visible save location (Downloads content:// URI on
+ * Android 10+) used by Open. `shareUri` is a file:// path in Cache used by
+ * Share, because the Capacitor Share plugin cannot share MediaStore content
+ * URIs directly — it requires a file:// path or a web URL.
  */
-function emitFileSaved(detail: { uri: string; fileName: string; mime: string }) {
+function emitFileSaved(detail: { uri: string; fileName: string; mime: string; shareUri?: string }) {
   if (typeof window === 'undefined') return;
   (window as any).__pendingSavedFileDetail = detail;
   window.dispatchEvent(new CustomEvent('file-saved', { detail }));
