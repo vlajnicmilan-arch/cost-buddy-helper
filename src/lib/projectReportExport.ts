@@ -85,10 +85,34 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 // Convert Croatian characters to ASCII for PDF compatibility
 const toAscii = (text: string): string => text;
 
-export const generateProjectPDFReport = async (data: ProjectReportData, mode: ExportMode = 'save'): Promise<void> => {
+export const generateProjectPDFReport = async (
+  data: ProjectReportData,
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
+): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
+  await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
+
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const confidentiality = brand.confidentiality ?? loadLastConfidentiality();
+  const subtitle = brand.subtitle || `${i18n.t('projects.project', 'Projekt')}: ${data.projectName}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality, subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: i18n.t('projects.reports', 'Izvještaji projekta'),
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
+
+  // Budget Summary
+  doc.setFontSize(11);
+  doc.setFont('Inter', 'bold');
   
   // Title
   doc.setFontSize(20);
