@@ -10,11 +10,32 @@
     "actions": {
       "openProject": "Öffnen",
       "openInvoice": "Rechnung",
-      "askAi": "KI fragen"
+      "askAi": "KI fragen",
+      "dismiss": "Verwerfen"
     },
     "dataQuality": {
       "uncategorized": "{{count}} Ausgaben ohne Beschreibung in den letzten 30 Tagen",
       "uncategorizedPrompt": "Welche Ausgaben der letzten 30 Tage brauchen eine Beschreibung?"
+    },
+    "issues": {
+      "lossZone": {
+        "title": "Projekt {{projectName}} in der Verlustzone",
+        "message": "Nur noch {{marginPct}}% Marge",
+        "messageOver": "Projekt überschreitet Vertragswert ({{marginPct}}% Marge)"
+      },
+      "overdueInvoice": {
+        "title": "Rechnung {{invoiceNumber}} überfällig",
+        "message": "{{daysOverdue}} Tage überfällig — {{amount}} €"
+      },
+      "budgetBurn": {
+        "title": "Budget {{budgetName}} fast aufgebraucht",
+        "message": "{{spentPct}}% verwendet",
+        "messageOver": "Budget überschritten ({{spentPct}}%)"
+      },
+      "cashflowRisk": {
+        "title": "Möglicher Liquiditätsengpass",
+        "message": "Nächste {{daysAhead}} Tage — Engpass {{shortage}} €"
+      }
     }
   },
   "paywall": {
