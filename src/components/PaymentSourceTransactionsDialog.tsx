@@ -677,41 +677,64 @@ export const PaymentSourceTransactionsDialog = ({
   const handlePrint = () => {
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
 
-    const rows = filteredSourceExpenses.map(e => {
+    const rowsHtml = filteredSourceExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
       const sign = e.type === 'income' || isInbound ? '+' : '-';
-      const color = e.type === 'income' || isInbound ? '#16a34a' : '#dc2626';
+      const cls = e.type === 'income' || isInbound ? 'pos' : 'neg';
+      const typeLabel = e.type === 'income' ? t('transactions.income') : e.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense');
       return `<tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${format(e.date, 'dd.MM.yyyy')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.type === 'income' ? t('transactions.income') : e.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense')}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.description}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${cat.name}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:${color}">${sign}${formatAmount(e.amount)}</td>
+        <td>${format(e.date, 'dd.MM.yyyy')}</td>
+        <td>${typeLabel}</td>
+        <td>${e.description}</td>
+        <td>${cat.name}</td>
+        <td class="num ${cls}">${sign}${formatAmount(e.amount)}</td>
       </tr>`;
     }).join('');
 
-    const html = `<!DOCTYPE html><html><head><title>${paymentSource.name} - ${t('transactions.transactions')}</title>
-      <style>body{font-family:system-ui,sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #333;font-size:13px}td{font-size:13px}.summary{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px}h1{font-size:18px;margin-bottom:4px}h2{font-size:15px;color:#666;margin-top:0}</style></head><body>
-      <h1>${paymentSource.icon} ${paymentSource.name}</h1>
-      <h2>${t('summary.balance')}: ${formatAmount(paymentSource.balance)} | ${filteredSourceExpenses.length} ${t('transactions.transactions')}</h2>
-      <table><thead><tr>
-        <th>${t('common.date', 'Datum')}</th>
-        <th>${t('common.type', 'Tip')}</th>
-        <th>${t('common.description', 'Opis')}</th>
-        <th>${t('common.category', 'Kategorija')}</th>
-        <th style="text-align:right">${t('common.amount', 'Iznos')}</th>
-      </tr></thead><tbody>${rows}</tbody></table>
-      <div class="summary">
-        <strong>${t('summary.totalIncome')}:</strong> ${formatAmount(totalIncome)} &nbsp;|&nbsp;
-        <strong>${t('summary.totalExpenses')}:</strong> ${formatAmount(totalExp)} &nbsp;|&nbsp;
-        <strong>${t('transactions.transfers', 'Prijenosi')}:</strong> ${formatAmount(totalTransfers)}
-      </div></body></html>`;
+    const kpiStrip = renderHtmlKpiStrip([
+      { label: t('summary.totalIncome'), value: formatAmount(totalIncome) },
+      { label: t('summary.totalExpenses'), value: formatAmount(totalExp) },
+      { label: t('transactions.transfers', 'Prijenosi'), value: formatAmount(totalTransfers) },
+      { label: t('summary.balance'), value: formatAmount(paymentSource.balance) },
+    ]);
+
+    const bodyHtml = `${kpiStrip}
+      <h2>${t('transactions.transactions')}</h2>
+      <table>
+        <thead><tr>
+          <th>${t('common.date', 'Datum')}</th>
+          <th>${t('common.type', 'Tip')}</th>
+          <th>${t('common.description', 'Opis')}</th>
+          <th>${t('common.category', 'Kategorija')}</th>
+          <th class="num">${t('common.amount', 'Iznos')}</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
+
+    const html = buildReportHtml({
+      title: `${paymentSource.icon} ${paymentSource.name}`,
+      brand: {
+        owner: reportOwner,
+        language: (i18n.language as any) || 'hr',
+        confidentiality,
+        subtitle: `${filteredSourceExpenses.length} ${t('transactions.transactions')}`,
+      },
+      bodyHtml,
+      confidentialityLabel: {
+        internal: t('reportBranding.confidentiality.internal'),
+        confidential: t('reportBranding.confidentiality.confidential'),
+      },
+      intendedForLabel: confidentiality !== 'none' && reportOwner
+        ? `${t('reportBranding.intendedFor')}: ${reportOwner}`
+        : undefined,
+    });
 
     // Native WebView ignores window.print() silently. Save HTML so the user
     // can open it in a system browser/viewer and print from there.
     if (Capacitor.isNativePlatform()) {
-      exportTextFile(html, `${paymentSource.name}.html`, 'text/html', false, 'save');
+      const fileName = buildReportFileName({ type: 'transakcije', owner: reportOwner, period: paymentSource.name, ext: 'html' });
+      exportTextFile(html, fileName, 'text/html', false, 'save');
       return;
     }
     printHtmlDocument(html);
