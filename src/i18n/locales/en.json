@@ -10,11 +10,32 @@
     "actions": {
       "openProject": "Open",
       "openInvoice": "Invoice",
-      "askAi": "Ask AI"
+      "askAi": "Ask AI",
+      "dismiss": "Dismiss"
     },
     "dataQuality": {
       "uncategorized": "{{count}} expenses without description in last 30 days",
       "uncategorizedPrompt": "Which expenses from the last 30 days need a description?"
+    },
+    "issues": {
+      "lossZone": {
+        "title": "Project {{projectName}} entering loss zone",
+        "message": "Only {{marginPct}}% margin remaining",
+        "messageOver": "Project exceeds contracted value ({{marginPct}}% margin)"
+      },
+      "overdueInvoice": {
+        "title": "Invoice {{invoiceNumber}} overdue",
+        "message": "{{daysOverdue}} days overdue — €{{amount}}"
+      },
+      "budgetBurn": {
+        "title": "Budget {{budgetName}} almost spent",
+        "message": "{{spentPct}}% used",
+        "messageOver": "Budget exceeded ({{spentPct}}%)"
+      },
+      "cashflowRisk": {
+        "title": "Possible cash shortfall",
+        "message": "Next {{daysAhead}} days — shortage €{{shortage}}"
+      }
     }
   },
   "paywall": {
