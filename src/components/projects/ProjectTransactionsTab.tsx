@@ -41,6 +41,7 @@ import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
 import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
