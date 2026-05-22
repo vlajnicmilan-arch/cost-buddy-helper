@@ -333,8 +333,15 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     },
   });
 
-  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  addNotOfficialFooter(doc);
+  const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: 'prihodi', owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
