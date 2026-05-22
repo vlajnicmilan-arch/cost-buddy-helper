@@ -1519,7 +1519,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
             </div>
 
             {/* Comparison Summary */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Period 1 */}
               <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                 <h3 className="font-semibold text-sm mb-3 text-primary">
