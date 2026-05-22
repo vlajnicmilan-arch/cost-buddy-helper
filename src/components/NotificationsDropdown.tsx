@@ -144,7 +144,10 @@ export const NotificationsDropdown = () => {
       case 'note_added':
         return { path: '/projects', state: { openProjectId: data.project_id, openExpenseId: data.expense_id } };
       case 'budget_alert':
+      case 'budget_burn':
         return { path: '/budgets', state: { openBudgetId: data.budget_id } };
+      case 'project_loss_zone':
+        return { path: '/projects', state: { openProjectId: data.project_id, from: '/home' } };
       case 'payment_source_transaction':
         return { path: '/', state: { openExpenseId: data.expense_id } };
       case 'family_message':
@@ -187,11 +190,22 @@ export const NotificationsDropdown = () => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }
-    
+
     const target = getNavigationTarget(notification.type, data);
     if (target) {
       setOpen(false);
       navigate(target.path, { state: target.state });
+      return;
+    }
+
+    // Fallback for issue-type notifications without a direct route (overdue_invoice, cashflow_risk)
+    if (notification.type === 'overdue_invoice' || notification.type === 'cashflow_risk') {
+      const titleVars = (data?.title_vars as Record<string, unknown>) ?? {};
+      const messageVars = (data?.message_vars as Record<string, unknown>) ?? {};
+      const title = resolveNotificationText(notification.title, titleVars, t);
+      const message = resolveNotificationText(notification.message, messageVars, t);
+      setOpen(false);
+      window.dispatchEvent(new CustomEvent('ai-assistant:ask', { detail: { prompt: `${title} — ${message}` } }));
     }
   };
 
@@ -329,13 +343,18 @@ export const NotificationsDropdown = () => {
               <div className="py-1">
                 {notifications.map((notification) => {
                   const isInvitation = isInvitationNotification(notification.type);
+                  const nData = parseNotificationData(notification.data);
+                  const titleVars = (nData?.title_vars as Record<string, unknown>) ?? {};
+                  const messageVars = (nData?.message_vars as Record<string, unknown>) ?? {};
+                  const titleText = resolveNotificationText(notification.title, titleVars, t);
+                  const messageText = resolveNotificationText(notification.message, messageVars, t);
 
                   return (
                     <div
                       key={notification.id}
                       role="button"
                       tabIndex={0}
-                      aria-label={resolveNotificationText(notification.title, (notification.data as any)?.title_vars, t) || resolveNotificationText(notification.message, (notification.data as any)?.message_vars, t) || 'Obavijest'}
+                      aria-label={titleText || messageText || 'Obavijest'}
                       className={cn(
                         'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                         !notification.read && 'bg-primary/5'
@@ -354,10 +373,10 @@ export const NotificationsDropdown = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={cn('text-sm', !notification.read && 'font-medium')}>
-                            {resolveNotificationText(notification.title, (notification.data as any)?.title_vars, t)}
+                            {titleText}
                           </p>
                           <p className="text-xs text-muted-foreground line-clamp-2">
-                            {resolveNotificationText(notification.message, (notification.data as any)?.message_vars, t)}
+                            {messageText}
                           </p>
                           {isInvitation && (
                             <p className="text-xs text-primary font-medium mt-1">
@@ -371,6 +390,7 @@ export const NotificationsDropdown = () => {
                             })}
                           </p>
                         </div>
+
                         {!isInvitation && (
                           <div className="flex items-center gap-1">
                             {!notification.read && (
@@ -416,9 +436,9 @@ export const NotificationsDropdown = () => {
       <AlertDialog open={!!invitationDialog} onOpenChange={(open) => !open && setInvitationDialog(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{resolveNotificationText(invitationDialog?.notification.title, (invitationDialog?.notification.data as any)?.title_vars, t)}</AlertDialogTitle>
+            <AlertDialogTitle>{resolveNotificationText(invitationDialog?.notification.title, (parseNotificationData(invitationDialog?.notification.data) as any)?.title_vars, t)}</AlertDialogTitle>
             <AlertDialogDescription>
-              {resolveNotificationText(invitationDialog?.notification.message, (invitationDialog?.notification.data as any)?.message_vars, t)}
+              {resolveNotificationText(invitationDialog?.notification.message, (parseNotificationData(invitationDialog?.notification.data) as any)?.message_vars, t)}
             </AlertDialogDescription>
           </AlertDialogHeader>
 

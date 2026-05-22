@@ -81,21 +81,32 @@ const Index = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
 
-  // Global "ai-assistant:ask" event — opens dialog with a pre-seeded prompt
+  // Global "ai-assistant:ask" event — opens dialog with a pre-seeded prompt.
+  // We store the prompt in state and re-dispatch via effect whenever the dialog
+  // transitions to open, so the dialog's seed listener (which only mounts when open)
+  // reliably receives it without timing hacks.
+  const [pendingAiPrompt, setPendingAiPrompt] = useState<string | null>(null);
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.prompt) {
+        setPendingAiPrompt(detail.prompt);
         setAssistantDialogOpen(true);
-        // re-dispatch shortly so the mounted dialog picks up the prompt
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("ai-assistant:seed", { detail }));
-        }, 250);
       }
     };
     window.addEventListener("ai-assistant:ask", handler);
     return () => window.removeEventListener("ai-assistant:ask", handler);
   }, []);
+  useEffect(() => {
+    if (assistantDialogOpen && pendingAiPrompt) {
+      const prompt = pendingAiPrompt;
+      setPendingAiPrompt(null);
+      // Dispatch on next frame so the dialog's effect-mounted listener is registered.
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent("ai-assistant:seed", { detail: { prompt } }));
+      });
+    }
+  }, [assistantDialogOpen, pendingAiPrompt]);
   const [recurringPanelOpen, setRecurringPanelOpen] = useState(false);
   const [recurringMatches, setRecurringMatches] = useState<RecurringMatch[]>([]);
   const [recurringMatchDialogOpen, setRecurringMatchDialogOpen] = useState(false);
