@@ -8,7 +8,7 @@ import { sanitizeCsvField } from '@/lib/csvSecurity';
 import { applyBrandFont, brandAutoTable } from '@/lib/pdfBranding';
 import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
 import { ensureReportLogo } from '@/lib/reportLogo';
-import { buildReportFileName, type ReportBrandOptions } from '@/lib/reportDesign';
+import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
