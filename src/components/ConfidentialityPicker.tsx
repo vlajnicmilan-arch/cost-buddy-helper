@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import {
   loadLastConfidentiality,
   saveLastConfidentiality,
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export const ConfidentialityPicker = ({ value, onChange, className }: Props) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const setAndPersist = (level: ConfidentialityLevel) => {
     saveLastConfidentiality(level);
