@@ -3941,6 +3941,60 @@
       "other": "Sonstiges"
     }
   },
+  "onboardingV3": {
+    "finishLater": "Später beenden",
+    "saving": "Speichern...",
+    "finish": "App öffnen",
+    "doneToast": "Deine App ist bereit!",
+    "defaultBudgetName": "Monatsbudget",
+    "greeting": {
+      "title": "Hallo!",
+      "titleNamed": "Schön, dich kennenzulernen, {{name}}!",
+      "intro": "Ich helfe dir herauszufinden, wohin dein Geld fließt, und schlage vor, wie du es effizienter verwalten kannst.",
+      "askName": "Wie soll ich dich nennen?",
+      "namePlaceholder": "z. B. Alex"
+    },
+    "usage": {
+      "title": "Wofür wirst du die App nutzen?",
+      "subtitle": "Ich passe die App an dich an. Du kannst es später ändern.",
+      "financeOnly": {
+        "title": "Nur meine Finanzen",
+        "desc": "Ich verfolge Gehalt, Ausgaben und Ersparnisse."
+      },
+      "financeProjects": {
+        "title": "Finanzen + Projekte",
+        "desc": "Ich habe ein Gewerbe, renoviere, betreue Kunden..."
+      }
+    },
+    "income": {
+      "title": "Fangen wir mit dem Schönen an — wie viel verdienst du ungefähr im Monat?",
+      "hint": "Muss nicht genau sein — alle Beträge kannst du später ändern.",
+      "saved": "Einkommen gespeichert"
+    },
+    "sliders": {
+      "title": "Schiebe die Regler auf grobe Prozente",
+      "hintWithIncome": "Der Eurobetrag wird aus deinem Einkommen berechnet.",
+      "hintNoIncome": "Ohne Einkommen speichern wir nur Prozente. Beträge später hinzufügen.",
+      "totalExpense": "Ausgaben gesamt",
+      "savings": "Bleibt zum Sparen",
+      "over100": "Du hast 100% deines Einkommens überschritten.",
+      "cats": {
+        "rent": "Wohnen",
+        "food": "Essen",
+        "car": "Auto / Transport",
+        "utilities": "Nebenkosten",
+        "other": "Sonstiges"
+      }
+    },
+    "ready": {
+      "title": "Deine App ist bereit!",
+      "titleNamed": "{{name}}, deine App ist bereit!",
+      "subtitle": "Alles ist eingerichtet. Los geht's.",
+      "budget": "Monatsbudget erstellt",
+      "cats": "{{count}} Ausgabenkategorien hinzugefügt",
+      "income": "Einkommen festgelegt"
+    }
+  },
   "openBanking": {
     "title": "Bank verbinden (Open Banking)",
     "subtitle": "Sichere PSD2-Verbindung. Keine Passwörter nötig.",
