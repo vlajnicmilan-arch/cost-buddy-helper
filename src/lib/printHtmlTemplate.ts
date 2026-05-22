@@ -5,6 +5,7 @@ import {
   formatBrandDate,
   type ReportBrandOptions,
 } from '@/lib/reportDesign';
+import { getReportLogoDataUrl } from '@/lib/reportLogo';
 
 export interface BuildReportHtmlInput {
   title: string;
