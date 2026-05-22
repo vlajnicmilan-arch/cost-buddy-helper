@@ -899,7 +899,10 @@ export const PaymentSourceTransactionsDialog = ({
                             {t('common.export', 'Izvoz')}
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-64">
+                          <div className="px-2 py-1.5 border-b mb-1">
+                            <ConfidentialityPicker value={confidentiality} onChange={setConfidentiality} />
+                          </div>
                           <DropdownMenuItem onClick={handlePrint}>
                             <Printer className="w-4 h-4 mr-2" />
                             {t('common.print', 'Ispis')}
