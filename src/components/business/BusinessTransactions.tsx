@@ -88,11 +88,18 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
 
   const handleDeleteBatch = async (expenseIds: string[]) => {
     // Only delete expenses that are actually in our filtered list (safety check)
-    const validIds = new Set(expenses.map(e => e.id));
-    const safeIds = expenseIds.filter(id => validIds.has(id));
-    for (const id of safeIds) {
-      onDeleteExpense(id);
-    }
+    const expMap = new Map(expenses.map(e => [e.id, e]));
+    const safeIds = expenseIds.filter(id => expMap.has(id));
+    const { supabase } = await import('@/integrations/supabase/client');
+    await Promise.allSettled(safeIds.map(async (id) => {
+      const exp = expMap.get(id);
+      if (exp?.bank_match_status === 'confirmed') {
+        const { error } = await supabase.rpc('unmerge_import_row', { p_id: id });
+        if (error) throw error;
+      } else {
+        onDeleteExpense(id);
+      }
+    }));
   };
 
   return (

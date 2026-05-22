@@ -1,107 +1,91 @@
-
-# Novi onboarding za V&M Balance — finalni plan
-
 ## Cilj
+Auto-merge ručno unesenih transakcija s redovima iz bankovnog izvoda (CSV/PDF) pri uvozu, uz **±1 dan + isti iznos + isti izvor + isti tip**. Mergeani redovi ostaju vidljivi u dijalogu "Izvod" s posebnom oznakom. Brisanje izvoda unmerga ručne unose umjesto da ih briše.
 
-Zamijeniti postojeći `src/pages/Onboarding.tsx` (4 koraka, suhoparan) novim, kraćim i interaktivnijim onboardingom (5 koraka, jedan ekran = jedno pitanje).
+## A) Auto-merge logika pri uvozu
 
----
+**Helper** `src/lib/manualMatchForImport.ts` (pure, no React/Supabase):
+- `matchManualToImported({imported, manualCandidates, maxDayDiff: 1})` → `{matches: [{importedIdx, manualId}], ambiguous: number[], unmatched: number[]}`
+- Match kriteriji: isti `payment_source`, isti `type` (expense/income, transfer preskoči), isti `amount` (`.toFixed(2)`), `|date − importedDate| ≤ 1 dan`.
+- 1:1 match → merge. 0 ili ≥2 kandidata → ne spaja (ide kao novi).
 
-## Tijek — 5 koraka
+**Test** `src/lib/manualMatchForImport.test.ts` — pokriva same-day, ±1d granicu, 2d → no match, ambiguous (2 kandidata), transfer skip, različit izvor.
 
-### Korak 1 — Pozdrav i ime
+**Patch** `src/hooks/useExpenseCRUD.ts` (cloud grana `importFromCSV`, ~459–580):
+1. Prije `upsert`: SELECT manual kandidata iz DB (jedan query za cijeli batch):
+   - `user_id = me`, `payment_source IN (importedSources)`, `type IN ('income','expense')`,
+   - `date BETWEEN minDate-1 AND maxDate+1`,
+   - `bank_transaction_id IS NULL`, `bank_match_status IN ('manual','pending_bank')`, `deleted_at IS NULL`.
+2. Pozovi helper → `matches` / `ambiguous` / `unmatched`.
+3. Za svaki match → UPDATE s guardom:
+   ```
+   UPDATE expenses
+   SET bank_transaction_id = <fp>,
+       bank_match_status = 'confirmed',
+       import_batch_id = <batchId>,                    -- da bude vidljiv u "Izvod" dijalogu
+       merchant_name = COALESCE(merchant_name, imported.merchant_name)
+   WHERE id = <manualId> AND bank_transaction_id IS NULL
+   ```
+   - `Promise.allSettled` za bulk.
+   - **Bez** balance update-a (manual je već utjecao).
+4. `unmatched` + `ambiguous` → postojeći `upsert(..., ignoreDuplicates: true)`. Balance update samo za stvarno umetnute (postojeća logika).
+5. Vrati `{inserted, merged, skipped}`.
 
-**Tekst (finalno usuglašen):**
-> **Bok!**
-> Pomoći ću ti otkriti gdje ti odlazi novac i predlagati kako njime efikasnije upravljati.
-> *Kako da te zovem?*
+**UI poruka** — koristi postojeći `showSuccess`:
+- `t('transactions.import.summaryFull', { inserted, merged, skipped })` = "Uvezeno X novih, spojeno Y s ručnim unosima, Z već postoji" (+ EN/DE).
 
-- Jedno polje za ime, autofokus.
-- Naslov se uživo mijenja u "Drago mi je, Marko!" čim korisnik počne tipkati.
-- Gumb "Dalje" otključan tek kad ime ima ≥ 1 slovo.
+## B) Vizualna oznaka u "Izvod" dijalogu
 
----
+`src/components/ImportBatchDialog.tsx`:
+- Mergeani red (`bank_match_status === 'confirmed'`) dobiva **mali badge** uz iznos: zelena `Link2` ili `CheckCircle2` ikona + tekst `t('importBatch.mergedWithManual')` = "Spojeno s ručnim unosom".
+- Sortiraj normalno; ne pravi posebnu sekciju.
 
-### Korak 2 — Za što ćeš koristiti aplikaciju?
+Globalna lista (`TransactionItem.tsx`) — već postoji `CheckCircle2` ikona za `confirmed`, ništa novo.
 
-(Vraćamo pitanje koje trenutno postoji u kodu — `OnboardingUsageProfileStep.tsx` — ali se ne koristi.)
+## C) Brisanje izvoda — UNMERGE umjesto delete za mergeane
 
-Dvije velike kartice:
-- 💰 **Samo moje financije** — *"Pratim plaću, troškove i štednju."*
-- 🧰 **Financije + projekti** — *"Imam obrt, renoviram stan, vodim klijente..."*
+**Novi RPC** (migracija) `unmerge_import_row(p_id uuid)` SECURITY DEFINER:
+- Provjeri `auth.uid() = expenses.user_id`.
+- `UPDATE expenses SET bank_transaction_id = NULL, bank_match_status = 'manual', import_batch_id = NULL WHERE id = p_id AND bank_match_status = 'confirmed' AND user_id = auth.uid()`.
+- Bez balance promjene.
 
-- Tap = odabir + odmah idemo dalje (bez dodatnog "Dalje" klika).
-- Odabir se sprema u `usage_profile` (postojeća logika).
-- **Plan compare panel** (Free/Pro/Business) iz postojećeg `OnboardingUsageProfileStep` se NE prikazuje ovdje — premjestit ćemo ga kasnije (po želji), ili sasvim izbaciti iz onboardinga da ne uspori tijek. Predlažem **izbaciti** — paywall i dalje postoji na `/paywall`.
+**Patch** `src/components/TransactionListDialog.tsx` `handleDeleteBatch` (linije 97-103) i `PaymentSourceTransactionsDialog.tsx` (isti pattern):
+- Za svaki id u batchu pročitaj `bank_match_status` iz `filteredExpenses`.
+- `confirmed` → RPC `unmerge_import_row(id)` (ne `onDelete`, balans ostaje).
+- `bank_only` (ili bilo što drugo) → postojeći `onDelete(id)` (briše + vraća balans).
+- `Promise.allSettled`, partial fail → `t('transactions.bulkDeleteFailed/bulkDeletePartial')`.
 
----
+**Confirm dialog tekst** (`ImportBatchDialog.tsx` AlertDialog):
+- Ako batch sadrži ≥1 `confirmed` red, prošireni opis:
+  `t('importBatch.deleteDescWithMerged', { count, mergedCount })` = "Briše X redaka. Y redaka koji su spojeni s ručnim unosima neće biti obrisani — vratit će se u prvotno stanje."
 
-### Korak 3 — Mjesečni prihod
+## D) Što NE diramo
+- Local mode (IndexedDB) — nepromijenjeno.
+- `bank-sync-transactions` edge — vlastita logika.
+- `duplicateDetection.ts`, `useRecurringMatcher`, `transferMatching` — nepromijenjeni.
+- `getInitialBankMatchStatus`, `TransactionItem` confirmed ikona — već rade.
+- DB šema za expenses kolone — sve već postoji. Samo dodajemo 1 RPC funkciju.
 
-**Tekst (s tvojim dodatkom):**
-> *"Krenimo od onog dobrog — koliko otprilike zaradiš mjesečno?
-> Ne mora biti točno — sve iznose možeš kasnije promijeniti."*
+## E) Datoteke (sažeto)
 
-- Jedno veliko polje s € znakom.
-- 4 brze tipke ispod: **700 €**, **1.000 €**, **1.500 €**, **2.500 €**.
-- Mala animacija kovanice koja "padne" u virtualni novčanik kad se upiše iznos.
-- Gumb "Preskoči" dolje sitno (ako preskoči, korak 4 prebacuje se u ručni unos).
+**Nove:**
+- `src/lib/manualMatchForImport.ts`
+- `src/lib/manualMatchForImport.test.ts`
+- Migracija: RPC `unmerge_import_row`
 
----
+**Izmjene:**
+- `src/hooks/useExpenseCRUD.ts` (cloud grana `importFromCSV`)
+- `src/components/ImportBatchDialog.tsx` (badge + prošireni delete confirm)
+- `src/components/TransactionListDialog.tsx` (handleDeleteBatch split)
+- `src/components/PaymentSourceTransactionsDialog.tsx` (handleDeleteBatch split)
+- `src/components/business/BusinessTransactions.tsx` (ako ima handleDeleteBatch — provjeriti)
+- i18n: `hr.json` / `en.json` / `de.json` → `transactions.import.summaryFull`, `importBatch.mergedWithManual`, `importBatch.deleteDescWithMerged`
 
-### Korak 4 — Glavni troškovi (klizači s % od prihoda)
+**Memory:**
+- `mem://features/import-manual-merge` (nova) — ±1d, single-match-only, `import_batch_id` na mergeani, unmerge RPC pri brisanju batcha.
+- Update `mem://index.md` u "Memories".
 
-**Naslov:** *"Pomakni klizače na grube postotke. Lako je."*
-
-- 5 vodoravnih klizača: 🏠 Stanovanje, 🛒 Hrana, 🚗 Auto/prijevoz, 💡 Režije, 📦 Ostalo.
-- Svaki klizač pokazuje **% lijevo** i **eurski iznos desno** (računa se iz prihoda iz koraka 3).
-- Ispod klizača **pita-grafikon** (recharts, već u projektu) koji se animira uživo.
-- Ispod grafikona: *"Ostaje ti za štednju: 230 €"* — boja crvena ako je negativno, zelena ako pozitivno.
-- Haptic vibracija kad korisnik prijeđe 100% prihoda.
-- **Fallback bez prihoda** (ako je korak 3 preskočen): isti dizajn klizača, ali umjesto € pokazuje samo postotke. Iznosi se spremaju kao postotak, korisnik kasnije ručno upiše vrijednosti.
-
----
-
-### Korak 5 — Sve je spremno
-
-- Konfeta animacija (postojeća `WelcomeConfetti` komponenta).
-- Naslov: *"Marko, tvoja aplikacija je spremna!"*
-- 3 kartice s odgodom 0.2s:
-  - ✅ *"Mjesečni budžet napravljen"*
-  - ✅ *"5 kategorija troškova dodano"*
-  - ✅ *"Prihod postavljen"*
-- Veliki gumb: **"Uđi u aplikaciju"** → navigacija na `/home`.
-
----
-
-## Što se NE mijenja
-
-- Spremanje u bazu (`profiles`, `budget_plans`, `budget_categories`) — postojeća logika ostaje.
-- Funnel event `onboarding_complete` — ostaje.
-- `WelcomeChecklist` na home ekranu nakon onboardinga — ostaje (stavka "Postavi budžet" će već biti označena ✅).
-- Bez novih paketa, bez DB migracija, bez native promjena (znači **bez** version bump-a).
-- Bez zvuka — samo postojeći haptic.
-
----
-
-## Tehnički sažetak
-
-**Datoteke:**
-- `src/pages/Onboarding.tsx` — prepisuje se (manji wrapper, ~80 linija, samo orchestrator koraka).
-- `src/components/onboarding/steps/StepGreeting.tsx` — novi
-- `src/components/onboarding/steps/StepUsageProfile.tsx` — novi (jednostavnija verzija postojećeg `OnboardingUsageProfileStep`, bez plan-compare panela)
-- `src/components/onboarding/steps/StepIncome.tsx` — novi
-- `src/components/onboarding/steps/StepBudgetSliders.tsx` — novi (glavni "wow" korak)
-- `src/components/onboarding/steps/StepReady.tsx` — novi
-- `src/components/onboarding/OnboardingUsageProfileStep.tsx` — može se obrisati nakon migracije (trenutno nije aktivan)
-
-**i18n ključevi:** novi namespace `onboardingV3.*` u `src/i18n/locales/{hr,en,de}.json`. Stari `onboardingV2.*` ostaje dok ne potvrdimo da V3 radi, pa ga čistimo u zasebnom prolazu.
-
-**Konvencije:**
-- Touch target ≥ 44px, mobile-first 384px.
-- Teal HSL 172 66% 40% (semantički tokeni iz `index.css`).
-- `framer-motion` za prijelaze, `recharts` za pita-grafikon, `@capacitor/haptics` za vibracije — sve već u projektu.
-- Lazy load zadržan u `App.tsx`.
-- A11y: svi klikabilni divovi kroz `clickableProps()` helper.
-
-**Validacija:** `npm test` mora proći (postojeći testovi). Bez novih testova jer su sve komponente UI (slijedi pravilo "ne testiraj shadcn render").
+## F) Rizici
+- **Race condition** (paralelni uvoz) → `WHERE bank_transaction_id IS NULL` guard.
+- **Ambiguous (2 manual ista iznosa unutar 48h na istom izvoru)** → svjesno ne spajamo, ide kao novi (`bank_only`), korisnik može ručno.
+- **Performance ≥500 redaka** → jedan range SELECT za cijeli batch.
+- **Unmerge na isti mergeani red dvaput** → RPC ima `WHERE bank_match_status = 'confirmed'`, drugi poziv je no-op.

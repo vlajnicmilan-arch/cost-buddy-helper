@@ -95,9 +95,19 @@ export const TransactionListDialog = ({
   };
 
   const handleDeleteBatch = async (expenseIds: string[]) => {
-    const visibleIds = new Set(filteredExpenses.map((expense) => expense.id));
-    const safeIds = expenseIds.filter((id) => visibleIds.has(id));
-    await Promise.all(safeIds.map((id) => onDelete(id)));
+    const visibleMap = new Map(filteredExpenses.map((e) => [e.id, e]));
+    const safeIds = expenseIds.filter((id) => visibleMap.has(id));
+    const { supabase } = await import('@/integrations/supabase/client');
+    await Promise.allSettled(safeIds.map(async (id) => {
+      const exp = visibleMap.get(id);
+      if (exp?.bank_match_status === 'confirmed') {
+        // Unmerge: vrati u prvotno (ručno) stanje, ne diraj saldo.
+        const { error } = await supabase.rpc('unmerge_import_row', { p_id: id });
+        if (error) throw error;
+      } else {
+        await onDelete(id);
+      }
+    }));
     setImportBatchDialogOpen(false);
     setSelectedBatchId(null);
   };

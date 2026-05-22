@@ -3,7 +3,7 @@ import { Expense, getCategoryInfo } from '@/types/expense';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { FileText, TrendingUp, TrendingDown, X as XIcon, Trash2 } from 'lucide-react';
+import { FileText, TrendingUp, TrendingDown, X as XIcon, Trash2, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -32,16 +32,17 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [allExpenses, batchId]);
 
-  const { totalIncome, totalExpenses, importDate } = useMemo(() => {
-    let inc = 0, exp = 0;
+  const { totalIncome, totalExpenses, importDate, mergedCount } = useMemo(() => {
+    let inc = 0, exp = 0, merged = 0;
     let earliest: Date | null = null;
     for (const e of batchExpenses) {
       if (e.type === 'income') inc += e.amount;
       else if (e.type === 'expense') exp += e.amount;
+      if (e.bank_match_status === 'confirmed') merged += 1;
       const created = e.created_at ? new Date(e.created_at) : e.date;
       if (!earliest || created < earliest) earliest = created;
     }
-    return { totalIncome: inc, totalExpenses: exp, importDate: earliest || new Date() };
+    return { totalIncome: inc, totalExpenses: exp, importDate: earliest || new Date(), mergedCount: merged };
   }, [batchExpenses]);
 
   const handleDeleteBatch = async () => {
@@ -131,6 +132,7 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
               <div className="space-y-0">
                 {batchExpenses.map((expense) => {
                   const categoryInfo = getCategoryInfo(expense.category);
+                  const isMerged = expense.bank_match_status === 'confirmed';
                   return (
                     <div
                       key={expense.id}
@@ -151,6 +153,18 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
                             <span className="truncate max-w-[80px]">{categoryInfo.name}</span>
                             <span className="text-muted-foreground/50">•</span>
                             <span>{format(expense.date, 'd. MMM', { locale: hr })}</span>
+                            {isMerged && (
+                              <>
+                                <span className="text-muted-foreground/50">•</span>
+                                <span
+                                  className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-primary/15 text-primary text-[10px] font-semibold"
+                                  title={t('importBatch.mergedWithManual')}
+                                >
+                                  <Link2 className="w-2.5 h-2.5" />
+                                  {t('importBatch.mergedBadge')}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                         <p className={cn(
@@ -178,7 +192,9 @@ export const ImportBatchDialog = ({ open, onOpenChange, batchId, allExpenses, on
         <AlertDialogHeader>
           <AlertDialogTitle>{t('importBatch.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('importBatch.deleteDesc', { count: batchExpenses.length })}
+            {mergedCount > 0
+              ? t('importBatch.deleteDescWithMerged', { deleteCount: batchExpenses.length - mergedCount, mergedCount })
+              : t('importBatch.deleteDesc', { count: batchExpenses.length })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

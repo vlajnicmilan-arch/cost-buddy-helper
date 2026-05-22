@@ -2730,8 +2730,11 @@
     "expenses": "Ausgaben",
     "deleteTitle": "Gesamten Import löschen?",
     "deleteDesc": "Dies löscht alle {{count}} Transaktionen aus diesem Import dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteDescWithMerged": "Löscht {{deleteCount}} importierte Transaktionen. {{mergedCount}} Transaktionen, die mit manuellen Einträgen verknüpft wurden, werden NICHT gelöscht — sie werden in ihren ursprünglichen Zustand (manueller Eintrag) zurückgesetzt.",
     "deleting": "Löschen...",
-    "deleteCount": "{{count}} Transaktionen löschen"
+    "deleteCount": "{{count}} Transaktionen löschen",
+    "mergedWithManual": "Mit manuellem Eintrag verknüpft",
+    "mergedBadge": "Verknüpft"
   },
   "install": {
     "installed": "App ist installiert!",
