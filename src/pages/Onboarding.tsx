@@ -51,21 +51,9 @@ const Onboarding = () => {
   const [income, setIncome] = useState<string>('');
   const [percents, setPercents] = useState<PercentMap>(INITIAL_PERCENTS);
 
-  // Pre-fill name iz profila
-  useEffect(() => {
-    let cancelled = false;
-    if (!initialName && user) {
-      supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!cancelled && data?.display_name) setDisplayName(data.display_name);
-        });
-    }
-    return () => { cancelled = true; };
-  }, [user, initialName]);
+  // Namjerno NE prefillamo iz profiles.display_name — DB trigger handle_new_user
+  // automatski upiše ime iz prefiksa maila (npr. "Hr Akrobat"), pa bi async fetch
+  // prepisao ono što korisnik upravo tipka u Step 1.
 
   const incomeNum = parseFloat(income) || 0;
   const hasIncome = incomeNum > 0;
