@@ -31,17 +31,15 @@ const CACHE_KEY = "ai-insights:v2";
 export const useAIInsights = (enabled: boolean) => {
   const [state, setState] = useState<State>(() => {
     const cached = instantCache.read<State>(CACHE_KEY);
-    return cached || { insights: [], loading: enabled };
+    if (cached) return { ...cached, loading: false };
+    return { insights: [], loading: enabled };
   });
-  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled || fetchedRef.current) return;
-    fetchedRef.current = true;
-
+    if (!enabled) return;
     let cancelled = false;
+    setState(s => ({ ...s, loading: true, error: null }));
     (async () => {
-      setState(s => ({ ...s, loading: true, error: null }));
       try {
         const { data, error } = await supabase.functions.invoke("generate-ai-insights", {
           body: {},
