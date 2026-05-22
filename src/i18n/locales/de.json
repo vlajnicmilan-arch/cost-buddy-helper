@@ -4069,5 +4069,16 @@
       "message": "In den Papierkorb verschoben",
       "undo": "Rückgängig"
     }
+  },
+  "reportBranding": {
+    "confidentialityTitle": "Vertraulichkeitsstufe",
+    "confidentiality": {
+      "none": "Keine Kennzeichnung",
+      "internal": "Intern",
+      "confidential": "Vertraulich"
+    },
+    "intendedFor": "Bestimmt für",
+    "pageXofY": "Seite {{n}} von {{total}}",
+    "preparedBy": "Erstellt von"
   }
 }

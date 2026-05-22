@@ -1,11 +1,14 @@
 // jspdf + jspdf-autotable are heavy (~420 KB). Load them on demand only when
 // a PDF export is actually requested, so they stay out of the initial bundle.
 import type { jsPDF as JsPDFType } from 'jspdf';
+import i18n from '@/i18n';
 import { Expense, getCategoryInfo, getPaymentSourceInfo, getTransactionTypeInfo } from '@/types/expense';
 import { exportPDFDoc, exportTextFile, type ExportMode } from '@/lib/fileExport';
-import { addNotOfficialFooter } from '@/lib/pdfFooter';
 import { sanitizeCsvField } from '@/lib/csvSecurity';
-import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
+import { applyBrandFont, brandAutoTable } from '@/lib/pdfBranding';
+import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfReportKit';
+import { buildReportFileName, type ReportBrandOptions } from '@/lib/reportDesign';
+import { getReportOwner } from '@/hooks/useReportOwner';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -57,39 +60,49 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 // Convert Croatian characters to ASCII for PDF compatibility
 const toAscii = (text: string): string => text;
 
-export const generatePDFReport = async (data: ReportData, reportTitle: string = 'Financijsko izvjesce', mode: ExportMode = 'save'): Promise<void> => {
+export const generatePDFReport = async (
+  data: ReportData,
+  reportTitle: string = 'Financijsko izvješće',
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
+): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   applyBrandFont(doc);
-  
-  doc.setFontSize(20);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii(reportTitle), 14, 20);
-  
-  doc.setFontSize(10);
-  doc.setFont('Inter', 'normal');
-  doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
-  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
-  doc.setFontSize(14);
+  // Resolve owner if not provided
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const subtitle = brand.subtitle || `${i18n.t('reports.period')}: ${formatDate(data.dateRange.start)} – ${formatDate(data.dateRange.end)}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality || 'none', subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: reportTitle,
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
+
+  doc.setFontSize(11);
   doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Sazetak'), 14, 46);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii('Sažetak'), REPORT_MARGIN_X, bodyStartY + 2);
 
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
-    [toAscii('Ukupni troskovi'), formatCurrency(data.totals.expenses, data.currency)],
+    [toAscii('Ukupni troškovi'), formatCurrency(data.totals.expenses, data.currency)],
     ['Stanje', formatCurrency(data.totals.balance, data.currency)],
     ['Prijenosi', formatCurrency(data.totals.transfers, data.currency)],
   ];
 
   brandAutoTable(doc, autoTable, {
-    startY: 50,
+    startY: bodyStartY + 5,
     head: [['Stavka', 'Iznos']],
     body: summaryData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    tableWidth: 80,
+    margin: { left: REPORT_MARGIN_X },
+    tableWidth: 90,
   });
 
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
@@ -158,8 +171,15 @@ export const generatePDFReport = async (data: ReportData, reportTitle: string = 
     },
   });
 
-  const fileName = `izvjestaj_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  addNotOfficialFooter(doc);
+  const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: 'izvjestaj', owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
@@ -221,23 +241,34 @@ export interface IncomeReportData {
   currency?: CurrencyConfig;
 }
 
-export const generateIncomePDFReport = async (data: IncomeReportData, reportTitle: string = 'Izvjesce o prihodima', mode: ExportMode = 'save'): Promise<void> => {
+export const generateIncomePDFReport = async (
+  data: IncomeReportData,
+  reportTitle: string = 'Izvješće o prihodima',
+  mode: ExportMode = 'save',
+  brand: ReportBrandOptions = {},
+): Promise<void> => {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF();
   applyBrandFont(doc);
-  
-  doc.setFontSize(20);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii(reportTitle), 14, 20);
-  
-  doc.setFontSize(10);
-  doc.setFont('Inter', 'normal');
-  doc.text(`Razdoblje: ${formatDate(data.dateRange.start)} - ${formatDate(data.dateRange.end)}`, 14, 28);
-  doc.text(`Generirano: ${formatDate(new Date())}`, 14, 34);
 
-  doc.setFontSize(14);
+  const language = (brand.language || (i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
+  const owner = brand.owner ?? (await getReportOwner());
+  const subtitle = brand.subtitle || `${i18n.t('reports.period')}: ${formatDate(data.dateRange.start)} – ${formatDate(data.dateRange.end)}`;
+  const fullBrand: ReportBrandOptions = { owner, language, confidentiality: brand.confidentiality || 'none', subtitle };
+
+  const bodyStartY = drawReportHeader(doc, {
+    title: reportTitle,
+    brand: fullBrand,
+    confidentialityLabel: {
+      internal: i18n.t('reportBranding.confidentiality.internal'),
+      confidential: i18n.t('reportBranding.confidentiality.confidential'),
+    },
+  });
+
+  doc.setFontSize(11);
   doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Sazetak prihoda'), 14, 46);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii('Sažetak prihoda'), REPORT_MARGIN_X, bodyStartY + 2);
 
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totalIncome, data.currency)],
@@ -245,13 +276,11 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
   ];
 
   brandAutoTable(doc, autoTable, {
-    startY: 50,
+    startY: bodyStartY + 5,
     head: [['Stavka', 'Vrijednost']],
     body: summaryData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    tableWidth: 80,
+    margin: { left: REPORT_MARGIN_X },
+    tableWidth: 90,
   });
 
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
@@ -313,8 +342,15 @@ export const generateIncomePDFReport = async (data: IncomeReportData, reportTitl
     },
   });
 
-  const fileName = `prihodi_${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-') + '.pdf';
-  addNotOfficialFooter(doc);
+  const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
+  const fileName = buildReportFileName({ type: 'prihodi', owner, period, ext: 'pdf' });
+  drawReportFooter(doc, {
+    brand: fullBrand,
+    pageLabel: i18n.t('reportBranding.pageXofY'),
+    intendedForLabel: fullBrand.confidentiality !== 'none' && owner
+      ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
+      : undefined,
+  });
   await exportPDFDoc(doc, fileName, mode);
 };
 
