@@ -50,8 +50,18 @@ export const drawReportHeader = (doc: JsPDFType, input: DrawHeaderInput): number
   doc.setFillColor(BRAND_TEAL[0], BRAND_TEAL[1], BRAND_TEAL[2]);
   doc.roundedRect(x, y, 2.5, h, 1.2, 1.2, 'F');
 
-  // Logo block (vector wordmark fallback). Position relative to card.
-  drawWordmark(doc, x + 8, y + 7);
+  // Logo (real PNG if cached, else vector wordmark fallback)
+  const logoX = x + 8;
+  const logoY = y + 6;
+  const logoH = 11;
+  const wordmarkOffsetX = drawLogo(doc, logoX, logoY, logoH);
+
+  // Wordmark "Balance" beside logo
+  const deep = hexToRgb(REPORT_COLORS.tealDeep);
+  doc.setTextColor(deep[0], deep[1], deep[2]);
+  doc.setFont('Inter', 'bold');
+  doc.setFontSize(12);
+  doc.text('V&M Balance', logoX + wordmarkOffsetX, logoY + 7.5);
 
   // Eyebrow line: OWNER · DATE
   const owner = (input.brand.owner || '').trim();
@@ -61,21 +71,21 @@ export const drawReportHeader = (doc: JsPDFType, input: DrawHeaderInput): number
     doc.setFontSize(7.5);
     doc.setFont('Inter', 'normal');
     doc.setTextColor(BRAND_MUTED[0], BRAND_MUTED[1], BRAND_MUTED[2]);
-    doc.text(eyebrowParts.join('  ·  '), x + 8, y + 19);
+    doc.text(eyebrowParts.join('  ·  '), x + 8, y + 21);
   }
 
   // Title
   doc.setFontSize(17);
   doc.setFont('Inter', 'bold');
   doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-  doc.text(input.title, x + 8, y + 27);
+  doc.text(input.title, x + 8, y + 29);
 
   // Subtitle
   if (input.brand.subtitle) {
     doc.setFontSize(9.5);
     doc.setFont('Inter', 'normal');
     doc.setTextColor(BRAND_MUTED[0], BRAND_MUTED[1], BRAND_MUTED[2]);
-    doc.text(input.brand.subtitle, x + 8, y + 33);
+    doc.text(input.brand.subtitle, x + 8, y + 35);
   }
 
   // Confidentiality badge top-right
@@ -91,21 +101,28 @@ export const drawReportHeader = (doc: JsPDFType, input: DrawHeaderInput): number
   return y + h + 6;
 };
 
-const drawWordmark = (doc: JsPDFType, x: number, y: number): void => {
-  // Teal rounded square with "V&M" + tealDeep "Balance" wordmark.
-  // Vector primitives — swap for image when real logo asset arrives.
+/**
+ * Draws the logo at (x, y) with given height (mm). Returns x-offset where
+ * the wordmark should start (logo width + small gap).
+ */
+const drawLogo = (doc: JsPDFType, x: number, y: number, h: number): number => {
+  const dataUrl = getReportLogoDataUrl();
+  if (dataUrl) {
+    try {
+      doc.addImage(dataUrl, 'PNG', x, y, h, h, undefined, 'FAST');
+      return h + 3;
+    } catch (e) {
+      console.warn('[pdfReportKit] addImage failed, using fallback', e);
+    }
+  }
+  // Fallback: teal rounded square with "V&M"
   doc.setFillColor(BRAND_TEAL[0], BRAND_TEAL[1], BRAND_TEAL[2]);
-  doc.roundedRect(x, y, 8, 8, 1.5, 1.5, 'F');
+  doc.roundedRect(x, y, h, h, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('Inter', 'bold');
-  doc.setFontSize(6.5);
-  doc.text('V&M', x + 4, y + 5.3, { align: 'center' });
-
-  const deep = hexToRgb(REPORT_COLORS.tealDeep);
-  doc.setTextColor(deep[0], deep[1], deep[2]);
-  doc.setFont('Inter', 'bold');
-  doc.setFontSize(11);
-  doc.text('Balance', x + 10, y + 5.6);
+  doc.setFontSize(7);
+  doc.text('V&M', x + h / 2, y + h / 2 + 1.2, { align: 'center' });
+  return h + 3;
 };
 
 const drawBadge = (doc: JsPDFType, rightX: number, y: number, label: string, accent: boolean): void => {
