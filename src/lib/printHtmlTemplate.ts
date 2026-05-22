@@ -98,8 +98,10 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
 ${watermark}
 <div class="vmb-header">
   <div class="vmb-logo">
-    <div class="vmb-logo-mark">V&amp;M</div>
-    <div class="vmb-logo-word">Balance</div>
+    ${getReportLogoDataUrl()
+      ? `<img class="vmb-logo-img" src="${getReportLogoDataUrl()}" alt="V&amp;M Balance" />`
+      : `<div class="vmb-logo-mark">V&amp;M</div>`}
+    <div class="vmb-logo-word">V&amp;M Balance</div>
   </div>
   ${eyebrow ? `<div class="vmb-eyebrow">${escapeHtml(eyebrow)}</div>` : ''}
   <h1 class="vmb-title">${escapeHtml(input.title)}</h1>
