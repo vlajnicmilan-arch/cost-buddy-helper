@@ -113,6 +113,11 @@ const Wallet = () => {
           setPaymentSourceDialogOpen(true);
           refetch();
         }} />
+        <WalletTransfersCard
+          monthlyTransfers={monthlyTransfers}
+          monthlyTransferCount={monthlyTransferCount}
+          onClick={() => setTransferDialogOpen(true)}
+        />
         <InstallmentsPanel />
         {dashboardV2Enabled && (
           <>
