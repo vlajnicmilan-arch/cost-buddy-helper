@@ -90,14 +90,14 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
   /* Activity feed — premium "operational" layout for personal transaction exports.
      Each row is a card-like block, not a table cell. */
   .vmb-feed { margin: 4px 0; }
-  .vmb-feed-day { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--hairline); }
-  .vmb-feed-day:first-child { margin-top: 6px; }
-  .vmb-feed-item { display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; padding: 12px 0; border-bottom: 1px solid var(--hairline); align-items: start; page-break-inside: avoid; }
+  .vmb-feed-day { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; margin: 12px 0 4px; padding-bottom: 3px; border-bottom: 1px solid var(--hairline); }
+  .vmb-feed-day:first-child { margin-top: 4px; }
+  .vmb-feed-item { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; padding: 6px 0; border-bottom: 1px solid var(--hairline); align-items: start; page-break-inside: avoid; }
   .vmb-feed-item:last-child { border-bottom: none; }
-  .vmb-feed-title { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; letter-spacing: -0.005em; }
-  .vmb-feed-meta { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
-  .vmb-feed-meta .dot { margin: 0 6px; opacity: 0.5; }
-  .vmb-feed-amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
+  .vmb-feed-title { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.3; letter-spacing: -0.005em; }
+  .vmb-feed-meta { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .vmb-feed-meta .dot { margin: 0 5px; opacity: 0.5; }
+  .vmb-feed-amount { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
   .vmb-feed-amount.pos { color: #16a34a; }
   .vmb-feed-amount.neg { color: var(--ink); }
 
