@@ -74,6 +74,29 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 const dayLabel = (d: Date, locale: string) =>
   d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+/** Strip UUIDs, long hex chains and trailing numeric references from a
+ * transaction description so PDF feed titles stay human-readable.
+ * Examples cleaned:
+ *  - "KEKS Pay - … Jadrolinija 304883586, e079598e-fb21-4a72-b819-a392f…"
+ *    → "KEKS Pay - … Jadrolinija"
+ *  - "WOLT ZAGREB, 3dd09f2b-c6bc-4603-…" → "WOLT ZAGREB"
+ */
+const cleanFeedTitle = (raw: string | undefined | null): string => {
+  if (!raw) return '';
+  let s = String(raw);
+  // Remove full UUIDs
+  s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
+  // Remove standalone long hex strings (>=16 chars)
+  s = s.replace(/\b[0-9a-f]{16,}\b/gi, '');
+  // Remove trailing ", " left over from removed UUIDs
+  s = s.replace(/[,\s]+(?=$|[,\s])/g, ' ');
+  // Remove trailing standalone numeric reference (>=6 digits) at end
+  s = s.replace(/[\s,–-]+\d{6,}\s*$/g, '');
+  // Collapse whitespace and trim trailing punctuation
+  s = s.replace(/\s+/g, ' ').replace(/[\s,;:–-]+$/g, '').trim();
+  return s;
+};
+
 const drawTransactionFeed = (
   doc: JsPDFType,
   items: FeedItem[],
@@ -116,8 +139,11 @@ const drawTransactionFeed = (
     doc.line(leftX, y, rightX, y);
     y += 2;
 
-    for (const it of dayItems) {
-      ensureSpace(9);
+    for (let i = 0; i < dayItems.length; i++) {
+      const it = dayItems[i];
+      const hasMeta = it.metaParts.filter(Boolean).length > 0;
+      const rowHeight = hasMeta ? 11 : 8;
+      ensureSpace(rowHeight);
       const amountText = (it.signed === 'neg' ? '-' : it.signed === 'pos' ? '+' : '') +
         formatCurrency(Math.abs(it.amount), currency);
 
@@ -133,7 +159,7 @@ const drawTransactionFeed = (
       doc.setFontSize(9.5);
       doc.setTextColor(15, 23, 42);
       const maxTitleWidth = rightX - leftX - amountWidth - 6;
-      let title = toAscii(it.title || '—');
+      let title = toAscii(cleanFeedTitle(it.title) || '—');
       if (doc.getTextWidth(title) > maxTitleWidth) {
         const r = maxTitleWidth / Math.max(doc.getTextWidth(title), 1);
         title = title.substring(0, Math.max(1, Math.floor(title.length * r) - 1)) + '…';
@@ -151,13 +177,20 @@ const drawTransactionFeed = (
           const r = maxMetaWidth / Math.max(doc.getTextWidth(meta), 1);
           meta = meta.substring(0, Math.max(1, Math.floor(meta.length * r) - 1)) + '…';
         }
-        doc.text(meta, leftX, y + 3.2);
+        doc.text(meta, leftX, y + 3.6);
       }
 
-      y += 6.5;
+      y += rowHeight - 2;
+      // Hairline separator between rows (skip after last item in day)
+      if (i < dayItems.length - 1) {
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.1);
+        doc.line(leftX, y, rightX, y);
+      }
+      y += 2;
     }
 
-    y += 2;
+    y += 3;
   }
 };
 
