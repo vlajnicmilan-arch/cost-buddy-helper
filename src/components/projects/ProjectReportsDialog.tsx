@@ -345,16 +345,23 @@ export const ProjectReportsDialog = ({
     }
   };
 
-  // Use unified logic: Remaining = Allocated (received) - Spent (completed milestones)
+  // Cashflow gap = Allocated (received) - Spent. Negative = spent more than received (not a true budget overrun).
   const remaining = totalAllocated - totalSpent;
   const usedPercent = totalAllocated > 0 
     ? (totalSpent / totalAllocated) * 100 
     : 0;
   
-  // Budget status indicators
-  const isOverBudget = remaining < 0;
+  // Cashflow indicators (renamed from budget overrun — semantically these compare cost vs received funds, not vs contract)
+  const hasCashflowGap = remaining < 0;
   const isWarning = usedPercent >= 80 && usedPercent < 100;
-  const overBudgetAmount = isOverBudget ? Math.abs(remaining) : 0;
+  const cashflowGapAmount = hasCashflowGap ? Math.abs(remaining) : 0;
+
+  // Effective contract value = contract_value (fallback total_budget) + sum of amendments
+  const { total: amendmentsTotal, amendments: amendmentsList } = useProjectContractAmendments(project.id);
+  const baseContract = (project as any).contract_value && Number((project as any).contract_value) > 0
+    ? Number((project as any).contract_value)
+    : Number(project.total_budget) || 0;
+  const effectiveContract = baseContract + (amendmentsTotal || 0);
 
   // Count milestones over budget
   const milestonesOverBudget = milestoneProgressData.filter(m => 
