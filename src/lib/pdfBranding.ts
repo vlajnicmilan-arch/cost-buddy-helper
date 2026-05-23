@@ -91,7 +91,8 @@ export const brandAutoTable = (
     ...opts,
     styles: { ...brandTableTheme.styles, ...(opts?.styles || {}) },
     headStyles: { ...brandTableTheme.headStyles, ...(opts?.headStyles || {}) },
-    alternateRowStyles: { ...brandTableTheme.alternateRowStyles, ...(opts?.alternateRowStyles || {}) },
+    bodyStyles: { ...(brandTableTheme as any).bodyStyles, ...(opts?.bodyStyles || {}) },
+    ...(opts?.alternateRowStyles ? { alternateRowStyles: opts.alternateRowStyles } : {}),
   };
   autoTable(doc, merged);
 };
