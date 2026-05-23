@@ -34,17 +34,33 @@ export const applyBrandFont = (doc: JsPDFType): void => {
 };
 
 /** Common autoTable theme. Spread into autoTable options. */
+// Faza 3A: bez zebra rows — premium "report" look (tanka hairline linija
+// ispod svakog reda umjesto alternating backgrounda). Header je bijel s
+// teal donjim border-om i muted uppercase labelima.
 export const brandTableTheme = {
-  theme: 'striped' as const,
-  styles: { font: 'Inter', fontSize: 9, cellPadding: 3, textColor: BRAND_DARK },
+  theme: 'plain' as const,
+  styles: {
+    font: 'Inter',
+    fontSize: 9.5,
+    cellPadding: { top: 5, right: 4, bottom: 5, left: 4 },
+    textColor: BRAND_DARK,
+    lineColor: [226, 232, 240] as [number, number, number], // hairline
+    lineWidth: 0.1,
+  },
   headStyles: {
     font: 'Inter',
     fontStyle: 'bold' as const,
-    fillColor: BRAND_TEAL,
-    textColor: [255, 255, 255] as [number, number, number],
-    fontSize: 9,
+    fillColor: [255, 255, 255] as [number, number, number],
+    textColor: BRAND_MUTED,
+    fontSize: 8,
+    cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
+    lineColor: BRAND_TEAL,
+    lineWidth: { top: 0, right: 0, bottom: 0.5, left: 0 } as any,
   },
-  alternateRowStyles: { fillColor: BRAND_TEAL_LIGHT },
+  bodyStyles: {
+    lineColor: [226, 232, 240] as [number, number, number],
+    lineWidth: { top: 0, right: 0, bottom: 0.1, left: 0 } as any,
+  },
 };
 
 export const formatBrandCurrency = (
