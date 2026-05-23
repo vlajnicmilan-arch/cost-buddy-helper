@@ -202,7 +202,7 @@ export const renderHtmlActivityFeed = (
       const amtCls = it.positive ? 'pos' : 'neg';
       parts.push(`<div class="vmb-feed-item">
   <div>
-    <div class="vmb-feed-title">${escapeHtml(it.title)}</div>
+    <div class="vmb-feed-title">${escapeHtml(cleanFeedTitle(it.title))}</div>
     ${metaHtml}
   </div>
   <div class="vmb-feed-amount ${amtCls}">${escapeHtml(it.amount)}</div>
