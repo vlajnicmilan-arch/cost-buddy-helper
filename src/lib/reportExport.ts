@@ -105,24 +105,24 @@ const drawTransactionFeed = (
 
   for (const key of sortedKeys) {
     const dayItems = grouped.get(key)!;
-    ensureSpace(12);
+    ensureSpace(10);
     doc.setFont('Inter', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(100, 116, 139);
     doc.text(toAscii(dayLabel(dayItems[0].date, locale)), leftX, y);
-    y += 5;
+    y += 4;
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.1);
     doc.line(leftX, y, rightX, y);
-    y += 3;
+    y += 2;
 
     for (const it of dayItems) {
-      ensureSpace(13);
+      ensureSpace(9);
       const amountText = (it.signed === 'neg' ? '-' : it.signed === 'pos' ? '+' : '') +
         formatCurrency(Math.abs(it.amount), currency);
 
       doc.setFont('Inter', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       if (it.signed === 'neg') doc.setTextColor(220, 38, 38);
       else if (it.signed === 'pos') doc.setTextColor(22, 163, 74);
       else doc.setTextColor(15, 23, 42);
@@ -130,7 +130,7 @@ const drawTransactionFeed = (
       doc.text(amountText, rightX - amountWidth, y);
 
       doc.setFont('Inter', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setTextColor(15, 23, 42);
       const maxTitleWidth = rightX - leftX - amountWidth - 6;
       let title = toAscii(it.title || '—');
@@ -143,7 +143,7 @@ const drawTransactionFeed = (
       const metaText = toAscii(it.metaParts.filter(Boolean).join(' · '));
       if (metaText) {
         doc.setFont('Inter', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         doc.setTextColor(100, 116, 139);
         const maxMetaWidth = rightX - leftX;
         let meta = metaText;
@@ -151,13 +151,13 @@ const drawTransactionFeed = (
           const r = maxMetaWidth / Math.max(doc.getTextWidth(meta), 1);
           meta = meta.substring(0, Math.max(1, Math.floor(meta.length * r) - 1)) + '…';
         }
-        doc.text(meta, leftX, y + 4);
+        doc.text(meta, leftX, y + 3.2);
       }
 
-      y += 10;
+      y += 6.5;
     }
 
-    y += 4;
+    y += 2;
   }
 };
 
@@ -229,8 +229,6 @@ export const generatePDFReport = async (
       startY: categoryY + 4,
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -248,12 +246,15 @@ export const generatePDFReport = async (
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
+      const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
       const signed: 'pos' | 'neg' | 'neutral' =
         expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
+      const meta: string[] = [categoryInfo.name, paymentInfo.name];
+      if (expense.type !== 'expense') meta.push(typeInfo.name);
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
-        metaParts: [categoryInfo.name, typeInfo.name].filter(Boolean) as string[],
+        metaParts: meta.filter(Boolean) as string[],
         amount: expense.amount,
         signed,
       };
@@ -395,8 +396,6 @@ export const generateIncomePDFReport = async (
       startY: categoryY + 4,
       head: [['Kategorija', 'Iznos', 'Udio']],
       body: categoryData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -411,13 +410,17 @@ export const generateIncomePDFReport = async (
   const feedItems: FeedItem[] = data.incomeTransactions
     .slice()
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(income => ({
-      date: income.date,
-      title: income.description || income.category || (i18n.t('common.other', 'Ostalo') as string),
-      metaParts: [income.category || (i18n.t('common.other', 'Ostalo') as string)],
-      amount: income.amount,
-      signed: 'pos' as const,
-    }));
+    .map(income => {
+      const paymentInfo = getPaymentSourceInfo(income.payment_source || 'cash');
+      const categoryLabel = income.category || (i18n.t('common.other', 'Ostalo') as string);
+      return {
+        date: income.date,
+        title: income.description || categoryLabel,
+        metaParts: [categoryLabel, paymentInfo.name].filter(Boolean) as string[],
+        amount: income.amount,
+        signed: 'pos' as const,
+      };
+    });
 
   drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
 

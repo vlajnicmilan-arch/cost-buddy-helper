@@ -265,8 +265,6 @@ export const generateProjectPDFReport = async (
       startY: memberY + 4,
       head: [['Ime', 'Uloga', toAscii('Potrosnja')]],
       body: memberData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 120,
     });
@@ -290,8 +288,6 @@ export const generateProjectPDFReport = async (
       startY: workerY + 4,
       head: [['Ime', 'Sati', 'Satnica', 'Ukupno']],
       body: workerData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       tableWidth: 140,
     });
@@ -315,8 +311,6 @@ export const generateProjectPDFReport = async (
       startY: collabY + 4,
       head: [['Ime', 'Usluga', 'Ugovoreno', toAscii('Placeno')]],
       body: collabData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
     });
   }
@@ -343,8 +337,6 @@ export const generateProjectPDFReport = async (
       startY: 24,
       head: [['Datum', 'Opis', 'Faza', 'Iznos']],
       body: transactionData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
       margin: { left: 14 },
       styles: { fontSize: 8 },
       columnStyles: {
