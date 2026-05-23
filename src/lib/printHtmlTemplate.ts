@@ -69,24 +69,26 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
   .vmb-badge { position: absolute; top: 18px; right: 22px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 999px; }
 
   .vmb-body { font-size: 13px; line-height: 1.55; }
-  .vmb-body h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--teal-deep); background: var(--teal-tint); display: inline-block; padding: 4px 10px; border-radius: 999px; margin: 22px 0 10px; }
+  .vmb-body h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--teal-deep); margin: 26px 0 12px; padding: 0 0 6px; border-bottom: 1px solid var(--hairline); }
   .vmb-body table { width: 100%; border-collapse: collapse; }
-  .vmb-body thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--hairline); }
-  .vmb-body tbody td { padding: 8px 10px; border-bottom: 1px solid var(--hairline); font-size: 12.5px; }
-  .vmb-body tbody tr:nth-child(even) td { background: #fafbfc; }
+  .vmb-body thead th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1.5px solid var(--teal); background: #fff; }
+  .vmb-body tbody td { padding: 11px 10px; border-bottom: 1px solid var(--hairline); font-size: 12.5px; background: #fff; }
+  .vmb-body tbody tr:last-child td { border-bottom: none; }
   .vmb-body .num { text-align: right; font-variant-numeric: tabular-nums; }
   .vmb-body .pos { color: #16a34a; }
   .vmb-body .neg { color: #dc2626; }
 
-  .vmb-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 8px; }
-  .vmb-kpi { background: #fff; border: 1px solid var(--hairline); border-radius: 8px; padding: 10px 12px; }
-  .vmb-kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
-  .vmb-kpi-value { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); }
+  .vmb-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0 14px; }
+  .vmb-kpi { background: #fff; border: 1px solid var(--hairline); border-radius: 10px; padding: 16px 16px 18px; }
+  .vmb-kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; margin-bottom: 10px; }
+  .vmb-kpi-value { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); line-height: 1.1; }
+  .vmb-kpi.is-hero { background: var(--teal-tint); border-color: transparent; }
+  .vmb-kpi.is-hero .vmb-kpi-value { font-size: 30px; color: var(--teal-deep); }
 
-  .vmb-footer { margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; color: var(--muted); font-size: 10.5px; }
-  .vmb-intended { font-weight: 600; }
+  .vmb-footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; color: var(--muted); font-size: 9.5px; letter-spacing: 0.02em; }
+  .vmb-intended { font-weight: 500; }
 
-  .vmb-watermark { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 0; font-size: 110px; font-weight: 900; color: var(--teal); opacity: 0.07; transform: rotate(-30deg); letter-spacing: 0.12em; }
+  .vmb-watermark { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 0; font-size: 110px; font-weight: 900; color: var(--teal); opacity: 0.04; transform: rotate(-30deg); letter-spacing: 0.12em; }
 
   @media print {
     body { padding: 16mm; max-width: none; }
@@ -118,8 +120,13 @@ ${input.bodyHtml}
 </body></html>`;
 };
 
-/** Helper to build a KPI strip used in HTML body. */
-export const renderHtmlKpiStrip = (kpis: Array<{ label: string; value: string }>): string => {
-  const cells = kpis.map(k => `<div class="vmb-kpi"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`).join('');
+/** Helper to build a KPI strip used in HTML body. Set `hero: true` on the
+ * primary metric (e.g. saldo/profit) for emphasized executive treatment. */
+export const renderHtmlKpiStrip = (
+  kpis: Array<{ label: string; value: string; hero?: boolean }>,
+): string => {
+  const cells = kpis.map(k =>
+    `<div class="vmb-kpi${k.hero ? ' is-hero' : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`
+  ).join('');
   return `<div class="vmb-kpi-strip">${cells}</div>`;
 };
