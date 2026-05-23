@@ -699,7 +699,7 @@ export const PaymentSourceTransactionsDialog = ({
       const card = getCardInfo(e);
       const metaParts = [cat.name];
       if (typeLabel) metaParts.push(typeLabel);
-      if (card?.last4) metaParts.push(`•••• ${card.last4}`);
+      if (card?.last_four_digits) metaParts.push(`•••• ${card.last_four_digits}`);
       return {
         date: e.date,
         title: e.description || cat.name,
