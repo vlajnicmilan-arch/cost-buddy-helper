@@ -74,6 +74,29 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 const dayLabel = (d: Date, locale: string) =>
   d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+/** Strip UUIDs, long hex chains and trailing numeric references from a
+ * transaction description so PDF feed titles stay human-readable.
+ * Examples cleaned:
+ *  - "KEKS Pay - … Jadrolinija 304883586, e079598e-fb21-4a72-b819-a392f…"
+ *    → "KEKS Pay - … Jadrolinija"
+ *  - "WOLT ZAGREB, 3dd09f2b-c6bc-4603-…" → "WOLT ZAGREB"
+ */
+const cleanFeedTitle = (raw: string | undefined | null): string => {
+  if (!raw) return '';
+  let s = String(raw);
+  // Remove full UUIDs
+  s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
+  // Remove standalone long hex strings (>=16 chars)
+  s = s.replace(/\b[0-9a-f]{16,}\b/gi, '');
+  // Remove trailing ", " left over from removed UUIDs
+  s = s.replace(/[,\s]+(?=$|[,\s])/g, ' ');
+  // Remove trailing standalone numeric reference (>=6 digits) at end
+  s = s.replace(/[\s,–-]+\d{6,}\s*$/g, '');
+  // Collapse whitespace and trim trailing punctuation
+  s = s.replace(/\s+/g, ' ').replace(/[\s,;:–-]+$/g, '').trim();
+  return s;
+};
+
 const drawTransactionFeed = (
   doc: JsPDFType,
   items: FeedItem[],
