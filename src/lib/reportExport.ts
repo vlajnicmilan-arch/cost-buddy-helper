@@ -239,40 +239,28 @@ export const generatePDFReport = async (
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('Inter', 'bold');
-  doc.text('Popis transakcija', 14, 20);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii(i18n.t('reports.transactionList', 'Popis transakcija') as string), REPORT_MARGIN_X, 20);
 
-  const transactionData = data.expenses
+  const feedItems: FeedItem[] = data.expenses
+    .slice()
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
-      return [
-        formatDate(expense.date),
-        toAscii(typeInfo.name),
-        toAscii(expense.description),
-        toAscii(categoryInfo.name),
-        expense.type === 'expense' 
-          ? `-${formatCurrency(expense.amount, data.currency)}` 
-          : formatCurrency(expense.amount, data.currency),
-      ];
+      const signed: 'pos' | 'neg' | 'neutral' =
+        expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
+      return {
+        date: expense.date,
+        title: expense.description || categoryInfo.name,
+        metaParts: [categoryInfo.name, typeInfo.name].filter(Boolean) as string[],
+        amount: expense.amount,
+        signed,
+      };
     });
 
-  brandAutoTable(doc, autoTable, {
-    startY: 24,
-    head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
-    body: transactionData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 30 },
-      4: { cellWidth: 30 },
-    },
-  });
+  drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
+
 
   const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
   const fileName = buildReportFileName({ type: 'izvjestaj', owner, period, ext: 'pdf' });
