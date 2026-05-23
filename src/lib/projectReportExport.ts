@@ -162,35 +162,90 @@ export const generateProjectPDFReport = async (
     tableWidth: 110,
   });
 
-  // Milestones
+  // Milestones — progress list (operational feel, not a table)
   if (data.milestones.length > 0) {
-    const milestoneY = (doc as any).lastAutoTable.finalY + 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const leftX = REPORT_MARGIN_X;
+    const rightX = pageWidth - REPORT_MARGIN_X;
+    const barWidth = rightX - leftX;
+    const rowHeight = 18;
+    const bottomLimit = pageHeight - 25;
+
+    let milestoneY = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
     doc.setFont('Inter', 'bold');
-    doc.text('Faze projekta', 14, milestoneY);
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii(i18n.t('projects.milestones', 'Faze projekta') as string), leftX, milestoneY);
+    milestoneY += 8;
 
-    const milestoneData = data.milestones.map(m => {
+    const STATUS_COLOR: Record<string, [number, number, number]> = {
+      completed: [34, 197, 94],
+      in_progress: BRAND_TEAL,
+      overdue: [239, 68, 68],
+      pending: [148, 163, 184],
+    };
+
+    for (const m of data.milestones) {
+      if (milestoneY + rowHeight > bottomLimit) {
+        doc.addPage();
+        milestoneY = 25;
+      }
+
       const spent = m.spent || 0;
-      const budgetPercent = m.budget > 0 
-        ? ((spent / m.budget) * 100).toFixed(1) 
-        : '0';
-      return [
-        toAscii(m.name),
-        toAscii(MILESTONE_STATUS_LABELS[m.status]),
-        formatCurrency(m.budget, data.currency),
-        formatCurrency(spent, data.currency),
-        `${budgetPercent}%`,
-      ];
-    });
+      const ratio = m.budget > 0 ? spent / m.budget : 0;
+      const pct = ratio * 100;
+      const color = STATUS_COLOR[m.status] || STATUS_COLOR.pending;
 
-    brandAutoTable(doc, autoTable, {
-      startY: milestoneY + 4,
-      head: [['Faza', 'Status', toAscii('Budzet'), toAscii('Potroseno'), 'Udio']],
-      body: milestoneData,
-      theme: 'striped',
-      headStyles: { fillColor: [35, 170, 145] },
-      margin: { left: 14 },
-    });
+      // Title line
+      doc.setFontSize(10);
+      doc.setFont('Inter', 'bold');
+      doc.setTextColor(15, 23, 42);
+      const nameText = toAscii(m.name);
+      const maxNameWidth = barWidth - 70;
+      let displayName = nameText;
+      if (doc.getTextWidth(nameText) > maxNameWidth) {
+        const r = maxNameWidth / Math.max(doc.getTextWidth(nameText), 1);
+        displayName = nameText.substring(0, Math.max(1, Math.floor(nameText.length * r) - 1)) + '…';
+      }
+      doc.text(displayName, leftX, milestoneY);
+
+      // Right side: spent / budget
+      doc.setFont('Inter', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      const amountText = `${formatCurrency(spent, data.currency)} / ${formatCurrency(m.budget, data.currency)}`;
+      const amountWidth = doc.getTextWidth(amountText);
+      doc.text(amountText, rightX - amountWidth, milestoneY);
+
+      // Status + percent (small, under title)
+      const statusLabel = toAscii(MILESTONE_STATUS_LABELS[m.status]);
+      const metaY = milestoneY + 4.5;
+      doc.setFontSize(8);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(`● ${statusLabel}`, leftX, metaY);
+      doc.setTextColor(100, 116, 139);
+      const pctText = `${pct.toFixed(0)}%`;
+      const pctWidth = doc.getTextWidth(pctText);
+      doc.text(pctText, rightX - pctWidth, metaY);
+
+      // Progress bar
+      const barY = milestoneY + 7;
+      const barH = 2.2;
+      doc.setFillColor(226, 232, 240);
+      doc.roundedRect(leftX, barY, barWidth, barH, 1.1, 1.1, 'F');
+      const fillW = Math.max(barWidth * Math.min(ratio, 1), 0);
+      if (fillW > 0) {
+        const overBudget = ratio > 1;
+        const fc = overBudget ? [239, 68, 68] : color;
+        doc.setFillColor(fc[0], fc[1], fc[2]);
+        doc.roundedRect(leftX, barY, fillW, barH, 1.1, 1.1, 'F');
+      }
+
+      milestoneY += rowHeight;
+    }
+
+    (doc as any).lastAutoTable = { finalY: milestoneY - 8 };
   }
 
   // Members spending
