@@ -429,22 +429,22 @@ export const ProjectReportsDialog = ({
           <div className="flex-1 overflow-y-auto mt-4">
             {/* Overview Tab */}
             <TabsContent value="overview" className="m-0 space-y-6">
-              {/* Over Budget Warning */}
-              {isOverBudget && (
+              {/* Cashflow gap warning (spent > received — NOT a true budget overrun) */}
+              {hasCashflowGap && (
                 <div className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/10 space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="w-5 h-5" />
-                    <span className="font-semibold">{t('projects.overBudgetWarning', 'Prekoračenje budžeta!')}</span>
+                    <span className="font-semibold">{t('projects.cashflowGapWarning', 'Manjak naplate')}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {t('projects.overBudgetDescription', 'Potrošnja je premašila primljena sredstva za')} {' '}
-                    <span className="font-bold text-destructive">{formatAmount(overBudgetAmount)}</span>
+                    {t('projects.cashflowGapDescription', 'Potrošnja premašuje primljena sredstva za')} {' '}
+                    <span className="font-bold text-destructive">{formatAmount(cashflowGapAmount)}</span>
                   </p>
                 </div>
               )}
 
               {/* Warning (approaching limit) */}
-              {isWarning && !isOverBudget && (
+              {isWarning && !hasCashflowGap && (
                 <div className="p-4 rounded-lg border-2 border-warning/50 bg-warning/10 space-y-2">
                   <div className="flex items-center gap-2 text-warning-foreground">
                     <AlertTriangle className="w-5 h-5" />
@@ -464,24 +464,30 @@ export const ProjectReportsDialog = ({
                 </div>
                 <div className="p-4 rounded-lg border bg-expense/10 text-center">
                   <p className="text-2xl font-bold text-expense">{formatAmount(totalSpent)}</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.totalSpent', 'Potrošeno')}</p>
                 </div>
                 <div className={cn(
                   "p-4 rounded-lg border text-center",
-                  isOverBudget ? "bg-destructive/10 border-destructive/30" : "bg-primary/10"
+                  hasCashflowGap ? "bg-destructive/10 border-destructive/30" : "bg-primary/10"
                 )}>
                   <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-primary" : "text-destructive")}>
-                    {isOverBudget && '-'}{formatAmount(Math.abs(remaining))}
+                    {hasCashflowGap && '-'}{formatAmount(Math.abs(remaining))}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isOverBudget ? t('projects.overBudget', 'Prekoračeno') : t('projects.remaining', 'Preostalo')}
+                    {hasCashflowGap ? t('projects.cashflowGap', 'Manjak naplate') : t('projects.remaining', 'Preostalo')}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{formatAmount(project.total_budget)}</p>
+                  <p className="text-2xl font-bold">{formatAmount(effectiveContract)}</p>
                   <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni proračun')}</p>
+                  {amendmentsTotal > 0 && (
+                    <p className="text-[10px] text-warning mt-1">
+                      +{formatAmount(amendmentsTotal)} ({amendmentsList.length})
+                    </p>
+                  )}
                 </div>
               </div>
+
 
               {/* Funds usage progress */}
               <div className="p-4 rounded-lg border space-y-2">
