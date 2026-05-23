@@ -29,6 +29,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
 import { ProjectRevisionsReport } from './ProjectRevisionsReport';
+import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
 
 interface ProjectExpense {
   id: string;
@@ -74,6 +75,13 @@ export const ProjectReportsDialog = ({
   const { formatAmount, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('overview');
   const [confidentiality, setConfidentiality] = useConfidentialityLevel();
+
+  // Contract amendments (aneksi) — used for effective contract value in UI + exports
+  const { total: amendmentsTotal, amendments: amendmentsList } = useProjectContractAmendments(project.id);
+  const baseContract = (project as any).contract_value && Number((project as any).contract_value) > 0
+    ? Number((project as any).contract_value)
+    : Number(project.total_budget) || 0;
+  const effectiveContract = baseContract + (amendmentsTotal || 0);
 
   // Fetch workers and collaborators for exports
   const [reportWorkers, setReportWorkers] = useState<{ name: string; hours: number; rate: number; cost: number }[]>([]);
@@ -199,8 +207,11 @@ export const ProjectReportsDialog = ({
       projectDescription: project.description,
       projectStatus: PROJECT_STATUS_LABELS[project.status],
       totalBudget: project.total_budget,
+      contractValue: (project as any).contract_value ?? null,
+      contractAmendmentsTotal: amendmentsTotal,
       totalSpent,
       totalAllocated,
+      totalIncome: totalAllocated,
       milestones: milestones.map(m => ({
         ...m,
         spent: spendingByMilestone.find(s => s.name === m.name)?.spent || 0,
@@ -344,16 +355,19 @@ export const ProjectReportsDialog = ({
     }
   };
 
-  // Use unified logic: Remaining = Allocated (received) - Spent (completed milestones)
+  // Cashflow gap = Allocated (received) - Spent. Negative = spent more than received (not a true budget overrun).
   const remaining = totalAllocated - totalSpent;
   const usedPercent = totalAllocated > 0 
     ? (totalSpent / totalAllocated) * 100 
     : 0;
   
-  // Budget status indicators
-  const isOverBudget = remaining < 0;
+  // Cashflow indicators (renamed from budget overrun — semantically these compare cost vs received funds, not vs contract)
+  const hasCashflowGap = remaining < 0;
   const isWarning = usedPercent >= 80 && usedPercent < 100;
-  const overBudgetAmount = isOverBudget ? Math.abs(remaining) : 0;
+  const cashflowGapAmount = hasCashflowGap ? Math.abs(remaining) : 0;
+
+
+
 
   // Count milestones over budget
   const milestonesOverBudget = milestoneProgressData.filter(m => 
@@ -421,22 +435,22 @@ export const ProjectReportsDialog = ({
           <div className="flex-1 overflow-y-auto mt-4">
             {/* Overview Tab */}
             <TabsContent value="overview" className="m-0 space-y-6">
-              {/* Over Budget Warning */}
-              {isOverBudget && (
+              {/* Cashflow gap warning (spent > received — NOT a true budget overrun) */}
+              {hasCashflowGap && (
                 <div className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/10 space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="w-5 h-5" />
-                    <span className="font-semibold">{t('projects.overBudgetWarning', 'Prekoračenje budžeta!')}</span>
+                    <span className="font-semibold">{t('projects.cashflowGapWarning', 'Manjak naplate')}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {t('projects.overBudgetDescription', 'Potrošnja je premašila primljena sredstva za')} {' '}
-                    <span className="font-bold text-destructive">{formatAmount(overBudgetAmount)}</span>
+                    {t('projects.cashflowGapDescription', 'Potrošnja premašuje primljena sredstva za')} {' '}
+                    <span className="font-bold text-destructive">{formatAmount(cashflowGapAmount)}</span>
                   </p>
                 </div>
               )}
 
               {/* Warning (approaching limit) */}
-              {isWarning && !isOverBudget && (
+              {isWarning && !hasCashflowGap && (
                 <div className="p-4 rounded-lg border-2 border-warning/50 bg-warning/10 space-y-2">
                   <div className="flex items-center gap-2 text-warning-foreground">
                     <AlertTriangle className="w-5 h-5" />
@@ -456,24 +470,30 @@ export const ProjectReportsDialog = ({
                 </div>
                 <div className="p-4 rounded-lg border bg-expense/10 text-center">
                   <p className="text-2xl font-bold text-expense">{formatAmount(totalSpent)}</p>
-                  <p className="text-xs text-muted-foreground">{t('projects.completedPhases', 'Završene faze')}</p>
+                  <p className="text-xs text-muted-foreground">{t('projects.totalSpent', 'Potrošeno')}</p>
                 </div>
                 <div className={cn(
                   "p-4 rounded-lg border text-center",
-                  isOverBudget ? "bg-destructive/10 border-destructive/30" : "bg-primary/10"
+                  hasCashflowGap ? "bg-destructive/10 border-destructive/30" : "bg-primary/10"
                 )}>
                   <p className={cn("text-2xl font-bold", remaining >= 0 ? "text-primary" : "text-destructive")}>
-                    {isOverBudget && '-'}{formatAmount(Math.abs(remaining))}
+                    {hasCashflowGap && '-'}{formatAmount(Math.abs(remaining))}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {isOverBudget ? t('projects.overBudget', 'Prekoračeno') : t('projects.remaining', 'Preostalo')}
+                    {hasCashflowGap ? t('projects.cashflowGap', 'Manjak naplate') : t('projects.remaining', 'Preostalo')}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{formatAmount(project.total_budget)}</p>
+                  <p className="text-2xl font-bold">{formatAmount(effectiveContract)}</p>
                   <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni proračun')}</p>
+                  {amendmentsTotal > 0 && (
+                    <p className="text-[10px] text-warning mt-1">
+                      +{formatAmount(amendmentsTotal)} ({amendmentsList.length})
+                    </p>
+                  )}
                 </div>
               </div>
+
 
               {/* Funds usage progress */}
               <div className="p-4 rounded-lg border space-y-2">
