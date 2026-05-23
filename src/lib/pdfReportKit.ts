@@ -205,7 +205,7 @@ const drawConfidentialWatermark = (doc: JsPDFType): void => {
     const anyDoc = doc as any;
     if (typeof anyDoc.saveGraphicsState === 'function' && typeof anyDoc.setGState === 'function' && typeof anyDoc.GState === 'function') {
       anyDoc.saveGraphicsState();
-      anyDoc.setGState(new anyDoc.GState({ opacity: 0.08 }));
+      anyDoc.setGState(new anyDoc.GState({ opacity: 0.045 }));
       doc.setFont('Inter', 'bold');
       doc.setFontSize(72);
       doc.setTextColor(BRAND_TEAL[0], BRAND_TEAL[1], BRAND_TEAL[2]);
