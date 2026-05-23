@@ -50,6 +50,7 @@ export interface ProjectReportData {
   projectStatus: string;
   totalBudget: number;
   contractValue?: number | null;
+  contractAmendmentsTotal?: number;
   totalSpent: number;
   totalAllocated: number;
   totalIncome?: number;
