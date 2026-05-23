@@ -172,10 +172,10 @@ export const drawReportFooter = (doc: JsPDFType, input: DrawFooterInput): void =
       drawConfidentialWatermark(doc);
     }
 
-    // Footer text
+    // Footer text — suptilno, ne dominira nad sadržajem
     doc.setFont('Inter', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(BRAND_MUTED[0], BRAND_MUTED[1], BRAND_MUTED[2]);
+    doc.setFontSize(6.5);
+    doc.setTextColor(148, 163, 184); // slate-400, lakše od BRAND_MUTED
 
     // Left: intendedFor (only when there's a confidentiality label)
     if (level !== 'none' && input.intendedForLabel) {
