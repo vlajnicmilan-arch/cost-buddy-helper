@@ -61,6 +61,107 @@ const formatCurrency = (amount: number, currency?: CurrencyConfig): string => {
 // Convert Croatian characters to ASCII for PDF compatibility
 const toAscii = (text: string): string => text;
 
+// ===== Activity feed renderer (used by transaction & income reports) =====
+interface FeedItem {
+  date: Date;
+  title: string;
+  metaParts: string[];
+  amount: number;
+  signed: 'pos' | 'neg' | 'neutral';
+}
+
+const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dayLabel = (d: Date, locale: string) =>
+  d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+const drawTransactionFeed = (
+  doc: JsPDFType,
+  items: FeedItem[],
+  currency: CurrencyConfig | undefined,
+  startY: number,
+  locale: string,
+): void => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const leftX = REPORT_MARGIN_X;
+  const rightX = pageWidth - REPORT_MARGIN_X;
+  const bottomLimit = pageHeight - 25;
+
+  const grouped = new Map<string, FeedItem[]>();
+  for (const it of items) {
+    const k = dayKey(it.date);
+    if (!grouped.has(k)) grouped.set(k, []);
+    grouped.get(k)!.push(it);
+  }
+  const sortedKeys = Array.from(grouped.keys()).sort().reverse();
+
+  let y = startY;
+  const ensureSpace = (h: number) => {
+    if (y + h > bottomLimit) {
+      doc.addPage();
+      y = 25;
+    }
+  };
+
+  for (const key of sortedKeys) {
+    const dayItems = grouped.get(key)!;
+    ensureSpace(12);
+    doc.setFont('Inter', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(toAscii(dayLabel(dayItems[0].date, locale)), leftX, y);
+    y += 5;
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.1);
+    doc.line(leftX, y, rightX, y);
+    y += 3;
+
+    for (const it of dayItems) {
+      ensureSpace(13);
+      const amountText = (it.signed === 'neg' ? '-' : it.signed === 'pos' ? '+' : '') +
+        formatCurrency(Math.abs(it.amount), currency);
+
+      doc.setFont('Inter', 'bold');
+      doc.setFontSize(10);
+      if (it.signed === 'neg') doc.setTextColor(220, 38, 38);
+      else if (it.signed === 'pos') doc.setTextColor(22, 163, 74);
+      else doc.setTextColor(15, 23, 42);
+      const amountWidth = doc.getTextWidth(amountText);
+      doc.text(amountText, rightX - amountWidth, y);
+
+      doc.setFont('Inter', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      const maxTitleWidth = rightX - leftX - amountWidth - 6;
+      let title = toAscii(it.title || '—');
+      if (doc.getTextWidth(title) > maxTitleWidth) {
+        const r = maxTitleWidth / Math.max(doc.getTextWidth(title), 1);
+        title = title.substring(0, Math.max(1, Math.floor(title.length * r) - 1)) + '…';
+      }
+      doc.text(title, leftX, y);
+
+      const metaText = toAscii(it.metaParts.filter(Boolean).join(' · '));
+      if (metaText) {
+        doc.setFont('Inter', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        const maxMetaWidth = rightX - leftX;
+        let meta = metaText;
+        if (doc.getTextWidth(meta) > maxMetaWidth) {
+          const r = maxMetaWidth / Math.max(doc.getTextWidth(meta), 1);
+          meta = meta.substring(0, Math.max(1, Math.floor(meta.length * r) - 1)) + '…';
+        }
+        doc.text(meta, leftX, y + 4);
+      }
+
+      y += 10;
+    }
+
+    y += 4;
+  }
+};
+
+
 export const generatePDFReport = async (
   data: ReportData,
   reportTitle: string = 'Financijsko izvješće',
@@ -138,40 +239,28 @@ export const generatePDFReport = async (
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('Inter', 'bold');
-  doc.text('Popis transakcija', 14, 20);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii(i18n.t('reports.transactionList', 'Popis transakcija') as string), REPORT_MARGIN_X, 20);
 
-  const transactionData = data.expenses
+  const feedItems: FeedItem[] = data.expenses
+    .slice()
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(expense => {
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
-      return [
-        formatDate(expense.date),
-        toAscii(typeInfo.name),
-        toAscii(expense.description),
-        toAscii(categoryInfo.name),
-        expense.type === 'expense' 
-          ? `-${formatCurrency(expense.amount, data.currency)}` 
-          : formatCurrency(expense.amount, data.currency),
-      ];
+      const signed: 'pos' | 'neg' | 'neutral' =
+        expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
+      return {
+        date: expense.date,
+        title: expense.description || categoryInfo.name,
+        metaParts: [categoryInfo.name, typeInfo.name].filter(Boolean) as string[],
+        amount: expense.amount,
+        signed,
+      };
     });
 
-  brandAutoTable(doc, autoTable, {
-    startY: 24,
-    head: [['Datum', 'Tip', 'Opis', 'Kategorija', 'Iznos']],
-    body: transactionData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 30 },
-      4: { cellWidth: 30 },
-    },
-  });
+  drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
+
 
   const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
   const fileName = buildReportFileName({ type: 'izvjestaj', owner, period, ext: 'pdf' });
@@ -316,34 +405,22 @@ export const generateIncomePDFReport = async (
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('Inter', 'bold');
-  doc.text('Popis prihoda', 14, 20);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii(i18n.t('reports.incomeList', 'Popis prihoda') as string), REPORT_MARGIN_X, 20);
 
-  const transactionData = data.incomeTransactions
+  const feedItems: FeedItem[] = data.incomeTransactions
+    .slice()
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(income => {
-      return [
-        formatDate(income.date),
-        toAscii(income.description),
-        toAscii(income.category || 'Ostalo'),
-        formatCurrency(income.amount, data.currency),
-      ];
-    });
+    .map(income => ({
+      date: income.date,
+      title: income.description || income.category || (i18n.t('common.other', 'Ostalo') as string),
+      metaParts: [income.category || (i18n.t('common.other', 'Ostalo') as string)],
+      amount: income.amount,
+      signed: 'pos' as const,
+    }));
 
-  brandAutoTable(doc, autoTable, {
-    startY: 24,
-    head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
-    body: transactionData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: 80 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 35 },
-    },
-  });
+  drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
+
 
   const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
   const fileName = buildReportFileName({ type: 'prihodi', owner, period, ext: 'pdf' });
