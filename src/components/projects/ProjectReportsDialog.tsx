@@ -200,8 +200,11 @@ export const ProjectReportsDialog = ({
       projectDescription: project.description,
       projectStatus: PROJECT_STATUS_LABELS[project.status],
       totalBudget: project.total_budget,
+      contractValue: (project as any).contract_value ?? null,
+      contractAmendmentsTotal: amendmentsTotal,
       totalSpent,
       totalAllocated,
+      totalIncome: totalAllocated,
       milestones: milestones.map(m => ({
         ...m,
         spent: spendingByMilestone.find(s => s.name === m.name)?.spent || 0,
