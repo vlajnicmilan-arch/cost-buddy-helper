@@ -159,6 +159,16 @@ export interface FeedItem {
   positive?: boolean;        // true for income/inbound transfer
 }
 
+const cleanFeedTitle = (raw: string): string => {
+  let s = String(raw || '');
+  s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
+  s = s.replace(/\b[0-9a-f]{16,}\b/gi, '');
+  s = s.replace(/[,\s]+(?=$|[,\s])/g, ' ');
+  s = s.replace(/[\s,–-]+\d{6,}\s*$/g, '');
+  s = s.replace(/\s+/g, ' ').replace(/[\s,;:–-]+$/g, '').trim();
+  return s;
+};
+
 export const renderHtmlActivityFeed = (
   items: FeedItem[],
   opts?: { dateLocale?: 'hr' | 'en' | 'de' },
