@@ -29,6 +29,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
 import { ProjectRevisionsReport } from './ProjectRevisionsReport';
+import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
 
 interface ProjectExpense {
   id: string;
