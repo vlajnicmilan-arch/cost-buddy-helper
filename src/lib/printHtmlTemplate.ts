@@ -139,10 +139,66 @@ ${input.bodyHtml}
 /** Helper to build a KPI strip used in HTML body. Set `hero: true` on the
  * primary metric (e.g. saldo/profit) for emphasized executive treatment. */
 export const renderHtmlKpiStrip = (
-  kpis: Array<{ label: string; value: string; hero?: boolean }>,
+  kpis: Array<{ label: string; value: string; hero?: boolean; tone?: 'pos' | 'neg' }>,
 ): string => {
-  const cells = kpis.map(k =>
-    `<div class="vmb-kpi${k.hero ? ' is-hero' : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`
-  ).join('');
+  const cells = kpis.map(k => {
+    const cls = [k.hero ? 'is-hero' : '', k.tone === 'pos' ? 'is-pos' : '', k.tone === 'neg' ? 'is-neg' : ''].filter(Boolean).join(' ');
+    return `<div class="vmb-kpi${cls ? ' ' + cls : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`;
+  }).join('');
   return `<div class="vmb-kpi-strip">${cells}</div>`;
+};
+
+/** Activity feed renderer — premium "operational" layout for personal
+ * transaction exports (alternative to database-style table). Items are
+ * grouped by day; each item shows title + meta chips + amount. */
+export interface FeedItem {
+  date: Date;
+  title: string;             // primary line (e.g. description)
+  metaParts?: string[];      // small chips joined by · (category, source, project, milestone)
+  amount: string;            // already-formatted with sign (e.g. "-34,80 €")
+  positive?: boolean;        // true for income/inbound transfer
+}
+
+export const renderHtmlActivityFeed = (
+  items: FeedItem[],
+  opts?: { dateLocale?: 'hr' | 'en' | 'de' },
+): string => {
+  if (items.length === 0) return '';
+  const locale = opts?.dateLocale === 'en' ? 'en-GB' : opts?.dateLocale === 'de' ? 'de-DE' : 'hr-HR';
+  const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Group by yyyy-mm-dd preserving incoming order (caller controls sort)
+  const groups: Array<{ key: string; label: string; items: FeedItem[] }> = [];
+  const seen = new Map<string, number>();
+  for (const it of items) {
+    const d = it.date;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let idx = seen.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      seen.set(key, idx);
+      groups.push({ key, label: dayFmt.format(d), items: [] });
+    }
+    groups[idx].items.push(it);
+  }
+
+  const parts: string[] = ['<div class="vmb-feed">'];
+  for (const g of groups) {
+    parts.push(`<div class="vmb-feed-day">${escapeHtml(g.label)}</div>`);
+    for (const it of g.items) {
+      const metaHtml = (it.metaParts && it.metaParts.length > 0)
+        ? `<div class="vmb-feed-meta">${it.metaParts.map(escapeHtml).join('<span class="dot">·</span>')}</div>`
+        : '';
+      const amtCls = it.positive ? 'pos' : 'neg';
+      parts.push(`<div class="vmb-feed-item">
+  <div>
+    <div class="vmb-feed-title">${escapeHtml(it.title)}</div>
+    ${metaHtml}
+  </div>
+  <div class="vmb-feed-amount ${amtCls}">${escapeHtml(it.amount)}</div>
+</div>`);
+    }
+  }
+  parts.push('</div>');
+  return parts.join('');
 };
