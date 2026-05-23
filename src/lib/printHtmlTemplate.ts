@@ -84,6 +84,22 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
   .vmb-kpi-value { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); line-height: 1.1; }
   .vmb-kpi.is-hero { background: var(--teal-tint); border-color: transparent; }
   .vmb-kpi.is-hero .vmb-kpi-value { font-size: 30px; color: var(--teal-deep); }
+  .vmb-kpi.is-pos .vmb-kpi-value { color: #16a34a; }
+  .vmb-kpi.is-neg .vmb-kpi-value { color: #dc2626; }
+
+  /* Activity feed — premium "operational" layout for personal transaction exports.
+     Each row is a card-like block, not a table cell. */
+  .vmb-feed { margin: 4px 0; }
+  .vmb-feed-day { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--hairline); }
+  .vmb-feed-day:first-child { margin-top: 6px; }
+  .vmb-feed-item { display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; padding: 12px 0; border-bottom: 1px solid var(--hairline); align-items: start; page-break-inside: avoid; }
+  .vmb-feed-item:last-child { border-bottom: none; }
+  .vmb-feed-title { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; letter-spacing: -0.005em; }
+  .vmb-feed-meta { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+  .vmb-feed-meta .dot { margin: 0 6px; opacity: 0.5; }
+  .vmb-feed-amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
+  .vmb-feed-amount.pos { color: #16a34a; }
+  .vmb-feed-amount.neg { color: var(--ink); }
 
   .vmb-footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; color: var(--muted); font-size: 9.5px; letter-spacing: 0.02em; }
   .vmb-intended { font-weight: 500; }
