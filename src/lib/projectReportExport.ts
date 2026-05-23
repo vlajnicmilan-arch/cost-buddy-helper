@@ -135,7 +135,9 @@ export const generateProjectPDFReport = async (
     ? ((data.totalSpent / data.totalBudget) * 100).toFixed(1) 
     : '0';
 
-  const resolvedContract = (data.contractValue && data.contractValue > 0) ? data.contractValue : data.totalBudget;
+  const baseContract = (data.contractValue && data.contractValue > 0) ? data.contractValue : data.totalBudget;
+  const amendmentsTotal = data.contractAmendmentsTotal || 0;
+  const resolvedContract = baseContract + amendmentsTotal;
   const collectedIncome = data.totalIncome ?? 0;
   const totalCostsAccrual = data.totalSpent;
   const cashBalance = collectedIncome - totalCostsAccrual;
