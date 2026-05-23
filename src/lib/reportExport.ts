@@ -139,8 +139,11 @@ const drawTransactionFeed = (
     doc.line(leftX, y, rightX, y);
     y += 2;
 
-    for (const it of dayItems) {
-      ensureSpace(9);
+    for (let i = 0; i < dayItems.length; i++) {
+      const it = dayItems[i];
+      const hasMeta = it.metaParts.filter(Boolean).length > 0;
+      const rowHeight = hasMeta ? 11 : 8;
+      ensureSpace(rowHeight);
       const amountText = (it.signed === 'neg' ? '-' : it.signed === 'pos' ? '+' : '') +
         formatCurrency(Math.abs(it.amount), currency);
 
@@ -156,7 +159,7 @@ const drawTransactionFeed = (
       doc.setFontSize(9.5);
       doc.setTextColor(15, 23, 42);
       const maxTitleWidth = rightX - leftX - amountWidth - 6;
-      let title = toAscii(it.title || '—');
+      let title = toAscii(cleanFeedTitle(it.title) || '—');
       if (doc.getTextWidth(title) > maxTitleWidth) {
         const r = maxTitleWidth / Math.max(doc.getTextWidth(title), 1);
         title = title.substring(0, Math.max(1, Math.floor(title.length * r) - 1)) + '…';
@@ -174,13 +177,20 @@ const drawTransactionFeed = (
           const r = maxMetaWidth / Math.max(doc.getTextWidth(meta), 1);
           meta = meta.substring(0, Math.max(1, Math.floor(meta.length * r) - 1)) + '…';
         }
-        doc.text(meta, leftX, y + 3.2);
+        doc.text(meta, leftX, y + 3.6);
       }
 
-      y += 6.5;
+      y += rowHeight - 2;
+      // Hairline separator between rows (skip after last item in day)
+      if (i < dayItems.length - 1) {
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.1);
+        doc.line(leftX, y, rightX, y);
+      }
+      y += 2;
     }
 
-    y += 2;
+    y += 3;
   }
 };
 
