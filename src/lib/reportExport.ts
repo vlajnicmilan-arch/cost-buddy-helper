@@ -405,34 +405,22 @@ export const generateIncomePDFReport = async (
   doc.addPage();
   doc.setFontSize(14);
   doc.setFont('Inter', 'bold');
-  doc.text('Popis prihoda', 14, 20);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii(i18n.t('reports.incomeList', 'Popis prihoda') as string), REPORT_MARGIN_X, 20);
 
-  const transactionData = data.incomeTransactions
+  const feedItems: FeedItem[] = data.incomeTransactions
+    .slice()
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(income => {
-      return [
-        formatDate(income.date),
-        toAscii(income.description),
-        toAscii(income.category || 'Ostalo'),
-        formatCurrency(income.amount, data.currency),
-      ];
-    });
+    .map(income => ({
+      date: income.date,
+      title: income.description || income.category || (i18n.t('common.other', 'Ostalo') as string),
+      metaParts: [income.category || (i18n.t('common.other', 'Ostalo') as string)],
+      amount: income.amount,
+      signed: 'pos' as const,
+    }));
 
-  brandAutoTable(doc, autoTable, {
-    startY: 24,
-    head: [['Datum', 'Opis', 'Kategorija', 'Iznos']],
-    body: transactionData,
-    theme: 'striped',
-    headStyles: { fillColor: [35, 170, 145] },
-    margin: { left: 14 },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: 80 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 35 },
-    },
-  });
+  drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
+
 
   const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
   const fileName = buildReportFileName({ type: 'prihodi', owner, period, ext: 'pdf' });
