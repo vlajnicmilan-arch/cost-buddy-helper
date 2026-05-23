@@ -36,7 +36,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
-import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { buildReportHtml, renderHtmlKpiStrip, renderHtmlActivityFeed, type FeedItem } from '@/lib/printHtmlTemplate';
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
@@ -686,40 +686,41 @@ export const PaymentSourceTransactionsDialog = ({
     if (!paymentSource || filteredSourceExpenses.length === 0) return;
     await ensureReportLogo();
 
-    const rowsHtml = filteredSourceExpenses.map(e => {
+    const feedItems: FeedItem[] = filteredSourceExpenses.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
-      const sign = e.type === 'income' || isInbound ? '+' : '-';
-      const cls = e.type === 'income' || isInbound ? 'pos' : 'neg';
-      const typeLabel = e.type === 'income' ? t('transactions.income') : e.type === 'transfer' ? t('transactions.transfer') : t('transactions.expense');
-      return `<tr>
-        <td>${format(e.date, 'dd.MM.yyyy')}</td>
-        <td>${typeLabel}</td>
-        <td>${e.description}</td>
-        <td>${cat.name}</td>
-        <td class="num ${cls}">${sign}${formatAmount(e.amount)}</td>
-      </tr>`;
-    }).join('');
+      const isPos = e.type === 'income' || isInbound;
+      const sign = isPos ? '+' : '-';
+      const typeLabel = e.type === 'income'
+        ? t('transactions.income')
+        : e.type === 'transfer'
+          ? t('transactions.transfer')
+          : null;
+      const card = getCardInfo(e);
+      const metaParts = [cat.name];
+      if (typeLabel) metaParts.push(typeLabel);
+      if (card?.last_four_digits) metaParts.push(`•••• ${card.last_four_digits}`);
+      return {
+        date: e.date,
+        title: e.description || cat.name,
+        metaParts,
+        amount: `${sign}${formatAmount(e.amount)}`,
+        positive: isPos,
+      };
+    });
 
+    const net = totalIncome - totalExp;
     const kpiStrip = renderHtmlKpiStrip([
-      { label: t('summary.totalIncome'), value: formatAmount(totalIncome) },
-      { label: t('summary.totalExpenses'), value: formatAmount(totalExp) },
-      { label: t('transactions.transfers', 'Prijenosi'), value: formatAmount(totalTransfers) },
-      { label: t('summary.balance'), value: formatAmount(paymentSource.balance) },
+      { label: t('summary.balance'), value: formatAmount(paymentSource.balance), hero: true },
+      { label: t('summary.totalIncome'), value: formatAmount(totalIncome), tone: 'pos' },
+      { label: t('summary.totalExpenses'), value: formatAmount(totalExp), tone: 'neg' },
+      { label: t('common.balance', 'Razlika'), value: formatAmount(net) },
     ]);
 
+    const language = ((i18n.language as any) || 'hr') as 'hr' | 'en' | 'de';
     const bodyHtml = `${kpiStrip}
       <h2>${t('transactions.transactions')}</h2>
-      <table>
-        <thead><tr>
-          <th>${t('common.date', 'Datum')}</th>
-          <th>${t('common.type', 'Tip')}</th>
-          <th>${t('common.description', 'Opis')}</th>
-          <th>${t('common.category', 'Kategorija')}</th>
-          <th class="num">${t('common.amount', 'Iznos')}</th>
-        </tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>`;
+      ${renderHtmlActivityFeed(feedItems, { dateLocale: language })}`;
 
     const html = buildReportHtml({
       title: `${paymentSource.icon} ${paymentSource.name}`,

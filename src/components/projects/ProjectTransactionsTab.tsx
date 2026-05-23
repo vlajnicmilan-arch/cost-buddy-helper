@@ -563,10 +563,11 @@ export const ProjectTransactionsTab = ({
       </tr>`;
     }).join('');
 
+    const net = filteredTotals.net;
     const kpiStrip = renderHtmlKpiStrip([
-      { label: t('transactions.income', 'Prihodi'), value: formatAmount(filteredTotals.totalIncome) },
-      { label: t('transactions.expense', 'Troškovi'), value: formatAmount(filteredTotals.totalExpenses) },
-      { label: t('common.balance', 'Razlika'), value: formatAmount(filteredTotals.net) },
+      { label: t('common.balance', 'Razlika'), value: formatAmount(net), hero: true },
+      { label: t('transactions.income', 'Prihodi'), value: formatAmount(filteredTotals.totalIncome), tone: 'pos' },
+      { label: t('transactions.expense', 'Troškovi'), value: formatAmount(filteredTotals.totalExpenses), tone: 'neg' },
       { label: t('common.count', 'Broj'), value: String(filteredExpenses.length) },
     ]);
 

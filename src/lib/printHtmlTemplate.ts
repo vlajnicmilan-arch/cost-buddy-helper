@@ -84,6 +84,22 @@ export const buildReportHtml = (input: BuildReportHtmlInput): string => {
   .vmb-kpi-value { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--ink); line-height: 1.1; }
   .vmb-kpi.is-hero { background: var(--teal-tint); border-color: transparent; }
   .vmb-kpi.is-hero .vmb-kpi-value { font-size: 30px; color: var(--teal-deep); }
+  .vmb-kpi.is-pos .vmb-kpi-value { color: #16a34a; }
+  .vmb-kpi.is-neg .vmb-kpi-value { color: #dc2626; }
+
+  /* Activity feed — premium "operational" layout for personal transaction exports.
+     Each row is a card-like block, not a table cell. */
+  .vmb-feed { margin: 4px 0; }
+  .vmb-feed-day { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--hairline); }
+  .vmb-feed-day:first-child { margin-top: 6px; }
+  .vmb-feed-item { display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; padding: 12px 0; border-bottom: 1px solid var(--hairline); align-items: start; page-break-inside: avoid; }
+  .vmb-feed-item:last-child { border-bottom: none; }
+  .vmb-feed-title { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.35; letter-spacing: -0.005em; }
+  .vmb-feed-meta { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+  .vmb-feed-meta .dot { margin: 0 6px; opacity: 0.5; }
+  .vmb-feed-amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
+  .vmb-feed-amount.pos { color: #16a34a; }
+  .vmb-feed-amount.neg { color: var(--ink); }
 
   .vmb-footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; color: var(--muted); font-size: 9.5px; letter-spacing: 0.02em; }
   .vmb-intended { font-weight: 500; }
@@ -123,10 +139,66 @@ ${input.bodyHtml}
 /** Helper to build a KPI strip used in HTML body. Set `hero: true` on the
  * primary metric (e.g. saldo/profit) for emphasized executive treatment. */
 export const renderHtmlKpiStrip = (
-  kpis: Array<{ label: string; value: string; hero?: boolean }>,
+  kpis: Array<{ label: string; value: string; hero?: boolean; tone?: 'pos' | 'neg' }>,
 ): string => {
-  const cells = kpis.map(k =>
-    `<div class="vmb-kpi${k.hero ? ' is-hero' : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`
-  ).join('');
+  const cells = kpis.map(k => {
+    const cls = [k.hero ? 'is-hero' : '', k.tone === 'pos' ? 'is-pos' : '', k.tone === 'neg' ? 'is-neg' : ''].filter(Boolean).join(' ');
+    return `<div class="vmb-kpi${cls ? ' ' + cls : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`;
+  }).join('');
   return `<div class="vmb-kpi-strip">${cells}</div>`;
+};
+
+/** Activity feed renderer — premium "operational" layout for personal
+ * transaction exports (alternative to database-style table). Items are
+ * grouped by day; each item shows title + meta chips + amount. */
+export interface FeedItem {
+  date: Date;
+  title: string;             // primary line (e.g. description)
+  metaParts?: string[];      // small chips joined by · (category, source, project, milestone)
+  amount: string;            // already-formatted with sign (e.g. "-34,80 €")
+  positive?: boolean;        // true for income/inbound transfer
+}
+
+export const renderHtmlActivityFeed = (
+  items: FeedItem[],
+  opts?: { dateLocale?: 'hr' | 'en' | 'de' },
+): string => {
+  if (items.length === 0) return '';
+  const locale = opts?.dateLocale === 'en' ? 'en-GB' : opts?.dateLocale === 'de' ? 'de-DE' : 'hr-HR';
+  const dayFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Group by yyyy-mm-dd preserving incoming order (caller controls sort)
+  const groups: Array<{ key: string; label: string; items: FeedItem[] }> = [];
+  const seen = new Map<string, number>();
+  for (const it of items) {
+    const d = it.date;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let idx = seen.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      seen.set(key, idx);
+      groups.push({ key, label: dayFmt.format(d), items: [] });
+    }
+    groups[idx].items.push(it);
+  }
+
+  const parts: string[] = ['<div class="vmb-feed">'];
+  for (const g of groups) {
+    parts.push(`<div class="vmb-feed-day">${escapeHtml(g.label)}</div>`);
+    for (const it of g.items) {
+      const metaHtml = (it.metaParts && it.metaParts.length > 0)
+        ? `<div class="vmb-feed-meta">${it.metaParts.map(escapeHtml).join('<span class="dot">·</span>')}</div>`
+        : '';
+      const amtCls = it.positive ? 'pos' : 'neg';
+      parts.push(`<div class="vmb-feed-item">
+  <div>
+    <div class="vmb-feed-title">${escapeHtml(it.title)}</div>
+    ${metaHtml}
+  </div>
+  <div class="vmb-feed-amount ${amtCls}">${escapeHtml(it.amount)}</div>
+</div>`);
+    }
+  }
+  parts.push('</div>');
+  return parts.join('');
 };
