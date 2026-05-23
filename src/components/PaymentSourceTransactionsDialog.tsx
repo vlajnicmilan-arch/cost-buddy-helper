@@ -36,7 +36,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
-import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
+import { buildReportHtml, renderHtmlKpiStrip, renderHtmlActivityFeed, type FeedItem } from '@/lib/printHtmlTemplate';
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesign';
 import { useReportOwner } from '@/hooks/useReportOwner';
