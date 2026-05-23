@@ -120,8 +120,13 @@ ${input.bodyHtml}
 </body></html>`;
 };
 
-/** Helper to build a KPI strip used in HTML body. */
-export const renderHtmlKpiStrip = (kpis: Array<{ label: string; value: string }>): string => {
-  const cells = kpis.map(k => `<div class="vmb-kpi"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`).join('');
+/** Helper to build a KPI strip used in HTML body. Set `hero: true` on the
+ * primary metric (e.g. saldo/profit) for emphasized executive treatment. */
+export const renderHtmlKpiStrip = (
+  kpis: Array<{ label: string; value: string; hero?: boolean }>,
+): string => {
+  const cells = kpis.map(k =>
+    `<div class="vmb-kpi${k.hero ? ' is-hero' : ''}"><div class="vmb-kpi-label">${escapeHtml(k.label)}</div><div class="vmb-kpi-value">${escapeHtml(k.value)}</div></div>`
+  ).join('');
   return `<div class="vmb-kpi-strip">${cells}</div>`;
 };
