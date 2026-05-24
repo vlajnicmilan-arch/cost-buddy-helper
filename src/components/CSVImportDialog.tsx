@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Upload, FileText, Check, AlertCircle, Loader2, Copy, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getCategoryInfo, TransactionType, Expense } from '@/types/expense';

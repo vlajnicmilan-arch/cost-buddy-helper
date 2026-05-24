@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Smartphone, Cloud, LayoutDashboard, FileSpreadsheet, LogOut } from 'lucide-react';

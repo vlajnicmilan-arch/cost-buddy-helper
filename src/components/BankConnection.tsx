@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { Button } from '@/components/ui/button';
 import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
