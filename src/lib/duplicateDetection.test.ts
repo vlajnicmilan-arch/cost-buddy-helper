@@ -305,3 +305,101 @@ describe('detectDuplicate — boundary scenarios', () => {
     expect(result.level).toBe('strict');
   });
 });
+
+describe('duplicateDetection — regression: shared city name false-positives', () => {
+  it('LUKOIL ≠ LESNINA on same day with ~3% amount diff → unique', () => {
+    const existing = baseExpense({
+      amount: 47.69,
+      date: new Date('2026-03-20T10:00:00Z'),
+      merchant_name: 'LUKOIL POLJUD/SPLIT/HRV',
+      description: 'LUKOIL POLJUD/SPLIT/HRV',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 45.89,
+        date: new Date('2026-03-20T15:00:00Z'),
+        merchant_name: 'LESNINA H PC SPLIT',
+        description: 'LESNINA H PC SPLIT',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('SUPETAR ≠ LIDL 4 days apart → unique', () => {
+    const existing = baseExpense({
+      amount: 41.30,
+      date: new Date('2026-02-18T10:00:00Z'),
+      merchant_name: 'SPLIT - SUPETAR',
+      description: 'SPLIT - SUPETAR',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 40.85,
+        date: new Date('2026-02-14T10:00:00Z'),
+        merchant_name: 'LIDL HRVATSKA 215 Split',
+        description: 'LIDL HRVATSKA 215 Split',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('TOMMY ZAGREB ≠ KONZUM ZAGREB same day same amount → unique', () => {
+    const existing = baseExpense({
+      amount: 25,
+      merchant_name: 'TOMMY ZAGREB',
+      description: 'TOMMY ZAGREB',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 25,
+        merchant_name: 'KONZUM ZAGREB',
+        description: 'KONZUM ZAGREB',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('legitimate suspicious case still triggers: NETFLIX with 1% diff, 2 days apart', () => {
+    const existing = baseExpense({
+      amount: 9.99,
+      date: new Date('2026-05-08T10:00:00Z'),
+      merchant_name: 'NETFLIX',
+      description: 'NETFLIX subscription',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 10.09,
+        date: new Date('2026-05-10T10:00:00Z'),
+        merchant_name: 'NETFLIX',
+        description: 'NETFLIX subscription',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('suspicious');
+  });
+
+  it('HEP ELEKTRA with <1% diff same day still suspicious', () => {
+    const existing = baseExpense({
+      amount: 45.20,
+      merchant_name: 'HEP ELEKTRA',
+      description: 'HEP ELEKTRA mjesečno',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 45.60,
+        merchant_name: 'HEP ELEKTRA',
+        description: 'HEP ELEKTRA mjesečno',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('suspicious');
+  });
+});
