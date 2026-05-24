@@ -32,6 +32,7 @@ type DuplicateInfo = {
   fuzzyMatchedExpenses: import('@/types/expense').Expense[];
   suspiciousDuplicates: ParsedTransaction[];
   suspiciousMatchedExpenses: import('@/types/expense').Expense[];
+  autoMergeMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[];
   unique: ParsedTransaction[];
 };
 
