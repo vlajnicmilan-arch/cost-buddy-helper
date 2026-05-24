@@ -107,13 +107,15 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   };
 
   // Detect duplicates using scoring findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense> } => {
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense>; autoMerge: Set<number>; autoMergeMapping: Map<number, Expense> } => {
     if (findDuplicates) {
-      const { duplicates, fuzzyDuplicates, autoGenMatches } = findDuplicates(txs);
+      const { duplicates, fuzzyDuplicates, autoGenMatches, autoMergeMatches } = findDuplicates(txs);
       const strictSet = new Set<number>();
       const fuzzySet = new Set<number>();
       const autoGenSet = new Set<number>();
       const agMap = new Map<number, Expense>();
+      const autoMergeSet = new Set<number>();
+      const amMap = new Map<number, Expense>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) strictSet.add(idx);
@@ -129,19 +131,27 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
           agMap.set(idx, existing);
         }
       });
-      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap };
+      (autoMergeMatches || []).forEach(({ tx: amTx, existing }) => {
+        const idx = txs.findIndex(tx => tx === amTx);
+        if (idx >= 0) {
+          autoMergeSet.add(idx);
+          amMap.set(idx, existing);
+        }
+      });
+      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap, autoMerge: autoMergeSet, autoMergeMapping: amMap };
     }
     // Fallback: simple check
     const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
       if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map() };
+    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map(), autoMerge: new Set(), autoMergeMapping: new Map() };
   };
 
   const duplicateCount = duplicateIndices.size;
   const fuzzyCount = fuzzyDuplicateIndices.size;
   const autoGenCount = autoGenIndices.size;
+  const autoMergeCount = autoMergeIndices.size;
 
   const resetState = () => {
     setStep('upload');
