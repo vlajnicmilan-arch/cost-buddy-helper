@@ -157,19 +157,49 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     setSelectedPaymentSource('');
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File, force: boolean) => {
     setError('');
+    fileMetaRef.current = { name: file.name, size: file.size, type: file.type || 'text/csv' };
 
     try {
+      // Guard 1: file-hash check before parsing
+      if (user?.id && !force) {
+        try {
+          const fileHash = await computeFileHash(file);
+          fileHashRef.current = fileHash;
+          const existing = await findExistingStatement(user.id, { fileHash });
+          if (existing) {
+            setStatementDup({ existing, retry: () => { void processFile(file, true); } });
+            return;
+          }
+        } catch {
+          fileHashRef.current = null;
+        }
+      }
+
       const content = await file.text();
       const result = parseCSV(content);
 
       if (!result.success) {
         setError(result.errors.join(', ') || t('import.fileReadError'));
         return;
+      }
+
+      // Guard 2: content-hash check after parsing
+      if (user?.id && !force && result.transactions.length > 0) {
+        try {
+          const paymentSourceValue = defaultPaymentSource
+            || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : null);
+          const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+          contentHashRef.current = contentHash;
+          const existing = await findExistingStatement(user.id, { contentHash });
+          if (existing) {
+            setStatementDup({ existing, retry: () => { void processFile(file, true); } });
+            return;
+          }
+        } catch {
+          contentHashRef.current = null;
+        }
       }
 
       setTransactions(result.transactions);
@@ -189,12 +219,18 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     } catch (err) {
       setError(t('import.fileReadError'));
     }
+  };
 
-    // Reset input
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file, false);
+    // Reset input so re-selecting same file works
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
 
   const toggleTransaction = (index: number) => {
     const newSelected = new Set(selectedIndices);
