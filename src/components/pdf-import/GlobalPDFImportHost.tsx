@@ -79,8 +79,8 @@ export const GlobalPDFImportHost = () => {
     clearStoredJob();
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
-    setSelectedFuzzy(new Set());
-    setSelectedSuspicious(new Set());
+    setFuzzyDecisions(new Map());
+    setSuspiciousDecisions(new Map());
     setAutoMergeExpanded(false);
     setStatementDup(null);
     fileHashRef.current = null;
