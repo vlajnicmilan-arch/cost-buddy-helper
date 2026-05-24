@@ -14,6 +14,15 @@ export interface ParsedPDFTransaction {
   merchant_name: string | null;
   payment_source?: PaymentSource;
   card_last4?: string | null;
+  // Installment metadata (Diners-style "EMMEZETA (6/7)" etc.)
+  is_installment?: boolean;
+  installment_current?: number | null;
+  installment_total?: number | null;
+  installment_base_description?: string | null;
+  // For credit-card statements: actual billing date, may differ from `date` (original purchase)
+  due_date_override?: string | null;
+  // True for summary rows like "Specifikacija troškova - Diners (8881) 788,10 EUR"
+  is_statement_total?: boolean;
 }
 
 export interface PDFParseResult {
@@ -22,6 +31,7 @@ export interface PDFParseResult {
   account_iban: string | null;
   holder_name: string | null;
   cards_detected: string[];
+  statement_due_date?: string | null;
   summary: {
     total_income: number;
     total_expenses: number;
@@ -53,12 +63,19 @@ const toParseResult = (data: any): PDFParseResult => ({
     category: tx.category as Category,
     type: tx.type as TransactionType,
     payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-    card_last4: tx.card_last4 || null
+    card_last4: tx.card_last4 || null,
+    is_installment: tx.is_installment === true,
+    installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
+    installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
+    installment_base_description: tx.installment_base_description ?? null,
+    due_date_override: tx.due_date_override ?? null,
+    is_statement_total: tx.is_statement_total === true,
   })),
   detected_bank: data.detected_bank || null,
   account_iban: data.account_iban || null,
   holder_name: data.holder_name || null,
   cards_detected: data.cards_detected || [],
+  statement_due_date: data.statement_due_date ?? null,
   summary: data.summary
 });
 
@@ -318,12 +335,19 @@ export const usePDFParser = () => {
           category: tx.category as Category,
           type: tx.type as TransactionType,
           payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-          card_last4: tx.card_last4 || null
+          card_last4: tx.card_last4 || null,
+          is_installment: tx.is_installment === true,
+          installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
+          installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
+          installment_base_description: tx.installment_base_description ?? null,
+          due_date_override: tx.due_date_override ?? null,
+          is_statement_total: tx.is_statement_total === true,
         })),
         detected_bank: data.detected_bank || null,
         account_iban: data.account_iban || null,
         holder_name: data.holder_name || null,
         cards_detected: data.cards_detected || [],
+        statement_due_date: data.statement_due_date ?? null,
         summary: data.summary
       };
 

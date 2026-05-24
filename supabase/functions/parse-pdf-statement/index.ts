@@ -203,6 +203,7 @@ CILJ: Vrati SVAKI redak iz dostavljene tablice transakcija. Ako u ROWS ima 47 re
 2. "Konačno stanje" / "Stanje poslije" / "Closing balance"
 3. "Promet ukupno" / "Ukupni dugovni/potražni promet" / "Total turnover"
 4. "Stanje na dan ..." (dnevni saldo)
+5. Naslovi sekcija bez iznosa ("Specifikacija troškova usluga", "Datum", "ID1", "ID2")
 
 ODREĐIVANJE TIPA (gledaj kolonu, ne opis):
 - Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
@@ -217,8 +218,28 @@ merchant_name: druga strana (platitelj kod uplate, primatelj kod isplate). Null 
 KATEGORIJA: food, transport, shopping, entertainment, bills, health, other.
 DATUM: YYYY-MM-DD.
 
+RATE / OBROČNA OTPLATA (VAŽNO za Diners, Visa Premium, Mastercard kreditne kartice):
+- Ako opis sadrži notaciju "(n/m)", "(n od m)", "rata n/m", "obrok n/m" (npr. "EMMEZETA (6/7)", "Pandora Joker (3/3)") → postavi:
+  - is_installment = true
+  - installment_current = trenutna rata (broj prije /)
+  - installment_total = ukupan broj rata (broj poslije /)
+  - installment_base_description = opis BEZ zagrade s ratom (npr. "EMMEZETA", "Pandora Joker")
+- Inače is_installment = false i ostala installment polja null.
+
+DATUM KNJIŽENJA ZA KARTIČNE IZVODE (Diners, Visa Premium, Mastercard kreditne):
+- Na takvim izvodima "Datum" uz svaku stavku je datum ORIGINALNE kupnje (npr. rata kupljena 05.09.25), ali NAPLATA se događa na datum dospijeća iz zaglavlja ("Platiti do: 20.03.2026").
+- Za SVAKU stavku koja je rata ili kartična transakcija s retroaktivnim datumom, postavi due_date_override = datum dospijeća/naplate iz zaglavlja izvoda (YYYY-MM-DD).
+- Ako izvod nije kartični (žiro, tekući račun), due_date_override = null.
+
+ZBIRNI REDOVI (NE knjižiti kao običan expense):
+- Redak tipa "Specifikacija troškova na prodajnim mjestima - [Card] (xxxx) [iznos] EUR" je SUMARNI total za karticu.
+- Redak tipa "Ukupno troškovi usluga ESB", "Sveukupno novi troškovi", "Ukupno dugovanje/preplata" je SUMARNI total.
+- Za TE retke postavi is_statement_total = true (svejedno popuni date/description/amount).
+- Pojedinačne stavke u tablici (rate, transakcije) imaju is_statement_total = false.
+
 METAPODACI:
-- detected_bank, account_iban, holder_name iz zaglavlja izvoda.`
+- detected_bank, account_iban, holder_name iz zaglavlja izvoda.
+- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.`
           },
           {
             role: 'user',
@@ -311,6 +332,34 @@ METAPODACI:
                           enum: ['visa', 'visa_gold', 'visa_platinum', 'mastercard', 'mastercard_gold', 'mastercard_platinum', 'maestro', 'amex', 'diners', 'bank', 'cash', 'revolut', 'aircash', 'crypto', 'other'],
                           description: 'Detected card/payment type from transaction. Use visa/mastercard variants when card type is visible.',
                           nullable: true
+                        },
+                        is_installment: {
+                          type: 'boolean',
+                          description: 'True if description contains installment notation like (6/7) or "rata n/m". Default false.'
+                        },
+                        installment_current: {
+                          type: 'number',
+                          description: 'Current installment number (n in n/m). Null if not an installment.',
+                          nullable: true
+                        },
+                        installment_total: {
+                          type: 'number',
+                          description: 'Total installment count (m in n/m). Null if not an installment.',
+                          nullable: true
+                        },
+                        installment_base_description: {
+                          type: 'string',
+                          description: 'Description without the (n/m) suffix, e.g. "EMMEZETA" instead of "EMMEZETA (6/7)". Null if not an installment.',
+                          nullable: true
+                        },
+                        due_date_override: {
+                          type: 'string',
+                          description: 'For credit-card statements: the actual billing/charge date (YYYY-MM-DD), different from the original purchase date in `date`. Null for non-credit statements.',
+                          nullable: true
+                        },
+                        is_statement_total: {
+                          type: 'boolean',
+                          description: 'True if this row is a per-card summary total (e.g. "Specifikacija troškova - Diners (8881) 788,10 EUR") rather than an individual transaction. Default false.'
                         }
                       },
                       required: ['date', 'description', 'amount', 'type', 'category']
@@ -323,6 +372,11 @@ METAPODACI:
                   total_expenses: {
                     type: 'number',
                     description: 'Sum of all expense transactions'
+                  },
+                  statement_due_date: {
+                    type: 'string',
+                    description: 'For credit-card statements: charge/billing due date (YYYY-MM-DD) from header ("Platiti do: DD.MM.YYYY"). Null otherwise.',
+                    nullable: true
                   }
                 },
                 required: ['transactions', 'total_income', 'total_expenses']
@@ -409,12 +463,18 @@ METAPODACI:
       return cleaned || null;
     }
 
-    // Filter and sanitize transactions
+    // Filter and sanitize transactions; preserve installment + statement-total metadata
     const rawTransactions = statementData.transactions || [];
     const transactions = rawTransactions.map((t: any) => ({
       ...t,
       description: sanitizeText(t.description) || 'Nepoznata transakcija',
       merchant_name: sanitizeText(t.merchant_name),
+      is_installment: t.is_installment === true,
+      installment_current: typeof t.installment_current === 'number' ? t.installment_current : null,
+      installment_total: typeof t.installment_total === 'number' ? t.installment_total : null,
+      installment_base_description: sanitizeText(t.installment_base_description),
+      due_date_override: typeof t.due_date_override === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date_override) ? t.due_date_override : null,
+      is_statement_total: t.is_statement_total === true,
     })).filter((t: any) => {
       // Skip transactions where both description and merchant are garbled
       if (t.description === 'Nepoznata transakcija' && !t.merchant_name) {
@@ -427,8 +487,13 @@ METAPODACI:
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
-    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const statementDueDate = typeof (statementData as any).statement_due_date === 'string'
+      && /^\d{4}-\d{2}-\d{2}$/.test((statementData as any).statement_due_date)
+      ? (statementData as any).statement_due_date
+      : null;
+    // Exclude statement-total rows from income/expense sums to avoid double counting
+    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
     // Group transactions by card if multiple cards detected
     const cardGroups = new Map<string, number>();
@@ -455,12 +520,13 @@ METAPODACI:
         account_iban: accountIban,
         holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
+        statement_due_date: statementDueDate,
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,
           transaction_count: transactions.length
         }
-      }), 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
