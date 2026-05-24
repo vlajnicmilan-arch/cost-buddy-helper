@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,7 @@ export interface FilterState {
   cardId: string | undefined;
   categoryId: string | undefined;
   scope: TransactionScope;
+  bankMatchStatus: string | undefined;
 }
 
 interface TransactionFiltersProps {
@@ -101,7 +102,8 @@ export const TransactionFilters = ({
     filters.memberId !== undefined ||
     filters.cardId !== undefined ||
     filters.categoryId !== undefined ||
-    filters.scope !== 'all';
+    filters.scope !== 'all' ||
+    filters.bankMatchStatus !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -113,6 +115,7 @@ export const TransactionFilters = ({
       cardId: undefined,
       categoryId: undefined,
       scope: 'all',
+      bankMatchStatus: undefined,
     });
   };
 
@@ -366,6 +369,24 @@ export const TransactionFilters = ({
               ))}
             </SelectContent>
           </Select>
+
+          {/* Bank Match Status Filter */}
+          <Select
+            value={filters.bankMatchStatus || 'all'}
+            onValueChange={(value) => updateFilter('bankMatchStatus', value === 'all' ? undefined : value)}
+          >
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <Landmark className="w-3.5 h-3.5 mr-1.5" />
+              <SelectValue placeholder={t('filters.allBankMatchStatuses', 'Svi statusi')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.allBankMatchStatuses', 'Svi statusi')}</SelectItem>
+              <SelectItem value="manual">{t('bankMatch.manual', 'Ručni unos')}</SelectItem>
+              <SelectItem value="pending_bank">{t('bankMatch.pendingBank', 'Čeka potvrdu banke')}</SelectItem>
+              <SelectItem value="confirmed">{t('bankMatch.confirmed', 'Potvrđeno bankom')}</SelectItem>
+              <SelectItem value="bank_only">{t('bankMatch.bankOnly', 'Iz izvoda')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>
@@ -373,7 +394,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null }>(
   items: T[],
   filters: FilterState,
   currentUserId?: string
@@ -429,6 +450,11 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (item.category !== filters.categoryId) return false;
     }
 
+    if (filters.bankMatchStatus !== undefined) {
+      const itemStatus = item.bank_match_status || 'manual';
+      if (itemStatus !== filters.bankMatchStatus) return false;
+    }
+
     return true;
   });
 };
@@ -443,4 +469,5 @@ export const defaultFilters: FilterState = {
   cardId: undefined,
   categoryId: undefined,
   scope: 'all',
+  bankMatchStatus: undefined,
 };
