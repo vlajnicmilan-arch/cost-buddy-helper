@@ -31,7 +31,7 @@ interface HomeHeaderProps {
   onCheckDuplicate?: (transaction: { amount: number; description: string; date: Date; type: string; category?: string; merchant_name?: string }) => Expense | null;
   onBulkUpdateExpenses: (expenses: Expense[]) => Promise<any>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
   existingExpenses?: Expense[];
   onRefetch: () => void;
   onSelectExpense?: (expense: Expense) => void;

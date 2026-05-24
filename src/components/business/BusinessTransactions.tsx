@@ -25,7 +25,7 @@ interface Props {
   onEditExpense: (expense: Expense) => Promise<void>;
   onDeleteExpense: (id: string) => void;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: import('@/types/expense').Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
   existingExpenses?: Expense[];
 }
 

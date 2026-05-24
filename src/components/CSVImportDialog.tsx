@@ -29,7 +29,7 @@ interface CSVImportDialogProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
