@@ -1598,7 +1598,16 @@
     "selected": "Ausgewählt",
     "fileReadError": "Fehler beim Lesen der Datei",
     "importError": "Fehler beim Importieren der Transaktionen",
-    "otherBanks": "Andere Banken"
+    "otherBanks": "Andere Banken",
+    "duplicateDecision": {
+      "merge": "Zusammenführen",
+      "new": "Neu",
+      "skip": "Überspringen",
+      "mergeHint": "Mit vorhandener manueller Transaktion verknüpfen (Saldo bleibt erhalten).",
+      "newHint": "Neue Transaktion aus dem Auszug erstellen.",
+      "skipHint": "Diese Zeile nicht importieren.",
+      "noMatchToMerge": "Keine vorhandene Transaktion zum Zusammenführen"
+    }
   },
   "bulk": {
     "paymentSource": "Massen-Zahlung",
