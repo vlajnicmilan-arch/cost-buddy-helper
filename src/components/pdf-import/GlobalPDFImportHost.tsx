@@ -524,7 +524,7 @@ export const GlobalPDFImportHost = () => {
                 )}
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {result.transactions.filter(tx => tx.is_statement_total !== true).map((tx, index) => (
-                    <div key={`${tx.date.toISOString()}-${index}`} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
+                    <div key={`${tx.date.getTime()}-${index}`} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {tx.description}
@@ -588,7 +588,7 @@ export const GlobalPDFImportHost = () => {
                     {autoMergeExpanded && (
                       <div className="px-3 pb-3 space-y-2 max-h-64 overflow-y-auto">
                         {duplicateInfo.autoMergeMatches.map(({ tx, existing }, index) => (
-                          <div key={`am-${tx.date.toISOString()}-${index}`} className="rounded-lg border border-emerald-500/20 overflow-hidden bg-background/40">
+                          <div key={`am-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className="rounded-lg border border-emerald-500/20 overflow-hidden bg-background/40">
                             <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
                               <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span>
                               <div className="flex-1 min-w-0">
@@ -615,7 +615,7 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-destructive/80">{t('import.strictDuplicates')}</p>
                     <div className="max-h-32 overflow-y-auto space-y-1">
-                      {duplicateInfo.duplicates.map((tx, index) => <DuplicateRow key={`${tx.date.toISOString()}-${index}`} tx={tx} formatAmount={formatAmount} />)}
+                      {duplicateInfo.duplicates.map((tx, index) => <DuplicateRow key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} tx={tx} formatAmount={formatAmount} />)}
                     </div>
                     <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
                       <Checkbox id="global-include-strict-dups-source" checked={includeDuplicates} onCheckedChange={checked => setIncludeDuplicates(checked === true)} />
@@ -631,7 +631,7 @@ export const GlobalPDFImportHost = () => {
                       {duplicateInfo.fuzzyDuplicates.map((tx, index) => {
                         const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[index];
                         return (
-                          <button type="button" key={`${tx.date.toISOString()}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
+                          <button type="button" key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
                             const next = new Set(prev);
                             next.has(index) ? next.delete(index) : next.add(index);
                             return next;
@@ -652,7 +652,7 @@ export const GlobalPDFImportHost = () => {
                       {duplicateInfo.suspiciousDuplicates.map((tx, index) => {
                         const matchedExpense = duplicateInfo.suspiciousMatchedExpenses[index];
                         return (
-                          <button type="button" key={`s-${tx.date.toISOString()}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
+                          <button type="button" key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
                             const next = new Set(prev);
                             next.has(index) ? next.delete(index) : next.add(index);
                             return next;

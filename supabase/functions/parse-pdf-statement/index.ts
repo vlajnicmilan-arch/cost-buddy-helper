@@ -453,9 +453,7 @@ METAPODACI:
     // Sanitize text: remove garbled/binary characters
     function sanitizeText(text: string | null | undefined): string | null {
       if (!text) return null;
-      // Remove non-printable chars except common whitespace
       const cleaned = text.replace(/[^\x20-\x7E\u00A0-\u024F\u0400-\u04FF\u0100-\u017F\u2000-\u206F\u20AC\n\r\t čćžšđČĆŽŠĐ]/g, '').trim();
-      // If more than 30% of original was garbage, it's unreadable
       if (cleaned.length < text.trim().length * 0.5) {
         console.warn('Garbled text detected, discarding:', text.substring(0, 50));
         return null;
@@ -463,20 +461,61 @@ METAPODACI:
       return cleaned || null;
     }
 
+    // Normalize various date formats to canonical YYYY-MM-DD.
+    // Accepts: YYYY-MM-DD, DD.MM.YYYY, DD.MM.YY, DD/MM/YYYY, DD/MM/YY, DD-MM-YYYY.
+    // Returns null for anything that isn't a real calendar date.
+    function normalizeDate(input: unknown): string | null {
+      if (typeof input !== 'string') return null;
+      const s = input.trim();
+      if (!s) return null;
+
+      let y: number | null = null, m: number | null = null, d: number | null = null;
+      let match: RegExpMatchArray | null;
+
+      if ((match = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) {
+        y = +match[1]; m = +match[2]; d = +match[3];
+      } else if ((match = s.match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})\.?$/))) {
+        d = +match[1]; m = +match[2];
+        const yy = +match[3];
+        y = match[3].length === 2 ? 2000 + yy : yy;
+      } else {
+        return null;
+      }
+
+      if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) return null;
+
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+
+      const mm = String(m).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
+      return `${y}-${mm}-${dd}`;
+    }
+
     // Filter and sanitize transactions; preserve installment + statement-total metadata
     const rawTransactions = statementData.transactions || [];
-    const transactions = rawTransactions.map((t: any) => ({
-      ...t,
-      description: sanitizeText(t.description) || 'Nepoznata transakcija',
-      merchant_name: sanitizeText(t.merchant_name),
-      is_installment: t.is_installment === true,
-      installment_current: typeof t.installment_current === 'number' ? t.installment_current : null,
-      installment_total: typeof t.installment_total === 'number' ? t.installment_total : null,
-      installment_base_description: sanitizeText(t.installment_base_description),
-      due_date_override: typeof t.due_date_override === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date_override) ? t.due_date_override : null,
-      is_statement_total: t.is_statement_total === true,
-    })).filter((t: any) => {
-      // Skip transactions where both description and merchant are garbled
+    let droppedInvalidDate = 0;
+    const transactions = rawTransactions.map((t: any) => {
+      const normDate = normalizeDate(t.date);
+      const normDueOverride = normalizeDate(t.due_date_override);
+      return {
+        ...t,
+        // Fall back to due_date_override if primary date is unparseable.
+        date: normDate ?? normDueOverride,
+        description: sanitizeText(t.description) || 'Nepoznata transakcija',
+        merchant_name: sanitizeText(t.merchant_name),
+        is_installment: t.is_installment === true,
+        installment_current: typeof t.installment_current === 'number' ? t.installment_current : null,
+        installment_total: typeof t.installment_total === 'number' ? t.installment_total : null,
+        installment_base_description: sanitizeText(t.installment_base_description),
+        due_date_override: normDueOverride,
+        is_statement_total: t.is_statement_total === true,
+      };
+    }).filter((t: any) => {
+      if (!t.date) {
+        droppedInvalidDate += 1;
+        return false;
+      }
       if (t.description === 'Nepoznata transakcija' && !t.merchant_name) {
         console.warn('Skipping transaction with unreadable text, amount:', t.amount);
         return false;
@@ -484,13 +523,14 @@ METAPODACI:
       return true;
     });
 
+    if (droppedInvalidDate > 0) {
+      console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
+    }
+
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
-    const statementDueDate = typeof (statementData as any).statement_due_date === 'string'
-      && /^\d{4}-\d{2}-\d{2}$/.test((statementData as any).statement_due_date)
-      ? (statementData as any).statement_due_date
-      : null;
+    const statementDueDate = normalizeDate((statementData as any).statement_due_date);
     // Exclude statement-total rows from income/expense sums to avoid double counting
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);

@@ -56,21 +56,39 @@ const isAbortLikeError = (error: unknown) => {
   return String(error).toLowerCase().includes('abort');
 };
 
+// Defensive parser: returns Date only if the input yields a valid timestamp.
+// Server-side normalization (parse-pdf-statement) already converts to YYYY-MM-DD,
+// but we keep this guard so a single bad row can never crash the import UI.
+const safeParseDate = (input: unknown): Date | null => {
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? null : input;
+  }
+  if (typeof input !== 'string' || !input.trim()) return null;
+  const d = new Date(input);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
 const toParseResult = (data: any): PDFParseResult => ({
-  transactions: (data.transactions || []).map((tx: any) => ({
-    ...tx,
-    date: new Date(tx.date),
-    category: tx.category as Category,
-    type: tx.type as TransactionType,
-    payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-    card_last4: tx.card_last4 || null,
-    is_installment: tx.is_installment === true,
-    installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
-    installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
-    installment_base_description: tx.installment_base_description ?? null,
-    due_date_override: tx.due_date_override ?? null,
-    is_statement_total: tx.is_statement_total === true,
-  })),
+  transactions: (data.transactions || [])
+    .map((tx: any) => {
+      const date = safeParseDate(tx.date);
+      if (!date) return null;
+      return {
+        ...tx,
+        date,
+        category: tx.category as Category,
+        type: tx.type as TransactionType,
+        payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
+        card_last4: tx.card_last4 || null,
+        is_installment: tx.is_installment === true,
+        installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
+        installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
+        installment_base_description: tx.installment_base_description ?? null,
+        due_date_override: tx.due_date_override ?? null,
+        is_statement_total: tx.is_statement_total === true,
+      };
+    })
+    .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),
   detected_bank: data.detected_bank || null,
   account_iban: data.account_iban || null,
   holder_name: data.holder_name || null,
@@ -329,20 +347,26 @@ export const usePDFParser = () => {
       const data = await response.json();
       
       const result: PDFParseResult = {
-        transactions: (data.transactions || []).map((tx: any) => ({
-          ...tx,
-          date: new Date(tx.date),
-          category: tx.category as Category,
-          type: tx.type as TransactionType,
-          payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-          card_last4: tx.card_last4 || null,
-          is_installment: tx.is_installment === true,
-          installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
-          installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
-          installment_base_description: tx.installment_base_description ?? null,
-          due_date_override: tx.due_date_override ?? null,
-          is_statement_total: tx.is_statement_total === true,
-        })),
+        transactions: (data.transactions || [])
+          .map((tx: any) => {
+            const date = safeParseDate(tx.date);
+            if (!date) return null;
+            return {
+              ...tx,
+              date,
+              category: tx.category as Category,
+              type: tx.type as TransactionType,
+              payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
+              card_last4: tx.card_last4 || null,
+              is_installment: tx.is_installment === true,
+              installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
+              installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
+              installment_base_description: tx.installment_base_description ?? null,
+              due_date_override: tx.due_date_override ?? null,
+              is_statement_total: tx.is_statement_total === true,
+            };
+          })
+          .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),
         detected_bank: data.detected_bank || null,
         account_iban: data.account_iban || null,
         holder_name: data.holder_name || null,
