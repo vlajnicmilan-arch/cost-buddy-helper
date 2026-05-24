@@ -765,3 +765,85 @@ const DuplicateRow = ({ tx, formatAmount }: { tx: ParsedTransaction; formatAmoun
     <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
   </div>
 );
+
+type DecisionRowProps = {
+  tx: ParsedTransaction;
+  matchedExpense: import('@/types/expense').Expense | undefined;
+  decision: RowDecision;
+  onChange: (value: RowDecision) => void;
+  formatAmount: (amount: number) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+};
+
+const DecisionRow = ({ tx, matchedExpense, decision, onChange, formatAmount, t }: DecisionRowProps) => {
+  const canMerge = !!matchedExpense?.id;
+  const borderClass =
+    decision === 'merge' ? 'border-emerald-500/40'
+    : decision === 'new' ? 'border-primary/40'
+    : 'border-border/40';
+  const hint =
+    decision === 'merge' ? t('import.duplicateDecision.mergeHint')
+    : decision === 'new' ? t('import.duplicateDecision.newHint')
+    : t('import.duplicateDecision.skipHint');
+  return (
+    <div className={cn('rounded-xl text-sm border overflow-hidden transition-colors', borderClass)}>
+      {matchedExpense && (
+        <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
+            <p className="text-[10px] text-muted-foreground">{(matchedExpense.date instanceof Date ? matchedExpense.date : new Date(matchedExpense.date)).toLocaleDateString()}</p>
+          </div>
+          <p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p>
+        </div>
+      )}
+      <div className="flex items-center gap-2 p-2 bg-amber-500/5">
+        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-14 shrink-0">{t('common.new')}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate text-xs">{tx.description}</p>
+          <p className="text-[10px] text-muted-foreground">{(tx.date instanceof Date ? tx.date : new Date(tx.date)).toLocaleDateString()}</p>
+        </div>
+        <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+      </div>
+      <div className="p-2 bg-background/40 border-t border-border/30 space-y-1.5">
+        <ToggleGroup
+          type="single"
+          value={decision}
+          onValueChange={(value) => {
+            if (!value) return;
+            const next = value as RowDecision;
+            if (next === 'merge' && !canMerge) return;
+            onChange(next);
+          }}
+          className="w-full grid grid-cols-3 gap-1"
+        >
+          <ToggleGroupItem
+            value="merge"
+            disabled={!canMerge}
+            className="text-xs h-9 data-[state=on]:bg-emerald-500/15 data-[state=on]:text-emerald-700 dark:data-[state=on]:text-emerald-300"
+            aria-label={t('import.duplicateDecision.merge')}
+          >
+            {t('import.duplicateDecision.merge')}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="new"
+            className="text-xs h-9 data-[state=on]:bg-primary/15 data-[state=on]:text-primary"
+            aria-label={t('import.duplicateDecision.new')}
+          >
+            {t('import.duplicateDecision.new')}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="skip"
+            className="text-xs h-9"
+            aria-label={t('import.duplicateDecision.skip')}
+          >
+            {t('import.duplicateDecision.skip')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <p className="text-[10px] text-muted-foreground leading-snug">
+          {!canMerge && decision !== 'new' && decision !== 'skip' ? t('import.duplicateDecision.noMatchToMerge') : hint}
+        </p>
+      </div>
+    </div>
+  );
+};
