@@ -615,7 +615,7 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-destructive/80">{t('import.strictDuplicates')}</p>
                     <div className="max-h-32 overflow-y-auto space-y-1">
-                      {duplicateInfo.duplicates.map((tx, index) => <DuplicateRow key={`${tx.date.toISOString()}-${index}`} tx={tx} formatAmount={formatAmount} />)}
+                      {duplicateInfo.duplicates.map((tx, index) => <DuplicateRow key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} tx={tx} formatAmount={formatAmount} />)}
                     </div>
                     <div className="flex items-center space-x-2 p-2 bg-muted/30 rounded-lg">
                       <Checkbox id="global-include-strict-dups-source" checked={includeDuplicates} onCheckedChange={checked => setIncludeDuplicates(checked === true)} />
