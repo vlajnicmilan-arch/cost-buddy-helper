@@ -38,15 +38,26 @@ const baseTx = (overrides: Partial<NewTxInput>): NewTxInput => ({
 });
 
 describe('duplicateDetection — helpers', () => {
-  it('normalizes merchants by stripping suffixes, diacritics and store numbers', () => {
-    expect(normalizeMerchant('Konzum d.o.o. Zagreb 045')).toBe('konzum zagreb');
-    expect(normalizeMerchant('KONZUM ZAGREB 045')).toBe('konzum zagreb');
+  it('normalizes merchants by stripping suffixes, diacritics, store numbers and geo stop-words', () => {
+    // "zagreb" is a geo stop-word → stripped
+    expect(normalizeMerchant('Konzum d.o.o. Zagreb 045')).toBe('konzum');
+    expect(normalizeMerchant('KONZUM ZAGREB 045')).toBe('konzum');
     expect(normalizeMerchant('Šibenska pekara')).toBe('sibenska pekara');
+    // Geo stop-words removed
+    expect(normalizeMerchant('LUKOIL POLJUD/SPLIT/HRV')).toBe('lukoil poljud');
+    expect(normalizeMerchant('LESNINA H PC SPLIT')).toBe('lesnina h pc');
   });
 
   it('matches similar merchants across formatting variants', () => {
     expect(areMerchantsSimilar('Konzum d.o.o. Zagreb', 'KONZUM ZAGREB 045')).toBe(true);
     expect(areMerchantsSimilar('Konzum', 'Lidl')).toBe(false);
+  });
+
+  it('does NOT match unrelated merchants that only share a city name', () => {
+    // The bug we fixed: LUKOIL ≠ LESNINA even though both contain "SPLIT"
+    expect(areMerchantsSimilar('LUKOIL POLJUD/SPLIT/HRV', 'LESNINA H PC SPLIT')).toBe(false);
+    expect(areMerchantsSimilar('SPLIT - SUPETAR', 'LIDL HRVATSKA 215 Split')).toBe(false);
+    expect(areMerchantsSimilar('TOMMY ZAGREB', 'KONZUM ZAGREB')).toBe(false);
   });
 
   it('levenshtein basics', () => {
