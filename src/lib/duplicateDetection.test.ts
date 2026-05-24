@@ -38,15 +38,26 @@ const baseTx = (overrides: Partial<NewTxInput>): NewTxInput => ({
 });
 
 describe('duplicateDetection — helpers', () => {
-  it('normalizes merchants by stripping suffixes, diacritics and store numbers', () => {
-    expect(normalizeMerchant('Konzum d.o.o. Zagreb 045')).toBe('konzum zagreb');
-    expect(normalizeMerchant('KONZUM ZAGREB 045')).toBe('konzum zagreb');
+  it('normalizes merchants by stripping suffixes, diacritics, store numbers and geo stop-words', () => {
+    // "zagreb" is a geo stop-word → stripped
+    expect(normalizeMerchant('Konzum d.o.o. Zagreb 045')).toBe('konzum');
+    expect(normalizeMerchant('KONZUM ZAGREB 045')).toBe('konzum');
     expect(normalizeMerchant('Šibenska pekara')).toBe('sibenska pekara');
+    // Geo stop-words removed
+    expect(normalizeMerchant('LUKOIL POLJUD/SPLIT/HRV')).toBe('lukoil poljud');
+    expect(normalizeMerchant('LESNINA H PC SPLIT')).toBe('lesnina h pc');
   });
 
   it('matches similar merchants across formatting variants', () => {
     expect(areMerchantsSimilar('Konzum d.o.o. Zagreb', 'KONZUM ZAGREB 045')).toBe(true);
     expect(areMerchantsSimilar('Konzum', 'Lidl')).toBe(false);
+  });
+
+  it('does NOT match unrelated merchants that only share a city name', () => {
+    // The bug we fixed: LUKOIL ≠ LESNINA even though both contain "SPLIT"
+    expect(areMerchantsSimilar('LUKOIL POLJUD/SPLIT/HRV', 'LESNINA H PC SPLIT')).toBe(false);
+    expect(areMerchantsSimilar('SPLIT - SUPETAR', 'LIDL HRVATSKA 215 Split')).toBe(false);
+    expect(areMerchantsSimilar('TOMMY ZAGREB', 'KONZUM ZAGREB')).toBe(false);
   });
 
   it('levenshtein basics', () => {
@@ -75,16 +86,27 @@ describe('duplicateDetection — levels', () => {
     expect(result.confidence).toBeLessThan(90);
   });
 
-  it('SUSPICIOUS: ~3% amount diff, same week, near-identical merchant', () => {
+  it('SUSPICIOUS: ~0.8% amount diff, 1 day apart, near-identical merchant', () => {
     const existing = baseExpense({
-      amount: 51.5,
-      date: new Date('2026-05-08T10:00:00Z'),
+      amount: 50.40,
+      date: new Date('2026-05-09T20:00:00Z'),
       merchant_name: 'Konzun',
     });
     const result = detectDuplicate(baseTx({}), [existing], { ignoreSameDayDuplicateGuard: true });
     expect(result.level).toBe('suspicious');
     expect(result.confidence).toBeGreaterThanOrEqual(30);
     expect(result.confidence).toBeLessThan(60);
+  });
+
+  it('SUSPICIOUS no longer triggers on >1% amount diff', () => {
+    // Old behaviour: 3% diff was suspicious. New: must be unique.
+    const existing = baseExpense({
+      amount: 51.5,
+      date: new Date('2026-05-09T10:00:00Z'),
+      merchant_name: 'Konzum',
+    });
+    const result = detectDuplicate(baseTx({}), [existing], { ignoreSameDayDuplicateGuard: true });
+    expect(result.level).toBe('unique');
   });
 
   it('UNIQUE: completely different transaction', () => {
@@ -281,5 +303,103 @@ describe('detectDuplicate — boundary scenarios', () => {
     });
     // Only one side has payment_source → no source comparison penalty → strict
     expect(result.level).toBe('strict');
+  });
+});
+
+describe('duplicateDetection — regression: shared city name false-positives', () => {
+  it('LUKOIL ≠ LESNINA on same day with ~3% amount diff → unique', () => {
+    const existing = baseExpense({
+      amount: 47.69,
+      date: new Date('2026-03-20T10:00:00Z'),
+      merchant_name: 'LUKOIL POLJUD/SPLIT/HRV',
+      description: 'LUKOIL POLJUD/SPLIT/HRV',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 45.89,
+        date: new Date('2026-03-20T15:00:00Z'),
+        merchant_name: 'LESNINA H PC SPLIT',
+        description: 'LESNINA H PC SPLIT',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('SUPETAR ≠ LIDL 4 days apart → unique', () => {
+    const existing = baseExpense({
+      amount: 41.30,
+      date: new Date('2026-02-18T10:00:00Z'),
+      merchant_name: 'SPLIT - SUPETAR',
+      description: 'SPLIT - SUPETAR',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 40.85,
+        date: new Date('2026-02-14T10:00:00Z'),
+        merchant_name: 'LIDL HRVATSKA 215 Split',
+        description: 'LIDL HRVATSKA 215 Split',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('TOMMY ZAGREB ≠ KONZUM ZAGREB same day same amount → unique', () => {
+    const existing = baseExpense({
+      amount: 25,
+      merchant_name: 'TOMMY ZAGREB',
+      description: 'TOMMY ZAGREB',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 25,
+        merchant_name: 'KONZUM ZAGREB',
+        description: 'KONZUM ZAGREB',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('unique');
+  });
+
+  it('legitimate suspicious case still triggers: NETFLIX with 1% diff, 2 days apart', () => {
+    const existing = baseExpense({
+      amount: 9.99,
+      date: new Date('2026-05-08T10:00:00Z'),
+      merchant_name: 'NETFLIX',
+      description: 'NETFLIX subscription',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 10.09,
+        date: new Date('2026-05-10T10:00:00Z'),
+        merchant_name: 'NETFLIX',
+        description: 'NETFLIX subscription',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('suspicious');
+  });
+
+  it('HEP ELEKTRA with <1% diff same day still suspicious', () => {
+    const existing = baseExpense({
+      amount: 45.20,
+      merchant_name: 'HEP ELEKTRA',
+      description: 'HEP ELEKTRA mjesečno',
+    });
+    const result = detectDuplicate(
+      baseTx({
+        amount: 45.60,
+        merchant_name: 'HEP ELEKTRA',
+        description: 'HEP ELEKTRA mjesečno',
+      }),
+      [existing],
+      { ignoreSameDayDuplicateGuard: true }
+    );
+    expect(result.level).toBe('suspicious');
   });
 });

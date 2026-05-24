@@ -1,66 +1,60 @@
+## Cilj
+Eliminirati lažne pozitive u "Vjerojatno postoji" sekciji pri uvozu izvoda (npr. LUKOIL ↔ LESNINA samo zato što oba imaju "SPLIT" u nazivu).
 
-## Uzrok problema (potvrđen u bazi)
+## Promjene — sve u `src/lib/duplicateDetection.ts`
 
-Migracija **`20260522182756_4d7f45a2-c0f8-459a-bc20-debb6c8be011.sql`** je na kraju izvršila `SELECT public.backfill_import_fingerprints();` — funkcija koja je:
-
-1. **Postavila lažni `bank_transaction_id` = `'imp:<sha256>'`** na SVAKI ručno unesen expense koji ga nije imao (1415 od 1417 redova u bazi)
-2. **Generirala lažni `import_batch_id` (gen_random_uuid)** po grupi (user × payment_source × mjesec) — 1415 redova
-3. **Insertala lažne `imported_statements` zapise** s `file_name = '[legacy backfill]'` — **136 nepostojećih izvoda**
-
-Posljedica: UI smatra sve te transakcije "spojenima s bankom" (1386 ih ima `bank_match_status='confirmed'` iz ranijih import flowova ili pripadnog koda), prikazuje markere uvoza koji nikad nisu uvezeni, a `unmerge_import_row` se ne može pozvati jer su to ručni unosi koje korisnik nikad nije uvozio.
-
-## Trenutno stanje (verificirano upitima):
-- `expenses.bank_transaction_id LIKE 'imp:%'` → **1415**
-- `expenses.import_batch_id IS NOT NULL` (svi pripadaju ovome) → **1415**
-- `imported_statements.file_name = '[legacy backfill]'` → **136**
-
-## Plan popravka
-
-### Korak 1 — Rollback migracija (kritično, prvo)
-
-Jedna migracija koja u transakciji čisti sve tragove backfill-a:
-
-```sql
--- 1) Vrati ručne unose u izvorno stanje
-UPDATE public.expenses
-   SET bank_transaction_id = NULL,
-       import_batch_id     = NULL,
-       bank_match_status   = 'manual'
- WHERE bank_transaction_id LIKE 'imp:%';
-
--- 2) Obriši lažne markere uvoza
-DELETE FROM public.imported_statements
- WHERE file_name = '[legacy backfill]';
-
--- 3) Ukloni funkciju da se NIKAD više ne može slučajno pozvati
-DROP FUNCTION IF EXISTS public.backfill_import_fingerprints();
+### 1. Proširi `normalizeMerchant` (strip geo/country šum)
+Dodati listu HR gradova + country oznaka koje se filtriraju prije word-splita:
 ```
+split, zagreb, rijeka, osijek, zadar, pula, sibenik, dubrovnik, varazdin,
+karlovac, vinkovci, sisak, slavonski, brod, bjelovar, kastel, supetar,
+trogir, makarska, samobor, koprivnica, krapina, cakovec, gospic,
+velika, gorica, hrv, hrvatska, hr, eur, eu
+```
+Rezultat: `"LUKOIL POLJUD SPLIT HRV"` → `"lukoil poljud"`; `"LESNINA H PC SPLIT"` → `"lesnina h pc"`.
 
-`bank_match_status='manual'` je siguran default — pravi bank-only/confirmed redovi (oni s pravim `bank_transaction_id` koji NE počinje s `imp:`) se ne diraju.
+### 2. Pooštri `areMerchantsSimilar`
+Trenutno: `common.length / minLen >= 0.5` (jedna zajednička riječ dovoljna).
+Novo:
+```
+if (common.length >= 2) return true;
+return common.length / minLen >= 0.6 && minLen >= 2;
+```
+Single-word merchanti (LIDL vs LIDL) i dalje rade preko `na === nb` / `includes` grane (linija 72–74) — ne mijenjamo je.
 
-### Korak 2 — Verifikacija nakon migracije
+### 3. Pooštri "suspicious" tier pragove (linije 238–257)
+- iznos: `within5pct` → **`within1pct`** (`amtDelta / max(|txAmt|, 0.01) <= 0.01`)
+- datum: `isWithinSameWeek` (≤7d) → **`days <= 2`**
+- merchant uvjet ostaje, ali sada koristi pooštreni `areMerchantsSimilar` + očišćeni `normalizeMerchant`
 
-Read-only provjera da:
-- 0 redova s `bank_transaction_id LIKE 'imp:%'`
-- 0 redova s `file_name = '[legacy backfill]'`
-- Pravi bank uvozi i dalje stoje (npr. `izvod3803303.pdf`, `transactions_report_*.pdf`)
-- Saldo izvora plaćanja se NE mijenja (ovo briše samo metapodatke, ne expense iznose)
+Razlog: pokriva samo realne slučajeve (pretplata s par centi razlike zbog tečaja, vikend booking delay), eliminira slučajne susjede.
 
-### Korak 3 — Sprječavanje regresije
+### 4. Testovi — `src/lib/duplicateDetection.test.ts`
+Dodati regresijske slučajeve:
 
-- Funkcija `backfill_import_fingerprints` ostaje obrisana
-- Pregled `useExpenseCRUD.ts` (linija ~512–567) gdje import flow postavlja `bank_match_status='confirmed'` — to je legitimno samo za stvarne CSV/PDF uvoze i ne treba ga dirati u ovom popravku
-- Postojeća logika u `src/lib/bankMatchStatus.ts` i `bank-sync-transactions` edge funkciji ostaje netaknuta
+**Negativni (moraju biti `unique`):**
+- LUKOIL POLJUD/SPLIT/HRV 47,69 vs LESNINA H PC SPLIT 45,89, isti dan
+- SPLIT - SUPETAR 41,30 vs LIDL HRVATSKA 215 Split 40,85, 4 dana razmaka
+- TOMMY ZAGREB vs KONZUM ZAGREB istog iznosa istog dana (samo "zagreb" zajedničko → strip-ano)
 
-### Što se NE mijenja
-- Iznosi, kategorije, opisi, datumi, payment_source — sve ostaje
-- Stvarni uvozi (s pravim file_name i pravim `bank_transaction_id` iz `bank-sync-transactions`) ostaju netaknuti
-- Saldo izvora plaćanja ostaje isti (jer brišemo samo bank-match metapodatke, ne expense)
+**Pozitivni (moraju ostati `suspicious`):**
+- NETFLIX 9,99 vs NETFLIX 10,09 (1% razlike), 2 dana razmaka, isti merchant
+- HEP ELEKTRA 45,20 vs HEP ELEKTRA 45,60 (0.88%), isti dan
 
-## Tehnički detalji
+**Pozitivni (moraju ostati `strict`/`fuzzy`):**
+- LIDL točan iznos isti dan → strict
+- LIDL točan iznos +2 dana → fuzzy
 
-**Sigurnost rollbacka:** `imp:` prefiks je deterministički znak da je redak došao iz backfill funkcije — pravi bank uvozi koriste ID-eve iz Enable Banking API-ja (numerički ili UUID format), nikad ne počinju s `imp:`. Filter `LIKE 'imp:%'` je 100% selektivan za štetu.
+## Što NE diramo
+- `useExpenseCRUD.ts`, auto-merge flow (`manualMatchForImport.ts`)
+- UI duplikat dijaloga
+- `checkDuplicate` (manual entry) — ostaje strict
+- DB / migracije — nije potrebno
+- i18n keys — postojeći `duplicates.reason.*` ostaju
 
-**Atomicnost:** Sva tri UPDATE/DELETE/DROP se izvršavaju u jednoj migraciji (jedna transakcija) — ili sve uspije ili ništa.
+## Verifikacija
+1. `npm test` — svi postojeći + 7 novih testova prolaze
+2. Korisnik ponovo uvozi isti izvod → "Vjerojatno postoji" sekcija prazna ili sadrži samo realne kandidate
 
-**Reverzibilnost:** Nije potrebna — backfill je bio neispravan po dizajnu (lažirao je izvore podataka), pa "vraćanje" lažnih podataka nema smisla.
+## Update memorije
+Nakon implementacije ažurirati `mem://features/transaction-duplicate-detection-v2` s novim pragovima (suspicious: ±1% iznosa, ±2 dana, ≥2 common merchant words; geo stop-words).

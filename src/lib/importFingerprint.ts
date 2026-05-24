@@ -20,11 +20,19 @@ const PREFIX = 'imp';
 
 /**
  * Mirror of duplicateDetection.normalizeMerchant — strips diacritics, common
- * legal suffixes, store numbers, punctuation, and collapses whitespace.
+ * legal suffixes, store numbers, punctuation, geo/country stop-words, and
+ * collapses whitespace. Keep in sync with duplicateDetection.GEO_STOPWORDS.
  */
+const GEO_STOPWORDS = new Set([
+  'split','zagreb','rijeka','osijek','zadar','pula','sibenik','dubrovnik',
+  'varazdin','karlovac','vinkovci','sisak','slavonski','brod','bjelovar',
+  'kastel','supetar','trogir','makarska','samobor','koprivnica','krapina',
+  'cakovec','gospic','velika','gorica','hrv','hrvatska','hr','eur','eu',
+]);
+
 function normalizeMerchant(name: string | null | undefined): string {
   if (!name) return '';
-  return name
+  const cleaned = name
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -33,6 +41,8 @@ function normalizeMerchant(name: string | null | undefined): string {
     .replace(/[.,&\-_'"()/]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  if (!cleaned) return '';
+  return cleaned.split(/\s+/).filter(w => !GEO_STOPWORDS.has(w)).join(' ').trim();
 }
 
 /**
