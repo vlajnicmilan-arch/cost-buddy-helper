@@ -1134,9 +1134,13 @@ export const PaymentSourceTransactionsDialog = ({
                           const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
                           const showBatchStart = expense.import_batch_id && 
                             (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
-                          const batchExpenseCount = showBatchStart 
-                            ? filteredSourceExpenses.filter(e => e.import_batch_id === expense.import_batch_id).length 
-                            : 0;
+                          let blockCount = 0;
+                          if (showBatchStart) {
+                            for (let i = index; i < filteredSourceExpenses.length; i++) {
+                              if (filteredSourceExpenses[i].import_batch_id === expense.import_batch_id) blockCount++;
+                              else break;
+                            }
+                          }
                           
                           return (
                             <div key={expense.id}>
