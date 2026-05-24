@@ -87,20 +87,44 @@ export const GlobalPDFImportHost = () => {
     pdfImport._setIdle();
   }, [clearStoredJob, pdfImport._setIdle]);
 
+  const statementTotals = useMemo(() => {
+    if (!pdfImport.result) return [] as Array<{ amount: number; description: string; date: Date }>;
+    return pdfImport.result.transactions
+      .filter(tx => tx.is_statement_total === true)
+      .map(tx => ({
+        amount: tx.amount,
+        description: tx.description,
+        date: tx.due_date_override ? new Date(tx.due_date_override) : tx.date,
+      }));
+  }, [pdfImport.result]);
+
   const toParsedTransactions = useCallback((): ParsedTransaction[] => {
     if (!pdfImport.result || !pdfImport.source) return [];
     const paymentSourceValue = `custom:${pdfImport.source.id}`;
-    return pdfImport.result.transactions.map(tx => ({
-      date: tx.date,
-      description: tx.description,
-      amount: tx.amount,
-      type: tx.type,
-      category: tx.category,
-      merchant_name: tx.merchant_name || undefined,
-      source: 'pdf' as const,
-      payment_source: paymentSourceValue as any,
-    }));
+    return pdfImport.result.transactions
+      // Statement total ("Specifikacija troškova ... 788,10 EUR") NIKAD ne ide
+      // kao expense — to bi duplo brojalo pojedinačne rate. Korisniku ga
+      // prikazujemo zasebno (info: knjiži ručno kao transfer žiro→Diners).
+      .filter(tx => tx.is_statement_total !== true)
+      .map(tx => ({
+        // Za rate koristi due_date_override (mjesec naplate) kako bi mjesečni
+        // izvještaj sjeo na pravi mjesec. Original date čuvamo u opisu nije
+        // potrebno — fingerprint koristi datum + amount + payment_source.
+        date: tx.is_installment && tx.due_date_override ? new Date(tx.due_date_override) : tx.date,
+        description: tx.description,
+        amount: tx.amount,
+        type: tx.type,
+        category: tx.category,
+        merchant_name: tx.merchant_name || undefined,
+        source: 'pdf' as const,
+        payment_source: paymentSourceValue as any,
+        is_installment: tx.is_installment === true,
+        installment_current: tx.installment_current ?? null,
+        installment_total: tx.installment_total ?? null,
+        installment_base_description: tx.installment_base_description ?? null,
+      }));
   }, [pdfImport.result, pdfImport.source]);
+
 
   useEffect(() => {
     if (pdfImport.phase !== 'starting' || !pdfImport.source) return;
