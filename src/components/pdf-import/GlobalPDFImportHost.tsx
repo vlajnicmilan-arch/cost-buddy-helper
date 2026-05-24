@@ -506,12 +506,35 @@ export const GlobalPDFImportHost = () => {
                     <div className="text-center"><p className="text-muted-foreground">{t('import.total')}</p><p className="font-bold">{result.summary.transaction_count}</p></div>
                   </div>
                 )}
+                {statementTotals.length > 0 && (
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm space-y-1">
+                    <p className="font-medium text-blue-700 dark:text-blue-300">
+                      💳 {t('import.statementTotal.title', 'Ukupna naplata izvoda')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('import.statementTotal.description', 'Ovo NE knjižimo kao trošak (bi duplo brojalo rate). Kad banka skine ukupni iznos, unesi ručno kao transfer žiro → {{source}}.', { source: source.name })}
+                    </p>
+                    {statementTotals.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 text-xs pt-1">
+                        <span className="truncate">{s.description} • {s.date.toLocaleDateString()}</span>
+                        <span className="font-mono font-bold text-blue-700 dark:text-blue-300 shrink-0">{formatAmount(s.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {result.transactions.map((tx, index) => (
+                  {result.transactions.filter(tx => tx.is_statement_total !== true).map((tx, index) => (
                     <div key={`${tx.date.toISOString()}-${index}`} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{tx.description}</p>
-                        <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()} • {tx.merchant_name || tx.category}{tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}</p>
+                        <p className="font-medium truncate">
+                          {tx.description}
+                          {tx.is_installment && tx.installment_current && tx.installment_total && (
+                            <span className="ml-1 inline-flex items-center rounded-full bg-primary/15 text-primary px-1.5 py-0.5 text-[10px] font-medium">
+                              {t('import.installment.badge', 'Rata {{cur}}/{{total}}', { cur: tx.installment_current, total: tx.installment_total })}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{(tx.due_date_override ? new Date(tx.due_date_override) : tx.date).toLocaleDateString()} • {tx.merchant_name || tx.category}{tx.card_last4 && <span className="ml-1 font-mono">(*{tx.card_last4})</span>}</p>
                       </div>
                       <p className={cn('font-mono font-bold shrink-0', tx.type === 'income' ? 'text-income' : tx.type === 'transfer' ? 'text-muted-foreground' : 'text-expense')}>{tx.type === 'income' ? '+' : tx.type === 'transfer' ? '↔' : '-'}{formatAmount(tx.amount)}</p>
                     </div>
@@ -521,9 +544,10 @@ export const GlobalPDFImportHost = () => {
               </div>
               <div className="p-4 border-t border-border/50">
                 <Button onClick={handleImport} disabled={isImporting} className="w-full rounded-xl min-h-11">
-                  {isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: result.transactions.length })}
+                  {isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: result.transactions.filter(tx => tx.is_statement_total !== true).length })}
                 </Button>
               </div>
+
             </motion.div>
           </motion.div>
         )}
