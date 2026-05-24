@@ -82,6 +82,16 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
+  const { user } = useAuth();
+  const fileHashRef = useRef<string | null>(null);
+  const contentHashRef = useRef<string | null>(null);
+  const fileMetaRef = useRef<{ name: string; size: number; type: string } | null>(null);
+  const [statementDup, setStatementDup] = useState<{
+    existing: ExistingStatement;
+    retry: () => void;
+  } | null>(null);
+
+
   // Simple fallback duplicate detection: same amount and same date (day-level)
   const isSimpleDuplicate = (tx: ParsedTransaction): boolean => {
     return existingExpenses.some(existing => {
