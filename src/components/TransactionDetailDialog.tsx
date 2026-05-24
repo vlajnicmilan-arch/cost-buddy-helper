@@ -760,6 +760,29 @@ export const TransactionDetailDialog = ({
             </div>
           )}
 
+
+          {/* Bank match status */}
+          {expense.bank_match_status && (() => {
+            const map = {
+              confirmed: { icon: CheckCircle2, label: 'bankMatch.confirmed', tip: 'bankMatch.confirmedTooltip', cls: 'bg-primary/15 text-primary border-primary/30' },
+              bank_only: { icon: Landmark, label: 'bankMatch.bankOnly', tip: 'bankMatch.bankOnlyTooltip', cls: 'bg-muted text-muted-foreground border-border' },
+              pending_bank: { icon: Clock, label: 'bankMatch.pendingBank', tip: 'bankMatch.pendingBankTooltip', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' },
+              manual: null,
+            } as const;
+            const cfg = map[expense.bank_match_status as keyof typeof map];
+            if (!cfg) return null;
+            const Icon = cfg.icon;
+            return (
+              <div className="flex flex-col items-center gap-1">
+                <Badge variant="outline" className={`gap-1 ${cfg.cls}`}>
+                  <Icon className="w-3 h-3" />
+                  {t(cfg.label)}
+                </Badge>
+                <p className="text-[11px] text-muted-foreground text-center px-4">{t(cfg.tip)}</p>
+              </div>
+            );
+          })()}
+
           {/* Timestamps */}
           {expense.created_at && (
             <p className="text-xs text-muted-foreground text-center">
