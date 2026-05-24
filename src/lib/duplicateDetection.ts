@@ -258,9 +258,12 @@ function scorePair(
   }
 
   // ── SUSPICIOUS (30–59) ───────────────────────────────────────────────────
+  // Tight thresholds to avoid false-positives: amount within ±1%, date ±2 days,
+  // and merchant must be genuinely similar (not just shared geo word — handled
+  // upstream by GEO_STOPWORDS strip in normalizeMerchant).
   if (
-    within5pct &&
-    isWithinSameWeek(exDate, txDate) &&
+    within1pct &&
+    days <= 2 &&
     (merchantMatch ||
       descMatch ||
       (existing.merchant_name &&
