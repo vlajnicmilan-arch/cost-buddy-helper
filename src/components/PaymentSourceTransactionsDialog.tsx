@@ -1110,6 +1110,7 @@ export const PaymentSourceTransactionsDialog = ({
                   onBulkDelete={handleBulkDelete}
                   onBulkBudgetChange={handleBulkBudgetChange}
                   onBulkProjectChange={handleBulkProjectChange}
+                  selectedExpenses={filteredSourceExpenses.filter(e => selectedIds.has(e.id))}
                 />
 
                 {/* Transaction List */}
