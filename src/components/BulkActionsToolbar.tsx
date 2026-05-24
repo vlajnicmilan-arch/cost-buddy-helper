@@ -336,6 +336,23 @@ export const BulkActionsToolbar = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={mergeConfirmOpen} onOpenChange={setMergeConfirmOpen}>
+        <AlertDialogContent className="z-[70]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('transactions.merge.confirmTitle', 'Spojiti ručnu transakciju s onom iz banke?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('transactions.merge.confirmBody', 'Ručna transakcija će preuzeti podatke iz banke i biti označena kao potvrđena. Bankovni zapis ide u smeće (možeš ga vratiti).')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isMerging}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMerge} disabled={isMerging}>
+              {isMerging ? t('transactions.merge.merging', 'Spajam…') : t('transactions.merge.button', 'Spoji')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
