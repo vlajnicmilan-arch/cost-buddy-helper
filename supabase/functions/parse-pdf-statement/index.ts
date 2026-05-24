@@ -203,6 +203,7 @@ CILJ: Vrati SVAKI redak iz dostavljene tablice transakcija. Ako u ROWS ima 47 re
 2. "Konačno stanje" / "Stanje poslije" / "Closing balance"
 3. "Promet ukupno" / "Ukupni dugovni/potražni promet" / "Total turnover"
 4. "Stanje na dan ..." (dnevni saldo)
+5. Naslovi sekcija bez iznosa ("Specifikacija troškova usluga", "Datum", "ID1", "ID2")
 
 ODREĐIVANJE TIPA (gledaj kolonu, ne opis):
 - Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
@@ -217,8 +218,28 @@ merchant_name: druga strana (platitelj kod uplate, primatelj kod isplate). Null 
 KATEGORIJA: food, transport, shopping, entertainment, bills, health, other.
 DATUM: YYYY-MM-DD.
 
+RATE / OBROČNA OTPLATA (VAŽNO za Diners, Visa Premium, Mastercard kreditne kartice):
+- Ako opis sadrži notaciju "(n/m)", "(n od m)", "rata n/m", "obrok n/m" (npr. "EMMEZETA (6/7)", "Pandora Joker (3/3)") → postavi:
+  - is_installment = true
+  - installment_current = trenutna rata (broj prije /)
+  - installment_total = ukupan broj rata (broj poslije /)
+  - installment_base_description = opis BEZ zagrade s ratom (npr. "EMMEZETA", "Pandora Joker")
+- Inače is_installment = false i ostala installment polja null.
+
+DATUM KNJIŽENJA ZA KARTIČNE IZVODE (Diners, Visa Premium, Mastercard kreditne):
+- Na takvim izvodima "Datum" uz svaku stavku je datum ORIGINALNE kupnje (npr. rata kupljena 05.09.25), ali NAPLATA se događa na datum dospijeća iz zaglavlja ("Platiti do: 20.03.2026").
+- Za SVAKU stavku koja je rata ili kartična transakcija s retroaktivnim datumom, postavi due_date_override = datum dospijeća/naplate iz zaglavlja izvoda (YYYY-MM-DD).
+- Ako izvod nije kartični (žiro, tekući račun), due_date_override = null.
+
+ZBIRNI REDOVI (NE knjižiti kao običan expense):
+- Redak tipa "Specifikacija troškova na prodajnim mjestima - [Card] (xxxx) [iznos] EUR" je SUMARNI total za karticu.
+- Redak tipa "Ukupno troškovi usluga ESB", "Sveukupno novi troškovi", "Ukupno dugovanje/preplata" je SUMARNI total.
+- Za TE retke postavi is_statement_total = true (svejedno popuni date/description/amount).
+- Pojedinačne stavke u tablici (rate, transakcije) imaju is_statement_total = false.
+
 METAPODACI:
-- detected_bank, account_iban, holder_name iz zaglavlja izvoda.`
+- detected_bank, account_iban, holder_name iz zaglavlja izvoda.
+- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.`
           },
           {
             role: 'user',
