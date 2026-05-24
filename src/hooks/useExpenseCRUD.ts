@@ -456,9 +456,13 @@ export const useExpenseCRUD = ({
     }
   }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated, emitAvatarEvent, t]);
 
-  const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
+  const importFromCSV = useCallback(async (
+    transactions: ParsedTransaction[],
+    opts?: { forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }> },
+  ) => {
     try {
       const batchId = crypto.randomUUID();
+      const forcedMerges = opts?.forcedManualMerges ?? [];
 
       if (isLocalMode) {
         for (const tx of transactions) {
@@ -492,7 +496,7 @@ export const useExpenseCRUD = ({
         // unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`
         // so re-importing the same statement cannot create duplicates.
         const { computeImportFingerprint } = await import('@/lib/importFingerprint');
-        const fingerprinted = await Promise.all(transactions.map(async (tx) => {
+        let fingerprinted = await Promise.all(transactions.map(async (tx) => {
           const fingerprint = tx.bank_transaction_id
             || await computeImportFingerprint({
               userId: user.id,
@@ -512,6 +516,48 @@ export const useExpenseCRUD = ({
         // dobivaju bank_transaction_id + bank_match_status='confirmed' + import_batch_id.
         let mergedCount = 0;
         const mergedFingerprints = new Set<string>();
+
+        // === Forced manual merges (user chose "Spoji" in duplicate dialog) ===
+        // Eksplicitne korisničke odluke iz UI-ja imaju prednost prije bilo
+        // kakvog auto-merge-a i prije upserta. Manual red dobiva
+        // bank_transaction_id + bank_match_status='confirmed' + import_batch_id;
+        // pripadajući tx se izbacuje iz daljnje obrade.
+        if (forcedMerges.length > 0) {
+          const forcedTxRefs = new Set(forcedMerges.map(m => m.tx));
+          const forcedResults = await Promise.allSettled(forcedMerges.map(async (m) => {
+            const fp = fingerprinted.find(r => r.tx === m.tx);
+            if (!fp) return false;
+            const { error: updErr, data: updData } = await supabase
+              .from('expenses')
+              .update({
+                bank_transaction_id: fp.fingerprint,
+                bank_match_status: 'confirmed',
+                import_batch_id: batchId,
+                merchant_name: fp.tx.merchant_name || null,
+              })
+              .eq('id', m.manualId)
+              .eq('user_id', user.id)
+              .is('bank_transaction_id', null) // race-guard
+              .select('id');
+            if (updErr) {
+              console.warn('[importFromCSV] forced merge failed:', updErr.message);
+              return false;
+            }
+            if (updData && updData.length > 0) {
+              mergedFingerprints.add(fp.fingerprint);
+              return true;
+            }
+            return false;
+          }));
+          mergedCount += forcedResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
+          // Forced merge txs preskaču i auto-merge query i upsert ispod.
+          // Auto-merge dolje koristi `fingerprinted` direktno — filter ručno:
+          for (let i = fingerprinted.length - 1; i >= 0; i -= 1) {
+            if (forcedTxRefs.has(fingerprinted[i].tx)) {
+              fingerprinted.splice(i, 1);
+            }
+          }
+        }
         try {
           const sources = Array.from(new Set(fingerprinted
             .map(r => r.tx.payment_source || 'other')
