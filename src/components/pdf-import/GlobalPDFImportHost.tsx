@@ -524,7 +524,7 @@ export const GlobalPDFImportHost = () => {
                 )}
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {result.transactions.filter(tx => tx.is_statement_total !== true).map((tx, index) => (
-                    <div key={`${tx.date.toISOString()}-${index}`} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
+                    <div key={`${tx.date.getTime()}-${index}`} className="flex items-center justify-between gap-3 p-3 bg-background/50 rounded-xl text-sm border border-border/40">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {tx.description}
