@@ -187,10 +187,16 @@ function scorePair(
   const exactAmount = amtDelta < 0.01;
   const within5pct = amtDelta / Math.max(Math.abs(txAmt), 0.01) <= 0.05;
 
-  const merchantMatch = areMerchantsSimilar(existing.merchant_name, tx.merchant_name);
+  const merchantMatch = merchantOrDescriptionSimilar(
+    existing.merchant_name,
+    existing.description,
+    tx.merchant_name,
+    tx.description,
+  );
   const descMatch = descriptionsOverlap(existing.description, tx.description);
   const samePaymentSource =
     !!existing.payment_source && !!tx.payment_source && existing.payment_source === tx.payment_source;
+
 
   // ── STRICT (90–100) ──────────────────────────────────────────────────────
   // Exact amount + date ±1 day + (merchant OR very similar description)
