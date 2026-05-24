@@ -18,8 +18,13 @@ export type FindPdfDuplicatesHandler = (transactions: ParsedTransaction[]) => {
   unique: ParsedTransaction[];
 };
 
+export type ForcedManualMerge = { tx: ParsedTransaction; manualId: string };
+
 interface PdfImportHandlers {
-  onImportCSV: (transactions: ParsedTransaction[]) => Promise<void>;
+  onImportCSV: (
+    transactions: ParsedTransaction[],
+    opts?: { forcedManualMerges?: ForcedManualMerge[] },
+  ) => Promise<void>;
   findDuplicates?: FindPdfDuplicatesHandler;
 }
 
