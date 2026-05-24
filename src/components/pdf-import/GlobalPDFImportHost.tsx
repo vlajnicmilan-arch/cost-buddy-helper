@@ -402,7 +402,14 @@ export const GlobalPDFImportHost = () => {
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, index) => selectedFuzzy.has(index));
     const suspiciousToInclude = duplicateInfo.suspiciousDuplicates.filter((_, index) => selectedSuspicious.has(index));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
-    const transactions = [...duplicateInfo.unique, ...fuzzyToInclude, ...suspiciousToInclude, ...strictToInclude];
+    const autoMergeTxs = duplicateInfo.autoMergeMatches.map(m => m.tx);
+    const transactions = [
+      ...duplicateInfo.unique,
+      ...autoMergeTxs,
+      ...fuzzyToInclude,
+      ...suspiciousToInclude,
+      ...strictToInclude,
+    ];
     if (transactions.length === 0) {
       toast.info(t('import.noNewTransactions'));
       resetAll();
