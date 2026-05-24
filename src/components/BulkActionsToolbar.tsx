@@ -174,6 +174,13 @@ export const BulkActionsToolbar = ({
     setDeleteConfirmOpen(false);
   });
 
+  const handleMerge = async () => {
+    if (!mergeCheck || !mergeCheck.ok) return;
+    const ok = await mergePair(mergeCheck.manual.id, mergeCheck.bank.id);
+    setMergeConfirmOpen(false);
+    if (ok) onClearSelection();
+  };
+
   const handleSelect = async (field: Field, id: string | null) => {
     if (field === 'category' && id) await onBulkCategoryChange(id as Category);
     else if (field === 'paymentSource' && id) await onBulkPaymentSourceChange(id);
@@ -248,6 +255,30 @@ export const BulkActionsToolbar = ({
                   <Settings2 className="w-3.5 h-3.5" />
                   {t('bulk.bulkChange')}
                 </Button>
+              )}
+
+              {showMergeButton && (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 text-xs gap-2 bg-background min-w-[44px]"
+                          onClick={() => setMergeConfirmOpen(true)}
+                          disabled={mergeDisabled || isProcessing}
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          {t('transactions.merge.button', 'Spoji')}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {mergeDisabled && mergeReason && (
+                      <TooltipContent side="top">{mergeReason}</TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               )}
 
               <Button
