@@ -657,6 +657,11 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                                 Zamjena
                               </Badge>
                             )}
+                            {isAutoMerge && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                {t('import.autoMerge.fromStatement')}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {format(tx.date, 'd. MMM yyyy', { locale: dateLocale })}
