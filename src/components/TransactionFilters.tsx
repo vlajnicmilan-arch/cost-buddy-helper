@@ -370,6 +370,24 @@ export const TransactionFilters = ({
               ))}
             </SelectContent>
           </Select>
+
+          {/* Bank Match Status Filter */}
+          <Select
+            value={filters.bankMatchStatus || 'all'}
+            onValueChange={(value) => updateFilter('bankMatchStatus', value === 'all' ? undefined : value)}
+          >
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <Landmark className="w-3.5 h-3.5 mr-1.5" />
+              <SelectValue placeholder={t('filters.allBankMatchStatuses', 'Svi statusi')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.allBankMatchStatuses', 'Svi statusi')}</SelectItem>
+              <SelectItem value="manual">{t('bankMatch.manual', 'Ručni unos')}</SelectItem>
+              <SelectItem value="pending_bank">{t('bankMatch.pendingBank', 'Čeka potvrdu banke')}</SelectItem>
+              <SelectItem value="confirmed">{t('bankMatch.confirmed', 'Potvrđeno bankom')}</SelectItem>
+              <SelectItem value="bank_only">{t('bankMatch.bankOnly', 'Iz izvoda')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>
