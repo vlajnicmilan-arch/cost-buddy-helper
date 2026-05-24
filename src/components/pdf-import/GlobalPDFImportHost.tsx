@@ -30,6 +30,8 @@ type DuplicateInfo = {
   duplicates: ParsedTransaction[];
   fuzzyDuplicates: ParsedTransaction[];
   fuzzyMatchedExpenses: import('@/types/expense').Expense[];
+  suspiciousDuplicates: ParsedTransaction[];
+  suspiciousMatchedExpenses: import('@/types/expense').Expense[];
   unique: ParsedTransaction[];
 };
 
@@ -54,6 +56,7 @@ export const GlobalPDFImportHost = () => {
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
+  const [selectedSuspicious, setSelectedSuspicious] = useState<Set<number>>(new Set());
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
   const contentHashRef = useRef<string | null>(null);
@@ -73,6 +76,7 @@ export const GlobalPDFImportHost = () => {
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
     setSelectedFuzzy(new Set());
+    setSelectedSuspicious(new Set());
     setStatementDup(null);
     fileHashRef.current = null;
     contentHashRef.current = null;
