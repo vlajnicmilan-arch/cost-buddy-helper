@@ -1108,7 +1108,32 @@
     "toAccountLabel": "📥 Auf Konto (Ziel)",
     "selectDestinationAccount": "Zielkonto auswählen",
     "noDestination": "Kein Ziel",
-    "amountHint": "Für Dezimalstellen Punkt oder Komma verwenden (z. B. 150,50)"
+    "amountHint": "Für Dezimalstellen Punkt oder Komma verwenden (z. B. 150,50)",
+    "merge": {
+      "button": "Zusammenführen",
+      "merging": "Wird zusammengeführt…",
+      "confirmTitle": "Manuelle Transaktion mit Bank-Transaktion zusammenführen?",
+      "confirmBody": "Die manuelle Transaktion übernimmt die Bankdaten und wird als bestätigt markiert. Der Bankeintrag wandert in den Papierkorb (wiederherstellbar).",
+      "success": "Zusammengeführt",
+      "errorGeneric": "Zusammenführen fehlgeschlagen",
+      "errors": {
+        "notTwoSelected": "Wähle genau 2 Transaktionen",
+        "bothManual": "Beide sind manuell — wähle eine manuelle und eine aus der Bank",
+        "bothBank": "Beide sind aus der Bank — wähle eine manuelle und eine aus der Bank",
+        "differentType": "Unterschiedlicher Transaktionstyp",
+        "differentSource": "Unterschiedliche Zahlungsquelle",
+        "differentCurrency": "Unterschiedliche Währung",
+        "differentAmount": "Beträge unterscheiden sich um mehr als 0,1%",
+        "dateTooFar": "Daten zu weit auseinander (>3 Tage)",
+        "transferNature": "Überweisungen können nicht zusammengeführt werden",
+        "correctionNature": "Korrekturen können nicht zusammengeführt werden",
+        "alreadyConfirmed": "Manuell ist bereits bestätigt",
+        "advanceProtected": "Vorauszahlungen können nicht zusammengeführt werden",
+        "deleted": "Transaktion ist gelöscht",
+        "differentUser": "Verschiedene Benutzer",
+        "notAuthorized": "Nicht erlaubt"
+      }
+    }
   },
   "dashboard": {
     "balance": "Kontostand",

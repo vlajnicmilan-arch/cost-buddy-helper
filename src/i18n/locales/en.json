@@ -1108,7 +1108,32 @@
     "toAccountLabel": "📥 To account (destination)",
     "selectDestinationAccount": "Select destination account",
     "noDestination": "No destination",
-    "amountHint": "For decimals use a dot or a comma (e.g. 150.50)"
+    "amountHint": "For decimals use a dot or a comma (e.g. 150.50)",
+    "merge": {
+      "button": "Merge",
+      "merging": "Merging…",
+      "confirmTitle": "Merge manual transaction with bank one?",
+      "confirmBody": "The manual transaction will take the bank data and be marked as confirmed. The bank record goes to trash (you can restore it).",
+      "success": "Merged",
+      "errorGeneric": "Merge failed",
+      "errors": {
+        "notTwoSelected": "Select exactly 2 transactions",
+        "bothManual": "Both are manual — pick one manual and one bank",
+        "bothBank": "Both are from bank — pick one manual and one bank",
+        "differentType": "Different transaction type",
+        "differentSource": "Different payment source",
+        "differentCurrency": "Different currency",
+        "differentAmount": "Amounts differ by more than 0.1%",
+        "dateTooFar": "Dates are too far apart (>3 days)",
+        "transferNature": "Transfers cannot be merged",
+        "correctionNature": "Corrections cannot be merged",
+        "alreadyConfirmed": "Manual is already confirmed",
+        "advanceProtected": "Advances cannot be merged",
+        "deleted": "Transaction is deleted",
+        "differentUser": "Different users",
+        "notAuthorized": "Not allowed"
+      }
+    }
   },
   "dashboard": {
     "balance": "Balance",
