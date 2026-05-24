@@ -1,95 +1,66 @@
-## Problem (verificiran u kodu)
 
-Trenutno `parse-pdf-statement` edge function NE prepoznaje notaciju `(n/m)` u Diners (i sličnim) izvodima. Za izvod od 788,10 €:
+## Uzrok problema (potvrđen u bazi)
 
-- AI vraća 4 rate (EMMEZETA 96,34 + EUROHERC 57,85 + Pandora 43,34 + Lesnina 45,89 + ostatak ako postoji) kao zasebne expense transakcije.
-- Datum se postavlja na **datum originalne kupnje** (npr. 05.09.25), ne na mjesec naplate → mjesečni report pokazuje "potrošnju u rujnu" iako se naplaćuje u ožujku.
-- Notacija `(6/7)` se gubi.
-- Saldo se umanjuje za zbroj rata; ako korisnik dodatno unese cijelu naplatu 788,10 € sa žiro računa → **double counting**.
-- Nema veze s ručno kreiranim `installment_plans`.
+Migracija **`20260522182756_4d7f45a2-c0f8-459a-bc20-debb6c8be011.sql`** je na kraju izvršila `SELECT public.backfill_import_fingerprints();` — funkcija koja je:
 
-## Rješenje (3 faze)
+1. **Postavila lažni `bank_transaction_id` = `'imp:<sha256>'`** na SVAKI ručno unesen expense koji ga nije imao (1415 od 1417 redova u bazi)
+2. **Generirala lažni `import_batch_id` (gen_random_uuid)** po grupi (user × payment_source × mjesec) — 1415 redova
+3. **Insertala lažne `imported_statements` zapise** s `file_name = '[legacy backfill]'` — **136 nepostojećih izvoda**
 
-### Faza A — Parser prepoznaje rate
+Posljedica: UI smatra sve te transakcije "spojenima s bankom" (1386 ih ima `bank_match_status='confirmed'` iz ranijih import flowova ili pripadnog koda), prikazuje markere uvoza koji nikad nisu uvezeni, a `unmerge_import_row` se ne može pozvati jer su to ručni unosi koje korisnik nikad nije uvozio.
 
-Proširi `supabase/functions/parse-pdf-statement/index.ts`:
+## Trenutno stanje (verificirano upitima):
+- `expenses.bank_transaction_id LIKE 'imp:%'` → **1415**
+- `expenses.import_batch_id IS NOT NULL` (svi pripadaju ovome) → **1415**
+- `imported_statements.file_name = '[legacy backfill]'` → **136**
 
-1. U tool schema (lines 274–315) dodaj polja:
-   - `is_installment: boolean`
-   - `installment_current: number | null` (npr. 6)
-   - `installment_total: number | null` (npr. 7)
-   - `installment_base_description: string | null` ("EMMEZETA" bez "(6/7)")
-   - `due_date_override: string | null` — datum dospijeća iz zaglavlja izvoda (ovaj mjesec), za rate gdje je `date` retroaktivan
-   - `is_statement_total: boolean` — true za zbirne retke "Specifikacija troškova na prodajnim mjestima - Diners Club (8881) 788,10 EUR"
+## Plan popravka
 
-2. U sistemskoj uputi (lines 200–221) dodaj sekciju:
-   - "Ako description sadrži `(n/m)` ili `n od m`, postavi `is_installment=true`, ekstrahiraj brojeve, `installment_base_description` = opis bez zagrada."
-   - "Za kartične izvode (Diners, Visa, Mastercard), datum knjiženja = datum dospijeća/naplate iz zaglavlja, ne datum originalne kupnje. Postavi `due_date_override` na datum naplate ovog mjeseca."
-   - "Zbirni retci tipa 'Specifikacija troškova na prodajnim mjestima - [Card] (xxxx) [iznos] EUR' su sumarni totali — `is_statement_total=true`. NE ulaze kao expense."
+### Korak 1 — Rollback migracija (kritično, prvo)
 
-### Faza B — Matching + booking logika
+Jedna migracija koja u transakciji čisti sve tragove backfill-a:
 
-Novi helper `src/lib/installmentMatching.ts`:
+```sql
+-- 1) Vrati ručne unose u izvorno stanje
+UPDATE public.expenses
+   SET bank_transaction_id = NULL,
+       import_batch_id     = NULL,
+       bank_match_status   = 'manual'
+ WHERE bank_transaction_id LIKE 'imp:%';
 
-```
-matchInstallmentToPlan(parsedRow, existingPlans): {
-  matched: boolean,
-  plan_id?: uuid,
-  installment_number?: number  // iz parsedRow.installment_current
-}
+-- 2) Obriši lažne markere uvoza
+DELETE FROM public.imported_statements
+ WHERE file_name = '[legacy backfill]';
+
+-- 3) Ukloni funkciju da se NIKAD više ne može slučajno pozvati
+DROP FUNCTION IF EXISTS public.backfill_import_fingerprints();
 ```
 
-Pravila:
-- `parsedRow.installment_total === plan.installment_count`
-- Normalizirani description (Levenshtein / unaccent / lowercase) — fuzzy match s `plan.description` (prag npr. 70%).
-- Iznos rate unutar ±0.1% od `plan.total_amount / plan.installment_count`.
+`bank_match_status='manual'` je siguran default — pravi bank-only/confirmed redovi (oni s pravim `bank_transaction_id` koji NE počinje s `imp:`) se ne diraju.
 
-U `useExpenses.findDuplicates` (ili novi bucket `installmentLinks` u istom interfaceu kao `autoMergeMatches`):
-- Za svaki PDF redak s `is_installment=true`:
-  - Pokušaj match. Ako da → ulazi kao expense + naknadno `UPDATE installments SET expense_id=..., is_paid=true WHERE plan_id=... AND installment_number=...`.
-  - Ako ne → ulazi kao običan expense + opis sadrži `(6/7)` + badge "Rata" u UI.
-- Datum = `due_date_override` ako postoji, inače `date`.
+### Korak 2 — Verifikacija nakon migracije
 
-Za `is_statement_total=true` retke:
-- Ako postoji payment source koji matcha karticu iz totala (npr. Diners Club s last4 `8881`) → kreira se `transfer` s `income_source_id` = žiro, `payment_source` = `custom:DinersUUID`, type `transfer`. Saldo se umanjuje na žiro, povećava na Diners.
-- Ako nema matching source → preskoči (parser ne knjiži), pokaži info u import dijalogu.
+Read-only provjera da:
+- 0 redova s `bank_transaction_id LIKE 'imp:%'`
+- 0 redova s `file_name = '[legacy backfill]'`
+- Pravi bank uvozi i dalje stoje (npr. `izvod3803303.pdf`, `transactions_report_*.pdf`)
+- Saldo izvora plaćanja se NE mijenja (ovo briše samo metapodatke, ne expense iznose)
 
-### Faza C — UI u Import dialog
+### Korak 3 — Sprječavanje regresije
 
-U `GlobalPDFImportHost.tsx` i `CSVImportDialog.tsx`:
-- Novi collapsible bucket "🔗 Rate povezane s planovima ({count})" — analogno postojećoj sekciji "Automatski spojeno s tvojim unosima".
-- Svaki red: `EMMEZETA 6/7 — povezano s planom 'Kupnja Emmezeta' (7×96,34 €)`.
-- Nepovezane rate: badge "Rata 6/7" žuto, info "Nije pronađen plan rata".
-- Zbirni totali (`is_statement_total=true`): zasebna sekcija "💳 Naplata cijelog izvoda — knjižit će se kao transfer sa žiro računa".
+- Funkcija `backfill_import_fingerprints` ostaje obrisana
+- Pregled `useExpenseCRUD.ts` (linija ~512–567) gdje import flow postavlja `bank_match_status='confirmed'` — to je legitimno samo za stvarne CSV/PDF uvoze i ne treba ga dirati u ovom popravku
+- Postojeća logika u `src/lib/bankMatchStatus.ts` i `bank-sync-transactions` edge funkciji ostaje netaknuta
 
-i18n ključevi (HR/EN/DE):
-- `import.installment.linkedTitle`, `import.installment.unlinkedBadge`
-- `import.installment.linkedTo`, `import.installment.noPlanFound`
-- `import.statementTotal.title`, `import.statementTotal.description`
+### Što se NE mijenja
+- Iznosi, kategorije, opisi, datumi, payment_source — sve ostaje
+- Stvarni uvozi (s pravim file_name i pravim `bank_transaction_id` iz `bank-sync-transactions`) ostaju netaknuti
+- Saldo izvora plaćanja ostaje isti (jer brišemo samo bank-match metapodatke, ne expense)
 
 ## Tehnički detalji
 
-**Baza** — bez novih kolona. Postojeće tablice dovoljne:
-- `installments.expense_id` (FK) — već postoji, koristi se za linkanje.
-- `installments` ima `installment_number` — popunjavamo iz `installment_current`.
+**Sigurnost rollbacka:** `imp:` prefiks je deterministički znak da je redak došao iz backfill funkcije — pravi bank uvozi koriste ID-eve iz Enable Banking API-ja (numerički ili UUID format), nikad ne počinju s `imp:`. Filter `LIKE 'imp:%'` je 100% selektivan za štetu.
 
-**Test pokrivenost** (vitest, regresijski helperi):
-- `src/lib/installmentMatching.test.ts` — fuzzy match, count match, amount tolerance.
-- `src/lib/parsePdfHelpers.test.ts` (ako ne postoji) — parsing `(6/7)` notacije iz description-a.
+**Atomicnost:** Sva tri UPDATE/DELETE/DROP se izvršavaju u jednoj migraciji (jedna transakcija) — ili sve uspije ili ništa.
 
-**Bez promjena**:
-- `useInstallments.createPlan` — ostaje isti.
-- Datum migracija — nema (svi infrastructura postoji).
-- Native — bez izmjena (sve edge function + frontend).
-
-## Što izričito NE radimo
-
-- Ne dodajemo automatsko kreiranje `installment_plan`-a iz PDF-a (samo linkanje na postojeće). Korisnik plan kreira ručno ili sa scanned receipta — kao i do sada.
-- Ne diramo `parse-receipt` (POS skener već radi).
-- Ne diramo `useBalanceUpdater` — saldo se ažurira normalno preko expense insert/update.
-
-## Pitanje koje OSTAJE otvoreno
-
-Za "ostatak" izvoda (Diners ima 4 vidljive rate na slici, ali total 788,10 € sugerira da ih ima više dolje) — parser će ih svejedno sve ekstrahirati ako ih AI vidi. Ako AI promaši neku, korisnik ručno doda. To je acceptable.
-
-Treba li krenuti s implementacijom?
+**Reverzibilnost:** Nije potrebna — backfill je bio neispravan po dizajnu (lažirao je izvore podataka), pa "vraćanje" lažnih podataka nema smisla.
