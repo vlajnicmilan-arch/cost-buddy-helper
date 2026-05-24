@@ -961,7 +961,13 @@
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
+    "pendingBankTooltip": "Manuelle Erfassung auf einem Bankkonto — noch nicht mit einer Bankzeile verknüpft.",
     "confirmed": "Von Bank bestätigt",
+    "confirmedTooltip": "Manuell erfasst und mit einer Zeile aus dem Bankauszug abgeglichen.",
+    "bankOnly": "Aus Auszug",
+    "bankOnlyTooltip": "Stammt ausschließlich aus dem Bankauszug, ohne manuelles Gegenstück.",
+    "manual": "Manuelle Erfassung",
+    "manualTooltip": "Manuell erfasst, ohne Verknüpfung zu einem Bankauszug.",
     "maybeDuplicate": "Möglicher Duplikat",
     "duplicateTitle": "Möglichen Duplikat prüfen",
     "duplicateDescription": "Eine Banktransaktion sieht wie eine bestehende aus. Zusammenführen oder als unterschiedlich bestätigen.",
