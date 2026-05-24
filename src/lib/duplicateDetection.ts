@@ -207,7 +207,7 @@ function scorePair(
   const txAmt = Number(tx.amount);
   const amtDelta = Math.abs(exAmt - txAmt);
   const exactAmount = amtDelta < 0.01;
-  const within5pct = amtDelta / Math.max(Math.abs(txAmt), 0.01) <= 0.05;
+  const within1pct = amtDelta / Math.max(Math.abs(txAmt), 0.01) <= 0.01;
 
   const merchantMatch = merchantOrDescriptionSimilar(
     existing.merchant_name,
