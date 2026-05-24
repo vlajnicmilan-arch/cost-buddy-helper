@@ -347,8 +347,17 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
       const duplicateResult = pdfImport._runFindDuplicates(transactions);
-      if (duplicateResult && (duplicateResult.duplicates.length > 0 || duplicateResult.fuzzyDuplicates.length > 0)) {
-        if (duplicateResult.unique.length === 0 && duplicateResult.fuzzyDuplicates.length === 0) {
+      if (
+        duplicateResult &&
+        (duplicateResult.duplicates.length > 0 ||
+          duplicateResult.fuzzyDuplicates.length > 0 ||
+          duplicateResult.suspiciousDuplicates.length > 0)
+      ) {
+        if (
+          duplicateResult.unique.length === 0 &&
+          duplicateResult.fuzzyDuplicates.length === 0 &&
+          duplicateResult.suspiciousDuplicates.length === 0
+        ) {
           toast.info(t('import.noNewTransactions'));
           resetAll();
           return;
@@ -356,6 +365,7 @@ export const GlobalPDFImportHost = () => {
         setDuplicateInfo(duplicateResult);
         setIncludeDuplicates(false);
         setSelectedFuzzy(new Set());
+        setSelectedSuspicious(new Set());
         pdfImport._setDuplicates();
         return;
       }
@@ -373,8 +383,9 @@ export const GlobalPDFImportHost = () => {
   const handleImportDuplicates = async () => {
     if (!duplicateInfo) return;
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, index) => selectedFuzzy.has(index));
+    const suspiciousToInclude = duplicateInfo.suspiciousDuplicates.filter((_, index) => selectedSuspicious.has(index));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
-    const transactions = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
+    const transactions = [...duplicateInfo.unique, ...fuzzyToInclude, ...suspiciousToInclude, ...strictToInclude];
     if (transactions.length === 0) {
       toast.info(t('import.noNewTransactions'));
       resetAll();
