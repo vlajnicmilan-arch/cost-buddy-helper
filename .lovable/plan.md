@@ -1,72 +1,95 @@
-## Cilj
+## Problem (verificiran u kodu)
 
-Korisnik više ne smije biti uplašen žutim "Vjerojatno postoji" upozorenjem za redove koje će sustav ionako tiho i sigurno spojiti. Dijalog mora jasno reći: "ovo je već riješeno, ne brini" vs "ovdje stvarno trebam tvoju odluku".
+Trenutno `parse-pdf-statement` edge function NE prepoznaje notaciju `(n/m)` u Diners (i sličnim) izvodima. Za izvod od 788,10 €:
 
-## Što se trenutno događa (potvrđeno iz koda)
+- AI vraća 4 rate (EMMEZETA 96,34 + EUROHERC 57,85 + Pandora 43,34 + Lesnina 45,89 + ostatak ako postoji) kao zasebne expense transakcije.
+- Datum se postavlja na **datum originalne kupnje** (npr. 05.09.25), ne na mjesec naplate → mjesečni report pokazuje "potrošnju u rujnu" iako se naplaćuje u ožujku.
+- Notacija `(6/7)` se gubi.
+- Saldo se umanjuje za zbroj rata; ako korisnik dodatno unese cijelu naplatu 788,10 € sa žiro računa → **double counting**.
+- Nema veze s ručno kreiranim `installment_plans`.
 
-- `findDuplicates` (`src/lib/duplicateDetection.ts`) → puni žute "Vjerojatno postoji" sekcije.
-- `matchManualToImported` (`src/lib/manualMatchForImport.ts`) → pokreće se TEK nakon klika "Uvezi" i tiho spaja izvod-red u postojeći ručni unos po vrlo strogim kriterijima: isti payment_source + isti type + isti iznos + ±1 dan + točno 1 kandidat.
+## Rješenje (3 faze)
 
-Ta dva sustava ne razgovaraju. Zato korisnik vidi `BIO&BIO Split` kao "vjerojatni duplikat" iako će se on automatski spojiti u njegov `Kupovina namirnica` unos.
+### Faza A — Parser prepoznaje rate
 
-## Prijedlog UX-a (najjednostavniji za korisnika)
+Proširi `supabase/functions/parse-pdf-statement/index.ts`:
 
-Dijalog "Pronađeni duplikati" dobiva **3 sekcije** umjesto današnje 2:
+1. U tool schema (lines 274–315) dodaj polja:
+   - `is_installment: boolean`
+   - `installment_current: number | null` (npr. 6)
+   - `installment_total: number | null` (npr. 7)
+   - `installment_base_description: string | null` ("EMMEZETA" bez "(6/7)")
+   - `due_date_override: string | null` — datum dospijeća iz zaglavlja izvoda (ovaj mjesec), za rate gdje je `date` retroaktivan
+   - `is_statement_total: boolean` — true za zbirne retke "Specifikacija troškova na prodajnim mjestima - Diners Club (8881) 788,10 EUR"
 
-```text
-┌─────────────────────────────────────────────┐
-│ 28 transakcija već postoji u bazi           │
-│ 8 novih transakcija je spremno za uvoz      │
-├─────────────────────────────────────────────┤
-│ ✅ Automatski spojeno s tvojim unosima (N)  │  ← NOVO, zeleno, collapsed
-│    "Ove ćemo tiho pripojiti tvojim ručnim   │
-│    unosima — iznos, datum i račun se        │
-│    poklapaju."                              │
-│    [Prikaži popis ▾]                        │
-├─────────────────────────────────────────────┤
-│ 🚫 Sigurni duplikati (isti datum i iznos)   │  ← postojeće, ali samo PRAVI duplikati
-│    (samo ako već postoji bank_only red s    │
-│    istim fingerprintom — neće biti merge-an)│
-├─────────────────────────────────────────────┤
-│ ❓ Trebamo tvoju odluku (M)                  │  ← postojeće "Vjerojatno postoji"
-│    Ovdje ima više kandidata ili se račun    │
-│    ne poklapa — ti odluči.                  │
-└─────────────────────────────────────────────┘
+2. U sistemskoj uputi (lines 200–221) dodaj sekciju:
+   - "Ako description sadrži `(n/m)` ili `n od m`, postavi `is_installment=true`, ekstrahiraj brojeve, `installment_base_description` = opis bez zagrada."
+   - "Za kartične izvode (Diners, Visa, Mastercard), datum knjiženja = datum dospijeća/naplate iz zaglavlja, ne datum originalne kupnje. Postavi `due_date_override` na datum naplate ovog mjeseca."
+   - "Zbirni retci tipa 'Specifikacija troškova na prodajnim mjestima - [Card] (xxxx) [iznos] EUR' su sumarni totali — `is_statement_total=true`. NE ulaze kao expense."
+
+### Faza B — Matching + booking logika
+
+Novi helper `src/lib/installmentMatching.ts`:
+
+```
+matchInstallmentToPlan(parsedRow, existingPlans): {
+  matched: boolean,
+  plan_id?: uuid,
+  installment_number?: number  // iz parsedRow.installment_current
+}
 ```
 
-Ključno:
-- Auto-merge sekcija je **bez checkboxa** — to nije izbor, to je informacija.
-- Žuta sekcija sadrži SAMO redove koje `matchManualToImported` označi kao `ambiguous` (2+ kandidata) ili koje `findDuplicates` označi kao fuzzy ali nemaju 1:1 manual match (npr. drugi račun).
-- Crvena "Sigurni duplikati" sekcija ostaje samo za redove koji se već nalaze u bazi kao `bank_only` (tj. bivši izvod već uvezen).
+Pravila:
+- `parsedRow.installment_total === plan.installment_count`
+- Normalizirani description (Levenshtein / unaccent / lowercase) — fuzzy match s `plan.description` (prag npr. 70%).
+- Iznos rate unutar ±0.1% od `plan.total_amount / plan.installment_count`.
 
-## Tehnička izvedba
+U `useExpenses.findDuplicates` (ili novi bucket `installmentLinks` u istom interfaceu kao `autoMergeMatches`):
+- Za svaki PDF redak s `is_installment=true`:
+  - Pokušaj match. Ako da → ulazi kao expense + naknadno `UPDATE installments SET expense_id=..., is_paid=true WHERE plan_id=... AND installment_number=...`.
+  - Ako ne → ulazi kao običan expense + opis sadrži `(6/7)` + badge "Rata" u UI.
+- Datum = `due_date_override` ako postoji, inače `date`.
 
-1. **`CSVImportDialog.tsx`** — prije renderiranja:
-   - Pozovi `matchManualToImported({ imported, manualCandidates: existingExpenses.filter(manual/pending_bank), maxDayDiff: 1 })`.
-   - Dobiveni `matches` → grupa `autoMerge`.
-   - Iz postojećih `duplicates` / `fuzzyDuplicates` izbaci sve indekse koji su u `autoMerge.matches.importedIndex` (oni će biti riješeni tihim merge-om, nema potrebe za alarmom).
-   - `ambiguous` indekse stavi u žutu sekciju (pravo mjesto za odluku korisnika).
-2. **UI sekcija "Automatski spojeno"**:
-   - Collapsed by default, zeleni `Link2` ikona, ekspandira se na klik.
-   - Svaki red prikazuje par: lijevo postojeći ručni unos (opis + datum), desno novi izvod-red (merchant + iznos), s `→` između.
-3. **Brojač "8 novih transakcija je spremno za uvoz"** ostaje točan jer auto-merge ne kreira novi red — već update-a postojeći. Treba ga preimenovati u nešto poput: `"8 novih + N spojenih = 8+N obrađenih redova"`.
-4. **Nema promjene** u `useExpenseCRUD.importFromCSV` — auto-merge već radi točno to što treba; samo dodajemo UI vidljivost prije klika.
-5. **i18n** ključevi pod `import.duplicates.autoMerge.*` (HR/EN/DE).
+Za `is_statement_total=true` retke:
+- Ako postoji payment source koji matcha karticu iz totala (npr. Diners Club s last4 `8881`) → kreira se `transfer` s `income_source_id` = žiro, `payment_source` = `custom:DinersUUID`, type `transfer`. Saldo se umanjuje na žiro, povećava na Diners.
+- Ako nema matching source → preskoči (parser ne knjiži), pokaži info u import dijalogu.
 
-## Što NE radimo
+### Faza C — UI u Import dialog
 
-- Ne diramo `duplicateDetection.ts` scoring (radi ispravno).
-- Ne diramo `manualMatchForImport.ts` kriterije (već su konzervativni i sigurni).
-- Ne kreiramo nove DB kolone, RPC-ove ni migracije.
-- Ne diramo postojeću `Link2 "Spojeno"` značku u `ImportBatchDialog` (post-import view).
+U `GlobalPDFImportHost.tsx` i `CSVImportDialog.tsx`:
+- Novi collapsible bucket "🔗 Rate povezane s planovima ({count})" — analogno postojećoj sekciji "Automatski spojeno s tvojim unosima".
+- Svaki red: `EMMEZETA 6/7 — povezano s planom 'Kupnja Emmezeta' (7×96,34 €)`.
+- Nepovezane rate: badge "Rata 6/7" žuto, info "Nije pronađen plan rata".
+- Zbirni totali (`is_statement_total=true`): zasebna sekcija "💳 Naplata cijelog izvoda — knjižit će se kao transfer sa žiro računa".
 
-## Datoteke koje mijenjam
+i18n ključevi (HR/EN/DE):
+- `import.installment.linkedTitle`, `import.installment.unlinkedBadge`
+- `import.installment.linkedTo`, `import.installment.noPlanFound`
+- `import.statementTotal.title`, `import.statementTotal.description`
 
-- `src/components/CSVImportDialog.tsx` — nova sekcija + pre-compute auto-merge grupe.
-- `src/contexts/PdfImportContext.tsx` — isti dijalog se koristi i za PDF, treba proslijediti `existingExpenses` ako već nije.
-- `src/i18n/locales/{hr,en,de}.json` — novi ključevi.
+## Tehnički detalji
 
-## Rizici
+**Baza** — bez novih kolona. Postojeće tablice dovoljne:
+- `installments.expense_id` (FK) — već postoji, koristi se za linkanje.
+- `installments` ima `installment_number` — popunjavamo iz `installment_current`.
 
-- Ako se `payment_source` razlikuje (npr. korisnik je ručni unos stavio pod `cash` a izvod ide na bankovni račun), auto-merge se NEĆE dogoditi i red će ostati u žutoj sekciji s napomenom "drugi račun" — to je ispravno, jer takav merge može maskirati grešku unosa.
-- Performance: `matchManualToImported` je pure i O(imported × candidates); za tipičan mjesečni izvod (≤100 redova) zanemarivo.
+**Test pokrivenost** (vitest, regresijski helperi):
+- `src/lib/installmentMatching.test.ts` — fuzzy match, count match, amount tolerance.
+- `src/lib/parsePdfHelpers.test.ts` (ako ne postoji) — parsing `(6/7)` notacije iz description-a.
+
+**Bez promjena**:
+- `useInstallments.createPlan` — ostaje isti.
+- Datum migracija — nema (svi infrastructura postoji).
+- Native — bez izmjena (sve edge function + frontend).
+
+## Što izričito NE radimo
+
+- Ne dodajemo automatsko kreiranje `installment_plan`-a iz PDF-a (samo linkanje na postojeće). Korisnik plan kreira ručno ili sa scanned receipta — kao i do sada.
+- Ne diramo `parse-receipt` (POS skener već radi).
+- Ne diramo `useBalanceUpdater` — saldo se ažurira normalno preko expense insert/update.
+
+## Pitanje koje OSTAJE otvoreno
+
+Za "ostatak" izvoda (Diners ima 4 vidljive rate na slici, ali total 788,10 € sugerira da ih ima više dolje) — parser će ih svejedno sve ekstrahirati ako ih AI vidi. Ako AI promaši neku, korisnik ručno doda. To je acceptable.
+
+Treba li krenuti s implementacijom?
