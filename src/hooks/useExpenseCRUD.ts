@@ -636,6 +636,93 @@ export const useExpenseCRUD = ({
           expense_nature: (e.expense_nature as 'regular' | 'extraordinary') || undefined
         }));
 
+        // === Installment linking ===
+        // Za inserted retke koji nose `is_installment` meta (iz PDF-a), pokušaj
+        // fuzzy match na postojeći `installment_plan` istog usera i označi
+        // pripadajuću `installments` ratu kao paid + poveži s expense_id.
+        let linkedInstallmentsCount = 0;
+        try {
+          const installmentRows = fingerprinted.filter(r => r.tx.is_installment === true);
+          if (installmentRows.length > 0 && insertedData.length > 0) {
+            // Map inserted rows by fingerprint za brzo dohvaćanje ID-a.
+            const insertedByFp = new Map<string, string>();
+            for (const e of insertedData) {
+              if (e.bank_transaction_id) insertedByFp.set(e.bank_transaction_id, e.id);
+            }
+
+            const { data: plansData, error: plansErr } = await supabase
+              .from('installment_plans')
+              .select('id, description, total_amount, installment_count, type, installments(id, plan_id, installment_number, amount, status, expense_id)')
+              .eq('user_id', user.id);
+
+            if (plansErr) {
+              console.warn('[importFromCSV] installment plans fetch failed:', plansErr.message);
+            } else if (plansData && plansData.length > 0) {
+              const { matchInstallmentToPlan } = await import('@/lib/installmentMatching');
+              const plans = plansData.map((p: any) => ({
+                id: p.id,
+                description: p.description,
+                total_amount: Number(p.total_amount),
+                installment_count: p.installment_count,
+                type: p.type,
+                installments: (p.installments || []).map((i: any) => ({
+                  id: i.id,
+                  plan_id: i.plan_id,
+                  installment_number: i.installment_number,
+                  amount: Number(i.amount),
+                  status: i.status,
+                  expense_id: i.expense_id,
+                })),
+              }));
+
+              // Pratimo koji su installmenti već zauzeti u ovom batchu da ne
+              // dvostruko linkamo dvije rate na isti zapis.
+              const usedInstallmentIds = new Set<string>();
+
+              for (const r of installmentRows) {
+                const expenseId = insertedByFp.get(r.fingerprint);
+                if (!expenseId) continue; // već postojao (skipped duplicate) ili merged
+
+                // Filtriraj već zauzete installmente live
+                const livePlans = plans.map(p => ({
+                  ...p,
+                  installments: (p.installments || []).filter(i => !usedInstallmentIds.has(i.id)),
+                }));
+
+                const match = matchInstallmentToPlan({
+                  base_description: r.tx.installment_base_description ?? null,
+                  description: r.tx.description,
+                  amount: r.tx.amount,
+                  installment_current: r.tx.installment_current ?? null,
+                  installment_total: r.tx.installment_total ?? null,
+                  type: r.tx.type as 'expense' | 'income' | 'transfer',
+                }, livePlans);
+
+                if (!match) continue;
+
+                const { error: updErr } = await supabase
+                  .from('installments')
+                  .update({
+                    expense_id: expenseId,
+                    status: 'paid',
+                    paid_at: new Date().toISOString(),
+                  })
+                  .eq('id', match.installment.id)
+                  .eq('user_id', user.id)
+                  .is('expense_id', null); // race-guard
+
+                if (!updErr) {
+                  usedInstallmentIds.add(match.installment.id);
+                  linkedInstallmentsCount += 1;
+                }
+              }
+            }
+          }
+        } catch (linkErr) {
+          console.warn('[importFromCSV] installment linking failed (non-fatal):', linkErr);
+        }
+
+
         // Update balance ONLY for actually inserted rows. Mergeani NE diraju
         // balans jer je ručni unos već utjecao prije merge-a.
         for (const tx of newExpenses) {
