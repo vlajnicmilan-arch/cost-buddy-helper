@@ -22,6 +22,24 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  computeFileHash,
+  computeContentHash,
+  findExistingStatement,
+  recordImportedStatement,
+  type ExistingStatement,
+} from '@/lib/statementFingerprint';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
