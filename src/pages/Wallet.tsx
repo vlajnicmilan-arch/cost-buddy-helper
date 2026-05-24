@@ -58,8 +58,11 @@ const Wallet = () => {
   });
 
   // Wrap importFromCSV so wallet list (balances, transactions) refetches after a successful import.
-  const importFromCSVWithRefetch = useCallback(async (txs: Parameters<typeof importFromCSV>[0]) => {
-    await importFromCSV(txs);
+  const importFromCSVWithRefetch = useCallback(async (
+    txs: Parameters<typeof importFromCSV>[0],
+    opts?: Parameters<typeof importFromCSV>[1],
+  ) => {
+    await importFromCSV(txs, opts);
     refetch();
   }, [importFromCSV, refetch]);
 
