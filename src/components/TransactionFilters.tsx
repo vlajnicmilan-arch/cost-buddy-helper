@@ -446,4 +446,5 @@ export const defaultFilters: FilterState = {
   cardId: undefined,
   categoryId: undefined,
   scope: 'all',
+  bankMatchStatus: undefined,
 };
