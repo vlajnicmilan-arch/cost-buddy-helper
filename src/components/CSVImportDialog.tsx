@@ -161,6 +161,8 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     setFuzzyDuplicateIndices(new Set());
     setAutoGenIndices(new Set());
     setAutoGenMap(new Map());
+    setAutoMergeIndices(new Set());
+    setAutoMergeMap(new Map());
     setReplaceAutoGen(true);
     setSkipDuplicates(true);
     setSource('');
