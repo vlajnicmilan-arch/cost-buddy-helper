@@ -707,7 +707,18 @@ export const GlobalPDFImportHost = () => {
               </div>
               <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
-                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">{isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: duplicateInfo.unique.length + selectedFuzzy.size + selectedSuspicious.size + duplicateInfo.autoMergeMatches.length + (includeDuplicates ? duplicateInfo.duplicates.length : 0) })}</Button>
+                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">
+                  {isImporting
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</>
+                    : t('import.importCount', {
+                        count:
+                          duplicateInfo.unique.length
+                          + duplicateInfo.autoMergeMatches.length
+                          + Array.from(fuzzyDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                          + Array.from(suspiciousDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                          + (includeDuplicates ? duplicateInfo.duplicates.length : 0),
+                      })}
+                </Button>
               </div>
             </motion.div>
           </motion.div>
