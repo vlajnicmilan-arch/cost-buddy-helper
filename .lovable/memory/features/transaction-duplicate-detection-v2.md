@@ -1,25 +1,27 @@
 ---
 name: Transaction Duplicate Detection
-description: Strict ALL-conditions check za ručni unos; 2-of-3 scoring za CSV import
+description: 4-tier scoring s geo stop-words; suspicious pooštren na ±1% iznosa, ±2 dana, ≥2 zajedničke riječi
 type: feature
 ---
 
-Two distinct paths in `src/hooks/useExpenses.ts`:
+Centralni helper `src/lib/duplicateDetection.ts` (4 razine: strict/fuzzy/suspicious/unique).
 
-**Manual entry — `checkDuplicate` (strict, ALL must match):**
-- Egzaktan iznos (Number === Number, ne ±1%)
-- Isti tip (expense/income/transfer)
-- Isti kalendarski dan (setHours 0,0,0,0 → ===)
-- Isti merchant (`areMerchantsSimilar`) ILI near-identical description (===, ili jedan sadrži drugi nakon lowercase+trim)
-- Returns first match or null. Bez scoringa.
+**Pragovi:**
+- `strict` (90–100): exact amount (±0.01) + ±1 dan + merchant match
+- `fuzzy` (60–89): exact amount + ±3 dana + merchant match
+- `suspicious` (30–59): **±1% iznosa + ±2 dana** + merchant match (pooštreno 24.5.2026)
+- `unique` (0–29)
 
-**Why:** Reduces false-positives. "Isti kafić 2 dana zaredom" više ne baca alarm. Realan duplikat (slučajni dvostruki klik) uvijek se događa istog dana s identičnim podacima.
+**Korištenje:**
+- `findDuplicates` (CSV/PDF, `ignoreSameDayDuplicateGuard: true`) — same-day exact = suspicious umjesto strict
+- `checkDuplicate` (manual entry) — same-day exact ostaje strict (anti-dvoklik)
 
-**CSV import — `findDuplicates` (2-of-3 scoring):**
-- Criterion 1: amount ±1% + same type
-- Criterion 2: date within ±5 days
-- Criterion 3: fuzzy desc/merchant match
-- 3/3 = auto-skip, 2/3 + autoGen = replace offer, 2/3 normal = fuzzy review
-- Looser jer uvoz mase podataka tolerira false-positive (korisnik bira u dialogu).
+**`normalizeMerchant` — geo stop-words (24.5.2026):**
+Strip-aju se HR gradovi i country oznake (split, zagreb, rijeka, osijek, hrv, hrvatska, hr, eur, eu…) prije word-split logike. Sprječava lažne pozitive tipa `LUKOIL POLJUD/SPLIT/HRV` ↔ `LESNINA H PC SPLIT`. **MIRROR**: ista lista u `src/lib/importFingerprint.ts` GEO_STOPWORDS — sinkronizirano.
 
-`scoreDuplicate` helper se koristi SAMO za import.
+**`areMerchantsSimilar` — minimum 2 zajedničke riječi:**
+Jedna zajednička riječ (≥3 znaka) više nije dovoljna za multi-word merchante. Single-word (LIDL vs LIDL) rade preko `na === nb` / `includes` grane.
+
+**Testovi:** 33 testa u `src/lib/duplicateDetection.test.ts`, uključujući regresijske scenarije (LUKOIL≠LESNINA, SUPETAR≠LIDL, TOMMY ZAGREB≠KONZUM ZAGREB; NETFLIX 1% ostaje suspicious).
+
+Phase B (DB kolone, /review-duplicates, badge) čeka pravu banku.
