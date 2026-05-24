@@ -301,6 +301,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {expense.bank_match_status === 'bank_only' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Landmark className="w-3 h-3 text-muted-foreground shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('bankMatch.bankOnly')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {expense.possible_duplicate_of && (
               <button
                 type="button"
