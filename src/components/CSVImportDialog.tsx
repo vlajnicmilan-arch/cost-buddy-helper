@@ -616,13 +616,15 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                           isAutoGen
                             ? 'bg-primary/5 border border-primary/20'
-                            : isStrict && !selectedIndices.has(index)
-                              ? 'bg-destructive/5 border border-destructive/20 opacity-50'
-                              : isFuzzy && !selectedIndices.has(index)
-                                ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
-                                : selectedIndices.has(index) 
-                                  ? 'bg-muted/50 border border-primary/20' 
-                                  : 'bg-muted/20 border border-transparent opacity-50'
+                            : isAutoMerge
+                              ? 'bg-emerald-500/5 border border-emerald-500/30'
+                              : isStrict && !selectedIndices.has(index)
+                                ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                                : isFuzzy && !selectedIndices.has(index)
+                                  ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                                  : selectedIndices.has(index) 
+                                    ? 'bg-muted/50 border border-primary/20' 
+                                    : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
                         {!isAutoGen && (
