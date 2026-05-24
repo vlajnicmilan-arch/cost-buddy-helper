@@ -588,7 +588,7 @@ export const GlobalPDFImportHost = () => {
                     {autoMergeExpanded && (
                       <div className="px-3 pb-3 space-y-2 max-h-64 overflow-y-auto">
                         {duplicateInfo.autoMergeMatches.map(({ tx, existing }, index) => (
-                          <div key={`am-${tx.date.toISOString()}-${index}`} className="rounded-lg border border-emerald-500/20 overflow-hidden bg-background/40">
+                          <div key={`am-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className="rounded-lg border border-emerald-500/20 overflow-hidden bg-background/40">
                             <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
                               <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span>
                               <div className="flex-1 min-w-0">
