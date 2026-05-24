@@ -26,6 +26,8 @@ import type { CustomPaymentSource } from '@/types/customPaymentSource';
 
 const PDF_JOB_TTL_MS = 15 * 60 * 1000;
 
+type RowDecision = 'merge' | 'new' | 'skip';
+
 type DuplicateInfo = {
   duplicates: ParsedTransaction[];
   fuzzyDuplicates: ParsedTransaction[];
