@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Loader2, Upload, X as XIcon } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Link2, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
