@@ -102,7 +102,8 @@ export const TransactionFilters = ({
     filters.memberId !== undefined ||
     filters.cardId !== undefined ||
     filters.categoryId !== undefined ||
-    filters.scope !== 'all';
+    filters.scope !== 'all' ||
+    filters.bankMatchStatus !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -114,6 +115,7 @@ export const TransactionFilters = ({
       cardId: undefined,
       categoryId: undefined,
       scope: 'all',
+      bankMatchStatus: undefined,
     });
   };
 
