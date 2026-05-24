@@ -79,6 +79,8 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
   const [autoGenIndices, setAutoGenIndices] = useState<Set<number>>(new Set());
   const [autoGenMap, setAutoGenMap] = useState<Map<number, Expense>>(new Map());
+  const [autoMergeIndices, setAutoMergeIndices] = useState<Set<number>>(new Set());
+  const [autoMergeMap, setAutoMergeMap] = useState<Map<number, Expense>>(new Map());
   const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
