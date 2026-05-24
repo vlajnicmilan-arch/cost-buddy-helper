@@ -1553,6 +1553,13 @@
     "importCount": "Uvezi {{count}} transakcija",
     "importedFromPDF": "Uvezeno {{count}} transakcija iz PDF-a",
     "importing": "Uvozim...",
+    "installment": {
+      "badge": "Rata {{cur}}/{{total}}"
+    },
+    "statementTotal": {
+      "title": "Ukupna naplata izvoda",
+      "description": "Ovo NE knjižimo kao trošak (bi duplo brojalo rate). Kad banka skine ukupni iznos, unesi ručno kao transfer žiro → {{source}}."
+    },
     "allAssignedToSource": "ℹ️ Sve transakcije će biti dodijeljene izvoru: {{name}}",
     "duplicatesFound": "Pronađeni duplikati",
     "duplicatesExist": "{{count}} transakcija već postoji u bazi",
