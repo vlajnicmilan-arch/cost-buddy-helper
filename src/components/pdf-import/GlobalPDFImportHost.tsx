@@ -56,8 +56,8 @@ export const GlobalPDFImportHost = () => {
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
-  const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
-  const [selectedSuspicious, setSelectedSuspicious] = useState<Set<number>>(new Set());
+  const [fuzzyDecisions, setFuzzyDecisions] = useState<Map<number, RowDecision>>(new Map());
+  const [suspiciousDecisions, setSuspiciousDecisions] = useState<Map<number, RowDecision>>(new Map());
   const [autoMergeExpanded, setAutoMergeExpanded] = useState(false);
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
