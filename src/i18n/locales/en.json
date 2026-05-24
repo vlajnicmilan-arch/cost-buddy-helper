@@ -1567,6 +1567,12 @@
     "existing": "Existing",
     "noNewTransactions": "No new transactions to import",
     "importedTransactions": "Imported {{count}} transactions",
+    "importedWithAutoMerge": "Imported {{count}} transactions ({{merged}} auto-merged with manual entries)",
+    "autoMerge": {
+      "title": "✅ Auto-merged with your entries ({{count}})",
+      "description": "These transactions already exist as your manual entries and will be linked to the statement.",
+      "fromStatement": "Statement"
+    },
     "supportedSources": "Supported sources",
     "supportedFormats": "Supported formats",
     "csvFormat": "Standard format for transaction export",
