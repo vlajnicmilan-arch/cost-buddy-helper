@@ -1554,6 +1554,13 @@
     "importCount": "Import {{count}} transactions",
     "importedFromPDF": "Imported {{count}} transactions from PDF",
     "importing": "Importing...",
+    "installment": {
+      "badge": "Installment {{cur}}/{{total}}"
+    },
+    "statementTotal": {
+      "title": "Statement total amount",
+      "description": "We don't book this as an expense (it would double-count the installments). When the bank charges the total, enter it manually as a transfer from your bank account → {{source}}."
+    },
     "allAssignedToSource": "ℹ️ All transactions will be assigned to source: {{name}}",
     "duplicatesFound": "Duplicates found",
     "duplicatesExist": "{{count}} transactions already exist in database",
