@@ -1597,7 +1597,16 @@
     "selected": "Odabrano",
     "fileReadError": "Greška pri čitanju datoteke",
     "importError": "Greška pri uvozu transakcija",
-    "otherBanks": "Ostale banke"
+    "otherBanks": "Ostale banke",
+    "duplicateDecision": {
+      "merge": "Spoji",
+      "new": "Nova",
+      "skip": "Preskoči",
+      "mergeHint": "Poveži s postojećom ručnom transakcijom (saldo se ne mijenja).",
+      "newHint": "Stvori novu transakciju iz izvoda.",
+      "skipHint": "Ne uvezi ovaj redak.",
+      "noMatchToMerge": "Nema postojeće transakcije za spajanje"
+    }
   },
   "bulk": {
     "paymentSource": "Grupno plaćanje",
