@@ -1,128 +1,102 @@
 ## Cilj
 
-1. **Sada**: spojiti 2 bank_only retka iz Vinkinog zadnjeg uvoza s postojećim manual unosima (umjesto da postoje kao paralelni duplikati).
-2. **Ubuduće**: u dijalogu duplikata svaki "možda" / "sumnjivi" redak dobiva 3 jasna gumba — **Spoji s postojećom** / **Uvezi kao novu** / **Preskoči** — da se ne ponovi greška.
+Dopustiti korisniku da **post-facto** spoji dvije postojeće transakcije — jednu ručno unesenu i jednu iz banke/izvoda — koje auto-merge tijekom uvoza nije ulovio.
 
----
+Spajanje znači: ručni redak preuzme `bank_transaction_id` / `bank_account_id` / `import_batch_id` od bank retka, dobije `bank_match_status='confirmed'`, a bank redak se soft-deletea (uz revert salda).
 
-## Dio 1 — Retroaktivno spajanje (jednokratno, preko data migration)
+## Faza 1 — Bulk gumb (radi se sad)
 
-Cilj: stanje mora izgledati identično kao da je autoMerge to napravio tijekom uvoza.
+### 1.1 Pure helper `src/lib/manualBankMergePair.ts`
 
-Za svaki od 2 para:
-- Manual redak (zadržava se): postaje `bank_match_status = 'confirmed'`, dobiva `import_batch_id = '985b800a-…'` i `bank_transaction_id` od bank_only retka.
-- Bank_only redak: hard delete (NE soft, jer je nikad nije trebao ni postojati; balans nije diran prilikom uvoza).
+- `isMergeablePair(a, b): { ok: true; manual; bank } | { ok: false; reason: string }`
+- Pravila:
+  - isti `user_id`, `type`, `payment_source`, **`currency`** (eksplicitno)
+  - jedan ima `bank_transaction_id` (bank), drugi nema (manual)
+  - oba `deleted_at IS NULL`
+  - manual nije već `confirmed`
+  - iznos: `|Δ| / max <= 0.001`
+  - datum: **`|Δ| <= 3 dana`**
+  - obje **nisu** `expense_nature IN ('correction','transfer')`
+  - nijedan nije `is_advance` i nema `linked_advance_ids`
+- `reason` = i18n key (npr. `transactions.merge.errors.differentAmount`)
+- Vitest: 10+ testova (happy + svaki fail razlog)
 
-Parovi:
-- 20.04. 40 € — manual `7b21b2d9` (Cabaret LEVEL / Entrio) ← bank `832df526` (ENTRIO WEB)
-- 19.04. 0,80 € — manual `4f1c692e` (Parking Prima 3) ← bank `97148f4b` (SPLIT PARKING)
+### 1.2 RPC `merge_manual_with_bank(p_manual_id, p_bank_id)`
 
-Sigurnosne provjere prije izvršavanja:
-- Potvrditi da bank_only retci nisu utjecali na saldo (`expense_nature ≠ 'correction'` i da `useBalanceUpdater` nije aplicirao — provjeriti `payment_source` i da nema `balance_applied` flaga).
-- Ako bilo koji manual već ima `import_batch_id ≠ NULL`, prekinuti (znak da je već nešto drugo).
+Migracija. `SECURITY DEFINER`, `search_path=public`. Atomarno:
 
----
+1. Učitaj oba retka, provjeri `auth.uid()` vlasništvo i `deleted_at IS NULL`
+2. Server-side re-verifikacija svih pravila iz helpera (defense in depth)
+3. Revert salda za bank redak: ako `payment_source` počinje s `custom:` i nije transfer/correction, pozovi inverse update na `custom_payment_sources.balance` (income → oduzmi, expense → dodaj)
+4. `UPDATE expenses SET bank_transaction_id, bank_account_id, import_batch_id, bank_match_status='confirmed' WHERE id = p_manual_id`
+5. `UPDATE expenses SET deleted_at = now(), deleted_by = auth.uid() WHERE id = p_bank_id`
+6. Return `jsonb {ok, merged_into}`
 
-## Dio 2 — 3-gumba UX (`GlobalPDFImportHost.tsx`)
+Sve unutar jedne transakcije; ako bilo koji korak fail-a, rollback.
 
-### Promjena modela odluke
+### 1.3 Hook `src/hooks/useManualBankMerge.ts`
 
-Trenutno: `selectedFuzzy: Set<number>` i `selectedSuspicious: Set<number>` — checkbox = "uvezi kao novu", inače = preskoči. **Nema opcije spojiti.**
+- `mergePair(manualId, bankId)` → poziva RPC, invalidira `['expenses']`, `['paymentSources']`, `['balances']`, emitira `funnel_event: 'manual_merge_used'`
+- `canMergeSelection(selected: Expense[])` → wrapper oko `isMergeablePair`
 
-Novo: po retku jedna od 3 vrijednosti:
-```
-type RowDecision = 'merge' | 'new' | 'skip';
-```
-Default: `'skip'` (najsigurnije — bez odluke ne ulazi ništa).
+### 1.4 UI u `BulkActionsToolbar`
 
-State:
-```
-fuzzyDecisions: Map<number, RowDecision>
-suspiciousDecisions: Map<number, RowDecision>
-```
+- Nove prop: `onBulkMerge?`, `selectedExpenses?: Expense[]`, `showMerge?: boolean`
+- Gumb `Link2 "Spoji"`:
+  - Vidljiv samo kad `showMerge && selectedCount === 2`
+  - `disabled` ako `canMergeSelection` vrati `ok: false`; razlog u tooltipu (lokaliziran)
+  - Klik → `AlertDialog` "Spoji ovu ručnu s ovom iz banke?" → potvrda → RPC → `StatusFeedback` "Spojeno"
 
-### UI po retku
+### 1.5 Konzumenti
 
-Umjesto cijelog retka kao checkbox-tile, svaki redak ima:
-- Gornji segment: postojeća transakcija (kao i sad).
-- Donji segment: nova s izvoda (kao i sad).
-- Ispod: 3 segmentirana gumba (ToggleGroup, single-select):
-  - **Spoji** (ikona `Link2`, teal kad je aktivna) — zelena emerald obrubljena kartica
-  - **Nova** (ikona `Plus`, amber kad je aktivna)
-  - **Preskoči** (ikona `X`, sivo, default)
+Proslijedi `onBulkMerge` + `selectedExpenses` (filter `expenses` po `selectedIds`) u:
+- `TransactionListDialog.tsx`
+- `PaymentSourceTransactionsDialog.tsx`
+- `CategoryTransactionsDialog.tsx`
+- `home/TransactionListSection.tsx`
 
-Touch target min 44px, fits 384px breakpoint (3 gumba × ~110px = stane). Na uskim ekranima ToggleGroup wrap-a u 2 reda po potrebi.
+### 1.6 i18n (hr/en/de)
 
-### Promjena u `handleImportDuplicates`
+Novi blok `transactions.merge.*`:
+- `button`, `confirmTitle`, `confirmBody`, `success`, `errorGeneric`
+- `errors.differentAmount`, `errors.differentSource`, `errors.differentCurrency`, `errors.differentType`, `errors.dateTooFar`, `errors.bothManual`, `errors.bothBank`, `errors.alreadyConfirmed`, `errors.correctionNature`, `errors.transferNature`, `errors.advanceProtected`, `errors.notTwoSelected`
 
-```
-const fuzzyMergeTxs   = fuzzyDuplicates.filter(merge);
-const fuzzyNewTxs     = fuzzyDuplicates.filter(new);
-const suspiciousMergeTxs = suspiciousDuplicates.filter(merge);
-const suspiciousNewTxs   = suspiciousDuplicates.filter(new);
+## Faza 2 — Proaktivni badge (ODGOĐENO)
 
-// "Nove" → ide kroz isti put kao do sad (transactions array → _runImport).
-// "Spoji" → novi put: pošalji parove (tx + matchedExpense.id) u dedicated helper koji:
-//   - update manual: bank_match_status='confirmed', import_batch_id=batch, bank_transaction_id=tx.bank_transaction_id (ili sintetski hash ako ga PDF nema)
-//   - NE inserta novi expense red
-//   - NE dira balans
-```
+NE radi se sad. Trigger: telemetrija pokaže ≥5% korisnika koristi Fazu 1 u 30 dana, ILI dođe prava banka pa bude realnih ne-spojenih parova.
 
-Dodaje se novi handler u `PdfImportContext` / `usePDFParser`:
-```
-type ManualMergeRequest = { manualId: string; tx: ParsedTransaction };
-onMergeIntoExisting: (requests: ManualMergeRequest[]) => Promise<void>;
-```
-Implementacija reuse-a istu DB logiku koju koristi `autoMerge` u postojećem importu (vjerojatno postoji u hooku gdje se obrađuje `autoMergeMatches` — iskoristit točno isti kod, ekstraktiramo u helper `applyManualBankMerge(manualId, tx, batchId)`).
+Skica:
+- Klijentski memo: `findUnmatchedPairs` nad zadnjih 90d manual + bank_only
+- Mali `Link2` badge u `TransactionRow` → mini-sheet "Spoji s ovom iz banke?" (Da / Ne / Nikad)
+- Tablica `merge_dismissals (user_id, manual_id, bank_id)` za "Nikad"
 
-### "Strict duplicates" sekcija — ostaje skoro ista
+## Što se NE radi
 
-Strict (isti dan + isti iznos + isti opis) i dalje samo: preskoči (default) ili "uvezi svejedno" (rijetko). NE treba im opcija Spoji jer to autoMerge već radi za njih.
+- Spajanje 2 ručna (= brisanje duplikata — postoji bulk delete + UNDO)
+- Spajanje 2 bank retka (UNIQUE constraint sprječava)
+- Auto-merge bez potvrde
 
-### Auto-merge sekcija — ostaje
+## File list
 
-Već je 100% automatska, samo informativna.
+**Novo:**
+- `src/lib/manualBankMergePair.ts` + `src/lib/__tests__/manualBankMergePair.test.ts`
+- `src/hooks/useManualBankMerge.ts`
+- `supabase/migrations/<ts>_merge_manual_with_bank.sql`
 
-### Brojač gumba "Uvezi N"
+**Izmijenjeno:**
+- `src/components/BulkActionsToolbar.tsx`
+- `src/components/TransactionListDialog.tsx`
+- `src/components/PaymentSourceTransactionsDialog.tsx`
+- `src/components/CategoryTransactionsDialog.tsx`
+- `src/components/home/TransactionListSection.tsx`
+- `src/i18n/locales/hr.json` / `en.json` / `de.json`
+- `src/lib/funnelEvents.ts` (event `manual_merge_used` ako je union tipiziran)
 
-```
-unique + autoMerge + fuzzyNew + suspiciousNew + fuzzyMerge + suspiciousMerge + (strict ako tick)
-```
-Tekst gumba ostaje `import.importCount`; ali možda dodati subline "X spojeno · Y novih" — odluka u izvedbi.
+**Nakon implementacije:** dodaj `mem://features/manual-bank-merge` u index.
 
----
+## Parametri (potvrđeni)
 
-## Dio 3 — i18n
-
-Novi ključevi u `hr.json` / `en.json` / `de.json` pod `import.duplicateDecision.*`:
-- `merge` / `mergeHint` ("Spoji s postojećom — banka potvrđuje tvoj unos")
-- `new` / `newHint` ("Uvezi kao zasebnu — različita transakcija")
-- `skip` / `skipHint` ("Preskoči — ignoriraj ovu stavku iz izvoda")
-
----
-
-## Dio 4 — Tehnički detalji
-
-**Datoteke:**
-- `src/components/pdf-import/GlobalPDFImportHost.tsx` — UI + decision state
-- `src/contexts/PdfImportContext.tsx` — dodati `_runMergeIntoExisting`
-- `src/hooks/useExpenseFetch.ts` ili gdje god je trenutni autoMerge writer — ekstrakt helpera `applyManualBankMerge`
-- `src/i18n/locales/{hr,en,de}.json` — 6 novih ključeva
-- (eventualno) novi vitest test za `applyManualBankMerge` decision flow
-
-**Što ne dirati:**
-- `duplicateDetection.ts` (klasifikacija je ispravna)
-- `manualMatchForImport.ts` (autoMerge logika)
-- `parse-pdf-statement` edge funkcija
-- Saldo / `useBalanceUpdater` (merge ne dira balans)
-
-**Native:** nema native promjena → bez version bumpa.
-
-**Test:** vitest za `applyManualBankMerge` (1 par → manual postaje confirmed + dobiva oba ID-a, bank_only se ne kreira).
-
----
-
-## Redoslijed izvršavanja
-
-1. Najprije Dio 1 (data migration / supabase--insert s SQL UPDATE + DELETE za 2 para) — pa potvrda da Vinka vidi spojeno stanje.
-2. Zatim Dio 2/3/4 (UI promjena za ubuduće).
+- Currency: eksplicitna jednakost ✅
+- Transfer nature: isključen ✅
+- Datum tolerancija: **3 dana** ✅
+- Iznos tolerancija: 0.1%
