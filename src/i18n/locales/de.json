@@ -1567,6 +1567,12 @@
     "existing": "Bestehend",
     "noNewTransactions": "Keine neuen Transaktionen zum Importieren",
     "importedTransactions": "{{count}} Transaktionen importiert",
+    "importedWithAutoMerge": "{{count}} Transaktionen importiert ({{merged}} automatisch mit manuellen Einträgen zusammengeführt)",
+    "autoMerge": {
+      "title": "✅ Automatisch mit deinen Einträgen zusammengeführt ({{count}})",
+      "description": "Diese Transaktionen existieren bereits als deine manuellen Einträge und werden mit dem Kontoauszug verknüpft.",
+      "fromStatement": "Kontoauszug"
+    },
     "supportedSources": "Unterstützte Quellen",
     "supportedFormats": "Unterstützte Formate",
     "csvFormat": "Standardformat für Transaktionsexport",
