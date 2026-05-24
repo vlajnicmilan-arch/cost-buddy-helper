@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { usePdfImport } from '@/contexts/PdfImportContext';
 import { usePDFParser } from '@/hooks/usePDFParser';
@@ -25,6 +26,8 @@ import { hr } from 'date-fns/locale';
 import type { CustomPaymentSource } from '@/types/customPaymentSource';
 
 const PDF_JOB_TTL_MS = 15 * 60 * 1000;
+
+type RowDecision = 'merge' | 'new' | 'skip';
 
 type DuplicateInfo = {
   duplicates: ParsedTransaction[];
@@ -56,8 +59,8 @@ export const GlobalPDFImportHost = () => {
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
-  const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
-  const [selectedSuspicious, setSelectedSuspicious] = useState<Set<number>>(new Set());
+  const [fuzzyDecisions, setFuzzyDecisions] = useState<Map<number, RowDecision>>(new Map());
+  const [suspiciousDecisions, setSuspiciousDecisions] = useState<Map<number, RowDecision>>(new Map());
   const [autoMergeExpanded, setAutoMergeExpanded] = useState(false);
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
@@ -77,8 +80,8 @@ export const GlobalPDFImportHost = () => {
     clearStoredJob();
     setDuplicateInfo(null);
     setIncludeDuplicates(false);
-    setSelectedFuzzy(new Set());
-    setSelectedSuspicious(new Set());
+    setFuzzyDecisions(new Map());
+    setSuspiciousDecisions(new Map());
     setAutoMergeExpanded(false);
     setStatementDup(null);
     fileHashRef.current = null;
@@ -401,8 +404,17 @@ export const GlobalPDFImportHost = () => {
           unique: duplicateResult.unique,
         });
         setIncludeDuplicates(false);
-        setSelectedFuzzy(new Set());
-        setSelectedSuspicious(new Set());
+        // Default decision: merge if a matched expense exists, else 'new' (preserve old behavior of "tick = import as new").
+        const fuzzyInit = new Map<number, RowDecision>();
+        duplicateResult.fuzzyDuplicates.forEach((_, idx) => {
+          fuzzyInit.set(idx, duplicateResult.fuzzyMatchedExpenses[idx] ? 'merge' : 'skip');
+        });
+        const suspInit = new Map<number, RowDecision>();
+        duplicateResult.suspiciousDuplicates.forEach((_, idx) => {
+          suspInit.set(idx, duplicateResult.suspiciousMatchedExpenses[idx] ? 'merge' : 'skip');
+        });
+        setFuzzyDecisions(fuzzyInit);
+        setSuspiciousDecisions(suspInit);
         pdfImport._setDuplicates();
         return;
       }
@@ -425,25 +437,49 @@ export const GlobalPDFImportHost = () => {
 
   const handleImportDuplicates = async () => {
     if (!duplicateInfo) return;
-    const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, index) => selectedFuzzy.has(index));
-    const suspiciousToInclude = duplicateInfo.suspiciousDuplicates.filter((_, index) => selectedSuspicious.has(index));
+
+    // Build forced manual merges from rows the user explicitly chose to merge.
+    const forcedManualMerges: { tx: ParsedTransaction; manualId: string }[] = [];
+    const fuzzyAsNew: ParsedTransaction[] = [];
+    duplicateInfo.fuzzyDuplicates.forEach((tx, index) => {
+      const decision = fuzzyDecisions.get(index) ?? 'skip';
+      const matched = duplicateInfo.fuzzyMatchedExpenses[index];
+      if (decision === 'merge' && matched?.id) {
+        forcedManualMerges.push({ tx, manualId: matched.id });
+      } else if (decision === 'new') {
+        fuzzyAsNew.push(tx);
+      }
+    });
+    const suspiciousAsNew: ParsedTransaction[] = [];
+    duplicateInfo.suspiciousDuplicates.forEach((tx, index) => {
+      const decision = suspiciousDecisions.get(index) ?? 'skip';
+      const matched = duplicateInfo.suspiciousMatchedExpenses[index];
+      if (decision === 'merge' && matched?.id) {
+        forcedManualMerges.push({ tx, manualId: matched.id });
+      } else if (decision === 'new') {
+        suspiciousAsNew.push(tx);
+      }
+    });
+
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
     const autoMergeTxs = duplicateInfo.autoMergeMatches.map(m => m.tx);
     const transactions = [
       ...duplicateInfo.unique,
       ...autoMergeTxs,
-      ...fuzzyToInclude,
-      ...suspiciousToInclude,
+      ...fuzzyAsNew,
+      ...suspiciousAsNew,
       ...strictToInclude,
+      // forced merges must also reach importFromCSV so the auto-merge stage picks the manualId
+      ...forcedManualMerges.map(m => m.tx),
     ];
-    if (transactions.length === 0) {
+    if (transactions.length === 0 && forcedManualMerges.length === 0) {
       toast.info(t('import.noNewTransactions'));
       resetAll();
       return;
     }
     try {
       pdfImport._setImporting(true);
-      await pdfImport._runImport(transactions);
+      await pdfImport._runImport(transactions, { forcedManualMerges });
       await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedTransactions', { count: transactions.length }));
       resetAll();
@@ -627,20 +663,22 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('import.possibleDuplicates')}</p>
                     <p className="text-xs text-muted-foreground">{t('import.compareAndSelect')}</p>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {duplicateInfo.fuzzyDuplicates.map((tx, index) => {
-                        const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[index];
-                        return (
-                          <button type="button" key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
-                            const next = new Set(prev);
-                            next.has(index) ? next.delete(index) : next.add(index);
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {duplicateInfo.fuzzyDuplicates.map((tx, index) => (
+                        <DecisionRow
+                          key={`f-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`}
+                          tx={tx}
+                          matchedExpense={duplicateInfo.fuzzyMatchedExpenses[index]}
+                          decision={fuzzyDecisions.get(index) ?? 'skip'}
+                          onChange={value => setFuzzyDecisions(prev => {
+                            const next = new Map(prev);
+                            next.set(index, value);
                             return next;
-                          })}>
-                            {matchedExpense && <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30"><span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{matchedExpense.description}</p><p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p></div>}
-                            <div className={cn('flex items-center gap-2 p-2', selectedFuzzy.has(index) ? 'bg-primary/5' : 'bg-amber-500/5')}><Checkbox checked={selectedFuzzy.has(index)} className="ml-0.5 pointer-events-none" /><span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">{t('common.new')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{tx.description}</p><p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p></div>
-                          </button>
-                        );
-                      })}
+                          })}
+                          formatAmount={formatAmount}
+                          t={t}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
@@ -648,27 +686,40 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('import.suspiciousDuplicates')}</p>
                     <p className="text-xs text-muted-foreground">{t('import.compareAndSelect')}</p>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {duplicateInfo.suspiciousDuplicates.map((tx, index) => {
-                        const matchedExpense = duplicateInfo.suspiciousMatchedExpenses[index];
-                        return (
-                          <button type="button" key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
-                            const next = new Set(prev);
-                            next.has(index) ? next.delete(index) : next.add(index);
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {duplicateInfo.suspiciousDuplicates.map((tx, index) => (
+                        <DecisionRow
+                          key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`}
+                          tx={tx}
+                          matchedExpense={duplicateInfo.suspiciousMatchedExpenses[index]}
+                          decision={suspiciousDecisions.get(index) ?? 'skip'}
+                          onChange={value => setSuspiciousDecisions(prev => {
+                            const next = new Map(prev);
+                            next.set(index, value);
                             return next;
-                          })}>
-                            {matchedExpense && <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30"><span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{matchedExpense.description}</p><p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p></div>}
-                            <div className={cn('flex items-center gap-2 p-2', selectedSuspicious.has(index) ? 'bg-primary/5' : 'bg-amber-500/5')}><Checkbox checked={selectedSuspicious.has(index)} className="ml-0.5 pointer-events-none" /><span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">{t('common.new')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{tx.description}</p><p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p></div>
-                          </button>
-                        );
-                      })}
+                          })}
+                          formatAmount={formatAmount}
+                          t={t}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
               <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
-                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">{isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: duplicateInfo.unique.length + selectedFuzzy.size + selectedSuspicious.size + duplicateInfo.autoMergeMatches.length + (includeDuplicates ? duplicateInfo.duplicates.length : 0) })}</Button>
+                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">
+                  {isImporting
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</>
+                    : t('import.importCount', {
+                        count:
+                          duplicateInfo.unique.length
+                          + duplicateInfo.autoMergeMatches.length
+                          + Array.from(fuzzyDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                          + Array.from(suspiciousDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                          + (includeDuplicates ? duplicateInfo.duplicates.length : 0),
+                      })}
+                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -714,3 +765,85 @@ const DuplicateRow = ({ tx, formatAmount }: { tx: ParsedTransaction; formatAmoun
     <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
   </div>
 );
+
+type DecisionRowProps = {
+  tx: ParsedTransaction;
+  matchedExpense: import('@/types/expense').Expense | undefined;
+  decision: RowDecision;
+  onChange: (value: RowDecision) => void;
+  formatAmount: (amount: number) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+};
+
+const DecisionRow = ({ tx, matchedExpense, decision, onChange, formatAmount, t }: DecisionRowProps) => {
+  const canMerge = !!matchedExpense?.id;
+  const borderClass =
+    decision === 'merge' ? 'border-emerald-500/40'
+    : decision === 'new' ? 'border-primary/40'
+    : 'border-border/40';
+  const hint =
+    decision === 'merge' ? t('import.duplicateDecision.mergeHint')
+    : decision === 'new' ? t('import.duplicateDecision.newHint')
+    : t('import.duplicateDecision.skipHint');
+  return (
+    <div className={cn('rounded-xl text-sm border overflow-hidden transition-colors', borderClass)}>
+      {matchedExpense && (
+        <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
+            <p className="text-[10px] text-muted-foreground">{(matchedExpense.date instanceof Date ? matchedExpense.date : new Date(matchedExpense.date)).toLocaleDateString()}</p>
+          </div>
+          <p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p>
+        </div>
+      )}
+      <div className="flex items-center gap-2 p-2 bg-amber-500/5">
+        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-14 shrink-0">{t('common.new')}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate text-xs">{tx.description}</p>
+          <p className="text-[10px] text-muted-foreground">{(tx.date instanceof Date ? tx.date : new Date(tx.date)).toLocaleDateString()}</p>
+        </div>
+        <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+      </div>
+      <div className="p-2 bg-background/40 border-t border-border/30 space-y-1.5">
+        <ToggleGroup
+          type="single"
+          value={decision}
+          onValueChange={(value) => {
+            if (!value) return;
+            const next = value as RowDecision;
+            if (next === 'merge' && !canMerge) return;
+            onChange(next);
+          }}
+          className="w-full grid grid-cols-3 gap-1"
+        >
+          <ToggleGroupItem
+            value="merge"
+            disabled={!canMerge}
+            className="text-xs h-9 data-[state=on]:bg-emerald-500/15 data-[state=on]:text-emerald-700 dark:data-[state=on]:text-emerald-300"
+            aria-label={t('import.duplicateDecision.merge')}
+          >
+            {t('import.duplicateDecision.merge')}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="new"
+            className="text-xs h-9 data-[state=on]:bg-primary/15 data-[state=on]:text-primary"
+            aria-label={t('import.duplicateDecision.new')}
+          >
+            {t('import.duplicateDecision.new')}
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="skip"
+            className="text-xs h-9"
+            aria-label={t('import.duplicateDecision.skip')}
+          >
+            {t('import.duplicateDecision.skip')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <p className="text-[10px] text-muted-foreground leading-snug">
+          {!canMerge && decision !== 'new' && decision !== 'skip' ? t('import.duplicateDecision.noMatchToMerge') : hint}
+        </p>
+      </div>
+    </div>
+  );
+};

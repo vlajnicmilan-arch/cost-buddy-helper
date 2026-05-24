@@ -1598,7 +1598,16 @@
     "selected": "Selected",
     "fileReadError": "Error reading file",
     "importError": "Error importing transactions",
-    "otherBanks": "Other banks"
+    "otherBanks": "Other banks",
+    "duplicateDecision": {
+      "merge": "Merge",
+      "new": "New",
+      "skip": "Skip",
+      "mergeHint": "Link to your existing manual transaction (balance is preserved).",
+      "newHint": "Create a new transaction from the statement.",
+      "skipHint": "Do not import this row.",
+      "noMatchToMerge": "No existing transaction to merge with"
+    }
   },
   "bulk": {
     "paymentSource": "Bulk Payment",
