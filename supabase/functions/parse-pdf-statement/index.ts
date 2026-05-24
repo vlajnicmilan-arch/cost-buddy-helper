@@ -520,12 +520,13 @@ METAPODACI:
         account_iban: accountIban,
         holder_name: holderName,
         cards_detected: Array.from(cardGroups.keys()),
+        statement_due_date: statementDueDate,
         summary: {
           total_income: totalIncome,
           total_expenses: totalExpenses,
           transaction_count: transactions.length
         }
-      }), 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
