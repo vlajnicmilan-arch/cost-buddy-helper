@@ -11,6 +11,8 @@ export type FindPdfDuplicatesHandler = (transactions: ParsedTransaction[]) => {
   duplicates: ParsedTransaction[];
   fuzzyDuplicates: ParsedTransaction[];
   fuzzyMatchedExpenses: Expense[];
+  suspiciousDuplicates: ParsedTransaction[];
+  suspiciousMatchedExpenses: Expense[];
   autoGenMatches: { tx: ParsedTransaction; existing: Expense }[];
   unique: ParsedTransaction[];
 };
