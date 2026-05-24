@@ -1195,9 +1195,41 @@ export const PaymentSourceTransactionsDialog = ({
                                     )}
                                   </div>
 
-                                  <p className="min-w-0 font-medium text-foreground truncate text-[15px] leading-tight">
-                                    {expense.merchant_name || expense.description}
-                                  </p>
+                                  <div className="min-w-0 flex items-center gap-1">
+                                    <p className="min-w-0 font-medium text-foreground truncate text-[15px] leading-tight">
+                                      {expense.merchant_name || expense.description}
+                                    </p>
+                                    {expense.bank_match_status === 'pending_bank' && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                          <p className="text-xs">{t('bankMatch.pendingBank')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                    {expense.bank_match_status === 'confirmed' && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                          <p className="text-xs">{t('bankMatch.confirmed')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                    {expense.bank_match_status === 'bank_only' && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Landmark className="w-3 h-3 text-muted-foreground shrink-0" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                          <p className="text-xs">{t('bankMatch.bankOnly')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
 
                                   {(() => {
                                     const isInboundTransfer = expense.type === 'transfer' && expense.income_source_id === paymentSource?.id;
