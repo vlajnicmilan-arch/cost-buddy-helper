@@ -304,6 +304,33 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       setStep('complete');
       emitAvatarEvent('happy', 'Uvezeno! Sve je tu 📊');
 
+      // Record statement-level fingerprint so future imports detect duplicates
+      if (user?.id) {
+        const sourceId = (effectiveSource && effectiveSource.startsWith('custom:'))
+          ? effectiveSource.slice(7)
+          : null;
+        let contentHash = contentHashRef.current;
+        if (!contentHash) {
+          try {
+            contentHash = await computeContentHash(user.id, effectiveSource ?? null, selectedTransactions);
+          } catch {
+            contentHash = null;
+          }
+        }
+        void recordImportedStatement({
+          userId: user.id,
+          paymentSourceId: sourceId,
+          fileHash: fileHashRef.current,
+          contentHash,
+          fileName: fileMetaRef.current?.name ?? null,
+          fileSize: fileMetaRef.current?.size ?? null,
+          mimeType: fileMetaRef.current?.type ?? null,
+          transactionsCount: selectedTransactions.length,
+          importBatchId: null,
+        });
+      }
+
+
       // After successful import, scan for loans in business mode
       if (activeBusinessProfileId) {
         const txsForScan = selectedTransactions.map(tx => ({
