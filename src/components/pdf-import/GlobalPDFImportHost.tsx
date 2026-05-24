@@ -58,6 +58,7 @@ export const GlobalPDFImportHost = () => {
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [selectedSuspicious, setSelectedSuspicious] = useState<Set<number>>(new Set());
+  const [autoMergeExpanded, setAutoMergeExpanded] = useState(false);
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
   const contentHashRef = useRef<string | null>(null);
