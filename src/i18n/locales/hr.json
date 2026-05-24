@@ -1566,6 +1566,12 @@
     "existing": "Postojeća",
     "noNewTransactions": "Nema novih transakcija za uvoz",
     "importedTransactions": "Uvezeno {{count}} transakcija",
+    "importedWithAutoMerge": "Uvezeno {{count}} transakcija ({{merged}} automatski spojeno s ručnim unosima)",
+    "autoMerge": {
+      "title": "✅ Automatski spojeno s tvojim unosima ({{count}})",
+      "description": "Ove transakcije već postoje kao tvoji ručni unosi i bit će povezane s izvodom.",
+      "fromStatement": "Izvod"
+    },
     "supportedSources": "Podržani izvori",
     "supportedFormats": "Podržani formati",
     "csvFormat": "Standardni format za izvoz transakcija",
