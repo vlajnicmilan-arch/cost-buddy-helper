@@ -63,12 +63,22 @@ export const BulkActionsToolbar = ({
 }: BulkActionsToolbarProps) => {
   const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [activeField, setActiveField] = useState<Field | null>(null);
   const { customPaymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets();
   const { projects } = useProjects();
+  const { mergePair, checkSelection, isMerging } = useManualBankMerge();
+
+  const mergeCheck = useMemo(
+    () => (showMerge && selectedExpenses ? checkSelection(selectedExpenses) : null),
+    [showMerge, selectedExpenses, checkSelection]
+  );
+  const showMergeButton = showMerge && selectedCount === 2 && !!selectedExpenses;
+  const mergeDisabled = !mergeCheck?.ok || isMerging;
+  const mergeReason = mergeCheck && !mergeCheck.ok ? t(mergeCheck.reason, '') : '';
 
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
   const canProject = showProjectChange && !!onBulkProjectChange;
