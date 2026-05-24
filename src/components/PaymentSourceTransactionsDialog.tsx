@@ -1156,7 +1156,7 @@ export const PaymentSourceTransactionsDialog = ({
                                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive/10 border border-destructive/20 group-hover:bg-destructive/20 transition-colors">
                                     <FileText className="w-3 h-3 text-destructive" />
                                     <span className="text-[11px] font-medium text-destructive">
-                                      Uvoz • {batchExpenseCount} tr.
+                                      {t('importBatch.badge')} • {blockCount} {t('importBatch.badgeShort')}
                                     </span>
                                   </div>
                                   <div className="flex-1 h-px bg-destructive/40" />
