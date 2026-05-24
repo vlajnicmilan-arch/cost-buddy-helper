@@ -277,6 +277,7 @@ export const TransactionListDialog = ({
             onBulkBudgetChange={handleBulkBudgetChange}
             onBulkProjectChange={handleBulkProjectChange}
             showCategoryChange={type === 'expense'}
+            selectedExpenses={filteredExpenses.filter(e => selectedIds.has(e.id))}
           />
 
           {/* Summary */}

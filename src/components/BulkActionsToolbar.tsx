@@ -4,7 +4,10 @@ import { CATEGORIES, Category, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
-import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder } from 'lucide-react';
+import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder, Link2 } from 'lucide-react';
+import { useManualBankMerge } from '@/hooks/useManualBankMerge';
+import type { MergeCandidateExpense } from '@/lib/manualBankMergePair';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -35,6 +38,10 @@ interface BulkActionsToolbarProps {
   showPaymentSourceChange?: boolean;
   showBudgetChange?: boolean;
   showProjectChange?: boolean;
+  /** Selected expense objects (needed for manual ↔ bank merge validation). */
+  selectedExpenses?: readonly MergeCandidateExpense[];
+  /** Show the "Spoji" (manual ↔ bank merge) button when 2 are selected. */
+  showMerge?: boolean;
 }
 
 export const BulkActionsToolbar = ({
@@ -51,15 +58,27 @@ export const BulkActionsToolbar = ({
   showPaymentSourceChange = true,
   showBudgetChange = true,
   showProjectChange = true,
+  selectedExpenses,
+  showMerge = true,
 }: BulkActionsToolbarProps) => {
   const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [activeField, setActiveField] = useState<Field | null>(null);
   const { customPaymentSources } = useCustomPaymentSources();
   const { budgets } = useBudgets();
   const { projects } = useProjects();
+  const { mergePair, checkSelection, isMerging } = useManualBankMerge();
+
+  const mergeCheck = useMemo(
+    () => (showMerge && selectedExpenses ? checkSelection(selectedExpenses) : null),
+    [showMerge, selectedExpenses, checkSelection]
+  );
+  const showMergeButton = showMerge && selectedCount === 2 && !!selectedExpenses;
+  const mergeDisabled = !mergeCheck?.ok || isMerging;
+  const mergeReason = mergeCheck && mergeCheck.ok === false ? t(mergeCheck.reason, '') : '';
 
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
   const canProject = showProjectChange && !!onBulkProjectChange;
@@ -155,6 +174,13 @@ export const BulkActionsToolbar = ({
     setDeleteConfirmOpen(false);
   });
 
+  const handleMerge = async () => {
+    if (!mergeCheck || !mergeCheck.ok) return;
+    const ok = await mergePair(mergeCheck.manual.id, mergeCheck.bank.id);
+    setMergeConfirmOpen(false);
+    if (ok) onClearSelection();
+  };
+
   const handleSelect = async (field: Field, id: string | null) => {
     if (field === 'category' && id) await onBulkCategoryChange(id as Category);
     else if (field === 'paymentSource' && id) await onBulkPaymentSourceChange(id);
@@ -231,6 +257,30 @@ export const BulkActionsToolbar = ({
                 </Button>
               )}
 
+              {showMergeButton && (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 text-xs gap-2 bg-background min-w-[44px]"
+                          onClick={() => setMergeConfirmOpen(true)}
+                          disabled={mergeDisabled || isProcessing}
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          {t('transactions.merge.button', 'Spoji')}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {mergeDisabled && mergeReason && (
+                      <TooltipContent side="top">{mergeReason}</TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               <Button
                 variant="destructive"
                 size="sm"
@@ -282,6 +332,23 @@ export const BulkActionsToolbar = ({
               disabled={isProcessing}
             >
               {isProcessing ? t('bulk.deleting') : t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={mergeConfirmOpen} onOpenChange={setMergeConfirmOpen}>
+        <AlertDialogContent className="z-[70]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('transactions.merge.confirmTitle', 'Spojiti ručnu transakciju s onom iz banke?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('transactions.merge.confirmBody', 'Ručna transakcija će preuzeti podatke iz banke i biti označena kao potvrđena. Bankovni zapis ide u smeće (možeš ga vratiti).')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isMerging}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMerge} disabled={isMerging}>
+              {isMerging ? t('transactions.merge.merging', 'Spajam…') : t('transactions.merge.button', 'Spoji')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -246,6 +246,7 @@ export const CategoryTransactionsDialog = forwardRef<HTMLDivElement, CategoryTra
             onBulkDelete={handleBulkDelete}
             onBulkBudgetChange={handleBulkBudgetChange}
             onBulkProjectChange={handleBulkProjectChange}
+            selectedExpenses={filteredExpenses.filter(e => selectedIds.has(e.id))}
           />
         </div>
 

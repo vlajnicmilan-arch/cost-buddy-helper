@@ -133,6 +133,7 @@ export const TransactionListSection = ({
             onBulkBudgetChange={onBulkBudgetChange}
             onBulkProjectChange={onBulkProjectChange}
             onBulkDelete={onBulkDelete}
+            selectedExpenses={filteredExpenses.filter(e => selectedTransactionIds.has(e.id))}
           />
           {expensesLoading ? (
             <div className="py-12 flex items-center justify-center">

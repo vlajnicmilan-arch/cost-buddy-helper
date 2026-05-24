@@ -4884,6 +4884,10 @@ export type Database = {
           title: string
         }[]
       }
+      merge_manual_with_bank: {
+        Args: { p_bank_id: string; p_manual_id: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

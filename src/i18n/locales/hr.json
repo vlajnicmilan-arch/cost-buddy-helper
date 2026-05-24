@@ -1107,7 +1107,32 @@
     "noBudget": "Bez budžeta",
     "toAccountLabel": "📥 Na račun (kamo)",
     "selectDestinationAccount": "Odaberi odredišni račun",
-    "noDestination": "Bez odredišta"
+    "noDestination": "Bez odredišta",
+    "merge": {
+      "button": "Spoji",
+      "merging": "Spajam…",
+      "confirmTitle": "Spojiti ručnu transakciju s onom iz banke?",
+      "confirmBody": "Ručna transakcija će preuzeti podatke iz banke i biti označena kao potvrđena. Bankovni zapis ide u smeće (možeš ga vratiti).",
+      "success": "Spojeno",
+      "errorGeneric": "Spajanje nije uspjelo",
+      "errors": {
+        "notTwoSelected": "Odaberi točno 2 transakcije",
+        "bothManual": "Obje su ručne — odaberi jednu ručnu i jednu iz banke",
+        "bothBank": "Obje su iz banke — odaberi jednu ručnu i jednu iz banke",
+        "differentType": "Različita vrsta transakcije",
+        "differentSource": "Različiti izvor plaćanja",
+        "differentCurrency": "Različita valuta",
+        "differentAmount": "Iznosi se razlikuju više od 0.1%",
+        "dateTooFar": "Datumi su predaleko (>3 dana)",
+        "transferNature": "Prijenosi se ne mogu spojiti",
+        "correctionNature": "Korekcije se ne mogu spojiti",
+        "alreadyConfirmed": "Ručna je već potvrđena",
+        "advanceProtected": "Avansi se ne mogu spojiti",
+        "deleted": "Transakcija je obrisana",
+        "differentUser": "Različiti korisnici",
+        "notAuthorized": "Nije dopušteno"
+      }
+    }
   },
   "dashboard": {
     "balance": "Stanje",
