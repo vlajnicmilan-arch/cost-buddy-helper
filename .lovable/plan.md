@@ -1,60 +1,54 @@
 ## Cilj
-Eliminirati lažne pozitive u "Vjerojatno postoji" sekciji pri uvozu izvoda (npr. LUKOIL ↔ LESNINA samo zato što oba imaju "SPLIT" u nazivu).
 
-## Promjene — sve u `src/lib/duplicateDetection.ts`
+U `PaymentSourceTransactionsDialog` lista transakcija sortirana je po datumu, pa se transakcije iz jednog uvoza (npr. Diners 7.2.–20.3.) lome u više blokova izmiješanih s ručnim unosima. Trenutno svaki "Uvoz" badge piše ukupan broj svih transakcija iz cijelog uvoza (npr. "34 tr."), što zbunjuje jer u tom bloku može biti samo npr. 5 transakcija.
 
-### 1. Proširi `normalizeMerchant` (strip geo/country šum)
-Dodati listu HR gradova + country oznaka koje se filtriraju prije word-splita:
+Rješenje (opcija C): broj uz svaki badge prikazuje **koliko transakcija pripada baš tom susjednom bloku**. Klik na bilo koji badge i dalje otvara isti `ImportBatchDialog` (cijeli uvoz, brisanje vrijedi za sve transakcije iz tog uvoza — to već radi ispravno).
+
+## Promjena u kodu
+
+**Datoteka:** `src/components/PaymentSourceTransactionsDialog.tsx` (redak ~1134–1139)
+
+Umjesto brojanja svih transakcija s istim `import_batch_id` u cijeloj listi, brojati samo **uzastopne** transakcije od trenutnog indeksa nadalje koje dijele isti `import_batch_id`:
+
+```ts
+const showBatchStart =
+  expense.import_batch_id &&
+  (!prevExpense || prevExpense.import_batch_id !== expense.import_batch_id);
+
+let blockCount = 0;
+if (showBatchStart) {
+  for (let i = index; i < filteredSourceExpenses.length; i++) {
+    if (filteredSourceExpenses[i].import_batch_id === expense.import_batch_id) blockCount++;
+    else break;
+  }
+}
 ```
-split, zagreb, rijeka, osijek, zadar, pula, sibenik, dubrovnik, varazdin,
-karlovac, vinkovci, sisak, slavonski, brod, bjelovar, kastel, supetar,
-trogir, makarska, samobor, koprivnica, krapina, cakovec, gospic,
-velika, gorica, hrv, hrvatska, hr, eur, eu
+
+I zamijeniti `batchExpenseCount` s `blockCount` u prikazu badgea.
+
+## i18n
+
+Trenutno je u JSX-u hardkodirano `"Uvoz • {N} tr."` što krši pravilo "no hardcoded text". Dodati ključeve u `src/i18n/locales/{hr,en,de}.json` pod postojeći namespace `importBatch`:
+
+- hr: `"badge": "Uvoz"`, `"badgeShort": "tr."`
+- en: `"badge": "Import"`, `"badgeShort": "tx"`
+- de: `"badge": "Import"`, `"badgeShort": "Tx."`
+
+I koristiti `t('importBatch.badge')` + `t('importBatch.transactions')` (već postoji "transakcija") ili novi `badgeShort` za kompaktni prikaz. Predlažem `badgeShort` jer "transakcija" je predugačko za inline badge.
+
+Render:
+```tsx
+{t('importBatch.badge')} • {blockCount} {t('importBatch.badgeShort')}
 ```
-Rezultat: `"LUKOIL POLJUD SPLIT HRV"` → `"lukoil poljud"`; `"LESNINA H PC SPLIT"` → `"lesnina h pc"`.
 
-### 2. Pooštri `areMerchantsSimilar`
-Trenutno: `common.length / minLen >= 0.5` (jedna zajednička riječ dovoljna).
-Novo:
-```
-if (common.length >= 2) return true;
-return common.length / minLen >= 0.6 && minLen >= 2;
-```
-Single-word merchanti (LIDL vs LIDL) i dalje rade preko `na === nb` / `includes` grane (linija 72–74) — ne mijenjamo je.
+## Što se NE mijenja
 
-### 3. Pooštri "suspicious" tier pragove (linije 238–257)
-- iznos: `within5pct` → **`within1pct`** (`amtDelta / max(|txAmt|, 0.01) <= 0.01`)
-- datum: `isWithinSameWeek` (≤7d) → **`days <= 2`**
-- merchant uvjet ostaje, ali sada koristi pooštreni `areMerchantsSimilar` + očišćeni `normalizeMerchant`
+- Klik na badge → otvara isti `ImportBatchDialog` (svi badgevi istog uvoza dijele `batchId`).
+- Brisanje iz dialoga → i dalje briše/odljepljuje sve transakcije iz cijelog uvoza, ne samo iz bloka (to je već potvrđeno ponašanje — ručni unosi spojeni s izvodom se vraćaju u prvotno stanje preko `unmerge_import_row`).
+- Nema DB migracije, nema promjene u edge funkcijama.
 
-Razlog: pokriva samo realne slučajeve (pretplata s par centi razlike zbog tečaja, vikend booking delay), eliminira slučajne susjede.
+## Test
 
-### 4. Testovi — `src/lib/duplicateDetection.test.ts`
-Dodati regresijske slučajeve:
+Vizualno provjeriti u Wallet → Diners izvor: očekujem više "Uvoz" badgeva s različitim brojevima koji se zbroje u ukupan broj iz `ImportBatchDialog` headera.
 
-**Negativni (moraju biti `unique`):**
-- LUKOIL POLJUD/SPLIT/HRV 47,69 vs LESNINA H PC SPLIT 45,89, isti dan
-- SPLIT - SUPETAR 41,30 vs LIDL HRVATSKA 215 Split 40,85, 4 dana razmaka
-- TOMMY ZAGREB vs KONZUM ZAGREB istog iznosa istog dana (samo "zagreb" zajedničko → strip-ano)
-
-**Pozitivni (moraju ostati `suspicious`):**
-- NETFLIX 9,99 vs NETFLIX 10,09 (1% razlike), 2 dana razmaka, isti merchant
-- HEP ELEKTRA 45,20 vs HEP ELEKTRA 45,60 (0.88%), isti dan
-
-**Pozitivni (moraju ostati `strict`/`fuzzy`):**
-- LIDL točan iznos isti dan → strict
-- LIDL točan iznos +2 dana → fuzzy
-
-## Što NE diramo
-- `useExpenseCRUD.ts`, auto-merge flow (`manualMatchForImport.ts`)
-- UI duplikat dijaloga
-- `checkDuplicate` (manual entry) — ostaje strict
-- DB / migracije — nije potrebno
-- i18n keys — postojeći `duplicates.reason.*` ostaju
-
-## Verifikacija
-1. `npm test` — svi postojeći + 7 novih testova prolaze
-2. Korisnik ponovo uvozi isti izvod → "Vjerojatno postoji" sekcija prazna ili sadrži samo realne kandidate
-
-## Update memorije
-Nakon implementacije ažurirati `mem://features/transaction-duplicate-detection-v2` s novim pragovima (suspicious: ±1% iznosa, ±2 dana, ≥2 common merchant words; geo stop-words).
+Bez novih vitest testova — promjena je čisto prezentacijska i lokalna u JSX-u (nema ekstrakcije helpera).
