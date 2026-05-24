@@ -17,6 +17,15 @@ export interface ParsedTransaction {
    * Computed in `src/lib/importFingerprint.ts`.
    */
   bank_transaction_id?: string;
+  /**
+   * Installment metadata propagated from PDF parser (Diners-style "(6/7)"
+   * notation). When present, importFromCSV pokuša link na postojeći
+   * installment_plan + označi pripadajuću `installments` ratu kao paid.
+   */
+  is_installment?: boolean;
+  installment_current?: number | null;
+  installment_total?: number | null;
+  installment_base_description?: string | null;
 }
 
 // Detect if transaction is an internal transfer between own accounts

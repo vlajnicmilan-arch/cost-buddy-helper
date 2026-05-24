@@ -1554,6 +1554,13 @@
     "importCount": "{{count}} Transaktionen importieren",
     "importedFromPDF": "{{count}} Transaktionen aus PDF importiert",
     "importing": "Importiere...",
+    "installment": {
+      "badge": "Rate {{cur}}/{{total}}"
+    },
+    "statementTotal": {
+      "title": "Gesamtbetrag des Kontoauszugs",
+      "description": "Wir buchen dies nicht als Ausgabe (würde Raten doppelt zählen). Wenn die Bank den Gesamtbetrag abbucht, erfasse es manuell als Überweisung Girokonto → {{source}}."
+    },
     "allAssignedToSource": "ℹ️ Alle Transaktionen werden der Quelle zugewiesen: {{name}}",
     "duplicatesFound": "Duplikate gefunden",
     "duplicatesExist": "{{count}} Transaktionen existieren bereits in der Datenbank",
