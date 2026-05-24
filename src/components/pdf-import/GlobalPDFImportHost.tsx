@@ -652,7 +652,7 @@ export const GlobalPDFImportHost = () => {
                       {duplicateInfo.suspiciousDuplicates.map((tx, index) => {
                         const matchedExpense = duplicateInfo.suspiciousMatchedExpenses[index];
                         return (
-                          <button type="button" key={`s-${tx.date.toISOString()}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
+                          <button type="button" key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
                             const next = new Set(prev);
                             next.has(index) ? next.delete(index) : next.add(index);
                             return next;
