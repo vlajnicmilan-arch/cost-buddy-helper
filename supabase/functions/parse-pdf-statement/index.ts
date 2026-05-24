@@ -463,12 +463,18 @@ METAPODACI:
       return cleaned || null;
     }
 
-    // Filter and sanitize transactions
+    // Filter and sanitize transactions; preserve installment + statement-total metadata
     const rawTransactions = statementData.transactions || [];
     const transactions = rawTransactions.map((t: any) => ({
       ...t,
       description: sanitizeText(t.description) || 'Nepoznata transakcija',
       merchant_name: sanitizeText(t.merchant_name),
+      is_installment: t.is_installment === true,
+      installment_current: typeof t.installment_current === 'number' ? t.installment_current : null,
+      installment_total: typeof t.installment_total === 'number' ? t.installment_total : null,
+      installment_base_description: sanitizeText(t.installment_base_description),
+      due_date_override: typeof t.due_date_override === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date_override) ? t.due_date_override : null,
+      is_statement_total: t.is_statement_total === true,
     })).filter((t: any) => {
       // Skip transactions where both description and merchant are garbled
       if (t.description === 'Nepoznata transakcija' && !t.merchant_name) {
@@ -481,8 +487,13 @@ METAPODACI:
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
-    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const statementDueDate = typeof (statementData as any).statement_due_date === 'string'
+      && /^\d{4}-\d{2}-\d{2}$/.test((statementData as any).statement_due_date)
+      ? (statementData as any).statement_due_date
+      : null;
+    // Exclude statement-total rows from income/expense sums to avoid double counting
+    const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
     // Group transactions by card if multiple cards detected
     const cardGroups = new Map<string, number>();
