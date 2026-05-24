@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { PaymentSourceCard } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { BankMatchStatus } from '@/lib/bankMatchStatus';
 
 export interface MemberOption {
   userId: string;
