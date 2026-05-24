@@ -14,6 +14,15 @@ export interface ParsedPDFTransaction {
   merchant_name: string | null;
   payment_source?: PaymentSource;
   card_last4?: string | null;
+  // Installment metadata (Diners-style "EMMEZETA (6/7)" etc.)
+  is_installment?: boolean;
+  installment_current?: number | null;
+  installment_total?: number | null;
+  installment_base_description?: string | null;
+  // For credit-card statements: actual billing date, may differ from `date` (original purchase)
+  due_date_override?: string | null;
+  // True for summary rows like "Specifikacija troškova - Diners (8881) 788,10 EUR"
+  is_statement_total?: boolean;
 }
 
 export interface PDFParseResult {
@@ -22,6 +31,7 @@ export interface PDFParseResult {
   account_iban: string | null;
   holder_name: string | null;
   cards_detected: string[];
+  statement_due_date?: string | null;
   summary: {
     total_income: number;
     total_expenses: number;
