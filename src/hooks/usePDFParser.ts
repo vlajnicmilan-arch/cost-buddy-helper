@@ -63,12 +63,19 @@ const toParseResult = (data: any): PDFParseResult => ({
     category: tx.category as Category,
     type: tx.type as TransactionType,
     payment_source: detectPaymentSource(tx.description, data.detected_bank, tx.card_type),
-    card_last4: tx.card_last4 || null
+    card_last4: tx.card_last4 || null,
+    is_installment: tx.is_installment === true,
+    installment_current: typeof tx.installment_current === 'number' ? tx.installment_current : null,
+    installment_total: typeof tx.installment_total === 'number' ? tx.installment_total : null,
+    installment_base_description: tx.installment_base_description ?? null,
+    due_date_override: tx.due_date_override ?? null,
+    is_statement_total: tx.is_statement_total === true,
   })),
   detected_bank: data.detected_bank || null,
   account_iban: data.account_iban || null,
   holder_name: data.holder_name || null,
   cards_detected: data.cards_detected || [],
+  statement_due_date: data.statement_due_date ?? null,
   summary: data.summary
 });
 
