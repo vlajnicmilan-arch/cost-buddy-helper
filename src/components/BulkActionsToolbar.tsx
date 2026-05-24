@@ -4,7 +4,10 @@ import { CATEGORIES, Category, PAYMENT_SOURCE_GROUPS } from '@/types/expense';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
-import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder } from 'lucide-react';
+import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder, Link2 } from 'lucide-react';
+import { useManualBankMerge } from '@/hooks/useManualBankMerge';
+import type { MergeCandidateExpense } from '@/lib/manualBankMergePair';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -35,6 +38,10 @@ interface BulkActionsToolbarProps {
   showPaymentSourceChange?: boolean;
   showBudgetChange?: boolean;
   showProjectChange?: boolean;
+  /** Selected expense objects (needed for manual ↔ bank merge validation). */
+  selectedExpenses?: readonly MergeCandidateExpense[];
+  /** Show the "Spoji" (manual ↔ bank merge) button when 2 are selected. */
+  showMerge?: boolean;
 }
 
 export const BulkActionsToolbar = ({
@@ -51,6 +58,8 @@ export const BulkActionsToolbar = ({
   showPaymentSourceChange = true,
   showBudgetChange = true,
   showProjectChange = true,
+  selectedExpenses,
+  showMerge = true,
 }: BulkActionsToolbarProps) => {
   const { t } = useTranslation();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
