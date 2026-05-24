@@ -456,9 +456,13 @@ export const useExpenseCRUD = ({
     }
   }, [isLocalMode, user, expenses, setExpenses, updateBalance, onBalanceUpdated, emitAvatarEvent, t]);
 
-  const importFromCSV = useCallback(async (transactions: ParsedTransaction[]) => {
+  const importFromCSV = useCallback(async (
+    transactions: ParsedTransaction[],
+    opts?: { forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }> },
+  ) => {
     try {
       const batchId = crypto.randomUUID();
+      const forcedMerges = opts?.forcedManualMerges ?? [];
 
       if (isLocalMode) {
         for (const tx of transactions) {
