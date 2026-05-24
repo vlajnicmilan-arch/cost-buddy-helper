@@ -1556,6 +1556,7 @@
     "importDuplicatesAnyway": "Duplikate trotzdem importieren ({{count}})",
     "strictDuplicates": "🚫 Sichere Duplikate (gleiches Datum und gleicher Betrag):",
     "possibleDuplicates": "⚠️ Mögliche Duplikate (±3 Tage, gleicher Betrag):",
+    "suspiciousDuplicates": "❓ Wahrscheinlich bereits importiert (gleicher Tag, Betrag, Händler):",
     "compareAndSelect": "Vergleichen und auswählen, welche importiert werden sollen:",
     "existing": "Bestehend",
     "noNewTransactions": "Keine neuen Transaktionen zum Importieren",

@@ -489,7 +489,7 @@ export const GlobalPDFImportHost = () => {
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-sm">
-                  <p className="font-medium text-orange-600 dark:text-orange-400">{t('import.duplicatesExist', { count: duplicateInfo.duplicates.length + duplicateInfo.fuzzyDuplicates.length })}</p>
+                  <p className="font-medium text-orange-600 dark:text-orange-400">{t('import.duplicatesExist', { count: duplicateInfo.duplicates.length + duplicateInfo.fuzzyDuplicates.length + duplicateInfo.suspiciousDuplicates.length })}</p>
                   <p className="text-muted-foreground text-xs mt-1">{t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}</p>
                 </div>
                 {duplicateInfo.duplicates.length > 0 && (
@@ -525,10 +525,31 @@ export const GlobalPDFImportHost = () => {
                     </div>
                   </div>
                 )}
+                {duplicateInfo.suspiciousDuplicates.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('import.suspiciousDuplicates')}</p>
+                    <p className="text-xs text-muted-foreground">{t('import.compareAndSelect')}</p>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {duplicateInfo.suspiciousDuplicates.map((tx, index) => {
+                        const matchedExpense = duplicateInfo.suspiciousMatchedExpenses[index];
+                        return (
+                          <button type="button" key={`s-${tx.date.toISOString()}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
+                            const next = new Set(prev);
+                            next.has(index) ? next.delete(index) : next.add(index);
+                            return next;
+                          })}>
+                            {matchedExpense && <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30"><span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{matchedExpense.description}</p><p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p></div>}
+                            <div className={cn('flex items-center gap-2 p-2', selectedSuspicious.has(index) ? 'bg-primary/5' : 'bg-amber-500/5')}><Checkbox checked={selectedSuspicious.has(index)} className="ml-0.5 pointer-events-none" /><span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">{t('common.new')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{tx.description}</p><p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p></div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
-                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">{isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: duplicateInfo.unique.length + selectedFuzzy.size + (includeDuplicates ? duplicateInfo.duplicates.length : 0) })}</Button>
+                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">{isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</> : t('import.importCount', { count: duplicateInfo.unique.length + selectedFuzzy.size + selectedSuspicious.size + (includeDuplicates ? duplicateInfo.duplicates.length : 0) })}</Button>
               </div>
             </motion.div>
           </motion.div>
