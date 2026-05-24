@@ -372,6 +372,11 @@ METAPODACI:
                   total_expenses: {
                     type: 'number',
                     description: 'Sum of all expense transactions'
+                  },
+                  statement_due_date: {
+                    type: 'string',
+                    description: 'For credit-card statements: charge/billing due date (YYYY-MM-DD) from header ("Platiti do: DD.MM.YYYY"). Null otherwise.',
+                    nullable: true
                   }
                 },
                 required: ['transactions', 'total_income', 'total_expenses']
