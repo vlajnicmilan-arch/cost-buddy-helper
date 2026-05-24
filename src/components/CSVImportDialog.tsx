@@ -79,6 +79,8 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   const [fuzzyDuplicateIndices, setFuzzyDuplicateIndices] = useState<Set<number>>(new Set());
   const [autoGenIndices, setAutoGenIndices] = useState<Set<number>>(new Set());
   const [autoGenMap, setAutoGenMap] = useState<Map<number, Expense>>(new Map());
+  const [autoMergeIndices, setAutoMergeIndices] = useState<Set<number>>(new Set());
+  const [autoMergeMap, setAutoMergeMap] = useState<Map<number, Expense>>(new Map());
   const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
@@ -105,13 +107,15 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   };
 
   // Detect duplicates using scoring findDuplicates if available, else simple check
-  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense> } => {
+  const detectDuplicates = (txs: ParsedTransaction[]): { strict: Set<number>; fuzzy: Set<number>; autoGen: Set<number>; autoGenMapping: Map<number, Expense>; autoMerge: Set<number>; autoMergeMapping: Map<number, Expense> } => {
     if (findDuplicates) {
-      const { duplicates, fuzzyDuplicates, autoGenMatches } = findDuplicates(txs);
+      const { duplicates, fuzzyDuplicates, autoGenMatches, autoMergeMatches } = findDuplicates(txs);
       const strictSet = new Set<number>();
       const fuzzySet = new Set<number>();
       const autoGenSet = new Set<number>();
       const agMap = new Map<number, Expense>();
+      const autoMergeSet = new Set<number>();
+      const amMap = new Map<number, Expense>();
       duplicates.forEach(dup => {
         const idx = txs.findIndex(tx => tx === dup);
         if (idx >= 0) strictSet.add(idx);
@@ -127,19 +131,27 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
           agMap.set(idx, existing);
         }
       });
-      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap };
+      (autoMergeMatches || []).forEach(({ tx: amTx, existing }) => {
+        const idx = txs.findIndex(tx => tx === amTx);
+        if (idx >= 0) {
+          autoMergeSet.add(idx);
+          amMap.set(idx, existing);
+        }
+      });
+      return { strict: strictSet, fuzzy: fuzzySet, autoGen: autoGenSet, autoGenMapping: agMap, autoMerge: autoMergeSet, autoMergeMapping: amMap };
     }
     // Fallback: simple check
     const strictSet = new Set<number>();
     txs.forEach((tx, i) => {
       if (isSimpleDuplicate(tx)) strictSet.add(i);
     });
-    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map() };
+    return { strict: strictSet, fuzzy: new Set(), autoGen: new Set(), autoGenMapping: new Map(), autoMerge: new Set(), autoMergeMapping: new Map() };
   };
 
   const duplicateCount = duplicateIndices.size;
   const fuzzyCount = fuzzyDuplicateIndices.size;
   const autoGenCount = autoGenIndices.size;
+  const autoMergeCount = autoMergeIndices.size;
 
   const resetState = () => {
     setStep('upload');
@@ -149,6 +161,8 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     setFuzzyDuplicateIndices(new Set());
     setAutoGenIndices(new Set());
     setAutoGenMap(new Map());
+    setAutoMergeIndices(new Set());
+    setAutoMergeMap(new Map());
     setReplaceAutoGen(true);
     setSkipDuplicates(true);
     setSource('');
@@ -205,12 +219,14 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const { strict, fuzzy, autoGen, autoGenMapping } = detectDuplicates(result.transactions);
+      const { strict, fuzzy, autoGen, autoGenMapping, autoMerge, autoMergeMapping } = detectDuplicates(result.transactions);
       setDuplicateIndices(strict);
       setFuzzyDuplicateIndices(fuzzy);
       setAutoGenIndices(autoGen);
       setAutoGenMap(autoGenMapping);
-      // Auto-deselect strict duplicates and auto-gen (will be replaced separately)
+      setAutoMergeIndices(autoMerge);
+      setAutoMergeMap(autoMergeMapping);
+      // Auto-deselect strict duplicates and auto-gen (will be replaced separately). Auto-merge rows ARE selected (they'll be imported and linked).
       const nonStrictDupIndices = new Set(
         result.transactions.map((_, i) => i).filter(i => !strict.has(i) && !autoGen.has(i))
       );
@@ -492,6 +508,14 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
+              {autoMergeCount > 0 && (
+                <div className="py-2 px-3 mb-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <Check className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs font-medium">
+                    {t('import.autoMerge.title', { count: autoMergeCount })}
+                  </span>
+                </div>
+              )}
               {(duplicateCount > 0 || fuzzyCount > 0 || autoGenCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
@@ -581,6 +605,7 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                     const isStrict = duplicateIndices.has(index);
                     const isFuzzy = fuzzyDuplicateIndices.has(index);
                     const isAutoGen = autoGenIndices.has(index);
+                    const isAutoMerge = autoMergeIndices.has(index);
                     return (
                       <motion.div
                         key={index}
@@ -591,13 +616,15 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                           isAutoGen
                             ? 'bg-primary/5 border border-primary/20'
-                            : isStrict && !selectedIndices.has(index)
-                              ? 'bg-destructive/5 border border-destructive/20 opacity-50'
-                              : isFuzzy && !selectedIndices.has(index)
-                                ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
-                                : selectedIndices.has(index) 
-                                  ? 'bg-muted/50 border border-primary/20' 
-                                  : 'bg-muted/20 border border-transparent opacity-50'
+                            : isAutoMerge
+                              ? 'bg-emerald-500/5 border border-emerald-500/30'
+                              : isStrict && !selectedIndices.has(index)
+                                ? 'bg-destructive/5 border border-destructive/20 opacity-50'
+                                : isFuzzy && !selectedIndices.has(index)
+                                  ? 'bg-amber-500/5 border border-amber-500/20 opacity-60'
+                                  : selectedIndices.has(index) 
+                                    ? 'bg-muted/50 border border-primary/20' 
+                                    : 'bg-muted/20 border border-transparent opacity-50'
                         }`}
                       >
                         {!isAutoGen && (
@@ -628,6 +655,11 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                             {isAutoGen && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary shrink-0">
                                 Zamjena
+                              </Badge>
+                            )}
+                            {isAutoMerge && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                {t('import.autoMerge.fromStatement')}
                               </Badge>
                             )}
                           </div>
