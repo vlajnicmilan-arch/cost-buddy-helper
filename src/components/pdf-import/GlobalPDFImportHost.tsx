@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Loader2, Upload, X as XIcon } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Link2, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ type DuplicateInfo = {
   fuzzyMatchedExpenses: import('@/types/expense').Expense[];
   suspiciousDuplicates: ParsedTransaction[];
   suspiciousMatchedExpenses: import('@/types/expense').Expense[];
+  autoMergeMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[];
   unique: ParsedTransaction[];
 };
 
@@ -57,6 +58,7 @@ export const GlobalPDFImportHost = () => {
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [selectedFuzzy, setSelectedFuzzy] = useState<Set<number>>(new Set());
   const [selectedSuspicious, setSelectedSuspicious] = useState<Set<number>>(new Set());
+  const [autoMergeExpanded, setAutoMergeExpanded] = useState(false);
   const [statementDup, setStatementDup] = useState<StatementDuplicate | null>(null);
   const fileHashRef = useRef<string | null>(null);
   const contentHashRef = useRef<string | null>(null);
@@ -77,6 +79,7 @@ export const GlobalPDFImportHost = () => {
     setIncludeDuplicates(false);
     setSelectedFuzzy(new Set());
     setSelectedSuspicious(new Set());
+    setAutoMergeExpanded(false);
     setStatementDup(null);
     fileHashRef.current = null;
     contentHashRef.current = null;
@@ -347,31 +350,47 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
       const duplicateResult = pdfImport._runFindDuplicates(transactions);
-      if (
+      const hasReviewable =
         duplicateResult &&
         (duplicateResult.duplicates.length > 0 ||
           duplicateResult.fuzzyDuplicates.length > 0 ||
-          duplicateResult.suspiciousDuplicates.length > 0)
-      ) {
+          duplicateResult.suspiciousDuplicates.length > 0);
+
+      if (hasReviewable) {
         if (
           duplicateResult.unique.length === 0 &&
           duplicateResult.fuzzyDuplicates.length === 0 &&
-          duplicateResult.suspiciousDuplicates.length === 0
+          duplicateResult.suspiciousDuplicates.length === 0 &&
+          (duplicateResult.autoMergeMatches?.length ?? 0) === 0
         ) {
           toast.info(t('import.noNewTransactions'));
           resetAll();
           return;
         }
-        setDuplicateInfo(duplicateResult);
+        setDuplicateInfo({
+          duplicates: duplicateResult.duplicates,
+          fuzzyDuplicates: duplicateResult.fuzzyDuplicates,
+          fuzzyMatchedExpenses: duplicateResult.fuzzyMatchedExpenses,
+          suspiciousDuplicates: duplicateResult.suspiciousDuplicates,
+          suspiciousMatchedExpenses: duplicateResult.suspiciousMatchedExpenses,
+          autoMergeMatches: duplicateResult.autoMergeMatches ?? [],
+          unique: duplicateResult.unique,
+        });
         setIncludeDuplicates(false);
         setSelectedFuzzy(new Set());
         setSelectedSuspicious(new Set());
         pdfImport._setDuplicates();
         return;
       }
+      // No reviewable duplicates — auto-merge (if any) happens silently inside importFromCSV.
       await pdfImport._runImport(transactions);
       await persistStatementRecord(transactions.length);
-      showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+      const mergedCount = duplicateResult?.autoMergeMatches?.length ?? 0;
+      if (mergedCount > 0) {
+        showSuccess(t('import.importedWithAutoMerge', { count: transactions.length - mergedCount, merged: mergedCount }));
+      } else {
+        showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+      }
       resetAll();
     } catch (error) {
       try { logDiagnostic('global_pdf_import_save_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
@@ -385,7 +404,14 @@ export const GlobalPDFImportHost = () => {
     const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, index) => selectedFuzzy.has(index));
     const suspiciousToInclude = duplicateInfo.suspiciousDuplicates.filter((_, index) => selectedSuspicious.has(index));
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
-    const transactions = [...duplicateInfo.unique, ...fuzzyToInclude, ...suspiciousToInclude, ...strictToInclude];
+    const autoMergeTxs = duplicateInfo.autoMergeMatches.map(m => m.tx);
+    const transactions = [
+      ...duplicateInfo.unique,
+      ...autoMergeTxs,
+      ...fuzzyToInclude,
+      ...suspiciousToInclude,
+      ...strictToInclude,
+    ];
     if (transactions.length === 0) {
       toast.info(t('import.noNewTransactions'));
       resetAll();
@@ -492,6 +518,51 @@ export const GlobalPDFImportHost = () => {
                   <p className="font-medium text-orange-600 dark:text-orange-400">{t('import.duplicatesExist', { count: duplicateInfo.duplicates.length + duplicateInfo.fuzzyDuplicates.length + duplicateInfo.suspiciousDuplicates.length })}</p>
                   <p className="text-muted-foreground text-xs mt-1">{t('import.newTransactionsReady', { count: duplicateInfo.unique.length })}</p>
                 </div>
+                {duplicateInfo.autoMergeMatches.length > 0 && (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setAutoMergeExpanded(prev => !prev)}
+                      className="w-full flex items-center gap-2 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
+                      aria-expanded={autoMergeExpanded}
+                    >
+                      <Link2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                          {t('import.autoMerge.title', { count: duplicateInfo.autoMergeMatches.length })}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {t('import.autoMerge.description')}
+                        </p>
+                      </div>
+                      {autoMergeExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+                    </button>
+                    {autoMergeExpanded && (
+                      <div className="px-3 pb-3 space-y-2 max-h-64 overflow-y-auto">
+                        {duplicateInfo.autoMergeMatches.map(({ tx, existing }, index) => (
+                          <div key={`am-${tx.date.toISOString()}-${index}`} className="rounded-lg border border-emerald-500/20 overflow-hidden bg-background/40">
+                            <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30">
+                              <span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-xs">{existing.description}</p>
+                                <p className="text-[10px] text-muted-foreground">{(existing.date instanceof Date ? existing.date : new Date(existing.date)).toLocaleDateString()}</p>
+                              </div>
+                              <p className={cn('font-mono text-xs shrink-0', existing.type === 'income' ? 'text-income' : 'text-expense')}>{existing.type === 'income' ? '+' : '-'}{formatAmount(Number(existing.amount))}</p>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 bg-emerald-500/5">
+                              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase w-14 shrink-0">{t('import.autoMerge.fromStatement')}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-xs">{tx.merchant_name || tx.description}</p>
+                                <p className="text-[10px] text-muted-foreground">{(tx.date instanceof Date ? tx.date : new Date(tx.date)).toLocaleDateString()}</p>
+                              </div>
+                              <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {duplicateInfo.duplicates.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-destructive/80">{t('import.strictDuplicates')}</p>
