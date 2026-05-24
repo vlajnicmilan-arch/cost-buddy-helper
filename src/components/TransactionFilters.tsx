@@ -30,6 +30,7 @@ export interface FilterState {
   cardId: string | undefined;
   categoryId: string | undefined;
   scope: TransactionScope;
+  bankMatchStatus: string | undefined;
 }
 
 interface TransactionFiltersProps {
