@@ -496,7 +496,7 @@ export const useExpenseCRUD = ({
         // unique index `uniq_expenses_user_bank_tx(user_id, bank_transaction_id)`
         // so re-importing the same statement cannot create duplicates.
         const { computeImportFingerprint } = await import('@/lib/importFingerprint');
-        const fingerprinted = await Promise.all(transactions.map(async (tx) => {
+        let fingerprinted = await Promise.all(transactions.map(async (tx) => {
           const fingerprint = tx.bank_transaction_id
             || await computeImportFingerprint({
               userId: user.id,
