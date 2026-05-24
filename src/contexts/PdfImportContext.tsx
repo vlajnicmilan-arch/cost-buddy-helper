@@ -57,7 +57,7 @@ interface PdfImportContextValue {
   _setDuplicates: () => void;
   _setIdle: () => void;
   _setImporting: (importing: boolean) => void;
-  _runImport: (transactions: ParsedTransaction[]) => Promise<void>;
+  _runImport: (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[] }) => Promise<void>;
   _runFindDuplicates: (transactions: ParsedTransaction[]) => ReturnType<FindPdfDuplicatesHandler> | null;
   _pendingPdfRef: MutableRefObject<StartPdfImportOptions | null>;
   _pendingHtmlRef: MutableRefObject<StartHtmlImportOptions | null>;
