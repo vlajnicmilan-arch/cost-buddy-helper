@@ -508,6 +508,14 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col min-h-0"
             >
+              {autoMergeCount > 0 && (
+                <div className="py-2 px-3 mb-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <Check className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs font-medium">
+                    {t('import.autoMerge.title', { count: autoMergeCount })}
+                  </span>
+                </div>
+              )}
               {(duplicateCount > 0 || fuzzyCount > 0 || autoGenCount > 0) && (
                 <div className="py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col gap-2 text-amber-700 dark:text-amber-400">
                   <div className="flex items-center gap-2">
