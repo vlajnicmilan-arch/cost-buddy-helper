@@ -2760,7 +2760,9 @@
     "deleting": "Brisanje...",
     "deleteCount": "Obriši {{count}} transakcija",
     "mergedWithManual": "Spojeno s ručnim unosom",
-    "mergedBadge": "Spojeno"
+    "mergedBadge": "Spojeno",
+    "badge": "Uvoz",
+    "badgeShort": "tr."
   },
   "install": {
     "installed": "Aplikacija je instalirana!",
