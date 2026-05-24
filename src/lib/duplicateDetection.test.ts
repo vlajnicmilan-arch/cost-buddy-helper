@@ -86,9 +86,9 @@ describe('duplicateDetection — levels', () => {
     expect(result.confidence).toBeLessThan(90);
   });
 
-  it('SUSPICIOUS: ~3% amount diff, same week, near-identical merchant', () => {
+  it('SUSPICIOUS: ~0.8% amount diff, ±2 days, near-identical merchant', () => {
     const existing = baseExpense({
-      amount: 51.5,
+      amount: 50.40,
       date: new Date('2026-05-08T10:00:00Z'),
       merchant_name: 'Konzun',
     });
@@ -96,6 +96,17 @@ describe('duplicateDetection — levels', () => {
     expect(result.level).toBe('suspicious');
     expect(result.confidence).toBeGreaterThanOrEqual(30);
     expect(result.confidence).toBeLessThan(60);
+  });
+
+  it('SUSPICIOUS no longer triggers on >1% amount diff', () => {
+    // Old behaviour: 3% diff was suspicious. New: must be unique.
+    const existing = baseExpense({
+      amount: 51.5,
+      date: new Date('2026-05-09T10:00:00Z'),
+      merchant_name: 'Konzum',
+    });
+    const result = detectDuplicate(baseTx({}), [existing], { ignoreSameDayDuplicateGuard: true });
+    expect(result.level).toBe('unique');
   });
 
   it('UNIQUE: completely different transaction', () => {
