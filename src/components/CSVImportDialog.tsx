@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Upload, FileText, Check, AlertCircle, Loader2, Copy, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseCSV, ParsedTransaction } from '@/lib/csvParsers';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getCategoryInfo, TransactionType, Expense } from '@/types/expense';
@@ -29,7 +30,7 @@ interface CSVImportDialogProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   defaultPaymentSource?: string;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';

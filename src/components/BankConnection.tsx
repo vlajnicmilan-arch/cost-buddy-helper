@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { Button } from '@/components/ui/button';
 import { FileSpreadsheet, Info, FileText, Loader2, AlertTriangle, Camera, Image as ImageIcon, Code2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -22,7 +23,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface BankConnectionProps {
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: import('@/types/expense').Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: import('@/types/expense').Expense }[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
   existingExpenses?: import('@/types/expense').Expense[];
   /**
    * UUID poslovnog izvora plaćanja na koji se vežu SVE uvezene transakcije.

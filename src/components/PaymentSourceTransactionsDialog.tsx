@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Expense, getCategoryInfo, Category } from '@/types/expense';
+import type { FindPdfDuplicatesHandler } from '@/contexts/PdfImportContext';
 import { TransactionFilters, FilterState, defaultFilters, applyFilters } from './TransactionFilters';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { TransactionDetailDialog } from './TransactionDetailDialog';
@@ -52,7 +53,7 @@ interface PaymentSourceTransactionsDialogProps {
   onDelete: (id: string) => Promise<void>;
   onBulkDelete?: (ids: string[]) => Promise<void>;
   onImportCSV?: (transactions: ParsedTransaction[]) => Promise<void>;
-  findDuplicates?: (transactions: ParsedTransaction[]) => { duplicates: ParsedTransaction[]; fuzzyDuplicates: ParsedTransaction[]; fuzzyMatchedExpenses: Expense[]; autoGenMatches: { tx: ParsedTransaction; existing: Expense }[]; unique: ParsedTransaction[] };
+  findDuplicates?: FindPdfDuplicatesHandler;
   onPdfProcessingChange?: (processing: boolean) => void;
 }
 

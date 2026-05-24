@@ -80,6 +80,24 @@ export function areMerchantsSimilar(a?: string | null, b?: string | null): boole
   return common.length / minLen >= 0.5;
 }
 
+/**
+ * Cross-field merchant similarity: covers the common case where the bank
+ * statement row has rich `merchant_name` but the manual entry only has a short
+ * `description` (e.g. "kava" vs "CAFFE BAR ABC 1234 ZAGREB"). Tries all
+ * meaningful combinations through `areMerchantsSimilar`.
+ */
+export function merchantOrDescriptionSimilar(
+  aMerchant?: string | null,
+  aDescription?: string | null,
+  bMerchant?: string | null,
+  bDescription?: string | null,
+): boolean {
+  if (areMerchantsSimilar(aMerchant, bMerchant)) return true;
+  if (areMerchantsSimilar(aMerchant, bDescription)) return true;
+  if (areMerchantsSimilar(aDescription, bMerchant)) return true;
+  return false;
+}
+
 export function descriptionsOverlap(a?: string | null, b?: string | null): boolean {
   const da = (a || '').toLowerCase().trim();
   const db = (b || '').toLowerCase().trim();
@@ -169,10 +187,16 @@ function scorePair(
   const exactAmount = amtDelta < 0.01;
   const within5pct = amtDelta / Math.max(Math.abs(txAmt), 0.01) <= 0.05;
 
-  const merchantMatch = areMerchantsSimilar(existing.merchant_name, tx.merchant_name);
+  const merchantMatch = merchantOrDescriptionSimilar(
+    existing.merchant_name,
+    existing.description,
+    tx.merchant_name,
+    tx.description,
+  );
   const descMatch = descriptionsOverlap(existing.description, tx.description);
   const samePaymentSource =
     !!existing.payment_source && !!tx.payment_source && existing.payment_source === tx.payment_source;
+
 
   // ── STRICT (90–100) ──────────────────────────────────────────────────────
   // Exact amount + date ±1 day + (merchant OR very similar description)
