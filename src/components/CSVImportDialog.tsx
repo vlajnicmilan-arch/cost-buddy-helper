@@ -605,6 +605,7 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
                     const isStrict = duplicateIndices.has(index);
                     const isFuzzy = fuzzyDuplicateIndices.has(index);
                     const isAutoGen = autoGenIndices.has(index);
+                    const isAutoMerge = autoMergeIndices.has(index);
                     return (
                       <motion.div
                         key={index}
