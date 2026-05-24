@@ -13,7 +13,6 @@ import { PaymentSourceCard } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
-import { BankMatchStatus } from '@/lib/bankMatchStatus';
 
 export interface MemberOption {
   userId: string;
