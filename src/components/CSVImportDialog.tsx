@@ -22,6 +22,24 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  computeFileHash,
+  computeContentHash,
+  findExistingStatement,
+  recordImportedStatement,
+  type ExistingStatement,
+} from '@/lib/statementFingerprint';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CSVImportDialogProps {
   onImport: (transactions: ParsedTransaction[]) => Promise<void>;
@@ -63,6 +81,16 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   const [autoGenMap, setAutoGenMap] = useState<Map<number, Expense>>(new Map());
   const [replaceAutoGen, setReplaceAutoGen] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
+
+  const { user } = useAuth();
+  const fileHashRef = useRef<string | null>(null);
+  const contentHashRef = useRef<string | null>(null);
+  const fileMetaRef = useRef<{ name: string; size: number; type: string } | null>(null);
+  const [statementDup, setStatementDup] = useState<{
+    existing: ExistingStatement;
+    retry: () => void;
+  } | null>(null);
+
 
   // Simple fallback duplicate detection: same amount and same date (day-level)
   const isSimpleDuplicate = (tx: ParsedTransaction): boolean => {
@@ -129,19 +157,49 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     setSelectedPaymentSource('');
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File, force: boolean) => {
     setError('');
+    fileMetaRef.current = { name: file.name, size: file.size, type: file.type || 'text/csv' };
 
     try {
+      // Guard 1: file-hash check before parsing
+      if (user?.id && !force) {
+        try {
+          const fileHash = await computeFileHash(file);
+          fileHashRef.current = fileHash;
+          const existing = await findExistingStatement(user.id, { fileHash });
+          if (existing) {
+            setStatementDup({ existing, retry: () => { void processFile(file, true); } });
+            return;
+          }
+        } catch {
+          fileHashRef.current = null;
+        }
+      }
+
       const content = await file.text();
       const result = parseCSV(content);
 
       if (!result.success) {
         setError(result.errors.join(', ') || t('import.fileReadError'));
         return;
+      }
+
+      // Guard 2: content-hash check after parsing
+      if (user?.id && !force && result.transactions.length > 0) {
+        try {
+          const paymentSourceValue = defaultPaymentSource
+            || (selectedPaymentSource ? `custom:${selectedPaymentSource}` : null);
+          const contentHash = await computeContentHash(user.id, paymentSourceValue, result.transactions);
+          contentHashRef.current = contentHash;
+          const existing = await findExistingStatement(user.id, { contentHash });
+          if (existing) {
+            setStatementDup({ existing, retry: () => { void processFile(file, true); } });
+            return;
+          }
+        } catch {
+          contentHashRef.current = null;
+        }
       }
 
       setTransactions(result.transactions);
@@ -161,12 +219,18 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
     } catch (err) {
       setError(t('import.fileReadError'));
     }
+  };
 
-    // Reset input
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file, false);
+    // Reset input so re-selecting same file works
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
 
   const toggleTransaction = (index: number) => {
     const newSelected = new Set(selectedIndices);
@@ -239,6 +303,33 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       setImportedCount(selectedTransactions.length + replacements.length);
       setStep('complete');
       emitAvatarEvent('happy', 'Uvezeno! Sve je tu 📊');
+
+      // Record statement-level fingerprint so future imports detect duplicates
+      if (user?.id) {
+        const sourceId = (effectiveSource && effectiveSource.startsWith('custom:'))
+          ? effectiveSource.slice(7)
+          : null;
+        let contentHash = contentHashRef.current;
+        if (!contentHash) {
+          try {
+            contentHash = await computeContentHash(user.id, effectiveSource ?? null, selectedTransactions);
+          } catch {
+            contentHash = null;
+          }
+        }
+        void recordImportedStatement({
+          userId: user.id,
+          paymentSourceId: sourceId,
+          fileHash: fileHashRef.current,
+          contentHash,
+          fileName: fileMetaRef.current?.name ?? null,
+          fileSize: fileMetaRef.current?.size ?? null,
+          mimeType: fileMetaRef.current?.type ?? null,
+          transactionsCount: selectedTransactions.length,
+          importBatchId: null,
+        });
+      }
+
 
       // After successful import, scan for loans in business mode
       if (activeBusinessProfileId) {
@@ -644,6 +735,33 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       detectedLoans={detectedLoans}
       onConfirm={handleLoanConfirm}
     />
+
+    <AlertDialog open={!!statementDup} onOpenChange={(o) => { if (!o) setStatementDup(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('statementDuplicate.title')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {statementDup && t('statementDuplicate.descriptionWithCount', {
+              date: format(new Date(statementDup.existing.imported_at), 'd. MMM yyyy', { locale: dateLocale }),
+              count: statementDup.existing.transactions_count ?? 0,
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setStatementDup(null)}>
+            {t('statementDuplicate.cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => {
+            const retry = statementDup?.retry;
+            setStatementDup(null);
+            retry?.();
+          }}>
+            {t('statementDuplicate.continueAnyway')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     </>
   );
 };
