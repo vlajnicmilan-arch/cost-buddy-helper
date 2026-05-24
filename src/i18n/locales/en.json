@@ -2760,7 +2760,9 @@
     "deleting": "Deleting...",
     "deleteCount": "Delete {{count}} transactions",
     "mergedWithManual": "Merged with manual entry",
-    "mergedBadge": "Merged"
+    "mergedBadge": "Merged",
+    "badge": "Import",
+    "badgeShort": "tx"
   },
   "install": {
     "installed": "App is installed!",
