@@ -348,31 +348,47 @@ export const GlobalPDFImportHost = () => {
     try {
       pdfImport._setImporting(true);
       const duplicateResult = pdfImport._runFindDuplicates(transactions);
-      if (
+      const hasReviewable =
         duplicateResult &&
         (duplicateResult.duplicates.length > 0 ||
           duplicateResult.fuzzyDuplicates.length > 0 ||
-          duplicateResult.suspiciousDuplicates.length > 0)
-      ) {
+          duplicateResult.suspiciousDuplicates.length > 0);
+
+      if (hasReviewable) {
         if (
           duplicateResult.unique.length === 0 &&
           duplicateResult.fuzzyDuplicates.length === 0 &&
-          duplicateResult.suspiciousDuplicates.length === 0
+          duplicateResult.suspiciousDuplicates.length === 0 &&
+          (duplicateResult.autoMergeMatches?.length ?? 0) === 0
         ) {
           toast.info(t('import.noNewTransactions'));
           resetAll();
           return;
         }
-        setDuplicateInfo(duplicateResult);
+        setDuplicateInfo({
+          duplicates: duplicateResult.duplicates,
+          fuzzyDuplicates: duplicateResult.fuzzyDuplicates,
+          fuzzyMatchedExpenses: duplicateResult.fuzzyMatchedExpenses,
+          suspiciousDuplicates: duplicateResult.suspiciousDuplicates,
+          suspiciousMatchedExpenses: duplicateResult.suspiciousMatchedExpenses,
+          autoMergeMatches: duplicateResult.autoMergeMatches ?? [],
+          unique: duplicateResult.unique,
+        });
         setIncludeDuplicates(false);
         setSelectedFuzzy(new Set());
         setSelectedSuspicious(new Set());
         pdfImport._setDuplicates();
         return;
       }
+      // No reviewable duplicates — auto-merge (if any) happens silently inside importFromCSV.
       await pdfImport._runImport(transactions);
       await persistStatementRecord(transactions.length);
-      showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+      const mergedCount = duplicateResult?.autoMergeMatches?.length ?? 0;
+      if (mergedCount > 0) {
+        showSuccess(t('import.importedWithAutoMerge', { count: transactions.length - mergedCount, merged: mergedCount }));
+      } else {
+        showSuccess(t('import.importedFromPDF', { count: transactions.length }));
+      }
       resetAll();
     } catch (error) {
       try { logDiagnostic('global_pdf_import_save_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
