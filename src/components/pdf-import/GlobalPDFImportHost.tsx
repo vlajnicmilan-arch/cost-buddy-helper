@@ -631,7 +631,7 @@ export const GlobalPDFImportHost = () => {
                       {duplicateInfo.fuzzyDuplicates.map((tx, index) => {
                         const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[index];
                         return (
-                          <button type="button" key={`${tx.date.toISOString()}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
+                          <button type="button" key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
                             const next = new Set(prev);
                             next.has(index) ? next.delete(index) : next.add(index);
                             return next;
