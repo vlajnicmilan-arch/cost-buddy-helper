@@ -219,12 +219,14 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       setTransactions(result.transactions);
       setSource(result.source);
       // Detect duplicates
-      const { strict, fuzzy, autoGen, autoGenMapping } = detectDuplicates(result.transactions);
+      const { strict, fuzzy, autoGen, autoGenMapping, autoMerge, autoMergeMapping } = detectDuplicates(result.transactions);
       setDuplicateIndices(strict);
       setFuzzyDuplicateIndices(fuzzy);
       setAutoGenIndices(autoGen);
       setAutoGenMap(autoGenMapping);
-      // Auto-deselect strict duplicates and auto-gen (will be replaced separately)
+      setAutoMergeIndices(autoMerge);
+      setAutoMergeMap(autoMergeMapping);
+      // Auto-deselect strict duplicates and auto-gen (will be replaced separately). Auto-merge rows ARE selected (they'll be imported and linked).
       const nonStrictDupIndices = new Set(
         result.transactions.map((_, i) => i).filter(i => !strict.has(i) && !autoGen.has(i))
       );
