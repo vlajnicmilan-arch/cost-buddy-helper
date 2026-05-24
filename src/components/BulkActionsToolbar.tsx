@@ -78,7 +78,7 @@ export const BulkActionsToolbar = ({
   );
   const showMergeButton = showMerge && selectedCount === 2 && !!selectedExpenses;
   const mergeDisabled = !mergeCheck?.ok || isMerging;
-  const mergeReason = mergeCheck && !mergeCheck.ok ? t(mergeCheck.reason, '') : '';
+  const mergeReason = mergeCheck && mergeCheck.ok === false ? t(mergeCheck.reason, '') : '';
 
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
   const canProject = showProjectChange && !!onBulkProjectChange;
