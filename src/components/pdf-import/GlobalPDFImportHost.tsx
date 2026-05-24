@@ -436,25 +436,49 @@ export const GlobalPDFImportHost = () => {
 
   const handleImportDuplicates = async () => {
     if (!duplicateInfo) return;
-    const fuzzyToInclude = duplicateInfo.fuzzyDuplicates.filter((_, index) => selectedFuzzy.has(index));
-    const suspiciousToInclude = duplicateInfo.suspiciousDuplicates.filter((_, index) => selectedSuspicious.has(index));
+
+    // Build forced manual merges from rows the user explicitly chose to merge.
+    const forcedManualMerges: { tx: ParsedTransaction; manualId: string }[] = [];
+    const fuzzyAsNew: ParsedTransaction[] = [];
+    duplicateInfo.fuzzyDuplicates.forEach((tx, index) => {
+      const decision = fuzzyDecisions.get(index) ?? 'skip';
+      const matched = duplicateInfo.fuzzyMatchedExpenses[index];
+      if (decision === 'merge' && matched?.id) {
+        forcedManualMerges.push({ tx, manualId: matched.id });
+      } else if (decision === 'new') {
+        fuzzyAsNew.push(tx);
+      }
+    });
+    const suspiciousAsNew: ParsedTransaction[] = [];
+    duplicateInfo.suspiciousDuplicates.forEach((tx, index) => {
+      const decision = suspiciousDecisions.get(index) ?? 'skip';
+      const matched = duplicateInfo.suspiciousMatchedExpenses[index];
+      if (decision === 'merge' && matched?.id) {
+        forcedManualMerges.push({ tx, manualId: matched.id });
+      } else if (decision === 'new') {
+        suspiciousAsNew.push(tx);
+      }
+    });
+
     const strictToInclude = includeDuplicates ? duplicateInfo.duplicates : [];
     const autoMergeTxs = duplicateInfo.autoMergeMatches.map(m => m.tx);
     const transactions = [
       ...duplicateInfo.unique,
       ...autoMergeTxs,
-      ...fuzzyToInclude,
-      ...suspiciousToInclude,
+      ...fuzzyAsNew,
+      ...suspiciousAsNew,
       ...strictToInclude,
+      // forced merges must also reach importFromCSV so the auto-merge stage picks the manualId
+      ...forcedManualMerges.map(m => m.tx),
     ];
-    if (transactions.length === 0) {
+    if (transactions.length === 0 && forcedManualMerges.length === 0) {
       toast.info(t('import.noNewTransactions'));
       resetAll();
       return;
     }
     try {
       pdfImport._setImporting(true);
-      await pdfImport._runImport(transactions);
+      await pdfImport._runImport(transactions, { forcedManualMerges });
       await persistStatementRecord(transactions.length);
       showSuccess(t('import.importedTransactions', { count: transactions.length }));
       resetAll();
