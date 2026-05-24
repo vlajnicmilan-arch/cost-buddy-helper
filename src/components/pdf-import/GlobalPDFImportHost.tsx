@@ -403,8 +403,17 @@ export const GlobalPDFImportHost = () => {
           unique: duplicateResult.unique,
         });
         setIncludeDuplicates(false);
-        setSelectedFuzzy(new Set());
-        setSelectedSuspicious(new Set());
+        // Default decision: merge if a matched expense exists, else 'new' (preserve old behavior of "tick = import as new").
+        const fuzzyInit = new Map<number, RowDecision>();
+        duplicateResult.fuzzyDuplicates.forEach((_, idx) => {
+          fuzzyInit.set(idx, duplicateResult.fuzzyMatchedExpenses[idx] ? 'merge' : 'skip');
+        });
+        const suspInit = new Map<number, RowDecision>();
+        duplicateResult.suspiciousDuplicates.forEach((_, idx) => {
+          suspInit.set(idx, duplicateResult.suspiciousMatchedExpenses[idx] ? 'merge' : 'skip');
+        });
+        setFuzzyDecisions(fuzzyInit);
+        setSuspiciousDecisions(suspInit);
         pdfImport._setDuplicates();
         return;
       }
