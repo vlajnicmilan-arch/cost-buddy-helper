@@ -735,6 +735,33 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
       detectedLoans={detectedLoans}
       onConfirm={handleLoanConfirm}
     />
+
+    <AlertDialog open={!!statementDup} onOpenChange={(o) => { if (!o) setStatementDup(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('statementDuplicate.title')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {statementDup && t('statementDuplicate.descriptionWithCount', {
+              date: format(new Date(statementDup.existing.imported_at), 'd. MMM yyyy', { locale: dateLocale }),
+              count: statementDup.existing.transactions_count ?? 0,
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setStatementDup(null)}>
+            {t('statementDuplicate.cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => {
+            const retry = statementDup?.retry;
+            setStatementDup(null);
+            retry?.();
+          }}>
+            {t('statementDuplicate.continueAnyway')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     </>
   );
 };
