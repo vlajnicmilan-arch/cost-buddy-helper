@@ -7,10 +7,37 @@
  * returns a slightly different set of rows on a retry.
  *
  * Pure module — no React, no Supabase. Browser-only (uses Web Crypto).
+ *
+ * Stability note (step B):
+ * The AI parser is non-deterministic on free-text description ("CAFFE BAR ABC"
+ * vs "Caffe bar ABC 1234 Zagreb"), so we hash the *normalized merchant name*
+ * first. Description is only used as a fallback when merchant is missing.
+ * Normalization mirrors `normalizeMerchant` in `duplicateDetection.ts` so the
+ * row-level and statement-level layers agree on identity.
  */
 
 const PREFIX = 'imp';
 
+/**
+ * Mirror of duplicateDetection.normalizeMerchant — strips diacritics, common
+ * legal suffixes, store numbers, punctuation, and collapses whitespace.
+ */
+function normalizeMerchant(name: string | null | undefined): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(d\.?o\.?o\.?|d\.?d\.?|j\.?d\.?o\.?o\.?|obrt|trgovina|trgovacki|trgovački|poslovanje|hotel)\b/gi, '')
+    .replace(/\b\d{2,}\b/g, ' ')
+    .replace(/[.,&\-_'"()/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Looser fallback for plain descriptions (no legal-suffix stripping).
+ */
 function normalizeDescription(desc: string | null | undefined): string {
   if (!desc) return '';
   return desc
@@ -68,11 +95,11 @@ export interface FingerprintInput {
 
 /**
  * Returns a stable string suitable for `expenses.bank_transaction_id`.
- * Same logical transaction (same user + source + day + type + amount + text)
- * yields the same value across imports.
+ * Identity key = normalized merchant first, normalized description as fallback.
  */
 export async function computeImportFingerprint(input: FingerprintInput): Promise<string> {
-  const text = normalizeDescription(input.description) || normalizeDescription(input.merchantName);
+  const merchant = normalizeMerchant(input.merchantName);
+  const text = merchant || normalizeDescription(input.description);
   const parts = [
     input.userId,
     String(input.paymentSource ?? ''),

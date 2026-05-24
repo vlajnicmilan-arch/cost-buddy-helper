@@ -31,25 +31,31 @@ export const useExpenses = (options?: UseExpensesOptions) => {
 
   /**
    * Bulk import (CSV/PDF) — uses centralized detectDuplicate with
-   * `ignoreSameDayDuplicateGuard: true` so two identical same-day purchases
-   * downgrade to `suspicious` (treated as unique here; Phase B adds a badge).
+   * `ignoreSameDayDuplicateGuard: true`. Suspicious matches (same-day,
+   * same-amount, same-merchant) get their own bucket so the import UI defaults
+   * them to "skip" instead of silently importing.
    *
    * Routing:
    *   strict + auto-generated existing → autoGenMatches (offer "replace auto")
    *   strict (normal)                  → duplicates  (auto-skip)
-   *   fuzzy                            → fuzzyDuplicates (review dialog)
-   *   suspicious | unique              → unique
+   *   fuzzy                            → fuzzyDuplicates (review, default off)
+   *   suspicious                       → suspiciousDuplicates (review, default off)
+   *   unique                           → unique
    */
   const findDuplicates = useCallback((transactions: ParsedTransaction[]): {
     duplicates: ParsedTransaction[];
     fuzzyDuplicates: ParsedTransaction[];
     fuzzyMatchedExpenses: Expense[];
+    suspiciousDuplicates: ParsedTransaction[];
+    suspiciousMatchedExpenses: Expense[];
     autoGenMatches: { tx: ParsedTransaction; existing: Expense }[];
     unique: ParsedTransaction[];
   } => {
     const duplicates: ParsedTransaction[] = [];
     const fuzzyDuplicates: ParsedTransaction[] = [];
     const fuzzyMatchedExpenses: Expense[] = [];
+    const suspiciousDuplicates: ParsedTransaction[] = [];
+    const suspiciousMatchedExpenses: Expense[] = [];
     const autoGenMatches: { tx: ParsedTransaction; existing: Expense }[] = [];
     const unique: ParsedTransaction[] = [];
 
@@ -77,12 +83,23 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       } else if (match.level === 'fuzzy' && match.match) {
         fuzzyDuplicates.push(tx);
         fuzzyMatchedExpenses.push(match.match);
+      } else if (match.level === 'suspicious' && match.match) {
+        suspiciousDuplicates.push(tx);
+        suspiciousMatchedExpenses.push(match.match);
       } else {
         unique.push(tx);
       }
     }
 
-    return { duplicates, fuzzyDuplicates, fuzzyMatchedExpenses, autoGenMatches, unique };
+    return {
+      duplicates,
+      fuzzyDuplicates,
+      fuzzyMatchedExpenses,
+      suspiciousDuplicates,
+      suspiciousMatchedExpenses,
+      autoGenMatches,
+      unique,
+    };
   }, [expenses]);
 
   /**
