@@ -8,7 +8,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone, Cloud, Upload, ArrowRight, ArrowLeftRight } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone, Cloud, Upload, ArrowRight, ArrowLeftRight, CheckCircle2, Clock, Landmark } from 'lucide-react';
 import { resolveTransferEndpoints } from '@/lib/transferMatching';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
