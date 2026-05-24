@@ -365,8 +365,11 @@ const Index = () => {
   }, [addExpense, recurringTransactions, isBusinessMode, findMatches]);
 
   // Wrapper: check for recurring matches after bulk import
-  const importWithRecurringCheck = useCallback(async (txs: any[]) => {
-    await importFromCSV(txs);
+  const importWithRecurringCheck = useCallback(async (
+    txs: any[],
+    opts?: { forcedManualMerges?: Array<{ tx: any; manualId: string }> },
+  ) => {
+    await importFromCSV(txs, opts);
     if (recurringTransactions.length > 0 && !isBusinessMode && txs.length > 0) {
       try {
         const matches = await findMatches(txs.map(e => ({
