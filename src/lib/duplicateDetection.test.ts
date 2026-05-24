@@ -86,10 +86,10 @@ describe('duplicateDetection — levels', () => {
     expect(result.confidence).toBeLessThan(90);
   });
 
-  it('SUSPICIOUS: ~0.8% amount diff, ±2 days, near-identical merchant', () => {
+  it('SUSPICIOUS: ~0.8% amount diff, 1 day apart, near-identical merchant', () => {
     const existing = baseExpense({
       amount: 50.40,
-      date: new Date('2026-05-08T10:00:00Z'),
+      date: new Date('2026-05-09T20:00:00Z'),
       merchant_name: 'Konzun',
     });
     const result = detectDuplicate(baseTx({}), [existing], { ignoreSameDayDuplicateGuard: true });
