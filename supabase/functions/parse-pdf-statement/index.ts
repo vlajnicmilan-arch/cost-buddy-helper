@@ -332,6 +332,34 @@ METAPODACI:
                           enum: ['visa', 'visa_gold', 'visa_platinum', 'mastercard', 'mastercard_gold', 'mastercard_platinum', 'maestro', 'amex', 'diners', 'bank', 'cash', 'revolut', 'aircash', 'crypto', 'other'],
                           description: 'Detected card/payment type from transaction. Use visa/mastercard variants when card type is visible.',
                           nullable: true
+                        },
+                        is_installment: {
+                          type: 'boolean',
+                          description: 'True if description contains installment notation like (6/7) or "rata n/m". Default false.'
+                        },
+                        installment_current: {
+                          type: 'number',
+                          description: 'Current installment number (n in n/m). Null if not an installment.',
+                          nullable: true
+                        },
+                        installment_total: {
+                          type: 'number',
+                          description: 'Total installment count (m in n/m). Null if not an installment.',
+                          nullable: true
+                        },
+                        installment_base_description: {
+                          type: 'string',
+                          description: 'Description without the (n/m) suffix, e.g. "EMMEZETA" instead of "EMMEZETA (6/7)". Null if not an installment.',
+                          nullable: true
+                        },
+                        due_date_override: {
+                          type: 'string',
+                          description: 'For credit-card statements: the actual billing/charge date (YYYY-MM-DD), different from the original purchase date in `date`. Null for non-credit statements.',
+                          nullable: true
+                        },
+                        is_statement_total: {
+                          type: 'boolean',
+                          description: 'True if this row is a per-card summary total (e.g. "Specifikacija troškova - Diners (8881) 788,10 EUR") rather than an individual transaction. Default false.'
                         }
                       },
                       required: ['date', 'description', 'amount', 'type', 'category']
