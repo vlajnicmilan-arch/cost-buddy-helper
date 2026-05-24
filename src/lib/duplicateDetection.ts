@@ -51,17 +51,36 @@ const DAY_MS = 86400000;
 // String helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Geo / country tokens commonly found in HR POS transaction descriptions.
+ * Stripping them prevents false-positives where two unrelated merchants share
+ * a city name (e.g. "LUKOIL POLJUD/SPLIT/HRV" vs "LESNINA H PC SPLIT").
+ */
+const GEO_STOPWORDS = new Set([
+  'split','zagreb','rijeka','osijek','zadar','pula','sibenik','dubrovnik',
+  'varazdin','karlovac','vinkovci','sisak','slavonski','brod','bjelovar',
+  'kastel','supetar','trogir','makarska','samobor','koprivnica','krapina',
+  'cakovec','gospic','velika','gorica','hrv','hrvatska','hr','eur','eu',
+]);
+
 export function normalizeMerchant(name: string): string {
   if (!name) return '';
-  return name
+  const cleaned = name
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // strip diacritics
     .replace(/\b(d\.?o\.?o\.?|d\.?d\.?|j\.?d\.?o\.?o\.?|obrt|trgovina|trgovački|poslovanje|hotel)\b/gi, '')
     .replace(/\b\d{2,}\b/g, ' ') // drop store numbers
-    .replace(/[.,&-_'"()/]/g, ' ')
+    .replace(/[.,&\-_'"()/]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  if (!cleaned) return '';
+  const filtered = cleaned
+    .split(/\s+/)
+    .filter(w => !GEO_STOPWORDS.has(w))
+    .join(' ')
+    .trim();
+  return filtered;
 }
 
 export function areMerchantsSimilar(a?: string | null, b?: string | null): boolean {
@@ -77,7 +96,10 @@ export function areMerchantsSimilar(a?: string | null, b?: string | null): boole
   if (wa.length === 0 || wb.length === 0) return false;
   const common = wa.filter(w => wb.some(w2 => w2.includes(w) || w.includes(w2)));
   const minLen = Math.min(wa.length, wb.length);
-  return common.length / minLen >= 0.5;
+  // Require either ≥2 common meaningful words OR ≥60% overlap on a multi-word name.
+  // Single shared word on multi-word merchants is too weak (typical false-positive).
+  if (common.length >= 2) return true;
+  return minLen >= 2 && common.length / minLen >= 0.6;
 }
 
 /**
