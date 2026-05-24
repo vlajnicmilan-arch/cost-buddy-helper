@@ -662,20 +662,22 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('import.possibleDuplicates')}</p>
                     <p className="text-xs text-muted-foreground">{t('import.compareAndSelect')}</p>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {duplicateInfo.fuzzyDuplicates.map((tx, index) => {
-                        const matchedExpense = duplicateInfo.fuzzyMatchedExpenses[index];
-                        return (
-                          <button type="button" key={`${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedFuzzy.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedFuzzy(prev => {
-                            const next = new Set(prev);
-                            next.has(index) ? next.delete(index) : next.add(index);
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {duplicateInfo.fuzzyDuplicates.map((tx, index) => (
+                        <DecisionRow
+                          key={`f-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`}
+                          tx={tx}
+                          matchedExpense={duplicateInfo.fuzzyMatchedExpenses[index]}
+                          decision={fuzzyDecisions.get(index) ?? 'skip'}
+                          onChange={value => setFuzzyDecisions(prev => {
+                            const next = new Map(prev);
+                            next.set(index, value);
                             return next;
-                          })}>
-                            {matchedExpense && <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30"><span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{matchedExpense.description}</p><p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p></div>}
-                            <div className={cn('flex items-center gap-2 p-2', selectedFuzzy.has(index) ? 'bg-primary/5' : 'bg-amber-500/5')}><Checkbox checked={selectedFuzzy.has(index)} className="ml-0.5 pointer-events-none" /><span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">{t('common.new')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{tx.description}</p><p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p></div>
-                          </button>
-                        );
-                      })}
+                          })}
+                          formatAmount={formatAmount}
+                          t={t}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
@@ -683,20 +685,22 @@ export const GlobalPDFImportHost = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('import.suspiciousDuplicates')}</p>
                     <p className="text-xs text-muted-foreground">{t('import.compareAndSelect')}</p>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {duplicateInfo.suspiciousDuplicates.map((tx, index) => {
-                        const matchedExpense = duplicateInfo.suspiciousMatchedExpenses[index];
-                        return (
-                          <button type="button" key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`} className={cn('w-full text-left rounded-xl text-sm border cursor-pointer transition-colors overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', selectedSuspicious.has(index) ? 'border-primary/30' : 'border-amber-500/20')} onClick={() => setSelectedSuspicious(prev => {
-                            const next = new Set(prev);
-                            next.has(index) ? next.delete(index) : next.add(index);
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {duplicateInfo.suspiciousDuplicates.map((tx, index) => (
+                        <DecisionRow
+                          key={`s-${(tx.date instanceof Date ? tx.date.getTime() : index)}-${index}`}
+                          tx={tx}
+                          matchedExpense={duplicateInfo.suspiciousMatchedExpenses[index]}
+                          decision={suspiciousDecisions.get(index) ?? 'skip'}
+                          onChange={value => setSuspiciousDecisions(prev => {
+                            const next = new Map(prev);
+                            next.set(index, value);
                             return next;
-                          })}>
-                            {matchedExpense && <div className="flex items-center gap-2 p-2 bg-muted/40 border-b border-border/30"><span className="text-[10px] font-medium text-muted-foreground uppercase w-14 shrink-0">{t('import.existing')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{matchedExpense.description}</p><p className="text-[10px] text-muted-foreground">{matchedExpense.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p></div>}
-                            <div className={cn('flex items-center gap-2 p-2', selectedSuspicious.has(index) ? 'bg-primary/5' : 'bg-amber-500/5')}><Checkbox checked={selectedSuspicious.has(index)} className="ml-0.5 pointer-events-none" /><span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase w-8 shrink-0">{t('common.new')}</span><div className="flex-1 min-w-0"><p className="font-medium truncate text-xs">{tx.description}</p><p className="text-[10px] text-muted-foreground">{tx.date.toLocaleDateString()}</p></div><p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p></div>
-                          </button>
-                        );
-                      })}
+                          })}
+                          formatAmount={formatAmount}
+                          t={t}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
