@@ -961,7 +961,13 @@
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
+    "pendingBankTooltip": "Manual entry on a bank-linked account — not yet matched with a bank row.",
     "confirmed": "Confirmed by bank",
+    "confirmedTooltip": "Entered manually and matched with a row from the bank statement.",
+    "bankOnly": "From statement",
+    "bankOnlyTooltip": "Came in only from the bank statement, with no manual counterpart.",
+    "manual": "Manual entry",
+    "manualTooltip": "Entered manually, not linked to any bank statement.",
     "maybeDuplicate": "Possible duplicate",
     "duplicateTitle": "Review possible duplicate",
     "duplicateDescription": "A bank transaction looks like an existing one. Merge them or confirm they're different.",

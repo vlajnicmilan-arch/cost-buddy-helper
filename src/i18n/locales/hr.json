@@ -961,7 +961,13 @@
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
+    "pendingBankTooltip": "Ručni unos na bankovnom računu — još nije spojen s bankovnim retkom.",
     "confirmed": "Potvrđeno bankom",
+    "confirmedTooltip": "Ručno uneseno i spojeno s odgovarajućim retkom iz bankovnog izvoda.",
+    "bankOnly": "Iz izvoda",
+    "bankOnlyTooltip": "Stiglo isključivo s bankovnog izvoda, bez ručnog para.",
+    "manual": "Ručni unos",
+    "manualTooltip": "Ručno uneseno, bez veze s bankovnim izvodom.",
     "maybeDuplicate": "Možda duplikat",
     "duplicateTitle": "Provjeri duplikat",
     "duplicateDescription": "Bankovna transakcija liči na već postojeću. Spoji ih u jednu ili potvrdi da nisu iste.",

@@ -3,7 +3,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle, Landmark } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import React, { useMemo, useRef, useState } from 'react';
 import { useHaptics } from '@/hooks/useHaptics';
@@ -298,6 +298,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p className="text-xs">{t('bankMatch.confirmed')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {expense.bank_match_status === 'bank_only' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Landmark className="w-3 h-3 text-muted-foreground shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('bankMatch.bankOnly')}</p>
                 </TooltipContent>
               </Tooltip>
             )}
