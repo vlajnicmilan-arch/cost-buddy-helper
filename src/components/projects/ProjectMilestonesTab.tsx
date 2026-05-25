@@ -319,13 +319,19 @@ export const ProjectMilestonesTab = ({
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-3">
-          {[...milestones].sort((a, b) => Number(!!b.is_contingency) - Number(!!a.is_contingency)).map((milestone) => {
+          {[...milestones]
+            .sort((a, b) => {
+              const score = (m: ProjectMilestone) => (m.is_contingency ? 2 : m.is_vtr ? 1 : 0);
+              return score(b) - score(a);
+            })
+            .map((milestone) => {
             const budgetUsed = milestone.budget > 0 
               ? ((milestone.spent || 0) / milestone.budget) * 100 
               : 0;
             const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
             const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
             const isContingency = !!milestone.is_contingency;
+            const isVtr = !!milestone.is_vtr;
 
             return (
               <div 
@@ -333,7 +339,8 @@ export const ProjectMilestonesTab = ({
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
                   isOverBudget && "border-destructive/40 bg-destructive/5",
-                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20"
+                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20",
+                  isVtr && !isContingency && "border-warning/40 bg-warning/5"
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -342,7 +349,13 @@ export const ProjectMilestonesTab = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {isContingency && <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                      {isVtr && <FileSignature className="w-3.5 h-3.5 text-warning shrink-0" />}
                       <h4 className="font-medium truncate">{milestone.name}</h4>
+                      {isVtr && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning">
+                          {t('projects.vtr.badge', 'VTR')}
+                        </Badge>
+                      )}
                       {isContingency ? (
                         <Badge variant="secondary" className="text-[10px]">
                           {t('projects.contingency.badge', 'Rezerva')}
