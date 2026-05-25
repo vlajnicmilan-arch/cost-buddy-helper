@@ -560,7 +560,8 @@
       "team": "Other app users with access to the project",
       "workers": "Your employees (you manage them, pay them, track hours)",
       "collaborators": "External subcontractors (other companies with agreed amounts)",
-      "projectTeam": "Everyone on the project: app members, workers and external collaborators"
+      "projectTeam": "Everyone on the project: app members, workers and external collaborators",
+      "workLog": "Worker hours logged by day and payout calculation"
     },
     "templates": {
       "startFrom": "Start from a template (optional)",
