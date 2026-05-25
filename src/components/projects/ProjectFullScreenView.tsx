@@ -42,6 +42,7 @@ import { ProjectTeamTab } from './ProjectTeamTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
+import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
