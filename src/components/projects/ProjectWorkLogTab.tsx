@@ -170,8 +170,18 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
       ) : (
       <>
 
+      {/* My pay (worker linked to this project) */}
+      {myWorker && !isManager && (
+        <MyWorkerPayCard
+          hourlyRate={myWorker.hourly_rate}
+          hours={myHoursInPeriod}
+          periodLabel={periodLabelMap[monthFilter]}
+        />
+      )}
+
       {/* Filters */}
       <div className="space-y-2">
+
         <div className="grid grid-cols-2 gap-2">
           <Select value={monthFilter} onValueChange={(v) => setMonthFilter(v as MonthFilter)}>
             <SelectTrigger className="h-9 text-xs">
