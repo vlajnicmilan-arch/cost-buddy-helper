@@ -97,9 +97,10 @@ export const ProjectMilestonesTab = ({
     '#ffffff'
   ];
 
-  const openDialog = (milestone?: ProjectMilestone) => {
+  const openDialog = (milestone?: ProjectMilestone, mode: 'milestone' | 'vtr' = 'milestone') => {
     if (milestone) {
       setEditingMilestone(milestone);
+      setDialogMode(milestone.is_vtr ? 'vtr' : 'milestone');
       setName(milestone.name);
       setDescription(milestone.description || '');
       setBudget(milestone.budget.toString());
@@ -113,11 +114,12 @@ export const ProjectMilestonesTab = ({
       setReminderDays((milestone.reminder_days_before ?? 3).toString());
     } else {
       setEditingMilestone(null);
+      setDialogMode(mode);
       setName('');
       setDescription('');
       setBudget('');
       setStatus('pending');
-      setColor('#3b82f6');
+      setColor(mode === 'vtr' ? 'hsl(38 92% 50%)' : '#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
       setActualStartDate(undefined);
@@ -133,6 +135,7 @@ export const ProjectMilestonesTab = ({
     setAmendmentEnabled(true);
     setAmendmentAmount('');
     setAmendmentNote('');
+    setVtrNote('');
     setDialogOpen(true);
   };
 
