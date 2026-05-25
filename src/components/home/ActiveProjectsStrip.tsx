@@ -417,22 +417,25 @@ export const ActiveProjectsStrip = React.memo(({
         })}
 
 
-        {/* Add new project CTA card */}
-        <motion.button
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: activeProjects.length * 0.04 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
-          className="snap-start min-w-[220px] max-w-[240px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
-        >
-          <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
-            <Plus className="w-6 h-6 text-primary" />
-          </div>
-          <p className="text-xs font-medium text-primary">
-            {t('nav.newProject', 'Novi projekt')}
-          </p>
-        </motion.button>
+        {/* Add new project CTA card — only for users who can actually create projects */}
+        {hasProjectsFeature && (
+          <motion.button
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: activeProjects.length * 0.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => handleNav('/projects', { openNewProject: true, from: '/home' })}
+            className="snap-start min-w-[220px] max-w-[240px] p-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors text-left flex flex-col items-center justify-center gap-2"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
+              <Plus className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-xs font-medium text-primary">
+              {t('nav.newProject', 'Novi projekt')}
+            </p>
+          </motion.button>
+        )}
+
 
       </div>
     </motion.div>
