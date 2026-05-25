@@ -337,8 +337,17 @@ export const useProjectMilestones = (projectId: string | null) => {
         }
       }
 
-      setMilestones(prev => prev.map(m => 
-        m.id === milestone.id ? { ...milestone, budget: Number(milestone.budget) } : m
+      setMilestones(prev => prev.map(m =>
+        m.id === milestone.id
+          ? {
+              ...milestone,
+              budget: Number(milestone.budget),
+              actual_start_date: actualStartUpdate,
+              actual_end_date: actualEndUpdate,
+              completed_at:
+                completedAtUpdate !== undefined ? completedAtUpdate : m.completed_at,
+            }
+          : m
       ));
       showSuccess(t('projects.milestoneUpdated'));
       if (projectId && previous && previous.status !== milestone.status) {
