@@ -574,6 +574,69 @@ export const ProjectMilestonesTab = ({
               </div>
             </div>
 
+            {/* Actual (real) dates — source of truth for delay calculation */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  {t('projects.actualStartDate', 'Stvarni početak')}
+                </Label>
+                <Popover open={actualStartOpen} onOpenChange={setActualStartOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {actualStartDate ? format(actualStartDate, 'd. MMM yyyy', { locale: hr }) : t('common.optional', 'Opcionalno')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={actualStartDate}
+                      onSelect={(d) => { setActualStartDate(d); if (d) setActualStartOpen(false); }}
+                      className="p-3 pointer-events-auto"
+                    />
+                    {actualStartDate && (
+                      <div className="p-2 border-t">
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => { setActualStartDate(undefined); setActualStartOpen(false); }}>
+                          {t('common.clear', 'Očisti')}
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('projects.actualEndDate', 'Stvarni završetak')}</Label>
+                <Popover open={actualEndOpen} onOpenChange={setActualEndOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {actualEndDate ? format(actualEndDate, 'd. MMM yyyy', { locale: hr }) : t('common.optional', 'Opcionalno')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={actualEndDate}
+                      onSelect={(d) => { setActualEndDate(d); if (d) setActualEndOpen(false); }}
+                      className="p-3 pointer-events-auto"
+                    />
+                    {actualEndDate && (
+                      <div className="p-2 border-t">
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => { setActualEndDate(undefined); setActualEndOpen(false); }}>
+                          {t('common.clear', 'Očisti')}
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              {t('projects.actualDatesHint', 'Stvarni datumi se automatski popunjavaju pri prijelazu statusa, ali ih možeš ručno mijenjati. Koriste se za izračun kašnjenja.')}
+            </p>
+
+
             {/* Dependency */}
             <div className="space-y-2">
               <Label>{t('projects.dependsOn', 'Ovisi o fazi')}</Label>
