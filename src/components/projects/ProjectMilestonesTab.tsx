@@ -14,7 +14,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, FileSignature } from 'lucide-react';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
@@ -47,11 +47,13 @@ export const ProjectMilestonesTab = ({
 }: ProjectMilestonesTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { addMilestone, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
+  const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
+  const [dialogMode, setDialogMode] = useState<'milestone' | 'vtr'>('milestone');
+  const [vtrNote, setVtrNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [revisionsDialogOpen, setRevisionsDialogOpen] = useState(false);
@@ -95,9 +97,10 @@ export const ProjectMilestonesTab = ({
     '#ffffff'
   ];
 
-  const openDialog = (milestone?: ProjectMilestone) => {
+  const openDialog = (milestone?: ProjectMilestone, mode: 'milestone' | 'vtr' = 'milestone') => {
     if (milestone) {
       setEditingMilestone(milestone);
+      setDialogMode(milestone.is_vtr ? 'vtr' : 'milestone');
       setName(milestone.name);
       setDescription(milestone.description || '');
       setBudget(milestone.budget.toString());
@@ -111,11 +114,12 @@ export const ProjectMilestonesTab = ({
       setReminderDays((milestone.reminder_days_before ?? 3).toString());
     } else {
       setEditingMilestone(null);
+      setDialogMode(mode);
       setName('');
       setDescription('');
       setBudget('');
       setStatus('pending');
-      setColor('#3b82f6');
+      setColor(mode === 'vtr' ? 'hsl(38 92% 50%)' : '#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
       setActualStartDate(undefined);
@@ -131,6 +135,7 @@ export const ProjectMilestonesTab = ({
     setAmendmentEnabled(true);
     setAmendmentAmount('');
     setAmendmentNote('');
+    setVtrNote('');
     setDialogOpen(true);
   };
 
@@ -224,6 +229,8 @@ export const ProjectMilestonesTab = ({
             }
           : undefined;
         await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
+      } else if (dialogMode === 'vtr') {
+        await createVtr({ ...milestoneData, note: vtrNote.trim() || null } as any);
       } else {
         await addMilestone(milestoneData);
       }
@@ -236,7 +243,11 @@ export const ProjectMilestonesTab = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm(t('projects.confirmDeleteMilestone'))) {
+    const m = milestones.find((x) => x.id === id);
+    const confirmMsg = m?.is_vtr
+      ? t('projects.vtr.deleteWarning', 'Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?', { amount: formatAmount(m.budget) })
+      : t('projects.confirmDeleteMilestone');
+    if (confirm(confirmMsg)) {
       await deleteMilestone(id);
       onRefetch();
     }
@@ -273,10 +284,16 @@ export const ProjectMilestonesTab = ({
           </ToggleGroupItem>
         </ToggleGroup>
         {isManager && (
-          <Button onClick={() => openDialog()} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            {t('projects.addMilestone')}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => openDialog(undefined, 'vtr')} size="sm" variant="outline" className="gap-1.5">
+              <FileSignature className="w-4 h-4" />
+              {t('projects.vtr.addButton', 'Dodaj VTR')}
+            </Button>
+            <Button onClick={() => openDialog()} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('projects.addMilestone')}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -302,13 +319,19 @@ export const ProjectMilestonesTab = ({
         </div>
       ) : viewMode === 'list' ? (
         <div className="space-y-3">
-          {[...milestones].sort((a, b) => Number(!!b.is_contingency) - Number(!!a.is_contingency)).map((milestone) => {
+          {[...milestones]
+            .sort((a, b) => {
+              const score = (m: ProjectMilestone) => (m.is_contingency ? 2 : m.is_vtr ? 1 : 0);
+              return score(b) - score(a);
+            })
+            .map((milestone) => {
             const budgetUsed = milestone.budget > 0 
               ? ((milestone.spent || 0) / milestone.budget) * 100 
               : 0;
             const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
             const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
             const isContingency = !!milestone.is_contingency;
+            const isVtr = !!milestone.is_vtr;
 
             return (
               <div 
@@ -316,7 +339,8 @@ export const ProjectMilestonesTab = ({
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
                   isOverBudget && "border-destructive/40 bg-destructive/5",
-                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20"
+                  isContingency && "border-dashed border-muted-foreground/40 bg-muted/20",
+                  isVtr && !isContingency && "border-warning/40 bg-warning/5"
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -325,7 +349,13 @@ export const ProjectMilestonesTab = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {isContingency && <Shield className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                      {isVtr && <FileSignature className="w-3.5 h-3.5 text-warning shrink-0" />}
                       <h4 className="font-medium truncate">{milestone.name}</h4>
+                      {isVtr && (
+                        <Badge variant="outline" className="text-[10px] border-warning text-warning">
+                          {t('projects.vtr.badge', 'VTR')}
+                        </Badge>
+                      )}
                       {isContingency ? (
                         <Badge variant="secondary" className="text-[10px]">
                           {t('projects.contingency.badge', 'Rezerva')}
@@ -458,15 +488,24 @@ export const ProjectMilestonesTab = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent showBackButton={false}>
           <DialogHeader>
-            <DialogTitle>
-              {editingMilestone ? t('projects.editMilestone') : t('projects.addMilestone')}
+            <DialogTitle className="flex items-center gap-2">
+              {dialogMode === 'vtr' && <FileSignature className="w-4 h-4 text-warning" />}
+              {editingMilestone
+                ? (dialogMode === 'vtr' ? t('projects.vtr.editTitle', 'Uredi VTR') : t('projects.editMilestone'))
+                : (dialogMode === 'vtr' ? t('projects.vtr.addTitle', 'Novi VTR') : t('projects.addMilestone'))}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
+            {dialogMode === 'vtr' && !editingMilestone && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+                {t('projects.vtr.hint', 'Iznos VTR-a bit će automatski dodan u ugovorenu vrijednost projekta kao aneks ugovora.')}
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label>{t('projects.milestoneName')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('projects.milestoneNamePlaceholder')} />
+              <Label>{dialogMode === 'vtr' ? t('projects.vtr.nameLabel', 'Naziv VTR-a') : t('projects.milestoneName')}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
             </div>
 
             <div className="space-y-2">
@@ -485,6 +524,13 @@ export const ProjectMilestonesTab = ({
                 />
               </div>
             </div>
+
+            {dialogMode === 'vtr' && !editingMilestone && (
+              <div className="space-y-2">
+                <Label>{t('projects.vtr.noteLabel', 'Bilješka uz aneks (opcionalno)')}</Label>
+                <Input value={vtrNote} onChange={(e) => setVtrNote(e.target.value)} placeholder={t('projects.vtr.notePlaceholder', 'npr. Klijent zatražio dodatne radove 12.5.2026')} />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

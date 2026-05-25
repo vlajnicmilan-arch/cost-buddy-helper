@@ -69,6 +69,8 @@ export interface ProjectMilestone {
   depends_on_milestone_id?: string | null;
   reminder_days_before?: number;
   is_contingency?: boolean;
+  /** True = ovo je VTR (Više traženih radova) — posebna vrsta faze koja automatski generira aneks ugovora. */
+  is_vtr?: boolean;
   created_at?: string;
   updated_at?: string;
   // Computed

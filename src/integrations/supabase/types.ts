@@ -3619,6 +3619,7 @@ export type Database = {
           due_date: string | null
           id: string
           is_contingency: boolean
+          is_vtr: boolean
           name: string
           project_id: string
           reminder_days_before: number | null
@@ -3641,6 +3642,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_contingency?: boolean
+          is_vtr?: boolean
           name: string
           project_id: string
           reminder_days_before?: number | null
@@ -3663,6 +3665,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_contingency?: boolean
+          is_vtr?: boolean
           name?: string
           project_id?: string
           reminder_days_before?: number | null
