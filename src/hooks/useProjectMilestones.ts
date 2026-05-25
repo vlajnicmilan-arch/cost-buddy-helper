@@ -56,6 +56,7 @@ export const useProjectMilestones = (projectId: string | null) => {
         depends_on_milestone_id: m.depends_on_milestone_id || null,
         reminder_days_before: m.reminder_days_before ?? 3,
         is_contingency: !!m.is_contingency,
+        is_vtr: !!m.is_vtr,
       })));
     } catch (error) {
       console.error('Error fetching milestones:', error);
