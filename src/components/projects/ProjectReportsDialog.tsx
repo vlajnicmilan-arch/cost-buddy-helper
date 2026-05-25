@@ -77,11 +77,14 @@ export const ProjectReportsDialog = ({
   const [confidentiality, setConfidentiality] = useConfidentialityLevel();
 
   // Contract amendments (aneksi) — used for effective contract value in UI + exports
+  // VAŽNO: projects.contract_value već uključuje aneks (useProjectMilestones ga bumpa pri unosu).
+  // effectiveContract = onaj za računanje (=contract_value). originalContract = bez aneksa (za prikaz).
   const { total: amendmentsTotal, amendments: amendmentsList } = useProjectContractAmendments(project.id);
-  const baseContract = (project as any).contract_value && Number((project as any).contract_value) > 0
+  const effectiveContract = (project as any).contract_value && Number((project as any).contract_value) > 0
     ? Number((project as any).contract_value)
     : Number(project.total_budget) || 0;
-  const effectiveContract = baseContract + (amendmentsTotal || 0);
+  const originalContract = Math.max(0, effectiveContract - (amendmentsTotal || 0));
+  const baseContract = originalContract; // backward-compat alias for downstream references
 
   // Fetch workers and collaborators for exports
   const [reportWorkers, setReportWorkers] = useState<{ name: string; hours: number; rate: number; cost: number }[]>([]);
@@ -484,7 +487,7 @@ export const ProjectReportsDialog = ({
                   </p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{formatAmount(effectiveContract)}</p>
+                  <p className="text-2xl font-bold">{formatAmount(originalContract)}</p>
                   <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni proračun')}</p>
                   {amendmentsTotal > 0 && (
                     <p className="text-[10px] text-warning mt-1">

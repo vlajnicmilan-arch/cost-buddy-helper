@@ -30,6 +30,7 @@ import { ProjectEarnedValueCard } from './ProjectEarnedValueCard';
 import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
 import { ProjectForecastCard } from './ProjectForecastCard';
 import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
+import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
 
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
@@ -95,15 +96,15 @@ export const ProjectFullScreenView = ({
   const { workers } = useProjectWorkers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
-  
+  const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
 
-  // Effective contracted value:
-  // - contract_value već uključuje aneks (useProjectMilestones ga bumpa pri unosu aneksa)
-  // - fallback na total_budget ako contract_value nije postavljen
-  // NE zbrajati amendmentsTotal — to bi dvostruko brojilo aneks.
+  // Razlika prikaza i računanja:
+  // - effectiveContract (=contract_value, koji već uključuje aneks) koristi se za marže/% potrošnje/% naplate/alarme.
+  // - originalContract (=effectiveContract - amendmentsTotal) prikazuje se u KPI "Ugovoreno"; aneks se prikazuje zasebnim badgeom ispod.
   const effectiveContract = Number(project?.contract_value) > 0
     ? Number(project?.contract_value)
     : Number(project?.total_budget) || 0;
+  const originalContract = Math.max(0, effectiveContract - (amendmentsTotal || 0));
 
   // Loss-zone alert: fires in-app notification when spent crosses 90% of effective contract value
   useProjectLossZoneAlert({
@@ -443,7 +444,7 @@ export const ProjectFullScreenView = ({
                     {/* 4 KPI cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                       <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
-                        <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(budget)}</p>
+                        <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(originalContract)}</p>
                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.contracted', 'Ugovoreno')}</p>
                         <ContractAmendmentsBadge projectId={project.id} />
                       </div>
