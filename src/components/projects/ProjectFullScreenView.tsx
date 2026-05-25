@@ -594,7 +594,7 @@ export const ProjectFullScreenView = ({
                         </>
                       )}
 
-                      {/* PEOPLE group — single unified "Tim projekta" tab with internal sub-tabs */}
+                      {/* PEOPLE group — Tim projekta + Dnevnik rada (if project has workers) */}
                       {activeGroup === 'people' && (
                         <TooltipProvider delayDuration={200}>
                           <TabsTrigger value="team" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
@@ -609,6 +609,20 @@ export const ProjectFullScreenView = ({
                               </TooltipContent>
                             </Tooltip>
                           </TabsTrigger>
+                          {canSeeTab('worklog') && (
+                            <TabsTrigger value="worklog" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              {t('workLog.tab', 'Dnevnik rada')}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                                  {t('projects.tooltips.workLog', 'Upisani sati radnika po danima i obračun isplata')}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TabsTrigger>
+                          )}
                         </TooltipProvider>
                       )}
 
