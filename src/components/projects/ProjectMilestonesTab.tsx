@@ -63,11 +63,15 @@ export const ProjectMilestonesTab = ({
   const [status, setStatus] = useState<MilestoneStatus>('pending');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [actualStartDate, setActualStartDate] = useState<Date | undefined>();
+  const [actualEndDate, setActualEndDate] = useState<Date | undefined>();
   const [color, setColor] = useState('#3b82f6');
   const [dependsOn, setDependsOn] = useState<string>('');
   const [reminderDays, setReminderDays] = useState('3');
   const [startOpen, setStartOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
+  const [actualStartOpen, setActualStartOpen] = useState(false);
+  const [actualEndOpen, setActualEndOpen] = useState(false);
   // Budget revision state (only relevant when editing)
   const [revisionReason, setRevisionReason] = useState('');
   const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
