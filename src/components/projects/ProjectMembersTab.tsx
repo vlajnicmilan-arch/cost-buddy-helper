@@ -418,6 +418,7 @@ export const ProjectMembersTab = ({
                 <SelectContent>
                   <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
                   <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
+                  <SelectItem value="worker">{t(`projectRoles.worker`, PROJECT_ROLE_LABELS.worker)}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSendInvite} disabled={sendingInvite}>
