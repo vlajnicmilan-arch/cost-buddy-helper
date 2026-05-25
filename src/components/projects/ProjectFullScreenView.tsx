@@ -786,40 +786,11 @@ export const ProjectFullScreenView = ({
                   <ProjectDocumentsTab projectId={project.id} />
                 </TabsContent>
 
-                <TabsContent value="activity" className="m-0 space-y-3">
-                  <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
-                    <button
-                      type="button"
-                      onClick={() => setActivityView('worklog')}
-                      className={cn(
-                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                        activityView === 'worklog' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
-                      )}
-                    >
-                      <BookOpen className="w-3 h-3" />
-                      {t('workLog.tab', 'Dnevnik')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivityView('activity')}
-                      className={cn(
-                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                        activityView === 'activity' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
-                      )}
-                    >
-                      <Activity className="w-3 h-3" />
-                      {t('projects.activity.tab', 'Aktivnost')}
-                    </button>
-                  </div>
-                  {activityView === 'activity' ? (
-                    <ProjectActivityTab projectId={project.id} />
-                  ) : (
-                    <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
-                  )}
+                <TabsContent value="activity" className="m-0">
+                  <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
 
-                {/* Worker-only standalone worklog (restricted role) */}
-                {isWorkerOnly && (
+                {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">
                   <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
                 </TabsContent>
