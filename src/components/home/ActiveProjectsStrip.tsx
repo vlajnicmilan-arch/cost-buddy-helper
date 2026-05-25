@@ -119,7 +119,10 @@ export const ActiveProjectsStrip = React.memo(({
   }, [projects, summary]);
 
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
-  if (!hasAccess('projects')) return null;
+  // Workers/members without 'projects' feature access still see their shared projects.
+  const hasProjectsFeature = hasAccess('projects');
+  const hasMembership = projects.some(p => !p.isOwner);
+  if (!hasProjectsFeature && !hasMembership) return null;
 
   const handleNav = (path: string, state?: Record<string, unknown>) => {
     lightTap();
