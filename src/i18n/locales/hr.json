@@ -3469,6 +3469,13 @@
       "all": "Sve",
       "allPhases": "Sve faze"
     },
+    "myPay": {
+      "title": "Moja zarada na projektu",
+      "hourlyRate": "Satnica",
+      "hoursInPeriod": "Sati",
+      "payout": "Za isplatu",
+      "noRateSet": "Vlasnik projekta još nije postavio satnicu."
+    },
     "hours": "Sati rada",
     "hoursPlaceholder": "npr. 8",
     "hoursHint": "Tvoji sati će se automatski zbrojiti u mjesečnu satnicu.",
