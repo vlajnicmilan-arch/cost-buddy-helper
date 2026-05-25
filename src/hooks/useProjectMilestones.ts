@@ -557,6 +557,7 @@ export const useProjectMilestones = (projectId: string | null) => {
     milestones,
     loading,
     addMilestone,
+    createVtr,
     updateMilestone,
     deleteMilestone,
     reorderMilestones,
