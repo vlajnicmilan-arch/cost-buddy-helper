@@ -468,6 +468,47 @@ export const useProjectMilestones = (projectId: string | null) => {
   const deleteMilestone = async (id: string): Promise<void> => {
     try {
       const removed = milestones.find((m) => m.id === id);
+
+      // VTR: revert contract amendment BEFORE deleting the milestone
+      // (FK is ON DELETE SET NULL on linked_milestone_id, so we must find amendments first)
+      if (removed?.is_vtr && projectId) {
+        const { data: amendments } = await supabase
+          .from('project_contract_amendments' as any)
+          .select('id, amendment_amount')
+          .eq('linked_milestone_id', id);
+
+        const totalRevert = (amendments || []).reduce(
+          (sum: number, a: any) => sum + Number(a.amendment_amount || 0),
+          0
+        );
+
+        if (totalRevert > 0) {
+          // Delete amendment rows
+          await supabase
+            .from('project_contract_amendments' as any)
+            .delete()
+            .eq('linked_milestone_id', id);
+
+          // Reduce contract_value
+          const { data: projRow } = await supabase
+            .from('projects')
+            .select('contract_value, total_budget')
+            .eq('id', projectId)
+            .single();
+          if (projRow) {
+            const newContract = applyContractAmendment(
+              (projRow as any).contract_value,
+              (projRow as any).total_budget,
+              -totalRevert
+            );
+            await supabase.from('projects').update({ contract_value: newContract }).eq('id', projectId);
+            window.dispatchEvent(
+              new CustomEvent('contract-amendment-added', { detail: { projectId, amount: -totalRevert } })
+            );
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('project_milestones')
         .delete()
