@@ -42,6 +42,9 @@ interface BusinessProfileLite {
 
 // Smart defaults per role
 const defaultPermsForRole = (role: ProjectRole): Record<string, boolean> => {
+  if (role === 'worker') {
+    return { overview: false, milestones: false, workers: false, collaborators: false, funding: false, transactions: false };
+  }
   if (role === 'viewer') {
     return { overview: true, milestones: true, workers: false, collaborators: false, funding: false, transactions: false };
   }
