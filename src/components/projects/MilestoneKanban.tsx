@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Pencil, Trash2, Bell, Link2, GripVertical, Shield } from 'lucide-react';
+import { AlertTriangle, Pencil, Trash2, Bell, Link2, GripVertical, Shield, FileSignature } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -103,7 +103,13 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate flex items-center gap-1">
                             {m.is_contingency && <Shield className="w-3 h-3 text-muted-foreground shrink-0" />}
+                            {m.is_vtr && <FileSignature className="w-3 h-3 text-warning shrink-0" />}
                             {m.name}
+                            {m.is_vtr && (
+                              <Badge variant="outline" className="h-4 px-1 text-[9px] border-warning text-warning ml-0.5">
+                                {t('projects.vtr.badge', 'VTR')}
+                              </Badge>
+                            )}
                           </p>
                           {m.description && (
                             <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
