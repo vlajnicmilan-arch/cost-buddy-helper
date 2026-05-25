@@ -144,6 +144,8 @@ export const ActiveProjectsStrip = React.memo(({
     );
   }
 
+  if (activeProjects.length === 0 && !hasProjectsFeature) return null;
+
   if (activeProjects.length === 0) {
     return (
       <motion.div
