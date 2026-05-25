@@ -99,7 +99,7 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
-      const budget = p.total_budget || 0;
+      const budget = calculateContractValue(p);
 
       let margin: number | null = null;
       let hasMargin = false;
