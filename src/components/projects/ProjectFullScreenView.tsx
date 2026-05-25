@@ -42,6 +42,7 @@ import { ProjectTeamTab } from './ProjectTeamTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
+import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -78,7 +79,6 @@ export const ProjectFullScreenView = ({
   const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [phasesView, setPhasesView] = useState<'list' | 'timeline'>('list');
-  const [activityView, setActivityView] = useState<'worklog' | 'activity'>('worklog');
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -91,6 +91,7 @@ export const ProjectFullScreenView = ({
   const { milestones, loading: milestonesLoading, refetch: refetchMilestones } = useProjectMilestones(project?.id || null);
   const { funding, incomeSources, totalAllocated, totalSourcesCount, loading: fundingLoading, refetch: refetchFunding } = useProjectFunding(project?.id || null);
   const { members, invitations, isManager, loading: membersLoading, refetch: refetchMembers } = useProjectMembers(project?.id || null);
+  const { workers } = useProjectWorkers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
 
@@ -126,6 +127,8 @@ export const ProjectFullScreenView = ({
     if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
     // Documents always visible to project members
     if (tabKey === 'documents') return true;
+    // Worklog tab in People group: only visible if project has at least one worker
+    if (tabKey === 'worklog') return (workers?.length ?? 0) > 0 && (isManager || isTabVisible('worklog'));
     return isManager || isTabVisible(tabKey);
   };
 
@@ -144,12 +147,12 @@ export const ProjectFullScreenView = ({
   const TAB_TO_GROUP: Record<string, TabGroup> = {
     overview: 'work',
     phases: 'work',
-    // legacy aliases — resolved to phases/activity below
+    // legacy aliases — resolved to phases below
     timeline: 'work',
     milestones: 'work',
     documents: 'work',
     activity: 'work',
-    worklog: 'work',
+    worklog: 'people',
     team: 'people',
     members: 'people',
     workers: 'people',
@@ -162,7 +165,6 @@ export const ProjectFullScreenView = ({
   const resolvedActiveTab = (() => {
     if (['members', 'workers', 'collaborators'].includes(activeTab)) return 'team';
     if (['timeline', 'milestones'].includes(activeTab)) return 'phases';
-    if (activeTab === 'worklog' && !isWorkerOnly) return 'activity';
     return activeTab;
   })();
   const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
@@ -173,9 +175,7 @@ export const ProjectFullScreenView = ({
   useEffect(() => {
     if (activeTab === 'timeline') setPhasesView('timeline');
     else if (activeTab === 'milestones') setPhasesView('list');
-    if (activeTab === 'worklog' && !isWorkerOnly) setActivityView('worklog');
-    else if (activeTab === 'activity') setActivityView('activity');
-  }, [activeTab, isWorkerOnly]);
+  }, [activeTab]);
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
@@ -594,7 +594,7 @@ export const ProjectFullScreenView = ({
                         </>
                       )}
 
-                      {/* PEOPLE group — single unified "Tim projekta" tab with internal sub-tabs */}
+                      {/* PEOPLE group — Tim projekta + Dnevnik rada (if project has workers) */}
                       {activeGroup === 'people' && (
                         <TooltipProvider delayDuration={200}>
                           <TabsTrigger value="team" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
@@ -609,6 +609,20 @@ export const ProjectFullScreenView = ({
                               </TooltipContent>
                             </Tooltip>
                           </TabsTrigger>
+                          {canSeeTab('worklog') && (
+                            <TabsTrigger value="worklog" className="gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              {t('workLog.tab', 'Dnevnik rada')}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-0.5 inline-flex"><HelpCircle className="w-3 h-3 opacity-60" /></span>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                                  {t('projects.tooltips.workLog', 'Upisani sati radnika po danima i obračun isplata')}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TabsTrigger>
+                          )}
                         </TooltipProvider>
                       )}
 
@@ -772,40 +786,11 @@ export const ProjectFullScreenView = ({
                   <ProjectDocumentsTab projectId={project.id} />
                 </TabsContent>
 
-                <TabsContent value="activity" className="m-0 space-y-3">
-                  <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
-                    <button
-                      type="button"
-                      onClick={() => setActivityView('worklog')}
-                      className={cn(
-                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                        activityView === 'worklog' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
-                      )}
-                    >
-                      <BookOpen className="w-3 h-3" />
-                      {t('workLog.tab', 'Dnevnik')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivityView('activity')}
-                      className={cn(
-                        'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                        activityView === 'activity' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
-                      )}
-                    >
-                      <Activity className="w-3 h-3" />
-                      {t('projects.activity.tab', 'Aktivnost')}
-                    </button>
-                  </div>
-                  {activityView === 'activity' ? (
-                    <ProjectActivityTab projectId={project.id} />
-                  ) : (
-                    <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
-                  )}
+                <TabsContent value="activity" className="m-0">
+                  <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
 
-                {/* Worker-only standalone worklog (restricted role) */}
-                {isWorkerOnly && (
+                {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">
                   <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
                 </TabsContent>

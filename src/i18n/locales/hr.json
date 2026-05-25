@@ -560,7 +560,8 @@
       "team": "Drugi korisnici aplikacije s pristupom projektu",
       "workers": "Tvoji zaposlenici (vodiš ih ti, plaćaš ih, evidencija sati)",
       "collaborators": "Vanjski podizvođači (drugi obrti/tvrtke s ugovorenim iznosom)",
-      "projectTeam": "Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici"
+      "projectTeam": "Svi ljudi na projektu: članovi aplikacije, radnici i vanjski suradnici",
+      "workLog": "Upisani sati radnika po danima i obračun isplata"
     },
     "templates": {
       "startFrom": "Započni iz šablone (opcionalno)",
@@ -3430,7 +3431,7 @@
     "resetFilters": "Resetiraj filtere"
   },
   "workLog": {
-    "tab": "Dnevnik",
+    "tab": "Dnevnik rada",
     "title": "Dnevnik rada",
     "newEntry": "Novi zapis",
     "newTitle": "Novi dnevni zapis",

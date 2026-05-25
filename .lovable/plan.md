@@ -1,50 +1,60 @@
 ## Cilj
 
-Kada prijavljeni korisnik na projektu ima ulogu radnika (postoji `project_workers` red s `user_id = auth.uid()`), u tabu "Dnevnik rada" pokazati mu malu osobnu karticu:
+Dnevnik rada izvući iz Activity taba (Work grupa) i postaviti kao **zaseban tab "Dnevnik rada" u People grupi**, pored "Tim projekta". Activity tab ostaje samo feed (bez toggle-a).
 
-- dogovorena satnica (`hourly_rate`)
-- ukupno odrađeni sati u odabranom razdoblju (zbroj `actual_hours`)
-- automatski izračun isplate = sati × satnica
-- valuta projekta
+## Promjene u `src/components/projects/ProjectFullScreenView.tsx`
 
-Vlasnik/menadžer ne vidi ovu karticu (oni imaju pregled u `ProjectWorkersTab`). Bez liste po danima.
+### 1. People grupa — dodati drugi tab
+U bloku `{activeGroup === 'people' && (...)}` (oko linije 598-613) dodati drugi `TabsTrigger value="worklog"`:
 
-## Što treba napraviti (samo frontend)
+- Ikona: `BookOpen`
+- Label: `t('workLog.tab', 'Dnevnik rada')`
+- Tooltip s objašnjenjem da prikazuje upisane sate radnika
 
-### 1. `src/components/projects/ProjectWorkLogTab.tsx`
+Gate vidljivost: `canSeeTab('worklog')` → vraća `true` samo ako (a) projekt ima ≥1 radnika (`workers.length > 0` iz `useProjectWorkers`), ili (b) `isWorkerOnly`. Bez radnika tab se ne pojavljuje da ne zatrpava ekipi koja nema radnike.
 
-- Dohvatiti `workers` preko postojećeg `useProjectWorkers(projectId)`.
-- `myWorker = workers.find(w => w.user_id === user?.id)`.
-- Ako `myWorker` postoji i `!isManager`:
-  - Ekstrahirati helper `isDateInPeriod(date, monthFilter)` iz postojeće `filteredLogs` logike (reuse, bez duplikata).
-  - Zbrojiti `actual_hours` iz `hoursByDate` samo za `myWorker.id` i samo za datume u trenutnom `monthFilter` periodu.
-  - `payout = hours * myWorker.hourly_rate`.
-  - Renderirati `MyWorkerPayCard` iznad filtera (ispod View toggle), s labelom razdoblja prema `monthFilter`.
+### 2. Activity tab — ukloniti dualni toggle
+Blok `<TabsContent value="activity">` (linije 775-805) pojednostaviti:
+- Maknuti toggle `worklog` ↔ `activity`
+- Renderira se samo `<ProjectActivityTab projectId={project.id} />`
+- Maknuti `activityView` state (linija 81) i useEffect za `activityView` (liniju 176-178)
 
-### 2. Nova komponenta `src/components/projects/MyWorkerPayCard.tsx`
+### 3. Worklog TabsContent — proširiti na sve uloge
+Trenutni `{isWorkerOnly && <TabsContent value="worklog">}` (linije 807-812) ukloniti gate `isWorkerOnly` — sad i menadžer ima isti `value="worklog"` tab. Jedan render za sve:
+```tsx
+{(canSeeTab('worklog')) && (
+  <TabsContent value="worklog" className="m-0">
+    <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
+  </TabsContent>
+)}
+```
 
-- Card s primary akcentom, 3 reda: satnica, sati u razdoblju, za isplatu.
-- Props: `hourlyRate`, `hours`, `payout`, `currency`, `periodLabel`.
-- Iznose formatirati istim helperom koji već koristi `ProjectWorkersTab` (provjeriti i reuse).
-- Ako `hourly_rate === 0` → prikazati poruku "Vlasnik projekta još nije postavio satnicu" umjesto iznosa.
+### 4. Mapiranja — uskladiti
+- `TAB_TO_GROUP` (linija 144-159): `worklog: 'people'` (umjesto trenutnog ponašanja gdje resolver šalje worklog u activity)
+- `resolvedActiveTab` (linija 162-167): ukloniti pravilo `if (activeTab === 'worklog' && !isWorkerOnly) return 'activity'`. Worklog je sad pravi tab.
+- `canSeeTab` (linija 122-130): dodati gate za `worklog` (vidi #1)
 
-### 3. Valuta projekta
+### 5. Default tab za menadžera
+Trenutno `setActiveTab(isWorkerOnly ? 'worklog' : 'phases')` — ostaje isto. Menadžer i dalje ulazi u Phases (Work grupa). Bez promjene defaulta.
 
-- Dodati `currency` prop u `ProjectWorkLogTab` i proslijediti iz `ProjectFullScreenView` (već zna projekt). Proslijediti u `MyWorkerPayCard`.
+### 6. Tooltipovi za People grupu
+Postojeći tooltip za "Tim projekta" zadržati. Dodati zasebni kratki tooltip za "Dnevnik rada".
 
-### 4. i18n (`src/i18n/locales/{hr,en,de}.json`)
+## i18n (`src/i18n/locales/{hr,en,de}.json`)
 
-Pod `workLog.myPay.*`:
-- `title` ("Moja zarada na projektu" / "My project earnings" / "Mein Projektverdienst")
-- `hourlyRate` ("Satnica" / "Hourly rate" / "Stundensatz")
-- `hoursInPeriod` ("Sati u razdoblju" / "Hours in period" / "Stunden im Zeitraum")
-- `payout` ("Za isplatu" / "Payout" / "Auszahlung")
-- `noRateSet` ("Vlasnik projekta još nije postavio satnicu" / ... / ...)
+Provjeriti postoje li ključevi; dodati ako fale:
+- `workLog.tab` — "Dnevnik rada" / "Work log" / "Arbeitstagebuch" (već postoji, ali vrijednost je trenutno samo "Dnevnik")
+- `projects.tooltips.workLog` — kratak opis ("Upisani sati radnika po danima i obračun isplata.")
 
-## Što NE treba
+## Što NE diramo
 
-- Bez DB migracija — `project_workers.hourly_rate` i `project_work_entries.actual_hours` postoje; RLS već dozvoljava radniku čitanje vlastitog reda (`user_id = auth.uid()`).
-- Bez promjena na `ProjectWorkersTab`.
-- Bez paywalla.
-- Bez liste po danima.
-- Bez promjena na transakcijama, budžetu ili isplatama (ovo je samo prikaz, ne kreira expense).
+- `ProjectWorkLogTab.tsx` — komponenta ostaje identična, samo se renderira iz drugog mjesta.
+- Worker-only ponašanje — radnik i dalje automatski upada u `worklog` tab, sad samo unutar People grupe.
+- Activity feed (`ProjectActivityTab`) — ostaje, samo bez podijeljenog prostora.
+- Bez DB migracija, bez RLS, bez novih hookova.
+
+## Edge cases
+
+- **Projekt bez radnika:** Dnevnik tab se sakriva u People grupi → menadžer vidi samo "Tim projekta". Ako naknadno doda radnika → tab se pojavljuje (React re-render preko `useProjectWorkers`).
+- **Legacy deep links** (`initialTab='worklog'` iz vanjskih mjesta, npr. ActiveProjectsStrip): radi se ispravno jer worklog sad postoji kao pravi tab; TAB_TO_GROUP automatski prebacuje na People grupu.
+- **`isManager` flag** prosljeđuje se nepromijenjeno (`ProjectWorkLogTab` ga već koristi za prikaz `MyWorkerPayCard` vs ostalo).

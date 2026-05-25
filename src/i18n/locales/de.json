@@ -579,7 +579,8 @@
       "projectTeam": "Alle Personen im Projekt: App-Mitglieder, Arbeiter und externe Mitwirkende",
       "team": "Teammitglieder",
       "workers": "Arbeiter",
-      "collaborators": "Mitwirkende"
+      "collaborators": "Mitwirkende",
+      "workLog": "Erfasste Arbeitsstunden pro Tag und Auszahlungsberechnung"
     },
     "invitationsDisabledClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind nicht möglich.",
     "complete": {
@@ -3430,7 +3431,7 @@
     "resetFilters": "Filter zurücksetzen"
   },
   "workLog": {
-    "tab": "Tagebuch",
+    "tab": "Arbeitstagebuch",
     "title": "Arbeitstagebuch",
     "newEntry": "Neuer Eintrag",
     "newTitle": "Neuer Tagebucheintrag",
