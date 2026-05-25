@@ -8,6 +8,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
+import { calculateContractValue } from '@/lib/projectCalculations';
 import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLine';
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
