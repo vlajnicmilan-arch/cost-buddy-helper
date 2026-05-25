@@ -95,6 +95,40 @@ export const ProjectCard = ({
     }
   };
 
+  // Worker role: minimal card (icon + name only). No financial data, no actions.
+  const isWorkerOnly = !project.isOwner && project.role === 'worker';
+
+  if (isWorkerOnly) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.01 }}
+        className="relative p-4 rounded-2xl border border-border/50 backdrop-blur-md transition-all duration-300 overflow-hidden"
+        style={{
+          borderLeftColor: projectColor,
+          borderLeftWidth: 3,
+          background: `linear-gradient(135deg, ${projectColor}0A 0%, ${projectColor}04 50%, transparent 100%)`,
+        }}
+      >
+        <div
+          {...clickableProps(() => onClick(project), {
+            label: project.name,
+            className: 'flex items-center gap-3 cursor-pointer rounded-xl',
+          })}
+        >
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm"
+            style={{ background: `linear-gradient(135deg, ${projectColor}25, ${projectColor}15)` }}
+          >
+            {projectIcon}
+          </div>
+          <h3 className="font-semibold truncate flex-1">{project.name}</h3>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
