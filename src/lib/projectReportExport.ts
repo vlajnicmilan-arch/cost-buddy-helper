@@ -135,9 +135,11 @@ export const generateProjectPDFReport = async (
     ? ((data.totalSpent / data.totalBudget) * 100).toFixed(1) 
     : '0';
 
-  const baseContract = (data.contractValue && data.contractValue > 0) ? data.contractValue : data.totalBudget;
+  // VAŽNO: data.contractValue (project.contract_value) već uključuje aneks
+  // (useProjectMilestones ga bumpa pri unosu). Ne zbrajati amendmentsTotal ponovo.
+  const resolvedContract = (data.contractValue && data.contractValue > 0) ? data.contractValue : data.totalBudget;
   const amendmentsTotal = data.contractAmendmentsTotal || 0;
-  const resolvedContract = baseContract + amendmentsTotal;
+  const originalContract = Math.max(0, resolvedContract - amendmentsTotal);
   const collectedIncome = data.totalIncome ?? 0;
   const totalCostsAccrual = data.totalSpent;
   const cashBalance = collectedIncome - totalCostsAccrual;
@@ -146,7 +148,13 @@ export const generateProjectPDFReport = async (
   const remainingToCollect = Math.max(resolvedContract - collectedIncome, 0);
 
   const budgetData = [
-    [toAscii('Ugovorena vrijednost'), formatCurrency(resolvedContract, data.currency)],
+    [toAscii('Ugovorena vrijednost'), formatCurrency(originalContract, data.currency)],
+    ...(amendmentsTotal > 0
+      ? [[toAscii('Aneksi ugovora'), `+${formatCurrency(amendmentsTotal, data.currency)}`]]
+      : []),
+    ...(amendmentsTotal > 0
+      ? [[toAscii('Ukupno za naplatu po ugovoru'), formatCurrency(resolvedContract, data.currency)]]
+      : []),
     [toAscii('Naplaceno'), formatCurrency(collectedIncome, data.currency)],
     [toAscii('Za naplatu'), formatCurrency(remainingToCollect, data.currency)],
     [toAscii('Ukupni budzet'), formatCurrency(data.totalBudget, data.currency)],
