@@ -52,20 +52,22 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
   const [searchQuery, setSearchQuery] = useState('');
   const [view, setView] = useState<'list' | 'monthly'>('list');
 
-  const filteredLogs = useMemo(() => {
+  const isDateInPeriod = (dateStr: string, filter: MonthFilter): boolean => {
+    if (filter === 'all') return true;
     const now = new Date();
     const startCurrent = startOfMonth(now);
     const startPrev = startOfMonth(subMonths(now, 1));
     const start3 = startOfMonth(subMonths(now, 2));
+    const d = parseISO(dateStr);
+    if (filter === 'current') return d >= startCurrent;
+    if (filter === 'previous') return d >= startPrev && d < startCurrent;
+    if (filter === 'last3') return d >= start3;
+    return true;
+  };
 
+  const filteredLogs = useMemo(() => {
     return logs.filter((l) => {
-      // Month filter
-      if (monthFilter !== 'all') {
-        const d = parseISO(l.log_date);
-        if (monthFilter === 'current' && d < startCurrent) return false;
-        if (monthFilter === 'previous' && (d < startPrev || d >= startCurrent)) return false;
-        if (monthFilter === 'last3' && d < start3) return false;
-      }
+      if (!isDateInPeriod(l.log_date, monthFilter)) return false;
       // Milestone filter
       if (milestoneFilter !== 'all') {
         if (milestoneFilter === 'none' && l.milestone_id) return false;
@@ -80,6 +82,32 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
       return true;
     });
   }, [logs, monthFilter, milestoneFilter, searchQuery]);
+
+  // My worker payout (only shown to non-managers who are linked as workers)
+  const myWorker = useMemo(
+    () => (user?.id ? workers.find((w) => w.user_id === user.id) : undefined),
+    [workers, user?.id],
+  );
+
+  const myHoursInPeriod = useMemo(() => {
+    if (!myWorker) return 0;
+    let total = 0;
+    Object.entries(hoursByDate).forEach(([date, entries]) => {
+      if (!isDateInPeriod(date, monthFilter)) return;
+      entries.forEach((e) => {
+        if (e.worker_id === myWorker.id) total += e.actual_hours;
+      });
+    });
+    return total;
+  }, [myWorker, hoursByDate, monthFilter]);
+
+  const periodLabelMap: Record<MonthFilter, string> = {
+    current: t('workLog.filter.currentMonth', 'Tekući mjesec'),
+    previous: t('workLog.filter.previousMonth', 'Prošli mjesec'),
+    last3: t('workLog.filter.last3', 'Zadnja 3 mjeseca'),
+    all: t('workLog.filter.all', 'Sve'),
+  };
+
 
   const handleSubmit = async (input: any) => {
     if (editingLog) {
