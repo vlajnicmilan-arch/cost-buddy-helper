@@ -165,7 +165,6 @@ export const ProjectFullScreenView = ({
   const resolvedActiveTab = (() => {
     if (['members', 'workers', 'collaborators'].includes(activeTab)) return 'team';
     if (['timeline', 'milestones'].includes(activeTab)) return 'phases';
-    if (activeTab === 'worklog' && !isWorkerOnly) return 'activity';
     return activeTab;
   })();
   const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
@@ -176,9 +175,7 @@ export const ProjectFullScreenView = ({
   useEffect(() => {
     if (activeTab === 'timeline') setPhasesView('timeline');
     else if (activeTab === 'milestones') setPhasesView('list');
-    if (activeTab === 'worklog' && !isWorkerOnly) setActivityView('worklog');
-    else if (activeTab === 'activity') setActivityView('activity');
-  }, [activeTab, isWorkerOnly]);
+  }, [activeTab]);
 
   useEffect(() => {
     const grp = TAB_TO_GROUP[activeTab];
