@@ -47,11 +47,13 @@ export const ProjectMilestonesTab = ({
 }: ProjectMilestonesTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
-  const { addMilestone, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
+  const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
+  const [dialogMode, setDialogMode] = useState<'milestone' | 'vtr'>('milestone');
+  const [vtrNote, setVtrNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [revisionsDialogOpen, setRevisionsDialogOpen] = useState(false);
