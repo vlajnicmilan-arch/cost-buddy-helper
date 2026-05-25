@@ -209,7 +209,7 @@ export const useProjectMilestones = (projectId: string | null) => {
         project_id: projectId,
         activity_type: 'milestone_added',
         ref_id: newMilestone.id,
-        meta: { milestone_name: newMilestone.name, is_vtr: true },
+        meta: { milestone_name: newMilestone.name },
       });
       return newMilestone;
     } catch (error) {
