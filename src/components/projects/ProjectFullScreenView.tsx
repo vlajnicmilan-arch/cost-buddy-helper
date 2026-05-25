@@ -211,7 +211,7 @@ export const ProjectFullScreenView = ({
 
   if (!project) return null;
 
-  const budget = project.total_budget || 0;
+  const budget = effectiveContract;
 
   // Use actual transaction-based spending from useProjectStats
   const totalSpent = stats.totalSpent;
