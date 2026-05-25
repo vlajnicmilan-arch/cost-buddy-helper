@@ -79,7 +79,6 @@ export const ProjectFullScreenView = ({
   const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [phasesView, setPhasesView] = useState<'list' | 'timeline'>('list');
-  const [activityView, setActivityView] = useState<'worklog' | 'activity'>('worklog');
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
