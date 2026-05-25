@@ -3431,7 +3431,7 @@
     "resetFilters": "Reset filters"
   },
   "workLog": {
-    "tab": "Log",
+    "tab": "Work log",
     "title": "Work log",
     "newEntry": "New entry",
     "newTitle": "New work log entry",
