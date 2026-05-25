@@ -28,6 +28,7 @@ import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
 import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
 import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
+import { getMilestoneDelay } from '@/lib/projectMilestoneDelay';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -63,11 +64,15 @@ export const ProjectMilestonesTab = ({
   const [status, setStatus] = useState<MilestoneStatus>('pending');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [actualStartDate, setActualStartDate] = useState<Date | undefined>();
+  const [actualEndDate, setActualEndDate] = useState<Date | undefined>();
   const [color, setColor] = useState('#3b82f6');
   const [dependsOn, setDependsOn] = useState<string>('');
   const [reminderDays, setReminderDays] = useState('3');
   const [startOpen, setStartOpen] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
+  const [actualStartOpen, setActualStartOpen] = useState(false);
+  const [actualEndOpen, setActualEndOpen] = useState(false);
   // Budget revision state (only relevant when editing)
   const [revisionReason, setRevisionReason] = useState('');
   const [revisionType, setRevisionType] = useState<MilestoneRevisionType | null>(null);
@@ -100,6 +105,8 @@ export const ProjectMilestonesTab = ({
       setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
       setDueDate(milestone.due_date ? new Date(milestone.due_date) : undefined);
+      setActualStartDate(milestone.actual_start_date ? new Date(milestone.actual_start_date) : undefined);
+      setActualEndDate(milestone.actual_end_date ? new Date(milestone.actual_end_date) : undefined);
       setDependsOn(milestone.depends_on_milestone_id || '');
       setReminderDays((milestone.reminder_days_before ?? 3).toString());
     } else {
@@ -111,6 +118,8 @@ export const ProjectMilestonesTab = ({
       setColor('#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
+      setActualStartDate(undefined);
+      setActualEndDate(undefined);
       setDependsOn('');
       setReminderDays('3');
     }
@@ -169,6 +178,8 @@ export const ProjectMilestonesTab = ({
         color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+        actual_start_date: actualStartDate ? format(actualStartDate, 'yyyy-MM-dd') : null,
+        actual_end_date: actualEndDate ? format(actualEndDate, 'yyyy-MM-dd') : null,
         sort_order: editingMilestone?.sort_order ?? milestones.length,
         depends_on_milestone_id: dependsOn && dependsOn !== 'none' ? dependsOn : null,
         reminder_days_before: parseInt(reminderDays) || 3,
@@ -387,6 +398,25 @@ export const ProjectMilestonesTab = ({
                           {milestone.reminder_days_before}d
                         </span>
                       )}
+                      {(() => {
+                        const delay = getMilestoneDelay(milestone);
+                        if (delay.status === 'late') {
+                          return <Badge variant="destructive" className="text-[10px]">{t('projects.delay.lateDays', { count: delay.days, defaultValue: 'Kasnilo {{count}} d' })}</Badge>;
+                        }
+                        if (delay.status === 'early') {
+                          return <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{t('projects.delay.earlyDays', { count: delay.days, defaultValue: 'Završeno {{count}} d ranije' })}</Badge>;
+                        }
+                        if (delay.status === 'on_time' && milestone.status === 'completed') {
+                          return <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{t('projects.delay.onTime', 'U roku')}</Badge>;
+                        }
+                        if (delay.status === 'in_progress_late') {
+                          return <Badge variant="destructive" className="text-[10px]">{t('projects.delay.inProgressLate', { count: delay.days, defaultValue: 'Kasni {{count}} d' })}</Badge>;
+                        }
+                        if (delay.status === 'pending_late') {
+                          return <Badge variant="outline" className="text-[10px] border-destructive text-destructive">{t('projects.delay.pendingLate', { count: delay.days, defaultValue: 'Trebalo započeti prije {{count}} d' })}</Badge>;
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     <details className="mt-3 group/check">
@@ -562,6 +592,69 @@ export const ProjectMilestonesTab = ({
                 </Popover>
               </div>
             </div>
+
+            {/* Actual (real) dates — source of truth for delay calculation */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  {t('projects.actualStartDate', 'Stvarni početak')}
+                </Label>
+                <Popover open={actualStartOpen} onOpenChange={setActualStartOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {actualStartDate ? format(actualStartDate, 'd. MMM yyyy', { locale: hr }) : t('common.optional', 'Opcionalno')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={actualStartDate}
+                      onSelect={(d) => { setActualStartDate(d); if (d) setActualStartOpen(false); }}
+                      className="p-3 pointer-events-auto"
+                    />
+                    {actualStartDate && (
+                      <div className="p-2 border-t">
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => { setActualStartDate(undefined); setActualStartOpen(false); }}>
+                          {t('common.clear', 'Očisti')}
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('projects.actualEndDate', 'Stvarni završetak')}</Label>
+                <Popover open={actualEndOpen} onOpenChange={setActualEndOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {actualEndDate ? format(actualEndDate, 'd. MMM yyyy', { locale: hr }) : t('common.optional', 'Opcionalno')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={actualEndDate}
+                      onSelect={(d) => { setActualEndDate(d); if (d) setActualEndOpen(false); }}
+                      className="p-3 pointer-events-auto"
+                    />
+                    {actualEndDate && (
+                      <div className="p-2 border-t">
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => { setActualEndDate(undefined); setActualEndOpen(false); }}>
+                          {t('common.clear', 'Očisti')}
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              {t('projects.actualDatesHint', 'Stvarni datumi se automatski popunjavaju pri prijelazu statusa, ali ih možeš ručno mijenjati. Koriste se za izračun kašnjenja.')}
+            </p>
+
 
             {/* Dependency */}
             <div className="space-y-2">

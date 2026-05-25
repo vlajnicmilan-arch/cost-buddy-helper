@@ -62,6 +62,8 @@ export interface ProjectMilestone {
   start_date?: string | null;
   due_date?: string | null;
   completed_at?: string | null;
+  actual_start_date?: string | null;
+  actual_end_date?: string | null;
   sort_order: number;
   color?: string | null;
   depends_on_milestone_id?: string | null;
