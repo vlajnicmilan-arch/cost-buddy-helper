@@ -126,21 +126,75 @@ export const useProjectMilestones = (projectId: string | null) => {
   ): Promise<void> => {
     try {
       const previous = milestones.find((m) => m.id === milestone.id);
+      const prevStatus = previous?.status;
+      const nowIso = new Date().toISOString();
+      const todayDate = nowIso.slice(0, 10);
+
+      // --- completed_at semantics (audit timestamp, NEVER overwritten) ---
+      // Set on first transition into 'completed'.
+      // Clear if transitioning OUT of 'completed'.
+      // Otherwise keep previous value (do NOT touch).
+      let completedAtUpdate: string | null | undefined;
+      if (milestone.status === 'completed' && prevStatus !== 'completed') {
+        completedAtUpdate = nowIso;
+      } else if (milestone.status !== 'completed' && prevStatus === 'completed') {
+        completedAtUpdate = null;
+      } else {
+        completedAtUpdate = undefined; // don't include in update payload
+      }
+
+      // --- actual_end_date: auto-populate on first completion if still empty,
+      // never overwrite if user already set it (manual edits always win). ---
+      const incomingActualEnd =
+        (milestone as any).actual_end_date !== undefined
+          ? (milestone as any).actual_end_date
+          : previous?.actual_end_date ?? null;
+      let actualEndUpdate: string | null = incomingActualEnd;
+      if (
+        milestone.status === 'completed' &&
+        prevStatus !== 'completed' &&
+        !incomingActualEnd
+      ) {
+        actualEndUpdate = todayDate;
+      }
+
+      // --- actual_start_date: auto-populate on first transition to in_progress
+      // if still empty; otherwise respect user input / preserve. ---
+      const incomingActualStart =
+        (milestone as any).actual_start_date !== undefined
+          ? (milestone as any).actual_start_date
+          : previous?.actual_start_date ?? null;
+      let actualStartUpdate: string | null = incomingActualStart;
+      if (
+        milestone.status === 'in_progress' &&
+        prevStatus !== 'in_progress' &&
+        prevStatus !== 'completed' &&
+        !incomingActualStart
+      ) {
+        actualStartUpdate = todayDate;
+      }
+
+      const updatePayload: Record<string, any> = {
+        name: milestone.name,
+        description: milestone.description,
+        budget: milestone.budget,
+        status: milestone.status,
+        start_date: milestone.start_date,
+        due_date: milestone.due_date,
+        sort_order: milestone.sort_order,
+        color: milestone.color || '#3b82f6',
+        depends_on_milestone_id: milestone.depends_on_milestone_id || null,
+        reminder_days_before: milestone.reminder_days_before ?? 3,
+        actual_start_date: actualStartUpdate,
+        actual_end_date: actualEndUpdate,
+      };
+      if (completedAtUpdate !== undefined) {
+        updatePayload.completed_at = completedAtUpdate;
+      }
+
       const { error } = await supabase
         .from('project_milestones')
-        .update({
-          name: milestone.name,
-          description: milestone.description,
-          budget: milestone.budget,
-          status: milestone.status,
-          start_date: milestone.start_date,
-          due_date: milestone.due_date,
-          completed_at: milestone.status === 'completed' ? new Date().toISOString() : null,
-          sort_order: milestone.sort_order,
-          color: milestone.color || '#3b82f6',
-          depends_on_milestone_id: milestone.depends_on_milestone_id || null,
-          reminder_days_before: milestone.reminder_days_before ?? 3,
-        })
+        .update(updatePayload)
         .eq('id', milestone.id);
 
       if (error) throw error;
