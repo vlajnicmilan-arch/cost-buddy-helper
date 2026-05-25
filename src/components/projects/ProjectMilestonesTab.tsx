@@ -243,7 +243,11 @@ export const ProjectMilestonesTab = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm(t('projects.confirmDeleteMilestone'))) {
+    const m = milestones.find((x) => x.id === id);
+    const confirmMsg = m?.is_vtr
+      ? t('projects.vtr.deleteWarning', 'Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?', { amount: formatAmount(m.budget) })
+      : t('projects.confirmDeleteMilestone');
+    if (confirm(confirmMsg)) {
       await deleteMilestone(id);
       onRefetch();
     }
