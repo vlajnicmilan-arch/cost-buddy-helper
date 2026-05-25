@@ -3606,6 +3606,8 @@ export type Database = {
       }
       project_milestones: {
         Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
           budget: number
           color: string | null
           completed_at: string | null
@@ -3626,6 +3628,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
           budget?: number
           color?: string | null
           completed_at?: string | null
@@ -3646,6 +3650,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
           budget?: number
           color?: string | null
           completed_at?: string | null

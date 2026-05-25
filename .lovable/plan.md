@@ -1,60 +1,55 @@
 ## Cilj
+Uvesti stvarne datume po fazi (`actual_start_date`, `actual_end_date`) kao izvor istine za kašnjenja. `due_date`/`start_date` ostaju planirani datumi, `completed_at` ostaje samo audit timestamp.
 
-Dnevnik rada izvući iz Activity taba (Work grupa) i postaviti kao **zaseban tab "Dnevnik rada" u People grupi**, pored "Tim projekta". Activity tab ostaje samo feed (bez toggle-a).
+## Promjene
 
-## Promjene u `src/components/projects/ProjectFullScreenView.tsx`
+### 1. DB migracija (`project_milestones`)
+- Dodati `actual_start_date DATE` i `actual_end_date DATE` (nullable).
+- **Backfill jednokratno**: `actual_end_date = completed_at::date` za sve već dovršene faze (gdje je `status='completed'` i `actual_end_date IS NULL`). Time vraćamo postojeću povijest koliko je još moguće.
+- Bez CHECK constrainta (Postgres immutable pravilo); validaciju radimo u kodu.
 
-### 1. People grupa — dodati drugi tab
-U bloku `{activeGroup === 'people' && (...)}` (oko linije 598-613) dodati drugi `TabsTrigger value="worklog"`:
+### 2. Fix bug u `useProjectMilestones.ts` (linija ~138)
+Trenutno se pri svakom UPDATE-u na već dovršenoj fazi `completed_at` postavlja na `now()`. To briše povijest.
+- `completed_at` se postavlja **samo** kad faza prelazi iz ne-completed u completed.
+- Ne dira se na ostale UPDATE-ove.
+- `actual_end_date` se **auto-popunjava na `today()`** prilikom prvog prijelaza u completed (opcija B), ali se kasnije može ručno mijenjati i NIKAD se više ne prepisuje automatski.
+- Analogno: `actual_start_date` se auto-popunjava na `today()` kad faza prvi put pređe u `in_progress` (ako je još NULL); kasnije ručno editabilno.
 
-- Ikona: `BookOpen`
-- Label: `t('workLog.tab', 'Dnevnik rada')`
-- Tooltip s objašnjenjem da prikazuje upisane sate radnika
+### 3. UI – uređivanje faza
+U dialogu za uređivanje milestone-a (`MilestoneEditDialog` ili ekvivalent) dodati dva nova polja:
+- "Stvarni početak" (`actual_start_date`) – DatePicker, opcionalno
+- "Stvarni završetak" (`actual_end_date`) – DatePicker, opcionalno, vidljivo samo kad je faza dovršena (ili uvijek, korisnik može unaprijed unijeti)
 
-Gate vidljivost: `canSeeTab('worklog')` → vraća `true` samo ako (a) projekt ima ≥1 radnika (`workers.length > 0` iz `useProjectWorkers`), ili (b) `isWorkerOnly`. Bez radnika tab se ne pojavljuje da ne zatrpava ekipi koja nema radnike.
+Postojeća polja "Planirani početak" i "Planirani završetak" ostaju nepromijenjena.
 
-### 2. Activity tab — ukloniti dualni toggle
-Blok `<TabsContent value="activity">` (linije 775-805) pojednostaviti:
-- Maknuti toggle `worklog` ↔ `activity`
-- Renderira se samo `<ProjectActivityTab projectId={project.id} />`
-- Maknuti `activityView` state (linija 81) i useEffect za `activityView` (liniju 176-178)
-
-### 3. Worklog TabsContent — proširiti na sve uloge
-Trenutni `{isWorkerOnly && <TabsContent value="worklog">}` (linije 807-812) ukloniti gate `isWorkerOnly` — sad i menadžer ima isti `value="worklog"` tab. Jedan render za sve:
-```tsx
-{(canSeeTab('worklog')) && (
-  <TabsContent value="worklog" className="m-0">
-    <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
-  </TabsContent>
-)}
+### 4. Helper za kašnjenje
+Novi pure helper `src/lib/projectMilestoneDelay.ts`:
 ```
+getMilestoneDelay(milestone) → { status: 'on_time'|'late'|'in_progress_late'|'pending', days: number }
+```
+Logika:
+- Dovršena faza: usporedi `actual_end_date` (ili fallback `completed_at::date`) vs `due_date`
+- U tijeku: usporedi danas vs `due_date`
+- Nije počela i prošao planirani početak: usporedi danas vs `start_date`
 
-### 4. Mapiranja — uskladiti
-- `TAB_TO_GROUP` (linija 144-159): `worklog: 'people'` (umjesto trenutnog ponašanja gdje resolver šalje worklog u activity)
-- `resolvedActiveTab` (linija 162-167): ukloniti pravilo `if (activeTab === 'worklog' && !isWorkerOnly) return 'activity'`. Worklog je sad pravi tab.
-- `canSeeTab` (linija 122-130): dodati gate za `worklog` (vidi #1)
+Vitest pokrivenost (po pravilu "bug → helper → test").
 
-### 5. Default tab za menadžera
-Trenutno `setActiveTab(isWorkerOnly ? 'worklog' : 'phases')` — ostaje isto. Menadžer i dalje ulazi u Phases (Work grupa). Bez promjene defaulta.
+### 5. UI prikaz kašnjenja
+- **Timeline tab** i **Phases tab** u `ProjectFullScreenView`: koristiti novi helper umjesto trenutne ad-hoc logike.
+- Za dovršene faze prikazati badge: "Kasnilo X dana" ili "U roku" (boja teal/orange/red).
+- Faze koje su dovršene prije planiranog datuma → "Završeno X dana ranije".
 
-### 6. Tooltipovi za People grupu
-Postojeći tooltip za "Tim projekta" zadržati. Dodati zasebni kratki tooltip za "Dnevnik rada".
+### 6. i18n
+Novi ključevi u `hr/en/de`:
+- `projects.milestones.actualStart`, `projects.milestones.actualEnd`
+- `projects.milestones.delay.onTime`, `delay.lateDays`, `delay.earlyDays`, `delay.inProgressLate`
 
-## i18n (`src/i18n/locales/{hr,en,de}.json`)
+## Što NE radimo
+- Nema `baseline_due_date` ni revision log-a (overkill za current scope).
+- Ne diramo `completed_at` semantiku — ostaje audit polje.
+- Ne mijenjamo postojeću logiku u `ProjectWorkLogTab` ni radničke prikaze.
 
-Provjeriti postoje li ključevi; dodati ako fale:
-- `workLog.tab` — "Dnevnik rada" / "Work log" / "Arbeitstagebuch" (već postoji, ali vrijednost je trenutno samo "Dnevnik")
-- `projects.tooltips.workLog` — kratak opis ("Upisani sati radnika po danima i obračun isplata.")
-
-## Što NE diramo
-
-- `ProjectWorkLogTab.tsx` — komponenta ostaje identična, samo se renderira iz drugog mjesta.
-- Worker-only ponašanje — radnik i dalje automatski upada u `worklog` tab, sad samo unutar People grupe.
-- Activity feed (`ProjectActivityTab`) — ostaje, samo bez podijeljenog prostora.
-- Bez DB migracija, bez RLS, bez novih hookova.
-
-## Edge cases
-
-- **Projekt bez radnika:** Dnevnik tab se sakriva u People grupi → menadžer vidi samo "Tim projekta". Ako naknadno doda radnika → tab se pojavljuje (React re-render preko `useProjectWorkers`).
-- **Legacy deep links** (`initialTab='worklog'` iz vanjskih mjesta, npr. ActiveProjectsStrip): radi se ispravno jer worklog sad postoji kao pravi tab; TAB_TO_GROUP automatski prebacuje na People grupu.
-- **`isManager` flag** prosljeđuje se nepromijenjeno (`ProjectWorkLogTab` ga već koristi za prikaz `MyWorkerPayCard` vs ostalo).
+## Tehnički detalji
+- Migracija je aditivna, sigurna; backfill iz `completed_at` jednom.
+- Update hook mora se osigurati da NE šalje `completed_at` u `update()` payload osim pri tranziciji statusa.
+- Update memorije (`mem://features/comprehensive-project-management`) nakon implementacije s napomenom o actual_* poljima.
