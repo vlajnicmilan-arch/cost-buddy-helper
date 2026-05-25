@@ -30,6 +30,7 @@ import { ProjectEarnedValueCard } from './ProjectEarnedValueCard';
 import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
 import { ProjectForecastCard } from './ProjectForecastCard';
 import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
+import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
 
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
 import { format } from 'date-fns';
