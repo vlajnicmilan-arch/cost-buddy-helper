@@ -95,7 +95,7 @@ export const ProjectFullScreenView = ({
   const { workers } = useProjectWorkers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
-  const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
+  
 
   // Effective contracted value:
   // - contract_value već uključuje aneks (useProjectMilestones ga bumpa pri unosu aneksa)
