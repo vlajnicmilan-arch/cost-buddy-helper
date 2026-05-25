@@ -127,6 +127,8 @@ export const ProjectFullScreenView = ({
     if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
     // Documents always visible to project members
     if (tabKey === 'documents') return true;
+    // Worklog tab in People group: only visible if project has at least one worker
+    if (tabKey === 'worklog') return (workers?.length ?? 0) > 0 && (isManager || isTabVisible('worklog'));
     return isManager || isTabVisible(tabKey);
   };
 
