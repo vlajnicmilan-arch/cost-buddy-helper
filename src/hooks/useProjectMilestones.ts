@@ -90,6 +90,7 @@ export const useProjectMilestones = (projectId: string | null) => {
           depends_on_milestone_id: milestone.depends_on_milestone_id || null,
           reminder_days_before: milestone.reminder_days_before ?? 3,
           is_contingency: milestone.is_contingency ?? false,
+          is_vtr: (milestone as any).is_vtr ?? false,
           actual_start_date: (milestone as any).actual_start_date ?? null,
           actual_end_date: (milestone as any).actual_end_date ?? null,
         } as any)
@@ -104,6 +105,7 @@ export const useProjectMilestones = (projectId: string | null) => {
         budget: Number(data.budget) || 0,
         spent: 0,
         is_contingency: !!(data as any).is_contingency,
+        is_vtr: !!(data as any).is_vtr,
       };
 
       setMilestones(prev => [...prev, newMilestone].sort((a, b) => a.sort_order - b.sort_order));
@@ -121,6 +123,102 @@ export const useProjectMilestones = (projectId: string | null) => {
       return null;
     }
   };
+
+  /**
+   * Create a VTR (Više traženih radova) — a milestone flagged is_vtr=true that
+   * AUTOMATICALLY adds its budget to the project's contract_value and creates a
+   * project_contract_amendments record. Mirrors the scope_change amendment flow.
+   */
+  const createVtr = async (
+    input: Omit<ProjectMilestone, 'id' | 'created_at' | 'updated_at' | 'spent' | 'is_vtr' | 'is_contingency'> & { note?: string | null }
+  ): Promise<ProjectMilestone | null> => {
+    if (!projectId || !user) return null;
+    const amount = Number(input.budget) || 0;
+    if (amount <= 0) {
+      showError(t('projects.vtr.amountRequired', 'Iznos VTR-a mora biti veći od 0.'));
+      return null;
+    }
+
+    try {
+      // 1) Insert milestone with is_vtr=true
+      const { data: mData, error: mErr } = await supabase
+        .from('project_milestones')
+        .insert({
+          project_id: projectId,
+          name: input.name,
+          description: input.description,
+          budget: amount,
+          status: input.status,
+          start_date: input.start_date,
+          due_date: input.due_date,
+          sort_order: input.sort_order,
+          color: input.color || 'hsl(38 92% 50%)',
+          depends_on_milestone_id: input.depends_on_milestone_id || null,
+          reminder_days_before: input.reminder_days_before ?? 3,
+          is_contingency: false,
+          is_vtr: true,
+        } as any)
+        .select()
+        .single();
+      if (mErr) throw mErr;
+
+      // 2) Insert contract amendment linked to this milestone
+      const { error: aErr } = await supabase
+        .from('project_contract_amendments' as any)
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          amendment_amount: amount,
+          note: input.note?.trim() || null,
+          linked_milestone_id: (mData as any).id,
+        } as any);
+      if (aErr) {
+        console.error('Failed to insert VTR amendment:', aErr);
+        showError(t('projects.contractAmendment.saveFailed', 'Nije moguće spremiti aneks ugovora.'));
+      } else {
+        // 3) Bump projects.contract_value (using same baseline rule as scope_change)
+        const { data: projRow } = await supabase
+          .from('projects')
+          .select('contract_value, total_budget')
+          .eq('id', projectId)
+          .single();
+        if (projRow) {
+          const newContract = applyContractAmendment(
+            (projRow as any).contract_value,
+            (projRow as any).total_budget,
+            amount
+          );
+          await supabase.from('projects').update({ contract_value: newContract }).eq('id', projectId);
+          window.dispatchEvent(
+            new CustomEvent('contract-amendment-added', { detail: { projectId, amount } })
+          );
+        }
+      }
+
+      const newMilestone: ProjectMilestone = {
+        ...(mData as any),
+        status: (mData as any).status as MilestoneStatus,
+        budget: Number((mData as any).budget) || 0,
+        spent: 0,
+        is_contingency: false,
+        is_vtr: true,
+      };
+      setMilestones(prev => [...prev, newMilestone].sort((a, b) => a.sort_order - b.sort_order));
+      showSuccess(t('projects.vtr.created', 'VTR dodan'));
+      void notifyProjectActivity({
+        project_id: projectId,
+        activity_type: 'milestone_added',
+        ref_id: newMilestone.id,
+        meta: { milestone_name: newMilestone.name, is_vtr: true },
+      });
+      return newMilestone;
+    } catch (error) {
+      console.error('Error creating VTR:', error);
+      showError(t('common.error'));
+      return null;
+    }
+  };
+
 
   const updateMilestone = async (
     milestone: ProjectMilestone,
