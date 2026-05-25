@@ -525,6 +525,13 @@ export const ProjectMilestonesTab = ({
               </div>
             </div>
 
+            {dialogMode === 'vtr' && !editingMilestone && (
+              <div className="space-y-2">
+                <Label>{t('projects.vtr.noteLabel', 'Bilješka uz aneks (opcionalno)')}</Label>
+                <Input value={vtrNote} onChange={(e) => setVtrNote(e.target.value)} placeholder={t('projects.vtr.notePlaceholder', 'npr. Klijent zatražio dodatne radove 12.5.2026')} />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('projects.budget')}</Label>
