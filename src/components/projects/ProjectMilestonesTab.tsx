@@ -229,6 +229,8 @@ export const ProjectMilestonesTab = ({
             }
           : undefined;
         await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
+      } else if (dialogMode === 'vtr') {
+        await createVtr({ ...milestoneData, note: vtrNote.trim() || null } as any);
       } else {
         await addMilestone(milestoneData);
       }
