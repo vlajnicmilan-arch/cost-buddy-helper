@@ -104,6 +104,8 @@ export const ProjectMilestonesTab = ({
       setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
       setDueDate(milestone.due_date ? new Date(milestone.due_date) : undefined);
+      setActualStartDate(milestone.actual_start_date ? new Date(milestone.actual_start_date) : undefined);
+      setActualEndDate(milestone.actual_end_date ? new Date(milestone.actual_end_date) : undefined);
       setDependsOn(milestone.depends_on_milestone_id || '');
       setReminderDays((milestone.reminder_days_before ?? 3).toString());
     } else {
@@ -115,6 +117,8 @@ export const ProjectMilestonesTab = ({
       setColor('#3b82f6');
       setStartDate(undefined);
       setDueDate(undefined);
+      setActualStartDate(undefined);
+      setActualEndDate(undefined);
       setDependsOn('');
       setReminderDays('3');
     }
