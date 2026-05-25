@@ -335,6 +335,36 @@ export const ActiveProjectsStrip = React.memo(({
             );
           };
 
+          const isWorkerOnly = !project.isOwner && project.role === 'worker';
+
+          if (isWorkerOnly) {
+            return (
+              <motion.button
+                key={project.id}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleNav('/projects', { openProjectId: project.id, from: '/home' })}
+                aria-label={project.name}
+                className="snap-start min-w-[220px] max-w-[240px] p-4 rounded-2xl border border-border/50 bg-card hover:shadow-lg hover:border-border transition-all text-left flex items-center gap-3 relative overflow-hidden"
+                style={{ borderLeftWidth: 3, borderLeftColor: color }}
+              >
+                <div
+                  className="absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-[0.10] pointer-events-none"
+                  style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
+                />
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${color}25, ${color}15)` }}
+                >
+                  {project.icon || '📁'}
+                </div>
+                <p className="font-semibold text-sm truncate flex-1">{project.name}</p>
+              </motion.button>
+            );
+          }
+
           return (
             <motion.button
               key={project.id}
@@ -385,6 +415,7 @@ export const ActiveProjectsStrip = React.memo(({
             </motion.button>
           );
         })}
+
 
         {/* Add new project CTA card */}
         <motion.button
