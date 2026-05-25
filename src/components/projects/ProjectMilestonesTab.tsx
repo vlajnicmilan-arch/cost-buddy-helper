@@ -398,6 +398,25 @@ export const ProjectMilestonesTab = ({
                           {milestone.reminder_days_before}d
                         </span>
                       )}
+                      {(() => {
+                        const delay = getMilestoneDelay(milestone);
+                        if (delay.status === 'late') {
+                          return <Badge variant="destructive" className="text-[10px]">{t('projects.delay.lateDays', { count: delay.days, defaultValue: 'Kasnilo {{count}} d' })}</Badge>;
+                        }
+                        if (delay.status === 'early') {
+                          return <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{t('projects.delay.earlyDays', { count: delay.days, defaultValue: 'Završeno {{count}} d ranije' })}</Badge>;
+                        }
+                        if (delay.status === 'on_time' && milestone.status === 'completed') {
+                          return <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{t('projects.delay.onTime', 'U roku')}</Badge>;
+                        }
+                        if (delay.status === 'in_progress_late') {
+                          return <Badge variant="destructive" className="text-[10px]">{t('projects.delay.inProgressLate', { count: delay.days, defaultValue: 'Kasni {{count}} d' })}</Badge>;
+                        }
+                        if (delay.status === 'pending_late') {
+                          return <Badge variant="outline" className="text-[10px] border-destructive text-destructive">{t('projects.delay.pendingLate', { count: delay.days, defaultValue: 'Trebalo započeti prije {{count}} d' })}</Badge>;
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     <details className="mt-3 group/check">
