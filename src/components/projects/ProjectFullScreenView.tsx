@@ -95,12 +95,20 @@ export const ProjectFullScreenView = ({
   const { workers } = useProjectWorkers(project?.id || null);
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
+  const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
 
-  // Loss-zone alert: fires in-app notification when spent crosses 90% of contract_value
+  // Effective contracted value = contract_value (fallback total_budget) + sum of aneksi.
+  // Mirrors ProjectReportsDialog so Pregled budžeta and Izvještaji nikad ne pokazuju drukčiju brojku.
+  const baseContract = Number(project?.contract_value) > 0
+    ? Number(project?.contract_value)
+    : Number(project?.total_budget) || 0;
+  const effectiveContract = baseContract + (amendmentsTotal || 0);
+
+  // Loss-zone alert: fires in-app notification when spent crosses 90% of effective contract value
   useProjectLossZoneAlert({
     projectId: project?.id,
     projectName: project?.name,
-    contractValue: project?.contract_value || project?.total_budget,
+    contractValue: effectiveContract,
     spent: stats.totalSpent,
   });
   
