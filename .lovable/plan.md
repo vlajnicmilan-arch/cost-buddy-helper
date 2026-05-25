@@ -1,95 +1,44 @@
+## Problem
 
-# Plan: VTR (Više traženih radova) kao vrsta faze
+Marža na kartici projekta na home dashboardu (npr. 25%) ne odgovara marži unutar projekta (npr. 32%). Formula je u oba slučaja ista — `(budget − spent) / budget` — ali se koristi **različit nazivnik**:
 
-## Što gradimo
+- **Home strip (`ActiveProjectsStrip.tsx` linija 101):** `budget = p.total_budget` (sirovi inicijalni budžet, BEZ aneksa i VTR-a)
+- **Project full screen (`ProjectFullScreenView.tsx` linija 216):** `budget = effectiveContract` = `contract_value` (uključuje aneks/VTR), s fallbackom na `total_budget`
 
-VTR je posebna vrsta faze (milestone) koja:
-- Vizualno je odvojena (badge "VTR", ikona `FileSignature`, vlastita boja)
-- Pri kreiranju **automatski** povećava `contract_value` projekta i kreira zapis u `project_contract_amendments` (isti mehanizam koji već koristi `scope_change`)
-- Inače se ponaša kao obična faza: ima bud­žet, tro­škove, status, kanban poziciju, datume, dependencies
+Kad postoji aneks ugovora ili VTR, `contract_value > total_budget`, pa je marža unutar projekta veća.
 
-## Promjene
+## Fix
 
-### 1. Baza (migracija)
+Uskladiti home strip s istim "effective contract" izvorom istine koji se već koristi u `useProjectProfitLoss`, `ProjectFullScreenView` i helperu `calculateContractValue` (`src/lib/projectCalculations.ts`).
 
-```sql
-ALTER TABLE public.project_milestones
-  ADD COLUMN is_vtr BOOLEAN NOT NULL DEFAULT false;
+### Izmjena
 
-CREATE INDEX idx_project_milestones_is_vtr 
-  ON public.project_milestones(project_id) WHERE is_vtr = true;
+**`src/components/home/ActiveProjectsStrip.tsx` (oko linije 101):**
+
+```ts
+// prije
+const budget = p.total_budget || 0;
+
+// poslije — koristi contract_value (uključuje aneks/VTR) s fallbackom na total_budget
+const budget = calculateContractValue(p);
 ```
 
-Bez novih RLS pravila — koriste se postojeća za `project_milestones`.
+Import dodati iz `@/lib/projectCalculations`.
 
-### 2. Tipovi
+To je jedina semantička promjena. Formula marže ostaje ista, samo se nazivnik usklađuje s onim unutar projekta. Result: marža na kartici i unutar projekta će biti identična u svim slučajevima (s aneksom, VTR-om, ili bez).
 
-`src/types/project.ts` → dodati `is_vtr?: boolean` u `ProjectMilestone`.
+### Verifikacija
 
-### 3. Hook `useProjectMilestones.ts`
+- `p.total_budget` postoji na `Project` tipu i koristi se kao fallback u helperu, pa ništa ne puca.
+- `health` traffic light koji se računa iz marže (`healthFromMargin`) automatski postaje konzistentan.
+- Ne dira se backend, ne dira RLS, ne dira `useActiveProjectsSummary` (spent kalkulacija je već identična onoj u project view).
 
-Nova funkcija `createVtr(input)` koja u jednoj transakciji:
-1. `INSERT` u `project_milestones` s `is_vtr=true`
-2. `INSERT` u `project_contract_amendments` (amount = budget VTR-a, linked_milestone_id)
-3. `UPDATE projects.contract_value += amount` (s baseline fallbackom kao u postojećoj `scope_change` logici, redak 282+)
-4. Emit `contract-amendment-added` event (da `ContractAmendmentsBadge` refetcha)
+### Što se NE mijenja
 
-Reuse postojeće logike iz `scope_change` grane — bez duplikacije.
+- Spent formula — već je ista (`calculateProjectSpent`)
+- Project view logika — ostaje izvor istine
+- Ostale kartice/widgeti (ako postoje s drukčijim budžetom) — nisu u opsegu ovog requesta
 
-### 4. UI — `ProjectMilestonesTab.tsx`
+## Files
 
-Pored postojećeg gumba **"Dodaj fazu"** dodati **"Dodaj VTR"** (varianta `outline`, ikona `FileSignature`). Otvara isti `MilestoneDialog` ali s prop `mode="vtr"`:
-- Naslov "Novi VTR"
-- Hint: "Iznos će biti dodan u ugovorenu vrijednost kao aneks"
-- Submit zove `createVtr` umjesto `createMilestone`
-
-### 5. Vizualna distinkcija
-
-`MilestoneKanban.tsx` + lista:
-- Badge "VTR" pored imena (Lucide `FileSignature`, primary/warning boja)
-- Border-left ostaje boja milestonea, ali default boja za VTR = `hsl(var(--warning))`
-
-### 6. Brisanje VTR-a
-
-Pri brisanju VTR milestonea:
-- Pronaći vezani `project_contract_amendments` zapis (po `linked_milestone_id`)
-- Obrnuti `contract_value` (oduzeti amount)
-- Obrisati amendment zapis
-- Tek onda obrisati milestone
-
-Ovo ide u isti hook (`deleteMilestone` već postoji — proširiti za VTR slučaj).
-
-### 7. Edit VTR-a
-
-Ako se mijenja `budget` postojećeg VTR-a → diff se primjenjuje na `contract_value` i ažurira amendment zapis. Drugi atributi (ime, datum, status) ne diraju aneks.
-
-### 8. i18n
-
-Novi ključevi (HR/EN/DE):
-- `projects.milestones.addVtr` — "Dodaj VTR"
-- `projects.milestones.vtrBadge` — "VTR"
-- `projects.milestones.vtrHint` — "Iznos će biti dodan u ugovorenu vrijednost kao aneks"
-- `projects.milestones.vtrDeleteWarning` — "Brisanjem VTR-a smanjit će se ugovorena vrijednost za {amount}"
-
-### 9. Test
-
-Vitest pure helper `applyVtrAmendment(currentContract, totalBudget, vtrAmount)` (po uzoru na postojeći `applyContractAmendment.test.ts`) — pokriti baseline fallback, brisanje (revert), edit (diff).
-
-## Što NE diramo
-
-- `contract_value` semantika ostaje ista (baseline + amandmani) — VTR samo dodaje još jedan izvor amandmana
-- `useProjectProfitLoss`, `ProjectEarnedValueCard`, `ContractAmendmentsBadge` rade automatski (već čitaju `contract_value` + amendmente)
-- Postojeći `scope_change` mehanizam ostaje netaknut (i dalje radi za korekcije bud­žeta postojećih faza); VTR je paralelan, namjenski tijek
-
-## Tehnički sažetak
-
-| Sloj | Datoteka | Promjena |
-|------|----------|----------|
-| DB | migracija | `+is_vtr` kolona |
-| Types | `types/project.ts` | `+is_vtr?: boolean` |
-| Hook | `useProjectMilestones.ts` | `+createVtr`, ext. `deleteMilestone`, ext. `updateMilestone` (budget diff) |
-| Lib | `lib/applyVtrAmendment.ts` (+test) | pure helper |
-| UI | `ProjectMilestonesTab.tsx` | "+Dodaj VTR" gumb |
-| UI | `MilestoneDialog` | `mode="vtr"` prop |
-| UI | `MilestoneKanban.tsx`, lista | VTR badge |
-| i18n | `locales/{hr,en,de}.json` | 4 nova ključa |
+- `src/components/home/ActiveProjectsStrip.tsx` — 1 import + 1 linija promjene

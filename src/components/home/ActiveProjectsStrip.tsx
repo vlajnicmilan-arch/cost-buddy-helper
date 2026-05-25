@@ -8,6 +8,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
+import { calculateContractValue } from '@/lib/projectCalculations';
 import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLine';
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
@@ -98,7 +99,7 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
-      const budget = p.total_budget || 0;
+      const budget = calculateContractValue(p);
 
       let margin: number | null = null;
       let hasMargin = false;
