@@ -97,12 +97,13 @@ export const ProjectFullScreenView = ({
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
 
-  // Effective contracted value = contract_value (fallback total_budget) + sum of aneksi.
-  // Mirrors ProjectReportsDialog so Pregled budžeta and Izvještaji nikad ne pokazuju drukčiju brojku.
-  const baseContract = Number(project?.contract_value) > 0
+  // Effective contracted value:
+  // - contract_value već uključuje aneks (useProjectMilestones ga bumpa pri unosu aneksa)
+  // - fallback na total_budget ako contract_value nije postavljen
+  // NE zbrajati amendmentsTotal — to bi dvostruko brojilo aneks.
+  const effectiveContract = Number(project?.contract_value) > 0
     ? Number(project?.contract_value)
     : Number(project?.total_budget) || 0;
-  const effectiveContract = baseContract + (amendmentsTotal || 0);
 
   // Loss-zone alert: fires in-app notification when spent crosses 90% of effective contract value
   useProjectLossZoneAlert({
