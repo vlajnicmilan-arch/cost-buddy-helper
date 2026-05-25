@@ -1,40 +1,49 @@
-# Ograničavanje pristupa radnika u projektu
 
-## Stanje
-Logika za restriktivnu rolu **već postoji**:
-- `ProjectRole` tip uključuje `'worker'` (src/types/project.ts)
-- `ProjectFullScreenView` ima `isWorkerOnly = role === 'worker' && !isManager` koji sakriva sve tabove osim **Dnevnika rada** (linije 105–141)
-- i18n ključ `projectRoles.worker` postoji u HR/EN/DE
-- RPC za promjenu role (`updateMemberRole`) radi za bilo koju ProjectRole vrijednost
+## Cilj
 
-## Problem
-UI u `ProjectMembersTab.tsx` nudi **samo `member` i `viewer`** u tri Select-a (poziv mailom, generiranje linka, promjena role postojećeg člana). Zato je tvoja osoba dobila default `member` koji vidi overview, funding, ugovoreni iznos itd.
+Korisnik s ulogom `worker` na nekom projektu mora moći:
+- otvoriti taj projekt i voditi **Dnevnik rada** bez obzira na svoj pretplatnički plan (čak i besplatni)
+- vidjeti samo **naziv + ikonu** projekta na kartici (bez Ugovoreno/Trošak/Zarada/marže/health dot-a)
 
-## Izmjena (minimalna, samo UI)
+Druge uloge (`member`, `viewer`, `manager`, vlasnik) ostaju nepromijenjene.
 
-Datoteka: `src/components/projects/ProjectMembersTab.tsx`
+## Trenutno stanje (verificirano)
 
-1. U sva 3 `<Select>` (linije 411, 437, 505) dodati novi `SelectItem`:
-   ```tsx
-   <SelectItem value="worker">{t('projectRoles.worker', PROJECT_ROLE_LABELS.worker)}</SelectItem>
-   ```
+- `ProjectFullScreenView` već ima `isWorkerOnly = role === 'worker' && !isManager` koji skriva sve tabove osim `worklog` ✓
+- `Projects.tsx` već dopušta worker/member pristup panelu bez paid plana preko `hasMemberships` ✓
+- **Problem 1**: `ActiveProjectsStrip` na Početnoj radi `if (!hasAccess('projects')) return null` (linija 122) → worker na besplatnom planu nikad ne vidi strip, pa ne može doći do projekta s Početne
+- **Problem 2**: `ActiveProjectsStrip` za sve projekte renderira `renderCenter()` (marža), `renderProgressBar()`, `renderFooterLines()` (Ugovoreno/Trošak/Zarada) → Petar trenutno vidi te brojke na "Duje Grčić"
+- **Problem 3**: `ProjectCard` (lista u Projekti tabu) prikazuje budžet/progress/income/expense i za worker rolu
 
-2. Proširiti `defaultPermsForRole` (linija 44) tako da za `worker` vrati sve `false` (defense in depth — FullScreenView ionako hard-codira, ali da `project_member_permissions` zapisi ne ostanu permisivni ako se rola kasnije promijeni):
-   ```ts
-   if (role === 'worker') {
-     return { overview: false, milestones: false, workers: false, collaborators: false, funding: false, transactions: false };
-   }
-   ```
+## Promjene
 
-3. Opcionalno: kratak hint ispod role select-a kad je odabran `worker` (npr. `t('projects.workerRoleHint', 'Vidi samo Dnevnik rada')`) — dodati i ključ u sva 3 i18n fajla.
+### 1. `src/components/home/ActiveProjectsStrip.tsx`
 
-## Što ne mijenjamo
-- Bez DB migracije (rola već prolazi kroz `role text` kolonu)
-- Bez izmjene RLS-a (FullScreenView je jedini ulaz u projekt; ostali resursi su zaštićeni postojećim policies)
-- Bez izmjene `linkWorkerToMember` flowa — sinkronizacija dnevnika rada nastavlja raditi
+- Ukloniti hard gating `if (!hasAccess('projects')) return null`. Umjesto toga: ako nema `hasAccess('projects')`, prikaži **samo** kartice projekata gdje je user *non-owner* član (najčešće worker/member). Bez "Novi projekt" CTA i bez prazne pozivnice za free workere.
+- Unutar mape: ako `project.role === 'worker' && !project.isOwner`, render **minimal varijanta** karte:
+  - ikona + naziv + (bez health dot-a, bez marže, bez progress bara, bez 3 amount linija, bez status linije)
+  - dimenzije i klik (`openProjectId`) ostaju iste radi konzistencije scroll-a
 
-## Korak za tvoju trenutnu situaciju (nakon implementacije)
-Otvori projekt → **Tim projekta → Članovi** → kraj imena tog korisnika promijeni rolu iz **Član** u **Radnik**. Na njegovom uređaju nestanu svi tabovi osim Dnevnika rada.
+### 2. `src/components/projects/ProjectCard.tsx`
 
-## Otvoreno pitanje
-Da li želiš još jednu razinu — npr. **"Radnik + Faze"** (vidi i milestones da zna na čemu radi, ali ne i novce)? Trenutno je `worker` samo Dnevnik rada. Ako da, mogu dodati zasebnu rolu ili koristiti per-tab `project_member_permissions` za `member` rolu (već postoje, samo treba UI). Reci prije implementacije.
+- Early-grana: kad je `project.role === 'worker' && !project.isOwner`, render čista kartica:
+  - ikona + naziv (bez status badge, bez health badge, bez opisa, bez budžeta, bez income/expense, bez datuma, bez member countera, bez milestone countera, bez timeline bara, bez dropdown menija)
+  - klik i dalje otvara projekt (`onClick(project)`) → `ProjectFullScreenView` → Dnevnik rada (već radi)
+
+### 3. Provjera feature gatinga unutar projekta
+
+- `ProjectFullScreenView` već ne dira `hasAccess('projects')` pri otvaranju, samo gating-a pojedine tabove. `worklog` tab nema `hasAccess` check → worker dolazi do njega bez paywall-a. **Bez promjene.**
+- `ProjectWorkLogTab` — provjeriti da unutar njega nema `hasAccess('workforce')` koji bi sjekao free workera. Ako ima, ukloniti taj gate za worker rolu (RLS i tako čuva podatke).
+
+## Što se NE radi
+
+- Ne dira se DB, RLS, `user_roles`, ni feature flagovi
+- Ne dira se onboarding/usage_profile (već radi: Petar je promijenio na "Koristim poslovno")
+- Ne dira se `ProjectMembersTab`, `ProjectFullScreenView` worker tab gating
+- Bez novih i18n ključeva
+
+## Datoteke
+
+- `src/components/home/ActiveProjectsStrip.tsx`
+- `src/components/projects/ProjectCard.tsx`
+- `src/components/projects/ProjectWorkLogTab.tsx` (samo provjera gatinga, eventualno ukloniti `hasAccess` ako blokira worker rolu)
