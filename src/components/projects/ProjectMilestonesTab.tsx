@@ -280,10 +280,16 @@ export const ProjectMilestonesTab = ({
           </ToggleGroupItem>
         </ToggleGroup>
         {isManager && (
-          <Button onClick={() => openDialog()} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            {t('projects.addMilestone')}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => openDialog(undefined, 'vtr')} size="sm" variant="outline" className="gap-1.5">
+              <FileSignature className="w-4 h-4" />
+              {t('projects.vtr.addButton', 'Dodaj VTR')}
+            </Button>
+            <Button onClick={() => openDialog()} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('projects.addMilestone')}
+            </Button>
+          </div>
         )}
       </div>
 
