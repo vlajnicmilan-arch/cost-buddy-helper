@@ -444,7 +444,7 @@ export const ProjectFullScreenView = ({
                     {/* 4 KPI cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                       <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
-                        <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(budget)}</p>
+                        <p className="text-base sm:text-xl font-bold tabular-nums truncate">{formatAmount(originalContract)}</p>
                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{t('projects.contracted', 'Ugovoreno')}</p>
                         <ContractAmendmentsBadge projectId={project.id} />
                       </div>
