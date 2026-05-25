@@ -89,6 +89,8 @@ export const useProjectMilestones = (projectId: string | null) => {
           depends_on_milestone_id: milestone.depends_on_milestone_id || null,
           reminder_days_before: milestone.reminder_days_before ?? 3,
           is_contingency: milestone.is_contingency ?? false,
+          actual_start_date: (milestone as any).actual_start_date ?? null,
+          actual_end_date: (milestone as any).actual_end_date ?? null,
         } as any)
         .select()
         .single();
