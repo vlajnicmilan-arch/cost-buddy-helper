@@ -1,55 +1,34 @@
+## Problem
+
+U `Pregled budžeta` na otvorenom projektu, KPI "Ugovoreno" prikazuje samo `project.total_budget` (npr. 30 000), iako postoje aneksi koji su već bumpani u `project.contract_value` i prikazani kao mali "+iznos" badge ispod. Sve izvedene veličine (marža, % potrošnje, % naplate, alarmi) računaju se s istom (neefektivnom) bazom, pa korisniku stvaraju krivi dojam profitabilnosti i naplate.
+
+`ProjectReportsDialog` i `ProjectEarnedValueCard` već koriste efektivnu ugovorenu vrijednost — Pregled budžeta je jedino mjesto koje to još ne radi.
+
 ## Cilj
-Uvesti stvarne datume po fazi (`actual_start_date`, `actual_end_date`) kao izvor istine za kašnjenja. `due_date`/`start_date` ostaju planirani datumi, `completed_at` ostaje samo audit timestamp.
+
+Pregled budžeta računa s **efektivnom ugovorenom vrijednošću** = `contract_value` (s fallbackom na `total_budget`) + zbroj aneksa, identično kao izvještaji. Total_budget ostaje izvorno polje za "originalno planirano".
 
 ## Promjene
 
-### 1. DB migracija (`project_milestones`)
-- Dodati `actual_start_date DATE` i `actual_end_date DATE` (nullable).
-- **Backfill jednokratno**: `actual_end_date = completed_at::date` za sve već dovršene faze (gdje je `status='completed'` i `actual_end_date IS NULL`). Time vraćamo postojeću povijest koliko je još moguće.
-- Bez CHECK constrainta (Postgres immutable pravilo); validaciju radimo u kodu.
+### `src/components/projects/ProjectFullScreenView.tsx`
+- Dodati `useProjectContractAmendments(project.id)` (već postoji hook s `total`).
+- Izvesti `effectiveContract = (project.contract_value || project.total_budget || 0) + amendmentsTotal`.
+- Zamijeniti `budget` u svim računima KPI-blokova:
+  - "Ugovoreno" KPI prikazuje `effectiveContract`
+  - `marginPct`, `costPct`, `collectionPct`, `showBudgetAlarm`, `showCollectionAlarm` koriste `effectiveContract` umjesto `total_budget`
+- `ContractAmendmentsBadge` ispod KPI-ja zadržati kao informaciju "od kojeg dijela je aneks" (npr. "uključuje +5 000 aneksa (1)") — radi transparentnosti, samo tekst se prilagodi.
+- Loss-zone alarm (`useProjectLossZoneAlert`) već prima `contract_value || total_budget` — uskladiti i tamo da uključuje aneks.
 
-### 2. Fix bug u `useProjectMilestones.ts` (linija ~138)
-Trenutno se pri svakom UPDATE-u na već dovršenoj fazi `completed_at` postavlja na `now()`. To briše povijest.
-- `completed_at` se postavlja **samo** kad faza prelazi iz ne-completed u completed.
-- Ne dira se na ostale UPDATE-ove.
-- `actual_end_date` se **auto-popunjava na `today()`** prilikom prvog prijelaza u completed (opcija B), ali se kasnije može ručno mijenjati i NIKAD se više ne prepisuje automatski.
-- Analogno: `actual_start_date` se auto-popunjava na `today()` kad faza prvi put pređe u `in_progress` (ako je još NULL); kasnije ručno editabilno.
+### i18n
+- Po potrebi novi key `projects.contractedIncludesAmendments` ("Uključuje aneks +{{amount}}") u `hr/en/de`.
 
-### 3. UI – uređivanje faza
-U dialogu za uređivanje milestone-a (`MilestoneEditDialog` ili ekvivalent) dodati dva nova polja:
-- "Stvarni početak" (`actual_start_date`) – DatePicker, opcionalno
-- "Stvarni završetak" (`actual_end_date`) – DatePicker, opcionalno, vidljivo samo kad je faza dovršena (ili uvijek, korisnik može unaprijed unijeti)
+### Što NE diramo
+- `total_budget` ostaje kao "originalno planirani budžet" (za "Povijest budžeta" i revizije).
+- `ProjectReportsDialog`, `ProjectEarnedValueCard`, `ProjectProfitLossCard` — već rade ispravno.
+- Bez DB migracije.
+- Bez promjene logike unosa aneksa u `ProjectMilestonesTab` / `MilestoneBudgetChangeSection`.
 
-Postojeća polja "Planirani početak" i "Planirani završetak" ostaju nepromijenjena.
-
-### 4. Helper za kašnjenje
-Novi pure helper `src/lib/projectMilestoneDelay.ts`:
-```
-getMilestoneDelay(milestone) → { status: 'on_time'|'late'|'in_progress_late'|'pending', days: number }
-```
-Logika:
-- Dovršena faza: usporedi `actual_end_date` (ili fallback `completed_at::date`) vs `due_date`
-- U tijeku: usporedi danas vs `due_date`
-- Nije počela i prošao planirani početak: usporedi danas vs `start_date`
-
-Vitest pokrivenost (po pravilu "bug → helper → test").
-
-### 5. UI prikaz kašnjenja
-- **Timeline tab** i **Phases tab** u `ProjectFullScreenView`: koristiti novi helper umjesto trenutne ad-hoc logike.
-- Za dovršene faze prikazati badge: "Kasnilo X dana" ili "U roku" (boja teal/orange/red).
-- Faze koje su dovršene prije planiranog datuma → "Završeno X dana ranije".
-
-### 6. i18n
-Novi ključevi u `hr/en/de`:
-- `projects.milestones.actualStart`, `projects.milestones.actualEnd`
-- `projects.milestones.delay.onTime`, `delay.lateDays`, `delay.earlyDays`, `delay.inProgressLate`
-
-## Što NE radimo
-- Nema `baseline_due_date` ni revision log-a (overkill za current scope).
-- Ne diramo `completed_at` semantiku — ostaje audit polje.
-- Ne mijenjamo postojeću logiku u `ProjectWorkLogTab` ni radničke prikaze.
-
-## Tehnički detalji
-- Migracija je aditivna, sigurna; backfill iz `completed_at` jednom.
-- Update hook mora se osigurati da NE šalje `completed_at` u `update()` payload osim pri tranziciji statusa.
-- Update memorije (`mem://features/comprehensive-project-management`) nakon implementacije s napomenom o actual_* poljima.
+## Verifikacija
+- Projekt s ugovorom 30 000 + aneks 5 000 → "Ugovoreno" pokazuje 35 000, marža/naplata/troškovni postoci se računaju s 35 000, alarmi (80% potrošnje, <50% naplate) okidaju na novoj bazi.
+- Projekt bez aneksa → ponašanje identično kao prije.
+- Brzi smoke test na `/projects` u oba moda (osobni/poslovni).
