@@ -40,6 +40,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
   const { milestones } = useProjectMilestones(projectId);
+  const { workers } = useProjectWorkers(projectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<ProjectWorkLog | null>(null);
