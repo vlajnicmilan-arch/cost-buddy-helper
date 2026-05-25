@@ -488,15 +488,24 @@ export const ProjectMilestonesTab = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent showBackButton={false}>
           <DialogHeader>
-            <DialogTitle>
-              {editingMilestone ? t('projects.editMilestone') : t('projects.addMilestone')}
+            <DialogTitle className="flex items-center gap-2">
+              {dialogMode === 'vtr' && <FileSignature className="w-4 h-4 text-warning" />}
+              {editingMilestone
+                ? (dialogMode === 'vtr' ? t('projects.vtr.editTitle', 'Uredi VTR') : t('projects.editMilestone'))
+                : (dialogMode === 'vtr' ? t('projects.vtr.addTitle', 'Novi VTR') : t('projects.addMilestone'))}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
+            {dialogMode === 'vtr' && !editingMilestone && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+                {t('projects.vtr.hint', 'Iznos VTR-a bit će automatski dodan u ugovorenu vrijednost projekta kao aneks ugovora.')}
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label>{t('projects.milestoneName')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('projects.milestoneNamePlaceholder')} />
+              <Label>{dialogMode === 'vtr' ? t('projects.vtr.nameLabel', 'Naziv VTR-a') : t('projects.milestoneName')}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
             </div>
 
             <div className="space-y-2">
