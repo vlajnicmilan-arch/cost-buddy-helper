@@ -3469,6 +3469,13 @@
       "all": "All",
       "allPhases": "All phases"
     },
+    "myPay": {
+      "title": "My project earnings",
+      "hourlyRate": "Hourly rate",
+      "hoursInPeriod": "Hours",
+      "payout": "Payout",
+      "noRateSet": "The project owner hasn't set an hourly rate yet."
+    },
     "hours": "Work hours",
     "hoursPlaceholder": "e.g. 8",
     "hoursHint": "Your hours will be automatically added to the monthly timesheet.",

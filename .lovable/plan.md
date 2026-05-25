@@ -1,49 +1,50 @@
-
 ## Cilj
 
-Korisnik s ulogom `worker` na nekom projektu mora moći:
-- otvoriti taj projekt i voditi **Dnevnik rada** bez obzira na svoj pretplatnički plan (čak i besplatni)
-- vidjeti samo **naziv + ikonu** projekta na kartici (bez Ugovoreno/Trošak/Zarada/marže/health dot-a)
+Kada prijavljeni korisnik na projektu ima ulogu radnika (postoji `project_workers` red s `user_id = auth.uid()`), u tabu "Dnevnik rada" pokazati mu malu osobnu karticu:
 
-Druge uloge (`member`, `viewer`, `manager`, vlasnik) ostaju nepromijenjene.
+- dogovorena satnica (`hourly_rate`)
+- ukupno odrađeni sati u odabranom razdoblju (zbroj `actual_hours`)
+- automatski izračun isplate = sati × satnica
+- valuta projekta
 
-## Trenutno stanje (verificirano)
+Vlasnik/menadžer ne vidi ovu karticu (oni imaju pregled u `ProjectWorkersTab`). Bez liste po danima.
 
-- `ProjectFullScreenView` već ima `isWorkerOnly = role === 'worker' && !isManager` koji skriva sve tabove osim `worklog` ✓
-- `Projects.tsx` već dopušta worker/member pristup panelu bez paid plana preko `hasMemberships` ✓
-- **Problem 1**: `ActiveProjectsStrip` na Početnoj radi `if (!hasAccess('projects')) return null` (linija 122) → worker na besplatnom planu nikad ne vidi strip, pa ne može doći do projekta s Početne
-- **Problem 2**: `ActiveProjectsStrip` za sve projekte renderira `renderCenter()` (marža), `renderProgressBar()`, `renderFooterLines()` (Ugovoreno/Trošak/Zarada) → Petar trenutno vidi te brojke na "Duje Grčić"
-- **Problem 3**: `ProjectCard` (lista u Projekti tabu) prikazuje budžet/progress/income/expense i za worker rolu
+## Što treba napraviti (samo frontend)
 
-## Promjene
+### 1. `src/components/projects/ProjectWorkLogTab.tsx`
 
-### 1. `src/components/home/ActiveProjectsStrip.tsx`
+- Dohvatiti `workers` preko postojećeg `useProjectWorkers(projectId)`.
+- `myWorker = workers.find(w => w.user_id === user?.id)`.
+- Ako `myWorker` postoji i `!isManager`:
+  - Ekstrahirati helper `isDateInPeriod(date, monthFilter)` iz postojeće `filteredLogs` logike (reuse, bez duplikata).
+  - Zbrojiti `actual_hours` iz `hoursByDate` samo za `myWorker.id` i samo za datume u trenutnom `monthFilter` periodu.
+  - `payout = hours * myWorker.hourly_rate`.
+  - Renderirati `MyWorkerPayCard` iznad filtera (ispod View toggle), s labelom razdoblja prema `monthFilter`.
 
-- Ukloniti hard gating `if (!hasAccess('projects')) return null`. Umjesto toga: ako nema `hasAccess('projects')`, prikaži **samo** kartice projekata gdje je user *non-owner* član (najčešće worker/member). Bez "Novi projekt" CTA i bez prazne pozivnice za free workere.
-- Unutar mape: ako `project.role === 'worker' && !project.isOwner`, render **minimal varijanta** karte:
-  - ikona + naziv + (bez health dot-a, bez marže, bez progress bara, bez 3 amount linija, bez status linije)
-  - dimenzije i klik (`openProjectId`) ostaju iste radi konzistencije scroll-a
+### 2. Nova komponenta `src/components/projects/MyWorkerPayCard.tsx`
 
-### 2. `src/components/projects/ProjectCard.tsx`
+- Card s primary akcentom, 3 reda: satnica, sati u razdoblju, za isplatu.
+- Props: `hourlyRate`, `hours`, `payout`, `currency`, `periodLabel`.
+- Iznose formatirati istim helperom koji već koristi `ProjectWorkersTab` (provjeriti i reuse).
+- Ako `hourly_rate === 0` → prikazati poruku "Vlasnik projekta još nije postavio satnicu" umjesto iznosa.
 
-- Early-grana: kad je `project.role === 'worker' && !project.isOwner`, render čista kartica:
-  - ikona + naziv (bez status badge, bez health badge, bez opisa, bez budžeta, bez income/expense, bez datuma, bez member countera, bez milestone countera, bez timeline bara, bez dropdown menija)
-  - klik i dalje otvara projekt (`onClick(project)`) → `ProjectFullScreenView` → Dnevnik rada (već radi)
+### 3. Valuta projekta
 
-### 3. Provjera feature gatinga unutar projekta
+- Dodati `currency` prop u `ProjectWorkLogTab` i proslijediti iz `ProjectFullScreenView` (već zna projekt). Proslijediti u `MyWorkerPayCard`.
 
-- `ProjectFullScreenView` već ne dira `hasAccess('projects')` pri otvaranju, samo gating-a pojedine tabove. `worklog` tab nema `hasAccess` check → worker dolazi do njega bez paywall-a. **Bez promjene.**
-- `ProjectWorkLogTab` — provjeriti da unutar njega nema `hasAccess('workforce')` koji bi sjekao free workera. Ako ima, ukloniti taj gate za worker rolu (RLS i tako čuva podatke).
+### 4. i18n (`src/i18n/locales/{hr,en,de}.json`)
 
-## Što se NE radi
+Pod `workLog.myPay.*`:
+- `title` ("Moja zarada na projektu" / "My project earnings" / "Mein Projektverdienst")
+- `hourlyRate` ("Satnica" / "Hourly rate" / "Stundensatz")
+- `hoursInPeriod` ("Sati u razdoblju" / "Hours in period" / "Stunden im Zeitraum")
+- `payout` ("Za isplatu" / "Payout" / "Auszahlung")
+- `noRateSet` ("Vlasnik projekta još nije postavio satnicu" / ... / ...)
 
-- Ne dira se DB, RLS, `user_roles`, ni feature flagovi
-- Ne dira se onboarding/usage_profile (već radi: Petar je promijenio na "Koristim poslovno")
-- Ne dira se `ProjectMembersTab`, `ProjectFullScreenView` worker tab gating
-- Bez novih i18n ključeva
+## Što NE treba
 
-## Datoteke
-
-- `src/components/home/ActiveProjectsStrip.tsx`
-- `src/components/projects/ProjectCard.tsx`
-- `src/components/projects/ProjectWorkLogTab.tsx` (samo provjera gatinga, eventualno ukloniti `hasAccess` ako blokira worker rolu)
+- Bez DB migracija — `project_workers.hourly_rate` i `project_work_entries.actual_hours` postoje; RLS već dozvoljava radniku čitanje vlastitog reda (`user_id = auth.uid()`).
+- Bez promjena na `ProjectWorkersTab`.
+- Bez paywalla.
+- Bez liste po danima.
+- Bez promjena na transakcijama, budžetu ili isplatama (ovo je samo prikaz, ne kreira expense).
