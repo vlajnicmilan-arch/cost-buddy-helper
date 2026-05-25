@@ -147,12 +147,12 @@ export const ProjectFullScreenView = ({
   const TAB_TO_GROUP: Record<string, TabGroup> = {
     overview: 'work',
     phases: 'work',
-    // legacy aliases — resolved to phases/activity below
+    // legacy aliases — resolved to phases below
     timeline: 'work',
     milestones: 'work',
     documents: 'work',
     activity: 'work',
-    worklog: 'work',
+    worklog: 'people',
     team: 'people',
     members: 'people',
     workers: 'people',
