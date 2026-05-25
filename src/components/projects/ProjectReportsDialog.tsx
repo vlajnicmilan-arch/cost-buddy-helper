@@ -487,7 +487,7 @@ export const ProjectReportsDialog = ({
                   </p>
                 </div>
                 <div className="p-4 rounded-lg border text-center">
-                  <p className="text-2xl font-bold">{formatAmount(effectiveContract)}</p>
+                  <p className="text-2xl font-bold">{formatAmount(originalContract)}</p>
                   <p className="text-xs text-muted-foreground">{t('projects.totalBudget', 'Ukupni proračun')}</p>
                   {amendmentsTotal > 0 && (
                     <p className="text-[10px] text-warning mt-1">
