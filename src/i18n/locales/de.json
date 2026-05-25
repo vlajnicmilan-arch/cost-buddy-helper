@@ -3469,6 +3469,13 @@
       "all": "Alle",
       "allPhases": "Alle Phasen"
     },
+    "myPay": {
+      "title": "Mein Projektverdienst",
+      "hourlyRate": "Stundensatz",
+      "hoursInPeriod": "Stunden",
+      "payout": "Auszahlung",
+      "noRateSet": "Der Projektinhaber hat noch keinen Stundensatz festgelegt."
+    },
     "hours": "Arbeitsstunden",
     "hoursPlaceholder": "z. B. 8",
     "hoursHint": "Deine Stunden werden automatisch zur monatlichen Stundenliste hinzugefügt.",
