@@ -28,6 +28,7 @@ import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milestoneRevision';
 import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
 import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
+import { getMilestoneDelay } from '@/lib/projectMilestoneDelay';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
