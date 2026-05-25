@@ -18,9 +18,11 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useProjectWorkLogs } from '@/hooks/useProjectWorkLogs';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useAuth } from '@/hooks/useAuth';
 import { WorkLogDialog } from './WorkLogDialog';
 import { WorkLogMonthlyOverview } from './WorkLogMonthlyOverview';
+import { MyWorkerPayCard } from './MyWorkerPayCard';
 import type { ProjectWorkLog } from '@/types/projectWorkLog';
 
 interface ProjectWorkLogTabProps {
