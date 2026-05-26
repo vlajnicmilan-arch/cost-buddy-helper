@@ -1,44 +1,44 @@
-## Problem
+# Worker = tiha rola za projektne push notifikacije
 
-Marža na kartici projekta na home dashboardu (npr. 25%) ne odgovara marži unutar projekta (npr. 32%). Formula je u oba slučaja ista — `(budget − spent) / budget` — ali se koristi **različit nazivnik**:
+## Problem (potvrđeno u DB)
 
-- **Home strip (`ActiveProjectsStrip.tsx` linija 101):** `budget = p.total_budget` (sirovi inicijalni budžet, BEZ aneksa i VTR-a)
-- **Project full screen (`ProjectFullScreenView.tsx` linija 216):** `budget = effectiveContract` = `contract_value` (uključuje aneks/VTR), s fallbackom na `total_budget`
+Petar Vlajnić (`fae4b087…`) je u `project_members` projekta "Duje Grčić" s ulogom `worker`. U zadnja 24h primio je 15 push poruka (transakcije + dodane/promijenjene faze) jer **edge funkcije ne filtriraju primatelje po roli**.
 
-Kad postoji aneks ugovora ili VTR, `contract_value > total_budget`, pa je marža unutar projekta veća.
+Stanje po edge funkciji:
+- `notify-project-transaction` — šalje svim članovima ≠ pošiljatelj (uključuje workere). **Treba isključiti workere.**
+- `notify-project-activity` — isto. **Treba isključiti workere.**
+- `notify-note-added` — isto. **Treba isključiti workere.**
+- `check-milestone-budgets` — već filtrira samo `role='manager'`. OK.
+- `check-milestone-deadlines` — već filtrira samo `role='manager'`. OK.
 
-## Fix
+## Rješenje
 
-Uskladiti home strip s istim "effective contract" izvorom istine koji se već koristi u `useProjectProfitLoss`, `ProjectFullScreenView` i helperu `calculateContractValue` (`src/lib/projectCalculations.ts`).
+Worker dobiva **samo direktna zaduženja** (po dogovoru). Realno trenutno znači: ništa od općih projektnih push-eva. Per-milestone assignment workera ne postoji u shemi, pa nema dodatne logike za graditi sada — samo isključujemo workere iz tri broadcast funkcije.
 
-### Izmjena
+### Promjene
 
-**`src/components/home/ActiveProjectsStrip.tsx` (oko linije 101):**
+1. **`supabase/functions/notify-project-transaction/index.ts`**
+   - U `project_members` queryju dodati `.neq('role', 'worker')`.
 
-```ts
-// prije
-const budget = p.total_budget || 0;
+2. **`supabase/functions/notify-project-activity/index.ts`**
+   - Isto: `.neq('role', 'worker')` u member fetchu.
 
-// poslije — koristi contract_value (uključuje aneks/VTR) s fallbackom na total_budget
-const budget = calculateContractValue(p);
-```
+3. **`supabase/functions/notify-note-added/index.ts`**
+   - Isto: `.neq('role', 'worker')`.
 
-Import dodati iz `@/lib/projectCalculations`.
+Owner se i dalje notificira preko zasebnog `project.user_id` puta (owner nikad nije worker svog projekta).
 
-To je jedina semantička promjena. Formula marže ostaje ista, samo se nazivnik usklađuje s onim unutar projekta. Result: marža na kartici i unutar projekta će biti identična u svim slučajevima (s aneksom, VTR-om, ili bez).
+### Što NE diramo
 
-### Verifikacija
+- `notifications` in-app tablica — ostaje kakva je (i tako se ne piše za workere kroz transaction/activity flow, push je primarni kanal).
+- `check-milestone-*` — već OK.
+- RLS i `project_members` shema — ne mijenja se. Worker i dalje vidi projekt i svoj dnevnik.
+- Bez retroaktivnog brisanja postojećih push logova.
 
-- `p.total_budget` postoji na `Project` tipu i koristi se kao fallback u helperu, pa ništa ne puca.
-- `health` traffic light koji se računa iz marže (`healthFromMargin`) automatski postaje konzistentan.
-- Ne dira se backend, ne dira RLS, ne dira `useActiveProjectsSummary` (spent kalkulacija je već identična onoj u project view).
+## Memory
 
-### Što se NE mijenja
+Dodati `mem://features/project-worker-notifications`: workeri (role='worker' u project_members) ne primaju notify-project-transaction / notify-project-activity / notify-note-added. Samo manager/member dobivaju broadcast.
 
-- Spent formula — već je ista (`calculateProjectSpent`)
-- Project view logika — ostaje izvor istine
-- Ostale kartice/widgeti (ako postoje s drukčijim budžetom) — nisu u opsegu ovog requesta
+## Verifikacija
 
-## Files
-
-- `src/components/home/ActiveProjectsStrip.tsx` — 1 import + 1 linija promjene
+Nakon deploya: kreirati testnu transakciju na projektu i provjeriti `push_delivery_logs` — Petar ne smije dobiti zapis.
