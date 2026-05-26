@@ -134,7 +134,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .from("project_members")
       .select("user_id")
       .eq("project_id", body.project_id)
-      .neq("user_id", userId);
+      .neq("user_id", userId)
+      .neq("role", "worker");
 
     const recipients = new Set<string>();
     if (project.user_id !== userId) recipients.add(project.user_id);

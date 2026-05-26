@@ -110,7 +110,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .from('project_members')
         .select('user_id')
         .eq('project_id', project_id)
-        .neq('user_id', user.id);
+        .neq('user_id', user.id)
+        .neq('role', 'worker');
 
       if (membersError) {
         console.error('Error fetching project members:', membersError);
