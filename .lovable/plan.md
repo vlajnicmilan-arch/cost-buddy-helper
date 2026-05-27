@@ -1,44 +1,29 @@
-# Worker = tiha rola za projektne push notifikacije
+# Fix: Artikli se ne vide pri otvaranju transakcije
 
-## Problem (potvrđeno u DB)
+## Root cause
 
-Petar Vlajnić (`fae4b087…`) je u `project_members` projekta "Duje Grčić" s ulogom `worker`. U zadnja 24h primio je 15 push poruka (transakcije + dodane/promijenjene faze) jer **edge funkcije ne filtriraju primatelje po roli**.
+Tablica `public.receipt_items` ima ispravne RLS policies (SELECT/INSERT/UPDATE/DELETE ograničene na vlasnika expense-a), ali **nema niti jedan GRANT** ni za `authenticated`, `anon` ni `service_role` rolu. Bez granta PostgREST (Supabase Data API) odbija sve upite — `loadReceiptItems()` u `TransactionDetailDialog.tsx:243` i `TransactionItemsExpander.tsx:43` tiho vrate praznu listu (greška ide samo u `console.error`, UI prikaže "Nema artikala").
 
-Stanje po edge funkciji:
-- `notify-project-transaction` — šalje svim članovima ≠ pošiljatelj (uključuje workere). **Treba isključiti workere.**
-- `notify-project-activity` — isto. **Treba isključiti workere.**
-- `notify-note-added` — isto. **Treba isključiti workere.**
-- `check-milestone-budgets` — već filtrira samo `role='manager'`. OK.
-- `check-milestone-deadlines` — već filtrira samo `role='manager'`. OK.
+Potvrđeno upitima:
+- `SELECT COUNT(*) FROM receipt_items` → 981 zapisa kroz 323 transakcije (podaci postoje)
+- `information_schema.role_table_grants` za `receipt_items` → 0 redaka
 
-## Rješenje
+## Što treba napraviti
 
-Worker dobiva **samo direktna zaduženja** (po dogovoru). Realno trenutno znači: ništa od općih projektnih push-eva. Per-milestone assignment workera ne postoji u shemi, pa nema dodatne logike za graditi sada — samo isključujemo workere iz tri broadcast funkcije.
+Jedna migracija koja dodaje standardne grantove (anon ne treba jer su sve policies vezane na `auth.uid()`):
 
-### Promjene
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.receipt_items TO authenticated;
+GRANT ALL ON public.receipt_items TO service_role;
+```
 
-1. **`supabase/functions/notify-project-transaction/index.ts`**
-   - U `project_members` queryju dodati `.neq('role', 'worker')`.
+## Što NE treba
 
-2. **`supabase/functions/notify-project-activity/index.ts`**
-   - Isto: `.neq('role', 'worker')` u member fetchu.
+- Nikakve izmjene koda u `TransactionDetailDialog.tsx`, `TransactionItemsExpander.tsx`, `ItemsAnalysisTab.tsx`, `BackupRestore.tsx` ili bilo gdje drugdje — fetch logika je već ispravna.
+- Nikakve izmjene RLS policy-ja — već su točne.
 
-3. **`supabase/functions/notify-note-added/index.ts`**
-   - Isto: `.neq('role', 'worker')`.
+## Verifikacija nakon migracije
 
-Owner se i dalje notificira preko zasebnog `project.user_id` puta (owner nikad nije worker svog projekta).
-
-### Što NE diramo
-
-- `notifications` in-app tablica — ostaje kakva je (i tako se ne piše za workere kroz transaction/activity flow, push je primarni kanal).
-- `check-milestone-*` — već OK.
-- RLS i `project_members` shema — ne mijenja se. Worker i dalje vidi projekt i svoj dnevnik.
-- Bez retroaktivnog brisanja postojećih push logova.
-
-## Memory
-
-Dodati `mem://features/project-worker-notifications`: workeri (role='worker' u project_members) ne primaju notify-project-transaction / notify-project-activity / notify-note-added. Samo manager/member dobivaju broadcast.
-
-## Verifikacija
-
-Nakon deploya: kreirati testnu transakciju na projektu i provjeriti `push_delivery_logs` — Petar ne smije dobiti zapis.
+1. Otvoriti transakciju koja ima skenirani račun (npr. iz one od 323 koje imaju zapise u `receipt_items`).
+2. Sekcija "Artikli" treba se pojaviti s listom umjesto "Nema artikala".
+3. Provjeriti i ItemsAnalysisTab u Izvještajima — trebao bi pokazati podatke umjesto praznog stanja.
