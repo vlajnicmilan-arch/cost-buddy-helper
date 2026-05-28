@@ -155,7 +155,10 @@ export default function RecoveryReceiptItems() {
       <div className="space-y-2">
         {pairs.map((p) => {
           const sel = !!selected[p.local.key];
-          const canSelect = p.status === 'safe_to_restore';
+          const canSelect =
+            p.status === 'safe_to_restore' ||
+            p.status === 'merchant_mismatch' ||
+            p.status === 'multiple_candidates';
           const dt = new Date(p.local.timestampMs);
           return (
             <Card key={p.local.key} className="p-3">
