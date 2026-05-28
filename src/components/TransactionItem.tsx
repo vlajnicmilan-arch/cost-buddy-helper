@@ -12,6 +12,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { TransferTransactionItem } from './TransferTransactionItem';
 import { BankDuplicateSheet } from './bank/BankDuplicateSheet';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { TransactionAttribution } from './transactions/TransactionAttribution';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
