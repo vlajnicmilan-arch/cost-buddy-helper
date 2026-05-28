@@ -1,63 +1,72 @@
-## Cilj
-Da se "AI skenirani račun → spremljen bez `receipt_items`" bug nikad ne ponovi, te da očistimo privremenu recovery infrastrukturu sad kad je posao gotov.
+# Uklanjanje family chata + audit family modula
 
-Root cause regresije (21.03.–28.05.2026): `addExpense` ima 4 pozicijska argumenta (`expense, items?, isPending?, entrySource?`). Wrapper u `Index.tsx` u jednom je trenutku proslijeđivao samo prvi argument, pa su `items` tiho padali u `undefined`. TypeScript to nije uhvatio jer su svi opcionalni.
+## Stanje (verificirano)
 
----
+**Upotreba u produkciji:**
+- `family_messages`: **2 retka** ukupno (chat se ne koristi)
+- `chat_messages`: 52 retka — **ovo je AI asistent**, NE family chat. Ostaje netaknuto.
+- `family_groups`: 3, `family_members`: 4, `family_invitations`: 3, `family_activity_log`: 5
+- `family_shared_sources`: 1, `family_shared_projects`: 2, `family_shared_budgets`: 0, `family_shared_savings`: 0
 
-## 1. Strukturna prevencija — opcijski objekt umjesto pozicija
-
-`src/hooks/useExpenseCRUD.ts`:
-- Zadržati `addExpense(expense, items?, isPending?, entrySource?)` kao thin shim radi kompatibilnosti, ali interno odmah pakirati u objekt.
-- Dodati novi primarni potpis:
-  ```ts
-  addExpense(payload: { expense, items?, isPendingMemberTransaction?, entrySource? })
-  ```
-  Overload tako da prvi argument može biti ili `Expense` ili `payload` objekt. Stari pozivi rade dalje.
-- `Index.tsx` `addExpenseWithRecurringCheck` prebaciti na objekt-formu i sam primati `payload` objekt. Time je nemoguće "izgubiti" `items` na razini wrappera.
-
-Rezultat: novi wrapperi koji forwardaju samo `expense` exploudaju u TypeScriptu, ne tiho.
-
-## 2. Runtime warning + diagnostički log
-
-U `useExpenseCRUD.addExpense`, prije inserta:
-- Ako `expense.ai_extracted === true` i (`!items || items.length === 0`) → `console.warn('[ExpenseCRUD] ai_extracted=true bez items — sumnja na regresiju write-patha')` i upis u `app_diagnostics_logs` s eventom `receipt_items_missing_on_ai_scan` (severity=warning, details: caller route, expense.merchant_name).
-- Ovo nije blokirajuće (user možda namjerno briše stavke), ali ako se pojavi u logovima znamo odmah.
-
-## 3. Regresijski test (vitest)
-
-`src/hooks/__tests__/useExpenseCRUD.items.test.ts`:
-- Mock `supabase.from('expenses').insert(...).select().single()` da vrati `{id:'x'}`.
-- Mock `supabase.from('receipt_items').insert(...)` spy.
-- Pozvati `addExpense({ expense: aiScanFixture, items: [{...}, {...}] })`.
-- Assert da je `receipt_items.insert` pozvan s točno 2 retka i `expense_id='x'`.
-- Drugi test: `addExpense({ expense: aiScanFixture })` (bez items) → assert da `receipt_items.insert` NIJE pozvan, ali `app_diagnostics_logs` jest s `receipt_items_missing_on_ai_scan`.
-- Treći test: ako `receipt_items.insert` vrati error → `addExpense` mora throwati (ne smije tiho proći).
-
-Time pokrivamo all 3 reprize iste klase buga.
-
-## 4. Uklanjanje recovery infrastrukture
-
-Sad kad je user vratio sve što mu treba i potvrdio da ostali nisu bitni:
-- Obrisati `src/components/ReceiptRecoveryBanner.tsx` i unmount iz `Index.tsx`.
-- Obrisati rutu `/recovery/receipt-items` iz `App.tsx` i lazy import.
-- Obrisati `src/pages/RecoveryReceiptItems.tsx`.
-- Obrisati `src/lib/receiptRecovery.ts`.
-- Obrisati i18n ključeve `recovery.banner.*` i `recovery.*` iz hr/en/de.
-- Ostavi `receipt_cache_*` u localStorageu na miru (čisti se prirodno; nije više linkano nigdje).
-
-## 5. Memory update
-
-Dodaj memo `mem://features/receipt-items-write-path-hardening` (description: "addExpense koristi opcijski objekt, AI scan bez items emitira warning + diagnostic log, regresijski vitest pokriva sve 3 putanje") i u index.md.
-
-## 6. Bez native bumpa
-
-Sve čisti JS/TS, bez Capacitor promjena → `public/version.json` i `build.gradle` ostaju.
+**Reference na chat:** `FamilyChat.tsx`, sekcija u `FamilyGroupDetailView.tsx` (l. 723–732), edge `notify-family-message`, `initialOpenChat` prop chain (Family.tsx + deep-link iz notifikacija), `dataExportZip.ts` (l. 56), i18n `family.chat*`, `familyDisableWarn3` spominjanje chata, `chat_enabled` u `notification_preferences` (koristi se i za bilješke na transakcijama — **ostaje**, samo se rebranda copy).
 
 ---
 
-## Što ovo NE radi
-- Ne dira `useReceiptScanner` flow — scan je OK, bug je bio u kasnijem propagiranju.
-- Ne mijenja DB shemu (`receipt_items` ostaje kakav je).
-- Ne dira write-path za ručno unesene transakcije.
-- Ne čisti stare orphane u DB-u (422 starih `ai_extracted=true` bez items ostaje — nije bitno per user).
+## Faza 1 — Uklanjanje chata (sada)
+
+### Frontend
+- Obriši `src/components/family/FamilyChat.tsx`
+- `src/components/family/FamilyGroupDetailView.tsx`:
+  - ukloni import `FamilyChat`, `chatSectionRef`, `initialOpenChat` prop, `useLayoutEffect` komentar o FamilyChat, `useEffect` za auto-scroll na chat, cijelu `<section ref={chatSectionRef}>` (l. ~723–732), `MessageCircle` import ako ostane neiskorišten
+- `src/pages/Family.tsx`: ukloni `initialOpenChat` state, deep-link grane (`state.openChat`), prosljeđivanje propa
+- `src/hooks/useDeepLinks.ts`: ukloni svaku granu koja postavlja `openChat: true` (provjeriti)
+- `src/components/NotificationsDropdown.tsx`: ukloni rute koje vode na chat sekciju (ako postoje)
+- `src/lib/dataExportZip.ts`: makni `'family_messages'` iz liste tablica za export
+
+### i18n (hr/en/de)
+- Ukloni ključeve: `family.chat`, `family.writeMessage`, `family.sendError`, `family.deleteError`, `family.noMessages`, `family.doubleClickDelete`
+- `settings.familyModeDesc`: makni "i chat" iz opisa
+- `settings.familyDisableWarn3`: ukloni cijelu liniju (Chat poruke i obavijesti)
+- `settings.notifChatDesc` (NotificationsSection): preformulirati na "Bilješke na transakcijama i komentari" (chat dio izlazi)
+
+### Backend
+- Migracija: `DROP TABLE public.family_messages CASCADE;` + `DROP FUNCTION public.cleanup_old_chat_messages()` **NE** (to je za AI chat_messages — ostaviti); ALI postoji `maybe_cleanup_chat_messages` trigger funkcija → provjeriti je li vezana na family_messages ili chat_messages; ako na chat_messages → ostaviti
+- Obriši edge funkciju `notify-family-message` (via delete_edge_functions)
+- `notification_preferences.chat_enabled`: **zadrži** (sada pokriva samo bilješke na transakcijama)
+
+### Tests
+- Ako postoji test koji referencira `FamilyChat` ili `family_messages` → ukloniti
+
+---
+
+## Faza 2 — Audit family modula (preporuke, ne implementacija)
+
+Opservacije nakon pregleda koda i brojeva:
+
+1. **Family grupa je "meta-bundler" preko postojećih invitation sustava.** Svaki resurs (project, budget, payment_source) već ima svoj invitation flow (`project_invitations`, `budget_invitations`, `payment_source_invitations`). Family grupa dodaje 4. sloj (`family_invitations` + `family_shared_*` join tablice) koji uglavnom duplicira funkciju "podijeli ovaj resurs s nekim".
+
+2. **Brojke pokazuju da feature ne živi:** 3 grupe na cijeloj aplikaciji, 0 budgeta i 0 savings dijeljeno. Sav stvarni sharing ide kroz direktne invitation flowove na pojedini resurs.
+
+3. **`family_activity_log`** dupla `project_activity_log` — drugi je puno bogatiji i koristi se aktivno.
+
+### Preporučene opcije za sljedeći potez (NE u ovoj fazi):
+
+- **Opcija A — minimalno čišćenje:** zadržati family grupu kao "label/folder" preko sharing-a, ali ukloniti `family_activity_log` i pojednostaviti detail view (jedan tab umjesto 4 sekcije).
+- **Opcija B — duboka konsolidacija:** ukinuti family grupe u potpunosti, ostaviti per-resource sharing (koji već radi). UI bi bio jedan "Dijeljeno sa mnom" pregled koji agregira sve resurse na koje sam pozvan/koje dijelim.
+- **Opcija C — status quo nakon chata:** ne dirati ništa drugo, vidjeti hoće li se upotreba pomaknuti.
+
+Ovo su prijedlozi za razgovor nakon Faze 1 — ne radim ništa od ovoga bez tvoje odluke.
+
+---
+
+## Što NE diram
+- `chat_messages` tablica (AI asistent)
+- `FinancialAssistantDialog`, `useFinancialAssistant` 
+- `family_groups`, `family_members`, `family_invitations`, `family_shared_*` tablice
+- `JoinFamily.tsx`, `useFamilyGroups`, `send-member-invitation`, `respond-to-invitation` edge fn
+- Feature gating (`useFeatureAccess` → `family_groups`)
+
+---
+
+## Memo update
+Dodati memo `mem://features/family-chat-removed` s razlogom uklanjanja + napomenom da `chat_enabled` pref sada pokriva samo transaction notes. Ažurirati `mem://features/family-and-collaboration-system` da odražava bez-chat stanje.
