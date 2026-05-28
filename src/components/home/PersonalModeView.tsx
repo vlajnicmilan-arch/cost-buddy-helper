@@ -16,6 +16,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 // WelcomeChecklist je uklonjen — onboarding je sada centraliziran u /onboarding wizardu.
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
+import { ReceiptRecoveryBanner } from '@/components/ReceiptRecoveryBanner';
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { ActiveIssuesSection } from '@/components/dashboard/ActiveIssuesSection';
 import { TrackSection } from '@/components/dashboard/TrackSection';
