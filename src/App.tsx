@@ -262,7 +262,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
-          <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={<Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />} />
+          
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
