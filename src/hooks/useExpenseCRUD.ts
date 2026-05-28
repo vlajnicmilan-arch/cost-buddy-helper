@@ -40,12 +40,32 @@ export const useExpenseCRUD = ({
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
 
+  // Overload: prefer object payload (prevents positional drop-bugs where a wrapper
+  // forgets to forward `items` — exact root cause of the 21.03.–28.05.2026 regression
+  // that produced 422 AI-scanned expenses with empty receipt_items).
+  type AddExpensePayload = {
+    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+    items?: ReceiptItem[];
+    isPendingMemberTransaction?: boolean;
+    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource;
+  };
+  function _isPayload(x: unknown): x is AddExpensePayload {
+    return !!x && typeof x === 'object' && 'expense' in (x as any);
+  }
   const addExpense = useCallback(async (
-    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    items?: ReceiptItem[],
-    isPendingMemberTransaction?: boolean,
-    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
+    expenseOrPayload:
+      | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+      | AddExpensePayload,
+    itemsArg?: ReceiptItem[],
+    isPendingMemberTransactionArg?: boolean,
+    entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
+    const expense = _isPayload(expenseOrPayload) ? expenseOrPayload.expense : expenseOrPayload;
+    const items = _isPayload(expenseOrPayload) ? expenseOrPayload.items : itemsArg;
+    const isPendingMemberTransaction = _isPayload(expenseOrPayload)
+      ? expenseOrPayload.isPendingMemberTransaction
+      : isPendingMemberTransactionArg;
+    const entrySource = _isPayload(expenseOrPayload) ? expenseOrPayload.entrySource : entrySourceArg;
     const normalizedDescription = (expense.description ?? '').trim()
       || expense.merchant_name?.trim()
       || (expense.type === 'transfer' ? 'Prijenos' : expense.type === 'income' ? 'Prihod' : 'Trošak');
