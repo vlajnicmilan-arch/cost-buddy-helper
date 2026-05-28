@@ -28,6 +28,18 @@ interface UseExpenseCRUDOptions {
   onBalanceUpdated?: () => void;
 }
 
+// Object-payload form za addExpense — sprječava regresiju gdje wrapper
+// "izgubi" pozicijski `items` argument (root cause buga 21.03.–28.05.2026).
+type AddExpensePayload = {
+  expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+  items?: ReceiptItem[];
+  isPendingMemberTransaction?: boolean;
+  entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource;
+};
+function isAddExpensePayload(x: unknown): x is AddExpensePayload {
+  return !!x && typeof x === 'object' && 'expense' in (x as Record<string, unknown>);
+}
+
 export const useExpenseCRUD = ({
   isLocalMode,
   expenses,
