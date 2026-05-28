@@ -68,6 +68,8 @@ const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const RecoveryReceiptItems = lazy(() => import("./pages/RecoveryReceiptItems"));
 
+const RECOVERY_RECEIPT_ITEMS_PATH = "/recovery/receipt-items";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -165,10 +167,12 @@ const RouteAwareGlobalOverlays = () => {
 };
 
 const AppRoutes = () => {
+  const location = useLocation();
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted, appStateReady } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
   const { user, authReady } = useAuth();
+  const authReturnPath = (location.state as { from?: string } | null)?.from;
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
@@ -206,6 +210,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
+          <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={user ? <RecoveryReceiptItems /> : <Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -258,6 +263,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
+          <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={<Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -288,7 +294,7 @@ const AppRoutes = () => {
       <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
       <Route path="/family" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Family />)}</Suspense>} />
       <Route path="/join-family/:token" element={<Suspense fallback={<PageLoader />}><JoinFamily /></Suspense>} />
-      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to="/home" replace /> : <Auth />}</Suspense>} />
+      <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to={authReturnPath || "/home"} replace /> : <Auth />}</Suspense>} />
       <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
       <Route path="/setup" element={<Suspense fallback={<PageLoader />}><StorageSetup /></Suspense>} />
