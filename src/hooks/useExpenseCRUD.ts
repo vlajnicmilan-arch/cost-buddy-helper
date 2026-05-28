@@ -52,18 +52,7 @@ export const useExpenseCRUD = ({
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
 
-  // Overload: prefer object payload (prevents positional drop-bugs where a wrapper
-  // forgets to forward `items` — exact root cause of the 21.03.–28.05.2026 regression
-  // that produced 422 AI-scanned expenses with empty receipt_items).
-  type AddExpensePayload = {
-    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-    items?: ReceiptItem[];
-    isPendingMemberTransaction?: boolean;
-    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource;
-  };
-  function _isPayload(x: unknown): x is AddExpensePayload {
-    return !!x && typeof x === 'object' && 'expense' in (x as any);
-  }
+  // Object-payload overload je definiran na module-scope-u (vidi AddExpensePayload).
   const addExpense = useCallback(async (
     expenseOrPayload:
       | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
@@ -72,12 +61,12 @@ export const useExpenseCRUD = ({
     isPendingMemberTransactionArg?: boolean,
     entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
-    const expense = _isPayload(expenseOrPayload) ? expenseOrPayload.expense : expenseOrPayload;
-    const items = _isPayload(expenseOrPayload) ? expenseOrPayload.items : itemsArg;
-    const isPendingMemberTransaction = _isPayload(expenseOrPayload)
+    const expense = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.expense : expenseOrPayload;
+    const items = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.items : itemsArg;
+    const isPendingMemberTransaction = isAddExpensePayload(expenseOrPayload)
       ? expenseOrPayload.isPendingMemberTransaction
       : isPendingMemberTransactionArg;
-    const entrySource = _isPayload(expenseOrPayload) ? expenseOrPayload.entrySource : entrySourceArg;
+    const entrySource = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.entrySource : entrySourceArg;
     const normalizedDescription = (expense.description ?? '').trim()
       || expense.merchant_name?.trim()
       || (expense.type === 'transfer' ? 'Prijenos' : expense.type === 'income' ? 'Prihod' : 'Trošak');
