@@ -125,6 +125,37 @@ export const useExpenseCRUD = ({
           // Best-effort: never block insert because of diagnostics.
         }
 
+        // Regresijska zaštita: AI scan MORA proslijediti items.
+        // Ako items fale, najvjerojatnije je riječ o wrapperu koji je "izgubio"
+        // pozicijski argument (bug 21.03.–28.05.2026). Ne blokira insert
+        // (user možda namjerno obriše stavke), ali ostavlja glasan trag.
+        try {
+          const { shouldWarnMissingItems } = await import('@/lib/receiptItemsGuard');
+          if (shouldWarnMissingItems({ aiExtracted: normalizedExpense.ai_extracted, items })) {
+            console.warn(
+              '[ExpenseCRUD] ai_extracted=true bez items — sumnja na regresiju write-patha',
+              { merchant: normalizedExpense.merchant_name, route: typeof window !== 'undefined' ? window.location.pathname : null },
+            );
+            try {
+              await supabase.from('app_diagnostics_logs').insert([{
+                session_id: 'expense-crud',
+                event: 'receipt_items_missing_on_ai_scan',
+                route: typeof window !== 'undefined' ? window.location.pathname : null,
+                user_id: user.id,
+                app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+                device_info: {},
+                severity: 'warning',
+                details: {
+                  merchant: normalizedExpense.merchant_name ?? null,
+                  amount: normalizedExpense.amount,
+                  description_preview: (normalizedExpense.description || '').slice(0, 60),
+                },
+              }]);
+            } catch { /* best-effort */ }
+          }
+        } catch { /* helper import never blocks insert */ }
+
+
         // Hybrid bank-first: odredi početni bank_match_status.
         // - OCR/slikani račun (ai_extracted=true) → 'ocr' source
         // - Sve ostalo (ručni unos) → 'manual' source
