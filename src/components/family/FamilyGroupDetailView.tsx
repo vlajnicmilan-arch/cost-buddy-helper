@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { FamilyGroup, FAMILY_ROLE_LABELS, FamilyRole } from '@/types/family';
 import { useFamilyMembers, useFamilySharedResources, useFamilyActivity } from '@/hooks/useFamilyGroups';
 import { useTranslation } from 'react-i18next';
@@ -27,9 +27,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Users, Mail, Plus, Trash2, Loader2,
-  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, MessageCircle, PiggyBank
+  Wallet, Target, Settings, UserMinus, Send, FolderKanban, Activity, PiggyBank
 } from 'lucide-react';
-import { FamilyChat } from './FamilyChat';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -39,13 +38,12 @@ import { FamilyGroupDialog } from './FamilyGroupDialog';
 
 interface Props {
   group: FamilyGroup;
-  initialOpenChat?: boolean;
   onBack: () => void;
   onUpdate: (id: string, data: Partial<FamilyGroup>) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
-export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate, onDelete }: Props) => {
+export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { formatAmount } = useCurrency();
@@ -73,11 +71,8 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
-  const chatSectionRef = useRef<HTMLElement>(null);
 
   // Reset scroll to top on mount (when entering detail view).
-  // Use useLayoutEffect + rAF to win against any child component (e.g. FamilyChat)
-  // that may scroll after its data loads.
   useLayoutEffect(() => {
     const reset = () => {
       window.scrollTo(0, 0);
@@ -94,15 +89,6 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
       clearTimeout(t);
     };
   }, []);
-
-  // Auto-scroll to chat when opened from notification
-  useEffect(() => {
-    if (initialOpenChat && chatSectionRef.current) {
-      setTimeout(() => {
-        chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 500);
-    }
-  }, [initialOpenChat]);
 
   // Project stats for shared projects (same logic as ProjectsPanel)
   const [projectStats, setProjectStats] = useState<Record<string, { spent: number; income: number; memberCount: number; milestoneCount: number }>>({});
@@ -719,18 +705,6 @@ export const FamilyGroupDetailView = ({ group, initialOpenChat, onBack, onUpdate
             )}
           </section>
 
-          {/* Chat */}
-          <section ref={chatSectionRef}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                {t('family.chat')}
-              </h2>
-            </div>
-            <div className="rounded-xl p-3 bg-card border border-border/50">
-              <FamilyChat groupId={group.id} groupColor={group.color || '#3b82f6'} />
-            </div>
-          </section>
 
           {/* Danger zone */}
           {isOwner && (

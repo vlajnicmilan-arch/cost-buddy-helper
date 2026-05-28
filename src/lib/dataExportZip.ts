@@ -53,7 +53,6 @@ const USER_OWNED_TABLES = [
   'time_clock_entries',
   'family_groups',
   'family_members',
-  'family_messages',
   'transaction_notes',
   'receipt_items',
   'bank_connections',

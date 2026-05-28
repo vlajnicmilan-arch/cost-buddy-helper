@@ -150,8 +150,6 @@ export const NotificationsDropdown = () => {
         return { path: '/projects', state: { openProjectId: data.project_id, from: '/home' } };
       case 'payment_source_transaction':
         return { path: '/', state: { openExpenseId: data.expense_id } };
-      case 'family_message':
-        return { path: '/family', state: { openGroupId: data.group_id, openChat: true } };
       case 'app_update':
         return { path: '/install', state: { version: data.version, apkUrl: data.apkUrl } };
       case 'invitation_accepted': {

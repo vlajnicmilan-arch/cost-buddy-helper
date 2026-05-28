@@ -78,7 +78,7 @@ export const NotificationsSection = ({
     descDefault: string;
     enabled: boolean;
   }> = [
-    { key: 'chat', icon: MessageSquare, labelKey: 'settings.notifChat', labelDefault: 'Poruke i komentari', descKey: 'settings.notifChatDesc', descDefault: 'Obiteljski chat i bilješke na transakcijama', enabled: prefs.chat_enabled },
+    { key: 'chat', icon: MessageSquare, labelKey: 'settings.notifChat', labelDefault: 'Bilješke i komentari', descKey: 'settings.notifChatDesc', descDefault: 'Bilješke na transakcijama i komentari', enabled: prefs.chat_enabled },
     { key: 'transactions', icon: ArrowLeftRight, labelKey: 'settings.notifTransactions', labelDefault: 'Transakcije', descKey: 'settings.notifTransactionsDesc', descDefault: 'Dijeljeni računi i projektne transakcije', enabled: prefs.transactions_enabled },
     { key: 'pending', icon: Clock, labelKey: 'settings.notifPending', labelDefault: 'Odobrenja na čekanju', descKey: 'settings.notifPendingDesc', descDefault: 'Transakcije koje čekaju vašu potvrdu', enabled: prefs.pending_enabled },
     { key: 'projects', icon: FolderKanban, labelKey: 'settings.notifProjects', labelDefault: 'Projekti', descKey: 'settings.notifProjectsDesc', descDefault: 'Pozivnice i promjene članstva', enabled: prefs.projects_enabled },
