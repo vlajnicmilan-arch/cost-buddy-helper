@@ -1,47 +1,49 @@
-## Faza 1 — Vratiti stare artikle (BEZ promjene koda)
+## Faza 1 — Privremeni 1-klik banner za recovery
 
-Stranica `/recovery/receipt-items` već radi, samo joj treba pristup iz native appa gdje je cache. Najjednostavnije rješenje, nula novih komponenti:
+Banner se prikazuje **samo na uređaju koji ima `receipt_cache_*` u localStorage s nepovraćenim itemima**. Nije globalna značajka, čisto recovery mehanizam koji se sam ugasi.
 
-1. Spoji Android telefon na računalo USB-om.
-2. Na računalu otvori Chrome → `chrome://inspect/#devices`.
-3. Pronađi `app.lovable.costbuddy` (V&M Balance) → klikni **"inspect"**. Otvara se DevTools nad WebView-om aplikacije.
-4. U DevTools Console upišeš: `location.href = '/recovery/receipt-items'`
-5. Stranica se otvori UNUTAR aplikacije, s pravim lokalnim cacheom. Vidiš listu, ručno potvrdiš restore za one koji su `safe_to_restore`.
-6. Nakon završetka, `receipt_cache_*` ključevi se brišu pa cache nestane.
+### Komponenta
 
-Ako nemaš USB kabel/računalo pri ruci, alternativa: privremeno dodam **skriveni deep link** koji se otvori tipkanjem fraze u globalnu pretragu (npr. "vrati artikle"). Briše se u Fazi 3. Reci ako želiš tu opciju.
+`src/components/ReceiptRecoveryBanner.tsx` — montira se u `Index.tsx` (dashboard) iznad postojećeg sadržaja.
 
-## Faza 2 — RCA (Root Cause Analysis)
+**Logika prikaza:**
+1. Na mount poziva `listLocalCachedReceipts()` iz `src/lib/receiptRecovery.ts`.
+2. Filtrira na `status === 'safe_to_restore'`.
+3. Ako count > 0 → renderira banner. Inače → vrati `null` (ništa).
+4. Klik banner → `navigate('/recovery/receipt-items')`.
+5. **Nema dismiss gumba** — banner nestane sam čim user vrati zadnji item (cache se obriše u recovery flowu).
 
-Već znam tehnički uzrok iz koda (komentar `Index.tsx:348-351`):
+**Tekst (i18n):**
+- `recovery.banner.title`: "Pronađeno {{count}} skeniranih artikala koji nisu spremljeni"
+- `recovery.banner.cta`: "Vrati ih"
 
-> *Wrapper `addExpenseWithRecurringCheck` nije proslijeđivao `items` u `addExpense`. Sve skenirane transakcije od 21.03. do 28.05.2026 ostale su bez `receipt_items`.*
+**Stil:** koristi postojeći amber/warning token, ne kreira novi. Touch target ≥44px. Mobile-first.
 
-Što još trebam provjeriti u bazi za potpunu sliku:
+### Sigurnosna mreža
 
-1. **Koliko je ukupno expense-ova s `ai_extracted = true` u prozoru 21.03.–28.05.2026** (svi useri vs. samo tvoj).
-2. **Koliko ih NEMA nijedan red u `receipt_items`** (potvrda opsega štete).
-3. **Git/commit timeline:** kad je točno wrapper izgubio `items` argument i u kojem commitu je popravljen.
-4. **Funnel events:** ima li ijedan `receipt_items_insert_error` u tom periodu (Index.tsx već logira na liniji 180).
+Ako `listLocalCachedReceipts()` baci grešku (npr. korumpirani cache) → banner se ne prikazuje, greška se proguta. Ne želimo da recovery banner sruši dashboard.
 
-Output: kratak izvještaj — `X expense-ova bez itema u Y dana, popravak u commitu Z, regresija uvedena u commitu W`.
+### Životni ciklus
 
-## Faza 3 — Prevencija regresije
+- **Sada:** user instalira novu verziju, banner se prikaže (ima cache), klikne → vrati artikle → banner zauvijek nestane.
+- **Faza 3:** kad RCA potvrdi da je write-path stabilan i nema novih sirotih cacheova, **brišemo cijelu komponentu + rutu `/recovery/receipt-items` + helper `receiptRecovery.ts`**. Banner je explicitno privremen.
 
-Točan uzrok bila je tiha promjena potpisa funkcije: wrapper je preuzeo `(expense)` i izgubio `(expense, items, ...)`. TypeScript to nije uhvatio jer su parametri označeni `any[]`. Tri male mjere:
+### Native bump
 
-1. **Regresijski vitest** (`src/hooks/__tests__/addExpenseWithRecurringCheck.test.ts`): mock `addExpense`, pozovi wrapper s `items: [{...}]`, expect da je `addExpense` pozvan s istim `items` arrayom. Ako netko opet ispusti argument → CI fail. To je pravilo iz našeg `mem://architecture/testing-priorities`.
-2. **Stroži tipovi**: `items?: any[]` → `items?: ExpenseItem[]`, gdje je `ExpenseItem` već definiran tip. Wrapper i caller dobiju istu signaturu pa TS prijavi mismatch.
-3. **Runtime safety net u `useExpenseCRUD.addExpense`**: ako `ai_extracted === true` ali `items` undefined ili prazan, logiraj u `funnel_events` (npr. event `receipt_items_missing_warning`) prije inserta. Već imamo infrastrukturu za funnel events. Ovo NE blokira insert (ne želimo guard/timeout patch), samo daje vidljivost ako se opet pojavi.
+Komponenta je čisti JS/React — bez Capacitor API-ja, bez nativne promjene. **Bez version bumpa** (`public/version.json` i `build.gradle` ostaju). User dobije banner kroz redovni OTA update appa.
+
+## Faza 2 — RCA (čeka)
+
+Već potvrđeno: 422/422 AI skeniranih u 21.03.–28.05.2026 nemaju iteme. Trebam tvoj email da prebrojim koliko od toga otpada na tebe. Reci ga kad budeš spreman, ili preskačemo i idemo direktno na Fazu 3.
+
+## Faza 3 — Prevencija + čišćenje
+
+Po planu (test + tipovi + warning log) **plus** uklanjanje recovery infrastrukture (banner, ruta, helper) kad se utvrdi da je čisto.
 
 ## Što ovo NE radi
 
 - Ne dodaje gumb u postavkama.
-- Ne dodaje banner na dashboardu.
-- Ne mijenja write-path logiku (samo dodaje tip + test + warning log).
-- Ne mijenja recovery stranicu.
-- Nema native build promjene → bez version bumpa.
-
-## Redoslijed izvršavanja
-
-Faza 1 prvo, jer ne ovisi o kodu i odmah daje konkretne podatke. Faza 2 čim potvrdiš da sam smio gledati tvoje expense-ove u bazi (treba mi tvoj user_id ili dopuštenje za query nad svim podacima). Faza 3 nakon što potvrdiš RCA brojke.
+- Ne dira write-path.
+- Nema banner za dismiss (sam nestane).
+- Bez native bumpa.
+- Ne kreira nove design tokene.
