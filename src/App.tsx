@@ -66,9 +66,8 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
-const RecoveryReceiptItems = lazy(() => import("./pages/RecoveryReceiptItems"));
 
-const RECOVERY_RECEIPT_ITEMS_PATH = "/recovery/receipt-items";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -210,7 +209,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
-          <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={user ? <RecoveryReceiptItems /> : <Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />} />
+          
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -263,7 +262,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
-          <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={<Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />} />
+          
           <Route path="/admin" element={<Admin />} />
           <Route path="/avatar-demo" element={<AvatarDemo />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -307,7 +306,7 @@ const AppRoutes = () => {
       <Route path="/impressum" element={<Suspense fallback={<PageLoader />}><Impressum /></Suspense>} />
       <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
       <Route path="/trash" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Trash />)}</Suspense>} />
-      <Route path={RECOVERY_RECEIPT_ITEMS_PATH} element={<Suspense fallback={<PageLoader />}>{user ? <RecoveryReceiptItems /> : <Navigate to="/auth" replace state={{ from: RECOVERY_RECEIPT_ITEMS_PATH }} />}</Suspense>} />
+      
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />

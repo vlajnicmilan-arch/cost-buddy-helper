@@ -28,6 +28,18 @@ interface UseExpenseCRUDOptions {
   onBalanceUpdated?: () => void;
 }
 
+// Object-payload form za addExpense — sprječava regresiju gdje wrapper
+// "izgubi" pozicijski `items` argument (root cause buga 21.03.–28.05.2026).
+type AddExpensePayload = {
+  expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+  items?: ReceiptItem[];
+  isPendingMemberTransaction?: boolean;
+  entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource;
+};
+function isAddExpensePayload(x: unknown): x is AddExpensePayload {
+  return !!x && typeof x === 'object' && 'expense' in (x as Record<string, unknown>);
+}
+
 export const useExpenseCRUD = ({
   isLocalMode,
   expenses,
@@ -40,12 +52,21 @@ export const useExpenseCRUD = ({
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
 
+  // Object-payload overload je definiran na module-scope-u (vidi AddExpensePayload).
   const addExpense = useCallback(async (
-    expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
-    items?: ReceiptItem[],
-    isPendingMemberTransaction?: boolean,
-    entrySource?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
+    expenseOrPayload:
+      | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+      | AddExpensePayload,
+    itemsArg?: ReceiptItem[],
+    isPendingMemberTransactionArg?: boolean,
+    entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
+    const expense = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.expense : expenseOrPayload;
+    const items = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.items : itemsArg;
+    const isPendingMemberTransaction = isAddExpensePayload(expenseOrPayload)
+      ? expenseOrPayload.isPendingMemberTransaction
+      : isPendingMemberTransactionArg;
+    const entrySource = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.entrySource : entrySourceArg;
     const normalizedDescription = (expense.description ?? '').trim()
       || expense.merchant_name?.trim()
       || (expense.type === 'transfer' ? 'Prijenos' : expense.type === 'income' ? 'Prihod' : 'Trošak');
@@ -103,6 +124,37 @@ export const useExpenseCRUD = ({
         } catch {
           // Best-effort: never block insert because of diagnostics.
         }
+
+        // Regresijska zaštita: AI scan MORA proslijediti items.
+        // Ako items fale, najvjerojatnije je riječ o wrapperu koji je "izgubio"
+        // pozicijski argument (bug 21.03.–28.05.2026). Ne blokira insert
+        // (user možda namjerno obriše stavke), ali ostavlja glasan trag.
+        try {
+          const { shouldWarnMissingItems } = await import('@/lib/receiptItemsGuard');
+          if (shouldWarnMissingItems({ aiExtracted: normalizedExpense.ai_extracted, items })) {
+            console.warn(
+              '[ExpenseCRUD] ai_extracted=true bez items — sumnja na regresiju write-patha',
+              { merchant: normalizedExpense.merchant_name, route: typeof window !== 'undefined' ? window.location.pathname : null },
+            );
+            try {
+              await supabase.from('app_diagnostics_logs').insert([{
+                session_id: 'expense-crud',
+                event: 'receipt_items_missing_on_ai_scan',
+                route: typeof window !== 'undefined' ? window.location.pathname : null,
+                user_id: user.id,
+                app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+                device_info: {},
+                severity: 'warning',
+                details: {
+                  merchant: normalizedExpense.merchant_name ?? null,
+                  amount: normalizedExpense.amount,
+                  description_preview: (normalizedExpense.description || '').slice(0, 60),
+                },
+              }]);
+            } catch { /* best-effort */ }
+          }
+        } catch { /* helper import never blocks insert */ }
+
 
         // Hybrid bank-first: odredi početni bank_match_status.
         // - OCR/slikani račun (ai_extracted=true) → 'ocr' source

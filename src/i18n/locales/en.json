@@ -4144,12 +4144,6 @@
       "failed": "Failed"
     }
   },
-  "recovery": {
-    "banner": {
-      "title": "Found {{count}} scanned receipts with unsaved items",
-      "cta": "Open and restore items"
-    }
-  },
   "trash": {
     "title": "Trash",
     "empty": "Trash is empty",
