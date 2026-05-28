@@ -345,9 +345,17 @@ const Index = () => {
     setSelectedTransactionIds(new Set());
   }, [dashboardFilters, setSelectedTransactionIds]);
 
-  // Wrapper: check for recurring matches after adding a transaction
-  const addExpenseWithRecurringCheck = useCallback(async (expense: any) => {
-    await addExpense(expense);
+  // Wrapper: check for recurring matches after adding a transaction.
+  // CRITICAL: must forward `items` and `isPendingMemberTransaction` to addExpense,
+  // otherwise scanned receipt items are silently dropped (regression confirmed
+  // 21.03.–28.05.2026 — sve nove skenirane transakcije ostale bez receipt_items).
+  const addExpenseWithRecurringCheck = useCallback(async (
+    expense: any,
+    items?: any[],
+    isPendingMemberTransaction?: boolean,
+    entrySource?: any,
+  ) => {
+    await addExpense(expense, items, isPendingMemberTransaction, entrySource);
     if (recurringTransactions.length > 0 && !isBusinessMode) {
       try {
         const matches = await findMatches([{
