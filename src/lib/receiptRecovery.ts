@@ -46,7 +46,7 @@ export interface CloudExpenseMatch {
 export interface RecoveryPair {
   local: LocalCachedReceipt;
   candidate: CloudExpenseMatch | null;
-  status: 'safe_to_restore' | 'has_items_already' | 'no_match' | 'multiple_candidates';
+  status: 'safe_to_restore' | 'has_items_already' | 'no_match' | 'multiple_candidates' | 'merchant_mismatch';
   reason?: string;
 }
 
@@ -194,22 +194,33 @@ export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
     const targetDate = l.date || new Date(l.timestampMs).toISOString().slice(0, 10);
     const localMerchantN = normalizeMerchant(l.merchant);
 
-    const candidates = cloud.filter((c) => {
+    // First pass: amount + date + (optional) merchant text overlap
+    const strictCandidates = cloud.filter((c) => {
       if (l.amount == null) return false;
       const amountOk = Math.abs(c.amount - l.amount) <= 0.01;
       if (!amountOk) return false;
       const dateOk = dateDiffDays(c.date, targetDate) <= 1;
       if (!dateOk) return false;
-      if (!localMerchantN) return true; // amount+date is enough when no merchant
+      if (!localMerchantN) return true;
       const descN = normalizeMerchant(c.description);
       return descN.includes(localMerchantN) || localMerchantN.includes(descN);
     });
+
+    // Fallback: amount + date only (handles cases where description was
+    // rewritten in the cloud, e.g. transfer/recurring rename).
+    const loose = cloud.filter((c) => {
+      if (l.amount == null) return false;
+      if (Math.abs(c.amount - l.amount) > 0.01) return false;
+      return dateDiffDays(c.date, targetDate) <= 1;
+    });
+
+    const candidates = strictCandidates.length > 0 ? strictCandidates : loose;
+    const isLooseOnly = strictCandidates.length === 0 && loose.length > 0;
 
     if (candidates.length === 0) {
       return { local: l, candidate: null, status: 'no_match' };
     }
     if (candidates.length > 1) {
-      // Pick closest by date diff, but flag.
       const sorted = [...candidates].sort(
         (a, b) => dateDiffDays(a.date, targetDate) - dateDiffDays(b.date, targetDate)
       );
@@ -227,6 +238,14 @@ export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
         candidate: c,
         status: 'has_items_already',
         reason: `${c.existing_item_count} artikala već postoji`,
+      };
+    }
+    if (isLooseOnly) {
+      return {
+        local: l,
+        candidate: c,
+        status: 'merchant_mismatch',
+        reason: `Opis u oblaku: "${c.description ?? ''}" — provjeri pa potvrdi`,
       };
     }
     return { local: l, candidate: c, status: 'safe_to_restore' };

@@ -29,6 +29,7 @@ function statusBadge(p: RecoveryPair) {
     has_items_already: { text: 'Već ima artikle', cls: 'bg-muted text-muted-foreground' },
     no_match: { text: 'Nema parnjaka', cls: 'bg-destructive/15 text-destructive' },
     multiple_candidates: { text: 'Više kandidata', cls: 'bg-amber-500/15 text-amber-600' },
+    merchant_mismatch: { text: 'Provjeri opis', cls: 'bg-amber-500/15 text-amber-600' },
   };
   const b = map[p.status];
   return <span className={`text-[11px] px-2 py-0.5 rounded ${b.cls}`}>{b.text}</span>;
@@ -71,7 +72,12 @@ export default function RecoveryReceiptItems() {
     setSelected((s) => ({ ...s, [key]: !s[key] }));
 
   const selectedPairs = pairs.filter(
-    (p) => selected[p.local.key] && p.status === 'safe_to_restore'
+    (p) =>
+      selected[p.local.key] &&
+      (p.status === 'safe_to_restore' ||
+        p.status === 'merchant_mismatch' ||
+        p.status === 'multiple_candidates') &&
+      p.candidate
   );
 
   const runRestore = async () => {
@@ -149,7 +155,10 @@ export default function RecoveryReceiptItems() {
       <div className="space-y-2">
         {pairs.map((p) => {
           const sel = !!selected[p.local.key];
-          const canSelect = p.status === 'safe_to_restore';
+          const canSelect =
+            p.status === 'safe_to_restore' ||
+            p.status === 'merchant_mismatch' ||
+            p.status === 'multiple_candidates';
           const dt = new Date(p.local.timestampMs);
           return (
             <Card key={p.local.key} className="p-3">
