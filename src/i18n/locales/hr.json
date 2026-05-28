@@ -4148,12 +4148,6 @@
       "failed": "Neuspješno"
     }
   },
-  "recovery": {
-    "banner": {
-      "title": "Pronađeno {{count}} skeniranih računa s artiklima koji nisu spremljeni",
-      "cta": "Otvori i vrati artikle"
-    }
-  },
   "trash": {
     "title": "Koš za smeće",
     "empty": "Koš je prazan",
