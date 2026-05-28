@@ -656,6 +656,8 @@ export interface FamilyActivity {
   metadata: Record<string, any>;
   created_at: string;
   display_name?: string;
+  amount?: number;
+  currency?: string;
 }
 
 export const useFamilyActivity = (groupId: string | null) => {
@@ -673,36 +675,94 @@ export const useFamilyActivity = (groupId: string | null) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1) Native activity log entries (group lifecycle, sharing, members).
+      const { data: logData, error: logError } = await supabase
         .from('family_activity_log' as any)
         .select('*')
         .eq('group_id', groupId)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
-      if (error) throw error;
+      if (logError) throw logError;
+      const logItems = (logData || []) as any[];
 
-      const items = (data || []) as any[];
-      
-      // Fetch display names
-      const userIds = [...new Set(items.map(a => a.user_id))];
-      let profilesMap = new Map<string, string>();
+      // 2) Resolve shared resource IDs for this group, then fetch recent
+      //    expenses touching any of them. This lets the feed show transactions
+      //    without a DB trigger.
+      const [sourcesRes, budgetsRes, projectsRes] = await Promise.all([
+        supabase.from('family_shared_sources' as any).select('payment_source_id').eq('group_id', groupId),
+        supabase.from('family_shared_budgets' as any).select('budget_id').eq('group_id', groupId),
+        supabase.from('family_shared_projects' as any).select('project_id').eq('group_id', groupId),
+      ]);
 
+      const sourceIds = (sourcesRes.data || []).map((r: any) => r.payment_source_id).filter(Boolean);
+      const budgetIds = (budgetsRes.data || []).map((r: any) => r.budget_id).filter(Boolean);
+      const projectIds = (projectsRes.data || []).map((r: any) => r.project_id).filter(Boolean);
+
+      // Build payment_source values in the "custom:<uuid>" form actually stored.
+      const sourceTokens = sourceIds.flatMap((id: string) => [id, `custom:${id}`]);
+
+      let expenseItems: any[] = [];
+      if (sourceTokens.length || budgetIds.length || projectIds.length) {
+        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const orParts: string[] = [];
+        if (sourceTokens.length) orParts.push(`payment_source.in.(${sourceTokens.map((s) => `"${s}"`).join(',')})`);
+        if (budgetIds.length) orParts.push(`budget_id.in.(${budgetIds.join(',')})`);
+        if (projectIds.length) orParts.push(`project_id.in.(${projectIds.join(',')})`);
+
+        const { data: expData, error: expError } = await supabase
+          .from('expenses')
+          .select('id, user_id, type, amount, currency, description, merchant_name, category, created_at, date')
+          .or(orParts.join(','))
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (!expError) expenseItems = expData || [];
+      }
+
+      // 3) Resolve display names for everyone involved.
+      const userIds = [
+        ...new Set([
+          ...logItems.map((a) => a.user_id),
+          ...expenseItems.map((e) => e.user_id),
+        ].filter(Boolean)),
+      ];
+      const profilesMap = new Map<string, string>();
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, display_name')
           .in('user_id', userIds);
-
-        profiles?.forEach(p => {
+        profiles?.forEach((p) => {
           profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
         });
       }
 
-      setActivities(items.map(a => ({
+      // 4) Normalize expenses into FamilyActivity shape and merge.
+      const expenseActivities: FamilyActivity[] = expenseItems.map((e) => ({
+        id: `expense:${e.id}`,
+        group_id: groupId,
+        user_id: e.user_id,
+        action_type: e.type === 'income' ? 'income_added' : e.type === 'transfer' ? 'transfer_added' : 'expense_added',
+        action_description: e.merchant_name || e.description || e.category || '',
+        metadata: { expense_id: e.id, amount: e.amount, currency: e.currency, category: e.category },
+        created_at: e.created_at,
+        amount: Number(e.amount),
+        currency: e.currency,
+        display_name: profilesMap.get(e.user_id) || 'Nepoznato',
+      }));
+
+      const logActivities: FamilyActivity[] = logItems.map((a) => ({
         ...a,
-        display_name: profilesMap.get(a.user_id) || 'Nepoznato'
-      })));
+        display_name: profilesMap.get(a.user_id) || 'Nepoznato',
+      }));
+
+      const merged = [...logActivities, ...expenseActivities]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 100);
+
+      setActivities(merged);
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
@@ -716,3 +776,4 @@ export const useFamilyActivity = (groupId: string | null) => {
 
   return { activities, loading, refetch: fetchActivities };
 };
+
