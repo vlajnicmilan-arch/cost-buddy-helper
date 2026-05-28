@@ -72,7 +72,12 @@ export default function RecoveryReceiptItems() {
     setSelected((s) => ({ ...s, [key]: !s[key] }));
 
   const selectedPairs = pairs.filter(
-    (p) => selected[p.local.key] && p.status === 'safe_to_restore'
+    (p) =>
+      selected[p.local.key] &&
+      (p.status === 'safe_to_restore' ||
+        p.status === 'merchant_mismatch' ||
+        p.status === 'multiple_candidates') &&
+      p.candidate
   );
 
   const runRestore = async () => {
