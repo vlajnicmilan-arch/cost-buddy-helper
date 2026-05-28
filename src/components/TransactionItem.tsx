@@ -41,7 +41,17 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [duplicateSheetOpen, setDuplicateSheetOpen] = useState(false);
+
+  // Attribution: only when someone else added this transaction.
+  const expenseUserId = (expense as any).user_id as string | undefined;
+  const showAttribution = !!expenseUserId && !!user && expenseUserId !== user.id;
+  const attributionIds = useMemo(
+    () => (showAttribution && expenseUserId ? [expenseUserId] : []),
+    [showAttribution, expenseUserId],
+  );
+  const profiles = useUserProfiles(attributionIds);
 
 
   // Resolve category: check custom categories first, then system ones
