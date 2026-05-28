@@ -127,36 +127,51 @@ async function fetchCandidateExpenses(
   fromIso: string,
   toIso: string
 ): Promise<CloudExpenseMatch[]> {
-  const { data: expenses, error } = await supabase
-    .from('expenses')
-    .select('id, date, amount, description, ai_extracted, type')
-    .eq('user_id', userId)
-    .eq('type', 'expense')
-    .gte('date', fromIso)
-    .lte('date', toIso)
-    .order('date', { ascending: false })
-    .limit(5000);
-  if (error) throw error;
-  if (!expenses || expenses.length === 0) return [];
+  // Paginiraj expenses preko range() jer Supabase default limit je 1000
+  const expenses: Array<{ id: string; date: string; amount: number; description: string | null; ai_extracted: boolean | null }> = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('id, date, amount, description, ai_extracted')
+      .eq('user_id', userId)
+      .eq('type', 'expense')
+      .gte('date', fromIso)
+      .lte('date', toIso)
+      .order('date', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    for (const e of data) {
+      expenses.push({
+        id: e.id,
+        date: e.date,
+        amount: Number(e.amount),
+        description: e.description ?? null,
+        ai_extracted: e.ai_extracted,
+      });
+    }
+    if (data.length < PAGE) break;
+  }
+  if (expenses.length === 0) return [];
 
-  const ids = expenses.map((e) => e.id);
-  const { data: itemRows, error: itemErr } = await supabase
-    .from('receipt_items')
-    .select('expense_id')
-    .in('expense_id', ids);
-  if (itemErr) throw itemErr;
-
+  // Batch receipt_items lookup — IN s previše ID-eva ruši URL (400 Bad Request)
   const counts = new Map<string, number>();
-  for (const row of itemRows ?? []) {
-    counts.set(row.expense_id, (counts.get(row.expense_id) ?? 0) + 1);
+  const BATCH = 200;
+  for (let i = 0; i < expenses.length; i += BATCH) {
+    const ids = expenses.slice(i, i + BATCH).map((e) => e.id);
+    const { data: itemRows, error: itemErr } = await supabase
+      .from('receipt_items')
+      .select('expense_id')
+      .in('expense_id', ids);
+    if (itemErr) throw itemErr;
+    for (const row of itemRows ?? []) {
+      counts.set(row.expense_id, (counts.get(row.expense_id) ?? 0) + 1);
+    }
   }
 
   return expenses.map((e) => ({
-    id: e.id,
-    date: e.date,
-    amount: Number(e.amount),
-    description: e.description ?? null,
-    ai_extracted: e.ai_extracted,
+    ...e,
     existing_item_count: counts.get(e.id) ?? 0,
   }));
 }
