@@ -46,7 +46,7 @@ export interface CloudExpenseMatch {
 export interface RecoveryPair {
   local: LocalCachedReceipt;
   candidate: CloudExpenseMatch | null;
-  status: 'safe_to_restore' | 'has_items_already' | 'no_match' | 'multiple_candidates';
+  status: 'safe_to_restore' | 'has_items_already' | 'no_match' | 'multiple_candidates' | 'merchant_mismatch';
   reason?: string;
 }
 
