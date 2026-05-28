@@ -1161,6 +1161,9 @@
         "differentUser": "Verschiedene Benutzer",
         "notAuthorized": "Nicht erlaubt"
       }
+    },
+    "attribution": {
+      "unknownMember": "Ehemaliges Mitglied"
     }
   },
   "dashboard": {

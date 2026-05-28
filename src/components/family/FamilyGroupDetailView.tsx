@@ -681,10 +681,18 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                     removed_budget: '🗑️',
                     added_project: '📁',
                     removed_project: '🗑️',
+                    added_savings: '🐖',
+                    removed_savings: '🗑️',
                     invited_member: '✉️',
                     member_joined: '👋',
                     member_left: '👤',
+                    expense_added: '💸',
+                    income_added: '💵',
+                    transfer_added: '↔️',
                   };
+                  const amountLabel = activity.amount != null
+                    ? formatAmount(Number(activity.amount), activity.currency as any)
+                    : null;
                   return (
                     <div key={activity.id} className="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-muted/30 transition-colors">
                       <span className="text-sm mt-0.5">{actionIcons[activity.action_type] || '📝'}</span>
@@ -693,6 +701,15 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                           <span className="font-medium">{activity.display_name}</span>
                           {' '}
                           <span className="text-muted-foreground">{activity.action_description}</span>
+                          {amountLabel && (
+                            <span className={
+                              activity.action_type === 'expense_added' ? ' text-expense font-medium ml-1'
+                                : activity.action_type === 'income_added' ? ' text-income font-medium ml-1'
+                                : ' text-muted-foreground font-medium ml-1'
+                            }>
+                              {activity.action_type === 'expense_added' ? '−' : activity.action_type === 'income_added' ? '+' : '↔'}{amountLabel}
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: hr })}

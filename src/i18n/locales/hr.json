@@ -1164,6 +1164,9 @@
         "differentUser": "Različiti korisnici",
         "notAuthorized": "Nije dopušteno"
       }
+    },
+    "attribution": {
+      "unknownMember": "Bivši član"
     }
   },
   "dashboard": {

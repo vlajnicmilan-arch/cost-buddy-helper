@@ -12,6 +12,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { TransferTransactionItem } from './TransferTransactionItem';
 import { BankDuplicateSheet } from './bank/BankDuplicateSheet';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { TransactionAttribution } from './transactions/TransactionAttribution';
 
 export interface TransactionContextLookup {
   budgets?: { id: string; name: string; icon?: string | null; color?: string | null }[];
@@ -38,7 +41,17 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
   const customCategories = contextLookup?.customCategories ?? hookCategories.customCategories;
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [duplicateSheetOpen, setDuplicateSheetOpen] = useState(false);
+
+  // Attribution: only when someone else added this transaction.
+  const expenseUserId = (expense as any).user_id as string | undefined;
+  const showAttribution = !!expenseUserId && !!user && expenseUserId !== user.id;
+  const attributionIds = useMemo(
+    () => (showAttribution && expenseUserId ? [expenseUserId] : []),
+    [showAttribution, expenseUserId],
+  );
+  const profiles = useUserProfiles(attributionIds);
 
 
   // Resolve category: check custom categories first, then system ones
@@ -385,7 +398,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
               </>
             )}
           </div>
+
+          {showAttribution && expenseUserId && (
+            <TransactionAttribution
+              userId={expenseUserId}
+              displayName={profiles.get(expenseUserId)?.display_name}
+              createdAt={(expense as any).created_at}
+            />
+          )}
         </div>
+
 
         {/* Amount & Date Column */}
         <div className="flex flex-col items-end shrink-0 gap-0.5">
