@@ -227,10 +227,6 @@ export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
     const isLooseOnly = strictCandidates.length === 0 && loose.length > 0;
 
 
-
-    const candidates = strictCandidates.length > 0 ? strictCandidates : loose;
-    const isLooseOnly = strictCandidates.length === 0 && loose.length > 0;
-
     if (candidates.length === 0) {
       return { local: l, candidate: null, status: 'no_match' };
     }
