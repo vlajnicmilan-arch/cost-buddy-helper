@@ -173,7 +173,7 @@ function dateDiffDays(a: string, b: string): number {
 }
 
 const STRICT_DATE_WINDOW_DAYS = 1;
-const LOOSE_DATE_WINDOW_DAYS = 7;
+const LOOSE_DATE_WINDOW_DAYS = 30;
 
 export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
   const { data: authData, error: authErr } = await supabase.auth.getUser();
