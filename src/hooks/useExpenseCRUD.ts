@@ -166,13 +166,36 @@ export const useExpenseCRUD = ({
           .catch(() => {});
 
         if (items && items.length > 0 && data) {
-          await supabase.from('receipt_items').insert(items.map(item => ({
+          const { error: itemsError } = await supabase.from('receipt_items').insert(items.map(item => ({
             expense_id: data.id,
             name: item.name,
             quantity: item.quantity || 1,
             unit_price: item.unit_price || null,
             total_price: item.total_price
           })));
+          // Diagnostic trail so future silent failures are visible.
+          try {
+            await supabase.from('app_diagnostics_logs').insert([{
+              session_id: 'expense-crud',
+              event: itemsError ? 'receipt_items_insert_error' : 'receipt_items_insert_success',
+              route: typeof window !== 'undefined' ? window.location.pathname : null,
+              user_id: user.id,
+              app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+              device_info: {},
+              severity: itemsError ? 'error' : 'info',
+              details: {
+                expense_id: data.id,
+                items_received: items.length,
+                error_code: itemsError?.code ?? null,
+                error_message: itemsError?.message ?? null,
+              },
+            }]);
+          } catch { /* best-effort */ }
+          if (itemsError) {
+            console.error('[ExpenseCRUD] receipt_items insert failed:', itemsError);
+            // Re-throw so UI shows error instead of silent "success" without artikli.
+            throw itemsError;
+          }
         }
 
         // Owner-loan auto-creation: business expense paid from a personal source.
