@@ -4144,6 +4144,12 @@
       "failed": "Fehlgeschlagen"
     }
   },
+  "recovery": {
+    "banner": {
+      "title": "{{count}} gescannte Belege mit nicht gespeicherten Artikeln gefunden",
+      "cta": "Öffnen und Artikel wiederherstellen"
+    }
+  },
   "trash": {
     "title": "Papierkorb",
     "empty": "Papierkorb ist leer",

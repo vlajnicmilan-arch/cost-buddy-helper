@@ -225,6 +225,11 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* Trial Banner */}
         <TrialBanner />
 
+        {/* Recovery banner — privremen, prikazuje se samo ako lokalni cache ima neostvarene scanove */}
+        <ReceiptRecoveryBanner />
+
+
+
         {/* Local Mode Banner */}
         {props.isLocalMode && (
           <div className="mb-6 p-4 bg-muted/50 rounded-xl flex items-center justify-between">
