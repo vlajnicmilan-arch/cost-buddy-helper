@@ -29,7 +29,6 @@ const Family = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<FamilyGroup | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<FamilyGroup | null>(null);
-  const [initialOpenChat, setInitialOpenChat] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user && storageMode === 'cloud') {
@@ -44,12 +43,11 @@ const Family = () => {
 
   // Handle deep-link from notifications
   useEffect(() => {
-    const state = location.state as { openGroupId?: string; openChat?: boolean } | null;
+    const state = location.state as { openGroupId?: string } | null;
     if (state?.openGroupId && groups.length > 0 && !selectedGroup) {
       const group = groups.find(g => g.id === state.openGroupId);
       if (group) {
         setSelectedGroup(group);
-        if (state.openChat) setInitialOpenChat(true);
         window.history.replaceState({}, document.title);
       }
     }
@@ -107,10 +105,8 @@ const Family = () => {
     return (
       <FamilyGroupDetailView
         group={selectedGroup}
-        initialOpenChat={initialOpenChat}
         onBack={() => {
           setSelectedGroup(null);
-          setInitialOpenChat(false);
           refetch();
         }}
         onUpdate={updateGroup}

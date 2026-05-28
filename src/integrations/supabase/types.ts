@@ -1519,38 +1519,6 @@ export type Database = {
           },
         ]
       }
-      family_messages: {
-        Row: {
-          content: string
-          created_at: string
-          group_id: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          group_id: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          group_id?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "family_messages_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "family_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       family_shared_budgets: {
         Row: {
           added_by: string

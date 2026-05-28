@@ -11,7 +11,7 @@ const corsHeaders = {
 const TABLES_TO_PURGE = [
   "activation_nudge_log","app_diagnostics_logs","bank_connections","budget_members",
   "bug_reports","business_debts","business_premises","cash_registers","chat_messages",
-  "clients","custom_categories","family_activity_log","family_members","family_messages",
+  "clients","custom_categories","family_activity_log","family_members",
   "income_source_members","installments","installment_plans","inventory_items","invoices",
   "milestone_budget_alerts","milestone_budget_revisions","milestone_checklist_items",
   "notification_preferences","notifications","payment_source_cards","payment_source_members",

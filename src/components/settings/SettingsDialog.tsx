@@ -749,7 +749,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               <ul className="list-disc list-inside text-sm space-y-1">
                 <li>{t('settings.familyDisableWarn1', 'Nećete više vidjeti obiteljske grupe u navigaciji')}</li>
                 <li>{t('settings.familyDisableWarn2', 'Dijeljeni računi, budžeti i ciljevi štednje neće biti vidljivi')}</li>
-                <li>{t('settings.familyDisableWarn3', 'Chat poruke i obavijesti neće stizati')}</li>
+                
               </ul>
               <p className="font-medium text-foreground mt-3">
                 {t('settings.familyDisableKeep', 'Vaši podaci ostaju sačuvani i bit će dostupni ako ponovno uključite obiteljski način.')}
