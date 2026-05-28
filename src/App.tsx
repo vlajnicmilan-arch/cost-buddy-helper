@@ -66,9 +66,8 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
-const RecoveryReceiptItems = lazy(() => import("./pages/RecoveryReceiptItems"));
 
-const RECOVERY_RECEIPT_ITEMS_PATH = "/recovery/receipt-items";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
