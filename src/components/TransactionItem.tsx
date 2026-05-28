@@ -398,7 +398,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
               </>
             )}
           </div>
+
+          {showAttribution && expenseUserId && (
+            <TransactionAttribution
+              userId={expenseUserId}
+              displayName={profiles.get(expenseUserId)?.display_name}
+              createdAt={(expense as any).created_at}
+            />
+          )}
         </div>
+
 
         {/* Amount & Date Column */}
         <div className="flex flex-col items-end shrink-0 gap-0.5">
