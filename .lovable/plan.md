@@ -1,72 +1,105 @@
-# Uklanjanje family chata + audit family modula
 
-## Stanje (verificirano)
+# Obitelj 2.0 — Faza A: Transparentnost
 
-**Upotreba u produkciji:**
-- `family_messages`: **2 retka** ukupno (chat se ne koristi)
-- `chat_messages`: 52 retka — **ovo je AI asistent**, NE family chat. Ostaje netaknuto.
-- `family_groups`: 3, `family_members`: 4, `family_invitations`: 3, `family_activity_log`: 5
-- `family_shared_sources`: 1, `family_shared_projects`: 2, `family_shared_budgets`: 0, `family_shared_savings`: 0
+Krećemo s **najmanjim, najsigurnijim korakom**. B (komentari) i C (fair share) dolaze kasnije, **tek nakon što vidimo da se Faza A koristi**.
 
-**Reference na chat:** `FamilyChat.tsx`, sekcija u `FamilyGroupDetailView.tsx` (l. 723–732), edge `notify-family-message`, `initialOpenChat` prop chain (Family.tsx + deep-link iz notifikacija), `dataExportZip.ts` (l. 56), i18n `family.chat*`, `familyDisableWarn3` spominjanje chata, `chat_enabled` u `notification_preferences` (koristi se i za bilješke na transakcijama — **ostaje**, samo se rebranda copy).
+Cilj Faze A: na svakoj dijeljenoj transakciji odmah se vidi **tko ju je dodao i kada**, plus zaseban kronološki pregled aktivnosti grupe zadnjih 30 dana.
 
 ---
 
-## Faza 1 — Uklanjanje chata (sada)
+## Što se mijenja (UI)
 
-### Frontend
-- Obriši `src/components/family/FamilyChat.tsx`
-- `src/components/family/FamilyGroupDetailView.tsx`:
-  - ukloni import `FamilyChat`, `chatSectionRef`, `initialOpenChat` prop, `useLayoutEffect` komentar o FamilyChat, `useEffect` za auto-scroll na chat, cijelu `<section ref={chatSectionRef}>` (l. ~723–732), `MessageCircle` import ako ostane neiskorišten
-- `src/pages/Family.tsx`: ukloni `initialOpenChat` state, deep-link grane (`state.openChat`), prosljeđivanje propa
-- `src/hooks/useDeepLinks.ts`: ukloni svaku granu koja postavlja `openChat: true` (provjeriti)
-- `src/components/NotificationsDropdown.tsx`: ukloni rute koje vode na chat sekciju (ako postoje)
-- `src/lib/dataExportZip.ts`: makni `'family_messages'` iz liste tablica za export
+### 1. Atribucija na dijeljenim transakcijama
+Kad je transakcija povezana s dijeljenim resursom obitelji (shared payment source / project / budget), u listi transakcija pored iznosa prikazuje se:
+- mali **avatar + ime člana** koji je unio
+- **relativno vrijeme** ("prije 2h", "jučer u 18:42")
 
-### i18n (hr/en/de)
-- Ukloni ključeve: `family.chat`, `family.writeMessage`, `family.sendError`, `family.deleteError`, `family.noMessages`, `family.doubleClickDelete`
-- `settings.familyModeDesc`: makni "i chat" iz opisa
-- `settings.familyDisableWarn3`: ukloni cijelu liniju (Chat poruke i obavijesti)
-- `settings.notifChatDesc` (NotificationsSection): preformulirati na "Bilješke na transakcijama i komentari" (chat dio izlazi)
+Vidljivo samo u kontekstu gdje resurs pripada family grupi — ne mijenja se ništa za isključivo osobne transakcije.
 
-### Backend
-- Migracija: `DROP TABLE public.family_messages CASCADE;` + `DROP FUNCTION public.cleanup_old_chat_messages()` **NE** (to je za AI chat_messages — ostaviti); ALI postoji `maybe_cleanup_chat_messages` trigger funkcija → provjeriti je li vezana na family_messages ili chat_messages; ako na chat_messages → ostaviti
-- Obriši edge funkciju `notify-family-message` (via delete_edge_functions)
-- `notification_preferences.chat_enabled`: **zadrži** (sada pokriva samo bilješke na transakcijama)
+### 2. Filter "Tko je unio"
+U postojeći Filter sheet za transakcije dodaje se nova sekcija **"Član obitelji"** — multi-select chips s avatarima članova trenutnog konteksta. Aktivira se samo kad je view filtriran na dijeljeni resurs.
 
-### Tests
-- Ako postoji test koji referencira `FamilyChat` ili `family_messages` → ukloniti
+### 3. Activity Feed tab u Family Group Detail view
+Novi tab **"Aktivnost"** unutar `FamilyGroupDetailView` pored postojećih sekcija (Članovi, Dijeljeni resursi). Kronološki feed zadnjih 30 dana:
+- transakcije na dijeljenim resursima (tko, koliko, kategorija, kad)
+- pridruživanje/odlazak članova
+- dodavanje/uklanjanje dijeljenih resursa
+
+Reuse postojećeg `family_activity_log` (već se piše, samo nema UI-a koji ga čita).
 
 ---
 
-## Faza 2 — Audit family modula (preporuke, ne implementacija)
-
-Opservacije nakon pregleda koda i brojeva:
-
-1. **Family grupa je "meta-bundler" preko postojećih invitation sustava.** Svaki resurs (project, budget, payment_source) već ima svoj invitation flow (`project_invitations`, `budget_invitations`, `payment_source_invitations`). Family grupa dodaje 4. sloj (`family_invitations` + `family_shared_*` join tablice) koji uglavnom duplicira funkciju "podijeli ovaj resurs s nekim".
-
-2. **Brojke pokazuju da feature ne živi:** 3 grupe na cijeloj aplikaciji, 0 budgeta i 0 savings dijeljeno. Sav stvarni sharing ide kroz direktne invitation flowove na pojedini resurs.
-
-3. **`family_activity_log`** dupla `project_activity_log` — drugi je puno bogatiji i koristi se aktivno.
-
-### Preporučene opcije za sljedeći potez (NE u ovoj fazi):
-
-- **Opcija A — minimalno čišćenje:** zadržati family grupu kao "label/folder" preko sharing-a, ali ukloniti `family_activity_log` i pojednostaviti detail view (jedan tab umjesto 4 sekcije).
-- **Opcija B — duboka konsolidacija:** ukinuti family grupe u potpunosti, ostaviti per-resource sharing (koji već radi). UI bi bio jedan "Dijeljeno sa mnom" pregled koji agregira sve resurse na koje sam pozvan/koje dijelim.
-- **Opcija C — status quo nakon chata:** ne dirati ništa drugo, vidjeti hoće li se upotreba pomaknuti.
-
-Ovo su prijedlozi za razgovor nakon Faze 1 — ne radim ništa od ovoga bez tvoje odluke.
+## Što NE radimo u Fazi A
+- ❌ Bez komentara/threada (to je Faza B)
+- ❌ Bez fair share matematike (to je Faza C)
+- ❌ Bez chata (uklonjeno trajno)
+- ❌ Bez push notifikacija za "Ana je dodala trošak" — samo passivna vidljivost u feedu
+- ❌ Bez izmjene postojećih RLS pravila ni dijeljenja resursa
 
 ---
 
-## Što NE diram
-- `chat_messages` tablica (AI asistent)
-- `FinancialAssistantDialog`, `useFinancialAssistant` 
-- `family_groups`, `family_members`, `family_invitations`, `family_shared_*` tablice
-- `JoinFamily.tsx`, `useFamilyGroups`, `send-member-invitation`, `respond-to-invitation` edge fn
-- Feature gating (`useFeatureAccess` → `family_groups`)
+## Tehnička izvedba
+
+### Tablice — nema novih
+Sve već postoji:
+- `expenses.user_id` → tko je unio
+- `expenses.created_at` → kada
+- `family_activity_log` (group_id, user_id, action_type, action_description, created_at) — već se piše, ali UI ne čita
+
+### Frontend datoteke
+**Nove:**
+- `src/components/family/FamilyActivityFeed.tsx` — tab content (lista + grupiranje po danu)
+- `src/hooks/useFamilyActivityLog.ts` — fetch + realtime subscribe (zadnjih 30d, limit 200)
+- `src/components/transactions/TransactionAttribution.tsx` — mali avatar+ime+vrijeme chip ispod transakcije
+
+**Mijenjamo:**
+- `src/components/family/FamilyGroupDetailView.tsx` — dodati `<Tabs>` (Pregled / Aktivnost), ubaciti `FamilyActivityFeed`
+- `src/components/TransactionList.tsx` (ili ekvivalent koji renderira retke) — uvjetno renderirati `TransactionAttribution` ako je transakcija na dijeljenom resursu i `expense.user_id !== currentUser.id`
+- `src/components/filters/TransactionFilterSheet.tsx` — dodati "Član obitelji" multi-select (samo kad je kontekst shared)
+
+### Hooks
+- `useExpenseFetch` već dohvaća `user_id` — dodati `profiles` join za `display_name` + `avatar_url` (lookup tablica u memoriji, ne per-row join)
+- Novi `useFamilyMembersForResource(resourceId, resourceType)` — vraća listu članova s pravom čitanja resursa, za filter chips i avatar lookup
+
+### Backend — minimalno
+- Provjera da `family_activity_log` RLS dopušta SELECT za sve `family_members` grupe (ako već ne)
+- Možda dodati indeks `(group_id, created_at DESC)` ako ga nema
+
+### i18n keys (nove)
+```
+family.activity.title
+family.activity.empty
+family.activity.last30days
+family.activity.addedExpense  // "{{name}} je dodao/la trošak"
+family.activity.addedIncome
+family.activity.joinedGroup
+family.activity.leftGroup
+family.activity.addedResource
+family.activity.removedResource
+transactions.attribution.addedBy  // "{{name}}, prije {{time}}"
+transactions.filter.byMember
+```
+HR, EN, DE.
 
 ---
 
-## Memo update
-Dodati memo `mem://features/family-chat-removed` s razlogom uklanjanja + napomenom da `chat_enabled` pref sada pokriva samo transaction notes. Ažurirati `mem://features/family-and-collaboration-system` da odražava bez-chat stanje.
+## Što ostaje za Fazu B i C (samo podsjetnik, NE radimo sad)
+
+**Faza B (~2-3 dana):** komentari na pojedinu transakciju, nova tablica `transaction_comments`, push notifikacija samo onome tko je unio.
+
+**Faza C (~4-6 dana):** per-grupa setting "Fair share method" (Equal / Income-weighted / Custom %), mjesečna kartica "Pravedan udio ovog mjeseca" na dashboardu kad je grupa aktivna, "Označi izravnato" gumb.
+
+Obje faze čekaju potvrdu da Faza A povećava upotrebu (više dijeljenih resursa, više članova po grupi).
+
+---
+
+## Rizici / odluke koje treba pratiti
+- **Privatnost atribucije:** član A vidi da je član B dodao trošak — to je *cilj* (transparentnost), ali znači da nitko ne može diskretno trošiti iz zajedničkog. Smatram to feature-om, ne bug-om.
+- **Performance feeda:** limit 30d × 200 stavki + realtime — siguran budžet, neće trošiti baterije.
+- **Edge case:** transakcija koju je unio bivši član grupe → prikaži ime iz `profiles` (ostaje), bez avatara ili sa sivim "(bivši član)" sufiksom.
+
+---
+
+## Procjena: ~1-2 radna dana
+
+Spreman za implementaciju kad odobriš.
