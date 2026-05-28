@@ -117,29 +117,28 @@ export async function listLocalCachedReceipts(): Promise<LocalCachedReceipt[]> {
 // ---------- Step 2: match with cloud expenses (read-only) ----------
 
 /**
- * Returns ALL ai_extracted expenses for the current user in the relevant date
- * range, with the number of existing receipt_items per expense (left join
- * count). Plain read; no writes.
+ * Returns ALL expense-type rows for the current user in the relevant date
+ * range. Previously restricted to ai_extracted=true, but many cloud rows lost
+ * that flag after edits / recurring matching / transfer detection, so they were
+ * missed even though they were the right parnjak.
  */
-async function fetchAiExtractedExpenses(
+async function fetchCandidateExpenses(
   userId: string,
   fromIso: string,
   toIso: string
 ): Promise<CloudExpenseMatch[]> {
-  // Pull expenses with ai_extracted=true in the window.
   const { data: expenses, error } = await supabase
     .from('expenses')
-    .select('id, date, amount, description, ai_extracted')
+    .select('id, date, amount, description, ai_extracted, type')
     .eq('user_id', userId)
-    .eq('ai_extracted', true)
+    .eq('type', 'expense')
     .gte('date', fromIso)
     .lte('date', toIso)
     .order('date', { ascending: false })
-    .limit(2000);
+    .limit(5000);
   if (error) throw error;
   if (!expenses || expenses.length === 0) return [];
 
-  // Fetch item counts for those expense ids.
   const ids = expenses.map((e) => e.id);
   const { data: itemRows, error: itemErr } = await supabase
     .from('receipt_items')
@@ -173,6 +172,9 @@ function dateDiffDays(a: string, b: string): number {
   return Math.abs(da - db) / 86400000;
 }
 
+const STRICT_DATE_WINDOW_DAYS = 1;
+const LOOSE_DATE_WINDOW_DAYS = 7;
+
 export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
   const { data: authData, error: authErr } = await supabase.auth.getUser();
   if (authErr) throw authErr;
@@ -182,40 +184,48 @@ export async function buildRecoveryPairs(): Promise<RecoveryPair[]> {
   const local = await listLocalCachedReceipts();
   if (local.length === 0) return [];
 
-  // Window covering all local timestamps ±3 days.
-  const minTs = Math.min(...local.map((l) => l.timestampMs));
-  const maxTs = Math.max(...local.map((l) => l.timestampMs));
-  const fromIso = new Date(minTs - 3 * 86400000).toISOString().slice(0, 10);
-  const toIso = new Date(maxTs + 3 * 86400000).toISOString().slice(0, 10);
+  // DB fetch window must cover both scan timestamps AND receipt dates,
+  // padded by the loose date window so all candidate matches are included.
+  const allTs: number[] = [];
+  for (const l of local) {
+    allTs.push(l.timestampMs);
+    if (l.date) {
+      const t = new Date(l.date).getTime();
+      if (!isNaN(t)) allTs.push(t);
+    }
+  }
+  const minTs = Math.min(...allTs);
+  const maxTs = Math.max(...allTs);
+  const pad = (LOOSE_DATE_WINDOW_DAYS + 1) * 86400000;
+  const fromIso = new Date(minTs - pad).toISOString().slice(0, 10);
+  const toIso = new Date(maxTs + pad).toISOString().slice(0, 10);
 
-  const cloud = await fetchAiExtractedExpenses(userId, fromIso, toIso);
+  const cloud = await fetchCandidateExpenses(userId, fromIso, toIso);
 
   const pairs: RecoveryPair[] = local.map((l) => {
     const targetDate = l.date || new Date(l.timestampMs).toISOString().slice(0, 10);
     const localMerchantN = normalizeMerchant(l.merchant);
 
-    // First pass: amount + date + (optional) merchant text overlap
+    // Strict: amount + ±1d + merchant text overlap
     const strictCandidates = cloud.filter((c) => {
       if (l.amount == null) return false;
-      const amountOk = Math.abs(c.amount - l.amount) <= 0.01;
-      if (!amountOk) return false;
-      const dateOk = dateDiffDays(c.date, targetDate) <= 1;
-      if (!dateOk) return false;
+      if (Math.abs(c.amount - l.amount) > 0.01) return false;
+      if (dateDiffDays(c.date, targetDate) > STRICT_DATE_WINDOW_DAYS) return false;
       if (!localMerchantN) return true;
       const descN = normalizeMerchant(c.description);
       return descN.includes(localMerchantN) || localMerchantN.includes(descN);
     });
 
-    // Fallback: amount + date only (handles cases where description was
-    // rewritten in the cloud, e.g. transfer/recurring rename).
+    // Loose: amount + ±7d (description may have been rewritten)
     const loose = cloud.filter((c) => {
       if (l.amount == null) return false;
       if (Math.abs(c.amount - l.amount) > 0.01) return false;
-      return dateDiffDays(c.date, targetDate) <= 1;
+      return dateDiffDays(c.date, targetDate) <= LOOSE_DATE_WINDOW_DAYS;
     });
 
     const candidates = strictCandidates.length > 0 ? strictCandidates : loose;
     const isLooseOnly = strictCandidates.length === 0 && loose.length > 0;
+
 
     if (candidates.length === 0) {
       return { local: l, candidate: null, status: 'no_match' };
