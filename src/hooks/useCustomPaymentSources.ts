@@ -101,17 +101,21 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
       if (ownError) throw ownError;
 
-      // Fetch shared payment sources via membership
+      // Fetch shared payment sources via membership (including role for current user)
       const { data: memberships, error: memberError } = await supabase
         .from('payment_source_members' as any)
-        .select('payment_source_id')
+        .select('payment_source_id, role')
         .eq('user_id', user.id);
 
       if (memberError) throw memberError;
 
+      const myRoleMap = new Map<string, string>();
+      (memberships || []).forEach((m: any) => myRoleMap.set(m.payment_source_id, m.role));
+
       const memberSourceIds = (memberships || [])
         .map((m: any) => m.payment_source_id)
         .filter((id: string) => !(ownSources || []).some((s: any) => s.id === id));
+
 
       let sharedSources: any[] = [];
       if (memberSourceIds.length > 0) {
