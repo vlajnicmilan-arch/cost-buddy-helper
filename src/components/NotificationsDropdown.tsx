@@ -331,22 +331,16 @@ export const NotificationsDropdown = () => {
                   const messageText = resolveNotificationText(notification.message, messageVars, t);
 
                   return (
-                    <div
+                    <SwipeableNotification
                       key={notification.id}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={titleText || messageText || 'Obavijest'}
-                      className={cn(
-                        'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-                        !notification.read && 'bg-primary/5'
-                      )}
-                      onClick={() => handleNotificationClick(notification)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleNotificationClick(notification);
-                        }
+                      onDelete={() => {
+                        deleteNotification(notification.id);
                       }}
+                      onClick={() => handleNotificationClick(notification)}
+                      ariaLabel={titleText || messageText || 'Obavijest'}
+                      isUnread={!notification.read}
+                      disableSwipe={isInvitation}
+                      deleteLabel={t('notifications.delete', 'Obriši')}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-0.5">
@@ -371,42 +365,11 @@ export const NotificationsDropdown = () => {
                             })}
                           </p>
                         </div>
-
-                        {!isInvitation && (
-                          <div className="flex items-center gap-1">
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={t('notifications.markRead', 'Označi kao pročitano')}
-                                className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(notification.id);
-                                }}
-                              >
-                                <Check className="w-3 h-3" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t('notifications.delete', 'Obriši')}
-                              className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification(notification.id);
-                                setOpen(false);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    </SwipeableNotification>
                   );
                 })}
+
               </div>
             )}
           </ScrollArea>
