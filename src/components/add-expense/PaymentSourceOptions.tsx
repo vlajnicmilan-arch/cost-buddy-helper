@@ -118,8 +118,6 @@ export const PaymentSourceOptions = ({
             const isViewer = source.myRole === 'viewer';
             return (
 
-            const isViewer = source.myRole === 'viewer';
-            return (
             <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`} disabled={isViewer}>
               <div className="flex items-center gap-2">
                 <span
