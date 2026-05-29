@@ -176,14 +176,23 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         const ownerName = !isOwned
           ? (ownerProfiles.find((p: any) => p.user_id === source.user_id)?.display_name || null)
           : null;
+        const rawRole = myRoleMap.get(source.id);
+        const myRole: 'owner' | 'full' | 'limited' | 'viewer' | null = isOwned
+          ? 'owner'
+          : (rawRole === 'full' ? 'full'
+            : rawRole === 'viewer' ? 'viewer'
+            : (rawRole === 'limited' || rawRole === 'member') ? 'limited'
+            : null);
         return {
           ...source,
           cards: (cards || []).filter((card: any) => card.payment_source_id === source.id),
           isOwned,
           memberCount,
           ownerName,
+          myRole,
         };
       });
+
 
       if (isStale()) return;
 
