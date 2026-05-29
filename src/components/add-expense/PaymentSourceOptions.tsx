@@ -113,7 +113,11 @@ export const PaymentSourceOptions = ({
           <div className="px-2 py-1.5 mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
             <span>🪙</span>
             <span>{t('business.payment.personalAccountsGroup', 'Osobni računi (pozajmica)')}</span>
+          </div>
           {filteredLoan.map((source) => {
+            const isViewer = source.myRole === 'viewer';
+            return (
+
             const isViewer = source.myRole === 'viewer';
             return (
             <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`} disabled={isViewer}>
