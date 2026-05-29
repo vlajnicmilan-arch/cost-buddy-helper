@@ -29,7 +29,6 @@ export interface CustomPaymentSource {
   myRole?: 'owner' | 'full' | 'limited' | 'viewer' | null; // current user's effective role on this source
 }
 
-}
 
 export const DEFAULT_PAYMENT_ICONS = [
   '💳', '💵', '🏦', '📱', '💰', '🪙', '💎', '🏧',
