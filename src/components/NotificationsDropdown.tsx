@@ -90,7 +90,7 @@ export const NotificationsDropdown = () => {
     unreadCount,
     loading,
     markAsRead,
-    markAllAsRead,
+
     deleteNotification,
     refetch,
   } = useNotifications();
