@@ -134,6 +134,37 @@ export const PaymentSourceTransactionsDialog = ({
     onPdfProcessingChange?.(isPdfProcessing);
   }, [isPdfProcessing, onPdfProcessingChange]);
 
+  // Fetch display names of other contributors (owner + members) so we can
+  // show a "Dodao: …" badge on transactions created by someone else.
+  useEffect(() => {
+    if (!user?.id) return;
+    const otherIds = Array.from(
+      new Set(
+        expenses
+          .map(e => e.user_id)
+          .filter((id): id is string => !!id && id !== user.id)
+      )
+    );
+    const missing = otherIds.filter(id => !(id in memberProfiles));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', missing);
+      if (cancelled || error || !data) return;
+      setMemberProfiles(prev => {
+        const next = { ...prev };
+        for (const row of data) {
+          if (row.user_id) next[row.user_id] = row.display_name || '';
+        }
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [expenses, user?.id, memberProfiles]);
+
   useEffect(() => {
     if (!onImportCSV) return;
     return registerPdfImportHandlers({ onImportCSV, findDuplicates });
