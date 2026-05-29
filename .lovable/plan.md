@@ -1,48 +1,59 @@
 
-# Family-shared payment source → auto Limited access
-
 ## Cilj
-Kad vlasnik podijeli račun u obiteljsku grupu, svi članovi obitelji automatski dobiju **Limited** pristup na taj račun preko postojeće `payment_source_members` tablice. Vlasnik može kasnije podići pojedinog člana na **Full** kroz već postojeći Shared Wallet UI.
 
-## Zašto Limited kao default
-- Sigurno za djecu i nove članove (ne mogu mijenjati/brisati tuđe transakcije ni saldo)
-- Nula friction-a za vlasnika kod dijeljenja
-- Reuse postojeće infrastrukture — bez novih flowova
-- Upgrade na Full je 1 klik kasnije
+Trenutno su `member` i `viewer` u Obitelji **identični** — oba prolaze kroz `is_family_member()` i dobivaju `limited` na dijeljenim izvorima preko `fm_grant_limited_on_join` trigera. Promatrač je dekorativan i ne radi ništa drugačije od člana. Cilj: tri jasno različite razine.
 
-## Što se mijenja
+## Konačna semantika uloga
 
-### 1. Backend (migration)
-Kad se red doda u `family_shared_payment_sources` (ili ekvivalent — provjeriti točan naziv u kodu), trigger:
-- Za svakog `family_members.user_id` iz iste grupe → upsert u `payment_source_members` s `role = 'limited'`
-- Skip ako član već postoji (ON CONFLICT DO NOTHING) — ne degradira postojeći `full` na `limited`
-- Kad se novi član pridruži obitelji → trigger na `family_members` insertu također upiše `limited` za sve već-dijeljene račune te grupe
-- Kad se račun makne iz dijeljenja → ukloni `limited` članstva (čuva `full` i `owner`)
-- Kad član napusti obitelj → ukloni njegova family-derived članstva
+| Uloga | Vidi dijeljene transakcije (sve, i tuđe) | Dodaje na dijeljene izvore | Mijenja/briše tuđe | Upravlja grupom |
+|---|---|---|---|---|
+| **Vlasnik** (`owner`) | Da | Da | Da | Da |
+| **Član** (`member`) | Da | Da | Ne (samo svoje) | Ne |
+| **Promatrač** (`viewer`) | Da | Ne | Ne | Ne |
 
-### 2. Frontend
-- **Nema novog UI-ja za biranje role pri dijeljenju** — samo "Podijeli s obitelji" toggle kao i sad
-- Postojeći Shared Wallet ekran (gdje se već vide članovi i njihov pristup) ostaje jedino mjesto gdje vlasnik mijenja Limited ↔ Full po članu
-- Sin (i ostali članovi) odmah vide račun u svom popisu izvora plaćanja s Limited oznakom
+Ključna promjena: **član sad vidi i tuđe transakcije na dijeljenom izvoru** (sad vidi samo svoje — bug koji je krenuo cijelu raspravu). Promatrač dobiva istu vidljivost ali bez prava unosa.
 
-### 3. Provjere
-- RLS na `payment_source_members` već radi → bez izmjena policy-ja
-- `useCustomPaymentSources` već čita preko `is_payment_source_member` → bez izmjena hooka
-- Balance updater već poštuje role → bez izmjena
+## Backend (migracije)
 
-## Što NE diramo
-- Phase A transparency (attribution + activity feed) ostaje
-- Direktan Shared Wallet flow (bez obitelji) ostaje nepromijenjen
-- Family group UX (svi vide sve transakcije unutar grupe) ostaje
-- Bez novih i18n ključeva osim eventualnog "Pristup preko obitelji" badge-a u članstvima
+1. **Novi role na `payment_source_members`**: dodaj `'viewer'` uz postojeće `'full'` i `'limited'`.
+2. **`fm_grant_limited_on_join` trigger** — preimenovati logiku tako da gleda `family_members.role`:
+   - `owner` → ostaje izvan (vlasnik izvora već ima sve)
+   - `member` → `limited` (kao sad)
+   - `viewer` → `viewer` (novo)
+3. **`fss_grant_limited_on_share` trigger** — ista logika po roli člana.
+4. **RLS na `expenses`** (ovo je srž popravka):
+   - Trenutno `limited` član vidi SELECT samo vlastite retke na dijeljenom izvoru.
+   - Nova politika: ako je izvor dijeljen i korisnik je `limited` **ili** `viewer` član tog izvora → SELECT sve transakcije na tom izvoru.
+   - INSERT/UPDATE/DELETE i dalje: `viewer` = zabranjeno, `limited` = INSERT da, UPDATE/DELETE samo vlastite, `full`/owner = sve.
+5. **Helper funkcija** `public.payment_source_role(_source_id, _user_id) returns text` (SECURITY DEFINER) — vraća `'owner' | 'full' | 'limited' | 'viewer' | null`, koristi se i u RLS i u UI.
 
-## Tehnički detalji
-- Jedna migracija: 2 trigger funkcije (`sync_family_payment_source_members` na share/unshare, `sync_member_to_family_sources` na family_members insert/delete)
-- Backfill: za sve postojeće family-shared račune odmah upisati `limited` članstva za sve trenutne članove (uključujući sina koji već čeka)
-- Bez novih kolona, bez novih tablica
+## Frontend
 
-## Plan koraka
-1. Pročitati točnu shemu (`family_shared_payment_sources`/`family_members`/`payment_source_members`) da potvrdim nazive
-2. Napisati migraciju s 2 triggera + backfill INSERT
-3. Provjeriti da Shared Wallet UI već prikazuje članove koji su došli "preko obitelji" (ako ne, dodati mali badge — i18n)
-4. Test: sin treba odmah vidjeti račun nakon primjene migracije
+1. **`FamilyRole` tip** u `src/types/family.ts` — već postoji `owner | member | viewer`, samo se počinje stvarno koristiti.
+2. **Family UI (`FamilyMembersList` / invite dialog)** — već nudi izbor uloge; dodati jasan opis ispod svake opcije (i18n).
+3. **`useFamilyMembers` / `usePaymentSourceMembers`** — proširiti rezultat da vraća efektivnu rolu (`owner | full | limited | viewer`).
+4. **Guard na unos transakcija**:
+   - `AddExpenseDialog` / izbornik izvora plaćanja: ako je korisnik `viewer` na izvoru → izvor je vidljiv u listi ali disabled s tooltipom "Samo pregled".
+   - Skriti FAB "Dodaj transakciju" ako korisnik nema niti jedan izvor na koji smije pisati.
+5. **i18n** (`hr`, `en`, `de`) za nove tekstove: `family.roles.viewer.description`, `family.roles.member.description`, `paymentSource.viewerCannotAdd`.
+
+## Push obavijesti
+
+`notify-family-transaction` već postoji — provjeriti da fire-a i za `viewer` i za `member` (oba trebaju primati push o novoj zajedničkoj transakciji). Ako trenutno fire-a samo prema `is_family_member()` to već pokriva oba.
+
+## Validacija
+
+- Vlasnik doda transakciju na dijeljeni Revolut → Petar (`member`) je vidi i dobiva push.
+- Promotaj Petra u `viewer` → i dalje vidi sve, ali "Dodaj" je disabled na Revolutu.
+- Promatrač pokuša POST na `expenses` s `payment_source='custom:<shared>'` → RLS odbija (403).
+- Postojeći podaci: `viewer` zapisi u `family_members` (ako ih ima) automatski rade prema novoj semantici nakon migracije, bez ručnog backfilla.
+
+## Što NIJE u opsegu
+
+- Per-transakcijske dozvole (npr. "vidi sve osim transakcija označenih kao privatne") — preskačemo, kompleksno.
+- Granularne dozvole "može uređivati tuđe" — `member` može mijenjati samo svoje, kraj.
+- Notifikacijske postavke po roli — koristi postojeću `notification_preferences`.
+
+## Memorija
+
+Nakon implementacije, ažurirati `mem://features/family-and-collaboration-system` da reflektira tri stvarne razine i dodati `mem://features/shared-wallet-role-permissions` napomenu o `viewer` roli na `payment_source_members`.

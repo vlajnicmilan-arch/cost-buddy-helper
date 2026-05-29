@@ -101,17 +101,21 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
       if (ownError) throw ownError;
 
-      // Fetch shared payment sources via membership
+      // Fetch shared payment sources via membership (including role for current user)
       const { data: memberships, error: memberError } = await supabase
         .from('payment_source_members' as any)
-        .select('payment_source_id')
+        .select('payment_source_id, role')
         .eq('user_id', user.id);
 
       if (memberError) throw memberError;
 
+      const myRoleMap = new Map<string, string>();
+      (memberships || []).forEach((m: any) => myRoleMap.set(m.payment_source_id, m.role));
+
       const memberSourceIds = (memberships || [])
         .map((m: any) => m.payment_source_id)
         .filter((id: string) => !(ownSources || []).some((s: any) => s.id === id));
+
 
       let sharedSources: any[] = [];
       if (memberSourceIds.length > 0) {
@@ -172,14 +176,23 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         const ownerName = !isOwned
           ? (ownerProfiles.find((p: any) => p.user_id === source.user_id)?.display_name || null)
           : null;
+        const rawRole = myRoleMap.get(source.id);
+        const myRole: 'owner' | 'full' | 'limited' | 'viewer' | null = isOwned
+          ? 'owner'
+          : (rawRole === 'full' ? 'full'
+            : rawRole === 'viewer' ? 'viewer'
+            : (rawRole === 'limited' || rawRole === 'member') ? 'limited'
+            : null);
         return {
           ...source,
           cards: (cards || []).filter((card: any) => card.payment_source_id === source.id),
           isOwned,
           memberCount,
           ownerName,
+          myRole,
         };
       });
+
 
       if (isStale()) return;
 
