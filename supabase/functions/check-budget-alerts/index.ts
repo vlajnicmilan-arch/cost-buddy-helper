@@ -136,9 +136,8 @@ serve(async (req) => {
       // In-app notifications (bell) are owned by useIssueReconciler / detectBudgetBurn
       // to avoid duplicate entries for the same budget. This function only sends
       // a push notification, and only for the critical threshold (100%).
-      const percentage = (totalSpent / totalLimit) * 100;
-
       if (percentage < 100) continue;
+
 
       // De-dupe push: only send once per budget per period, per threshold=100.
       // We reuse the notifications table as the dedup ledger via reconciler rows
