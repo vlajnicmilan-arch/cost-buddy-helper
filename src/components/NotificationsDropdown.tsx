@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase, Download } from 'lucide-react';
+import { Bell, Check, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase, Download } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,14 +11,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -90,13 +90,12 @@ export const NotificationsDropdown = () => {
     unreadCount,
     loading,
     markAsRead,
-    markAllAsRead,
+
     deleteNotification,
-    deleteAllNotifications,
     refetch,
   } = useNotifications();
   const [open, setOpen] = useState(false);
-  const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
+
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
     notification: Notification;
@@ -302,32 +301,14 @@ export const NotificationsDropdown = () => {
         <DropdownMenuContent align="end" className="w-80">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="font-semibold text-sm">{t('notifications.title', 'Obavijesti')}</h3>
-            <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs px-2"
-                  onClick={() => markAllAsRead()}
-                >
-                  <CheckCheck className="w-3 h-3 mr-1" />
-                  {t('notifications.markAllRead', 'Označi sve')}
-                </Button>
-              )}
-              {notifications.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => setConfirmDeleteAllOpen(true)}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  {t('notifications.deleteAll', 'Obriši sve')}
-                </Button>
-              )}
-            </div>
+            {unreadCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {unreadCount}
+              </span>
+            )}
           </div>
           <DropdownMenuSeparator />
+
           <ScrollArea className="max-h-80">
             {loading ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
@@ -348,22 +329,16 @@ export const NotificationsDropdown = () => {
                   const messageText = resolveNotificationText(notification.message, messageVars, t);
 
                   return (
-                    <div
+                    <SwipeableNotification
                       key={notification.id}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={titleText || messageText || 'Obavijest'}
-                      className={cn(
-                        'px-3 py-2 hover:bg-muted/50 cursor-pointer flex flex-col gap-2 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-                        !notification.read && 'bg-primary/5'
-                      )}
-                      onClick={() => handleNotificationClick(notification)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleNotificationClick(notification);
-                        }
+                      onDelete={() => {
+                        deleteNotification(notification.id);
                       }}
+                      onClick={() => handleNotificationClick(notification)}
+                      ariaLabel={titleText || messageText || 'Obavijest'}
+                      isUnread={!notification.read}
+                      disableSwipe={isInvitation}
+                      deleteLabel={t('notifications.delete', 'Obriši')}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-0.5">
@@ -388,42 +363,11 @@ export const NotificationsDropdown = () => {
                             })}
                           </p>
                         </div>
-
-                        {!isInvitation && (
-                          <div className="flex items-center gap-1">
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={t('notifications.markRead', 'Označi kao pročitano')}
-                                className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(notification.id);
-                                }}
-                              >
-                                <Check className="w-3 h-3" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t('notifications.delete', 'Obriši')}
-                              className="h-6 w-6 min-h-[44px] min-w-[44px] touch-manipulation text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification(notification.id);
-                                setOpen(false);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    </SwipeableNotification>
                   );
                 })}
+
               </div>
             )}
           </ScrollArea>
@@ -543,36 +487,126 @@ export const NotificationsDropdown = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirm delete all */}
-      <AlertDialog open={confirmDeleteAllOpen} onOpenChange={setConfirmDeleteAllOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('notifications.confirmDeleteAllTitle', 'Obrisati sve obavijesti?')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('notifications.confirmDeleteAllDesc', 'Sve obavijesti će biti trajno uklonjene s popisa. Postojeće pozivnice ostaju aktivne i možeš ih prihvatiti preko linka koji ti je vlasnik poslao.')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                const ok = await deleteAllNotifications();
-                if (ok) {
-                  showSuccess(t('notifications.allDeleted', 'Sve obavijesti obrisane'));
-                  setOpen(false);
-                } else {
-                  showError(t('common.error', 'Greška'));
-                }
-              }}
-            >
-              {t('notifications.deleteAll', 'Obriši sve')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };
+
+// ============================================================
+// SwipeableNotification — swipe-left to delete
+// ============================================================
+
+interface SwipeableNotificationProps {
+  children: React.ReactNode;
+  onDelete: () => void;
+  onClick: () => void;
+  ariaLabel: string;
+  isUnread: boolean;
+  disableSwipe?: boolean;
+  deleteLabel: string;
+}
+
+const SWIPE_THRESHOLD = 80;
+const TAP_THRESHOLD = 8;
+
+const SwipeableNotification = ({
+  children,
+  onDelete,
+  onClick,
+  ariaLabel,
+  isUnread,
+  disableSwipe = false,
+  deleteLabel,
+}: SwipeableNotificationProps) => {
+  const [offset, setOffset] = useState(0);
+  const [removing, setRemoving] = useState(false);
+  const startXRef = useRef<number | null>(null);
+  const movedRef = useRef(false);
+  const draggingRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (disableSwipe) return;
+    startXRef.current = e.clientX;
+    movedRef.current = false;
+    draggingRef.current = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!draggingRef.current || startXRef.current === null) return;
+    const dx = e.clientX - startXRef.current;
+    if (Math.abs(dx) > TAP_THRESHOLD) movedRef.current = true;
+    // Only allow swipe-left (negative offset)
+    setOffset(Math.min(0, dx));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+
+    if (offset <= -SWIPE_THRESHOLD) {
+      setRemoving(true);
+      // animate out then trigger delete
+      window.setTimeout(() => {
+        onDelete();
+      }, 180);
+    } else {
+      setOffset(0);
+    }
+    startXRef.current = null;
+  };
+
+  const handleClick = () => {
+    if (movedRef.current) {
+      movedRef.current = false;
+      return;
+    }
+    onClick();
+  };
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden transition-[max-height,opacity] duration-200',
+        removing ? 'max-h-0 opacity-0' : 'max-h-40 opacity-100',
+      )}
+    >
+      {/* Delete reveal background */}
+      {!disableSwipe && (
+        <div className="absolute inset-0 flex items-center justify-end pr-4 bg-destructive/90 text-destructive-foreground pointer-events-none">
+          <Trash2 className="w-4 h-4 mr-2" />
+          <span className="text-sm">{deleteLabel}</span>
+        </div>
+      )}
+
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={ariaLabel}
+        className={cn(
+          'relative px-3 py-2 bg-popover hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+          isUnread && 'bg-primary/5',
+        )}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: draggingRef.current ? 'none' : 'transform 180ms ease-out',
+          touchAction: 'pan-y',
+        }}
+        onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
