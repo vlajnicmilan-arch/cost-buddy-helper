@@ -1014,6 +1014,7 @@
   },
   "transactions": {
     "title": "Transakcije",
+    "addedBy": "Dodao: {{name}}",
     "swipe": {
       "edit": "Uredi",
       "delete": "Obriši",
