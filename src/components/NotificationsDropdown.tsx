@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase, Download } from 'lucide-react';
+import { Bell, Check, Trash2, UserPlus, X, Loader2, FolderOpen, Wallet, AlertTriangle, Clock, User, Briefcase, Download } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
