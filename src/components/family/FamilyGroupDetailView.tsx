@@ -644,11 +644,22 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">{t('family.member')}</SelectItem>
-                      <SelectItem value="viewer">{t('family.viewer')}</SelectItem>
+                      <SelectItem value="member">
+                        <div className="flex flex-col">
+                          <span>{t('family.member')}</span>
+                          <span className="text-[10px] text-muted-foreground">{t('family.roleDescriptions.member', 'Vidi i dodaje na dijeljene izvore')}</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="viewer">
+                        <div className="flex flex-col">
+                          <span>{t('family.viewer')}</span>
+                          <span className="text-[10px] text-muted-foreground">{t('family.roleDescriptions.viewer', 'Samo pregled, bez unosa')}</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
 
                 <Button 
                   onClick={handleSendInvite} 
