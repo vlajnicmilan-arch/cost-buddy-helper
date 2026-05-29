@@ -2299,7 +2299,12 @@
     "projectNotAvailable": "Projekt nije dostupan za pregled",
     "you": "ti",
     "member": "Član",
-    "viewer": "Preglednik",
+    "viewer": "Promatrač",
+    "roleDescriptions": {
+      "member": "Vidi sve transakcije i može dodavati na dijeljene izvore",
+      "viewer": "Vidi sve transakcije, ne može dodavati ni mijenjati"
+    },
+
     "sharedSavings": "Dijeljeni ciljevi štednje",
     "selectSavingsToAdd": "Odaberi cilj štednje za dodavanje:",
     "allSavingsAdded": "Svi ciljevi štednje su već dodani u grupu.",
