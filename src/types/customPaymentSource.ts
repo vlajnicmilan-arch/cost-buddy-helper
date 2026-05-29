@@ -26,6 +26,9 @@ export interface CustomPaymentSource {
   isOwned?: boolean;
   memberCount?: number; // number of OTHER members (excluding owner)
   ownerName?: string | null; // display name of owner when source is shared with current user
+  myRole?: 'owner' | 'full' | 'limited' | 'viewer' | null; // current user's effective role on this source
+}
+
 }
 
 export const DEFAULT_PAYMENT_ICONS = [
