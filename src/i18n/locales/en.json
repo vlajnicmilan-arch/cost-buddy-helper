@@ -1010,6 +1010,7 @@
   },
   "transactions": {
     "title": "Transactions",
+    "addedBy": "Added by: {{name}}",
     "swipe": {
       "edit": "Edit",
       "delete": "Delete",
