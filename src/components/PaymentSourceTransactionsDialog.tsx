@@ -44,6 +44,8 @@ import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesi
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
 import i18n from '@/i18n';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
