@@ -93,11 +93,10 @@ export const NotificationsDropdown = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    deleteAllNotifications,
     refetch,
   } = useNotifications();
   const [open, setOpen] = useState(false);
-  const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
+
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
     notification: Notification;
