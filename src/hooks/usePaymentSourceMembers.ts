@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
-export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full';
+export type PaymentSourceRole = 'owner' | 'member' | 'limited' | 'full' | 'viewer';
 
 export interface PaymentSourceMember {
   id: string;
@@ -33,7 +33,9 @@ export const PAYMENT_SOURCE_ROLE_LABELS: Record<PaymentSourceRole, string> = {
   member: 'Ograničeni', // legacy, treated same as limited
   limited: 'Ograničeni',
   full: 'Potpuni pristup',
+  viewer: 'Promatrač',
 };
+
 
 export const usePaymentSourceMembers = (paymentSourceId: string | null) => {
   const { t } = useTranslation();
