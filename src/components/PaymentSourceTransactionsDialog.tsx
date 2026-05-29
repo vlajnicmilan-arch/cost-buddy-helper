@@ -44,6 +44,8 @@ import { buildReportFileName, type ConfidentialityLevel } from '@/lib/reportDesi
 import { useReportOwner } from '@/hooks/useReportOwner';
 import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/ConfidentialityPicker';
 import i18n from '@/i18n';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -81,6 +83,8 @@ export const PaymentSourceTransactionsDialog = ({
   onPdfProcessingChange
 }: PaymentSourceTransactionsDialogProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({});
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
@@ -129,6 +133,37 @@ export const PaymentSourceTransactionsDialog = ({
   useEffect(() => {
     onPdfProcessingChange?.(isPdfProcessing);
   }, [isPdfProcessing, onPdfProcessingChange]);
+
+  // Fetch display names of other contributors (owner + members) so we can
+  // show a "Dodao: …" badge on transactions created by someone else.
+  useEffect(() => {
+    if (!user?.id) return;
+    const otherIds = Array.from(
+      new Set(
+        expenses
+          .map(e => e.user_id)
+          .filter((id): id is string => !!id && id !== user.id)
+      )
+    );
+    const missing = otherIds.filter(id => !(id in memberProfiles));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', missing);
+      if (cancelled || error || !data) return;
+      setMemberProfiles(prev => {
+        const next = { ...prev };
+        for (const row of data) {
+          if (row.user_id) next[row.user_id] = row.display_name || '';
+        }
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [expenses, user?.id, memberProfiles]);
 
   useEffect(() => {
     if (!onImportCSV) return;
@@ -1233,6 +1268,11 @@ export const PaymentSourceTransactionsDialog = ({
                                           <p className="text-xs">{t('bankMatch.bankOnly')}</p>
                                         </TooltipContent>
                                       </Tooltip>
+                                    )}
+                                    {expense.user_id && user?.id && expense.user_id !== user.id && memberProfiles[expense.user_id] && (
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                                        {t('transactions.addedBy', { name: memberProfiles[expense.user_id] })}
+                                      </Badge>
                                     )}
                                   </div>
 

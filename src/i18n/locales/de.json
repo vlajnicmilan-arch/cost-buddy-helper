@@ -1010,6 +1010,7 @@
   },
   "transactions": {
     "title": "Transaktionen",
+    "addedBy": "Hinzugefügt von: {{name}}",
     "swipe": {
       "edit": "Bearbeiten",
       "delete": "Löschen",
