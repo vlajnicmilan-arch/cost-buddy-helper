@@ -113,9 +113,10 @@ export const PaymentSourceOptions = ({
           <div className="px-2 py-1.5 mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
             <span>🪙</span>
             <span>{t('business.payment.personalAccountsGroup', 'Osobni računi (pozajmica)')}</span>
-          </div>
-          {filteredLoan.map((source) => (
-            <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`}>
+          {filteredLoan.map((source) => {
+            const isViewer = source.myRole === 'viewer';
+            return (
+            <SelectItem key={source.id} value={`${customValuePrefix}${source.id}`} disabled={isViewer}>
               <div className="flex items-center gap-2">
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
@@ -130,6 +131,11 @@ export const PaymentSourceOptions = ({
                 >
                   {t('transactions.ownerLoanBadge', 'Pozajmica')}
                 </Badge>
+                {isViewer && (
+                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                    {t('paymentSources.viewerOnly', 'samo pregled')}
+                  </Badge>
+                )}
                 {showBalance && (
                   <span className="text-xs text-muted-foreground ml-auto">
                     {(CURRENCIES.find((c) => c.code === source.currency)?.symbol || primaryCurrency.symbol)}
@@ -138,7 +144,9 @@ export const PaymentSourceOptions = ({
                 )}
               </div>
             </SelectItem>
-          ))}
+            );
+          })}
+
         </>
       )}
 
