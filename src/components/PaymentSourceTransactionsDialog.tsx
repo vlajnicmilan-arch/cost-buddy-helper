@@ -1269,6 +1269,11 @@ export const PaymentSourceTransactionsDialog = ({
                                         </TooltipContent>
                                       </Tooltip>
                                     )}
+                                    {expense.user_id && user?.id && expense.user_id !== user.id && memberProfiles[expense.user_id] && (
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                                        {t('transactions.addedBy', { name: memberProfiles[expense.user_id] })}
+                                      </Badge>
+                                    )}
                                   </div>
 
                                   {(() => {
