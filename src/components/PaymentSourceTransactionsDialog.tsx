@@ -83,6 +83,8 @@ export const PaymentSourceTransactionsDialog = ({
   onPdfProcessingChange
 }: PaymentSourceTransactionsDialogProps) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, string>>({});
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
