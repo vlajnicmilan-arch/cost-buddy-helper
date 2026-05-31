@@ -1,48 +1,44 @@
+## Problem
 
-## Što mijenjamo
+Na screenshotu se vidi crvena pozadina i "Obriši" gumb iako korisnik nije swipeao karticu. Reveal sloj (`bg-destructive/90` + Trash2 + "Obriši") namjerno stoji `absolute inset-0` iza foreground kartice i smije biti vidljiv tek kad foreground translateX makne karticu ulijevo.
 
-Dvije neovisne stvari u istom potezu:
+Bug je u `SwipeableNotification` (`src/components/NotificationsDropdown.tsx`, ~588):
 
-### 1. UX dropdowna obavijesti (`NotificationsDropdown.tsx`)
-- Maknuti gumbe **"Označi sve"** i **"Obriši sve"** iz headera dropdowna (preglednije, manje "admin chrome").
-- Maknuti per-item ikone ✓ i 🗑 koje sada vise s desne strane (zauzimaju širinu, izgledaju kao desktop UI).
-- Dodati **swipe-lijevo → obriši** po obavijesti (native osjećaj, kao Mail/Gmail):
-  - Implementacija pure CSS + `pointerdown/move/up` na samoj kartici (bez nove biblioteke; uskladiti s postojećim `clickableProps()` patternom za a11y).
-  - Threshold ~80px → odmah brisanje + `StatusFeedback` "Obrisano" (1200ms, bez Undo jer obavijesti nisu kritične).
-  - Tap (bez povlačenja) i dalje otvara obavijest kao i sad.
-  - Klikom na obavijest ona se automatski označava kao pročitana (već postoji) → potreba za ručnim ✓ nestaje.
-- Header dropdowna ostaje samo s naslovom **"Obavijesti"** i (ako ima nepročitanih) malim brojem.
+```tsx
+className={cn(
+  'relative px-3 py-2 bg-popover hover:bg-muted/50 cursor-pointer ...',
+  isUnread && 'bg-primary/5',
+)}
+```
 
-### 2. Duplikati budget obavijesti
-Na screenshotu se vidi za isti budžet **"Put u Osijek po radionu"**:
-- `budget_alert` (101% prekoračen) ← iz edge funkcije `check-budget-alerts` (thresholdi 80/90/100, jedna obavijest po crossanom thresholdu)
-- `budget_burn` (95% pri kraju) ← iz `useIssueReconciler` + `detectBudgetBurn` (threshold 85%, active-issue lifecycle)
+`tailwind-merge` (preko `cn`) zadržava samo zadnju `bg-*` klasu, pa za nepročitanu obavijest `bg-primary/5` (teal s 5% alpha) potpuno zamijeni `bg-popover`. Foreground postaje gotovo proziran → crveni reveal sloj curi kroz njega, zajedno s ikonom i tekstom "Obriši".
 
-Dva neovisna sustava pišu u istu `notifications` tablicu za istu pojavu → korisnik vidi 2 stavke.
+Pročitane obavijesti rade ispravno (zadržavaju `bg-popover`).
 
-Rješenje: **`useIssueReconciler` postaje jedini izvor istine za budget upozorenja u zvonu.** Edge funkcija `check-budget-alerts` više ne kreira `notifications` redak — samo šalje push (jer push ne ide kroz reconciler) i to **samo za threshold 100%** (manje šuma, push se rezervira za kritično). Reconciler i dalje radi 85%/100% s auto-resolve kad potrošnja padne.
+## Fix
 
-Posljedice:
-- Jedna budget obavijest po budžetu u zvonu, s auto-resolvom (nestaje sama kad spent padne ispod 85%).
-- Push i dalje pršti samo na prekoračenju (100%).
-- 80%/90% in-app obavijesti nestaju — pokrivene su `budget_burn` (85%) statusom.
+Razdvojiti solid base bg od unread "highlight" overlaya tako da `bg-popover` uvijek ostane primijenjen:
 
-## Tehnički detalji
+```tsx
+className={cn(
+  'relative px-3 py-2 bg-popover hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+)}
+```
 
-**Files:**
-- `src/components/NotificationsDropdown.tsx` — ukloniti header bulk buttons + per-item action buttons; dodati swipe gesture handler na karticu obavijesti.
-- `supabase/functions/check-budget-alerts/index.ts` — ukloniti `supabase.from("notifications").insert(...)` blok; zadržati push samo za `targetThreshold === 100`; zadržati `alerts[]` u responseu (klijent ga ne koristi za UI nego za feedback).
-- `src/i18n/locales/{hr,en,de}.json` — ukloniti ključeve `notifications.markAllRead` i `notifications.deleteAll` ako se nigdje drugdje ne koriste (provjeriti `rg`).
-- Memorija: kratki update u `mem://index.md` ("Budget alerts unified" — reconciler je jedini izvor in-app, push samo na 100%).
+A za unread indikator dodati zaseban sloj unutar (npr. `before:absolute before:inset-0 before:bg-primary/5 before:pointer-events-none`) ili jednostavnije — lijevi accent border:
 
-**Bez DB migracije.** `useNotifications.deleteAllNotifications` i `markAllAsRead` ostaju u hooku (mogu zatrebati drugdje), samo se uklanja UI ulaz.
+```tsx
+isUnread && 'before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary'
+```
 
-**Swipe ponašanje:**
-- `touchAction: 'pan-y'` na karticama da se ne sukobljava sa scrollom dropdowna.
-- Tijekom povlačenja ikona 🗑 + crveni background ispod (sliding reveal).
-- Otkazivanje povlačenjem natrag < 80px → snap nazad.
+Time foreground ostaje solid `bg-popover`, a unread se i dalje jasno razlikuje. Reveal sloj se vidi isključivo tokom swipea.
 
-## Što NE radimo (sad)
-- Bez Undo toasta (obavijesti nisu kritični podatak, ako zatrebaju vidi se cijela povijest u sustavu).
-- Bez izmjene `monitor-app-health` / drugih edge funkcija — fokus je samo na duple budget alerte koji su vidljivi na screenshotu.
-- Bez batch select moda (swipe je dovoljan; ako se pojavi potreba za 50+ obavijesti, doradit ćemo).
+## Files
+
+- `src/components/NotificationsDropdown.tsx` — samo `SwipeableNotification` className (1 mjesto, ~6 linija).
+
+## Što NE radimo
+
+- Bez izmjena swipe logike, thresholda, animacija.
+- Bez izmjena edge funkcije ili DB.
+- Bez i18n promjena.

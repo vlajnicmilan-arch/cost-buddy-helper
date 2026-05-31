@@ -585,7 +585,7 @@ const SwipeableNotification = ({
         aria-label={ariaLabel}
         className={cn(
           'relative px-3 py-2 bg-popover hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-          isUnread && 'bg-primary/5',
+          isUnread && 'before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-primary before:pointer-events-none',
         )}
         style={{
           transform: `translateX(${offset}px)`,
