@@ -81,6 +81,10 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
+
+    const quotaResp = await checkAiQuota(supabase, userId, "parse-pdf-statement");
+    if (quotaResp) return quotaResp;
+
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
 
