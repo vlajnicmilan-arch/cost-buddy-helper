@@ -2624,6 +2624,20 @@
         "grandparent": "Grandparent",
         "other": "Other"
       }
+    },
+    "reactions": {
+      "add": "Add reaction"
+    },
+    "comments": {
+      "empty": "No comments yet.",
+      "placeholder": "Comment (max 280)",
+      "send": "Send"
+    },
+    "notifications": {
+      "overrideLabel": "Push: change to my split",
+      "overrideDesc": "Notify me when someone adjusts my share of a shared transaction.",
+      "reactionsLabel": "Push: reactions & comments",
+      "reactionsDesc": "Notify me when someone reacts or comments on my transaction."
     }
   },
   "business": {

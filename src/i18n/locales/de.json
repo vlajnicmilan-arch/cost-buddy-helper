@@ -2492,6 +2492,20 @@
         "grandparent": "Großeltern",
         "other": "Sonstige"
       }
+    },
+    "reactions": {
+      "add": "Reaktion hinzufügen"
+    },
+    "comments": {
+      "empty": "Noch keine Kommentare.",
+      "placeholder": "Kommentar (max. 280)",
+      "send": "Senden"
+    },
+    "notifications": {
+      "overrideLabel": "Push: Änderung meines Anteils",
+      "overrideDesc": "Mich benachrichtigen, wenn jemand meinen Anteil an einer geteilten Transaktion anpasst.",
+      "reactionsLabel": "Push: Reaktionen & Kommentare",
+      "reactionsDesc": "Mich benachrichtigen, wenn jemand auf meine Transaktion reagiert oder kommentiert."
     }
   },
   "business": {
