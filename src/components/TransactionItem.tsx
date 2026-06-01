@@ -397,6 +397,22 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </span>
               </>
             )}
+            {(expense as any).is_private && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title={t('family.split.privacy.label')}>
+                  <EyeOff className="w-2.5 h-2.5" />
+                </span>
+              </>
+            )}
+            {(expense as any).split_overrides && Object.keys((expense as any).split_overrides).length > 0 && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary" title={t('family.split.override.badge')}>
+                  <SplitSquareVertical className="w-2.5 h-2.5" />
+                </span>
+              </>
+            )}
           </div>
 
           {showAttribution && expenseUserId && (
