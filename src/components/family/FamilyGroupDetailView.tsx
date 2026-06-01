@@ -584,13 +584,15 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   );
 
   const renderTeamTab = () => (
-    <section>
-      <div className="flex items-center justify-between mb-3">
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
         <h2 className="font-semibold flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           {t('family.membersCount')} ({members.length})
         </h2>
       </div>
+
+      <FamilyMemberConsentCard groupId={group.id} showIncomeFields={!!showIncomeFields} />
 
       <div className="space-y-2">
         {members.map((member) => (
