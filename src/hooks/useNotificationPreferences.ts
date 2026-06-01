@@ -144,5 +144,24 @@ export const useNotificationPreferences = () => {
     }
   }, [user, prefs]);
 
-  return { prefs, loading, setCategory, setWeekendEnabled, refetch: fetchPrefs };
+  const setFlag = useCallback(
+    async (col: keyof NotificationPreferences, enabled: boolean) => {
+      if (!user) return;
+      setPrefs((p) => ({ ...p, [col]: enabled }));
+      try {
+        await (supabase as any)
+          .from('notification_preferences')
+          .upsert(
+            { user_id: user.id, ...prefs, [col]: enabled },
+            { onConflict: 'user_id' },
+          );
+      } catch (e) {
+        console.error('[notif-prefs] flag update failed:', e);
+        setPrefs((p) => ({ ...p, [col]: !enabled }));
+      }
+    },
+    [user, prefs],
+  );
+
+  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, refetch: fetchPrefs };
 };
