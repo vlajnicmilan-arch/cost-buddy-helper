@@ -103,6 +103,10 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
+
+    const quotaResp = await checkAiQuota(supabase, userId, "parse-receipt");
+    if (quotaResp) return quotaResp;
+
     
     let body;
     try {
