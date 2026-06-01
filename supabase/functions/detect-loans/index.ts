@@ -20,7 +20,17 @@ serve(async (req) => {
   }
 
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof Response) return auth;
+
     const { transactions } = await req.json();
+
+    // Quota check (only if there's actually work to do)
+    if (transactions && transactions.length > 0) {
+      const quota = await checkAiQuota(auth.supabase, auth.userId, "detect-loans");
+      if (quota) return quota;
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
