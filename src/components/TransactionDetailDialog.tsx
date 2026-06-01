@@ -27,6 +27,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useNativeShare } from '@/hooks/useNativeShare';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { FamilySplitControls } from './family/FamilySplitControls';
 
 
 interface TransactionDetailDialogProps {
