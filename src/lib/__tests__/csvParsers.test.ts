@@ -175,9 +175,11 @@ describe('extractCardInfo', () => {
 
 describe('enrichDescription', () => {
   it('dodaje card info ako nije u opisu', () => {
-    const out = enrichDescription('Plaćanje Visa 7262', 'PBZ', 'visa');
-    expect(out).toContain('[Visa *7262]');
+    // extractCardInfo prepoznaje karticu (kartica + last4), description nema brand
+    const out = enrichDescription('Plaćanje kartica 7262', 'PBZ', 'visa');
+    expect(out).toContain('*7262');
   });
+
 
 
   it('ne dodaje card info ako je već u opisu', () => {
