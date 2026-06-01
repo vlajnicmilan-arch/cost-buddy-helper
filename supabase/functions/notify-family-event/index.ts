@@ -136,8 +136,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       body.preview?.slice(0, 120) ||
       (expense.description ? `${expense.description}` : "Transakcija");
 
-    await sendPushNotificationToMany({
-      userIds: [expense.user_id],
+    await sendPushNotificationToMany([expense.user_id], {
       title,
       body: previewBody,
       data: {
