@@ -27,6 +27,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useNativeShare } from '@/hooks/useNativeShare';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { FamilySplitControls } from './family/FamilySplitControls';
 
 
 interface TransactionDetailDialogProps {
@@ -403,6 +404,11 @@ export const TransactionDetailDialog = ({
                 </Badge>
               )}
             </div>
+          )}
+
+          {/* Family split controls — only rendered when expense lives on a shared family payment source */}
+          {expense.type === 'expense' && expense.user_id === user?.id && (
+            <FamilySplitControls expense={expense} />
           )}
 
           {/* Payment Source — for transfer: show From → To, otherwise single source */}
