@@ -94,13 +94,12 @@ describe('buildHub3DeepLink', () => {
   });
 
   it('truncates description to 35 chars', () => {
-    const desc = 'a'.repeat(100);
+    const desc = 'z'.repeat(100);
     const link = buildHub3DeepLink({
       amount: 1, creditorName: 'X', creditorIban: 'HR1', description: desc,
     });
-    const payload = decodeURIComponent(link);
-    // Should contain exactly 35 'a' chars
-    const aRun = payload.match(/a+/)![0];
-    expect(aRun.length).toBe(35);
+    const payload = decodeURIComponent(link.replace('hub3://?payload=', ''));
+    const zRun = payload.match(/z+/)![0];
+    expect(zRun.length).toBe(35);
   });
 });
