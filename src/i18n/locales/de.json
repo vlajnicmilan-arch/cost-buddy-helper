@@ -2506,6 +2506,9 @@
       "overrideDesc": "Mich benachrichtigen, wenn jemand meinen Anteil an einer geteilten Transaktion anpasst.",
       "reactionsLabel": "Push: Reaktionen & Kommentare",
       "reactionsDesc": "Mich benachrichtigen, wenn jemand auf meine Transaktion reagiert oder kommentiert."
+    },
+    "transactionSocial": {
+      "title": "Familie"
     }
   },
   "business": {
