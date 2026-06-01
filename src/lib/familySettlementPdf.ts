@@ -89,7 +89,7 @@ export async function generateFamilySettlementPdf(
   input: FamilySettlementPdfInput,
 ): Promise<boolean> {
   const lang = input.language || (i18n.language as any) || 'hr';
-  const { jsPDF } = await loadJsPdf();
+  const { jsPDF, autoTable } = await loadJsPdf();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   applyBrandFont(doc);
 
