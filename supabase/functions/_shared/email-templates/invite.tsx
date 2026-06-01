@@ -3,6 +3,7 @@
 import * as React from 'npm:react@18.3.1'
 
 import {
+import { getLogoUrl } from '../brandAssets.ts'
   Body,
   Button,
   Container,
@@ -21,8 +22,7 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL = 'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/email-assets/logo.png'
-
+const LOGO_URL = getLogoUrl()
 export const InviteEmail = ({
   siteName,
   siteUrl,
