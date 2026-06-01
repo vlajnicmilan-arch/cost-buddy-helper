@@ -58,9 +58,8 @@ Deno.serve(async (req) => {
     });
     if (listError) throw listError;
 
-    // Get total count
-    const { data: { users: allUsersForCount } } = await supabase.auth.admin.listUsers({ perPage: 1 });
-    // Supabase returns total in the response metadata, but we approximate via stats
+    // (removed unused allUsersForCount dead query)
+
 
 
     // Get profiles
@@ -110,10 +109,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get stats
+    // Get stats — counts use { count: "exact" } so they're not affected by the
+    // 1000-row default limit. Active users come from a SECURITY DEFINER RPC that
+    // does count(DISTINCT user_id) server-side, also bypassing the 1000-row limit.
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const { count: totalExpenses } = await supabase.from("expenses").select("*", { count: "exact", head: true });
     const { count: expenses7d } = await supabase.from("expenses").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo);
@@ -129,18 +129,21 @@ Deno.serve(async (req) => {
     referrals?.forEach((r: any) => {
       referralCountMap.set(r.referrer_id, (referralCountMap.get(r.referrer_id) || 0) + 1);
     });
-    // Active users (logged in within 7 days)
-    const { data: activeLogins } = await supabase
-      .from("user_login_logs")
-      .select("user_id")
-      .gte("logged_in_at", sevenDaysAgo);
-    const activeUsers7d = new Set(activeLogins?.map((l: any) => l.user_id)).size;
 
-    const { data: activeLogins30 } = await supabase
-      .from("user_login_logs")
-      .select("user_id")
-      .gte("logged_in_at", thirtyDaysAgo);
-    const activeUsers30d = new Set(activeLogins30?.map((l: any) => l.user_id)).size;
+    // Accurate active-user counts via server-side DISTINCT (no 1000-row limit)
+    let activeUsers7d = 0;
+    let activeUsers30d = 0;
+    let totalUsersCount: number | null = null;
+    {
+      const { data: statsData, error: statsErr } = await supabase.rpc("get_admin_user_stats");
+      if (statsErr) {
+        console.error("[LIST-USERS] get_admin_user_stats failed:", statsErr);
+      } else if (statsData) {
+        activeUsers7d = (statsData as any).active_users_7d ?? 0;
+        activeUsers30d = (statsData as any).active_users_30d ?? 0;
+        totalUsersCount = (statsData as any).total_users ?? null;
+      }
+    }
 
     const result = {
       users: users.map((u: any) => {
@@ -168,7 +171,7 @@ Deno.serve(async (req) => {
         hasMore: users.length === perPage,
       },
       stats: {
-        total_users: users.length,
+        total_users: totalUsersCount ?? users.length,
         active_users_7d: activeUsers7d,
         active_users_30d: activeUsers30d,
         total_expenses: totalExpenses || 0,

@@ -360,52 +360,41 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
     }
   }, [user, isLocalMode, t, fetchBudgets, hasAccess, budgets.length]);
 
-  // Update budget
+  // Update budget — atomic via update_budget_with_categories RPC.
+  // Previously three separate client calls (UPDATE plan → DELETE cats → INSERT cats)
+  // could leave the budget with no categories if the final INSERT failed.
   const updateBudget = useCallback(async (budgetData: BudgetWithStats) => {
     if (isLocalMode || !user) return;
 
     try {
-      const { error: budgetError } = await supabase
-        .from('budget_plans')
-        .update({
-          name: budgetData.name,
-          description: budgetData.description,
-          icon: budgetData.icon,
-          color: budgetData.color,
-          period_type: budgetData.period_type,
-          total_amount: budgetData.total_amount,
-          start_date: budgetData.start_date,
-          end_date: budgetData.end_date,
-          is_active: budgetData.is_active,
-          is_recurring: budgetData.is_recurring ?? true,
-          project_id: budgetData.project_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', budgetData.id);
+      const patch = {
+        name: budgetData.name,
+        description: budgetData.description,
+        icon: budgetData.icon,
+        color: budgetData.color,
+        period_type: budgetData.period_type,
+        total_amount: budgetData.total_amount,
+        start_date: budgetData.start_date,
+        end_date: budgetData.end_date ?? '',
+        is_active: budgetData.is_active,
+        is_recurring: budgetData.is_recurring ?? true,
+        project_id: budgetData.project_id ?? '',
+      };
 
-      if (budgetError) throw budgetError;
+      const categories = (budgetData.categories ?? []).map(cat => ({
+        category: cat.category,
+        limit_amount: cat.limit_amount,
+        icon: cat.icon,
+        color: cat.color,
+      }));
 
-      // Update categories - delete old and insert new
-      await supabase
-        .from('budget_categories')
-        .delete()
-        .eq('budget_id', budgetData.id);
+      const { error: rpcError } = await supabase.rpc('update_budget_with_categories', {
+        p_budget_id: budgetData.id,
+        p_patch: patch as any,
+        p_categories: categories as any,
+      });
 
-      if (budgetData.categories && budgetData.categories.length > 0) {
-        const categoryInserts = budgetData.categories.map(cat => ({
-          budget_id: budgetData.id,
-          category: cat.category,
-          limit_amount: cat.limit_amount,
-          icon: cat.icon,
-          color: cat.color,
-        }));
-
-        const { error: catError } = await supabase
-          .from('budget_categories')
-          .insert(categoryInserts);
-
-        if (catError) throw catError;
-      }
+      if (rpcError) throw rpcError;
 
       showSuccess(t('budget.updated', 'Budžet ažuriran'));
       await fetchBudgets();

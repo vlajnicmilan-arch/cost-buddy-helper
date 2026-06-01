@@ -60,14 +60,20 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find user by email
-    console.log("[SEND-MEMBER-INVITATION] Looking up user by email...");
-    const { data: usersData, error: listUsersError } = await adminClient.auth.admin.listUsers();
-    if (listUsersError) {
-      console.error("[SEND-MEMBER-INVITATION] listUsers error:", listUsersError);
+    // Find user by email via SECURITY DEFINER RPC (avoids 50-row listUsers pagination bug)
+    console.log("[SEND-MEMBER-INVITATION] Looking up user by email via RPC...");
+    const { data: invitedUserId, error: lookupError } = await adminClient
+      .rpc("find_user_by_email", { p_email: invitedEmail.toLowerCase() });
+    if (lookupError) {
+      console.error("[SEND-MEMBER-INVITATION] find_user_by_email error:", lookupError);
     }
-    console.log("[SEND-MEMBER-INVITATION] Found", usersData?.users?.length || 0, "users");
-    const invitedUser = usersData?.users.find(u => u.email?.toLowerCase() === invitedEmail.toLowerCase());
+    let invitedUser: { id: string; email: string } | null = null;
+    if (invitedUserId) {
+      const { data: userRow } = await adminClient.auth.admin.getUserById(invitedUserId);
+      if (userRow?.user) {
+        invitedUser = { id: userRow.user.id, email: userRow.user.email || invitedEmail };
+      }
+    }
 
     const isNewUser = !invitedUser;
 
