@@ -53,17 +53,13 @@ serve(async (req) => {
     // SECURITY: Stripe success/cancel URLs must come from a fixed allowlist, not
     // a client-controlled Origin header (otherwise a forged request could redirect
     // a logged-in user back through an attacker-controlled domain).
-    const ALLOWED_ORIGINS = new Set([
-      "https://vmbalance.com",
-      "https://www.vmbalance.com",
-      "https://cost-buddy-helper.lovable.app",
-      "https://id-preview--8a8fc612-0ac2-4902-a82e-29b5b800bc32.lovable.app",
-    ]);
     const requestedOrigin = req.headers.get("origin") || "";
-    const origin = ALLOWED_ORIGINS.has(requestedOrigin)
-      ? requestedOrigin
-      : "https://vmbalance.com";
-    logStep("Resolved checkout origin", { requestedOrigin, origin, allowed: ALLOWED_ORIGINS.has(requestedOrigin) });
+    const origin = resolveCheckoutOrigin(requestedOrigin);
+    logStep("Resolved checkout origin", {
+      requestedOrigin,
+      origin,
+      allowed: ALLOWED_CHECKOUT_ORIGINS.has(requestedOrigin),
+    });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
