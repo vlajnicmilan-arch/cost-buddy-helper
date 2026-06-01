@@ -4,10 +4,10 @@ import {
   Body, Container, Head, Heading, Html, Img, Preview, Text, Button, Link,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { getLogoUrl } from '../brandAssets.ts'
 
 const SITE_NAME = 'V&M Balance'
-const LOGO_URL = 'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/email-assets/logo.png'
-
+const LOGO_URL = getLogoUrl()
 interface ProjectWorkerInvitationProps {
   inviterName?: string
   projectName?: string

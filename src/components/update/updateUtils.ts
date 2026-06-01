@@ -11,8 +11,12 @@ export const FALLBACK_ORIGINS = [
 // Stabilan manifest u Storage-u — ažurira ga CI odmah nakon APK uploada,
 // neovisno o tome je li frontend već published. Koristimo ga kao PRIMARNI
 // izvor da update notifikacija ne ovisi o ručnom Publish kliku.
-const STORAGE_MANIFEST_URL =
-  'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/version.json';
+// URL se gradi iz VITE_SUPABASE_URL kako project ref ne bi bio hardkodiran.
+const SUPABASE_URL_FALLBACK = 'https://fzalxjretvtvokiotvkf.supabase.co';
+const SUPABASE_BASE = (
+  import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL_FALLBACK
+).replace(/\/$/, '');
+const STORAGE_MANIFEST_URL = `${SUPABASE_BASE}/storage/v1/object/public/public-assets/releases/version.json`;
 
 export const getIsNativeApp = () => {
   if (typeof window === 'undefined') return false;
