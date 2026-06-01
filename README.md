@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# V&M Balance
 
-## Project info
+Mobile-first PWA + Capacitor Android app za osobne i poslovne financije: transakcije, budžeti, projekti, AI uvidi, dijeljeni novčanici i open banking sync.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Live:** https://vmbalance.com  
+**Lovable projekt:** https://lovable.dev/projects/8a8fc612-0ac2-4902-a82e-29b5b800bc32
 
-## How can I edit this code?
+## Stack
 
-There are several ways of editing your application.
+- React 18 + TypeScript 5 + Vite 5
+- Tailwind CSS v3 + shadcn/ui (Lucide ikone)
+- TanStack Query + React Context
+- Lovable Cloud (Supabase: Postgres + RLS + Edge Functions + Storage + Auth)
+- Lovable AI Gateway (Gemini Flash Lite / Pro)
+- Capacitor 8 (Android): Camera, Haptics, StatusBar, Browser, Filesystem, FCM v1 push
+- i18n: hr (primary), en, de — sve UI tekstove ide kroz `t()`
+- Stripe (BYOK trenutno) za pretplate
 
-**Use Lovable**
+## Razvoj
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Preduvjeti: Node 18+ i npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install --legacy-peer-deps
+npm run dev        # Vite dev server
+npm test           # Vitest (pure helperi i hookovi)
 ```
 
-**Edit a file directly in GitHub**
+### Android (Capacitor)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run build
+npx cap sync android
+npx cap open android
+```
 
-**Use GitHub Codespaces**
+Svaka native promjena zahtijeva bump `public/version.json` + `android/app/build.gradle` u istom commitu (update checker se oslanja na to).
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Backend (Lovable Cloud)
 
-## What technologies are used for this project?
+Cijeli backend je u `supabase/`:
+- `migrations/` — SQL migracije (RLS, RPC, triggeri, cron jobovi)
+- `functions/` — Deno edge funkcije, dijeljeni kod u `functions/_shared/`
+- `config.toml` — projektne i per-funkcijske postavke
 
-This project is built with:
+Edge funkcije se deployaju automatski. Tajne se postavljaju kroz Lovable Cloud UI (nikad u `.env`).
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Sigurnost
 
-## How can I deploy this project?
+- RLS uključen na svim public tablicama
+- Uloge isključivo u `user_roles` tablici + `has_role()` security definer funkcija
+- Svaka `CREATE TABLE public.*` migracija MORA imati eksplicitne `GRANT`ove
+- Soft delete (`deleted_at`) s 30d retention + cron purge
+- Account deletion GDPR flow (30d grace period)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Konvencije
 
-## Can I connect a custom domain to my Lovable project?
+Detaljne konvencije, dizajn-sistem, i18n pravila i bug-fix strategija su u [`PROJECT_KNOWLEDGE.md`](./PROJECT_KNOWLEDGE.md).
 
-Yes, you can!
+Kratko:
+- camelCase varijable, PascalCase komponente
+- Teal primarna boja HSL `172 66% 40%`, mobile-first 384px breakpoint
+- Min touch target 44px, BottomNav obavezan
+- Bez hardkodiranih UI stringova, bez patcha s guardovima/timeoutima
+- Bug u pure logici → ekstrahiraj helper → napiši vitest
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deploy
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Lovable → Share → Publish. Custom domena kroz Project Settings → Domains.
