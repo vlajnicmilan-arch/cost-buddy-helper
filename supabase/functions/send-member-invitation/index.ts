@@ -50,9 +50,8 @@ serve(async (req) => {
       );
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(invitedEmail)) {
+    // Basic email validation (shared with classifyInvitationOutcome helper)
+    if (!isValidInvitationEmail(invitedEmail)) {
       return new Response(
         JSON.stringify({ error: "invalid_email", message: "Neispravna email adresa" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
