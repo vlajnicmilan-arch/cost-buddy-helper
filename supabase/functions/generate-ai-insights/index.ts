@@ -64,6 +64,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    const quotaResp = await checkAiQuota(userClient, user.id, "generate-ai-insights");
+    if (quotaResp) return quotaResp;
+
+
     // Optional: force regenerate
     let force = false;
     try { const body = await req.json(); force = !!body?.force; } catch { /* no body */ }
