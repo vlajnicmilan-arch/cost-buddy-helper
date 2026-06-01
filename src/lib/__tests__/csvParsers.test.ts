@@ -175,9 +175,10 @@ describe('extractCardInfo', () => {
 
 describe('enrichDescription', () => {
   it('dodaje card info ako nije u opisu', () => {
-    const out = enrichDescription('Plaćanje *** 7262', 'PBZ', 'visa');
+    const out = enrichDescription('Plaćanje Visa 7262', 'PBZ', 'visa');
     expect(out).toContain('[Visa *7262]');
   });
+
 
   it('ne dodaje card info ako je već u opisu', () => {
     const out = enrichDescription('Visa *** 7262 Konzum', 'PBZ', 'visa');
