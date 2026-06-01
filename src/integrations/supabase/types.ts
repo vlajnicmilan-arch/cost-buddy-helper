@@ -4962,6 +4962,60 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_split_override: {
+        Args: { p_expense_id: string; p_overrides: Json }
+        Returns: {
+          ai_extracted: boolean | null
+          amount: number
+          bank_account_id: string | null
+          bank_match_status: string
+          bank_transaction_id: string | null
+          budget_id: string | null
+          business_profile_id: string | null
+          cash_register_id: string | null
+          category: string
+          collaborator_id: string | null
+          created_at: string
+          currency: string | null
+          date: string
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string
+          expense_nature: string | null
+          id: string
+          import_batch_id: string | null
+          income_source_id: string | null
+          invoice_id: string | null
+          is_advance: boolean
+          is_private: boolean
+          linked_advance_ids: string[]
+          location_coords: string | null
+          location_name: string | null
+          merchant_name: string | null
+          milestone_id: string | null
+          note: string | null
+          payment_source: string | null
+          payment_source_card_id: string | null
+          possible_duplicate_of: string | null
+          project_id: string | null
+          receipt_url: string | null
+          split_overrides: Json | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          submitted_by: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          vat_amount: number | null
+          vat_rate: number | null
+          work_type: Database["public"]["Enums"]["expense_work_type"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "expenses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_write_payment_source: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
@@ -4974,6 +5028,27 @@ export type Database = {
       cleanup_old_monitor_alerts: { Args: never; Returns: undefined }
       cleanup_old_push_logs: { Args: never; Returns: undefined }
       cleanup_stale_push_tokens: { Args: never; Returns: undefined }
+      compute_family_income_ratio: {
+        Args: { p_group_id: string }
+        Returns: {
+          auto_3m_income: number
+          consent: boolean
+          declared_currency: string
+          declared_income: number
+          effective_income: number
+          monthly_contribution: number
+          ratio: number
+          user_id: string
+        }[]
+      }
+      compute_family_settlements: {
+        Args: {
+          p_group_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: undefined
+      }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }
         Returns: {
@@ -5120,6 +5195,43 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_settlement: {
+        Args: {
+          p_note?: string
+          p_payment_expense_id?: string
+          p_settlement_id: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          creditor_user_id: string
+          currency: string
+          debtor_user_id: string
+          group_id: string
+          id: string
+          note: string | null
+          paid_at: string | null
+          payment_expense_id: string | null
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "family_settlements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      refresh_family_split_snapshot: {
+        Args: {
+          p_group_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: undefined
       }
       resolve_stale_issues: {
         Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
