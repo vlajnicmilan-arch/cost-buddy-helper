@@ -17,9 +17,11 @@ export function FamilyCommentsInline({ groupId, expenseId }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { rows, add, remove, maxLength } = useFamilyComments({ groupId, expenseId });
-  const { getDisplayName } = useUserProfiles(
+  const profiles = useUserProfiles(
     Array.from(new Set(rows.map((r) => r.author_user_id))),
   );
+  const getDisplayName = (uid: string) =>
+    profiles.get(uid)?.display_name || t('family.unknownMember', 'Član');
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
