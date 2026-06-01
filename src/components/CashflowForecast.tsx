@@ -81,11 +81,25 @@ export const CashflowForecast = () => {
   const { formatAmount, currency } = useCurrency();
   const { recurringTransactions } = useRecurringTransactions();
   const { plans } = useInstallments();
+  const { settlements: familyObligations } = useFamilyForecastObligations();
 
   const forecastData = useMemo(() => {
     const today = startOfDay(new Date());
     const weeks: ForecastWeek[] = [];
     let cumulative = 0;
+
+    const weekRanges = Array.from({ length: 8 }, (_, w) => {
+      const ws = addWeeks(today, w);
+      return { start: ws, end: addDays(ws, 6) };
+    });
+    const familyPerWeek = computeFamilyOutflowsPerWeek(
+      familyObligations,
+      // current user id is encoded in `debtor_user_id` filter on the hook already
+      familyObligations[0]?.debtor_user_id || '',
+      weekRanges,
+    );
+
+
 
     for (let w = 0; w < 8; w++) {
       const weekStart = addWeeks(today, w);
