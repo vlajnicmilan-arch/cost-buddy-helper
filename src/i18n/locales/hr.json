@@ -2514,6 +2514,9 @@
       "overrideDesc": "Obavijesti me kad netko prilagodi moj udio u zajedničkoj transakciji.",
       "reactionsLabel": "Push: reakcije i komentari",
       "reactionsDesc": "Obavijesti me kad netko reagira ili komentira moju transakciju."
+    },
+    "transactionSocial": {
+      "title": "Obitelj"
     }
   },
   "business": {

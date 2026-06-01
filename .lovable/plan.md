@@ -1,108 +1,93 @@
+## Cilj
 
-# Family Split — Faza 3 (koraci 1–6)
+Korisnik kad otvori detalje transakcije koja pripada **family shared izvoru plaćanja** vidi:
+- **Reakcije** (👍 ❤️ ⚠️ …) – jedan red, klik = toggle
+- **Komentare** (kratki, max 280 znakova) – lista + input
 
-Cilj: dovršiti family modul s pametnim prijedlozima, izvještajima, cashflow integracijom, relationship tagovima, reakcijama i push obavijestima za override.
-
-Izvest ćemo **sekvencijalno** (svaki korak = zaseban deliverable + commit). Ne paralelno, jer su koraci 3 i 5 ovisni o stabilnoj snapshot bazi iz Faze 2.
-
----
-
-## Korak 1 — Smart prompting (mode suggestion) ✅ DOVRŠENO
-
-**Cilj:** kad grupa ima ≥3 mjeseca podataka i `split_mode='equal'`, sustav analizira stvarno trošenje i predlaže `proportional_income` ako bi to bilo "pravednije".
-
-- Pure helper `src/lib/familySplitSuggestion.ts` — `analyzeFairness()` + `gini()`
-- Hook `src/hooks/useFamilySplitSuggestion.ts` — fetch snapshots iz RLS, compute klijent-side (bez RPC-a)
-- UI: `SplitModeSuggestionBanner` mountan u overview tab `FamilyGroupDetailView`
-- Dismiss perzistencija u localStorage 14 dana po (group, reason)
-- 12 vitest scenarija: gini, insufficient_periods, single_member, manual_mode, income_skew, balanced, needs_consent, spend_balanced, zero_activity
-- i18n: `family.split.suggestion.*` u hr/en/de
+Za transakcije koje **nisu** family-shared, dialog ostaje identičan kao danas (nula vizualne promjene).
 
 ---
 
-## Korak 2 — Monthly settlement PDF
+## Što je već gotovo (iz koraka 5)
 
-**Cilj:** export mjesečnog obračuna (tko kome duguje, breakdown po članu/kategoriji).
+- `FamilyReactionsBar` komponenta — radi, treba `groupId` + `expenseId`
+- `FamilyCommentsInline` komponenta — radi, treba `groupId` + `expenseId`
+- `useFamilyReactions` / `useFamilyComments` hookovi + RLS na tablicama
+- Push notifikacije (`notify-family-event`) već postoje (korak 6)
 
-- Helper `src/lib/familySettlementPdf.ts` — koristi postojeći `pdfReportKit.ts` i Teal branding
-- Sekcije: header (grupa, period), summary tablica (član × doprinos × udio × saldo), netting matrix, audit changes u periodu
-- Gumb "Export PDF" u `FamilySettlementsTab` header
-- Native: koristi postojeći `fileExport.ts` + `FileSavedDialog` (Faza 2 export pipeline)
-- i18n: `family.split.settlements.exportPdf.*`
-
----
-
-## Korak 3 — Cashflow Forecast integracija
-
-**Cilj:** uključiti predviđene family obveze (settlements) u 8-tjedni cashflow forecast.
-
-- Proširiti `useCashflowForecast` (Faza 2 forecast hook) — dodati izvor `family_obligations`
-- Helper `src/lib/familyForecastContrib.ts` — za svakog usera vraća listu predviđenih outflowa (vlastiti dio iz aktivnih settlement zapisa + projekcija do kraja perioda)
-- UI: chip "Obiteljski obračun" u Cashflow Forecast viewu, klik → drill-down lista
-- vitest helper (zero outflow/multiple periods/declined consent edge cases)
-- i18n: `cashflow.familyObligations.*`
+Nedostaje **samo wiring**: kako iz transakcije saznati pripada li family grupi i kojoj.
 
 ---
 
-## Korak 4 — Relationship tagovi
+## Plan implementacije (1 commit)
 
-**Cilj:** označiti članove kao `partner`/`child`/`roommate`/`parent`/`other` i koristiti to za default split pravila i prikaz.
+### 1. Novi hook `useFamilyGroupForExpense(expense)`
 
-- Migracija: `family_members.relationship` text CHECK in (`partner`,`child`,`roommate`,`parent`,`sibling`,`other`)
-- Defaults po relationshipu (samo prijedlozi pri kreiranju, ne forsiraju se):
-  - partner → proportional_income
-  - child → excluded from split (samo contribution)
-  - roommate → equal
-- UI: `RelationshipPicker` u `FamilyMemberConsentCard` + invitation flow
-- Badge u članstvu listi (mali icon + label)
-- i18n: `family.relationship.*`
+Lokacija: `src/hooks/useFamilyGroupForExpense.ts`
 
----
+Logika (čisti SELECT, bez novih tablica):
+1. Iz `expense.payment_source` ekstraktiraj custom UUID (`custom:<uuid>` ili direktan match na `customPaymentSources`).
+2. Query: `family_shared_sources` WHERE `payment_source_id = <uuid>` → vrati `group_id` (ili `null`).
+3. Cache preko TanStack Query (`['family-group-for-source', sourceId]`, `staleTime: 5 min`).
 
-## Korak 5 — Reakcije/komentari na transakcije (BEZ chata)
+Vraća: `{ groupId: string | null, loading: boolean }`.
 
-**Cilj:** kratke emoji reakcije (👍 ❤️ ⚠️) i jednoredni komentar na shared transakcije. NE chat thread.
+Edge case: ako transakcija nema custom izvor (cash, generic), helper odmah vraća `null` bez query-a.
 
-- Migracija: `family_transaction_reactions` (id, expense_id, user_id, emoji text, created_at, UNIQUE(expense_id, user_id, emoji))
-- Migracija: `family_transaction_comments` (id, expense_id, user_id, body text max 280 znakova, created_at, deleted_at)
-- RLS: vidljivo svim članovima grupe kojoj pripada `payment_source` transakcije; pisanje samo autor
-- Hook `useFamilyReactions(expenseId)`, `useFamilyComments(expenseId)`
-- UI: `FamilyReactionsBar` + `FamilyCommentsInline` u `TransactionDetailDialog` (samo kad je shared family source)
-- Push odgođen za Korak 6 ovog plana (zajedno s override pushom)
-- i18n: `family.reactions.*`, `family.comments.*`
+### 2. Integracija u `TransactionDetailDialog.tsx`
 
----
+Pri vrhu komponente pozovi hook. Ako `groupId` postoji, **na dnu dialoga** (ispod postojećih sekcija, prije akcijskih gumba) dodaj novu sekciju:
 
-## Korak 6 — Push za override + reakcije
+```
+┌─────────────────────────────────┐
+│ 👨‍👩‍👧 Obitelj                    │
+│                                 │
+│ [👍 2] [❤️ 1] [+]               │  ← FamilyReactionsBar
+│                                 │
+│ Marko: Ovo je za rođendan       │  ← FamilyCommentsInline
+│ Ana: 👍                          │
+│ [textarea + Pošalji]            │
+└─────────────────────────────────┘
+```
 
-**Cilj:** opt-in push notifikacija kad netko primijeni split override ili reagira na korisnikovu transakciju.
+Naslov sekcije: `t('family.transactionSocial.title', 'Obitelj')` s ikonom `Users`.
 
-- Notification preferences proširiti: `family_override_push` boolean, `family_reactions_push` boolean (default oba `false` — opt-in)
-- Edge function `notify-family-event` (CORS + JWT validate):
-  - Trigger izvori: `apply_split_override` RPC + INSERT u `family_transaction_reactions`/`comments`
-  - Filter: ne push autoru, ne push workerima (postoji obrazac iz `notify-project-transaction`)
-  - Reuse FCM v1 pipeline iz postojećih notify edge functiona
-- UI: 2 toggle prekidača u `NotificationsSection` (`family.notifications.override`, `family.notifications.reactions`)
-- Dedup: za reakcije throttle 60s po (expense_id, recipient_id) preko `notifications.data.last_sent_at`
-- i18n: notifikacije lokalizirane preko `notificationI18n.ts`
+### 3. i18n
 
----
+Dodati u `hr/en/de`:
+- `family.transactionSocial.title` = "Obitelj" / "Family" / "Familie"
 
-## Tehnički sažetak (za pregled prije starta)
+Reactions/comments stringovi (`family.reactions.*`, `family.comments.*`) već postoje.
 
-- **Migracije:** 3 nove tablice (reactions, comments) + 1 kolona (relationship) + 2 prefs polja
-- **Edge functions:** 1 nova (`notify-family-event`)
-- **Helperi:** 3 nova pure helpera (suggestion, pdf, forecast) — svi s vitest testovima
-- **i18n namespaces:** `family.split.suggestion`, `family.split.settlements.exportPdf`, `cashflow.familyObligations`, `family.relationship`, `family.reactions`, `family.comments`, `family.notifications`
-- **Memory update:** dopuna `mem://features/family-proportional-split` na kraju zadnjeg koraka
+### 4. Nema DB migracije
 
-## Procjena i rizici
+Sve tablice i RLS-ovi su postavljeni u koraku 5. Nema schema promjena.
 
-- ~3–4 dana fokusiranog rada
-- Rizik: PDF u koraku 2 zahtjeva snapshot podatke iz Faze 2 — provjeriti da je `family_split_snapshots` popunjen prije testa
-- Rizik: push throttle u koraku 6 — koristit ćemo postojeći obrazac iz `check-budget-alerts` (push_sent_at u `data` jsonb)
-- Reactions tablica može narasti — particioniranje odgođeno (kao i audit u Fazi 2)
+### 5. Nema native promjena
+
+Web + native (Capacitor) koriste isti React kod. Nema potrebe za version bump u `public/version.json` / `build.gradle`.
 
 ---
 
-**Krećemo s Korakom 1 — Smart prompting (helper + RPC + banner).** Nakon potvrde plana radim migraciju + helper + UI u istom rezu, pa nastavljam na Korak 2.
+## Tehnički sažetak
+
+| Stavka | Status |
+|---|---|
+| Nova tablica | – |
+| Migracija | – |
+| Edge function | – |
+| Novi hook | `useFamilyGroupForExpense` |
+| Izmijenjeni file | `src/components/TransactionDetailDialog.tsx` |
+| i18n ključ | 1 novi (`family.transactionSocial.title`) |
+| Version bump | nije potreban |
+
+## Što NIJE u ovom planu
+
+- Badge na transakcijskoj listi koji pokazuje broj reakcija (može u sljedećoj iteraciji ako se feature koristi)
+- Real-time refresh preko `supabase.channel` (TanStack Query refetch je dovoljan za sada)
+- Notifikacija "X je reagirao na tvoju transakciju" → već postoji u `notify-family-event` (korak 6)
+
+## Rizici
+
+- Ako `payment_source` ima nestandardni format (legacy `card:` prefix), helper vraća `null` i sekcija se ne prikazuje — fail-safe (ništa se ne razbije).
+- Performance: po otvaranju dialoga jedan dodatan SELECT (cached 5 min) — zanemarivo.
