@@ -83,6 +83,7 @@ export const CashflowForecast = () => {
   const { recurringTransactions } = useRecurringTransactions();
   const { plans } = useInstallments();
   const { settlements: familyObligations } = useFamilyForecastObligations();
+  const { user } = useAuth();
 
   const forecastData = useMemo(() => {
     const today = startOfDay(new Date());
@@ -95,10 +96,10 @@ export const CashflowForecast = () => {
     });
     const familyPerWeek = computeFamilyOutflowsPerWeek(
       familyObligations,
-      // current user id is encoded in `debtor_user_id` filter on the hook already
-      familyObligations[0]?.debtor_user_id || '',
+      user?.id || '',
       weekRanges,
     );
+
 
 
 
