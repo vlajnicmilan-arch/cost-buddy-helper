@@ -104,7 +104,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('unknown cardId falls through to payment_source resolution', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'uuid-2' as any, payment_source_card_id: 'card-ghost' }),
+      makeTransfer({ payment_source: 'uuid-2', payment_source_card_id: 'card-ghost' } as any),
       customSources
     );
     expect(r?.from.name).toBe('Revolut');
