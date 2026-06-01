@@ -156,7 +156,7 @@ export const CashflowForecast = () => {
     }
 
     return weeks;
-  }, [recurringTransactions, plans, familyObligations, t]);
+  }, [recurringTransactions, plans, familyObligations, user?.id, t]);
 
   const familyTotal = useMemo(
     () => familyObligations.reduce((s, r) => s + Number(r.amount || 0), 0),
