@@ -5167,6 +5167,8 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      find_user_by_email: { Args: { p_email: string }; Returns: string }
+      get_admin_user_stats: { Args: never; Returns: Json }
       get_dashboard_scroll_distribution: {
         Args: { p_days?: number }
         Returns: {
@@ -5346,6 +5348,10 @@ export type Database = {
       }
       unaccent: { Args: { "": string }; Returns: string }
       unmerge_import_row: { Args: { p_id: string }; Returns: undefined }
+      update_budget_with_categories: {
+        Args: { p_budget_id: string; p_categories: Json; p_patch: Json }
+        Returns: undefined
+      }
       upsert_active_issue: {
         Args: {
           p_data?: Json
