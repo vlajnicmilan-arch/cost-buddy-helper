@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RecurringTransaction } from './useRecurringTransactions';
 import { localMatch } from '@/lib/recurringMatching';
+import { validateAiRecurringMatch } from '@/lib/validateAiRecurringMatch';
 
 export interface RecurringMatch {
   transaction: {
