@@ -41,7 +41,7 @@ export function useFamilyMemberConsent(groupId: string | null) {
     try {
       const { data: row, error } = await supabase
         .from('family_members')
-        .select('id, user_id, income_share_consent, income_share_consent_at, declared_monthly_income, declared_income_currency, monthly_contribution')
+        .select('id, user_id, income_share_consent, income_share_consent_at, declared_monthly_income, declared_income_currency, monthly_contribution, relationship')
         .eq('group_id', groupId)
         .eq('user_id', user.id)
         .maybeSingle();
