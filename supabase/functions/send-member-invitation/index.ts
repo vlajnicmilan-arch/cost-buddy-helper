@@ -194,7 +194,7 @@ serve(async (req) => {
       if (existingEmailInvite) {
         return new Response(
           JSON.stringify({ error: "already_invited", message: "Već postoji aktivna pozivnica za tu email adresu" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
