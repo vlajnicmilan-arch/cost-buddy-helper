@@ -1537,6 +1537,7 @@ export type Database = {
           income_share_consent_at: string | null
           joined_at: string
           monthly_contribution: number
+          relationship: string | null
           role: string
           user_id: string
         }
@@ -1550,6 +1551,7 @@ export type Database = {
           income_share_consent_at?: string | null
           joined_at?: string
           monthly_contribution?: number
+          relationship?: string | null
           role?: string
           user_id: string
         }
@@ -1563,6 +1565,7 @@ export type Database = {
           income_share_consent_at?: string | null
           joined_at?: string
           monthly_contribution?: number
+          relationship?: string | null
           role?: string
           user_id?: string
         }
