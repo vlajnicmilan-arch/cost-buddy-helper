@@ -1218,7 +1218,10 @@
       "projectedExpenses": "Očekivani troškovi",
       "netFlow": "Neto tok",
       "cumulative": "Kumulativno",
-      "basedOn": "Bazirano na ponavljajućim transakcijama i ratama"
+      "basedOn": "Bazirano na ponavljajućim transakcijama i ratama",
+      "familyObligations": {
+        "chip": "Uključeno: obiteljski obračun {{amount}}"
+      }
     }
   },
   "nav": {
