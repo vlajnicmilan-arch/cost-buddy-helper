@@ -2300,7 +2300,48 @@
     "sharedSavings": "Geteilte Sparziele",
     "selectSavingsToAdd": "Sparziel zum Hinzufügen auswählen:",
     "allSavingsAdded": "Alle Sparziele wurden bereits zur Gruppe hinzugefügt.",
-    "noSavings": "Keine Sparziele hinzugefügt"
+    "noSavings": "Keine Sparziele hinzugefügt",
+    "unknownMember": "Unbekannt",
+    "fallbackAccount": "Konto",
+    "fallbackBudget": "Budget",
+    "fallbackProject": "Projekt",
+    "tabs": {
+      "overview": "Übersicht",
+      "accounts": "Konten",
+      "budgets": "Budgets",
+      "projects": "Projekte",
+      "savings": "Ziele",
+      "team": "Team",
+      "activity": "Aktivität"
+    },
+    "overview": {
+      "quickStats": "Gruppenübersicht",
+      "membersCount": "Mitglieder",
+      "sharedResources": "Geteilte Ressourcen",
+      "recentActivity": "Letzte Aktivitäten",
+      "viewAll": "Alle anzeigen"
+    },
+    "wizard": {
+      "title": "Gruppe in 3 Schritten einrichten",
+      "subtitle": "Hol das Beste aus dem Teilen heraus",
+      "step1": "Erstes geteiltes Konto hinzufügen",
+      "step2": "Familienmitglied einladen",
+      "step3": "Gemeinsames Ziel festlegen",
+      "dismiss": "Ausblenden"
+    },
+    "activityFilters": {
+      "allMembers": "Alle Mitglieder",
+      "allTypes": "Alle Arten",
+      "finance": "Finanzen",
+      "membership": "Mitgliedschaft",
+      "resources": "Ressourcen",
+      "loadMore": "Mehr laden"
+    },
+    "tally": {
+      "others": "+{{count}} weitere",
+      "noSpend": "Keine Ausgaben",
+      "ofTotal": "von {{total}}"
+    }
   },
   "business": {
     "payment": {

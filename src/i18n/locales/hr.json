@@ -2305,11 +2305,51 @@
       "member": "Vidi sve transakcije i može dodavati na dijeljene izvore",
       "viewer": "Vidi sve transakcije, ne može dodavati ni mijenjati"
     },
-
     "sharedSavings": "Dijeljeni ciljevi štednje",
     "selectSavingsToAdd": "Odaberi cilj štednje za dodavanje:",
     "allSavingsAdded": "Svi ciljevi štednje su već dodani u grupu.",
-    "noSavings": "Nema dodanih ciljeva štednje"
+    "noSavings": "Nema dodanih ciljeva štednje",
+    "unknownMember": "Nepoznato",
+    "fallbackAccount": "Račun",
+    "fallbackBudget": "Budžet",
+    "fallbackProject": "Projekt",
+    "tabs": {
+      "overview": "Pregled",
+      "accounts": "Računi",
+      "budgets": "Budžeti",
+      "projects": "Projekti",
+      "savings": "Ciljevi",
+      "team": "Tim",
+      "activity": "Aktivnost"
+    },
+    "overview": {
+      "quickStats": "Pregled grupe",
+      "membersCount": "Članovi",
+      "sharedResources": "Dijeljeni resursi",
+      "recentActivity": "Najnovije aktivnosti",
+      "viewAll": "Sve aktivnosti"
+    },
+    "wizard": {
+      "title": "Postavi grupu u 3 koraka",
+      "subtitle": "Iskoristi maksimum dijeljenja",
+      "step1": "Dodaj prvi dijeljeni račun",
+      "step2": "Pozovi člana obitelji",
+      "step3": "Postavi zajednički cilj",
+      "dismiss": "Sakrij"
+    },
+    "activityFilters": {
+      "allMembers": "Svi članovi",
+      "allTypes": "Sve vrste",
+      "finance": "Financije",
+      "membership": "Članstvo",
+      "resources": "Resursi",
+      "loadMore": "Učitaj još"
+    },
+    "tally": {
+      "others": "i još {{count}}",
+      "noSpend": "Bez troškova",
+      "ofTotal": "od {{total}}"
+    }
   },
   "business": {
     "payment": {
