@@ -3,10 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useRecurringTransactions, RecurringTransaction } from '@/hooks/useRecurringTransactions';
 import { useInstallments } from '@/hooks/useInstallments';
+import { useFamilyForecastObligations } from '@/hooks/useFamilyForecastObligations';
+import { computeFamilyOutflowsPerWeek } from '@/lib/familyForecastContrib';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRight, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { addDays, addWeeks, addMonths, addYears, format, isWithinInterval, startOfDay } from 'date-fns';
+
 import {
   AreaChart,
   Area,
