@@ -83,35 +83,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all users
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
-      perPage: 1000,
-    });
-    if (listError) throw listError;
+    // Paginate through ALL users (auth.admin.listUsers caps perPage at 1000 but
+    // also stops there — silent truncation on bigger bases). Loop until empty page.
+    const allUserIds: string[] = [];
+    const PER_PAGE = 1000;
+    for (let page = 1; page < 1000; page++) {
+      const { data, error: listError } = await supabase.auth.admin.listUsers({ page, perPage: PER_PAGE });
+      if (listError) throw listError;
+      const batch = data?.users ?? [];
+      if (batch.length === 0) break;
+      for (const u of batch) allUserIds.push(u.id);
+      if (batch.length < PER_PAGE) break;
+    }
+    console.log(`[BROADCAST] Targeting ${allUserIds.length} users`);
 
-    // Insert notification for each user
-    const notifications = users.map((u: any) => ({
-      user_id: u.id,
-      title,
-      message,
-      type: "system",
-      read: false,
-    }));
+    // Insert notifications in chunks (avoid single 10k+ row insert)
+    const NOTIF_CHUNK = 500;
+    for (let i = 0; i < allUserIds.length; i += NOTIF_CHUNK) {
+      const slice = allUserIds.slice(i, i + NOTIF_CHUNK);
+      const notifications = slice.map((id) => ({
+        user_id: id,
+        title,
+        message,
+        type: "system",
+        read: false,
+      }));
+      const { error: insertError } = await supabase.from("notifications").insert(notifications);
+      if (insertError) throw insertError;
+    }
 
-    const { error: insertError } = await supabase
-      .from("notifications")
-      .insert(notifications);
-
-    if (insertError) throw insertError;
-
-    // Best-effort push broadcast
-    await sendPushNotificationToMany(
-      users.map((u: any) => u.id),
-      { title, body: message, data: { type: "system", category: "broadcast" }, source: "broadcast-notification" }
-    );
+    // Push fan-out: sequential chunks of 50 (each call invokes send-push edge fn;
+    // running 1000+ in parallel hits rate limits and stalls). Best-effort.
+    const PUSH_CHUNK = 50;
+    for (let i = 0; i < allUserIds.length; i += PUSH_CHUNK) {
+      const slice = allUserIds.slice(i, i + PUSH_CHUNK);
+      try {
+        await sendPushNotificationToMany(slice, {
+          title,
+          body: message,
+          data: { type: "system", category: "broadcast" },
+          source: "broadcast-notification",
+        });
+      } catch (e) {
+        console.error("[BROADCAST] push chunk failed", { i, err: e });
+      }
+    }
 
     return new Response(
-      JSON.stringify({ success: true, count: users.length }),
+      JSON.stringify({ success: true, count: allUserIds.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
