@@ -2341,6 +2341,28 @@
       "others": "+{{count}} weitere",
       "noSpend": "Keine Ausgaben",
       "ofTotal": "von {{total}}"
+    },
+    "split": {
+      "privacy": {
+        "label": "Private Transaktion",
+        "hint": "Andere Mitglieder sehen nur, dass eine Transaktion existiert, ohne Betrag oder Kategorie"
+      },
+      "override": {
+        "title": "Aufteilung anpassen",
+        "description": "Ändere den Anteil für jedes Mitglied. Die Summe muss 100% betragen.",
+        "sum": "Summe",
+        "member": "Mitglied",
+        "share": "Anteil (%)",
+        "save": "Speichern",
+        "remove": "Anpassung entfernen",
+        "badge": "Angepasste Aufteilung",
+        "mustSum": "Anteile müssen 100% ergeben (aktuell {{sum}}%)",
+        "outOfRange": "Anteil muss zwischen 0 und 100 liegen",
+        "applied": "Anpassung angewendet",
+        "removed": "Anpassung entfernt",
+        "error": "Fehler beim Speichern der Anpassung",
+        "notFamilySource": "Diese Transaktion ist nicht auf einem geteilten Konto"
+      }
     }
   },
   "business": {

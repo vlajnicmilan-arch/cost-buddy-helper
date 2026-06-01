@@ -2473,6 +2473,28 @@
       "others": "+{{count}} more",
       "noSpend": "No spend yet",
       "ofTotal": "of {{total}}"
+    },
+    "split": {
+      "privacy": {
+        "label": "Private transaction",
+        "hint": "Other members only see that a transaction exists, without amount or category"
+      },
+      "override": {
+        "title": "Adjust split",
+        "description": "Change the share for each member. The sum must equal 100%.",
+        "sum": "Sum",
+        "member": "Member",
+        "share": "Share (%)",
+        "save": "Save",
+        "remove": "Remove override",
+        "badge": "Custom split",
+        "mustSum": "Shares must sum to 100% (currently {{sum}}%)",
+        "outOfRange": "Share must be between 0 and 100",
+        "applied": "Override applied",
+        "removed": "Override removed",
+        "error": "Failed to save override",
+        "notFamilySource": "This transaction is not on a shared account"
+      }
     }
   },
   "business": {

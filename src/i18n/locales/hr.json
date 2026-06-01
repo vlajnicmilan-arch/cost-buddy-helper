@@ -2349,6 +2349,28 @@
       "others": "i još {{count}}",
       "noSpend": "Bez troškova",
       "ofTotal": "od {{total}}"
+    },
+    "split": {
+      "privacy": {
+        "label": "Privatna transakcija",
+        "hint": "Drugi članovi vide samo da postoji transakcija, bez iznosa i kategorije"
+      },
+      "override": {
+        "title": "Prilagodi podjelu",
+        "description": "Promijeni udio za svakog člana. Suma mora biti 100%.",
+        "sum": "Suma",
+        "member": "Član",
+        "share": "Udio (%)",
+        "save": "Spremi",
+        "remove": "Ukloni prilagodbu",
+        "badge": "Prilagođena podjela",
+        "mustSum": "Suma udjela mora biti 100% (trenutno {{sum}}%)",
+        "outOfRange": "Udio mora biti između 0 i 100",
+        "applied": "Prilagodba primijenjena",
+        "removed": "Prilagodba uklonjena",
+        "error": "Greška pri spremanju prilagodbe",
+        "notFamilySource": "Ova transakcija nije na dijeljenom računu"
+      }
     }
   },
   "business": {
