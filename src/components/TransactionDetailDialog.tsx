@@ -82,6 +82,7 @@ export const TransactionDetailDialog = ({
   const { customCategories } = useCustomCategories();
   const { t, i18n } = useTranslation();
   const { shareTransaction } = useNativeShare();
+  const { groupId: familyGroupId } = useFamilyGroupForExpense(expense);
   const isLocalMode = storageMode === 'local' && !user;
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
