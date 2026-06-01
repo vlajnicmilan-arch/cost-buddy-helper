@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { captureEdgeError } from "../_shared/sentry.ts";
+import { ALLOWED_CHECKOUT_ORIGINS, resolveCheckoutOrigin } from "../_shared/checkoutOrigin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,17 +53,13 @@ serve(async (req) => {
     // SECURITY: Stripe success/cancel URLs must come from a fixed allowlist, not
     // a client-controlled Origin header (otherwise a forged request could redirect
     // a logged-in user back through an attacker-controlled domain).
-    const ALLOWED_ORIGINS = new Set([
-      "https://vmbalance.com",
-      "https://www.vmbalance.com",
-      "https://cost-buddy-helper.lovable.app",
-      "https://id-preview--8a8fc612-0ac2-4902-a82e-29b5b800bc32.lovable.app",
-    ]);
     const requestedOrigin = req.headers.get("origin") || "";
-    const origin = ALLOWED_ORIGINS.has(requestedOrigin)
-      ? requestedOrigin
-      : "https://vmbalance.com";
-    logStep("Resolved checkout origin", { requestedOrigin, origin, allowed: ALLOWED_ORIGINS.has(requestedOrigin) });
+    const origin = resolveCheckoutOrigin(requestedOrigin);
+    logStep("Resolved checkout origin", {
+      requestedOrigin,
+      origin,
+      allowed: ALLOWED_CHECKOUT_ORIGINS.has(requestedOrigin),
+    });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
