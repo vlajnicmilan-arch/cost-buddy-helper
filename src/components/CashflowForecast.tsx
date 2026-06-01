@@ -5,6 +5,7 @@ import { useRecurringTransactions, RecurringTransaction } from '@/hooks/useRecur
 import { useInstallments } from '@/hooks/useInstallments';
 import { useFamilyForecastObligations } from '@/hooks/useFamilyForecastObligations';
 import { computeFamilyOutflowsPerWeek } from '@/lib/familyForecastContrib';
+import { useAuth } from '@/hooks/useAuth';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, ArrowRight, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
