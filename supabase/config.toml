@@ -69,7 +69,7 @@ project_id = "fzalxjretvtvokiotvkf"
   [functions.project-insights]
     verify_jwt = true
   [functions.parse-standup]
-    verify_jwt = false
+    verify_jwt = true
   [functions.notify-payment-source-transaction]
     verify_jwt = false
   [functions.request-account-deletion]
