@@ -113,6 +113,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_daily: {
+        Row: {
+          count: number
+          route: string
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          route: string
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          route?: string
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_diagnostics_logs: {
         Row: {
           app_version: string | null
@@ -4749,6 +4773,7 @@ export type Database = {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_old_ai_usage: { Args: never; Returns: undefined }
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
       cleanup_old_health_summaries: { Args: never; Returns: undefined }
@@ -4804,6 +4829,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_ai_usage: {
+        Args: { p_limit: number; p_route: string }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          daily_limit: number
+        }[]
       }
       is_budget_member: {
         Args: { _budget_id: string; _user_id: string }
