@@ -1211,6 +1211,7 @@ export type Database = {
           income_source_id: string | null
           invoice_id: string | null
           is_advance: boolean
+          is_private: boolean
           linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
@@ -1222,6 +1223,7 @@ export type Database = {
           possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
+          split_overrides: Json | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           type: string
@@ -1254,6 +1256,7 @@ export type Database = {
           income_source_id?: string | null
           invoice_id?: string | null
           is_advance?: boolean
+          is_private?: boolean
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1265,6 +1268,7 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
+          split_overrides?: Json | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -1297,6 +1301,7 @@ export type Database = {
           income_source_id?: string | null
           invoice_id?: string | null
           is_advance?: boolean
+          is_private?: boolean
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1308,6 +1313,7 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
+          split_overrides?: Json | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -1432,27 +1438,39 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          currency: string
           icon: string | null
           id: string
           name: string
+          shared_categories: string[]
+          split_income_source: string
+          split_mode: string
           updated_at: string
           user_id: string
         }
         Insert: {
           color?: string | null
           created_at?: string
+          currency?: string
           icon?: string | null
           id?: string
           name: string
+          shared_categories?: string[]
+          split_income_source?: string
+          split_mode?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           color?: string | null
           created_at?: string
+          currency?: string
           icon?: string | null
           id?: string
           name?: string
+          shared_categories?: string[]
+          split_income_source?: string
+          split_mode?: string
           updated_at?: string
           user_id?: string
         }
@@ -1511,25 +1529,40 @@ export type Database = {
       family_members: {
         Row: {
           created_at: string
+          declared_income_currency: string
+          declared_monthly_income: number | null
           group_id: string
           id: string
+          income_share_consent: boolean
+          income_share_consent_at: string | null
           joined_at: string
+          monthly_contribution: number
           role: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          declared_income_currency?: string
+          declared_monthly_income?: number | null
           group_id: string
           id?: string
+          income_share_consent?: boolean
+          income_share_consent_at?: string | null
           joined_at?: string
+          monthly_contribution?: number
           role?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          declared_income_currency?: string
+          declared_monthly_income?: number | null
           group_id?: string
           id?: string
+          income_share_consent?: boolean
+          income_share_consent_at?: string | null
           joined_at?: string
+          monthly_contribution?: number
           role?: string
           user_id?: string
         }
@@ -1539,6 +1572,72 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          creditor_user_id: string
+          currency: string
+          debtor_user_id: string
+          group_id: string
+          id: string
+          note: string | null
+          paid_at: string | null
+          payment_expense_id: string | null
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creditor_user_id: string
+          currency?: string
+          debtor_user_id: string
+          group_id: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          payment_expense_id?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creditor_user_id?: string
+          currency?: string
+          debtor_user_id?: string
+          group_id?: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          payment_expense_id?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_settlements_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_settlements_payment_expense_id_fkey"
+            columns: ["payment_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
         ]
@@ -1695,6 +1794,100 @@ export type Database = {
             columns: ["payment_source_id"]
             isOneToOne: false
             referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_split_audit: {
+        Row: {
+          action: string
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_split_audit_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_split_snapshots: {
+        Row: {
+          computed_at: string
+          currency: string
+          group_id: string
+          id: string
+          member_user_id: string
+          owed: number
+          paid: number
+          period_end: string
+          period_start: string
+          share_ratio: number
+          shared_total: number
+        }
+        Insert: {
+          computed_at?: string
+          currency?: string
+          group_id: string
+          id?: string
+          member_user_id: string
+          owed?: number
+          paid?: number
+          period_end: string
+          period_start: string
+          share_ratio?: number
+          shared_total?: number
+        }
+        Update: {
+          computed_at?: string
+          currency?: string
+          group_id?: string
+          id?: string
+          member_user_id?: string
+          owed?: number
+          paid?: number
+          period_end?: string
+          period_start?: string
+          share_ratio?: number
+          shared_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_split_snapshots_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
             referencedColumns: ["id"]
           },
         ]
