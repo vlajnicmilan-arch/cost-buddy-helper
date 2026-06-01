@@ -782,6 +782,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               <TabsTrigger value="projects" className="text-xs">{t('family.tabs.projects')}</TabsTrigger>
               <TabsTrigger value="savings" className="text-xs">{t('family.tabs.savings')}</TabsTrigger>
               <TabsTrigger value="team" className="text-xs">{t('family.tabs.team')}</TabsTrigger>
+              <TabsTrigger value="settlements" className="text-xs">{t('family.tabs.settlements', 'Saldo')}</TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs">{t('family.tabs.settings', 'Postavke')}</TabsTrigger>
               <TabsTrigger value="activity" className="text-xs">{t('family.tabs.activity')}</TabsTrigger>
             </TabsList>
 
@@ -791,6 +793,12 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <TabsContent value="projects">{renderProjectsTab()}</TabsContent>
             <TabsContent value="savings">{renderSavingsTab()}</TabsContent>
             <TabsContent value="team">{renderTeamTab()}</TabsContent>
+            <TabsContent value="settlements">
+              <FamilySettlementsTab groupId={group.id} members={memberRefs} currentUserId={user?.id} />
+            </TabsContent>
+            <TabsContent value="settings">
+              <FamilySplitSettingsTab groupId={group.id} isOwner={isOwner} />
+            </TabsContent>
             <TabsContent value="activity">
               <FamilyActivityFeed
                 activities={activities}
