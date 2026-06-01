@@ -189,10 +189,10 @@ describe('validateAiRecurringMatch — confidence override', () => {
 
   it('ignores empty merchant for confidence', () => {
     const r = validateAiRecurringMatch(
-      { description: 'random text netflix-something extra', amount: 12.99, type: 'expense' },
-      rec({ description: 'netflix', merchant_name: '' })
+      { description: 'streaming abonnement', amount: 12.99, type: 'expense' },
+      rec({ description: 'streaming pretplata', merchant_name: '' })
     );
-    // 'netflix' not full substring of tx, tx not substring of 'netflix' → medium
+    // shared word "streaming" → overlap ✓ ; neither desc is full substring of other → medium
     expect(r.accept).toBe(true);
     expect(r.confidence).toBe('medium');
   });
