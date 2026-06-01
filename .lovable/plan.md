@@ -1,5 +1,5 @@
 
-# Faza 2 — Family modul: Proporcionalna podjela troškova
+# Faza 2 — Family modul: Proporcionalna podjela troškova  ✅ DOVRŠENO (1.6.2026)
 
 Cilj: omogućiti obiteljima da dijele troškove proporcionalno prihodu, s privacy kontrolom, eksplicitnim pristankom i transparentnim "tko kome duguje". Real-time obračun, override kroz badge (ne push), audit trail.
 

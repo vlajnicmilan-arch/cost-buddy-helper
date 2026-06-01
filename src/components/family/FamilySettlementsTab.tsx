@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useFamilySettlements } from '@/hooks/useFamilySettlements';
+import { FamilySplitAuditTimeline } from './FamilySplitAuditTimeline';
 
 interface MemberRef {
   user_id: string;
@@ -170,6 +171,9 @@ export const FamilySettlementsTab = ({ groupId, members, currentUserId }: Props)
           })}
         </div>
       )}
+
+
+      <FamilySplitAuditTimeline groupId={groupId} />
 
       <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
         {t(

@@ -2419,6 +2419,24 @@
         "notePh": "Notiz (optional)",
         "confirm": "Bestätigen",
         "disclaimer": "Nur informativ. Keine tatsächliche Zahlung; das Markieren schließt nur den Eintrag."
+      },
+      "prediction": {
+        "title": "Voraussichtliche Aufteilung",
+        "loading": "Berechne Aufteilung…",
+        "disclaimer": "Schätzung vor dem Speichern; manuelle Anpassung danach möglich."
+      },
+      "audit": {
+        "title": "Änderungsverlauf",
+        "empty": "Keine Einträge.",
+        "actions": {
+          "member_exit": "Mitglied hat die Gruppe verlassen",
+          "override_applied": "Anpassung angewendet",
+          "override_removed": "Anpassung entfernt",
+          "settings_changed": "Einstellungen geändert",
+          "consent_changed": "Zustimmung geändert",
+          "settlement_recorded": "Abrechnung erfasst",
+          "snapshot_refreshed": "Snapshot aktualisiert"
+        }
       }
     }
   },

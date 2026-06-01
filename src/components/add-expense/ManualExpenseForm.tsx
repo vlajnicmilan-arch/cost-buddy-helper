@@ -23,6 +23,7 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
+import { SplitPredictionHint } from '@/components/family/SplitPredictionHint';
 
 interface ManualExpenseFormProps {
   // Type
@@ -582,6 +583,15 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           </p>
         )}
       </div>
+
+      {/* Family split prediction (renders only when source is shared family) */}
+      {props.type === 'expense' && (
+        <SplitPredictionHint
+          paymentSource={props.paymentSource}
+          amount={parseFloat(props.amount) || 0}
+          currency={props.selectedSourceCurrency}
+        />
+      )}
 
       {/* Description */}
       <div className="space-y-2">
