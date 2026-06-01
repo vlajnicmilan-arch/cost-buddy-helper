@@ -85,6 +85,8 @@ export const useNotificationPreferences = () => {
           broadcast_enabled: data.broadcast_enabled,
           daily_summary_enabled: data.daily_summary_enabled ?? true,
           daily_summary_weekend_enabled: data.daily_summary_weekend_enabled ?? true,
+          family_override_push: data.family_override_push ?? false,
+          family_reactions_push: data.family_reactions_push ?? false,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
