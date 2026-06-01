@@ -61,7 +61,7 @@ export function SplitPredictionHint({ paymentSource, amount, currency }: Props) 
               {s.display_name || t('family.unknownMember', 'Član')}
             </span>
             <span className="font-mono text-muted-foreground shrink-0 pl-2">
-              {formatAmount(s.share, currency)} ({Math.round(s.ratio * 100)}%)
+              {formatAmount(s.share, currency as any)} ({Math.round(s.ratio * 100)}%)
             </span>
           </li>
         ))}
