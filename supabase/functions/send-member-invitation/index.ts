@@ -83,7 +83,7 @@ serve(async (req) => {
     if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
       return new Response(
         JSON.stringify({ error: "user_not_found", message: "Korisnik s tim emailom nije pronađen u sustavu" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
