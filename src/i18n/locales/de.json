@@ -2478,6 +2478,20 @@
         "applied": "Aufteilungsmodus aktualisiert",
         "applyFailed": "Aktualisierung fehlgeschlagen"
       }
+    },
+    "relationship": {
+      "label": "Meine Rolle in der Familie",
+      "placeholder": "Auswählen…",
+      "none": "Nicht angegeben",
+      "options": {
+        "partner": "Partner:in",
+        "child": "Kind",
+        "parent": "Elternteil",
+        "sibling": "Geschwister",
+        "roommate": "Mitbewohner:in",
+        "grandparent": "Großeltern",
+        "other": "Sonstige"
+      }
     }
   },
   "business": {

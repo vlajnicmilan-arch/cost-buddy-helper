@@ -2610,6 +2610,20 @@
         "applied": "Split mode updated",
         "applyFailed": "Failed to update"
       }
+    },
+    "relationship": {
+      "label": "My family role",
+      "placeholder": "Choose…",
+      "none": "Not specified",
+      "options": {
+        "partner": "Partner",
+        "child": "Child",
+        "parent": "Parent",
+        "sibling": "Sibling",
+        "roommate": "Roommate",
+        "grandparent": "Grandparent",
+        "other": "Other"
+      }
     }
   },
   "business": {
