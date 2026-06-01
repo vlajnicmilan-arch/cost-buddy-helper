@@ -132,7 +132,7 @@ export async function generateFamilySettlementPdf(
     fmtMoney(m.owed - m.paid, input.currency, lang),
   ]);
 
-  brandAutoTable(doc, {
+  brandAutoTable(doc, autoTable, {
     startY: y,
     head: [[
       tr('family.split.settlements.exportPdf.colMember', 'Član'),
@@ -172,7 +172,7 @@ export async function generateFamilySettlementPdf(
     );
     y += 8;
   } else {
-    brandAutoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: y,
       head: [[
         tr('family.split.settlements.exportPdf.colDebtor', 'Dugovnik'),
@@ -209,7 +209,7 @@ export async function generateFamilySettlementPdf(
     );
     y += 4;
 
-    brandAutoTable(doc, {
+    brandAutoTable(doc, autoTable, {
       startY: y,
       head: [[
         tr('family.split.settlements.exportPdf.colWhen', 'Vrijeme'),
