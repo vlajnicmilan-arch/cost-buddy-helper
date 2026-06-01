@@ -172,6 +172,9 @@ export const FamilySettlementsTab = ({ groupId, members, currentUserId }: Props)
         </div>
       )}
 
+
+      <FamilySplitAuditTimeline groupId={groupId} />
+
       <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
         {t(
           'family.split.settlements.disclaimer',
