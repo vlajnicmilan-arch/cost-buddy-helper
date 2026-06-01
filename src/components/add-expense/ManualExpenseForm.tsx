@@ -23,6 +23,7 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
+import { SplitPredictionHint } from '@/components/family/SplitPredictionHint';
 
 interface ManualExpenseFormProps {
   // Type
