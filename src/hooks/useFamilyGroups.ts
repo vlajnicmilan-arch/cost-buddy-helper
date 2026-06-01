@@ -152,14 +152,14 @@ export const useFamilyMembers = (groupId: string | null) => {
           .in('user_id', userIds);
 
         profiles?.forEach(p => {
-          profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
+          profilesMap.set(p.user_id, p.display_name || t('family.unknownMember', 'Nepoznato'));
         });
       }
 
       setMembers((membersData || []).map(m => ({
         ...m,
         role: m.role as FamilyRole,
-        display_name: profilesMap.get(m.user_id) || 'Nepoznato'
+        display_name: profilesMap.get(m.user_id) || t('family.unknownMember', 'Nepoznato')
       })));
 
       if (isCurrentOwner) {
@@ -735,7 +735,7 @@ export const useFamilyActivity = (groupId: string | null) => {
           .select('user_id, display_name')
           .in('user_id', userIds);
         profiles?.forEach((p) => {
-          profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
+          profilesMap.set(p.user_id, p.display_name || t('family.unknownMember', 'Nepoznato'));
         });
       }
 
@@ -750,12 +750,12 @@ export const useFamilyActivity = (groupId: string | null) => {
         created_at: e.created_at,
         amount: Number(e.amount),
         currency: e.currency,
-        display_name: profilesMap.get(e.user_id) || 'Nepoznato',
+        display_name: profilesMap.get(e.user_id) || t('family.unknownMember', 'Nepoznato'),
       }));
 
       const logActivities: FamilyActivity[] = logItems.map((a) => ({
         ...a,
-        display_name: profilesMap.get(a.user_id) || 'Nepoznato',
+        display_name: profilesMap.get(a.user_id) || t('family.unknownMember', 'Nepoznato'),
       }));
 
       const merged = [...logActivities, ...expenseActivities]

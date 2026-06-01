@@ -2432,7 +2432,48 @@
     "sharedSavings": "Shared savings goals",
     "selectSavingsToAdd": "Select savings goal to add:",
     "allSavingsAdded": "All savings goals are already added to the group.",
-    "noSavings": "No savings goals added"
+    "noSavings": "No savings goals added",
+    "unknownMember": "Unknown",
+    "fallbackAccount": "Account",
+    "fallbackBudget": "Budget",
+    "fallbackProject": "Project",
+    "tabs": {
+      "overview": "Overview",
+      "accounts": "Accounts",
+      "budgets": "Budgets",
+      "projects": "Projects",
+      "savings": "Goals",
+      "team": "Team",
+      "activity": "Activity"
+    },
+    "overview": {
+      "quickStats": "Group overview",
+      "membersCount": "Members",
+      "sharedResources": "Shared resources",
+      "recentActivity": "Recent activity",
+      "viewAll": "See all"
+    },
+    "wizard": {
+      "title": "Set up your group in 3 steps",
+      "subtitle": "Get the most out of sharing",
+      "step1": "Add your first shared account",
+      "step2": "Invite a family member",
+      "step3": "Set a shared goal",
+      "dismiss": "Dismiss"
+    },
+    "activityFilters": {
+      "allMembers": "All members",
+      "allTypes": "All types",
+      "finance": "Finance",
+      "membership": "Membership",
+      "resources": "Resources",
+      "loadMore": "Load more"
+    },
+    "tally": {
+      "others": "+{{count}} more",
+      "noSpend": "No spend yet",
+      "ofTotal": "of {{total}}"
+    }
   },
   "business": {
     "payment": {
