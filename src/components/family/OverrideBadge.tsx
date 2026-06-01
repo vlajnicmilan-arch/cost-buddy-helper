@@ -22,7 +22,7 @@ export function OverrideBadge({ onClick, className }: OverrideBadgeProps) {
       <Badge
         variant="secondary"
         className={`gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring ${className ?? ''}`}
-        {...clickableProps(onClick, label)}
+        {...clickableProps(onClick, { label })}
       >
         <SplitSquareVertical className="h-3 w-3" />
         {label}
