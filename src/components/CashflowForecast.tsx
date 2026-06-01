@@ -188,7 +188,7 @@ export const CashflowForecast = () => {
         <div className="flex justify-end mb-2">
           <Badge variant="secondary" className="gap-1 text-[10px] h-5">
             <Users className="w-3 h-3" />
-            {t('cashflow.familyObligations.chip', { amount: formatAmount(familyTotal) })}
+            {t('dashboard.cashflow.familyObligations.chip', { amount: formatAmount(familyTotal) })}
           </Badge>
         </div>
       )}
