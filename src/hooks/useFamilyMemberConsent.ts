@@ -4,6 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
+export type FamilyRelationship =
+  | 'partner'
+  | 'child'
+  | 'parent'
+  | 'sibling'
+  | 'roommate'
+  | 'grandparent'
+  | 'other';
+
 export interface FamilyMemberConsentData {
   id: string;
   user_id: string;
@@ -12,6 +21,7 @@ export interface FamilyMemberConsentData {
   declared_monthly_income: number | null;
   declared_income_currency: string;
   monthly_contribution: number;
+  relationship: FamilyRelationship | null;
 }
 
 /**
