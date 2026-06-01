@@ -584,6 +584,15 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         )}
       </div>
 
+      {/* Family split prediction (renders only when source is shared family) */}
+      {props.type === 'expense' && (
+        <SplitPredictionHint
+          paymentSource={props.paymentSource}
+          amount={parseFloat(props.amount) || 0}
+          currency={props.selectedSourceCurrency}
+        />
+      )}
+
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description" className="text-sm font-medium">{t('common.description')}</Label>
