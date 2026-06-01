@@ -2427,6 +2427,24 @@
         "notePh": "Bilješka (opcionalno)",
         "confirm": "Potvrdi",
         "disclaimer": "Obračun je informativan. Stvarna naplata se ne provodi; označavanje samo zatvara stavku."
+      },
+      "prediction": {
+        "title": "Predviđena podjela",
+        "loading": "Računam podjelu…",
+        "disclaimer": "Procjena prije snimanja; ručni override moguć nakon spremanja."
+      },
+      "audit": {
+        "title": "Povijest promjena",
+        "empty": "Nema zapisa.",
+        "actions": {
+          "member_exit": "Član izašao iz grupe",
+          "override_applied": "Primijenjen override",
+          "override_removed": "Uklonjen override",
+          "settings_changed": "Promijenjene postavke",
+          "consent_changed": "Promjena pristanka",
+          "settlement_recorded": "Zabilježena uplata",
+          "snapshot_refreshed": "Osvježen snapshot"
+        }
       }
     }
   },

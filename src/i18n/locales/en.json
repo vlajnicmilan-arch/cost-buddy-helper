@@ -2551,6 +2551,24 @@
         "notePh": "Note (optional)",
         "confirm": "Confirm",
         "disclaimer": "Informational only. No real payment is made; marking just closes the item."
+      },
+      "prediction": {
+        "title": "Predicted split",
+        "loading": "Calculating split…",
+        "disclaimer": "Estimate before saving; manual override available afterwards."
+      },
+      "audit": {
+        "title": "Change history",
+        "empty": "No entries.",
+        "actions": {
+          "member_exit": "Member left the group",
+          "override_applied": "Override applied",
+          "override_removed": "Override removed",
+          "settings_changed": "Settings changed",
+          "consent_changed": "Consent changed",
+          "settlement_recorded": "Settlement recorded",
+          "snapshot_refreshed": "Snapshot refreshed"
+        }
       }
     }
   },
