@@ -1,82 +1,136 @@
 
-# Faza 1 — Family modul: "Hygiene" iteracija
+# Faza 2 — Family modul: Proporcionalna podjela troškova
 
-Cilj: brzo poboljšati UX bez DB promjena ili novih feature-a. Sve unutar postojeće arhitekture.
+Cilj: omogućiti obiteljima da dijele troškove proporcionalno prihodu, s privacy kontrolom, eksplicitnim pristankom i transparentnim "tko kome duguje". Real-time obračun, override kroz badge (ne push), audit trail.
 
-## A. Tabovi u detail view-u
+## Princip
 
-`FamilyGroupDetailView.tsx` (819 linija) trenutno renderira 6 sekcija jednu ispod druge. Razbiti u shadcn `Tabs`:
+- **Real-time obračun** (live) + tooltip "projekcija na kraj mjeseca"
+- **Override = badge u feedu**, nikad push notifikacija
+- **Smart prompting odgođen** (čeka 3-6 mjeseci podataka)
+- **Snapshot cache** umjesto RPC-per-transaction (computational sanity)
+- **Currency-aware** (Marko €, Ana CHF → konverzija prije omjera)
+- **Audit trail** (`family_split_audit`) za sve override-e i promjene modela
 
-```
-[Pregled] [Računi] [Budžeti] [Projekti] [Ciljevi] [Tim] [Aktivnost]
-```
+---
 
-- **Pregled**: Summary card (totalBalance) + 3 najnovije aktivnosti + brzi statistički blok (broj članova, broj dijeljenih resursa)
-- Ostale sekcije → svaka u svom tabu, kod ostaje isti, samo wrap u `TabsContent`
-- Default tab: `pregled`
-- Tab state u `useState` (ne URL — detail view se zatvara natrag na listu grupa)
+## Korak 1 — Schema + pure helperi + RPC (bez UI)
 
-## B. Empty-state wizard
+### DB migracija
 
-Kad grupa ima 0 dijeljenih resursa **i** 1 člana (samo owner), na vrhu "Pregled" taba pokazati 3-step checklist:
+**`expenses`:**
+- `is_private` boolean DEFAULT false (parcijalni indeks `(user_id) WHERE is_private=true`)
+- `split_overrides` jsonb (per-transaction override: `{userId: ratio}`)
 
-```
-☐ 1. Dodaj prvi dijeljeni račun
-☐ 2. Pozovi člana obitelji
-☐ 3. Postavi zajednički cilj
-```
+**`family_members`:**
+- `income_share_consent` boolean DEFAULT false
+- `income_share_consent_at` timestamptz
+- `declared_monthly_income` numeric
+- `declared_income_currency` text DEFAULT 'EUR'
+- `monthly_contribution` numeric (stipendija, džeparac)
 
-Svaki check je gumb koji otvara odgovarajući tab + scrolla na "Add" sekciju. Sakriva se čim je sve ispunjeno (`localStorage` zastavica `family_wizard_dismissed_{groupId}` za "Sakrij").
+**`family_groups`:**
+- `split_mode` text CHECK in (`equal`,`proportional_income`,`manual`) DEFAULT `equal`
+- `split_income_source` text CHECK in (`auto_3m`,`declared`,`hybrid`) DEFAULT `hybrid`
+- `shared_categories` text[]
+- `currency` text DEFAULT 'EUR'
 
-## C. i18n cleanup
+**Nove tablice:**
+- `family_settlements` — period, dugovnik, vjerovnik, iznos, status, payment_expense_id
+- `family_split_audit` — group_id, user_id, action, before/after jsonb
+- `family_split_snapshots` — materijalizirani cache (group_id, period, member_id, shared_total, owed, paid)
 
-Zamijeniti hardkodirane fallback stringove pronađene u `useFamilyGroups.ts` i `FamilyGroupDetailView.tsx`:
+Sve s GRANT-ovima (authenticated + service_role), RLS, policies vezane na `is_family_member`/`is_family_owner`.
 
-- `'Nepoznato'` (3 mjesta u hooku) → `t('family.unknownMember', 'Nepoznato')`
-- `'Račun'` (3 mjesta) → `t('family.fallbackAccount', 'Račun')`
-- `'Budžet'` (2 mjesta) → `t('family.fallbackBudget', 'Budžet')`
-- `'Projekt'` (1 mjesto) → `t('family.fallbackProject', 'Projekt')`
+### Pure helperi (vitest)
 
-Dodati ključeve u sva 3 jezika (hr/en/de) unutar postojećeg `family.*` namespacea.
+`src/lib/familySplit.ts`:
+- `computeIncomeRatio(members, incomes, currency, exchangeRates)` — currency-aware
+- `applyConsent(members, ratios)` — pending članovi izvan podjele
+- `excludeZeroIncome(members)`
+- `applyMonthlyContribution(members)`
+- `projectMonthEnd(spent, daysElapsed, daysInMonth)` — linearni trend
 
-## D. Aktivnost feed — filtri + paginacija
+`src/lib/familySettlements.ts`:
+- `computeSettlements(snapshot)` — netting algoritam
+- `generateIBANDeepLink(creditor, amount, reference)` — HR Pay
 
-`FamilyActivity` sekcija trenutno pokazuje sve unose odjednom. Dodati:
+### RPC (SECURITY DEFINER)
 
-- Dva mala `Select`-a iznad liste: **Član** (svi / pojedinačno po imenu) i **Tip** (svi / financije / članstvo / resursi)
-- Klijentsko filtriranje na `activities` arrayu (nije potrebno mijenjati hook ili DB)
-- Paginacija: prvih 30 + "Učitaj još 30" gumb (isti pattern kao transaction list pagination memory)
+- `compute_family_income_ratio(group_id, source)`
+- `refresh_family_split_snapshot(group_id, period_start, period_end)`
+- `compute_family_settlements(group_id, period_start, period_end)`
+- `record_settlement(settlement_id, payment_source_id)`
+- `apply_split_override(expense_id, overrides)` — upiše override + audit
 
-## E. Per-member tally na shared budget kartici
+### Triggeri
 
-Trenutno svaka `sharedBudgets` kartica prikazuje samo `formatAmount(budget_total)`. Dodati ispod imena malu liniju "Tomislav 45 €, Ana 30 € · od 200 €" — tko je koliko potrošio.
+- `expenses` insert/update/delete na shared sourceu → debounce refresh snapshot (5s)
+- `family_members` role/consent change → audit
+- `family_groups` split_mode change → audit
 
-Implementacija:
-- U `useFamilySharedResources` ili novom `useFamilyBudgetTally(budgetId, memberIds)` hooku: jedan query `expenses` filtriran po `budget_id` i `user_id IN (members)`, GROUP BY user_id, SUM amount za `type='expense'`
-- Cache po `budget_id` u state objektu (kao postojeći `projectStats`)
-- Prikaz: max 3 najveća člana, ostali "+N"
-- Bez DB promjena, samo SELECT preko postojeće RLS
+---
 
-## Što NIJE u Fazi 1 (čeka tvoju odluku)
+## Korak 2 — Privacy + per-transaction override (UI)
 
-- Per-transaction privacy flag (Faza 2)
-- Split tracker / "tko duguje kome" (Faza 2)
-- Reakcije i komentari (Faza 3)
-- Granularne notifikacije (Faza 3)
+- **`PrivacyToggle`** u `AddExpenseDialog` i `EditTransactionDialog`
+- **`SplitOverrideDialog`** iz `TransactionDetailDialog` (0-100% per član, suma=100%)
+- **`OverrideBadge`** u `TransactionListItem` kad postoji `split_overrides`
+- **Hookovi:** `useFamilySplit(groupId, period)`, `useFamilyIncomeRatio(groupId)`
+
+Privatne transakcije na shared sourceu: drugi članovi vide row kao "Transakcija (privatno)" bez iznosa, ali saldo se računa.
+
+---
+
+## Korak 3 — Settings, Consent, Settlements tab
+
+### `FamilySplitSettings` (u "Pregled" tabu)
+
+- Mode picker (equal/proportional/manual)
+- Income source (auto_3m/declared/hybrid) kad je proporcionalan
+- Shared categories multi-select
+- Per-member tablica: prihod, valuta, dodatak, consent status
+
+### Consent flow
+
+- `FamilyInvitationConsent` — 2. korak u `JoinFamily` ("Pristajem na proporcionalnu podjelu / Odbij — ostani 50/50")
+- Retroaktivni banner za postojeće članove kad vlasnik uključi proporcionalan mod
+
+### `FamilySettlementsTab` — novi tab "Obračun"
+
+- Period selector (ovaj/prošli/custom)
+- Live status: "Marko duguje 60€ Ani"
+- Tooltip projekcije kraja mjeseca
+- "Označi plaćeno" → dialog s payment source + IBAN deep link
+- Audit timeline (collapsible)
+
+### Member exit
+
+- Modal s preostalim saldom, opcija obračuna prije izlaska, history ostaje, audit zapis
+
+---
 
 ## Tehnički detalji
 
-- **Bez novih tablica, bez migracija.** Sve je UI + jedan SELECT za tally.
-- **Bez novih dependencyja.** shadcn `Tabs` i `Select` su već u projektu.
-- **Komponenta refactor:** `FamilyGroupDetailView.tsx` (819 linija) razbiti na `FamilyDetailHeader`, `FamilyOverviewTab`, `FamilySourcesTab`, `FamilyBudgetsTab`, `FamilyProjectsTab`, `FamilySavingsTab`, `FamilyMembersTab`, `FamilyActivityTab` — usklađeno s pravilom "max ~300 linija po komponenti".
-- **i18n:** novi ključevi `family.tabs.*`, `family.wizard.*`, `family.activity.filterBy*`, `family.fallback*`, `family.unknownMember`, `family.tally.others` u hr/en/de.
-- **A11y:** tabovi automatski dolaze s ARIA iz shadcn-a; checklist gumbi koriste postojeći `clickableProps()` ako će biti `<div>`, inače `<button>`.
+- **Currency:** `useExchangeRates` već postoji, snapshot u group currency
+- **Real-time:** snapshot iz cachea, projekcija = linearni trend (bez ML)
+- **Performance:** debounce 5s, snapshot TTL 90 dana, jedan SELECT za period
+- **i18n:** novi namespace `family.split.*` (hr/en/de) — mode, privacy, override, consent, settlements, audit, memberExit
+- **RLS:** privatne txn maskirane kroz view `family_shared_feed`; settlements vidljive članovima; audit vidljiv članovima (transparentnost), upis samo kroz RPC
 
-## Procjena
+---
 
-- ~4-6 sati implementacije
-- Bez rizika za postojeće funkcionalnosti
-- 0 DB migracija
-- Pokriva 4 od 14 dimenzija ocjene iz prethodnog reviewa (UX, empty state, i18n, aktivnost)
+## Explicitno odgođeno (Faza 3)
 
-Reci "krenimo" pa idem u build mode.
+Smart prompting, push za override, monthly settlement PDF, Cashflow Forecast integracija, relationship tagovi, reakcije/komentari.
+
+---
+
+## Procjena i rizici
+
+- ~3 dana fokusiranog rada (migracija + helperi + RPC + 3 koraka UI + i18n)
+- Retroaktivni consent: pending članovi koriste equal split kao fallback
+- Snapshot drift: "Osvježi" gumb + nightly cron full-refresh
+- Audit rast: particioniranje po mjesecu nakon 1 godine
+
+Krećemo s **Korakom 1** — DB migracija + pure helperi + RPC. UI dolazi tek u Koraku 2.
