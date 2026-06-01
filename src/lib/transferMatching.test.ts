@@ -104,7 +104,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('unknown cardId falls through to payment_source resolution', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'uuid-2', payment_source_card_id: 'card-ghost' }),
+      makeTransfer({ payment_source: 'uuid-2' as any, payment_source_card_id: 'card-ghost' }),
       customSources
     );
     expect(r?.from.name).toBe('Revolut');
@@ -150,7 +150,7 @@ describe('resolveTransferEndpoints', () => {
 
   it('source with no cards array still resolves by sourceId', () => {
     const r = resolveTransferEndpoints(
-      makeTransfer({ payment_source: 'uuid-2', payment_source_card_id: 'card-1' }),
+      makeTransfer({ payment_source: 'uuid-2' as any, payment_source_card_id: 'card-1' }),
       [{ id: 'uuid-2', name: 'Revolut', icon: '💳', color: '#456' }]
     );
     expect(r?.from.name).toBe('Revolut');
