@@ -152,14 +152,14 @@ export const useFamilyMembers = (groupId: string | null) => {
           .in('user_id', userIds);
 
         profiles?.forEach(p => {
-          profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
+          profilesMap.set(p.user_id, p.display_name || t('family.unknownMember', 'Nepoznato'));
         });
       }
 
       setMembers((membersData || []).map(m => ({
         ...m,
         role: m.role as FamilyRole,
-        display_name: profilesMap.get(m.user_id) || 'Nepoznato'
+        display_name: profilesMap.get(m.user_id) || t('family.unknownMember', 'Nepoznato')
       })));
 
       if (isCurrentOwner) {
