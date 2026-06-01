@@ -7,6 +7,12 @@ serve(async (req) => {
   }
 
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const quota = await checkAiQuota(auth.supabase, auth.userId, "scan-card");
+    if (quota) return quota;
+
     const { imageBase64 } = await req.json();
     
     if (!imageBase64) {
