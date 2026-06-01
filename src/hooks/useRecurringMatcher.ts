@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RecurringTransaction } from './useRecurringTransactions';
 import { localMatch } from '@/lib/recurringMatching';
+import { validateAiRecurringMatch } from '@/lib/validateAiRecurringMatch';
 
 export interface RecurringMatch {
   transaction: {
@@ -73,33 +74,18 @@ export const useRecurringMatcher = () => {
               const rec = remainingRecurring[m.recurring_index - 1];
               if (!tx || !rec || matchedRecurringIds.has(rec.id)) continue;
 
-              // Post-validacija: iznos mora biti identičan
-              const txAmt = Math.abs(tx.amount);
-              const recAmt = Math.abs(rec.amount);
-              const amtDiff = Math.abs(txAmt - recAmt) / Math.max(recAmt, 0.01);
-              if (amtDiff > 0.001) continue; // Odbaci ako iznos nije identičan
-
-              // Post-validacija: tip mora biti isti
-              if (tx.type !== rec.type) continue;
-
-              // Post-validacija: barem 1 zajednička riječ (≥3 slova)
-              const txWords = tx.description.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
-              const recWords = [...rec.description.toLowerCase().split(/\s+/), ...(rec.merchant_name || '').toLowerCase().split(/\s+/)].filter(w => w.length >= 3);
-              const hasWordOverlap = txWords.some(tw => recWords.some(rw => rw.includes(tw) || tw.includes(rw)));
-              if (!hasWordOverlap) continue;
-
-              // Confidence override: "high" samo ako opis sadrži podstring
-              const txDesc = tx.description.toLowerCase().trim();
-              const recDesc = rec.description.toLowerCase().trim();
-              const recMerchant = (rec.merchant_name || '').toLowerCase().trim();
-              const descSubstring = recDesc.includes(txDesc) || txDesc.includes(recDesc) ||
-                (recMerchant && (txDesc.includes(recMerchant) || recMerchant.includes(txDesc)));
-              const confidence: 'high' | 'medium' = descSubstring ? 'high' : 'medium';
+              const validation = validateAiRecurringMatch(tx, {
+                description: rec.description,
+                merchant_name: rec.merchant_name,
+                amount: rec.amount,
+                type: rec.type,
+              });
+              if (!validation.accept) continue;
 
               results.push({
                 transaction: tx,
                 recurring: rec,
-                confidence,
+                confidence: validation.confidence,
                 source: 'ai',
               });
               matchedRecurringIds.add(rec.id);
