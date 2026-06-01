@@ -28,6 +28,9 @@ import { useNativeShare } from '@/hooks/useNativeShare';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { FamilySplitControls } from './family/FamilySplitControls';
+import { FamilyReactionsBar } from './family/FamilyReactionsBar';
+import { FamilyCommentsInline } from './family/FamilyCommentsInline';
+import { useFamilyGroupForExpense } from '@/hooks/useFamilyGroupForExpense';
 
 
 interface TransactionDetailDialogProps {
@@ -799,6 +802,18 @@ export const TransactionDetailDialog = ({
             </p>
           )}
         </div>
+
+        {/* Family reactions & comments — samo za transakcije na shared family izvoru */}
+        {expense && familyGroupId && (
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3 shrink-0">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <User className="w-3.5 h-3.5" />
+              {t('family.transactionSocial.title')}
+            </div>
+            <FamilyReactionsBar groupId={familyGroupId} expenseId={expense.id} />
+            <FamilyCommentsInline groupId={familyGroupId} expenseId={expense.id} />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-2 shrink-0">
