@@ -110,7 +110,7 @@ export function useFamilySplitOverride() {
         );
         return true;
       } catch (e: any) {
-        showError(t('family.split.override.error'), e?.message);
+        showError(t('family.split.override.error'));
         return false;
       } finally {
         setSaving(false);
