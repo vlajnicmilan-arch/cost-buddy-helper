@@ -101,4 +101,72 @@ describe('resolveTransferEndpoints', () => {
     expect(r?.from.name).toBe('Gotovina');
     expect(r?.to.name).toBe('Banka');
   });
+
+  it('unknown cardId falls through to payment_source resolution', () => {
+    const r = resolveTransferEndpoints(
+      makeTransfer({ payment_source: 'uuid-2', payment_source_card_id: 'card-ghost' }),
+      customSources
+    );
+    expect(r?.from.name).toBe('Revolut');
+    expect(r?.from.cardLast4).toBeUndefined();
+  });
+
+  it('"custom:" prefix with unknown uuid falls back to cash', () => {
+    const r = resolveTransferEndpoints(
+      makeTransfer({ payment_source: 'custom:ghost-uuid' as any, income_source_id: 'cash' }),
+      customSources
+    );
+    expect(r?.from.name).toBe('Gotovina');
+    expect(r?.to.name).toBe('Gotovina');
+  });
+
+  it('empty-string card_name falls back to parent source name', () => {
+    const sources = [
+      {
+        id: 'uuid-x',
+        name: 'PBZ',
+        icon: '🏦',
+        color: '#abc',
+        cards: [{ id: 'card-empty', last_four_digits: '0000', card_name: '' }],
+      },
+    ];
+    const r = resolveTransferEndpoints(
+      makeTransfer({ payment_source_card_id: 'card-empty' }),
+      sources
+    );
+    expect(r?.from.name).toBe('PBZ');
+    expect(r?.from.cardLast4).toBe('0000');
+  });
+
+  it('mixed endpoints: from=card, to=custom UUID', () => {
+    const r = resolveTransferEndpoints(
+      makeTransfer({ payment_source_card_id: 'card-1', income_source_id: 'custom:uuid-2' }),
+      customSources
+    );
+    expect(r?.from.name).toBe('Glavna Visa');
+    expect(r?.from.cardLast4).toBe('1234');
+    expect(r?.to.name).toBe('Revolut');
+  });
+
+  it('source with no cards array still resolves by sourceId', () => {
+    const r = resolveTransferEndpoints(
+      makeTransfer({ payment_source: 'uuid-2', payment_source_card_id: 'card-1' }),
+      [{ id: 'uuid-2', name: 'Revolut', icon: '💳', color: '#456' }]
+    );
+    expect(r?.from.name).toBe('Revolut');
+    expect(r?.from.cardLast4).toBeUndefined();
+  });
+
+  it('destination card_id is ignored (only from-side supports cards)', () => {
+    const r = resolveTransferEndpoints(
+      makeTransfer({
+        payment_source: 'cash',
+        income_source_id: 'uuid-1',
+        // even if a stray destination card existed, function never reads it
+      }),
+      customSources
+    );
+    expect(r?.to.name).toBe('Erste tekući');
+    expect(r?.to.cardLast4).toBeUndefined();
+  });
 });
