@@ -47,7 +47,7 @@ export const NotificationsSection = ({
   const navigate = useNavigate();
   const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
-  const { prefs, setCategory, setWeekendEnabled } = useNotificationPreferences();
+  const { prefs, setCategory, setWeekendEnabled, setFlag } = useNotificationPreferences();
   const { user } = useAuth();
   const [showCategories, setShowCategories] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
@@ -228,6 +228,43 @@ export const NotificationsSection = ({
           </>
         )}
       </div>
+
+      {!isLocalMode && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+            <div className="flex-1 min-w-0 mr-3">
+              <Label htmlFor="family-override-push" className="text-sm font-medium cursor-pointer">
+                {t('family.notifications.overrideLabel', 'Push: promjena moje podjele')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('family.notifications.overrideDesc', 'Obavijesti me kad netko prilagodi moj udio u zajedničkoj transakciji.')}
+              </p>
+            </div>
+            <Switch
+              id="family-override-push"
+              checked={prefs.family_override_push}
+              onCheckedChange={(v) => setFlag('family_override_push', v)}
+            />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+            <div className="flex-1 min-w-0 mr-3">
+              <Label htmlFor="family-reactions-push" className="text-sm font-medium cursor-pointer">
+                {t('family.notifications.reactionsLabel', 'Push: reakcije i komentari')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('family.notifications.reactionsDesc', 'Obavijesti me kad netko reagira ili komentira moju transakciju.')}
+              </p>
+            </div>
+            <Switch
+              id="family-reactions-push"
+              checked={prefs.family_reactions_push}
+              onCheckedChange={(v) => setFlag('family_reactions_push', v)}
+            />
+          </div>
+        </div>
+      )}
+
+
 
       {!isLocalMode && (
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">

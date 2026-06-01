@@ -24,6 +24,8 @@ export interface NotificationPreferences {
   broadcast_enabled: boolean;
   daily_summary_enabled: boolean;
   daily_summary_weekend_enabled: boolean;
+  family_override_push: boolean;
+  family_reactions_push: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPreferences = {
@@ -37,6 +39,8 @@ const DEFAULT_PREFS: NotificationPreferences = {
   broadcast_enabled: true,
   daily_summary_enabled: true,
   daily_summary_weekend_enabled: true,
+  family_override_push: false,
+  family_reactions_push: false,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -81,6 +85,8 @@ export const useNotificationPreferences = () => {
           broadcast_enabled: data.broadcast_enabled,
           daily_summary_enabled: data.daily_summary_enabled ?? true,
           daily_summary_weekend_enabled: data.daily_summary_weekend_enabled ?? true,
+          family_override_push: data.family_override_push ?? false,
+          family_reactions_push: data.family_reactions_push ?? false,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
@@ -138,5 +144,24 @@ export const useNotificationPreferences = () => {
     }
   }, [user, prefs]);
 
-  return { prefs, loading, setCategory, setWeekendEnabled, refetch: fetchPrefs };
+  const setFlag = useCallback(
+    async (col: keyof NotificationPreferences, enabled: boolean) => {
+      if (!user) return;
+      setPrefs((p) => ({ ...p, [col]: enabled }));
+      try {
+        await (supabase as any)
+          .from('notification_preferences')
+          .upsert(
+            { user_id: user.id, ...prefs, [col]: enabled },
+            { onConflict: 'user_id' },
+          );
+      } catch (e) {
+        console.error('[notif-prefs] flag update failed:', e);
+        setPrefs((p) => ({ ...p, [col]: !enabled }));
+      }
+    },
+    [user, prefs],
+  );
+
+  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, refetch: fetchPrefs };
 };

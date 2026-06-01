@@ -4,6 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
+export type FamilyRelationship =
+  | 'partner'
+  | 'child'
+  | 'parent'
+  | 'sibling'
+  | 'roommate'
+  | 'grandparent'
+  | 'other';
+
 export interface FamilyMemberConsentData {
   id: string;
   user_id: string;
@@ -12,6 +21,7 @@ export interface FamilyMemberConsentData {
   declared_monthly_income: number | null;
   declared_income_currency: string;
   monthly_contribution: number;
+  relationship: FamilyRelationship | null;
 }
 
 /**
@@ -31,7 +41,7 @@ export function useFamilyMemberConsent(groupId: string | null) {
     try {
       const { data: row, error } = await supabase
         .from('family_members')
-        .select('id, user_id, income_share_consent, income_share_consent_at, declared_monthly_income, declared_income_currency, monthly_contribution')
+        .select('id, user_id, income_share_consent, income_share_consent_at, declared_monthly_income, declared_income_currency, monthly_contribution, relationship')
         .eq('group_id', groupId)
         .eq('user_id', user.id)
         .maybeSingle();

@@ -1218,7 +1218,10 @@
       "projectedExpenses": "Očekivani troškovi",
       "netFlow": "Neto tok",
       "cumulative": "Kumulativno",
-      "basedOn": "Bazirano na ponavljajućim transakcijama i ratama"
+      "basedOn": "Bazirano na ponavljajućim transakcijama i ratama",
+      "familyObligations": {
+        "chip": "Uključeno: obiteljski obračun {{amount}}"
+      }
     }
   },
   "nav": {
@@ -2483,6 +2486,34 @@
         "applied": "Mode podjele ažuriran",
         "applyFailed": "Greška pri ažuriranju"
       }
+    },
+    "relationship": {
+      "label": "Moja uloga u obitelji",
+      "placeholder": "Odaberi…",
+      "none": "Nije navedeno",
+      "options": {
+        "partner": "Partner",
+        "child": "Dijete",
+        "parent": "Roditelj",
+        "sibling": "Brat/sestra",
+        "roommate": "Cimer/cimerica",
+        "grandparent": "Baka/djed",
+        "other": "Ostalo"
+      }
+    },
+    "reactions": {
+      "add": "Dodaj reakciju"
+    },
+    "comments": {
+      "empty": "Još nema komentara.",
+      "placeholder": "Komentar (max 280)",
+      "send": "Pošalji"
+    },
+    "notifications": {
+      "overrideLabel": "Push: promjena moje podjele",
+      "overrideDesc": "Obavijesti me kad netko prilagodi moj udio u zajedničkoj transakciji.",
+      "reactionsLabel": "Push: reakcije i komentari",
+      "reactionsDesc": "Obavijesti me kad netko reagira ili komentira moju transakciju."
     }
   },
   "business": {

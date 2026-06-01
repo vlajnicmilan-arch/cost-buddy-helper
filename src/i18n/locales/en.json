@@ -1215,7 +1215,10 @@
       "projectedExpenses": "Projected expenses",
       "netFlow": "Net flow",
       "cumulative": "Cumulative",
-      "basedOn": "Based on recurring transactions and installments"
+      "basedOn": "Based on recurring transactions and installments",
+      "familyObligations": {
+        "chip": "Included: family settlement {{amount}}"
+      }
     }
   },
   "nav": {
@@ -2607,6 +2610,34 @@
         "applied": "Split mode updated",
         "applyFailed": "Failed to update"
       }
+    },
+    "relationship": {
+      "label": "My family role",
+      "placeholder": "Choose…",
+      "none": "Not specified",
+      "options": {
+        "partner": "Partner",
+        "child": "Child",
+        "parent": "Parent",
+        "sibling": "Sibling",
+        "roommate": "Roommate",
+        "grandparent": "Grandparent",
+        "other": "Other"
+      }
+    },
+    "reactions": {
+      "add": "Add reaction"
+    },
+    "comments": {
+      "empty": "No comments yet.",
+      "placeholder": "Comment (max 280)",
+      "send": "Send"
+    },
+    "notifications": {
+      "overrideLabel": "Push: change to my split",
+      "overrideDesc": "Notify me when someone adjusts my share of a shared transaction.",
+      "reactionsLabel": "Push: reactions & comments",
+      "reactionsDesc": "Notify me when someone reacts or comments on my transaction."
     }
   },
   "business": {
