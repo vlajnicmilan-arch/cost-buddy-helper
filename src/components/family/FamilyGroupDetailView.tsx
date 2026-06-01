@@ -88,8 +88,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
 
   const addBtnRef = useRef<Record<TabKey, HTMLButtonElement | null>>({
-    overview: null, accounts: null, budgets: null, projects: null, savings: null, team: null, activity: null,
+    overview: null, accounts: null, budgets: null, projects: null, savings: null, team: null, settlements: null, settings: null, activity: null,
   });
+
+  const { settings: splitSettings } = useFamilySplitSettings(group.id);
+  const showIncomeFields = splitSettings?.split_mode === 'proportional_income';
 
   // Reset scroll to top on mount (when entering detail view).
   useLayoutEffect(() => {
