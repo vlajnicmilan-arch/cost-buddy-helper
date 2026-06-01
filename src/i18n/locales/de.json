@@ -2437,6 +2437,18 @@
           "settlement_recorded": "Abrechnung erfasst",
           "snapshot_refreshed": "Snapshot aktualisiert"
         }
+      },
+      "suggestion": {
+        "title_proportional_income": "Anteilige Aufteilung erwägen",
+        "title_equal": "Zurück zur gleichen Aufteilung",
+        "descToProportional": "Die letzten 3 Monate zeigen deutliche Unterschiede bei den tatsächlichen Mitgliederausgaben. Anteilig wäre fairer.",
+        "descToEqual": "Die Ausgaben der Mitglieder haben sich angeglichen. Gleiche Aufteilung ist nun einfacher.",
+        "basedOn": "Basierend auf {{periods}} Perioden",
+        "applyButton_proportional_income": "Auf anteilig wechseln",
+        "applyButton_equal": "Auf gleich zurücksetzen",
+        "openSettings": "Aufteilungseinstellungen öffnen",
+        "applied": "Aufteilungsmodus aktualisiert",
+        "applyFailed": "Aktualisierung fehlgeschlagen"
       }
     }
   },

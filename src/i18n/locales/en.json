@@ -2569,6 +2569,18 @@
           "settlement_recorded": "Settlement recorded",
           "snapshot_refreshed": "Snapshot refreshed"
         }
+      },
+      "suggestion": {
+        "title_proportional_income": "Consider proportional split",
+        "title_equal": "Revert to equal split",
+        "descToProportional": "Last 3 months show significant differences in actual member spending. Proportional would be fairer.",
+        "descToEqual": "Member spending has balanced out. Equal split is simpler now.",
+        "basedOn": "Based on {{periods}} periods",
+        "applyButton_proportional_income": "Switch to proportional",
+        "applyButton_equal": "Revert to equal",
+        "openSettings": "Open split settings",
+        "applied": "Split mode updated",
+        "applyFailed": "Failed to update"
       }
     }
   },

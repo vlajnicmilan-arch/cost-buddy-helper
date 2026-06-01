@@ -2445,6 +2445,18 @@
           "settlement_recorded": "Zabilježena uplata",
           "snapshot_refreshed": "Osvježen snapshot"
         }
+      },
+      "suggestion": {
+        "title_proportional_income": "Razmotri proporcionalnu podjelu",
+        "title_equal": "Vrati se na jednaku podjelu",
+        "descToProportional": "Zadnja 3 mjeseca pokazuju značajnu razliku u stvarnoj potrošnji članova. Proporcionalno bi bilo pravednije.",
+        "descToEqual": "Potrošnja članova izjednačila se. Jednaka podjela je sada jednostavnija.",
+        "basedOn": "Na temelju {{periods}} perioda",
+        "applyButton_proportional_income": "Prebaci na proporcionalno",
+        "applyButton_equal": "Vrati na jednako",
+        "openSettings": "Otvori postavke podjele",
+        "applied": "Mode podjele ažuriran",
+        "applyFailed": "Greška pri ažuriranju"
       }
     }
   },
