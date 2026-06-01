@@ -1215,7 +1215,10 @@
       "projectedExpenses": "Erwartete Ausgaben",
       "netFlow": "Netto-Fluss",
       "cumulative": "Kumuliert",
-      "basedOn": "Basierend auf wiederkehrenden Transaktionen und Raten"
+      "basedOn": "Basierend auf wiederkehrenden Transaktionen und Raten",
+      "familyObligations": {
+        "chip": "Inklusive: Familienabrechnung {{amount}}"
+      }
     }
   },
   "nav": {

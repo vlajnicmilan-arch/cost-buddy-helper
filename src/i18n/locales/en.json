@@ -1215,7 +1215,10 @@
       "projectedExpenses": "Projected expenses",
       "netFlow": "Net flow",
       "cumulative": "Cumulative",
-      "basedOn": "Based on recurring transactions and installments"
+      "basedOn": "Based on recurring transactions and installments",
+      "familyObligations": {
+        "chip": "Included: family settlement {{amount}}"
+      }
     }
   },
   "nav": {
