@@ -128,10 +128,9 @@ Deno.serve(async (req) => {
         console.error("[BROADCAST] push chunk failed", { i, err: e });
       }
     }
-    const users = { length: allUserIds.length } as any;
 
     return new Response(
-      JSON.stringify({ success: true, count: users.length }),
+      JSON.stringify({ success: true, count: allUserIds.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
