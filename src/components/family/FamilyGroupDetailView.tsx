@@ -36,6 +36,10 @@ import { FamilyGroupDialog } from './FamilyGroupDialog';
 import { FamilyOnboardingWizard } from './FamilyOnboardingWizard';
 import { FamilyActivityFeed } from './FamilyActivityFeed';
 import { FamilyBudgetTallyRow } from './FamilyBudgetTallyRow';
+import { FamilySplitSettingsTab } from './FamilySplitSettingsTab';
+import { FamilySettlementsTab } from './FamilySettlementsTab';
+import { FamilyMemberConsentCard } from './FamilyMemberConsentCard';
+import { useFamilySplitSettings } from '@/hooks/useFamilySplitSettings';
 
 interface Props {
   group: FamilyGroup;
@@ -44,7 +48,7 @@ interface Props {
   onDelete: () => Promise<void>;
 }
 
-type TabKey = 'overview' | 'accounts' | 'budgets' | 'projects' | 'savings' | 'team' | 'activity';
+type TabKey = 'overview' | 'accounts' | 'budgets' | 'projects' | 'savings' | 'team' | 'settlements' | 'settings' | 'activity';
 
 export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Props) => {
   const { t } = useTranslation();
