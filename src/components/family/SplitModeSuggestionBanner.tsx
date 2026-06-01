@@ -50,7 +50,7 @@ export function SplitModeSuggestionBanner({
 }: Props) {
   const { t } = useTranslation();
   const { result, loading } = useFamilySplitSuggestion({ groupId, currentMode });
-  const { updateSettings } = useFamilySplitSettings(groupId);
+  const { save: saveSettings } = useFamilySplitSettings(groupId);
   const [dismissedTick, setDismissedTick] = useState(0);
   const [applying, setApplying] = useState(false);
 
@@ -69,7 +69,7 @@ export function SplitModeSuggestionBanner({
     }
     setApplying(true);
     try {
-      await updateSettings({ split_mode: result.suggestedMode! });
+      await saveSettings({ split_mode: result.suggestedMode! });
       showSuccess(t('family.split.suggestion.applied'));
       persistDismiss(groupId, result.reason);
       setDismissedTick((x) => x + 1);
