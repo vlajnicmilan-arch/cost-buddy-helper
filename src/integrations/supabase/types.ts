@@ -1895,6 +1895,96 @@ export type Database = {
           },
         ]
       }
+      family_transaction_comments: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          expense_id: string
+          group_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_id: string
+          group_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          expense_id?: string
+          group_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_transaction_comments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_transaction_comments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_transaction_reactions: {
+        Row: {
+          author_user_id: string
+          created_at: string
+          emoji: string
+          expense_id: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          author_user_id: string
+          created_at?: string
+          emoji: string
+          expense_id: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          author_user_id?: string
+          created_at?: string
+          emoji?: string
+          expense_id?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_transaction_reactions_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_transaction_reactions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_submissions: {
         Row: {
           app_version: string | null
@@ -2819,6 +2909,8 @@ export type Database = {
           daily_summary_paused_until: string | null
           daily_summary_unopened_streak: number
           daily_summary_weekend_enabled: boolean
+          family_override_push: boolean
+          family_reactions_push: boolean
           id: string
           pending_enabled: boolean
           projects_enabled: boolean
@@ -2838,6 +2930,8 @@ export type Database = {
           daily_summary_paused_until?: string | null
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
+          family_override_push?: boolean
+          family_reactions_push?: boolean
           id?: string
           pending_enabled?: boolean
           projects_enabled?: boolean
@@ -2857,6 +2951,8 @@ export type Database = {
           daily_summary_paused_until?: string | null
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
+          family_override_push?: boolean
+          family_reactions_push?: boolean
           id?: string
           pending_enabled?: boolean
           projects_enabled?: boolean
