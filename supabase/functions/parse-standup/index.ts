@@ -14,12 +14,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof Response) return auth;
+
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const quota = await checkAiQuota(auth.supabase, auth.userId, "parse-standup");
+    if (quota) return quota;
+
 
     const { text, project_name, worker_names }: ParseRequest = await req.json();
     if (!text || typeof text !== 'string' || text.trim().length < 5) {
