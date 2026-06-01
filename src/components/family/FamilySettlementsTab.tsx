@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, RefreshCw, Check, ArrowRight, Scale } from 'lucide-react';
+import { Loader2, RefreshCw, Check, ArrowRight, Scale, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useFamilySettlements } from '@/hooks/useFamilySettlements';
 import { FamilySplitAuditTimeline } from './FamilySplitAuditTimeline';
+import { supabase } from '@/integrations/supabase/client';
+import { generateFamilySettlementPdf } from '@/lib/familySettlementPdf';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 interface MemberRef {
   user_id: string;
@@ -86,10 +89,68 @@ export const FamilySettlementsTab = ({ groupId, members, currentUserId }: Props)
         </div>
       </div>
 
-      <Button onClick={recompute} disabled={computing} className="w-full gap-1.5" variant="default">
-        {computing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        {t('family.split.settlements.recompute', 'Izračunaj saldo')}
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={recompute} disabled={computing} className="flex-1 gap-1.5" variant="default">
+          {computing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {t('family.split.settlements.recompute', 'Izračunaj saldo')}
+        </Button>
+        <Button
+          onClick={async () => {
+            try {
+              const [snapRes, memberRes] = await Promise.all([
+                supabase
+                  .from('family_split_snapshots')
+                  .select('member_user_id, shared_total, share_ratio, owed, paid, currency')
+                  .eq('group_id', groupId)
+                  .eq('period_start', periodStart)
+                  .eq('period_end', periodEnd),
+                supabase
+                  .from('family_groups')
+                  .select('name, currency')
+                  .eq('id', groupId)
+                  .maybeSingle(),
+              ]);
+              if (snapRes.error || memberRes.error) throw snapRes.error || memberRes.error;
+              const groupName = memberRes.data?.name || 'Obitelj';
+              const currency = memberRes.data?.currency || 'EUR';
+              const memberMap = new Map(members.map((m) => [m.user_id, m.display_name || '?']));
+              const memberRows = (snapRes.data || []).map((s: any) => ({
+                user_id: s.member_user_id,
+                display_name: memberMap.get(s.member_user_id) || '?',
+                shared_total: Number(s.shared_total || 0),
+                share_ratio: Number(s.share_ratio || 0),
+                owed: Number(s.owed || 0),
+                paid: Number(s.paid || 0),
+              }));
+              const settlementRows = rows.map((r) => ({
+                debtor: memberMap.get(r.debtor_user_id) || '?',
+                creditor: memberMap.get(r.creditor_user_id) || '?',
+                amount: Number(r.amount || 0),
+                status: r.status,
+                paid_at: r.paid_at,
+                note: r.note,
+              }));
+              await generateFamilySettlementPdf({
+                groupName,
+                periodStart,
+                periodEnd,
+                currency,
+                members: memberRows,
+                settlements: settlementRows,
+              });
+              showSuccess(t('family.split.settlements.exportPdf.success', 'PDF spreman'));
+            } catch (e: any) {
+              showError(e?.message || t('family.split.settlements.exportPdf.failed', 'Greška'));
+            }
+          }}
+          variant="outline"
+          className="gap-1.5"
+          disabled={rows.length === 0}
+        >
+          <FileDown className="h-3.5 w-3.5" />
+          {t('family.split.settlements.exportPdf.button', 'PDF')}
+        </Button>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-8">

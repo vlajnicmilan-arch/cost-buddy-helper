@@ -2426,7 +2426,32 @@
         "markError": "Greška",
         "notePh": "Bilješka (opcionalno)",
         "confirm": "Potvrdi",
-        "disclaimer": "Obračun je informativan. Stvarna naplata se ne provodi; označavanje samo zatvara stavku."
+        "disclaimer": "Obračun je informativan. Stvarna naplata se ne provodi; označavanje samo zatvara stavku.",
+        "exportPdf": {
+          "button": "PDF",
+          "title": "Obiteljski obračun",
+          "success": "PDF spreman",
+          "failed": "Greška pri izradi PDF-a",
+          "sectionMembers": "Pregled po članovima",
+          "sectionNetting": "Tko kome duguje",
+          "sectionAudit": "Povijest promjena",
+          "nettingEmpty": "Nema otvorenih stavki — sve namireno.",
+          "colMember": "Član",
+          "colSharedTotal": "Ukupno dijeljeno",
+          "colShare": "Udio",
+          "colOwed": "Duguje",
+          "colPaid": "Plaćeno",
+          "colBalance": "Saldo",
+          "colDebtor": "Dugovnik",
+          "colCreditor": "Vjerovnik",
+          "colAmount": "Iznos",
+          "colStatus": "Status",
+          "colWhen": "Vrijeme",
+          "colWho": "Tko",
+          "colWhat": "Akcija",
+          "statusPending": "Otvoreno",
+          "statusCancelled": "Otkazano"
+        }
       },
       "prediction": {
         "title": "Predviđena podjela",
@@ -2445,6 +2470,18 @@
           "settlement_recorded": "Zabilježena uplata",
           "snapshot_refreshed": "Osvježen snapshot"
         }
+      },
+      "suggestion": {
+        "title_proportional_income": "Razmotri proporcionalnu podjelu",
+        "title_equal": "Vrati se na jednaku podjelu",
+        "descToProportional": "Zadnja 3 mjeseca pokazuju značajnu razliku u stvarnoj potrošnji članova. Proporcionalno bi bilo pravednije.",
+        "descToEqual": "Potrošnja članova izjednačila se. Jednaka podjela je sada jednostavnija.",
+        "basedOn": "Na temelju {{periods}} perioda",
+        "applyButton_proportional_income": "Prebaci na proporcionalno",
+        "applyButton_equal": "Vrati na jednako",
+        "openSettings": "Otvori postavke podjele",
+        "applied": "Mode podjele ažuriran",
+        "applyFailed": "Greška pri ažuriranju"
       }
     }
   },

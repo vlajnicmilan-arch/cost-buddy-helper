@@ -39,6 +39,7 @@ import { FamilyBudgetTallyRow } from './FamilyBudgetTallyRow';
 import { FamilySplitSettingsTab } from './FamilySplitSettingsTab';
 import { FamilySettlementsTab } from './FamilySettlementsTab';
 import { FamilyMemberConsentCard } from './FamilyMemberConsentCard';
+import { SplitModeSuggestionBanner } from './SplitModeSuggestionBanner';
 import { useFamilySplitSettings } from '@/hooks/useFamilySplitSettings';
 
 interface Props {
@@ -702,6 +703,16 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
         onGoToTeam={() => goToTab('team')}
         onGoToSavings={() => goToTab('savings')}
       />
+
+      {splitSettings && (
+        <SplitModeSuggestionBanner
+          groupId={group.id}
+          currentMode={splitSettings.split_mode}
+          isOwner={isOwner}
+          onSwitchTab={() => goToTab('settings')}
+        />
+      )}
+
 
       <div className="rounded-xl p-4 bg-card border border-border/50">
         <p className="text-xs text-muted-foreground mb-1">{t('family.totalSharedBalance')}</p>

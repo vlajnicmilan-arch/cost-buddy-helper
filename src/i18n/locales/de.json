@@ -2418,7 +2418,32 @@
         "markError": "Fehler",
         "notePh": "Notiz (optional)",
         "confirm": "Bestätigen",
-        "disclaimer": "Nur informativ. Keine tatsächliche Zahlung; das Markieren schließt nur den Eintrag."
+        "disclaimer": "Nur informativ. Keine tatsächliche Zahlung; das Markieren schließt nur den Eintrag.",
+        "exportPdf": {
+          "button": "PDF",
+          "title": "Familienabrechnung",
+          "success": "PDF bereit",
+          "failed": "PDF-Erstellung fehlgeschlagen",
+          "sectionMembers": "Mitgliederübersicht",
+          "sectionNetting": "Wer schuldet wem",
+          "sectionAudit": "Änderungsverlauf",
+          "nettingEmpty": "Keine offenen Posten — alles beglichen.",
+          "colMember": "Mitglied",
+          "colSharedTotal": "Geteilt gesamt",
+          "colShare": "Anteil",
+          "colOwed": "Schuldet",
+          "colPaid": "Bezahlt",
+          "colBalance": "Saldo",
+          "colDebtor": "Schuldner",
+          "colCreditor": "Gläubiger",
+          "colAmount": "Betrag",
+          "colStatus": "Status",
+          "colWhen": "Wann",
+          "colWho": "Wer",
+          "colWhat": "Aktion",
+          "statusPending": "Offen",
+          "statusCancelled": "Storniert"
+        }
       },
       "prediction": {
         "title": "Voraussichtliche Aufteilung",
@@ -2437,6 +2462,18 @@
           "settlement_recorded": "Abrechnung erfasst",
           "snapshot_refreshed": "Snapshot aktualisiert"
         }
+      },
+      "suggestion": {
+        "title_proportional_income": "Anteilige Aufteilung erwägen",
+        "title_equal": "Zurück zur gleichen Aufteilung",
+        "descToProportional": "Die letzten 3 Monate zeigen deutliche Unterschiede bei den tatsächlichen Mitgliederausgaben. Anteilig wäre fairer.",
+        "descToEqual": "Die Ausgaben der Mitglieder haben sich angeglichen. Gleiche Aufteilung ist nun einfacher.",
+        "basedOn": "Basierend auf {{periods}} Perioden",
+        "applyButton_proportional_income": "Auf anteilig wechseln",
+        "applyButton_equal": "Auf gleich zurücksetzen",
+        "openSettings": "Aufteilungseinstellungen öffnen",
+        "applied": "Aufteilungsmodus aktualisiert",
+        "applyFailed": "Aktualisierung fehlgeschlagen"
       }
     }
   },
