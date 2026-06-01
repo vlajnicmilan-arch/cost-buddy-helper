@@ -1,7 +1,4 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 
 interface ProjectContextItem {
   id: string;
@@ -25,12 +22,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const auth = await requireAuth(req);
+    if (auth instanceof Response) return auth;
+
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const quota = await checkAiQuota(auth.supabase, auth.userId, "analyze-document");
+    if (quota) return quota;
+
 
     const body: AnalyzeRequest = await req.json();
     if (!body.base64 && !body.url) {

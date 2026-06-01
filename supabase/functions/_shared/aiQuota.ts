@@ -1,0 +1,138 @@
+// Shared helpers for AI cost-abuse protection across edge functions.
+//
+// Two responsibilities:
+//   1) requireAuth(req)      → verifies the JWT and returns { userId, supabase, authHeader }
+//                              or a 401 Response if the caller is not authenticated.
+//   2) checkAiQuota(...)     → atomically increments per-user/per-route daily counter
+//                              and returns a 429 Response if the tier limit was exceeded.
+//
+// Tier resolution: reads `subscribers` (Stripe-driven) and falls back to 'free'.
+// Free / Pro / Business limits are defined per route below — tune without redeploy
+// by editing this file.
+
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type Tier = "free" | "pro" | "business";
+
+// Per-route daily limits. null = unlimited.
+const QUOTAS: Record<string, Record<Tier, number>> = {
+  "parse-receipt":         { free: 10, pro: 100, business: 500 },
+  "parse-pdf-statement":   { free: 3,  pro: 30,  business: 150 },
+  "financial-assistant":   { free: 5,  pro: 50,  business: 200 },
+  "generate-ai-insights":  { free: 2,  pro: 5,   business: 10 },
+  "scan-card":             { free: 5,  pro: 20,  business: 50 },
+  "analyze-document":      { free: 5,  pro: 30,  business: 100 },
+  "categorize-transaction":{ free: 30, pro: 200, business: 1000 },
+  "detect-loans":          { free: 5,  pro: 30,  business: 100 },
+  "match-recurring":       { free: 5,  pro: 30,  business: 100 },
+  "parse-standup":         { free: 5,  pro: 30,  business: 100 },
+};
+
+export interface AuthResult {
+  userId: string;
+  supabase: SupabaseClient;
+  authHeader: string;
+}
+
+/**
+ * Verifies the caller's JWT via getClaims. Returns either an AuthResult or a
+ * 401 Response that the caller should return as-is.
+ */
+export async function requireAuth(req: Request): Promise<AuthResult | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return { userId: data.claims.sub as string, supabase, authHeader };
+}
+
+async function resolveTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
+  try {
+    const { data } = await supabase
+      .from("subscribers")
+      .select("subscribed, subscription_tier")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data?.subscribed) return "free";
+    const t = (data.subscription_tier || "").toLowerCase();
+    if (t.includes("business") || t.includes("lifetime")) return "business";
+    if (t.includes("pro") || t.includes("premium")) return "pro";
+    return "free";
+  } catch {
+    return "free";
+  }
+}
+
+/**
+ * Atomically increments the per-user daily counter for `route` and returns a
+ * 429 Response if the tier's limit has been exceeded. Returns null on success.
+ *
+ * Uses SECURITY DEFINER RPC `increment_ai_usage`. Failures (e.g. transient DB
+ * errors) fail-open so AI features keep working — the workspace budget cap is
+ * the ultimate hard stop.
+ */
+export async function checkAiQuota(
+  supabase: SupabaseClient,
+  userId: string,
+  route: string,
+): Promise<Response | null> {
+  const limits = QUOTAS[route];
+  if (!limits) return null; // route not gated
+
+  const tier = await resolveTier(supabase, userId);
+  const limit = limits[tier];
+
+  // Use service-role client so RLS / SECURITY DEFINER works with the real auth.uid().
+  // We rely on auth.uid() inside the function — so reuse the user-scoped client.
+  const { data, error } = await supabase.rpc("increment_ai_usage", {
+    p_route: route,
+    p_limit: limit,
+  });
+
+  if (error) {
+    console.warn("[aiQuota] increment failed, failing open:", error.message);
+    return null;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row && row.allowed === false) {
+    return new Response(
+      JSON.stringify({
+        error: "daily_ai_limit_reached",
+        route,
+        limit,
+        tier,
+      }),
+      {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  return null;
+}

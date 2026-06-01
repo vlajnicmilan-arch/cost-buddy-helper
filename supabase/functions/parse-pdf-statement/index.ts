@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkAiQuota } from "../_shared/aiQuota.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,6 +81,10 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
+
+    const quotaResp = await checkAiQuota(supabase, userId, "parse-pdf-statement");
+    if (quotaResp) return quotaResp;
+
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
 

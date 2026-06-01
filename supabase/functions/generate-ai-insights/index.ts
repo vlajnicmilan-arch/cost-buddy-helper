@@ -2,6 +2,7 @@
 // Hybrid: deterministic compute + AI sentence formulation.
 // Auth: validates JWT in code (verify_jwt = false in config).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkAiQuota } from "../_shared/aiQuota.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,10 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const quotaResp = await checkAiQuota(userClient, user.id, "generate-ai-insights");
+    if (quotaResp) return quotaResp;
+
 
     // Optional: force regenerate
     let force = false;
