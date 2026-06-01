@@ -39,6 +39,7 @@ import { FamilyBudgetTallyRow } from './FamilyBudgetTallyRow';
 import { FamilySplitSettingsTab } from './FamilySplitSettingsTab';
 import { FamilySettlementsTab } from './FamilySettlementsTab';
 import { FamilyMemberConsentCard } from './FamilyMemberConsentCard';
+import { SplitModeSuggestionBanner } from './SplitModeSuggestionBanner';
 import { useFamilySplitSettings } from '@/hooks/useFamilySplitSettings';
 
 interface Props {
