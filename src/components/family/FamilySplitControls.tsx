@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useFamilySplitContext } from '@/hooks/useFamilySplitOverride';
 import { SplitOverrideDialog } from './SplitOverrideDialog';
-import type { Expense } from '@/types';
+import type { Expense } from '@/types/expense';
 
 interface FamilySplitControlsProps {
   expense: Expense;
