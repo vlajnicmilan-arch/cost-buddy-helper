@@ -136,6 +136,9 @@ export const CashflowForecast = () => {
         }
       }
 
+      // Family obligations (current user as debtor, pending)
+      weekExpenses += familyPerWeek[w] || 0;
+
       const net = weekIncome - weekExpenses;
       cumulative += net;
 
@@ -151,7 +154,13 @@ export const CashflowForecast = () => {
     }
 
     return weeks;
-  }, [recurringTransactions, plans, t]);
+  }, [recurringTransactions, plans, familyObligations, t]);
+
+  const familyTotal = useMemo(
+    () => familyObligations.reduce((s, r) => s + Number(r.amount || 0), 0),
+    [familyObligations],
+  );
+
 
   const totalProjectedIncome = forecastData.reduce((s, w) => s + w.income, 0);
   const totalProjectedExpenses = forecastData.reduce((s, w) => s + w.expenses, 0);
