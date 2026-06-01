@@ -406,6 +406,11 @@ export const TransactionDetailDialog = ({
             </div>
           )}
 
+          {/* Family split controls — only rendered when expense lives on a shared family payment source */}
+          {expense.type === 'expense' && expense.user_id === user?.id && (
+            <FamilySplitControls expense={expense} />
+          )}
+
           {/* Payment Source — for transfer: show From → To, otherwise single source */}
           {expense.type === 'transfer' ? (
             (() => {
