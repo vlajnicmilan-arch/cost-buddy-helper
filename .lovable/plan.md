@@ -7,17 +7,16 @@ Izvest ćemo **sekvencijalno** (svaki korak = zaseban deliverable + commit). Ne 
 
 ---
 
-## Korak 1 — Smart prompting (mode suggestion)
+## Korak 1 — Smart prompting (mode suggestion) ✅ DOVRŠENO
 
 **Cilj:** kad grupa ima ≥3 mjeseca podataka i `split_mode='equal'`, sustav analizira stvarno trošenje i predlaže `proportional_income` ako bi to bilo "pravednije".
 
-- Pure helper `src/lib/familySplitSuggestion.ts`:
-  - `analyzeFairness(snapshots, members)` → vraća `{currentMode, suggestedMode, reason, gini}` (Gini koeficijent razlike doprinos vs trošak)
-  - Threshold: prijedlog kad razlika člana > 25% od equal share kroz 3 mj.
-- RPC `suggest_family_split_mode(group_id)` (SECURITY DEFINER, read-only)
-- UI: `SplitModeSuggestionBanner` u `FamilyGroupDetailView` Pregled tabu (dismissible, localStorage 14d)
-- vitest pokrivenost helpera (5+ scenarija: tied/skewed/insufficient data/already proportional/single member)
-- i18n: `family.split.suggestion.*`
+- Pure helper `src/lib/familySplitSuggestion.ts` — `analyzeFairness()` + `gini()`
+- Hook `src/hooks/useFamilySplitSuggestion.ts` — fetch snapshots iz RLS, compute klijent-side (bez RPC-a)
+- UI: `SplitModeSuggestionBanner` mountan u overview tab `FamilyGroupDetailView`
+- Dismiss perzistencija u localStorage 14 dana po (group, reason)
+- 12 vitest scenarija: gini, insufficient_periods, single_member, manual_mode, income_skew, balanced, needs_consent, spend_balanced, zero_activity
+- i18n: `family.split.suggestion.*` u hr/en/de
 
 ---
 
