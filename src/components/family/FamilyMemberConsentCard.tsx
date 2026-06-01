@@ -1,17 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldOff, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useFamilyMemberConsent } from '@/hooks/useFamilyMemberConsent';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  useFamilyMemberConsent,
+  type FamilyRelationship,
+} from '@/hooks/useFamilyMemberConsent';
+import { RELATIONSHIP_OPTIONS } from '@/lib/familyRelationships';
 
 interface Props {
   groupId: string;
   /** Hide the "share income" UI if group is not in proportional mode. */
   showIncomeFields: boolean;
 }
+
 
 /**
  * Inline card shown to the current user inside the Team tab.
