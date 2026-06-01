@@ -469,7 +469,7 @@ export function categorizeTransaction(description: string): Category {
 }
 
 // Parse amount from various formats
-function parseAmount(amountStr: string): number {
+export function parseAmount(amountStr: string): number {
   // Remove currency symbols and whitespace
   let cleaned = amountStr.replace(/[€$£kn HRK EUR USD GBP\s]/gi, '').trim();
   
@@ -502,7 +502,7 @@ function parseAmount(amountStr: string): number {
 }
 
 // Parse date from various formats
-function parseDate(dateStr: string): Date {
+export function parseDate(dateStr: string): Date {
   const cleaned = dateStr.trim();
   
   // Try ISO format first
