@@ -69,6 +69,37 @@ export const FamilyMemberConsentCard = ({ groupId, showIncomeFields }: Props) =>
 
   return (
     <div className="p-3 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Label className="text-xs flex-1">
+          {t('family.relationship.label', 'Moja uloga u obitelji')}
+        </Label>
+        <Select
+          value={data.relationship ?? 'none'}
+          disabled={saving}
+          onValueChange={(v) =>
+            save({ relationship: v === 'none' ? null : (v as FamilyRelationship) })
+          }
+        >
+          <SelectTrigger className="h-8 w-[150px] text-xs">
+            <SelectValue
+              placeholder={t('family.relationship.placeholder', 'Odaberi…')}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">
+              {t('family.relationship.none', 'Nije navedeno')}
+            </SelectItem>
+            {RELATIONSHIP_OPTIONS.map((r) => (
+              <SelectItem key={r} value={r}>
+                {t(`family.relationship.options.${r}`, r)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-start gap-2 min-w-0">
           {data.income_share_consent ? (
