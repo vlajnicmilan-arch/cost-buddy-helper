@@ -2550,7 +2550,32 @@
         "markError": "Error",
         "notePh": "Note (optional)",
         "confirm": "Confirm",
-        "disclaimer": "Informational only. No real payment is made; marking just closes the item."
+        "disclaimer": "Informational only. No real payment is made; marking just closes the item.",
+        "exportPdf": {
+          "button": "PDF",
+          "title": "Family settlement",
+          "success": "PDF ready",
+          "failed": "PDF generation failed",
+          "sectionMembers": "Members overview",
+          "sectionNetting": "Who owes whom",
+          "sectionAudit": "Change history",
+          "nettingEmpty": "No open items — all settled.",
+          "colMember": "Member",
+          "colSharedTotal": "Shared total",
+          "colShare": "Share",
+          "colOwed": "Owes",
+          "colPaid": "Paid",
+          "colBalance": "Balance",
+          "colDebtor": "Debtor",
+          "colCreditor": "Creditor",
+          "colAmount": "Amount",
+          "colStatus": "Status",
+          "colWhen": "When",
+          "colWho": "Who",
+          "colWhat": "Action",
+          "statusPending": "Open",
+          "statusCancelled": "Cancelled"
+        }
       },
       "prediction": {
         "title": "Predicted split",

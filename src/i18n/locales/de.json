@@ -2418,7 +2418,32 @@
         "markError": "Fehler",
         "notePh": "Notiz (optional)",
         "confirm": "Bestätigen",
-        "disclaimer": "Nur informativ. Keine tatsächliche Zahlung; das Markieren schließt nur den Eintrag."
+        "disclaimer": "Nur informativ. Keine tatsächliche Zahlung; das Markieren schließt nur den Eintrag.",
+        "exportPdf": {
+          "button": "PDF",
+          "title": "Familienabrechnung",
+          "success": "PDF bereit",
+          "failed": "PDF-Erstellung fehlgeschlagen",
+          "sectionMembers": "Mitgliederübersicht",
+          "sectionNetting": "Wer schuldet wem",
+          "sectionAudit": "Änderungsverlauf",
+          "nettingEmpty": "Keine offenen Posten — alles beglichen.",
+          "colMember": "Mitglied",
+          "colSharedTotal": "Geteilt gesamt",
+          "colShare": "Anteil",
+          "colOwed": "Schuldet",
+          "colPaid": "Bezahlt",
+          "colBalance": "Saldo",
+          "colDebtor": "Schuldner",
+          "colCreditor": "Gläubiger",
+          "colAmount": "Betrag",
+          "colStatus": "Status",
+          "colWhen": "Wann",
+          "colWho": "Wer",
+          "colWhat": "Aktion",
+          "statusPending": "Offen",
+          "statusCancelled": "Storniert"
+        }
       },
       "prediction": {
         "title": "Voraussichtliche Aufteilung",

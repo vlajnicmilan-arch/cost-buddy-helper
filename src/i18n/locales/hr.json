@@ -2426,7 +2426,32 @@
         "markError": "Greška",
         "notePh": "Bilješka (opcionalno)",
         "confirm": "Potvrdi",
-        "disclaimer": "Obračun je informativan. Stvarna naplata se ne provodi; označavanje samo zatvara stavku."
+        "disclaimer": "Obračun je informativan. Stvarna naplata se ne provodi; označavanje samo zatvara stavku.",
+        "exportPdf": {
+          "button": "PDF",
+          "title": "Obiteljski obračun",
+          "success": "PDF spreman",
+          "failed": "Greška pri izradi PDF-a",
+          "sectionMembers": "Pregled po članovima",
+          "sectionNetting": "Tko kome duguje",
+          "sectionAudit": "Povijest promjena",
+          "nettingEmpty": "Nema otvorenih stavki — sve namireno.",
+          "colMember": "Član",
+          "colSharedTotal": "Ukupno dijeljeno",
+          "colShare": "Udio",
+          "colOwed": "Duguje",
+          "colPaid": "Plaćeno",
+          "colBalance": "Saldo",
+          "colDebtor": "Dugovnik",
+          "colCreditor": "Vjerovnik",
+          "colAmount": "Iznos",
+          "colStatus": "Status",
+          "colWhen": "Vrijeme",
+          "colWho": "Tko",
+          "colWhat": "Akcija",
+          "statusPending": "Otvoreno",
+          "statusCancelled": "Otkazano"
+        }
       },
       "prediction": {
         "title": "Predviđena podjela",
