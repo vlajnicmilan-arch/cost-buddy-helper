@@ -36,6 +36,10 @@ import { FamilyGroupDialog } from './FamilyGroupDialog';
 import { FamilyOnboardingWizard } from './FamilyOnboardingWizard';
 import { FamilyActivityFeed } from './FamilyActivityFeed';
 import { FamilyBudgetTallyRow } from './FamilyBudgetTallyRow';
+import { FamilySplitSettingsTab } from './FamilySplitSettingsTab';
+import { FamilySettlementsTab } from './FamilySettlementsTab';
+import { FamilyMemberConsentCard } from './FamilyMemberConsentCard';
+import { useFamilySplitSettings } from '@/hooks/useFamilySplitSettings';
 
 interface Props {
   group: FamilyGroup;
@@ -44,7 +48,7 @@ interface Props {
   onDelete: () => Promise<void>;
 }
 
-type TabKey = 'overview' | 'accounts' | 'budgets' | 'projects' | 'savings' | 'team' | 'activity';
+type TabKey = 'overview' | 'accounts' | 'budgets' | 'projects' | 'savings' | 'team' | 'settlements' | 'settings' | 'activity';
 
 export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Props) => {
   const { t } = useTranslation();
@@ -84,8 +88,11 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   const [projectFullScreenOpen, setProjectFullScreenOpen] = useState(false);
 
   const addBtnRef = useRef<Record<TabKey, HTMLButtonElement | null>>({
-    overview: null, accounts: null, budgets: null, projects: null, savings: null, team: null, activity: null,
+    overview: null, accounts: null, budgets: null, projects: null, savings: null, team: null, settlements: null, settings: null, activity: null,
   });
+
+  const { settings: splitSettings } = useFamilySplitSettings(group.id);
+  const showIncomeFields = splitSettings?.split_mode === 'proportional_income';
 
   // Reset scroll to top on mount (when entering detail view).
   useLayoutEffect(() => {
@@ -577,13 +584,15 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
   );
 
   const renderTeamTab = () => (
-    <section>
-      <div className="flex items-center justify-between mb-3">
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
         <h2 className="font-semibold flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           {t('family.membersCount')} ({members.length})
         </h2>
       </div>
+
+      <FamilyMemberConsentCard groupId={group.id} showIncomeFields={!!showIncomeFields} />
 
       <div className="space-y-2">
         {members.map((member) => (
@@ -773,6 +782,8 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
               <TabsTrigger value="projects" className="text-xs">{t('family.tabs.projects')}</TabsTrigger>
               <TabsTrigger value="savings" className="text-xs">{t('family.tabs.savings')}</TabsTrigger>
               <TabsTrigger value="team" className="text-xs">{t('family.tabs.team')}</TabsTrigger>
+              <TabsTrigger value="settlements" className="text-xs">{t('family.tabs.settlements', 'Saldo')}</TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs">{t('family.tabs.settings', 'Postavke')}</TabsTrigger>
               <TabsTrigger value="activity" className="text-xs">{t('family.tabs.activity')}</TabsTrigger>
             </TabsList>
 
@@ -782,6 +793,12 @@ export const FamilyGroupDetailView = ({ group, onBack, onUpdate, onDelete }: Pro
             <TabsContent value="projects">{renderProjectsTab()}</TabsContent>
             <TabsContent value="savings">{renderSavingsTab()}</TabsContent>
             <TabsContent value="team">{renderTeamTab()}</TabsContent>
+            <TabsContent value="settlements">
+              <FamilySettlementsTab groupId={group.id} members={memberRefs} currentUserId={user?.id} />
+            </TabsContent>
+            <TabsContent value="settings">
+              <FamilySplitSettingsTab groupId={group.id} isOwner={isOwner} />
+            </TabsContent>
             <TabsContent value="activity">
               <FamilyActivityFeed
                 activities={activities}
