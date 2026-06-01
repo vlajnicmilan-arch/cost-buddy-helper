@@ -162,7 +162,7 @@ serve(async (req) => {
       if (existingMember) {
         return new Response(
           JSON.stringify({ error: "already_member", message: "Korisnik je već član" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -178,7 +178,7 @@ serve(async (req) => {
       if (existingInvitation) {
         return new Response(
           JSON.stringify({ error: "already_invited", message: "Korisnik već ima aktivnu pozivnicu" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } else {
