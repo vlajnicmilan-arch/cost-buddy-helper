@@ -31,6 +31,7 @@ export interface FilterState {
   categoryId: string | undefined;
   scope: TransactionScope;
   bankMatchStatus: string | undefined;
+  paymentSource: string | undefined;
 }
 
 interface TransactionFiltersProps {
@@ -40,8 +41,10 @@ interface TransactionFiltersProps {
   showMemberFilter?: boolean;
   showCardFilter?: boolean;
   showScopeFilter?: boolean;
+  showPaymentSourceFilter?: boolean;
   members?: MemberOption[];
   cards?: PaymentSourceCard[];
+  paymentSources?: CustomPaymentSource[];
   className?: string;
 }
 
