@@ -1538,7 +1538,10 @@
     "itemsFound": "Artikel",
     "merchant": "Händler",
     "dateNotFound": "Nicht gefunden",
-    "analyzingPages": "Analysiere {{count}} Seiten..."
+    "analyzingPages": "Analysiere {{count}} Seiten...",
+    "customSource": "Benutzerdefinierte Quelle",
+    "scanSuccessSource": "Beleg gescannt! Quelle erkannt: {{source}}",
+    "scanSuccessItems": "Beleg gescannt! {{count}} Artikel gefunden."
   },
   "summary": {
     "balance": "Saldo",
