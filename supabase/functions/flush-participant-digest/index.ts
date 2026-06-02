@@ -284,6 +284,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         due: dueCount,
         sent: sentCount,
         errors: errorCount,
+        test_mode: testMode,
         took_ms: Date.now() - startedAt,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
