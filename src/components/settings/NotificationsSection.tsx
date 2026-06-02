@@ -24,11 +24,6 @@ interface NotificationsSectionProps {
   onSimpleModeChange: (v: boolean) => void;
   classicDashboard: boolean;
   onClassicDashboardChange: (v: boolean) => void;
-  familyModeEnabled: boolean;
-  onFamilyModeToggle: (checked: boolean) => void;
-  businessModeEnabled: boolean;
-  onBusinessModeChange: (v: boolean) => void;
-  onShowBusinessProfile: () => void;
   isLocalMode: boolean;
 }
 
@@ -38,14 +33,11 @@ export const NotificationsSection = ({
   aiAssistantEnabled, onAiAssistantChange,
   simpleModeEnabled, onSimpleModeChange,
   classicDashboard, onClassicDashboardChange,
-  familyModeEnabled, onFamilyModeToggle,
-  businessModeEnabled, onBusinessModeChange,
-  onShowBusinessProfile, isLocalMode
+  isLocalMode,
 }: NotificationsSectionProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   const navigate = useNavigate();
-  const canUseBusiness = hasAccess('business_module');
   const isNative = Capacitor.isNativePlatform();
   const { prefs, setCategory, setWeekendEnabled, setFlag } = useNotificationPreferences();
   const { user } = useAuth();
