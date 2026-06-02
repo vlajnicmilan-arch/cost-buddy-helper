@@ -394,6 +394,30 @@ export const TransactionFilters = ({
               <SelectItem value="bank_only">{t('bankMatch.bankOnly', 'Iz izvoda')}</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Payment Source Filter */}
+          {showPaymentSourceFilter && (
+            <Select
+              value={filters.paymentSource || 'all'}
+              onValueChange={(value) => updateFilter('paymentSource', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <Wallet className="w-3.5 h-3.5 mr-1.5" />
+                <SelectValue placeholder={t('filters.allPaymentSources', 'Svi izvori')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filters.allPaymentSources', 'Svi izvori')}</SelectItem>
+                <SelectItem value="cash">{t('filters.cash', 'Gotovina')}</SelectItem>
+                <SelectItem value="card">{t('filters.card', 'Kartica')}</SelectItem>
+                <SelectItem value="bank">{t('filters.bank', 'Banka')}</SelectItem>
+                {paymentSources.map((src) => (
+                  <SelectItem key={src.id} value={`custom:${src.id}`}>
+                    {src.icon} {src.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
     </div>
