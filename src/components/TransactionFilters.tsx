@@ -67,6 +67,8 @@ export const TransactionFilters = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const { customCategories } = useCustomCategories();
+  const moduleStates = useModuleStates();
+  const projectsActive = isModuleActive('projects', moduleStates.projects);
 
   // Build combined category list: default + custom
   const allCategories = [
