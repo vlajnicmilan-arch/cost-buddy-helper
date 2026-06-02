@@ -144,8 +144,46 @@ export const useReceiptScanner = () => {
         })) || []
       })) || [];
 
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`;
+      const authHeader = `Bearer ${sessionData.session.access_token}`;
+
+      const callViaFetch = async (payloadImages: string[]): Promise<ReceiptHttpResult> => {
+        const payload = {
+          imagesBase64: payloadImages,
+          customPaymentSources: sourcesForApi,
+          customCategories: customCategories || []
+        };
+        const webResponse = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify(payload)
+        });
+        return {
+          ok: webResponse.ok,
+          status: webResponse.status,
+          json: () => webResponse.json(),
+        };
+      };
+
+      const isTransientNetworkError = (err: any) => {
+        const msg = (err?.message || String(err) || '').toLowerCase();
+        return (
+          msg.includes('timeout') ||
+          msg.includes('timed out') ||
+          msg.includes('connection abort') ||
+          msg.includes('connection reset') ||
+          msg.includes('software caused connection') ||
+          msg.includes('network') ||
+          msg.includes('failed to fetch') ||
+          msg.includes('load failed') ||
+          msg.includes('socket')
+        );
+      };
+
       const callParseReceipt = async (payloadImages: string[]): Promise<ReceiptHttpResult> => {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-receipt`;
         const payload = {
           imagesBase64: payloadImages,
           customPaymentSources: sourcesForApi,
@@ -159,11 +197,11 @@ export const useReceiptScanner = () => {
               url,
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionData.session.access_token}`,
+                'Authorization': authHeader,
               },
               data: payload,
-              connectTimeout: 15000,
-              readTimeout: 60000,
+              connectTimeout: 20000,
+              readTimeout: 90000,
               responseType: 'json',
             });
             try {
@@ -189,24 +227,32 @@ export const useReceiptScanner = () => {
                 },
               });
             } catch {}
+            if (isTransientNetworkError(httpErr)) {
+              try { logDiagnostic('receipt_scan_native_http_fallback_start', { image_count: payloadImages.length }); } catch {}
+              try {
+                const fallback = await callViaFetch(payloadImages);
+                try {
+                  logDiagnostic('receipt_scan_native_http_fallback_done', {
+                    status: fallback.status,
+                  });
+                } catch {}
+                return fallback;
+              } catch (fallbackErr: any) {
+                try {
+                  logDiagnostic({
+                    event: 'receipt_scan_native_http_fallback_failed',
+                    severity: 'error',
+                    details: { message: fallbackErr?.message || String(fallbackErr) },
+                  });
+                } catch {}
+                throw fallbackErr;
+              }
+            }
             throw httpErr;
           }
         }
 
-        const webResponse = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session.access_token}`
-          },
-          body: JSON.stringify(payload)
-        });
-
-        return {
-          ok: webResponse.ok,
-          status: webResponse.status,
-          json: () => webResponse.json(),
-        };
+        return callViaFetch(payloadImages);
       };
 
       let response = await callParseReceipt(compressedImages);
