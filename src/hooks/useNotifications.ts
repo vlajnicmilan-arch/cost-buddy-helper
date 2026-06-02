@@ -192,6 +192,7 @@ export const useNotifications = () => {
         // Issue rows: dismiss (keeps a 7-day suppression in upsert_active_issue)
         const { error } = await (supabase as any).rpc('dismiss_notification', { p_id: notificationId });
         if (error) throw error;
+        window.dispatchEvent(new CustomEvent('active-issues-changed'));
       } else {
         const { error } = await (supabase as any)
           .from('notifications')
@@ -230,6 +231,10 @@ export const useNotifications = () => {
           .delete()
           .in('id', plainIds);
         if (error) throw error;
+      }
+
+      if (issueIds.length > 0) {
+        window.dispatchEvent(new CustomEvent('active-issues-changed'));
       }
 
       return true;
