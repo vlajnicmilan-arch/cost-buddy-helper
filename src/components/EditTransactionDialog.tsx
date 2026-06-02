@@ -491,7 +491,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           </div>
 
           {/* Project Assignment */}
-          {projects.length > 0 && (
+          {projectsActive && projects.length > 0 && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <FolderKanban className="w-4 h-4" />
