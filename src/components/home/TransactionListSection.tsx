@@ -71,6 +71,7 @@ export const TransactionListSection = ({
   onDeleteExpense,
   contextLookup,
   allCards,
+  paymentSources = [],
   showScopeFilter,
   className,
   dataTutorial,
