@@ -82,8 +82,10 @@ export const BulkActionsToolbar = ({
   const mergeDisabled = !mergeCheck?.ok || isMerging;
   const mergeReason = mergeCheck && mergeCheck.ok === false ? t(mergeCheck.reason, '') : '';
 
+  const moduleStates = useModuleStates();
+  const projectsActive = isModuleActive('projects', moduleStates.projects);
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
-  const canProject = showProjectChange && !!onBulkProjectChange;
+  const canProject = projectsActive && showProjectChange && !!onBulkProjectChange;
   const hasMenu = showCategoryChange || showPaymentSourceChange || canBudget || canProject;
 
   const actionOptions: BulkAssignOption[] = useMemo(() => {
