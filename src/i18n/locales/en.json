@@ -686,6 +686,8 @@
     "access": {
       "readOnlyTitle": "Projects are read-only",
       "readOnlyBody": "Your Projects subscription is not active. You can still view existing data, but adding, editing and deleting are disabled until you activate the plan.",
+      "readOnlyParticipantBody": "You are a member of this project but not the owner. Viewing is allowed; only the owner with an active subscription can make changes.",
+      "readOnlyBlockedToast": "Action not allowed — this project is read-only.",
       "cta": "Activate Projects",
       "orphanGroup": "Personal projects"
     }
