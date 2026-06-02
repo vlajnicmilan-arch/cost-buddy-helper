@@ -1866,6 +1866,7 @@
       "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
       "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
       "scanCancelled": "Scan wurde abgebrochen. Bitte erneut versuchen.",
+      "requestTimeout": "Die Analyse dauert zu lange. Bitte erneut mit einem klareren Foto versuchen.",
       "scanFailed": "Beleg konnte nicht gescannt werden"
     },
     "pdf": {
