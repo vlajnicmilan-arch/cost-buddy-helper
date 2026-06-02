@@ -159,6 +159,13 @@ export const useProjectFunding = (projectId: string | null) => {
 
       setFunding(prev => [...prev, newFunding]);
       showSuccess(t('projects.fundingAdded'));
+      void enqueueFundingDigest(
+        projectId,
+        user.id,
+        'project_funding_added',
+        newFunding.income_source_name ?? null,
+        newFunding.id,
+      );
       return newFunding;
     } catch (error: any) {
       console.error('Error adding funding:', error);
