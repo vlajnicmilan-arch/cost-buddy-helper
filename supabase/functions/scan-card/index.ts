@@ -81,6 +81,7 @@ Do not include any other text or explanation.`
     });
 
     if (!response.ok) {
+      if (!skipQuota) await refundCoreScanQuota(auth.supabase);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
@@ -93,7 +94,7 @@ Do not include any other text or explanation.`
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       throw new Error("AI gateway error");
