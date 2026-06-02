@@ -244,6 +244,23 @@ export const NotificationsSection = ({
         )}
       </div>
 
+      {!isLocalMode && hasAccess('projects') && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-xs h-8 px-3"
+          onClick={sendDigestTest}
+          disabled={sendingDigestTest || !user}
+        >
+          <FolderKanban className="w-3.5 h-3.5 mr-2" />
+          {sendingDigestTest
+            ? t('settings.digestTestSending', 'Šaljem sažetak…')
+            : t('settings.digestTestButton', 'Pošalji testni sažetak projekta')}
+        </Button>
+      )}
+
+
+
       {!isLocalMode && (
         <div className="space-y-2">
           <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
