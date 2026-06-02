@@ -1869,6 +1869,7 @@
       "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
       "noCredits": "Nedostaje kredita za AI obradu.",
       "scanCancelled": "Skeniranje je prekinuto. Pokušaj ponovno.",
+      "requestTimeout": "Analiza predugo traje. Pokušaj ponovno s jasnijom fotografijom.",
       "scanFailed": "Greška pri skeniranju računa"
     },
     "pdf": {
