@@ -696,17 +696,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onSimpleModeChange={setSimpleModeEnabled}
               classicDashboard={!dashboardV2Enabled}
               onClassicDashboardChange={(v) => setDashboardV2Enabled(!v)}
-              familyModeEnabled={familyModeEnabled}
-              onFamilyModeToggle={(checked) => {
-                if (!checked) {
-                  setShowFamilyDisableConfirm(true);
-                } else {
-                  setFamilyModeEnabled(true);
-                  showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
-                }
-              }}
-              businessModeEnabled={businessFeatureEnabled}
-              onBusinessModeChange={setBusinessFeatureEnabled}
+              isLocalMode={isLocalMode}
+            />
+
+            <Separator />
+
+            <ModulesSection
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
             />
