@@ -686,6 +686,8 @@
     "access": {
       "readOnlyTitle": "Projekte sind schreibgeschützt",
       "readOnlyBody": "Dein Projekte-Abo ist nicht aktiv. Vorhandene Daten kannst du weiterhin ansehen, aber Hinzufügen, Bearbeiten und Löschen sind deaktiviert, bis du den Plan aktivierst.",
+      "readOnlyParticipantBody": "Du bist Mitglied dieses Projekts, aber nicht der Eigentümer. Ansicht ist möglich; Änderungen kann nur der Eigentümer mit aktivem Abo vornehmen.",
+      "readOnlyBlockedToast": "Aktion nicht erlaubt — Projekt ist schreibgeschützt.",
       "cta": "Projekte aktivieren",
       "orphanGroup": "Persönliche Projekte"
     }
