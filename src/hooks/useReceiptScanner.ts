@@ -9,6 +9,7 @@ import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { matchCustomByMethod } from '@/lib/paymentSourceMatching';
+import { parseAiQuotaError } from '@/lib/aiQuotaError';
 
 interface ParsedReceipt {
   amount: number;
@@ -214,7 +215,18 @@ export const useReceiptScanner = () => {
       
 
       if (response.status === 429) {
-        showError(t('errors.receipt.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
+        const quotaError = await parseAiQuotaError(response);
+        if (quotaError?.kind === 'daily_limit') {
+          showError(
+            t('errors.receipt.dailyLimitReached', {
+              limit: quotaError.limit,
+              tier: quotaError.tier,
+              defaultValue: `Iskoristio si dnevni limit od ${quotaError.limit} AI skenova (${quotaError.tier} plan). Nadogradi za više.`,
+            }),
+          );
+        } else {
+          showError(t('errors.receipt.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
+        }
         return null;
       }
 

@@ -1861,6 +1861,7 @@
     "receipt": {
       "cloudRequired": "KI-Belegscan erfordert Cloud-Modus und Anmeldung. Sie können die Daten manuell eingeben.",
       "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
+      "dailyLimitReached": "Tägliches Limit von {{limit}} KI-Scans erreicht ({{tier}} Plan). Upgrade für mehr.",
       "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
       "scanCancelled": "Scan wurde abgebrochen. Bitte erneut versuchen.",
       "scanFailed": "Beleg konnte nicht gescannt werden"
