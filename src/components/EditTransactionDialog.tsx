@@ -530,7 +530,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           )}
 
           {/* Milestone Assignment - only when project is selected */}
-          {selectedProjectId && milestones.length > 0 && (
+          {projectsActive && selectedProjectId && milestones.length > 0 && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Milestone className="w-4 h-4" />
