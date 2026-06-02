@@ -301,6 +301,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('dashboard_v2_enabled', enabled.toString());
   }, []);
 
+  const setProjectsModuleEnabled = useCallback((enabled: boolean) => {
+    setProjectsModuleEnabledState(enabled);
+    localStorage.setItem('projects_module_enabled', enabled.toString());
+  }, []);
+
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
@@ -347,6 +352,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingCompleted,
     usageProfile,
     setUsageProfile,
+    projectsModuleEnabled,
+    setProjectsModuleEnabled,
     dashboardV2Enabled,
     setDashboardV2Enabled,
     appStateReady,
@@ -366,6 +373,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,
     usageProfile, setUsageProfile,
+    projectsModuleEnabled, setProjectsModuleEnabled,
     dashboardV2Enabled, setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,
