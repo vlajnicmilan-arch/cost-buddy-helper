@@ -1,46 +1,28 @@
 # Plan
 
-## 1. SplitPredictionHint — sakrij dok nema iznosa
+## Cilj
+Pojačati vidljivost gumba "Višestraničan račun" u `ReceiptCaptureButtons.tsx` (linija 108).
 
-**Datoteka:** `src/components/family/SplitPredictionHint.tsx`
+## Trenutno stanje
+```
+className="w-full gap-2 rounded-xl border-dashed border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+```
+Border je `border-border/70` (svjetlosivi, 70% opacity) + dashed — gubi se na pozadini.
 
-Dodati early-return **prije** poziva `useFamilySplitPrediction` i prije loading bloka:
+## Promjena
+Koristiti **primary (teal)** boju iz design sistema — već je dominantna boja appa i sklada se s plavim/zelenim CTA gumbima iznad:
 
-```tsx
-if (!Number.isFinite(amount) || amount <= 0) return null;
+```
+className="w-full gap-2 rounded-xl border-dashed border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/70"
 ```
 
-Rezultat: "Računam podjelu…" spinner se više ne pojavljuje na praznoj formi. Hint se prikazuje tek kad korisnik upiše iznos > 0 na dijeljenom izvoru — što je u skladu s logikom (podjela ima smisla samo kad je izvor dijeljen **i** iznos poznat).
-
-Hook poziv ostaje očuvan iznad uvjeta? Ne — pomičemo ga ispod guarda da izbjegnemo nepotrebne fetch-eve dok je iznos 0.
-
-## 2. i18n — 4 ključa pod `transactions.*`
-
-Trenutno stanje (verificirano):
-- **HR**: fale sva 4 (`merchantPlaceholder`, `assignToProject`, `noProject`, `amountHint`)
-- **EN**: fali 3 (ima samo `amountHint`)
-- **DE**: fali 3 (ima samo `amountHint`)
-
-Dodati u `transactions` blok:
-
-**hr.json**
-- `merchantPlaceholder`: "npr. Konzum, A1, Netflix..."
-- `assignToProject`: "Pridruži projektu"
-- `noProject`: "Bez projekta"
-- `amountHint`: "Za decimale koristi točku ili zarez (npr. 150,50)"
-
-**en.json**
-- `merchantPlaceholder`: "e.g. Walmart, AT&T, Netflix..."
-- `assignToProject`: "Assign to project"
-- `noProject`: "No project"
-
-**de.json**
-- `merchantPlaceholder`: "z.B. Edeka, Telekom, Netflix..."
-- `assignToProject`: "Projekt zuweisen"
-- `noProject`: "Kein Projekt"
+- `border-primary/50` umjesto `border-border/70` → jasno vidljiv teal obrub
+- `bg-primary/5` → suptilna teal pozadina (slično CTA gumbima Foto/Galerija)
+- `text-primary` → tekst i ikona u teal boji
+- Dashed ostaje (signalizira "secondary action")
+- Dark mode radi automatski jer `primary` token je theme-aware
 
 ## Što NE diram
-
-- Logiku `useFamilySplitPrediction` hooka
-- `ManualExpenseForm` — prop interface je već ispravan
-- Druge dijelove forme
+- Funkcionalnost gumba
+- Plavi/zeleni CTA gumbi iznad
+- Multi-image collector blok (ima već vlastiti border)
