@@ -446,6 +446,13 @@ export const ProjectFullScreenView = ({
 
             {/* Main content */}
             <div className="max-w-6xl mx-auto p-4 pb-24">
+              {isReadOnly && (
+                <ProjectReadOnlyBanner
+                  reason={isOwner ? 'owner_downgrade' : 'participant'}
+                  onUpgradeClick={isOwner ? handleUpgradeProjects : undefined}
+                  className="mb-4"
+                />
+              )}
               {/* Budget Overview - only show if user can see funding */}
               {canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-4 mb-6">
