@@ -150,3 +150,77 @@ export async function checkAiQuota(
 
   return null;
 }
+
+// =========================================================
+// Core scan quota (global 3 / 30 days, per user; unlimited for paid)
+// =========================================================
+
+const SKIP_HEADER = "x-internal-skip-quota";
+
+/**
+ * Returns true if the request carries a valid internal skip-quota header.
+ * Used by self-fetching functions (e.g. parse-pdf-statement async branch) so
+ * the inner call does not double-decrement quotas already consumed outside.
+ */
+export function isInternalSkipQuota(req: Request): boolean {
+  const provided = req.headers.get(SKIP_HEADER);
+  if (!provided) return false;
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  return !!secret && provided === secret;
+}
+
+export function internalSkipQuotaHeader(): Record<string, string> {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  return { "X-Internal-Skip-Quota": secret };
+}
+
+export interface CoreScanQuotaResult {
+  allowed: boolean;
+  unlimited?: boolean;
+  remaining?: number;
+  count?: number;
+  reset_at?: string;
+}
+
+/**
+ * Consume one slot from the global Core scan quota.
+ * Returns a 429 Response when the user hit the limit (free tier only).
+ * Returns null on success or transient failures (fail-open).
+ */
+export async function consumeCoreScanQuota(
+  supabase: SupabaseClient,
+): Promise<Response | null> {
+  const { data, error } = await supabase.rpc("consume_core_scan_quota");
+  if (error) {
+    console.warn("[coreScanQuota] consume failed, failing open:", error.message);
+    return null;
+  }
+  const result = (data ?? {}) as CoreScanQuotaResult;
+  if (result.allowed === false) {
+    return new Response(
+      JSON.stringify({
+        error: "core_scan_limit_reached",
+        remaining: 0,
+        reset_at: result.reset_at,
+      }),
+      {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+  return null;
+}
+
+/**
+ * Refund one slot when the AI pipeline failed after consumption.
+ * Best-effort; never throws.
+ */
+export async function refundCoreScanQuota(supabase: SupabaseClient): Promise<void> {
+  try {
+    const { error } = await supabase.rpc("refund_core_scan_quota");
+    if (error) console.warn("[coreScanQuota] refund failed:", error.message);
+  } catch (e) {
+    console.warn("[coreScanQuota] refund threw:", (e as Error).message);
+  }
+}
