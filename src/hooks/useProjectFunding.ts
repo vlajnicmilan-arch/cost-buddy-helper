@@ -194,12 +194,22 @@ export const useProjectFunding = (projectId: string | null) => {
 
       if (error) throw error;
 
+      const updated = funding.find(f => f.id === id);
       setFunding(prev => prev.map(f => 
         f.id === id 
           ? { ...f, allocated_amount: allocatedAmount, percentage: percentage || null } 
           : f
       ));
       showSuccess(t('projects.fundingUpdated'));
+      if (projectId && user) {
+        void enqueueFundingDigest(
+          projectId,
+          user.id,
+          'project_funding_updated',
+          updated?.income_source_name ?? null,
+          id,
+        );
+      }
     } catch (error) {
       console.error('Error updating funding:', error);
       showError(t('common.error'));
