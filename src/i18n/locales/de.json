@@ -11,7 +11,8 @@
       "openProject": "Öffnen",
       "openInvoice": "Rechnung",
       "askAi": "KI fragen",
-      "dismiss": "Verwerfen"
+      "dismiss": "Verwerfen",
+      "openBudget": "Budget öffnen"
     },
     "dataQuality": {
       "uncategorized": "{{count}} Ausgaben ohne Beschreibung in den letzten 30 Tagen",

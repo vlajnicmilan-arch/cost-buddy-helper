@@ -11,7 +11,8 @@
       "openProject": "Open",
       "openInvoice": "Invoice",
       "askAi": "Ask AI",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "openBudget": "Open budget"
     },
     "dataQuality": {
       "uncategorized": "{{count}} expenses without description in last 30 days",
