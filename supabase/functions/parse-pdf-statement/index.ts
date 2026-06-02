@@ -400,6 +400,7 @@ METAPODACI:
     });
 
     if (!aiResponse.ok) {
+      if (!skipQuota) await refundCoreScanQuota(supabase);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Previše zahtjeva. Pokušaj ponovno za minutu.' }), 
