@@ -83,22 +83,132 @@ Deno.serve(async (req: Request): Promise<Response> => {
   let sentCount = 0;
   let errorCount = 0;
 
+  // --- Test mode ---------------------------------------------------------
+  // Body: { test: true } → require Authorization header, scope strictly to
+  // the caller's user_id, bypass 20h cooldown, and auto-enqueue a synthetic
+  // event into one of the caller's projects if no pending row exists yet.
+  // This closes the QA loop: enqueue → drain → push with one click.
+  let testMode = false;
+  let testUserId: string | null = null;
+  let testProjectIdHint: string | null = null;
   try {
-    // 1) Collect due rows.
-    const cutoffIso = new Date(Date.now() - MIN_INTERVAL_HOURS * 3600_000).toISOString();
-    const { data: due, error: dueErr } = await admin
+    if (req.method === "POST") {
+      const raw = await req.text();
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          test?: boolean;
+          project_id?: string;
+        };
+        if (parsed?.test === true) {
+          const authHeader = req.headers.get("Authorization");
+          if (!authHeader?.startsWith("Bearer ")) {
+            return new Response(
+              JSON.stringify({ error: "auth_required_for_test" }),
+              { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+          const supabaseUser = createClient(
+            SUPABASE_URL,
+            Deno.env.get("SUPABASE_ANON_KEY")!,
+            { global: { headers: { Authorization: authHeader } } },
+          );
+          const token = authHeader.replace("Bearer ", "");
+          const { data: claimsData, error: claimsErr } = await supabaseUser.auth.getClaims(token);
+          const uid = claimsData?.claims?.sub as string | undefined;
+          if (claimsErr || !uid) {
+            return new Response(
+              JSON.stringify({ error: "invalid_token" }),
+              { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+          testMode = true;
+          testUserId = uid;
+          testProjectIdHint = parsed.project_id ?? null;
+        }
+      }
+    }
+  } catch (parseErr) {
+    console.warn("[flush-participant-digest] body parse skipped", parseErr);
+  }
+
+  try {
+    // Test bootstrap: ensure caller has a pending row to drain.
+    if (testMode && testUserId) {
+      // Pick a project: explicit hint > most recent owned/joined project.
+      let projectId = testProjectIdHint;
+      if (!projectId) {
+        const { data: ownProj } = await admin
+          .from("projects")
+          .select("id, created_at")
+          .eq("user_id", testUserId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ownProj?.id) {
+          projectId = ownProj.id;
+        } else {
+          const { data: memProj } = await admin
+            .from("project_members")
+            .select("project_id, created_at")
+            .eq("user_id", testUserId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          projectId = memProj?.project_id ?? null;
+        }
+      }
+      if (!projectId) {
+        return new Response(
+          JSON.stringify({ error: "no_project_for_test_user" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      // Inject a synthetic pending event directly (bypass enqueue RPC which
+      // filters out the actor — in test we WANT to push to the caller).
+      await admin
+        .from("participant_digest_state")
+        .upsert({
+          user_id: testUserId,
+          project_id: projectId,
+          pending_count: 1,
+          pending_summary: [{
+            kind: "test_event",
+            actor_name: "QA",
+            label: "manual test trigger",
+            at: new Date().toISOString(),
+          }],
+          last_event_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id,project_id" });
+    }
+
+    // 1) Collect due rows. In test mode: only the caller's rows, no cooldown.
+    let query = admin
       .from("participant_digest_state")
       .select("user_id, project_id, pending_count, last_sent_at")
       .gt("pending_count", 0)
-      .or(`last_sent_at.is.null,last_sent_at.lt.${cutoffIso}`)
       .limit(1000);
 
+    if (testMode && testUserId) {
+      query = query.eq("user_id", testUserId);
+    } else {
+      const cutoffIso = new Date(Date.now() - MIN_INTERVAL_HOURS * 3600_000).toISOString();
+      query = query.or(`last_sent_at.is.null,last_sent_at.lt.${cutoffIso}`);
+    }
+
+    const { data: due, error: dueErr } = await query;
     if (dueErr) throw dueErr;
     dueCount = due?.length ?? 0;
 
     if (dueCount === 0) {
       return new Response(
-        JSON.stringify({ success: true, due: 0, sent: 0, took_ms: Date.now() - startedAt }),
+        JSON.stringify({
+          success: true,
+          due: 0,
+          sent: 0,
+          test_mode: testMode,
+          took_ms: Date.now() - startedAt,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
