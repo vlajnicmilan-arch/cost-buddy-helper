@@ -19,7 +19,7 @@ export class ProjectReadOnlyError extends Error {
   }
 }
 
-function isProjectsReadonlyError(error: unknown): boolean {
+export function isProjectsReadonlyError(error: unknown): boolean {
   if (!error) return false;
   const e = error as { code?: string; message?: string };
   return e.code === '42501' || (e.message ?? '').includes('projects_readonly');

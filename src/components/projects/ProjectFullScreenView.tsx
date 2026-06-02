@@ -46,6 +46,11 @@ import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
+import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
+import { isProjectsReadonlyError } from '@/lib/softDelete';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -119,6 +124,14 @@ export const ProjectFullScreenView = ({
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
   const labels = useProjectTypeLabels(project);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const isOwner = !!project && !!user && project.user_id === user.id;
+  const accessLevel = useProjectAccessLevel(
+    project ? { user_id: project.user_id, isParticipant: !isOwner } : null
+  );
+  const isReadOnly = isReadOnlyAccess(accessLevel);
+  const handleUpgradeProjects = () => navigate('/paywall');
 
   // Business view supports both owned business projects and shared projects joined under this business profile.
   const isBusinessView = !!activeBusinessProfileId && (
@@ -339,9 +352,16 @@ export const ProjectFullScreenView = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => setCompleteWizardOpen(true)}
+                  onClick={() => {
+                    if (isReadOnly) {
+                      showError(t('projects.access.readOnlyBlockedToast'));
+                      return;
+                    }
+                    setCompleteWizardOpen(true);
+                  }}
+                  disabled={isReadOnly}
                   className="shrink-0 gap-1"
-                  title={t('projects.complete.headerCta', 'Završi projekt')}
+                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.headerCta', 'Završi projekt')}
                 >
                   <Flag className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.complete.headerCta', 'Završi projekt')}</span>
@@ -352,8 +372,12 @@ export const ProjectFullScreenView = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={reopening}
+                  disabled={reopening || isReadOnly}
                   onClick={async () => {
+                    if (isReadOnly) {
+                      showError(t('projects.access.readOnlyBlockedToast'));
+                      return;
+                    }
                     setReopening(true);
                     try {
                       const { error } = await supabase
@@ -366,13 +390,17 @@ export const ProjectFullScreenView = ({
                       onClose();
                     } catch (e) {
                       console.error('Reopen project error:', e);
-                      showError(t('common.error'));
+                      if (isProjectsReadonlyError(e)) {
+                        showError(t('projects.access.readOnlyBlockedToast'));
+                      } else {
+                        showError(t('common.error'));
+                      }
                     } finally {
                       setReopening(false);
                     }
                   }}
                   className="shrink-0 gap-1"
-                  title={t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
+                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
                 >
                   <RotateCcw className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.complete.reopenCta', 'Ponovo otvori')}</span>
@@ -418,6 +446,13 @@ export const ProjectFullScreenView = ({
 
             {/* Main content */}
             <div className="max-w-6xl mx-auto p-4 pb-24">
+              {isReadOnly && (
+                <ProjectReadOnlyBanner
+                  reason={isOwner ? 'owner_downgrade' : 'participant'}
+                  onUpgradeClick={isOwner ? handleUpgradeProjects : undefined}
+                  className="mb-4"
+                />
+              )}
               {/* Budget Overview - only show if user can see funding */}
               {canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-4 mb-6">

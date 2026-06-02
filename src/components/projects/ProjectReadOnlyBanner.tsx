@@ -24,6 +24,9 @@ export function ProjectReadOnlyBanner({
 }: ProjectReadOnlyBannerProps) {
   const { t } = useTranslation();
   const showCta = reason === 'owner_downgrade';
+  const bodyKey = reason === 'participant'
+    ? 'projects.access.readOnlyParticipantBody'
+    : 'projects.access.readOnlyBody';
 
   return (
     <div
@@ -40,7 +43,7 @@ export function ProjectReadOnlyBanner({
       <div className="min-w-0 flex-1">
         <p className="font-medium">{t('projects.access.readOnlyTitle')}</p>
         {!compact && (
-          <p className="mt-1 text-sm opacity-90">{t('projects.access.readOnlyBody')}</p>
+          <p className="mt-1 text-sm opacity-90">{t(bodyKey)}</p>
         )}
       </div>
       {showCta && onUpgradeClick && (
