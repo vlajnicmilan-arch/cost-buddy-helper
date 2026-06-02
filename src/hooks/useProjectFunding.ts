@@ -13,6 +13,31 @@ export interface ProjectIncomeSource {
   category: string;
 }
 
+// Best-effort daily digest enqueue for participant project space.
+// Recipient-type independent — RPC excludes the actor itself.
+async function enqueueFundingDigest(
+  projectId: string,
+  actorUserId: string,
+  kind: 'project_funding_added' | 'project_funding_updated' | 'project_funding_removed',
+  label: string | null,
+  refId: string | null,
+) {
+  try {
+    await supabase.rpc('enqueue_participant_digest_event', {
+      p_project_id: projectId,
+      p_actor_user_id: actorUserId,
+      p_event: {
+        kind,
+        label,
+        ref_id: refId,
+        at: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error('[useProjectFunding] digest enqueue error', err);
+  }
+}
+
 export const useProjectFunding = (projectId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
