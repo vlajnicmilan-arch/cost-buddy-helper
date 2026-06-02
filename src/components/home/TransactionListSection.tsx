@@ -125,7 +125,9 @@ export const TransactionListSection = ({
             onFiltersChange={onFiltersChange}
             showCardFilter={allCards.length > 0}
             showScopeFilter={showScopeFilter}
+            showPaymentSourceFilter={paymentSources.length > 0}
             cards={allCards}
+            paymentSources={paymentSources}
           />
           <BulkActionsToolbar
             selectedCount={selectedTransactionIds.size}
