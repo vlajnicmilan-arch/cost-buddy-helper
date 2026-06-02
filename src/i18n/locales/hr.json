@@ -11,7 +11,8 @@
       "openProject": "Otvori",
       "openInvoice": "Faktura",
       "askAi": "Pitaj AI",
-      "dismiss": "Odbaci"
+      "dismiss": "Odbaci",
+      "openBudget": "Otvori budžet"
     },
     "dataQuality": {
       "uncategorized": "{{count}} troškova bez opisa u zadnjih 30 dana",

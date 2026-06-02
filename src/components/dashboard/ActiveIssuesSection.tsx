@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, AlertTriangle, Lightbulb, FolderOpen, FileText, MessageCircle, ChevronRight, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, Lightbulb, FolderOpen, FileText, MessageCircle, Target, ChevronRight, X } from "lucide-react";
 import { useActiveIssues, type ActiveIssue, type IssueSeverity } from "@/hooks/useActiveIssues";
 import { useIssueReconciler } from "@/hooks/useIssueReconciler";
 import { cn } from "@/lib/utils";
@@ -56,12 +56,21 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
       navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } });
       return;
     }
+    if (issue.entity_type === "budget" && issue.entity_id) {
+      navigate("/budgets", { state: { openBudgetId: issue.entity_id, from: "/home" } });
+      return;
+    }
     if (issue.entity_type === "invoice" && issue.entity_id) {
       // No direct invoice route — open AI chat with context as fallback
       const titleVars = (issue.data?.title_vars as Record<string, unknown>) ?? {};
       const msg = `${renderText(issue.title, titleVars, t)} — ${renderText(issue.message, (issue.data?.message_vars as Record<string, unknown>) ?? {}, t)}`;
       window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: msg } }));
+      return;
     }
+    // Fallback for unknown entity types: open AI chat with the issue text
+    const titleVars = (issue.data?.title_vars as Record<string, unknown>) ?? {};
+    const msg = `${renderText(issue.title, titleVars, t)} — ${renderText(issue.message, (issue.data?.message_vars as Record<string, unknown>) ?? {}, t)}`;
+    window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: msg } }));
   }, [navigate, t]);
 
   if (!enabled) return null;
@@ -90,9 +99,11 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
             const messageVars = (issue.data?.message_vars as Record<string, unknown>) ?? {};
             const ActionIcon =
               issue.entity_type === "project" ? FolderOpen :
+              issue.entity_type === "budget" ? Target :
               issue.entity_type === "invoice" ? FileText : MessageCircle;
             const actionLabel =
               issue.entity_type === "project" ? t("attention.actions.openProject") :
+              issue.entity_type === "budget" ? t("attention.actions.openBudget", "Otvori budžet") :
               issue.entity_type === "invoice" ? t("attention.actions.openInvoice") :
               t("attention.actions.askAi");
 
