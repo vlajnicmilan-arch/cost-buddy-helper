@@ -682,6 +682,12 @@
         "noCollaborator": "Mitarbeiter auswählen, der den Vorschuss erhält.",
         "zeroAmountWithLinks": "Rechnungsbetrag darf nicht 0 sein, wenn Vorschüsse verknüpft sind."
       }
+    },
+    "access": {
+      "readOnlyTitle": "Projekte sind schreibgeschützt",
+      "readOnlyBody": "Dein Projekte-Abo ist nicht aktiv. Vorhandene Daten kannst du weiterhin ansehen, aber Hinzufügen, Bearbeiten und Löschen sind deaktiviert, bis du den Plan aktivierst.",
+      "cta": "Projekte aktivieren",
+      "orphanGroup": "Persönliche Projekte"
     }
   },
   "estimates": {
@@ -1573,7 +1579,14 @@
     "scanPagesOne": "{{count}} Seite scannen",
     "scanPagesOther": "{{count}} Seiten scannen",
     "analyzingShort": "Analysiere...",
-    "maxPages": "Maximal {{max}} Seiten"
+    "maxPages": "Maximal {{max}} Seiten",
+    "coreQuota": {
+      "title": "Kostenloses Scan-Limit erreicht",
+      "body": "Der kostenlose Plan enthält 3 Scans pro 30 Tage. Nächstes Reset: {{resetAt}}.",
+      "cta": "Upgrade für unbegrenzt",
+      "close": "OK",
+      "remaining": "Verbleibende Scans: {{remaining}}"
+    }
   },
   "summary": {
     "balance": "Saldo",
@@ -1961,7 +1974,8 @@
     },
     "bug": {
       "loginRequired": "Sie müssen angemeldet sein, um ein Problem zu melden"
-    }
+    },
+    "projectsReadonly": "Projekte sind schreibgeschützt. Aktiviere dein Abo, um Änderungen vorzunehmen."
   },
   "onboarding": {
     "welcomeTitle": "Willkommen!",

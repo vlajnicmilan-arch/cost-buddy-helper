@@ -686,6 +686,12 @@
         "noCollaborator": "Odaberi suradnika kojem se isplaćuje avans.",
         "zeroAmountWithLinks": "Iznos računa ne smije biti 0 ako su vezani avansi."
       }
+    },
+    "access": {
+      "readOnlyTitle": "Projekti su u načinu samo za pregled",
+      "readOnlyBody": "Tvoja pretplata na Projekte nije aktivna. Postojeće podatke i dalje vidiš, ali nije moguće dodavati, mijenjati ni brisati zapise dok ne aktiviraš plan.",
+      "cta": "Aktiviraj Projekte",
+      "orphanGroup": "Osobni projekti"
     }
   },
   "estimates": {
@@ -1578,7 +1584,14 @@
     "scanPagesFew": "Skeniraj {{count}} stranice",
     "scanPagesMany": "Skeniraj {{count}} stranica",
     "analyzingShort": "Analiziram...",
-    "maxPages": "Maksimalno {{max}} stranica"
+    "maxPages": "Maksimalno {{max}} stranica",
+    "coreQuota": {
+      "title": "Iskorišten je besplatni limit skeniranja",
+      "body": "Imaš pravo na 3 skena u 30 dana na besplatnom planu. Sljedeći reset: {{resetAt}}.",
+      "cta": "Nadogradi za neograničeno",
+      "close": "U redu",
+      "remaining": "Preostalo skenova: {{remaining}}"
+    }
   },
   "summary": {
     "balance": "Stanje",
@@ -1966,7 +1979,8 @@
     },
     "bug": {
       "loginRequired": "Morate biti prijavljeni za prijavu problema"
-    }
+    },
+    "projectsReadonly": "Projekti su u načinu samo za pregled. Aktiviraj pretplatu da bi mijenjao podatke."
   },
   "onboarding": {
     "welcomeTitle": "Dobrodošli!",

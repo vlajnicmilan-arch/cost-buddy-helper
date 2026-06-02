@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
+import {
+  requireAuth,
+  checkAiQuota,
+  consumeCoreScanQuota,
+  refundCoreScanQuota,
+  isInternalSkipQuota,
+  corsHeaders,
+} from "../_shared/aiQuota.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -10,8 +17,13 @@ serve(async (req) => {
     const auth = await requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const quota = await checkAiQuota(auth.supabase, auth.userId, "scan-card");
-    if (quota) return quota;
+    const skipQuota = isInternalSkipQuota(req);
+    if (!skipQuota) {
+      const quota = await checkAiQuota(auth.supabase, auth.userId, "scan-card");
+      if (quota) return quota;
+      const coreQuota = await consumeCoreScanQuota(auth.supabase);
+      if (coreQuota) return coreQuota;
+    }
 
     const { imageBase64 } = await req.json();
     
@@ -69,6 +81,7 @@ Do not include any other text or explanation.`
     });
 
     if (!response.ok) {
+      if (!skipQuota) await refundCoreScanQuota(auth.supabase);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
@@ -81,7 +94,7 @@ Do not include any other text or explanation.`
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       throw new Error("AI gateway error");

@@ -682,6 +682,12 @@
         "noCollaborator": "Select the collaborator receiving this advance.",
         "zeroAmountWithLinks": "Invoice amount cannot be 0 when advances are linked."
       }
+    },
+    "access": {
+      "readOnlyTitle": "Projects are read-only",
+      "readOnlyBody": "Your Projects subscription is not active. You can still view existing data, but adding, editing and deleting are disabled until you activate the plan.",
+      "cta": "Activate Projects",
+      "orphanGroup": "Personal projects"
     }
   },
   "estimates": {
@@ -1573,7 +1579,14 @@
     "scanPagesOne": "Scan {{count}} page",
     "scanPagesOther": "Scan {{count}} pages",
     "analyzingShort": "Analyzing...",
-    "maxPages": "Maximum {{max}} pages"
+    "maxPages": "Maximum {{max}} pages",
+    "coreQuota": {
+      "title": "Free scan limit reached",
+      "body": "The free plan includes 3 scans per 30 days. Next reset: {{resetAt}}.",
+      "cta": "Upgrade for unlimited",
+      "close": "OK",
+      "remaining": "Scans remaining: {{remaining}}"
+    }
   },
   "summary": {
     "balance": "Balance",
@@ -1961,7 +1974,8 @@
     },
     "bug": {
       "loginRequired": "You must be signed in to report an issue"
-    }
+    },
+    "projectsReadonly": "Projects are read-only. Activate your subscription to make changes."
   },
   "onboarding": {
     "welcomeTitle": "Welcome!",

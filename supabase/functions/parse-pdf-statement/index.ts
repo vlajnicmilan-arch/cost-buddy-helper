@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { checkAiQuota } from "../_shared/aiQuota.ts";
+import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,8 +82,13 @@ serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
-    const quotaResp = await checkAiQuota(supabase, userId, "parse-pdf-statement");
-    if (quotaResp) return quotaResp;
+    const skipQuota = isInternalSkipQuota(req);
+    if (!skipQuota) {
+      const quotaResp = await checkAiQuota(supabase, userId, "parse-pdf-statement");
+      if (quotaResp) return quotaResp;
+      const coreResp = await consumeCoreScanQuota(supabase);
+      if (coreResp) return coreResp;
+    }
 
     const body = await req.json();
     const { pdfBase64, bankType, isImage, htmlContent } = body;
@@ -124,6 +129,7 @@ serve(async (req) => {
             headers: {
               Authorization: authHeader,
               'Content-Type': 'application/json',
+              ...internalSkipQuotaHeader(),
             },
             body: JSON.stringify(directBody),
           });
@@ -394,6 +400,7 @@ METAPODACI:
     });
 
     if (!aiResponse.ok) {
+      if (!skipQuota) await refundCoreScanQuota(supabase);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Previše zahtjeva. Pokušaj ponovno za minutu.' }), 
