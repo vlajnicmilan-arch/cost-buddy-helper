@@ -120,34 +120,8 @@ export const BudgetCard = ({
           style={{ background: `radial-gradient(circle, ${budgetColor} 0%, transparent 70%)` }}
         />
 
-        {/* Hover Actions */}
-        <div className={cn(
-          "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-          "absolute top-2 right-2"
-        )}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.();
-            }}
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        {/* Hover Actions removed from top-right — moved to footer row below to be visible on mobile and avoid overlap with status badges/icons */}
+
         {/* Header row */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 min-w-0">
