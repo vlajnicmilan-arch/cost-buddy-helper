@@ -233,6 +233,34 @@ export const BudgetCard = ({
               })}
             </div>
           )}
+
+          {/* Action footer — always visible (mobile-first), separated from content */}
+          <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/50">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/60"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {t('common.edit', 'Uredi')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/60"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t('common.delete', 'Obriši')}
+            </Button>
+          </div>
         </div>
       </motion.div>
 
