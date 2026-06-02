@@ -690,6 +690,8 @@
     "access": {
       "readOnlyTitle": "Projekti su u načinu samo za pregled",
       "readOnlyBody": "Tvoja pretplata na Projekte nije aktivna. Postojeće podatke i dalje vidiš, ali nije moguće dodavati, mijenjati ni brisati zapise dok ne aktiviraš plan.",
+      "readOnlyParticipantBody": "Ti si član ovog projekta, ali ga ne posjeduješ. Pregled je dostupan, izmjene može raditi vlasnik s aktivnom pretplatom.",
+      "readOnlyBlockedToast": "Akcija nije moguća — projekt je u read-only stanju.",
       "cta": "Aktiviraj Projekte",
       "orphanGroup": "Osobni projekti"
     }
