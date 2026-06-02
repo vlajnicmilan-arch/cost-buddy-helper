@@ -1732,6 +1732,10 @@
     "allMembers": "Svi članovi",
     "allCards": "Sve kartice",
     "allBankMatchStatuses": "Svi statusi",
+    "allPaymentSources": "Svi izvori",
+    "cash": "Gotovina",
+    "card": "Kartica",
+    "bank": "Banka",
     "all": "Sve",
     "personal": "Osobno",
     "projects": "Projekti"

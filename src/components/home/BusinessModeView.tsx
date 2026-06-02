@@ -272,6 +272,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               onDeleteExpense={props.onDeleteExpense}
               contextLookup={props.contextLookup}
               allCards={props.allCards}
+              paymentSources={props.customPaymentSources}
               showScopeFilter={false}
             />
 

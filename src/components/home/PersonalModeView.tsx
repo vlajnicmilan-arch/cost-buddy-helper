@@ -394,6 +394,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
               onDeleteExpense={props.onDeleteExpense}
               contextLookup={props.contextLookup}
               allCards={props.allCards}
+              paymentSources={props.customPaymentSources}
               showScopeFilter={!props.isLocalMode}
               dataTutorial="transactions"
             />

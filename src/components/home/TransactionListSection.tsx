@@ -1,4 +1,5 @@
 import { Expense, Category } from '@/types/expense';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TransactionItem } from '@/components/TransactionItem';
 import { TransactionFilters, FilterState } from '@/components/TransactionFilters';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
@@ -39,6 +40,7 @@ interface TransactionListSectionProps {
   contextLookup: any;
   // Filter options
   allCards: any[];
+  paymentSources?: CustomPaymentSource[];
   showScopeFilter: boolean;
   // Layout
   className?: string;
@@ -69,6 +71,7 @@ export const TransactionListSection = ({
   onDeleteExpense,
   contextLookup,
   allCards,
+  paymentSources = [],
   showScopeFilter,
   className,
   dataTutorial,
@@ -87,6 +90,7 @@ export const TransactionListSection = ({
     filters.memberId ||
     filters.cardId ||
     filters.categoryId ||
+    filters.paymentSource ||
     (filters.scope && filters.scope !== 'all')
   );
 
@@ -121,7 +125,9 @@ export const TransactionListSection = ({
             onFiltersChange={onFiltersChange}
             showCardFilter={allCards.length > 0}
             showScopeFilter={showScopeFilter}
+            showPaymentSourceFilter={paymentSources.length > 0}
             cards={allCards}
+            paymentSources={paymentSources}
           />
           <BulkActionsToolbar
             selectedCount={selectedTransactionIds.size}

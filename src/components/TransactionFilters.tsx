@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark, Wallet } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
-import { PaymentSourceCard } from '@/types/customPaymentSource';
+import { PaymentSourceCard, CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -31,6 +31,7 @@ export interface FilterState {
   categoryId: string | undefined;
   scope: TransactionScope;
   bankMatchStatus: string | undefined;
+  paymentSource: string | undefined;
 }
 
 interface TransactionFiltersProps {
@@ -40,8 +41,10 @@ interface TransactionFiltersProps {
   showMemberFilter?: boolean;
   showCardFilter?: boolean;
   showScopeFilter?: boolean;
+  showPaymentSourceFilter?: boolean;
   members?: MemberOption[];
   cards?: PaymentSourceCard[];
+  paymentSources?: CustomPaymentSource[];
   className?: string;
 }
 
@@ -52,8 +55,10 @@ export const TransactionFilters = ({
   showMemberFilter = false,
   showCardFilter = false,
   showScopeFilter = false,
+  showPaymentSourceFilter = false,
   members = [],
   cards = [],
+  paymentSources = [],
   className,
 }: TransactionFiltersProps) => {
   const { t, i18n } = useTranslation();
@@ -103,7 +108,8 @@ export const TransactionFilters = ({
     filters.cardId !== undefined ||
     filters.categoryId !== undefined ||
     filters.scope !== 'all' ||
-    filters.bankMatchStatus !== undefined;
+    filters.bankMatchStatus !== undefined ||
+    filters.paymentSource !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -116,6 +122,7 @@ export const TransactionFilters = ({
       categoryId: undefined,
       scope: 'all',
       bankMatchStatus: undefined,
+      paymentSource: undefined,
     });
   };
 
@@ -387,6 +394,30 @@ export const TransactionFilters = ({
               <SelectItem value="bank_only">{t('bankMatch.bankOnly', 'Iz izvoda')}</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Payment Source Filter */}
+          {showPaymentSourceFilter && (
+            <Select
+              value={filters.paymentSource || 'all'}
+              onValueChange={(value) => updateFilter('paymentSource', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <Wallet className="w-3.5 h-3.5 mr-1.5" />
+                <SelectValue placeholder={t('filters.allPaymentSources', 'Svi izvori')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filters.allPaymentSources', 'Svi izvori')}</SelectItem>
+                <SelectItem value="cash">{t('filters.cash', 'Gotovina')}</SelectItem>
+                <SelectItem value="card">{t('filters.card', 'Kartica')}</SelectItem>
+                <SelectItem value="bank">{t('filters.bank', 'Banka')}</SelectItem>
+                {paymentSources.map((src) => (
+                  <SelectItem key={src.id} value={`custom:${src.id}`}>
+                    {src.icon} {src.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
     </div>
@@ -394,7 +425,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null; payment_source?: string | null }>(
   items: T[],
   filters: FilterState,
   currentUserId?: string
@@ -455,6 +486,10 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (itemStatus !== filters.bankMatchStatus) return false;
     }
 
+    if (filters.paymentSource !== undefined) {
+      if ((item.payment_source ?? null) !== filters.paymentSource) return false;
+    }
+
     return true;
   });
 };
@@ -470,4 +505,5 @@ export const defaultFilters: FilterState = {
   categoryId: undefined,
   scope: 'all',
   bankMatchStatus: undefined,
+  paymentSource: undefined,
 };

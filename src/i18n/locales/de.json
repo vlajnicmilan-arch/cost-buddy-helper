@@ -1727,6 +1727,10 @@
     "allMembers": "Alle Mitglieder",
     "allCards": "Alle Karten",
     "allBankMatchStatuses": "Alle Status",
+    "allPaymentSources": "Alle Quellen",
+    "cash": "Bargeld",
+    "card": "Karte",
+    "bank": "Bank",
     "all": "Alle",
     "personal": "Persönlich",
     "projects": "Projekte"
