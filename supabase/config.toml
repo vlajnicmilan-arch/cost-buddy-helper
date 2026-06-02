@@ -93,7 +93,7 @@ project_id = "fzalxjretvtvokiotvkf"
   [functions.flush-participant-digest]
     verify_jwt = false
 
-  [functions._test-participant-filter]
+  [functions.test-participant-filter]
     verify_jwt = false
 
 [studio]
