@@ -381,9 +381,15 @@ export const AddExpenseDialog = ({
     // Defensive blur: ensure keyboard is dismissed before scan/AI analysis kicks in
     try { (document.activeElement as HTMLElement)?.blur?.(); } catch {}
     if (multiMode || showMultiImageCollector) {
-      setReceiptImages(prev => [...prev, base64]);
-      setReceiptImage(base64);
-      if (!showMultiImageCollector) setShowMultiImageCollector(true);
+      try {
+        setReceiptImages(prev => [...prev, base64]);
+        setReceiptImage(base64);
+        if (!showMultiImageCollector) setShowMultiImageCollector(true);
+      } finally {
+        // Multi-mode samo prikuplja slike — pravi scan ide tek na "Skeniraj".
+        // Bez ovog reset-a guard ostaje trajno zaključan i X/back ne reagiraju.
+        scanInProgressRef.current = false;
+      }
     } else {
       scanInProgressRef.current = true;
       setReceiptImage(base64);
