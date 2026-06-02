@@ -20,6 +20,7 @@ import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
@@ -129,6 +130,7 @@ interface ManualExpenseFormProps {
 
 export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
+  const { projectsModuleEnabled, familyModeEnabled } = useAppState();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -380,7 +382,8 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           )}
 
           {/* Project Assignment */}
-          {props.projects.length > 0 && (
+          {/* Project Assignment — Faza 1 modularnog UI-a: gated by Projects modul */}
+          {projectsModuleEnabled && props.projects.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <FolderKanban className="w-4 h-4" />
@@ -484,8 +487,8 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             </div>
           )}
 
-          {/* Collaborator advance section — only for projects + expense type */}
-          {props.selectedProjectId && props.type === 'expense' && (
+          {/* Collaborator advance section — Faza 1 modularnog UI-a: ovisi o projektima */}
+          {projectsModuleEnabled && props.selectedProjectId && props.type === 'expense' && (
             <AdvanceLinkSection
               projectId={props.selectedProjectId}
               type={props.type}
@@ -584,8 +587,10 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         )}
       </div>
 
-      {/* Family split prediction (renders only when source is shared family) */}
-      {props.type === 'expense' && (
+      {/* Family split prediction — Faza 1 modularnog UI-a: gated by Family modul.
+          Komponenta i dalje interno provjerava je li source dijeljen, ali gate je tu
+          da skroz isključi pristup hooku/UI-u kad modul nije aktivan. */}
+      {familyModeEnabled && props.type === 'expense' && (
         <SplitPredictionHint
           paymentSource={props.paymentSource}
           amount={parseFloat(props.amount) || 0}
