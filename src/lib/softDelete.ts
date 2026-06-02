@@ -7,6 +7,24 @@ export type TrashEntity = 'expense' | 'project' | 'invoice' | 'estimate';
  * Soft delete: označava red kao obrisan postavljajući deleted_at i deleted_by.
  * RLS restriktivna policy `hide_soft_deleted` automatski skriva ovaj red iz svih SELECT-ova.
  */
+/**
+ * Greska bacena kad downgrade owner pokusa obrisati projekt-domenski zapis.
+ * UI je hvata i prikazuje ProjectReadOnlyBanner / dialog umjesto sirovog Postgres errora.
+ */
+export class ProjectReadOnlyError extends Error {
+  code = 'projects_readonly' as const;
+  constructor(message = 'projects_readonly') {
+    super(message);
+    this.name = 'ProjectReadOnlyError';
+  }
+}
+
+function isProjectsReadonlyError(error: unknown): boolean {
+  if (!error) return false;
+  const e = error as { code?: string; message?: string };
+  return e.code === '42501' || (e.message ?? '').includes('projects_readonly');
+}
+
 export async function softDelete(
   table: SoftDeleteTable,
   id: string,
@@ -18,7 +36,10 @@ export async function softDelete(
     p_table: table,
     p_id: id,
   });
-  if (error) throw error;
+  if (error) {
+    if (isProjectsReadonlyError(error)) throw new ProjectReadOnlyError();
+    throw error;
+  }
 }
 
 /** Vraća soft-obrisan red iz koša. Koristi RPC zbog audita; cascade trigger riješi povezano. */
