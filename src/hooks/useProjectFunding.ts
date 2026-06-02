@@ -13,6 +13,31 @@ export interface ProjectIncomeSource {
   category: string;
 }
 
+// Best-effort daily digest enqueue for participant project space.
+// Recipient-type independent — RPC excludes the actor itself.
+async function enqueueFundingDigest(
+  projectId: string,
+  actorUserId: string,
+  kind: 'project_funding_added' | 'project_funding_updated' | 'project_funding_removed',
+  label: string | null,
+  refId: string | null,
+) {
+  try {
+    await supabase.rpc('enqueue_participant_digest_event', {
+      p_project_id: projectId,
+      p_actor_user_id: actorUserId,
+      p_event: {
+        kind,
+        label,
+        ref_id: refId,
+        at: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error('[useProjectFunding] digest enqueue error', err);
+  }
+}
+
 export const useProjectFunding = (projectId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -134,6 +159,13 @@ export const useProjectFunding = (projectId: string | null) => {
 
       setFunding(prev => [...prev, newFunding]);
       showSuccess(t('projects.fundingAdded'));
+      void enqueueFundingDigest(
+        projectId,
+        user.id,
+        'project_funding_added',
+        newFunding.income_source_name ?? null,
+        newFunding.id,
+      );
       return newFunding;
     } catch (error: any) {
       console.error('Error adding funding:', error);
@@ -162,12 +194,22 @@ export const useProjectFunding = (projectId: string | null) => {
 
       if (error) throw error;
 
+      const updated = funding.find(f => f.id === id);
       setFunding(prev => prev.map(f => 
         f.id === id 
           ? { ...f, allocated_amount: allocatedAmount, percentage: percentage || null } 
           : f
       ));
       showSuccess(t('projects.fundingUpdated'));
+      if (projectId && user) {
+        void enqueueFundingDigest(
+          projectId,
+          user.id,
+          'project_funding_updated',
+          updated?.income_source_name ?? null,
+          id,
+        );
+      }
     } catch (error) {
       console.error('Error updating funding:', error);
       showError(t('common.error'));
@@ -183,8 +225,18 @@ export const useProjectFunding = (projectId: string | null) => {
 
       if (error) throw error;
 
+      const removed = funding.find(f => f.id === id);
       setFunding(prev => prev.filter(f => f.id !== id));
       showSuccess(t('projects.fundingRemoved'));
+      if (projectId && user) {
+        void enqueueFundingDigest(
+          projectId,
+          user.id,
+          'project_funding_removed',
+          removed?.income_source_name ?? null,
+          id,
+        );
+      }
     } catch (error) {
       console.error('Error deleting funding:', error);
       showError(t('common.error'));

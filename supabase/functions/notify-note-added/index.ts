@@ -175,6 +175,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
         source: 'notify-note-added',
       });
 
+      // Daily digest enqueue (po prostoru, recipient-type independent).
+      try {
+        await supabaseAdmin.rpc('enqueue_participant_digest_event', {
+          p_project_id: project.id,
+          p_actor_user_id: user.id,
+          p_event: {
+            kind: 'project_note_added',
+            actor_name: memberName,
+            label: expense.description ?? null,
+            ref_id: expense.id ?? null,
+            at: new Date().toISOString(),
+          },
+        });
+      } catch (digestErr) {
+        console.error('[notify-note-added] digest enqueue error', digestErr);
+      }
+
       console.log(`Project note notifications sent to ${usersToNotify.size} user(s) from ${memberName}`);
 
       return new Response(
