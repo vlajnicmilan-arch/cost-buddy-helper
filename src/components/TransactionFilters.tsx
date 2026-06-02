@@ -505,4 +505,5 @@ export const defaultFilters: FilterState = {
   categoryId: undefined,
   scope: 'all',
   bankMatchStatus: undefined,
+  paymentSource: undefined,
 };
