@@ -211,6 +211,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
+    // Enqueue daily digest event (po prostoru). Best-effort; failure must not
+    // break the immediate notify flow. Recipient selection happens server-side
+    // in the RPC (owner + all members minus actor), independent of role.
+    try {
+      await supabaseAdmin.rpc("enqueue_participant_digest_event", {
+        p_project_id: project.id,
+        p_actor_user_id: userId,
+        p_event: {
+          kind: body.activity_type,
+          actor_name: submitterName,
+          label: body.meta?.milestone_name ?? body.meta?.date ?? null,
+          ref_id: body.ref_id ?? null,
+          at: new Date().toISOString(),
+        },
+      });
+    } catch (digestErr) {
+      console.error("[notify-project-activity] digest enqueue error", digestErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
