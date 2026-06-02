@@ -90,6 +90,7 @@ export const TransactionListSection = ({
     filters.memberId ||
     filters.cardId ||
     filters.categoryId ||
+    filters.paymentSource ||
     (filters.scope && filters.scope !== 'all')
   );
 
