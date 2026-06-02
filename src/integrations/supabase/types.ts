@@ -924,6 +924,27 @@ export type Database = {
           },
         ]
       }
+      core_scan_usage: {
+        Row: {
+          count: number
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       custom_categories: {
         Row: {
           color: string
@@ -3024,6 +3045,44 @@ export type Database = {
         }
         Relationships: []
       }
+      participant_digest_state: {
+        Row: {
+          last_event_at: string | null
+          last_sent_at: string | null
+          pending_count: number
+          pending_summary: Json
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_event_at?: string | null
+          last_sent_at?: string | null
+          pending_count?: number
+          pending_summary?: Json
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_event_at?: string | null
+          last_sent_at?: string | null
+          pending_count?: number
+          pending_summary?: Json
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participant_digest_state_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_source_cards: {
         Row: {
           card_name: string
@@ -5118,6 +5177,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      assert_projects_write_allowed: { Args: never; Returns: undefined }
       can_write_payment_source: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
@@ -5151,6 +5211,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      consume_core_scan_quota: { Args: never; Returns: Json }
       consume_invitation_token: {
         Args: { _invitation_type: string; _token: string }
         Returns: {
@@ -5169,6 +5230,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      enqueue_participant_digest_event: {
+        Args: { p_actor_user_id: string; p_event: Json; p_project_id: string }
+        Returns: undefined
       }
       find_user_by_email: { Args: { p_email: string }; Returns: string }
       get_admin_user_stats: { Args: never; Returns: Json }
@@ -5191,6 +5256,7 @@ export type Database = {
       }
       get_founding_member_count: { Args: never; Returns: number }
       get_next_founding_member_number: { Args: never; Returns: number }
+      has_any_paid_plan: { Args: { _user_id: string }; Returns: boolean }
       has_full_payment_source_access: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
@@ -5250,6 +5316,7 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_projects_subscriber: { Args: { _user_id: string }; Returns: boolean }
       is_push_category_enabled: {
         Args: { _category: string; _user_id: string }
         Returns: boolean
@@ -5287,6 +5354,7 @@ export type Database = {
         Args: { _source_id: string; _user_id: string }
         Returns: string
       }
+      peek_core_scan_quota: { Args: never; Returns: Json }
       purge_old_trash: { Args: { p_older_than_days?: number }; Returns: Json }
       purge_trash_item: {
         Args: { p_entity: string; p_id: string }
@@ -5337,6 +5405,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      refund_core_scan_quota: { Args: never; Returns: undefined }
       resolve_stale_issues: {
         Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
         Returns: number
