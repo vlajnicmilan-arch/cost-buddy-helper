@@ -31,6 +31,7 @@ import { FamilySplitControls } from './family/FamilySplitControls';
 import { FamilyReactionsBar } from './family/FamilyReactionsBar';
 import { FamilyCommentsInline } from './family/FamilyCommentsInline';
 import { useFamilyGroupForExpense } from '@/hooks/useFamilyGroupForExpense';
+import { useAppState } from '@/contexts/AppStateContext';
 
 
 interface TransactionDetailDialogProps {
@@ -83,6 +84,7 @@ export const TransactionDetailDialog = ({
   const { t, i18n } = useTranslation();
   const { shareTransaction } = useNativeShare();
   const { groupId: familyGroupId } = useFamilyGroupForExpense(expense);
+  const { familyModeEnabled } = useAppState();
   const isLocalMode = storageMode === 'local' && !user;
   
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
@@ -410,8 +412,8 @@ export const TransactionDetailDialog = ({
             </div>
           )}
 
-          {/* Family split controls — only rendered when expense lives on a shared family payment source */}
-          {expense.type === 'expense' && expense.user_id === user?.id && (
+          {/* Family split controls — gated by Family modul (Faza 1 modularnog UI-a) */}
+          {familyModeEnabled && expense.type === 'expense' && expense.user_id === user?.id && (
             <FamilySplitControls expense={expense} />
           )}
 
