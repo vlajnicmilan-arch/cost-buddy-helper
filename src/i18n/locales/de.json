@@ -4147,7 +4147,10 @@
     }
   },
   "scanning": {
-    "step4Fallback": "Analyse wird abgeschlossen...",
+    "step1": "Text wird aus dem Bild gelesen...",
+    "step2": "Positionen und Beträge werden erkannt...",
+    "step3": "Transaktion wird kategorisiert...",
+    "step4": "Analyse wird abgeschlossen...",
     "tip1": "Tipp: Halten Sie den Beleg flach für bessere Ergebnisse",
     "tip2": "Tipp: Gute Beleuchtung verbessert die Genauigkeit",
     "tip3": "Tipp: Vermeiden Sie Schatten auf dem Beleg",

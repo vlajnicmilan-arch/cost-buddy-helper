@@ -4155,7 +4155,10 @@
     }
   },
   "scanning": {
-    "step4Fallback": "Završavam analizu...",
+    "step1": "Čitam tekst sa slike...",
+    "step2": "Prepoznajem stavke i iznose...",
+    "step3": "Kategoriziram transakciju...",
+    "step4": "Završavam analizu...",
     "tip1": "Savjet: Držite račun ravno za bolji rezultat",
     "tip2": "Savjet: Dobro osvjetljenje poboljšava preciznost",
     "tip3": "Savjet: Izbjegavajte sjene preko računa",
