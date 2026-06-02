@@ -9,7 +9,7 @@ import { LocalFileCache } from './useLocalFileCache';
 import { LocalStorage } from './useLocalStorage';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { matchCustomByMethod } from '@/lib/paymentSourceMatching';
-import { parseAiQuotaError } from '@/lib/aiQuotaError';
+import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
 
 interface ParsedReceipt {
   amount: number;
@@ -216,7 +216,9 @@ export const useReceiptScanner = () => {
 
       if (response.status === 429) {
         const quotaError = await parseAiQuotaError(response);
-        if (quotaError?.kind === 'daily_limit') {
+        if (quotaError?.kind === 'core_scan_limit') {
+          emitCoreScanLimitReached(quotaError.resetAt);
+        } else if (quotaError?.kind === 'daily_limit') {
           showError(
             t('errors.receipt.dailyLimitReached', {
               limit: quotaError.limit,
