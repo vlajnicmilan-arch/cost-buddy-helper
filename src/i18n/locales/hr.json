@@ -1541,7 +1541,15 @@
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
     "dateNotFound": "Nije pronađen",
-    "analyzingPages": "Analiziram {{count}} stranica..."
+    "analyzingPages": "Analiziram {{count}} stranica...",
+    "multiPageReceipt": "Višestraničan račun",
+    "multiPageTitle": "Dodaj sve stranice računa ({{count}}/{{max}})",
+    "addPage": "Dodaj stranicu",
+    "scanPagesOne": "Skeniraj {{count}} stranicu",
+    "scanPagesFew": "Skeniraj {{count}} stranice",
+    "scanPagesMany": "Skeniraj {{count}} stranica",
+    "analyzingShort": "Analiziram...",
+    "maxPages": "Maksimalno {{max}} stranica"
   },
   "summary": {
     "balance": "Stanje",
