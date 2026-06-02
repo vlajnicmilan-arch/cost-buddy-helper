@@ -48,11 +48,6 @@ type ReceiptHttpResult = {
   json: () => Promise<any>;
 };
 
-const parseReceiptResponseBody = async (body: unknown) => {
-  if (typeof body === 'string') return JSON.parse(body);
-  return body;
-};
-
 const MAX_RECEIPT_IMAGE_WIDTH = 1400;
 const RECEIPT_UPLOAD_TARGET_BYTES = 420_000;
 const RECEIPT_UPLOAD_MAX_BYTES = 500_000;
@@ -181,10 +176,16 @@ export const useReceiptScanner = () => {
         return null;
       }
 
-      // Compress all images
       const compressedImages = await Promise.all(
-        imagesBase64.map(img => compressImage(img))
+        imagesBase64.map(img => normalizeReceiptImage(img))
       );
+      try {
+        logDiagnostic('receipt_scan_images_normalized', {
+          original_total_base64_bytes: totalBytes,
+          normalized_total_base64_bytes: compressedImages.reduce((sum, img) => sum + img.length, 0),
+          is_native: Capacitor.isNativePlatform(),
+        });
+      } catch {}
 
       // Prepare custom payment sources for the API
       const sourcesForApi = customPaymentSources?.map(src => ({
@@ -207,14 +208,14 @@ export const useReceiptScanner = () => {
           customPaymentSources: sourcesForApi,
           customCategories: customCategories || []
         };
-        const webResponse = await fetch(url, {
+        const webResponse = await fetchWithTimeout(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': authHeader,
           },
           body: JSON.stringify(payload)
-        });
+        }, RECEIPT_FETCH_TIMEOUT_MS);
         return {
           ok: webResponse.ok,
           status: webResponse.status,
@@ -222,91 +223,22 @@ export const useReceiptScanner = () => {
         };
       };
 
-      const isTransientNetworkError = (err: any) => {
-        const msg = (err?.message || String(err) || '').toLowerCase();
-        return (
-          msg.includes('timeout') ||
-          msg.includes('timed out') ||
-          msg.includes('connection abort') ||
-          msg.includes('connection reset') ||
-          msg.includes('software caused connection') ||
-          msg.includes('network') ||
-          msg.includes('failed to fetch') ||
-          msg.includes('load failed') ||
-          msg.includes('socket')
-        );
-      };
-
       const callParseReceipt = async (payloadImages: string[]): Promise<ReceiptHttpResult> => {
-        const payload = {
-          imagesBase64: payloadImages,
-          customPaymentSources: sourcesForApi,
-          customCategories: customCategories || []
-        };
-
-        if (Capacitor.isNativePlatform()) {
-          try { logDiagnostic('receipt_scan_native_http_start', { image_count: payloadImages.length }); } catch {}
+        try { logDiagnostic('receipt_scan_fetch_start', { image_count: payloadImages.length }); } catch {}
+        try {
+          const result = await callViaFetch(payloadImages);
+          try { logDiagnostic('receipt_scan_fetch_done', { status: result.status }); } catch {}
+          return result;
+        } catch (fetchErr) {
           try {
-            const nativeResponse = await CapacitorHttp.post({
-              url,
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authHeader,
-              },
-              data: payload,
-              connectTimeout: 20000,
-              readTimeout: 90000,
-              responseType: 'json',
+            logDiagnostic({
+              event: 'receipt_scan_fetch_failed',
+              severity: 'error',
+              details: { message: fetchErr instanceof Error ? fetchErr.message : String(fetchErr) },
             });
-            try {
-              logDiagnostic('receipt_scan_native_http_done', {
-                status: nativeResponse.status,
-                has_data: !!nativeResponse.data,
-                data_type: typeof nativeResponse.data,
-              });
-            } catch {}
-            return {
-              ok: nativeResponse.status >= 200 && nativeResponse.status < 300,
-              status: nativeResponse.status,
-              json: () => Promise.resolve(parseReceiptResponseBody(nativeResponse.data)),
-            };
-          } catch (httpErr: any) {
-            try {
-              logDiagnostic({
-                event: 'receipt_scan_native_http_failed',
-                severity: 'error',
-                details: {
-                  message: httpErr?.message || String(httpErr),
-                  name: httpErr?.name,
-                },
-              });
-            } catch {}
-            if (isTransientNetworkError(httpErr)) {
-              try { logDiagnostic('receipt_scan_native_http_fallback_start', { image_count: payloadImages.length }); } catch {}
-              try {
-                const fallback = await callViaFetch(payloadImages);
-                try {
-                  logDiagnostic('receipt_scan_native_http_fallback_done', {
-                    status: fallback.status,
-                  });
-                } catch {}
-                return fallback;
-              } catch (fallbackErr: any) {
-                try {
-                  logDiagnostic({
-                    event: 'receipt_scan_native_http_fallback_failed',
-                    severity: 'error',
-                    details: { message: fallbackErr?.message || String(fallbackErr) },
-                  });
-                } catch {}
-                throw fallbackErr;
-              }
-            }
-            throw httpErr;
-          }
+          } catch {}
+          throw fetchErr;
         }
-
-        return callViaFetch(payloadImages);
       };
 
       let response = await callParseReceipt(compressedImages);
