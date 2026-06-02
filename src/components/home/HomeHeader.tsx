@@ -81,12 +81,16 @@ export const HomeHeader = ({
     } catch (e) {
       console.error('Sign out error:', e);
     } finally {
+      // Sign-out preserve: keep non-user-specific local prefs (themes, modul flagovi
+      // i pohrana). Faza 1 modularnog UI-a dodaje `projects_module_enabled`.
       const theme = localStorage.getItem('theme');
       const storageConfig = localStorage.getItem('finmate-storage-config');
       const aiAssistant = localStorage.getItem('ai_assistant_enabled');
       const simpleMode = localStorage.getItem('simple_mode_enabled');
       const familyMode = localStorage.getItem('family_mode_enabled');
       const businessMode = localStorage.getItem('business_mode_enabled');
+      const businessFeature = localStorage.getItem('business_feature_enabled');
+      const projectsModule = localStorage.getItem('projects_module_enabled');
       localStorage.clear();
       if (theme) localStorage.setItem('theme', theme);
       if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
@@ -94,6 +98,8 @@ export const HomeHeader = ({
       if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
       if (familyMode) localStorage.setItem('family_mode_enabled', familyMode);
       if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
+      if (businessFeature) localStorage.setItem('business_feature_enabled', businessFeature);
+      if (projectsModule) localStorage.setItem('projects_module_enabled', projectsModule);
       navigate('/');
     }
   };

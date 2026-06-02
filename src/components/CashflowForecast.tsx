@@ -6,6 +6,7 @@ import { useInstallments } from '@/hooks/useInstallments';
 import { useFamilyForecastObligations } from '@/hooks/useFamilyForecastObligations';
 import { computeFamilyOutflowsPerWeek } from '@/lib/familyForecastContrib';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, ArrowRight, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,7 @@ export const CashflowForecast = () => {
   const { plans } = useInstallments();
   const { settlements: familyObligations } = useFamilyForecastObligations();
   const { user } = useAuth();
+  const { familyModeEnabled } = useAppState();
 
   const forecastData = useMemo(() => {
     const today = startOfDay(new Date());
@@ -186,7 +188,7 @@ export const CashflowForecast = () => {
       transition={{ delay: 0.28 }}
     >
 
-      {familyTotal > 0 && (
+      {familyModeEnabled && familyTotal > 0 && (
         <div className="flex justify-end mb-2">
           <Badge variant="secondary" className="gap-1 text-[10px] h-5">
             <Users className="w-3 h-3" />

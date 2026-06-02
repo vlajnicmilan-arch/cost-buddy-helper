@@ -32,9 +32,16 @@ interface AppStateContextValue {
   setActiveBusinessProfileId: (id: string | null) => void;
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
-  // Usage profile: 'finance_only' | 'finance_projects' | null (legacy)
+  // Usage profile: 'finance_only' | 'finance_projects' | null (legacy).
+  // OD FAZE 1 MODULARNOG UI-A: nije više UI gate za Projects (zamijenjen
+  // sa projectsModuleEnabled). Ostaje za onboarding analitiku/telemetriju.
   usageProfile: UsageProfile;
   setUsageProfile: (p: UsageProfile) => void;
+  // Projects modul toggle (user-controlled). Faza 1 modularnog UI-a.
+  // Pravi izvor istine za sve project UI entry pointe; tier gate ostaje u
+  // useFeatureAccess('projects').
+  projectsModuleEnabled: boolean;
+  setProjectsModuleEnabled: (enabled: boolean) => void;
   // Dashboard V2 layout (refocused: hero=projects-or-balance, no cashflow/savings/quicklinks
   // on home). Default ON; opt-out via Settings → "Klasični prikaz".
   dashboardV2Enabled: boolean;
@@ -60,8 +67,12 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [simpleModeEnabled, setSimpleModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('simple_mode_enabled') === 'true'
   );
+  // Faza 1 modularnog UI-a: family default je sada OFF za nove korisnike.
+  // Postojeći korisnici koji su eksplicitno toggleali ostaju na svojoj vrijednosti.
+  // Backfill auto-on za korisnike s aktivnim family membershipom radi se niže
+  // u resolveOnboarding() (jedan SELECT na `family_members`).
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('family_mode_enabled') !== 'false'
+    () => localStorage.getItem('family_mode_enabled') === 'true'
   );
   // Master switch from Settings — persisted. If user upgrades from old build,
   // migrate from the previous `business_mode_enabled` key (which used to act as master).
@@ -86,6 +97,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [usageProfile, setUsageProfileState] = useState<UsageProfile>(() => {
     const v = localStorage.getItem('usage_profile');
     return v === 'finance_only' || v === 'finance_projects' ? v : null;
+  });
+  // Projects modul flag. Faza 1 modularnog UI-a — zamjenjuje usageProfile kao UI gate.
+  // Legacy init: ako nema eksplicitnog ključa, čita iz usage_profile-a:
+  //   - 'finance_only' → false
+  //   - 'finance_projects' / null (legacy) → true
+  // Backfill auto-on (korisnik ima projekte ili membership) radi se u resolveOnboarding().
+  const [projectsModuleEnabled, setProjectsModuleEnabledState] = useState<boolean>(() => {
+    const explicit = localStorage.getItem('projects_module_enabled');
+    if (explicit !== null) return explicit === 'true';
+    const usage = localStorage.getItem('usage_profile');
+    return usage !== 'finance_only';
   });
   // Dashboard V2 default ON; only OFF if user explicitly opts out.
   const [dashboardV2Enabled, setDashboardV2EnabledState] = useState<boolean>(
@@ -173,6 +195,47 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch {
           /* best-effort, ignore */
+        }
+
+        // Faza 1 modularnog UI-a: jednokratni backfill module flagova za
+        // postojeće korisnike koji nisu eksplicitno toggleali u Settings.
+        // Smjer je "auto-on kad postoji signal koji modul treba", nikad off.
+        try {
+          if (localStorage.getItem('family_mode_enabled') === null) {
+            const { count } = await supabase
+              .from('family_members')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', session.user.id);
+            if ((count ?? 0) > 0) {
+              localStorage.setItem('family_mode_enabled', 'true');
+              setFamilyModeEnabledState(true);
+            } else {
+              // Persist eksplicitno "false" da se ne pokreće query svaki mount.
+              localStorage.setItem('family_mode_enabled', 'false');
+            }
+          }
+          if (localStorage.getItem('projects_module_enabled') === null) {
+            const usage = localStorage.getItem('usage_profile');
+            if (usage !== 'finance_only') {
+              // Za legacy ('finance_projects' ili null) provjeri ima li projekata
+              // ili membershipa; ako da → ON; inače ostaje na default-u iz
+              // initial state-a (true) — ali zapiši ga radi stabilnosti.
+              const [{ count: ownCount }, { count: memberCount }] = await Promise.all([
+                supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
+                supabase.from('project_members').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
+              ]);
+              const hasAny = (ownCount ?? 0) > 0 || (memberCount ?? 0) > 0;
+              const next = hasAny; // legacy useri bez projekata dobivaju OFF — Core-only iskustvo
+              localStorage.setItem('projects_module_enabled', next.toString());
+              setProjectsModuleEnabledState(next);
+            } else {
+              localStorage.setItem('projects_module_enabled', 'false');
+              setProjectsModuleEnabledState(false);
+            }
+          }
+        } catch (err) {
+          // Backfill je best-effort; sljedeći mount će opet pokušati.
+          console.warn('[module-visibility] backfill skipped:', err);
         }
       } catch (e) {
         console.error('Failed to resolve onboarding state from DB:', e);
@@ -279,6 +342,11 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('dashboard_v2_enabled', enabled.toString());
   }, []);
 
+  const setProjectsModuleEnabled = useCallback((enabled: boolean) => {
+    setProjectsModuleEnabledState(enabled);
+    localStorage.setItem('projects_module_enabled', enabled.toString());
+  }, []);
+
   const onAvatarEvent = useCallback((handler: AvatarEventHandler) => {
     avatarHandlers.current.add(handler);
     return () => { avatarHandlers.current.delete(handler); };
@@ -325,6 +393,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingCompleted,
     usageProfile,
     setUsageProfile,
+    projectsModuleEnabled,
+    setProjectsModuleEnabled,
     dashboardV2Enabled,
     setDashboardV2Enabled,
     appStateReady,
@@ -344,6 +414,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     activeBusinessProfileId, setActiveBusinessProfileId,
     onboardingCompleted, setOnboardingCompleted,
     usageProfile, setUsageProfile,
+    projectsModuleEnabled, setProjectsModuleEnabled,
     dashboardV2Enabled, setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,

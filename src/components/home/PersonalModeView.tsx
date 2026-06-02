@@ -143,8 +143,11 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { usageProfile, activeBusinessProfileId, dashboardV2Enabled } = useAppState();
-  const projectsHidden = usageProfile === 'finance_only';
+  const { projectsModuleEnabled, activeBusinessProfileId, dashboardV2Enabled } = useAppState();
+  // Faza 1 modularnog UI-a: izvor istine je `projectsModuleEnabled` (zamijenio
+  // legacy `usageProfile === 'finance_only'` check). Strip/CTA-i nestaju kad
+  // korisnik isključi modul iz Settings → Moduli.
+  const projectsHidden = !projectsModuleEnabled;
   const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers } = useReceiptScan();
