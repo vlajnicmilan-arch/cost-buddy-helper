@@ -113,6 +113,13 @@ export const NotificationsDropdown = () => {
   const [chosenBusinessProfileId, setChosenBusinessProfileId] = useState<string>('');
   const [suggestedContext, setSuggestedContext] = useState<'personal' | 'business'>('personal');
 
+  // Auto-close dropdown when empty (after deleting last notification)
+  useEffect(() => {
+    if (!open || loading || notifications.length > 0 || confirmDeleteAll || invitationDialog) return;
+    const timer = setTimeout(() => setOpen(false), 1500);
+    return () => clearTimeout(timer);
+  }, [open, loading, notifications.length, confirmDeleteAll, invitationDialog]);
+
   // When project invitation dialog opens, load suggestion + user's business profiles
   useEffect(() => {
     const loadProjectContext = async () => {
