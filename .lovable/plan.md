@@ -1,26 +1,32 @@
-Uzrok je jasan: dio “Za pažnju” koristi `dismiss_notification` i ostavlja zapis kao `dismissed`, pa se isti problem ne vraća 7 dana. Ali zvono za obavijesti koristi direktni `DELETE` nad `notifications`; kad se izbriše aktivno upozorenje s `dedup_key`, `useIssueReconciler` ga nakon kratkog vremena ponovno detektira i ponovno umetne.
+## Cilj
+U kartici "Nedavno" (homepage) u naprednim filterima dodati novi filter **Izvor plaćanja** koji nudi sve korisničke izvore plaćanja (custom payment sources) + standardne (gotovina/kartica/banka).
 
-Plan popravka:
+## Promjene
 
-1. Uskladiti brisanje u zvonu s postojećim “Za pažnju” tokom
-   - Za aktivna issue upozorenja (`dedup_key` / `status='active'` / tipovi poput `budget_burn`, `project_loss_zone`, `overdue_invoice`) umjesto fizičkog brisanja pozvati postojeći RPC `dismiss_notification`.
-   - Za obične obavijesti bez issue logike zadržati stvarno brisanje.
+### 1. `src/components/TransactionFilters.tsx`
+- `FilterState`: dodati `paymentSource: string | undefined` (format kao u DB: `'cash' | 'card' | 'bank' | 'custom:UUID'`).
+- Props: nove opcionalne `showPaymentSourceFilter?: boolean` i `paymentSources?: CustomPaymentSource[]`.
+- U `hasActiveFilters`, `clearFilters`, `defaultFilters` uključiti novo polje.
+- U panelu naprednih filtera dodati `<Select>` (Wallet ikona iz lucide):
+  - opcije: "Svi izvori" (all), Gotovina, Kartica, Banka, pa lista korisničkih izvora s ikonom+nazivom.
+- U `applyFilters`: ako je `paymentSource` postavljen → `item.payment_source === filters.paymentSource`. Tip generika proširiti s `payment_source?: string`.
 
-2. Sakriti dismissed/resolved zapise iz zvona
-   - `useNotifications` će dohvaćati samo vidljive obavijesti, tj. aktivne zapise.
-   - Kad se issue dismiss-a, lokalno će odmah nestati iz liste i neće se vraćati nakon refetcha.
+### 2. `src/components/home/TransactionListSection.tsx`
+- Novi prop `paymentSources: CustomPaymentSource[]`.
+- Proslijediti `showPaymentSourceFilter` i `paymentSources` u `<TransactionFilters>`.
+- U `hasActiveFilters` dodati `filters.paymentSource`.
 
-3. Popraviti “Obriši sve”
-   - Ne smije hard-deleteati issue upozorenja jer se onda regeneriraju.
-   - Vidljive issue obavijesti će se dismissati, a obične obavijesti obrisati.
-   - Badge/unread count se ažurira prema stvarnom vidljivom stanju.
+### 3. Pozivatelji `TransactionListSection`
+- `src/components/home/PersonalModeView.tsx` i `BusinessModeView.tsx` (i svi mjesti gdje se mountira): dohvatiti listu kroz postojeći `useCustomPaymentSources()` hook i proslijediti je. U Business modu već postoji aktivan profil — koristi se hookova interna filtracija.
 
-4. Pojačati realtime sinkronizaciju
-   - Na `UPDATE` gdje obavijest postane `dismissed` ili `resolved`, ukloniti je iz lokalnog stanja.
-   - Na `DELETE` ukloniti je iz lokalnog stanja.
-   - INSERT ostaje kao sada, ali samo za vidljive aktivne obavijesti.
+### 4. i18n (`hr/en/de.json`)
+- `filters.paymentSource` ("Izvor plaćanja" / "Payment source" / "Zahlungsquelle")
+- `filters.allPaymentSources` ("Svi izvori" / …)
+- `filters.cash`, `filters.card`, `filters.bank` (ako već ne postoje — provjeriti i reusati).
 
-5. Provjera
-   - Provjeriti da brisanje iz zvona uklanja obavijest odmah.
-   - Provjeriti da se isto upozorenje ne vrati nakon sljedećeg reconcile ciklusa.
-   - Provjeriti da obične obavijesti i dalje mogu biti trajno obrisane.
+### 5. Bez DB i edge promjena
+Filter je čisto klijentski; `expenses.payment_source` već postoji.
+
+## Što ostaje izvan opsega
+- Bulk operacije, izvještaji, ostali ekrani (Wallet/Budget/Project dialogs već imaju vlastite mehanizme).
+- Bez patcha postojećih filtera, bez izmjene rute/URL state-a.
