@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushNotification, sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
+import { splitInstantVsDigest } from '../_shared/participantFilter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
