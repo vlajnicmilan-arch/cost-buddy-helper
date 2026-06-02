@@ -41,6 +41,7 @@ import { ProfileSection } from './ProfileSection';
 import { AppearanceSection } from './AppearanceSection';
 import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
+import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
