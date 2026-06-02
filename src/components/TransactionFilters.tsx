@@ -13,6 +13,8 @@ import { PaymentSourceCard, CustomPaymentSource } from '@/types/customPaymentSou
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 
 export interface MemberOption {
   userId: string;
