@@ -877,6 +877,30 @@
     "businessModeDesc": "Geschäftsterminologie und Firmenprofil",
     "businessModeEnabled": "Geschäftsmodus aktiviert",
     "businessModeDisabled": "Persönlicher Modus wiederhergestellt",
+    "modules": {
+      "title": "Module",
+      "subtitle": "Aktiviere nur, was du brauchst — die Oberfläche bleibt aufgeräumt.",
+      "active": "Aktiv",
+      "lockedToast": "Mit Upgrade verfügbar",
+      "upgradeCta": "Upgraden",
+      "family": {
+        "title": "Familie",
+        "description": "Familiengruppen, geteilte Konten und Budgets",
+        "locked": "Im Pro-Tarif verfügbar"
+      },
+      "projects": {
+        "title": "Projekte",
+        "description": "Budgets und Ausgaben pro Projekt verfolgen",
+        "locked": "Im Pro-Tarif verfügbar",
+        "enabled": "Projekte aktiviert",
+        "disabled": "Projekte deaktiviert"
+      },
+      "business": {
+        "title": "Business",
+        "description": "Geschäftsterminologie und Firmenprofile",
+        "locked": "Im Business-Tarif verfügbar"
+      }
+    },
     "profile": "Profil",
     "displayName": "Ihr Name",
     "displayNameDesc": "Name für personalisierte Nachrichten",
