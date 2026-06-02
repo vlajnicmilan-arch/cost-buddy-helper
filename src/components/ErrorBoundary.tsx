@@ -6,7 +6,7 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { captureSentryException } from '@/lib/sentry';
 import { notifyCrash } from '@/lib/notifyCrash';
 import { APP_VERSION } from '@/lib/version';
-import { tryRecoverFromChunkError } from '@/lib/chunkLoadError';
+import { isChunkLoadError, tryRecoverFromChunkError } from '@/lib/chunkLoadError';
 
 interface Props {
   children: ReactNode;
@@ -24,12 +24,20 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Stale lazy-chunk after deploy is benign — don't render the crash UI.
+    if (isChunkLoadError(error)) {
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Stale lazy-chunk after deploy → silently hard-reload. Skip log/Sentry/email.
-    if (tryRecoverFromChunkError(error)) return;
+    // Stale lazy-chunk after deploy → silently hard-reload (if guard allows).
+    // Either way: skip log/Sentry/email — these are stale-cache artifacts, not bugs.
+    if (isChunkLoadError(error)) {
+      tryRecoverFromChunkError(error);
+      return;
+    }
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     // Critical: log full React crash to diagnostics so admin sees it in Pulse.
     try {
