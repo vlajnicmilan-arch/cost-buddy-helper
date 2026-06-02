@@ -1538,7 +1538,10 @@
     "itemsFound": "Artikel",
     "merchant": "Händler",
     "dateNotFound": "Nicht gefunden",
-    "analyzingPages": "Analysiere {{count}} Seiten..."
+    "analyzingPages": "Analysiere {{count}} Seiten...",
+    "customSource": "Benutzerdefinierte Quelle",
+    "scanSuccessSource": "Beleg gescannt! Quelle erkannt: {{source}}",
+    "scanSuccessItems": "Beleg gescannt! {{count}} Artikel gefunden."
   },
   "summary": {
     "balance": "Saldo",
@@ -1863,6 +1866,7 @@
       "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
       "noCredits": "Nicht genügend Credits für KI-Verarbeitung.",
       "scanCancelled": "Scan wurde abgebrochen. Bitte erneut versuchen.",
+      "requestTimeout": "Die Analyse dauert zu lange. Bitte erneut mit einem klareren Foto versuchen.",
       "scanFailed": "Beleg konnte nicht gescannt werden"
     },
     "pdf": {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { Category, PaymentSource, ReceiptItem } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -48,46 +48,81 @@ type ReceiptHttpResult = {
   json: () => Promise<any>;
 };
 
-const parseReceiptResponseBody = async (body: unknown) => {
-  if (typeof body === 'string') return JSON.parse(body);
-  return body;
-};
+const MAX_RECEIPT_IMAGE_WIDTH = 1400;
+const RECEIPT_UPLOAD_TARGET_BYTES = 420_000;
+const RECEIPT_UPLOAD_MAX_BYTES = 500_000;
+const RECEIPT_FETCH_TIMEOUT_MS = 75_000;
 
-// Kompresija slike za mobilne uređaje - zadržava dovoljno detalja za OCR.
-// 800px je bilo preagresivno za sitan tekst na računima i moglo je uzrokovati
-// odgovor "Nije moguće pročitati račun" iako je slika valjana.
-const compressImage = async (base64: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
+const waitForImageLoad = (base64: string): Promise<HTMLImageElement | null> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(base64);
-        return;
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressed);
-    };
+    img.onload = () => resolve(img);
     img.onerror = () => {
-      console.error('Failed to load image for compression');
-      resolve(base64);
+      console.error('Failed to load image for receipt normalization');
+      resolve(null);
     };
     img.src = base64;
   });
+};
+
+// Normalize receipt photos before upload. Android native HTTP and WebView fetch
+// are both fragile with large base64 JSON bodies; keep OCR detail while making
+// the request body predictably small enough to reach the backend.
+const normalizeReceiptImage = async (base64: string): Promise<string> => {
+  const img = await waitForImageLoad(base64);
+  if (!img) return base64;
+
+  let width = img.width;
+  let height = img.height;
+
+  if (width > MAX_RECEIPT_IMAGE_WIDTH) {
+    height = Math.round((height * MAX_RECEIPT_IMAGE_WIDTH) / width);
+    width = MAX_RECEIPT_IMAGE_WIDTH;
+  }
+
+  const render = (nextWidth: number, quality: number) => {
+    const canvas = document.createElement('canvas');
+    const nextHeight = Math.max(1, Math.round((height * nextWidth) / width));
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return base64;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, nextWidth, nextHeight);
+    return canvas.toDataURL('image/jpeg', quality);
+  };
+
+  const attempts = [
+    { width, quality: 0.82 },
+    { width, quality: 0.74 },
+    { width: Math.round(width * 0.9), quality: 0.74 },
+    { width: Math.round(width * 0.82), quality: 0.72 },
+  ];
+
+  let best = base64;
+  for (const attempt of attempts) {
+    const normalized = render(Math.max(900, attempt.width), attempt.quality);
+    best = normalized;
+    if (normalized.length <= RECEIPT_UPLOAD_TARGET_BYTES) break;
+  }
+
+  return best.length <= RECEIPT_UPLOAD_MAX_BYTES || best.length < base64.length ? best : base64;
+};
+
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('receipt_request_timeout');
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 };
 
 export const useReceiptScanner = () => {
@@ -127,10 +162,16 @@ export const useReceiptScanner = () => {
         return null;
       }
 
-      // Compress all images
       const compressedImages = await Promise.all(
-        imagesBase64.map(img => compressImage(img))
+        imagesBase64.map(img => normalizeReceiptImage(img))
       );
+      try {
+        logDiagnostic('receipt_scan_images_normalized', {
+          original_total_base64_bytes: totalBytes,
+          normalized_total_base64_bytes: compressedImages.reduce((sum, img) => sum + img.length, 0),
+          is_native: Capacitor.isNativePlatform(),
+        });
+      } catch {}
 
       // Prepare custom payment sources for the API
       const sourcesForApi = customPaymentSources?.map(src => ({
@@ -153,14 +194,14 @@ export const useReceiptScanner = () => {
           customPaymentSources: sourcesForApi,
           customCategories: customCategories || []
         };
-        const webResponse = await fetch(url, {
+        const webResponse = await fetchWithTimeout(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': authHeader,
           },
           body: JSON.stringify(payload)
-        });
+        }, RECEIPT_FETCH_TIMEOUT_MS);
         return {
           ok: webResponse.ok,
           status: webResponse.status,
@@ -168,91 +209,22 @@ export const useReceiptScanner = () => {
         };
       };
 
-      const isTransientNetworkError = (err: any) => {
-        const msg = (err?.message || String(err) || '').toLowerCase();
-        return (
-          msg.includes('timeout') ||
-          msg.includes('timed out') ||
-          msg.includes('connection abort') ||
-          msg.includes('connection reset') ||
-          msg.includes('software caused connection') ||
-          msg.includes('network') ||
-          msg.includes('failed to fetch') ||
-          msg.includes('load failed') ||
-          msg.includes('socket')
-        );
-      };
-
       const callParseReceipt = async (payloadImages: string[]): Promise<ReceiptHttpResult> => {
-        const payload = {
-          imagesBase64: payloadImages,
-          customPaymentSources: sourcesForApi,
-          customCategories: customCategories || []
-        };
-
-        if (Capacitor.isNativePlatform()) {
-          try { logDiagnostic('receipt_scan_native_http_start', { image_count: payloadImages.length }); } catch {}
+        try { logDiagnostic('receipt_scan_fetch_start', { image_count: payloadImages.length }); } catch {}
+        try {
+          const result = await callViaFetch(payloadImages);
+          try { logDiagnostic('receipt_scan_fetch_done', { status: result.status }); } catch {}
+          return result;
+        } catch (fetchErr) {
           try {
-            const nativeResponse = await CapacitorHttp.post({
-              url,
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authHeader,
-              },
-              data: payload,
-              connectTimeout: 20000,
-              readTimeout: 90000,
-              responseType: 'json',
+            logDiagnostic({
+              event: 'receipt_scan_fetch_failed',
+              severity: 'error',
+              details: { message: fetchErr instanceof Error ? fetchErr.message : String(fetchErr) },
             });
-            try {
-              logDiagnostic('receipt_scan_native_http_done', {
-                status: nativeResponse.status,
-                has_data: !!nativeResponse.data,
-                data_type: typeof nativeResponse.data,
-              });
-            } catch {}
-            return {
-              ok: nativeResponse.status >= 200 && nativeResponse.status < 300,
-              status: nativeResponse.status,
-              json: () => Promise.resolve(parseReceiptResponseBody(nativeResponse.data)),
-            };
-          } catch (httpErr: any) {
-            try {
-              logDiagnostic({
-                event: 'receipt_scan_native_http_failed',
-                severity: 'error',
-                details: {
-                  message: httpErr?.message || String(httpErr),
-                  name: httpErr?.name,
-                },
-              });
-            } catch {}
-            if (isTransientNetworkError(httpErr)) {
-              try { logDiagnostic('receipt_scan_native_http_fallback_start', { image_count: payloadImages.length }); } catch {}
-              try {
-                const fallback = await callViaFetch(payloadImages);
-                try {
-                  logDiagnostic('receipt_scan_native_http_fallback_done', {
-                    status: fallback.status,
-                  });
-                } catch {}
-                return fallback;
-              } catch (fallbackErr: any) {
-                try {
-                  logDiagnostic({
-                    event: 'receipt_scan_native_http_fallback_failed',
-                    severity: 'error',
-                    details: { message: fallbackErr?.message || String(fallbackErr) },
-                  });
-                } catch {}
-                throw fallbackErr;
-              }
-            }
-            throw httpErr;
-          }
+          } catch {}
+          throw fetchErr;
         }
-
-        return callViaFetch(payloadImages);
       };
 
       let response = await callParseReceipt(compressedImages);
@@ -372,10 +344,9 @@ export const useReceiptScanner = () => {
       // Show different message if custom source was matched
       if (matchedCustomId) {
         const matchedSource = customPaymentSources?.find(s => s.id === matchedCustomId);
-        showSuccess(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
+        showSuccess(t('scanner.scanSuccessSource', { source: matchedSource?.name || t('scanner.customSource') }));
       } else {
-        const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
-        showSuccess(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
+        showSuccess(t('scanner.scanSuccessItems', { count: result.items.length }));
       }
       try {
         logDiagnostic('receipt_scan_success', {
@@ -410,6 +381,12 @@ export const useReceiptScanner = () => {
         console.warn('Receipt scanning was interrupted:', error);
         try { logDiagnostic('receipt_scan_aborted', {}); } catch {}
         showError(t('errors.receipt.scanCancelled', 'Skeniranje je prekinuto. Pokušaj ponovno.'));
+        return null;
+      }
+
+      if (error instanceof Error && error.message === 'receipt_request_timeout') {
+        try { logDiagnostic('receipt_scan_request_timeout', { timeout_ms: RECEIPT_FETCH_TIMEOUT_MS }); } catch {}
+        showError(t('errors.receipt.requestTimeout'));
         return null;
       }
 

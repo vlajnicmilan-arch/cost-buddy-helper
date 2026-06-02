@@ -1538,7 +1538,10 @@
     "itemsFound": "Items",
     "merchant": "Merchant",
     "dateNotFound": "Not found",
-    "analyzingPages": "Analyzing {{count}} pages..."
+    "analyzingPages": "Analyzing {{count}} pages...",
+    "customSource": "Custom source",
+    "scanSuccessSource": "Receipt scanned! Source detected: {{source}}",
+    "scanSuccessItems": "Receipt scanned! Found {{count}} items."
   },
   "summary": {
     "balance": "Balance",
@@ -1863,6 +1866,7 @@
       "rateLimit": "Too many requests. Please try again in a minute.",
       "noCredits": "Not enough credits for AI processing.",
       "scanCancelled": "Scan was cancelled. Please try again.",
+      "requestTimeout": "Analysis is taking too long. Please try again with a clearer photo.",
       "scanFailed": "Failed to scan receipt"
     },
     "pdf": {
