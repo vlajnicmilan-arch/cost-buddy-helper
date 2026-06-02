@@ -1,4 +1,5 @@
 import { Expense, Category } from '@/types/expense';
+import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { TransactionItem } from '@/components/TransactionItem';
 import { TransactionFilters, FilterState } from '@/components/TransactionFilters';
 import { BulkActionsToolbar } from '@/components/BulkActionsToolbar';
