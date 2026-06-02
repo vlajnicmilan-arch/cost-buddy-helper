@@ -881,6 +881,30 @@
     "businessModeDesc": "Poslovna terminologija i profil tvrtke",
     "businessModeEnabled": "Poslovni način uključen",
     "businessModeDisabled": "Osobni način vraćen",
+    "modules": {
+      "title": "Moduli",
+      "subtitle": "Uključi samo ono što ti treba — sučelje ostaje čisto.",
+      "active": "Aktivno",
+      "lockedToast": "Dostupno uz nadogradnju",
+      "upgradeCta": "Nadogradi",
+      "family": {
+        "title": "Obitelj",
+        "description": "Obiteljske grupe, dijeljeni računi i budžeti",
+        "locked": "Dostupno uz Pro pretplatu"
+      },
+      "projects": {
+        "title": "Projekti",
+        "description": "Praćenje budžeta i troškova po projektu",
+        "locked": "Dostupno uz Pro pretplatu",
+        "enabled": "Projekti uključeni",
+        "disabled": "Projekti isključeni"
+      },
+      "business": {
+        "title": "Business",
+        "description": "Poslovna terminologija i profili tvrtki",
+        "locked": "Dostupno uz Business pretplatu"
+      }
+    },
     "profile": "Profil",
     "displayName": "Vaše ime",
     "displayNameDesc": "Ime koje se koristi za personalizirane poruke",
