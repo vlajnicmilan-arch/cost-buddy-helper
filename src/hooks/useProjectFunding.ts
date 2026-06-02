@@ -225,8 +225,18 @@ export const useProjectFunding = (projectId: string | null) => {
 
       if (error) throw error;
 
+      const removed = funding.find(f => f.id === id);
       setFunding(prev => prev.filter(f => f.id !== id));
       showSuccess(t('projects.fundingRemoved'));
+      if (projectId && user) {
+        void enqueueFundingDigest(
+          projectId,
+          user.id,
+          'project_funding_removed',
+          removed?.income_source_name ?? null,
+          id,
+        );
+      }
     } catch (error) {
       console.error('Error deleting funding:', error);
       showError(t('common.error'));
