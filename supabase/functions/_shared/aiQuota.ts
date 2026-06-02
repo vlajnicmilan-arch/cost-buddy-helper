@@ -72,15 +72,29 @@ export async function requireAuth(req: Request): Promise<AuthResult | Response> 
 
 async function resolveTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
   try {
-    const { data } = await supabase
-      .from("subscribers")
-      .select("subscribed, subscription_tier")
+    // 1) Admin-assigned / Stripe-synced tier in user_subscriptions (source of truth — mirrors check-subscription)
+    const { data: sub } = await supabase
+      .from("user_subscriptions")
+      .select("tier, expires_at")
       .eq("user_id", userId)
       .maybeSingle();
-    if (!data?.subscribed) return "free";
-    const t = (data.subscription_tier || "").toLowerCase();
-    if (t.includes("business") || t.includes("lifetime")) return "business";
-    if (t.includes("pro") || t.includes("premium")) return "pro";
+    if (sub && sub.tier && sub.tier !== "free") {
+      const notExpired = !sub.expires_at || new Date(sub.expires_at) > new Date();
+      if (notExpired) {
+        const t = String(sub.tier).toLowerCase();
+        if (t.includes("business")) return "business";
+        if (t.includes("pro") || t.includes("premium") || t.includes("lifetime")) return "pro";
+      }
+    }
+
+    // 2) Lifetime Pro one-time purchase
+    const { data: lifetime } = await supabase
+      .from("lifetime_purchases")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (lifetime) return "pro";
+
     return "free";
   } catch {
     return "free";
