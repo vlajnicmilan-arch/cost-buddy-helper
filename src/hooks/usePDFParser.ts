@@ -4,6 +4,7 @@ import { Category, PaymentSource, TransactionType } from '@/types/expense';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
 
 export interface ParsedPDFTransaction {
   date: Date;
@@ -180,7 +181,14 @@ export const usePDFParser = () => {
     );
 
     if (!response.ok) {
-      if (response.status === 429) throw new Error(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
+      if (response.status === 429) {
+        const quotaError = await parseAiQuotaError(response.clone());
+        if (quotaError?.kind === 'core_scan_limit') {
+          emitCoreScanLimitReached(quotaError.resetAt);
+          throw new Error(t('scanner.coreQuota.title', 'Iskorišten je besplatni limit skeniranja'));
+        }
+        throw new Error(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
+      }
       if (response.status === 402) throw new Error(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || 'Greška pri analizi izvoda');
@@ -333,6 +341,11 @@ export const usePDFParser = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
+          const quotaError = await parseAiQuotaError(response.clone());
+          if (quotaError?.kind === 'core_scan_limit') {
+            emitCoreScanLimitReached(quotaError.resetAt);
+            return null;
+          }
           showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
           return null;
         }

@@ -34,6 +34,20 @@ describe("parseAiQuotaError", () => {
     });
   });
 
+  it("recognises core_scan_limit_reached payload", async () => {
+    const result = await parseAiQuotaError(
+      makeResp(429, {
+        error: "core_scan_limit_reached",
+        remaining: 0,
+        reset_at: "2026-07-02T00:00:00Z",
+      }),
+    );
+    expect(result).toEqual({
+      kind: "core_scan_limit",
+      resetAt: "2026-07-02T00:00:00Z",
+    });
+  });
+
   it("falls back to rate_limit for other 429 bodies", async () => {
     expect(
       await parseAiQuotaError(makeResp(429, { error: "too_many_requests" })),

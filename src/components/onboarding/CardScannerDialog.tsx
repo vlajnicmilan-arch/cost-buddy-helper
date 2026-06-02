@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Camera, Loader2, CreditCard, ScanLine, AlertCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
+import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
 
 interface CardScannerDialogProps {
   open: boolean;
@@ -80,6 +81,15 @@ export const CardScannerDialog = ({
       });
 
       if (funcError) {
+        // supabase-js wraps non-2xx u FunctionsHttpError s `.context` (Response)
+        const ctx = (funcError as { context?: Response }).context;
+        if (ctx && ctx.status === 429) {
+          const quotaError = await parseAiQuotaError(ctx.clone());
+          if (quotaError?.kind === 'core_scan_limit') {
+            emitCoreScanLimitReached(quotaError.resetAt);
+            return;
+          }
+        }
         throw new Error(funcError.message);
       }
 

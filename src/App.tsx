@@ -32,6 +32,7 @@ import { lazy, Suspense, useEffect } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
 import { FeedbackFAB } from "@/components/feedback/FeedbackFAB";
 import { FileSavedDialog } from "@/components/FileSavedDialog";
+import { GlobalScanQuotaDialog } from "@/components/scanner/GlobalScanQuotaDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
@@ -161,6 +162,7 @@ const RouteAwareGlobalOverlays = () => {
       <CookieConsentBanner />
       <FeedbackFAB />
       <FileSavedDialog />
+      <GlobalScanQuotaDialog />
     </>
   );
 };
