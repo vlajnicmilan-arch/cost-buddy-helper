@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { splitInstantVsDigest } from "../_shared/participantFilter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,8 +136,20 @@ Deno.serve(async (req) => {
         .insert(alertRows);
       if (!alertErr) alertsCreated += alertRows.length;
 
-      // 3) Push notifications (best effort)
-      for (const userId of targets) {
+      // Filter: Core participants → digest only, no instant push.
+      const { instant: pushTargets, digestOnly } = await splitInstantVsDigest(
+        supabase,
+        project.user_id,
+        targets,
+      );
+      if (digestOnly.length > 0) {
+        console.log(
+          `[check-milestone-budgets] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
+        );
+      }
+
+      // 3) Push notifications (best effort) — instant-eligible recipients only
+      for (const userId of pushTargets) {
         try {
           await supabase.functions.invoke("send-push", {
             body: {

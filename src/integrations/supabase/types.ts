@@ -5242,6 +5242,10 @@ export type Database = {
         Args: { p_actor_user_id: string; p_event: Json; p_project_id: string }
         Returns: undefined
       }
+      filter_projects_subscribers: {
+        Args: { p_user_ids: string[] }
+        Returns: string[]
+      }
       find_user_by_email: { Args: { p_email: string }; Returns: string }
       get_admin_user_stats: { Args: never; Returns: Json }
       get_dashboard_scroll_distribution: {

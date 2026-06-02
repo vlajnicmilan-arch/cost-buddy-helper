@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
+import { splitInstantVsDigest } from '../_shared/participantFilter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,12 +173,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    await sendPushNotificationToMany(Array.from(usersToNotify), {
-      title: `Transakcija u projektu "${project.name}"`,
-      body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
-      data: { expense_id: expense.id, project_id: project.id, type: 'project_transaction', category: 'transactions' },
-      source: 'notify-project-transaction',
-    });
+    // Filter: Core participants (non-owner, non-subscriber) → digest only, no instant push.
+    const { instant: pushTargets, digestOnly } = await splitInstantVsDigest(
+      supabaseAdmin,
+      project.user_id,
+      Array.from(usersToNotify),
+    );
+    if (digestOnly.length > 0) {
+      console.log(
+        `[notify-project-transaction] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
+      );
+    }
+
+    if (pushTargets.length > 0) {
+      await sendPushNotificationToMany(pushTargets, {
+        title: `Transakcija u projektu "${project.name}"`,
+        body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
+        data: { expense_id: expense.id, project_id: project.id, type: 'project_transaction', category: 'transactions' },
+        source: 'notify-project-transaction',
+      });
+    }
 
     // Daily digest enqueue (po prostoru, recipient-type independent).
     try {
