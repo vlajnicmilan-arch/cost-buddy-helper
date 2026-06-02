@@ -157,6 +157,28 @@ Deno.serve(async (req) => {
           console.warn("Push send failed for user", userId, pushErr);
         }
       }
+
+      // Daily digest enqueue (po prostoru, recipient-type independent).
+      // Actor = project owner (system signal) — owner is excluded; participants
+      // and members get a consolidated daily summary instead of an instant push.
+      try {
+        await supabase.rpc("enqueue_participant_digest_event", {
+          p_project_id: m.project_id,
+          p_actor_user_id: project.user_id,
+          p_event: {
+            kind: threshold === 100
+              ? "milestone_budget_over"
+              : "milestone_budget_warning",
+            label: m.name ?? null,
+            ref_id: m.id ?? null,
+            threshold,
+            usage_pct: Number(usagePct.toFixed(2)),
+            at: new Date().toISOString(),
+          },
+        });
+      } catch (digestErr) {
+        console.error("[check-milestone-budgets] digest enqueue error", digestErr);
+      }
     }
 
     return new Response(
