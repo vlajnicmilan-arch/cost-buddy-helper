@@ -55,8 +55,10 @@ export const TransactionFilters = ({
   showMemberFilter = false,
   showCardFilter = false,
   showScopeFilter = false,
+  showPaymentSourceFilter = false,
   members = [],
   cards = [],
+  paymentSources = [],
   className,
 }: TransactionFiltersProps) => {
   const { t, i18n } = useTranslation();
