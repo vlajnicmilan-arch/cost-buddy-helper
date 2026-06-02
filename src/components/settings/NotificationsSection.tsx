@@ -43,6 +43,7 @@ export const NotificationsSection = ({
   const { user } = useAuth();
   const [showCategories, setShowCategories] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [sendingDigestTest, setSendingDigestTest] = useState(false);
 
   const sendDailySummaryTest = async () => {
     if (!user || sendingTest) return;
@@ -58,6 +59,28 @@ export const NotificationsSection = ({
       showError(t('settings.dailySummaryTestFailed', 'Slanje nije uspjelo'));
     } finally {
       setSendingTest(false);
+    }
+  };
+
+  const sendDigestTest = async () => {
+    if (!user || sendingDigestTest) return;
+    setSendingDigestTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('flush-participant-digest', {
+        body: { test: true },
+      });
+      if (error) throw error;
+      const sent = (data as { sent?: number } | null)?.sent ?? 0;
+      if (sent > 0) {
+        showSuccess(t('settings.digestTestSent', 'Testni sažetak poslan'));
+      } else {
+        showError(t('settings.digestTestNoProject', 'Nemaš projekt — testni sažetak nije poslan'));
+      }
+    } catch (e) {
+      console.error('[participant-digest] test failed:', e);
+      showError(t('settings.digestTestFailed', 'Slanje sažetka nije uspjelo'));
+    } finally {
+      setSendingDigestTest(false);
     }
   };
 
