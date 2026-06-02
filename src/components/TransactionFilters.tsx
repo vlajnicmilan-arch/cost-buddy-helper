@@ -199,18 +199,20 @@ export const TransactionFilters = ({
               <User className="w-3 h-3" />
               {t('filters.personal')}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-7 text-xs px-2.5 rounded-md gap-1',
-                filters.scope === 'project' && 'bg-background shadow-sm'
-              )}
-              onClick={() => updateFilter('scope', 'project')}
-            >
-              <FolderKanban className="w-3 h-3" />
-              {t('filters.projects')}
-            </Button>
+            {projectsActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-7 text-xs px-2.5 rounded-md gap-1',
+                  filters.scope === 'project' && 'bg-background shadow-sm'
+                )}
+                onClick={() => updateFilter('scope', 'project')}
+              >
+                <FolderKanban className="w-3 h-3" />
+                {t('filters.projects')}
+              </Button>
+            )}
           </div>
         )}
 
