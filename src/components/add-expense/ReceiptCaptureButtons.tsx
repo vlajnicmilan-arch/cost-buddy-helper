@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Image, Loader2, Check, X } from 'lucide-react';
+import { Camera, Image, Loader2, Check, X, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ReceiptCaptureButtonsProps {
