@@ -1864,6 +1864,7 @@
     "receipt": {
       "cloudRequired": "AI skeniranje računa zahtijeva cloud način rada i prijavu. Možeš ručno unijeti podatke.",
       "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
+      "dailyLimitReached": "Iskoristio si dnevni limit od {{limit}} AI skenova ({{tier}} plan). Nadogradi za više.",
       "noCredits": "Nedostaje kredita za AI obradu.",
       "scanCancelled": "Skeniranje je prekinuto. Pokušaj ponovno.",
       "scanFailed": "Greška pri skeniranju računa"

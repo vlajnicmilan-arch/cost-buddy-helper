@@ -1861,6 +1861,7 @@
     "receipt": {
       "cloudRequired": "AI receipt scanning requires cloud mode and sign-in. You can enter the data manually.",
       "rateLimit": "Too many requests. Please try again in a minute.",
+      "dailyLimitReached": "You've used your daily limit of {{limit}} AI scans ({{tier}} plan). Upgrade for more.",
       "noCredits": "Not enough credits for AI processing.",
       "scanCancelled": "Scan was cancelled. Please try again.",
       "scanFailed": "Failed to scan receipt"
