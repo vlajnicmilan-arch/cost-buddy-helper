@@ -92,9 +92,13 @@ export const NotificationsDropdown = () => {
     markAsRead,
 
     deleteNotification,
+    deleteAllNotifications,
     refetch,
   } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+
 
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
@@ -301,13 +305,30 @@ export const NotificationsDropdown = () => {
         <DropdownMenuContent align="end" className="w-80">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="font-semibold text-sm">{t('notifications.title', 'Obavijesti')}</h3>
-            {unreadCount > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {unreadCount}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {unreadCount}
+                </span>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDeleteAll(true);
+                  }}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  {t('notifications.deleteAll', 'Obriši sve')}
+                </Button>
+              )}
+            </div>
           </div>
           <DropdownMenuSeparator />
+
 
           <ScrollArea className="max-h-80">
             {loading ? (
@@ -487,9 +508,55 @@ export const NotificationsDropdown = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Confirm delete-all dialog */}
+      <AlertDialog open={confirmDeleteAll} onOpenChange={(o) => !deletingAll && setConfirmDeleteAll(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('notifications.confirmDeleteAllTitle', 'Obrisati sve obavijesti?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('notifications.confirmDeleteAllDesc', 'Sve obavijesti će biti trajno uklonjene.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={deletingAll}
+              onClick={() => setConfirmDeleteAll(false)}
+            >
+              {t('common.cancel', 'Odustani')}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={deletingAll}
+              onClick={async () => {
+                setDeletingAll(true);
+                const ok = await deleteAllNotifications();
+                setDeletingAll(false);
+                setConfirmDeleteAll(false);
+                if (ok) {
+                  showSuccess(t('notifications.allDeleted', 'Sve obavijesti obrisane'));
+                  setOpen(false);
+                } else {
+                  showError(t('common.error'));
+                }
+              }}
+            >
+              {deletingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t('notifications.deleteAll', 'Obriši sve')}
+                </>
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
+
 
 // ============================================================
 // SwipeableNotification — swipe-left to delete
