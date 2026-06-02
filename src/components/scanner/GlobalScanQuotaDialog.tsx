@@ -32,7 +32,7 @@ export function GlobalScanQuotaDialog() {
       resetAt={state.resetAt}
       onUpgradeClick={() => {
         setState((prev) => ({ ...prev, open: false }));
-        navigate('/subscription');
+        navigate('/paywall');
       }}
     />
   );
