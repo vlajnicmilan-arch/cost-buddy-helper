@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FolderKanban, Plus, ChevronRight, Wallet, Sparkles, Clock, Pause, Info, AlertCircle } from 'lucide-react';
 import { ProjectWithOwnership, DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
@@ -80,6 +81,7 @@ export const ActiveProjectsStrip = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasAccess } = useFeatureAccess();
+  const { projectsModuleEnabled } = useAppState();
   const { lightTap } = useHaptics();
   const { formatAmount } = useCurrency();
 
@@ -119,6 +121,10 @@ export const ActiveProjectsStrip = React.memo(({
     });
   }, [projects, summary]);
 
+  // Faza 1 modularnog UI-a: belt-and-suspenders gate — PersonalModeView već
+  // skida strip kad modul nije aktivan, ali ako se komponenta ikad mounta s
+  // drugog mjesta, ovaj guard je striktan izvor istine.
+  if (!projectsModuleEnabled) return null;
   if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
   // Workers/members without 'projects' feature access still see their shared projects.
   const hasProjectsFeature = hasAccess('projects');
