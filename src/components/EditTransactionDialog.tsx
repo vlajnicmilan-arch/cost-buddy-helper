@@ -19,6 +19,9 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
+
 
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
