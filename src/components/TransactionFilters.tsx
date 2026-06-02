@@ -108,7 +108,8 @@ export const TransactionFilters = ({
     filters.cardId !== undefined ||
     filters.categoryId !== undefined ||
     filters.scope !== 'all' ||
-    filters.bankMatchStatus !== undefined;
+    filters.bankMatchStatus !== undefined ||
+    filters.paymentSource !== undefined;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -121,6 +122,7 @@ export const TransactionFilters = ({
       categoryId: undefined,
       scope: 'all',
       bankMatchStatus: undefined,
+      paymentSource: undefined,
     });
   };
 
