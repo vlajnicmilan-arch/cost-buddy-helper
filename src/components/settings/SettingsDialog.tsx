@@ -41,6 +41,7 @@ import { ProfileSection } from './ProfileSection';
 import { AppearanceSection } from './AppearanceSection';
 import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
+import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
@@ -99,7 +100,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   
-  const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showBusinessProfile, setShowBusinessProfile] = useState(false);
@@ -113,8 +113,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
     dashboardV2Enabled, setDashboardV2Enabled,
-    familyModeEnabled, setFamilyModeEnabled,
-    businessFeatureEnabled, setBusinessFeatureEnabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
@@ -696,17 +694,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onSimpleModeChange={setSimpleModeEnabled}
               classicDashboard={!dashboardV2Enabled}
               onClassicDashboardChange={(v) => setDashboardV2Enabled(!v)}
-              familyModeEnabled={familyModeEnabled}
-              onFamilyModeToggle={(checked) => {
-                if (!checked) {
-                  setShowFamilyDisableConfirm(true);
-                } else {
-                  setFamilyModeEnabled(true);
-                  showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
-                }
-              }}
-              businessModeEnabled={businessFeatureEnabled}
-              onBusinessModeChange={setBusinessFeatureEnabled}
+              isLocalMode={isLocalMode}
+            />
+
+            <Separator />
+
+            <ModulesSection
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
             />
@@ -736,34 +729,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         </DialogContent>
       </Dialog>
 
-      {/* Family Mode Disable Confirmation */}
-      <AlertDialog open={showFamilyDisableConfirm} onOpenChange={setShowFamilyDisableConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
-              <Users className="w-5 h-5" />
-              {t('settings.familyDisableTitle', 'Isključiti obiteljski način?')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>{t('settings.familyDisableDesc', 'Isključivanjem obiteljskog načina:')}</p>
-              <ul className="list-disc list-inside text-sm space-y-1">
-                <li>{t('settings.familyDisableWarn1', 'Nećete više vidjeti obiteljske grupe u navigaciji')}</li>
-                <li>{t('settings.familyDisableWarn2', 'Dijeljeni računi, budžeti i ciljevi štednje neće biti vidljivi')}</li>
-                
-              </ul>
-              <p className="font-medium text-foreground mt-3">
-                {t('settings.familyDisableKeep', 'Vaši podaci ostaju sačuvani i bit će dostupni ako ponovno uključite obiteljski način.')}
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
-            <AlertDialogAction className="bg-amber-600 text-white hover:bg-amber-700" onClick={() => { setFamilyModeEnabled(false); setShowFamilyDisableConfirm(false); showSuccess(t('settings.familyModeDisabled', 'Obiteljski način isključen')); }}>
-              {t('settings.familyDisableConfirm', 'Isključi')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+
 
       {/* Reset Data Confirmation */}
       <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>

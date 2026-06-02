@@ -6,6 +6,8 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { useProjects } from '@/hooks/useProjects';
 import { Trash2, Settings2, X, CheckSquare, Tag, CreditCard, Target, Folder, Link2 } from 'lucide-react';
 import { useManualBankMerge } from '@/hooks/useManualBankMerge';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 import type { MergeCandidateExpense } from '@/lib/manualBankMergePair';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,8 +82,10 @@ export const BulkActionsToolbar = ({
   const mergeDisabled = !mergeCheck?.ok || isMerging;
   const mergeReason = mergeCheck && mergeCheck.ok === false ? t(mergeCheck.reason, '') : '';
 
+  const moduleStates = useModuleStates();
+  const projectsActive = isModuleActive('projects', moduleStates.projects);
   const canBudget = showBudgetChange && !!onBulkBudgetChange;
-  const canProject = showProjectChange && !!onBulkProjectChange;
+  const canProject = projectsActive && showProjectChange && !!onBulkProjectChange;
   const hasMenu = showCategoryChange || showPaymentSourceChange || canBudget || canProject;
 
   const actionOptions: BulkAssignOption[] = useMemo(() => {

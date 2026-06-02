@@ -19,6 +19,9 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
+
 
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
@@ -59,6 +62,8 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   const { customIncomeCategories, addCustomIncomeCategory, refetch: refetchIncomeCategories } = useCustomIncomeCategories();
   const { customCategories } = useCustomCategories();
   const { projects } = useProjects();
+  const moduleStates = useModuleStates();
+  const projectsActive = isModuleActive('projects', moduleStates.projects);
   const { budgets } = useBudgets();
   const { milestones } = useProjectMilestones(selectedProjectId);
   const [incomeCategoryDialogOpen, setIncomeCategoryDialogOpen] = useState(false);
@@ -486,7 +491,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           </div>
 
           {/* Project Assignment */}
-          {projects.length > 0 && (
+          {projectsActive && projects.length > 0 && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <FolderKanban className="w-4 h-4" />
@@ -525,7 +530,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           )}
 
           {/* Milestone Assignment - only when project is selected */}
-          {selectedProjectId && milestones.length > 0 && (
+          {projectsActive && selectedProjectId && milestones.length > 0 && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Milestone className="w-4 h-4" />

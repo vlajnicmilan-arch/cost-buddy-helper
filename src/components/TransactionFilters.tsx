@@ -13,6 +13,8 @@ import { PaymentSourceCard, CustomPaymentSource } from '@/types/customPaymentSou
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, INCOME_CATEGORIES, getCategoryInfo } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { isModuleActive } from '@/lib/moduleVisibility';
 
 export interface MemberOption {
   userId: string;
@@ -65,6 +67,8 @@ export const TransactionFilters = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const { customCategories } = useCustomCategories();
+  const moduleStates = useModuleStates();
+  const projectsActive = isModuleActive('projects', moduleStates.projects);
 
   // Build combined category list: default + custom
   const allCategories = [
@@ -195,18 +199,20 @@ export const TransactionFilters = ({
               <User className="w-3 h-3" />
               {t('filters.personal')}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-7 text-xs px-2.5 rounded-md gap-1',
-                filters.scope === 'project' && 'bg-background shadow-sm'
-              )}
-              onClick={() => updateFilter('scope', 'project')}
-            >
-              <FolderKanban className="w-3 h-3" />
-              {t('filters.projects')}
-            </Button>
+            {projectsActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-7 text-xs px-2.5 rounded-md gap-1',
+                  filters.scope === 'project' && 'bg-background shadow-sm'
+                )}
+                onClick={() => updateFilter('scope', 'project')}
+              >
+                <FolderKanban className="w-3 h-3" />
+                {t('filters.projects')}
+              </Button>
+            )}
           </div>
         )}
 
