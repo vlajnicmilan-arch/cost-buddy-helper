@@ -93,8 +93,6 @@ project_id = "fzalxjretvtvokiotvkf"
   [functions.flush-participant-digest]
     verify_jwt = false
 
-  [functions.test-participant-filter]
-    verify_jwt = false
 
 [studio]
   enabled = true
