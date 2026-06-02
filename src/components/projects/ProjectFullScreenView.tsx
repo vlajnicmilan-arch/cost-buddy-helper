@@ -352,9 +352,16 @@ export const ProjectFullScreenView = ({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => setCompleteWizardOpen(true)}
+                  onClick={() => {
+                    if (isReadOnly) {
+                      showError(t('projects.access.readOnlyBlockedToast'));
+                      return;
+                    }
+                    setCompleteWizardOpen(true);
+                  }}
+                  disabled={isReadOnly}
                   className="shrink-0 gap-1"
-                  title={t('projects.complete.headerCta', 'Završi projekt')}
+                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.headerCta', 'Završi projekt')}
                 >
                   <Flag className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.complete.headerCta', 'Završi projekt')}</span>
@@ -365,8 +372,12 @@ export const ProjectFullScreenView = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={reopening}
+                  disabled={reopening || isReadOnly}
                   onClick={async () => {
+                    if (isReadOnly) {
+                      showError(t('projects.access.readOnlyBlockedToast'));
+                      return;
+                    }
                     setReopening(true);
                     try {
                       const { error } = await supabase
@@ -379,13 +390,17 @@ export const ProjectFullScreenView = ({
                       onClose();
                     } catch (e) {
                       console.error('Reopen project error:', e);
-                      showError(t('common.error'));
+                      if (isProjectsReadonlyError(e)) {
+                        showError(t('projects.access.readOnlyBlockedToast'));
+                      } else {
+                        showError(t('common.error'));
+                      }
                     } finally {
                       setReopening(false);
                     }
                   }}
                   className="shrink-0 gap-1"
-                  title={t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
+                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
                 >
                   <RotateCcw className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">{t('projects.complete.reopenCta', 'Ponovo otvori')}</span>
