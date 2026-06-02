@@ -32,9 +32,16 @@ interface AppStateContextValue {
   setActiveBusinessProfileId: (id: string | null) => void;
   onboardingCompleted: boolean;
   setOnboardingCompleted: (completed: boolean) => void;
-  // Usage profile: 'finance_only' | 'finance_projects' | null (legacy)
+  // Usage profile: 'finance_only' | 'finance_projects' | null (legacy).
+  // OD FAZE 1 MODULARNOG UI-A: nije više UI gate za Projects (zamijenjen
+  // sa projectsModuleEnabled). Ostaje za onboarding analitiku/telemetriju.
   usageProfile: UsageProfile;
   setUsageProfile: (p: UsageProfile) => void;
+  // Projects modul toggle (user-controlled). Faza 1 modularnog UI-a.
+  // Pravi izvor istine za sve project UI entry pointe; tier gate ostaje u
+  // useFeatureAccess('projects').
+  projectsModuleEnabled: boolean;
+  setProjectsModuleEnabled: (enabled: boolean) => void;
   // Dashboard V2 layout (refocused: hero=projects-or-balance, no cashflow/savings/quicklinks
   // on home). Default ON; opt-out via Settings → "Klasični prikaz".
   dashboardV2Enabled: boolean;
@@ -60,8 +67,12 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [simpleModeEnabled, setSimpleModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('simple_mode_enabled') === 'true'
   );
+  // Faza 1 modularnog UI-a: family default je sada OFF za nove korisnike.
+  // Postojeći korisnici koji su eksplicitno toggleali ostaju na svojoj vrijednosti.
+  // Backfill auto-on za korisnike s aktivnim family membershipom radi se niže
+  // u resolveOnboarding() (jedan SELECT na `family_members`).
   const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('family_mode_enabled') !== 'false'
+    () => localStorage.getItem('family_mode_enabled') === 'true'
   );
   // Master switch from Settings — persisted. If user upgrades from old build,
   // migrate from the previous `business_mode_enabled` key (which used to act as master).
@@ -86,6 +97,17 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [usageProfile, setUsageProfileState] = useState<UsageProfile>(() => {
     const v = localStorage.getItem('usage_profile');
     return v === 'finance_only' || v === 'finance_projects' ? v : null;
+  });
+  // Projects modul flag. Faza 1 modularnog UI-a — zamjenjuje usageProfile kao UI gate.
+  // Legacy init: ako nema eksplicitnog ključa, čita iz usage_profile-a:
+  //   - 'finance_only' → false
+  //   - 'finance_projects' / null (legacy) → true
+  // Backfill auto-on (korisnik ima projekte ili membership) radi se u resolveOnboarding().
+  const [projectsModuleEnabled, setProjectsModuleEnabledState] = useState<boolean>(() => {
+    const explicit = localStorage.getItem('projects_module_enabled');
+    if (explicit !== null) return explicit === 'true';
+    const usage = localStorage.getItem('usage_profile');
+    return usage !== 'finance_only';
   });
   // Dashboard V2 default ON; only OFF if user explicitly opts out.
   const [dashboardV2Enabled, setDashboardV2EnabledState] = useState<boolean>(
