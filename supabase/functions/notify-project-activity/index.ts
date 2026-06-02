@@ -176,12 +176,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const { error: notifErr } = await supabaseAdmin.from("notifications").insert(inAppRows);
     if (notifErr) console.error("[notify-project-activity] notifications insert error", notifErr);
 
-    // Push: per-recipient throttle
+    // Filter: Core participants (non-owner project members WITHOUT their own Projects
+    // subscription) must NOT get an instant push — they are covered by the daily digest.
+    const { instant: instantRecipients, digestOnly } = await splitInstantVsDigest(
+      supabaseAdmin,
+      project.user_id,
+      Array.from(recipients),
+    );
+    if (digestOnly.length > 0) {
+      console.log(
+        `[notify-project-activity] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
+      );
+    }
+
+    // Push: per-recipient throttle, only over instant-eligible recipients
     const bucket = bucketFor(body.activity_type);
     const pushRecipients: string[] = [];
     let groupedFor: { recipient: string; pendingCount: number } | null = null;
 
-    for (const rid of recipients) {
+    for (const rid of instantRecipients) {
       const decision = await decidePushThrottle(rid, project.id, bucket);
       if (decision.shouldSendPush) {
         pushRecipients.push(rid);
