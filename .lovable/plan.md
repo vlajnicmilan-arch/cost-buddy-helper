@@ -1,32 +1,26 @@
-# Fix: Stale-chunk greške ne smiju trigerirati alerte
+Uzrok je jasan: dio “Za pažnju” koristi `dismiss_notification` i ostavlja zapis kao `dismissed`, pa se isti problem ne vraća 7 dana. Ali zvono za obavijesti koristi direktni `DELETE` nad `notifications`; kad se izbriše aktivno upozorenje s `dedup_key`, `useIssueReconciler` ga nakon kratkog vremena ponovno detektira i ponovno umetne.
 
-## Problem
-Nakon AI deploya, otvoreni browseri pokušaju učitati stari lazy chunk (npr. `Index.tsx?t=...`) koji više ne postoji. To je benigno — app se sam recoverira reloadom. Trenutno se ipak loguje u `app_diagnostics_logs` kao `react_error_boundary`, što cron pretvara u push/email alert (lažni "🔴 V&M Balance: 1 greška").
+Plan popravka:
 
-## Uzrok
-`ErrorBoundary` i globalni `window.error` / `unhandledrejection` handleri zovu `tryRecoverFromChunkError()` koji ima 30s reload guard. Kad guard blokira drugi poziv za isti chunk error, kod **propada dalje** u `logDiagnostic('react_error_boundary')` + `notifyCrash` → alert.
+1. Uskladiti brisanje u zvonu s postojećim “Za pažnju” tokom
+   - Za aktivna issue upozorenja (`dedup_key` / `status='active'` / tipovi poput `budget_burn`, `project_loss_zone`, `overdue_invoice`) umjesto fizičkog brisanja pozvati postojeći RPC `dismiss_notification`.
+   - Za obične obavijesti bez issue logike zadržati stvarno brisanje.
 
-## Rješenje
-Razdvojiti dvije provjere u svakom error handleru:
+2. Sakriti dismissed/resolved zapise iz zvona
+   - `useNotifications` će dohvaćati samo vidljive obavijesti, tj. aktivne zapise.
+   - Kad se issue dismiss-a, lokalno će odmah nestati iz liste i neće se vraćati nakon refetcha.
 
-1. **`isChunkLoadError(error)`** → **potpuni skip** (no log, no Sentry, no notifyCrash, no setState za error UI). Vratiti samo `tryRecoverFromChunkError()` da pokuša reload ako guard dozvoli.
-2. Sve ostale greške → postojeći flow nepromijenjen.
+3. Popraviti “Obriši sve”
+   - Ne smije hard-deleteati issue upozorenja jer se onda regeneriraju.
+   - Vidljive issue obavijesti će se dismissati, a obične obavijesti obrisati.
+   - Badge/unread count se ažurira prema stvarnom vidljivom stanju.
 
-### Konkretne izmjene
-- `src/components/ErrorBoundary.tsx` — u `componentDidCatch`: ako `isChunkLoadError` → pozovi recover i `return` PRIJE Sentry/logDiagnostic/notifyCrash. Isto u `getDerivedStateFromError` (ne postaviti `hasError: true` za chunk errore).
-- `src/main.tsx` (ili gdje su global handleri) — `window.addEventListener('error')` i `unhandledrejection`: isti pattern, chunk error = silent.
-- Helper `isChunkLoadError` već postoji; reuse.
+4. Pojačati realtime sinkronizaciju
+   - Na `UPDATE` gdje obavijest postane `dismissed` ili `resolved`, ukloniti je iz lokalnog stanja.
+   - Na `DELETE` ukloniti je iz lokalnog stanja.
+   - INSERT ostaje kao sada, ali samo za vidljive aktivne obavijesti.
 
-### Što se NE mijenja
-- 30s reload guard ostaje (sprečava reload loop).
-- Pravi runtime errori i dalje idu kroz alert flow.
-- Cron `monitor-error-spikes` ostaje, samo dobiva manje šuma.
-
-## Verifikacija
-- Trigger ručno: simulirati `ChunkLoadError` u konzoli → nema novog reda u `app_diagnostics_logs` s `event='react_error_boundary'`.
-- Nakon idućeg deploya: provjeriti da `monitor_alerts_log` ne dobije novi `chunk` alert za userov uid.
-
-## Bez izmjena na
-- DB shemi
-- i18n
-- UI komponentama izvan ErrorBoundary
+5. Provjera
+   - Provjeriti da brisanje iz zvona uklanja obavijest odmah.
+   - Provjeriti da se isto upozorenje ne vrati nakon sljedećeg reconcile ciklusa.
+   - Provjeriti da obične obavijesti i dalje mogu biti trajno obrisane.

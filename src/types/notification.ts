@@ -7,4 +7,7 @@ export interface Notification {
   data: Record<string, unknown>;
   read: boolean;
   created_at: string;
+  status?: 'active' | 'resolved' | 'dismissed';
+  dedup_key?: string | null;
+  severity?: 'info' | 'warning' | 'critical';
 }

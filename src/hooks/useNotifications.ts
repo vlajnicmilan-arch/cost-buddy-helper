@@ -5,6 +5,16 @@ import { Notification } from '@/types/notification';
 import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotificationSound';
 import { useAppBadge } from '@/hooks/useAppBadge';
 
+/**
+ * Returns true if the notification represents an auto-reconciled "issue"
+ * (budget_burn, project_loss_zone, overdue_invoice, ...).
+ * These rows have a dedup_key and must be dismissed (status='dismissed') via RPC
+ * so the reconciler does NOT recreate them on next pass.
+ */
+const isIssueNotification = (n: Notification): boolean => {
+  return !!n.dedup_key;
+};
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -26,6 +36,7 @@ export const useNotifications = () => {
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -63,12 +74,60 @@ export const useNotifications = () => {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          if (newNotification.status && newNotification.status !== 'active') return;
+          setNotifications(prev => {
+            if (prev.some(n => n.id === newNotification.id)) return prev;
+            return [newNotification, ...prev];
+          });
           setUnreadCount(prev => prev + 1);
-          
-          // Play sound and show browser notification
+
           playNotificationSound();
           showBrowserNotification(newNotification.title, newNotification.message);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as Notification;
+          if (updated.status && updated.status !== 'active') {
+            // resolved/dismissed → remove from visible list
+            setNotifications(prev => {
+              const existing = prev.find(n => n.id === updated.id);
+              if (!existing) return prev;
+              if (!existing.read) {
+                setUnreadCount(c => Math.max(0, c - 1));
+              }
+              return prev.filter(n => n.id !== updated.id);
+            });
+          } else {
+            setNotifications(prev => prev.map(n => (n.id === updated.id ? { ...n, ...updated } : n)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const oldRow = payload.old as { id: string };
+          setNotifications(prev => {
+            const existing = prev.find(n => n.id === oldRow.id);
+            if (!existing) return prev;
+            if (!existing.read) {
+              setUnreadCount(c => Math.max(0, c - 1));
+            }
+            return prev.filter(n => n.id !== oldRow.id);
+          });
         }
       )
       .subscribe();
@@ -104,6 +163,7 @@ export const useNotifications = () => {
         .from('notifications')
         .update({ read: true })
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .eq('read', false);
 
       if (error) throw error;
@@ -119,41 +179,63 @@ export const useNotifications = () => {
   const deleteNotification = async (notificationId: string) => {
     try {
       const notification = notifications.find(n => n.id === notificationId);
-      
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId);
 
-      if (error) throw error;
-
+      // Optimistic update
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (notification && !notification.read) {
         const newUnread = Math.max(0, unreadCount - 1);
         setUnreadCount(newUnread);
         setBadge(newUnread);
       }
+
+      if (notification && isIssueNotification(notification)) {
+        // Issue rows: dismiss (keeps a 7-day suppression in upsert_active_issue)
+        const { error } = await (supabase as any).rpc('dismiss_notification', { p_id: notificationId });
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from('notifications')
+          .delete()
+          .eq('id', notificationId);
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('Error deleting notification:', error);
+      // Re-sync on failure
+      fetchNotifications();
     }
   };
 
   const deleteAllNotifications = async (): Promise<boolean> => {
     if (!user) return false;
+    const snapshot = notifications;
     try {
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
+      // Optimistic clear
       setNotifications([]);
       setUnreadCount(0);
       setBadge(0);
+
+      const issueIds = snapshot.filter(isIssueNotification).map(n => n.id);
+      const plainIds = snapshot.filter(n => !isIssueNotification(n)).map(n => n.id);
+
+      // Dismiss all issue rows via RPC (per-id; small N — UI limit 20)
+      for (const id of issueIds) {
+        const { error } = await (supabase as any).rpc('dismiss_notification', { p_id: id });
+        if (error) throw error;
+      }
+
+      if (plainIds.length > 0) {
+        const { error } = await (supabase as any)
+          .from('notifications')
+          .delete()
+          .in('id', plainIds);
+        if (error) throw error;
+      }
+
       return true;
     } catch (error) {
       console.error('Error deleting all notifications:', error);
+      fetchNotifications();
       return false;
     }
   };
