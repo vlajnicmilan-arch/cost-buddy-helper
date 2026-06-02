@@ -124,6 +124,14 @@ export const ProjectFullScreenView = ({
   const { activeBusinessProfileId } = useAppState();
   const { hasAccess } = useFeatureAccess();
   const labels = useProjectTypeLabels(project);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const isOwner = !!project && !!user && project.user_id === user.id;
+  const accessLevel = useProjectAccessLevel(
+    project ? { user_id: project.user_id, isParticipant: !isOwner } : null
+  );
+  const isReadOnly = isReadOnlyAccess(accessLevel);
+  const handleUpgradeProjects = () => navigate('/paywall');
 
   // Business view supports both owned business projects and shared projects joined under this business profile.
   const isBusinessView = !!activeBusinessProfileId && (
