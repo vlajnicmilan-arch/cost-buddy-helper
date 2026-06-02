@@ -117,6 +117,9 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('receipt_request_timeout');
+    throw error;
   } finally {
     window.clearTimeout(timeout);
   }
@@ -341,10 +344,9 @@ export const useReceiptScanner = () => {
       // Show different message if custom source was matched
       if (matchedCustomId) {
         const matchedSource = customPaymentSources?.find(s => s.id === matchedCustomId);
-        showSuccess(`Račun skeniran! Prepoznat izvor: ${matchedSource?.name || 'Prilagođeni izvor'}`);
+        showSuccess(t('scanner.scanSuccessSource', { source: matchedSource?.name || t('scanner.customSource') }));
       } else {
-        const pagesNote = imagesBase64.length > 1 ? ` (${imagesBase64.length} stranica)` : '';
-        showSuccess(`Račun skeniran${pagesNote}! Pronađeno ${result.items.length} artikala.`);
+        showSuccess(t('scanner.scanSuccessItems', { count: result.items.length }));
       }
       try {
         logDiagnostic('receipt_scan_success', {
@@ -379,6 +381,12 @@ export const useReceiptScanner = () => {
         console.warn('Receipt scanning was interrupted:', error);
         try { logDiagnostic('receipt_scan_aborted', {}); } catch {}
         showError(t('errors.receipt.scanCancelled', 'Skeniranje je prekinuto. Pokušaj ponovno.'));
+        return null;
+      }
+
+      if (error instanceof Error && error.message === 'receipt_request_timeout') {
+        try { logDiagnostic('receipt_scan_request_timeout', { timeout_ms: RECEIPT_FETCH_TIMEOUT_MS }); } catch {}
+        showError(t('errors.receipt.requestTimeout'));
         return null;
       }
 
