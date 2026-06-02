@@ -179,6 +179,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
       source: 'notify-project-transaction',
     });
 
+    // Daily digest enqueue (po prostoru, recipient-type independent).
+    try {
+      await supabaseAdmin.rpc('enqueue_participant_digest_event', {
+        p_project_id: project.id,
+        p_actor_user_id: userId,
+        p_event: {
+          kind: `project_transaction_${action}`,
+          actor_name: submitterName,
+          label: expense.description ?? null,
+          ref_id: expense.id ?? null,
+          at: new Date().toISOString(),
+        },
+      });
+    } catch (digestErr) {
+      console.error('[notify-project-transaction] digest enqueue error', digestErr);
+    }
+
     console.log(`Notifications sent to ${usersToNotify.size} user(s) for project transaction by ${submitterName}`);
 
     return new Response(

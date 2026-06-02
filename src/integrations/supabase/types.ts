@@ -5227,6 +5227,13 @@ export type Database = {
         Returns: boolean
       }
       dismiss_notification: { Args: { p_id: string }; Returns: undefined }
+      drain_participant_digest: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: {
+          pending_count: number
+          pending_summary: Json
+        }[]
+      }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
