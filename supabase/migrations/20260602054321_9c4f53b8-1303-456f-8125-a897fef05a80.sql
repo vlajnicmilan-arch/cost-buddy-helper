@@ -1,0 +1,1 @@
+DELETE FROM public.notifications WHERE type = 'app_update' AND data->>'version' = '2.1.1';
