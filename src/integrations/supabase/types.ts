@@ -2907,6 +2907,7 @@ export type Database = {
           daily_summary_enabled: boolean
           daily_summary_last_sent_on: string | null
           daily_summary_paused_until: string | null
+          daily_summary_state: Json
           daily_summary_unopened_streak: number
           daily_summary_weekend_enabled: boolean
           family_override_push: boolean
@@ -2928,6 +2929,7 @@ export type Database = {
           daily_summary_enabled?: boolean
           daily_summary_last_sent_on?: string | null
           daily_summary_paused_until?: string | null
+          daily_summary_state?: Json
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
           family_override_push?: boolean
@@ -2949,6 +2951,7 @@ export type Database = {
           daily_summary_enabled?: boolean
           daily_summary_last_sent_on?: string | null
           daily_summary_paused_until?: string | null
+          daily_summary_state?: Json
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
           family_override_push?: boolean
