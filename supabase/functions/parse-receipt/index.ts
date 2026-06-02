@@ -443,6 +443,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
     }
 
     if (!aiResponse.ok) {
+      if (!skipQuota) await refundCoreScanQuota(supabase);
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Previše zahtjeva. Pokušaj ponovno za minutu.' }), 
@@ -480,6 +481,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
+      if (!skipQuota) await refundCoreScanQuota(supabase);
       return new Response(
         JSON.stringify({ error: 'Nije moguće analizirati račun' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
