@@ -105,7 +105,7 @@ export const ReceiptCaptureButtons = ({
           size="sm"
           onClick={onToggleMultiMode}
           disabled={scanning}
-          className="w-full gap-2 rounded-xl border-dashed border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+          className="w-full gap-2 rounded-xl border-dashed border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/70"
         >
           <Layers className="w-4 h-4" />
           {t('scanner.multiPageReceipt')}
