@@ -122,23 +122,6 @@ const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: nu
   }
 };
 
-const isTransientNetworkError = (err: unknown) => {
-  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-  const name = err instanceof Error ? err.name.toLowerCase() : '';
-  return (
-    name.includes('abort') ||
-    msg.includes('timeout') ||
-    msg.includes('timed out') ||
-    msg.includes('connection abort') ||
-    msg.includes('connection reset') ||
-    msg.includes('software caused connection') ||
-    msg.includes('network') ||
-    msg.includes('failed to fetch') ||
-    msg.includes('load failed') ||
-    msg.includes('socket')
-  );
-};
-
 export const useReceiptScanner = () => {
   const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
