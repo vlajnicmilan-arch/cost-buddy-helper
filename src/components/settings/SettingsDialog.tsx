@@ -100,8 +100,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   
-  const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false); // legacy state (unused), kept for minimal diff
-  void showFamilyDisableConfirm; void setShowFamilyDisableConfirm;
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showBusinessProfile, setShowBusinessProfile] = useState(false);
