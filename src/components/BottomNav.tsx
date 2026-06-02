@@ -3,30 +3,45 @@ import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
+import { useModuleStates } from '@/hooks/useModuleStates';
+import { getNavVisibility, type AppModule } from '@/lib/moduleVisibility';
 import { useHaptics } from '@/hooks/useHaptics';
 
-const allNavItems = [
-  { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'] },
-  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'] },
-  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'] },
-  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'] },
-  { path: '/family', icon: Users, labelKey: 'nav.family', fallback: 'Obitelj', activePaths: ['/family'] },
+type NavItem = {
+  path: string;
+  icon: typeof LayoutDashboard;
+  labelKey: string;
+  fallback: string;
+  activePaths: string[];
+  /**
+   * Modul koji kontrolira vidljivost stavke. Core stavke (Home/Wallet/Budgets)
+   * koriste `'core'` — uvijek vidljive.
+   */
+  module: AppModule;
+};
+
+const ALL_NAV_ITEMS: NavItem[] = [
+  { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'], module: 'core' },
+  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects' },
+  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core' },
+  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core' },
+  { path: '/family', icon: Users, labelKey: 'nav.family', fallback: 'Obitelj', activePaths: ['/family'], module: 'family' },
 ];
 
 export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { familyModeEnabled, activeBusinessProfileId, usageProfile } = useAppState();
+  const { activeBusinessProfileId } = useAppState();
+  const modules = useModuleStates();
   const { lightTap } = useHaptics();
 
-  const navItems = allNavItems.filter(item => {
-    if (item.path === '/family') return familyModeEnabled && !activeBusinessProfileId;
-    if (item.path === '/projects') {
-      // Hide for users who explicitly chose finance-only.
-      // Legacy users (null) and 'finance_projects' → visible.
-      return usageProfile !== 'finance_only';
-    }
+  // Faza 1 modularnog UI-a: jedini izvor istine za nav stavke je
+  // getNavVisibility(). Family se dodatno sakriva u business kontekstu
+  // (kontekst-specifična navigacija, ne modul gate).
+  const navItems = ALL_NAV_ITEMS.filter(item => {
+    if (getNavVisibility(item.module, modules[item.module]) !== 'visible') return false;
+    if (item.path === '/family' && activeBusinessProfileId) return false;
     return true;
   });
 
