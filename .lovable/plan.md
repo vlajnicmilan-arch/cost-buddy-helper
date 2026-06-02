@@ -1,47 +1,46 @@
-## Problem
+# Plan
 
-U "Višestraničan račun" modu, čim korisnik doda prvu sliku (kamera ili galerija), gumb X i Android back gumb prestaju reagirati. Bez slika sve radi normalno.
+## 1. SplitPredictionHint — sakrij dok nema iznosa
 
-## Root cause
+**Datoteka:** `src/components/family/SplitPredictionHint.tsx`
 
-U `src/components/add-expense/AddExpenseDialog.tsx`:
+Dodati early-return **prije** poziva `useFamilySplitPrediction` i prije loading bloka:
 
-- `handleNativeCapture` i `handleImageCapture` postavljaju `scanInProgressRef.current = true` prije capture-a (legitimno — sprječava Android popstate da unmounta dialog tijekom kamera roundtripa).
-- Nakon capture-a poziva se `processImageBase64(base64, multiMode=true)`.
-- U `processImageBase64`, **multi-mode grana** samo doda sliku u `receiptImages` i NE resetira `scanInProgressRef.current`. Reset postoji samo u single-scan grani (`finally` blok oko `scanReceipt`).
-- `releaseCaptureGuardSoon()` u finally bloku resetira samo `cameraActiveRef`, ne `scanInProgressRef`.
-
-Rezultat: `scanInProgressRef.current` ostaje `true` zauvijek u multi modu. I `handleBackClose` (linija 557) i `onOpenChange` guard (linija 1031) provjeravaju ovaj ref pa blokiraju zatvaranje dialoga.
-
-## Plan
-
-### `src/components/add-expense/AddExpenseDialog.tsx`
-
-U `processImageBase64`, multi-mode granu (linije 383–386) zamotati u try/finally koji garantirano resetira `scanInProgressRef.current = false` nakon što je slika dodana u kolekciju. Multi-mode ne pokreće stvarni scan — collector samo prikuplja slike — pa nema razloga držati guard nakon dodavanja.
-
-```ts
-if (multiMode || showMultiImageCollector) {
-  try {
-    setReceiptImages(prev => [...prev, base64]);
-    setReceiptImage(base64);
-    if (!showMultiImageCollector) setShowMultiImageCollector(true);
-  } finally {
-    scanInProgressRef.current = false;
-  }
-}
+```tsx
+if (!Number.isFinite(amount) || amount <= 0) return null;
 ```
 
-Ovime se rješavaju obje rute (kamera i file input) jer obje zovu isti `processImageBase64`. `cameraActiveRef` se nastavlja resetirati postojećim `releaseCaptureGuardSoon()` u finally blokovima oba capture handlera — to ostaje nepromijenjeno jer pokriva legitiman race s Android popstate.
+Rezultat: "Računam podjelu…" spinner se više ne pojavljuje na praznoj formi. Hint se prikazuje tek kad korisnik upiše iznos > 0 na dijeljenom izvoru — što je u skladu s logikom (podjela ima smisla samo kad je izvor dijeljen **i** iznos poznat).
 
-### Što NIJE u opsegu
+Hook poziv ostaje očuvan iznad uvjeta? Ne — pomičemo ga ispod guarda da izbjegnemo nepotrebne fetch-eve dok je iznos 0.
 
-- Stvarni scan flow (`handleScanMultipleImages`) — radi ispravno, postojeći single-scan guard ostaje.
-- `cameraActiveRef` logika i safety-net timeri — ne diramo, pokrivaju drugi scenarij.
-- UI / i18n / dizajn — nema promjena.
-- Bez novih guard-eva, flag-ova ili timeouta — ovo je popravak korijenskog uzroka, ne workaround.
+## 2. i18n — 4 ključa pod `transactions.*`
 
-## Verifikacija
+Trenutno stanje (verificirano):
+- **HR**: fale sva 4 (`merchantPlaceholder`, `assignToProject`, `noProject`, `amountHint`)
+- **EN**: fali 3 (ima samo `amountHint`)
+- **DE**: fali 3 (ima samo `amountHint`)
 
-Nakon primjene:
-1. Otvori AddExpense dialog → klik "Višestraničan račun" → dodaj 1 sliku → X i back gumb moraju zatvoriti dialog odmah.
-2. Single-page scan (bez multi moda) i dalje mora čekati da scan završi prije zatvaranja (guard za real scan ostaje aktivan).
+Dodati u `transactions` blok:
+
+**hr.json**
+- `merchantPlaceholder`: "npr. Konzum, A1, Netflix..."
+- `assignToProject`: "Pridruži projektu"
+- `noProject`: "Bez projekta"
+- `amountHint`: "Za decimale koristi točku ili zarez (npr. 150,50)"
+
+**en.json**
+- `merchantPlaceholder`: "e.g. Walmart, AT&T, Netflix..."
+- `assignToProject`: "Assign to project"
+- `noProject`: "No project"
+
+**de.json**
+- `merchantPlaceholder`: "z.B. Edeka, Telekom, Netflix..."
+- `assignToProject`: "Projekt zuweisen"
+- `noProject`: "Kein Projekt"
+
+## Što NE diram
+
+- Logiku `useFamilySplitPrediction` hooka
+- `ManualExpenseForm` — prop interface je već ispravan
+- Druge dijelove forme

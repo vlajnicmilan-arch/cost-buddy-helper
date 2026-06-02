@@ -1168,7 +1168,11 @@
     },
     "attribution": {
       "unknownMember": "Bivši član"
-    }
+    },
+    "merchantPlaceholder": "npr. Konzum, A1, Netflix...",
+    "assignToProject": "Pridruži projektu",
+    "noProject": "Bez projekta",
+    "amountHint": "Za decimale koristi točku ili zarez (npr. 150,50)"
   },
   "dashboard": {
     "balance": "Stanje",

@@ -1165,7 +1165,10 @@
     },
     "attribution": {
       "unknownMember": "Former member"
-    }
+    },
+    "merchantPlaceholder": "e.g. Walmart, AT&T, Netflix...",
+    "assignToProject": "Assign to project",
+    "noProject": "No project"
   },
   "dashboard": {
     "balance": "Balance",

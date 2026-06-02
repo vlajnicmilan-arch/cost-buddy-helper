@@ -19,10 +19,13 @@ interface Props {
 export function SplitPredictionHint({ paymentSource, amount, currency }: Props) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const hasAmount = Number.isFinite(amount) && amount > 0;
   const { prediction, loading } = useFamilySplitPrediction(
     paymentSource,
-    Number.isFinite(amount) && amount > 0 ? amount : 0,
+    hasAmount ? amount : 0,
   );
+
+  if (!hasAmount) return null;
 
   if (loading) {
     return (
@@ -33,7 +36,7 @@ export function SplitPredictionHint({ paymentSource, amount, currency }: Props) 
     );
   }
 
-  if (!prediction || amount <= 0 || prediction.shares.length === 0) return null;
+  if (!prediction || prediction.shares.length === 0) return null;
 
   const modeLabel =
     prediction.mode === 'proportional_income'
