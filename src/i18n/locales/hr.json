@@ -1541,10 +1541,7 @@
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
     "dateNotFound": "Nije pronađen",
-    "analyzingPages": "Analiziram {{count}} stranica...",
-    "customSource": "Prilagođeni izvor",
-    "scanSuccessSource": "Račun skeniran! Prepoznat izvor: {{source}}",
-    "scanSuccessItems": "Račun skeniran! Pronađeno {{count}} artikala."
+    "analyzingPages": "Analiziram {{count}} stranica..."
   },
   "summary": {
     "balance": "Stanje",
@@ -1869,7 +1866,6 @@
       "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
       "noCredits": "Nedostaje kredita za AI obradu.",
       "scanCancelled": "Skeniranje je prekinuto. Pokušaj ponovno.",
-      "requestTimeout": "Analiza predugo traje. Pokušaj ponovno s jasnijom fotografijom.",
       "scanFailed": "Greška pri skeniranju računa"
     },
     "pdf": {
