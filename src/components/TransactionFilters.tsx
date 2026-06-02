@@ -486,6 +486,10 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if (itemStatus !== filters.bankMatchStatus) return false;
     }
 
+    if (filters.paymentSource !== undefined) {
+      if ((item.payment_source ?? null) !== filters.paymentSource) return false;
+    }
+
     return true;
   });
 };
