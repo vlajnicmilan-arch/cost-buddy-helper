@@ -508,9 +508,55 @@ export const NotificationsDropdown = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Confirm delete-all dialog */}
+      <AlertDialog open={confirmDeleteAll} onOpenChange={(o) => !deletingAll && setConfirmDeleteAll(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('notifications.confirmDeleteAllTitle', 'Obrisati sve obavijesti?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('notifications.confirmDeleteAllDesc', 'Sve obavijesti će biti trajno uklonjene.')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={deletingAll}
+              onClick={() => setConfirmDeleteAll(false)}
+            >
+              {t('common.cancel', 'Odustani')}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={deletingAll}
+              onClick={async () => {
+                setDeletingAll(true);
+                const ok = await deleteAllNotifications();
+                setDeletingAll(false);
+                setConfirmDeleteAll(false);
+                if (ok) {
+                  showSuccess(t('notifications.allDeleted', 'Sve obavijesti obrisane'));
+                  setOpen(false);
+                } else {
+                  showError(t('common.error'));
+                }
+              }}
+            >
+              {deletingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t('notifications.deleteAll', 'Obriši sve')}
+                </>
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
+
 
 // ============================================================
 // SwipeableNotification — swipe-left to delete
