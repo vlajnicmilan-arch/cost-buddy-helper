@@ -4147,7 +4147,10 @@
     }
   },
   "scanning": {
-    "step4Fallback": "Finalizing analysis...",
+    "step1": "Reading text from image...",
+    "step2": "Recognising items and amounts...",
+    "step3": "Categorising transaction...",
+    "step4": "Finalising analysis...",
     "tip1": "Tip: Hold the receipt flat for better results",
     "tip2": "Tip: Good lighting improves accuracy",
     "tip3": "Tip: Avoid shadows over the receipt",
