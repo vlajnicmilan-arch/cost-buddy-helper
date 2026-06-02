@@ -1541,7 +1541,10 @@
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
     "dateNotFound": "Nije pronađen",
-    "analyzingPages": "Analiziram {{count}} stranica..."
+    "analyzingPages": "Analiziram {{count}} stranica...",
+    "customSource": "Prilagođeni izvor",
+    "scanSuccessSource": "Račun skeniran! Prepoznat izvor: {{source}}",
+    "scanSuccessItems": "Račun skeniran! Pronađeno {{count}} artikala."
   },
   "summary": {
     "balance": "Stanje",
