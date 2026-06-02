@@ -806,8 +806,8 @@ export const TransactionDetailDialog = ({
           )}
         </div>
 
-        {/* Family reactions & comments — samo za transakcije na shared family izvoru */}
-        {expense && familyGroupId && (
+        {/* Family reactions & comments — gated by Family modul (Faza 1 modularnog UI-a) */}
+        {familyModeEnabled && expense && familyGroupId && (
           <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3 shrink-0">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <User className="w-3.5 h-3.5" />
