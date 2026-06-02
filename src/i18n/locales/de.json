@@ -1165,7 +1165,10 @@
     },
     "attribution": {
       "unknownMember": "Ehemaliges Mitglied"
-    }
+    },
+    "merchantPlaceholder": "z.B. Edeka, Telekom, Netflix...",
+    "assignToProject": "Projekt zuweisen",
+    "noProject": "Kein Projekt"
   },
   "dashboard": {
     "balance": "Kontostand",
