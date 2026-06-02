@@ -46,6 +46,11 @@ import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
+import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
+import { isProjectsReadonlyError } from '@/lib/softDelete';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
