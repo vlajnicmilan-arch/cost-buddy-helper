@@ -196,6 +196,47 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         } catch {
           /* best-effort, ignore */
         }
+
+        // Faza 1 modularnog UI-a: jednokratni backfill module flagova za
+        // postojeće korisnike koji nisu eksplicitno toggleali u Settings.
+        // Smjer je "auto-on kad postoji signal koji modul treba", nikad off.
+        try {
+          if (localStorage.getItem('family_mode_enabled') === null) {
+            const { count } = await supabase
+              .from('family_members')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', session.user.id);
+            if ((count ?? 0) > 0) {
+              localStorage.setItem('family_mode_enabled', 'true');
+              setFamilyModeEnabledState(true);
+            } else {
+              // Persist eksplicitno "false" da se ne pokreće query svaki mount.
+              localStorage.setItem('family_mode_enabled', 'false');
+            }
+          }
+          if (localStorage.getItem('projects_module_enabled') === null) {
+            const usage = localStorage.getItem('usage_profile');
+            if (usage !== 'finance_only') {
+              // Za legacy ('finance_projects' ili null) provjeri ima li projekata
+              // ili membershipa; ako da → ON; inače ostaje na default-u iz
+              // initial state-a (true) — ali zapiši ga radi stabilnosti.
+              const [{ count: ownCount }, { count: memberCount }] = await Promise.all([
+                supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
+                supabase.from('project_members').select('id', { count: 'exact', head: true }).eq('user_id', session.user.id),
+              ]);
+              const hasAny = (ownCount ?? 0) > 0 || (memberCount ?? 0) > 0;
+              const next = hasAny; // legacy useri bez projekata dobivaju OFF — Core-only iskustvo
+              localStorage.setItem('projects_module_enabled', next.toString());
+              setProjectsModuleEnabledState(next);
+            } else {
+              localStorage.setItem('projects_module_enabled', 'false');
+              setProjectsModuleEnabledState(false);
+            }
+          }
+        } catch (err) {
+          // Backfill je best-effort; sljedeći mount će opet pokušati.
+          console.warn('[module-visibility] backfill skipped:', err);
+        }
       } catch (e) {
         console.error('Failed to resolve onboarding state from DB:', e);
         // Fallback na localStorage cache ako je mreža pala — bolje pustiti korisnika u app
