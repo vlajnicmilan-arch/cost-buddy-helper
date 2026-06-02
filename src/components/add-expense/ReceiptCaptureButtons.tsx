@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Image, Loader2, Check, X } from 'lucide-react';
+import { Camera, Image, Loader2, Check, X, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ReceiptCaptureButtonsProps {
@@ -99,27 +99,31 @@ export const ReceiptCaptureButtons = ({
 
       {/* Multi-page toggle */}
       {!showMultiImageCollector && !scanning && (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={onToggleMultiMode}
-          className="w-full text-xs text-muted-foreground hover:text-primary transition-colors py-1"
+          disabled={scanning}
+          className="w-full gap-2 rounded-xl border-dashed border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40"
         >
-          📄 Višestraničan račun? Klikni ovdje
-        </button>
+          <Layers className="w-4 h-4" />
+          {t('scanner.multiPageReceipt')}
+        </Button>
       )}
 
       {/* Multi-image collector */}
       {showMultiImageCollector && (
         <div className="space-y-2 p-3 bg-muted/30 rounded-xl border border-border/50">
           <p className="text-xs font-medium text-muted-foreground">
-            📄 Dodaj sve stranice računa ({receiptImages.length}/5)
+            {t('scanner.multiPageTitle', { count: receiptImages.length, max: 5 })}
           </p>
 
           {receiptImages.length > 0 && (
             <div className="flex gap-1 overflow-x-auto">
               {receiptImages.map((img, idx) => (
                 <div key={idx} className="relative flex-shrink-0">
-                  <img src={img} alt={`Str. ${idx + 1}`} className="h-16 w-auto rounded object-cover" />
+                  <img src={img} alt={`${idx + 1}`} className="h-16 w-auto rounded object-cover" />
                   <button
                     type="button"
                     className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[10px]"
@@ -142,7 +146,7 @@ export const ReceiptCaptureButtons = ({
               disabled={scanning || receiptImages.length >= 5}
             >
               <Camera className="w-3 h-3" />
-              Dodaj stranicu
+              {t('scanner.addPage')}
             </Button>
             <Button
               type="button"
@@ -153,7 +157,7 @@ export const ReceiptCaptureButtons = ({
               disabled={scanning || receiptImages.length >= 5}
             >
               <Image className="w-3 h-3" />
-              Iz galerije
+              {t('scanner.fromGallery')}
             </Button>
           </div>
 
@@ -165,15 +169,28 @@ export const ReceiptCaptureButtons = ({
               disabled={scanning}
             >
               {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {scanning ? 'Analiziram...' : `Skeniraj ${receiptImages.length} ${receiptImages.length === 1 ? 'stranicu' : 'stranice'}`}
+              {scanning ? t('scanner.analyzingShort') : pluralizeScanPages(t, receiptImages.length)}
             </Button>
           )}
 
           {receiptImages.length >= 5 && (
-            <p className="text-xs text-muted-foreground text-center">Maksimalno 5 stranica</p>
+            <p className="text-xs text-muted-foreground text-center">{t('scanner.maxPages', { max: 5 })}</p>
           )}
         </div>
       )}
     </div>
   );
 };
+
+// HR pluralization helper (one/few/many); EN/DE fall back to scanPagesOther
+function pluralizeScanPages(t: (key: string, opts?: Record<string, unknown>) => string, count: number): string {
+  const lang = (typeof document !== 'undefined' && document.documentElement.lang) || 'hr';
+  if (lang.startsWith('hr')) {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return t('scanner.scanPagesOne', { count });
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return t('scanner.scanPagesFew', { count });
+    return t('scanner.scanPagesMany', { count });
+  }
+  return count === 1 ? t('scanner.scanPagesOne', { count }) : t('scanner.scanPagesOther', { count });
+}

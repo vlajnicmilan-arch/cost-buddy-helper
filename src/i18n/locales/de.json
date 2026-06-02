@@ -1538,7 +1538,14 @@
     "itemsFound": "Artikel",
     "merchant": "Händler",
     "dateNotFound": "Nicht gefunden",
-    "analyzingPages": "Analysiere {{count}} Seiten..."
+    "analyzingPages": "Analysiere {{count}} Seiten...",
+    "multiPageReceipt": "Mehrseitiger Beleg",
+    "multiPageTitle": "Alle Belegseiten hinzufügen ({{count}}/{{max}})",
+    "addPage": "Seite hinzufügen",
+    "scanPagesOne": "{{count}} Seite scannen",
+    "scanPagesOther": "{{count}} Seiten scannen",
+    "analyzingShort": "Analysiere...",
+    "maxPages": "Maximal {{max}} Seiten"
   },
   "summary": {
     "balance": "Saldo",
