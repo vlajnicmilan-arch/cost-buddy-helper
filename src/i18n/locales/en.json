@@ -1538,7 +1538,10 @@
     "itemsFound": "Items",
     "merchant": "Merchant",
     "dateNotFound": "Not found",
-    "analyzingPages": "Analyzing {{count}} pages..."
+    "analyzingPages": "Analyzing {{count}} pages...",
+    "customSource": "Custom source",
+    "scanSuccessSource": "Receipt scanned! Source detected: {{source}}",
+    "scanSuccessItems": "Receipt scanned! Found {{count}} items."
   },
   "summary": {
     "balance": "Balance",
