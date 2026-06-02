@@ -877,6 +877,30 @@
     "businessModeDesc": "Business terminology and company profile",
     "businessModeEnabled": "Business mode enabled",
     "businessModeDisabled": "Personal mode restored",
+    "modules": {
+      "title": "Modules",
+      "subtitle": "Turn on only what you need — keep the interface clean.",
+      "active": "Active",
+      "lockedToast": "Available with an upgrade",
+      "upgradeCta": "Upgrade",
+      "family": {
+        "title": "Family",
+        "description": "Family groups, shared accounts and budgets",
+        "locked": "Available on Pro plan"
+      },
+      "projects": {
+        "title": "Projects",
+        "description": "Track budgets and expenses per project",
+        "locked": "Available on Pro plan",
+        "enabled": "Projects enabled",
+        "disabled": "Projects disabled"
+      },
+      "business": {
+        "title": "Business",
+        "description": "Business terminology and company profiles",
+        "locked": "Available on Business plan"
+      }
+    },
     "profile": "Profile",
     "displayName": "Your name",
     "displayNameDesc": "Name used for personalized messages",
