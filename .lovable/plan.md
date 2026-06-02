@@ -1,28 +1,32 @@
-# Plan
+# Fix: Stale-chunk greške ne smiju trigerirati alerte
 
-## Cilj
-Pojačati vidljivost gumba "Višestraničan račun" u `ReceiptCaptureButtons.tsx` (linija 108).
+## Problem
+Nakon AI deploya, otvoreni browseri pokušaju učitati stari lazy chunk (npr. `Index.tsx?t=...`) koji više ne postoji. To je benigno — app se sam recoverira reloadom. Trenutno se ipak loguje u `app_diagnostics_logs` kao `react_error_boundary`, što cron pretvara u push/email alert (lažni "🔴 V&M Balance: 1 greška").
 
-## Trenutno stanje
-```
-className="w-full gap-2 rounded-xl border-dashed border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40"
-```
-Border je `border-border/70` (svjetlosivi, 70% opacity) + dashed — gubi se na pozadini.
+## Uzrok
+`ErrorBoundary` i globalni `window.error` / `unhandledrejection` handleri zovu `tryRecoverFromChunkError()` koji ima 30s reload guard. Kad guard blokira drugi poziv za isti chunk error, kod **propada dalje** u `logDiagnostic('react_error_boundary')` + `notifyCrash` → alert.
 
-## Promjena
-Koristiti **primary (teal)** boju iz design sistema — već je dominantna boja appa i sklada se s plavim/zelenim CTA gumbima iznad:
+## Rješenje
+Razdvojiti dvije provjere u svakom error handleru:
 
-```
-className="w-full gap-2 rounded-xl border-dashed border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/70"
-```
+1. **`isChunkLoadError(error)`** → **potpuni skip** (no log, no Sentry, no notifyCrash, no setState za error UI). Vratiti samo `tryRecoverFromChunkError()` da pokuša reload ako guard dozvoli.
+2. Sve ostale greške → postojeći flow nepromijenjen.
 
-- `border-primary/50` umjesto `border-border/70` → jasno vidljiv teal obrub
-- `bg-primary/5` → suptilna teal pozadina (slično CTA gumbima Foto/Galerija)
-- `text-primary` → tekst i ikona u teal boji
-- Dashed ostaje (signalizira "secondary action")
-- Dark mode radi automatski jer `primary` token je theme-aware
+### Konkretne izmjene
+- `src/components/ErrorBoundary.tsx` — u `componentDidCatch`: ako `isChunkLoadError` → pozovi recover i `return` PRIJE Sentry/logDiagnostic/notifyCrash. Isto u `getDerivedStateFromError` (ne postaviti `hasError: true` za chunk errore).
+- `src/main.tsx` (ili gdje su global handleri) — `window.addEventListener('error')` i `unhandledrejection`: isti pattern, chunk error = silent.
+- Helper `isChunkLoadError` već postoji; reuse.
 
-## Što NE diram
-- Funkcionalnost gumba
-- Plavi/zeleni CTA gumbi iznad
-- Multi-image collector blok (ima već vlastiti border)
+### Što se NE mijenja
+- 30s reload guard ostaje (sprečava reload loop).
+- Pravi runtime errori i dalje idu kroz alert flow.
+- Cron `monitor-error-spikes` ostaje, samo dobiva manje šuma.
+
+## Verifikacija
+- Trigger ručno: simulirati `ChunkLoadError` u konzoli → nema novog reda u `app_diagnostics_logs` s `event='react_error_boundary'`.
+- Nakon idućeg deploya: provjeriti da `monitor_alerts_log` ne dobije novi `chunk` alert za userov uid.
+
+## Bez izmjena na
+- DB shemi
+- i18n
+- UI komponentama izvan ErrorBoundary
