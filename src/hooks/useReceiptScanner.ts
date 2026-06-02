@@ -143,10 +143,6 @@ const isTransientNetworkError = (err: unknown) => {
     msg.includes('socket')
   );
 };
-    };
-    img.src = base64;
-  });
-};
 
 export const useReceiptScanner = () => {
   const { t } = useTranslation();
