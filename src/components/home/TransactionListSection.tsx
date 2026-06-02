@@ -40,6 +40,7 @@ interface TransactionListSectionProps {
   contextLookup: any;
   // Filter options
   allCards: any[];
+  paymentSources?: CustomPaymentSource[];
   showScopeFilter: boolean;
   // Layout
   className?: string;
