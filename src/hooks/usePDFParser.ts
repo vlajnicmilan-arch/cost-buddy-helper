@@ -5,6 +5,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
+import { reclassifyInternalTransfers } from '@/lib/pdfPostProcess';
 
 export interface ParsedPDFTransaction {
   date: Date;
@@ -70,7 +71,7 @@ const safeParseDate = (input: unknown): Date | null => {
 };
 
 const toParseResult = (data: any): PDFParseResult => ({
-  transactions: (data.transactions || [])
+  transactions: reclassifyInternalTransfers(data.transactions || [])
     .map((tx: any) => {
       const date = safeParseDate(tx.date);
       if (!date) return null;
@@ -360,7 +361,7 @@ export const usePDFParser = () => {
       const data = await response.json();
       
       const result: PDFParseResult = {
-        transactions: (data.transactions || [])
+        transactions: reclassifyInternalTransfers(data.transactions || [])
           .map((tx: any) => {
             const date = safeParseDate(tx.date);
             if (!date) return null;
