@@ -1,54 +1,25 @@
-## Problem
+## Retroaktivni reclassification: Aircash "Uplata gotovine" income → transfer
 
-Aircash PDF izvod uvezao je 2 retka "Uplata gotovine na Aircash Tisak" (300 €, 500 €) kao `type: "income"`. Trebali bi biti `type: "transfer"` (cash top-up novčanika). CSV import isto rješava preko `isInternalTransfer()` u `src/lib/csvParsers.ts`, ali PDF flow taj post-processing ne radi i AI prompt ne pokriva ovaj scenarij.
+### Što
+UPDATE 5 postojećih redaka u `expenses` tablici (svi pripadaju jednom useru, svi na Aircash payment source `custom:0716b12f-6723-4b60-a089-673e8187df0d`):
 
-## Cilj
+- `07e6ebc5…` — 02.06.2026, 300 €
+- `b0721a6e…` — 02.06.2026, 500 €
+- `6c96d661…` — 14.05.2026, 200 €
+- `176b37d3…` — 12.05.2026, 100 €
+- `dbcd7711…` — 09.05.2026, 100 €
 
-PDF/HTML/foto izvodi konzistentni s CSV importom: cash i wallet top-upovi (Aircash, Revolut, PayPal, Wise, Tisak gotovina, ATM uplata…) završavaju kao `transfer`, ne kao `income`.
+Promjena: `type = 'income'` → `type = 'transfer'`.
 
-## Promjene
+### Što NE diram
+- **Saldo Aircash izvora ostaje netaknut.** Ovo su realni cash top-upovi koji su već uvećali saldo Aircash računa. Reclassification je samo radi klasifikacije (da ne ulaze u "ukupni prihod" u izvještajima). Suprotni „cash" izvor ne postoji jer gotovina nije tracked source.
+- `income_source_id`, `amount`, `payment_source`, `date`, `description` — sve ostaje isto.
+- Ostali useri i transakcije — ne diram.
 
-### 1. AI prompt (`supabase/functions/parse-pdf-statement/index.ts`)
+### Izvedba
+Kroz `supabase--insert` tool (UPDATE = data change, ne schema), s eksplicitnim WHERE po 5 ID-jeva da nema slučajnog prelijevanja.
 
-Proširiti dio "ODREĐIVANJE TIPA" — eksplicitno dodati cash/wallet top-up klasu kao `transfer`:
-
-- Bilo koja "Uplata gotovine na <wallet>" (Aircash, Revolut, PayPal, KeksPay, Wise, Bunq, N26…)
-- "Uplata na Aircash", "Top up", "Nadoplata Aircash/Revolut"
-- "Uplata gotovine putem Tisak / bankomat / ATM"
-- ATM podizanje (već postoji) — zadržati
-
-Primjeri u promptu da Gemini Flash nauči obrazac. Bez mijenjanja sheme, samo dodatak teksta.
-
-### 2. Post-process safety net (`src/hooks/usePDFParser.ts`)
-
-U `toParseResult` i u `parseHTML` mapperu, za svaku transakciju s `type === 'income'` pozvati `isInternalTransfer(description)`. Ako vrati `true` → prepisati `type` u `'transfer'`. Funkcija je već exported iz `src/lib/csvParsers.ts`.
-
-Ovo pokriva i:
-- starije AI deploye koji još nisu pohvatali novi prompt
-- edge case-ove koje AI promaši
-- garantira identično ponašanje s CSV parserima
-
-### 3. Test (`src/lib/__tests__/usePDFParser.test.ts` — novo, samo helper)
-
-Ekstrahirati post-process korak u čistu funkciju `reclassifyInternalTransfers(tx[])` u `src/lib/pdfPostProcess.ts` (per project rule: bug u logici → helper → test) i pokriti vitest-om:
-- "Uplata gotovine na Aircash Tisak" income → transfer
-- "Uplata na Aircash - Visa *** 7262" income → transfer
-- Obična plaća "Plaća za 5/26" income → ostaje income
-- Expense retci se ne diraju
-
-## Što NE radim
-
-- Ne diram CSV parser (već radi)
-- Ne diram `transferMatching` (druga strana za Tisak cash top-up ionako ne postoji u sustavu)
-- Ne radim retroaktivnu migraciju postojećih krivo uvezenih redaka — to ti mogu napraviti zasebnom akcijom (UPDATE za tvoja 2 retka) ako želiš nakon mergea.
-- Ne mijenjam shemu, RLS, ni druge edge funkcije.
-
-## Verifikacija
-
-1. `npm test` — novi unit testovi prolaze
-2. Re-import istog Aircash PDF-a u preview-u: 2 "Uplata gotovine na Aircash Tisak" prikazuju se s ↔ ikonom i `transfer` tipom u review dialogu prije importa
-3. Edge log `parse-pdf-statement` pokazuje da AI sad već vraća `type: "transfer"` (ili da ga safety net prepisuje)
-
-## Otvoreno pitanje za poslije
-
-Trebaš li UPDATE za 2 postojeća retka koja su već uvezena kao income? To mogu pripremiti zasebnim migrationom ili ručno preko `update transaction` UI-a nakon mergea ovog fixa.
+### Rizici / napomene
+- Ako se igdje u kodu transfer NE filtrira iz "prihoda" (npr. custom report koji broji sve osim `expense`), te će se brojke smanjiti za 1200 €. Provjera: `useExpenseFetch` i budget calc već isključuju transfer (vidi memory).
+- Ako user u međuvremenu obriše neki od ovih redaka prije approvala, UPDATE će ga preskočiti (deleted_at filter).
+- Bez backfilla za buduće importe — nova `reclassifyInternalTransfers` logika već radi posao automatski.
