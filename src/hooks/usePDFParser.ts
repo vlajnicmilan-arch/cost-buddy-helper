@@ -71,7 +71,7 @@ const safeParseDate = (input: unknown): Date | null => {
 };
 
 const toParseResult = (data: any): PDFParseResult => ({
-  transactions: (data.transactions || [])
+  transactions: reclassifyInternalTransfers(data.transactions || [])
     .map((tx: any) => {
       const date = safeParseDate(tx.date);
       if (!date) return null;
