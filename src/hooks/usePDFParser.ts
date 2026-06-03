@@ -5,6 +5,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { parseAiQuotaError, emitCoreScanLimitReached } from '@/lib/aiQuotaError';
+import { reclassifyInternalTransfers } from '@/lib/pdfPostProcess';
 
 export interface ParsedPDFTransaction {
   date: Date;
