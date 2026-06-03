@@ -361,7 +361,7 @@ export const usePDFParser = () => {
       const data = await response.json();
       
       const result: PDFParseResult = {
-        transactions: (data.transactions || [])
+        transactions: reclassifyInternalTransfers(data.transactions || [])
           .map((tx: any) => {
             const date = safeParseDate(tx.date);
             if (!date) return null;
