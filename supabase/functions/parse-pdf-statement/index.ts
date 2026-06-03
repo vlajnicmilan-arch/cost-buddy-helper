@@ -220,6 +220,12 @@ ODREĐIVANJE TIPA (gledaj kolonu, ne opis):
 - Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
 - Iznos u koloni "Isplata" / "Duguje" / "Teret" / "Debit" / "Soll" / "Na teret" → type = "expense"
 - Vidljivi interni prijenos između vlastitih računa / ATM podizanje → type = "transfer"
+- CASH / WALLET TOP-UP (UVIJEK transfer, bez obzira na kolonu):
+  • "Uplata gotovine na Aircash/Revolut/PayPal/KeksPay/Wise/Bunq/N26" (npr. "Uplata gotovine na Aircash Tisak")
+  • "Uplata na Aircash/Revolut/..." (čak i kad u opisu piše Visa/Mastercard kartica)
+  • "Nadoplata Aircash/Revolut/kartice", "Top up", "Top-up", "Added money"
+  • "Polog gotovine", "Cash deposit", "ATM uplata"
+  • ATM podizanje ("Podizanje gotovine", "Bankomat", "Cash withdrawal")
 - Iznos UVIJEK pozitivan broj.
 
 OPIS:
