@@ -39,6 +39,7 @@ interface CustomPaymentSourceDialogProps {
   onSave: (data: PaymentSourceData) => Promise<void>;
   onAddCard?: (paymentSourceId: string, card: Omit<PaymentSourceCard, 'id' | 'payment_source_id' | 'user_id' | 'created_at'>) => Promise<PaymentSourceCard | null>;
   onDeleteCard?: (cardId: string) => Promise<void>;
+  onUpdateCard?: (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
 }
 
@@ -49,6 +50,7 @@ export const CustomPaymentSourceDialog = ({
   onSave,
   onAddCard,
   onDeleteCard,
+  onUpdateCard,
   initialData,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
