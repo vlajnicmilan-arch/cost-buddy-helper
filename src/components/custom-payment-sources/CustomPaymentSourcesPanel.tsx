@@ -38,7 +38,7 @@ interface CustomPaymentSourcesPanelProps {
 }
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses }: CustomPaymentSourcesPanelProps) => {
-  const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, reorderPaymentSources } = useCustomPaymentSources();
+  const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, updateCard, reorderPaymentSources } = useCustomPaymentSources();
   const { isHidden, toggleHidden } = useHiddenPaymentSources();
   const { user } = useAuth();
   const { storageMode } = useStorage();
@@ -504,6 +504,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
           onSave={handleSave}
           onAddCard={addCard}
           onDeleteCard={deleteCard}
+          onUpdateCard={updateCard}
           initialData={initialData}
         />
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -565,6 +566,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         onSave={handleSave}
         onAddCard={addCard}
         onDeleteCard={deleteCard}
+        onUpdateCard={updateCard}
         initialData={initialData}
       />
 

@@ -39,6 +39,7 @@ interface CustomPaymentSourceDialogProps {
   onSave: (data: PaymentSourceData) => Promise<void>;
   onAddCard?: (paymentSourceId: string, card: Omit<PaymentSourceCard, 'id' | 'payment_source_id' | 'user_id' | 'created_at'>) => Promise<PaymentSourceCard | null>;
   onDeleteCard?: (cardId: string) => Promise<void>;
+  onUpdateCard?: (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
 }
 
@@ -49,6 +50,7 @@ export const CustomPaymentSourceDialog = ({
   onSave,
   onAddCard,
   onDeleteCard,
+  onUpdateCard,
   initialData,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
@@ -137,7 +139,7 @@ export const CustomPaymentSourceDialog = ({
           }
         }
         
-        // Add new cards
+        // Add new cards or update existing changed ones
         for (const card of cards) {
           if (!card.id && card.last_four_digits) {
             await onAddCard(source.id, {
@@ -145,6 +147,20 @@ export const CustomPaymentSourceDialog = ({
               last_four_digits: card.last_four_digits,
               card_type: card.card_type
             });
+          } else if (card.id && onUpdateCard) {
+            const original = (source.cards || []).find(c => c.id === card.id);
+            if (
+              original &&
+              (original.card_name !== card.card_name ||
+                original.last_four_digits !== card.last_four_digits ||
+                (original.card_type || '') !== (card.card_type || ''))
+            ) {
+              await onUpdateCard(card.id, {
+                card_name: card.card_name || t('common.card'),
+                last_four_digits: card.last_four_digits,
+                card_type: card.card_type,
+              });
+            }
           }
         }
       }
