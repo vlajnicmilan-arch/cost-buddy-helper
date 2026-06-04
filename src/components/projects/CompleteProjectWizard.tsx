@@ -141,6 +141,7 @@ export const CompleteProjectWizard = ({
 
   const handleFinalize = async () => {
     if (!user) return;
+    if (!guard()) return;
     setSubmitting(true);
     try {
       const archived = archiveChoice === 'archive';
