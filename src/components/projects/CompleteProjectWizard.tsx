@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 type Step = 1 | 2 | 3;
 
@@ -49,6 +50,7 @@ export const CompleteProjectWizard = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
+  const { guard } = useProjectWriteGuard({ project });
 
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
@@ -101,6 +103,7 @@ export const CompleteProjectWizard = ({
         .map(([id]) => id);
 
       if (idsToComplete.length > 0) {
+        if (!guard()) return;
         try {
           setSubmitting(true);
           const { error } = await supabase
@@ -139,6 +142,7 @@ export const CompleteProjectWizard = ({
 
   const handleFinalize = async () => {
     if (!user) return;
+    if (!guard()) return;
     setSubmitting(true);
     try {
       const archived = archiveChoice === 'archive';

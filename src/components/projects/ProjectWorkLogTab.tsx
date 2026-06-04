@@ -24,18 +24,21 @@ import { WorkLogDialog } from './WorkLogDialog';
 import { WorkLogMonthlyOverview } from './WorkLogMonthlyOverview';
 import { MyWorkerPayCard } from './MyWorkerPayCard';
 import type { ProjectWorkLog } from '@/types/projectWorkLog';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectWorkLogTabProps {
   projectId: string;
   isManager: boolean;
   projectName?: string;
+  isReadOnly?: boolean;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnly = false }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
@@ -110,6 +113,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
 
 
   const handleSubmit = async (input: any) => {
+    if (!guard()) return false;
     if (editingLog) {
       return update(editingLog.id, input);
     }
@@ -117,11 +121,13 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
   };
 
   const openCreate = () => {
+    if (!guard()) return;
     setEditingLog(null);
     setDialogOpen(true);
   };
 
   const openEdit = (log: ProjectWorkLog) => {
+    if (!guard()) return;
     setEditingLog(log);
     setDialogOpen(true);
   };
@@ -137,7 +143,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
             <Badge variant="secondary" className="text-[10px]">{filteredLogs.length}</Badge>
           )}
         </h3>
-        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl">
+        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl" disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
           <Plus className="w-4 h-4" />
           {t('workLog.newEntry', 'Novi zapis')}
         </Button>
@@ -246,8 +252,8 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
             const totalHours = dayHours.reduce((s, h) => s + h.actual_hours, 0);
             const dayDate = parseISO(log.log_date);
             const isAuthor = log.user_id === user?.id;
-            const canEdit = isAuthor;
-            const canDelete = isAuthor || isManager;
+            const canEdit = isAuthor && !isReadOnly;
+            const canDelete = (isAuthor || isManager) && !isReadOnly;
 
             return (
               <Card key={log.id} className="overflow-hidden">
@@ -365,6 +371,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: Project
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
+                if (!guard()) return;
                 if (deleteId) {
                   await remove(deleteId);
                   setDeleteId(null);

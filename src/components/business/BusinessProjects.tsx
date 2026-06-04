@@ -563,6 +563,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
             if (!o) setWorkLogProjectId(null);
           }}
           projectId={workLogProjectId}
+          project={businessProjects.find((p) => p.id === workLogProjectId) ?? null}
         />
       )}
     </div>

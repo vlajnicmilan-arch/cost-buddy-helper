@@ -20,15 +20,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/EmptyState';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectDocumentsTabProps {
   projectId: string;
+  isReadOnly?: boolean;
 }
 
 type AnyDoc = ProjectDocumentRow & { document_kind?: string; location_coords?: string | null; location_name?: string | null; captured_at?: string | null };
 
-export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => {
+export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDocumentsTabProps) => {
   const { t } = useTranslation();
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { documents, loading, uploadDocument, removeDocument, updateAnalysis } = useProjectDocuments(projectId);
   const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
@@ -53,11 +56,13 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   );
 
   const triggerFilePicker = (mode: StorageMode) => {
+    if (!guard()) return;
     setUploadingMode(mode);
     fileInputRef.current?.click();
   };
 
   const handleCamera = async (mode: StorageMode) => {
+    if (!guard()) return;
     try {
       const dataUrl = await takePhoto();
       if (!dataUrl) return;
@@ -72,6 +77,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   };
 
   const handleGallery = async (mode: StorageMode) => {
+    if (!guard()) return;
     try {
       const dataUrl = await pickFromGallery();
       if (!dataUrl) return;
@@ -87,6 +93,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
 
   // Foto dnevnik: with GPS location
   const handleProgressPhoto = async (source: 'camera' | 'gallery') => {
+    if (!guard()) return;
     try {
       const dataUrl = source === 'camera' ? await takePhoto() : await pickFromGallery();
       if (!dataUrl) return;
@@ -111,6 +118,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!guard()) return;
     setUploading(true);
     await uploadDocument(file, { mode: uploadingMode, documentKind: 'document' });
     setUploading(false);
@@ -124,6 +132,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
   };
 
   const handleAnalyze = async (doc: AnyDoc) => {
+    if (!guard()) return;
     setAnalyzingId(doc.id);
     try {
       let base64: string | null = null;
@@ -208,11 +217,11 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
           <Button variant="ghost" size="sm" onClick={() => handlePreview(doc)}>
             <Eye className="w-3.5 h-3.5 mr-1" /> {t('common.view', 'Pregled')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleAnalyze(doc)} disabled={analyzingId === doc.id}>
+          <Button variant="ghost" size="sm" onClick={() => handleAnalyze(doc)} disabled={analyzingId === doc.id || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
             {analyzingId === doc.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
             {t('projects.documents.analyze', 'AI analiza')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDocToDelete(doc)}>
+          <Button variant="ghost" size="sm" onClick={() => { if (guard()) setDocToDelete(doc); }} disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
             <Trash2 className="w-3.5 h-3.5 text-destructive" />
           </Button>
         </div>
@@ -246,7 +255,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
             <div className="grid grid-cols-3 gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="default" className="h-auto py-3 flex-col gap-1" disabled={uploading}>
+                  <Button variant="default" className="h-auto py-3 flex-col gap-1" disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <CameraIcon className="w-5 h-5" />
                     <span className="text-xs font-medium">{t('projects.documents.takePhoto', 'Slikaj')}</span>
                   </Button>
@@ -261,7 +270,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading}>
+                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <ImagePlus className="w-5 h-5" />
                     <span className="text-xs font-medium">{t('projects.documents.gallery', 'Galerija')}</span>
                   </Button>
@@ -276,7 +285,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading}>
+                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <Upload className="w-5 h-5" />
                     <span className="text-xs font-medium">{t('projects.documents.file', 'Datoteka')}</span>
                   </Button>
@@ -315,11 +324,11 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
           {/* PHOTOS TAB — Foto dnevnik */}
           <TabsContent value="photos" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="default" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('camera')} disabled={uploading}>
+              <Button variant="default" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('camera')} disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                 <CameraIcon className="w-5 h-5" />
                 <span className="text-xs font-medium">{t('projects.documents.captureProgress', 'Slikaj napredak')}</span>
               </Button>
-              <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('gallery')} disabled={uploading}>
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('gallery')} disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                 <ImagePlus className="w-5 h-5" />
                 <span className="text-xs font-medium">{t('projects.documents.fromGallery', 'Iz galerije')}</span>
               </Button>
@@ -365,8 +374,10 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
                     </div>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setDocToDelete(doc); }}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      onClick={(e) => { e.stopPropagation(); if (guard()) setDocToDelete(doc); }}
+                      disabled={isReadOnly}
+                      title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:opacity-30"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -416,7 +427,7 @@ export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => 
             <AlertDialogFooter>
               <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={async () => { if (docToDelete) { await removeDocument(docToDelete); setDocToDelete(null); } }}
+                onClick={async () => { if (!guard()) return; if (docToDelete) { await removeDocument(docToDelete); setDocToDelete(null); } }}
                 className="bg-destructive text-destructive-foreground"
               >
                 {t('common.delete', 'Obriši')}
