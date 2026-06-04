@@ -1,15 +1,35 @@
 /**
  * Krug detail — članovi, shared payment sources.
  *
- * V1 skeleton: read-only prikaz. Akcije iznad krug-konteksta (privacy/A-akti)
- * žive na samoj transakciji u TransactionDetailDialog kad bude wirean.
+ * Wave 2 dodano:
+ * - vlasnik dodaje članove (AddKrugMemberDialog → krug-add-member edge fn)
+ * - vlasnik mijenja ulogu (punopravni ↔ obicni) direktno preko RLS-a
+ * - vlasnik uklanja članove (RLS: krug_membership_delete_owner_not_self)
+ *
+ * Owner se NE prikazuje kao membership row — vodi se kroz `krug_ownership`.
  */
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, User, Users, CreditCard } from 'lucide-react';
-import { useKrug, useKrugMembers } from '@/hooks/useKrug';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Crown, User, Users, CreditCard, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import { useKrugSharedPaymentSources } from '@/hooks/useKrugSharedPaymentSources';
+import {
+  useKrugChangeMemberRole,
+  useKrugRemoveMember,
+} from '@/hooks/useKrugMemberMutations';
+import { useAuth } from '@/hooks/useAuth';
+import { AddKrugMemberDialog } from './AddKrugMemberDialog';
+import { canAddPunopravni } from '@/lib/krugPresets';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
 interface Props {
   krugId: string;
@@ -17,9 +37,19 @@ interface Props {
 
 export function KrugDetailScreen({ krugId }: Props) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
   const { data: members = [] } = useKrugMembers(krugId);
   const { data: sharedSources = [] } = useKrugSharedPaymentSources(krugId);
+  const changeRole = useKrugChangeMemberRole();
+  const removeMember = useKrugRemoveMember();
+  const [addOpen, setAddOpen] = useState(false);
+
+  const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
+  const punopravniCount = useMemo(
+    () => members.filter((m) => m.kind === 'owner' || m.kind === 'punopravni').length,
+    [members],
+  );
 
   if (isLoading) {
     return <Card className="p-6 text-sm text-muted-foreground">{t('common.loading', 'Učitavanje…')}</Card>;
@@ -29,6 +59,39 @@ export function KrugDetailScreen({ krugId }: Props) {
   }
 
   const { krug } = detail;
+  const canPromoteToPunopravni = canAddPunopravni(krug.preset, punopravniCount);
+
+  const handlePromote = async (m: KrugMemberView) => {
+    if (!m.membership_id) return;
+    try {
+      await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'punopravni' });
+      showSuccess(t('krug.member.role.promoted', 'Promovirano u punopravnog člana'));
+    } catch (e) {
+      showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+    }
+  };
+
+  const handleDemote = async (m: KrugMemberView) => {
+    if (!m.membership_id) return;
+    try {
+      await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'obicni' });
+      showSuccess(t('krug.member.role.demoted', 'Promijenjeno u običnog člana'));
+    } catch (e) {
+      showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+    }
+  };
+
+  const handleRemove = async (m: KrugMemberView) => {
+    if (!m.membership_id) return;
+    const ok = window.confirm(t('krug.member.remove.confirm', 'Ukloniti člana iz Kruga?'));
+    if (!ok) return;
+    try {
+      await removeMember.mutateAsync({ krugId, membershipId: m.membership_id });
+      showSuccess(t('krug.member.remove.success', 'Član uklonjen'));
+    } catch (e) {
+      showError(t('krug.member.remove.error', 'Greška pri uklanjanju člana'));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -47,29 +110,92 @@ export function KrugDetailScreen({ krugId }: Props) {
       </Card>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          {t('krug.members', 'Članovi')}
-          <span className="text-xs text-muted-foreground">({members.length})</span>
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            {t('krug.members', 'Članovi')}
+            <span className="text-xs text-muted-foreground">({members.length})</span>
+          </h3>
+          {isOwner && (
+            <Button size="sm" onClick={() => setAddOpen(true)} className="h-8">
+              <UserPlus className="w-4 h-4 mr-1" />
+              {t('krug.member.add.cta', 'Dodaj člana')}
+            </Button>
+          )}
+        </div>
+
         <Card className="divide-y divide-border">
-          {members.map((m) => (
-            <div key={`${m.user_id}-${m.kind}`} className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                {m.kind === 'owner' ? (
-                  <Crown className="w-4 h-4 text-primary" />
-                ) : (
-                  <User className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className="font-mono text-xs text-muted-foreground">
-                  {m.user_id.slice(0, 8)}…
-                </span>
+          {members.map((m) => {
+            const isMe = user?.id === m.user_id;
+            const canManage = isOwner && m.kind !== 'owner';
+            const busy =
+              (changeRole.isPending && changeRole.variables?.membershipId === m.membership_id) ||
+              (removeMember.isPending && removeMember.variables?.membershipId === m.membership_id);
+
+            return (
+              <div
+                key={`${m.user_id}-${m.kind}`}
+                className="px-4 py-3 flex items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                  {m.kind === 'owner' ? (
+                    <Crown className="w-4 h-4 text-primary shrink-0" />
+                  ) : (
+                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="font-mono text-xs text-muted-foreground truncate">
+                    {m.user_id.slice(0, 8)}…
+                  </span>
+                  {isMe && (
+                    <span className="text-[10px] text-muted-foreground">
+                      ({t('krug.member.you', 'ti')})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge
+                    variant={m.kind === 'owner' ? 'default' : 'secondary'}
+                    className="text-[10px]"
+                  >
+                    {t(`krug.role.${m.kind}`, m.kind)}
+                  </Badge>
+                  {canManage && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy}>
+                          {busy ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <MoreVertical className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {m.kind === 'obicni' ? (
+                          <DropdownMenuItem
+                            disabled={!canPromoteToPunopravni}
+                            onClick={() => handlePromote(m)}
+                          >
+                            {t('krug.member.actions.promote', 'Promoviraj u punopravnog')}
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleDemote(m)}>
+                            {t('krug.member.actions.demote', 'Vrati na običnog')}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleRemove(m)}
+                        >
+                          {t('krug.member.actions.remove', 'Ukloni iz Kruga')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
-              <Badge variant={m.kind === 'owner' ? 'default' : 'secondary'} className="text-[10px]">
-                {t(`krug.role.${m.kind}`, m.kind)}
-              </Badge>
-            </div>
-          ))}
+            );
+          })}
         </Card>
       </section>
 
@@ -93,6 +219,14 @@ export function KrugDetailScreen({ krugId }: Props) {
           </Card>
         )}
       </section>
+
+      <AddKrugMemberDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        krugId={krugId}
+        preset={krug.preset}
+        punopravniCount={punopravniCount}
+      />
     </div>
   );
 }
