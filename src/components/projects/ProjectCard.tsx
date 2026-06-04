@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
 import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -33,6 +34,8 @@ interface ProjectCardProps {
   isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
+  /** Owner-readonly (downgrade): owner action items in dropdown become disabled + toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectCard = ({
@@ -47,12 +50,15 @@ export const ProjectCard = ({
   onArchive,
   isArchived,
   onClick,
-  onMigrateToBusiness
+  onMigrateToBusiness,
+  isReadOnly = false
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const [actionsOpen, setActionsOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+  const { guard } = useProjectWriteGuard({ isReadOnly });
+  const blockedTitle = isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined;
 
   const projectColor = project.color || '#3b82f6';
   const projectIcon = project.icon || '📁';
@@ -333,9 +339,11 @@ export const ProjectCard = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-[70]" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuItem
+                disabled={isReadOnly}
                 onSelect={(e) => {
                   e.preventDefault();
                   setActionsOpen(false);
+                  if (!guard()) return;
                   onEdit(project);
                 }}
               >
@@ -344,9 +352,11 @@ export const ProjectCard = ({
               </DropdownMenuItem>
               {onMigrateToBusiness && !project.business_profile_id && (
                 <DropdownMenuItem
+                  disabled={isReadOnly}
                   onSelect={(e) => {
                     e.preventDefault();
                     setActionsOpen(false);
+                    if (!guard()) return;
                     onMigrateToBusiness(project);
                   }}
                 >
@@ -356,9 +366,11 @@ export const ProjectCard = ({
               )}
               {onArchive && (
                 <DropdownMenuItem
+                  disabled={isReadOnly}
                   onSelect={(e) => {
                     e.preventDefault();
                     setActionsOpen(false);
+                    if (!guard()) return;
                     onArchive(project.id);
                   }}
                 >
@@ -374,10 +386,12 @@ export const ProjectCard = ({
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                disabled={isReadOnly}
                 className="text-destructive focus:text-destructive"
                 onSelect={(e) => {
                   e.preventDefault();
                   setActionsOpen(false);
+                  if (!guard()) return;
                   onDelete(project.id);
                 }}
               >

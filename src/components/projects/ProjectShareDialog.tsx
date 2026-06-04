@@ -11,17 +11,21 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
   projectName: string;
+  /** When true (owner_readonly or participant), all mutate actions are blocked with a toast. */
+  isReadOnly?: boolean;
 }
 
-export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName }: ProjectShareDialogProps) => {
+export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName, isReadOnly = false }: ProjectShareDialogProps) => {
   const { t } = useTranslation();
   const { links, loading, create, revoke, remove, update } = useProjectShareLinks(projectId);
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
   const [creating, setCreating] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showPhotos, setShowPhotos] = useState(true);
@@ -29,12 +33,23 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
   const [expiresInDays, setExpiresInDays] = useState('30');
 
   const handleCreate = async () => {
+    if (!guard()) return;
     setCreating(true);
     const expires_at = expiresInDays
       ? new Date(Date.now() + parseInt(expiresInDays) * 86400000).toISOString()
       : null;
     await create({ show_financials: showFinancials, show_photos: showPhotos, show_milestones: showMilestones, expires_at });
     setCreating(false);
+  };
+
+  const handleRevoke = async (id: string) => {
+    if (!guard()) return;
+    await revoke(id);
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!guard()) return;
+    await remove(id);
   };
 
   const buildUrl = (token: string) => `${window.location.origin}/p/${token}`;
@@ -90,7 +105,13 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
               />
             </div>
 
-            <Button onClick={handleCreate} disabled={creating} className="w-full h-9">
+            <Button
+              onClick={handleCreate}
+              disabled={creating || isReadOnly}
+              aria-disabled={creating || isReadOnly}
+              title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+              className="w-full h-9"
+            >
               {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('projects.share.generate', 'Generiraj link')}
             </Button>
@@ -118,7 +139,15 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(buildUrl(link.token), '_blank')} disabled={inactive}>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(link.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => handleRemove(link.id)}
+                        disabled={isReadOnly}
+                        aria-disabled={isReadOnly}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -138,7 +167,15 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
                       )}
                     </div>
                     {!link.revoked_at && (
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => revoke(link.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2"
+                        onClick={() => handleRevoke(link.id)}
+                        disabled={isReadOnly}
+                        aria-disabled={isReadOnly}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      >
                         {t('projects.share.revokeAction', 'Opozovi')}
                       </Button>
                     )}

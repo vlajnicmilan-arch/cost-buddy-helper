@@ -26,6 +26,7 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -41,6 +42,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const returnToRef = useRef<string | null>(null);
   const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
+  const { hasAccess } = useFeatureAccess();
+  const hasProjectsSubscription = hasAccess('projects');
   const { businessModeEnabled } = useAppState();
   
   // Show migrate button only in personal mode when user has business mode enabled

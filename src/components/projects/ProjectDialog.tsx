@@ -41,6 +41,8 @@ interface ProjectDialogProps {
     addContingency?: boolean
   ) => Promise<void>;
   onUpdate?: (project: Project) => Promise<void>;
+  /** Owner-readonly (downgrade): blocks edit submit with toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectDialog = ({
@@ -49,7 +51,8 @@ export const ProjectDialog = ({
   project,
   preset,
   onSave,
-  onUpdate
+  onUpdate,
+  isReadOnly = false
 }: ProjectDialogProps) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
@@ -141,6 +144,11 @@ export const ProjectDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (isEdit && isReadOnly) {
+      const { showError } = await import('@/hooks/useStatusFeedback');
+      showError(t('projects.access.readOnlyBlockedToast'));
+      return;
+    }
 
     setSaving(true);
     try {
