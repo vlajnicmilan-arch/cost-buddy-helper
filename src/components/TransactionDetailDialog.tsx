@@ -32,6 +32,7 @@ import { FamilyReactionsBar } from './family/FamilyReactionsBar';
 import { FamilyCommentsInline } from './family/FamilyCommentsInline';
 import { useFamilyGroupForExpense } from '@/hooks/useFamilyGroupForExpense';
 import { useAppState } from '@/contexts/AppStateContext';
+import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 
 
 interface TransactionDetailDialogProps {
@@ -415,6 +416,11 @@ export const TransactionDetailDialog = ({
           {/* Family split controls — gated by Family modul (Faza 1 modularnog UI-a) */}
           {familyModeEnabled && expense.type === 'expense' && expense.user_id === user?.id && (
             <FamilySplitControls expense={expense} />
+          )}
+
+          {/* Krug — transakcijska razina (privacy + A1-A7); renderira se samo ako je krug_id postavljen */}
+          {expense.type !== 'transfer' && (
+            <KrugTransactionPanel expenseId={expense.id} expenseAuthorId={expense.user_id} />
           )}
 
           {/* Payment Source — for transfer: show From → To, otherwise single source */}

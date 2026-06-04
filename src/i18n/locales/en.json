@@ -4647,6 +4647,28 @@
       "ugrozen": "At risk",
       "paused": "Paused",
       "terminated": "Ended"
+    },
+    "transaction": {
+      "title": "Krug",
+      "loading": "Loading…"
+    },
+    "privacy": {
+      "personal": "Personal",
+      "private": "Private",
+      "shared": "Shared"
+    },
+    "status": {
+      "predlozena": "Proposed",
+      "potvrdjena": "Confirmed",
+      "nepotvrdjena": "Rejected"
+    },
+    "act": {
+      "A1": "Confirm",
+      "A2": "Reject",
+      "A3": "Move to personal",
+      "A4": "Withdraw proposal",
+      "A5": "Re-propose",
+      "A7": "Flip to personal"
     }
   }
 }
