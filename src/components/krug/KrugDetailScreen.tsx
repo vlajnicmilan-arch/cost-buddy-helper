@@ -124,16 +124,20 @@ export function KrugDetailScreen({ krugId }: Props) {
     <div className="space-y-4">
       <Card className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold">{krug.name}</h2>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold truncate">{krug.name}</h2>
+            <p className="text-xs text-muted-foreground truncate">
               {t(`krug.preset.${krug.preset}`, krug.preset)}
             </p>
           </div>
-          <Badge variant="outline" className="text-[10px] uppercase">
-            {t(`krug.lifecycle.${krug.lifecycle_state}`, krug.lifecycle_state)}
-          </Badge>
+          <KrugLifecycleBadge state={krug.lifecycle_state} className="shrink-0 text-right" />
         </div>
+        <KrugLifecycleBadge state={krug.lifecycle_state} withNote className="hidden" />
+        {krug.lifecycle_state && krug.lifecycle_state !== 'active' && (
+          <p className="text-[11px] text-muted-foreground">
+            {t(`krug.lifecycleNote.${krug.lifecycle_state}`, { defaultValue: '' })}
+          </p>
+        )}
       </Card>
 
       <KrugApprovalQueue
