@@ -4647,6 +4647,28 @@
       "ugrozen": "Gefährdet",
       "paused": "Pausiert",
       "terminated": "Beendet"
+    },
+    "transaction": {
+      "title": "Krug",
+      "loading": "Lädt…"
+    },
+    "privacy": {
+      "personal": "Persönlich",
+      "private": "Privat",
+      "shared": "Gemeinsam"
+    },
+    "status": {
+      "predlozena": "Vorgeschlagen",
+      "potvrdjena": "Bestätigt",
+      "nepotvrdjena": "Abgelehnt"
+    },
+    "act": {
+      "A1": "Bestätigen",
+      "A2": "Ablehnen",
+      "A3": "Auf persönlich zurücksetzen",
+      "A4": "Vorschlag zurückziehen",
+      "A5": "Erneut vorschlagen",
+      "A7": "Auf persönlich umschalten"
     }
   }
 }
