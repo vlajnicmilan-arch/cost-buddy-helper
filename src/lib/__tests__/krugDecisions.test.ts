@@ -3,11 +3,15 @@ import {
   decideSetPrivacy,
   decideApplyAct,
   decideWithdraw,
+  decideRetract,
+  decideGovernToPersonal,
   parseSharedSourceRef,
   canManageSharedSource,
   type SetPrivacyInput,
   type ApplyActInput,
   type WithdrawInput,
+  type RetractInput,
+  type GovernToPersonalInput,
 } from '@/lib/krugDecisions';
 
 // Bazni "happy path" objekti koje testovi mutiraju samo u relevantnim poljima.
