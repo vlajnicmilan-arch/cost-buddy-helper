@@ -16,6 +16,7 @@ import { FeedbackInboxTab } from '@/components/admin/FeedbackInboxTab';
 import { StatsTab } from '@/components/admin/StatsTab';
 import { UsersTab } from '@/components/admin/UsersTab';
 import { AccessTab } from '@/components/admin/AccessTab';
+import type { DrilldownIntent } from '@/components/admin/access/ModuleAccessOverview';
 import { ReportsTab } from '@/components/admin/ReportsTab';
 import { NotifyTab } from '@/components/admin/NotifyTab';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
