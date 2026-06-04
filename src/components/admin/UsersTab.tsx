@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck,
-  ShieldCheck, ShieldOff, Search, X,
+  ShieldCheck, ShieldOff, Search, X, Filter,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -14,7 +14,13 @@ import { UserAccessBadges } from './users/UserAccessBadges';
 import { EffectiveAccessSummary } from './users/EffectiveAccessSummary';
 import { UserBillingSection } from './users/UserBillingSection';
 import { UserModuleOverrideSection } from './users/UserModuleOverrideSection';
-import { deriveEffectiveAccess, type ActiveGrantLike } from '@/lib/adminAccess';
+import {
+  deriveEffectiveAccess,
+  isGrantExpiringSoon,
+  getEarliestUpcomingExpiry,
+  type ActiveGrantLike,
+} from '@/lib/adminAccess';
+import type { DrilldownIntent } from './access/ModuleAccessOverview';
 import { type AppUser, parseUserAgent, parseDetailedUA, isBanned } from './types';
 
 type FilterKey =
@@ -24,6 +30,7 @@ type FilterKey =
   | 'hasProjects'
   | 'hasBusiness'
   | 'overrideActive'
+  | 'expiringOverride'
   | 'coreOnly';
 
 interface UsersTabProps {
@@ -41,6 +48,9 @@ interface UsersTabProps {
   onRefresh: () => void;
   onLoadMore: () => void;
   onManageUser: (action: string, userId: string, role?: string) => void;
+  /** Drill-down kontekst iz ModuleAccessOverview. Konzumira se jednom. */
+  pendingUserContext?: DrilldownIntent | null;
+  onContextConsumed?: () => void;
 }
 
 export const UsersTab = ({
@@ -58,11 +68,30 @@ export const UsersTab = ({
   onRefresh,
   onLoadMore,
   onManageUser,
+  pendingUserContext = null,
+  onContextConsumed,
 }: UsersTabProps) => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilterRaw] = useState<FilterKey>('all');
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
+  const [activeContext, setActiveContext] = useState<DrilldownIntent | null>(null);
+
+  // Wrapper: ručna promjena filtera briše drill-down kontekst.
+  const setFilter = useCallback((k: FilterKey) => {
+    setActiveContext(null);
+    setFilterRaw(k);
+  }, []);
+
+  // Konzumiranje pendingUserContext: postavi activeContext + mapiraj filter
+  useEffect(() => {
+    if (!pendingUserContext) return;
+    setActiveContext(pendingUserContext);
+    setFilterRaw(
+      pendingUserContext.module === 'projects' ? 'hasProjects' : 'hasBusiness'
+    );
+    onContextConsumed?.();
+  }, [pendingUserContext, onContextConsumed]);
 
   const loadGrants = useCallback(async () => {
     const nowIso = new Date().toISOString();
@@ -85,31 +114,38 @@ export const UsersTab = ({
     loadGrants();
   }, [loadGrants]);
 
+  const now = useMemo(() => new Date(), [grants]);
+
   // Grantovi koji ističu < 7 dana (za ⏳ akcent na badgeu)
   const expiringSoonGrants = useMemo(() => {
-    const cutoff = Date.now() + 7 * 86400_000;
     return grants
-      .filter((g) => g.expires_at && new Date(g.expires_at).getTime() < cutoff)
+      .filter((g) => isGrantExpiringSoon(g, now))
       .map((g) => ({ user_id: g.user_id, module: g.module as 'projects' | 'business' }));
-  }, [grants]);
+  }, [grants, now]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return users.filter((u) => {
+    const matched = users.filter((u) => {
       if (q) {
         const haystack = `${u.display_name || ''} ${u.email || ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       if (filter === 'admin') return u.roles.includes('admin');
       if (filter === 'banned') return isBanned(u);
-      if (filter === 'hasProjects') {
-        return deriveEffectiveAccess(u.id, subscriptions[u.id], grants).projects.has;
-      }
-      if (filter === 'hasBusiness') {
-        return deriveEffectiveAccess(u.id, subscriptions[u.id], grants).business.has;
+      if (filter === 'hasProjects' || filter === 'hasBusiness') {
+        const a = deriveEffectiveAccess(u.id, subscriptions[u.id], grants);
+        const mod = filter === 'hasProjects' ? a.projects : a.business;
+        if (!mod.has) return false;
+        // Sub-filter iz drill-down konteksta
+        if (activeContext?.source === 'billing' && !mod.sources.includes('billing')) return false;
+        if (activeContext?.source === 'override' && !mod.sources.includes('override')) return false;
+        return true;
       }
       if (filter === 'overrideActive') {
         return grants.some((g) => g.user_id === u.id);
+      }
+      if (filter === 'expiringOverride') {
+        return grants.some((g) => g.user_id === u.id && isGrantExpiringSoon(g, now));
       }
       if (filter === 'coreOnly') {
         const a = deriveEffectiveAccess(u.id, subscriptions[u.id], grants);
@@ -117,7 +153,17 @@ export const UsersTab = ({
       }
       return true;
     });
-  }, [users, search, filter, subscriptions, grants]);
+
+    // Sort: kad je expiring chip aktivan → po min(expires_at) ASC
+    if (filter === 'expiringOverride') {
+      return [...matched].sort((a, b) => {
+        const ea = getEarliestUpcomingExpiry(grants, a.id, now)?.getTime() ?? Infinity;
+        const eb = getEarliestUpcomingExpiry(grants, b.id, now)?.getTime() ?? Infinity;
+        return ea - eb;
+      });
+    }
+    return matched;
+  }, [users, search, filter, subscriptions, grants, activeContext, now]);
 
   const filterChips: { key: FilterKey; label: string }[] = [
     { key: 'all', label: t('admin.users.filter.all', 'Svi') },
@@ -126,8 +172,21 @@ export const UsersTab = ({
     { key: 'hasProjects', label: t('admin.users.filter.hasProjects', 'Ima Projects') },
     { key: 'hasBusiness', label: t('admin.users.filter.hasBusiness', 'Ima Business') },
     { key: 'overrideActive', label: t('admin.users.filter.overrideActive', 'Override aktivan') },
+    { key: 'expiringOverride', label: t('admin.users.filter.expiringOverride', 'Override ističe < 7d') },
     { key: 'coreOnly', label: t('admin.users.filter.coreOnly', 'Samo Core') },
   ];
+
+  const activeContextLabel = (() => {
+    if (!activeContext) return null;
+    const { module, source } = activeContext;
+    const key =
+      module === 'projects'
+        ? source === 'billing' ? 'projectsBilling' : source === 'override' ? 'projectsOverride' : 'projects'
+        : source === 'billing' ? 'businessBilling' : source === 'override' ? 'businessOverride' : 'business';
+    return t(`admin.users.activeContext.${key}`);
+  })();
+
+
 
   return (
     <div className="space-y-3 mt-4">
