@@ -1,236 +1,280 @@
 
-# Krug RLS Implementation Plan v1.1
+# Krug Endpoint Contract Plan v1.1
 
-Block E dokument. Prevodi sve već zaključane Block A–D ugovore (Schema v1.3, Visibility v1.1, Mutation Path v1.1, Approval Enforcement v1.1, API/Service Boundary v1.1) u konkretan RLS dizajn nad redom `expenses` kad je `krug_id IS NOT NULL`.
+Block F dokument. Definira konkretni skup klijent ↔ server endpointa koji implementiraju **API/Service Boundary v1.1** iznad **RLS Implementation v1.1** sloja, za sve Krug akte A1–A7 nad `expenses` redovima gdje `krug_id IS NOT NULL`.
 
-Bez SQL koda, bez RPC potpisa, bez naziva policy-a, bez migracija.
+Bez SQL-a, bez RPC potpisa, bez HTTP path stringova, bez TypeScript tipova, bez UI komponenti, bez naziva edge funkcija.
 
 **Promjene v1.0 → v1.1 (samo usklađenja, bez novih ideja):**
-- A3 ispravno mapiran: `potvrđena → nepotvrđena` (opoziv potvrde), ne `potvrđena → predložena`
-- A5 prebačen iz governance/RGA kanala u author kanal (`A5 = nepotvrđena → predložena`, akter = autor s pravom pokretanja shared toka)
-- Razdvojena dva autorizacijska modela za UPDATE: governance/RGA akti (A1, A2, A3, A7) vs author akti (A4, A5)
-- Race-uvjeti usklađeni s novom A3 semantikom
+- **E4 (A4 povlačenje) više nije autoriziran samo s H5.** Traži se **H5 ∧ H2** — author koji je istovremeno owner ili full member Kruga ("author s pravom pokretanja shared toka"), isti uvjet kao za E5. Ordinary član ne smije A4 ni nad vlastitim shared retkom.
+- §4.2 redoslijed provjera i §5.2 specifikacija E4 eksplicitno razdvajaju "obični autor" od "autor s pravom pokretanja shared toka"; nova klasa ishoda `not_full_member` vrijedi i za E4.
+- Tablice §3.2, §8 i zaključak ne ostavljaju dojam da svaki autor može A4 nad shared retkom.
 
 ---
 
 ## §1. Scope
 
 Pokriva:
-- RLS nad `expenses` za retke gdje `krug_id IS NOT NULL`
-- 4 RLS kanala: SELECT, INSERT, UPDATE, DELETE
-- Mapiranje A1–A7 na te kanale
-- Security-definer helpere koje RLS smije zvati (samo nabrojati funkciju, ne implementaciju)
-- Granicu prema retcima gdje `krug_id IS NULL` (ne diramo postojeće non-Krug policy-e)
+- Klasifikaciju i broj endpointa (read vs write)
+- Mapiranje A1–A7 na endpointe (1 akt = 1 endpoint, atomski, per-row)
+- Ugovor svakog endpointa: ulaz, izlaz, pre-uvjeti, post-uvjeti, klase grešaka
+- Tko provjerava što (klijent vs server vs RLS), bez dupliciranja s drugim slojevima
+- Granicu prema A6 system putu i prema ne-Krug retcima
 
 Ne pokriva:
-- SQL, naziv policy-a, naziv funkcija, signature
-- RLS nad bilo kojom drugom tablicom osim `expenses`
-- Krug-level tablice (članstvo, presets) — pretpostavljamo da već postoje i da imaju svoj RLS
-- A6 (48h expiry) kao izvor pisanja — to ide kroz system role, ne kroz klijent RLS
-- Bulk/admin override putove
-- Notifikacije, audit log, UI
+- SQL/RPC implementaciju, HTTP route stringove, transport (REST/RPC/edge), serijalizaciju
+- UI, notifikacije, audit, rate-limit konfiguraciju
+- Schema/Visibility/Mutation/Approval/RLS dizajn — to je već zaključano u Block A–E
+- Bulk operacije i admin override
 
 ---
 
 ## §2. Principi
 
-1. **RLS je drugi sloj obrane**, ne primarni. Primarni je server-side logika iza endpointa iz API Boundary v1.1.
-2. **RLS mora biti suglasna s Approval v1.1 i Mutation v1.1.** Ako endpoint dopušta akt, RLS ga ne smije blokirati. Ako endpoint zabranjuje akt, RLS ga mora odbiti i kad endpoint zakaže.
-3. **RLS ne smije sama izvoditi semantičke akte.** Ne mijenja `krug_shared_status`, `krug_privacy`, ne briše, ne potvrđuje. Samo dopušta/odbija ono što je client/endpoint pokušao.
-4. **RGA i scope-of-affected se izvode kroz security-definer helpere**, ne kroz inline JOIN u policy-u.
-5. **`auth.uid()` je jedini identitet aktera u RLS-u.**
-6. **RLS ne razlikuje akte A1–A7 po imenu.** Razlikuje ih po (kanal, prethodno stanje retka, novo stanje retka, akter).
-7. **Dva odvojena autorizacijska modela za UPDATE** (novo u v1.1):
-   - **governance/RGA model** — za A1, A2, A3, A7 (akter mora biti RGA za taj redak)
-   - **author model** — za A4, A5 i edit vlastitog prijedloga (akter mora biti autor, dodatno za A5: autor s pravom pokretanja shared toka = owner ili full član Kruga koji je ujedno autor)
-
-   Ova dva modela se NE smiju brkati niti dijeliti isti helper.
+1. **1 akt = 1 endpoint.** A1, A2, A3, A4, A5, A7 svaki ima vlastiti namjenski write-endpoint. A6 nema klijentski endpoint (system path, vidi §6).
+2. **Per-row atomicity.** Svaki write-endpoint djeluje na točno jedan `expenses` redak po pozivu. Nema bulk varijante u v1.
+3. **Server je jedini izvor istine.** Endpoint izvodi RGA, scope-of-affected, "autor s pravom pokretanja shared toka" i tranzicijsku provjeru server-side. RLS je drugi pojas, ne primarni gate.
+4. **Klijent ne smije pre-računavati autorizaciju kao final answer.** Smije samo gate-ati UI prema vlastitoj projekciji vidljivosti; konačni verdikt daje endpoint.
+5. **Idempotentnost = no-op + jasna klasa ishoda.** Ako je akt već primijenjen (npr. A1 nad već `potvrđena`), endpoint ne radi pisanje i vraća deterministički ishod (vidi §4.3).
+6. **Tri autorizacijska kostura iz Approval v1.1 + RLS v1.1:**
+   - **governance/RGA** kostur → E1, E2, E3, E7 (H4 + H3)
+   - **shared-flow author** kostur → **E4, E5** (H4 + H5 + H2) — autor koji je owner/full član Kruga; A4 i A5 dijele isti autorizacijski test
+   - **plain author** kostur → samo E-edit (H4 + H5); pokriva edit ne-tranzicijskih polja vlastitog `predložena` retka
+7. **Read i write su strogo razdvojeni.** Read-endpointi nikad ne mijenjaju stanje, nikad ne troše governance kvotu.
 
 ---
 
-## §3. Security-definer helperi (samo popis)
+## §3. Klasifikacija endpointa
 
-RLS smije pozvati isključivo ove funkcije. Svaka mora biti `SECURITY DEFINER`, deterministička za isti input, ne smije sama mijenjati podatke, `SET search_path = public`.
+### §3.1 Read endpointi
 
-| Helper | Vraća | Koristi se u | Izvor istine za |
+Jedan endpoint za listanje/dohvat `expenses` redova vidljivih korisniku, prema Visibility v1.1. Već postoji kao dio općeg dohvata (`expenses` SELECT preko RLS). Ovaj plan ne uvodi novi read-endpoint specifičan za Krug — vidljivost je svojstvo zajedničkog SELECT-a.
+
+Read se NIKAD ne troši kao governance ili shared-flow akt. Read ne implicira RGA niti pravo pokretanja shared toka.
+
+### §3.2 Write endpointi
+
+Točno **6 namjenskih write-endpointa** za Krug akte:
+
+| Endpoint | Akt | Autorizacijski kostur | Tranzicija |
 |---|---|---|---|
-| H1. `is_krug_member(krug_id, user_id)` | bool | SELECT, INSERT | Bilo kakvo članstvo (ordinary, full, owner) |
-| H2. `is_krug_full_or_owner(krug_id, user_id)` | bool | UPDATE (A5 author kanal) | Owner/full membership; nužan uvjet za pokretanje shared toka, koristi se ISKLJUČIVO unutar author modela za A5 |
-| H3. `is_rga_for_row(expense_row, user_id)` | bool | UPDATE (governance kanal: A1, A2, A3, A7) | RGA = owner/full member ∧ financijski pogođen za taj konkretni redak |
-| H4. `krug_row_is_visible(expense_row, user_id)` | bool | SELECT, USING preduvjet za UPDATE i DELETE | Visibility v1.1 (private/personal/shared/ordinary-redacted) |
-| H5. `is_row_author(expense_row, user_id)` | bool | UPDATE (author kanal: A4, A5, field-edit), DELETE | `auth.uid() = OLD.user_id` |
+| E1 | A1 potvrda | governance/RGA (H4 + H3) | `shared`/`predložena` → `shared`/`potvrđena` |
+| E2 | A2 veto | governance/RGA (H4 + H3) | `shared`/`predložena` → `shared`/`nepotvrđena` |
+| E3 | A3 opoziv potvrde | governance/RGA (H4 + H3) | `shared`/`potvrđena` → `shared`/`nepotvrđena` |
+| **E4** | **A4 povlačenje** | **shared-flow author (H4 + H5 + H2)** | DELETE retka (uvjetovano statusom) |
+| E5 | A5 ponovno pokretanje | shared-flow author (H4 + H5 + H2) | `shared`/`nepotvrđena` → `shared`/`predložena` |
+| E7 | A7 governance → personal | governance/RGA (H4 + H3) | `shared`/* → `personal`/NULL |
 
-Napomena: H2 i H3 NISU zamjenjivi. H3 strožiji je (RGA = full/owner + scope-of-affected). H2 je slabiji i koristi se samo u A5 author kanalu kao dodatni filter "autor s pravom pokretanja shared toka".
+A6 (48h expiry) NIJE klijentski endpoint — system path (§6).
 
-RLS ne smije zvati ništa drugo iz aplikativnog sloja. Ne smije čitati `expenses` rekurzivno.
+E4 i E5 koriste **isti** autorizacijski test (H5 ∧ H2). Razlika je samo u operaciji i tranzicijskom preduvjetu. Ordinary član NIKAD ne smije pokrenuti A4, čak ni nad vlastitim shared retkom (npr. historijski/migracijski edge-case kad je redak nastao prije nego što je član sveden na ordinary).
+
+Generički "patch redak" endpoint je **zabranjen** za sva polja koja sudjeluju u Krug tranziciji (`krug_privacy`, `krug_shared_status`, `krug_id`). Field-edit ne-tranzicijskih polja na vlastitom `predložena` retku pokriva zaseban plain-author endpoint **E-edit** (§5.3).
 
 ---
 
-## §4. RLS kanali
+## §4. Zajednički ugovor svakog write-endpointa
 
-### §4.1 SELECT
+### §4.1 Ulaz (semantički)
 
-Dopušteno akko `H4(redak, auth.uid())` vraća true.
+Svaki write-endpoint prima točno:
+- identitet aktera (iz auth sloja, ne iz tijela zahtjeva)
+- identifikator ciljnog retka (jedan)
+- opcionalni idempotency marker (string koji klijent generira; server ga može koristiti za dedup, vidi §4.4)
 
-H4 unutar sebe pokriva sva 4 slučaja iz Visibility v1.1. Column-level redakcija za ordinary članove nije RLS odgovornost u ovom planu.
+Endpoint NE prima:
+- novo stanje (`status`, `privacy`) — to je implicitno iz tipa akta
+- listu redaka
+- ime akta kao parametar (svaki endpoint je već vezan za točno jedan akt)
 
-### §4.2 INSERT
+E-edit (§5.3) dodatno prima patch ne-tranzicijskih polja.
 
-Dopušteno akko:
-- `auth.uid() = NEW.user_id`
-- ako `NEW.krug_id IS NOT NULL`: `H1(NEW.krug_id, auth.uid())`
-- ako `NEW.krug_privacy = 'shared'`: `NEW.krug_shared_status = 'predložena'`
-- ako `NEW.krug_privacy ∈ {'private','personal'}`: `NEW.krug_shared_status IS NULL`
+### §4.2 Server provjere (redoslijed)
 
-INSERT ne pokriva nijedan od akata A1–A7.
+Svaki write-endpoint mora izvesti, atomski, ovim redoslijedom:
 
-### §4.3 UPDATE
+1. **Autentikacija** — `auth.uid()` postoji; inače `unauthenticated`.
+2. **Postojanje retka** — redak postoji i nije soft-deleted; inače `not_found`.
+3. **Vidljivost (H4)** — Visibility v1.1; inače `not_found` (ne otkrivati postojanje).
+4. **Autorizacija po kosturu akta:**
+   - **governance endpointi (E1, E2, E3, E7):** RGA za taj redak (H3). Ako je samo full/owner ali nije scope-of-affected → `not_in_scope`. Ako nije ni full/owner → `not_authorized_member`.
+   - **shared-flow author endpointi (E4, E5):** dva uvjeta, oba obavezna, provjeravaju se ovim redoslijedom:
+     - 4a. **autor retka (H5)** — inače `not_author`
+     - 4b. **owner ili full član Kruga (H2)** — inače `not_full_member`
+     Ordinary autor (H5 prolazi, H2 pada) NE smije A4 niti A5. Ovo je eksplicitno: "autor s pravom pokretanja shared toka".
+   - **plain author endpoint (E-edit):** autor retka (H5). Inače `not_author`. H2 se NE provjerava (edit ne-tranzicijskih polja ne zahtijeva pravo pokretanja shared toka).
+5. **Tranzicijski preduvjet** — OLD stanje retka odgovara tranziciji koju akt pokriva (vidi tablicu §3.2). Inače `wrong_state`.
+6. **Schema invarijante v1.3** — provjeriti da NEW ne krši `krug_shared_status IS NULL ⇔ krug_privacy ∈ {private, personal}`. Inače `invariant_violation` (internal; ne smije se dogoditi za pravilno dizajniran endpoint).
+7. **Pisanje** — jedan UPDATE/DELETE, unutar transakcije, oslanjajući se na RLS kao drugi pojas. Ako RLS odbije unatoč svemu, mapirati u odgovarajuću grešku.
 
-UPDATE policy je strukturalno podijeljen u **dva odvojena autorizacijska modela**. Implementacija može biti jedan policy s OR granom ili dva odvojena permisivna policy-a — semantika je ista.
+Koraci 4–7 moraju biti u istoj transakciji; nikakvo dvofazno čitanje + pisanje izvan transakcije.
 
-**Zajednički USING preduvjet (oba modela):**
-- `H4(OLD, auth.uid())` — bez vidljivosti nema UPDATE-a
+### §4.3 Izlaz (semantičke klase ishoda)
 
-#### §4.3.A Governance / RGA model — pokriva A1, A2, A3, A7
+Svaki write-endpoint vraća jedan od sljedećih ishoda. Točan transport (HTTP status, polje s kodom) ostavljen sljedećem dokumentu, ali skup klasa je fiksiran:
 
-USING dodatno:
-- `H3(OLD, auth.uid())` — akter je RGA za taj redak
+- **applied** — akt je upravo izvršen, redak je u novom stanju.
+- **noop_already_in_target_state** — redak je već u ciljnom stanju (npr. A1 nad `potvrđena`, A2 nad `nepotvrđena`). Server ne piše. Ovo nije greška.
+- **noop_idempotent_replay** — identičan zahtjev s istim idempotency markerom je već primijenjen (vidi §4.4). Vraća isti ishod kao izvorni.
+- **wrong_state** — redak je u stanju iz kojeg ovaj akt nije moguć (npr. A1 nad `nepotvrđena`, A5 nad `potvrđena`).
+- **not_found** — redak ne postoji ili nije vidljiv akteru.
+- **not_authorized_member** — akter nema potrebnu razinu članstva (governance: nije full/owner ali jest u Krugu).
+- **not_in_scope** — akter je full/owner ali nije financijski pogođen za taj redak (samo governance endpointi).
+- **not_author** — akter nije autor retka (shared-flow author i plain author endpointi).
+- **not_full_member** — akter je autor retka ali nije owner/full član Kruga; ne smije pokrenuti A4 ni A5 (vrijedi za **E4 i E5**).
+- **unauthenticated** — nema `auth.uid()`.
+- **invariant_violation** — interna greška Schema v1.3; ne smije se dogoditi pri ispravnoj implementaciji.
+- **conflict_concurrent** — RLS/transakcija odbila zbog konkurentne promjene OLD stanja između čitanja i pisanja; klijent može refetchati i pokušati ponovo.
 
-WITH CHECK matrica:
+Razlikovanje `not_authorized_member` vs `not_in_scope` (governance) i `not_author` vs `not_full_member` (shared-flow author) zahtjev je API Boundary v1.1 (§4.3.3) i mora se sačuvati u kontraktu endpointa, ne samo u logu. RLS samo emitira generičku 42501 — endpoint je taj koji razdvaja na temelju vlastite eksplicitne provjere u koraku §4.2.4.
 
-| Prethodno (OLD) | Novo (NEW) | Akt |
-|---|---|---|
-| `shared` / `predložena` | `shared` / `potvrđena` | A1 (potvrda) |
-| `shared` / `predložena` | `shared` / `nepotvrđena` | A2 (veto) |
-| `shared` / `potvrđena` | `shared` / `nepotvrđena` | **A3 (opoziv potvrde)** |
-| `shared` / bilo koji | `personal` / NULL | A7 (governance → personal) |
+### §4.4 Idempotentnost
 
-Sve ostale tranzicije pod ovim modelom: banned.
+Svaki write-endpoint je **idempotentan po prirodi akta** zbog `noop_already_in_target_state` ishoda (npr. A1 nad već potvrđenim retkom ne radi ništa).
 
-#### §4.3.B Author model — pokriva A5 i edit vlastitog prijedloga (te A0 ako je u Mutation v1.1)
+Dodatno, klijent može poslati idempotency marker. Server smije, ali ne mora, držati kratkoročni dedup po (akter, redak, akt, marker) i vratiti **noop_idempotent_replay** za ponovne pokušaje. Trajanje i implementacija dedup-a su operativna stvar sljedećeg dokumenta; ovaj ugovor samo definira da klasa ishoda postoji.
 
-USING dodatno:
-- `H5(OLD, auth.uid())` — akter je autor retka
+Ovo NE zamjenjuje A6 (vremenski timeout prijedloga 48h) niti rate-limit za A5 — to su zasebni mehanizmi.
 
-WITH CHECK matrica:
+### §4.5 Što endpoint NE radi
 
-| Prethodno (OLD) | Novo (NEW) | Akt | Dodatni uvjet |
+Eksplicitno izvan ugovora:
+- ne šalje notifikacije (zasebni sloj, već postoji)
+- ne piše audit log (zasebni sloj)
+- ne provjerava A6 48h prozor (system path, §6)
+- ne provjerava rate-limit za A5 (operativna stvar, izvan ovog ugovora)
+- ne radi cascade na druge tablice
+- ne mijenja `krug_id` retka
+
+---
+
+## §5. Specifikacije po endpointu
+
+### §5.1 Governance endpointi (E1, E2, E3, E7)
+
+Svi koriste **istovjetan kostur** iz §4.2 (governance grana). Razlika je samo u tranzicijskoj matrici i tome je li OLD `predložena` (E1, E2), `potvrđena` (E3) ili bilo koji `shared` (E7 — `predložena`, `potvrđena` i `nepotvrđena` sva tri su valjana OLD za prijelaz na `personal`).
+
+Specifični `noop_already_in_target_state` slučajevi:
+- E1: redak već `shared`/`potvrđena`
+- E2: redak već `shared`/`nepotvrđena` (bez obzira na razlog — A2 ili A6)
+- E3: redak već `shared`/`nepotvrđena`
+- E7: redak već `personal`/NULL
+
+`wrong_state` slučajevi (primjeri):
+- E1 nad `shared`/`nepotvrđena` → `wrong_state` (ne `noop`; A1 traži `predložena`)
+- E3 nad `shared`/`predložena` → `wrong_state` (A3 nije za predloženi redak)
+- E5 nikad nije isti endpoint kao E3 — to je striktno razdvojeno iz Approval v1.1 i RLS v1.1
+
+Svi koriste **RGA autorizaciju** (full/owner + scope-of-affected). Razdvajanje `not_authorized_member` vs `not_in_scope` obavezno.
+
+### §5.2 Shared-flow author endpointi (E4, E5)
+
+E4 i E5 koriste **isti autorizacijski test**: H5 ∧ H2. Razlika je samo u operaciji i tranzicijskom preduvjetu. Ova simetrija je posljedica zaključanog pravila: A4 i A5 oba pripadaju shared toku i smije ih pokrenuti samo "author s pravom pokretanja shared toka" = autor + owner/full član.
+
+**E4 (A4 povlačenje):**
+- Operacija: DELETE retka
+- Autorizacija (redoslijed):
+  - 4a. autor retka (H5) — inače `not_author`
+  - 4b. owner ili full član Kruga (H2) — inače **`not_full_member`**
+- Tranzicijski preduvjet: `krug_shared_status ∈ {NULL, 'predložena', 'nepotvrđena'}`
+- Banned: DELETE nad `shared`/`potvrđena` → `wrong_state`
+- Banned: ordinary autor (H5 prolazi, H2 pada) → **`not_full_member`**, čak i nad vlastitim shared retkom u historijskom/migracijskom edge-caseu kad je redak nastao dok je autor još imao full status, a u međuvremenu je sveden na ordinary
+- `noop_already_in_target_state` ovdje znači: redak je već nestao (autor ga je već povukao u drugom pokušaju) → vraća se isti ishod ako je idempotency marker prisutan i poznat, inače `not_found`
+
+**E5 (A5 ponovno pokretanje):**
+- Tranzicija: `shared`/`nepotvrđena` → `shared`/`predložena`
+- Autorizacija: identično kao E4 (H5 ∧ H2)
+- Ishodi:
+  - autor koji NIJE owner/full → `not_full_member`
+  - autor je owner/full ali redak je `shared`/`predložena` → `noop_already_in_target_state`
+  - autor je owner/full ali redak je `shared`/`potvrđena` → `wrong_state`
+- A5 ne pokreće 48h timer ovdje kao stvar endpointa — taj timer je posljedica činjenice da je redak ponovno u `predložena` stanju i automatski ga pokupi A6 system path (§6)
+
+### §5.3 Plain-author endpoint (E-edit)
+
+Pokriva edit ne-tranzicijskih polja vlastitog prijedloga (npr. opis, kategorija, iznos — preciznu listu polja definira Mutation v1.1 i Schema v1.3; ovdje samo pravilo).
+
+- Autorizacija: H5 (autor). **H2 se NE provjerava** — edit ne-tranzicijskih polja vlastitog `predložena` retka nije pokretanje shared toka, već nastavak već pokrenutog toka.
+- Tranzicijski preduvjet: `krug_shared_status = 'predložena'` (nije moguć edit nakon ijedne potvrde)
+- Banned polja: `krug_privacy`, `krug_shared_status`, `krug_id`, `user_id`
+- Ishodi: `applied` / `wrong_state` (npr. redak je već `potvrđena`/`nepotvrđena`) / `not_author` / `not_found` / `unauthenticated`. **Ne emitira `not_full_member`** jer ne traži H2.
+- Ovaj endpoint NIJE governance — `not_in_scope` nije moguć ishod
+- Dvije konkurentne izmjene (autor + RGA potvrda) razrješavaju se identično kao u RLS race-uvjetima (§7 RLS plana): tko prvi commita pobjeđuje, drugi dobiva `wrong_state` ili `conflict_concurrent`
+
+Napomena o asimetriji E-edit vs E4: edit polja postojećeg `predložena` retka ne mijenja status i ne briše redak — autor koji je pao u ordinary može i dalje doraditi opis svog vlastitog otvorenog prijedloga, ali ne smije ga povući (E4) niti reaktivirati (E5). Tu liniju vuče Approval v1.1 i ovaj ugovor je ne mijenja.
+
+### §5.4 Što NE postoji u v1
+
+- bulk endpoint nad više redaka odjednom
+- "smart" endpoint koji sam odlučuje koji akt izvesti na temelju OLD/NEW
+- generički PATCH koji bi mogao izvesti tranziciju
+- klijentski endpoint za A6
+- endpoint koji bi spojio E4+E5 ili E3+E5
+- endpoint koji bi omogućio RGA-i da direktno izvrši A5 nad tuđim prijedlogom (eksplicitno isključeno modelom v1.1)
+- endpoint koji bi omogućio ordinary autoru A4 nad vlastitim shared retkom (eksplicitno isključeno v1.1)
+
+---
+
+## §6. A6 (48h expiry) — system path
+
+A6 je sistemski akt, ne klijentski. Ugovor:
+
+- Klijentski sloj nema endpoint koji izvodi A6.
+- System worker (cron/scheduler/edge — implementacija ostavljena sljedećem dokumentu) periodički sken redaka u `shared`/`predložena` čiji je prijedlog stariji od 48h, i izvodi prijelaz u `shared`/`nepotvrđena` kroz service-role pisanje koje zaobilazi RLS.
+- System worker ne smije proći kroz E2. E2 je klijentski endpoint s RGA provjerom; A6 nema RGA aktera.
+- Korisnik je još uvijek vidljiv kao "prijedlog je istekao" jer redak ostaje u `shared`/`nepotvrđena` — autor (ako je owner/full) može pokrenuti E5 (A5) i vratiti ga u `predložena`. Ordinary autor ne može.
+
+Iz perspektive ostalih endpointa, A6 izgleda kao "netko je u međuvremenu promijenio OLD stanje" i tretira se kao `noop_already_in_target_state` (za E2 — ishod je isti) ili `wrong_state` (za E1, E3 — preduvjet više ne vrijedi).
+
+---
+
+## §7. Ne-Krug retci (`krug_id IS NULL`)
+
+Svi endpointi iz §3.2 i §5.3 strogo odbijaju ako `OLD.krug_id IS NULL`. To je `wrong_state` (akt nije primjenjiv na ne-Krug redak), ne `not_found`.
+
+Edit ne-Krug retka ide kroz **postojeći generički expense endpoint koji ovaj plan ne dira**. Granica se osigurava strogim filtriranjem `krug_id IS NOT NULL` u koraku §4.2.2.
+
+---
+
+## §8. Tablica: tko što provjerava
+
+| Provjera | Klijent | Endpoint (server) | RLS (drugi pojas) |
 |---|---|---|---|
-| `shared` / `nepotvrđena` | `shared` / `predložena` | **A5 (ponovno pokretanje)** | `H2(OLD.krug_id, auth.uid())` — autor mora biti owner/full član (autor s pravom pokretanja shared toka) |
-| `private` / NULL | `shared` / `predložena` | A0 (ako Mutation v1.1 dopušta) | `H2(OLD.krug_id, auth.uid())` |
-| `shared` / `predložena` | `private` / NULL | povrat u private prije ikakve potvrde (ako Mutation v1.1 dopušta) | — |
-| field-edit bez promjene `krug_privacy` / `krug_shared_status` | — | edit vlastitog prijedloga | samo dok je `OLD.krug_shared_status = 'predložena'` i bez ijedne zabilježene potvrde |
-
-Sve ostale tranzicije pod ovim modelom: banned.
-
-#### §4.3.C Zajedničke zabrane (oba modela)
-
-WITH CHECK mora odbiti:
-- Schema v1.3 invariantu krši: `krug_shared_status IS NULL ⇔ krug_privacy ∈ {private, personal}` — bilo koji NEW koji to krši
-- Promjena `krug_id` (nijedan A1–A7 to ne radi)
-- `shared`/`potvrđena` → `shared`/`predložena` direkt (Mutation v1.1: ne postoji takav prijelaz; reopen potvrđene = A3 koji ide u `nepotvrđena`, ne u `predložena`)
-- Bilo koja tranzicija od strane aktera koji nije ni RGA (A1/A2/A3/A7) ni autor (A4/A5/edit) — npr. ordinary član bez RGA statusa
-- A6 prijelaz (`predložena → nepotvrđena` bez RGA + bez autora) — vidi §5
-
-### §4.4 DELETE
-
-Dopušteno akko:
-- `H4(OLD, auth.uid())`
-- `H5(OLD, auth.uid())` — autor djeluje na vlastiti redak
-- `OLD.krug_shared_status ∈ {NULL, 'predložena', 'nepotvrđena'}`
-
-Banned:
-- DELETE nad `shared` / `potvrđena`
-- DELETE od strane bilo koga tko nije autor
-
-Ovo je RLS odgovor na A4 (autor akt).
+| Vidljivost (H4) | UI gate | da | da (USING) |
+| Članstvo full/owner (H2) | UI gate | da (**E4, E5**) | da (E4, E5) |
+| RGA = full/owner + scope (H3) | NE (samo UI hint) | da (governance E1/E2/E3/E7) | da (governance kanal) |
+| Autor retka (H5) | UI gate | da (E4, E5, E-edit) | da (author kanal) |
+| OLD stanje za tranziciju | NE | da | da (WITH CHECK) |
+| Schema v1.3 invarijanta | NE | da | da (WITH CHECK) |
+| `not_authorized_member` vs `not_in_scope` (governance) | NE | da | NE (RLS daje generički 42501) |
+| `not_author` vs `not_full_member` (shared-flow author) | NE | da | NE (RLS daje generički 42501) |
+| Idempotency marker dedup | klijent generira | opcionalno | NE |
+| 48h timeout (A6) | NE | NE (klijentski endpointi) | NE (klijentski RLS) |
+| Rate-limit za A5 | NE | da (operativno, izvan ugovora) | NE |
+| Notifikacije, audit | NE | zasebni sloj | NE |
 
 ---
 
-## §5. A6 (48h expiry)
+## §9. Otvorena pitanja (operativna, ne mijenjaju ugovor)
 
-A6 nema klijentski put. Pisanje koje izvodi A6 (`predložena → nepotvrđena` nakon 48h) ide isključivo kroz system role (cron / scheduled job / service_role), ne kroz klijentski RLS.
-
-Klijentski RLS policy NE pokriva taj prijelaz:
-- Governance/RGA model (§4.3.A) ne sadrži `predložena → nepotvrđena` (taj prijelaz je A2 ili A6; A2 zahtijeva eksplicitni RGA akt iz endpointa; A6 ne smije biti klijentski mogu)
-- Konkretno: u §4.3.A `predložena → nepotvrđena` se ostvaruje samo kao A2; svaki UPDATE koji izvede tu tranziciju bez RGA aktera pada (jer USING traži H3)
-- Author model (§4.3.B) ne sadrži tu tranziciju uopće
-
-Rezultat: ako pokušaj dođe od `auth.uid()` koji nije RGA, RLS odbija; A6 može proći isključivo kroz service_role koji zaobilazi RLS.
+1. Transport: PostgREST RPC, edge function (Deno), ili kombinacija. Odluka ne mijenja semantiku endpointa.
+2. Konkretni HTTP statusi / kodovi za svaku klasu ishoda iz §4.3.
+3. TTL i pohrana za idempotency marker dedup.
+4. Rate-limit konfiguracija za E5 (broj pokušaja po retku po vremenu).
+5. Hoće li E1–E3 i E7 dijeliti istu serversku funkciju s parametrom akta (interna implementacija) ili biti potpuno odvojeni — ne utječe na ugovor, ali utječe na održavanje. Isto pitanje za E4 i E5 koji dijele autorizacijski test.
+6. Format identifikatora ciljnog retka (uuid vs composite) i mjesta gdje se može mapirati `not_found`.
 
 ---
 
-## §6. Mapiranje A1–A7 → RLS kanali (ispravljeno u v1.1)
+## §10. Zaključak
 
-| Akt | Kanal | Model | Tko (po RLS-u) | Što RLS provjerava |
-|---|---|---|---|---|
-| A1 potvrda | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`predložena`, NEW=`shared`/`potvrđena`, H3(OLD) |
-| A2 veto | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`predložena`, NEW=`shared`/`nepotvrđena`, H3(OLD) |
-| **A3 opoziv potvrde** | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`potvrđena`, **NEW=`shared`/`nepotvrđena`**, H3(OLD) |
-| A4 povlačenje | DELETE | author | autor | OLD.status ∈ {NULL, `predložena`, `nepotvrđena`}, H5 |
-| **A5 ponovno pokretanje** | UPDATE | §4.3.B author | **autor s pravom pokretanja shared toka** | OLD=`shared`/`nepotvrđena`, NEW=`shared`/`predložena`, H5 ∧ H2 |
-| A6 expiry | UPDATE (system) | NIJE klijentski | system role | NIJE pokriveno klijentskim policy-em |
-| A7 governance → personal | UPDATE | §4.3.A governance/RGA | RGA | OLD.privacy=`shared`, NEW.privacy=`personal` ∧ NEW.status=NULL, H3(OLD) |
+Ugovor pokriva sve klijentske operacije nad Krug retcima: 6 namjenskih write-endpointa (E1, E2, E3, E4, E5, E7) + 1 plain-author field-edit endpoint (E-edit), plus jedan system path (A6).
 
-Governance/RGA akti = A1, A2, A3, A7 → koriste H3.
-Author akti = A4, A5 → koriste H5 (A5 dodatno H2). Nikada ne koriste H3.
+Tri autorizacijska kostura su strogo razdvojena:
+- **governance/RGA** (E1, E2, E3, E7): full/owner + scope-of-affected
+- **shared-flow author** (**E4, E5**): autor + owner/full član Kruga; ordinary autor NE smije ni A4 ni A5
+- **plain author** (E-edit): autor; samo edit ne-tranzicijskih polja vlastitog `predložena` retka
 
-RLS nigdje ne smije pomiješati ova dva modela — npr. RGA koji nije autor NE smije izvesti A5; autor koji nije RGA NE smije izvesti A1/A2/A3/A7.
+Svaki write-endpoint je per-row, atomski, idempotentan na razini akta, vraća zatvoren skup semantičkih klasa ishoda (uključujući razdvojene `not_authorized_member` vs `not_in_scope` za governance i `not_author` vs `not_full_member` za shared-flow author).
 
----
-
-## §7. Race-uvjeti i RLS (ispravljeno u v1.1)
-
-RLS osigurava da svaki pojedinačni pokušaj zadovoljava pravila u trenutku evaluacije. Deduplikacija i serijalizacija akata su odgovornost endpoint sloja.
-
-- **Dvostruka potvrda (A1+A1) konkurentno:** obje pojedinačno prolaze RLS jer su obje validne nad `predložena`. Drugi commit vidi OLD=`potvrđena` i pada na WITH CHECK. Konzistentno.
-- **Veto+povlačenje (A2+A4) konkurentno:** A2 je governance UPDATE, A4 je author DELETE. Oba dopuštena nad `predložena`. Tko prvi commita pobjeđuje; drugi pada (UPDATE pada jer OLD više nije `predložena`, ili DELETE pada jer reda nema / status se promijenio).
-- **A3 vs nova A1 konkurentno (v1.1):** A1 traži OLD=`predložena`, A3 traži OLD=`potvrđena`. Sekvenca A1→A3 je validna (potvrda pa opoziv). Konkurentno: ako oboje pokušaju nad istim OLD, jedan ima pogrešan OLD i pada.
-- **A3 (opoziv potvrde) vs A5 konkurentno (v1.1):** A3 djeluje na `potvrđena`, A5 djeluje na `nepotvrđena`. Mogu se nadovezati u sekvenci A3→A5 (RGA opozove potvrdu, autor ponovno pokrene), ali nikad ne ciljaju isto OLD stanje pa nema race na razini OLD-a. Ako A3 prvi commita (`potvrđena → nepotvrđena`), naknadni A5 nad istim retkom je validan i prolazi (drugi akter, drugi model). Ako A5 pokuša prije A3, pada jer OLD nije `nepotvrđena`.
-- **Field-edit autora + A1 RGA konkurentno:** oba UPDATE-a; field-edit ide kroz author model, A1 kroz governance model; prvi commit postavlja novi OLD; drugi se evaluira protiv tog novog stanja. Ako RGA potvrdi prije autora, autorov field-edit pada jer status više nije `predložena`. Konzistentno.
-- **A6 vs ručni akt konkurentno:** A6 ide system rolom (zaobilazi RLS), ručni akt ide `auth.uid()`. Ako A6 prvi commita (`predložena → nepotvrđena`), ručni A1 pada jer OLD nije `predložena`; ručni A2 pada jer OLD nije `predložena`; ručni A5 (autor) može uslijediti i validno proći.
-- **A7 + A4 konkurentno:** A7 je governance UPDATE, A4 je author DELETE. Prvi commit pobjeđuje, drugi pada.
-- **A5 (autor) vs A5 (drugi pokušaj) konkurentno:** oba author kanal nad istim OLD=`nepotvrđena`; prvi commita vraća redak u `predložena`, drugi pada jer OLD više nije `nepotvrđena`. Rate-limit po (redak, autor) je endpoint odgovornost, ne RLS.
-
-Nijedan race ne zahtijeva da RLS uvodi advisory lock, SERIALIZABLE transakciju ili optimističku verziju.
-
----
-
-## §8. Ne-Krug retci (`krug_id IS NULL`)
-
-Ovaj plan ne dira postojeće policy-e za `krug_id IS NULL` retke. Implementacija mora osigurati da:
-- novi Krug-specifični UPDATE/DELETE policy se aktivira isključivo kad `OLD.krug_id IS NOT NULL`
-- postojeći non-Krug policy se aktivira isključivo kad `OLD.krug_id IS NULL`
-- nijedan redak nije ni pokriven s oba ni ostavljen bez ijednog
-
----
-
-## §9. Što RLS NE radi (eksplicitno)
-
-- ne briše redak nakon A4 automatski — to radi DELETE call iz endpointa
-- ne mijenja `krug_shared_status` sama
-- ne šalje notifikacije, ne piše audit log
-- ne provjerava rate-limit za A5 → endpoint odgovornost
-- ne provjerava 48h prozor za A6 → system role odgovornost
-- ne razlikuje "nevaljan zbog članstva" od "nevaljan zbog scope-of-affected" → vraća jednu RLS grešku (42501); razdvajanje je endpoint odgovornost
-- ne primjenjuje column-level redakciju za ordinary članove
-- **ne koristi isti helper za governance akte i author akte** (v1.1)
-
----
-
-## §10. Otvorena pitanja (operativna, ne mijenjaju ugovor)
-
-1. Hoće li helperi H1–H5 biti novi ili reuse postojećih funkcija.
-2. Restrictive vs permissive policy strategija za Krug retke.
-3. Kako system role izvodi A6 — pg_cron + service_role direktno, ili edge funkcija.
-4. Točan error code mapping (42501 vs custom RAISE) — endpoint odgovornost.
-5. Treba li dedicirani BEFORE UPDATE trigger za Schema v1.3 invariantu kao dodatni pojas.
-6. Hoće li governance i author model biti dva odvojena permisivna policy-a ili jedan policy s OR granom — implementacijska odluka koja ne mijenja semantiku.
-
----
-
-## §11. Zaključak
-
-RLS dizajn je potpun za sve A1–A7 putove + A6 system put + SELECT/INSERT/UPDATE/DELETE kanale, s ispravljenom A3 semantikom (opoziv potvrde) i ispravnim A5 autorizacijskim modelom (author kanal, ne governance), te jasnom podjelom na governance/RGA i author autorizacijski model.
-
-Sljedeći dokument (Block F): **`Krug Endpoint Contract Plan v1`** — konkretni endpointi (još bez SQL/RPC potpisa) koji implementiraju API Boundary v1.1 iznad ovog RLS sloja.
+Sljedeći dokument (Block G, prijedlog): **`Krug Transport & Error Mapping Plan v1`** — konkretni HTTP/RPC oblik i mapiranje klasa ishoda iz §4.3 u stvarne kodove i tijela odgovora, te dedup TTL za §4.4. Bez kontradikcije s ovim ugovorom.
