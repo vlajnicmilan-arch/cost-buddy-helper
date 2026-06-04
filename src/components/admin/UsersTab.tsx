@@ -120,7 +120,11 @@ export const UsersTab = ({
   const expiringSoonGrants = useMemo(() => {
     return grants
       .filter((g) => isGrantExpiringSoon(g, now))
-      .map((g) => ({ user_id: g.user_id, module: g.module as 'projects' | 'business' }));
+      .map((g) => ({
+        user_id: g.user_id,
+        module: g.module as 'projects' | 'business',
+        expires_at: g.expires_at as string,
+      }));
   }, [grants, now]);
 
   const filteredUsers = useMemo(() => {
