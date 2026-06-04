@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { GrantModule } from './useMyActiveModuleGrants';
+import type { GrantReasonCode } from '@/lib/adminAccess';
 
-export type GrantReasonCode =
-  | 'refund'
-  | 'beta_tester'
-  | 'internal'
-  | 'partner'
-  | 'support'
-  | 'other';
+// Re-export za backward compat — domain tip živi u src/lib/adminAccess.ts.
+export type { GrantReasonCode } from '@/lib/adminAccess';
 
 export type RevokeActor = 'admin' | 'system';
 
