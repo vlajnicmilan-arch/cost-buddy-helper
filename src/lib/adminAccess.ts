@@ -316,3 +316,58 @@ export function formatExpiryBadge(
   const days = Math.floor(hours / 24);
   return { i18nKey: 'admin.users.expiry.expiresInDays', params: { count: days } };
 }
+
+// ---------------------------------------------------------------------------
+// PR3: override reason breakdown (čisti override model, BEZ billing miješanja)
+// ---------------------------------------------------------------------------
+
+/** Normalizira null/undefined `reason_code` u `'other'`. */
+function normalizeReason(code: GrantReasonCode | null | undefined): GrantReasonCode {
+  return code ?? 'other';
+}
+
+/**
+ * Grupira AKTIVNE override grantove po `reason_code` unutar zadanog modula.
+ *
+ * Vraća SAMO razloge s count > 0 (zero reasoni se ne pojavljuju).
+ * Null/undefined `reason_code` mapira u `'other'`.
+ * Aktivan = `isGrantActive(g, now)`.
+ *
+ * Strogo per-modul: drugi moduli se ignoriraju, nema križanja.
+ * BEZ billing miješanja — billing tier ne ulazi u ovaj brojač.
+ */
+export function groupActiveGrantsByReason(
+  grants: ActiveGrantLike[],
+  module: GrantModule,
+  now: Date = new Date()
+): Partial<Record<GrantReasonCode, number>> {
+  const out: Partial<Record<GrantReasonCode, number>> = {};
+  for (const g of grants) {
+    if (g.module !== module) continue;
+    if (!isGrantActive(g, now)) continue;
+    const code = normalizeReason(g.reason_code);
+    out[code] = (out[code] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Vraća aktivne grantove za zadani `module` koji match-aju `reasonCode`.
+ *
+ * `module` je OBAVEZAN prvi diskriminator — nemoguće je pozvati filter
+ * koji bi miješao module ili spuznuo u billing-aware logiku.
+ * Null/undefined `reason_code` matchira `'other'`.
+ */
+export function filterGrantsByReason(
+  grants: ActiveGrantLike[],
+  module: GrantModule,
+  reasonCode: GrantReasonCode,
+  now: Date = new Date()
+): ActiveGrantLike[] {
+  return grants.filter(
+    (g) =>
+      g.module === module &&
+      isGrantActive(g, now) &&
+      normalizeReason(g.reason_code) === reasonCode
+  );
+}
