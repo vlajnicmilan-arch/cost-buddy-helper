@@ -4723,6 +4723,7 @@
     },
     "member": {
       "you": "ti",
+      "unknown": "Nepoznat član",
       "add": {
         "cta": "Dodaj člana",
         "title": "Dodaj člana",
