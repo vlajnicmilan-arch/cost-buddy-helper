@@ -5620,6 +5620,12 @@ export type Database = {
         Args: { _author: string; _krug: string; _viewer: string }
         Returns: boolean
       }
+      krug_cleanup_act_dedup: { Args: never; Returns: Json }
+      krug_expire_predlozena: { Args: never; Returns: Json }
+      krug_govern_to_personal: {
+        Args: { p_client_request_id: string; p_expense_id: string }
+        Returns: Json
+      }
       krug_is_full_member: {
         Args: { _krug: string; _user: string }
         Returns: boolean
@@ -5631,6 +5637,10 @@ export type Database = {
       krug_is_owner: {
         Args: { _krug: string; _user: string }
         Returns: boolean
+      }
+      krug_retract: {
+        Args: { p_client_request_id: string; p_expense_id: string }
+        Returns: Json
       }
       krug_set_privacy: {
         Args: {
