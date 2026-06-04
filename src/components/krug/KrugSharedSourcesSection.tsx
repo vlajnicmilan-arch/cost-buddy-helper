@@ -68,6 +68,20 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
     return map;
   }, [customPaymentSources]);
 
+  const resolveLabel = (paymentSourceId: string): { label: string; currency?: string } => {
+    if (paymentSourceId.startsWith('custom:')) {
+      const meta = nameById.get(paymentSourceId);
+      if (meta?.name) return { label: meta.name, currency: meta.currency };
+      const tail = paymentSourceId.slice(7, 13);
+      return { label: `${t('krug.sharedSource.unknown', 'Izvor')} · ${tail}` };
+    }
+    // Built-in slug (npr. `cash`, `bank_account`) — pokušaj i18n preko `paymentSources.<slug>`.
+    const slugKey = `paymentSources.${paymentSourceId}`;
+    const translated = t(slugKey, { defaultValue: '' });
+    if (translated && translated !== slugKey) return { label: translated };
+    return { label: paymentSourceId };
+  };
+
   const handleAttach = async (id: string) => {
     if (!id) return;
     try {
