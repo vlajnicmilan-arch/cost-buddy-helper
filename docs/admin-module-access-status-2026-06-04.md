@@ -1,8 +1,8 @@
-# Admin Module Access — Status PR1
+# Admin Module Access — Status PR1 + PR2 + PR3
 
 **Datum zaključavanja:** 2026-06-04
-**Status:** Završen
-**Sljedeća faza:** PR2 (novi scope)
+**Status:** PR1, PR2 i PR3 završeni
+**Sljedeća faza:** daljnje promjene = novi scope
 
 ---
 
@@ -118,4 +118,44 @@ Uzak PR2 scope zatvoren u istom dokumentu radi povijesnog konteksta:
 
 Out of scope (potvrđeno): bez DB promjena, bez RPC-ova, bez edge funkcija, bez telemetryja/funnel evenata, bez `Plaća/Ne plaća`, bez bulk overridea, bez `Family` aktivacije, prag fiksan na 7 dana.
 
-**PR2 zatvoren.** Sljedeći scope (PR3 kandidati): `Plaća / Ne plaća` filter, bulk override; `Family` ostaje blokiran do zasebne produktne odluke.
+**PR2 zatvoren.**
+
+---
+
+## 9. PR3 nadogradnja (završeno)
+
+Uzak PR3 scope zatvoren u istom dokumentu radi povijesnog konteksta. Pravilo zaključano prije implementacije: **`Override` znači isključivo ručnu admin iznimku i nikada se ne smije miješati s `Billing` ni u jednom brojaču, filteru ili kontekstu.**
+
+### Što je pokriveno
+
+1. **Override reason breakdown** — inline ispod `Override` retka na svakoj kartici modula u `ModuleAccessOverview`. Prikazuju se samo razlozi s count `> 0`; ako su svi `0`, breakdown se ne renderira. Brojanje ide preko `groupActiveGrantsByReason(grants, module)` koji u potpunosti ignorira billing.
+2. **Drill-down po reasonu** — klik na reason chip postavlja `activeContext = { module, source: 'override', reasonCode }` i prebacuje na `Korisnici` tab. Filtriranje koristi `filterGrantsByReason(grants, module, reasonCode, now)` s **obaveznim** `module` parametrom kao prvim diskriminatorom — nema cross-module curenja.
+3. **Context chip s trećom dimenzijom** — `Modul · Override · Razlog` (npr. `Projects · Override · Beta tester`). `[×]` briše cijeli kontekst (sve tri dimenzije). Sekundarni UX detalj: drugi klik na isti reason chip briše samo treću dimenziju, dok `module` i `source` ostaju.
+4. **Čisti override-only model** — `reasonCode` je validan ISKLJUČIVO uz `source: 'override'`. `EffectiveAccessSummary` i billing sloj nedirani. `GrantReasonCode` premješten u `src/lib/adminAccess.ts` kao domain tip; `useAdminModuleGrants.ts` ga importira odatle (obrnut smjer od ranijeg).
+
+### Status
+
+- **Implementirano** — `src/lib/adminAccess.ts`, `src/hooks/useAdminModuleGrants.ts`, `src/components/admin/AccessTab.tsx`, `src/components/admin/UsersTab.tsx`, `src/components/admin/access/ModuleAccessOverview.tsx`.
+- **Testirano** — 12 novih vitest slučajeva u `src/lib/__tests__/adminAccess.test.ts` (per-module izolacija, reason normalizacija); ukupno **554 testa prolaze**.
+- **Ručno verificirano** — breakdown se skriva kad nema aktivnih override grantova; klik na reason chip ispravno filtrira `UsersTab`; context chip pokazuje sve tri dimenzije; `[×]` resetira cijeli kontekst; `EffectiveAccessSummary` nepromijenjen.
+
+### Out of scope (potvrđeno i dalje)
+
+- Bulk override dodjela
+- `Family` modul (aktivacija u admin override modelu)
+- Audit CSV export po reasonu
+- Cron / auto-revoke / notify za istekle grantove
+- Server-side `is_business_subscriber()` + Business RLS
+
+**PR3 zatvoren.**
+
+---
+
+## 10. Završni zaključak
+
+- **PR1** — završen (refactor admin UX-a, uklonjen legacy `Free/Pro/Business` jezik, helperi i testovi).
+- **PR2** — završen (drill-down iz kartica, kontekst chip, filter `Override ističe < 7d`, tekstualni expiry badge).
+- **PR3** — završen (override reason breakdown, drill-down po reasonu, treća dimenzija konteksta, čisti override-only model).
+
+Stanje admin module access UX-a je **zaključano**. Bilo kakva daljnja promjena (bulk override, `Family`, CSV export, auto-revoke, Business RLS, server-side subscriber check, dodatne dimenzije konteksta) tretira se kao **novi scope** s vlastitim planom i vlastitim status zapisom.
+
