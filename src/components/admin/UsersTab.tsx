@@ -145,6 +145,18 @@ export const UsersTab = ({
         // Sub-filter iz drill-down konteksta
         if (activeContext?.source === 'billing' && !mod.sources.includes('billing')) return false;
         if (activeContext?.source === 'override' && !mod.sources.includes('override')) return false;
+        // PR3: treća dimenzija — reasonCode (samo uz source: 'override')
+        if (activeContext?.source === 'override' && activeContext.reasonCode) {
+          const moduleKey: 'projects' | 'business' =
+            filter === 'hasProjects' ? 'projects' : 'business';
+          const hasMatchingReason = grants.some(
+            (g) =>
+              g.user_id === u.id &&
+              g.module === moduleKey &&
+              (g.reason_code ?? 'other') === activeContext.reasonCode
+          );
+          if (!hasMatchingReason) return false;
+        }
         return true;
       }
       if (filter === 'overrideActive') {
