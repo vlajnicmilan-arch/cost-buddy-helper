@@ -28,7 +28,7 @@ export function KrugListScreen({ onSelect }: Props) {
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('krug.title', 'Krug')}</h1>
         {krugs.length > 0 && (
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" variant="module" onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-1" />
             {t('krug.create.cta', 'Novi Krug')}
           </Button>
@@ -57,7 +57,7 @@ export function KrugListScreen({ onSelect }: Props) {
         </Card>
       ) : krugs.length === 0 ? (
         <Card className="p-8 text-center space-y-3">
-          <Circle className="w-10 h-10 mx-auto text-muted-foreground" strokeWidth={1.5} />
+          <Circle className="w-10 h-10 mx-auto text-module/70" strokeWidth={1.5} />
           <h2 className="font-medium">{t('krug.emptyTitle', 'Još nemaš Krug')}</h2>
           <p className="text-sm text-muted-foreground">
             {t(
@@ -65,7 +65,7 @@ export function KrugListScreen({ onSelect }: Props) {
               'Krug je tvoj zajednički kontekst s drugima. Pridruži se preko poziva ili otvori novi.',
             )}
           </p>
-          <Button onClick={() => setCreateOpen(true)} className="mt-2">
+          <Button variant="module" onClick={() => setCreateOpen(true)} className="mt-2">
             <Plus className="w-4 h-4 mr-1" />
             {t('krug.create.cta', 'Novi Krug')}
           </Button>

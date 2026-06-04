@@ -31,7 +31,7 @@ interface Props {
 }
 
 const TONE: Record<Lifecycle, string> = {
-  active: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  active: 'bg-module/10 text-module border-module/30',
   early_signal: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
   ugrozen: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40',
   continuity_window: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30',
