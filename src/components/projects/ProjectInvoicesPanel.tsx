@@ -15,6 +15,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
 import { SendInvoiceReminderDialog } from '@/components/business/SendInvoiceReminderDialog';
 import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 // Lazy heavy dialog
 const InvoiceDialog = lazy(() => import('./InvoiceDialog').then(m => ({ default: m.InvoiceDialog })));
@@ -32,20 +33,29 @@ interface ProjectInvoicesPanelProps {
   projectId?: string;
   /** Hide the title row (caller renders its own header). */
   compact?: boolean;
+  /** When true, all write paths are gated with the read-only toast. */
+  isReadOnly?: boolean;
 }
 
-export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvoicesPanelProps = {}) => {
+export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = false }: ProjectInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { activeBusinessProfileId } = useAppState();
   const { invoices, payments, loading, deleteInvoice, updateInvoice, getEffectiveStatus, refetch } = useProjectInvoices();
   const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ProjectInvoice | null>(null);
   const [toDelete, setToDelete] = useState<ProjectInvoice | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [reminderInvoice, setReminderInvoice] = useState<ProjectInvoice | null>(null);
   const noBusinessCtx = !activeBusinessProfileId;
+  const writeDisabled = noBusinessCtx || isReadOnly;
+  const writeDisabledTitle = isReadOnly
+    ? t('projects.access.readOnlyBlockedToast')
+    : noBusinessCtx
+      ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.')
+      : undefined;
 
   const visibleInvoices = useMemo(() => {
     if (!projectId) return invoices;
@@ -73,9 +83,9 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           </h3>
           <Button
             size="sm"
-            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
-            disabled={noBusinessCtx}
-            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+            onClick={() => { if (!guard()) return; setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={writeDisabled}
+            title={writeDisabledTitle}
           >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
@@ -87,9 +97,9 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
           <Button
             size="sm"
             variant="outline"
-            onClick={() => { setEditingInvoice(null); setDialogOpen(true); }}
-            disabled={noBusinessCtx}
-            title={noBusinessCtx ? t('invoices.errors.noBusinessContext', 'Računi se mogu kreirati samo u kontekstu tvrtke. Prebaci se na tvrtku na dashboardu.') : undefined}
+            onClick={() => { if (!guard()) return; setEditingInvoice(null); setDialogOpen(true); }}
+            disabled={writeDisabled}
+            title={writeDisabledTitle}
           >
             <Plus className="w-4 h-4 mr-1" />
             {t('invoices.add', 'Novi račun')}
@@ -168,25 +178,27 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false }: ProjectInvo
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setReminderInvoice(inv)}
-                        title={t('invoices.reminder.send', 'Pošalji podsjetnik')}
+                        onClick={() => { if (!guard()) return; setReminderInvoice(inv); }}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('invoices.reminder.send', 'Pošalji podsjetnik')}
+                        disabled={isReadOnly}
                       >
                         <Mail className="w-3.5 h-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => updateInvoice(inv.id, { status: 'paid' })}
-                        title={t('invoices.markPaid', 'Označi plaćeno')}
+                        onClick={() => { if (!guard()) return; updateInvoice(inv.id, { status: 'paid' }); }}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('invoices.markPaid', 'Označi plaćeno')}
+                        disabled={isReadOnly}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('invoices.markPaid', 'Plaćeno')}
                       </Button>
                     </>
                   )}
-                  <Button variant="ghost" size="sm" onClick={() => { setEditingInvoice(inv); setDialogOpen(true); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { if (!guard()) return; setEditingInvoice(inv); setDialogOpen(true); }} disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <Edit className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setToDelete(inv)}>
+                  <Button variant="ghost" size="sm" onClick={() => { if (!guard()) return; setToDelete(inv); }} disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <Trash2 className="w-3.5 h-3.5 text-destructive" />
                   </Button>
                 </div>

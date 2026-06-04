@@ -16,6 +16,7 @@ import { generateEstimatePdf } from '@/lib/estimatePdf';
 import { showError } from '@/hooks/useStatusFeedback';
 import { friendlyError } from '@/lib/errorMessages';
 import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 const STATUS_LABELS: Record<EstimateStatus, string> = {
   draft: 'Radna verzija',
@@ -37,17 +38,21 @@ interface ProjectEstimatesPanelProps {
   projectId?: string;
   /** Hide the title row (caller renders its own header). */
   compact?: boolean;
+  /** When true, all write paths are gated with the read-only toast. */
+  isReadOnly?: boolean;
 }
 
-export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEstimatesPanelProps = {}) => {
+export const ProjectEstimatesPanel = ({ projectId, compact = false, isReadOnly = false }: ProjectEstimatesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { estimates, loading, deleteEstimate, convertToProject, updateEstimate, refetch } = useProjectEstimates();
   const wrapDeleteWithUndo = useSoftDeleteWithUndo({ onRestored: refetch });
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<ProjectEstimate | null>(null);
   const [toDelete, setToDelete] = useState<ProjectEstimate | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
+  const roTitle = isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined;
 
   const visibleEstimates = useMemo(() => {
     if (!projectId) return estimates;
@@ -98,7 +103,7 @@ export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEst
             <FileText className="w-5 h-5 text-primary" />
             {t('estimates.title', 'Ponude / Predračuni')}
           </h3>
-          <Button size="sm" onClick={() => { setEditingEstimate(null); setDialogOpen(true); }}>
+          <Button size="sm" onClick={() => { if (!guard()) return; setEditingEstimate(null); setDialogOpen(true); }} disabled={isReadOnly} title={roTitle}>
             <Plus className="w-4 h-4 mr-1" />
             {t('estimates.add', 'Nova ponuda')}
           </Button>
@@ -106,7 +111,7 @@ export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEst
       )}
       {compact && (
         <div className="flex items-center justify-end">
-          <Button size="sm" variant="outline" onClick={() => { setEditingEstimate(null); setDialogOpen(true); }}>
+          <Button size="sm" variant="outline" onClick={() => { if (!guard()) return; setEditingEstimate(null); setDialogOpen(true); }} disabled={isReadOnly} title={roTitle}>
             <Plus className="w-4 h-4 mr-1" />
             {t('estimates.add', 'Nova ponuda')}
           </Button>
@@ -166,19 +171,19 @@ export const ProjectEstimatesPanel = ({ projectId, compact = false }: ProjectEst
                   PDF
                 </Button>
                 {est.status === 'draft' && (
-                  <Button variant="ghost" size="sm" onClick={() => updateEstimate(est.id, { status: 'sent' })}>
+                  <Button variant="ghost" size="sm" onClick={() => { if (!guard()) return; updateEstimate(est.id, { status: 'sent' }); }} disabled={isReadOnly} title={roTitle}>
                     <Send className="w-3.5 h-3.5 mr-1" /> {t('estimates.markSent', 'Označi poslano')}
                   </Button>
                 )}
                 {(est.status === 'sent' || est.status === 'draft') && !est.accepted_project_id && (
-                  <Button variant="default" size="sm" onClick={() => convertToProject(est)}>
+                  <Button variant="default" size="sm" onClick={() => { if (!guard()) return; convertToProject(est); }} disabled={isReadOnly} title={roTitle}>
                     <FolderPlus className="w-3.5 h-3.5 mr-1" /> {t('estimates.convertToProject', 'Pretvori u projekt')}
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => { setEditingEstimate(est); setDialogOpen(true); }}>
+                <Button variant="ghost" size="sm" onClick={() => { if (!guard()) return; setEditingEstimate(est); setDialogOpen(true); }} disabled={isReadOnly} title={roTitle}>
                   <Edit className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setToDelete(est)}>
+                <Button variant="ghost" size="sm" onClick={() => { if (!guard()) return; setToDelete(est); }} disabled={isReadOnly} title={roTitle}>
                   <Trash2 className="w-3.5 h-3.5 text-destructive" />
                 </Button>
               </div>

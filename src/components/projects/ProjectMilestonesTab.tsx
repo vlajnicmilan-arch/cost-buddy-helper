@@ -29,6 +29,7 @@ import { MilestoneRevisionType, MilestoneRevisionCoverage } from '@/types/milest
 import { useMilestoneRevisions } from '@/hooks/useMilestoneRevisions';
 import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 import { getMilestoneDelay } from '@/lib/projectMilestoneDelay';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectMilestonesTabProps {
   projectId: string;
@@ -36,6 +37,8 @@ interface ProjectMilestonesTabProps {
   isManager: boolean;
   loading: boolean;
   onRefetch: () => void;
+  /** When true, all write paths are gated with the read-only toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectMilestonesTab = ({
@@ -43,12 +46,15 @@ export const ProjectMilestonesTab = ({
   milestones,
   isManager,
   loading,
-  onRefetch
+  onRefetch,
+  isReadOnly = false,
 }: ProjectMilestonesTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
+  
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null);
@@ -141,6 +147,7 @@ export const ProjectMilestonesTab = ({
 
   const handleSave = async () => {
     if (!name.trim()) return;
+    if (!guard()) return;
 
     // Validate dependency: can't start if dependency not completed
     if (status === 'in_progress' && dependsOn) {
@@ -243,6 +250,7 @@ export const ProjectMilestonesTab = ({
   };
 
   const handleDelete = async (id: string) => {
+    if (!guard()) return;
     const m = milestones.find((x) => x.id === id);
     const confirmMsg = m?.is_vtr
       ? t('projects.vtr.deleteWarning', 'Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?', { amount: formatAmount(m.budget) })
@@ -285,11 +293,11 @@ export const ProjectMilestonesTab = ({
         </ToggleGroup>
         {isManager && (
           <div className="flex gap-2">
-            <Button onClick={() => openDialog(undefined, 'vtr')} size="sm" variant="outline" className="gap-1.5">
+            <Button onClick={() => { if (!guard()) return; openDialog(undefined, 'vtr'); }} size="sm" variant="outline" className="gap-1.5" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
               <FileSignature className="w-4 h-4" />
               {t('projects.vtr.addButton', 'Dodaj VTR')}
             </Button>
-            <Button onClick={() => openDialog()} size="sm">
+            <Button onClick={() => { if (!guard()) return; openDialog(); }} size="sm" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
               <Plus className="w-4 h-4 mr-2" />
               {t('projects.addMilestone')}
             </Button>
@@ -300,12 +308,13 @@ export const ProjectMilestonesTab = ({
       {viewMode === 'kanban' && milestones.length > 0 && (
         <MilestoneKanban
           milestones={milestones}
-          isManager={isManager}
+          isManager={isManager && !isReadOnly}
           projectId={projectId}
-          onEdit={(m) => openDialog(m)}
-          onDelete={handleDelete}
+          onEdit={(m) => { if (!guard()) return; openDialog(m); }}
+          onDelete={(id) => { if (!guard()) return; handleDelete(id); }}
           onShowRevisions={(m) => { setRevisionsTarget(m); setRevisionsDialogOpen(true); }}
           onStatusChange={async (m, newStatus) => {
+            if (!guard()) return;
             await updateMilestone({ ...m, status: newStatus });
             onRefetch();
           }}
@@ -464,14 +473,16 @@ export const ProjectMilestonesTab = ({
 
                   {isManager && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDialog(milestone)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (!guard()) return; openDialog(milestone); }} disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
                         onClick={() => handleDelete(milestone.id)}
+                        disabled={isReadOnly}
+                        title={isReadOnly ? blockProps.title : undefined}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

@@ -805,6 +805,7 @@ export const ProjectFullScreenView = ({
                       isManager={isManager}
                       loading={milestonesLoading}
                       onRefetch={refetchMilestones}
+                      isReadOnly={isReadOnly}
                     />
                   )}
                 </TabsContent>
@@ -855,6 +856,7 @@ export const ProjectFullScreenView = ({
                     isManager={isManager}
                     loading={fundingLoading}
                     onRefetch={refetchFunding}
+                    isReadOnly={isReadOnly}
                   />
                 </TabsContent>
                 )}
