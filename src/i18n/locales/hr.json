@@ -1311,6 +1311,7 @@
     }
   },
   "common": {
+    "retry": "Pokušaj ponovo",
     "exportPdf": "Izvoz u PDF",
     "exportSuccess": "Izvezeno",
     "exportFailed": "Izvoz nije uspio",
