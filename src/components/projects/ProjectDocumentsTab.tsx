@@ -132,6 +132,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
   };
 
   const handleAnalyze = async (doc: AnyDoc) => {
+    if (!guard()) return;
     setAnalyzingId(doc.id);
     try {
       let base64: string | null = null;
