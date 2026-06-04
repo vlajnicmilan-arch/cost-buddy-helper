@@ -417,4 +417,128 @@ describe('formatExpiryBadge (4 buckets, bez decimala u UI)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// PR3: groupActiveGrantsByReason + filterGrantsByReason + helpers
+// ---------------------------------------------------------------------------
+
+const grant = (p: Partial<ActiveGrantLike>): ActiveGrantLike => ({
+  user_id: p.user_id ?? 'u1',
+  module: p.module ?? 'projects',
+  revoked_at: p.revoked_at ?? null,
+  expires_at: p.expires_at ?? null,
+  reason_code: p.reason_code ?? 'support',
+});
+
+describe('grantReasonCodeI18nKey', () => {
+  it('vraća postojeći namespace ključ', () => {
+    expect(grantReasonCodeI18nKey('beta_tester')).toBe(
+      'admin.moduleAccess.reasonCode.beta_tester'
+    );
+  });
+  it('GRANT_REASON_CODES sadrži svih 6 razloga', () => {
+    expect(GRANT_REASON_CODES).toEqual([
+      'refund', 'beta_tester', 'internal', 'partner', 'support', 'other',
+    ]);
+  });
+});
+
+describe('groupActiveGrantsByReason (PR3, čisti override model)', () => {
+  it('prazan input → prazan objekt', () => {
+    expect(groupActiveGrantsByReason([], 'projects', NOW)).toEqual({});
+  });
+
+  it('broji samo aktivne (revoked i expired ignored)', () => {
+    const grants = [
+      grant({ reason_code: 'refund' }),
+      grant({ reason_code: 'refund', revoked_at: past(1) }),
+      grant({ reason_code: 'refund', expires_at: past(1) }),
+      grant({ reason_code: 'beta_tester', expires_at: future(10) }),
+    ];
+    expect(groupActiveGrantsByReason(grants, 'projects', NOW)).toEqual({
+      refund: 1,
+      beta_tester: 1,
+    });
+  });
+
+  it('izolira po modulu — business grantovi ne ulaze u projects breakdown', () => {
+    const grants = [
+      grant({ module: 'projects', reason_code: 'refund' }),
+      grant({ module: 'business', reason_code: 'refund' }),
+      grant({ module: 'business', reason_code: 'internal' }),
+    ];
+    expect(groupActiveGrantsByReason(grants, 'projects', NOW)).toEqual({ refund: 1 });
+    expect(groupActiveGrantsByReason(grants, 'business', NOW)).toEqual({
+      refund: 1,
+      internal: 1,
+    });
+  });
+
+  it('null/undefined reason_code → other', () => {
+    const grants = [
+      grant({ reason_code: null }),
+      grant({ reason_code: undefined }),
+      grant({ reason_code: 'other' }),
+    ];
+    expect(groupActiveGrantsByReason(grants, 'projects', NOW)).toEqual({ other: 3 });
+  });
+
+  it('zero reasoni se NE pojavljuju u outputu', () => {
+    const grants = [grant({ reason_code: 'beta_tester' })];
+    const out = groupActiveGrantsByReason(grants, 'projects', NOW);
+    expect(Object.keys(out)).toEqual(['beta_tester']);
+    expect(out.refund).toBeUndefined();
+    expect(out.internal).toBeUndefined();
+  });
+
+  it('više grantova istog razloga se zbrajaju', () => {
+    const grants = [
+      grant({ user_id: 'a', reason_code: 'partner' }),
+      grant({ user_id: 'b', reason_code: 'partner' }),
+      grant({ user_id: 'c', reason_code: 'partner' }),
+    ];
+    expect(groupActiveGrantsByReason(grants, 'projects', NOW)).toEqual({ partner: 3 });
+  });
+});
+
+describe('filterGrantsByReason (PR3, obavezan module diskriminator)', () => {
+  it('vraća samo aktivne s match-anim razlogom unutar modula', () => {
+    const grants = [
+      grant({ user_id: 'a', module: 'projects', reason_code: 'refund' }),
+      grant({ user_id: 'b', module: 'projects', reason_code: 'refund', revoked_at: past(1) }),
+      grant({ user_id: 'c', module: 'projects', reason_code: 'beta_tester' }),
+      grant({ user_id: 'd', module: 'business', reason_code: 'refund' }),
+    ];
+    const out = filterGrantsByReason(grants, 'projects', 'refund', NOW);
+    expect(out).toHaveLength(1);
+    expect(out[0].user_id).toBe('a');
+  });
+
+  it('null reason_code matchira other', () => {
+    const grants = [
+      grant({ user_id: 'a', reason_code: null }),
+      grant({ user_id: 'b', reason_code: 'other' }),
+      grant({ user_id: 'c', reason_code: 'support' }),
+    ];
+    const out = filterGrantsByReason(grants, 'projects', 'other', NOW);
+    expect(out.map((g) => g.user_id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('izolira po modulu — različit module ne pada kroz', () => {
+    const grants = [
+      grant({ user_id: 'a', module: 'projects', reason_code: 'support' }),
+      grant({ user_id: 'b', module: 'business', reason_code: 'support' }),
+    ];
+    expect(filterGrantsByReason(grants, 'projects', 'support', NOW)).toHaveLength(1);
+    expect(filterGrantsByReason(grants, 'business', 'support', NOW)).toHaveLength(1);
+  });
+
+  it('expired grant se ne vraća', () => {
+    const grants = [
+      grant({ reason_code: 'refund', expires_at: past(1) }),
+      grant({ reason_code: 'refund', expires_at: future(1) }),
+    ];
+    expect(filterGrantsByReason(grants, 'projects', 'refund', NOW)).toHaveLength(1);
+  });
+});
 });
