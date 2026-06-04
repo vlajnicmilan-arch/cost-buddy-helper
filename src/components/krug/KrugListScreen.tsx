@@ -39,6 +39,22 @@ export function KrugListScreen({ onSelect }: Props) {
         <Card className="p-6 text-sm text-muted-foreground">
           {t('common.loading', 'Učitavanje…')}
         </Card>
+      ) : isError ? (
+        <Card className="p-6 space-y-3 border-destructive/30">
+          <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+            <AlertCircle className="w-4 h-4" />
+            {t('krug.loadError.title', 'Krug se ne može učitati')}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              'krug.loadError.body',
+              'Provjeri internetsku vezu i pokušaj ponovo. Ako se ponavlja, javi nam.',
+            )}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            {t('common.retry', 'Pokušaj ponovo')}
+          </Button>
+        </Card>
       ) : krugs.length === 0 ? (
         <Card className="p-8 text-center space-y-3">
           <Circle className="w-10 h-10 mx-auto text-muted-foreground" strokeWidth={1.5} />
@@ -62,16 +78,14 @@ export function KrugListScreen({ onSelect }: Props) {
               {...clickableProps(() => onSelect(k.id))}
               className="p-4 hover:bg-accent/40 cursor-pointer transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="font-medium">{k.name}</div>
-                  <div className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-1 min-w-0">
+                  <div className="font-medium truncate">{k.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">
                     {t(`krug.preset.${k.preset}`, k.preset)}
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] uppercase">
-                  {t(`krug.lifecycle.${k.lifecycle_state}`, k.lifecycle_state)}
-                </Badge>
+                <KrugLifecycleBadge state={k.lifecycle_state} />
               </div>
             </Card>
           ))}
