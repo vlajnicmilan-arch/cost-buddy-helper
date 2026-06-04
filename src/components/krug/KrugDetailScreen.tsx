@@ -148,32 +148,51 @@ export function KrugDetailScreen({ krugId }: Props) {
               (changeRole.isPending && changeRole.variables?.membershipId === m.membership_id) ||
               (removeMember.isPending && removeMember.variables?.membershipId === m.membership_id);
 
+            const profile = profileMap.get(m.user_id);
+            const displayName = getMemberDisplayName(
+              profile,
+              m.user_id,
+              t('krug.member.unknown', 'Nepoznat član'),
+            );
+            const initials = getInitials(profile?.display_name || '', m.user_id);
+
             return (
               <div
                 key={`${m.user_id}-${m.kind}`}
                 className="px-4 py-3 flex items-center justify-between gap-2"
               >
-                <div className="flex items-center gap-2 text-sm min-w-0">
-                  {m.kind === 'owner' ? (
-                    <Crown className="w-4 h-4 text-primary shrink-0" />
-                  ) : (
-                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
-                  )}
-                  <span className="font-mono text-xs text-muted-foreground truncate">
-                    {m.user_id.slice(0, 8)}…
-                  </span>
-                  {isMe && (
-                    <span className="text-[10px] text-muted-foreground">
-                      ({t('krug.member.you', 'ti')})
-                    </span>
-                  )}
+                <div className="flex items-center gap-3 text-sm min-w-0">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="text-[10px] font-medium bg-muted">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex flex-col">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-medium truncate">{displayName}</span>
+                      {isMe && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          ({t('krug.member.you', 'ti')})
+                        </span>
+                      )}
+                    </div>
+                    {m.kind === 'owner' && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-primary" />
+                        {t('krug.role.owner', 'Vlasnik')}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
-                    variant={m.kind === 'owner' ? 'default' : 'secondary'}
+                    variant={m.kind === 'punopravni' || m.kind === 'owner' ? 'default' : 'secondary'}
                     className="text-[10px]"
                   >
-                    {t(`krug.role.${m.kind}`, m.kind)}
+                    {t(
+                      `krug.role.${m.kind === 'owner' ? 'punopravni' : m.kind}`,
+                      m.kind === 'owner' ? 'punopravni' : m.kind,
+                    )}
                   </Badge>
                   {canManage && (
                     <DropdownMenu>
