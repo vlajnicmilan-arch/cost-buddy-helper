@@ -1,291 +1,272 @@
-# Krug Transaction Mutation Path Plan v1.1
 
-Block D dokument. Zatvara **tko smije mijenjati transakcijski redak u Krug kontekstu i kako se semantika prevodi u tranziciju**. Polazi strogo od:
+# Krug Approval Enforcement Plan v1.1
+
+Block D dokument. Prvi **dinamički** kanal u Krug arhitekturi. Definira kako se governance akti iz `Krug Transaction Mutation Path Plan v1.1` (§5.3, §6.1) stvarno **izvršavaju, konzumiraju, vetiraju**, što znači **prozor §5.4**, i koja su pravila za **ponovno otvaranje approval toka** (`nepotvrđena → predložena`).
+
+Polazi strogo od:
 
 - `Krug Foundation v4.2`
 - `Preset Constraint Matrix v1`
 - `Governance Matrix v1.3`
 - `Krug Transaction Semantics Schema Plan v1.3`
 - `Krug Transaction RLS / Visibility Plan v1.1`
+- `Krug Transaction Mutation Path Plan v1.1`
 
-Bez novih presetova. Bez `Family`. Bez `majority`. Bez SQL koda, RPC potpisa, UI flow-a, rollout plana.
+**Bez** novog voting modela. **Bez** `majority`. **Bez** generičkog workflow enginea. **Bez** SQL koda, RPC potpisa, UI flow-a, rollout plana, notifikacijskog kanala.
 
-**Promjena u odnosu na v1**: zatvoreno je pitanje smije li ordinary member inicirati `personal → shared`. Odgovor je **ne**, i to je sada eksplicitno provedeno kroz §3, §5.3, §6, §7, §8, §9. Pojam `author` više nije sam po sebi dovoljan za pokretanje shared approval toka — uveden je pojam **author s pravom pokretanja shared toka** (= author koji je istovremeno owner ili full member).
+Scope je isključivo approval kanal za **transakcijski redak** u Krug kontekstu.
+
+**Promjene u odnosu na v1**:
+
+1. Uveden **48h expiry** za `predložena` stanje (akt **A6**) kao već zaključano pravilo Foundation v4.2. Tvrdnja "samo eksplicitni akti pomiču stanje" iz v1 je povučena.
+2. Uveden **akt A7** (`shared → personal` kao governance posljedica) unutar approval kanala, čime se uklanja konflikt s `Krug Transaction Mutation Path Plan v1.1` §5.1 i §5.5. Tvrdnja iz v1 "redak kroz approval kanal nikad ne napušta `shared`" je povučena.
 
 ---
 
 ## §1. Opseg
 
-Definira mutaciju nad jednim transakcijskim retkom u Krug kontekstu:
+Definira:
 
-- **create** — unos novog retka
-- **field-edit** — promjena nesemantičkih polja (iznos, opis, datum, kategorija, izvor)
-- **semantic-transition** — promjena `krug_privacy` ili `krug_shared_status`
-- **hard-delete** — pokretanje post-delete pravila (`krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`)
+- životni ciklus jednog **prijedloga** (`shared/predložena`)
+- koji **approval akti** mijenjaju `krug_shared_status` ili `krug_privacy`
+- tko je **inicijator** i tko je **konzument** svakog akta
+- što je **veto**, **opoziv potvrde** i **expiry**
+- što znači **povlačenje prijedloga**
+- kada i kako redak prelazi iz `shared` u `personal` kao governance posljedica (akt A7)
+- operativni kriterij **prozora §5.4** (`personal → private`)
+- pravilo za **ponovno otvaranje** (`nepotvrđena → predložena`)
+- **terminalna stanja** approval toka
+- **invariante** i **race-uvjeti** koji moraju biti pokriveni
 
-Approval enforcement, billing, takeover, governance pravo iznad retka nisu scope.
-
----
-
-## §2. Akteri
-
-Iz Governance Matrix v1.3:
-
-- **author** — korisnik koji je redak kreirao
-- **owner** — vlasnik Kruga
-- **full member** — član s punim pravima sudjelovanja (uključuje pravo pokretanja shared approval toka)
-- **ordinary member** — vidi sve, **nema** governance prava, **nema** pravo prijedloga shared transakcija
-- **non-member** — nema pristup
-
-Izveden pojam koji se koristi u cijelom dokumentu:
-
-> **author s pravom pokretanja shared toka** = author koji je istovremeno **owner ILI full member**.
->
-> Ordinary member **nije** author s pravom pokretanja shared toka, ni nad vlastitim retkom. To je zaključano u Governance Matrix v1.3 i ovaj dokument se na to oslanja bez iznimke.
+Ne ulazi u: notifikacije, UI, rate-limit konkretne brojeve, audit log shemu, RPC potpise, RLS implementaciju.
 
 ---
 
-## §3. Create
+## §2. Approval akti
 
-### §3.1 Tko smije kreirati redak u Krug kontekstu
+Iz Mutation Path v1.1 §5.3 / §6.1 i Foundation v4.2 (48h pravilo) izvedeno je **sedam** approval akata. Drugih akata u kanalu nema.
 
-| Akter            | `private` | `personal` | `shared` |
-|------------------|-----------|------------|----------|
-| owner            | da        | da         | da       |
-| full member      | da        | da         | da       |
-| ordinary member  | da        | da         | **ne**   |
-| non-member       | ne        | ne         | ne       |
+| Akt | Učinak na redak | Tko ga pokreće |
+|---|---|---|
+| **A1. Potvrda** | `predložena → potvrđena` | governance kanal (owner / full member) |
+| **A2. Veto** | `predložena → nepotvrđena` | governance kanal |
+| **A3. Opoziv potvrde** | `potvrđena → nepotvrđena` | governance kanal |
+| **A4. Povlačenje prijedloga** | hard-delete retka u `predložena` ili `nepotvrđena` (post-delete pravilo Schema v1.3) | author s pravom pokretanja shared toka |
+| **A5. Ponovno otvaranje** | `nepotvrđena → predložena` | author s pravom pokretanja shared toka |
+| **A6. Expiry prijedloga** | `predložena → nepotvrđena` po isteku 48h od ulaska u `predložena` | **sistem** (vremenski okidač) |
+| **A7. Prelazak u personal** | `shared → personal` uz `krug_shared_status := NULL` | governance kanal |
 
-Obrazloženje za ordinary `shared = ne`: kreiranje `shared` retka je ulazna točka u approval tok. Ordinary po Governance Matrix v1.3 nema pravo pokretanja tog toka, pa nema ni pravo kreirati `shared` redak — ni nad vlastitim niti nad bilo kojim drugim retkom.
+Ordinary member i non-member se **ne pojavljuju** kao inicijatori nijednog akta.
 
-### §3.2 Preset utjecaj na create
-
-Preset **ne mijenja tko smije kreirati**. Preset utječe samo na vidljivost `personal` retka prema drugim full members (Visibility v1.1) i na governance pravila iznad `shared` retka (Governance Matrix v1.3).
-
-### §3.3 Inicijalni `krug_shared_status`
-
-- `private` → `krug_shared_status = NULL`
-- `personal` → `krug_shared_status = NULL`
-- `shared` → `krug_shared_status = predložena` (uvijek)
-
-Direktan create u `potvrđena` ili `nepotvrđena` je nevaljana mutacija.
+A1–A3 i A7 su **governance akti**. A4–A5 su **autorski akti unutar approval toka**. A6 je **sistemski akt**, jedini koji nije ručno pokrenut.
 
 ---
 
-## §4. Field-edit (nesemantička polja)
+## §3. Životni ciklus prijedloga
 
-### §4.1 `private`
+Prijedlog **postoji** dok `krug_privacy = shared`. Stanja kroz koja prolazi:
 
-- samo **author** smije editirati
+```text
+                      A4 (povlačenje)
+        ┌──────────────── hard-delete ──→ (krug_id = NULL, personal)
+        │
+        │     A6 (48h expiry)
+        │   ┌────────────────┐
+        │   ▼                │
+   predložena ──A1──→ potvrđena ──A3──→ nepotvrđena ──A5──→ predložena ──→ ...
+        │                                    ▲
+        └──────────A2─────────────────────────┘
 
-### §4.2 `personal`
+   bilo koje stanje u `shared`  ──A7──→  personal  (krug_shared_status = NULL)
+```
 
-- samo **author** smije editirati
-- preset ne otvara edit pravo drugima
+- **predložena**: smisleni akti su A1, A2, A4, A6, A7.
+- **potvrđena**: smisleni akti su A3, A7.
+- **nepotvrđena**: smisleni akti su A4, A5, A7.
 
-### §4.3 `shared` — ovisi o `krug_shared_status`
-
-| `krug_shared_status` | author edit | owner edit | full member edit | ordinary edit |
-|----------------------|-------------|------------|-------------------|---------------|
-| `predložena`         | da          | ne*        | ne*               | ne            |
-| `potvrđena`          | **ne**      | ne*        | ne*               | ne            |
-| `nepotvrđena`        | da          | ne*        | ne*               | ne            |
-
-\* owner / full member nad `shared` retkom djeluju isključivo kroz **governance akte** (scope Approval Enforcement). Ovdje samo zabrana izravnog field-edita.
-
-Napomena: za `shared` redak čiji je author ordinary — taj slučaj **ne postoji** po §3.1 (ordinary ne smije kreirati `shared`). Ako se pojavi historijski/migracijski, edit prava ostaju kao iznad (author smije nad svojim u `predložena` / `nepotvrđena`), ali ordinary i dalje **ne smije** inicirati nikakvu semantičku tranziciju koja ulazi u approval tok (§5).
-
-### §4.4 Ordinary member
-
-Nema edit nad tuđim retkom. Nad vlastitim `private` / `personal` smije (kao author).
-
-### §4.5 Non-member
-
-Bez edit prava na redak gdje `krug_id IS NOT NULL`.
+A6 osigurava da **nijedan prijedlog ne visi beskonačno**: ako u 48h od ulaska u `predložena` nije izvršen A1, A2, A4 ili A7, sistem ga prebacuje u `nepotvrđena` (vidi §5.3). Author može iz `nepotvrđena` pokrenuti A5 ili A4 pod istim pravilima kao i nakon A2.
 
 ---
 
-## §5. Semantic-transition
+## §4. Tko konzumira akt
 
-### §5.1 Matrica `krug_privacy` tranzicija
+- **A1 / A2 / A3 / A7** — konzument je **governance kanal**: akter mora biti owner ILI full member (Governance Matrix v1.3) nad Krugom kojem redak pripada. Preset utječe samo na to tko je full member, ne na pravilo da je governance pravo individualno.
+- **A4 / A5** — konzument je **sam author**, pod uvjetom da je istovremeno owner ili full member.
+- **A6** — konzument je **sistem**. Nema ljudskog aktera. Okida se na temelju vremena ulaska retka u `predložena`.
 
-| Iz \ U     | `private`         | `personal`       | `shared`         |
-|------------|-------------------|------------------|------------------|
-| `private`  | —                 | da (author)      | **ne** direktno  |
-| `personal` | da (author, prozor §5.4) | —          | da (author s pravom pokretanja shared toka) |
-| `shared`   | **ne**            | da (governance)  | —                |
+**Ordinary author** ne može konzumirati A4 ni A5, jer u normalnom toku ne može doći do `shared` retka čiji je on author (Mutation Path v1.1 §3.1).
 
-Detalji:
-
-- **`private → personal`**: smije samo author.
-- **`private → shared`**: zabranjeno direktno. Mora `private → personal`, pa `personal → shared`.
-- **`personal → private`**: smije samo author, u prozoru §5.4.
-- **`personal → shared`**: smije **samo author s pravom pokretanja shared toka** (= author koji je owner ili full member). **Ordinary member NE smije**, ni nad vlastitim retkom. Postavlja `krug_shared_status = predložena`.
-- **`shared → personal`**: ne od strane authora izravno. Dopušteno samo kao posljedica governance akta (veto / opoziv potvrde) — scope Approval Enforcement. Postavlja `krug_shared_status = NULL`.
-- **`shared → private`**: trajno zabranjeno.
-
-### §5.2 Matrica `krug_shared_status` tranzicija (samo unutar `shared`)
-
-| Iz \ U         | `predložena` | `potvrđena` | `nepotvrđena` |
-|----------------|--------------|-------------|---------------|
-| `predložena`   | —            | da (gov.)   | da (gov.)     |
-| `potvrđena`    | **ne**       | —           | da (gov. opoziv) |
-| `nepotvrđena`  | da (author s pravom pokretanja shared toka, preoblikovanje) | ne | — |
-
-- Sve tranzicije osim `nepotvrđena → predložena` su governance akti (scope Approval Enforcement).
-- `nepotvrđena → predložena` smije **samo author s pravom pokretanja shared toka**. Ordinary ne smije, čak ni ako je nominalno author retka. Ne mijenja `krug_privacy`.
-- `potvrđena → predložena` direktno je zabranjeno. Ide kroz `potvrđena → nepotvrđena` (opoziv), pa `nepotvrđena → predložena` (author s pravom pokretanja shared toka).
-
-### §5.3 Tko smije inicirati semantičku tranziciju
-
-| Tranzicija                          | Inicijator                                              |
-|-------------------------------------|---------------------------------------------------------|
-| `private → personal`                | author                                                  |
-| `personal → private` (u prozoru)    | author                                                  |
-| `personal → shared`                 | **author s pravom pokretanja shared toka** (owner ili full member). Ordinary **ne smije**, ni nad vlastitim retkom. |
-| `shared → personal` (govern.)       | governance kanal (Approval Enforcement)                 |
-| `predložena → potvrđena`            | governance kanal                                        |
-| `predložena → nepotvrđena`          | governance kanal                                        |
-| `potvrđena → nepotvrđena` (opoziv)  | governance kanal                                        |
-| `nepotvrđena → predložena`          | **author s pravom pokretanja shared toka**. Ordinary **ne smije**. |
-
-Ordinary member se ne pojavljuje kao inicijator nijedne tranzicije koja ulazi u approval tok ili ga ponovno otvara.
-
-### §5.4 Prozor za `personal → private`
-
-Dopušteno samo dok redak nije bio prikazan drugim članovima Kruga.
-
-> `personal → private` smije, ali ne nakon što je redak već postao vidljiv ikojem drugom članu Kruga kroz preset.
-
-Za presetove gdje `personal` nikad nije vidljiv drugima (`Su-roditelj`, `Cimer` po defaultu), prozor je trajno otvoren autoru. Za `Supružnik / partner`, prozor se zatvara čim partner stekne vidljivost.
-
-Operativni kriterij prozora je scope Approval Enforcement.
-
-### §5.5 Side-effects semantičkih tranzicija
-
-| Tranzicija                  | Side-effect                                        |
-|-----------------------------|----------------------------------------------------|
-| `private → personal`        | `krug_shared_status` ostaje `NULL`                 |
-| `personal → private`        | `krug_shared_status` ostaje `NULL`                 |
-| `personal → shared`         | `krug_shared_status := predložena`                 |
-| `shared → personal` (gov.)  | `krug_shared_status := NULL`                       |
-| `predložena → potvrđena`    | `krug_privacy` nepromijenjen                       |
-| `predložena → nepotvrđena`  | `krug_privacy` nepromijenjen                       |
-| `potvrđena → nepotvrđena`   | `krug_privacy` nepromijenjen                       |
-| `nepotvrđena → predložena`  | `krug_privacy` nepromijenjen                       |
-
-Nijedna semantička tranzicija ne mijenja `krug_id` — to radi isključivo hard-delete (§6).
+Voting / quorum / majority **ne postoji**. Svaki governance akt je **unilateralan**: jedna potvrda → `potvrđena`; jedan veto → `nepotvrđena`; jedan A7 → `personal`. To je posljedica Governance Matrix v1.3.
 
 ---
 
-## §6. Hard-delete kao tranzicija
+## §5. Veto, opoziv, expiry i prelazak u personal
 
-Post-delete pravilo (Schema v1.3): `krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`.
+### §5.1 Veto (A2)
 
-### §6.1 Tko smije pokrenuti hard-delete
+- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = predložena`
+- učinak: `krug_shared_status := nepotvrđena`
+- `krug_privacy` ostaje `shared`
+- redak ostaje vidljiv članovima Kruga; author (A+) može A5 ili A4
 
-| Redak privacy / status                  | Tko smije pokrenuti                              |
-|-----------------------------------------|--------------------------------------------------|
-| `private`                               | author                                           |
-| `personal`                              | author                                           |
-| `shared` + `predložena`                 | author s pravom pokretanja shared toka (povlači vlastiti prijedlog). Ordinary **ne smije**, što je konzistentno s §3.1 (ordinary uopće ne može biti author `shared` retka u normalnom toku). |
-| `shared` + `potvrđena`                  | **zabranjeno** — mora prvo opoziv (gov.) → `nepotvrđena` |
-| `shared` + `nepotvrđena`                | author s pravom pokretanja shared toka            |
+### §5.2 Opoziv potvrde (A3)
 
-### §6.2 Ordinary member i hard-delete
+- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = potvrđena`
+- učinak: `krug_shared_status := nepotvrđena`
+- `krug_privacy` ostaje `shared`
+- iz `nepotvrđena` author (A+) može A5 ili A4; governance može A7
 
-Ordinary ne smije obrisati tuđi redak. Nad vlastitim `private` / `personal` smije (kao author). Nad `shared` retkom — ne smije ga ni kreirati (§3.1), pa ovaj put u normalnom toku ne postoji. Za historijske/migracijske `shared` retke gdje je ordinary nominalno author: hard-delete nije dopušten, jer bi to bio ulaz u semantičku radnju nad approval tokom za koju ordinary nema pravo.
+A3 omogućuje pravilo Mutation Path v1.1 §6.1 (hard-delete `shared/potvrđena` mora ići preko opoziva: A3 → A4).
 
-### §6.3 Owner i full member nad tuđim retkom
+### §5.3 Expiry prijedloga (A6) — 48h
 
-Hard-delete tuđeg retka nije dopušten kroz mutation path. Postoji samo kao posljedica:
+Foundation v4.2: prijedlog koji traži potvrdu vrijedi 48 sati; ako ne bude potvrđen u tom roku, automatski postaje nevažeći.
 
-- soft-delete cijelog Kruga (scope: Krug lifecycle)
-- governance opoziva koji vodi `shared → personal` (autor zatim odlučuje o brisanju)
+Operacionalizacija u approval kanalu:
 
-Owner ne smije unilateralno obrisati tuđi `private` / `personal` / `shared` redak.
+- **trigger**: trenutak u kojem je `krug_shared_status` postao `predložena` (uključuje i A5, koji je novi ulazak u `predložena`, ne nastavak starog brojača).
+- **trajanje**: 48 sati, fiksno, neovisno o presetu i o Krugu.
+- **učinak po isteku**: `krug_shared_status := nepotvrđena`. `krug_privacy` ostaje `shared`. Identičan ishod stanja kao A2, ali izvor je sistem, ne governance akter.
+- **prekidanje**: A1, A2, A4 ili A7 izvršeni prije isteka **prekidaju** brojač. A6 se nakon toga ne okida za taj ciklus.
+- **ponovno otvaranje**: A5 (`nepotvrđena → predložena`) **resetira** brojač na novih 48h. To znači da je 48h pravilo per-ciklus, ne per-redak.
+- **side-effects**: nikakvi izvan promjene `krug_shared_status`. `krug_id`, `krug_privacy` i ostala polja se ne diraju.
+- **author reakcija**: iz `nepotvrđena` (bilo iz A2 ili A6) author (A+) može A5 ili A4 pod istim pravilima.
 
----
+A6 je jedini akt koji se ne aktivira ručnom radnjom. Mehanizam okidanja (cron, scheduler, on-read provjera) je operativni izbor i nije scope ovog dokumenta — bitno je samo da je **deterministički** vezan uz 48h od ulaska u `predložena` i da ne ovisi o aktivnosti aktera.
 
-## §7. Sažeta autorizacijska matrica
+### §5.4 Prelazak u personal (A7)
 
-Skraćeni pregled. `A` = author, `A+` = author s pravom pokretanja shared toka (= author koji je owner ili full member), `O` = owner, `F` = full member, `R` = ordinary, `—` = ništa.
+Mutation Path v1.1 §5.1 i §5.5 propisuju da je `shared → personal` dopušten kao **posljedica governance akta**, uz `krug_shared_status := NULL`. Approval Enforcement v1.1 to ostvaruje aktom A7.
 
-| Akcija                          | A     | A+    | O     | F     | R     |
-|---------------------------------|-------|-------|-------|-------|-------|
-| read (`private`)                | da    | —     | —     | —     | —     |
-| read (`personal`)               | da    | —     | preset| preset| da    |
-| read (`shared`)                 | da    | —     | da    | da    | da    |
-| create (`private` / `personal`) | n/a   | n/a   | da    | da    | da    |
-| create (`shared`)               | n/a   | n/a   | da    | da    | **ne** |
-| field-edit (`private`)          | da    | —     | —     | —     | —     |
-| field-edit (`personal`)         | da    | —     | —     | —     | —     |
-| field-edit (`shared/predložena`)| da    | —     | —     | —     | —     |
-| field-edit (`shared/potvrđena`) | —     | —     | —     | —     | —     |
-| field-edit (`shared/nepotvrđena`)| da   | —     | —     | —     | —     |
-| `private → personal`            | da    | —     | —     | —     | —     |
-| `personal → private` (prozor)   | da    | —     | —     | —     | —     |
-| **`personal → shared`**         | —     | **da**| —     | —     | **ne** |
-| **`nepotvrđena → predložena`**  | —     | **da**| —     | —     | **ne** |
-| ostale `shared_status` tranzicije | —   | —     | gov.  | gov.  | —     |
-| `shared → personal` (gov.)      | —     | —     | gov.  | gov.  | —     |
-| hard-delete (vlastiti, dopušteni status) | da* | —  | —     | —     | da (samo `private`/`personal`) |
-| hard-delete (tuđi)              | —     | —     | **ne**| **ne**| —     |
+- **pretpostavka**: `krug_privacy = shared` ∧ `krug_shared_status ∈ {predložena, potvrđena, nepotvrđena}`
+- **akter**: governance kanal (owner ili full member)
+- **učinak**: `krug_privacy := personal` ∧ `krug_shared_status := NULL`
+- **`krug_id` se ne mijenja** — redak ostaje u Krugu, samo prestaje biti shared.
+- **vidljivost nakon A7**: određuje Visibility v1.1 za `personal` u tom presetu (može značiti da redak prestaje biti vidljiv drugim full membera).
+- **author prava nakon A7**: author dobiva natrag puno field-edit pravo nad `personal` retkom (Mutation Path v1.1 §4.2). Author **ne smije** vratiti redak na `private` ako je u međuvremenu redak već bio vidljiv drugim članovima kroz preset (prozor §5.4 Mutation Path v1.1 je trajno zatvoren čim je redak postao `shared`).
+- **odnos prema A3**: A3 ostavlja redak u `shared/nepotvrđena`. A7 ide korak dalje i izlazi iz `shared`. To su dva različita akta s dva različita ishoda; nisu sinonimi i ne moraju se izvršavati zajedno.
+- **odnos prema A2 / A6**: nakon veta ili expiry-ja, redak je u `shared/nepotvrđena`. Governance i dalje smije A7 nad takvim retkom. To je legalan put da se vetirani / istekli prijedlog izvuče iz Kruga bez čekanja autora.
+- **A7 nije hard-delete**: redak ostaje, samo gubi `shared` status. Hard-delete radi A4.
 
-\* `A` smije hard-delete vlastitog `shared/predložena` i `shared/nepotvrđena` retka **samo ako je istovremeno A+** (jer u normalnom toku ordinary i nije mogao kreirati `shared`).
+A7 popunjava točno onu prazninu zbog koje je v1 bio u konfliktu s Mutation Path v1.1. Drugog kanala za `shared → personal` u arhitekturi **nema** (osim Krug-level akata iz lifecycle scope-a, npr. soft-delete cijelog Kruga, što je izvan ovog dokumenta).
 
 ---
 
-## §8. Nevaljane mutacije (eksplicitno)
+## §6. Povlačenje prijedloga (A4)
 
-- create `shared` od strane ordinary membera
-- create sa `krug_shared_status` ≠ NULL ako `krug_privacy ∈ {private, personal}`
-- create `shared` sa `krug_shared_status ∈ {potvrđena, nepotvrđena}`
-- **`personal → shared` od strane ordinary membera nad vlastitim retkom**
-- **`nepotvrđena → predložena` od strane ordinary membera**
-- `private → shared` direktno
-- `shared → private` ikad
-- `potvrđena → predložena` direktno
-- field-edit `shared/potvrđena` retka
-- field-edit tuđeg retka od bilo koga
-- hard-delete `shared/potvrđena` retka
-- hard-delete tuđeg retka od owner / full / ordinary
-- hard-delete `shared` retka od ordinary, čak i ako je nominalno author
-- mutacija od non-membera nad retkom gdje `krug_id IS NOT NULL`
-- `personal → private` nakon što je redak stekao vidljivost ikojem drugom članu Kruga kroz preset
+- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status ∈ {predložena, nepotvrđena}` ∧ akter = author s pravom pokretanja shared toka
+- učinak: hard-delete uz post-delete pravilo Schema v1.3 (`krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`)
+- nije dopušten nad `shared/potvrđena` (Mutation Path v1.1 §6.1) — mora prvo A3 (ili A7, ako governance odluči izvući redak u personal i prepustiti autoru obični delete na `personal`)
+- autorski akt, ne traži suglasnost owner / full member
 
 ---
 
-## §9. Danger zones
+## §7. Ponovno otvaranje (A5)
 
-1. **Tihi `personal → private` kroz edit formu** — promjena privacy chip-a mora ići kroz semantic-transition gate (§5.4), ne kroz field-edit.
-2. **Direktan skok `private → shared`** — UI mora forsirati međukorak ili odbiti.
-3. **Field-edit nakon `potvrđena`** — UI mora disable-ati polja.
-4. **Ordinary "Podijeli s Krugom" gumb** — UI **ne smije** ponuditi `personal → shared` ordinary memberu, ni nad vlastitim retkom. Ovo je zaključano pravilo (§3.1, §5.3, §8), ne otvoreno pitanje. Mutation gate mora odbiti i kad bi UI propustio.
-5. **Ordinary "Pošalji ponovo" nakon veta** — UI **ne smije** ponuditi `nepotvrđena → predložena` ordinary memberu. Zaključano pravilo (§5.2, §5.3, §8).
-6. **Hard-delete `shared/potvrđena`** — UI mora forsirati opoziv kroz governance prije delete-a.
-7. **Owner "obriši tuđe"** — owner nema delete pravo nad tuđim retkom.
-8. **`nepotvrđena → predložena` bez izmjene polja** — autor (A+) smije, ali rate-limit/uvjeti su scope Approval Enforcement.
-9. **Post-delete `krug_id → NULL`** — terminalna tranzicija, nema povratka u Krug bez novog create-a.
+- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = nepotvrđena` ∧ akter = author s pravom pokretanja shared toka
+- učinak: `krug_shared_status := predložena`
+- side-effects: nikakvi
+- **resetira A6 brojač** na novih 48h (§5.3)
+
+### §7.1 Smije li A5 ići bez izmjene polja
+
+Smije. A5 je tranzicija statusa, ne polja. Field-edit u `nepotvrđena` je dopušten (Mutation Path v1.1 §4.3) ali nije preduvjet.
+
+### §7.2 Rate-limit
+
+A5 je jedini ručni akt koji author može pokrenuti više puta nad istim retkom. U kombinaciji s A2 i A6 (oba ishoda → `nepotvrđena`) postoji rizik ciklusa.
+
+Approval Enforcement v1.1 **zaključava pravilo**, ne brojke:
+
+- mora postojati ograničenje koje sprječava da ciklus A5 ↔ (A2 ili A6) degradira kanal.
+- ograničenje je vezano uz par **(redak, author)**, ne uz Krug.
+- ograničenje se **ne smije** zaobići field-editom u `nepotvrđena`.
+- konkretni parametri (broj A5 u prozoru) su operativna konfiguracija, ne Block D.
+
+48h iz A6 **nije zamjena** za rate-limit A5: A6 ograničava trajanje jednog ciklusa, rate-limit ograničava broj ciklusa.
 
 ---
 
-## §10. Zaključak
+## §8. Prozor §5.4 (Mutation Path) operativno
 
-### Je li mutation path za transakcije sada dovoljno jasan?
+- prozor je **otvoren** dok redak ima `krug_privacy = personal` **i** dok preset ne omogućuje drugom članu read (Visibility v1.1).
+- prozor se **zatvara** čim redak po Visibility v1.1 postane čitljiv ikojem drugom članu Kruga (uključuje i prelazak u `shared`).
+- prozor je **trajno otvoren** za presetove gdje `personal` nikad nije vidljiv drugima (`Su-roditelj`, `Cimer` po defaultu), dok je redak `personal`.
+- ulazak u approval kanal (`personal → shared`) zatvara prozor **trajno** — uključujući kasniji povratak na `personal` kroz A7. Author nakon A7 može uređivati `personal` redak, ali ga ne može vratiti u `private`.
 
-**Da.** Zaključano je bez otvorenih pitanja:
+---
 
-- tko smije create per privacy (§3)
-- tko smije field-edit per privacy × status (§4)
-- koje su sve dopuštene `krug_privacy` i `krug_shared_status` tranzicije i tko ih inicira, uz eksplicitno isključenje ordinary membera iz svake tranzicije koja dira approval tok (§5)
-- tko smije hard-delete per privacy × status (§6)
-- side-effects svake tranzicije na druga semantička polja (§5.5)
-- eksplicitna lista nevaljanih mutacija (§8)
-- danger zones bez otvorenih pitanja (§9)
+## §9. Invariante
+
+Svaki akt u kanalu mora očuvati:
+
+1. `krug_shared_status` je `NULL` ⇔ `krug_privacy ∈ {private, personal}`.
+2. `krug_shared_status ∈ {predložena, potvrđena, nepotvrđena}` ⇔ `krug_privacy = shared`.
+3. `predložena → potvrđena → predložena` bez A3 + A5 nije moguć.
+4. `potvrđena → predložena` direktno nije moguć.
+5. Nijedan akt A1–A7 ne mijenja `krug_id`.
+6. A1, A2, A3, A5, A6 ne mijenjaju `krug_privacy`. A4 izlazi iz Kruga preko post-delete pravila. A7 mijenja `krug_privacy` iz `shared` u `personal` uz `krug_shared_status := NULL`.
+7. Ordinary member ne smije biti akter nijednog akta A1–A7.
+8. Non-member ne smije biti akter nijednog akta.
+9. Akt mora biti izvršen u Krugu kojem redak pripada.
+10. Akt nad retkom čije stanje ne zadovoljava pretpostavku akta je nevaljan.
+11. A6 mora biti **deterministički** vezan uz vrijeme ulaska u `predložena`; ne smije ovisiti o aktivnosti aktera ili o read-pathu.
+
+---
+
+## §10. Race-uvjeti koje operativni sloj mora pokriti
+
+1. **Dvostruka potvrda** (dva A1) — samo jedan uspijeva; drugi pada.
+2. **Potvrda i veto istovremeno** (A1 ∥ A2) — samo jedan uspijeva; deterministički prvi.
+3. **Veto i povlačenje** (A2 ∥ A4) — ako A2 prvi, A4 i dalje smije nad `nepotvrđena`. Nikad dvostruka mutacija.
+4. **Opoziv i novi ciklus** (A3 → A5 → A1/A2 koji pripada starom ciklusu) — operativni sloj mora razlikovati cikluse.
+5. **A5 koji zaobilazi rate-limit** — ograničenje §7.2 mora biti atomsko po (redak, author).
+6. **Field-edit istodobno s A1** — A1 potvrđuje trenutno stanje; field-edit nakon A1 zabranjen (Mutation Path v1.1 §4.3).
+7. **Govern akt nad nepostojećim retkom** (A4 izvršen prije, A1/A2/A3/A7 stigne kasnije) — mora pasti.
+8. **A6 vs ručni akt na granici 48h** — ako A1/A2/A4/A7 dođe u istom trenutku kao A6, mora postojati deterministički poredak. Ručni akt prije A6 prekida brojač; ručni akt nakon A6 nailazi na `nepotvrđena` i mora se evaluirati protiv tog stanja (A1 pada, A4/A5/A7 ostaju legalni).
+9. **A6 dupli okidač** — mehanizam okidanja mora biti idempotentan po (redak, ciklus). Dva okidanja A6 u istom ciklusu ne smiju dvaput mijenjati stanje ili poništiti naknadni A5.
+10. **A7 nad retkom koji je upravo postao `nepotvrđena` kroz A6** — legalan; A7 ne razlikuje izvor `nepotvrđena` (A2 ili A6).
+11. **A7 i A4 istovremeno** — A4 vodi u hard-delete, A7 u `personal`. Samo jedan uspijeva; drugi pada (redak je ili obrisan ili više nije `shared`).
+
+Ovaj dokument propisuje **legalne i nevaljane ishode**, ne mehanizam (lock / serialization / idempotency key).
+
+---
+
+## §11. Što approval kanal NIJE
+
+- voting / quorum / majority / weighted approval
+- timeout **različit** od 48h iz Foundation v4.2 (A6 je jedini vremenski okidač; drugih nema)
+- delegacija approval prava
+- notifikacijski kanal
+- audit log shema
+- UI flow
+- per-preset varijacija approval logike izvan onoga što Governance Matrix v1.3 već definira kroz pojam full membera
+- approval akt iznad bilo čega što nije transakcijski redak
+- Krug-level akti (soft-delete Kruga, promjena članstva, promjena presetova) — to je scope Krug lifecycle dokumenata. A7 **nije** Krug-level akt; on djeluje na pojedini redak i ostaje unutar approval kanala.
+
+---
+
+## §12. Zaključak
+
+### Je li approval kanal sada dovoljno jasan
+
+Da, uz oba usklađenja iz v1.1:
+
+- **48h expiry (A6)** je integriran kao deterministički sistemski akt; prijedlog ne može visiti beskonačno (§5.3, §9.11, §10.8–9).
+- **`shared → personal` (A7)** je integriran kao governance akt unutar approval kanala, čime se uklanja konflikt s Mutation Path v1.1 §5.1 / §5.5 (§5.4, §9.6, §10.10–11).
+
+Ostalo zaključano u v1.1:
+
+- konačan skup od **sedam** akata (§2)
+- životni ciklus prijedloga s eksplicitnom A6 granom (§3)
+- konzument svakog akta, isključenje ordinary / non-member (§4)
+- semantika veta, opoziva, expiry-ja i prelaska u personal (§5)
+- pravila povlačenja i ponovnog otvaranja (§6, §7)
+- operativni kriterij prozora §5.4 (§8)
+- invariante koje akti moraju očuvati (§9)
+- race-uvjeti koje operativni sloj mora pokriti (§10)
+- eksplicitni perimeter (§11)
 
 ### Najbolji sljedeći dokument
 
-**`Krug Approval Enforcement Plan v1`**.
-
-Razlog: semantika (Schema v1.3), vidljivost (Visibility v1.1) i mutation path (ovaj dokument) su tri statična ugla. Approval Enforcement je prvi dinamički kanal — definira kako se governance akti iz §5.3 i §6.1 izvršavaju, tko ih konzumira, kako se vetiraju, koji je operativni kriterij prozora §5.4, i koji je rate-limit za `nepotvrđena → predložena`. Tek nakon njega ima smisla `Krug API / Service Boundary Plan v1`.
+**`Krug API / Service Boundary Plan v1`** — mapiranje akata A1–A7 i invarianti §9 / race-uvjeta §10 na granicu klijent ↔ server, prije ulaska u `Krug RLS Implementation Plan v1`.
