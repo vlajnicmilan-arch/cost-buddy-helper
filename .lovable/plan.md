@@ -80,8 +80,8 @@ Ključno: postojanje `payment_source_members` redova nastavlja biti vezano za re
 
 | Staro | Novo | Tip |
 |-------|------|-----|
-| transakcija "pripada useru" + možda visible drugima preko shared izvora | transakcija dobiva `krug_id` + `privacy` (private/shared) + `shared_status` prema Domain Model v1.1 | novi atributi, ne rename |
-| (default ponašanje) | bez `krug_id` → transakcija je `private` za vlasnika (default) | formalizacija defaulta |
+| transakcija "pripada useru" + možda visible drugima preko shared izvora | transakcija dobiva `krug_id` (Krug kontekst) + `privacy` (`private` / `personal` / `shared`) + `shared_status` prema Domain Model v1.1 | novi atributi, ne rename |
+| (nije postojalo eksplicitno) | `krug_id` označava Krug kontekst transakcije; `privacy` i `shared_status` ostaju zasebne osi sa svojim već zaključenim pravilima (preset defaulti: `partner` = `shared`, `su-roditelj` = `personal`, `cimer` = `personal`; post-delete: bivši `shared` → `personal`). Odsutnost `krug_id` ne uvodi novu globalnu default tvrdnju. | formalizacija osi, bez novog defaulta |
 
 ### 2.8 Post-delete
 
