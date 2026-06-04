@@ -828,6 +828,7 @@ export const ProjectFullScreenView = ({
                     initialSubTab={teamInitialSubTab}
                     projectStatus={project.status}
                     archivedAt={project.archived_at ?? null}
+                    isReadOnly={isReadOnly}
                   />
                 </TabsContent>
 
