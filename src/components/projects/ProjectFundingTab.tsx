@@ -23,6 +23,7 @@ interface ProjectFundingTabProps {
   isManager: boolean;
   loading: boolean;
   onRefetch: () => void;
+  isReadOnly?: boolean;
 }
 
 export const ProjectFundingTab = ({
@@ -35,7 +36,8 @@ export const ProjectFundingTab = ({
   projectBudget,
   isManager,
   loading,
-  onRefetch
+  onRefetch,
+  isReadOnly = false,
 }: ProjectFundingTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -208,7 +210,7 @@ export const ProjectFundingTab = ({
             <FileText className="w-4 h-4" />
             {t('estimates.forProject', 'Ponude za ovaj projekt')} ({projectEstimates.length})
           </h4>
-          <ProjectEstimatesPanel projectId={projectId} compact />
+          <ProjectEstimatesPanel projectId={projectId} compact isReadOnly={isReadOnly} />
         </div>
       )}
 
@@ -219,7 +221,7 @@ export const ProjectFundingTab = ({
           {t('invoices.forProject', 'Računi za ovaj projekt')}
           {projectInvoices.length > 0 && ` (${projectInvoices.length})`}
         </h4>
-        <ProjectInvoicesPanel projectId={projectId} compact />
+        <ProjectInvoicesPanel projectId={projectId} compact isReadOnly={isReadOnly} />
       </div>
     </div>
   );
