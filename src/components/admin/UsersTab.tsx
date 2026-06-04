@@ -18,6 +18,7 @@ import {
   deriveEffectiveAccess,
   isGrantExpiringSoon,
   getEarliestUpcomingExpiry,
+  grantReasonCodeI18nKey,
   type ActiveGrantLike,
 } from '@/lib/adminAccess';
 import type { DrilldownIntent } from './access/ModuleAccessOverview';
