@@ -1290,6 +1290,11 @@ export type Database = {
           invoice_id: string | null
           is_advance: boolean
           is_private: boolean
+          krug_id: string | null
+          krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
@@ -1335,6 +1340,11 @@ export type Database = {
           invoice_id?: string | null
           is_advance?: boolean
           is_private?: boolean
+          krug_id?: string | null
+          krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status?:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1380,6 +1390,11 @@ export type Database = {
           invoice_id?: string | null
           is_advance?: boolean
           is_private?: boolean
+          krug_id?: string | null
+          krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status?:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1442,6 +1457,13 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "project_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
             referencedColumns: ["id"]
           },
           {
@@ -5312,6 +5334,11 @@ export type Database = {
           invoice_id: string | null
           is_advance: boolean
           is_private: boolean
+          krug_id: string | null
+          krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
@@ -5679,6 +5706,8 @@ export type Database = {
         | "putovanje"
         | "projekt"
         | "klub"
+      krug_privacy: "personal" | "private" | "shared"
+      krug_shared_status: "predlozena" | "potvrdjena" | "nepotvrdjena"
       milestone_revision_coverage: "increase_total" | "transfer" | "contingency"
       milestone_revision_type:
         | "overrun"
@@ -5854,6 +5883,8 @@ export const Constants = {
         "projekt",
         "klub",
       ],
+      krug_privacy: ["personal", "private", "shared"],
+      krug_shared_status: ["predlozena", "potvrdjena", "nepotvrdjena"],
       milestone_revision_coverage: [
         "increase_total",
         "transfer",
