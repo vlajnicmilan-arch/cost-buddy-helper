@@ -20,6 +20,7 @@ import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthSco
 import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -34,7 +35,10 @@ interface ProjectCardProps {
   isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
-  /** Owner-readonly (downgrade): owner action items in dropdown become disabled + toast. */
+  /**
+   * Owner-readonly (downgrade): owner action items in dropdown become disabled + toast.
+   * When omitted, the card auto-derives read-only state from `project` via useProjectAccessLevel.
+   */
   isReadOnly?: boolean;
 }
 
@@ -51,14 +55,18 @@ export const ProjectCard = ({
   isArchived,
   onClick,
   onMigrateToBusiness,
-  isReadOnly = false
+  isReadOnly: isReadOnlyProp
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const [actionsOpen, setActionsOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+  // Auto-derive access level from project so list views don't have to wire isReadOnly per card.
+  const derivedAccessLevel = useProjectAccessLevel(
+    project ? { user_id: project.user_id, isParticipant: !project.isOwner } : null
+  );
+  const isReadOnly = isReadOnlyProp ?? isReadOnlyAccess(derivedAccessLevel);
   const { guard } = useProjectWriteGuard({ isReadOnly });
-  const blockedTitle = isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined;
 
   const projectColor = project.color || '#3b82f6';
   const projectIcon = project.icon || '📁';

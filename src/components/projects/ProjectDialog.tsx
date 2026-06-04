@@ -21,6 +21,7 @@ import { ProjectTemplate, useProjectTemplates } from '@/hooks/useProjectTemplate
 import { ProjectTypePickerStep } from './ProjectTypePickerStep';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 
 interface ProjectDialogPreset {
   name?: string;
@@ -41,7 +42,10 @@ interface ProjectDialogProps {
     addContingency?: boolean
   ) => Promise<void>;
   onUpdate?: (project: Project) => Promise<void>;
-  /** Owner-readonly (downgrade): blocks edit submit with toast. */
+  /**
+   * Owner-readonly (downgrade): blocks edit submit with toast.
+   * When omitted in edit mode, derives from `project` via useProjectAccessLevel.
+   */
   isReadOnly?: boolean;
 }
 
@@ -52,7 +56,7 @@ export const ProjectDialog = ({
   preset,
   onSave,
   onUpdate,
-  isReadOnly = false
+  isReadOnly: isReadOnlyProp
 }: ProjectDialogProps) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
