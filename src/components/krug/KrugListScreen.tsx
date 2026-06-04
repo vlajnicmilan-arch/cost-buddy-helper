@@ -20,7 +20,7 @@ interface Props {
 
 export function KrugListScreen({ onSelect }: Props) {
   const { t } = useTranslation();
-  const { data: krugs = [], isLoading } = useMyKrugs();
+  const { data: krugs = [], isLoading, isError, refetch } = useMyKrugs();
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
