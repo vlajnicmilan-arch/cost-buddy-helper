@@ -4672,19 +4672,15 @@
       "active": "Active",
       "early_signal": "Early signal",
       "ugrozen": "At risk",
-      "paused": "Paused",
-      "terminated": "Ended",
       "continuity_window": "Transition",
       "read_only": "Read-only",
       "deleted": "Deleted"
     },
     "lifecycleNote": {
       "early_signal": "Krug shows early signs of inactivity. Check member and transaction state.",
-      "ugrozen": "Krug is at risk — no activity for a while. Consider pausing or resuming.",
-      "paused": "Krug is paused. Mutations are halted until you reactivate it.",
+      "ugrozen": "Krug is at risk — no activity for a while. Consider the next step.",
       "continuity_window": "Krug is in a transition window — renewal or wrap-up is possible.",
       "read_only": "Krug is read-only. Actions are disabled.",
-      "terminated": "Krug has ended. History stays visible, no new changes possible.",
       "deleted": "Krug has been deleted."
     },
     "loadError": {
