@@ -1307,6 +1307,7 @@
     }
   },
   "common": {
+    "retry": "Try again",
     "exportPdf": "Export to PDF",
     "exportSuccess": "Exported",
     "exportFailed": "Export failed",
