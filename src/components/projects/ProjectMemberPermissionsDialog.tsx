@@ -11,6 +11,7 @@ import {
   TAB_LABELS, 
   useProjectMemberPermissions 
 } from '@/hooks/useProjectMemberPermissions';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectMemberPermissionsDialogProps {
   open: boolean;
@@ -18,6 +19,8 @@ interface ProjectMemberPermissionsDialogProps {
   projectId: string;
   userId: string;
   memberName: string;
+  /** Owner-readonly downgrade: blocks save with toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectMemberPermissionsDialog = ({
@@ -26,11 +29,13 @@ export const ProjectMemberPermissionsDialog = ({
   projectId,
   userId,
   memberName,
+  isReadOnly = false,
 }: ProjectMemberPermissionsDialogProps) => {
   const { t } = useTranslation();
   const { permissions, loading, updatePermissions, refetch } = useProjectMemberPermissions(projectId, userId);
   const [localPerms, setLocalPerms] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const { guard } = useProjectWriteGuard({ isReadOnly });
 
   useEffect(() => {
     if (open) {
@@ -47,6 +52,7 @@ export const ProjectMemberPermissionsDialog = ({
   }, [permissions]);
 
   const handleSave = async () => {
+    if (!guard()) return;
     setSaving(true);
     const success = await updatePermissions(projectId, userId, localPerms);
     setSaving(false);
@@ -57,6 +63,7 @@ export const ProjectMemberPermissionsDialog = ({
       showError(t('common.error'));
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,7 +113,7 @@ export const ProjectMemberPermissionsDialog = ({
               ))}
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="w-full">
+            <Button onClick={handleSave} disabled={saving || isReadOnly} aria-disabled={saving || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined} className="w-full">
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('common.save', 'Spremi')}
             </Button>
