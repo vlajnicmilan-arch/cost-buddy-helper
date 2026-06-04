@@ -164,6 +164,71 @@ export function decideWithdraw(i: WithdrawInput): WithdrawOutcome {
   return 'ok_withdrawn';
 }
 
+// ---------- krug_retract (A3 — autor: shared+predlozena → personal, krug_id ostaje) ----------
+
+export type RetractOutcome =
+  | 'unauthenticated'
+  | 'missing_client_request_id'
+  | 'not_found'
+  | 'not_author'
+  | 'not_in_shared_flow'
+  | 'not_full_member'
+  | 'wrong_state'
+  | 'ok_retracted';
+
+export interface RetractInput {
+  authenticated: boolean;
+  expenseFound: boolean;
+  alreadyDeleted: boolean;
+  isAuthor: boolean;
+  inSharedFlow: boolean;
+  isFullMember: boolean;
+  prevStatus: KrugSharedStatus | null;
+  clientRequestId: string | null | undefined;
+}
+
+export function decideRetract(i: RetractInput): RetractOutcome {
+  if (!i.authenticated) return 'unauthenticated';
+  if (!i.clientRequestId || i.clientRequestId.length === 0) return 'missing_client_request_id';
+  if (!i.expenseFound || i.alreadyDeleted) return 'not_found';
+  if (!i.isAuthor) return 'not_author';
+  if (!i.inSharedFlow) return 'not_in_shared_flow';
+  if (!i.isFullMember) return 'not_full_member';
+  if (i.prevStatus !== 'predlozena') return 'wrong_state';
+  return 'ok_retracted';
+}
+
+// ---------- krug_govern_to_personal (A7 — punopravni član flippa potvrdjena/nepotvrdjena → personal) ----------
+
+export type GovernToPersonalOutcome =
+  | 'unauthenticated'
+  | 'missing_client_request_id'
+  | 'not_found'
+  | 'not_in_shared_flow'
+  | 'not_full_member'
+  | 'wrong_state'
+  | 'ok_governed_to_personal';
+
+export interface GovernToPersonalInput {
+  authenticated: boolean;
+  expenseFound: boolean;
+  alreadyDeleted: boolean;
+  inSharedFlow: boolean;
+  isFullMember: boolean;
+  prevStatus: KrugSharedStatus | null;
+  clientRequestId: string | null | undefined;
+}
+
+export function decideGovernToPersonal(i: GovernToPersonalInput): GovernToPersonalOutcome {
+  if (!i.authenticated) return 'unauthenticated';
+  if (!i.clientRequestId || i.clientRequestId.length === 0) return 'missing_client_request_id';
+  if (!i.expenseFound || i.alreadyDeleted) return 'not_found';
+  if (!i.inSharedFlow) return 'not_in_shared_flow';
+  if (!i.isFullMember) return 'not_full_member';
+  if (i.prevStatus !== 'potvrdjena' && i.prevStatus !== 'nepotvrdjena') return 'wrong_state';
+  return 'ok_governed_to_personal';
+}
+
 // ---------- Shared payment source ref ----------
 
 export type SharedSourceRef =
