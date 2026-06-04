@@ -383,6 +383,8 @@ const Admin = () => {
               onRefresh={() => loadUsers(1)}
               onLoadMore={() => loadUsers(usersPage + 1)}
               onManageUser={manageUser}
+              pendingUserContext={pendingUserContext}
+              onContextConsumed={() => setPendingUserContext(null)}
             />
           </TabsContent>
 
@@ -393,6 +395,7 @@ const Admin = () => {
               onToggleBilling={toggleBilling}
               users={users}
               subscriptions={subscriptions}
+              onDrilldown={handleDrilldown}
             />
           </TabsContent>
 
