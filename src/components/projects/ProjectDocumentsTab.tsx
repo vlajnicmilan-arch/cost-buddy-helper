@@ -427,7 +427,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
             <AlertDialogFooter>
               <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={async () => { if (docToDelete) { await removeDocument(docToDelete); setDocToDelete(null); } }}
+                onClick={async () => { if (!guard()) return; if (docToDelete) { await removeDocument(docToDelete); setDocToDelete(null); } }}
                 className="bg-destructive text-destructive-foreground"
               >
                 {t('common.delete', 'Obriši')}
