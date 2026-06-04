@@ -16,6 +16,7 @@ import { FeedbackInboxTab } from '@/components/admin/FeedbackInboxTab';
 import { StatsTab } from '@/components/admin/StatsTab';
 import { UsersTab } from '@/components/admin/UsersTab';
 import { AccessTab } from '@/components/admin/AccessTab';
+import type { DrilldownIntent } from '@/components/admin/access/ModuleAccessOverview';
 import { ReportsTab } from '@/components/admin/ReportsTab';
 import { NotifyTab } from '@/components/admin/NotifyTab';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -63,6 +64,12 @@ const Admin = () => {
   const [billingLoading, setBillingLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
   const [subLoading, setSubLoading] = useState<string | null>(null);
+  const [pendingUserContext, setPendingUserContext] = useState<DrilldownIntent | null>(null);
+
+  const handleDrilldown = (intent: DrilldownIntent) => {
+    setPendingUserContext(intent);
+    setActiveTab('users');
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -376,6 +383,8 @@ const Admin = () => {
               onRefresh={() => loadUsers(1)}
               onLoadMore={() => loadUsers(usersPage + 1)}
               onManageUser={manageUser}
+              pendingUserContext={pendingUserContext}
+              onContextConsumed={() => setPendingUserContext(null)}
             />
           </TabsContent>
 
@@ -386,6 +395,7 @@ const Admin = () => {
               onToggleBilling={toggleBilling}
               users={users}
               subscriptions={subscriptions}
+              onDrilldown={handleDrilldown}
             />
           </TabsContent>
 

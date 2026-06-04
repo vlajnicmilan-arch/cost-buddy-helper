@@ -4381,6 +4381,7 @@
         "hasProjects": "Has Projects",
         "hasBusiness": "Has Business",
         "overrideActive": "Override active",
+        "expiringOverride": "Override expires < 7d",
         "coreOnly": "Core only"
       },
       "accessBadge": {
@@ -4391,6 +4392,23 @@
         "billing": "Billing",
         "override": "Override",
         "both": "Billing + Override"
+      },
+      "expiry": {
+        "expiresSoon": "Expires soon",
+        "expiresToday": "Expires today",
+        "expiresInDay": "Expires in 1 day",
+        "expiresInDays_one": "Expires in {{count}} day",
+        "expiresInDays_other": "Expires in {{count}} days"
+      },
+      "activeContext": {
+        "fromCardPrefix": "From module card:",
+        "projects": "Projects",
+        "projectsBilling": "Projects via Billing",
+        "projectsOverride": "Projects via Override",
+        "business": "Business",
+        "businessBilling": "Business via Billing",
+        "businessOverride": "Business via Override",
+        "reset": "Reset"
       }
     },
     "user": {

@@ -4381,6 +4381,7 @@
         "hasProjects": "Hat Projects",
         "hasBusiness": "Hat Business",
         "overrideActive": "Override aktiv",
+        "expiringOverride": "Override läuft < 7T ab",
         "coreOnly": "Nur Core"
       },
       "accessBadge": {
@@ -4391,6 +4392,23 @@
         "billing": "Abrechnung",
         "override": "Override",
         "both": "Abrechnung + Override"
+      },
+      "expiry": {
+        "expiresSoon": "Läuft bald ab",
+        "expiresToday": "Läuft heute ab",
+        "expiresInDay": "Läuft in 1 Tag ab",
+        "expiresInDays_one": "Läuft in {{count}} Tag ab",
+        "expiresInDays_other": "Läuft in {{count}} Tagen ab"
+      },
+      "activeContext": {
+        "fromCardPrefix": "Aus Modulkarte:",
+        "projects": "Projects",
+        "projectsBilling": "Projects via Abrechnung",
+        "projectsOverride": "Projects via Override",
+        "business": "Business",
+        "businessBilling": "Business via Abrechnung",
+        "businessOverride": "Business via Override",
+        "reset": "Zurücksetzen"
       }
     },
     "user": {

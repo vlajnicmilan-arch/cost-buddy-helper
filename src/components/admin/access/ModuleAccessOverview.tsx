@@ -4,16 +4,79 @@ import {
   summarizeModuleAccess,
   type ActiveGrantLike,
 } from '@/lib/adminAccess';
+import { clickableProps } from '@/lib/a11y';
+
+export type DrilldownIntent = {
+  module: 'projects' | 'business';
+  source?: 'billing' | 'override';
+};
 
 interface Props {
   userIds: string[];
   subscriptions: Record<string, string>;
   grants: ActiveGrantLike[];
+  onDrilldown?: (intent: DrilldownIntent) => void;
 }
+
+const Stat = ({
+  primary,
+  label,
+  value,
+  onClick,
+  ariaLabel,
+}: {
+  primary?: boolean;
+  label: string;
+  value: number;
+  onClick?: () => void;
+  ariaLabel?: string;
+}) => {
+  if (!onClick) {
+    return (
+      <div className="flex justify-between">
+        <span>{label}</span>
+        <span className="font-medium text-foreground">{value}</span>
+      </div>
+    );
+  }
+  if (primary) {
+    return (
+      <div
+        {...clickableProps(onClick, {
+          label: ariaLabel,
+          className:
+            'rounded -m-1 p-1 cursor-pointer hover:bg-muted/60 transition-colors',
+        })}
+      >
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          {label}
+        </p>
+        <p className="text-2xl font-bold leading-tight underline decoration-dotted decoration-muted-foreground/40 underline-offset-2">
+          {value}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div
+      {...clickableProps(onClick, {
+        label: ariaLabel,
+        className:
+          'flex justify-between rounded px-1 -mx-1 cursor-pointer hover:bg-muted/60 transition-colors',
+      })}
+    >
+      <span className="underline decoration-dotted decoration-muted-foreground/40 underline-offset-2">
+        {label}
+      </span>
+      <span className="font-medium text-foreground">{value}</span>
+    </div>
+  );
+};
 
 const ModuleCard = ({
   icon,
   label,
+  module,
   total,
   billing,
   override,
@@ -22,9 +85,11 @@ const ModuleCard = ({
   overrideLabel,
   intersectionLabel,
   totalLabel,
+  onDrilldown,
 }: {
   icon: React.ReactNode;
   label: string;
+  module: 'projects' | 'business';
   total: number;
   billing: number;
   override: number;
@@ -33,27 +98,33 @@ const ModuleCard = ({
   overrideLabel: string;
   intersectionLabel: string;
   totalLabel: string;
+  onDrilldown?: (intent: DrilldownIntent) => void;
 }) => (
   <div className="bg-card border rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2">
       {icon}
       <h4 className="text-sm font-semibold">{label}</h4>
     </div>
-    <div>
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-        {totalLabel}
-      </p>
-      <p className="text-2xl font-bold leading-tight">{total}</p>
-    </div>
+    <Stat
+      primary
+      label={totalLabel}
+      value={total}
+      onClick={onDrilldown ? () => onDrilldown({ module }) : undefined}
+      ariaLabel={`${label} — ${totalLabel}`}
+    />
     <div className="text-[11px] text-muted-foreground space-y-0.5 pt-1 border-t">
-      <div className="flex justify-between">
-        <span>{billingLabel}</span>
-        <span className="font-medium text-foreground">{billing}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>{overrideLabel}</span>
-        <span className="font-medium text-foreground">{override}</span>
-      </div>
+      <Stat
+        label={billingLabel}
+        value={billing}
+        onClick={onDrilldown ? () => onDrilldown({ module, source: 'billing' }) : undefined}
+        ariaLabel={`${label} — ${billingLabel}`}
+      />
+      <Stat
+        label={overrideLabel}
+        value={override}
+        onClick={onDrilldown ? () => onDrilldown({ module, source: 'override' }) : undefined}
+        ariaLabel={`${label} — ${overrideLabel}`}
+      />
       {intersection > 0 && (
         <div className="flex justify-between pt-0.5 text-muted-foreground/80">
           <span className="italic">{intersectionLabel}</span>
@@ -68,6 +139,7 @@ export const ModuleAccessOverview = ({
   userIds,
   subscriptions,
   grants,
+  onDrilldown,
 }: Props) => {
   const { t } = useTranslation();
   const summary = summarizeModuleAccess(userIds, subscriptions, grants);
@@ -105,6 +177,7 @@ export const ModuleAccessOverview = ({
         <ModuleCard
           icon={<FolderKanban className="w-4 h-4 text-primary" />}
           label={t('settings.modules.projects.title', 'Projekti')}
+          module="projects"
           total={summary.projects.total}
           billing={summary.projects.billing}
           override={summary.projects.override}
@@ -113,11 +186,13 @@ export const ModuleAccessOverview = ({
           overrideLabel={overrideLabel}
           intersectionLabel={intersectionLabel}
           totalLabel={totalLabel}
+          onDrilldown={onDrilldown}
         />
 
         <ModuleCard
           icon={<Building2 className="w-4 h-4 text-primary" />}
           label={t('settings.modules.business.title', 'Business')}
+          module="business"
           total={summary.business.total}
           billing={summary.business.billing}
           override={summary.business.override}
@@ -126,6 +201,7 @@ export const ModuleAccessOverview = ({
           overrideLabel={overrideLabel}
           intersectionLabel={intersectionLabel}
           totalLabel={totalLabel}
+          onDrilldown={onDrilldown}
         />
       </div>
     </div>

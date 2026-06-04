@@ -4,7 +4,7 @@ import { CreditCard } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
-import { ModuleAccessOverview } from './access/ModuleAccessOverview';
+import { ModuleAccessOverview, type DrilldownIntent } from './access/ModuleAccessOverview';
 import { RecentOverrideActivity } from './access/RecentOverrideActivity';
 import type { AppUser } from './types';
 import type { ActiveGrantLike } from '@/lib/adminAccess';
@@ -15,6 +15,7 @@ interface AccessTabProps {
   onToggleBilling: (enabled: boolean) => void;
   users: AppUser[];
   subscriptions: Record<string, string>;
+  onDrilldown?: (intent: DrilldownIntent) => void;
 }
 
 export const AccessTab = ({
@@ -23,6 +24,7 @@ export const AccessTab = ({
   onToggleBilling,
   users,
   subscriptions,
+  onDrilldown,
 }: AccessTabProps) => {
   const { t } = useTranslation();
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
@@ -97,6 +99,7 @@ export const AccessTab = ({
         userIds={userIds}
         subscriptions={subscriptions}
         grants={grants}
+        onDrilldown={onDrilldown}
       />
 
       {/* 3. Nedavna override aktivnost */}
