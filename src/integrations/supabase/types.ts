@@ -1290,6 +1290,11 @@ export type Database = {
           invoice_id: string | null
           is_advance: boolean
           is_private: boolean
+          krug_id: string | null
+          krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
@@ -1335,6 +1340,11 @@ export type Database = {
           invoice_id?: string | null
           is_advance?: boolean
           is_private?: boolean
+          krug_id?: string | null
+          krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status?:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1380,6 +1390,11 @@ export type Database = {
           invoice_id?: string | null
           is_advance?: boolean
           is_private?: boolean
+          krug_id?: string | null
+          krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status?:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids?: string[]
           location_coords?: string | null
           location_name?: string | null
@@ -1442,6 +1457,13 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "project_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
             referencedColumns: ["id"]
           },
           {
@@ -2716,6 +2738,112 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          lifecycle_state: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name: string
+          preset: Database["public"]["Enums"]["krug_preset"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name: string
+          preset: Database["public"]["Enums"]["krug_preset"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name?: string
+          preset?: Database["public"]["Enums"]["krug_preset"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      krug_membership: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          krug_id: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          krug_id: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          krug_id?: string
+          role?: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_membership_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_ownership: {
+        Row: {
+          created_at: string
+          id: string
+          krug_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          krug_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          krug_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_ownership_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: true
+            referencedRelation: "krug"
             referencedColumns: ["id"]
           },
         ]
@@ -5206,6 +5334,11 @@ export type Database = {
           invoice_id: string | null
           is_advance: boolean
           is_private: boolean
+          krug_id: string | null
+          krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_shared_status:
+            | Database["public"]["Enums"]["krug_shared_status"]
+            | null
           linked_advance_ids: string[]
           location_coords: string | null
           location_name: string | null
@@ -5406,6 +5539,29 @@ export type Database = {
         Args: { _category: string; _user_id: string }
         Returns: boolean
       }
+      krug_can_see_personal: {
+        Args: { _author: string; _krug: string; _viewer: string }
+        Returns: boolean
+      }
+      krug_is_full_member: {
+        Args: { _krug: string; _user: string }
+        Returns: boolean
+      }
+      krug_is_member: {
+        Args: { _krug: string; _user: string }
+        Returns: boolean
+      }
+      krug_is_owner: {
+        Args: { _krug: string; _user: string }
+        Returns: boolean
+      }
+      krug_set_privacy: {
+        Args: {
+          p_expense_id: string
+          p_new_privacy: Database["public"]["Enums"]["krug_privacy"]
+        }
+        Returns: Json
+      }
       link_worker_to_member: {
         Args: { _user_id: string; _worker_id: string }
         Returns: Json
@@ -5546,6 +5702,23 @@ export type Database = {
         | "subcontractor"
         | "other"
       income_source_role: "owner" | "member"
+      krug_lifecycle_state:
+        | "active"
+        | "early_signal"
+        | "ugrozen"
+        | "continuity_window"
+        | "read_only"
+        | "deleted"
+      krug_membership_role: "punopravni" | "obicni"
+      krug_preset:
+        | "partner"
+        | "su_roditelj"
+        | "cimer"
+        | "putovanje"
+        | "projekt"
+        | "klub"
+      krug_privacy: "personal" | "private" | "shared"
+      krug_shared_status: "predlozena" | "potvrdjena" | "nepotvrdjena"
       milestone_revision_coverage: "increase_total" | "transfer" | "contingency"
       milestone_revision_type:
         | "overrun"
@@ -5704,6 +5877,25 @@ export const Constants = {
         "other",
       ],
       income_source_role: ["owner", "member"],
+      krug_lifecycle_state: [
+        "active",
+        "early_signal",
+        "ugrozen",
+        "continuity_window",
+        "read_only",
+        "deleted",
+      ],
+      krug_membership_role: ["punopravni", "obicni"],
+      krug_preset: [
+        "partner",
+        "su_roditelj",
+        "cimer",
+        "putovanje",
+        "projekt",
+        "klub",
+      ],
+      krug_privacy: ["personal", "private", "shared"],
+      krug_shared_status: ["predlozena", "potvrdjena", "nepotvrdjena"],
       milestone_revision_coverage: [
         "increase_total",
         "transfer",

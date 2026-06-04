@@ -1,219 +1,221 @@
-# Krug Transport & Error Mapping Plan v1.1
+# Implementation Sprint v1.1 — Krug First Honest Skeleton
 
-Block G dokument. Definira **konkretan transport** i **error→ishod mapiranje** za sve endpointe iz `Krug Endpoint Contract Plan v1.1` (E1, E2, E3, E4, E5, E7, E-edit). Bez SQL-a, bez RPC tijela, bez TypeScript koda, bez UI-a, bez migracija. Samo ugovor o žici.
-
-Promjena u odnosu na v1: **A7 semantika ispravljena.** A7 je governance akt `shared → personal` unutar postojećeg Krug konteksta — mijenja **isključivo** `krug_shared_status → NULL`, a `krug_id` **ostaje postavljen**. `krug_id → NULL` pripada isključivo post-delete flowu i nema veze s A7.
-
-Pretpostavlja kao zaključano:
-- `Krug API Boundary v1.1` — 7 akata, 5 hipoteza H1–H5, dual autorizacija (governance/RGA vs author-with-initiation).
-- `Krug RLS Implementation Plan v1.1` — razdvojeni autorizacijski helperi.
-- `Krug Endpoint Contract Plan v1.1` — E1–E5, E7, E-edit; 11 ishoda; A6 = system path.
+Ispravak v1 prema 5 zaključanih temelja. Bez novih ideja, bez širenja scope-a.
 
 ---
 
-## 1. Cilj
+## A. Implementation Sprint v1.1 — task blokovi
 
-Za svaki endpoint odgovoriti na 4 pitanja:
-1. **Transport** — PostgREST RPC ili edge funkcija?
-2. **Request shape** — što klijent šalje (i kako se cilja red)?
-3. **Response shape** — kako server javlja ishod (uvijek deterministički).
-4. **Error mapiranje** — kako se Postgres/HTTP greške svode na 11 ishoda iz §4.3 v1.1.
+### T1. Core Krug schema
+**Što gradimo**
+- Tablice: `krug`, `krug_ownership`, `krug_membership`.
+- Enumi (strogo prema zaključanom modelu):
+  - `krug_preset` — samo zaključani presetovi iz Preset Constraint Matrix v1, **bez `family`**.
+  - `krug_membership_role` — **`punopravni` | `obični`**. Owner **nije** membership role; vodi se isključivo kroz `krug_ownership`.
+  - `krug_lifecycle_state` — **`active` | `early_signal` | `ugrožen` | `continuity_window` | `read_only` | `deleted`** (prema Continuity & Billing State Machine v1.3.2).
+- Standardne kolone: `id`, `created_at`, `updated_at`, `deleted_at`/`deleted_by` (Soft Delete uzorak).
+- `krug_membership` UNIQUE(`krug_id`, `user_id`); `krug_ownership` UNIQUE(`krug_id`) — jedan owner po krugu u v1.
+- Triggeri: `update_updated_at_column`.
+- GRANT blok prema `public-schema-grants` pravilu.
 
-Dokument NE uvodi nove akte, ne mijenja autorizaciju, ne dira A6 sistemski put, ne dira post-delete flow.
+**Preduvjet**: nijedan.
 
----
+**Done state**: migracija prošla, RLS uključen bez policy-ja (zaključavajuće), GRANT-ovi zapisani.
 
-## 2. Odluka o transportu (po endpointu)
-
-| Endpoint | Akt | Tranzicija | Transport | Razlog |
-|---|---|---|---|---|
-| E1 | A1 potvrda | `predložena → potvrđena` (status only) | RPC | RLS + jedna update naredba, bez vanjskih efekata |
-| E2 | A2 veto | `predložena → nepotvrđena` (status only) | RPC | Isto |
-| E3 | A3 opoziv potvrde | `potvrđena → nepotvrđena` (status only) | RPC | Isto |
-| E4 | A4 povlačenje | DELETE redak (post-delete flow) | RPC | DELETE pod RLS-om, atomski |
-| E5 | A5 ponovno pokretanje | `nepotvrđena → predložena` (status only) | RPC | State tranzicija |
-| E7 | A7 shared → personal | `krug_shared_status → NULL`, `krug_id` **ostaje** | RPC | State tranzicija unutar postojećeg Krug konteksta |
-| E-edit | field edit | netranzicijska polja na `predložena` | PostgREST PATCH | Nije tranzicijski akt, ne treba server-side helper |
-
-**Napomena o A7:** ovo je governance akt koji **uklanja redak iz shared toka** unutar istog kruga — ne uklanja vezu prema krugu. `krug_id IS NULL` semantika rezervirana je isključivo za post-delete flow (vidi §8.1) i ovaj dokument je nigdje ne veže za A7.
-
-**Otvoreno za potvrdu prije builda:** koristimo li **jednu** RPC funkciju `krug_apply_act(p_expense_id, p_act)` koja interno grana na E1/E2/E3/E5/E7, ili **šest** zasebnih RPC-a? Preporuka v1: **jedna funkcija** s `p_act` enumom — manje površine, jedno mjesto za audit, jedinstven response shape. E4 ostaje zaseban jer je DELETE semantika drukčija. E-edit ostaje PostgREST PATCH.
+**Ne pokriva**: tranzicije lifecycle stateova (te radi Continuity stroj kasnije), audit, realtime, owner transfer, invites.
 
 ---
 
-## 3. Request shape (klijent → server)
+### T2. Core Krug RLS (governance read + write)
+**Što gradimo**
+- SECURITY DEFINER helperi (RLS Implementation Plan v1.1, razdvojeni governance vs author-with-initiation):
+  - `krug_is_member(_krug, _user) returns bool` — istinit za ownera **i** za bilo koji `krug_membership` zapis (`punopravni` ili `obični`).
+  - `krug_is_owner(_krug, _user) returns bool` — gleda **isključivo** `krug_ownership`.
+  - `krug_is_full_member(_krug, _user) returns bool` — owner ∨ membership s rolom `punopravni`.
+- Policies:
+  - `krug` SELECT: member.
+  - `krug` INSERT: `auth.uid() is not null`. INSERT trigger creatora upisuje **u `krug_ownership`** i **u `krug_membership` s rolom `punopravni`** — nikad ne piše `owner` u membership.
+  - `krug` UPDATE: owner only. Preset je NOT NULL i zamrznut (column trigger blokira promjenu, prema Preset Constraint Matrix v1).
+  - `krug` DELETE: owner only, soft delete preko `soft_delete_record` RPC.
+  - `krug_ownership` SELECT: member; INSERT/UPDATE/DELETE: blokirano u v1 (owner transfer = kasniji val).
+  - `krug_membership` SELECT: member; INSERT/UPDATE/DELETE: owner only u v1 (invites kasnije).
 
-### 3.1 RPC pozivi (E1, E2, E3, E5, E7)
+**Preduvjet**: T1.
 
+**Done state**: owner kreira krug, vidi ga, mijenja ime; ručno dodan `obični` ili `punopravni` member vidi krug i članove. Niti owner niti bilo tko drugi nije u membershipu s rolom `owner`.
+
+**Ne pokriva**: invite/accept, role promotion, owner transfer, lifecycle tranzicije.
+
+---
+
+### T3. Hooks i read modeli (frontend, neutralno prema UI-u)
+**Što gradimo**
+- `useMyKrugs()` — krugovi gdje sam member, s presetom i `lifecycle_state`.
+- `useKrug(id)` — single krug + owner row iz `krug_ownership` + moj membership row.
+- `useKrugMembers(id)` — owner (iz `krug_ownership`) + lista članova iz `krug_membership` s rolom `punopravni`/`obični`. Owner se prikazuje odvojeno, ne kao membership role.
+- TanStack Query, `['krug', ...]`, staleTime 5min.
+
+**Preduvjet**: T2.
+
+**Done state**: hookovi vraćaju točne podatke; UI sloj može razlikovati ownera od membera bez gađanja membership role enuma.
+
+**Ne pokriva**: UI komponente, copy, i18n iznad nužnih ključeva za empty stateove.
+
+---
+
+### T4. Shared payment source link
+**Što gradimo**
+- Tablica `krug_shared_payment_source` (per Shared Resources Link — Structural Choice v1.1): `id`, `krug_id`, `payment_source_id text` (`custom:UUID` ili built-in slug, Balance Sync pattern), `linked_by`, `linked_at`. UNIQUE(`krug_id`, `payment_source_id`).
+- RLS:
+  - SELECT: `krug_is_member`.
+  - INSERT/DELETE: `krug_is_owner` **i** vlasnik / full member tog payment source-a (preko postojećeg `payment_source_members`).
+- Hook `useKrugSharedPaymentSources(krugId)` + `linkPaymentSource` / `unlinkPaymentSource`.
+
+**Preduvjet**: T2.
+
+**Done state**: owner povezuje izvor s krugom, svi članovi vide listu, unlink ne dira balanse ni transakcije.
+
+**Ne pokriva**: auto-limited grant članovima (radi postojeći trigger iz Family Shared Source mem; ako se pokaže da ne pokriva krug kontekst, follow-up u Wave 1.5 — namjerno ne dupliciramo).
+
+---
+
+### T5. Transaction Krug polja
+**Što gradimo (migracija na `expenses`)**
+- `krug_id uuid null references krug(id)`
+- `krug_privacy text null` CHECK in (`personal`, `private`, `shared`) — NULL = legacy/ne-Krug zapis.
+- `krug_shared_status text null` CHECK in (`predložena`, `potvrđena`, `nepotvrđena`) — samo za `krug_privacy='shared'`.
+- Invarijante (CHECK, bez `now()`):
+  - `krug_shared_status not null ⇒ krug_id not null AND krug_privacy='shared'`
+  - `krug_privacy='shared' ⇒ krug_id not null`
+  - `krug_privacy in ('personal','private') ⇒ krug_shared_status is null`
+- Indeksi: `(krug_id, krug_shared_status)`, `(krug_id, user_id)`.
+- Backfill: nijedan.
+
+**Preduvjet**: T1.
+
+**Done state**: schema prošla; postojeća app nepromijenjena (svi `krug_*` NULL).
+
+**Ne pokriva**: vidljivost (T6), mutacije (T7), approval (T8).
+
+---
+
+### T6. Transaction visibility RLS dopuna
+**Što gradimo (strogo po Krug Transaction RLS / Visibility Plan v1.1)**
+- Proširujemo postojeću `expenses` SELECT policy s tri Krug grane koje vrijede **samo** kad je `krug_id not null`:
+  - **`private`**: vidi **isključivo autor** (`user_id = auth.uid()`), bez obzira na članstvo i preset.
+  - **`shared`**: vidi autor **i svaki `krug_is_member`** kruga.
+  - **`personal`** (Krug-kontekstualni "personal" — **nije** isto što i skriveno): vidi autor **i članovi kruga prema pravilima preseta**. Konkretno, vidljivost se ne svodi na "vlasnik", nego se delegira na helper:
+    - `krug_can_see_personal(_krug, _viewer, _author) returns bool` — implementiran prema Preset Constraint Matrix v1; za presetove gdje preset `personal` izlaže ordinary memberima, helper vraća true za `krug_is_member`.
+    - Pravilo prema kojem **ordinary member vidi sve Krug transakcije koje nisu `private`** dolazi direktno kroz ovaj helper za presetove kod kojih je tako zaključano; helper ne smije proširiti vidljivost iznad zaključanog preseta.
+- Legacy retci s `krug_id is null` zadržavaju postojeću SELECT logiku (vlasnik + Shared Wallet preko `payment_source_members`) — ne diramo.
+
+**Preduvjet**: T2, T5.
+
+**Done state**: tri Krug grane se ponašaju prema RLS/Visibility v1.1; postojeća non-Krug vidljivost neizmijenjena. SQL test pokriva četiri uloge (autor, ordinary member, full member, autsajder) i tri privatnosti.
+
+**Ne pokriva**: UI filtere, write put (T7), approval (T8).
+
+---
+
+### T7. Transaction mutation minimum
+**Što gradimo (unutar postojećeg write puta + jedna nova RPC)**
+- **Create u Krug kontekstu**: kad UI eksplicitno proslijedi `krug_id`, write path **mora** dobiti i `krug_privacy` od pozivatelja. Default `krug_privacy` se **ne** određuje u write sloju — bira ga sloj iznad (UI/preset resolver) prema **zaključanim preset defaultima**:
+  - partner → `shared`
+  - su-roditelj → `personal`
+  - cimer → `personal`
+  - ostali presetovi: prema Preset Constraint Matrix v1.
+  Write sloj samo validira invarijante iz T5 i RLS dopušta INSERT samo ako je autor full member kruga za odabranu privatnost (H5 ∧ H2 tamo gdje je tranzicija u shared tok).
+- **Bez Krug konteksta** (`krug_id is null`): write put **nepromijenjen**, ne uvodimo nikakav novi globalni default `krug_privacy`.
+- **Field edit**: postojeći PATCH put vrijedi za sva non-tranzicijska polja. RLS column-level guard blokira direktan PATCH `krug_shared_status` i `krug_id`.
+- **Tranzicije bez approvala** kroz jednu RPC `krug_set_privacy(p_expense_id, p_new_privacy)` (Transport Plan v1.1, uniformni outcome shape):
+  - `personal ↔ private` — samo autor, samo dok `krug_shared_status is null`.
+  - `personal/private → shared/predložena` — samo autor koji je full member kruga (H5 ∧ H2).
+
+**Preduvjet**: T6.
+
+**Done state**: autor mijenja privatnost svoje transakcije unutar dopuštenih tranzicija; default privatnosti na create-u dolazi iz preset resolvera, nije implementacijska konstanta write sloja.
+
+**Ne pokriva**: A3, A7 (governance shared→personal), A4 hard-delete idu u T8/Wave 1.5.
+
+---
+
+### T8. Approval skeleton (A1, A2, A4, A5) — **djelomično pokriće**
+**Što gradimo**
+- RPC-ovi prema Transport Plan v1.1:
+  - `krug_apply_act(p_expense_id, p_act, p_client_request_id)` za **A1** (governance, H1+H3), **A2** (governance, H1+H3), **A5** (author H5+H2).
+  - `krug_withdraw(p_expense_id, p_client_request_id)` za **A4** (DELETE, author H5+H2; soft delete preko `soft_delete_record`).
+- Uniformni response shape (11 ishoda; 200 za biz odbijenice; 401 za unauth; 409 rezerviran ali ne emitiran u v1).
+- Dedup tablica `krug_act_dedup(user_id, expense_id, act, client_request_id, outcome, created_at)`, TTL 24h (cleanup cron = Wave 1.5).
+- Hook `useKrugAct()` + StatusFeedback bridge.
+
+**Pošteno označeno: ovo je skeleton kompromis, NIJE potpun approval minimum.**
+- **A3** (opoziv potvrde) — **nije** u v1, ide u Wave 1.5.
+- **A6** (48h system expiry) — **nije** u v1, ide u Wave 1.5. A6 je zaključani dio approval kanala (ne governance, sistemski put), i bez njega `predložena` retci ostaju zauvijek u svom stanju dok ih netko ručno ne dirne. To je svjesni kompromis prvog vala, ne tvrdnja da je approval potpun.
+- **A7** (governance shared→personal) — **nije** u v1, ide u Wave 1.5.
+
+**Preduvjet**: T7.
+
+**Done state**: A1, A2, A4, A5 rade s determinističkim ishodima i idempotencijom. UI mora jasno komunicirati da `predložena` stanja u v1 nemaju automatski expiry.
+
+**Ne pokriva**: A3, A6, A7 (eksplicitno).
+
+---
+
+### T9. Wave 1.5 — explicit follow-up scope
+Ne implementira se u v1; ovdje samo zaključano što ide odmah nakon T8:
+- **A6** system expiry (pg_cron + `krug_expire_proposals` SECURITY DEFINER, prema Transport Plan v1.1 §8.2).
+- **A3** opoziv potvrde.
+- **A7** governance shared→personal (mijenja **samo** `krug_shared_status → NULL`, `krug_id` ostaje — prema Transport & Error Mapping v1.1).
+- Cleanup cron za `krug_act_dedup` (24h TTL).
+- Eventualni follow-up za auto-limited grant kroz Krug kontekst ako postojeći `payment_source_members` trigger ne pokriva.
+
+---
+
+## B. Build Order
+
+```text
+T1  ─►  T2  ─►  T3
+        │
+        ├──►  T4              (paralelno s T3 nakon T2)
+        │
+        └──►  T5  ─►  T6  ─►  T7  ─►  T8
+                                       │
+                                       └──►  Wave 1.5 (A3, A6, A7, dedup cron)
 ```
-rpc('krug_apply_act', {
-  p_expense_id: uuid,
-  p_act: 'A1' | 'A2' | 'A3' | 'A5' | 'A7',
-  p_client_request_id: uuid   // za idempotenciju, opcionalno
-})
-```
 
-- `p_expense_id` cilja **točno jedan** red (per-row atomicity, §4.1 v1.1).
-- `p_act` je enum string, ne magic broj.
-- `p_client_request_id` je opcionalan UUID za dedup ponovljenog poziva (§7.1).
-- Niti jedan od ovih akata, uključujući A7, **ne dira `krug_id` kolonu**. A7 mijenja samo `krug_shared_status` na `NULL`.
-
-### 3.2 RPC poziv (E4 — povlačenje)
-
-```
-rpc('krug_withdraw', {
-  p_expense_id: uuid,
-  p_client_request_id: uuid   // opcionalno
-})
-```
-
-Zaseban RPC jer interno radi `DELETE`, ne `UPDATE`. Autorizacija: **H5 ∧ H2** (author koji je owner/full member). Post-delete flow (uklj. eventualno otpuštanje `krug_id` na povezanim entitetima) dokumentiran je u §8.1, izvan ovog dokumenta.
-
-### 3.3 PostgREST PATCH (E-edit)
-
-```
-PATCH /rest/v1/expenses?id=eq.<uuid>
-Body: { description?, amount?, ... }   // samo whitelistana polja, NE krug_shared_status, NE krug_id
-```
-
-- Autorizacija: RLS policy `H5` (author).
-- Tranzicijska polja (`krug_shared_status`) i strukturna polja (`krug_id`) **moraju biti odbijena RLS column-level pravilom ili trigger guardom** — to je posao Block RLS v1.1, ovaj dokument samo bilježi zahtjev.
+- Strogo sekvencijalno: T1 → T2 → T5 → T6 → T7 → T8.
+- Paralelno nakon T2: T3 i T4 (ne diraju `expenses`).
+- T6 ne prije T5; T7 ne prije T6; T8 ne prije T7.
 
 ---
 
-## 4. Response shape (server → klijent)
+## C. First Honest Skeleton
 
-### 4.1 Uspjeh i deterministički ishod
+Najmanji skup nakon kojeg možemo iskreno reći "Krug postoji u kodu":
 
-Sve RPC funkcije vraćaju **isti JSON oblik**, jedan red:
+**T1 + T2 + T5 + T6 + T7.**
 
-```json
-{
-  "outcome": "applied" | "noop_already_in_target_state" | "noop_idempotent_replay"
-            | "wrong_state" | "not_found" | "not_authorized_member" | "not_in_scope"
-            | "not_author" | "not_full_member" | "unauthenticated"
-            | "invariant_violation" | "conflict_concurrent",
-  "expense_id": "uuid",
-  "act": "A1" | "A2" | "A3" | "A4" | "A5" | "A7" | null,
-  "previous_status": "predložena" | "potvrđena" | "nepotvrđena" | null,
-  "new_status":      "predložena" | "potvrđena" | "nepotvrđena" | null,
-  "krug_id": "uuid"
-}
-```
+- Krug se kreira (owner u `krug_ownership`, creator u `krug_membership` kao `punopravni`), member se ručno dodaje (`punopravni` ili `obični`), krug se soft-deletea.
+- Transakcija nosi `krug_id` + `krug_privacy` + `krug_shared_status` s invarijantama.
+- Vidljivost je razdvojena na `private`/`shared`/`personal` prema RLS/Visibility v1.1, uključujući pravilo da ordinary member vidi sve ne-`private` retke za presetove gdje je tako zaključano.
+- Autor mijenja privatnost u dopuštenim tranzicijama, default privatnosti na create-u dolazi iz preset resolvera.
 
-- `outcome` je **uvijek prisutan** i jedan od 11 ishoda iz Endpoint Contract v1.1 §4.3.
-- `krug_id` u response-u je **uvijek isti** prije i poslije akta za sve RPC tranzicije (uključujući A7). Klijent ga koristi za invalidaciju cachea po krugu.
-- Za A7: `previous_status` je jedan od shared statusa (`predložena`/`potvrđena`/`nepotvrđena`), `new_status` je `NULL` (redak više nije u shared toku), `krug_id` ostaje nepromijenjen.
-- Za A4: redak je obrisan, pa server vraća `previous_status` zadnjeg poznatog stanja i `new_status = null`. `krug_id` u response-u nosi vrijednost koju je redak imao prije DELETE-a, isključivo za klijentsku invalidaciju cachea — to **nije** trvanje veze, redak više ne postoji.
-- HTTP status je **200 čak i za poslovne odbijenice** (`wrong_state`, `not_authorized_member`, `not_in_scope`, `not_author`, `not_full_member`, `invariant_violation`). Razlog: klijent mora razlikovati “server me odbio iz poslovnog razloga” od “mreža je pala” — različiti HTTP kodovi za poslovne ishode bi zamutili tu granicu i provocirali pogrešne retry-eve.
-- **401** rezerviran isključivo za `unauthenticated` (JWT istekao ili nema ga).
-- **409** rezerviran isključivo za `conflict_concurrent` (vidi §7.2).
-- **5xx** = stvarna serverska greška, ne smije nikad nositi `outcome`.
-
-### 4.2 E-edit (PATCH)
-
-PostgREST native shape:
-- **2xx + redak** = uspjeh.
-- **404 / prazan response** = `not_found` ili RLS sakrio red (klijent ih mora tretirati identično: “nemam pravo ili ne postoji”).
-- **403** = RLS odbio (npr. pokušaj patcha `krug_shared_status` ili `krug_id` polja).
-- Bez `outcome` polja — E-edit nije tranzicijski akt, ne ulazi u 11-ishod model.
+Bez T8 imamo skeleton bez governance akcija. T8 dodaje djelomični approval (A1/A2/A4/A5). Bez A3/A6/A7 to **nije** potpun approval minimum, i tako je označeno.
 
 ---
 
-## 5. Error → ishod mapiranje (RPC sloj)
+## D. Immediate Risks
 
-Kako Postgres greške (RLS, check, conflict) postaju jedan od 11 deterministicnih ishoda **unutar RPC funkcije** (a ne na klijentu):
+1. **`expenses` SELECT policy merge.** Krug grane moraju proći kroz jedan izraz, ne paralelni permissive policy (PostgreSQL OR slučajno proširuje). Mitigacija: T6 prepisuje policy s eksplicitnim granama; SQL test pokriva četiri uloge × tri privatnosti × legacy.
 
-| Izvor | Detekcija unutar RPC | Ishod |
-|---|---|---|
-| `auth.uid() IS NULL` | guard na ulazu | `unauthenticated` (HTTP 401) |
-| red ne postoji ili RLS ga skriva | `SELECT ... FOR UPDATE` vraća 0 redova | `not_found` |
-| red postoji, `krug_id IS NULL` | provjera nakon lock-a | `wrong_state` |
-| red postoji, `krug_shared_status IS NULL` i akt zahtijeva shared red | provjera nakon lock-a | `wrong_state` |
-| red postoji, status nije ulazni za traženi akt | provjera nakon lock-a | `wrong_state` |
-| red već u ciljnom stanju (za A7: `krug_shared_status` već `NULL`) | provjera nakon lock-a | `noop_already_in_target_state` |
-| `p_client_request_id` već viđen za isti `(expense_id, act)` | dedup tablica | `noop_idempotent_replay` |
-| user nije član kruga (governance akt) | poziv helpera za RGA | `not_authorized_member` |
-| user je član ali nije financijski pogođen (H3) | poziv helpera | `not_in_scope` |
-| user nije autor (author akt) | provjera `expenses.user_id` | `not_author` |
-| user je autor ali nije owner/full member (E4/E5) | provjera H2 | `not_full_member` |
-| invarijanta (npr. shared status postavljen, a `krug_id IS NULL`) | check unutar funkcije | `invariant_violation` |
-| concurrent update detektiran | optimistic version mismatch | `conflict_concurrent` (HTTP 409) |
+2. **`krug_can_see_personal` helper.** Cijela `personal` grana ovisi o korektnoj implementaciji helpera prema Preset Constraint Matrix v1. Greška ovdje znači curenje ili lažno skrivanje. Mitigacija: helper se piše s eksplicitnim per-preset granama, ne kao "default true/false", + per-preset SQL test.
 
-**Pravilo:** RPC funkcija **nikad ne smije propustiti sirovu Postgres iznimku klijentu kao 5xx** ako je uzrok jedan od 11 ishoda. 5xx je rezerviran za stvarne bug-ove (sintaksa, missing column, OOM).
+3. **Creator INSERT trigger ne smije pisati `owner` u `krug_membership`.** Lako se zaboravi i razbije `krug_is_full_member`. Mitigacija: trigger eksplicitno upisuje rolu `punopravni`; unit-test na razini SQL-a.
 
----
+4. **Soft delete kruga vs `expenses.krug_id`.** Soft delete kruga **ne** kaskadira na expenses (Post-Delete Behavior Foundation Patch v1.1; `krug_id → NULL` pripada drugom flowu, nije akt). `krug_is_member` mora tolerirati soft-deletan krug (vraća false za sve osim ownera).
 
-## 6. Error → ishod mapiranje (klijent)
+5. **`SELECT ... FOR UPDATE` u svakom RPC-u.** Bez toga `wrong_state` ↔ `noop_already_in_target_state` postaje nedeterministički. Mitigacija: review checklist po RPC-u.
 
-Klijent (React/TanStack Query mutation) prima:
+6. **A6 izostanak u v1 vidljiv UI sloju.** Bez 48h expirya `predložena` živi unedogled. To je svjesni skeleton kompromis i mora biti označeno u UI copy-ju (Wave 1.5 zatvara). Nije bug, nego pošteno priznata rupa.
 
-1. **2xx + body s `outcome`** → koristi `outcome` direktno, ne pogađaj iz teksta.
-2. **401** → `unauthenticated`, redirect na re-auth.
-3. **409** → `conflict_concurrent`, refetch + dopusti retry.
-4. **5xx ili network error** → tehnička greška, NIJE jedan od 11 ishoda; prikaži generičku poruku + retry button. Ne smije se mapirati u `wrong_state` ili `not_found` da ne sakrije stvarni bug.
-5. **PostgREST 403 (E-edit)** → tretiraj kao `not_authorized_member` ekvivalent za UX svrhe, ali bez upisa u audit (PATCH nema audit zapis na razini akta).
-
----
-
-## 7. Idempotencija i concurrency
-
-### 7.1 Idempotencija
-
-- Klijent **smije** poslati `p_client_request_id` (UUID v4).
-- Server vodi minimalnu dedup memoriju za parove `(user_id, expense_id, act, client_request_id)` u kratkom prozoru (preporuka: **24 h**).
-- Ponovljeni poziv s istim `p_client_request_id` vraća **isti** outcome kao prvi (tipično `applied` → `noop_idempotent_replay` na drugom pozivu).
-- Bez `p_client_request_id` server radi posao, ali drugi poziv može legitimno vratiti `noop_already_in_target_state` (što nije isto što i `noop_idempotent_replay` — prvi znači “netko drugi je već to napravio”, drugi znači “ti si već to napravio”).
-
-**Otvoreno za potvrdu:** TTL dedup prozora (24 h preporuka v1).
-
-### 7.2 Concurrency
-
-- Svaki RPC uzima **row-level lock** (`SELECT ... FOR UPDATE`) na ciljni expense prije provjera.
-- Ako između čitanja klijenta i RPC poziva netko drugi promijeni status u **isti ciljni** status → `noop_already_in_target_state` (vrijedi i za A7: ako je netko drugi već prebacio na `krug_shared_status = NULL`).
-- Ako netko promijeni status u **različit** status (npr. paralelno A2 dok ti šalješ A1) → `wrong_state` (jer ulazni state više nije `predložena`).
-- `conflict_concurrent` (HTTP 409) rezerviran je samo za slučaj kad detektiramo da je redak izmijenjen **u trenutku našeg UPDATE-a** (npr. preko `xmin` ili eksplicitne `version` kolone, ako Block RLS v1.1 to uvede). Ako verzioniranje nije uvedeno, ishod `conflict_concurrent` se **ne emitira** u v1 i taj ulazak ostaje rezerviran za buduću proširenu kontrolu.
-
----
-
-## 8. Granice prema susjednim flow-ovima
-
-### 8.1 Post-delete flow (izvan scope-a)
-
-`krug_id → NULL` semantika **pripada isključivo post-delete flowu**, ne nijednom od 7 Krug akata. Ako uopće postoji slučaj u kojem `krug_id` ide na `NULL` (npr. nakon A4 DELETE-a, na povezanim entitetima koji prežive), to je tema zasebnog dokumenta i ovaj dokument ga ne specificira. Niti jedan endpoint definiran ovdje ne smije mijenjati `krug_id`.
-
-### 8.2 A6 (48h expiry) — sistemski put
-
-- Nema klijentski endpoint, **nema HTTP/JSON ugovor** prema klijentu.
-- Cron/edge worker poziva **drugi** RPC (`krug_expire_proposals`) koji:
-  - bypassuje RLS (`SECURITY DEFINER`),
-  - obrađuje skup redova starijih od 48h u stanju `predložena`,
-  - mijenja ih u `nepotvrđena` (samo `krug_shared_status`, `krug_id` ostaje),
-  - piše audit zapis tipa `A6_expired`.
-- Dokumentirano ovdje samo radi potpunosti; sve detalje pokriva poseban Block (Worker plan).
-
----
-
-## 9. Što ovaj dokument NE radi
-
-- Ne piše SQL ni RPC tijela.
-- Ne uvodi nove akte ni nova stanja.
-- Ne odlučuje o audit shemi (zaseban Block H).
-- Ne odlučuje o UI komponentama, kopiji, i18n ključevima.
-- Ne dira A6 worker raspored.
-- Ne specificira post-delete flow ni bilo koju mutaciju `krug_id` kolone.
-
----
-
-## 10. Otvorena pitanja prije sljedećeg dokumenta
-
-1. Jedna RPC funkcija `krug_apply_act` ili šest zasebnih? **(preporuka v1: jedna)**
-2. TTL dedup prozora za `p_client_request_id`? **(preporuka v1: 24 h)**
-3. Uvodimo li `version` kolonu za `conflict_concurrent` već u v1, ili odgađamo i privremeno isključujemo taj ishod? **(preporuka v1: odgoditi, ne emitirati `conflict_concurrent`)**
-4. Format `p_expense_id` — `uuid` (preporuka) ili composite ključ? **(preporuka v1: uuid)**
-
----
-
-## 11. Sljedeći korak
-
-Nakon odobrenja ovog dokumenta sljedeći plan dokument je **Block H — Audit & Telemetry Plan v1** (što se zapisuje, gdje, s kojim PII pravilima), ili direktno **Block RLS Migration Plan v1** ako želiš preskočiti audit u prvoj iteraciji. To je tvoja odluka.
+Nema otvorenih product pitanja. Sve odluke unutar 22 zaključana dokumenta.
