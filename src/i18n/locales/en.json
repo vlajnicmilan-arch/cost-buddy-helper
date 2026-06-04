@@ -4628,6 +4628,22 @@
     "members": "Members",
     "sharedSources": "Shared sources",
     "noSharedSources": "No linked payment sources.",
+    "sharedSource": {
+      "attach": {
+        "placeholder": "Link a payment source…",
+        "empty": "No payment sources available to link",
+        "success": "Source linked to Krug",
+        "denied": "You can only link a source you own.",
+        "error": "Failed to link source"
+      },
+      "detach": {
+        "cta": "Detach source",
+        "confirm": "Detach source from Krug?",
+        "success": "Source detached",
+        "denied": "You are not allowed to detach this source.",
+        "error": "Failed to detach source"
+      }
+    },
     "notFound": "Krug not found.",
     "role": {
       "owner": "Owner",
