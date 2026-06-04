@@ -1,368 +1,291 @@
-# Krug Transaction RLS / Visibility Plan v1.1
+# Krug Transaction Mutation Path Plan v1.1
 
-## Status
+Block D dokument. Zatvara **tko smije mijenjati transakcijski redak u Krug kontekstu i kako se semantika prevodi u tranziciju**. Polazi strogo od:
 
-Nije implementacijski plan.
+- `Krug Foundation v4.2`
+- `Preset Constraint Matrix v1`
+- `Governance Matrix v1.3`
+- `Krug Transaction Semantics Schema Plan v1.3`
+- `Krug Transaction RLS / Visibility Plan v1.1`
 
-Ovaj dokument prevodi semantiku iz `Krug Transaction Semantics Schema Plan v1.3` u visibility model za transakcije unutar Kruga.
+Bez novih presetova. Bez `Family`. Bez `majority`. Bez SQL koda, RPC potpisa, UI flow-a, rollout plana.
 
-Ne uvodi SQL policy sintaksu, RPC potpise, RLS klauzule, UI tokove, API granice ni rollout korake. Ne uvodi nove presete, ne vraća `Family`, ne uvodi `majority` i ne otvara novi product scope.
+**Promjena u odnosu na v1**: zatvoreno je pitanje smije li ordinary member inicirati `personal → shared`. Odgovor je **ne**, i to je sada eksplicitno provedeno kroz §3, §5.3, §6, §7, §8, §9. Pojam `author` više nije sam po sebi dovoljan za pokretanje shared approval toka — uveden je pojam **author s pravom pokretanja shared toka** (= author koji je istovremeno owner ili full member).
 
-## 1. Visibility načela
+---
 
-### 1.1 Ownership ≠ vidljivost ≠ pravo djelovanja
+## §1. Opseg
 
-Tri pojma su strogo odvojena:
+Definira mutaciju nad jednim transakcijskim retkom u Krug kontekstu:
 
-- Ownership transakcije: tko je autor i čiji saldo/wallet redak dira. Izvodi se iz `user_id` retka.
-- Vidljivost transakcije: tko smije pročitati taj redak u kontekstu Kruga.
-- Pravo djelovanja nad retkom: tko ga smije predložiti kao zajedničkog, potvrditi, odbiti, mijenjati `krug_privacy`, povezati s splitom itd.
+- **create** — unos novog retka
+- **field-edit** — promjena nesemantičkih polja (iznos, opis, datum, kategorija, izvor)
+- **semantic-transition** — promjena `krug_privacy` ili `krug_shared_status`
+- **hard-delete** — pokretanje post-delete pravila (`krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`)
 
-Ovaj dokument govori samo o ownershipu i vidljivosti. Pravo djelovanja nad retkom (governance, approval, billing, takeover, mutation paths) ostaje u već zaključanim dokumentima `Krug Governance / Mutation Path Plan v1.1`, `Krug Access Matrix v1.3` i budućim `Mutation Path` / `Approval Enforcement` planovima.
+Approval enforcement, billing, takeover, governance pravo iznad retka nisu scope.
 
-Autor uvijek vidi vlastitu transakciju, neovisno o `krug_privacy`, neovisno o presetu i neovisno o lifecycle stanju Kruga (osim hard-delete koji se rješava zasebno u §6).
+---
 
-### 1.2 Što odlučuje vidljivost
+## §2. Akteri
 
-Vidljivost prema drugim članovima Kruga izvodi se iz tri ulazna izvora:
+Iz Governance Matrix v1.3:
 
-1. Sam redak: `krug_id`, `krug_privacy`, `krug_shared_status`.
-2. Preset Kruga: `Supružnik / partner`, `Su-roditelj`, `Cimer`.
-3. Tip članstva čitatelja u Krugu: owner, punopravni član, ordinary member, non-member.
+- **author** — korisnik koji je redak kreirao
+- **owner** — vlasnik Kruga
+- **full member** — član s punim pravima sudjelovanja (uključuje pravo pokretanja shared approval toka)
+- **ordinary member** — vidi sve, **nema** governance prava, **nema** pravo prijedloga shared transakcija
+- **non-member** — nema pristup
 
-Pravilo o smjeru utjecaja:
+Izveden pojam koji se koristi u cijelom dokumentu:
 
-- `private` na razini retka uvijek sužava vidljivost prema svim drugim članovima Kruga, bez obzira na preset i bez obzira na tip članstva.
-- `shared` na razini retka uvijek otvara vidljivost svim članovima Kruga (vidi §2.3 i §5).
-- Preset definira default vidljivost `personal` transakcija među punopravnim članovima. Preset ne smije snižavati vidljivost ordinary memberu ispod onoga što je za njega već zaključano (§5.3).
+> **author s pravom pokretanja shared toka** = author koji je istovremeno **owner ILI full member**.
+>
+> Ordinary member **nije** author s pravom pokretanja shared toka, ni nad vlastitim retkom. To je zaključano u Governance Matrix v1.3 i ovaj dokument se na to oslanja bez iznimke.
 
-### 1.3 Što dolazi iz preseta, a što iz retka
+---
 
-- Preset definira default razinu dijeljenja `personal` transakcija među punopravnim članovima Kruga.
-- Redak preko `krug_privacy = private` može eksplicitno zaključati nevidljivost prema svim drugim članovima, neovisno o presetu i neovisno o tipu članstva.
-- Redak preko `krug_privacy = shared` ulazi u zaseban shared approval tok i ima vlastiti visibility minimum opisan u §2.3.
+## §3. Create
 
-### 1.4 Što se nikad ne smije prepustiti samo UI-u
+### §3.1 Tko smije kreirati redak u Krug kontekstu
 
-Sljedeće tvrdnje moraju biti enforce-ane na razini podataka (RLS / service), nikada samo u UI-u:
+| Akter            | `private` | `personal` | `shared` |
+|------------------|-----------|------------|----------|
+| owner            | da        | da         | da       |
+| full member      | da        | da         | da       |
+| ordinary member  | da        | da         | **ne**   |
+| non-member       | ne        | ne         | ne       |
 
-- `private` transakcija ne smije biti čitljiva ni jednom drugom članu Kruga osim autora, neovisno o tipu članstva.
-- Non-member ne smije vidjeti niti jednu transakciju s `krug_id IS NOT NULL`, neovisno o `krug_privacy` ili `krug_shared_status`.
-- Ordinary member ne smije izgubiti vidljivost koja mu je zaključana (§5.3) kroz konfiguraciju preseta ili UI fallbacke.
-- Nakon hard-delete Kruga, ni jedan čitatelj osim autora ne smije više vidjeti tu transakciju kroz Krug kontekst, jer Krug kontekst više ne postoji.
+Obrazloženje za ordinary `shared = ne`: kreiranje `shared` retka je ulazna točka u approval tok. Ordinary po Governance Matrix v1.3 nema pravo pokretanja tog toka, pa nema ni pravo kreirati `shared` redak — ni nad vlastitim niti nad bilo kojim drugim retkom.
 
-## 2. Visibility po `krug_privacy`
+### §3.2 Preset utjecaj na create
 
-### 2.1 `personal`
+Preset **ne mijenja tko smije kreirati**. Preset utječe samo na vidljivost `personal` retka prema drugim full members (Visibility v1.1) i na governance pravila iznad `shared` retka (Governance Matrix v1.3).
 
-`personal` znači: osobna transakcija autora; ne ulazi u shared approval tok ni u split.
+### §3.3 Inicijalni `krug_shared_status`
 
-Vidljivost:
+- `private` → `krug_shared_status = NULL`
+- `personal` → `krug_shared_status = NULL`
+- `shared` → `krug_shared_status = predložena` (uvijek)
 
-- Autor: uvijek vidi.
-- Owner Kruga: vidi tuđe `personal` ako preset to dopušta među punopravnim članovima; ne automatski.
-- Punopravni član Kruga: vidi tuđe `personal` ako preset to dopušta među punopravnim članovima; ne automatski.
-- Ordinary member Kruga: vidi sva tuđa `personal` u Krugu jer ordinary member po zaključanom pravilu vidi sve transakcije Kruga (§5.3). Ovo se ne sužava presetom.
-- Non-member: nikad ne vidi.
+Direktan create u `potvrđena` ili `nepotvrđena` je nevaljana mutacija.
 
-Zabranjeno:
+---
 
-- Tretirati `personal` kao implicitno `shared`. `personal` ne ulazi u split ni u shared approval listu.
-- Tretirati `personal` kao implicitno `private`. `personal` ne zaključava vidljivost; vidljivost prema drugim punopravnim članovima određuje preset, a prema ordinary memberu vrijedi pravilo iz §5.3.
+## §4. Field-edit (nesemantička polja)
 
-### 2.2 `private`
+### §4.1 `private`
 
-`private` znači: osobna transakcija autora u Krug kontekstu koju drugi članovi Kruga ne vide, neovisno o presetu i neovisno o tipu članstva.
+- samo **author** smije editirati
 
-Vidljivost:
+### §4.2 `personal`
 
-- Autor: uvijek vidi.
-- Owner Kruga: ne vidi.
-- Punopravni član Kruga: ne vidi.
-- Ordinary member Kruga: ne vidi. Ovo je jedina iznimka od pravila „ordinary member vidi sve transakcije Kruga” i postavljena je svjesno, jer je sama svrha `private` zaključavanje nevidljivosti prema svima drugima.
-- Non-member: nikad ne vidi.
+- samo **author** smije editirati
+- preset ne otvara edit pravo drugima
 
-Zabranjeno:
+### §4.3 `shared` — ovisi o `krug_shared_status`
 
-- Bilo kakvo proširenje vidljivosti `private` retka kroz preset.
-- Otkrivanje postojanja `private` retka drugim članovima kroz agregate, brojače ili sume na razini Kruga koji bi indirektno otkrili njegovu vrijednost ili autora.
+| `krug_shared_status` | author edit | owner edit | full member edit | ordinary edit |
+|----------------------|-------------|------------|-------------------|---------------|
+| `predložena`         | da          | ne*        | ne*               | ne            |
+| `potvrđena`          | **ne**      | ne*        | ne*               | ne            |
+| `nepotvrđena`        | da          | ne*        | ne*               | ne            |
 
-### 2.3 `shared`
+\* owner / full member nad `shared` retkom djeluju isključivo kroz **governance akte** (scope Approval Enforcement). Ovdje samo zabrana izravnog field-edita.
 
-`shared` znači: transakcija u Krug kontekstu koja je ušla u shared approval tok.
+Napomena: za `shared` redak čiji je author ordinary — taj slučaj **ne postoji** po §3.1 (ordinary ne smije kreirati `shared`). Ako se pojavi historijski/migracijski, edit prava ostaju kao iznad (author smije nad svojim u `predložena` / `nepotvrđena`), ali ordinary i dalje **ne smije** inicirati nikakvu semantičku tranziciju koja ulazi u approval tok (§5).
 
-Vidljivost:
+### §4.4 Ordinary member
 
-- Autor: uvijek vidi.
-- Owner Kruga: vidi.
-- Punopravni član Kruga: vidi, jer sudjeluje u shared approval kontekstu.
-- Ordinary member Kruga: vidi, jer ordinary member po zaključanom pravilu vidi sve transakcije Kruga (§5.3). Ordinary member nema pravo predlagati, potvrđivati niti odbijati shared transakcije — to je domena governance pravila iz `Krug Governance / Mutation Path Plan v1.1`.
-- Non-member: nikad ne vidi.
+Nema edit nad tuđim retkom. Nad vlastitim `private` / `personal` smije (kao author).
 
-Zabranjeno:
+### §4.5 Non-member
 
-- Skrivanje `shared` retka pred bilo kojim članom Kruga (uključujući ordinary membera).
-- Otkrivanje `shared` retka non-memberu pod bilo kojim uvjetom.
+Bez edit prava na redak gdje `krug_id IS NOT NULL`.
 
-## 3. Utjecaj `krug_shared_status`
+---
 
-`krug_shared_status` ne mijenja tko smije čitati `shared` transakciju. Mijenja samo značenje tog retka u shared approval kontekstu.
+## §5. Semantic-transition
 
-Pravilo: vidljivost `shared` retka određuje `krug_privacy = shared` u kombinaciji s tipom članstva (§2.3, §5). Approval status samo dodaje semantičku oznaku koju čitatelji koji već imaju pravo vidjeti redak moraju vidjeti zajedno s retkom.
+### §5.1 Matrica `krug_privacy` tranzicija
 
-### 3.1 `predložena`
+| Iz \ U     | `private`         | `personal`       | `shared`         |
+|------------|-------------------|------------------|------------------|
+| `private`  | —                 | da (author)      | **ne** direktno  |
+| `personal` | da (author, prozor §5.4) | —          | da (author s pravom pokretanja shared toka) |
+| `shared`   | **ne**            | da (governance)  | —                |
 
-- Ne mijenja krug čitatelja.
-- Svi koji prema §2.3 vide `shared` redak (autor, owner, punopravni član, ordinary member) moraju vidjeti i to da je status `predložena`.
-- Tko smije reagirati na `predložena` (potvrditi, odbiti) regulira governance, ne visibility.
+Detalji:
 
-### 3.2 `potvrđena`
+- **`private → personal`**: smije samo author.
+- **`private → shared`**: zabranjeno direktno. Mora `private → personal`, pa `personal → shared`.
+- **`personal → private`**: smije samo author, u prozoru §5.4.
+- **`personal → shared`**: smije **samo author s pravom pokretanja shared toka** (= author koji je owner ili full member). **Ordinary member NE smije**, ni nad vlastitim retkom. Postavlja `krug_shared_status = predložena`.
+- **`shared → personal`**: ne od strane authora izravno. Dopušteno samo kao posljedica governance akta (veto / opoziv potvrde) — scope Approval Enforcement. Postavlja `krug_shared_status = NULL`.
+- **`shared → private`**: trajno zabranjeno.
 
-- Ne mijenja krug čitatelja.
-- Svi koji prema §2.3 vide `shared` redak moraju vidjeti i to da je status `potvrđena`.
+### §5.2 Matrica `krug_shared_status` tranzicija (samo unutar `shared`)
 
-### 3.3 `nepotvrđena`
+| Iz \ U         | `predložena` | `potvrđena` | `nepotvrđena` |
+|----------------|--------------|-------------|---------------|
+| `predložena`   | —            | da (gov.)   | da (gov.)     |
+| `potvrđena`    | **ne**       | —           | da (gov. opoziv) |
+| `nepotvrđena`  | da (author s pravom pokretanja shared toka, preoblikovanje) | ne | — |
 
-- Ne mijenja krug čitatelja.
-- Svi koji prema §2.3 vide `shared` redak moraju vidjeti i to da je status `nepotvrđena`.
-- Posebno: `nepotvrđena` se ne smije skrivati pred ostalim članovima Kruga kako bi se „očistila lista”. Approval ishod ostaje vidljiv jer je on dokaz da je tok proveden.
+- Sve tranzicije osim `nepotvrđena → predložena` su governance akti (scope Approval Enforcement).
+- `nepotvrđena → predložena` smije **samo author s pravom pokretanja shared toka**. Ordinary ne smije, čak ni ako je nominalno author retka. Ne mijenja `krug_privacy`.
+- `potvrđena → predložena` direktno je zabranjeno. Ide kroz `potvrđena → nepotvrđena` (opoziv), pa `nepotvrđena → predložena` (author s pravom pokretanja shared toka).
 
-## 4. Visibility po presetima
+### §5.3 Tko smije inicirati semantičku tranziciju
 
-Presetovi se odnose isključivo na default vidljivost `personal` transakcija među punopravnim članovima Kruga. `private` uvijek presijeca preset (vidi §2.2), `shared` uvijek dobiva minimum iz §2.3, a ordinary member uvijek dobiva vidljivost iz §5.3 bez obzira na preset.
+| Tranzicija                          | Inicijator                                              |
+|-------------------------------------|---------------------------------------------------------|
+| `private → personal`                | author                                                  |
+| `personal → private` (u prozoru)    | author                                                  |
+| `personal → shared`                 | **author s pravom pokretanja shared toka** (owner ili full member). Ordinary **ne smije**, ni nad vlastitim retkom. |
+| `shared → personal` (govern.)       | governance kanal (Approval Enforcement)                 |
+| `predložena → potvrđena`            | governance kanal                                        |
+| `predložena → nepotvrđena`          | governance kanal                                        |
+| `potvrđena → nepotvrđena` (opoziv)  | governance kanal                                        |
+| `nepotvrđena → predložena`          | **author s pravom pokretanja shared toka**. Ordinary **ne smije**. |
 
-### 4.1 `Supružnik / partner`
+Ordinary member se ne pojavljuje kao inicijator nijedne tranzicije koja ulazi u approval tok ili ga ponovno otvara.
 
-Default za osobne transakcije: visok stupanj dijeljenja među dvoje punopravnih članova.
+### §5.4 Prozor za `personal → private`
 
-- `personal`: oba punopravna člana se međusobno vide jedan drugome.
-- `private`: ne vidi drugi član.
-- `shared`: oba člana vide redak i njegov approval status.
+Dopušteno samo dok redak nije bio prikazan drugim članovima Kruga.
 
-Ako se ordinary member nađe u Krugu s ovim presetom, vidljivost ordinary membera ide po §5.3, ne po presetu.
+> `personal → private` smije, ali ne nakon što je redak već postao vidljiv ikojem drugom članu Kruga kroz preset.
 
-### 4.2 `Su-roditelj`
+Za presetove gdje `personal` nikad nije vidljiv drugima (`Su-roditelj`, `Cimer` po defaultu), prozor je trajno otvoren autoru. Za `Supružnik / partner`, prozor se zatvara čim partner stekne vidljivost.
 
-Default za osobne transakcije: `personal` ne otvara automatski uvid drugom su-roditelju.
+Operativni kriterij prozora je scope Approval Enforcement.
 
-- `personal`: drugi punopravni član (drugi su-roditelj) ne vidi automatski, jer preset polazi od pretpostavke odvojenih osobnih financija.
-- `private`: drugi su-roditelj ne vidi.
-- `shared`: oba su-roditelja vide redak i approval status, jer je tu riječ o zajedničkom kontekstu.
+### §5.5 Side-effects semantičkih tranzicija
 
-Razlika `personal` ↔ `private` u ovom presetu je u tome tko o vidljivosti odlučuje: kod `personal` o tome odlučuje preset (koji ovdje ne otvara automatsku vidljivost među punopravnim članovima), kod `private` redak eksplicitno zaključava nevidljivost prema svima drugima, neovisno o budućim promjenama preseta.
+| Tranzicija                  | Side-effect                                        |
+|-----------------------------|----------------------------------------------------|
+| `private → personal`        | `krug_shared_status` ostaje `NULL`                 |
+| `personal → private`        | `krug_shared_status` ostaje `NULL`                 |
+| `personal → shared`         | `krug_shared_status := predložena`                 |
+| `shared → personal` (gov.)  | `krug_shared_status := NULL`                       |
+| `predložena → potvrđena`    | `krug_privacy` nepromijenjen                       |
+| `predložena → nepotvrđena`  | `krug_privacy` nepromijenjen                       |
+| `potvrđena → nepotvrđena`   | `krug_privacy` nepromijenjen                       |
+| `nepotvrđena → predložena`  | `krug_privacy` nepromijenjen                       |
 
-### 4.3 `Cimer`
+Nijedna semantička tranzicija ne mijenja `krug_id` — to radi isključivo hard-delete (§6).
 
-Default za osobne transakcije: vrlo nizak stupanj dijeljenja, kao i kod `Su-roditelj`, ali u kontekstu zajedničkog stanovanja.
+---
 
-- `personal`: drugi punopravni član (cimer) ne vidi automatski.
-- `private`: drugi cimer ne vidi.
-- `shared`: oba cimera vide redak i approval status.
+## §6. Hard-delete kao tranzicija
 
-Kao i u §4.2: `personal` ne zaključava nevidljivost prema svima drugima; samo se oslanja na preset koji u ovom slučaju ne otvara vidljivost među punopravnim članovima. `private` zaključava nevidljivost eksplicitno prema svima.
+Post-delete pravilo (Schema v1.3): `krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`.
 
-### 4.4 Zašto je `personal` default za `Su-roditelj` i `Cimer`
+### §6.1 Tko smije pokrenuti hard-delete
 
-- Oba preseta polaze od pretpostavke odvojenih osobnih financija dvoje punopravnih članova.
-- `personal` je default jer čuva odvojenost prema drugom punopravnom članu po defaultu, bez prisiljavanja korisnika da svaku osobnu transakciju eksplicitno označi kao `private`.
-- `private` ostaje dostupan korisniku za one transakcije koje želi zaključati protiv bilo kakve buduće promjene preseta ili buduće promjene pravila Kruga, i koje želi sakriti i od ordinary membera.
+| Redak privacy / status                  | Tko smije pokrenuti                              |
+|-----------------------------------------|--------------------------------------------------|
+| `private`                               | author                                           |
+| `personal`                              | author                                           |
+| `shared` + `predložena`                 | author s pravom pokretanja shared toka (povlači vlastiti prijedlog). Ordinary **ne smije**, što je konzistentno s §3.1 (ordinary uopće ne može biti author `shared` retka u normalnom toku). |
+| `shared` + `potvrđena`                  | **zabranjeno** — mora prvo opoziv (gov.) → `nepotvrđena` |
+| `shared` + `nepotvrđena`                | author s pravom pokretanja shared toka            |
 
-### 4.5 Vidljivost ordinary membera kroz preset
+### §6.2 Ordinary member i hard-delete
 
-Preset ne određuje vidljivost ordinary membera. Vidljivost ordinary membera je zaključana u §5.3 i glasi:
+Ordinary ne smije obrisati tuđi redak. Nad vlastitim `private` / `personal` smije (kao author). Nad `shared` retkom — ne smije ga ni kreirati (§3.1), pa ovaj put u normalnom toku ne postoji. Za historijske/migracijske `shared` retke gdje je ordinary nominalno author: hard-delete nije dopušten, jer bi to bio ulaz u semantičku radnju nad approval tokom za koju ordinary nema pravo.
 
-- ordinary member vidi sve transakcije Kruga koje još postoje u Krug kontekstu,
-- s jedinom iznimkom `private` retka koji je vidljiv samo autoru (§2.2).
+### §6.3 Owner i full member nad tuđim retkom
 
-Preset ne smije:
+Hard-delete tuđeg retka nije dopušten kroz mutation path. Postoji samo kao posljedica:
 
-- snižavati vidljivost ordinary memberu ispod tog pravila,
-- niti otvarati ordinary memberu išta dodatno na razini governance (predlaganje, potvrda, veto, billing, takeover).
+- soft-delete cijelog Kruga (scope: Krug lifecycle)
+- governance opoziva koji vodi `shared → personal` (autor zatim odlučuje o brisanju)
 
-## 5. Visibility po vrstama članova
+Owner ne smije unilateralno obrisati tuđi `private` / `personal` / `shared` redak.
 
-Sažeti pregled po čitatelju, prema kombinacijama stanja:
+---
 
-### 5.1 Owner
+## §7. Sažeta autorizacijska matrica
 
-- Vlastite transakcije: uvijek vidi.
-- Tuđe `personal`: vidi prema presetu (među punopravnim članovima).
-- Tuđe `private`: ne vidi.
-- Tuđe `shared` (bilo koji approval status): vidi.
+Skraćeni pregled. `A` = author, `A+` = author s pravom pokretanja shared toka (= author koji je owner ili full member), `O` = owner, `F` = full member, `R` = ordinary, `—` = ništa.
 
-### 5.2 Punopravni član (nije owner)
+| Akcija                          | A     | A+    | O     | F     | R     |
+|---------------------------------|-------|-------|-------|-------|-------|
+| read (`private`)                | da    | —     | —     | —     | —     |
+| read (`personal`)               | da    | —     | preset| preset| da    |
+| read (`shared`)                 | da    | —     | da    | da    | da    |
+| create (`private` / `personal`) | n/a   | n/a   | da    | da    | da    |
+| create (`shared`)               | n/a   | n/a   | da    | da    | **ne** |
+| field-edit (`private`)          | da    | —     | —     | —     | —     |
+| field-edit (`personal`)         | da    | —     | —     | —     | —     |
+| field-edit (`shared/predložena`)| da    | —     | —     | —     | —     |
+| field-edit (`shared/potvrđena`) | —     | —     | —     | —     | —     |
+| field-edit (`shared/nepotvrđena`)| da   | —     | —     | —     | —     |
+| `private → personal`            | da    | —     | —     | —     | —     |
+| `personal → private` (prozor)   | da    | —     | —     | —     | —     |
+| **`personal → shared`**         | —     | **da**| —     | —     | **ne** |
+| **`nepotvrđena → predložena`**  | —     | **da**| —     | —     | **ne** |
+| ostale `shared_status` tranzicije | —   | —     | gov.  | gov.  | —     |
+| `shared → personal` (gov.)      | —     | —     | gov.  | gov.  | —     |
+| hard-delete (vlastiti, dopušteni status) | da* | —  | —     | —     | da (samo `private`/`personal`) |
+| hard-delete (tuđi)              | —     | —     | **ne**| **ne**| —     |
 
-- Vlastite transakcije: uvijek vidi.
-- Tuđe `personal`: vidi prema presetu (među punopravnim članovima).
-- Tuđe `private`: ne vidi.
-- Tuđe `shared` (bilo koji approval status): vidi.
+\* `A` smije hard-delete vlastitog `shared/predložena` i `shared/nepotvrđena` retka **samo ako je istovremeno A+** (jer u normalnom toku ordinary i nije mogao kreirati `shared`).
 
-### 5.3 Ordinary member
+---
 
-Zaključano pravilo: ordinary member vidi sve transakcije Kruga koje još postoje u Krug kontekstu. To je samo visibility pravo, ne i pravo djelovanja.
+## §8. Nevaljane mutacije (eksplicitno)
 
-- Vlastite transakcije: uvijek vidi.
-- Tuđe `personal`: vidi sve, neovisno o presetu.
-- Tuđe `private`: ne vidi. Ovo je jedina iznimka i postoji zato što je svrha `private` zaključavanje vidljivosti prema svima drugima.
-- Tuđe `shared` (bilo koji approval status): vidi sve, neovisno o presetu.
+- create `shared` od strane ordinary membera
+- create sa `krug_shared_status` ≠ NULL ako `krug_privacy ∈ {private, personal}`
+- create `shared` sa `krug_shared_status ∈ {potvrđena, nepotvrđena}`
+- **`personal → shared` od strane ordinary membera nad vlastitim retkom**
+- **`nepotvrđena → predložena` od strane ordinary membera**
+- `private → shared` direktno
+- `shared → private` ikad
+- `potvrđena → predložena` direktno
+- field-edit `shared/potvrđena` retka
+- field-edit tuđeg retka od bilo koga
+- hard-delete `shared/potvrđena` retka
+- hard-delete tuđeg retka od owner / full / ordinary
+- hard-delete `shared` retka od ordinary, čak i ako je nominalno author
+- mutacija od non-membera nad retkom gdje `krug_id IS NOT NULL`
+- `personal → private` nakon što je redak stekao vidljivost ikojem drugom članu Kruga kroz preset
 
-Posebno zaključano za ordinary membera (visibility ≠ djelovanje):
+---
 
-- nema governance prava,
-- nema prijedloga shared transakcija,
-- nema potvrde/odbijanja shared transakcija,
-- nema veta,
-- nema billing/takeover prava.
+## §9. Danger zones
 
-Sva ta prava ostaju regulirana izvan ovog dokumenta i ne mogu se izvesti iz činjenice da ordinary member vidi redak.
+1. **Tihi `personal → private` kroz edit formu** — promjena privacy chip-a mora ići kroz semantic-transition gate (§5.4), ne kroz field-edit.
+2. **Direktan skok `private → shared`** — UI mora forsirati međukorak ili odbiti.
+3. **Field-edit nakon `potvrđena`** — UI mora disable-ati polja.
+4. **Ordinary "Podijeli s Krugom" gumb** — UI **ne smije** ponuditi `personal → shared` ordinary memberu, ni nad vlastitim retkom. Ovo je zaključano pravilo (§3.1, §5.3, §8), ne otvoreno pitanje. Mutation gate mora odbiti i kad bi UI propustio.
+5. **Ordinary "Pošalji ponovo" nakon veta** — UI **ne smije** ponuditi `nepotvrđena → predložena` ordinary memberu. Zaključano pravilo (§5.2, §5.3, §8).
+6. **Hard-delete `shared/potvrđena`** — UI mora forsirati opoziv kroz governance prije delete-a.
+7. **Owner "obriši tuđe"** — owner nema delete pravo nad tuđim retkom.
+8. **`nepotvrđena → predložena` bez izmjene polja** — autor (A+) smije, ali rate-limit/uvjeti su scope Approval Enforcement.
+9. **Post-delete `krug_id → NULL`** — terminalna tranzicija, nema povratka u Krug bez novog create-a.
 
-### 5.4 Non-member
+---
 
-- Sve transakcije s `krug_id IS NOT NULL`: ne vidi, neovisno o `krug_privacy` ili `krug_shared_status`.
-- Transakcije s `krug_id IS NULL` koje pripadaju non-memberu kao autoru rješavaju se izvan Krug visibility modela.
+## §10. Zaključak
 
-## 6. Lifecycle utjecaj
+### Je li mutation path za transakcije sada dovoljno jasan?
 
-Krug prolazi kroz lifecycle stanja definirana u `Continuity & Billing State Machine v1.3.2` i `Takeover Conditions Spec v1.1`. Visibility model reagira na ta stanja na sljedeći način:
+**Da.** Zaključano je bez otvorenih pitanja:
 
-### 6.1 `active`
+- tko smije create per privacy (§3)
+- tko smije field-edit per privacy × status (§4)
+- koje su sve dopuštene `krug_privacy` i `krug_shared_status` tranzicije i tko ih inicira, uz eksplicitno isključenje ordinary membera iz svake tranzicije koja dira approval tok (§5)
+- tko smije hard-delete per privacy × status (§6)
+- side-effects svake tranzicije na druga semantička polja (§5.5)
+- eksplicitna lista nevaljanih mutacija (§8)
+- danger zones bez otvorenih pitanja (§9)
 
-Visibility radi po §2–§5 bez izmjena.
+### Najbolji sljedeći dokument
 
-### 6.2 `early_signal`
+**`Krug Approval Enforcement Plan v1`**.
 
-Visibility radi po §2–§5 bez izmjena. `early_signal` je samo signal stanja na razini Kruga, ne mijenja tko vidi koju transakciju.
-
-### 6.3 `ugrožen`
-
-Visibility radi po §2–§5 bez izmjena. Isto kao `early_signal`, ovo je stanje konteksta, ne visibility pravilo.
-
-### 6.4 `continuity_window`
-
-Visibility radi po §2–§5 bez izmjena. U ovom prozoru Krug i dalje postoji i transakcije se i dalje gledaju kroz Krug kontekst.
-
-### 6.5 `read_only`
-
-Visibility radi po §2–§5 bez izmjena. `read_only` se odnosi na mutacije, ne na čitanje. Tko je do sada smio vidjeti redak, i dalje ga vidi.
-
-### 6.6 Prije `deleted`
-
-Sve do trenutka hard-delete-a Kruga, čitatelji navedeni u §2–§5 i dalje vide transakcije po istim pravilima. Lifecycle stanja sama po sebi ne uklanjaju vidljivost.
-
-### 6.7 `deleted`
-
-Primjenjuje se post-delete pravilo iz `Post-Delete Behavior Foundation Patch v1.1` koje je već zaključano u `Krug Transaction Semantics Schema Plan v1.3 §7`:
-
-```text
-krug_id              → NULL
-krug_privacy         shared → personal
-krug_shared_status   → NULL
-```
-
-Posljedice za visibility:
-
-- Transakcija više nije u Krug kontekstu.
-- Krug-based vidljivost (preset, punopravni član, ordinary member) prestaje vrijediti za tu transakciju, jer Krug konteksta više nema.
-- Autor i dalje vidi transakciju, sada kao osobnu transakciju izvan Kruga.
-- Drugi bivši članovi Kruga (uključujući bivše ordinary membere) je više ne vide kroz Krug kontekst.
-- `shared` approval status se briše zajedno s ostatkom Krug konteksta. Nema „shared transakcije bez Kruga”.
-
-## 7. Što je enforcement, a što samo semantika
-
-Ovaj dokument tvrdi sljedeće kao visibility pravila koja MORAJU biti enforce-ana na razini podataka (RLS i/ili service layer), neovisno o UI-u:
-
-- §1.4 (autor uvijek vidi vlastito; non-member nikad ne vidi Krug transakcije; `private` ne curi prema drugim članovima — uključujući ordinary membera; ordinary member ne smije biti spušten ispod §5.3).
-- §2.1, §2.2, §2.3 (visibility po `krug_privacy`, uključujući da ordinary member vidi `personal` i `shared` bez obzira na preset).
-- §3 (`krug_shared_status` ne mijenja krug čitatelja; status mora biti vidljiv onima koji već vide redak).
-- §4 (preset odlučuje default vidljivost `personal` među punopravnim članovima; `private` uvijek presijeca preset; `shared` uvijek dobiva minimum iz §2.3; preset ne dira ordinary membera).
-- §5 (matrica po tipovima članstva; ordinary member ima zaključano široko visibility pravo, ali nikakvo pravo djelovanja).
-- §6.7 (post-delete potpuno gasi Krug-based vidljivost).
-
-Ovaj dokument NE definira:
-
-- SQL policy sintaksu za bilo koju od ovih tvrdnji.
-- RPC potpise za approval ili visibility provjere.
-- API granice servisa koji posreduju u čitanju.
-- Indekse, agregate, materijalizirane prikaze.
-- UI tokove i komponente.
-- Rollout, migracije postojećih podataka i feature flagove.
-- Prava djelovanja nad retkom (governance, approval, billing, takeover) — to ostaje u već zaključanim governance dokumentima i budućim `Mutation Path` / `Approval Enforcement` planovima.
-
-## 8. Najopasnija mjesta
-
-### 8.1 Zamjena vidljivosti i prava djelovanja
-
-Najopasnija konceptualna zamjena u v1.1.
-
-- Činjenica da ordinary member vidi redak ne znači da ga smije predložiti kao shared, potvrditi, odbiti ili mijenjati `krug_privacy`.
-- UI koji bi iz „vidim redak” izveo „smijem djelovati nad retkom” otvara governance pukotinu.
-- Enforcement djelovanja mora ići kroz governance pravila, ne kroz visibility.
-
-### 8.2 Zamjena `personal` i `private`
-
-- `personal` ne znači „skriveno”. `personal` znači: vidljivost prema drugim punopravnim članovima određuje preset, a prema ordinary memberu vrijedi §5.3.
-- `private` znači „skriveno prema svima drugima, neovisno o presetu i neovisno o tipu članstva, uključujući ordinary membera”.
-- Tretiranje `personal` kao implicitno `private` (npr. u UI-u koji „za svaki slučaj” sakrije `personal` od ordinary membera) curi suprotno od onoga što je zaključano (§5.3).
-- Tretiranje `private` kao samo „jača verzija `personal`” curi prema agregatima na razini Kruga koji bi otkrili sumu ili autora `private` retka.
-
-### 8.3 Ordinary member dobiva premalo ili previše
-
-- Premalo: ordinary member ne smije izgubiti vidljivost `personal` i `shared` transakcija u Krugu zbog konfiguracije preseta ili UI fallbacka. To bi prekršilo §5.3.
-- Previše: ordinary member ne smije dobiti pravo djelovanja (predlaganje shared, potvrda, odbijanje, veto, billing, takeover) zato što vidi redak. To bi prekršilo governance pravila.
-- Posebno: ordinary member NE smije vidjeti `private` redak punopravnog člana. To je jedina iznimka od §5.3 i mora biti enforce-ana na razini podataka, ne samo UI-a.
-
-### 8.4 Preset curi u pogrešan visibility model
-
-- `Supružnik / partner` ima visok default dijeljenja `personal` transakcija među punopravnim članovima. Taj default ne smije „pobjeći” na `Su-roditelj` ili `Cimer` kroz dijeljeni kod.
-- `Su-roditelj` i `Cimer` imaju nizak default dijeljenja `personal` među punopravnim članovima. Taj default ne smije „pobjeći” u stranu otvorenosti zbog generičkog fallbacka „ako preset nije prepoznat, otvori sve”.
-- Default za nepoznat ili nedostajući preset MORA biti restriktivan na razini punopravnih članova, dok ordinary member ostaje na §5.3 i autor uvijek vidi svoje.
-
-### 8.5 Fantomski shared trag nakon `deleted`
-
-- Nakon hard-delete Kruga, post-delete pravilo (§6.7) postavlja `krug_id = NULL`, `krug_privacy: shared → personal`, `krug_shared_status = NULL`.
-- Opasno je ostaviti bilo koji popratni objekt (npr. approval zapis, shared agregat, settlement trag) koji bi nastavio implicirati da je transakcija nekad bila shared u nepostojećem Krugu i kroz njega curila bivšim članovima — uključujući bivše ordinary membere.
-- Vidljivost prema svim bivšim članovima nakon hard-delete-a mora biti nula. Autor zadržava transakciju kao osobnu, bez Krug konteksta.
-
-## 9. Zaključak
-
-### 9.1 Je li visibility model za transakcije dovoljno jasan
-
-Da, na razini čitanja transakcija.
-
-Ovaj dokument:
-
-- Zaključava razliku ownership ↔ vidljivost ↔ pravo djelovanja.
-- Definira što `personal`, `private`, `shared` znače u kontekstu čitanja.
-- Razdvaja ulogu preseta (default vidljivost `personal` među punopravnim članovima) od uloge retka (`private` zaključava, `shared` otvara).
-- Razdvaja `krug_shared_status` kao semantičku oznaku koja ne mijenja krug čitatelja.
-- Definira vidljivost po tipovima članstva, pri čemu ordinary member ima zaključano široko visibility pravo bez ikakvih prava djelovanja.
-- Definira ponašanje kroz lifecycle, uključujući potpuno gašenje Krug-based vidljivosti nakon hard-delete-a.
-- Eksplicitno označava najopasnije zamke, uključujući zamjenu vidljivosti i prava djelovanja.
-
-Što ovaj dokument NIJE riješio (svjesno i izvan scope-a):
-
-- Mutacijska pravila („tko smije promijeniti `krug_privacy`” i tko smije inicirati approval tok) na razini governance/approval toka.
-- Enforcement approval prijelaza `predložena → potvrđena / nepotvrđena`.
-- Konkretne SQL/RLS policy klauzule.
-- API i service granice koje će ova pravila operacionalizirati.
-
-### 9.2 Najbolji sljedeći dokument
-
-Preporučeni sljedeći dokument: **`Krug Transaction Mutation Path Plan v1`**.
-
-Razlog: prije nego što opišemo approval enforcement ili service boundary, treba zaključati tko smije inicirati i izvršiti svaku semantičku tranziciju iz `Krug Transaction Semantics Schema Plan v1.3 §5` (npr. `personal → shared / predložena`, `shared / predložena → shared / potvrđena`), oslanjajući se na visibility model iz ovog dokumenta i na governance pravila iz `Krug Governance / Mutation Path Plan v1.1` — i istovremeno potvrditi da ordinary member ostaje na nuli prava djelovanja, iako vidi sve.
-
-Nakon mutation path plana logično slijedi:
-
-1. `Krug Approval Enforcement Plan v1` — kako se `predložena → potvrđena / nepotvrđena` dokazuje na razini podataka.
-2. `Krug API / Service Boundary Plan v1` — kako se sve gore navedeno izlaže kroz servisni sloj prije nego se zaključa u SQL/RLS sintaksi.
-
-### 9.3 Sažetak zaključanih ispravaka u v1.1
-
-U odnosu na v1, v1.1 zaključava:
-
-- Ordinary member vidi sve transakcije Kruga koje još postoje u Krug kontekstu (jedina iznimka: `private` retke vidi samo autor).
-- Ordinary member nema nikakva governance, approval, billing ni takeover prava — to je strogo odvojeno od visibilityja.
-- Preset ne određuje vidljivost ordinary membera; preset određuje samo default vidljivost `personal` među punopravnim članovima.
-- §2.1, §2.3, §4.5 i §5.3 usklađeni su s ovim pravilom.
-- §1.1 i §1.4 sada eksplicitno razdvajaju vidljivost i pravo djelovanja, a §8.1 ovaj rizik označava kao najopasniju zamjenu.
+Razlog: semantika (Schema v1.3), vidljivost (Visibility v1.1) i mutation path (ovaj dokument) su tri statična ugla. Approval Enforcement je prvi dinamički kanal — definira kako se governance akti iz §5.3 i §6.1 izvršavaju, tko ih konzumira, kako se vetiraju, koji je operativni kriterij prozora §5.4, i koji je rate-limit za `nepotvrđena → predložena`. Tek nakon njega ima smisla `Krug API / Service Boundary Plan v1`.
