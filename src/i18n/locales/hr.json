@@ -4683,19 +4683,15 @@
       "active": "Aktivan",
       "early_signal": "Rani signal",
       "ugrozen": "Ugrožen",
-      "paused": "Pauziran",
-      "terminated": "Završen",
       "continuity_window": "Prijelaz",
       "read_only": "Samo čitanje",
       "deleted": "Obrisan"
     },
     "lifecycleNote": {
       "early_signal": "Krug pokazuje rane signale neaktivnosti. Provjeri stanje članova i transakcija.",
-      "ugrozen": "Krug je ugrožen — nije bilo aktivnosti dulje vrijeme. Razmotri pauzu ili nastavak.",
-      "paused": "Krug je pauziran. Mutacije su zaustavljene dok ga ne aktiviraš.",
+      "ugrozen": "Krug je ugrožen — nije bilo aktivnosti dulje vrijeme. Razmotri sljedeći korak.",
       "continuity_window": "Krug je u prijelaznom razdoblju — moguća je obnova ili završetak.",
       "read_only": "Krug je u read-only stanju. Akcije su onemogućene.",
-      "terminated": "Krug je završen. Povijest ostaje vidljiva, nove izmjene nisu moguće.",
       "deleted": "Krug je obrisan."
     },
     "loadError": {
