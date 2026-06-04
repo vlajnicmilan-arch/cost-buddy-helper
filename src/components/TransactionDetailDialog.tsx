@@ -32,6 +32,7 @@ import { FamilyReactionsBar } from './family/FamilyReactionsBar';
 import { FamilyCommentsInline } from './family/FamilyCommentsInline';
 import { useFamilyGroupForExpense } from '@/hooks/useFamilyGroupForExpense';
 import { useAppState } from '@/contexts/AppStateContext';
+import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 
 
 interface TransactionDetailDialogProps {
