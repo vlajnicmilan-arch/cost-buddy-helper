@@ -233,3 +233,105 @@ describe('canManageSharedSource', () => {
     expect(canManageSharedSource(invalid, true, true)).toBe(false);
   });
 });
+
+// ============================================================================
+// Wave 1.5 — A3 retract
+// ============================================================================
+
+const baseRetract: RetractInput = {
+  authenticated: true,
+  expenseFound: true,
+  alreadyDeleted: false,
+  isAuthor: true,
+  inSharedFlow: true,
+  isFullMember: true,
+  prevStatus: 'predlozena',
+  clientRequestId: 'req-1',
+};
+
+describe('decideRetract (A3)', () => {
+  it('happy path → ok_retracted', () => {
+    expect(decideRetract(baseRetract)).toBe('ok_retracted');
+  });
+  it('unauth', () => {
+    expect(decideRetract({ ...baseRetract, authenticated: false })).toBe('unauthenticated');
+  });
+  it('missing request id', () => {
+    expect(decideRetract({ ...baseRetract, clientRequestId: '' })).toBe('missing_client_request_id');
+  });
+  it('not found', () => {
+    expect(decideRetract({ ...baseRetract, expenseFound: false })).toBe('not_found');
+  });
+  it('already deleted → not_found (klijent ne zna razliku)', () => {
+    expect(decideRetract({ ...baseRetract, alreadyDeleted: true })).toBe('not_found');
+  });
+  it('ne-autor', () => {
+    expect(decideRetract({ ...baseRetract, isAuthor: false })).toBe('not_author');
+  });
+  it('izvan shared toka', () => {
+    expect(decideRetract({ ...baseRetract, inSharedFlow: false })).toBe('not_in_shared_flow');
+  });
+  it('autor ali obični član', () => {
+    expect(decideRetract({ ...baseRetract, isFullMember: false })).toBe('not_full_member');
+  });
+  it('potvrdjena → wrong_state (A3 samo na predlozena)', () => {
+    expect(decideRetract({ ...baseRetract, prevStatus: 'potvrdjena' })).toBe('wrong_state');
+  });
+  it('nepotvrdjena → wrong_state', () => {
+    expect(decideRetract({ ...baseRetract, prevStatus: 'nepotvrdjena' })).toBe('wrong_state');
+  });
+  it('null status → wrong_state', () => {
+    expect(decideRetract({ ...baseRetract, prevStatus: null })).toBe('wrong_state');
+  });
+});
+
+// ============================================================================
+// Wave 1.5 — A7 govern to personal
+// ============================================================================
+
+const baseGovern: GovernToPersonalInput = {
+  authenticated: true,
+  expenseFound: true,
+  alreadyDeleted: false,
+  inSharedFlow: true,
+  isFullMember: true,
+  prevStatus: 'potvrdjena',
+  clientRequestId: 'req-1',
+};
+
+describe('decideGovernToPersonal (A7)', () => {
+  it('potvrdjena → ok', () => {
+    expect(decideGovernToPersonal(baseGovern)).toBe('ok_governed_to_personal');
+  });
+  it('nepotvrdjena → ok (post-quorum oba smjera)', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, prevStatus: 'nepotvrdjena' })).toBe('ok_governed_to_personal');
+  });
+  it('predlozena → wrong_state (A7 ne dira pending)', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, prevStatus: 'predlozena' })).toBe('wrong_state');
+  });
+  it('null status → wrong_state', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, prevStatus: null })).toBe('wrong_state');
+  });
+  it('unauth', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, authenticated: false })).toBe('unauthenticated');
+  });
+  it('missing request id', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, clientRequestId: undefined })).toBe('missing_client_request_id');
+  });
+  it('not found', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, expenseFound: false })).toBe('not_found');
+  });
+  it('already deleted → not_found', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, alreadyDeleted: true })).toBe('not_found');
+  });
+  it('izvan shared toka', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, inSharedFlow: false })).toBe('not_in_shared_flow');
+  });
+  it('obični član ne može', () => {
+    expect(decideGovernToPersonal({ ...baseGovern, isFullMember: false })).toBe('not_full_member');
+  });
+  it('A7 ne traži autora — drugi punopravni član smije', () => {
+    // Sanity: nema isAuthor polja u inputu, što je namjerno.
+    expect(decideGovernToPersonal(baseGovern)).toBe('ok_governed_to_personal');
+  });
+});
