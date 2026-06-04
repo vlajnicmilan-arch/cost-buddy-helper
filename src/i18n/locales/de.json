@@ -4628,6 +4628,22 @@
     "members": "Mitglieder",
     "sharedSources": "Gemeinsame Quellen",
     "noSharedSources": "Keine verknüpften Zahlungsquellen.",
+    "sharedSource": {
+      "attach": {
+        "placeholder": "Zahlungsquelle verknüpfen…",
+        "empty": "Keine Zahlungsquellen zum Verknüpfen verfügbar",
+        "success": "Quelle mit Krug verknüpft",
+        "denied": "Du kannst nur eine eigene Quelle verknüpfen.",
+        "error": "Verknüpfen fehlgeschlagen"
+      },
+      "detach": {
+        "cta": "Quelle trennen",
+        "confirm": "Quelle vom Krug trennen?",
+        "success": "Quelle getrennt",
+        "denied": "Du darfst diese Quelle nicht trennen.",
+        "error": "Trennen fehlgeschlagen"
+      }
+    },
     "notFound": "Krug nicht gefunden.",
     "role": {
       "owner": "Eigentümer",

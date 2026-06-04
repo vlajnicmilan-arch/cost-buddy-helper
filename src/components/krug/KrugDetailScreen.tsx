@@ -19,17 +19,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, User, Users, CreditCard, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { Crown, User, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
-import { useKrugSharedPaymentSources } from '@/hooks/useKrugSharedPaymentSources';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
+import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+
 
 interface Props {
   krugId: string;
@@ -40,8 +41,8 @@ export function KrugDetailScreen({ krugId }: Props) {
   const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
   const { data: members = [] } = useKrugMembers(krugId);
-  const { data: sharedSources = [] } = useKrugSharedPaymentSources(krugId);
   const changeRole = useKrugChangeMemberRole();
+
   const removeMember = useKrugRemoveMember();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -199,26 +200,9 @@ export function KrugDetailScreen({ krugId }: Props) {
         </Card>
       </section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          <CreditCard className="w-4 h-4" />
-          {t('krug.sharedSources', 'Zajednički izvori')}
-          <span className="text-xs text-muted-foreground">({sharedSources.length})</span>
-        </h3>
-        {sharedSources.length === 0 ? (
-          <Card className="p-4 text-xs text-muted-foreground">
-            {t('krug.noSharedSources', 'Nema povezanih izvora plaćanja.')}
-          </Card>
-        ) : (
-          <Card className="divide-y divide-border">
-            {sharedSources.map((s) => (
-              <div key={s.id} className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                {s.payment_source_id}
-              </div>
-            ))}
-          </Card>
-        )}
-      </section>
+      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} />
+
+
 
       <AddKrugMemberDialog
         open={addOpen}
