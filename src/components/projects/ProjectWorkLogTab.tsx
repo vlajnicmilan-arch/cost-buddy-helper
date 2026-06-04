@@ -24,18 +24,21 @@ import { WorkLogDialog } from './WorkLogDialog';
 import { WorkLogMonthlyOverview } from './WorkLogMonthlyOverview';
 import { MyWorkerPayCard } from './MyWorkerPayCard';
 import type { ProjectWorkLog } from '@/types/projectWorkLog';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectWorkLogTabProps {
   projectId: string;
   isManager: boolean;
   projectName?: string;
+  isReadOnly?: boolean;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager, projectName }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnly = false }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
