@@ -56,6 +56,7 @@ export const BottomNav = () => {
         {navItems.map((item) => {
           const isActive = item.activePaths.includes(location.pathname);
           const Icon = item.icon;
+          const accent = MODULE_NAV_CLASSES[item.colorKey];
           return (
             <button
               key={item.path}
@@ -65,19 +66,21 @@ export const BottomNav = () => {
               {isActive && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary"
+                  className={cn('absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full', accent.bg)}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
               <Icon
-                className={`w-5 h-5 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={cn(
+                  'w-5 h-5 transition-colors',
+                  isActive ? accent.text : 'text-muted-foreground',
+                )}
               />
               <span
-                className={`text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={cn(
+                  'text-[10px] font-medium transition-colors',
+                  isActive ? accent.text : 'text-muted-foreground',
+                )}
               >
                 {t(item.labelKey, item.fallback)}
               </span>
