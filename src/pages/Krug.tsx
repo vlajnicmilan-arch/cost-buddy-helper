@@ -12,7 +12,7 @@ import { Navigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { HomeHeader } from '@/components/home/HomeHeader';
+import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { KrugListScreen } from '@/components/krug/KrugListScreen';
 import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';
@@ -31,7 +31,7 @@ export default function Krug() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <HomeHeader />
+      <PageHeader title={t('krug.title', 'Krug')} />
       <main className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {selectedKrugId ? (
           <>
