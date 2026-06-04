@@ -255,7 +255,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
             <div className="grid grid-cols-3 gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="default" className="h-auto py-3 flex-col gap-1" disabled={uploading}>
+                  <Button variant="default" className="h-auto py-3 flex-col gap-1" disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <CameraIcon className="w-5 h-5" />
                     <span className="text-xs font-medium">{t('projects.documents.takePhoto', 'Slikaj')}</span>
                   </Button>
