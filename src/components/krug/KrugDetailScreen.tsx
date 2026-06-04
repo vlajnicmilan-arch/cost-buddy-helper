@@ -27,6 +27,8 @@ import {
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
+import { KrugApprovalQueue } from './KrugApprovalQueue';
+
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -109,6 +111,16 @@ export function KrugDetailScreen({ krugId }: Props) {
           </Badge>
         </div>
       </Card>
+
+      <KrugApprovalQueue
+        krugId={krugId}
+        viewerUserId={user?.id ?? null}
+        viewerIsFullMember={
+          isOwner || detail.myMembership?.role === 'punopravni'
+        }
+      />
+
+
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">

@@ -4628,6 +4628,11 @@
     "members": "Members",
     "sharedSources": "Shared sources",
     "noSharedSources": "No linked payment sources.",
+    "queue": {
+      "title": "Awaiting decision",
+      "empty": "No proposals to decide on.",
+      "noDescription": "(no description)"
+    },
     "sharedSource": {
       "attach": {
         "placeholder": "Link a payment source…",

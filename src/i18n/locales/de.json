@@ -4628,6 +4628,11 @@
     "members": "Mitglieder",
     "sharedSources": "Gemeinsame Quellen",
     "noSharedSources": "Keine verknüpften Zahlungsquellen.",
+    "queue": {
+      "title": "Zur Entscheidung",
+      "empty": "Keine Vorschläge zur Entscheidung.",
+      "noDescription": "(keine Beschreibung)"
+    },
     "sharedSource": {
       "attach": {
         "placeholder": "Zahlungsquelle verknüpfen…",
