@@ -257,6 +257,12 @@ export const UsersTab = ({
             {t('admin.users.activeContext.fromCardPrefix', 'Iz kartice modula:')}
           </span>
           <span className="text-xs font-semibold text-primary">{activeContextLabel}</span>
+          {activeReasonLabel && (
+            <>
+              <span aria-hidden className="text-xs text-primary/60">·</span>
+              <span className="text-xs font-semibold text-primary">{activeReasonLabel}</span>
+            </>
+          )}
           <button
             type="button"
             onClick={() => { setActiveContext(null); setFilterRaw('all'); }}
