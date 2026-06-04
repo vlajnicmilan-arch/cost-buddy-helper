@@ -1307,6 +1307,7 @@
     }
   },
   "common": {
+    "retry": "Erneut versuchen",
     "exportPdf": "Als PDF exportieren",
     "exportSuccess": "Exportiert",
     "exportFailed": "Export fehlgeschlagen",
@@ -4677,6 +4678,20 @@
       "read_only": "Nur lesen",
       "deleted": "Gelöscht"
     },
+    "lifecycleNote": {
+      "early_signal": "Krug zeigt erste Anzeichen von Inaktivität. Prüfe Mitglieder und Transaktionen.",
+      "ugrozen": "Krug ist gefährdet — längere Zeit keine Aktivität. Pausieren oder fortsetzen erwägen.",
+      "paused": "Krug ist pausiert. Mutationen sind gestoppt, bis du ihn reaktivierst.",
+      "continuity_window": "Krug ist im Übergang — Erneuerung oder Abschluss möglich.",
+      "read_only": "Krug ist nur lesbar. Aktionen sind deaktiviert.",
+      "terminated": "Krug ist beendet. Historie bleibt sichtbar, keine neuen Änderungen möglich.",
+      "deleted": "Krug wurde gelöscht."
+    },
+    "loadError": {
+      "title": "Krug konnte nicht geladen werden",
+      "body": "Verbindung prüfen und erneut versuchen. Falls es wiederholt auftritt, melde dich."
+    },
+    "notFoundBody": "Möglicherweise gelöscht oder kein Zugriff mehr. Zurück zur Krug-Liste.",
     "transaction": {
       "title": "Krug",
       "loading": "Lädt…"
@@ -4728,8 +4743,13 @@
           "cannot_add_self": "Du kannst dich nicht selbst hinzufügen.",
           "not_owner": "Nur der Krug-Eigentümer kann Mitglieder hinzufügen.",
           "invalid_input": "Ungültige E-Mail.",
+          "cap_exceeded": "Die maximale Anzahl von Vollmitgliedern für dieses Preset ist erreicht.",
           "generic": "Fehler beim Hinzufügen."
         }
+      },
+      "empty": {
+        "owner": "Der Krug hat noch keine weiteren Mitglieder. Lade jemanden über „Mitglied hinzufügen“ ein.",
+        "member": "Der Krug hat noch keine weiteren Mitglieder."
       },
       "role": {
         "promoted": "Zum Vollmitglied befördert",

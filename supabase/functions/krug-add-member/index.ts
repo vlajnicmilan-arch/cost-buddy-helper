@@ -96,6 +96,8 @@ serve(async (req) => {
     }
 
     // Insert membership (RLS-equivalent via service role; we already verified owner).
+    // BEFORE INSERT trigger `krug_enforce_punopravni_cap` may reject when the
+    // preset's cap is exceeded — surface that as `cap_exceeded`.
     const { error: insErr } = await admin.from("krug_membership").insert({
       krug_id: krugId,
       user_id: invitedUserId,
@@ -104,6 +106,9 @@ serve(async (req) => {
     });
     if (insErr) {
       console.error("[KRUG-ADD-MEMBER] insert error", insErr);
+      if ((insErr.message || "").includes("krug_punopravni_cap")) {
+        return json({ error: "cap_exceeded" }, 200);
+      }
       return json({ error: "insert_failed", detail: insErr.message }, 200);
     }
 

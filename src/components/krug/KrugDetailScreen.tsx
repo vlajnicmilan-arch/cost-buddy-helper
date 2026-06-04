@@ -20,17 +20,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
+  isKrugCapError,
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
 import { KrugApprovalQueue } from './KrugApprovalQueue';
+import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { canAddPunopravni } from '@/lib/krugPresets';
@@ -63,7 +65,20 @@ export function KrugDetailScreen({ krugId }: Props) {
     return <Card className="p-6 text-sm text-muted-foreground">{t('common.loading', 'Učitavanje…')}</Card>;
   }
   if (!detail) {
-    return <Card className="p-6 text-sm text-muted-foreground">{t('krug.notFound', 'Krug ne postoji.')}</Card>;
+    return (
+      <Card className="p-6 space-y-2 border-destructive/30">
+        <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+          <AlertCircle className="w-4 h-4" />
+          {t('krug.notFound', 'Krug ne postoji.')}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            'krug.notFoundBody',
+            'Možda je obrisan ili više nemaš pristup. Vrati se na listu Krugova.',
+          )}
+        </p>
+      </Card>
+    );
   }
 
   const { krug } = detail;
@@ -75,7 +90,11 @@ export function KrugDetailScreen({ krugId }: Props) {
       await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'punopravni' });
       showSuccess(t('krug.member.role.promoted', 'Promovirano u punopravnog člana'));
     } catch (e) {
-      showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+      if (isKrugCapError(e)) {
+        showError(t('krug.member.add.errors.cap_exceeded', 'Dosegnut je maks. broj punopravnih članova za ovaj preset.'));
+      } else {
+        showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+      }
     }
   };
 
@@ -105,16 +124,20 @@ export function KrugDetailScreen({ krugId }: Props) {
     <div className="space-y-4">
       <Card className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold">{krug.name}</h2>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold truncate">{krug.name}</h2>
+            <p className="text-xs text-muted-foreground truncate">
               {t(`krug.preset.${krug.preset}`, krug.preset)}
             </p>
           </div>
-          <Badge variant="outline" className="text-[10px] uppercase">
-            {t(`krug.lifecycle.${krug.lifecycle_state}`, krug.lifecycle_state)}
-          </Badge>
+          <KrugLifecycleBadge state={krug.lifecycle_state} className="shrink-0 text-right" />
         </div>
+        
+        {krug.lifecycle_state && krug.lifecycle_state !== 'active' && (
+          <p className="text-[11px] text-muted-foreground">
+            {t(`krug.lifecycleNote.${krug.lifecycle_state}`, { defaultValue: '' })}
+          </p>
+        )}
       </Card>
 
       <KrugApprovalQueue
@@ -142,7 +165,16 @@ export function KrugDetailScreen({ krugId }: Props) {
           )}
         </div>
 
+        {members.length <= 1 && (
+          <Card className="p-4 text-xs text-muted-foreground">
+            {isOwner
+              ? t('krug.member.empty.owner', 'Krug još nema drugih članova. Pozovi nekoga preko “Dodaj člana”.')
+              : t('krug.member.empty.member', 'Krug još nema drugih članova.')}
+          </Card>
+        )}
+
         <Card className="divide-y divide-border">
+
           {members.map((m) => {
             const isMe = user?.id === m.user_id;
             const canManage = isOwner && m.kind !== 'owner';

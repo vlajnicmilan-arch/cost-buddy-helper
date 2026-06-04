@@ -1311,6 +1311,7 @@
     }
   },
   "common": {
+    "retry": "Pokušaj ponovo",
     "exportPdf": "Izvoz u PDF",
     "exportSuccess": "Izvezeno",
     "exportFailed": "Izvoz nije uspio",
@@ -4688,6 +4689,20 @@
       "read_only": "Samo čitanje",
       "deleted": "Obrisan"
     },
+    "lifecycleNote": {
+      "early_signal": "Krug pokazuje rane signale neaktivnosti. Provjeri stanje članova i transakcija.",
+      "ugrozen": "Krug je ugrožen — nije bilo aktivnosti dulje vrijeme. Razmotri pauzu ili nastavak.",
+      "paused": "Krug je pauziran. Mutacije su zaustavljene dok ga ne aktiviraš.",
+      "continuity_window": "Krug je u prijelaznom razdoblju — moguća je obnova ili završetak.",
+      "read_only": "Krug je u read-only stanju. Akcije su onemogućene.",
+      "terminated": "Krug je završen. Povijest ostaje vidljiva, nove izmjene nisu moguće.",
+      "deleted": "Krug je obrisan."
+    },
+    "loadError": {
+      "title": "Krug se ne može učitati",
+      "body": "Provjeri internetsku vezu i pokušaj ponovo. Ako se ponavlja, javi nam."
+    },
+    "notFoundBody": "Možda je obrisan ili više nemaš pristup. Vrati se na listu Krugova.",
     "transaction": {
       "title": "Krug",
       "loading": "Učitavam…"
@@ -4739,8 +4754,13 @@
           "cannot_add_self": "Ne možeš dodati samog sebe.",
           "not_owner": "Samo vlasnik Kruga može dodavati članove.",
           "invalid_input": "Neispravan email.",
+          "cap_exceeded": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
           "generic": "Greška pri dodavanju člana."
         }
+      },
+      "empty": {
+        "owner": "Krug još nema drugih članova. Pozovi nekoga preko “Dodaj člana”.",
+        "member": "Krug još nema drugih članova."
       },
       "role": {
         "promoted": "Promovirano u punopravnog člana",

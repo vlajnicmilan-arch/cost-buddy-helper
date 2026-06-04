@@ -147,6 +147,8 @@ function translateAddError(err: KrugAddError, t: TFunction): string {
       return t('krug.member.add.errors.not_owner', 'Samo vlasnik Kruga može dodavati članove.');
     case 'invalid_input':
       return t('krug.member.add.errors.invalid_input', 'Neispravan email.');
+    case 'cap_exceeded':
+      return t('krug.member.add.errors.cap_exceeded', 'Dosegnut je maks. broj punopravnih članova za ovaj preset.');
     case 'lookup_failed':
     case 'insert_failed':
     case 'unauthorized':

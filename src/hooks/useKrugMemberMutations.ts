@@ -25,9 +25,19 @@ export type KrugAddError =
   | 'user_not_found'
   | 'cannot_add_self'
   | 'already_member'
+  | 'cap_exceeded'
   | 'lookup_failed'
   | 'insert_failed'
   | 'unexpected';
+
+/** Marker poruka koju DB trigger digne kad je preset cap probijen. */
+export const KRUG_CAP_MARKER = 'krug_punopravni_cap';
+
+export function isKrugCapError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = (err as { message?: string })?.message ?? String(err);
+  return msg.includes(KRUG_CAP_MARKER);
+}
 
 interface AddArgs {
   krugId: string;

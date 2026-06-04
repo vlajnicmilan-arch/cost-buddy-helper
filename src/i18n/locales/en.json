@@ -1307,6 +1307,7 @@
     }
   },
   "common": {
+    "retry": "Try again",
     "exportPdf": "Export to PDF",
     "exportSuccess": "Exported",
     "exportFailed": "Export failed",
@@ -4677,6 +4678,20 @@
       "read_only": "Read-only",
       "deleted": "Deleted"
     },
+    "lifecycleNote": {
+      "early_signal": "Krug shows early signs of inactivity. Check member and transaction state.",
+      "ugrozen": "Krug is at risk — no activity for a while. Consider pausing or resuming.",
+      "paused": "Krug is paused. Mutations are halted until you reactivate it.",
+      "continuity_window": "Krug is in a transition window — renewal or wrap-up is possible.",
+      "read_only": "Krug is read-only. Actions are disabled.",
+      "terminated": "Krug has ended. History stays visible, no new changes possible.",
+      "deleted": "Krug has been deleted."
+    },
+    "loadError": {
+      "title": "Krug failed to load",
+      "body": "Check your connection and try again. If this keeps happening, let us know."
+    },
+    "notFoundBody": "It may have been deleted or you no longer have access. Go back to the Krug list.",
     "transaction": {
       "title": "Krug",
       "loading": "Loading…"
@@ -4728,8 +4743,13 @@
           "cannot_add_self": "You cannot add yourself.",
           "not_owner": "Only the Krug owner can add members.",
           "invalid_input": "Invalid email.",
+          "cap_exceeded": "The maximum number of full members for this preset has been reached.",
           "generic": "Failed to add member."
         }
+      },
+      "empty": {
+        "owner": "Krug has no other members yet. Invite someone via “Add member”.",
+        "member": "Krug has no other members yet."
       },
       "role": {
         "promoted": "Promoted to full member",
