@@ -165,7 +165,16 @@ export function KrugDetailScreen({ krugId }: Props) {
           )}
         </div>
 
+        {members.length <= 1 && (
+          <Card className="p-4 text-xs text-muted-foreground">
+            {isOwner
+              ? t('krug.member.empty.owner', 'Krug još nema drugih članova. Pozovi nekoga preko “Dodaj člana”.')
+              : t('krug.member.empty.member', 'Krug još nema drugih članova.')}
+          </Card>
+        )}
+
         <Card className="divide-y divide-border">
+
           {members.map((m) => {
             const isMe = user?.id === m.user_id;
             const canManage = isOwner && m.kind !== 'owner';
