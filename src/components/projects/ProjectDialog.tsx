@@ -144,6 +144,11 @@ export const ProjectDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (isEdit && isReadOnly) {
+      const { showError } = await import('@/hooks/useStatusFeedback');
+      showError(t('projects.access.readOnlyBlockedToast'));
+      return;
+    }
 
     setSaving(true);
     try {
