@@ -133,7 +133,7 @@ export const BudgetCard = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="font-semibold text-base sm:text-lg truncate">{budget.name}</h3>
+                <h3 className="font-semibold text-base sm:text-lg truncate text-[hsl(258_90%_66%)]">{budget.name}</h3>
                 <Badge variant={getStatusBadgeVariant(budgetStatus)} className="text-xs shrink-0">
                   {t(`budget.status.${budgetStatus}`)}
                 </Badge>

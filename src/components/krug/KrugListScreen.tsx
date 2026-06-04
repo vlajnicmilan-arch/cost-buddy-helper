@@ -80,7 +80,7 @@ export function KrugListScreen({ onSelect }: Props) {
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="space-y-1 min-w-0">
-                  <div className="font-medium truncate">{k.name}</div>
+                  <div className="font-medium truncate text-[hsl(25_95%_53%)]">{k.name}</div>
                   <div className="text-xs text-muted-foreground truncate">
                     {t(`krug.preset.${k.preset}`, k.preset)}
                   </div>
