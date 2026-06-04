@@ -12,7 +12,7 @@ import { Navigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { HomeHeader } from '@/components/HomeHeader';
+import { HomeHeader } from '@/components/home/HomeHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { KrugListScreen } from '@/components/krug/KrugListScreen';
 import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';

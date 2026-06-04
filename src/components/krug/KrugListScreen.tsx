@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useMyKrugs } from '@/hooks/useKrug';
 import { clickableProps } from '@/lib/a11y';
-import { showInfo } from '@/hooks/useStatusFeedback';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 interface Props {
   onSelect: (krugId: string) => void;
@@ -22,7 +22,7 @@ export function KrugListScreen({ onSelect }: Props) {
 
   const handleCreate = () => {
     // Wave 2: preset wizard. Za sada ne uvodimo novu product odluku iz UI sloja.
-    showInfo(t('krug.createSoon', 'Kreiranje Kruga uskoro'));
+    showSuccess(t('krug.createSoon', 'Kreiranje Kruga uskoro'));
   };
 
   return (
