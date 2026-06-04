@@ -285,7 +285,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading}>
+                  <Button variant="outline" className="h-auto py-3 flex-col gap-1" disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                     <Upload className="w-5 h-5" />
                     <span className="text-xs font-medium">{t('projects.documents.file', 'Datoteka')}</span>
                   </Button>
