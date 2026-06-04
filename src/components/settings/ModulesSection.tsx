@@ -168,12 +168,13 @@ export const ModulesSection = ({
     const isLocked = cardState === 'locked';
     const isActive = cardState === 'active';
 
-    // Read-only badge: prikazuje se SAMO kad modul ima aktivan admin override grant.
-    // Strogo informativan: bez CTA, bez interakcije, ne mijenja access logiku.
+    // Read-only badge: prikazuje se kad postoji aktivan admin override grant
+    // za ovaj modul. Strogo informativan: bez CTA, bez interakcije.
     const overrideModule: GrantModule | null =
       cfg.module === 'projects' ? 'projects' : cfg.module === 'business' ? 'business' : null;
     const overrideGrant = overrideModule ? getGrant(overrideModule) : undefined;
-    const showOverrideBadge = !!overrideGrant && !state.tierUnlocked;
+    const showOverrideBadge = !!overrideGrant;
+
 
     return (
       <div
