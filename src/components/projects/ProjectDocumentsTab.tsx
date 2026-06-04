@@ -374,8 +374,10 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
                     </div>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setDocToDelete(doc); }}
-                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      onClick={(e) => { e.stopPropagation(); if (guard()) setDocToDelete(doc); }}
+                      disabled={isReadOnly}
+                      title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:opacity-30"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
