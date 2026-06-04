@@ -4391,6 +4391,7 @@
         "hasProjects": "Ima Projects",
         "hasBusiness": "Ima Business",
         "overrideActive": "Override aktivan",
+        "expiringOverride": "Override ističe < 7d",
         "coreOnly": "Samo Core"
       },
       "accessBadge": {
@@ -4401,6 +4402,24 @@
         "billing": "Naplata",
         "override": "Override",
         "both": "Naplata + Override"
+      },
+      "expiry": {
+        "expiresSoon": "Ističe uskoro",
+        "expiresToday": "Ističe danas",
+        "expiresInDay": "Ističe za 1 dan",
+        "expiresInDays_one": "Ističe za {{count}} dan",
+        "expiresInDays_few": "Ističe za {{count}} dana",
+        "expiresInDays_other": "Ističe za {{count}} dana"
+      },
+      "activeContext": {
+        "fromCardPrefix": "Iz kartice modula:",
+        "projects": "Projects",
+        "projectsBilling": "Projects kroz Naplatu",
+        "projectsOverride": "Projects kroz Override",
+        "business": "Business",
+        "businessBilling": "Business kroz Naplatu",
+        "businessOverride": "Business kroz Override",
+        "reset": "Resetiraj"
       }
     },
     "user": {
