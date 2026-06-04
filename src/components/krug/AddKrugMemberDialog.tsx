@@ -31,8 +31,8 @@ interface Props {
 
 export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopravniCount }: Props) {
   const { t } = useTranslation();
-  const { showSuccess, showError } = useStatusFeedback();
   const addMember = useKrugAddMember();
+
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<KrugAddRole>('punopravni');
 
@@ -57,7 +57,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
       showSuccess(t('krug.member.add.success', 'Član dodan'));
       handleClose(false);
     } else {
-      showError(translateAddError(res.error, t));
+      showError(translateAddError((res as { error: KrugAddError }).error, t));
     }
   };
 
