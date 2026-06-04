@@ -56,11 +56,13 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
   );
 
   const triggerFilePicker = (mode: StorageMode) => {
+    if (!guard()) return;
     setUploadingMode(mode);
     fileInputRef.current?.click();
   };
 
   const handleCamera = async (mode: StorageMode) => {
+    if (!guard()) return;
     try {
       const dataUrl = await takePhoto();
       if (!dataUrl) return;
@@ -75,6 +77,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
   };
 
   const handleGallery = async (mode: StorageMode) => {
+    if (!guard()) return;
     try {
       const dataUrl = await pickFromGallery();
       if (!dataUrl) return;
@@ -90,6 +93,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
 
   // Foto dnevnik: with GPS location
   const handleProgressPhoto = async (source: 'camera' | 'gallery') => {
+    if (!guard()) return;
     try {
       const dataUrl = source === 'camera' ? await takePhoto() : await pickFromGallery();
       if (!dataUrl) return;
@@ -114,6 +118,7 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (!guard()) return;
     setUploading(true);
     await uploadDocument(file, { mode: uploadingMode, documentKind: 'document' });
     setUploading(false);
