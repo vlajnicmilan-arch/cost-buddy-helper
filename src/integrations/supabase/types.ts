@@ -5555,6 +5555,13 @@ export type Database = {
         Args: { _krug: string; _user: string }
         Returns: boolean
       }
+      krug_set_privacy: {
+        Args: {
+          p_expense_id: string
+          p_new_privacy: Database["public"]["Enums"]["krug_privacy"]
+        }
+        Returns: Json
+      }
       link_worker_to_member: {
         Args: { _user_id: string; _worker_id: string }
         Returns: Json
