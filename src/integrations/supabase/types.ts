@@ -83,6 +83,63 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_module_grants: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string
+          id: string
+          module: Database["public"]["Enums"]["admin_grant_module"]
+          reason_code: Database["public"]["Enums"]["admin_grant_reason_code"]
+          reason_note: string | null
+          revoke_reason: string | null
+          revoked_actor:
+            | Database["public"]["Enums"]["admin_revoke_actor"]
+            | null
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by: string
+          id?: string
+          module: Database["public"]["Enums"]["admin_grant_module"]
+          reason_code: Database["public"]["Enums"]["admin_grant_reason_code"]
+          reason_note?: string | null
+          revoke_reason?: string | null
+          revoked_actor?:
+            | Database["public"]["Enums"]["admin_revoke_actor"]
+            | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          module?: Database["public"]["Enums"]["admin_grant_module"]
+          reason_code?: Database["public"]["Enums"]["admin_grant_reason_code"]
+          reason_note?: string | null
+          revoke_reason?: string | null
+          revoked_actor?:
+            | Database["public"]["Enums"]["admin_revoke_actor"]
+            | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_insights_cache: {
         Row: {
           created_at: string
@@ -5267,6 +5324,23 @@ export type Database = {
       }
       get_founding_member_count: { Args: never; Returns: number }
       get_next_founding_member_number: { Args: never; Returns: number }
+      grant_module_access: {
+        Args: {
+          p_expires_at: string
+          p_modules: Database["public"]["Enums"]["admin_grant_module"][]
+          p_reason_code: Database["public"]["Enums"]["admin_grant_reason_code"]
+          p_reason_note: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      has_active_module_grant: {
+        Args: {
+          _module: Database["public"]["Enums"]["admin_grant_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_any_paid_plan: { Args: { _user_id: string }; Returns: boolean }
       has_full_payment_source_access: {
         Args: { _source_id: string; _user_id: string }
@@ -5425,6 +5499,10 @@ export type Database = {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      revoke_module_access: {
+        Args: { p_grant_id: string; p_revoke_reason: string }
+        Returns: Json
+      }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -5450,6 +5528,15 @@ export type Database = {
       }
     }
     Enums: {
+      admin_grant_module: "projects" | "business"
+      admin_grant_reason_code:
+        | "refund"
+        | "beta_tester"
+        | "internal"
+        | "partner"
+        | "support"
+        | "other"
+      admin_revoke_actor: "admin" | "system"
       app_role: "admin" | "user"
       expense_work_type:
         | "material"
@@ -5597,6 +5684,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_grant_module: ["projects", "business"],
+      admin_grant_reason_code: [
+        "refund",
+        "beta_tester",
+        "internal",
+        "partner",
+        "support",
+        "other",
+      ],
+      admin_revoke_actor: ["admin", "system"],
       app_role: ["admin", "user"],
       expense_work_type: [
         "material",
