@@ -156,14 +156,13 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
       ) : (
         <Card className="divide-y divide-border">
           {linked.map((s) => {
-            const meta = nameById.get(s.payment_source_id);
-            const label = meta?.name ?? s.payment_source_id;
+            const { label, currency } = resolveLabel(s.payment_source_id);
             return (
               <div key={s.id} className="px-4 py-3 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm truncate">{label}</div>
-                  {meta?.currency && (
-                    <div className="text-[10px] text-muted-foreground">{meta.currency}</div>
+                  {currency && (
+                    <div className="text-[10px] text-muted-foreground">{currency}</div>
                   )}
                 </div>
                 {isOwner && (
