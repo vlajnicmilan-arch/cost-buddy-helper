@@ -4350,6 +4350,80 @@
         "dateMustBeFuture": "Datum mora biti u budućnosti.",
         "submit": "Dodijeli pristup"
       }
+    },
+    "access": {
+      "tab": "Pristup",
+      "systemBilling": {
+        "title": "Naplata sustava",
+        "desc": "Uključi/isključi sustav naplate za sve korisnike",
+        "activeNote": "✓ Naplata je aktivna — korisnici vide ograničenja prema razini.",
+        "disabledNote": "○ Naplata je isključena — svi korisnici imaju puni pristup."
+      },
+      "overview": {
+        "title": "Stanje pristupa po modulima",
+        "totalUsers": "Ukupno korisnika",
+        "totalWithAccess": "Ukupno s pristupom",
+        "viaBilling": "kroz Naplatu",
+        "viaOverride": "kroz Override",
+        "intersection": "i jedno i drugo",
+        "coreAlwaysOn": "Core je dostupan svima."
+      },
+      "recentActivity": {
+        "title": "Nedavna override aktivnost",
+        "empty": "Još nema override aktivnosti.",
+        "actionGrant": "Dodijeljen",
+        "actionRevoke": "Opozvan"
+      },
+      "footerNote": "Per-user upravljanje naplatom i admin overrideom dostupno je u detalju korisnika na tabu Korisnici."
+    },
+    "billing": {
+      "planLabel": {
+        "coreOnly": "Samo Core",
+        "projects": "Naplata: Projects",
+        "business": "Naplata: Business"
+      }
+    },
+    "users": {
+      "filter": {
+        "all": "Svi",
+        "admins": "Admini",
+        "banned": "Blokirani",
+        "hasProjects": "Ima Projects",
+        "hasBusiness": "Ima Business",
+        "overrideActive": "Override aktivan",
+        "coreOnly": "Samo Core"
+      },
+      "accessBadge": {
+        "label": "Pristup",
+        "coreOnly": "Samo Core"
+      },
+      "accessSource": {
+        "billing": "Naplata",
+        "override": "Override",
+        "both": "Naplata + Override"
+      }
+    },
+    "user": {
+      "until": "do",
+      "effectiveAccess": {
+        "title": "Efektivni pristup",
+        "coreOnly": "Samo Core",
+        "always": "uvijek",
+        "from": "iz"
+      },
+      "billingSection": {
+        "title": "Naplata",
+        "layerChip": "Sloj 1",
+        "current": "Trenutno",
+        "saving": "Spremam...",
+        "note": "Mijenja samo billing zapis. Admin override modula uređuje se ispod."
+      },
+      "overrideSection": {
+        "title": "Admin override modula",
+        "layerChip": "Sloj 2",
+        "addButton": "Dodijeli pristup modulu"
+      },
+      "layersIndependentNote": "Naplata i Admin override su nezavisni slojevi. Promjena naplate ne uklanja postojeće override grantove. Opoziv overridea ne mijenja naplatu. Efektivni pristup vrijedi dok postoji barem jedan aktivni izvor."
     }
   },
   "onboardingV2": {
