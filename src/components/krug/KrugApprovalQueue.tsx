@@ -128,6 +128,13 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
             const { canConfirm, canNegate } = canActOn(e);
             const busy = actingId === e.id && applyAct.isPending;
             const amountFormatted = formatAmount(Number(e.amount), (e.currency ?? undefined) as any);
+            const authorName = e.user_id
+              ? getMemberDisplayName(
+                  profiles.get(e.user_id),
+                  e.user_id,
+                  t('krug.member.unknown', 'Nepoznat član'),
+                )
+              : null;
             return (
               <div
                 key={e.id}
@@ -140,6 +147,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     {format(e.date, 'd. MMM yyyy.', { locale })}
+                    {authorName ? ` · ${authorName}` : ''}
                     {e.merchant_name ? ` · ${e.merchant_name}` : ''}
                   </div>
                 </div>
