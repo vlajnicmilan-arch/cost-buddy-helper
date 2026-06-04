@@ -16,7 +16,9 @@ import { Label } from '@/components/ui/label';
 import { Mail, Loader2 } from 'lucide-react';
 import { useKrugAddMember, type KrugAddError, type KrugAddRole } from '@/hooks/useKrugMemberMutations';
 import { canAddPunopravni } from '@/lib/krugPresets';
-import { useStatusFeedback } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import type { TFunction } from 'i18next';
+
 
 interface Props {
   open: boolean;
