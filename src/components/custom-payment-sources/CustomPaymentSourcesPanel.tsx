@@ -548,7 +548,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
               <CreditCard className="h-5 w-5" />
               {t('paymentSources.myAccounts')}
             </CardTitle>
-            <Button size="sm" onClick={openNewDialog}>
+            <Button size="sm" variant="module" onClick={openNewDialog}>
               <Plus className="h-4 w-4 mr-1" />
               {t('common.new')}
             </Button>

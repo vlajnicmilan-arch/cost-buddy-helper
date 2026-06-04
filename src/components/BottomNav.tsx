@@ -6,6 +6,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useModuleStates } from '@/hooks/useModuleStates';
 import { getNavVisibility, type AppModule } from '@/lib/moduleVisibility';
 import { useHaptics } from '@/hooks/useHaptics';
+import { MODULE_NAV_CLASSES, type ModuleKey } from '@/lib/moduleColors';
+import { cn } from '@/lib/utils';
 
 type NavItem = {
   path: string;
@@ -13,22 +15,21 @@ type NavItem = {
   labelKey: string;
   fallback: string;
   activePaths: string[];
-  /**
-   * Modul koji kontrolira vidljivost stavke. Core stavke (Home/Wallet/Budgets)
-   * koriste `'core'` — uvijek vidljive.
-   */
+  /** Modul koji kontrolira vidljivost stavke (core = uvijek vidljiv). */
   module: AppModule;
+  /** Modul boja akcenta za aktivni tab (vidi `MODULE_NAV_CLASSES`). */
+  colorKey: ModuleKey;
 };
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'], module: 'core' },
-  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects' },
-  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core' },
-  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core' },
+  { path: '/home', icon: LayoutDashboard, labelKey: 'nav.dashboard', fallback: 'Pregled', activePaths: ['/home', '/dashboard'], module: 'core', colorKey: 'overview' },
+  { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects', colorKey: 'projects' },
+  { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core', colorKey: 'wallet' },
+  { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core', colorKey: 'budgets' },
   // Krug zauzima slot bivšeg Obitelj taba (odluka 04.06.2026). Gating ostaje
   // preko `family` modula: tierUnlocked = plaćen paket. Legacy /family
   // ostaje dostupan kao ruta dok se ne odluči o migraciji, ali ne u nav-u.
-  { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'family' },
+  { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'family', colorKey: 'krug' },
 ];
 
 export const BottomNav = () => {
@@ -55,6 +56,7 @@ export const BottomNav = () => {
         {navItems.map((item) => {
           const isActive = item.activePaths.includes(location.pathname);
           const Icon = item.icon;
+          const accent = MODULE_NAV_CLASSES[item.colorKey];
           return (
             <button
               key={item.path}
@@ -64,19 +66,21 @@ export const BottomNav = () => {
               {isActive && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary"
+                  className={cn('absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full', accent.bg)}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
               <Icon
-                className={`w-5 h-5 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={cn(
+                  'w-5 h-5 transition-colors',
+                  isActive ? accent.text : 'text-muted-foreground',
+                )}
               />
               <span
-                className={`text-[10px] font-medium transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={cn(
+                  'text-[10px] font-medium transition-colors',
+                  isActive ? accent.text : 'text-muted-foreground',
+                )}
               >
                 {t(item.labelKey, item.fallback)}
               </span>

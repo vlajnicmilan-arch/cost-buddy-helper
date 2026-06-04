@@ -59,7 +59,7 @@ export const BudgetCard = ({
   const getProgressColor = () => {
     if (budget.isOverBudget) return 'bg-destructive';
     if (budget.isWarning) return 'bg-budget-warning';
-    return 'bg-primary';
+    return 'bg-module';
   };
 
   const getBudgetStatus = () => {

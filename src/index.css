@@ -51,6 +51,11 @@
     --input: 170 25% 88%;
     --ring: 172 66% 40%;
 
+    /* Module Color System — aktivni akcent (postavlja ModuleThemeProvider).
+       Default = overview (teal), poklapa se s --primary. */
+    --module-accent: 172 66% 40%;
+    --module-accent-foreground: 0 0% 100%;
+
     --radius: 0.75rem;
 
     --sidebar-background: 165 15% 97%;

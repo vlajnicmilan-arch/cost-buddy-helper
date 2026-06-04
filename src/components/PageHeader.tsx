@@ -63,7 +63,10 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
           <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{title}</h1>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-module" aria-hidden="true" />
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{title}</h1>
+          </div>
           {subtitle && (
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-sm text-muted-foreground">{subtitle}</p>

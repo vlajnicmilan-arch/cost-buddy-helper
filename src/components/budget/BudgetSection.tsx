@@ -79,8 +79,8 @@ export const BudgetSection = ({
       {/* Section Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-module/10 flex items-center justify-center">
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-module" />
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-semibold">{t('budget.title', 'Budžeti')}</h2>
@@ -89,7 +89,7 @@ export const BudgetSection = ({
             </p>
           </div>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-1.5">
+        <Button onClick={() => setCreateDialogOpen(true)} size="sm" variant="module" className="gap-1.5">
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">{t('budget.create', 'Novi budžet')}</span>
         </Button>
