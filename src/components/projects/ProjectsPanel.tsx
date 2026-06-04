@@ -26,6 +26,7 @@ import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
