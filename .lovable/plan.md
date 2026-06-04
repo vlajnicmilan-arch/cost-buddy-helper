@@ -1,215 +1,202 @@
-Cilj: zamijeniti sadržaj `.lovable/plan.md` ovim tekstom kao `Krug RLS / Access Enforcement Plan v1.1`. Bez novih ideja, bez širenja scope-a. Dvije promjene u odnosu na v1:
+Cilj: zamijeniti sadržaj `.lovable/plan.md` ovim tekstom kao `Krug Governance / Mutation Path Plan v1.1`. Dvije promjene u odnosu na v1:
 
-1. Uklonjeni svi prekopirani dijelovi iz `Krug SQL / Schema Plan v1.1` (opseg sheme, enumi, tablični opisi, FK/indeksi/integritet, schema zaključci). Tablica-po-tablica sekcija ostaje, ali striktno kao enforcement matrica (SELECT/INSERT/UPDATE/DELETE + RLS vs service vs trigger + rizik), bez ponavljanja kolona, ključeva, indeksa ili enuma. Tamo gdje je potreban schema kontekst — referenca na v1.1, ne reprodukcija.
-2. `krug_ownership` SELECT preciziran tako da ne dođe u konflikt s već zaključenim access modelom: razdvojena vidljivost **identiteta ownera** (relationship činjenica, vidljiva članovima) od **billing detalja / billing konteksta** (steady-state pripadaju owneru; u tranzicijama owner ili spec-dodijeljeni punopravni član u relevantnom kontekstu). Isto razdvajanje primijenjeno i u §3 i §5 gdje se to dotiče.
+1. Uklonjena generička formulacija "punopravni član smije Add/Change status/Remove involuntary". `Add member` (i obični i punopravni) = owner-only. `Remove member — involuntary` razdvojen na ordinary/full s eksplicitnim governance pravilima: ordinary uklanja owner kad je sam jedini punopravni, inače unanimous svih punopravnih; full ne može biti jednostrano izbačen.
+2. `Change member status` razdvojen u dva path-a: `Promote ordinary → full` (governance, owner-only inicijacija u skladu s `Governance Matrix v1.3`) i `Demote full → ordinary` (postoji samo ako iniciran/pristankom samog člana). Dodano izričito pravilo da se full ne može jednostrano downgradeati.
 
----
-
-# Krug RLS / Access Enforcement Plan v1.1
-
-Strateški enforcement dokument. Prevodi `Krug Access Matrix v1.3` i `Krug SQL / Schema Plan v1.1` u jasan plan **gdje se pravila provode** (DB/RLS, trigger, service layer, GRANT).
-
-Dokument je **čisto enforcement**. Nije zamjena ni dopuna sheme. Sve što se tiče tablica, kolona, ključeva, enuma, indeksa, FK-ova i integritetnih constraint-a živi u `Krug SQL / Schema Plan v1.1` i ovdje se ne ponavlja — samo referencira.
-
-Bez konkretnog SQL koda, bez `CREATE POLICY` izraza, bez RPC potpisa, bez rollouta, bez UI flowa.
-
-Polazi striktno od zaključenog seta: `Krug Foundation v4.2`, `Preset Constraint Matrix v1`, `Governance Matrix v1.3`, `Continuity & Billing State Machine v1.3.2`, `Takeover Conditions Spec v1.1`, `Krug Domain/Data Model v1.1`, `Post-Delete Behavior Foundation Patch v1.1`, `Shared Resources Link — Structural Choice v1.1`, `Krug Access Matrix v1.3`, `Reuse / Refactor / Rebuild Plan v1`, `Krug Implementation Order v1.1`, `Krug Naming & Migration Strategy v1.1`, `Krug SQL / Schema Plan v1.1`.
-
-Scope: enforcement model za tablice iz v1.1 sheme. Bez novih preseta, bez `Family` kao aktivnog modela, bez `majority`, bez novog product scope-a.
+Bez novih ideja, bez širenja scope-a. Bez konkretnog SQL-a, RPC potpisa, UI flowa, rollouta. Bez novih preseta, bez `Family` kao aktivnog modela, bez `majority`.
 
 ---
 
-## 1. Enforcement načela
+# Krug Governance / Mutation Path Plan v1.1
 
-Enforcement Kruga se ne smije svesti samo na RLS. Tri sloja zajedno daju siguran model; svaki sam je nedovoljan.
+Strateški dokument. Definira **koje sve mutation paths postoje** u Krug ekosistemu, **tko ih smije pozvati**, **koje preduvjete provjeravaju** i **koje invariante atomarno čuvaju** — sve na razini servisnog sloja, bez konkretnih potpisa ili koda.
 
-**DB/RLS sloj — što mora biti garantirano ovdje:**
-- Vidljivost reda po identitetu korisnika (`auth.uid()` ↔ aktivno članstvo / vlasništvo / link na resurs).
-- Negativna izolacija: korisnik koji nije ni vlasnik ni član Kruga ne smije dobiti red iz bilo koje `krug_*` tablice ni indirektno.
-- Razdvajanje read od write puta: SELECT politika se ne smije slijepo reciklirati kao USING za UPDATE/DELETE.
-- Zatvaranje direktnog client write-a tamo gdje promjena nosi cross-row ili cross-table posljedicu (vidi §3).
-- Razdvajanje vidljivosti **relationship činjenica** (npr. tko je trenutni owner Kruga) od vidljivosti **billing/kontekstualnih detalja** vezanih uz tu istu relaciju.
+Dokument je **čisto mutation/governance**. Ne ponavlja schemu (`Krug SQL / Schema Plan v1.1`), ne ponavlja RLS plan (`Krug RLS / Access Enforcement Plan v1.1`), ne otvara transakcijsku semantiku (Blok D), ne piše orchestrator kod (Blok E). Sve referencira.
 
-**Service / domain sloj — što mora biti garantirano ovdje:**
-- Sve tranzicije `lifecycle_state` (Continuity & Billing State Machine v1.3.2).
-- Sve tranzicije ownershipa (otvaranje, zatvaranje, takeover) jer ovise o governance i continuity uvjetima.
-- Otvaranje/zatvaranje continuity prozora (C/E boundary) — nikad direktan client write.
-- Atomarnost orchestracija koje diraju više tablica (npr. takeover = end starog ownershipa + start novog + lifecycle update + continuity close).
-- Validacije iz `Preset Constraint Matrix v1` i `Takeover Conditions Spec v1.1` koje RLS strukturno ne može izraziti.
-- Provjera **billing kontekstualnih prava** prije izlaganja billing detalja: steady-state owner; u tranziciji owner ili spec-dodijeljeni punopravni član u relevantnom kontekstu.
+Polazi striktno od zaključenog seta: `Krug Foundation v4.2`, `Preset Constraint Matrix v1`, `Governance Matrix v1.3`, `Continuity & Billing State Machine v1.3.2`, `Takeover Conditions Spec v1.1`, `Krug Domain/Data Model v1.1`, `Post-Delete Behavior Foundation Patch v1.1`, `Shared Resources Link — Structural Choice v1.1`, `Krug Access Matrix v1.3`, `Reuse / Refactor / Rebuild Plan v1`, `Krug Implementation Order v1.1`, `Krug Naming & Migration Strategy v1.1`, `Krug SQL / Schema Plan v1.1`, `Krug RLS / Access Enforcement Plan v1.1`.
 
-**Što se nikad ne smije prepustiti samo UI-u:**
-- Provjera tko može mijenjati shared payment source.
-- Provjera punopravan vs običan član.
-- Provjera continuity uvjeta prije takeover poziva.
-- Filtriranje "moji Krugovi" — UI smije sakriti, ali ne smije odlučivati o pristupu.
-- Sakrivanje billing detalja od članova koji nemaju billing pravo (mora biti zatvoreno ispod UI sloja).
-
-**Gdje access matrix postaje read/write policy:**
-- `Krug Access Matrix v1.3` definira *uloge × radnje*. Read aspekt prevodi se u SELECT politike, ali s razlikom između relationship vidljivosti i billing/kontekstualne vidljivosti. Write aspekt ne preslikava se 1:1 u UPDATE/DELETE jer governance traži dodatne uvjete (preset, lifecycle, continuity), pa write ide kroz service-layer mutation path.
-
-**Gdje governance/state-machine traži više od čistog RLS-a:**
-- Bilo koja radnja čiji preduvjet uključuje *trenutno* stanje druge tablice ili vremenski uvjet (continuity prozor, broj punopravnih članova, takeover prag iz Governance Matrix v1.3) ide kroz service layer; RLS ostaje kao zadnja zaštitna ograda, ne kao izvor istine.
+Scope: mutation paths nad tablicama iz v1.1 sheme (Blokovi A–C + C/E boundary). Blok D i Blok E referenciraju se samo kao točke u kojima neki mutation path *postoji*, ali nisu ovdje razrađeni.
 
 ---
 
-## 2. Tablica po tablica
+## 1. Što je "mutation path"
 
-Za svaku tablicu iz `Krug SQL / Schema Plan v1.1` navodim: kvalificirani SELECT/INSERT/UPDATE/DELETE pristup, što ide čistim RLS-om, što kroz service-role / controlled mutation path, i ključni rizik krivog modeliranja. Strukturni opisi (kolone, ključevi, indeksi, enumi, constraint-i) — vidi v1.1 schema plan.
+Mutation path je **imenovana servisna operacija** koja:
 
-### 2.1 `krug`
+- mijenja stanje jedne ili više `krug_*` tablica,
+- ima jasno definiranog *inicijatora* (koja uloga smije pozvati) i, gdje je potrebno, *suglasnost* dodatnih identiteta,
+- ima jasno definirane *preduvjete* (lifecycle, governance, preset, continuity),
+- atomarno čuva *invariante* (cross-row i cross-table),
+- završava determinističkim *post-stanjem* usklađenim s `Continuity & Billing State Machine v1.3.2` i `Governance Matrix v1.3`.
 
-- **SELECT** — owner i aktivni članovi Kruga, plus identiteti koje Access Matrix v1.3 izričito navodi. Bivši članovi/owneri ne vide red osim ako Access Matrix to izričito dopušta (trenutno ne).
-- **INSERT** — service layer. Kreiranje Kruga nikad nije čisti client INSERT jer mora atomarno otvoriti i ownership red i (ovisno o presetu) inicijalno članstvo.
-- **UPDATE** — vrlo uska RLS dozvola na bezopasna polja koja Access Matrix v1.3 dopušta owneru. Sve što dira lifecycle ili preset — zabranjeno na RLS razini, ide isključivo kroz service layer.
-- **DELETE** — nikad direktan client. Brisanje prolazi kroz Post-Delete Behavior Foundation Patch v1.1 orchestrator.
-- **Čisti RLS pokriva:** vidljivost i blokadu pisanja po preset/lifecycle.
-- **Service-role / controlled path:** kreiranje, lifecycle promjene, brisanje.
-- **Rizik krivog modeliranja:** preširok UPDATE → klijent mijenja preset ili lifecycle direktno i ruši cijeli state machine i preset invariante.
+Mutation path **nije** RLS politika, nije trigger, nije RPC potpis, nije klijent funkcija. To je *strateška jedinica promjene*.
 
-### 2.2 `krug_ownership`
-
-Read sloj se mora razdvojiti na dvije razine vidljivosti.
-
-- **SELECT — relationship vidljivost (tko je owner):**
-  - Owner vidi vlastite redove (aktivne i povijesne).
-  - Aktivni članovi Kruga vide **identitet trenutnog ownera** kao relationship činjenicu (jedan aktivan red po Krugu); ovo je dio transparentnosti propisane Access Matrix v1.3.
-  - Bivši owneri vide vlastite povijesne redove.
-  - Bivši članovi i neutralni korisnici — ne vide ništa.
-- **SELECT — billing / billing-kontekstualni detalji vezani uz ownership red:**
-  - Steady-state: vidi **isključivo owner**.
-  - Tranzicijski (continuity prozor, takeover, post-delete handover): vidi owner i, kad spec to izričito dodjeljuje, **spec-dodijeljeni punopravni član u tom konkretnom kontekstu** (`Takeover Conditions Spec v1.1`, Continuity & Billing State Machine v1.3.2).
-  - Ostali aktivni članovi **ne** dobivaju billing detalje samo zato što su članovi.
-  - Praktično: ako schema čuva billing-vezane atribute na ownership redu, ti atributi moraju biti enforceani odvojeno od relationship vidljivosti — bilo razdvajanjem kolona u zaseban read path, bilo service-layer projekcijom (vidi §3.7). RLS sam ne smije izložiti billing detalje samo na temelju aktivnog članstva.
-- **INSERT** — isključivo service layer. Novi ownership red nastaje samo iz: (a) kreiranja Kruga, (b) takeover orchestracije pod uvjetima `Takeover Conditions Spec v1.1`.
-- **UPDATE** — isključivo service layer. Zatvaranje ownership reda smije samo orchestrator (lifecycle / continuity / takeover / post-delete).
-- **DELETE** — zabranjeno svima osim service-role; u normalnom toku se ne koristi (ownership se zatvara, ne briše).
-- **Čisti RLS pokriva:** relationship read scoping, zabranu billing reada za ne-ovlaštene članove, potpunu zabranu client write-a.
-- **Service-role / controlled path:** sve mutacije; izlaganje billing detalja kroz kontroliranu projekciju.
-- **Rizik krivog modeliranja:** (a) ako klijent može direktno pisati u ownership red, ruši se invariant "jedan aktivan owner" i otvara ilegalni put do takeovera bez governance provjere; (b) ako SELECT politika izloži billing detalje cijelom članstvu, leakaju se billing podaci izvan ovlaštenog kruga i to je u izravnom konfliktu s Access Matrix v1.3.
-
-### 2.3 `krug_membership`
-
-- **SELECT** — owner Kruga i svi aktivni članovi (međusobna vidljivost po Access Matrix v1.3). Pojedinac uvijek vidi vlastite member redove kroz život Kruga.
-- **INSERT** — service layer. Dodavanje člana mora poštivati `Preset Constraint Matrix v1` i `Governance Matrix v1.3`.
-- **UPDATE** — service layer. Promjena statusa (punopravni/obični) je governance odluka, ne client write.
-- **DELETE** — isključivo service layer (izlazak, izbacivanje, post-delete cascade).
-- **Čisti RLS pokriva:** read scoping i zabranu client write-a na status.
-- **Service-role / controlled path:** sve mutacije, posebno promjena statusa.
-- **Rizik krivog modeliranja:** ako bilo koji član može mijenjati status direktno, obični član se sam unaprijedi u punopravnog i zaobiđe cijeli Governance Matrix v1.3. Najopasnija pojedinačna RLS pogreška u modelu.
-
-### 2.4 `krug_shared_payment_source`
-
-- **SELECT** — owner Kruga i aktivni članovi (vidljivost da Krug ima link na izvor). Neovisno o tome, **pristup samom izvoru plaćanja** i dalje strogo ide kroz postojeći `payment_source_members` sloj — ovaj red nije prečica do podataka izvora.
-- **INSERT** — service layer. Linkanje mora paralelno provjeriti da je inicijator vlasnik izvora i punopravni član Kruga (kombinirani uvjet, ne samo RLS).
-- **UPDATE** — minimalno; praktički ne postoji legitiman client UPDATE.
-- **DELETE** — zabranjeno klijentu. Unlink ide kroz service (logičko zatvaranje, ne fizičko brisanje), zbog Post-Delete Behavior Foundation Patch v1.1 i continuity konzistencije.
-- **Čisti RLS pokriva:** read scoping i zabranu client write/delete.
-- **Service-role / controlled path:** link, unlink, post-delete cascade.
-- **Rizik krivog modeliranja:** ako se ovaj red tretira kao "dovoljan dokaz pristupa izvoru", zaobilazi se `payment_source_members` i nastaje horizontalni leak preko Kruga. Pravilo: link daje *kontekst*, `payment_source_members` daje *pristup*.
-
-### 2.5 `krug_continuity_window` (C/E boundary)
-
-- **SELECT** — owner i aktivni članovi Kruga (transparentnost continuity stanja prema Access Matrix v1.3). Povijesni prozori dio su te vidljivosti. Billing-kontekstualna prava koja proizlaze iz otvorenog prozora ne pripadaju ovoj tablici — vidi 2.2.
-- **INSERT** — isključivo service layer (Blok E orchestrator). Ne postoji legitiman client put za otvaranje.
-- **UPDATE** — isključivo service layer. Zatvaranje prozora popunjava samo Continuity & Billing State Machine v1.3.2 ili Takeover orchestracija.
-- **DELETE** — zabranjeno u normalnom toku.
-- **Čisti RLS pokriva:** read scoping i potpunu zabranu client write-a.
-- **Service-role / controlled path:** sve mutacije.
-- **Rizik krivog modeliranja:** klijent koji može otvarati/zatvarati prozor desinkronizira lifecycle i continuity → kriva takeover i billing odluka.
+**Pravilo:** sve što `Krug RLS / Access Enforcement Plan v1.1` označi kao "service-role / controlled mutation path" pripada nekom path-u iz ovog dokumenta. Direktan client write izvan ovih paths-a je po definiciji zabranjen.
 
 ---
 
-## 3. Cross-table invariants
+## 2. Klasifikacija mutation paths
 
-Pravila koja **strukturno** ne stanu u policy nad jednom tablicom. Za svako: je li RLS dovoljan, treba li trigger, treba li service-layer orchestrator. Strukturne mehanike (npr. partial unique) — vidi v1.1 schema plan.
-
-### 3.1 Jedan aktivan owner po Krugu
-- RLS sam: nedovoljan (RLS ne čuva jedinstvenost).
-- Trigger: nije potreban dodatno ako schema već nosi partial unique.
-- Service layer: obavezan za atomarnu orchestraciju "end stari + start novi" (takeover, post-delete handover).
-
-### 3.2 Obični član nema governance prava
-- RLS sam: nedovoljan — sprječava direktan write u governance polja, ali ne pokriva semantičke radnje (npr. inicijaciju takeovera) koje su uvijek service pozivi.
-- Trigger: nije pravo mjesto za governance pravila.
-- Service layer: obavezan. Svaka governance radnja provjerava status = punopravni prije izvršenja, neovisno o RLS-u.
-
-### 3.3 Ownership i lifecycle moraju biti usklađeni
-- RLS sam: nedovoljan.
-- Trigger: moguć kao dodatna zaštitna ograda (invariant guard na write).
-- Service layer: primarno mjesto — orchestrator mijenja lifecycle i ownership u istoj transakciji.
-
-### 3.4 Continuity window i lifecycle state moraju biti konzistentni
-- RLS sam: nedovoljan.
-- Trigger: preporučen kao invariant guard nakon Bloka E.
-- Service layer: primarno mjesto — sve tranzicije idu kroz Continuity & Billing State Machine v1.3.2.
-
-### 3.5 Link na shared payment source ne smije zaobići `payment_source_members`
-- RLS sam: nedovoljan ako bi se gradio query "preko Kruga" do izvora. Pristup izvoru i dalje ovisi isključivo o `payment_source_members`.
-- Trigger: nije potreban (pitanje je *čitanja* izvora, ne pisanja u Krug tablice).
-- Service layer: obavezan za link (paralelna provjera vlasništva nad izvorom + punopravnog članstva).
-- Read sloj nad izvorom: ostaje na postojećoj `payment_source_members` politici; Krug joj ništa ne dodaje.
-
-### 3.6 Preset je immutable
-- RLS: dio rješenja — UPDATE mora isključiti preset za sve osim service-role.
-- Trigger: preporučen kao dodatna ograda.
-- Service layer: ne dira preset nakon kreiranja.
-
-### 3.7 Billing/ownership read razdvajanje
-- Invariant: aktivno članstvo daje pravo na **relationship** činjenicu (tko je owner), ali ne i na **billing detalje** ownership reda. Billing detalje vidi owner; u tranziciji — owner ili spec-dodijeljeni punopravni član u relevantnom kontekstu.
-- RLS sam: dovoljan samo ako se billing-vezani atributi mogu jasno izolirati u read pathu (npr. razdvojena projekcija/pogled, ili politika koja billing kolone vraća samo ovlaštenim identitetima). Inače je RLS nedovoljan kao jedina obrana.
-- Trigger: nije primjenjiv (read sloj).
-- Service layer: obavezan kao kanonski read path za billing detalje; klijent ne smije izvlačiti billing kolone iz generičkog ownership SELECT-a.
+1. **Lifecycle paths** — `krug` i/ili `krug_ownership` u steady-state granicama.
+2. **Membership paths** — `krug_membership` (sastav, status).
+3. **Resource paths** — `krug_shared_payment_source` (link/unlink).
+4. **Continuity / takeover paths (C/E boundary)** — `krug_continuity_window` i sve usklađeno s njim. Puna orchestracija živi u Bloku E.
+5. **Post-delete paths** — kontrolirano zatvaranje prema `Post-Delete Behavior Foundation Patch v1.1`.
 
 ---
 
-## 4. GRANT matrica na visokoj razini
+## 3. Katalog mutation paths
 
-Bez konkretnog SQL-a, ali jasno tko što dobiva.
+### 3.1 Lifecycle paths
 
-- **`anon`** — ništa. Nijedna `krug_*` tablica nije javna.
-- **`authenticated`** — SELECT na `krug_*` tablice (filtriran RLS-om, uz razdvajanje relationship vs billing read-a iz §2.2 i §3.7). Vrlo uski UPDATE na `krug` (samo bezopasna polja koja Access Matrix v1.3 dopušta owneru); inače bez direktnog INSERT/UPDATE/DELETE. Read-heavy rola.
-- **`service_role`** — pun pristup. Sve mutacije s cross-row/cross-table posljedicom idu ovim putem (kreiranje Kruga, ownership tranzicije, membership status, link/unlink shared sourcea, continuity window open/close, lifecycle tranzicije, post-delete cascade), kao i kanonski read path za billing detalje gdje je potreban.
+- **Create Krug** — kreira Krug s odabranim presetom; otvara inicijalni `krug_ownership`; otvara inicijalno `krug_membership` za kreatora kao *full* (kreator je istovremeno owner i punopravni član u skladu s `Krug Foundation v4.2`). Inicijator: autentificirani korisnik. Tablice: `krug`, `krug_ownership`, `krug_membership`. Post-stanje: `active`.
+- **Update Krug — bezopasna polja** — mijenja polja koja `Krug Access Matrix v1.3` izričito dopušta owneru kao client UPDATE (display/kontekstualna). Inicijator: owner. Tablice: `krug`. Lifecycle: ne-terminalno.
+- **Transition Krug lifecycle** — sve dopuštene tranzicije `lifecycle_state` osim onih koje pripadaju continuity/takeover (3.4) i post-delete (3.5). Inicijator: prema state machine-u. Tablice: `krug`, eventualno `krug_ownership`.
 
-**Operacije koje nikad ne bi smjele biti direktan client write:**
-- Otvaranje ili zatvaranje ownership reda.
-- Promjena member statusa.
-- Otvaranje ili zatvaranje continuity prozora.
-- Promjena lifecycle state ili preset.
-- Brisanje bilo kojeg `krug_*` reda.
-- Link ili unlink shared payment source.
+### 3.2 Membership paths
+
+Svi membership paths su **owner-only ili explicitno governance-omotani**; obični član ne inicira ništa osim svog izlaska.
+
+- **Add member — ordinary** — dodaje novog člana sa statusom *ordinary*. Inicijator: **owner**. Suglasnost: nije potrebna. Tablice: `krug_membership`. Preset constraint mora biti zadovoljen (`Preset Constraint Matrix v1`).
+- **Add member — full** — dodaje novog člana već u statusu *full* (kad to spec dopušta). Inicijator: **owner**. Suglasnost: nije potrebna. Tablice: `krug_membership`. Preset constraint na broj punopravnih mora biti zadovoljen.
+- **Promote ordinary → full** — promovira postojećeg običnog člana u punopravnog. Inicijator: **owner** (governance odluka prema `Governance Matrix v1.3`). Suglasnost: prema specu (ako spec traži pristanak promoviranog ili suglasnost ostalih punopravnih, path to provodi). Tablice: `krug_membership`. Invariante: broj punopravnih nakon promocije ostaje unutar preset granica.
+- **Demote full → ordinary** — postoji **samo** kao radnja inicirana od strane samog punopravnog člana (vlastiti odlazak iz full statusa u ordinary) ili uz njegov izričiti pristanak. Inicijator: **sam punopravni član**. Suglasnost: nije potrebna kad on sam inicira; ako bi se ikad zatražio downgrade na drugačiji način, path zahtijeva njegov eksplicitni pristanak kao tvrdi preduvjet. Tablice: `krug_membership`. Invariante: nikad ne ostaviti Krug ispod preset minimuma punopravnih; ako bi pao ispod, path mora biti odbijen ili preusmjeren u continuity/takeover (3.4). **Eksplicitno pravilo:** governance ne može jednostrano downgradeati punopravnog člana; bez pristanka tog člana ovaj path se ne izvršava.
+- **Remove member — voluntary leave** — član sam izlazi iz Kruga. Inicijator: **sam član** (bilo ordinary, bilo full). Suglasnost: nije potrebna. Tablice: `krug_membership`. Posebno pravilo: ako odlazeći punopravni član ostavlja Krug ispod preset minimuma punopravnih, path preusmjerava u continuity/takeover (3.4) umjesto čistog izlaska.
+- **Remove member — involuntary, ordinary** — izbacivanje običnog člana. Inicijator i suglasnost ovise o sastavu punopravnih:
+  - ako je **owner jedini punopravni** u Krugu: **owner-only**, bez dodatne suglasnosti;
+  - ako postoje **2 ili više punopravnih**: **unanimous svih punopravnih** (uključujući ownera). Path nije izvršiv dok nije zabilježena suglasnost svakog punopravnog.
+  - Tablice: `krug_membership`.
+- **Remove member — involuntary, full** — **ne postoji kao izvršiv path**. Punopravni član ne može biti jednostrano izbačen. Jedini načini da punopravni član prestane biti član: vlastiti `Remove member — voluntary leave`, ili posljedica continuity/takeover orchestracije u skladu s `Takeover Conditions Spec v1.1`. Bilo koji pokušaj koji bi semantički bio "kick full member" mora biti odbijen na servisnom sloju.
+
+### 3.3 Resource paths
+
+- **Link shared payment source** — Inicijator: identitet koji je istovremeno *vlasnik izvora* **i** *punopravni član Kruga* (kombinirani uvjet). Tablice: `krug_shared_payment_source`. Ne dira `payment_source_members`.
+- **Unlink shared payment source** — logičko zatvaranje. Inicijator: vlasnik izvora ili owner Kruga (precizan presjek prema `Krug Access Matrix v1.3`). Tablice: `krug_shared_payment_source`. Fizičko brisanje se ne koristi.
+
+### 3.4 Continuity / takeover paths (C/E boundary)
+
+Mutation jedinice. Pune orchestracije, vremenski uvjeti i billing posljedice — Blok E i `Takeover Conditions Spec v1.1`.
+
+- **Open continuity window** — otvara red u `krug_continuity_window`, postavlja `krug.lifecycle_state = continuity_window`. Inicijator: sustav / orchestrator. Klijent nikad.
+- **Close continuity window — resolved** — zatvara prozor bez takeovera; lifecycle se vraća prema state machine-u.
+- **Close continuity window — takeover** — atomarno: end starog `krug_ownership`, start novog za spec-dodijeljenog punopravnog člana, lifecycle u `active`. Inicijator: spec-dodijeljeni punopravni član u relevantnom kontekstu (`Takeover Conditions Spec v1.1`).
+- **Close continuity window — expired** — vremenski istek bez takeovera; post-stanje propisuje state machine.
+
+### 3.5 Post-delete paths
+
+- **Delete Krug** — kontrolirano zatvaranje prema `Post-Delete Behavior Foundation Patch v1.1`: zatvaranje `krug_ownership`, zatvaranje `krug_continuity_window` ako je otvoren, unlink svih `krug_shared_payment_source` redova, finalni lifecycle. Inicijator: owner (ili sustav u definiranim slučajevima). Tablice: sve `krug_*`.
 
 ---
 
-## 5. Najopasnija mjesta
+## 4. Tko smije pozvati koji path
 
-1. **Member status kao client-writable polje** — obični član se sam unaprijedi u punopravnog → ruši Governance Matrix v1.3, Preset Constraint Matrix v1 i Takeover Conditions Spec v1.1.
-2. **Ownership direktno pisan iz klijenta** — INSERT (lažni owner) ili UPDATE zatvaranja (samonametnuti takeover put) → zaobilazi cijeli takeover spec.
-3. **Lifecycle ili preset u client UPDATE-u** — ruši state machine i preset invariante. Preset posebno: cijeli Preset Constraint Matrix v1 pretpostavlja immutability.
-4. **Continuity prozor pisan izvan orchestratora** — desinkronizacija s lifecycleom → kriva takeover/billing odluka.
-5. **Shared source link kao prečica do izvora** — zaobilazi `payment_source_members` i pravi horizontalni leak preko Kruga. Pravilo: link daje kontekst, ne pristup.
-6. **Billing detalji ownership reda izloženi cijelom članstvu** — direktan konflikt s Access Matrix v1.3. Aktivno članstvo daje vidljivost *tko* je owner, ne i *billing pozadinu* tog ownershipa. Ako SELECT politika ne razdvaja te dvije razine, billing leaka i tranzicijska prava postaju iluzorna.
-7. **SELECT politike koje "cure" preko membershipa** — npr. SELECT na ownership bez provjere da je `auth.uid()` aktivan član/owner baš tog Kruga → vlasništvo tuđih Krugova postaje vidljivo.
-8. **Recikliranje SELECT USING kao UPDATE/DELETE USING** — najčešća RLS greška; mora se izričito izbjeći.
-9. **Zaboravljeni GRANT-ovi** — bez eksplicitnih GRANT-ova PostgREST vraća permission error; preširoki GRANT na `anon` razbija read scoping.
+Servisni sloj **mora** provjeriti inicijatora (i suglasnost gdje je tražena) neovisno o RLS-u i neovisno o UI-u.
+
+- **Autentificirani korisnik (neovisno o Krugu)** — samo `Create Krug`.
+- **Owner Kruga**
+  - `Update Krug — bezopasna polja`
+  - `Add member — ordinary`
+  - `Add member — full`
+  - `Promote ordinary → full`
+  - `Remove member — involuntary, ordinary` (samo kad je owner jedini punopravni; inače ovaj path traži unanimous svih punopravnih i owner je samo jedan od njih)
+  - `Unlink shared payment source` (alternativni put pored vlasnika izvora)
+  - `Delete Krug`
+  - sve lifecycle tranzicije koje state machine dodjeljuje owneru
+- **Skup svih punopravnih (uključujući ownera)** — `Remove member — involuntary, ordinary` kad ih je 2+: path nije izvršiv bez **unanimous** suglasnosti svih punopravnih.
+- **Sam član (svoj red)**
+  - `Remove member — voluntary leave` (bilo ordinary, bilo full)
+  - `Demote full → ordinary` (samo on sam može inicirati ili dati pristanak)
+- **Vlasnik izvora plaćanja**
+  - `Link shared payment source` (uz dodatni uvjet punopravnog članstva u istom Krugu)
+  - `Unlink shared payment source` (alternativni put pored ownera Kruga)
+- **Spec-dodijeljeni punopravni član u kontekstu** — `Close continuity window — takeover`.
+- **Sustav / orchestrator (service-role bez korisničkog inicijatora)** — `Open continuity window`, `Close continuity window — expired`, dijelovi `Delete Krug` koji idu kao cascade, dijelovi `Transition Krug lifecycle` koje state machine pokreće vremenski.
+
+**Stroga negativna pravila:**
+
+- Obični član **ne inicira** nijedan membership path osim `Remove member — voluntary leave` (i, ako je vlasnik izvora, resource paths uz dodatne uvjete).
+- Punopravni član (koji nije owner) **ne inicira** `Add member — ordinary`, `Add member — full`, `Promote ordinary → full`, `Remove member — involuntary, ordinary` *jednostrano*; sudjeluje samo kao jedan od potrebnih suglasnika u unanimous slučaju.
+- **Nitko ne smije** izvršiti `Remove member — involuntary, full` — taj path ne postoji.
+- **Nitko osim samog punopravnog člana** ne smije iniciraciti ni izvršiti `Demote full → ordinary`.
+- Ovlast se ne smije izvoditi iz UI flag-a; izvor istine je servisni sloj koji čita aktualno stanje `krug_ownership` / `krug_membership` / `krug_continuity_window`.
 
 ---
 
-## 6. Što ovaj dokument svjesno NE odlučuje
+## 5. Preduvjeti i invariante po path-u
 
-- Konkretan SQL policy kod (`CREATE POLICY`, `USING`, `WITH CHECK`).
-- Konkretne RPC potpise i tijela orchestratora.
-- UI flow za bilo koju radnju.
-- Rollout plan (faze, okoliši, backfill).
+Strukturni constraint-i (partial unique, FK) — vidi v1.1 schema plan.
+
+### Zajednički preduvjeti (svi paths osim `Create Krug`)
+- Krug postoji i nije u nedopuštenom lifecycle-u.
+- Inicijator (i suglasnici, gdje su traženi) zadovoljavaju §4.
+- `preset` se ne mijenja.
+
+### Lifecycle paths
+- **Create Krug** — preset iz dopuštenog skupa; kreator unutar billing/governance limita ako postoje. Invariante: jedan aktivan `krug_ownership`, inicijalno članstvo konzistentno s presetom (kreator = full), `lifecycle_state = active`.
+- **Update Krug — bezopasna polja** — polje u dopuštenom skupu. Invariante: ne dira `preset`, `lifecycle_state`.
+- **Transition Krug lifecycle** — tranzicija dopuštena state machine-om. Invariante: `krug_ownership` i `krug.lifecycle_state` konzistentni; ako tranzicija završava u `continuity_window`, postoji točno jedan otvoreni `krug_continuity_window` red.
+
+### Membership paths
+- **Add member — ordinary** — identitet nije već član; preset constraint zadovoljen. Invariante: jedinstvenost (korisnik, Krug); status = ordinary.
+- **Add member — full** — kao gore + preset constraint na broj punopravnih zadovoljen i nakon dodavanja. Invariante: broj punopravnih unutar preset granica.
+- **Promote ordinary → full** — meta-član je trenutno ordinary; broj punopravnih nakon promocije unutar preset granica; suglasnost (ako je spec traži) zabilježena. Invariante: status promijenjen atomarno; broj punopravnih unutar dopuštenog raspona.
+- **Demote full → ordinary** — inicijator je sam taj punopravni član (ili je njegov pristanak izričito zabilježen); broj punopravnih nakon downgradea ostaje na ili iznad preset minimuma — inače path mora biti odbijen ili preusmjeren u continuity/takeover. Invariante: bez pristanka člana nema promjene; preset minimum punopravnih očuvan.
+- **Remove member — voluntary leave** — član postoji. Invariante: ako odlazeći punopravni član ostavlja Krug ispod preset minimuma, path delegira u continuity/takeover umjesto da tiho izvrši izlazak.
+- **Remove member — involuntary, ordinary** — meta-član je ordinary; inicijator/suglasnost zadovoljava pravilo iz §3.2 (owner-only kad je owner jedini punopravni; inače unanimous svih punopravnih). Invariante: nikad ne izvrši ako uvjet suglasnosti nije potpun.
+- **Remove member — involuntary, full** — *path ne postoji*. Servisni sloj mora odbiti svaki poziv koji semantički odgovara izbacivanju punopravnog člana.
+
+### Resource paths
+- **Link shared payment source** — inicijator je vlasnik izvora *i* punopravni član; izvor nije već linkan; uvjeti iz `Shared Resources Link — Structural Choice v1.1` zadovoljeni. Invariante: link ne dodjeljuje pristup samom izvoru; idempotentnost.
+- **Unlink shared payment source** — link postoji i nije zatvoren. Invariante: logičko zatvaranje; konzistentnost s post-delete pravilima.
+
+### Continuity / takeover paths
+- **Open continuity window** — Krug nije već u `continuity_window`; uvjet state machine-a ispunjen. Invariante: točno jedan otvoreni prozor po Krugu; `lifecycle_state` istovremeno postavljen.
+- **Close — resolved / expired / takeover** — postoji otvoreni prozor; specifični uvjet ispunjen. Invariante: prozor zatvoren atomarno s lifecycle promjenom; kod takeovera dodatno stari ownership zatvoren i novi otvoren u istoj transakciji.
+
+### Post-delete paths
+- **Delete Krug** — inicijator ovlašten; Krug u dopuštenom stanju prema `Post-Delete Behavior Foundation Patch v1.1`. Invariante: svi otvoreni redovi zatvoreni atomarno; finalni lifecycle dosegnut; nijedan rezidualni "živi" red.
+
+---
+
+## 6. Najosjetljiviji paths
+
+1. **Remove member — involuntary, full (ne postoji)** — najveći rizik je dopustiti ga implicitno (npr. preko UI gumba koji zaobilazi service). Servisni sloj mora ga izričito odbijati.
+2. **Demote full → ordinary** — drugi najveći rizik: dopustiti ga bez pristanka tog člana. Bez eksplicitnog pristanka punopravnog člana, path se ne izvršava ni iz jedne uloge, uključujući ownera.
+3. **Remove member — involuntary, ordinary (2+ punopravnih)** — rizik je izvršiti ga bez potpunog unanimous-a. Path mora držati skup zabilježenih suglasnosti i odbiti izvršenje dok bilo koja nedostaje.
+4. **Promote ordinary → full** — direktno mijenja governance moć; mora biti owner-inicirano i poštivati preset granice.
+5. **Close continuity window — takeover** — mijenja ownership *i* lifecycle *i* continuity istovremeno; atomarnost obavezna.
+6. **Delete Krug** — najveći blast radius; doslovno pratiti `Post-Delete Behavior Foundation Patch v1.1`.
+7. **Link shared payment source** — mjesto najlakšeg horizontalnog leaka ako se pomiješa s pristupom samom izvoru.
+8. **Open continuity window** — ako se pozove izvan sustava, state machine postaje besmislen.
+
+---
+
+## 7. Atomarnost i orchestracija
+
+- Svaki path je **transakcijska jedinica**: ili sve izmjene uspijevaju, ili nijedna.
+- Paths koji diraju više tablica (`Create Krug`, `Close — takeover`, `Delete Krug`, `Transition Krug lifecycle` kad pomiče i ownership) izvršavaju se u istoj DB transakciji.
+- Paths s **traženom suglasnošću** (npr. `Remove member — involuntary, ordinary` s 2+ punopravnih) mogu zahtijevati višefazni model (prikupljanje suglasnosti → izvršenje), ali sama izvršna faza ostaje atomarna i tek kad je suglasnost potpuna.
+- Triggeri ostaju **invariant guard**, ne primarni mehanizam.
+- Idempotentnost: paths koji se mogu legitimno ponoviti (npr. `Link shared payment source`) moraju biti idempotentni; paths koji ne smiju (npr. promocija u full) moraju biti idempotency-safe na razini detekcije duplog poziva, ne na razini "ignoriraj i prođi".
+
+---
+
+## 8. Što ovaj dokument svjesno NE odlučuje
+
+- Konkretne RPC potpise, imena, parametre, povratne tipove.
+- Konkretan SQL ili PL/pgSQL.
+- UI flow ili komponente.
+- Rollout (faze, okoliši, backfill).
 - Transakcijsku semantiku Bloka D.
-- Blok E orchestratore — koristi se samo *ime* kao referenca.
-- Triggere kao gotov kod — samo *gdje su preporučeni* kao zaštitna ograda.
-- Bilo koji dio sheme koji već živi u `Krug SQL / Schema Plan v1.1` (kolone, ključevi, indeksi, enumi, constraint-i).
+- Pune orchestratore Bloka E — koristim samo *imena* paths-a kao reference.
+- Bilo koji dio sheme ili RLS plana — to živi u v1.1 schema planu i v1.1 RLS planu.
+- Notifikacije, e-mailove, audit log.
+- Mehaniku prikupljanja suglasnosti (kako se bilježi, koji je timeout, koji UI) — samo *zahtjev* da suglasnost postoji prije izvršenja.
 
 ---
 
-## 7. Zaključak
+## 9. Zaključak
 
-1. Enforcement model za v1.1 tablice je sada dovoljno jasan: zna se što ide RLS-om, što service layerom, gdje su triggeri zaštitna ograda, kako izgleda GRANT matrica na visokoj razini, koja su mjesta najopasnija, i kako se razdvaja relationship od billing vidljivosti na ownership sloju.
+1. **Mutation model za v1.1 tablice je sada zatvoren** na strateškoj razini, uz governance pravila zaključana u `Governance Matrix v1.3`: pathovi su razdvojeni po ovlastima i suglasnostima, jednostrano izbacivanje punopravnog člana je formalno isključeno, a downgrade punopravnog statusa moguć je samo uz pristanak tog člana.
 
-2. Najbolji sljedeći dokument: **`Krug Governance / Mutation Path Plan v1`**. §2 i §3 kontinuirano upiru u service-layer mutation path kao mjesto gdje žive sve netrivijalne radnje (ownership tranzicije, member status, lifecycle, continuity, link/unlink, billing read path). Prije Bloka D ili konkretnog API/SQL rada treba zatvoriti koje su to mutation paths, tko ih smije pozvati, koje preduvjete provjeravaju i koje invariante atomarno čuvaju — i dalje strateški, bez RPC potpisa. `Krug Transaction Semantics Schema Plan v1` i `Krug API / Service Boundary Plan v1` dolaze prirodno nakon toga.
+2. **Najbolji sljedeći dokument:** `Krug Transaction Semantics Schema Plan v1`. §3.4 i §6 jasno označavaju gdje su granice ovog dokumenta — sve što se tiče *transakcija unutar Kruga* (kako se `krug_id`, `privacy`, `shared_status` ponašaju na `expenses` redovima, kako se odnose na ownership/continuity stanje, kako se filtriraju u izvještajima) je Blok D i nije pokriveno ovdje. Prije nego se otvori `Krug API / Service Boundary Plan v1` potrebno je zatvoriti transakcijsku semantiku jer mijenja što neki paths uopće smiju raditi (npr. `Delete Krug` i transakcije s `krug_id`, `Close — takeover` i privacy preusmjeravanja).
