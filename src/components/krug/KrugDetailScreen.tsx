@@ -41,8 +41,8 @@ export function KrugDetailScreen({ krugId }: Props) {
   const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
   const { data: members = [] } = useKrugMembers(krugId);
-  const { data: sharedSources = [] } = useKrugSharedPaymentSources(krugId);
   const changeRole = useKrugChangeMemberRole();
+
   const removeMember = useKrugRemoveMember();
   const [addOpen, setAddOpen] = useState(false);
 
