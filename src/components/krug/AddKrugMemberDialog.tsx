@@ -135,7 +135,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
   );
 }
 
-function translateAddError(err: KrugAddError, t: (k: string, d?: string) => string): string {
+function translateAddError(err: KrugAddError, t: TFunction): string {
   switch (err) {
     case 'user_not_found':
       return t('krug.member.add.errors.user_not_found', 'Korisnik s tim emailom još nema račun.');
