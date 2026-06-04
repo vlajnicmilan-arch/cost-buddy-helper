@@ -1291,7 +1291,8 @@
     "loss": "Gubitak",
     "remaining": "Preostalo",
     "overBudget": "Preko budžeta",
-    "items": "{{count}} stavki"
+    "items": "{{count}} stavki",
+    "krug": "Krug"
   },
   "validation": {
     "dateOutOfRange": "Datum nije unutar dopuštenog raspona",
@@ -4627,5 +4628,36 @@
     "intendedFor": "Namijenjeno",
     "pageXofY": "Stranica {{n}} / {{total}}",
     "preparedBy": "Pripremio"
+  },
+  "krug": {
+    "title": "Krug",
+    "create": "Novi krug",
+    "createSoon": "Kreiranje Kruga uskoro",
+    "backToList": "Natrag na popis",
+    "emptyTitle": "Još nemaš Krug",
+    "emptyBody": "Krug je tvoj zajednički kontekst s drugima. Pridruži se preko poziva ili otvori novi.",
+    "members": "Članovi",
+    "sharedSources": "Zajednički izvori",
+    "noSharedSources": "Nema povezanih izvora plaćanja.",
+    "notFound": "Krug ne postoji.",
+    "role": {
+      "owner": "Vlasnik",
+      "punopravni": "Punopravni član",
+      "obicni": "Obični član"
+    },
+    "preset": {
+      "obitelj": "Obitelj",
+      "partner": "Partneri",
+      "cimer": "Cimeri",
+      "suroditelj": "Su-roditelji",
+      "prijatelji": "Prijatelji"
+    },
+    "lifecycle": {
+      "active": "Aktivan",
+      "early_signal": "Rani signal",
+      "ugrozen": "Ugrožen",
+      "paused": "Pauziran",
+      "terminated": "Završen"
+    }
   }
 }

@@ -1287,7 +1287,8 @@
     "loss": "Loss",
     "remaining": "Remaining",
     "overBudget": "Over budget",
-    "items": "{{count}} items"
+    "items": "{{count}} items",
+    "krug": "Krug"
   },
   "validation": {
     "dateOutOfRange": "Date is outside the allowed range",
@@ -4616,5 +4617,36 @@
     "intendedFor": "Intended for",
     "pageXofY": "Page {{n}} of {{total}}",
     "preparedBy": "Prepared by"
+  },
+  "krug": {
+    "title": "Krug",
+    "create": "New Krug",
+    "createSoon": "Krug creation coming soon",
+    "backToList": "Back to list",
+    "emptyTitle": "You don't have a Krug yet",
+    "emptyBody": "Krug is your shared context with others. Join via invitation or start a new one.",
+    "members": "Members",
+    "sharedSources": "Shared sources",
+    "noSharedSources": "No linked payment sources.",
+    "notFound": "Krug not found.",
+    "role": {
+      "owner": "Owner",
+      "punopravni": "Full member",
+      "obicni": "Ordinary member"
+    },
+    "preset": {
+      "obitelj": "Family",
+      "partner": "Partners",
+      "cimer": "Roommates",
+      "suroditelj": "Co-parents",
+      "prijatelji": "Friends"
+    },
+    "lifecycle": {
+      "active": "Active",
+      "early_signal": "Early signal",
+      "ugrozen": "At risk",
+      "paused": "Paused",
+      "terminated": "Ended"
+    }
   }
 }
