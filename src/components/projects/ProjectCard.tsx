@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { calculateProjectHealth, getHealthBgClass } from '@/lib/projectHealthScore';
 import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
