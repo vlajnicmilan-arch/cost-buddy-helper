@@ -4743,8 +4743,13 @@
           "cannot_add_self": "You cannot add yourself.",
           "not_owner": "Only the Krug owner can add members.",
           "invalid_input": "Invalid email.",
+          "cap_exceeded": "The maximum number of full members for this preset has been reached.",
           "generic": "Failed to add member."
         }
+      },
+      "empty": {
+        "owner": "Krug has no other members yet. Invite someone via “Add member”.",
+        "member": "Krug has no other members yet."
       },
       "role": {
         "promoted": "Promoted to full member",
