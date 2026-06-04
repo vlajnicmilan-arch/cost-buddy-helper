@@ -17,6 +17,7 @@ import { ProjectMemberPermissionsDialog } from './ProjectMemberPermissionsDialog
 import { OPTIONAL_TABS, TAB_LABELS } from '@/hooks/useProjectMemberPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectMembersTabProps {
   projectId: string;
@@ -27,6 +28,8 @@ interface ProjectMembersTabProps {
   onRefetch: () => void;
   projectStatus?: string;
   archivedAt?: string | null;
+  /** Owner-readonly downgrade: blocks invite/remove/role/cancel/permissions with toast. */
+  isReadOnly?: boolean;
 }
 
 interface PermDialogState {
@@ -61,9 +64,11 @@ export const ProjectMembersTab = ({
   onRefetch,
   projectStatus,
   archivedAt,
+  isReadOnly = false,
 }: ProjectMembersTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const isProjectClosed =
     !!archivedAt || projectStatus === 'completed' || projectStatus === 'cancelled';
   const { updateMemberRole, removeMember, cancelInvitation, generateInviteLink, updateMemberContext } = useProjectMembers(projectId);
@@ -139,6 +144,7 @@ export const ProjectMembersTab = ({
   };
 
   const handleGenerateLink = async () => {
+    if (!guard()) return;
     setGeneratingLink(true);
     try {
       const link = await generateInviteLink(inviteRole, suggestedContext, initialPerms);
@@ -150,6 +156,7 @@ export const ProjectMembersTab = ({
     }
   };
 
+
   const copyLink = async () => {
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink);
@@ -158,6 +165,7 @@ export const ProjectMembersTab = ({
   };
 
   const handleSendInvite = async () => {
+    if (!guard()) return;
     if (!inviteEmail.trim()) {
       showError(t('projects.enterEmail', t('toasts.enterEmail')));
       return;
@@ -205,6 +213,7 @@ export const ProjectMembersTab = ({
   };
 
   const handleRemoveMember = async (memberId: string) => {
+    if (!guard()) return;
     if (confirm(t('projects.confirmRemoveMember'))) {
       await removeMember(memberId);
       onRefetch();
@@ -212,14 +221,17 @@ export const ProjectMembersTab = ({
   };
 
   const handleRoleChange = async (memberId: string, newRole: ProjectRole) => {
+    if (!guard()) return;
     await updateMemberRole(memberId, newRole);
     onRefetch();
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
+    if (!guard()) return;
     await cancelInvitation(invitationId);
     onRefetch();
   };
+
 
   if (loading) {
     return (
