@@ -1,219 +1,256 @@
-# Krug Naming & Migration Strategy v1.1
+# Krug SQL / Schema Plan v1
 
-Strateški dokument. Zatvara naming + konceptualnu migraciju iz `family_*` jezika i modela u `Krug`. Bez SQL-a, bez koda, bez rollout plana po okolišima.
+Strateški dokument. Prevodi zaključeni domenski model u konkretan oblik **tablica, kolona, ključeva, enuma i constraint-a** za Krug ekosistem.
 
-Polazi striktno od: `Krug Foundation v4.2`, `Preset Constraint Matrix v1`, `Governance Matrix v1.3`, `Continuity & Billing State Machine v1.3.2`, `Takeover Conditions Spec v1.1`, `Krug Domain/Data Model v1.1`, `Post-Delete Behavior Foundation Patch v1.1`, `Shared Resources Link — Structural Choice v1.1`, `Krug Access Matrix v1.3`, `Reuse / Refactor / Rebuild Plan v1`, `Krug Implementation Order v1.1`.
+Bez:
+- migracijskih koraka (DDL skripta, `ALTER`, `DROP`, `RENAME`)
+- backfill / data migration plana
+- rollout plana po okolišima (dev/stage/prod)
+- koda (RPC tijela, edge funkcije, klijent)
+- novih preseta, novih stanja, novog scope-a
 
-Bez `Family` kao aktivnog modela. Bez `majority`. Bez novih preseta.
+Polazi striktno od zaključenog seta:
+`Krug Foundation v4.2`, `Preset Constraint Matrix v1`, `Governance Matrix v1.3`, `Continuity & Billing State Machine v1.3.2`, `Takeover Conditions Spec v1.1`, `Krug Domain/Data Model v1.1`, `Post-Delete Behavior Foundation Patch v1.1`, `Shared Resources Link — Structural Choice v1.1`, `Krug Access Matrix v1.3`, `Reuse / Refactor / Rebuild Plan v1`, `Krug Implementation Order v1.1`, `Krug Naming & Migration Strategy v1.1`.
 
----
-
-## 1. Naming načela
-
-1. **`Krug` je umbrella pojam**, ne sinonim za `Family`. Krug pokriva svaki preset (`spouse_partner`, `coparent`, `roommate`) i sve buduće preseta koji prođu Preset Constraint Matrix. `Family` je bio jedan jedini obrazac; `Krug` je generalizacija.
-2. **`Family` je legacy termin koji se gasi**, ne preimenovani Krug. Ne postoji "Family preset". Sve što je nekad bilo "family" je sada ili (a) konkretan Krug preset, ili (b) pomoćni resource link sloj koji više nema veze s riječju "family".
-3. **Tri jasno razdvojena sloja imena:**
-   - **Product copy** (UI tekst koji vidi korisnik) — mora govoriti jezikom Kruga *odmah* kad je feature isporučen.
-   - **Domain naming** (entiteti, role, statusi, lifecycle stanja, governance artefakti, edge function imena, hook imena) — prelazi na `krug*` u koraku s implementacijom; sve novo se piše kao `krug*`.
-   - **Persistence sloj** (DB tablice, kolone, enumi, RPC) — može privremeno zadržati `family_*` imena uz pomoćni adapter/view; rename ide tek kad je core Krug semantika čvrsto sjela.
-4. **Nikad ne miješati stari i novi jezik unutar istog koncepta.** Ako se neki koncept već zove `Krug`, ne smije imati paralelno polje/komentar/copy gdje ga se zove "family". Mješavina jezika je glavni izvor semantičkih bugova jer sugerira da je staro značenje još važeće.
-5. **Imena prate model, ne obratno.** Foundation v4.2 + Domain Model v1.1 + Access Matrix v1.3 su izvor istine. Ako bi neki "lijepi" rename razvodnio značenje (npr. zatajio razliku između člana i ownera), preferirati semantičku jasnoću nad estetskom uniformnošću.
-6. **Legacy nije bug, ali je dug.** Sve što ostane pod `family_*` mora imati eksplicitnu oznaku "legacy/compat" i kratak rok dok stoji — inače legacy postaje stalna stvarnost.
+Konvencija: imena su domenska (`krug_*`). Persistence rename iz `family_*` u `krug_*` nije dio ovog dokumenta — to pokriva Naming & Migration Strategy.
 
 ---
 
-## 2. Konceptualna mapa preimenovanja
+## 1. Opseg sheme
 
-Sažeto: što je 1:1 rename, što se **cijepa** u više pojmova, što se **ukida**.
+Schema Plan v1 pokriva isključivo Blokove A–C iz Implementation Order v1.1:
 
-### 2.1 Grupa
+- **Blok A — Core Krug** (Krug, KrugOwnership, KrugMembership)
+- **Blok B — Resource Link sloj** (Krug ↔ resursi, prema Structural Choice v1.1)
+- **Blok C — Lifecycle & Continuity** (lifecycle stanja, continuity window, billing veza)
 
-| Staro | Novo | Tip |
-|-------|------|-----|
-| `family group`, `family` | `Krug` | rename + generalizacija (Krug ima preset, Family nije imao) |
-| `family type` (ako se igdje izvodilo iz konteksta) | `Krug preset` | rename + formalizacija (preset je sad zaključan i immutable) |
+Blokovi D–I (governance, takeover, post-delete operativni sloj, transakcijska semantika, access enforcement, audit, telemetry) **nisu** dio v1 sheme — dobit će vlastite Schema Plan dokumente (`v2`, `v3`, …) u koraku s Implementation Order.
 
-### 2.2 Članstvo i ownership
-
-Ovo je najvažnija točka — ovdje 1:1 rename **ne radi**.
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| `family member` (jedinstven pojam koji je miješao člana i vlasnika) | **cijepa se u dvoje:** `KrugMember` (samo `status: punopravni / obični`) **+** `KrugOwnership` (zaseban sloj, točno jedan aktivni owner po Krugu) | **split** |
-| `role: owner` na članstvu | uklanja se — owner se izvodi iz `KrugOwnership`, ne iz role na članu | ukidanje koncepta |
-| `limited` / `full` (postojeći payment_source_members rolovi koji su slučajno korespondirali članstvu) | **mapira se u status:** `limited` ↔ `obični`, `full` ↔ `punopravni` — ali samo na razini Kruga, **ne** dirati postojeća `payment_source_members` značenja (to je drugi sloj, vidi 2.4) | mapping s razdvajanjem konteksta |
-
-### 2.3 Billing
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| implicitno: "owner Family grupe plaća" | eksplicitno: **owner (iz `KrugOwnership`) je billing nositelj isključivo u steady-state `active`** | formalizacija |
-| (nije postojalo) | tranzicijski billing izvršitelji u `confirmed transfer`, `fallback takeover`, `read_only` reaktivaciji — owner **ili** spec-dodijeljeni punopravni član | novi koncept (continuity sloj) |
-
-### 2.4 Shared resursi
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| `family_shared_sources` | per-resource standardiziran link sloj prema Structural Choice v1.1 (npr. `krug_shared_payment_sources` ili sl.) — **ne** generic tablica | per-resource refactor |
-| `family_shared_*` (budgets/projekti/ciljevi/dokumenti ako postoje) | isti per-resource pristup | per-resource refactor |
-| `payment_source_members` (`limited`/`full`) | **ostaje kako jest** — to je access sloj nad resursom, ne članstvo u Krugu; ne preimenovati, ne spajati s `KrugMember` | namjerno **bez** rename-a |
-
-Ključno: postojanje `payment_source_members` redova nastavlja biti vezano za resource, ne za Krug. Krug ↔ resource veza ide kroz link sloj iz Structural Choice v1.1; `payment_source_members` zadržava svoju ulogu pristupa pojedinom izvoru.
-
-### 2.5 Governance / consent
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| (nije formalno postojalo u `family_*`) | `KrugProposal`, `KrugConsent` (propose / confirm / reject) prema Governance Matrix v1.3 | novi sloj |
-| ad-hoc "owner odluči" putevi | ostaju kao **owner-unilateral** akcije gdje preset dopušta; ostalo ide kroz proposal/consent | formalizacija |
-| ~~majority~~ | ne postoji | ukidanje |
-
-### 2.6 Continuity / lifecycle
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| (nije bilo formalnog lifecyclea) | lifecycle stanja Kruga: `active`, `early_signal`, `ugrožen`, `continuity_window`, `read_only`, `deleted` | novi sloj |
-| (nije postojalo) | tranzicijski konteksti: `confirmed transfer`, `fallback takeover`, `read_only` reaktivacija | novi sloj |
-| `grace` (ako se igdje neformalno pojavljivao u copy-u/dokumentaciji) | **ne postoji** — uklanja se iz cijelog jezika | ukidanje |
-
-### 2.7 Transakcijska semantika
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| transakcija "pripada useru" + možda visible drugima preko shared izvora | transakcija dobiva `krug_id` (Krug kontekst) + `privacy` (`private` / `personal` / `shared`) + `shared_status` prema Domain Model v1.1 | novi atributi, ne rename |
-| (nije postojalo eksplicitno) | `krug_id` označava Krug kontekst transakcije; `privacy` i `shared_status` ostaju zasebne osi sa svojim već zaključenim pravilima (preset defaulti: `partner` = `shared`, `su-roditelj` = `personal`, `cimer` = `personal`; post-delete: bivši `shared` → `personal`). Odsutnost `krug_id` ne uvodi novu globalnu default tvrdnju. | formalizacija osi, bez novog defaulta |
-
-### 2.8 Post-delete
-
-| Staro | Novo | Tip |
-|-------|------|-----|
-| implicitno cascade (ili nedefinirano) | Post-Delete Behavior Foundation Patch v1.1 — eksplicitna pravila po vrsti artefakta (resursi/transakcije/governance) | novi sloj |
+Zašto: foundationi koje su ti blokovi ovise (npr. KrugProposal/KrugConsent, takeover events, post-delete artefakti) imaju vlastite osi koje će lakše sjesti kad Blok A–C bude čvrst.
 
 ---
 
-## 3. Što je odmah novi naziv, a što može ostati legacy sloj
+## 2. Enumi (zaključani)
 
-Tri sloja, tri brzine.
+Svi enumi su domenski zatvoreni — bez "ostalo" / "tbd". Šire se samo kroz novu verziju foundationa, ne kroz ad-hoc dodavanje.
 
-### 3.1 Product copy — **Krug odmah**
+### 2.1 `krug_preset`
 
-Sav UI tekst koji korisnik vidi u trenutku isporuke bilo kojeg Krug bloka (A → I iz Implementation Order v1.1) mora biti na jeziku Kruga: "Krug", "članovi Kruga", "vlasnik Kruga", "preset Kruga", lifecycle stanja, governance radnje.
+- `spouse_partner`
+- `coparent`
+- `roommate`
 
-Riječ "Family" se **ne smije** pojaviti u novom korisničkom copy-u. Postojeći stari Family ekrani koji još nisu refaktorirani smiju zadržati staru terminologiju **dok god se ne diraju** — ali u trenutku kad ih dira novi rad, prelaze na Krug copy *u istom potezu*. Nema "pola ekrana Krug, pola Family".
+Preset Constraint Matrix v1 je izvor istine. Preset je **immutable** nakon kreiranja Kruga (Foundation v4.2).
 
-Iznimka: i18n ključevi (`family.*`) smiju ostati pod starim namespaceom dok ne dođe do koordiniranog rename-a — bitno je da *vrijednosti* (HR/EN/DE tekstovi) pokazuju Krug jezik. Ključ je internalija, copy je vanjština.
+### 2.2 `krug_lifecycle_state`
 
-### 3.2 Domain naming — **Krug postupno, ali striktno u koraku s implementacijom**
+- `active`
+- `early_signal`
+- `ugrozen`
+- `continuity_window`
+- `read_only`
+- `deleted`
 
-Sve **novo** što se piše po Implementation Order v1.1 (entiteti, hookovi, helperi, edge functions, događaji, tipovi) ide kao `krug*` / `Krug*` od prvog dana. Bez prijelaznih `family*` imena u novom kodu.
+Bez `grace`. Continuity & Billing State Machine v1.3.2 je izvor istine.
 
-**Postojeći** domain kod (`useFamily*`, `family*` helperi, edge functions kao `notify-family-message`-tipa) može privremeno ostati pod starim imenom dok ga ne dotakne refactor iz odgovarajućeg bloka. U trenutku tog refactora rename je obavezan dio istog poteza, ne kasnije.
+### 2.3 `krug_member_status`
 
-Opasno ako predugo ostane staro: hibridni kod gdje novi `krug*` helperi pozivaju stare `family*` helpere stvara dojam da su isti pojam — što nisu (vidi §4).
+- `punopravni`
+- `obicni`
 
-### 3.3 Persistence / compatibility — **`family_*` smije neko vrijeme ostati ispod haube**
+Ne uključuje `owner`. Ownership je zaseban sloj (vidi §3.2).
 
-DB tablice, kolone i enumi koji već postoje kao `family_*` ne moraju se renameirati istovremeno s domain slojem. Pristup:
+### 2.4 `krug_ownership_event_type` (rezervirano za Blok B/C-završetak)
 
-- iznad postojećih tablica se uvodi **adapter/view sloj** koji izlaže Krug semantiku (npr. view koji izvodi `KrugOwnership` iz onoga što je sad u `family_groups`/`family_members`, ili read RPC koji vraća Krug oblik).
-- novi entiteti koji nemaju legacy parnjaka (Governance artefakti, Continuity state, Takeover prozori, Krug lifecycle state) idu odmah pod `krug_*` imena — nema razloga ih zvati starim jezikom.
-- per-resource refactor iz Structural Choice v1.1 (npr. `family_shared_sources` → namjenski Krug link sloj) je **dio Bloka F**; ne radi se ranije, ne radi se kasnije.
+Vrijednosti se zatvaraju u Schema Plan v2 zajedno s governance/takeover blokom. Spomenuto ovdje samo zato da rezervacija imena bude transparentna i da se izbjegne kasniji konflikt.
 
-Opasno ako predugo ostane staro: kad UI/domain već govore Krug, a tablice i dalje `family_*`, prvi novi developer koji dođe pretpostavit će da su to isti koncepti i ugraditi staru `Family` logiku natrag.
+### 2.5 Privacy / shared_status na transakcijama
 
----
-
-## 4. Semantički rizici prijelaza
-
-Najopasnija mjesta gdje rename može lagati ili gdje stari naziv može potajno vratiti stari behaviour.
-
-### 4.1 Gdje 1:1 rename **ne radi**
-
-- **`family member` → `KrugMember`** nije čisti rename. Stari `family member` je miješao člana i vlasnika kroz jedno polje. Novi model ima `KrugMember.status` (`punopravni`/`obični`) **+** odvojeni `KrugOwnership`. Tko rename napravi 1:1 ostat će s vlasnikom kao roleom na članu — direktna kontradikcija Foundation-a + Implementation Order v1.1.
-- **`payment_source_members.role: limited/full` ↔ `KrugMember.status: obični/punopravni`** *konceptualno koreliraju* ali nisu isto i ne smiju se spojiti. `payment_source_members` je access sloj nad **resursom**, ne članstvo u Krugu. Spajanjem se gubi sposobnost dijeljenja resursa izvan Kruga (npr. nasljeđena `family_shared_sources` veza kroz drugu grupu).
-- **`family group` → `Krug`** nije rename grupe nego **generalizacija**. Krug ima preset koji je zaključan na stvaranju; stara `family` nije imala formalni preset. Tretirati Krug kao "preimenovani Family" znači gubiti preset semantiku i otvarati vrata pitanjima "kako promijeniti tip Kruga" koja u modelu **ne postoje**.
-
-### 4.2 Gdje stari naziv krivo sugerira stari behaviour
-
-- **"Family ownership transfer"** kao copy/komentar krivo sugerira da je vlasništvo property grupe. U Krugu je vlasništvo zaseban sloj (`KrugOwnership`) s vlastitim tranzicijama (`confirmed transfer`, `fallback takeover`) — to nije isto kao "novi family head".
-- **"Family billing"** krivo sugerira da bilo tko u grupi može platiti / preuzeti billing. U Krugu billing je strogo owner u steady-state `active`, plus spec-dodijeljeni punopravni član **isključivo u tranzicijskim prozorima** (Access Matrix v1.3 §3.10).
-- **"Family deletion"** krivo sugerira jednostavan cascade. Krug ima Post-Delete Behavior Foundation Patch v1.1 s eksplicitnim ponašanjem po vrsti artefakta — to nije `DELETE CASCADE`.
-- **"Family chat"** je već eksplicitno uklonjeno (vidi memory `Family Chat Removed`) — naming ne smije nikako sugerirati da se vraća. Krug **nema** chat.
-
-### 4.3 Gdje postoji opasnost povratka `Family` logike kroz naming
-
-- **Admin UX**: ako admin tooling i dalje govori "Family group", admin će intuitivno tražiti "promijeni vlasnika Family grupe" — radnju koja u Krugu ide kroz odvojeni Takeover/Continuity put. Admin copy mora ići s prvim Krug isporukama, ne kasnije.
-- **Developer onboarding / interna dokumentacija**: ako se interno i dalje govori "family preset", "family owner", novi developer će graditi pretpostavke iz starog modela. Interna dokumentacija (README, decision logs, ovaj plan) mora biti čisto Krug.
-- **i18n vrijednosti vs. ključevi**: dok ključ `family.something` može privremeno ostati, **vrijednost** ne smije sadržavati "obitelj"/"family"/"Familie" u novom copy-u. Ako se to ne razdvoji jasno, prijevodi će ostati lažno-Family iako je sve drugo Krug.
-- **Hookovi i helperi koji se kopiraju**: `useFamilyMembers` → kopiran u `useKrugMembers` 1:1 → vraća isti shape s `role: owner` → tihi povratak starog modela. Svaki kopirani helper mora proći kroz §4.1 filter prije nego se commit-a.
+**Ne uvodi se u Schema Plan v1.** Pripada Bloku D (transakcijska semantika). Zaključane vrijednosti (`private` / `personal` / `shared`) već su dokumentirane u Domain Model v1.1 i Naming & Migration Strategy v1.1, ali same kolone (`krug_id`, `privacy`, `shared_status`) ulaze tek u Schema Plan koji prati Blok D.
 
 ---
 
-## 5. Preporučena migration strategija na razini jezika/modela
+## 3. Tablice — Blok A (Core Krug)
 
-Strateški redoslijed (ne SQL koraci):
+### 3.1 `krug`
 
-### Korak 1 — Product copy first (uz prvu Krug isporuku iz Implementation Order v1.1)
+Jedan red = jedan Krug.
 
-**Što:** sav novi UI copy je Krug. Stari Family ekrani ostaju netaknuti dok ih ne dotakne refactor.
-**Zašto:** korisnik je najmanje invested u tehničke detalje i najbrže prima novu mentalnu sliku. Ako copy ide zadnji, korisnik kroz pola releasea živi u starom modelu i daje feedback iz starog modela — što vraća product odluke unazad.
-**Što se time štiti:** korisnička mentalna slika + product feedback loop.
-**Što se time odgađa:** ništa tehnički — copy je najmanje invazivan sloj.
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| `id` | UUID PK | da | |
+| `preset` | `krug_preset` | da | immutable nakon insert-a |
+| `name` | text | da | display ime; nije identifikator |
+| `lifecycle_state` | `krug_lifecycle_state` | da | default `active` |
+| `created_at` | timestamptz | da | |
+| `updated_at` | timestamptz | da | |
 
-### Korak 2 — Domain naming u koraku s implementacijom (Blok-by-Blok prema Order v1.1)
+Constraint-i (deklarativna razina, bez implementacije):
+- `preset` mora biti postavljen pri insert-u i ne smije se mijenjati nakon toga (immutability se osigurava na write-path razini, ne kroz CHECK ovisan o vremenu).
+- `lifecycle_state` tranzicije su validirane van DB CHECK-a (state machine je u domenskom sloju; CHECK ne može opisati legalni graf tranzicija).
 
-**Što:** svaki blok iz Implementation Order v1.1 koji se isporučuje uvodi svoj `Krug*` domain sloj odmah. Bez prijelaznih `family*` imena u novom kodu. Postojeći `family*` kod ne renameirati dok ga ne dotakne neki blok.
-**Zašto:** rename bez refactora je rizik (lažno-isti pojmovi); rename **tijekom** refactora osigurava da rename i semantička promjena idu u istom potezu i u istom code reviewu.
-**Što se time štiti:** semantička jasnoća — nikad se ne događa da je nešto preimenovano a značenje staro.
-**Što se time odgađa:** "lijepi" potpuni rename cijelog kodbase odjednom — to je svjesno odgođeno jer bi inače trajalo predugo i blokiralo isporuke.
+Što tablica **ne** sadrži:
+- ne sadrži `owner_user_id` — ownership ide kroz `krug_ownership` (§3.2).
+- ne sadrži billing podatke — billing veza je zaseban entitet u Bloku C (§5).
+- ne sadrži članove — članstvo je `krug_membership` (§3.3).
+- ne sadrži resurse — link je u Bloku B (§4).
 
-### Korak 3 — Adapter sloj nad postojećim `family_*` tablicama (paralelno s Korakom 2, čim Blok A dođe na red)
+### 3.2 `krug_ownership`
 
-**Što:** views / RPC-ovi / čitači koji iznad `family_groups`/`family_members`/`family_shared_*` izlažu Krug oblik (`Krug`, `KrugMember.status`, `KrugOwnership`). Pisanje i dalje ide na stare tablice dok se ne preimenuju.
-**Zašto:** novi Krug domain sloj može odmah živjeti nad starim podacima bez čekanja DB rename-a. Spriječava "dva podatkovna izvora istine" jer ostaje samo jedan (stari), samo gledan kroz novu leću.
-**Što se time štiti:** nema duplikacije podataka, nema dvostrukih upisa, nema race conditiona između starog i novog sloja.
-**Što se time odgađa:** sam DB rename (`family_*` → `krug_*`) — namjerno odgođen u Korak 4.
+Ownership je **zaseban sloj**, ne polje na Krugu i ne uloga na članu. Razlog: Foundation v4.2 + Access Matrix v1.3 traže da owner može biti samo jedan u jednom trenutku, da se može mijenjati kroz takeover/continuity, i da je owner povijesno auditabilan (tko je bio owner u kojem prozoru). Kolona na `krug` ne bi pokrila povijest, a uloga na `krug_membership` bi miješala ownership s membershipom (eksplicitno odbijeno u v1.1 ispravkama).
 
-### Korak 4 — Persistence rename (zadnje, jedan blok po jedan)
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| `id` | UUID PK | da | |
+| `krug_id` | UUID FK → `krug.id` | da | |
+| `user_id` | UUID | da | referenca na auth user (kroz profiles sloj, prema project konvenciji) |
+| `started_at` | timestamptz | da | početak ownership prozora |
+| `ended_at` | timestamptz | ne | NULL = trenutni owner |
+| `ended_reason` | text/enum (rezervirano) | ne | popunjava se u Bloku C/D (takeover, continuity ishod, brisanje) |
+| `created_at` | timestamptz | da | |
 
-**Što:** tek kad je za pojedini `family_*` entitet (a) cijeli domain sloj Krug, (b) cijeli UI copy Krug, (c) adapter sloj dokazano radi — tablica/kolona/enum se preimenuje uz drop adaptera. Per-resource refactor iz Structural Choice v1.1 ide u sklopu Bloka F.
-**Zašto:** persistence rename je najskuplji i najmanje reverzibilan; mora se raditi kad više nema rizika da neka konzumacija još ovisi o starom imenu.
-**Što se time štiti:** stabilnost — nijedan rename ne dogodi se "u zraku".
-**Što se time odgađa:** estetska čistoća DB schema — namjerno; tehnički dug je svjestan i ograničen rokom.
+Constraint-i:
+- **Najviše jedan aktivan owner po Krugu**: jedinstvenost po `krug_id` gdje `ended_at IS NULL`. Implementira se partial unique index — bez `now()` u izrazu, pa je deterministički i restore-safe.
+- Bez FK na `auth.users` (prema project konvenciji).
+- `ended_at >= started_at` validira se kroz trigger, ne CHECK (jer su obje vrijednosti vremenske i pravilo se logički veže uz state machine).
 
-### Alternativa razmatrana i odbijena
+Što tablica **ne** sadrži:
+- ne sadrži permission flag-ove ownera — permissions su izvedene iz Access Matrix v1.3 na temelju postojanja aktivnog reda.
+- ne sadrži takeover event detalje — to ide u zaseban takeover audit u Bloku C/D Schema Plana.
 
-**"Big bang" rename** (sve odjednom: copy + domain + persistence) — odbijeno jer:
-- mora se isporučiti u jednom potezu, što kontradiktira Bloku-by-Bloku redoslijedu iz Order v1.1.
-- maksimizira rizik regresija (sve se mijenja istovremeno → debug je kombinatoričan).
-- zahtijeva da svi blokovi A–I budu spremni prije bilo kakvog rename-a — odgađa korisničku vrijednost na sam kraj.
+### 3.3 `krug_membership`
+
+Članstvo u Krugu. **Owner ne mora biti redak ovdje** (ownership je posve odvojen sloj); ako proizvod kasnije odluči da owner _također_ ima membership red radi UI-ja, to je domenska odluka koja se rješava van schema planiranja v1.
+
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| `id` | UUID PK | da | |
+| `krug_id` | UUID FK → `krug.id` | da | |
+| `user_id` | UUID | da | |
+| `status` | `krug_member_status` | da | `punopravni` ili `obicni` |
+| `joined_at` | timestamptz | da | |
+| `left_at` | timestamptz | ne | NULL = aktivan član |
+| `created_at` | timestamptz | da | |
+| `updated_at` | timestamptz | da | |
+
+Constraint-i:
+- **Jedan aktivan member redak po (`krug_id`, `user_id`)**: partial unique gdje `left_at IS NULL`.
+- `status` tranzicije (`obicni` ↔ `punopravni`) idu kroz governance (Blok D); DB ne validira tranziciju.
+- Brojevni limiti članova (ako ih preset nameće) **ne** ulaze u CHECK; rješavaju se u governance sloju jer ovise o presetu i kontekstu.
+
+Što tablica **ne** sadrži:
+- bez polja `role` u smislu owner/admin — ownership je u §3.2.
+- bez split/proportional split podataka — to je vlasništvo Family Proportional Split feature seta i, ako se zadrži, integrira se kroz vlastiti sloj, ne kroz `krug_membership`.
 
 ---
 
-## 6. Što ovaj dokument svjesno NE odlučuje
+## 4. Tablice — Blok B (Resource Link sloj)
 
-- **nije SQL migration plan** (točan redoslijed CREATE/ALTER/DROP, FK pravila, default vrijednosti, indeksi, constraints).
-- **nije deployment plan** (po okolišima, downtime prozori, redoslijed migracije po environmentu).
-- **nije rollout plan po korisnicima** (feature flagovi, postotak korisnika, A/B, beta krug).
-- **nije code mod plan** (koje fajlove točno renameirati, kojim alatom, u kojem PR-u).
-- **nije API/service versioning spec** (kako se klijenti starije verzije ponašaju prema Krug API-ju, kako edge funkcije rute prema staroj/novoj shemi).
-- **nije i18n key migration plan** (kada točno `family.*` ključevi postaju `krug.*` i kako se prevodi održavaju u prijelazu).
+Polazi strogo od `Shared Resources Link — Structural Choice v1.1`: **per-resource link tablice**, ne generic many-to-many.
 
-Sve gore — svaki u svom dokumentu kad za njega dođe vrijeme.
+v1 sheme pokriva resurs koji već ima zaključanu strukturu u postojećem modelu — **payment sources**. Ostali resursi (budgets, projects, goals, …) dobivaju vlastite link tablice u kasnijim Schema Plan verzijama, jednom kad njihova interna semantika sjedne u Krug kontekst (Implementation Order v1.1 Blokovi B-ostatak).
+
+### 4.1 `krug_shared_payment_source`
+
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| `id` | UUID PK | da | |
+| `krug_id` | UUID FK → `krug.id` | da | |
+| `payment_source_id` | UUID FK → existing payment source entitet | da | |
+| `linked_at` | timestamptz | da | |
+| `linked_by_user_id` | UUID | da | tko je dodao link (audit) |
+| `unlinked_at` | timestamptz | ne | NULL = aktivan link |
+
+Constraint-i:
+- **Najviše jedan aktivan link po (`krug_id`, `payment_source_id`)**: partial unique gdje `unlinked_at IS NULL`.
+- Resource → `payment_source_members` sloj **ostaje netaknut**. Ovaj link sloj samo dodaje Krug kontekst; access na sam izvor i dalje ide kroz `payment_source_members` (potvrđeno u Naming & Migration Strategy v1.1).
+
+Što tablica **ne** sadrži:
+- bez per-člana permission flag-ova — pristup ide kroz postojeći resource-level sloj (`payment_source_members`).
+- bez audit/event lanca — audit je u Bloku D Schema Plana.
+
+Sinkronizacija s `payment_source_members` (auto-`limited` trigger, manualni uplift na `full`) **ostaje na postojećem mjestu**, ne miče se u Krug sloj. Schema Plan v1 samo dokumentira da je to ugovor između dvaju slojeva i da se ne duplicira u Krug link sloju.
 
 ---
 
-## 7. Zaključak
+## 5. Tablice — Blok C (Lifecycle & Continuity, minimalni set)
 
-1. **Naming + konceptualna migration strategija je sada jasna.** Tri sloja s tri brzine (copy odmah, domain u koraku s implementacijom, persistence zadnje), eksplicitna split mjesta gdje 1:1 rename ne radi (član vs ownership, payment_source_members vs KrugMember, Family group vs Krug + preset), eksplicitni semantički rizici (4.1–4.3), jasan strateški redoslijed (Koraci 1–4) s argumentima zašto.
+Lifecycle stanje samog Kruga već živi u `krug.lifecycle_state` (§3.1). Blok C u v1 dodaje **samo** ono što je nužno da state machine ima persistirano trajanje continuity prozora i vezu prema billing-u, bez koje lifecycle ne može operirati.
 
-2. **Sljedeći dokument — preporuka:**
-   - **`SQL / Schema Plan v1`** — *preporučeno*. Naming pitanja su sada zatvorena (ovaj dokument) i Implementation Order v1.1 ima jasan redoslijed blokova. SQL plan može sigurno krenuti od Bloka A (Krug, KrugOwnership, KrugMember) jer:
-     - zna kako se entiteti zovu (ovaj dokument),
-     - zna što ide prvo i s kojim zavisnostima (Order v1.1),
-     - zna koje su semantičke granice (Domain Model v1.1, Access Matrix v1.3).
-     SQL plan može uključiti i adapter sloj iz §5 Koraka 3 kao prvi-class artefakt.
-   - Alternativa: **`API / Service Boundary Plan v1`** — ima smisla **samo** ako se prvo želi zatvoriti pitanje kako edge functions i RPC-ovi mijenjaju potpis tijekom prijelaza (npr. da li `notify-family-*` edge funkcije zadržavaju ime ili idu u `notify-krug-*` s redirect/compat slojem). Niža prioritet — može doći odmah nakon SQL plana.
-   - **`UI Surface Plan v1`** — i dalje preuranjen. Bez Blokova A–C nema čvrste podloge za UI; bez SQL plana se UI ne može vezati na konkretne reads/writes.
+### 5.1 `krug_continuity_window`
 
-Reci "prihvaćam Naming & Migration Strategy v1" ili javi korekcije.
+Postoji isključivo kad je Krug u stanju `continuity_window`. Jedan aktivan red po Krugu.
+
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| `id` | UUID PK | da | |
+| `krug_id` | UUID FK → `krug.id` | da | |
+| `opened_at` | timestamptz | da | |
+| `expires_at` | timestamptz | da | trajanje prema State Machine v1.3.2 |
+| `closed_at` | timestamptz | ne | NULL = prozor traje |
+| `closed_reason` | text/enum (rezervirano u Bloku C-completion) | ne | npr. takeover, expiry, manual resolve |
+
+Constraint-i:
+- **Najviše jedan aktivan continuity_window po Krugu**: partial unique gdje `closed_at IS NULL`.
+- `expires_at > opened_at` validira se kroz trigger (ne CHECK).
+- Veza s `krug.lifecycle_state = continuity_window` osigurava se na write-path razini (state machine), ne kroz cross-row CHECK.
+
+### 5.2 Billing veza
+
+`Continuity & Billing State Machine v1.3.2` zahtijeva da se zna **subscription/billing entitet** koji drži Krug. Schema Plan v1 ovdje **ne** uvodi novu billing tablicu — projekt već ima billing/subscription sloj (Stripe + module access model).
+
+Što v1 zaključava:
+- Krug se veže na billing kroz **postojeći subscription entitet**, ne kroz novu `krug_billing` tablicu.
+- Veza je 1:1 prema vlasniku (owner — `krug_ownership.user_id` aktivnog reda) i izvedena, ne pohranjena na `krug`. Razlog: vlasnik se može mijenjati (takeover/continuity), pa duplicirati subscription_id na `krug` znači stalni sync rizik.
+- Ako se pokaže potreba za pohranjenom referencom (npr. zbog performansa ili audita), uvodi se u Schema Plan v2 kao zaseban materijaliziran view ili explicit veza s vlastitim invariantima — ne kao improvizirano polje.
+
+---
+
+## 6. Foreign keys, indeksi i integritet (sažeto)
+
+- Sve FK reference unutar Krug sloja koriste `ON DELETE` semantiku **usklađenu s Post-Delete Behavior Foundation Patch v1.1**. Konkretno: brisanje Kruga ne smije nasumično `CASCADE` brisati resurse — pravila su per-artefakt. Praktično: FK od link sloja (§4.1) i continuity sloja (§5.1) prema `krug.id` mogu ići `ON DELETE CASCADE` jer su to čisto pomoćne tablice; FK prema vanjskim resursima (npr. `payment_source_id`) ne smije imati cascade koji bi obrisao resurs.
+- Sve tablice imaju standardna polja `created_at` / `updated_at` osim onih gdje je life-cycle eksplicitno opisan parovima (`opened_at`/`closed_at`, `started_at`/`ended_at`).
+- Partial unique indeksi (aktivni owner, aktivni member, aktivni link, aktivni continuity_window) su deterministički — bez `now()` u izrazu — kako bi ostali restore-safe (potvrđena konvencija projekta).
+- RLS i GRANT-ovi: u skladu s project core pravilima (RLS na svim tablicama, GRANT-ovi u istoj migraciji). **Konkretne policies** nisu dio ovog Schema Plana — zatvaraju se u zasebnom `Krug RLS / Access Enforcement Plan` jer su izvedene iz Access Matrix v1.3 i nemaju smisla razdvojeno od enforcement sloja.
+
+---
+
+## 7. Što je svjesno **ostavljeno van** v1 sheme
+
+Sve donje stavke imaju svoj zaključani domenski model, ali ulaze u Schema Plan v2/v3 jer ovise o blokovima izvan A–C:
+
+1. **Transakcijska semantika** (`krug_id`, `privacy`, `shared_status` na transakcijama) — Blok D.
+2. **Governance artefakti** (`krug_proposal`, `krug_consent`) — Blok D, Governance Matrix v1.3.
+3. **Takeover events / audit** (uvjeti iz Takeover Conditions Spec v1.1) — Blok C-završetak / D.
+4. **Post-delete operativni sloj** (artefakti koje Post-Delete Patch v1.1 zahtijeva da prežive brisanje Kruga, npr. denormalizirani snapshot bivših shared transakcija prije reklasifikacije u `personal`) — vlastiti Schema Plan kad se taj operativni sloj projektira do kraja.
+5. **Resource link sloj za ostale resurse** (budgets, projects, goals, …) — per-resource, u istom obliku kao §4.1, ali tek kad svaki taj resurs domenski sjedne u Krug kontekst.
+6. **Billing pohranjena referenca** na Krugu (ako se pokaže nužnom) — §5.2 obrazloženje.
+7. **RLS policies i GRANT matrica** — zaseban Access Enforcement Plan.
+8. **Indeksi za performans** (osim integritetskih partial unique-a) — tek nakon što write/read obrasci budu poznati iz implementacije.
+9. **Persistence rename `family_*` → `krug_*`** — Naming & Migration Strategy v1.1 § (završni korak), ne ovaj dokument.
+
+---
+
+## 8. Što ovaj dokument **ne** mijenja u zaključanom modelu
+
+- Ne uvodi `grace`.
+- Ne uvodi `majority`.
+- Ne uvodi nove presete.
+- Ne tretira `owner` kao role na članu.
+- Ne svodi privacy na `private/shared` (3 osi ostaju: `private` / `personal` / `shared`, ali izvan v1 sheme).
+- Ne uvodi novi default za "transakcija bez `krug_id`".
+- Ne otvara promjenu preseta kao governance tok.
+- Ne uvodi `Family` kao aktivnog modela.
+
+---
+
+## 9. Zaključak
+
+`Krug SQL / Schema Plan v1` pokriva Blokove A–C iz Implementation Order v1.1 na razini:
+- enuma (`krug_preset`, `krug_lifecycle_state`, `krug_member_status`)
+- tablica (`krug`, `krug_ownership`, `krug_membership`, `krug_shared_payment_source`, `krug_continuity_window`)
+- integritetskih pravila (partial unique indeksi, FK semantika usklađena s post-delete patchom, trigger-based time validacija umjesto vremenskih CHECK-ova)
+
+Sve dalje (governance, takeover, post-delete operativni sloj, transakcijska semantika, RLS) ima rezervirano mjesto i bit će pokriveno u sljedećim Schema Plan verzijama bez retroaktivne promjene v1 sheme.
+
+Preporučeni sljedeći dokument: **`Krug RLS / Access Enforcement Plan v1`** — prevodi `Krug Access Matrix v1.3` u konkretna RLS pravila i GRANT matricu nad ovdje definiranim tablicama (Blok A–C), prije nego se otvori Blok D i transakcijska semantika.
