@@ -182,7 +182,7 @@ export const ProjectCard = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-semibold truncate">{project.name}</h3>
+            <h3 className="font-semibold truncate text-[hsl(217_91%_60%)]">{project.name}</h3>
             <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
               {t(`projectStatus.${project.status}`, PROJECT_STATUS_LABELS[project.status])}
             </Badge>
