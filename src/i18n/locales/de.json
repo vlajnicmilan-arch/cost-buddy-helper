@@ -4340,6 +4340,80 @@
         "dateMustBeFuture": "Datum muss in der Zukunft liegen.",
         "submit": "Zugriff gewähren"
       }
+    },
+    "access": {
+      "tab": "Zugriff",
+      "systemBilling": {
+        "title": "Systemabrechnung",
+        "desc": "Abrechnung für alle Nutzer aktivieren oder deaktivieren",
+        "activeNote": "✓ Abrechnung ist aktiv — Nutzer sehen Limits gemäß ihrer Stufe.",
+        "disabledNote": "○ Abrechnung ist deaktiviert — alle Nutzer haben vollen Zugriff."
+      },
+      "overview": {
+        "title": "Modulzugriff im Überblick",
+        "totalUsers": "Nutzer gesamt",
+        "totalWithAccess": "Gesamt mit Zugriff",
+        "viaBilling": "über Abrechnung",
+        "viaOverride": "über Override",
+        "intersection": "beides",
+        "coreAlwaysOn": "Core ist für alle verfügbar."
+      },
+      "recentActivity": {
+        "title": "Letzte Override-Aktivität",
+        "empty": "Noch keine Override-Aktivität.",
+        "actionGrant": "Gewährt",
+        "actionRevoke": "Entzogen"
+      },
+      "footerNote": "Pro-Nutzer Abrechnung und Admin-Override werden im Nutzerdetail unter dem Tab Nutzer verwaltet."
+    },
+    "billing": {
+      "planLabel": {
+        "coreOnly": "Nur Core",
+        "projects": "Abrechnung: Projects",
+        "business": "Abrechnung: Business"
+      }
+    },
+    "users": {
+      "filter": {
+        "all": "Alle",
+        "admins": "Admins",
+        "banned": "Gesperrt",
+        "hasProjects": "Hat Projects",
+        "hasBusiness": "Hat Business",
+        "overrideActive": "Override aktiv",
+        "coreOnly": "Nur Core"
+      },
+      "accessBadge": {
+        "label": "Zugriff",
+        "coreOnly": "Nur Core"
+      },
+      "accessSource": {
+        "billing": "Abrechnung",
+        "override": "Override",
+        "both": "Abrechnung + Override"
+      }
+    },
+    "user": {
+      "until": "bis",
+      "effectiveAccess": {
+        "title": "Effektiver Zugriff",
+        "coreOnly": "Nur Core",
+        "always": "immer",
+        "from": "aus"
+      },
+      "billingSection": {
+        "title": "Abrechnung",
+        "layerChip": "Ebene 1",
+        "current": "Aktuell",
+        "saving": "Speichere...",
+        "note": "Ändert nur den Abrechnungseintrag. Admin-Modul-Override wird unten verwaltet."
+      },
+      "overrideSection": {
+        "title": "Admin-Modul-Override",
+        "layerChip": "Ebene 2",
+        "addButton": "Modulzugriff gewähren"
+      },
+      "layersIndependentNote": "Abrechnung und Admin-Override sind unabhängige Ebenen. Eine Abrechnungsänderung entfernt bestehende Override-Grants nicht. Ein Entzug ändert die Abrechnung nicht. Der effektive Zugriff bleibt bestehen, solange mindestens eine aktive Quelle existiert."
     }
   },
   "onboardingV2": {
