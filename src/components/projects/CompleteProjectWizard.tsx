@@ -50,6 +50,7 @@ export const CompleteProjectWizard = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
+  const { guard } = useProjectWriteGuard({ project });
 
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
