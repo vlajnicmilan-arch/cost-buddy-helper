@@ -105,7 +105,13 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
               />
             </div>
 
-            <Button onClick={handleCreate} disabled={creating} className="w-full h-9">
+            <Button
+              onClick={handleCreate}
+              disabled={creating || isReadOnly}
+              aria-disabled={creating || isReadOnly}
+              title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+              className="w-full h-9"
+            >
               {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('projects.share.generate', 'Generiraj link')}
             </Button>
@@ -133,7 +139,15 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(buildUrl(link.token), '_blank')} disabled={inactive}>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(link.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => handleRemove(link.id)}
+                        disabled={isReadOnly}
+                        aria-disabled={isReadOnly}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -153,7 +167,15 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName,
                       )}
                     </div>
                     {!link.revoked_at && (
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => revoke(link.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2"
+                        onClick={() => handleRevoke(link.id)}
+                        disabled={isReadOnly}
+                        aria-disabled={isReadOnly}
+                        title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
+                      >
                         {t('projects.share.revokeAction', 'Opozovi')}
                       </Button>
                     )}
