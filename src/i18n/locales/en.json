@@ -4636,17 +4636,24 @@
     },
     "preset": {
       "obitelj": "Family",
-      "partner": "Partners",
-      "cimer": "Roommates",
+      "partner": "Spouse / partner",
+      "cimer": "Roommate",
       "suroditelj": "Co-parents",
-      "prijatelji": "Friends"
+      "su_roditelj": "Co-parent",
+      "prijatelji": "Friends",
+      "putovanje": "Trip",
+      "projekt": "Project",
+      "klub": "Club"
     },
     "lifecycle": {
       "active": "Active",
       "early_signal": "Early signal",
       "ugrozen": "At risk",
       "paused": "Paused",
-      "terminated": "Ended"
+      "terminated": "Ended",
+      "continuity_window": "Transition",
+      "read_only": "Read-only",
+      "deleted": "Deleted"
     },
     "transaction": {
       "title": "Krug",
@@ -4669,6 +4676,17 @@
       "A4": "Withdraw proposal",
       "A5": "Re-propose",
       "A7": "Flip to personal"
+    },
+    "create": {
+      "cta": "New Krug",
+      "title": "New Krug",
+      "nameLabel": "Krug name",
+      "namePlaceholder": "e.g. Our home",
+      "nameHint": "Min 2 chars. Visible to the whole Krug.",
+      "presetLabel": "Krug type",
+      "maxPunopravni": "Max full members: {{n}}",
+      "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
+      "submit": "Create Krug"
     }
   }
 }
