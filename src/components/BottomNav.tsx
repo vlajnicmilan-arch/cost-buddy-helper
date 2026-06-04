@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Target, Wallet, Users } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Target, Wallet, Circle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -25,7 +25,10 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects' },
   { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core' },
   { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core' },
-  { path: '/family', icon: Users, labelKey: 'nav.family', fallback: 'Obitelj', activePaths: ['/family'], module: 'family' },
+  // Krug zauzima slot bivšeg Obitelj taba (odluka 04.06.2026). Gating ostaje
+  // preko `family` modula: tierUnlocked = plaćen paket. Legacy /family
+  // ostaje dostupan kao ruta dok se ne odluči o migraciji, ali ne u nav-u.
+  { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'family' },
 ];
 
 export const BottomNav = () => {
@@ -37,11 +40,12 @@ export const BottomNav = () => {
   const { lightTap } = useHaptics();
 
   // Faza 1 modularnog UI-a: jedini izvor istine za nav stavke je
-  // getNavVisibility(). Family se dodatno sakriva u business kontekstu
-  // (kontekst-specifična navigacija, ne modul gate).
+  // getNavVisibility(). Krug se dodatno sakriva u business kontekstu
+  // (kontekst-specifična navigacija, ne modul gate) — mirror legacy obiteljskog
+  // ponašanja u v1.
   const navItems = ALL_NAV_ITEMS.filter(item => {
     if (getNavVisibility(item.module, modules[item.module]) !== 'visible') return false;
-    if (item.path === '/family' && activeBusinessProfileId) return false;
+    if (item.path === '/krug' && activeBusinessProfileId) return false;
     return true;
   });
 
