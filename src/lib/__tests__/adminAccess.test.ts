@@ -5,6 +5,10 @@ import {
   summarizeModuleAccess,
   sortGrantsByLatestEvent,
   isGrantActive,
+  isGrantExpiringSoon,
+  getEarliestUpcomingExpiry,
+  formatExpiryBadge,
+  hoursUntilGrantExpiry,
   type ActiveGrantLike,
 } from '@/lib/adminAccess';
 
