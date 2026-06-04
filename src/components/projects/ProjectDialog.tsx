@@ -61,6 +61,11 @@ export const ProjectDialog = ({
   const { t } = useTranslation();
   const { currency } = useCurrency();
   const [saving, setSaving] = useState(false);
+  // Auto-derive in edit mode so callers don't need to wire isReadOnly explicitly.
+  const derivedAccessLevel = useProjectAccessLevel(
+    project ? { user_id: (project as any).user_id, isParticipant: !(project as any).isOwner } : null
+  );
+  const isReadOnly = isReadOnlyProp ?? (project ? isReadOnlyAccess(derivedAccessLevel) : false);
 
   // Wizard state — only relevant for create flow.
   const [step, setStep] = useState<1 | 2>(1);
