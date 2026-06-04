@@ -21,6 +21,8 @@ import { useKrugPendingExpenses } from '@/hooks/useKrugPendingExpenses';
 import { useKrugApplyAct } from '@/hooks/useKrugAct';
 import { decideApplyAct } from '@/lib/krugDecisions';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
