@@ -4647,7 +4647,8 @@
         "success": "Source detached",
         "denied": "You are not allowed to detach this source.",
         "error": "Failed to detach source"
-      }
+      },
+      "unknown": "Source"
     },
     "notFound": "Krug not found.",
     "role": {
@@ -4711,6 +4712,7 @@
     },
     "member": {
       "you": "you",
+      "unknown": "Unknown member",
       "add": {
         "cta": "Add member",
         "title": "Add member",

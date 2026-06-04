@@ -21,6 +21,8 @@ import { useKrugPendingExpenses } from '@/hooks/useKrugPendingExpenses';
 import { useKrugApplyAct } from '@/hooks/useKrugAct';
 import { decideApplyAct } from '@/lib/krugDecisions';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
@@ -42,6 +44,11 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
   const [actingId, setActingId] = useState<string | null>(null);
 
   const locale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? de : hr;
+  const authorIds = useMemo(
+    () => Array.from(new Set(pending.map((e) => e.user_id).filter(Boolean) as string[])),
+    [pending],
+  );
+  const profiles = useUserProfiles(authorIds);
 
   const openDetail = (e: Expense) => {
     setSelected(e);
@@ -121,6 +128,13 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
             const { canConfirm, canNegate } = canActOn(e);
             const busy = actingId === e.id && applyAct.isPending;
             const amountFormatted = formatAmount(Number(e.amount), (e.currency ?? undefined) as any);
+            const authorName = e.user_id
+              ? getMemberDisplayName(
+                  profiles.get(e.user_id),
+                  e.user_id,
+                  t('krug.member.unknown', 'Nepoznat član'),
+                )
+              : null;
             return (
               <div
                 key={e.id}
@@ -133,6 +147,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     {format(e.date, 'd. MMM yyyy.', { locale })}
+                    {authorName ? ` · ${authorName}` : ''}
                     {e.merchant_name ? ` · ${e.merchant_name}` : ''}
                   </div>
                 </div>

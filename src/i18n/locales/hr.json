@@ -4658,7 +4658,8 @@
         "success": "Izvor odvojen",
         "denied": "Nemaš ovlasti odvojiti ovaj izvor.",
         "error": "Odvajanje nije uspjelo"
-      }
+      },
+      "unknown": "Izvor"
     },
     "notFound": "Krug ne postoji.",
     "role": {
@@ -4722,6 +4723,7 @@
     },
     "member": {
       "you": "ti",
+      "unknown": "Nepoznat član",
       "add": {
         "cta": "Dodaj člana",
         "title": "Dodaj člana",

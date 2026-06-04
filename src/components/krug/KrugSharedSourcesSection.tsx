@@ -68,6 +68,20 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
     return map;
   }, [customPaymentSources]);
 
+  const resolveLabel = (paymentSourceId: string): { label: string; currency?: string } => {
+    if (paymentSourceId.startsWith('custom:')) {
+      const meta = nameById.get(paymentSourceId);
+      if (meta?.name) return { label: meta.name, currency: meta.currency };
+      const tail = paymentSourceId.slice(7, 13);
+      return { label: `${t('krug.sharedSource.unknown', 'Izvor')} · ${tail}` };
+    }
+    // Built-in slug (npr. `cash`, `bank_account`) — pokušaj i18n preko `paymentSources.<slug>`.
+    const slugKey = `paymentSources.${paymentSourceId}`;
+    const translated = t(slugKey, { defaultValue: '' });
+    if (translated && translated !== slugKey) return { label: translated };
+    return { label: paymentSourceId };
+  };
+
   const handleAttach = async (id: string) => {
     if (!id) return;
     try {
@@ -142,14 +156,13 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
       ) : (
         <Card className="divide-y divide-border">
           {linked.map((s) => {
-            const meta = nameById.get(s.payment_source_id);
-            const label = meta?.name ?? s.payment_source_id;
+            const { label, currency } = resolveLabel(s.payment_source_id);
             return (
               <div key={s.id} className="px-4 py-3 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm truncate">{label}</div>
-                  {meta?.currency && (
-                    <div className="text-[10px] text-muted-foreground">{meta.currency}</div>
+                  {currency && (
+                    <div className="text-[10px] text-muted-foreground">{currency}</div>
                   )}
                 </div>
                 {isOwner && (
