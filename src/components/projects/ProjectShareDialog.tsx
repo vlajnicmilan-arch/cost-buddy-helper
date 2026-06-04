@@ -11,17 +11,21 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface ProjectShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
   projectName: string;
+  /** When true (owner_readonly or participant), all mutate actions are blocked with a toast. */
+  isReadOnly?: boolean;
 }
 
-export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName }: ProjectShareDialogProps) => {
+export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName, isReadOnly = false }: ProjectShareDialogProps) => {
   const { t } = useTranslation();
   const { links, loading, create, revoke, remove, update } = useProjectShareLinks(projectId);
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
   const [creating, setCreating] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
   const [showPhotos, setShowPhotos] = useState(true);
@@ -29,12 +33,23 @@ export const ProjectShareDialog = ({ open, onOpenChange, projectId, projectName 
   const [expiresInDays, setExpiresInDays] = useState('30');
 
   const handleCreate = async () => {
+    if (!guard()) return;
     setCreating(true);
     const expires_at = expiresInDays
       ? new Date(Date.now() + parseInt(expiresInDays) * 86400000).toISOString()
       : null;
     await create({ show_financials: showFinancials, show_photos: showPhotos, show_milestones: showMilestones, expires_at });
     setCreating(false);
+  };
+
+  const handleRevoke = async (id: string) => {
+    if (!guard()) return;
+    await revoke(id);
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!guard()) return;
+    await remove(id);
   };
 
   const buildUrl = (token: string) => `${window.location.origin}/p/${token}`;
