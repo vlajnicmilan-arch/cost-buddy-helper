@@ -5539,6 +5539,10 @@ export type Database = {
         Args: { _category: string; _user_id: string }
         Returns: boolean
       }
+      krug_can_see_personal: {
+        Args: { _author: string; _krug: string; _viewer: string }
+        Returns: boolean
+      }
       krug_is_full_member: {
         Args: { _krug: string; _user: string }
         Returns: boolean
