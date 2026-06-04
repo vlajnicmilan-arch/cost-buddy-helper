@@ -15,6 +15,7 @@ import { WorkerDataDisclaimerDialog, hasAcceptedWorkerDisclaimer } from '@/compo
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Handshake, Building2, Loader2, Target, Search } from 'lucide-react';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface Milestone {
   id: string;
@@ -25,6 +26,8 @@ interface ProjectCollaboratorsTabProps {
   projectId: string;
   milestones: Milestone[];
   isManager: boolean;
+  /** Owner-readonly downgrade: blocks add/edit/delete/save with toast. */
+  isReadOnly?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -42,10 +45,11 @@ const STATUS_LABELS: Record<string, string> = {
 type StatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
 type SortKey = 'newest' | 'oldest' | 'name' | 'agreed' | 'paid' | 'remaining';
 
-export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: ProjectCollaboratorsTabProps) => {
+export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager, isReadOnly = false }: ProjectCollaboratorsTabProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { collaborators, loading, addCollaborator, updateCollaborator, deleteCollaborator } = useProjectCollaborators(projectId);
+  const { guard } = useProjectWriteGuard({ isReadOnly });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectCollaborator | null>(null);
@@ -54,6 +58,7 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const openAddDialog = () => {
+    if (!guard()) return;
     setEditing(null);
     if (!hasAcceptedWorkerDisclaimer()) {
       setDisclaimerOpen(true);
@@ -69,6 +74,7 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
   const [search, setSearch] = useState('');
 
   const handleSave = async (data: ProjectCollaboratorInput) => {
+    if (!guard()) return;
     if (editing) {
       await updateCollaborator({ ...editing, ...data });
     } else {
@@ -322,10 +328,10 @@ export const ProjectCollaboratorsTab = ({ projectId, milestones, isManager }: Pr
 
                   {isManager && (
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setDialogOpen(true); }}>
+                      <Button variant="ghost" size="icon" disabled={isReadOnly} aria-disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined} onClick={() => { if (!guard()) return; setEditing(c); setDialogOpen(true); }}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => { setToDelete(c.id); setDeleteConfirmOpen(true); }}>
+                      <Button variant="ghost" size="icon" disabled={isReadOnly} aria-disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined} onClick={() => { if (!guard()) return; setToDelete(c.id); setDeleteConfirmOpen(true); }}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     </div>

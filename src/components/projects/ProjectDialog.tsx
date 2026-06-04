@@ -21,6 +21,7 @@ import { ProjectTemplate, useProjectTemplates } from '@/hooks/useProjectTemplate
 import { ProjectTypePickerStep } from './ProjectTypePickerStep';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 
 interface ProjectDialogPreset {
   name?: string;
@@ -41,7 +42,10 @@ interface ProjectDialogProps {
     addContingency?: boolean
   ) => Promise<void>;
   onUpdate?: (project: Project) => Promise<void>;
-  /** Owner-readonly (downgrade): blocks edit submit with toast. */
+  /**
+   * Owner-readonly (downgrade): blocks edit submit with toast.
+   * When omitted in edit mode, derives from `project` via useProjectAccessLevel.
+   */
   isReadOnly?: boolean;
 }
 
@@ -52,11 +56,16 @@ export const ProjectDialog = ({
   preset,
   onSave,
   onUpdate,
-  isReadOnly = false
+  isReadOnly: isReadOnlyProp
 }: ProjectDialogProps) => {
   const { t } = useTranslation();
   const { currency } = useCurrency();
   const [saving, setSaving] = useState(false);
+  // Auto-derive in edit mode so callers don't need to wire isReadOnly explicitly.
+  const derivedAccessLevel = useProjectAccessLevel(
+    project ? { user_id: (project as any).user_id, isParticipant: !(project as any).isOwner } : null
+  );
+  const isReadOnly = isReadOnlyProp ?? (project ? isReadOnlyAccess(derivedAccessLevel) : false);
 
   // Wizard state — only relevant for create flow.
   const [step, setStep] = useState<1 | 2>(1);

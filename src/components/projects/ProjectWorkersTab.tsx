@@ -34,6 +34,7 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { supabase } from '@/integrations/supabase/client';
 import { generateWorkRecordsPDF, generateWorkRecordsCSV, generateWorkRecordsJSON, WorkExportConfig } from '@/lib/workRecordsExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 type PeriodKey = 'currentMonth' | 'previousMonth' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
 type SortKey = 'name' | 'position' | 'hourlyRate' | 'periodHours' | 'periodCost';
@@ -68,6 +69,8 @@ interface ProjectWorkersTabProps {
   isManager: boolean;
   loading?: boolean;
   onRefetch?: () => void;
+  /** Owner-readonly downgrade: blocks add/edit/delete/save with toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectWorkersTab = ({
@@ -75,13 +78,15 @@ export const ProjectWorkersTab = ({
   projectName = 'Projekt',
   isManager,
   loading: externalLoading,
-  onRefetch
+  onRefetch,
+  isReadOnly = false,
 }: ProjectWorkersTabProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { workers, entries, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
   const { milestones } = useProjectMilestones(projectId);
   const [viewMode, setViewMode] = useState<string>('list');
+  const { guard } = useProjectWriteGuard({ isReadOnly });
 
   // Filter state
   const [period, setPeriod] = useState<PeriodKey>('currentMonth');
@@ -142,6 +147,7 @@ export const ProjectWorkersTab = ({
   };
 
   const handleAdd = () => {
+    if (!guard()) return;
     setEditingWorker(null);
     if (!hasAcceptedWorkerDisclaimer()) {
       setDisclaimerOpen(true);
@@ -151,16 +157,19 @@ export const ProjectWorkersTab = ({
   };
 
   const handleEdit = (worker: ProjectWorker) => {
+    if (!guard()) return;
     setEditingWorker(worker);
     setDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
+    if (!guard()) return;
     setWorkerToDelete(id);
     setDeleteConfirmOpen(true);
   };
 
   const confirmDelete = async () => {
+    if (!guard()) return;
     if (workerToDelete) {
       await deleteWorker(workerToDelete);
       setDeleteConfirmOpen(false);
@@ -178,6 +187,7 @@ export const ProjectWorkersTab = ({
     work_start_time: string;
     work_end_time: string;
   }) => {
+    if (!guard()) return;
     if (editingWorker) {
       await updateWorker({ ...editingWorker, ...data });
     } else {

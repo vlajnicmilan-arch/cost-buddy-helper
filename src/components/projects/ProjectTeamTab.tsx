@@ -26,6 +26,8 @@ interface ProjectTeamTabProps {
   initialSubTab?: SubTab;
   projectStatus?: string;
   archivedAt?: string | null;
+  /** Owner-readonly downgrade: blocks writes inside members/workers/collaborators sub-tabs. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectTeamTab = ({
@@ -42,6 +44,7 @@ export const ProjectTeamTab = ({
   initialSubTab,
   projectStatus,
   archivedAt,
+  isReadOnly = false,
 }: ProjectTeamTabProps) => {
   const { t } = useTranslation();
   const { workers } = useProjectWorkers(projectId);
@@ -132,6 +135,7 @@ export const ProjectTeamTab = ({
           onRefetch={onRefetchMembers}
           projectStatus={projectStatus}
           archivedAt={archivedAt}
+          isReadOnly={isReadOnly}
         />
       )}
       {active === 'workers' && canSeeWorkers && (
@@ -140,6 +144,7 @@ export const ProjectTeamTab = ({
           projectName={projectName}
           isManager={isManager}
           onRefetch={() => {}}
+          isReadOnly={isReadOnly}
         />
       )}
       {active === 'collaborators' && canSeeCollaborators && (
@@ -147,6 +152,7 @@ export const ProjectTeamTab = ({
           projectId={projectId}
           milestones={milestones}
           isManager={isManager}
+          isReadOnly={isReadOnly}
         />
       )}
     </div>
