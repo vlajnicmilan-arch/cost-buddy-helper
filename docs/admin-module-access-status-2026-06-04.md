@@ -102,3 +102,20 @@ Sljedeće stavke svjesno su odgođene za sljedeći scope i NE smatraju se nastav
 Admin module access PR1 je **završen** i zaključan u ovom stanju. Refactor je postavio čist temelj na kojem se može graditi PR2.
 
 Daljnje promjene admin access UX-a trebaju ići kao **novi scope** s vlastitim planom i vlastitim status dokumentom — ne kao nastavak ovog PR-a. Time se izbjegava ponovno otvaranje već zaključanih odluka oko jezika sučelja, redoslijeda sekcija i semantike brojanja.
+
+---
+
+## 8. PR2 nadogradnja (završeno)
+
+Uzak PR2 scope zatvoren u istom dokumentu radi povijesnog konteksta:
+
+1. **Drill-down iz kartica modula** — 3 brojača na `ModuleAccessOverview` (Total / Naplata / Override) emitiraju `onDrilldown` u `Admin.tsx` (`pendingUserContext`), prebacuju na `Pristup → Korisnici` tab i predaju `activeContext` u `UsersTab`.
+2. **Vizualno odvojen kontekst chip** — `activeContext` je zaseban drill-down state (nije pod `sourceSubFilter`), prikazan kao primary chip s prefiksom `Iz kartice modula:` i `×` resetom. Šest eksplicitnih varijanti: `Projects`, `Projects kroz Naplatu`, `Projects kroz Override`, `Business`, `Business kroz Naplatu`, `Business kroz Override`.
+3. **Filter `Override ističe < 7d`** — strict rolling `expires_at − now < 7×24h`, isključuje perpetual i revoked grantove; sortiranje po `min(expires_at) ASC`.
+4. **Tekstualni expiry badge** — `formatExpiryBadge(expiresAt, now)` deterministički 4-bucket mapping (`Ističe uskoro` / `Ističe danas` / `Ističe za 1 dan` / `Ističe za N dana`), bez decimala, neutralno-amber stil; zamijenio postojeću `Clock3` ikonu u `UserAccessBadges`.
+5. **Helperi** — `hoursUntilGrantExpiry`, `isGrantExpiringSoon`, `getEarliestUpcomingExpiry`, `formatExpiryBadge` u `src/lib/adminAccess.ts`, pokriveni vitest setom (53 testa prolaze).
+6. **i18n** — novi ključevi u HR/EN/DE za `admin.users.filter.expiringOverride`, `admin.users.expiry.*` (s pluralizacijom), `admin.users.activeContext.*`.
+
+Out of scope (potvrđeno): bez DB promjena, bez RPC-ova, bez edge funkcija, bez telemetryja/funnel evenata, bez `Plaća/Ne plaća`, bez bulk overridea, bez `Family` aktivacije, prag fiksan na 7 dana.
+
+**PR2 zatvoren.** Sljedeći scope (PR3 kandidati): `Plaća / Ne plaća` filter, bulk override; `Family` ostaje blokiran do zasebne produktne odluke.

@@ -1,24 +1,29 @@
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Clock3 } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import {
   deriveEffectiveAccess,
+  formatExpiryBadge,
   type ActiveGrantLike,
 } from '@/lib/adminAccess';
+
+export interface ExpiringSoonEntry {
+  user_id: string;
+  module: 'projects' | 'business';
+  expires_at: string;
+}
 
 interface Props {
   userId: string;
   tier: string | null | undefined;
   grants: ActiveGrantLike[];
-  /** Sve aktivne grant rows s expires_at; koristi se za ⏳ akcent. */
-  expiringSoonGrants?: { user_id: string; module: 'projects' | 'business' }[];
+  /** Aktivni grantovi s `expires_at` koji ulaze u rolling < 7d prozor. */
+  expiringSoonGrants?: ExpiringSoonEntry[];
 }
 
 /**
- * Lagani tekstualni `Modul · Izvor` badgevi.
- * - Bez `Core` badge-a u retku (Core se podrazumijeva).
- * - Kad nema nijedan modul → indikator `Samo Core` (neutralan).
- * - Tekst primarno, ikone samo kao sekundarni akcent.
+ * Lagani tekstualni `Modul · Izvor` badgevi + zaseban tekstualni expiry badge
+ * (PR2) za module čiji override grant ističe < 7 dana.
  */
 export const UserAccessBadges = ({
   userId,
@@ -28,6 +33,17 @@ export const UserAccessBadges = ({
 }: Props) => {
   const { t } = useTranslation();
   const access = deriveEffectiveAccess(userId, tier, grants);
+
+  const earliestPerModule = (module: 'projects' | 'business'): Date | null => {
+    let min: number | null = null;
+    for (const g of expiringSoonGrants) {
+      if (g.user_id !== userId || g.module !== module) continue;
+      const t = new Date(g.expires_at).getTime();
+      if (Number.isNaN(t)) continue;
+      if (min === null || t < min) min = t;
+    }
+    return min === null ? null : new Date(min);
+  };
 
   const renderModule = (
     module: 'projects' | 'business',
@@ -43,31 +59,35 @@ export const UserAccessBadges = ({
         : hasBilling
           ? t('admin.users.accessSource.billing', 'Naplata')
           : t('admin.users.accessSource.override', 'Override');
-    const expiringSoon = expiringSoonGrants.some(
-      (g) => g.user_id === userId && g.module === module
-    );
+
+    const earliest = earliestPerModule(module);
+    const expiryBadge = earliest ? formatExpiryBadge(earliest) : null;
+
     return (
-      <Badge
-        key={module}
-        variant="secondary"
-        className="text-[10px] px-1.5 py-0 font-normal bg-muted/60 text-foreground/80 border-border/60"
-      >
-        <span className="font-medium">{label}</span>
-        <span className="mx-1 opacity-50">·</span>
-        <span>{sourceText}</span>
-        {hasOverride && (
-          <Zap
-            className="w-2.5 h-2.5 ml-1 opacity-60"
-            aria-hidden="true"
-          />
+      <div key={module} className="inline-flex items-center gap-1">
+        <Badge
+          variant="secondary"
+          className="text-[10px] px-1.5 py-0 font-normal bg-muted/60 text-foreground/80 border-border/60"
+        >
+          <span className="font-medium">{label}</span>
+          <span className="mx-1 opacity-50">·</span>
+          <span>{sourceText}</span>
+          {hasOverride && (
+            <Zap
+              className="w-2.5 h-2.5 ml-1 opacity-60"
+              aria-hidden="true"
+            />
+          )}
+        </Badge>
+        {expiryBadge && (
+          <Badge
+            variant="outline"
+            className="text-[10px] px-1.5 py-0 font-normal border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          >
+            {t(expiryBadge.i18nKey, expiryBadge.params)}
+          </Badge>
         )}
-        {expiringSoon && (
-          <Clock3
-            className="w-2.5 h-2.5 ml-0.5 opacity-60"
-            aria-hidden="true"
-          />
-        )}
-      </Badge>
+      </div>
     );
   };
 
