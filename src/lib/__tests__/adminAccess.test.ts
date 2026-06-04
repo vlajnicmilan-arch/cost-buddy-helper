@@ -246,5 +246,171 @@ describe('sortGrantsByLatestEvent', () => {
     const snapshot = JSON.stringify(rows);
     sortGrantsByLatestEvent(rows);
     expect(JSON.stringify(rows)).toBe(snapshot);
+});
+
+// ---------------------------------------------------------------------------
+// PR2: expiring helpers
+// ---------------------------------------------------------------------------
+
+const inHours = (h: number) => new Date(NOW.getTime() + h * 3600_000).toISOString();
+
+describe('hoursUntilGrantExpiry', () => {
+  it('null za perpetual', () => {
+    expect(hoursUntilGrantExpiry({ expires_at: null }, NOW)).toBeNull();
   });
+  it('pozitivno za budućnost', () => {
+    expect(hoursUntilGrantExpiry({ expires_at: inHours(5) }, NOW)).toBeCloseTo(5, 5);
+  });
+  it('negativno za prošlost', () => {
+    expect(hoursUntilGrantExpiry({ expires_at: inHours(-2) }, NOW)).toBeCloseTo(-2, 5);
+  });
+});
+
+describe('isGrantExpiringSoon (threshold = 7d, strict rolling)', () => {
+  const base = { user_id: 'u', module: 'projects' as const };
+
+  it('perpetual → false', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: null }, NOW)
+    ).toBe(false);
+  });
+  it('revoked → false', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: past(1), expires_at: inHours(3) }, NOW)
+    ).toBe(false);
+  });
+  it('rub 59min → true', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(59 / 60) }, NOW)
+    ).toBe(true);
+  });
+  it('točno 1h → true', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(1) }, NOW)
+    ).toBe(true);
+  });
+  it('1d → true', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(24) }, NOW)
+    ).toBe(true);
+  });
+  it('točno 7d (= 168h) → false (strict)', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(168) }, NOW)
+    ).toBe(false);
+  });
+  it('7d − 1s → true', () => {
+    expect(
+      isGrantExpiringSoon(
+        { ...base, revoked_at: null, expires_at: inHours(168 - 1 / 3600) },
+        NOW
+      )
+    ).toBe(true);
+  });
+  it('već istekao (0h) → false', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(0) }, NOW)
+    ).toBe(false);
+  });
+  it('isteknut (-1h) → false', () => {
+    expect(
+      isGrantExpiringSoon({ ...base, revoked_at: null, expires_at: inHours(-1) }, NOW)
+    ).toBe(false);
+  });
+});
+
+describe('getEarliestUpcomingExpiry', () => {
+  it('null kad nema match-a', () => {
+    const grants: ActiveGrantLike[] = [
+      { user_id: 'u', module: 'projects', revoked_at: null, expires_at: null },
+    ];
+    expect(getEarliestUpcomingExpiry(grants, 'u', NOW)).toBeNull();
+  });
+
+  it('vraća najraniji od više expiring grantova istog usera', () => {
+    const grants: ActiveGrantLike[] = [
+      { user_id: 'u', module: 'projects', revoked_at: null, expires_at: inHours(120) },
+      { user_id: 'u', module: 'business', revoked_at: null, expires_at: inHours(36) },
+      { user_id: 'u', module: 'projects', revoked_at: null, expires_at: inHours(10) },
+    ];
+    const out = getEarliestUpcomingExpiry(grants, 'u', NOW);
+    expect(out).not.toBeNull();
+    expect(Math.round((out!.getTime() - NOW.getTime()) / 3600_000)).toBe(10);
+  });
+
+  it('ignorira tuđe grantove', () => {
+    const grants: ActiveGrantLike[] = [
+      { user_id: 'u2', module: 'projects', revoked_at: null, expires_at: inHours(3) },
+    ];
+    expect(getEarliestUpcomingExpiry(grants, 'u', NOW)).toBeNull();
+  });
+
+  it('ignorira perpetual i revoked', () => {
+    const grants: ActiveGrantLike[] = [
+      { user_id: 'u', module: 'projects', revoked_at: null, expires_at: null },
+      { user_id: 'u', module: 'business', revoked_at: past(1), expires_at: inHours(2) },
+    ];
+    expect(getEarliestUpcomingExpiry(grants, 'u', NOW)).toBeNull();
+  });
+});
+
+describe('formatExpiryBadge (4 buckets, bez decimala u UI)', () => {
+  it('59min → expiresSoon', () => {
+    expect(formatExpiryBadge(inHours(59 / 60), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresSoon',
+    });
+  });
+
+  it('1h → expiresToday', () => {
+    expect(formatExpiryBadge(inHours(1), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresToday',
+    });
+  });
+
+  it('23h 59min → expiresToday', () => {
+    expect(formatExpiryBadge(inHours(23 + 59 / 60), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresToday',
+    });
+  });
+
+  it('točno 24h → expiresInDay', () => {
+    expect(formatExpiryBadge(inHours(24), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresInDay',
+    });
+  });
+
+  it('47h 59min → expiresInDay (još uvijek 1 dan, granica < 48h)', () => {
+    expect(formatExpiryBadge(inHours(47 + 59 / 60), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresInDay',
+    });
+  });
+
+  it('48h → expiresInDays count 2', () => {
+    expect(formatExpiryBadge(inHours(48), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresInDays',
+      params: { count: 2 },
+    });
+  });
+
+  it('6d 23h → expiresInDays count 6 (floor)', () => {
+    expect(formatExpiryBadge(inHours(6 * 24 + 23), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresInDays',
+      params: { count: 6 },
+    });
+  });
+
+  it('prima Date objekt', () => {
+    const d = new Date(NOW.getTime() + 3 * 86400_000);
+    expect(formatExpiryBadge(d, NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresInDays',
+      params: { count: 3 },
+    });
+  });
+
+  it('negativan (defenzivno) → expiresSoon', () => {
+    expect(formatExpiryBadge(inHours(-1), NOW)).toEqual({
+      i18nKey: 'admin.users.expiry.expiresSoon',
+    });
+  });
+});
 });
