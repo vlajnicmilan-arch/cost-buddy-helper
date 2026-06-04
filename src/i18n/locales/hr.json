@@ -916,6 +916,10 @@
         "title": "Business",
         "description": "Poslovna terminologija i profili tvrtki",
         "locked": "Dostupno uz Business pretplatu"
+      },
+      "overrideBadge": {
+        "source": "Admin override",
+        "permanent": "Trajno"
       }
     },
     "profile": "Profil",
@@ -4280,7 +4284,73 @@
     "browser": "Browser",
     "language": "Jezik",
     "screen": "Ekran",
-    "viewport": "Viewport"
+    "viewport": "Viewport",
+    "moduleAccess": {
+      "moduleAccess": "Pristup modulima",
+      "openButton": "Pristup modulima",
+      "dialogTitle": "Pristup modulima",
+      "dialogDesc": "Korisnik",
+      "tabGrant": "Dodijeli",
+      "tabHistory": "Povijest",
+      "historyEmpty": "Nema povijesti override grantova.",
+      "permanent": "Trajno",
+      "revoke": "Opozovi",
+      "revokeTitle": "Opozovi pristup",
+      "revokeDesc": "Razlog je obavezan i ostaje vidljiv u povijesti.",
+      "revokeReasonLabel": "Razlog opoziva",
+      "revokeReasonPh": "Npr. povrat sredstava, nesporazum…",
+      "revokeConfirm": "Opozovi",
+      "revokeSuccess": "Pristup opozvan",
+      "revokeError": "Opoziv nije uspio",
+      "grantSuccess": "Pristup dodijeljen ({{n}})",
+      "grantError": "Greška pri dodjeli",
+      "reasonCode": {
+        "refund": "Povrat",
+        "beta_tester": "Beta tester",
+        "internal": "Interno",
+        "partner": "Partner",
+        "support": "Podrška",
+        "other": "Ostalo"
+      },
+      "status": {
+        "active": "Aktivan",
+        "expired": "Istekao",
+        "revoked": "Opozvan"
+      },
+      "actor": {
+        "system": "Sustav"
+      },
+      "field": {
+        "grantedBy": "Dodijelio",
+        "duration": "Trajanje",
+        "reason": "Razlog",
+        "revokedBy": "Opozvao",
+        "grantedAt": "Dodijeljen"
+      },
+      "conflict": {
+        "title": "Postoji aktivan grant",
+        "desc": "Novi grant ne može preko postojećeg aktivnog. Prvo ga eksplicitno opozovi pa kreiraj novi."
+      },
+      "duration": {
+        "7d": "7 dana",
+        "30d": "30 dana",
+        "90d": "90 dana",
+        "365d": "1 godina",
+        "permanent": "Trajno",
+        "custom": "Prilagođeno…"
+      },
+      "form": {
+        "modules": "Moduli",
+        "duration": "Trajanje",
+        "reasonCode": "Razlog",
+        "reasonNote": "Napomena",
+        "reasonNotePh": "Opcionalno…",
+        "reasonNoteRequiredPh": "Obavezno objasni razlog…",
+        "reasonNoteRequired": "Za razlog \"Ostalo\" napomena je obavezna.",
+        "dateMustBeFuture": "Datum mora biti u budućnosti.",
+        "submit": "Dodijeli pristup"
+      }
+    }
   },
   "onboardingV2": {
     "finishLater": "Završi kasnije",
