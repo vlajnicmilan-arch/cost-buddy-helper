@@ -137,7 +137,7 @@ export const ProjectCard = ({
           >
             {projectIcon}
           </div>
-          <h3 className="font-semibold truncate flex-1">{project.name}</h3>
+          <h3 className="font-semibold truncate flex-1 text-[hsl(217_91%_60%)]">{project.name}</h3>
         </div>
       </motion.div>
     );
