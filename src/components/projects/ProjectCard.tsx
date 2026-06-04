@@ -57,6 +57,8 @@ export const ProjectCard = ({
   const { t, i18n } = useTranslation();
   const [actionsOpen, setActionsOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
+  const { guard } = useProjectWriteGuard({ isReadOnly });
+  const blockedTitle = isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined;
 
   const projectColor = project.color || '#3b82f6';
   const projectIcon = project.icon || '📁';
