@@ -223,6 +223,25 @@ export const UsersTab = ({
         )}
       </div>
 
+      {/* Drill-down kontekst chip — vizualno odvojen, u zasebnom retku iznad filter chipova */}
+      {activeContextLabel && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+          <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span className="text-xs text-primary/80">
+            {t('admin.users.activeContext.fromCardPrefix', 'Iz kartice modula:')}
+          </span>
+          <span className="text-xs font-semibold text-primary">{activeContextLabel}</span>
+          <button
+            type="button"
+            onClick={() => { setActiveContext(null); setFilterRaw('all'); }}
+            aria-label={t('admin.users.activeContext.reset', 'Resetiraj')}
+            className="ml-auto p-1 rounded hover:bg-primary/20 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Filter chips */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {filterChips.map((chip) => (
