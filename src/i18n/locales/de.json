@@ -4647,7 +4647,8 @@
         "success": "Quelle getrennt",
         "denied": "Du darfst diese Quelle nicht trennen.",
         "error": "Trennen fehlgeschlagen"
-      }
+      },
+      "unknown": "Quelle"
     },
     "notFound": "Krug nicht gefunden.",
     "role": {
