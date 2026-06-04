@@ -99,6 +99,7 @@ export const AccessTab = ({
         userIds={userIds}
         subscriptions={subscriptions}
         grants={grants}
+        onDrilldown={onDrilldown}
       />
 
       {/* 3. Nedavna override aktivnost */}
