@@ -64,6 +64,12 @@ const Admin = () => {
   const [billingLoading, setBillingLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
   const [subLoading, setSubLoading] = useState<string | null>(null);
+  const [pendingUserContext, setPendingUserContext] = useState<DrilldownIntent | null>(null);
+
+  const handleDrilldown = (intent: DrilldownIntent) => {
+    setPendingUserContext(intent);
+    setActiveTab('users');
+  };
 
   useEffect(() => {
     if (authLoading) return;
