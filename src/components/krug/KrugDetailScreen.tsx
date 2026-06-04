@@ -65,7 +65,20 @@ export function KrugDetailScreen({ krugId }: Props) {
     return <Card className="p-6 text-sm text-muted-foreground">{t('common.loading', 'Učitavanje…')}</Card>;
   }
   if (!detail) {
-    return <Card className="p-6 text-sm text-muted-foreground">{t('krug.notFound', 'Krug ne postoji.')}</Card>;
+    return (
+      <Card className="p-6 space-y-2 border-destructive/30">
+        <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+          <AlertCircle className="w-4 h-4" />
+          {t('krug.notFound', 'Krug ne postoji.')}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            'krug.notFoundBody',
+            'Možda je obrisan ili više nemaš pristup. Vrati se na listu Krugova.',
+          )}
+        </p>
+      </Card>
+    );
   }
 
   const { krug } = detail;
@@ -77,7 +90,11 @@ export function KrugDetailScreen({ krugId }: Props) {
       await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'punopravni' });
       showSuccess(t('krug.member.role.promoted', 'Promovirano u punopravnog člana'));
     } catch (e) {
-      showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+      if (isKrugCapError(e)) {
+        showError(t('krug.member.add.errors.cap_exceeded', 'Dosegnut je maks. broj punopravnih članova za ovaj preset.'));
+      } else {
+        showError(t('krug.member.role.error', 'Greška pri promjeni uloge'));
+      }
     }
   };
 
