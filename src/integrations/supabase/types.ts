@@ -2720,6 +2720,112 @@ export type Database = {
           },
         ]
       }
+      krug: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          lifecycle_state: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name: string
+          preset: Database["public"]["Enums"]["krug_preset"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name: string
+          preset: Database["public"]["Enums"]["krug_preset"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
+          name?: string
+          preset?: Database["public"]["Enums"]["krug_preset"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      krug_membership: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          krug_id: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          krug_id: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          krug_id?: string
+          role?: Database["public"]["Enums"]["krug_membership_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_membership_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_ownership: {
+        Row: {
+          created_at: string
+          id: string
+          krug_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          krug_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          krug_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_ownership_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: true
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifetime_purchases: {
         Row: {
           amount_paid: number
@@ -5546,6 +5652,21 @@ export type Database = {
         | "subcontractor"
         | "other"
       income_source_role: "owner" | "member"
+      krug_lifecycle_state:
+        | "active"
+        | "early_signal"
+        | "ugrozen"
+        | "continuity_window"
+        | "read_only"
+        | "deleted"
+      krug_membership_role: "punopravni" | "obicni"
+      krug_preset:
+        | "partner"
+        | "su_roditelj"
+        | "cimer"
+        | "putovanje"
+        | "projekt"
+        | "klub"
       milestone_revision_coverage: "increase_total" | "transfer" | "contingency"
       milestone_revision_type:
         | "overrun"
@@ -5704,6 +5825,23 @@ export const Constants = {
         "other",
       ],
       income_source_role: ["owner", "member"],
+      krug_lifecycle_state: [
+        "active",
+        "early_signal",
+        "ugrozen",
+        "continuity_window",
+        "read_only",
+        "deleted",
+      ],
+      krug_membership_role: ["punopravni", "obicni"],
+      krug_preset: [
+        "partner",
+        "su_roditelj",
+        "cimer",
+        "putovanje",
+        "projekt",
+        "klub",
+      ],
       milestone_revision_coverage: [
         "increase_total",
         "transfer",
