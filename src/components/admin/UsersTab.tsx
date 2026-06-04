@@ -1,16 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff, Search, X, KeyRound } from 'lucide-react';
+import {
+  Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck,
+  ShieldCheck, ShieldOff, Search, X,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { AdminModuleAccessDialog } from './AdminModuleAccessDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { UserAccessBadges } from './users/UserAccessBadges';
+import { EffectiveAccessSummary } from './users/EffectiveAccessSummary';
+import { UserBillingSection } from './users/UserBillingSection';
+import { UserModuleOverrideSection } from './users/UserModuleOverrideSection';
+import { deriveEffectiveAccess, type ActiveGrantLike } from '@/lib/adminAccess';
 import { type AppUser, parseUserAgent, parseDetailedUA, isBanned } from './types';
 
-
-type FilterKey = 'all' | 'admin' | 'banned' | 'pro' | 'business' | 'free';
+type FilterKey =
+  | 'all'
+  | 'admin'
+  | 'banned'
+  | 'hasProjects'
+  | 'hasBusiness'
+  | 'overrideActive'
+  | 'coreOnly';
 
 interface UsersTabProps {
   users: AppUser[];
@@ -22,6 +36,8 @@ interface UsersTabProps {
   actionLoading: string | null;
   currentUserId?: string;
   subscriptions?: Record<string, string>;
+  subLoading?: string | null;
+  onSetUserTier?: (userId: string, tier: string) => void;
   onRefresh: () => void;
   onLoadMore: () => void;
   onManageUser: (action: string, userId: string, role?: string) => void;
@@ -37,6 +53,8 @@ export const UsersTab = ({
   actionLoading,
   currentUserId,
   subscriptions = {},
+  subLoading = null,
+  onSetUserTier,
   onRefresh,
   onLoadMore,
   onManageUser,
@@ -44,34 +62,71 @@ export const UsersTab = ({
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
-  const [moduleAccessUser, setModuleAccessUser] = useState<AppUser | null>(null);
+  const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
 
+  const loadGrants = useCallback(async () => {
+    const nowIso = new Date().toISOString();
+    const { data } = await supabase
+      .from('admin_module_grants')
+      .select('user_id, module, revoked_at, expires_at')
+      .is('revoked_at', null)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+    setGrants(
+      (data ?? []).map((r: any) => ({
+        user_id: r.user_id,
+        module: r.module,
+        revoked_at: r.revoked_at,
+        expires_at: r.expires_at,
+      }))
+    );
+  }, []);
+
+  useEffect(() => {
+    loadGrants();
+  }, [loadGrants]);
+
+  // Grantovi koji ističu < 7 dana (za ⏳ akcent na badgeu)
+  const expiringSoonGrants = useMemo(() => {
+    const cutoff = Date.now() + 7 * 86400_000;
+    return grants
+      .filter((g) => g.expires_at && new Date(g.expires_at).getTime() < cutoff)
+      .map((g) => ({ user_id: g.user_id, module: g.module as 'projects' | 'business' }));
+  }, [grants]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
-      // Text search
       if (q) {
         const haystack = `${u.display_name || ''} ${u.email || ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-      // Filter chip
       if (filter === 'admin') return u.roles.includes('admin');
       if (filter === 'banned') return isBanned(u);
-      if (filter === 'pro') return (subscriptions[u.id] || 'free') === 'pro';
-      if (filter === 'business') return (subscriptions[u.id] || 'free') === 'business';
-      if (filter === 'free') return !subscriptions[u.id] || subscriptions[u.id] === 'free';
+      if (filter === 'hasProjects') {
+        return deriveEffectiveAccess(u.id, subscriptions[u.id], grants).projects.has;
+      }
+      if (filter === 'hasBusiness') {
+        return deriveEffectiveAccess(u.id, subscriptions[u.id], grants).business.has;
+      }
+      if (filter === 'overrideActive') {
+        return grants.some((g) => g.user_id === u.id);
+      }
+      if (filter === 'coreOnly') {
+        const a = deriveEffectiveAccess(u.id, subscriptions[u.id], grants);
+        return !a.projects.has && !a.business.has;
+      }
       return true;
     });
-  }, [users, search, filter, subscriptions]);
+  }, [users, search, filter, subscriptions, grants]);
 
   const filterChips: { key: FilterKey; label: string }[] = [
-    { key: 'all', label: 'Svi' },
-    { key: 'admin', label: 'Admini' },
-    { key: 'banned', label: 'Blokirani' },
-    { key: 'business', label: 'Business' },
-    { key: 'pro', label: 'Pro' },
-    { key: 'free', label: 'Free' },
+    { key: 'all', label: t('admin.users.filter.all', 'Svi') },
+    { key: 'admin', label: t('admin.users.filter.admins', 'Admini') },
+    { key: 'banned', label: t('admin.users.filter.banned', 'Blokirani') },
+    { key: 'hasProjects', label: t('admin.users.filter.hasProjects', 'Ima Projects') },
+    { key: 'hasBusiness', label: t('admin.users.filter.hasBusiness', 'Ima Business') },
+    { key: 'overrideActive', label: t('admin.users.filter.overrideActive', 'Override aktivan') },
+    { key: 'coreOnly', label: t('admin.users.filter.coreOnly', 'Samo Core') },
   ];
 
   return (
@@ -148,7 +203,7 @@ export const UsersTab = ({
                       <User className={`w-4 h-4 ${isBanned(u) ? 'text-destructive' : 'text-primary'}`} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold">{u.display_name || 'Bez imena'}</p>
                         {u.roles.includes('admin') && (
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">Admin</Badge>
@@ -172,6 +227,20 @@ export const UsersTab = ({
                     </Badge>
                   )}
                 </div>
+
+                {/* Pristup: tekstualni Modul · Izvor badgevi */}
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    {t('admin.users.accessBadge.label', 'Pristup')}:
+                  </span>
+                  <UserAccessBadges
+                    userId={u.id}
+                    tier={subscriptions[u.id]}
+                    grants={grants}
+                    expiringSoonGrants={expiringSoonGrants}
+                  />
+                </div>
+
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -194,6 +263,29 @@ export const UsersTab = ({
 
               {expandedUserId === u.id && (
                 <div className="pt-2 border-t space-y-3">
+                  {/* A. Efektivni pristup (summary) */}
+                  <EffectiveAccessSummary
+                    userId={u.id}
+                    tier={subscriptions[u.id]}
+                    grants={grants}
+                  />
+
+                  {/* B. Naplata (sloj 1) */}
+                  {onSetUserTier && (
+                    <UserBillingSection
+                      userId={u.id}
+                      currentTier={subscriptions[u.id] || 'free'}
+                      loading={subLoading === u.id}
+                      onChangeTier={(tier) => onSetUserTier(u.id, tier)}
+                    />
+                  )}
+
+                  {/* C. Admin override modula (sloj 2) */}
+                  <UserModuleOverrideSection
+                    userId={u.id}
+                    onChanged={loadGrants}
+                  />
+
                   <div className="text-xs space-y-1 text-muted-foreground">
                     <p><strong>ID:</strong> <span className="font-mono text-[10px]">{u.id}</span></p>
                     <p><strong>{t('admin.currency')}:</strong> {u.currency || 'EUR'}</p>
@@ -247,10 +339,6 @@ export const UsersTab = ({
                           <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
                         </Button>
                       )}
-                      <Button size="sm" variant="outline" onClick={() => setModuleAccessUser(u)}>
-                        <KeyRound className="w-3.5 h-3.5 mr-1" />
-                        {t('admin.moduleAccess.openButton', 'Pristup modulima')}
-                      </Button>
                     </div>
                   )}
                 </div>
@@ -272,13 +360,6 @@ export const UsersTab = ({
           )}
         </div>
       )}
-
-      <AdminModuleAccessDialog
-        open={!!moduleAccessUser}
-        onOpenChange={(o) => !o && setModuleAccessUser(null)}
-        targetUserId={moduleAccessUser?.id ?? null}
-        targetUserLabel={moduleAccessUser?.display_name || moduleAccessUser?.email || ''}
-      />
     </div>
   );
 };
