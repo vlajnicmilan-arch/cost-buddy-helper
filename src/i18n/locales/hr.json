@@ -4754,8 +4754,13 @@
           "cannot_add_self": "Ne možeš dodati samog sebe.",
           "not_owner": "Samo vlasnik Kruga može dodavati članove.",
           "invalid_input": "Neispravan email.",
+          "cap_exceeded": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
           "generic": "Greška pri dodavanju člana."
         }
+      },
+      "empty": {
+        "owner": "Krug još nema drugih članova. Pozovi nekoga preko “Dodaj člana”.",
+        "member": "Krug još nema drugih članova."
       },
       "role": {
         "promoted": "Promovirano u punopravnog člana",
