@@ -75,9 +75,11 @@ export const ModulesSection = ({
     setBusinessFeatureEnabled,
   } = useAppState();
   const moduleStates = useModuleStates();
+  const { getGrant } = useMyActiveModuleGrants();
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
 
   if (isLocalMode) return null;
+
 
   const cards: ModuleCardConfig[] = [
     {
