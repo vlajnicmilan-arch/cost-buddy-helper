@@ -1,78 +1,99 @@
+# Root cause (potvrđen)
 
-# Module Color System — v1.1 korekcije
+`CreateKrugDialog` insert prolazi `WITH CHECK`, ali PostgREST radi `RETURNING id` (`.select('id')`) koji ide kroz `krug_select_member` policy `USING (krug_is_member(id, auth.uid()))`. Bootstrap trigger NE POSTOJI (potvrđeno `pg_trigger`-om, 0 user triggera na `public.krug`), pa `krug_membership` ostane prazan → SELECT visibility ne prolazi → PostgREST vraća `new row violates row-level security policy for table "krug"`.
 
-Ostatak v1 plana ostaje na snazi. Mijenjaju se samo dvije točke.
+Klijent + enumi + `krug_enforce_punopravni_cap` su čisti. Nema legacy `owner/full/limited` ni `paused/terminated` referenci u Krug schemi.
 
-## Korekcija 1 — Krug route mapping (stvarno stanje)
+# Spoofing surface — što već postoji
 
-Provjereno u kodu:
-
-- `src/App.tsx` registrira **obje** rute: `/krug` (komponenta `Krug`) i `/family` (legacy komponenta `Family`).
-- `src/components/BottomNav.tsx` koristi **isključivo `/krug`** kao nav slot (Krug zauzima bivši Obitelj slot). `/family` više nije u nav-u — dostupan je samo kao izravna ruta.
-
-Module mapping (`ROUTE_TO_MODULE`) zato eksplicitno pokriva oba:
-
+Postojeća policy `krug_insert_authenticated`:
 ```
-/home      → overview
-/dashboard → overview          (alias, postoji u BottomNav activePaths)
-/projects  → projects
-/wallet    → wallet
-/budgets   → budgets
-/krug      → krug              (kanonska ruta za Krug modul)
-/family    → krug              (legacy entrypoint — isti modul/akcent)
-*          → overview          (fallback)
+WITH CHECK ((auth.uid() IS NOT NULL) AND (created_by = auth.uid()))
 ```
+Već blokira spoof preko `authenticated` role. RLS check je dovoljan za normalni klijent path. **Ali**: SECURITY DEFINER pozivi i service_role bypass-aju RLS, pa pravilo nije zakon na DB razini — samo na PostgREST razini.
 
-Mapping se radi `startsWith` matchom na pathname, idemo od najduže prema najkraćoj, da `/projects/:id` također hvata `projects`. Kanonska ruta za Krug ostaje `/krug`; `/family` se samo tonira istom modulskom bojom dok god je živ legacy ekran. Kad se `/family` ukloni, dovoljno je obrisati jedan red u mapi.
+# Fix (belt-and-suspenders)
 
-## Korekcija 2 — BottomNav / module class strategija (bez runtime string klasa)
+Jedna migracija dodaje 2 stvari:
 
-Napušta se pristup `text-[hsl(var(--module-<key>))]`. Tailwind JIT ih u praksi pokupi, ali su build/purge krhke i loše se debuggiraju. Umjesto toga koristimo **kombinaciju statički mapiranih klasa + jedinstvenog aktivnog tokena**:
+### A) Bootstrap trigger (rješava RLS RETURNING)
 
-### a) Aktivni token za sve module-aware surface-e izvan BottomNav-a
+`SECURITY DEFINER` AFTER INSERT trigger upisuje ownership + 'punopravni' membership za `NEW.created_by`. Idempotentno (`ON CONFLICT DO NOTHING`). Cap trigger propušta prvi punopravni (0 < 2).
 
-`ModuleThemeProvider` postavlja na `<body>`:
+### B) `created_by` integrity (zatvara spoofing rupu)
 
-- `data-module="<key>"`
-- inline `style.setProperty('--module-accent', hsl)` i `'--module-accent-foreground', hsl`
+BEFORE INSERT trigger na `public.krug`, NIJE `SECURITY DEFINER` (želimo da vidi pozivateljev `auth.uid()`):
 
-U `tailwind.config.ts` definirana je **jedna** boja:
+```sql
+CREATE OR REPLACE FUNCTION public.krug_enforce_created_by()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE v_uid uuid := auth.uid();
+BEGIN
+  -- Service role / pozadinski poslovi: auth.uid() je NULL.
+  -- Eksplicitno zahtijevamo postavljen created_by u tom slučaju.
+  IF v_uid IS NULL THEN
+    IF NEW.created_by IS NULL THEN
+      RAISE EXCEPTION 'krug.created_by must be set';
+    END IF;
+    RETURN NEW;
+  END IF;
 
-```
-colors: {
-  module: {
-    DEFAULT: 'hsl(var(--module-accent))',
-    foreground: 'hsl(var(--module-accent-foreground))',
-  },
-}
-```
+  -- Authenticated path: created_by je UVIJEK pozivatelj.
+  -- Bez obzira šalje li klijent NULL, svoj UUID, ili tuđi.
+  NEW.created_by := v_uid;
+  RETURN NEW;
+END;
+$$;
 
-Sve module-aware komponente (PageHeader dot, CTA button `variant="module"`, badge `variant="module"`, progress indicator, empty-state ikona) koriste **isključivo statičke klase**: `bg-module`, `text-module`, `bg-module/10`, `border-module/20`, `ring-module`. Nema runtime string konkatenacije — Tailwind ih garantirano vidi u izvoru.
-
-### b) BottomNav (potrebne su sve boje istovremeno na ekranu)
-
-BottomNav prikazuje 5 tabova; aktivni token (`--module-accent`) je samo jedan, pa nije dovoljan. Rješenje: **statička lookup mapa Tailwind klasa po modulu**, deklarirana kao konstanta u izvoru (Tailwind JIT je vidi):
-
-```ts
-// src/lib/moduleColors.ts
-export const MODULE_NAV_CLASSES: Record<ModuleKey, { text: string; bg: string }> = {
-  overview: { text: 'text-[hsl(172_66%_40%)]', bg: 'bg-[hsl(172_66%_40%)]' },
-  projects: { text: 'text-[hsl(217_91%_60%)]', bg: 'bg-[hsl(217_91%_60%)]' },
-  wallet:   { text: 'text-[hsl(142_71%_45%)]', bg: 'bg-[hsl(142_71%_45%)]' },
-  budgets:  { text: 'text-[hsl(258_90%_66%)]', bg: 'bg-[hsl(258_90%_66%)]' },
-  krug:     { text: 'text-[hsl(25_95%_53%)]',  bg: 'bg-[hsl(25_95%_53%)]'  },
-};
+CREATE TRIGGER krug_enforce_created_by_bef
+BEFORE INSERT ON public.krug
+FOR EACH ROW EXECUTE FUNCTION public.krug_enforce_created_by();
 ```
 
-Ključno: klase su **literalne, statičke, deklarirane u source fajlu** koji Tailwind scan-a. Nema `${}` interpolacije, nema CSS var indirekcije po ključu. BottomNav samo radi lookup `MODULE_NAV_CLASSES[item.module].text` na već postojećim, izgrađenim klasama. Build-safe, purge-safe, lako se debuggira.
+Posljedica:
+- Klijent može slati bilo što (čak i tuđi UUID); DB prepiše s `auth.uid()` prije WITH CHECK. Spoofing je nemoguć neovisno o policy-ju.
+- RLS `WITH CHECK (created_by = auth.uid())` ostaje (double-belt — ako trigger ikad bude drop-an, RLS i dalje hvata).
+- Service role smije postaviti bilo koji `created_by` (admin/backfill path).
 
-Indikator traka i ikona/label aktivnog taba koriste isti par klasa iz mape. Neaktivni tabovi ostaju `text-muted-foreground` (već postojeće ponašanje).
+### Bootstrap trigger
 
-Ako se ikad doda 6. modul, dodaje se jedan red u mapu — bez magije.
+```sql
+CREATE OR REPLACE FUNCTION public.krug_bootstrap_creator()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.krug_ownership (krug_id, user_id)
+  VALUES (NEW.id, NEW.created_by)
+  ON CONFLICT (krug_id) DO NOTHING;
 
-## Što se ne mijenja iz v1
+  INSERT INTO public.krug_membership (krug_id, user_id, role, added_by)
+  VALUES (NEW.id, NEW.created_by, 'punopravni'::public.krug_membership_role, NEW.created_by)
+  ON CONFLICT (krug_id, user_id) DO NOTHING;
 
-- 80/20 princip, neutralna baza, status boje s prioritetom
-- popis diralnih fajlova
-- opseg po komponentama (BottomNav, PageHeader, jedan CTA / progress / empty-state po modulu)
-- što ostaje izvan opsega (HomeHeader, BusinessBottomNav, recharts, sub-screens)
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER krug_bootstrap_creator_aft
+AFTER INSERT ON public.krug
+FOR EACH ROW EXECUTE FUNCTION public.krug_bootstrap_creator();
+```
+
+Order: BEFORE (enforce) → INSERT → AFTER (bootstrap). `krug_bootstrap_creator` koristi već prepisani `NEW.created_by`, pa ne može upisati ownership na tuđeg usera.
+
+# Verification
+
+1. UI: kreirati Krug → dialog se zatvori, redirect na detail.
+2. `SELECT user_id FROM krug_ownership WHERE krug_id=<new>` = `auth.uid()` pozivatelja.
+3. `SELECT user_id, role FROM krug_membership WHERE krug_id=<new>` = `(auth.uid(), 'punopravni')`.
+4. Spoofing test: insert sa `created_by = '<tuđi-uuid>'` → red se kreira sa `created_by = auth.uid()` (BEFORE trigger prepisao), bootstrap ide na pozivatelja, ne na žrtvu.
+5. Supabase linter pass.
+
+# Out of scope
+
+- Nema promjena enuma, presetova, cap logike, lifecycle stanja, klijenta, KrugLifecycleBadge.
