@@ -19,17 +19,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, User, Users, CreditCard, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { Crown, User, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
-import { useKrugSharedPaymentSources } from '@/hooks/useKrugSharedPaymentSources';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
+import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+
 
 interface Props {
   krugId: string;
