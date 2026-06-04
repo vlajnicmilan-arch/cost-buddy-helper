@@ -252,8 +252,8 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             const totalHours = dayHours.reduce((s, h) => s + h.actual_hours, 0);
             const dayDate = parseISO(log.log_date);
             const isAuthor = log.user_id === user?.id;
-            const canEdit = isAuthor;
-            const canDelete = isAuthor || isManager;
+            const canEdit = isAuthor && !isReadOnly;
+            const canDelete = (isAuthor || isManager) && !isReadOnly;
 
             return (
               <Card key={log.id} className="overflow-hidden">
