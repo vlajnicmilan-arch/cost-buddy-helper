@@ -1287,7 +1287,8 @@
     "loss": "Verlust",
     "remaining": "Verbleibend",
     "overBudget": "Über Budget",
-    "items": "{{count}} Einträge"
+    "items": "{{count}} Einträge",
+    "krug": "Krug"
   },
   "validation": {
     "dateOutOfRange": "Datum liegt außerhalb des zulässigen Bereichs",
@@ -4616,5 +4617,36 @@
     "intendedFor": "Bestimmt für",
     "pageXofY": "Seite {{n}} von {{total}}",
     "preparedBy": "Erstellt von"
+  },
+  "krug": {
+    "title": "Krug",
+    "create": "Neuer Krug",
+    "createSoon": "Krug-Erstellung kommt bald",
+    "backToList": "Zurück zur Liste",
+    "emptyTitle": "Du hast noch keinen Krug",
+    "emptyBody": "Krug ist dein geteilter Kontext mit anderen. Tritt per Einladung bei oder starte einen neuen.",
+    "members": "Mitglieder",
+    "sharedSources": "Gemeinsame Quellen",
+    "noSharedSources": "Keine verknüpften Zahlungsquellen.",
+    "notFound": "Krug nicht gefunden.",
+    "role": {
+      "owner": "Eigentümer",
+      "punopravni": "Vollmitglied",
+      "obicni": "Reguläres Mitglied"
+    },
+    "preset": {
+      "obitelj": "Familie",
+      "partner": "Partner",
+      "cimer": "Mitbewohner",
+      "suroditelj": "Co-Eltern",
+      "prijatelji": "Freunde"
+    },
+    "lifecycle": {
+      "active": "Aktiv",
+      "early_signal": "Frühes Signal",
+      "ugrozen": "Gefährdet",
+      "paused": "Pausiert",
+      "terminated": "Beendet"
+    }
   }
 }
