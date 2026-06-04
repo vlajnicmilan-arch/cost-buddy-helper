@@ -832,7 +832,7 @@ export const ProjectFullScreenView = ({
                 </TabsContent>
 
                 <TabsContent value="documents" className="m-0">
-                  <ProjectDocumentsTab projectId={project.id} />
+                  <ProjectDocumentsTab projectId={project.id} isReadOnly={isReadOnly} />
                 </TabsContent>
 
                 <TabsContent value="activity" className="m-0">
@@ -841,7 +841,7 @@ export const ProjectFullScreenView = ({
 
                 {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">
-                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} />
+                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} isReadOnly={isReadOnly} />
                 </TabsContent>
                 )}
 
