@@ -4687,6 +4687,42 @@
       "maxPunopravni": "Max. Vollmitglieder: {{n}}",
       "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
       "submit": "Krug erstellen"
+    },
+    "member": {
+      "you": "du",
+      "add": {
+        "cta": "Mitglied hinzufügen",
+        "title": "Mitglied hinzufügen",
+        "emailLabel": "E-Mail",
+        "emailHint": "Lädt einen bestehenden App-Nutzer ein. Einladungen für neue Nutzer folgen in der nächsten Welle.",
+        "roleLabel": "Rolle",
+        "submit": "Hinzufügen",
+        "success": "Mitglied hinzugefügt",
+        "punopravniCapReached": "Max. Anzahl Vollmitglieder für diesen Preset erreicht.",
+        "errors": {
+          "user_not_found": "Kein Nutzer mit dieser E-Mail vorhanden.",
+          "already_member": "Nutzer ist bereits Mitglied dieses Krug.",
+          "cannot_add_self": "Du kannst dich nicht selbst hinzufügen.",
+          "not_owner": "Nur der Krug-Eigentümer kann Mitglieder hinzufügen.",
+          "invalid_input": "Ungültige E-Mail.",
+          "generic": "Fehler beim Hinzufügen."
+        }
+      },
+      "role": {
+        "promoted": "Zum Vollmitglied befördert",
+        "demoted": "Zum regulären Mitglied gestuft",
+        "error": "Rollenänderung fehlgeschlagen"
+      },
+      "remove": {
+        "confirm": "Mitglied aus dem Krug entfernen?",
+        "success": "Mitglied entfernt",
+        "error": "Entfernen fehlgeschlagen"
+      },
+      "actions": {
+        "promote": "Zu Vollmitglied befördern",
+        "demote": "Zu regulärem Mitglied stufen",
+        "remove": "Aus Krug entfernen"
+      }
     }
   }
 }

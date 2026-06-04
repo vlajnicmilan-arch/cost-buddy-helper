@@ -4687,6 +4687,42 @@
       "maxPunopravni": "Max full members: {{n}}",
       "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
       "submit": "Create Krug"
+    },
+    "member": {
+      "you": "you",
+      "add": {
+        "cta": "Add member",
+        "title": "Add member",
+        "emailLabel": "Email",
+        "emailHint": "Invites an existing app user. Invites for new users will arrive in the next wave.",
+        "roleLabel": "Role",
+        "submit": "Add",
+        "success": "Member added",
+        "punopravniCapReached": "Max number of full members reached for this preset.",
+        "errors": {
+          "user_not_found": "No user with that email yet.",
+          "already_member": "User is already a member of this Krug.",
+          "cannot_add_self": "You cannot add yourself.",
+          "not_owner": "Only the Krug owner can add members.",
+          "invalid_input": "Invalid email.",
+          "generic": "Failed to add member."
+        }
+      },
+      "role": {
+        "promoted": "Promoted to full member",
+        "demoted": "Demoted to regular member",
+        "error": "Failed to change role"
+      },
+      "remove": {
+        "confirm": "Remove member from Krug?",
+        "success": "Member removed",
+        "error": "Failed to remove member"
+      },
+      "actions": {
+        "promote": "Promote to full",
+        "demote": "Demote to regular",
+        "remove": "Remove from Krug"
+      }
     }
   }
 }

@@ -4698,6 +4698,42 @@
       "maxPunopravni": "Maks. punopravnih: {{n}}",
       "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
       "submit": "Kreiraj Krug"
+    },
+    "member": {
+      "you": "ti",
+      "add": {
+        "cta": "Dodaj člana",
+        "title": "Dodaj člana",
+        "emailLabel": "Email",
+        "emailHint": "Pozivamo postojećeg korisnika aplikacije. Pozivi novim korisnicima dolaze u sljedećem valu.",
+        "roleLabel": "Uloga",
+        "submit": "Dodaj",
+        "success": "Član dodan",
+        "punopravniCapReached": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
+        "errors": {
+          "user_not_found": "Korisnik s tim emailom još nema račun.",
+          "already_member": "Korisnik je već član ovog Kruga.",
+          "cannot_add_self": "Ne možeš dodati samog sebe.",
+          "not_owner": "Samo vlasnik Kruga može dodavati članove.",
+          "invalid_input": "Neispravan email.",
+          "generic": "Greška pri dodavanju člana."
+        }
+      },
+      "role": {
+        "promoted": "Promovirano u punopravnog člana",
+        "demoted": "Promijenjeno u običnog člana",
+        "error": "Greška pri promjeni uloge"
+      },
+      "remove": {
+        "confirm": "Ukloniti člana iz Kruga?",
+        "success": "Član uklonjen",
+        "error": "Greška pri uklanjanju člana"
+      },
+      "actions": {
+        "promote": "Promoviraj u punopravnog",
+        "demote": "Vrati na običnog",
+        "remove": "Ukloni iz Kruga"
+      }
+    }
   }
-}
 }
