@@ -15,7 +15,7 @@ import { PulseTab } from '@/components/admin/PulseTab';
 import { FeedbackInboxTab } from '@/components/admin/FeedbackInboxTab';
 import { StatsTab } from '@/components/admin/StatsTab';
 import { UsersTab } from '@/components/admin/UsersTab';
-import { BillingTab } from '@/components/admin/BillingTab';
+import { AccessTab } from '@/components/admin/AccessTab';
 import { ReportsTab } from '@/components/admin/ReportsTab';
 import { NotifyTab } from '@/components/admin/NotifyTab';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -327,7 +327,7 @@ const Admin = () => {
                 <Users className="w-4 h-4 shrink-0" /><span>Korisnici</span>
               </TabsTrigger>
               <TabsTrigger value="billing" className={tabBtnClass}>
-                <CreditCard className="w-4 h-4 shrink-0" /><span>Pretplate</span>
+                <CreditCard className="w-4 h-4 shrink-0" /><span>Pristup</span>
               </TabsTrigger>
               <TabsTrigger value="reports" className={tabBtnClass}>
                 <Bug className="w-4 h-4 shrink-0" /><span>Prijave</span>
@@ -371,6 +371,8 @@ const Admin = () => {
               actionLoading={actionLoading}
               currentUserId={user?.id}
               subscriptions={subscriptions}
+              subLoading={subLoading}
+              onSetUserTier={setUserTier}
               onRefresh={() => loadUsers(1)}
               onLoadMore={() => loadUsers(usersPage + 1)}
               onManageUser={manageUser}
@@ -378,14 +380,12 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="billing">
-            <BillingTab
+            <AccessTab
               billingEnabled={billingEnabled}
               billingLoading={billingLoading}
               onToggleBilling={toggleBilling}
               users={users}
               subscriptions={subscriptions}
-              subLoading={subLoading}
-              onSetUserTier={setUserTier}
             />
           </TabsContent>
 
