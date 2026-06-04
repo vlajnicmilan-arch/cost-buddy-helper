@@ -120,7 +120,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
           {pending.map((e) => {
             const { canConfirm, canNegate } = canActOn(e);
             const busy = actingId === e.id && applyAct.isPending;
-            const amountFormatted = formatAmount(Number(e.amount), e.currency ?? undefined);
+            const amountFormatted = formatAmount(Number(e.amount), (e.currency ?? undefined) as any);
             return (
               <div
                 key={e.id}
