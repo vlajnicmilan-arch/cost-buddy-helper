@@ -1,8 +1,8 @@
-# Admin Module Access — Status PR1
+# Admin Module Access — Status PR1 + PR2 + PR3
 
 **Datum zaključavanja:** 2026-06-04
-**Status:** Završen
-**Sljedeća faza:** PR2 (novi scope)
+**Status:** PR1, PR2 i PR3 završeni
+**Sljedeća faza:** daljnje promjene = novi scope
 
 ---
 
