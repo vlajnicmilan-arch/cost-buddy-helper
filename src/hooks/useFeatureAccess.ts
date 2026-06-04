@@ -1,5 +1,7 @@
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { SubscriptionTier } from '@/lib/subscriptionTiers';
+import { useMyActiveModuleGrants } from '@/hooks/useMyActiveModuleGrants';
+
 
 export type Feature =
   | 'unlimited_transactions'
@@ -61,13 +63,20 @@ const TIER_RANK: Record<SubscriptionTier, number> = {
 
 export function useFeatureAccess() {
   const { tier, trialActive, subscribed } = useSubscription();
+  const { hasActiveGrant } = useMyActiveModuleGrants();
 
   // During trial, all features are unlocked
   const effectiveTier: SubscriptionTier = trialActive ? 'business' : tier;
 
   const hasAccess = (feature: Feature): boolean => {
     const requiredTier = FEATURE_TIERS[feature];
-    return TIER_RANK[effectiveTier] >= TIER_RANK[requiredTier];
+    if (TIER_RANK[effectiveTier] >= TIER_RANK[requiredTier]) return true;
+    // Admin module override — aditivno, ne dira billing.
+    // PR1: samo Projects ima server-side ekvivalent (is_projects_subscriber).
+    // Business override = klijent-only UI gate (preflight potvrdio 0 server-side billing gateova).
+    if (feature === 'projects' && hasActiveGrant('projects')) return true;
+    if (feature === 'business_module' && hasActiveGrant('business')) return true;
+    return false;
   };
 
   const getRequiredTier = (feature: Feature): SubscriptionTier => {
@@ -88,3 +97,4 @@ export function useFeatureAccess() {
     trialActive,
   };
 }
+
