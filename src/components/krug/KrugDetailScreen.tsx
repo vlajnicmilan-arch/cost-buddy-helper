@@ -132,7 +132,7 @@ export function KrugDetailScreen({ krugId }: Props) {
           </div>
           <KrugLifecycleBadge state={krug.lifecycle_state} className="shrink-0 text-right" />
         </div>
-        <KrugLifecycleBadge state={krug.lifecycle_state} withNote className="hidden" />
+        
         {krug.lifecycle_state && krug.lifecycle_state !== 'active' && (
           <p className="text-[11px] text-muted-foreground">
             {t(`krug.lifecycleNote.${krug.lifecycle_state}`, { defaultValue: '' })}
