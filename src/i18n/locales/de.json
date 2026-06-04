@@ -4636,17 +4636,24 @@
     },
     "preset": {
       "obitelj": "Familie",
-      "partner": "Partner",
+      "partner": "Ehepartner / Partner",
       "cimer": "Mitbewohner",
       "suroditelj": "Co-Eltern",
-      "prijatelji": "Freunde"
+      "su_roditelj": "Co-Elternteil",
+      "prijatelji": "Freunde",
+      "putovanje": "Reise",
+      "projekt": "Projekt",
+      "klub": "Klub"
     },
     "lifecycle": {
       "active": "Aktiv",
       "early_signal": "Frühes Signal",
       "ugrozen": "Gefährdet",
       "paused": "Pausiert",
-      "terminated": "Beendet"
+      "terminated": "Beendet",
+      "continuity_window": "Übergang",
+      "read_only": "Nur lesen",
+      "deleted": "Gelöscht"
     },
     "transaction": {
       "title": "Krug",
@@ -4669,6 +4676,17 @@
       "A4": "Vorschlag zurückziehen",
       "A5": "Erneut vorschlagen",
       "A7": "Auf persönlich umschalten"
+    },
+    "create": {
+      "cta": "Neuer Krug",
+      "title": "Neuer Krug",
+      "nameLabel": "Krug-Name",
+      "namePlaceholder": "z. B. Unser Zuhause",
+      "nameHint": "Min. 2 Zeichen. Für den ganzen Krug sichtbar.",
+      "presetLabel": "Krug-Typ",
+      "maxPunopravni": "Max. Vollmitglieder: {{n}}",
+      "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
+      "submit": "Krug erstellen"
     }
   }
 }
