@@ -371,6 +371,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
+                if (!guard()) return;
                 if (deleteId) {
                   await remove(deleteId);
                   setDeleteId(null);
