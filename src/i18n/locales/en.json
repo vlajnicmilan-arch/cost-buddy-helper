@@ -4712,6 +4712,7 @@
     },
     "member": {
       "you": "you",
+      "unknown": "Unknown member",
       "add": {
         "cta": "Add member",
         "title": "Add member",
