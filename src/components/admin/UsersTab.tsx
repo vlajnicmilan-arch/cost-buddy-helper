@@ -204,6 +204,14 @@ export const UsersTab = ({
     return t(`admin.users.activeContext.${key}`);
   })();
 
+  // PR3: treća dimenzija — reason segment context chipa (samo uz override).
+  const activeReasonLabel = (() => {
+    if (!activeContext) return null;
+    if (activeContext.source !== 'override') return null;
+    if (!activeContext.reasonCode) return null;
+    return t(grantReasonCodeI18nKey(activeContext.reasonCode));
+  })();
+
 
 
   return (
