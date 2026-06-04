@@ -84,10 +84,25 @@ export const UsersTab = ({
     setFilterRaw(k);
   }, []);
 
-  // Konzumiranje pendingUserContext: postavi activeContext + mapiraj filter
+  // Konzumiranje pendingUserContext: postavi activeContext + mapiraj filter.
+  // Sekundarni UX: ako isti drill-down (module + source + reasonCode) već vrijedi,
+  // klik na isti reason chip briše SAMO treću dimenziju. Glavni izlaz ostaje [×] na chipu.
   useEffect(() => {
     if (!pendingUserContext) return;
-    setActiveContext(pendingUserContext);
+    setActiveContext((prev) => {
+      if (
+        prev &&
+        pendingUserContext.module === prev.module &&
+        pendingUserContext.source === 'override' &&
+        prev.source === 'override' &&
+        pendingUserContext.reasonCode &&
+        pendingUserContext.reasonCode === prev.reasonCode
+      ) {
+        // Toggle: skini samo reasonCode, zadrži module + source.
+        return { module: prev.module, source: prev.source };
+      }
+      return pendingUserContext;
+    });
     setFilterRaw(
       pendingUserContext.module === 'projects' ? 'hasProjects' : 'hasBusiness'
     );
