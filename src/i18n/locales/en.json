@@ -4340,6 +4340,80 @@
         "dateMustBeFuture": "Date must be in the future.",
         "submit": "Grant access"
       }
+    },
+    "access": {
+      "tab": "Access",
+      "systemBilling": {
+        "title": "System billing",
+        "desc": "Enable or disable billing for all users",
+        "activeNote": "✓ Billing is active — users see limits based on their tier.",
+        "disabledNote": "○ Billing is disabled — all users have full access."
+      },
+      "overview": {
+        "title": "Module access overview",
+        "totalUsers": "Total users",
+        "totalWithAccess": "Total with access",
+        "viaBilling": "via Billing",
+        "viaOverride": "via Override",
+        "intersection": "both",
+        "coreAlwaysOn": "Core is available to everyone."
+      },
+      "recentActivity": {
+        "title": "Recent override activity",
+        "empty": "No override activity yet.",
+        "actionGrant": "Granted",
+        "actionRevoke": "Revoked"
+      },
+      "footerNote": "Per-user billing and admin override management is available in the user detail under the Users tab."
+    },
+    "billing": {
+      "planLabel": {
+        "coreOnly": "Core only",
+        "projects": "Billing: Projects",
+        "business": "Billing: Business"
+      }
+    },
+    "users": {
+      "filter": {
+        "all": "All",
+        "admins": "Admins",
+        "banned": "Banned",
+        "hasProjects": "Has Projects",
+        "hasBusiness": "Has Business",
+        "overrideActive": "Override active",
+        "coreOnly": "Core only"
+      },
+      "accessBadge": {
+        "label": "Access",
+        "coreOnly": "Core only"
+      },
+      "accessSource": {
+        "billing": "Billing",
+        "override": "Override",
+        "both": "Billing + Override"
+      }
+    },
+    "user": {
+      "until": "until",
+      "effectiveAccess": {
+        "title": "Effective access",
+        "coreOnly": "Core only",
+        "always": "always",
+        "from": "from"
+      },
+      "billingSection": {
+        "title": "Billing",
+        "layerChip": "Layer 1",
+        "current": "Current",
+        "saving": "Saving...",
+        "note": "Only changes the billing record. Admin module override is managed below."
+      },
+      "overrideSection": {
+        "title": "Admin module override",
+        "layerChip": "Layer 2",
+        "addButton": "Grant module access"
+      },
+      "layersIndependentNote": "Billing and Admin override are independent layers. A billing change does not remove existing override grants. A revoke does not change billing. Effective access remains as long as at least one active source exists."
     }
   },
   "onboardingV2": {
