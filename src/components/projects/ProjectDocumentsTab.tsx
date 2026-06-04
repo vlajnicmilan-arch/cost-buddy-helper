@@ -324,11 +324,11 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
           {/* PHOTOS TAB — Foto dnevnik */}
           <TabsContent value="photos" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="default" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('camera')} disabled={uploading}>
+              <Button variant="default" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('camera')} disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                 <CameraIcon className="w-5 h-5" />
                 <span className="text-xs font-medium">{t('projects.documents.captureProgress', 'Slikaj napredak')}</span>
               </Button>
-              <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('gallery')} disabled={uploading}>
+              <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => handleProgressPhoto('gallery')} disabled={uploading || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                 <ImagePlus className="w-5 h-5" />
                 <span className="text-xs font-medium">{t('projects.documents.fromGallery', 'Iz galerije')}</span>
               </Button>
