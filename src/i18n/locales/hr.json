@@ -4647,17 +4647,24 @@
     },
     "preset": {
       "obitelj": "Obitelj",
-      "partner": "Partneri",
-      "cimer": "Cimeri",
+      "partner": "Supružnik / partner",
+      "cimer": "Cimer",
       "suroditelj": "Su-roditelji",
-      "prijatelji": "Prijatelji"
+      "su_roditelj": "Su-roditelj",
+      "prijatelji": "Prijatelji",
+      "putovanje": "Putovanje",
+      "projekt": "Projekt",
+      "klub": "Klub"
     },
     "lifecycle": {
       "active": "Aktivan",
       "early_signal": "Rani signal",
       "ugrozen": "Ugrožen",
       "paused": "Pauziran",
-      "terminated": "Završen"
+      "terminated": "Završen",
+      "continuity_window": "Prijelaz",
+      "read_only": "Samo čitanje",
+      "deleted": "Obrisan"
     },
     "transaction": {
       "title": "Krug",
@@ -4680,6 +4687,19 @@
       "A4": "Povuci prijedlog",
       "A5": "Predloži ponovo",
       "A7": "Prebaci na osobno"
+    },
+    "create": {
+      "cta": "Novi Krug",
+      "title": "Novi Krug",
+      "nameLabel": "Naziv Kruga",
+      "namePlaceholder": "npr. Naš dom",
+      "nameHint": "Min 2 znaka. Naziv vidi cijeli Krug.",
+      "presetLabel": "Tip Kruga",
+      "maxPunopravni": "Maks. punopravnih: {{n}}",
+      "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
+      "submit": "Kreiraj Krug"
     }
+  }
+}
   }
 }
