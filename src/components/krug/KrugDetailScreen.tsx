@@ -199,26 +199,9 @@ export function KrugDetailScreen({ krugId }: Props) {
         </Card>
       </section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          <CreditCard className="w-4 h-4" />
-          {t('krug.sharedSources', 'Zajednički izvori')}
-          <span className="text-xs text-muted-foreground">({sharedSources.length})</span>
-        </h3>
-        {sharedSources.length === 0 ? (
-          <Card className="p-4 text-xs text-muted-foreground">
-            {t('krug.noSharedSources', 'Nema povezanih izvora plaćanja.')}
-          </Card>
-        ) : (
-          <Card className="divide-y divide-border">
-            {sharedSources.map((s) => (
-              <div key={s.id} className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                {s.payment_source_id}
-              </div>
-            ))}
-          </Card>
-        )}
-      </section>
+      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} />
+
+
 
       <AddKrugMemberDialog
         open={addOpen}
