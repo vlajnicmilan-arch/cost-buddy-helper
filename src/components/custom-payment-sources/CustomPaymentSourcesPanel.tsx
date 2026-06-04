@@ -341,7 +341,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-medium">{source.name}</span>
+                    <span className="font-medium text-[hsl(142_71%_45%)]">{source.name}</span>
                     {((source.isOwned && (source.memberCount || 0) > 0) || source.isOwned === false) && (
                       <span
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[10px] font-medium"
