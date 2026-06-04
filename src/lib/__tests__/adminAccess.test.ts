@@ -427,7 +427,7 @@ const grant = (p: Partial<ActiveGrantLike>): ActiveGrantLike => ({
   module: p.module ?? 'projects',
   revoked_at: p.revoked_at ?? null,
   expires_at: p.expires_at ?? null,
-  reason_code: p.reason_code ?? 'support',
+  reason_code: 'reason_code' in p ? p.reason_code : 'support',
 });
 
 describe('grantReasonCodeI18nKey', () => {
