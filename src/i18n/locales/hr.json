@@ -4658,6 +4658,28 @@
       "ugrozen": "Ugrožen",
       "paused": "Pauziran",
       "terminated": "Završen"
+    },
+    "transaction": {
+      "title": "Krug",
+      "loading": "Učitavam…"
+    },
+    "privacy": {
+      "personal": "Osobno",
+      "private": "Privatno",
+      "shared": "Zajedničko"
+    },
+    "status": {
+      "predlozena": "Predloženo",
+      "potvrdjena": "Potvrđeno",
+      "nepotvrdjena": "Nepotvrđeno"
+    },
+    "act": {
+      "A1": "Potvrdi",
+      "A2": "Negiraj",
+      "A3": "Vrati na osobno",
+      "A4": "Povuci prijedlog",
+      "A5": "Predloži ponovo",
+      "A7": "Prebaci na osobno"
     }
   }
 }
