@@ -1,272 +1,236 @@
 
-# Krug Approval Enforcement Plan v1.1
+# Krug RLS Implementation Plan v1.1
 
-Block D dokument. Prvi **dinamički** kanal u Krug arhitekturi. Definira kako se governance akti iz `Krug Transaction Mutation Path Plan v1.1` (§5.3, §6.1) stvarno **izvršavaju, konzumiraju, vetiraju**, što znači **prozor §5.4**, i koja su pravila za **ponovno otvaranje approval toka** (`nepotvrđena → predložena`).
+Block E dokument. Prevodi sve već zaključane Block A–D ugovore (Schema v1.3, Visibility v1.1, Mutation Path v1.1, Approval Enforcement v1.1, API/Service Boundary v1.1) u konkretan RLS dizajn nad redom `expenses` kad je `krug_id IS NOT NULL`.
 
-Polazi strogo od:
+Bez SQL koda, bez RPC potpisa, bez naziva policy-a, bez migracija.
 
-- `Krug Foundation v4.2`
-- `Preset Constraint Matrix v1`
-- `Governance Matrix v1.3`
-- `Krug Transaction Semantics Schema Plan v1.3`
-- `Krug Transaction RLS / Visibility Plan v1.1`
-- `Krug Transaction Mutation Path Plan v1.1`
-
-**Bez** novog voting modela. **Bez** `majority`. **Bez** generičkog workflow enginea. **Bez** SQL koda, RPC potpisa, UI flow-a, rollout plana, notifikacijskog kanala.
-
-Scope je isključivo approval kanal za **transakcijski redak** u Krug kontekstu.
-
-**Promjene u odnosu na v1**:
-
-1. Uveden **48h expiry** za `predložena` stanje (akt **A6**) kao već zaključano pravilo Foundation v4.2. Tvrdnja "samo eksplicitni akti pomiču stanje" iz v1 je povučena.
-2. Uveden **akt A7** (`shared → personal` kao governance posljedica) unutar approval kanala, čime se uklanja konflikt s `Krug Transaction Mutation Path Plan v1.1` §5.1 i §5.5. Tvrdnja iz v1 "redak kroz approval kanal nikad ne napušta `shared`" je povučena.
+**Promjene v1.0 → v1.1 (samo usklađenja, bez novih ideja):**
+- A3 ispravno mapiran: `potvrđena → nepotvrđena` (opoziv potvrde), ne `potvrđena → predložena`
+- A5 prebačen iz governance/RGA kanala u author kanal (`A5 = nepotvrđena → predložena`, akter = autor s pravom pokretanja shared toka)
+- Razdvojena dva autorizacijska modela za UPDATE: governance/RGA akti (A1, A2, A3, A7) vs author akti (A4, A5)
+- Race-uvjeti usklađeni s novom A3 semantikom
 
 ---
 
-## §1. Opseg
+## §1. Scope
 
-Definira:
+Pokriva:
+- RLS nad `expenses` za retke gdje `krug_id IS NOT NULL`
+- 4 RLS kanala: SELECT, INSERT, UPDATE, DELETE
+- Mapiranje A1–A7 na te kanale
+- Security-definer helpere koje RLS smije zvati (samo nabrojati funkciju, ne implementaciju)
+- Granicu prema retcima gdje `krug_id IS NULL` (ne diramo postojeće non-Krug policy-e)
 
-- životni ciklus jednog **prijedloga** (`shared/predložena`)
-- koji **approval akti** mijenjaju `krug_shared_status` ili `krug_privacy`
-- tko je **inicijator** i tko je **konzument** svakog akta
-- što je **veto**, **opoziv potvrde** i **expiry**
-- što znači **povlačenje prijedloga**
-- kada i kako redak prelazi iz `shared` u `personal` kao governance posljedica (akt A7)
-- operativni kriterij **prozora §5.4** (`personal → private`)
-- pravilo za **ponovno otvaranje** (`nepotvrđena → predložena`)
-- **terminalna stanja** approval toka
-- **invariante** i **race-uvjeti** koji moraju biti pokriveni
-
-Ne ulazi u: notifikacije, UI, rate-limit konkretne brojeve, audit log shemu, RPC potpise, RLS implementaciju.
+Ne pokriva:
+- SQL, naziv policy-a, naziv funkcija, signature
+- RLS nad bilo kojom drugom tablicom osim `expenses`
+- Krug-level tablice (članstvo, presets) — pretpostavljamo da već postoje i da imaju svoj RLS
+- A6 (48h expiry) kao izvor pisanja — to ide kroz system role, ne kroz klijent RLS
+- Bulk/admin override putove
+- Notifikacije, audit log, UI
 
 ---
 
-## §2. Approval akti
+## §2. Principi
 
-Iz Mutation Path v1.1 §5.3 / §6.1 i Foundation v4.2 (48h pravilo) izvedeno je **sedam** approval akata. Drugih akata u kanalu nema.
+1. **RLS je drugi sloj obrane**, ne primarni. Primarni je server-side logika iza endpointa iz API Boundary v1.1.
+2. **RLS mora biti suglasna s Approval v1.1 i Mutation v1.1.** Ako endpoint dopušta akt, RLS ga ne smije blokirati. Ako endpoint zabranjuje akt, RLS ga mora odbiti i kad endpoint zakaže.
+3. **RLS ne smije sama izvoditi semantičke akte.** Ne mijenja `krug_shared_status`, `krug_privacy`, ne briše, ne potvrđuje. Samo dopušta/odbija ono što je client/endpoint pokušao.
+4. **RGA i scope-of-affected se izvode kroz security-definer helpere**, ne kroz inline JOIN u policy-u.
+5. **`auth.uid()` je jedini identitet aktera u RLS-u.**
+6. **RLS ne razlikuje akte A1–A7 po imenu.** Razlikuje ih po (kanal, prethodno stanje retka, novo stanje retka, akter).
+7. **Dva odvojena autorizacijska modela za UPDATE** (novo u v1.1):
+   - **governance/RGA model** — za A1, A2, A3, A7 (akter mora biti RGA za taj redak)
+   - **author model** — za A4, A5 i edit vlastitog prijedloga (akter mora biti autor, dodatno za A5: autor s pravom pokretanja shared toka = owner ili full član Kruga koji je ujedno autor)
 
-| Akt | Učinak na redak | Tko ga pokreće |
+   Ova dva modela se NE smiju brkati niti dijeliti isti helper.
+
+---
+
+## §3. Security-definer helperi (samo popis)
+
+RLS smije pozvati isključivo ove funkcije. Svaka mora biti `SECURITY DEFINER`, deterministička za isti input, ne smije sama mijenjati podatke, `SET search_path = public`.
+
+| Helper | Vraća | Koristi se u | Izvor istine za |
+|---|---|---|---|
+| H1. `is_krug_member(krug_id, user_id)` | bool | SELECT, INSERT | Bilo kakvo članstvo (ordinary, full, owner) |
+| H2. `is_krug_full_or_owner(krug_id, user_id)` | bool | UPDATE (A5 author kanal) | Owner/full membership; nužan uvjet za pokretanje shared toka, koristi se ISKLJUČIVO unutar author modela za A5 |
+| H3. `is_rga_for_row(expense_row, user_id)` | bool | UPDATE (governance kanal: A1, A2, A3, A7) | RGA = owner/full member ∧ financijski pogođen za taj konkretni redak |
+| H4. `krug_row_is_visible(expense_row, user_id)` | bool | SELECT, USING preduvjet za UPDATE i DELETE | Visibility v1.1 (private/personal/shared/ordinary-redacted) |
+| H5. `is_row_author(expense_row, user_id)` | bool | UPDATE (author kanal: A4, A5, field-edit), DELETE | `auth.uid() = OLD.user_id` |
+
+Napomena: H2 i H3 NISU zamjenjivi. H3 strožiji je (RGA = full/owner + scope-of-affected). H2 je slabiji i koristi se samo u A5 author kanalu kao dodatni filter "autor s pravom pokretanja shared toka".
+
+RLS ne smije zvati ništa drugo iz aplikativnog sloja. Ne smije čitati `expenses` rekurzivno.
+
+---
+
+## §4. RLS kanali
+
+### §4.1 SELECT
+
+Dopušteno akko `H4(redak, auth.uid())` vraća true.
+
+H4 unutar sebe pokriva sva 4 slučaja iz Visibility v1.1. Column-level redakcija za ordinary članove nije RLS odgovornost u ovom planu.
+
+### §4.2 INSERT
+
+Dopušteno akko:
+- `auth.uid() = NEW.user_id`
+- ako `NEW.krug_id IS NOT NULL`: `H1(NEW.krug_id, auth.uid())`
+- ako `NEW.krug_privacy = 'shared'`: `NEW.krug_shared_status = 'predložena'`
+- ako `NEW.krug_privacy ∈ {'private','personal'}`: `NEW.krug_shared_status IS NULL`
+
+INSERT ne pokriva nijedan od akata A1–A7.
+
+### §4.3 UPDATE
+
+UPDATE policy je strukturalno podijeljen u **dva odvojena autorizacijska modela**. Implementacija može biti jedan policy s OR granom ili dva odvojena permisivna policy-a — semantika je ista.
+
+**Zajednički USING preduvjet (oba modela):**
+- `H4(OLD, auth.uid())` — bez vidljivosti nema UPDATE-a
+
+#### §4.3.A Governance / RGA model — pokriva A1, A2, A3, A7
+
+USING dodatno:
+- `H3(OLD, auth.uid())` — akter je RGA za taj redak
+
+WITH CHECK matrica:
+
+| Prethodno (OLD) | Novo (NEW) | Akt |
 |---|---|---|
-| **A1. Potvrda** | `predložena → potvrđena` | governance kanal (owner / full member) |
-| **A2. Veto** | `predložena → nepotvrđena` | governance kanal |
-| **A3. Opoziv potvrde** | `potvrđena → nepotvrđena` | governance kanal |
-| **A4. Povlačenje prijedloga** | hard-delete retka u `predložena` ili `nepotvrđena` (post-delete pravilo Schema v1.3) | author s pravom pokretanja shared toka |
-| **A5. Ponovno otvaranje** | `nepotvrđena → predložena` | author s pravom pokretanja shared toka |
-| **A6. Expiry prijedloga** | `predložena → nepotvrđena` po isteku 48h od ulaska u `predložena` | **sistem** (vremenski okidač) |
-| **A7. Prelazak u personal** | `shared → personal` uz `krug_shared_status := NULL` | governance kanal |
+| `shared` / `predložena` | `shared` / `potvrđena` | A1 (potvrda) |
+| `shared` / `predložena` | `shared` / `nepotvrđena` | A2 (veto) |
+| `shared` / `potvrđena` | `shared` / `nepotvrđena` | **A3 (opoziv potvrde)** |
+| `shared` / bilo koji | `personal` / NULL | A7 (governance → personal) |
 
-Ordinary member i non-member se **ne pojavljuju** kao inicijatori nijednog akta.
+Sve ostale tranzicije pod ovim modelom: banned.
 
-A1–A3 i A7 su **governance akti**. A4–A5 su **autorski akti unutar approval toka**. A6 je **sistemski akt**, jedini koji nije ručno pokrenut.
+#### §4.3.B Author model — pokriva A5 i edit vlastitog prijedloga (te A0 ako je u Mutation v1.1)
 
----
+USING dodatno:
+- `H5(OLD, auth.uid())` — akter je autor retka
 
-## §3. Životni ciklus prijedloga
+WITH CHECK matrica:
 
-Prijedlog **postoji** dok `krug_privacy = shared`. Stanja kroz koja prolazi:
+| Prethodno (OLD) | Novo (NEW) | Akt | Dodatni uvjet |
+|---|---|---|---|
+| `shared` / `nepotvrđena` | `shared` / `predložena` | **A5 (ponovno pokretanje)** | `H2(OLD.krug_id, auth.uid())` — autor mora biti owner/full član (autor s pravom pokretanja shared toka) |
+| `private` / NULL | `shared` / `predložena` | A0 (ako Mutation v1.1 dopušta) | `H2(OLD.krug_id, auth.uid())` |
+| `shared` / `predložena` | `private` / NULL | povrat u private prije ikakve potvrde (ako Mutation v1.1 dopušta) | — |
+| field-edit bez promjene `krug_privacy` / `krug_shared_status` | — | edit vlastitog prijedloga | samo dok je `OLD.krug_shared_status = 'predložena'` i bez ijedne zabilježene potvrde |
 
-```text
-                      A4 (povlačenje)
-        ┌──────────────── hard-delete ──→ (krug_id = NULL, personal)
-        │
-        │     A6 (48h expiry)
-        │   ┌────────────────┐
-        │   ▼                │
-   predložena ──A1──→ potvrđena ──A3──→ nepotvrđena ──A5──→ predložena ──→ ...
-        │                                    ▲
-        └──────────A2─────────────────────────┘
+Sve ostale tranzicije pod ovim modelom: banned.
 
-   bilo koje stanje u `shared`  ──A7──→  personal  (krug_shared_status = NULL)
-```
+#### §4.3.C Zajedničke zabrane (oba modela)
 
-- **predložena**: smisleni akti su A1, A2, A4, A6, A7.
-- **potvrđena**: smisleni akti su A3, A7.
-- **nepotvrđena**: smisleni akti su A4, A5, A7.
+WITH CHECK mora odbiti:
+- Schema v1.3 invariantu krši: `krug_shared_status IS NULL ⇔ krug_privacy ∈ {private, personal}` — bilo koji NEW koji to krši
+- Promjena `krug_id` (nijedan A1–A7 to ne radi)
+- `shared`/`potvrđena` → `shared`/`predložena` direkt (Mutation v1.1: ne postoji takav prijelaz; reopen potvrđene = A3 koji ide u `nepotvrđena`, ne u `predložena`)
+- Bilo koja tranzicija od strane aktera koji nije ni RGA (A1/A2/A3/A7) ni autor (A4/A5/edit) — npr. ordinary član bez RGA statusa
+- A6 prijelaz (`predložena → nepotvrđena` bez RGA + bez autora) — vidi §5
 
-A6 osigurava da **nijedan prijedlog ne visi beskonačno**: ako u 48h od ulaska u `predložena` nije izvršen A1, A2, A4 ili A7, sistem ga prebacuje u `nepotvrđena` (vidi §5.3). Author može iz `nepotvrđena` pokrenuti A5 ili A4 pod istim pravilima kao i nakon A2.
+### §4.4 DELETE
 
----
+Dopušteno akko:
+- `H4(OLD, auth.uid())`
+- `H5(OLD, auth.uid())` — autor djeluje na vlastiti redak
+- `OLD.krug_shared_status ∈ {NULL, 'predložena', 'nepotvrđena'}`
 
-## §4. Tko konzumira akt
+Banned:
+- DELETE nad `shared` / `potvrđena`
+- DELETE od strane bilo koga tko nije autor
 
-- **A1 / A2 / A3 / A7** — konzument je **governance kanal**: akter mora biti owner ILI full member (Governance Matrix v1.3) nad Krugom kojem redak pripada. Preset utječe samo na to tko je full member, ne na pravilo da je governance pravo individualno.
-- **A4 / A5** — konzument je **sam author**, pod uvjetom da je istovremeno owner ili full member.
-- **A6** — konzument je **sistem**. Nema ljudskog aktera. Okida se na temelju vremena ulaska retka u `predložena`.
-
-**Ordinary author** ne može konzumirati A4 ni A5, jer u normalnom toku ne može doći do `shared` retka čiji je on author (Mutation Path v1.1 §3.1).
-
-Voting / quorum / majority **ne postoji**. Svaki governance akt je **unilateralan**: jedna potvrda → `potvrđena`; jedan veto → `nepotvrđena`; jedan A7 → `personal`. To je posljedica Governance Matrix v1.3.
+Ovo je RLS odgovor na A4 (autor akt).
 
 ---
 
-## §5. Veto, opoziv, expiry i prelazak u personal
+## §5. A6 (48h expiry)
 
-### §5.1 Veto (A2)
+A6 nema klijentski put. Pisanje koje izvodi A6 (`predložena → nepotvrđena` nakon 48h) ide isključivo kroz system role (cron / scheduled job / service_role), ne kroz klijentski RLS.
 
-- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = predložena`
-- učinak: `krug_shared_status := nepotvrđena`
-- `krug_privacy` ostaje `shared`
-- redak ostaje vidljiv članovima Kruga; author (A+) može A5 ili A4
+Klijentski RLS policy NE pokriva taj prijelaz:
+- Governance/RGA model (§4.3.A) ne sadrži `predložena → nepotvrđena` (taj prijelaz je A2 ili A6; A2 zahtijeva eksplicitni RGA akt iz endpointa; A6 ne smije biti klijentski mogu)
+- Konkretno: u §4.3.A `predložena → nepotvrđena` se ostvaruje samo kao A2; svaki UPDATE koji izvede tu tranziciju bez RGA aktera pada (jer USING traži H3)
+- Author model (§4.3.B) ne sadrži tu tranziciju uopće
 
-### §5.2 Opoziv potvrde (A3)
-
-- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = potvrđena`
-- učinak: `krug_shared_status := nepotvrđena`
-- `krug_privacy` ostaje `shared`
-- iz `nepotvrđena` author (A+) može A5 ili A4; governance može A7
-
-A3 omogućuje pravilo Mutation Path v1.1 §6.1 (hard-delete `shared/potvrđena` mora ići preko opoziva: A3 → A4).
-
-### §5.3 Expiry prijedloga (A6) — 48h
-
-Foundation v4.2: prijedlog koji traži potvrdu vrijedi 48 sati; ako ne bude potvrđen u tom roku, automatski postaje nevažeći.
-
-Operacionalizacija u approval kanalu:
-
-- **trigger**: trenutak u kojem je `krug_shared_status` postao `predložena` (uključuje i A5, koji je novi ulazak u `predložena`, ne nastavak starog brojača).
-- **trajanje**: 48 sati, fiksno, neovisno o presetu i o Krugu.
-- **učinak po isteku**: `krug_shared_status := nepotvrđena`. `krug_privacy` ostaje `shared`. Identičan ishod stanja kao A2, ali izvor je sistem, ne governance akter.
-- **prekidanje**: A1, A2, A4 ili A7 izvršeni prije isteka **prekidaju** brojač. A6 se nakon toga ne okida za taj ciklus.
-- **ponovno otvaranje**: A5 (`nepotvrđena → predložena`) **resetira** brojač na novih 48h. To znači da je 48h pravilo per-ciklus, ne per-redak.
-- **side-effects**: nikakvi izvan promjene `krug_shared_status`. `krug_id`, `krug_privacy` i ostala polja se ne diraju.
-- **author reakcija**: iz `nepotvrđena` (bilo iz A2 ili A6) author (A+) može A5 ili A4 pod istim pravilima.
-
-A6 je jedini akt koji se ne aktivira ručnom radnjom. Mehanizam okidanja (cron, scheduler, on-read provjera) je operativni izbor i nije scope ovog dokumenta — bitno je samo da je **deterministički** vezan uz 48h od ulaska u `predložena` i da ne ovisi o aktivnosti aktera.
-
-### §5.4 Prelazak u personal (A7)
-
-Mutation Path v1.1 §5.1 i §5.5 propisuju da je `shared → personal` dopušten kao **posljedica governance akta**, uz `krug_shared_status := NULL`. Approval Enforcement v1.1 to ostvaruje aktom A7.
-
-- **pretpostavka**: `krug_privacy = shared` ∧ `krug_shared_status ∈ {predložena, potvrđena, nepotvrđena}`
-- **akter**: governance kanal (owner ili full member)
-- **učinak**: `krug_privacy := personal` ∧ `krug_shared_status := NULL`
-- **`krug_id` se ne mijenja** — redak ostaje u Krugu, samo prestaje biti shared.
-- **vidljivost nakon A7**: određuje Visibility v1.1 za `personal` u tom presetu (može značiti da redak prestaje biti vidljiv drugim full membera).
-- **author prava nakon A7**: author dobiva natrag puno field-edit pravo nad `personal` retkom (Mutation Path v1.1 §4.2). Author **ne smije** vratiti redak na `private` ako je u međuvremenu redak već bio vidljiv drugim članovima kroz preset (prozor §5.4 Mutation Path v1.1 je trajno zatvoren čim je redak postao `shared`).
-- **odnos prema A3**: A3 ostavlja redak u `shared/nepotvrđena`. A7 ide korak dalje i izlazi iz `shared`. To su dva različita akta s dva različita ishoda; nisu sinonimi i ne moraju se izvršavati zajedno.
-- **odnos prema A2 / A6**: nakon veta ili expiry-ja, redak je u `shared/nepotvrđena`. Governance i dalje smije A7 nad takvim retkom. To je legalan put da se vetirani / istekli prijedlog izvuče iz Kruga bez čekanja autora.
-- **A7 nije hard-delete**: redak ostaje, samo gubi `shared` status. Hard-delete radi A4.
-
-A7 popunjava točno onu prazninu zbog koje je v1 bio u konfliktu s Mutation Path v1.1. Drugog kanala za `shared → personal` u arhitekturi **nema** (osim Krug-level akata iz lifecycle scope-a, npr. soft-delete cijelog Kruga, što je izvan ovog dokumenta).
+Rezultat: ako pokušaj dođe od `auth.uid()` koji nije RGA, RLS odbija; A6 može proći isključivo kroz service_role koji zaobilazi RLS.
 
 ---
 
-## §6. Povlačenje prijedloga (A4)
+## §6. Mapiranje A1–A7 → RLS kanali (ispravljeno u v1.1)
 
-- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status ∈ {predložena, nepotvrđena}` ∧ akter = author s pravom pokretanja shared toka
-- učinak: hard-delete uz post-delete pravilo Schema v1.3 (`krug_id → NULL`, `shared → personal`, `krug_shared_status → NULL`)
-- nije dopušten nad `shared/potvrđena` (Mutation Path v1.1 §6.1) — mora prvo A3 (ili A7, ako governance odluči izvući redak u personal i prepustiti autoru obični delete na `personal`)
-- autorski akt, ne traži suglasnost owner / full member
+| Akt | Kanal | Model | Tko (po RLS-u) | Što RLS provjerava |
+|---|---|---|---|---|
+| A1 potvrda | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`predložena`, NEW=`shared`/`potvrđena`, H3(OLD) |
+| A2 veto | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`predložena`, NEW=`shared`/`nepotvrđena`, H3(OLD) |
+| **A3 opoziv potvrde** | UPDATE | §4.3.A governance/RGA | RGA | OLD=`shared`/`potvrđena`, **NEW=`shared`/`nepotvrđena`**, H3(OLD) |
+| A4 povlačenje | DELETE | author | autor | OLD.status ∈ {NULL, `predložena`, `nepotvrđena`}, H5 |
+| **A5 ponovno pokretanje** | UPDATE | §4.3.B author | **autor s pravom pokretanja shared toka** | OLD=`shared`/`nepotvrđena`, NEW=`shared`/`predložena`, H5 ∧ H2 |
+| A6 expiry | UPDATE (system) | NIJE klijentski | system role | NIJE pokriveno klijentskim policy-em |
+| A7 governance → personal | UPDATE | §4.3.A governance/RGA | RGA | OLD.privacy=`shared`, NEW.privacy=`personal` ∧ NEW.status=NULL, H3(OLD) |
 
----
+Governance/RGA akti = A1, A2, A3, A7 → koriste H3.
+Author akti = A4, A5 → koriste H5 (A5 dodatno H2). Nikada ne koriste H3.
 
-## §7. Ponovno otvaranje (A5)
-
-- pretpostavka: `krug_privacy = shared` ∧ `krug_shared_status = nepotvrđena` ∧ akter = author s pravom pokretanja shared toka
-- učinak: `krug_shared_status := predložena`
-- side-effects: nikakvi
-- **resetira A6 brojač** na novih 48h (§5.3)
-
-### §7.1 Smije li A5 ići bez izmjene polja
-
-Smije. A5 je tranzicija statusa, ne polja. Field-edit u `nepotvrđena` je dopušten (Mutation Path v1.1 §4.3) ali nije preduvjet.
-
-### §7.2 Rate-limit
-
-A5 je jedini ručni akt koji author može pokrenuti više puta nad istim retkom. U kombinaciji s A2 i A6 (oba ishoda → `nepotvrđena`) postoji rizik ciklusa.
-
-Approval Enforcement v1.1 **zaključava pravilo**, ne brojke:
-
-- mora postojati ograničenje koje sprječava da ciklus A5 ↔ (A2 ili A6) degradira kanal.
-- ograničenje je vezano uz par **(redak, author)**, ne uz Krug.
-- ograničenje se **ne smije** zaobići field-editom u `nepotvrđena`.
-- konkretni parametri (broj A5 u prozoru) su operativna konfiguracija, ne Block D.
-
-48h iz A6 **nije zamjena** za rate-limit A5: A6 ograničava trajanje jednog ciklusa, rate-limit ograničava broj ciklusa.
+RLS nigdje ne smije pomiješati ova dva modela — npr. RGA koji nije autor NE smije izvesti A5; autor koji nije RGA NE smije izvesti A1/A2/A3/A7.
 
 ---
 
-## §8. Prozor §5.4 (Mutation Path) operativno
+## §7. Race-uvjeti i RLS (ispravljeno u v1.1)
 
-- prozor je **otvoren** dok redak ima `krug_privacy = personal` **i** dok preset ne omogućuje drugom članu read (Visibility v1.1).
-- prozor se **zatvara** čim redak po Visibility v1.1 postane čitljiv ikojem drugom članu Kruga (uključuje i prelazak u `shared`).
-- prozor je **trajno otvoren** za presetove gdje `personal` nikad nije vidljiv drugima (`Su-roditelj`, `Cimer` po defaultu), dok je redak `personal`.
-- ulazak u approval kanal (`personal → shared`) zatvara prozor **trajno** — uključujući kasniji povratak na `personal` kroz A7. Author nakon A7 može uređivati `personal` redak, ali ga ne može vratiti u `private`.
+RLS osigurava da svaki pojedinačni pokušaj zadovoljava pravila u trenutku evaluacije. Deduplikacija i serijalizacija akata su odgovornost endpoint sloja.
 
----
+- **Dvostruka potvrda (A1+A1) konkurentno:** obje pojedinačno prolaze RLS jer su obje validne nad `predložena`. Drugi commit vidi OLD=`potvrđena` i pada na WITH CHECK. Konzistentno.
+- **Veto+povlačenje (A2+A4) konkurentno:** A2 je governance UPDATE, A4 je author DELETE. Oba dopuštena nad `predložena`. Tko prvi commita pobjeđuje; drugi pada (UPDATE pada jer OLD više nije `predložena`, ili DELETE pada jer reda nema / status se promijenio).
+- **A3 vs nova A1 konkurentno (v1.1):** A1 traži OLD=`predložena`, A3 traži OLD=`potvrđena`. Sekvenca A1→A3 je validna (potvrda pa opoziv). Konkurentno: ako oboje pokušaju nad istim OLD, jedan ima pogrešan OLD i pada.
+- **A3 (opoziv potvrde) vs A5 konkurentno (v1.1):** A3 djeluje na `potvrđena`, A5 djeluje na `nepotvrđena`. Mogu se nadovezati u sekvenci A3→A5 (RGA opozove potvrdu, autor ponovno pokrene), ali nikad ne ciljaju isto OLD stanje pa nema race na razini OLD-a. Ako A3 prvi commita (`potvrđena → nepotvrđena`), naknadni A5 nad istim retkom je validan i prolazi (drugi akter, drugi model). Ako A5 pokuša prije A3, pada jer OLD nije `nepotvrđena`.
+- **Field-edit autora + A1 RGA konkurentno:** oba UPDATE-a; field-edit ide kroz author model, A1 kroz governance model; prvi commit postavlja novi OLD; drugi se evaluira protiv tog novog stanja. Ako RGA potvrdi prije autora, autorov field-edit pada jer status više nije `predložena`. Konzistentno.
+- **A6 vs ručni akt konkurentno:** A6 ide system rolom (zaobilazi RLS), ručni akt ide `auth.uid()`. Ako A6 prvi commita (`predložena → nepotvrđena`), ručni A1 pada jer OLD nije `predložena`; ručni A2 pada jer OLD nije `predložena`; ručni A5 (autor) može uslijediti i validno proći.
+- **A7 + A4 konkurentno:** A7 je governance UPDATE, A4 je author DELETE. Prvi commit pobjeđuje, drugi pada.
+- **A5 (autor) vs A5 (drugi pokušaj) konkurentno:** oba author kanal nad istim OLD=`nepotvrđena`; prvi commita vraća redak u `predložena`, drugi pada jer OLD više nije `nepotvrđena`. Rate-limit po (redak, autor) je endpoint odgovornost, ne RLS.
 
-## §9. Invariante
-
-Svaki akt u kanalu mora očuvati:
-
-1. `krug_shared_status` je `NULL` ⇔ `krug_privacy ∈ {private, personal}`.
-2. `krug_shared_status ∈ {predložena, potvrđena, nepotvrđena}` ⇔ `krug_privacy = shared`.
-3. `predložena → potvrđena → predložena` bez A3 + A5 nije moguć.
-4. `potvrđena → predložena` direktno nije moguć.
-5. Nijedan akt A1–A7 ne mijenja `krug_id`.
-6. A1, A2, A3, A5, A6 ne mijenjaju `krug_privacy`. A4 izlazi iz Kruga preko post-delete pravila. A7 mijenja `krug_privacy` iz `shared` u `personal` uz `krug_shared_status := NULL`.
-7. Ordinary member ne smije biti akter nijednog akta A1–A7.
-8. Non-member ne smije biti akter nijednog akta.
-9. Akt mora biti izvršen u Krugu kojem redak pripada.
-10. Akt nad retkom čije stanje ne zadovoljava pretpostavku akta je nevaljan.
-11. A6 mora biti **deterministički** vezan uz vrijeme ulaska u `predložena`; ne smije ovisiti o aktivnosti aktera ili o read-pathu.
+Nijedan race ne zahtijeva da RLS uvodi advisory lock, SERIALIZABLE transakciju ili optimističku verziju.
 
 ---
 
-## §10. Race-uvjeti koje operativni sloj mora pokriti
+## §8. Ne-Krug retci (`krug_id IS NULL`)
 
-1. **Dvostruka potvrda** (dva A1) — samo jedan uspijeva; drugi pada.
-2. **Potvrda i veto istovremeno** (A1 ∥ A2) — samo jedan uspijeva; deterministički prvi.
-3. **Veto i povlačenje** (A2 ∥ A4) — ako A2 prvi, A4 i dalje smije nad `nepotvrđena`. Nikad dvostruka mutacija.
-4. **Opoziv i novi ciklus** (A3 → A5 → A1/A2 koji pripada starom ciklusu) — operativni sloj mora razlikovati cikluse.
-5. **A5 koji zaobilazi rate-limit** — ograničenje §7.2 mora biti atomsko po (redak, author).
-6. **Field-edit istodobno s A1** — A1 potvrđuje trenutno stanje; field-edit nakon A1 zabranjen (Mutation Path v1.1 §4.3).
-7. **Govern akt nad nepostojećim retkom** (A4 izvršen prije, A1/A2/A3/A7 stigne kasnije) — mora pasti.
-8. **A6 vs ručni akt na granici 48h** — ako A1/A2/A4/A7 dođe u istom trenutku kao A6, mora postojati deterministički poredak. Ručni akt prije A6 prekida brojač; ručni akt nakon A6 nailazi na `nepotvrđena` i mora se evaluirati protiv tog stanja (A1 pada, A4/A5/A7 ostaju legalni).
-9. **A6 dupli okidač** — mehanizam okidanja mora biti idempotentan po (redak, ciklus). Dva okidanja A6 u istom ciklusu ne smiju dvaput mijenjati stanje ili poništiti naknadni A5.
-10. **A7 nad retkom koji je upravo postao `nepotvrđena` kroz A6** — legalan; A7 ne razlikuje izvor `nepotvrđena` (A2 ili A6).
-11. **A7 i A4 istovremeno** — A4 vodi u hard-delete, A7 u `personal`. Samo jedan uspijeva; drugi pada (redak je ili obrisan ili više nije `shared`).
-
-Ovaj dokument propisuje **legalne i nevaljane ishode**, ne mehanizam (lock / serialization / idempotency key).
+Ovaj plan ne dira postojeće policy-e za `krug_id IS NULL` retke. Implementacija mora osigurati da:
+- novi Krug-specifični UPDATE/DELETE policy se aktivira isključivo kad `OLD.krug_id IS NOT NULL`
+- postojeći non-Krug policy se aktivira isključivo kad `OLD.krug_id IS NULL`
+- nijedan redak nije ni pokriven s oba ni ostavljen bez ijednog
 
 ---
 
-## §11. Što approval kanal NIJE
+## §9. Što RLS NE radi (eksplicitno)
 
-- voting / quorum / majority / weighted approval
-- timeout **različit** od 48h iz Foundation v4.2 (A6 je jedini vremenski okidač; drugih nema)
-- delegacija approval prava
-- notifikacijski kanal
-- audit log shema
-- UI flow
-- per-preset varijacija approval logike izvan onoga što Governance Matrix v1.3 već definira kroz pojam full membera
-- approval akt iznad bilo čega što nije transakcijski redak
-- Krug-level akti (soft-delete Kruga, promjena članstva, promjena presetova) — to je scope Krug lifecycle dokumenata. A7 **nije** Krug-level akt; on djeluje na pojedini redak i ostaje unutar approval kanala.
+- ne briše redak nakon A4 automatski — to radi DELETE call iz endpointa
+- ne mijenja `krug_shared_status` sama
+- ne šalje notifikacije, ne piše audit log
+- ne provjerava rate-limit za A5 → endpoint odgovornost
+- ne provjerava 48h prozor za A6 → system role odgovornost
+- ne razlikuje "nevaljan zbog članstva" od "nevaljan zbog scope-of-affected" → vraća jednu RLS grešku (42501); razdvajanje je endpoint odgovornost
+- ne primjenjuje column-level redakciju za ordinary članove
+- **ne koristi isti helper za governance akte i author akte** (v1.1)
 
 ---
 
-## §12. Zaključak
+## §10. Otvorena pitanja (operativna, ne mijenjaju ugovor)
 
-### Je li approval kanal sada dovoljno jasan
+1. Hoće li helperi H1–H5 biti novi ili reuse postojećih funkcija.
+2. Restrictive vs permissive policy strategija za Krug retke.
+3. Kako system role izvodi A6 — pg_cron + service_role direktno, ili edge funkcija.
+4. Točan error code mapping (42501 vs custom RAISE) — endpoint odgovornost.
+5. Treba li dedicirani BEFORE UPDATE trigger za Schema v1.3 invariantu kao dodatni pojas.
+6. Hoće li governance i author model biti dva odvojena permisivna policy-a ili jedan policy s OR granom — implementacijska odluka koja ne mijenja semantiku.
 
-Da, uz oba usklađenja iz v1.1:
+---
 
-- **48h expiry (A6)** je integriran kao deterministički sistemski akt; prijedlog ne može visiti beskonačno (§5.3, §9.11, §10.8–9).
-- **`shared → personal` (A7)** je integriran kao governance akt unutar approval kanala, čime se uklanja konflikt s Mutation Path v1.1 §5.1 / §5.5 (§5.4, §9.6, §10.10–11).
+## §11. Zaključak
 
-Ostalo zaključano u v1.1:
+RLS dizajn je potpun za sve A1–A7 putove + A6 system put + SELECT/INSERT/UPDATE/DELETE kanale, s ispravljenom A3 semantikom (opoziv potvrde) i ispravnim A5 autorizacijskim modelom (author kanal, ne governance), te jasnom podjelom na governance/RGA i author autorizacijski model.
 
-- konačan skup od **sedam** akata (§2)
-- životni ciklus prijedloga s eksplicitnom A6 granom (§3)
-- konzument svakog akta, isključenje ordinary / non-member (§4)
-- semantika veta, opoziva, expiry-ja i prelaska u personal (§5)
-- pravila povlačenja i ponovnog otvaranja (§6, §7)
-- operativni kriterij prozora §5.4 (§8)
-- invariante koje akti moraju očuvati (§9)
-- race-uvjeti koje operativni sloj mora pokriti (§10)
-- eksplicitni perimeter (§11)
-
-### Najbolji sljedeći dokument
-
-**`Krug API / Service Boundary Plan v1`** — mapiranje akata A1–A7 i invarianti §9 / race-uvjeta §10 na granicu klijent ↔ server, prije ulaska u `Krug RLS Implementation Plan v1`.
+Sljedeći dokument (Block F): **`Krug Endpoint Contract Plan v1`** — konkretni endpointi (još bez SQL/RPC potpisa) koji implementiraju API Boundary v1.1 iznad ovog RLS sloja.
