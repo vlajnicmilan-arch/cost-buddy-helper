@@ -912,6 +912,10 @@
         "title": "Business",
         "description": "Geschäftsterminologie und Firmenprofile",
         "locked": "Im Business-Tarif verfügbar"
+      },
+      "overrideBadge": {
+        "source": "Admin-Override",
+        "permanent": "Dauerhaft"
       }
     },
     "profile": "Profil",
@@ -4270,7 +4274,73 @@
     "browser": "Browser",
     "language": "Sprache",
     "screen": "Bildschirm",
-    "viewport": "Viewport"
+    "viewport": "Viewport",
+    "moduleAccess": {
+      "moduleAccess": "Modulzugriff",
+      "openButton": "Modulzugriff",
+      "dialogTitle": "Modulzugriff",
+      "dialogDesc": "Benutzer",
+      "tabGrant": "Gewähren",
+      "tabHistory": "Verlauf",
+      "historyEmpty": "Keine Override-Grant-Historie.",
+      "permanent": "Dauerhaft",
+      "revoke": "Widerrufen",
+      "revokeTitle": "Zugriff widerrufen",
+      "revokeDesc": "Ein Grund ist erforderlich und bleibt im Verlauf sichtbar.",
+      "revokeReasonLabel": "Widerrufsgrund",
+      "revokeReasonPh": "Z. B. Rückerstattung, Missverständnis…",
+      "revokeConfirm": "Widerrufen",
+      "revokeSuccess": "Zugriff widerrufen",
+      "revokeError": "Widerruf fehlgeschlagen",
+      "grantSuccess": "Zugriff gewährt ({{n}})",
+      "grantError": "Fehler bei der Vergabe",
+      "reasonCode": {
+        "refund": "Rückerstattung",
+        "beta_tester": "Beta-Tester",
+        "internal": "Intern",
+        "partner": "Partner",
+        "support": "Support",
+        "other": "Sonstiges"
+      },
+      "status": {
+        "active": "Aktiv",
+        "expired": "Abgelaufen",
+        "revoked": "Widerrufen"
+      },
+      "actor": {
+        "system": "System"
+      },
+      "field": {
+        "grantedBy": "Gewährt von",
+        "duration": "Dauer",
+        "reason": "Grund",
+        "revokedBy": "Widerrufen von",
+        "grantedAt": "Gewährt am"
+      },
+      "conflict": {
+        "title": "Aktiver Grant vorhanden",
+        "desc": "Ein neuer Grant kann einen bestehenden aktiven nicht überschreiben. Widerrufen Sie ihn zuerst und erstellen Sie dann einen neuen."
+      },
+      "duration": {
+        "7d": "7 Tage",
+        "30d": "30 Tage",
+        "90d": "90 Tage",
+        "365d": "1 Jahr",
+        "permanent": "Dauerhaft",
+        "custom": "Benutzerdefiniert…"
+      },
+      "form": {
+        "modules": "Module",
+        "duration": "Dauer",
+        "reasonCode": "Grund",
+        "reasonNote": "Notiz",
+        "reasonNotePh": "Optional…",
+        "reasonNoteRequiredPh": "Erläuterung erforderlich…",
+        "reasonNoteRequired": "Für den Grund \"Sonstiges\" ist eine Notiz erforderlich.",
+        "dateMustBeFuture": "Datum muss in der Zukunft liegen.",
+        "submit": "Zugriff gewähren"
+      }
+    }
   },
   "onboardingV2": {
     "finishLater": "Später beenden",

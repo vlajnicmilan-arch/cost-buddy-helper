@@ -912,6 +912,10 @@
         "title": "Business",
         "description": "Business terminology and company profiles",
         "locked": "Available on Business plan"
+      },
+      "overrideBadge": {
+        "source": "Admin override",
+        "permanent": "Permanent"
       }
     },
     "profile": "Profile",
@@ -4270,7 +4274,73 @@
     "browser": "Browser",
     "language": "Language",
     "screen": "Screen",
-    "viewport": "Viewport"
+    "viewport": "Viewport",
+    "moduleAccess": {
+      "moduleAccess": "Module access",
+      "openButton": "Module access",
+      "dialogTitle": "Module access",
+      "dialogDesc": "User",
+      "tabGrant": "Grant",
+      "tabHistory": "History",
+      "historyEmpty": "No override grant history.",
+      "permanent": "Permanent",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke access",
+      "revokeDesc": "A reason is required and remains visible in history.",
+      "revokeReasonLabel": "Revoke reason",
+      "revokeReasonPh": "E.g. refund, misunderstanding…",
+      "revokeConfirm": "Revoke",
+      "revokeSuccess": "Access revoked",
+      "revokeError": "Revoke failed",
+      "grantSuccess": "Access granted ({{n}})",
+      "grantError": "Grant error",
+      "reasonCode": {
+        "refund": "Refund",
+        "beta_tester": "Beta tester",
+        "internal": "Internal",
+        "partner": "Partner",
+        "support": "Support",
+        "other": "Other"
+      },
+      "status": {
+        "active": "Active",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "actor": {
+        "system": "System"
+      },
+      "field": {
+        "grantedBy": "Granted by",
+        "duration": "Duration",
+        "reason": "Reason",
+        "revokedBy": "Revoked by",
+        "grantedAt": "Granted at"
+      },
+      "conflict": {
+        "title": "Active grant exists",
+        "desc": "A new grant cannot override an existing active one. Revoke it explicitly first, then create a new one."
+      },
+      "duration": {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "365d": "1 year",
+        "permanent": "Permanent",
+        "custom": "Custom…"
+      },
+      "form": {
+        "modules": "Modules",
+        "duration": "Duration",
+        "reasonCode": "Reason",
+        "reasonNote": "Note",
+        "reasonNotePh": "Optional…",
+        "reasonNoteRequiredPh": "Explanation required…",
+        "reasonNoteRequired": "For reason \"Other\" a note is required.",
+        "dateMustBeFuture": "Date must be in the future.",
+        "submit": "Grant access"
+      }
+    }
   },
   "onboardingV2": {
     "finishLater": "Finish later",

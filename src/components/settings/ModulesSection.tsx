@@ -19,17 +19,22 @@ import {
   Lock,
   Sparkles,
   Check,
+  ShieldCheck,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useModuleStates } from '@/hooks/useModuleStates';
+import { useMyActiveModuleGrants, GrantModule } from '@/hooks/useMyActiveModuleGrants';
 import {
   getSettingsCardState,
   type AppModule,
   type SettingsCardState,
 } from '@/lib/moduleVisibility';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+
 
 interface ModulesSectionProps {
   /** Otvara BusinessProfileDialog (Tvrtke) iz parenta. */
@@ -70,9 +75,11 @@ export const ModulesSection = ({
     setBusinessFeatureEnabled,
   } = useAppState();
   const moduleStates = useModuleStates();
+  const { getGrant } = useMyActiveModuleGrants();
   const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
 
   if (isLocalMode) return null;
+
 
   const cards: ModuleCardConfig[] = [
     {
@@ -161,6 +168,14 @@ export const ModulesSection = ({
     const isLocked = cardState === 'locked';
     const isActive = cardState === 'active';
 
+    // Read-only badge: prikazuje se kad postoji aktivan admin override grant
+    // za ovaj modul. Strogo informativan: bez CTA, bez interakcije.
+    const overrideModule: GrantModule | null =
+      cfg.module === 'projects' ? 'projects' : cfg.module === 'business' ? 'business' : null;
+    const overrideGrant = overrideModule ? getGrant(overrideModule) : undefined;
+    const showOverrideBadge = !!overrideGrant;
+
+
     return (
       <div
         key={cfg.module}
@@ -178,7 +193,7 @@ export const ModulesSection = ({
               >
                 {cfg.title}
               </Label>
-              {isLocked && <Lock className="w-3 h-3 text-muted-foreground" />}
+              {isLocked && !showOverrideBadge && <Lock className="w-3 h-3 text-muted-foreground" />}
               {isActive && (
                 <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary">
                   <Check className="w-3 h-3" />
@@ -187,8 +202,23 @@ export const ModulesSection = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isLocked && cfg.lockedDescription ? cfg.lockedDescription : cfg.description}
+              {isLocked && !showOverrideBadge && cfg.lockedDescription
+                ? cfg.lockedDescription
+                : cfg.description}
             </p>
+
+            {showOverrideBadge && overrideGrant && (
+              <div className="inline-flex items-center gap-1.5 mt-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[11px]">
+                <ShieldCheck className="w-3 h-3" />
+                <span>
+                  {t('settings.modules.overrideBadge.source', 'Admin override')} •{' '}
+                  {overrideGrant.expires_at
+                    ? format(new Date(overrideGrant.expires_at), 'dd.MM.yyyy.', { locale: hr })
+                    : t('settings.modules.overrideBadge.permanent', 'Trajno')}
+                </span>
+              </div>
+            )}
+
 
             {cfg.module === 'business' && isActive && (
               <Button
