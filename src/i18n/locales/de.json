@@ -4678,6 +4678,20 @@
       "read_only": "Nur lesen",
       "deleted": "Gelöscht"
     },
+    "lifecycleNote": {
+      "early_signal": "Krug zeigt erste Anzeichen von Inaktivität. Prüfe Mitglieder und Transaktionen.",
+      "ugrozen": "Krug ist gefährdet — längere Zeit keine Aktivität. Pausieren oder fortsetzen erwägen.",
+      "paused": "Krug ist pausiert. Mutationen sind gestoppt, bis du ihn reaktivierst.",
+      "continuity_window": "Krug ist im Übergang — Erneuerung oder Abschluss möglich.",
+      "read_only": "Krug ist nur lesbar. Aktionen sind deaktiviert.",
+      "terminated": "Krug ist beendet. Historie bleibt sichtbar, keine neuen Änderungen möglich.",
+      "deleted": "Krug wurde gelöscht."
+    },
+    "loadError": {
+      "title": "Krug konnte nicht geladen werden",
+      "body": "Verbindung prüfen und erneut versuchen. Falls es wiederholt auftritt, melde dich."
+    },
+    "notFoundBody": "Möglicherweise gelöscht oder kein Zugriff mehr. Zurück zur Krug-Liste.",
     "transaction": {
       "title": "Krug",
       "loading": "Lädt…"
