@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff, Search, X } from 'lucide-react';
+import { Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck, ShieldCheck, ShieldOff, Search, X, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { AdminModuleAccessDialog } from './AdminModuleAccessDialog';
 import { type AppUser, parseUserAgent, parseDetailedUA, isBanned } from './types';
+
 
 type FilterKey = 'all' | 'admin' | 'banned' | 'pro' | 'business' | 'free';
 
@@ -42,6 +44,8 @@ export const UsersTab = ({
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [moduleAccessUser, setModuleAccessUser] = useState<AppUser | null>(null);
+
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -243,9 +247,42 @@ export const UsersTab = ({
                           <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
                         </Button>
                       )}
+                      <Button size="sm" variant="outline" onClick={() => setModuleAccessUser(u)}>
+                        <KeyRound className="w-3.5 h-3.5 mr-1" />
+                        {t('admin.moduleAccess.openButton', 'Pristup modulima')}
+                      </Button>
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          ))}
+          {hasMoreUsers && filter === 'all' && !search && (
+            <div className="text-center pt-2">
+              <Button variant="outline" size="sm" onClick={onLoadMore} disabled={usersLoading}>
+                {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                Učitaj više
+              </Button>
+            </div>
+          )}
+          {hasMoreUsers && (filter !== 'all' || search) && (
+            <p className="text-center text-[11px] text-muted-foreground pt-2">
+              Filter radi na učitanim korisnicima. Za pretragu svih, isključi filter ili klikni "Učitaj više" bez filtera.
+            </p>
+          )}
+        </div>
+      )}
+
+      <AdminModuleAccessDialog
+        open={!!moduleAccessUser}
+        onOpenChange={(o) => !o && setModuleAccessUser(null)}
+        targetUserId={moduleAccessUser?.id ?? null}
+        targetUserLabel={moduleAccessUser?.display_name || moduleAccessUser?.email || ''}
+      />
+    </div>
+  );
+};
+
               )}
             </div>
           ))}
