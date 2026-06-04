@@ -1,4 +1,4 @@
-# Krug Naming & Migration Strategy v1
+# Krug Naming & Migration Strategy v1.1
 
 Strateški dokument. Zatvara naming + konceptualnu migraciju iz `family_*` jezika i modela u `Krug`. Bez SQL-a, bez koda, bez rollout plana po okolišima.
 
