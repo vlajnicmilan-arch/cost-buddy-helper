@@ -1,136 +1,213 @@
-# Shared Resources Link — Structural Choice v1.1
+# Krug Access Matrix v1
 
-Zatvara **B-1** iz `Reuse / Refactor / Rebuild Plan v1`: koja je **strukturna paradigma** sloja koji povezuje `Krug` s dijeljenim resursima (budgets, payment sources, projekti, ciljevi, dokumenti, …).
+Zatvara pitanje **tko što smije** unutar Kruga — visibility, korištenje, governance, ownership/billing, continuity/takeover — bez ulaska u RLS, UI ili rollout razinu.
 
-Ovaj dokument bira **smjer**, ne schemu. Bez naziva tablica, kolona, FK pravila, RLS politika, trigger strategije. To pripada kasnijem data/schema dokumentu.
+Polazi striktno od već zaključenog:
+`Krug Foundation v4.2`, `Preset Constraint Matrix v1`, `Governance Matrix v1.3`, `Continuity & Billing State Machine v1.3.1`, `Takeover Conditions Spec v1.1`, `Krug Domain/Data Model v1.1`, `Post-Delete Behavior Foundation Patch v1.1`, `Shared Resources Link — Structural Choice v1.1`.
 
----
-
-## 1. Što je već zaključano (ulazi u odluku)
-
-- **Domain potreba B-1**: Krug mora moći "sadržavati" dijeljene resurse dostupne punopravnim članovima. *(Domain Model v1.1 §2.7)*
-- **Foundation pravilo**: transakcija ostaje korisniku, ne Krugu. Resurs je **zaseban entitet** s vlastitim vlasništvom, koji može biti dijeljen.
-- **Post-delete pravilo** (Patch v1.1): kad Krug nestane, Krug-specifična metadata se briše. Link Krug↔resurs mora moći nestati **bez da ubije sam resurs**.
-- **Postojeće stanje**: `family_shared_sources` već postoji kao per-resource link tablica. Budgets/projekti/ciljevi nikad nisu dobili svoj `family_shared_*` ekvivalent.
+Bez novog scopea. Bez novih presetova. Bez `Family`. Bez `majority`.
 
 ---
 
-## 2. Tri kandidatska smjera
+## 1. Osnovne access osi
 
-### Smjer (a) — Jedinstvena generička link tablica
+Pet ortogonalnih osi po kojima se mjeri pravo unutar Kruga. Svaka radnja u sustavu pada u točno jednu od njih.
 
-Jedna polimorfna tablica koja generalizira sve resurse (tip + id resursa).
+### 1.1 Pregled / visibility
+Tko **vidi** da neki entitet uopće postoji i tko vidi njegov sadržaj. Visibility ne implicira pravo izmjene. Privatne stvari (privatne transakcije, privatne bilješke) ostaju izvan ove osi bez obzira na članstvo.
 
-**Plus:**
-- Jedan kod-put za sve resurse.
-- Trivijalno dodavanje novog tipa resursa u budućnosti.
-- Post-delete čišćenje je jedna operacija po Krugu.
+### 1.2 Operativno korištenje
+Tko smije **koristiti** dijeljeni resurs u svakodnevnom radu — knjižiti transakciju na shared payment source, vezati trošak na shared budget, dodavati stavke pod shared projekt. Ne uključuje promjenu samog resursa, samo njegovu uporabu.
 
-**Minus:**
-- Polimorfne reference nemaju pravi FK ni na jednu specifičnu tablicu — moraju se simulirati trigerima ili viewovima. U Postgresu uz RLS to postaje neugodno jer per-resource provjera vlasništva traži grananje po tipu resursa unutar policy-ja.
-- Postojeća infrastruktura (`family_shared_sources` + sinkronizacija na nižim slojevima) bi se morala raspisati od nule.
-- Performance regresija na hot pathu (svaki upit ide kroz polimorfni sloj umjesto direktno).
+### 1.3 Governance odluke
+Tko smije **predložiti**, tko **potvrditi**, tko **odbiti** strukturne odluke Kruga (vidi Governance Matrix v1.3): promjena preseta, kooptacija, isključenje, promjena pravila, raspuštanje. Ovo je sloj iznad operativnog korištenja.
 
-### Smjer (b) — Per-resource link tablice, rename + standardizacija konvencije
+### 1.4 Ownership / billing posebna prava
+Tko nosi **billing odgovornost** za Krug, tko može mijenjati billing kontekst, tko može pokrenuti gašenje Kruga s billing strane. Ekskluzivno owner-ov sloj dok takeover ne nastupi.
 
-Svaki tip resursa ima vlastitu link tablicu (postojeća `family_shared_sources` se renameira, novi tipovi dobivaju vlastite). Sve dijele istu konvenciju i shape, ali su fizički odvojene.
-
-**Plus:**
-- Pravi FK enforcement na razini baze (link zna točno na koji tip resursa pokazuje).
-- RLS po tablici je jednostavna i fokusirana — ne mora granati po tipu.
-- **Postojeća `family_shared_sources` infrastruktura ostaje funkcionalna** — rename + zamjena reference na Krug umjesto na obitelj.
-- M:N između Kruga i resursa je prirodno očuvan (isti resurs može biti dijeljen u više Krugova).
-
-**Minus:**
-- N tablica umjesto 1. Više boilerplatea pri dodavanju novog tipa resursa.
-- Konvencija mora biti **strogo standardizirana** preko svih per-resource tablica, inače model degenerira u "skupinu sličnih tablica s različitim ponašanjem".
-- Kod-put nije sasvim DRY — trebaju per-resource hookovi, ali to je već stvarnost u app-u.
-
-### Smjer (c) — Pripadnost Krugu direktno na resursu, bez link tablice
-
-Resurs sam nosi referencu na Krug kojem pripada (umjesto zasebne link tablice).
-
-**Minus — fatalni za naš model:**
-- **Resurs može biti dijeljen u najviše jednom Krugu istovremeno.** Korisnik koji je u dvije obitelji ne može isti resurs dijeliti u oba Kruga. M:N je izgubljen.
-- **Vlasništvo se miješa s dijeljenjem** — semantika "tko ovo posjeduje" postaje dvosmislena kad se Krug briše.
-- **Post-delete** traži pisanje po samim resursima pri brisanju Kruga — širi blast radius i odstupa od foundation pravila "Krug je kontekst, ne vlasnik".
+### 1.5 Continuity / takeover posebna prava
+Tko smije **inicirati**, **potvrditi** ili **blokirati** continuity/takeover tranziciju (vidi Continuity & Billing State Machine v1.3.1 i Takeover Conditions Spec v1.1). Privremena prava koja se aktiviraju samo u definiranim stanjima Kruga, ne u steady-state.
 
 ---
 
-## 3. Odluka
+## 2. Matrix po vrstama članova i presetima
 
-**Smjer (b) — per-resource link tablice s rename + standardizacijom konvencije.**
+Tri vrste članova prema foundationu:
+- **owner** — kreator/billing nositelj Kruga
+- **punopravni član** — član s punim governance pravima unutar preseta
+- **obični član** — član s ograničenim governance pravima
 
-### Razlozi
+Za svaki preset niže matrica opisuje što svaka vrsta člana smije. Ako preset ne razlikuje "punopravni" i "obični" (npr. Supružnik/partner je strogo 2-osobni paritet), to je eksplicitno označeno.
 
-1. **Najmanje rizika za već radeći kod.** Postojeća infrastruktura je zaključana i testirana; rename je deterministička transformacija, ne arhitekturno prepisivanje.
-2. **Pravi FK enforcement** na razini baze. Polimorfne reference (smjer a) su poznata anti-paterna u Postgresu uz RLS.
-3. **Foundation poštivanje.** Resurs ostaje svoj entitet. Link tablica je čista posrednica koja se može ukloniti bez dodirivanja resursa — što post-delete pravilo i traži.
-4. **M:N je očuvan.** Isti resurs može biti dijeljen u više Krugova. Smjer (c) to ne dopušta; smjer (a) dopušta uz polimorfnu cijenu.
-5. **Postupnost.** Smjer (b) dopušta da se najprije migrira samo postojeća link tablica, dok se ostali tipovi resursa dodaju tek kad ih stvarno zatreba prvi feature. Smjer (a) traži cijeli sloj od dana 1.
+### 2.1 Preset: Supružnik / partner
 
-### Što ova odluka **NE** propisuje (svjesno izvan razine ovog dokumenta)
+Strogo dva člana, oba punopravna po definiciji preseta. Kategorija "obični član" se u ovom presetu **ne pojavljuje**.
 
-- točne nazive pojedinih tablica
-- točan shape kolona, indekse, UNIQUE constraintove
-- FK pravila (CASCADE / SET NULL / RESTRICT)
-- konkretne RLS policy-je
-- trigger strategiju i sinkronizaciju s nižim slojevima
-- migracijski redoslijed i backfill strategiju
-- redoslijed kojim se per-resource tablice grade
+**Owner (jedan od dvoje):**
+- vidi: sve unutar Kruga osim privatnih stavki drugog člana
+- koristi: sve shared resurse Kruga
+- predlaže: sve governance odluke koje preset dopušta
+- potvrđuje: governance odluke prema Governance Matrix v1.3 (paritetna potvrda gdje preset to traži)
+- billing: nosi pretplatu Kruga, smije mijenjati billing kontekst, smije pokrenuti gašenje s billing strane
+- continuity/takeover: smije inicirati svoju stranu tranzicije; ne može sam dovršiti takeover bez druge strane prema Takeover Conditions Spec v1.1
+- ne smije: zaobići paritet, jednostrano izbaciti drugog člana, jednostrano promijeniti preset
 
-Sve gore navedeno pripada kasnijem **data/schema dokumentu**, ne ovoj structural-choice razini.
+**Punopravni član (drugi):**
+- vidi: identično owneru osim billing detalja koji su owner-only
+- koristi: identično owneru
+- predlaže / potvrđuje: identično owneru (paritet)
+- billing: ne nosi pretplatu, ne mijenja billing kontekst; smije inicirati takeover prema Takeover Conditions Spec v1.1
+- continuity/takeover: ravnopravan inicijator/potvrditelj prema spec-u
+- ne smije: vidjeti billing detalje ownera, niti jednostrano promijeniti preset
+
+### 2.2 Preset: Su-roditelj
+
+Dva ili više članova, asimetrija dopuštena. Razlikuje "punopravni" (su-roditelj s punim governance pravima) i "obični" (npr. odrasli ukućanin koji nije roditelj, ako preset to dopušta).
+
+**Owner:**
+- vidi: sve unutar Kruga osim privatnih stavki drugih
+- koristi: sve shared resurse
+- predlaže/potvrđuje: prema Governance Matrix v1.3 za Su-roditelj preset
+- billing: standardna ownership prava kao u 2.1
+- continuity/takeover: standardno; takeover prema spec-u
+- ne smije: zaobići governance pravila preseta
+
+**Punopravni član:**
+- vidi: sve shared, osim privatnih stavki drugih i osim billing detalja ownera
+- koristi: sve shared resurse
+- predlaže: sve odluke koje Governance Matrix dopušta punopravnima za ovaj preset
+- potvrđuje: prema Governance Matrix v1.3 (više nego obični član, manje nego owner u billing pitanjima)
+- billing: ne; takeover prema spec-u
+- ne smije: jednostrano gasiti Krug niti mijenjati billing kontekst
+
+**Obični član:**
+- vidi: shared resurse koji su mu eksplicitno dani (vidi §3 i Shared Resources Link — Structural Choice v1.1); ne nužno cijeli sadržaj Kruga
+- koristi: shared resurse na koje ima dani pristup
+- predlaže: samo ono što Governance Matrix v1.3 dopušta običnom članu za Su-roditelj preset (uže od punopravnog)
+- potvrđuje: samo ako Governance Matrix to eksplicitno dopušta; inače glas običnog člana ne ulazi u potvrdu strukturnih odluka
+- billing/takeover: ne
+- ne smije: governance odluke izvan dopuštenog opsega; pristup resursima koji mu nisu eksplicitno dani
+
+### 2.3 Preset: Cimer
+
+Dva ili više članova, niži kohezijski model. Razlikuje punopravnog i običnog člana, ali shared resursi su tipično uži nego u Su-roditelj presetu.
+
+**Owner:**
+- vidi: shared kontekst Kruga, ne privatne stavke drugih
+- koristi: sve shared resurse
+- predlaže/potvrđuje: prema Governance Matrix v1.3 za Cimer preset
+- billing: standardna ownership prava
+- continuity/takeover: standardno; takeover prema spec-u
+- ne smije: zaobići dogovorenu užu kohezijsku semantiku preseta
+
+**Punopravni član:**
+- vidi: shared resurse i shared governance kontekst
+- koristi: sve shared resurse
+- predlaže/potvrđuje: prema Governance Matrix v1.3 (pravila Cimer preseta su uža od Su-roditelj)
+- billing: ne; takeover prema spec-u
+- ne smije: governance opseg izvan onog što Cimer preset eksplicitno dopušta
+
+**Obični član:**
+- vidi: samo eksplicitno dane shared resurse
+- koristi: samo eksplicitno dane shared resurse
+- predlaže: minimalno, prema Governance Matrix v1.3 za Cimer / obični član
+- potvrđuje: u pravilu ne; samo gdje Governance Matrix eksplicitno spominje
+- billing/takeover: ne
+- ne smije: ono što nije eksplicitno dopušteno
 
 ---
 
-## 4. Standardizacijska načela za smjer (b)
+## 3. Access po tipovima objekata
 
-Da smjer (b) ne propadne u "N različitih tablica s različitim konvencijama", kasniji schema dokument mora poštivati ova **načela** (ne konkretna pravila):
+Za svaki tip objekta u Krugu izvodi se isto pitanje: tko ga **vidi**, tko ga **koristi**, tko ga **mijenja**. Pravila ovdje izviru iz §1 i §2 i iz `Shared Resources Link — Structural Choice v1.1` (link tablica je posrednica; resurs ostaje vlasnikov entitet).
 
-1. **Jedinstvena konvencija naziva** za sve per-resource link tablice (točan oblik bira schema dokument).
-2. **Zajednički minimum shape-a** preko svih tablica — link uvijek povezuje točno jedan Krug s točno jednim resursom, plus standardna audit metadata. Konkretne kolone i constraintovi su pitanje schema dokumenta.
-3. **Per-resource proširenja su dopuštena**, ali ne smiju kršiti zajednički minimum.
-4. **Post-delete usklađenost je obavezna**: brisanje Kruga mora ukloniti pripadajuće linkove bez dodirivanja resursa. Mehanizam (CASCADE, trigger, RPC) je pitanje schema dokumenta.
-5. **Sinkronizacija s nižim slojevima** (npr. derivacija članstva iz dijeljenja) ostaje per-tablica i ne smije se generalizirati prije nego stvarno postoji 2+ tablice s identičnim ponašanjem.
+### 3.1 Sam Krug (entitet)
+- **Vidi**: svi članovi Kruga (postojanje, naziv, preset, popis članova prema preset pravilima).
+- **Mijenja meta (naziv, preset)**: prema Governance Matrix v1.3 — tipično owner + paritet ili paritet punopravnih, ovisno o presetu.
+- **Briše/gasi**: owner inicira; tranzicija ide kroz Continuity & Billing State Machine v1.3.1; takeover prema spec-u.
+
+### 3.2 Članstvo (KrugMember)
+- **Vidi popis članova**: svi članovi Kruga.
+- **Vidi role/status pojedinog člana**: svi članovi Kruga (transparentnost je preduvjet governancea).
+- **Dodaje/uklanja člana (kooptacija/isključenje)**: prema Governance Matrix v1.3 po presetu; obični član u pravilu nema ovo pravo.
+- **Mijenja sebi status**: ne; samo izlazak iz Kruga je jednostrana radnja, ostalo ide kroz governance.
+
+### 3.3 Shared payment sources
+- **Vidi postojanje shared source-a**: svi članovi kojima je source eksplicitno dijeljen kroz link sloj (vidi Structural Choice v1.1).
+- **Koristi (knjiži transakciju na njega)**: punopravni članovi kojima je dijeljen; obični članovi samo ako im je eksplicitno dan.
+- **Mijenja sam resurs (preimenuje, gasi)**: **vlasnik resursa**, ne Krug. Krug može samo otkazati dijeljenje (ukloniti link).
+- **Dijeli / uklanja iz dijeljenja**: vlasnik resursa, prema načelima iz Structural Choice v1.1.
+
+### 3.4 Shared budgets
+- **Vidi**: kao 3.3.
+- **Koristi (veže trošak)**: punopravni članovi kojima je dijeljen; obični po eksplicitnom davanju.
+- **Mijenja sam budget (limit, kategorije)**: vlasnik budgeta.
+- **Dijeli/uklanja**: vlasnik budgeta.
+
+### 3.5 Shared projekti
+- **Vidi**: članovi kojima je projekt dijeljen.
+- **Koristi (dodaje stavke, milestone unutar dopuštene role)**: prema project member roli koja je već definirana izvan Kruga (manager/worker/collaborator); Krug ne mijenja te uloge, samo posreduje u dijeljenju.
+- **Mijenja sam projekt**: vlasnik projekta i manager prema postojećim pravilima projekata.
+- **Dijeli/uklanja**: vlasnik projekta.
+
+### 3.6 Shared ciljevi / dokumenti / ostali resursi
+Identičan obrazac kao 3.3–3.5: vlasnik resursa kontrolira sam resurs i dijeljenje; Krug je posrednik kroz link sloj; korištenje slijedi vrstu člana i preset.
+
+### 3.7 Transakcije
+- **Privatne**: vidi i mijenja **isključivo** vlasnik. Krug ne dobiva pristup bez obzira na role.
+- **Shared (na shared resursu)**: vidi vlasnik transakcije + članovi kojima je taj resurs dijeljen, prema visibility pravilima resursa.
+- **Mijenja shared transakciju**: vlasnik transakcije; drugi članovi ne mijenjaju tuđe transakcije.
+- **Post-delete Kruga**: prema Patch v1.1 — transakcija ostaje vlasniku, Krug-specifična metadata se uklanja.
+
+### 3.8 Governance artefakti (prijedlozi, glasovi, odluke)
+- **Vidi**: svi članovi Kruga koje ta odluka pogađa (transparentnost glasanja unutar Kruga).
+- **Predlaže/glasuje/potvrđuje**: striktno prema Governance Matrix v1.3 po presetu i vrsti člana.
+- **Mijenja zatvorenu odluku**: ne; samo nova odluka može nadjačati prethodnu.
+
+### 3.9 Billing / pretplata
+- **Vidi billing detalje**: owner.
+- **Vidi status pretplate Kruga (active/grace/…)**: svi članovi (continuity zahtijeva transparentnost stanja).
+- **Mijenja billing**: owner; takeover prema Takeover Conditions Spec v1.1.
+
+### 3.10 Continuity / takeover artefakti
+- **Vidi continuity stanje Kruga**: svi članovi.
+- **Inicira tranziciju**: prema Continuity & Billing State Machine v1.3.1 i Takeover Conditions Spec v1.1 — owner i/ili definirani punopravni članovi, ovisno o stanju.
+- **Potvrđuje takeover**: prema spec-u; obični članovi nemaju ovo pravo.
 
 ---
 
-## 5. Otvorena pitanja (preporuke, ne zaključane odluke)
+## 4. Odnos prema već zaključenom
 
-Sljedeće je **smisleno razmotriti** u kasnijim dokumentima, ali **nije ovdje zaključano**:
-
-- **Tko smije čitati shared resource link.** Intuitivno: punopravni članovi Kruga. Ali foundation još nije eksplicitno definirao access matrix za shared resurse po statusu članstva (`punopravni` / `read_only` / itd.). Ovo se rješava ili u foundation dopuni ili u schema dokumentu — ovdje se ostavlja kao **preporuka, ne pravilo**.
-- **Tko smije kreirati / ukloniti link.** Intuitivno: vlasnik resursa. Isto pitanje access matrixa — preporuka, ne pravilo.
-- **Role na samom linku** (viewer / editor na razini Kruga) vs. role na nižem sloju članstva resursa — odluka po pojedinoj tablici, ne foundation pitanje.
-- **Unificirani query view** preko svih per-resource link tablica — query/UI layer, ne struktura.
-
----
-
-## 6. Kritički osvrt
-
-**Snaga:** poklapa se s realnim stanjem koda. Najmanja udaljenost između "danas radi" i "sutra radi za Krug". Ortogonalno post-delete pravilu.
-
-**Slabost:** dodavanje novog tipa resursa u budućnosti traži novu tablicu + novi hook. Više boilerplatea od smjera (a). Prihvatljivo jer se novi tipovi resursa dodaju rijetko.
-
-**Rizik:** ako se standardizacijska načela iz §4 ne provedu strogo, model degenerira. Mitigacija je odgovornost schema dokumenta, ne ovoga.
+- **Governance Matrix v1.3** ostaje **autoritet** za sve "predlaže / potvrđuje / odbija" pojedinosti po presetu i vrsti člana. Ovaj dokument ne dodaje nova governance pravila, samo ih organizira kroz pet osi i tri vrste člana.
+- **Continuity & Billing v1.3.1 + Takeover v1.1** ostaju autoritet za sve continuity/takeover specifičnosti. Ovdje su samo locirani u §1.4 i §1.5.
+- **Preset Constraint Matrix v1** definira koje vrste članova preset uopće dopušta (npr. Supružnik/partner nema "običnog člana"). Ova matrica ne smije proizvesti kombinaciju koju preset ne dopušta.
+- **Structural Choice v1.1** definira **kako** se shared resurs vezuje na Krug. Ova matrica koristi taj sloj kao izvor pravila "tko vidi/koristi shared resurs", ali ne propisuje schemu.
+- **Post-Delete Patch v1.1** određuje što se dogodi s pristupom nakon brisanja Kruga. §3.7 to eksplicitno spominje za transakcije; isti princip vrijedi za sve shared objekte (link nestaje, resurs ostaje vlasniku).
 
 ---
 
-## 7. Status
+## 5. Što ova matrica eksplicitno **NE** rješava
 
-- **B-1 zatvoren.** Izabran smjer **(b)**. Konkretizacija (nazivi, kolone, RLS, triggeri) prepuštena kasnijem data/schema dokumentu.
-- **B-2 zatvoren** (Patch v1.1).
-- **Reuse / Refactor / Rebuild Plan v1** više nema blocked stavki. `KrugSharedResourceLink` iz Domain Model v1.1 §2.7 sada je klasificiran kao **Refactor (per-resource rename + standardizacija)**, ne kao novi generički entitet.
+Svjesno izvan scope-a:
+- RLS policy formulacije, helper funkcije, security definer rutine
+- konkretni UI placement (gdje se gumb pojavljuje, koje stanje se prikazuje)
+- rollout / migracija postojećih `family_*` uloga u Krug vrste člana
+- konkretni nazivi role enuma u bazi
+- access matrix za **system-level audit** (admin/forensic) — to je odvojen sloj izvan Kruga
+- ponašanje za vanjske (ne-članove) — izvan domene Kruga
 
 ---
 
-## 8. Što slijedi (preporuka, ne odluka)
+## 6. Status
 
-Sljedeći logičan dokument je **`Krug Implementation Order v1`** — prevodi zaključani Reuse / Refactor / Rebuild Plan + ovaj structural choice u redoslijed izgradnje.
+- **Access matrix je zaključan na razini načela.** Sve buduće implementacije (RLS, UI gating, hook-ovi) moraju se moći obrazložiti kroz §1 osi i §2 matricu, bez novih izmišljenih pravila.
+- Ako se u kasnijem dokumentu pojavi potreba za pravilom koje ova matrica ne pokriva, prvo se vraća **ovdje** i nadograđuje na razini načela, pa tek onda u implementaciju.
 
-Alternative na foundation razini:
-- **`Krug Access Matrix v1`** — eksplicitno tko što smije po statusu članstva (zatvara otvorena pitanja iz §5)
-- **`Krug Naming & Migration Strategy v1`** — kad i kako `family_*` postaje `krug_*` u kodu i UI-u
-- **`Krug i18n Namespace v1`** — strukturni plan za `krug.*` ključeve
+---
 
-Reci "prihvaćam v1.1" pa idemo dalje, ili javi korekcije.
+## 7. Što slijedi (preporuka, ne odluka)
+
+- **`Krug Implementation Order v1`** — prevodi cijeli foundation (uključujući ovu matricu) u redoslijed izgradnje.
+- Alternativa: **`Krug Naming & Migration Strategy v1`** — kad i kako `family_*` postaje `krug_*` u kodu, RLS-u i UI-u.
+
+Reci "prihvaćam v1" ili javi korekcije.
