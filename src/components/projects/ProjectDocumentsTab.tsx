@@ -23,12 +23,14 @@ import { EmptyState } from '@/components/EmptyState';
 
 interface ProjectDocumentsTabProps {
   projectId: string;
+  isReadOnly?: boolean;
 }
 
 type AnyDoc = ProjectDocumentRow & { document_kind?: string; location_coords?: string | null; location_name?: string | null; captured_at?: string | null };
 
-export const ProjectDocumentsTab = ({ projectId }: ProjectDocumentsTabProps) => {
+export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDocumentsTabProps) => {
   const { t } = useTranslation();
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { documents, loading, uploadDocument, removeDocument, updateAnalysis } = useProjectDocuments(projectId);
   const { takePhoto, pickFromGallery, cameraInputRef, galleryInputRef } = useNativeCamera();
