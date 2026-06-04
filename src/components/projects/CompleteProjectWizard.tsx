@@ -103,6 +103,7 @@ export const CompleteProjectWizard = ({
         .map(([id]) => id);
 
       if (idsToComplete.length > 0) {
+        if (!guard()) return;
         try {
           setSubmitting(true);
           const { error } = await supabase
