@@ -44,6 +44,11 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
   const [actingId, setActingId] = useState<string | null>(null);
 
   const locale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? de : hr;
+  const authorIds = useMemo(
+    () => Array.from(new Set(pending.map((e) => e.user_id).filter(Boolean) as string[])),
+    [pending],
+  );
+  const profiles = useUserProfiles(authorIds);
 
   const openDetail = (e: Expense) => {
     setSelected(e);
