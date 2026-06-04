@@ -13,19 +13,22 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, User, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
 import { KrugApprovalQueue } from './KrugApprovalQueue';
 
