@@ -33,6 +33,8 @@ interface ProjectCardProps {
   isArchived?: boolean;
   onClick: (project: ProjectWithOwnership) => void;
   onMigrateToBusiness?: (project: ProjectWithOwnership) => void;
+  /** Owner-readonly (downgrade): owner action items in dropdown become disabled + toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectCard = ({
@@ -47,7 +49,8 @@ export const ProjectCard = ({
   onArchive,
   isArchived,
   onClick,
-  onMigrateToBusiness
+  onMigrateToBusiness,
+  isReadOnly = false
 }: ProjectCardProps) => {
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
