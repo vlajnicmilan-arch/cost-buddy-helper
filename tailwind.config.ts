@@ -74,6 +74,10 @@ export default {
           DEFAULT: "hsl(var(--ai))",
           foreground: "hsl(var(--ai-foreground))",
         },
+        module: {
+          DEFAULT: "hsl(var(--module-accent))",
+          foreground: "hsl(var(--module-accent-foreground))",
+        },
         category: {
           food: "hsl(var(--category-food))",
           transport: "hsl(var(--category-transport))",
