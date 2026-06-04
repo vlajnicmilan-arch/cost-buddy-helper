@@ -6,6 +6,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useModuleStates } from '@/hooks/useModuleStates';
 import { getNavVisibility, type AppModule } from '@/lib/moduleVisibility';
 import { useHaptics } from '@/hooks/useHaptics';
+import { MODULE_NAV_CLASSES, type ModuleKey } from '@/lib/moduleColors';
+import { cn } from '@/lib/utils';
 
 type NavItem = {
   path: string;
