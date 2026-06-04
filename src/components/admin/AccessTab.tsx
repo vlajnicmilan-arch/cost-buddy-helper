@@ -34,7 +34,7 @@ export const AccessTab = ({
       const nowIso = new Date().toISOString();
       const { data } = await supabase
         .from('admin_module_grants')
-        .select('user_id, module, revoked_at, expires_at')
+        .select('user_id, module, revoked_at, expires_at, reason_code')
         .is('revoked_at', null)
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
       setGrants(
@@ -43,6 +43,7 @@ export const AccessTab = ({
           module: r.module,
           revoked_at: r.revoked_at,
           expires_at: r.expires_at,
+          reason_code: r.reason_code,
         }))
       );
     })();

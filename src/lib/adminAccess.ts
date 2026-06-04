@@ -16,11 +16,40 @@ export type GrantModule = 'projects' | 'business';
 export type BillingTier = 'free' | 'pro' | 'business';
 export type AccessSource = 'billing' | 'override';
 
+/**
+ * Domain tip za razlog admin overridea. Živi u domain sloju (adminAccess),
+ * NE u hook sloju. Hookovi i komponente importiraju odavde.
+ */
+export type GrantReasonCode =
+  | 'refund'
+  | 'beta_tester'
+  | 'internal'
+  | 'partner'
+  | 'support'
+  | 'other';
+
+/** Fiksna lista svih reason codeova — koristiti za iteraciju u UI. */
+export const GRANT_REASON_CODES: readonly GrantReasonCode[] = [
+  'refund',
+  'beta_tester',
+  'internal',
+  'partner',
+  'support',
+  'other',
+] as const;
+
+/** i18n ključ za prikaz reason codea (reuse postojećih `admin.moduleAccess.reasonCode.*`). */
+export function grantReasonCodeI18nKey(code: GrantReasonCode): string {
+  return `admin.moduleAccess.reasonCode.${code}`;
+}
+
 export interface ActiveGrantLike {
   user_id: string;
   module: GrantModule;
   revoked_at?: string | null;
   expires_at?: string | null;
+  /** PR3: opcionalno; koristi se za override reason breakdown po modulu. */
+  reason_code?: GrantReasonCode | null;
 }
 
 export interface ModuleAccess {
@@ -286,4 +315,59 @@ export function formatExpiryBadge(
   }
   const days = Math.floor(hours / 24);
   return { i18nKey: 'admin.users.expiry.expiresInDays', params: { count: days } };
+}
+
+// ---------------------------------------------------------------------------
+// PR3: override reason breakdown (čisti override model, BEZ billing miješanja)
+// ---------------------------------------------------------------------------
+
+/** Normalizira null/undefined `reason_code` u `'other'`. */
+function normalizeReason(code: GrantReasonCode | null | undefined): GrantReasonCode {
+  return code ?? 'other';
+}
+
+/**
+ * Grupira AKTIVNE override grantove po `reason_code` unutar zadanog modula.
+ *
+ * Vraća SAMO razloge s count > 0 (zero reasoni se ne pojavljuju).
+ * Null/undefined `reason_code` mapira u `'other'`.
+ * Aktivan = `isGrantActive(g, now)`.
+ *
+ * Strogo per-modul: drugi moduli se ignoriraju, nema križanja.
+ * BEZ billing miješanja — billing tier ne ulazi u ovaj brojač.
+ */
+export function groupActiveGrantsByReason(
+  grants: ActiveGrantLike[],
+  module: GrantModule,
+  now: Date = new Date()
+): Partial<Record<GrantReasonCode, number>> {
+  const out: Partial<Record<GrantReasonCode, number>> = {};
+  for (const g of grants) {
+    if (g.module !== module) continue;
+    if (!isGrantActive(g, now)) continue;
+    const code = normalizeReason(g.reason_code);
+    out[code] = (out[code] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Vraća aktivne grantove za zadani `module` koji match-aju `reasonCode`.
+ *
+ * `module` je OBAVEZAN prvi diskriminator — nemoguće je pozvati filter
+ * koji bi miješao module ili spuznuo u billing-aware logiku.
+ * Null/undefined `reason_code` matchira `'other'`.
+ */
+export function filterGrantsByReason(
+  grants: ActiveGrantLike[],
+  module: GrantModule,
+  reasonCode: GrantReasonCode,
+  now: Date = new Date()
+): ActiveGrantLike[] {
+  return grants.filter(
+    (g) =>
+      g.module === module &&
+      isGrantActive(g, now) &&
+      normalizeReason(g.reason_code) === reasonCode
+  );
 }

@@ -18,6 +18,7 @@ import {
   deriveEffectiveAccess,
   isGrantExpiringSoon,
   getEarliestUpcomingExpiry,
+  grantReasonCodeI18nKey,
   type ActiveGrantLike,
 } from '@/lib/adminAccess';
 import type { DrilldownIntent } from './access/ModuleAccessOverview';
@@ -83,10 +84,25 @@ export const UsersTab = ({
     setFilterRaw(k);
   }, []);
 
-  // Konzumiranje pendingUserContext: postavi activeContext + mapiraj filter
+  // Konzumiranje pendingUserContext: postavi activeContext + mapiraj filter.
+  // Sekundarni UX: ako isti drill-down (module + source + reasonCode) već vrijedi,
+  // klik na isti reason chip briše SAMO treću dimenziju. Glavni izlaz ostaje [×] na chipu.
   useEffect(() => {
     if (!pendingUserContext) return;
-    setActiveContext(pendingUserContext);
+    setActiveContext((prev) => {
+      if (
+        prev &&
+        pendingUserContext.module === prev.module &&
+        pendingUserContext.source === 'override' &&
+        prev.source === 'override' &&
+        pendingUserContext.reasonCode &&
+        pendingUserContext.reasonCode === prev.reasonCode
+      ) {
+        // Toggle: skini samo reasonCode, zadrži module + source.
+        return { module: prev.module, source: prev.source };
+      }
+      return pendingUserContext;
+    });
     setFilterRaw(
       pendingUserContext.module === 'projects' ? 'hasProjects' : 'hasBusiness'
     );
@@ -97,7 +113,7 @@ export const UsersTab = ({
     const nowIso = new Date().toISOString();
     const { data } = await supabase
       .from('admin_module_grants')
-      .select('user_id, module, revoked_at, expires_at')
+      .select('user_id, module, revoked_at, expires_at, reason_code')
       .is('revoked_at', null)
       .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
     setGrants(
@@ -106,6 +122,7 @@ export const UsersTab = ({
         module: r.module,
         revoked_at: r.revoked_at,
         expires_at: r.expires_at,
+        reason_code: r.reason_code,
       }))
     );
   }, []);
@@ -143,6 +160,18 @@ export const UsersTab = ({
         // Sub-filter iz drill-down konteksta
         if (activeContext?.source === 'billing' && !mod.sources.includes('billing')) return false;
         if (activeContext?.source === 'override' && !mod.sources.includes('override')) return false;
+        // PR3: treća dimenzija — reasonCode (samo uz source: 'override')
+        if (activeContext?.source === 'override' && activeContext.reasonCode) {
+          const moduleKey: 'projects' | 'business' =
+            filter === 'hasProjects' ? 'projects' : 'business';
+          const hasMatchingReason = grants.some(
+            (g) =>
+              g.user_id === u.id &&
+              g.module === moduleKey &&
+              (g.reason_code ?? 'other') === activeContext.reasonCode
+          );
+          if (!hasMatchingReason) return false;
+        }
         return true;
       }
       if (filter === 'overrideActive') {
@@ -190,6 +219,14 @@ export const UsersTab = ({
     return t(`admin.users.activeContext.${key}`);
   })();
 
+  // PR3: treća dimenzija — reason segment context chipa (samo uz override).
+  const activeReasonLabel = (() => {
+    if (!activeContext) return null;
+    if (activeContext.source !== 'override') return null;
+    if (!activeContext.reasonCode) return null;
+    return t(grantReasonCodeI18nKey(activeContext.reasonCode));
+  })();
+
 
 
   return (
@@ -235,6 +272,12 @@ export const UsersTab = ({
             {t('admin.users.activeContext.fromCardPrefix', 'Iz kartice modula:')}
           </span>
           <span className="text-xs font-semibold text-primary">{activeContextLabel}</span>
+          {activeReasonLabel && (
+            <>
+              <span aria-hidden className="text-xs text-primary/60">·</span>
+              <span className="text-xs font-semibold text-primary">{activeReasonLabel}</span>
+            </>
+          )}
           <button
             type="button"
             onClick={() => { setActiveContext(null); setFilterRaw('all'); }}

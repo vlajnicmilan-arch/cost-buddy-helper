@@ -2,13 +2,22 @@ import { useTranslation } from 'react-i18next';
 import { Users, FolderKanban, Building2 } from 'lucide-react';
 import {
   summarizeModuleAccess,
+  groupActiveGrantsByReason,
+  grantReasonCodeI18nKey,
+  GRANT_REASON_CODES,
   type ActiveGrantLike,
+  type GrantReasonCode,
 } from '@/lib/adminAccess';
 import { clickableProps } from '@/lib/a11y';
 
 export type DrilldownIntent = {
   module: 'projects' | 'business';
   source?: 'billing' | 'override';
+  /**
+   * PR3: treća dimenzija. Validno ISKLJUČIVO uz `source: 'override'`.
+   * Nikad ne smije biti postavljen uz `source: 'billing'` ili prazan `source`.
+   */
+  reasonCode?: GrantReasonCode;
 };
 
 interface Props {
@@ -73,6 +82,57 @@ const Stat = ({
   );
 };
 
+/**
+ * PR3: inline reason breakdown ispod Override Stat retka.
+ * Renderira SAMO razloge s count > 0. Ako su svi 0 → ništa ne renderira.
+ * Klik na reason chip → drill-down s `source: 'override'` + `reasonCode`.
+ * BEZ billing miješanja — koristi `groupActiveGrantsByReason` koji ignorira billing.
+ */
+const ReasonBreakdown = ({
+  grants,
+  module,
+  onDrilldown,
+  moduleLabel,
+}: {
+  grants: ActiveGrantLike[];
+  module: 'projects' | 'business';
+  onDrilldown?: (intent: DrilldownIntent) => void;
+  moduleLabel: string;
+}) => {
+  const { t } = useTranslation();
+  const grouped = groupActiveGrantsByReason(grants, module);
+  // Deterministički redoslijed iz GRANT_REASON_CODES, samo > 0
+  const entries = GRANT_REASON_CODES
+    .map((code) => [code, grouped[code] ?? 0] as const)
+    .filter(([, count]) => count > 0);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="pt-1 pl-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-muted-foreground">
+      {entries.map(([code, count], i) => {
+        const reasonLabel = t(grantReasonCodeI18nKey(code));
+        return (
+          <span key={code} className="inline-flex items-center gap-1.5">
+            {i > 0 && <span aria-hidden className="text-muted-foreground/50">·</span>}
+            <button
+              type="button"
+              onClick={() =>
+                onDrilldown?.({ module, source: 'override', reasonCode: code })
+              }
+              aria-label={`${moduleLabel} — ${reasonLabel} ${count}`}
+              className="inline-flex items-center gap-1 rounded px-1 -mx-1 hover:text-foreground hover:bg-muted/60 underline decoration-dotted decoration-muted-foreground/40 underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span>{reasonLabel}</span>
+              <span className="font-medium text-foreground">{count}</span>
+            </button>
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
 const ModuleCard = ({
   icon,
   label,
@@ -86,6 +146,7 @@ const ModuleCard = ({
   intersectionLabel,
   totalLabel,
   onDrilldown,
+  grants,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -99,6 +160,7 @@ const ModuleCard = ({
   intersectionLabel: string;
   totalLabel: string;
   onDrilldown?: (intent: DrilldownIntent) => void;
+  grants: ActiveGrantLike[];
 }) => (
   <div className="bg-card border rounded-xl p-4 space-y-2">
     <div className="flex items-center gap-2">
@@ -124,6 +186,13 @@ const ModuleCard = ({
         value={override}
         onClick={onDrilldown ? () => onDrilldown({ module, source: 'override' }) : undefined}
         ariaLabel={`${label} — ${overrideLabel}`}
+      />
+      {/* PR3: inline reason breakdown — samo override, BEZ billing miješanja */}
+      <ReasonBreakdown
+        grants={grants}
+        module={module}
+        onDrilldown={onDrilldown}
+        moduleLabel={label}
       />
       {intersection > 0 && (
         <div className="flex justify-between pt-0.5 text-muted-foreground/80">
@@ -187,6 +256,7 @@ export const ModuleAccessOverview = ({
           intersectionLabel={intersectionLabel}
           totalLabel={totalLabel}
           onDrilldown={onDrilldown}
+          grants={grants}
         />
 
         <ModuleCard
@@ -202,6 +272,7 @@ export const ModuleAccessOverview = ({
           intersectionLabel={intersectionLabel}
           totalLabel={totalLabel}
           onDrilldown={onDrilldown}
+          grants={grants}
         />
       </div>
     </div>
