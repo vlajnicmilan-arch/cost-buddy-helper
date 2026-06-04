@@ -217,11 +217,11 @@ export const ProjectDocumentsTab = ({ projectId, isReadOnly = false }: ProjectDo
           <Button variant="ghost" size="sm" onClick={() => handlePreview(doc)}>
             <Eye className="w-3.5 h-3.5 mr-1" /> {t('common.view', 'Pregled')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleAnalyze(doc)} disabled={analyzingId === doc.id}>
+          <Button variant="ghost" size="sm" onClick={() => handleAnalyze(doc)} disabled={analyzingId === doc.id || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
             {analyzingId === doc.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
             {t('projects.documents.analyze', 'AI analiza')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDocToDelete(doc)}>
+          <Button variant="ghost" size="sm" onClick={() => { if (guard()) setDocToDelete(doc); }} disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
             <Trash2 className="w-3.5 h-3.5 text-destructive" />
           </Button>
         </div>
