@@ -339,9 +339,11 @@ export const ProjectCard = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-[70]" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuItem
+                disabled={isReadOnly}
                 onSelect={(e) => {
                   e.preventDefault();
                   setActionsOpen(false);
+                  if (!guard()) return;
                   onEdit(project);
                 }}
               >
@@ -350,9 +352,11 @@ export const ProjectCard = ({
               </DropdownMenuItem>
               {onMigrateToBusiness && !project.business_profile_id && (
                 <DropdownMenuItem
+                  disabled={isReadOnly}
                   onSelect={(e) => {
                     e.preventDefault();
                     setActionsOpen(false);
+                    if (!guard()) return;
                     onMigrateToBusiness(project);
                   }}
                 >
@@ -362,9 +366,11 @@ export const ProjectCard = ({
               )}
               {onArchive && (
                 <DropdownMenuItem
+                  disabled={isReadOnly}
                   onSelect={(e) => {
                     e.preventDefault();
                     setActionsOpen(false);
+                    if (!guard()) return;
                     onArchive(project.id);
                   }}
                 >
@@ -380,10 +386,12 @@ export const ProjectCard = ({
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                disabled={isReadOnly}
                 className="text-destructive focus:text-destructive"
                 onSelect={(e) => {
                   e.preventDefault();
                   setActionsOpen(false);
+                  if (!guard()) return;
                   onDelete(project.id);
                 }}
               >
