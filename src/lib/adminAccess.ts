@@ -196,3 +196,94 @@ export function sortGrantsByLatestEvent<T extends GrantSortRow>(rows: T[]): T[] 
     return b.id.localeCompare(a.id);
   });
 }
+
+// ---------------------------------------------------------------------------
+// PR2: expiring grant helpers (strict rolling, hardcoded 7d threshold)
+// ---------------------------------------------------------------------------
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Sati do isteka. `null` ako nema `expires_at` (perpetual). Može biti negativan. */
+export function hoursUntilGrantExpiry(
+  grant: Pick<ActiveGrantLike, 'expires_at'>,
+  now: Date = new Date()
+): number | null {
+  if (!grant.expires_at) return null;
+  return (new Date(grant.expires_at).getTime() - now.getTime()) / MS_PER_HOUR;
+}
+
+/**
+ * `true` ako je grant aktivan (nije revoked), ima `expires_at`,
+ * i `0 < (expires_at − now) < thresholdDays × 24h` (strict rolling).
+ * Perpetual i revoked grantovi vraćaju `false`.
+ */
+export function isGrantExpiringSoon(
+  grant: Pick<ActiveGrantLike, 'revoked_at' | 'expires_at'>,
+  now: Date = new Date(),
+  thresholdDays: number = 7
+): boolean {
+  if (grant.revoked_at) return false;
+  if (!grant.expires_at) return false;
+  const hours = (new Date(grant.expires_at).getTime() - now.getTime()) / MS_PER_HOUR;
+  if (hours <= 0) return false;
+  return hours < thresholdDays * 24;
+}
+
+/**
+ * Najraniji `expires_at` među aktivnim grantovima korisnika koji match-aju
+ * `isGrantExpiringSoon`. `null` ako nema niti jednog.
+ */
+export function getEarliestUpcomingExpiry(
+  grants: ActiveGrantLike[],
+  userId: string,
+  now: Date = new Date(),
+  thresholdDays: number = 7
+): Date | null {
+  let min: number | null = null;
+  for (const g of grants) {
+    if (g.user_id !== userId) continue;
+    if (!isGrantExpiringSoon(g, now, thresholdDays)) continue;
+    const t = new Date(g.expires_at as string).getTime();
+    if (min === null || t < min) min = t;
+  }
+  return min === null ? null : new Date(min);
+}
+
+export interface ExpiryBadgeResult {
+  i18nKey: string;
+  params?: { count: number };
+}
+
+/**
+ * Determinističko mapiranje `expiresAt` (Date | string) u i18n ključ + opcionalni `count`.
+ *
+ * Buckets (`d = expiresAt − now`, decimali se NE prikazuju u UI):
+ *   d < 1h            → `admin.users.expiry.expiresSoon`
+ *   1h ≤ d < 24h      → `admin.users.expiry.expiresToday`
+ *   24h ≤ d < 48h     → `admin.users.expiry.expiresInDay`     (1 dan, bez plurala)
+ *   48h ≤ d < 7×24h   → `admin.users.expiry.expiresInDays`    (+ {count: N}, N = floor(h/24))
+ *   d ≥ 7×24h         → `admin.users.expiry.expiresInDays`    (graceful, ali pozivatelj
+ *                                                              uglavnom već filtrira)
+ *
+ * Negativan/isteknut grant ne bi smio doći ovdje — vraća `expiresSoon` defenzivno.
+ */
+export function formatExpiryBadge(
+  expiresAt: Date | string,
+  now: Date = new Date()
+): ExpiryBadgeResult {
+  const expiryMs =
+    expiresAt instanceof Date ? expiresAt.getTime() : new Date(expiresAt).getTime();
+  const hours = (expiryMs - now.getTime()) / MS_PER_HOUR;
+
+  if (hours < 1) {
+    return { i18nKey: 'admin.users.expiry.expiresSoon' };
+  }
+  if (hours < 24) {
+    return { i18nKey: 'admin.users.expiry.expiresToday' };
+  }
+  if (hours < 48) {
+    return { i18nKey: 'admin.users.expiry.expiresInDay' };
+  }
+  const days = Math.floor(hours / 24);
+  return { i18nKey: 'admin.users.expiry.expiresInDays', params: { count: days } };
+}
