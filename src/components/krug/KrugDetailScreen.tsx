@@ -56,6 +56,8 @@ export function KrugDetailScreen({ krugId }: Props) {
     () => members.filter((m) => m.kind === 'owner' || m.kind === 'punopravni').length,
     [members],
   );
+  const memberIds = useMemo(() => members.map((m) => m.user_id), [members]);
+  const profileMap = useUserProfiles(memberIds);
 
   if (isLoading) {
     return <Card className="p-6 text-sm text-muted-foreground">{t('common.loading', 'Učitavanje…')}</Card>;
