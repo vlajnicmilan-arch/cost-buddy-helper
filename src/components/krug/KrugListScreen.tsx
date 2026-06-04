@@ -6,13 +6,13 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Circle, Plus } from 'lucide-react';
+import { Circle, Plus, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useMyKrugs } from '@/hooks/useKrug';
 import { clickableProps } from '@/lib/a11y';
 import { CreateKrugDialog } from './CreateKrugDialog';
+import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 interface Props {
   onSelect: (krugId: string) => void;
