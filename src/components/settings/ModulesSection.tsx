@@ -19,17 +19,22 @@ import {
   Lock,
   Sparkles,
   Check,
+  ShieldCheck,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useModuleStates } from '@/hooks/useModuleStates';
+import { useMyActiveModuleGrants, GrantModule } from '@/hooks/useMyActiveModuleGrants';
 import {
   getSettingsCardState,
   type AppModule,
   type SettingsCardState,
 } from '@/lib/moduleVisibility';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+
 
 interface ModulesSectionProps {
   /** Otvara BusinessProfileDialog (Tvrtke) iz parenta. */
