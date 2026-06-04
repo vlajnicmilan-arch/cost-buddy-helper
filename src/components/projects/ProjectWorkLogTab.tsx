@@ -113,6 +113,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
 
 
   const handleSubmit = async (input: any) => {
+    if (!guard()) return false;
     if (editingLog) {
       return update(editingLog.id, input);
     }
@@ -120,11 +121,13 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
   };
 
   const openCreate = () => {
+    if (!guard()) return;
     setEditingLog(null);
     setDialogOpen(true);
   };
 
   const openEdit = (log: ProjectWorkLog) => {
+    if (!guard()) return;
     setEditingLog(log);
     setDialogOpen(true);
   };
