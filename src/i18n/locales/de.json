@@ -4743,8 +4743,13 @@
           "cannot_add_self": "Du kannst dich nicht selbst hinzufügen.",
           "not_owner": "Nur der Krug-Eigentümer kann Mitglieder hinzufügen.",
           "invalid_input": "Ungültige E-Mail.",
+          "cap_exceeded": "Die maximale Anzahl von Vollmitgliedern für dieses Preset ist erreicht.",
           "generic": "Fehler beim Hinzufügen."
         }
+      },
+      "empty": {
+        "owner": "Der Krug hat noch keine weiteren Mitglieder. Lade jemanden über „Mitglied hinzufügen“ ein.",
+        "member": "Der Krug hat noch keine weiteren Mitglieder."
       },
       "role": {
         "promoted": "Zum Vollmitglied befördert",
