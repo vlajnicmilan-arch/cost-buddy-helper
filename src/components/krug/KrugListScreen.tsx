@@ -1,8 +1,10 @@
 /**
  * Krug list — moji krugovi (owner ili član).
  *
- * Skeleton: prazan state s tipiziranim CTA-em koji NE kreira preset (Wave 2).
+ * Empty state CTA i header CTA otvaraju `CreateKrugDialog`. Po uspjehu
+ * roditeljska stranica preuzima i otvara detail screen za novi Krug.
  */
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Circle, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -10,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useMyKrugs } from '@/hooks/useKrug';
 import { clickableProps } from '@/lib/a11y';
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { CreateKrugDialog } from './CreateKrugDialog';
 
 interface Props {
   onSelect: (krugId: string) => void;
@@ -19,20 +21,18 @@ interface Props {
 export function KrugListScreen({ onSelect }: Props) {
   const { t } = useTranslation();
   const { data: krugs = [], isLoading } = useMyKrugs();
-
-  const handleCreate = () => {
-    // Wave 2: preset wizard. Za sada ne uvodimo novu product odluku iz UI sloja.
-    showSuccess(t('krug.createSoon', 'Kreiranje Kruga uskoro'));
-  };
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <div className="space-y-3">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('krug.title', 'Krug')}</h1>
-        <Button size="sm" onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-1" />
-          {t('krug.create', 'Novi krug')}
-        </Button>
+        {krugs.length > 0 && (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" />
+            {t('krug.create.cta', 'Novi Krug')}
+          </Button>
+        )}
       </header>
 
       {isLoading ? (
@@ -40,7 +40,7 @@ export function KrugListScreen({ onSelect }: Props) {
           {t('common.loading', 'Učitavanje…')}
         </Card>
       ) : krugs.length === 0 ? (
-        <Card className="p-8 text-center space-y-2">
+        <Card className="p-8 text-center space-y-3">
           <Circle className="w-10 h-10 mx-auto text-muted-foreground" strokeWidth={1.5} />
           <h2 className="font-medium">{t('krug.emptyTitle', 'Još nemaš Krug')}</h2>
           <p className="text-sm text-muted-foreground">
@@ -49,6 +49,10 @@ export function KrugListScreen({ onSelect }: Props) {
               'Krug je tvoj zajednički kontekst s drugima. Pridruži se preko poziva ili otvori novi.',
             )}
           </p>
+          <Button onClick={() => setCreateOpen(true)} className="mt-2">
+            <Plus className="w-4 h-4 mr-1" />
+            {t('krug.create.cta', 'Novi Krug')}
+          </Button>
         </Card>
       ) : (
         <div className="space-y-2">
@@ -73,6 +77,12 @@ export function KrugListScreen({ onSelect }: Props) {
           ))}
         </div>
       )}
+
+      <CreateKrugDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(id) => onSelect(id)}
+      />
     </div>
   );
 }
