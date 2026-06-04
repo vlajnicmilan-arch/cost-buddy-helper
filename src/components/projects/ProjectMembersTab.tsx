@@ -433,7 +433,7 @@ export const ProjectMembersTab = ({
                   <SelectItem value="worker">{t(`projectRoles.worker`, PROJECT_ROLE_LABELS.worker)}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button onClick={handleSendInvite} disabled={sendingInvite}>
+              <Button onClick={handleSendInvite} disabled={sendingInvite || isReadOnly} aria-disabled={sendingInvite || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
                 {sendingInvite ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -461,7 +461,7 @@ export const ProjectMembersTab = ({
                 </SelectContent>
               </Select>
 
-              <Button onClick={handleGenerateLink} disabled={generatingLink} variant="outline" className="flex-1">
+              <Button onClick={handleGenerateLink} disabled={generatingLink || isReadOnly} aria-disabled={generatingLink || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined} variant="outline" className="flex-1">
                 {generatingLink ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
@@ -603,6 +603,7 @@ export const ProjectMembersTab = ({
         projectId={projectId}
         userId={permDialog.userId}
         memberName={permDialog.memberName}
+        isReadOnly={isReadOnly}
       />
     </div>
   );
