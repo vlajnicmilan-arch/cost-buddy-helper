@@ -2778,6 +2778,36 @@ export type Database = {
         }
         Relationships: []
       }
+      krug_act_dedup: {
+        Row: {
+          act: string
+          client_request_id: string
+          created_at: string
+          expense_id: string
+          id: string
+          outcome: string
+          user_id: string
+        }
+        Insert: {
+          act: string
+          client_request_id: string
+          created_at?: string
+          expense_id: string
+          id?: string
+          outcome: string
+          user_id: string
+        }
+        Update: {
+          act?: string
+          client_request_id?: string
+          created_at?: string
+          expense_id?: string
+          id?: string
+          outcome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       krug_membership: {
         Row: {
           added_by: string | null
@@ -2843,6 +2873,41 @@ export type Database = {
             foreignKeyName: "krug_ownership_krug_id_fkey"
             columns: ["krug_id"]
             isOneToOne: true
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_shared_payment_source: {
+        Row: {
+          created_at: string
+          id: string
+          krug_id: string
+          linked_at: string
+          linked_by: string
+          payment_source_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          krug_id: string
+          linked_at?: string
+          linked_by: string
+          payment_source_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          krug_id?: string
+          linked_at?: string
+          linked_by?: string
+          payment_source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_shared_payment_source_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
             referencedRelation: "krug"
             referencedColumns: ["id"]
           },
@@ -5539,6 +5604,18 @@ export type Database = {
         Args: { _category: string; _user_id: string }
         Returns: boolean
       }
+      krug_apply_act: {
+        Args: {
+          p_act: string
+          p_client_request_id: string
+          p_expense_id: string
+        }
+        Returns: Json
+      }
+      krug_can_manage_shared_source: {
+        Args: { _krug: string; _source_id: string; _user: string }
+        Returns: boolean
+      }
       krug_can_see_personal: {
         Args: { _author: string; _krug: string; _viewer: string }
         Returns: boolean
@@ -5560,6 +5637,10 @@ export type Database = {
           p_expense_id: string
           p_new_privacy: Database["public"]["Enums"]["krug_privacy"]
         }
+        Returns: Json
+      }
+      krug_withdraw: {
+        Args: { p_client_request_id: string; p_expense_id: string }
         Returns: Json
       }
       link_worker_to_member: {
