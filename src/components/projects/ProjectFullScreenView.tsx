@@ -414,7 +414,9 @@ export const ProjectFullScreenView = ({
               onOpenChange={setShareOpen}
               projectId={project.id}
               projectName={project.name}
+              isReadOnly={isReadOnly}
             />
+
 
             {/* Reports Dialog */}
             <ProjectReportsDialog
