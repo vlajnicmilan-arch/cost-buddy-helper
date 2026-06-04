@@ -4672,19 +4672,15 @@
       "active": "Aktiv",
       "early_signal": "Frühes Signal",
       "ugrozen": "Gefährdet",
-      "paused": "Pausiert",
-      "terminated": "Beendet",
       "continuity_window": "Übergang",
       "read_only": "Nur lesen",
       "deleted": "Gelöscht"
     },
     "lifecycleNote": {
       "early_signal": "Krug zeigt erste Anzeichen von Inaktivität. Prüfe Mitglieder und Transaktionen.",
-      "ugrozen": "Krug ist gefährdet — längere Zeit keine Aktivität. Pausieren oder fortsetzen erwägen.",
-      "paused": "Krug ist pausiert. Mutationen sind gestoppt, bis du ihn reaktivierst.",
+      "ugrozen": "Krug ist gefährdet — längere Zeit keine Aktivität. Nächsten Schritt erwägen.",
       "continuity_window": "Krug ist im Übergang — Erneuerung oder Abschluss möglich.",
       "read_only": "Krug ist nur lesbar. Aktionen sind deaktiviert.",
-      "terminated": "Krug ist beendet. Historie bleibt sichtbar, keine neuen Änderungen möglich.",
       "deleted": "Krug wurde gelöscht."
     },
     "loadError": {
