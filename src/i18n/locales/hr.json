@@ -4639,6 +4639,11 @@
     "members": "Članovi",
     "sharedSources": "Zajednički izvori",
     "noSharedSources": "Nema povezanih izvora plaćanja.",
+    "queue": {
+      "title": "Za odlučivanje",
+      "empty": "Nema prijedloga za odluku.",
+      "noDescription": "(bez opisa)"
+    },
     "sharedSource": {
       "attach": {
         "placeholder": "Poveži izvor plaćanja…",
