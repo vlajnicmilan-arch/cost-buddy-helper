@@ -16,11 +16,40 @@ export type GrantModule = 'projects' | 'business';
 export type BillingTier = 'free' | 'pro' | 'business';
 export type AccessSource = 'billing' | 'override';
 
+/**
+ * Domain tip za razlog admin overridea. Živi u domain sloju (adminAccess),
+ * NE u hook sloju. Hookovi i komponente importiraju odavde.
+ */
+export type GrantReasonCode =
+  | 'refund'
+  | 'beta_tester'
+  | 'internal'
+  | 'partner'
+  | 'support'
+  | 'other';
+
+/** Fiksna lista svih reason codeova — koristiti za iteraciju u UI. */
+export const GRANT_REASON_CODES: readonly GrantReasonCode[] = [
+  'refund',
+  'beta_tester',
+  'internal',
+  'partner',
+  'support',
+  'other',
+] as const;
+
+/** i18n ključ za prikaz reason codea (reuse postojećih `admin.moduleAccess.reasonCode.*`). */
+export function grantReasonCodeI18nKey(code: GrantReasonCode): string {
+  return `admin.moduleAccess.reasonCode.${code}`;
+}
+
 export interface ActiveGrantLike {
   user_id: string;
   module: GrantModule;
   revoked_at?: string | null;
   expires_at?: string | null;
+  /** PR3: opcionalno; koristi se za override reason breakdown po modulu. */
+  reason_code?: GrantReasonCode | null;
 }
 
 export interface ModuleAccess {
