@@ -20,17 +20,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Users, UserPlus, MoreVertical, Loader2 } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
+  isKrugCapError,
 } from '@/hooks/useKrugMemberMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
 import { KrugApprovalQueue } from './KrugApprovalQueue';
+import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { canAddPunopravni } from '@/lib/krugPresets';
