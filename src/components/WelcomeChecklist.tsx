@@ -141,11 +141,24 @@ export const WelcomeChecklist = ({
 
   const completedCount = steps.filter(s => s.done).length;
 
+  const handleStepClick = (stepKey: string, action: () => void) => {
+    logFunnelEvent('checklist_step_clicked', {
+      step: stepKey,
+      completed_before: completedCount,
+    }).catch(() => {});
+    action();
+  };
+
   const handleDismiss = () => {
     setDismissed(true);
     if (user?.id) {
       localStorage.setItem(`${DISMISS_KEY_PREFIX}${user.id}`, 'true');
     }
+    logFunnelEvent('checklist_dismissed', {
+      completed_count: completedCount,
+      all_done: allDone,
+      time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
+    }).catch(() => {});
   };
 
   return (
