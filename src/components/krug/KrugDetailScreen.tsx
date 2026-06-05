@@ -20,8 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
+import { KrugDeleteDialog } from './KrugDeleteDialog';
+import { KrugDeletionVotePanel } from './KrugDeletionVotePanel';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
@@ -52,6 +54,7 @@ export function KrugDetailScreen({ krugId }: Props) {
 
   const removeMember = useKrugRemoveMember();
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
   const punopravniCount = useMemo(
