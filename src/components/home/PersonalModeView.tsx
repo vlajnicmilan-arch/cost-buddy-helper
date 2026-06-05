@@ -13,7 +13,7 @@ import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
-// WelcomeChecklist je uklonjen — onboarding je sada centraliziran u /onboarding wizardu.
+import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
 
@@ -248,6 +248,21 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             </Button>
           </div>
         )}
+
+        {/* Welcome Checklist — Guided Empty State za nove korisnike (post-onboarding).
+            Komponenta sama gateira: skriva se za pro/business, korisnike s business profilom,
+            te nakon dismiss-a. Auto-dismiss 3s nakon kompletiranja svih koraka. */}
+        {!props.isLocalMode && !isBusinessChip && (
+          <WelcomeChecklist
+            hasPaymentSources={props.customPaymentSources.length > 0}
+            hasTransactions={props.allExpenses.length > 0}
+            hasBudgets={props.budgetsCount > 0}
+            onAddPaymentSource={() => navigate('/wallet')}
+            onAddTransaction={() => props.onExpenseDialogChange(true)}
+            onAddBudget={() => navigate('/budgets')}
+          />
+        )}
+
 
         {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
         {v2 && !projectsHidden && (

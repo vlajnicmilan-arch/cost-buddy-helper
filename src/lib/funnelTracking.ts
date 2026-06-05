@@ -24,7 +24,11 @@ export type FunnelEventName =
   | 'onboarding_step_viewed'
   | 'onboarding_step_completed'
   | 'onboarding_step_skipped'
-  | 'onboarding_abandoned';
+  | 'onboarding_abandoned'
+  | 'checklist_viewed'
+  | 'checklist_step_clicked'
+  | 'checklist_dismissed'
+  | 'checklist_completed';
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';

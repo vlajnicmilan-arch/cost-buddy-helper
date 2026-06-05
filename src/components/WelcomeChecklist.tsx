@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
@@ -8,8 +8,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { logFunnelEvent } from '@/lib/funnelTracking';
 
 const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
+const VIEWED_KEY_PREFIX = 'welcome_checklist_viewed:';
+const COMPLETED_KEY_PREFIX = 'welcome_checklist_completed:';
 
 interface WelcomeChecklistProps {
   hasPaymentSources: boolean;
@@ -34,6 +37,9 @@ export const WelcomeChecklist = ({
   const { loading: subLoading } = useSubscription();
   const { profiles: businessProfiles, loading: bpLoading } = useBusinessProfiles();
   const [dismissed, setDismissed] = useState(false);
+  const mountTimeRef = useRef<number>(performance.now());
+  const viewedFiredRef = useRef(false);
+  const completedFiredRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -42,6 +48,23 @@ export const WelcomeChecklist = ({
   }, [user?.id]);
 
   const allDone = hasPaymentSources && hasTransactions && hasBudgets;
+
+  // checklist_completed — jednom po korisniku kad svi koraci postanu done
+  useEffect(() => {
+    if (!allDone || !user?.id || completedFiredRef.current) return;
+    try {
+      const key = `${COMPLETED_KEY_PREFIX}${user.id}`;
+      if (localStorage.getItem(key) === '1') {
+        completedFiredRef.current = true;
+        return;
+      }
+      localStorage.setItem(key, '1');
+    } catch { /* noop */ }
+    completedFiredRef.current = true;
+    logFunnelEvent('checklist_completed', {
+      time_to_complete_ms: Math.round(performance.now() - mountTimeRef.current),
+    }).catch(() => {});
+  }, [allDone, user?.id]);
 
   // Auto-dismiss when all done
   useEffect(() => {
@@ -53,6 +76,33 @@ export const WelcomeChecklist = ({
       return () => clearTimeout(timer);
     }
   }, [allDone, user?.id]);
+
+  // checklist_viewed — jednom po useru kad je komponenta REALNO renderana
+  // (svi guardovi su odlučili da nije null). Emit unutar useEffect-a poslije
+  // svih hookova kako bi se poštivala React rules-of-hooks.
+  const shouldRender =
+    !subLoading && !bpLoading && !isProTier && businessProfiles.length === 0 && !dismissed;
+
+  useEffect(() => {
+    if (!shouldRender || !user?.id || viewedFiredRef.current) return;
+    try {
+      const key = `${VIEWED_KEY_PREFIX}${user.id}`;
+      if (localStorage.getItem(key) === '1') {
+        viewedFiredRef.current = true;
+        return;
+      }
+      localStorage.setItem(key, '1');
+    } catch { /* noop */ }
+    viewedFiredRef.current = true;
+    logFunnelEvent('checklist_viewed', {
+      initial_state: {
+        has_payment_sources: hasPaymentSources,
+        has_transactions: hasTransactions,
+        has_budgets: hasBudgets,
+      },
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldRender, user?.id]);
 
   // Hide while subscription/business data still loading (avoids flash on dashboard).
   if (subLoading || bpLoading) return null;
@@ -91,11 +141,24 @@ export const WelcomeChecklist = ({
 
   const completedCount = steps.filter(s => s.done).length;
 
+  const handleStepClick = (stepKey: string, action: () => void) => {
+    logFunnelEvent('checklist_step_clicked', {
+      step: stepKey,
+      completed_before: completedCount,
+    }).catch(() => {});
+    action();
+  };
+
   const handleDismiss = () => {
     setDismissed(true);
     if (user?.id) {
       localStorage.setItem(`${DISMISS_KEY_PREFIX}${user.id}`, 'true');
     }
+    logFunnelEvent('checklist_dismissed', {
+      completed_count: completedCount,
+      all_done: allDone,
+      time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
+    }).catch(() => {});
   };
 
   return (
@@ -152,7 +215,7 @@ export const WelcomeChecklist = ({
                   ? 'bg-primary/[0.06]'
                   : 'hover:bg-muted/40 cursor-pointer active:scale-[0.98]'
               )}
-              onClick={!step.done ? step.action : undefined}
+              onClick={!step.done ? () => handleStepClick(step.key, step.action) : undefined}
             >
               <div className={cn(
                 'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
