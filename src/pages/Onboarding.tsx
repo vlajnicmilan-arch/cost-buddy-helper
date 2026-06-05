@@ -25,12 +25,44 @@ import { StepReady } from '@/components/onboarding/steps/StepReady';
 
 const TOTAL_STEPS = 5;
 
+const STEP_NAMES: Record<number, string> = {
+  1: 'greeting',
+  2: 'usage_profile',
+  3: 'income',
+  4: 'budget_sliders',
+  5: 'ready',
+};
+
+const ATTEMPT_KEY = 'onboarding_attempt_count';
+const SESSION_KEY = 'onboarding_session_id';
+
 const INITIAL_PERCENTS: PercentMap = {
   rent: 0,
   food: 0,
   car: 0,
   utilities: 0,
   other: 0,
+};
+
+const initTelemetrySession = (): { sessionId: string; attempt: number } => {
+  let sessionId = '';
+  let attempt = 1;
+  try {
+    sessionId = sessionStorage.getItem(SESSION_KEY) || '';
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+      const prev = parseInt(localStorage.getItem(ATTEMPT_KEY) || '0', 10);
+      attempt = (Number.isFinite(prev) ? prev : 0) + 1;
+      localStorage.setItem(ATTEMPT_KEY, String(attempt));
+    } else {
+      const stored = parseInt(localStorage.getItem(ATTEMPT_KEY) || '1', 10);
+      attempt = Number.isFinite(stored) && stored > 0 ? stored : 1;
+    }
+  } catch {
+    sessionId = crypto.randomUUID();
+  }
+  return { sessionId, attempt };
 };
 
 const Onboarding = () => {
