@@ -293,14 +293,17 @@ const Onboarding = () => {
       setUsageProfile(profile);
       setOnboardingCompleted(true);
 
-      // 4) Funnel telemetry
-      import('@/lib/funnelTracking')
-        .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
-          usage_profile: profile,
-          has_income: hasIncome,
-          expense_categories: selectedCategories.length,
-        }))
-        .catch(() => {});
+      // 4) Funnel telemetry — označi outcome PRIJE async loga da unmount handler ne ispali abandoned
+      outcomeRef.current = 'completed';
+      // step_completed za zadnji korak (Ready) — finish CTA
+      logStepCompleted(currentStepRef.current);
+      logFunnelEvent('onboarding_complete', {
+        ...baseMeta(),
+        usage_profile: profile,
+        has_income: hasIncome,
+        expense_categories: selectedCategories.length,
+        total_duration_ms: Math.round(performance.now() - mountTimeRef.current),
+      }).catch(() => {});
 
       successVibration().catch(() => {});
       showSuccess(t('onboardingV3.doneToast', 'Aplikacija je spremna!'));
