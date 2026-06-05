@@ -65,7 +65,7 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
         <div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-module" aria-hidden="true" />
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-module tracking-tight">{title}</h1>
           </div>
           {subtitle && (
             <div className="flex items-center gap-2 mt-0.5">
