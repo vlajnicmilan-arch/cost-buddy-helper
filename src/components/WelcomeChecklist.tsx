@@ -37,6 +37,9 @@ export const WelcomeChecklist = ({
   const { loading: subLoading } = useSubscription();
   const { profiles: businessProfiles, loading: bpLoading } = useBusinessProfiles();
   const [dismissed, setDismissed] = useState(false);
+  const mountTimeRef = useRef<number>(performance.now());
+  const viewedFiredRef = useRef(false);
+  const completedFiredRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -45,6 +48,23 @@ export const WelcomeChecklist = ({
   }, [user?.id]);
 
   const allDone = hasPaymentSources && hasTransactions && hasBudgets;
+
+  // checklist_completed — jednom po korisniku kad svi koraci postanu done
+  useEffect(() => {
+    if (!allDone || !user?.id || completedFiredRef.current) return;
+    try {
+      const key = `${COMPLETED_KEY_PREFIX}${user.id}`;
+      if (localStorage.getItem(key) === '1') {
+        completedFiredRef.current = true;
+        return;
+      }
+      localStorage.setItem(key, '1');
+    } catch { /* noop */ }
+    completedFiredRef.current = true;
+    logFunnelEvent('checklist_completed', {
+      time_to_complete_ms: Math.round(performance.now() - mountTimeRef.current),
+    }).catch(() => {});
+  }, [allDone, user?.id]);
 
   // Auto-dismiss when all done
   useEffect(() => {
