@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, Target, Wallet, Circle } from 'lucide-react';
+import { KrugBrandIcon } from '@/components/krug/KrugBrandIcon';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -70,12 +71,17 @@ export const BottomNav = () => {
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
-              <Icon
-                className={cn(
-                  'w-5 h-5 transition-colors',
-                  isActive ? accent.text : 'text-muted-foreground',
-                )}
-              />
+              {item.path === '/krug' ? (
+                <KrugBrandIcon size={20} className="transition-opacity" />
+              ) : (
+                <Icon
+                  className={cn(
+                    'w-5 h-5 transition-colors',
+                    isActive ? accent.text : 'text-muted-foreground',
+                  )}
+                />
+              )}
+
               <span
                 className={cn(
                   'text-[10px] font-medium transition-colors',
