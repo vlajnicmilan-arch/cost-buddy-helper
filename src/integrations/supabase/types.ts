@@ -5512,6 +5512,16 @@ export type Database = {
       cleanup_old_monitor_alerts: { Args: never; Returns: undefined }
       cleanup_old_push_logs: { Args: never; Returns: undefined }
       cleanup_stale_push_tokens: { Args: never; Returns: undefined }
+      complete_onboarding: {
+        Args: {
+          p_budget_name: string
+          p_categories: Json
+          p_display_name: string
+          p_income: number
+          p_usage_profile: string
+        }
+        Returns: Json
+      }
       compute_family_income_ratio: {
         Args: { p_group_id: string }
         Returns: {
