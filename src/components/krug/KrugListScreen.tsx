@@ -6,7 +6,8 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Circle, Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
+import { KrugBrandIcon } from './KrugBrandIcon';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useMyKrugs } from '@/hooks/useKrug';
@@ -57,7 +58,7 @@ export function KrugListScreen({ onSelect }: Props) {
         </Card>
       ) : krugs.length === 0 ? (
         <Card className="p-8 text-center space-y-3">
-          <Circle className="w-10 h-10 mx-auto text-module/70" strokeWidth={1.5} />
+          <KrugBrandIcon size={40} className="mx-auto" />
           <h2 className="font-medium">{t('krug.emptyTitle', 'Još nemaš Krug')}</h2>
           <p className="text-sm text-muted-foreground">
             {t(
