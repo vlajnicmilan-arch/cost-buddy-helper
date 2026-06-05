@@ -4773,6 +4773,45 @@
         "demote": "Vrati na običnog",
         "remove": "Ukloni iz Kruga"
       }
+    },
+    "delete": {
+      "cta": "Obriši Krug",
+      "title": "Brisanje Kruga",
+      "confirmSolo": "Premjesti Krug \"{{name}}\" u koš? Krug ostaje 30 dana prije trajnog brisanja.",
+      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje zahtijeva suglasnost svih punopravnih članova ({{count}}).",
+      "reasonLabel": "Razlog (opcionalno)",
+      "reasonPlaceholder": "Npr. testni krug, više se ne koristi…",
+      "submit": "Pošalji zahtjev",
+      "submitSolo": "Obriši odmah",
+      "votePanel": {
+        "title": "Zahtjev za brisanje",
+        "subtitle": "Pokrenuo: {{name}}",
+        "reason": "Razlog: {{reason}}",
+        "progress": "{{approved}}/{{total}} odobrilo",
+        "approve": "Odobri",
+        "reject": "Odbij",
+        "withdraw": "Povuci zahtjev",
+        "voted": "Glasao",
+        "pending": "Čeka glas"
+      },
+      "outcomes": {
+        "ok_deleted_solo": "Krug premješten u koš",
+        "ok_request_created": "Zahtjev za brisanje pokrenut",
+        "ok_vote_recorded": "Glas zabilježen",
+        "ok_approved_and_deleted": "Krug obrisan — svi su odobrili",
+        "ok_rejected": "Zahtjev odbijen",
+        "ok_cancelled": "Zahtjev povučen"
+      },
+      "errors": {
+        "not_owner": "Samo vlasnik može pokrenuti brisanje",
+        "not_eligible": "Samo punopravni članovi mogu glasati",
+        "request_already_pending": "Već postoji aktivan zahtjev",
+        "no_pending_request": "Nema aktivnog zahtjeva",
+        "krug_not_found": "Krug ne postoji",
+        "already_deleted": "Krug je već obrisan",
+        "unauthorized": "Nisi prijavljen",
+        "unknown": "Nepoznata greška"
+      }
     }
   }
 }
