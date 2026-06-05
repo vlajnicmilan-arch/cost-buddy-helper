@@ -77,6 +77,33 @@ export const WelcomeChecklist = ({
     }
   }, [allDone, user?.id]);
 
+  // checklist_viewed — jednom po useru kad je komponenta REALNO renderana
+  // (svi guardovi su odlučili da nije null). Emit unutar useEffect-a poslije
+  // svih hookova kako bi se poštivala React rules-of-hooks.
+  const shouldRender =
+    !subLoading && !bpLoading && !isProTier && businessProfiles.length === 0 && !dismissed;
+
+  useEffect(() => {
+    if (!shouldRender || !user?.id || viewedFiredRef.current) return;
+    try {
+      const key = `${VIEWED_KEY_PREFIX}${user.id}`;
+      if (localStorage.getItem(key) === '1') {
+        viewedFiredRef.current = true;
+        return;
+      }
+      localStorage.setItem(key, '1');
+    } catch { /* noop */ }
+    viewedFiredRef.current = true;
+    logFunnelEvent('checklist_viewed', {
+      initial_state: {
+        has_payment_sources: hasPaymentSources,
+        has_transactions: hasTransactions,
+        has_budgets: hasBudgets,
+      },
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldRender, user?.id]);
+
   // Hide while subscription/business data still loading (avoids flash on dashboard).
   if (subLoading || bpLoading) return null;
   // Paid users (Pro/Business, including trial) don't need onboarding checklist.
