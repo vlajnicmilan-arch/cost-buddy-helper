@@ -555,6 +555,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         </Label>
         <Input
           id="amount"
+          data-testid="manual-expense-amount"
           type="text"
           inputMode="decimal"
           placeholder="0.00"
@@ -604,6 +605,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         <div className="relative">
           <Input
             id="description"
+            data-testid="manual-expense-description"
             placeholder={props.type === 'transfer' ? t('transactions.transferDescriptionPlaceholder') : t('transactions.descriptionPlaceholder')}
             value={props.description}
             onChange={(e) => props.onDescriptionChange(e.target.value)}

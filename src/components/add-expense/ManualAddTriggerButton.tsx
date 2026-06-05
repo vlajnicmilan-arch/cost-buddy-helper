@@ -30,6 +30,7 @@ export const ManualAddTriggerButton = ({
   return (
     <Button
       type="button"
+      data-testid="add-expense-fab"
       onClick={() => openManualAdd({ businessProfileId })}
       className={cn(
         'gap-2 rounded-xl shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20',
