@@ -5440,6 +5440,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _require_admin: { Args: never; Returns: undefined }
+      admin_get_activation_by_cohort: {
+        Args: never
+        Returns: {
+          activated_count: number
+          activated_pct: number
+          cohort_size: number
+          cohort_week: string
+          cohort_week_start: string
+          median_expenses_per_active: number
+        }[]
+      }
+      admin_get_cohort_retention: {
+        Args: never
+        Returns: {
+          cohort_size: number
+          cohort_week: string
+          cohort_week_start: string
+          retained_count: number
+          retained_pct: number
+          week_offset: number
+        }[]
+      }
+      admin_get_funnel_summary_30d: {
+        Args: never
+        Returns: {
+          cnt: number
+          day: string
+          event_name: string
+        }[]
+      }
+      admin_purge_old_funnel_events: {
+        Args: { p_days?: number }
+        Returns: number
+      }
       apply_split_override: {
         Args: { p_expense_id: string; p_overrides: Json }
         Returns: {
@@ -5681,6 +5716,7 @@ export type Database = {
         Args: { _category: string; _user_id: string }
         Returns: boolean
       }
+      iso_week_label: { Args: { p_ts: string }; Returns: string }
       krug_apply_act: {
         Args: {
           p_act: string
