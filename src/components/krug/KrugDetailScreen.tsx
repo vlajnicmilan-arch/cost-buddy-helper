@@ -303,6 +303,14 @@ export function KrugDetailScreen({ krugId }: Props) {
         preset={krug.preset}
         punopravniCount={punopravniCount}
       />
+
+      <KrugDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        krugId={krugId}
+        krugName={krug.name}
+        fullMemberCount={punopravniCount}
+      />
     </div>
   );
 }
