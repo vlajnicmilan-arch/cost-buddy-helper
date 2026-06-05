@@ -4762,6 +4762,45 @@
         "demote": "Zu regulärem Mitglied stufen",
         "remove": "Aus Krug entfernen"
       }
+    },
+    "delete": {
+      "cta": "Krug löschen",
+      "title": "Krug löschen",
+      "confirmSolo": "Krug \"{{name}}\" in den Papierkorb verschieben? Bleibt 30 Tage vor endgültiger Löschung.",
+      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Alle Vollmitglieder ({{count}}) müssen zustimmen.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "z.B. Test-Krug, nicht mehr verwendet…",
+      "submit": "Antrag senden",
+      "submitSolo": "Jetzt löschen",
+      "votePanel": {
+        "title": "Löschantrag",
+        "subtitle": "Gestartet von: {{name}}",
+        "reason": "Grund: {{reason}}",
+        "progress": "{{approved}}/{{total}} zugestimmt",
+        "approve": "Zustimmen",
+        "reject": "Ablehnen",
+        "withdraw": "Antrag zurückziehen",
+        "voted": "Abgestimmt",
+        "pending": "Warten auf Stimme"
+      },
+      "outcomes": {
+        "ok_deleted_solo": "Krug in Papierkorb verschoben",
+        "ok_request_created": "Löschantrag gestartet",
+        "ok_vote_recorded": "Stimme erfasst",
+        "ok_approved_and_deleted": "Krug gelöscht — alle haben zugestimmt",
+        "ok_rejected": "Antrag abgelehnt",
+        "ok_cancelled": "Antrag zurückgezogen"
+      },
+      "errors": {
+        "not_owner": "Nur der Eigentümer kann die Löschung starten",
+        "not_eligible": "Nur Vollmitglieder dürfen abstimmen",
+        "request_already_pending": "Es besteht bereits ein offener Antrag",
+        "no_pending_request": "Kein offener Antrag",
+        "krug_not_found": "Krug nicht gefunden",
+        "already_deleted": "Krug bereits gelöscht",
+        "unauthorized": "Nicht angemeldet",
+        "unknown": "Unbekannter Fehler"
+      }
     }
   }
 }
