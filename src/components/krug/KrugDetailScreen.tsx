@@ -143,6 +143,27 @@ export function KrugDetailScreen({ krugId }: Props) {
         )}
       </Card>
 
+      {isOwner && krug.lifecycle_state !== 'deleted' && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            {t('krug.delete.cta', 'Obriši Krug')}
+          </Button>
+        </div>
+      )}
+
+      <KrugDeletionVotePanel
+        krugId={krugId}
+        members={members}
+        isOwner={isOwner}
+        currentUserId={user?.id ?? null}
+      />
+
       <KrugApprovalQueue
         krugId={krugId}
         viewerUserId={user?.id ?? null}
