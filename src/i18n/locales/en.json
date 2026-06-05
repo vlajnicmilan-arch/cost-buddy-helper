@@ -4762,6 +4762,45 @@
         "demote": "Demote to regular",
         "remove": "Remove from Krug"
       }
+    },
+    "delete": {
+      "cta": "Delete Krug",
+      "title": "Delete Krug",
+      "confirmSolo": "Move Krug \"{{name}}\" to trash? Krug stays 30 days before permanent deletion.",
+      "confirmMulti": "Start a deletion request for Krug \"{{name}}\". All full members ({{count}}) must approve.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "e.g. test krug, no longer used…",
+      "submit": "Send request",
+      "submitSolo": "Delete now",
+      "votePanel": {
+        "title": "Deletion request",
+        "subtitle": "Started by: {{name}}",
+        "reason": "Reason: {{reason}}",
+        "progress": "{{approved}}/{{total}} approved",
+        "approve": "Approve",
+        "reject": "Reject",
+        "withdraw": "Withdraw request",
+        "voted": "Voted",
+        "pending": "Awaiting vote"
+      },
+      "outcomes": {
+        "ok_deleted_solo": "Krug moved to trash",
+        "ok_request_created": "Deletion request started",
+        "ok_vote_recorded": "Vote recorded",
+        "ok_approved_and_deleted": "Krug deleted — all approved",
+        "ok_rejected": "Request rejected",
+        "ok_cancelled": "Request withdrawn"
+      },
+      "errors": {
+        "not_owner": "Only the owner can start a deletion",
+        "not_eligible": "Only full members can vote",
+        "request_already_pending": "A pending request already exists",
+        "no_pending_request": "No pending request",
+        "krug_not_found": "Krug not found",
+        "already_deleted": "Krug already deleted",
+        "unauthorized": "Not signed in",
+        "unknown": "Unknown error"
+      }
     }
   }
 }
