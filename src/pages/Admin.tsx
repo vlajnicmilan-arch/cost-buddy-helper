@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Bug, ArrowLeft, Users, BarChart3, Bell, CreditCard,
-  MessageSquareReply, Activity, Package, BellRing, Heart,
+  MessageSquareReply, Activity, Package, BellRing, Heart, LineChart,
 } from 'lucide-react';
+import { RetentionTab } from '@/components/admin/retention/RetentionTab';
 import { DiagnosticLogsTab } from '@/components/admin/DiagnosticLogsTab';
 import { APKManagerTab } from '@/components/admin/APKManagerTab';
 import { PushLogsTab } from '@/components/admin/PushLogsTab';
@@ -327,6 +328,9 @@ const Admin = () => {
               <TabsTrigger value="stats" className={tabBtnClass}>
                 <BarChart3 className="w-4 h-4 shrink-0" /><span>Statistika</span>
               </TabsTrigger>
+              <TabsTrigger value="retention" className={tabBtnClass}>
+                <LineChart className="w-4 h-4 shrink-0" /><span>Retention</span>
+              </TabsTrigger>
 
               <div className="w-px self-stretch bg-border/60 mx-1 flex-shrink-0" aria-hidden="true" />
 
@@ -442,6 +446,10 @@ const Admin = () => {
 
           <TabsContent value="feedback" className="space-y-3 mt-4">
             <FeedbackInboxTab initialId={new URLSearchParams(window.location.search).get('id')} />
+          </TabsContent>
+
+          <TabsContent value="retention" className="space-y-3 mt-4">
+            <RetentionTab enabled={activeTab === 'retention'} />
           </TabsContent>
         </Tabs>
       </div>
