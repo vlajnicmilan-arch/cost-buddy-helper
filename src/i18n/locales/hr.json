@@ -4447,6 +4447,47 @@
       "layersIndependentNote": "Naplata i Admin override su nezavisni slojevi. Promjena naplate ne uklanja postojeće override grantove. Opoziv overridea ne mijenja naplatu. Efektivni pristup vrijedi dok postoji barem jedan aktivni izvor."
     }
   },
+  "adminRetention": {
+    "title": "Cohort Retention",
+    "subtitle": "Zadržavanje korisnika po tjednim cohortima (signup), zadnjih 180 dana. Aktivan = ≥1 transakcija u tjednu. Activation = ≥3 transakcije ukupno.",
+    "loading": "Učitavam...",
+    "error": "Greška pri dohvaćanju",
+    "kpi": {
+      "w1": "W1 retention",
+      "w4": "W4 retention",
+      "activation": "Activation",
+      "medianExpenses": "Medijan transakcija",
+      "perActiveUser": "po aktivnom korisniku",
+      "basedOn": "{{cohorts}} cohorta · {{users}} korisnika",
+      "infoAria": "Objašnjenje metrike",
+      "w1Tooltip": "Postotak korisnika koji su unijeli ≥1 transakciju u tjednu nakon signupa. Računa se preko cohortа s ≥20 korisnika i dovoljnom maturity, weighted po veličini cohortа.",
+      "w4Tooltip": "Postotak korisnika aktivnih u 4. tjednu nakon signupa. Mjesečna retention proksimacija. Iste restrikcije kao W1.",
+      "activationTooltip": "Postotak korisnika u cohortu koji su unijeli ≥3 transakcije ukupno (lifetime). Računa se preko cohortа s ≥20 korisnika.",
+      "medianTooltip": "Kohortna procjena: weighted prosjek per-cohort mediana, težinski po broju aktiviranih. Nije apsolutna globalna medijana — koristi se za signal trenda."
+    },
+    "funnel": {
+      "title": "Funnel (30 dana)",
+      "subtitle": "Dnevni broj ključnih eventа i ukupno za razdoblje.",
+      "events": {
+        "install": "Install",
+        "signup": "Signup",
+        "onboarding_complete": "Onboarding završen",
+        "first_transaction": "Prva transakcija",
+        "day7_active": "D7 aktivan",
+        "paid_conversion": "Plaćena konverzija"
+      }
+    },
+    "heatmap": {
+      "title": "Cohort heatmap",
+      "subtitle": "Postotak vraćenih korisnika po tjednu W0..W7. Tamnija ćelija = veći postotak. Buduće ćelije prikazane su sivo.",
+      "cohortHeader": "Cohort (ISO tjedan)",
+      "sizeHeader": "N",
+      "smallSample": "Mali uzorak",
+      "futureCell": "Cohort još nije dosegnuo ovaj tjedan",
+      "cellTitle": "{{count}} od {{size}}",
+      "empty": "Nema cohortа u zadnjih 180 dana."
+    }
+  },
   "onboardingV2": {
     "finishLater": "Završi kasnije",
     "saving": "Spremam...",

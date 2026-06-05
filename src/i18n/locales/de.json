@@ -4436,6 +4436,47 @@
       "layersIndependentNote": "Abrechnung und Admin-Override sind unabhängige Ebenen. Eine Abrechnungsänderung entfernt bestehende Override-Grants nicht. Ein Entzug ändert die Abrechnung nicht. Der effektive Zugriff bleibt bestehen, solange mindestens eine aktive Quelle existiert."
     }
   },
+  "adminRetention": {
+    "title": "Cohort Retention",
+    "subtitle": "Nutzerbindung nach Signup-Wochen-Kohorten, letzte 180 Tage. Aktiv = ≥1 Transaktion in der Woche. Aktivierung = ≥3 Transaktionen lebenslang.",
+    "loading": "Lade...",
+    "error": "Fehler beim Laden",
+    "kpi": {
+      "w1": "W1 Retention",
+      "w4": "W4 Retention",
+      "activation": "Aktivierung",
+      "medianExpenses": "Median Transaktionen",
+      "perActiveUser": "pro aktivem Nutzer",
+      "basedOn": "{{cohorts}} Kohorten · {{users}} Nutzer",
+      "infoAria": "Erklärung der Metrik",
+      "w1Tooltip": "Anteil der Nutzer mit ≥1 Transaktion in der Woche nach Signup. Berechnet über Kohorten mit ≥20 Nutzern und ausreichender Reife, gewichtet nach Kohortengröße.",
+      "w4Tooltip": "Anteil der Nutzer aktiv in der 4. Woche nach Signup. Proxy für monatliche Retention. Gleiche Einschränkungen wie W1.",
+      "activationTooltip": "Anteil der Nutzer in der Kohorte mit ≥3 Transaktionen lebenslang. Berechnet über Kohorten mit ≥20 Nutzern.",
+      "medianTooltip": "Kohorten-Schätzung: gewichteter Durchschnitt der Per-Kohorten-Mediane, gewichtet nach Aktivierungszahl. Kein absoluter globaler Median — als Trendsignal nutzen."
+    },
+    "funnel": {
+      "title": "Funnel (30 Tage)",
+      "subtitle": "Tägliche Anzahl der Schlüsselereignisse und Gesamtsumme für den Zeitraum.",
+      "events": {
+        "install": "Installation",
+        "signup": "Anmeldung",
+        "onboarding_complete": "Onboarding abgeschlossen",
+        "first_transaction": "Erste Transaktion",
+        "day7_active": "T7 aktiv",
+        "paid_conversion": "Bezahlte Konversion"
+      }
+    },
+    "heatmap": {
+      "title": "Kohorten-Heatmap",
+      "subtitle": "Anteil zurückkehrender Nutzer pro Woche W0..W7. Dunklere Zelle = höherer Anteil. Zukünftige Zellen grau dargestellt.",
+      "cohortHeader": "Kohorte (ISO-Woche)",
+      "sizeHeader": "N",
+      "smallSample": "Kleine Stichprobe",
+      "futureCell": "Kohorte hat diese Woche noch nicht erreicht",
+      "cellTitle": "{{count}} von {{size}}",
+      "empty": "Keine Kohorten in den letzten 180 Tagen."
+    }
+  },
   "onboardingV2": {
     "finishLater": "Später beenden",
     "saving": "Speichere...",
