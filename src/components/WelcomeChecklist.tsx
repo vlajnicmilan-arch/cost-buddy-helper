@@ -215,7 +215,7 @@ export const WelcomeChecklist = ({
                   ? 'bg-primary/[0.06]'
                   : 'hover:bg-muted/40 cursor-pointer active:scale-[0.98]'
               )}
-              onClick={!step.done ? step.action : undefined}
+              onClick={!step.done ? () => handleStepClick(step.key, step.action) : undefined}
             >
               <div className={cn(
                 'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
