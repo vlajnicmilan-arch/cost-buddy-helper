@@ -1238,6 +1238,7 @@ export const AddExpenseDialog = ({
           <div className="flex-shrink-0 pt-4 border-t border-border/50">
             <Button 
               type="button"
+              data-testid="manual-expense-submit"
               onClick={handleSubmit}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               disabled={scanning || !amount}

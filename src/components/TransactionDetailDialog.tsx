@@ -852,6 +852,7 @@ export const TransactionDetailDialog = ({
           <Button 
             variant="destructive" 
             className="flex-1"
+            data-testid="transaction-delete"
             onClick={handleDelete}
           >
             <Trash2 className="w-4 h-4 mr-2" />
