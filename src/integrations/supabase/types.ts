@@ -2808,6 +2808,73 @@ export type Database = {
         }
         Relationships: []
       }
+      krug_deletion_request: {
+        Row: {
+          initiated_at: string
+          initiated_by: string
+          krug_id: string
+          reason: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          initiated_at?: string
+          initiated_by: string
+          krug_id: string
+          reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          initiated_at?: string
+          initiated_by?: string
+          krug_id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_deletion_request_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: true
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_deletion_vote: {
+        Row: {
+          approve: boolean
+          krug_id: string
+          user_id: string
+          voted_at: string
+        }
+        Insert: {
+          approve: boolean
+          krug_id: string
+          user_id: string
+          voted_at?: string
+        }
+        Update: {
+          approve?: boolean
+          krug_id?: string
+          user_id?: string
+          voted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_deletion_vote_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug_deletion_request"
+            referencedColumns: ["krug_id"]
+          },
+        ]
+      }
       krug_membership: {
         Row: {
           added_by: string | null
@@ -5620,6 +5687,7 @@ export type Database = {
         Args: { _author: string; _krug: string; _viewer: string }
         Returns: boolean
       }
+      krug_cancel_deletion: { Args: { p_krug_id: string }; Returns: Json }
       krug_cleanup_act_dedup: { Args: never; Returns: Json }
       krug_expire_predlozena: { Args: never; Returns: Json }
       krug_govern_to_personal: {
@@ -5638,6 +5706,14 @@ export type Database = {
         Args: { _krug: string; _user: string }
         Returns: boolean
       }
+      krug_purge_deleted: {
+        Args: { p_older_than_days?: number }
+        Returns: number
+      }
+      krug_request_deletion: {
+        Args: { p_krug_id: string; p_reason?: string }
+        Returns: Json
+      }
       krug_retract: {
         Args: { p_client_request_id: string; p_expense_id: string }
         Returns: Json
@@ -5647,6 +5723,10 @@ export type Database = {
           p_expense_id: string
           p_new_privacy: Database["public"]["Enums"]["krug_privacy"]
         }
+        Returns: Json
+      }
+      krug_vote_deletion: {
+        Args: { p_approve: boolean; p_krug_id: string }
         Returns: Json
       }
       krug_withdraw: {
