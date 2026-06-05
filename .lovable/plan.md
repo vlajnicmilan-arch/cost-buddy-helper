@@ -1,26 +1,25 @@
 ## Cilj
 
-Stari Lucide `Circle` simbol u Krug ekranima zamijeniti novim `KrugBrandIcon` (4-segmentni krug u modulskim bojama).
+Povećati vizualni "gap" između 4 segmenta u `KrugBrandIcon` tako da odgovara referentnoj slici (jasno prekinut krug, kratki lukovi s velikim razmacima).
 
-## Pronađene pozicije
+## Trenutno stanje
 
-Pregled koda pokazuje **samo jednu** poziciju s "old circle" simbolom u Krug flowu:
+`src/components/krug/KrugBrandIcon.tsx`: arc 80°, gap 10° → segmenti se gotovo dodiruju.
 
-- `src/components/krug/KrugListScreen.tsx:60` — empty state, `<Circle className="w-10 h-10 ...">`
+## Izmjena
 
-Ostale Lucide ikone u Krug komponentama (`Users`, `Crown`, `UserPlus`, `Heart`, `HomeIcon`) su **semantičke** (članovi, vlasnik, preset tip) i ne predstavljaju "simbol kruga" — ne diram ih.
+Samo `src/components/krug/KrugBrandIcon.tsx`:
 
-`PageHeader` u `src/pages/Krug.tsx` ne prikazuje ikonu pored naslova (komponenta nema `icon` prop), pa tamo nema starog simbola za zamijeniti.
-
-## Izmjene
-
-**`src/components/krug/KrugListScreen.tsx`**
-- Maknuti `Circle` iz lucide importa
-- Dodati `import { KrugBrandIcon } from './KrugBrandIcon'`
-- Zamijeniti `<Circle className="w-10 h-10 mx-auto text-module/70" strokeWidth={1.5} />` s `<KrugBrandIcon size={40} className="mx-auto" />`
+- `ARC_LEN`: 80° → **60°** (kraći luk)
+- Gap između segmenata: 10° → **30°** (vidljivo razmaknuti, kao na slici)
+- Rekalibracija `rotate` vrijednosti tako da centri lukova ostaju na 45°/135°/225°/315° (sredina = rotate + 30°):
+  - Krug (narančasta, bottom-right): `5` → `15`
+  - Budžeti (ljubičasta, bottom-left): `95` → `105`
+  - Projekti (plava, top-left): `185` → `195`
+  - Novčanik (zelena, top-right): `-85` → `-75`
+- `strokeLinecap="round"` ostaje (zaobljeni krajevi kao na slici)
+- `strokeWidth="2.5"` ostaje
 
 ## Out of scope
 
-- Dodavanje ikone u `PageHeader` (zahtijeva novi prop, van traženog opsega)
-- BottomNav (već zamijenjeno u prethodnom koraku)
-- `Users`/`Crown`/`Heart` ikone (različita semantika, nisu "simbol kruga")
+Boje, redoslijed, veličine, ostali ekrani. Samo geometrija lukova u jednoj komponenti.

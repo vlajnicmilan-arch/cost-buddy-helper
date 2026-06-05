@@ -1,7 +1,7 @@
 /**
  * KrugBrandIcon — multi-color brand simbol za "Krug" tab u BottomNav.
  *
- * Krug podijeljen na 4 luka (po 80°, 10° gap) u bojama 4 modula:
+ * Krug podijeljen na 4 luka (po 60°, 30° gap) u bojama 4 modula:
  *   - top-left:     Projekti (plava)
  *   - top-right:    Novčanik (zelena)
  *   - bottom-left:  Budžeti (ljubičasta)
@@ -17,19 +17,19 @@ interface Props {
   className?: string;
 }
 
-// r=9, C = 2π·9 ≈ 56.549; svaki luk = 80° → L ≈ 12.566
+// r=9, C = 2π·9 ≈ 56.549; svaki luk = 60° → L ≈ 9.425
 const R = 9;
 const C = 2 * Math.PI * R;
-const ARC_LEN = (80 / 360) * C;
+const ARC_LEN = (60 / 360) * C;
 const DASH = `${ARC_LEN} ${C - ARC_LEN}`;
 
-// Rotacije postavljaju početak luka tako da se luk završava 5° prije osi
-// (10° gap između susjednih lukova). Smjer crtanja je CW od 3 sata.
+// Centri lukova ostaju na 45°/135°/225°/315°; rotate = centar − 30°
+// (luk se crta CW od `rotate` u trajanju 60°, gap 30° između susjednih).
 const SEGMENTS: Array<{ rotate: number; hsl: string }> = [
-  { rotate: 185, hsl: MODULE_HSL.projects }, // top-left, plava
-  { rotate: -85, hsl: MODULE_HSL.wallet },   // top-right, zelena
-  { rotate: 95,  hsl: MODULE_HSL.budgets },  // bottom-left, ljubičasta
-  { rotate: 5,   hsl: MODULE_HSL.krug },     // bottom-right, narančasta
+  { rotate: 195, hsl: MODULE_HSL.projects }, // top-left, plava
+  { rotate: -75, hsl: MODULE_HSL.wallet },   // top-right, zelena
+  { rotate: 105, hsl: MODULE_HSL.budgets },  // bottom-left, ljubičasta
+  { rotate: 15,  hsl: MODULE_HSL.krug },     // bottom-right, narančasta
 ];
 
 export const KrugBrandIcon = ({ size = 20, className }: Props) => {
