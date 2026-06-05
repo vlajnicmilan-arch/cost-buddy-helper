@@ -233,54 +233,28 @@ const Onboarding = () => {
       const trimmedName = displayName.trim();
       const profile: UsageProfile = usageProfile ?? 'finance_only';
 
-      // 1) Profile
-      await supabase
-        .from('profiles')
-        .upsert(
-          {
-            user_id: user.id,
-            display_name: trimmedName || null,
-            onboarding_completed: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' },
-        );
+      // Atomic RPC — profile upsert + (opcionalno) budget + kategorije u jednoj transakciji.
+      // Sprječava polu-stanje kada bi neki od 3 zasebna upita pao (profil označen kao
+      // completed, ali budžet ostao nestvoren — ili budžet bez kategorija).
+      const categoriesPayload =
+        hasIncome && selectedCategories.length > 0
+          ? selectedCategories.map((p) => ({
+              category: p.key as SliderKey,
+              limit_amount: (incomeNum * percents[p.key]) / 100,
+              icon: p.emoji,
+              color: p.color,
+            }))
+          : [];
 
-      // 2) Budget + categories (samo ako ima prihoda i barem 1 kategorije s > 0%)
-      if (hasIncome && selectedCategories.length > 0) {
-        const totalExpense = selectedCategories.reduce(
-          (s, p) => s + (incomeNum * percents[p.key]) / 100,
-          0,
-        );
+      const { error: rpcErr } = await supabase.rpc('complete_onboarding', {
+        p_display_name: trimmedName || null,
+        p_usage_profile: profile,
+        p_income: hasIncome ? incomeNum : null,
+        p_budget_name: t('onboardingV3.defaultBudgetName', 'Mjesečni budžet'),
+        p_categories: categoriesPayload as any,
+      });
+      if (rpcErr) throw rpcErr;
 
-        const { data: budget, error: budgetErr } = await supabase
-          .from('budget_plans')
-          .insert({
-            user_id: user.id,
-            name: t('onboardingV3.defaultBudgetName', 'Mjesečni budžet'),
-            period_type: 'monthly',
-            is_active: true,
-            is_recurring: true,
-            total_amount: totalExpense,
-            icon: '💰',
-            color: 'hsl(172 66% 40%)',
-          })
-          .select('id')
-          .single();
-
-        if (budgetErr) throw budgetErr;
-        if (budget?.id) {
-          const rows = selectedCategories.map((p) => ({
-            budget_id: budget.id,
-            category: p.key as SliderKey,
-            limit_amount: (incomeNum * percents[p.key]) / 100,
-            icon: p.emoji,
-            color: p.color,
-          }));
-          const { error: catErr } = await supabase.from('budget_categories').insert(rows);
-          if (catErr) throw catErr;
-        }
-      }
 
       // 3) Lokalno stanje
       localStorage.setItem('onboarding_completed', 'true');
