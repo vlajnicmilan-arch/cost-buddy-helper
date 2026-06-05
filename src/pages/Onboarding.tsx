@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import logo from '@/assets/logo.webp';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { useHaptics } from '@/hooks/useHaptics';
+import { logFunnelEvent } from '@/lib/funnelTracking';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
 import { StepUsageProfile } from '@/components/onboarding/steps/StepUsageProfile';
