@@ -19,7 +19,12 @@ export type FunnelEventName =
   | 'first_transaction'
   | 'day7_active'
   | 'paid_conversion'
-  | 'manual_merge_used';
+  | 'manual_merge_used'
+  | 'onboarding_started'
+  | 'onboarding_step_viewed'
+  | 'onboarding_step_completed'
+  | 'onboarding_step_skipped'
+  | 'onboarding_abandoned';
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';

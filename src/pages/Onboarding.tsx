@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import logo from '@/assets/logo.webp';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { useHaptics } from '@/hooks/useHaptics';
+import { logFunnelEvent } from '@/lib/funnelTracking';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
 import { StepUsageProfile } from '@/components/onboarding/steps/StepUsageProfile';
@@ -24,12 +25,44 @@ import { StepReady } from '@/components/onboarding/steps/StepReady';
 
 const TOTAL_STEPS = 5;
 
+const STEP_NAMES: Record<number, string> = {
+  1: 'greeting',
+  2: 'usage_profile',
+  3: 'income',
+  4: 'budget_sliders',
+  5: 'ready',
+};
+
+const ATTEMPT_KEY = 'onboarding_attempt_count';
+const SESSION_KEY = 'onboarding_session_id';
+
 const INITIAL_PERCENTS: PercentMap = {
   rent: 0,
   food: 0,
   car: 0,
   utilities: 0,
   other: 0,
+};
+
+const initTelemetrySession = (): { sessionId: string; attempt: number } => {
+  let sessionId = '';
+  let attempt = 1;
+  try {
+    sessionId = sessionStorage.getItem(SESSION_KEY) || '';
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+      const prev = parseInt(localStorage.getItem(ATTEMPT_KEY) || '0', 10);
+      attempt = (Number.isFinite(prev) ? prev : 0) + 1;
+      localStorage.setItem(ATTEMPT_KEY, String(attempt));
+    } else {
+      const stored = parseInt(localStorage.getItem(ATTEMPT_KEY) || '1', 10);
+      attempt = Number.isFinite(stored) && stored > 0 ? stored : 1;
+    }
+  } catch {
+    sessionId = crypto.randomUUID();
+  }
+  return { sessionId, attempt };
 };
 
 const Onboarding = () => {
@@ -62,23 +95,115 @@ const Onboarding = () => {
 
   const progress = (step / TOTAL_STEPS) * 100;
 
+  // --- Telemetry refs (stabilne kroz cijeli mount) ---
+  const telemetryRef = useRef<{ sessionId: string; attempt: number } | null>(null);
+  if (telemetryRef.current === null) {
+    telemetryRef.current = initTelemetrySession();
+  }
+  const mountTimeRef = useRef<number>(performance.now());
+  const stepEnterTimeRef = useRef<number>(performance.now());
+  const outcomeRef = useRef<'completed' | 'skipped' | null>(null);
+  const currentStepRef = useRef<number>(1);
+
+  // has_value po koraku — koristi najsvježije vrijednosti
+  const hasValueForStepRef = useRef<(s: number) => boolean>(() => false);
+  hasValueForStepRef.current = (s: number): boolean => {
+    if (s === 1) return displayName.trim().length > 0;
+    if (s === 2) return usageProfile !== null;
+    if (s === 3) return incomeNum > 0;
+    if (s === 4) return selectedCategories.length > 0;
+    return true;
+  };
+
+  const baseMeta = () => ({
+    session_id: telemetryRef.current!.sessionId,
+    attempt: telemetryRef.current!.attempt,
+  });
+
+  // onboarding_started — jednom po mountu (sessionStorage flag spriječi dvostruko firanje pri remountu unutar iste sesije)
+  useEffect(() => {
+    try {
+      const FIRED_KEY = 'onboarding_started_fired_' + telemetryRef.current!.sessionId;
+      if (sessionStorage.getItem(FIRED_KEY) === '1') return;
+      sessionStorage.setItem(FIRED_KEY, '1');
+    } catch {
+      /* noop — sve-jedno emitiramo */
+    }
+    logFunnelEvent('onboarding_started', { ...baseMeta(), entry: 'mount' }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // step_viewed — pri svakom ulasku u korak (uključujući Back)
+  useEffect(() => {
+    currentStepRef.current = step;
+    stepEnterTimeRef.current = performance.now();
+    logFunnelEvent('onboarding_step_viewed', {
+      ...baseMeta(),
+      step,
+      step_name: STEP_NAMES[step] ?? String(step),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // unmount → abandoned (samo ako nije bio completed/skipped)
+  useEffect(() => {
+    return () => {
+      if (outcomeRef.current !== null) return;
+      logFunnelEvent('onboarding_abandoned', {
+        ...baseMeta(),
+        last_step: currentStepRef.current,
+        last_step_name: STEP_NAMES[currentStepRef.current] ?? String(currentStepRef.current),
+        time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
+      }).catch(() => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const logStepCompleted = (fromStep: number) => {
+    const duration_ms = Math.round(performance.now() - stepEnterTimeRef.current);
+    logFunnelEvent('onboarding_step_completed', {
+      ...baseMeta(),
+      step: fromStep,
+      step_name: STEP_NAMES[fromStep] ?? String(fromStep),
+      duration_ms,
+      has_value: hasValueForStepRef.current(fromStep),
+    }).catch(() => {});
+  };
+
   const goBack = () => {
     lightTap().catch(() => {});
     setStep((s) => Math.max(1, s - 1));
   };
   const goNext = () => {
     lightTap().catch(() => {});
+    logStepCompleted(currentStepRef.current);
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
   const handleUsageSelect = (p: Exclude<UsageProfile, null>) => {
     setUsageProfileLocal(p);
     lightTap().catch(() => {});
-    // Auto-advance
+    // Auto-advance — log completion za step 2 odmah (has_value=true jer smo upravo selektirali)
+    logFunnelEvent('onboarding_step_completed', {
+      ...baseMeta(),
+      step: 2,
+      step_name: STEP_NAMES[2],
+      duration_ms: Math.round(performance.now() - stepEnterTimeRef.current),
+      has_value: true,
+      auto_advance: true,
+    }).catch(() => {});
     setTimeout(() => setStep((s) => Math.min(TOTAL_STEPS, s + 1)), 220);
   };
 
   const handleSkip = () => {
+    outcomeRef.current = 'skipped';
+    logFunnelEvent('onboarding_step_skipped', {
+      ...baseMeta(),
+      step: currentStepRef.current,
+      step_name: STEP_NAMES[currentStepRef.current] ?? String(currentStepRef.current),
+      reason: 'finish_later',
+      time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
+    }).catch(() => {});
     // Završi kasnije: označi onboarding kao gotov + minimalni defaulti
     setOnboardingCompleted(true);
     localStorage.setItem('onboarding_completed', 'true');
@@ -168,14 +293,17 @@ const Onboarding = () => {
       setUsageProfile(profile);
       setOnboardingCompleted(true);
 
-      // 4) Funnel telemetry
-      import('@/lib/funnelTracking')
-        .then(({ logFunnelEvent }) => logFunnelEvent('onboarding_complete', {
-          usage_profile: profile,
-          has_income: hasIncome,
-          expense_categories: selectedCategories.length,
-        }))
-        .catch(() => {});
+      // 4) Funnel telemetry — označi outcome PRIJE async loga da unmount handler ne ispali abandoned
+      outcomeRef.current = 'completed';
+      // step_completed za zadnji korak (Ready) — finish CTA
+      logStepCompleted(currentStepRef.current);
+      logFunnelEvent('onboarding_complete', {
+        ...baseMeta(),
+        usage_profile: profile,
+        has_income: hasIncome,
+        expense_categories: selectedCategories.length,
+        total_duration_ms: Math.round(performance.now() - mountTimeRef.current),
+      }).catch(() => {});
 
       successVibration().catch(() => {});
       showSuccess(t('onboardingV3.doneToast', 'Aplikacija je spremna!'));
