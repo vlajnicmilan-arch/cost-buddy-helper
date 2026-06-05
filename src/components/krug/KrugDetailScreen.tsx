@@ -20,8 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
+import { KrugDeleteDialog } from './KrugDeleteDialog';
+import { KrugDeletionVotePanel } from './KrugDeletionVotePanel';
 import {
   useKrugChangeMemberRole,
   useKrugRemoveMember,
@@ -52,6 +54,7 @@ export function KrugDetailScreen({ krugId }: Props) {
 
   const removeMember = useKrugRemoveMember();
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
   const punopravniCount = useMemo(
@@ -139,6 +142,27 @@ export function KrugDetailScreen({ krugId }: Props) {
           </p>
         )}
       </Card>
+
+      {isOwner && krug.lifecycle_state !== 'deleted' && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            {t('krug.delete.cta', 'Obriši Krug')}
+          </Button>
+        </div>
+      )}
+
+      <KrugDeletionVotePanel
+        krugId={krugId}
+        members={members}
+        isOwner={isOwner}
+        currentUserId={user?.id ?? null}
+      />
 
       <KrugApprovalQueue
         krugId={krugId}
@@ -278,6 +302,14 @@ export function KrugDetailScreen({ krugId }: Props) {
         krugId={krugId}
         preset={krug.preset}
         punopravniCount={punopravniCount}
+      />
+
+      <KrugDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        krugId={krugId}
+        krugName={krug.name}
+        fullMemberCount={punopravniCount}
       />
     </div>
   );
