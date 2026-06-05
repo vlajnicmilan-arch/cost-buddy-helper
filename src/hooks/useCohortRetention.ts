@@ -16,7 +16,24 @@ export const useCohortRetention = (enabled = true) =>
     queryFn: async (): Promise<CohortRetentionRow[]> => {
       const { data, error } = await supabase.rpc('admin_get_cohort_retention');
       if (error) throw error;
-      return (data ?? []) as CohortRetentionRow[];
+      const wide = (data ?? []) as Array<Record<string, number | string>>;
+      const long: CohortRetentionRow[] = [];
+      for (const r of wide) {
+        const size = Number(r.cohort_size) || 0;
+        for (let w = 0; w < 8; w++) {
+          const count = Number(r[`w${w}`]) || 0;
+          const pct = size > 0 ? (count / size) * 100 : 0;
+          long.push({
+            cohort_week: String(r.cohort_week),
+            cohort_week_start: String(r.cohort_week_start),
+            cohort_size: size,
+            week_offset: w,
+            retained_count: count,
+            retained_pct: Math.round(pct * 10) / 10,
+          });
+        }
+      }
+      return long;
     },
   });
 

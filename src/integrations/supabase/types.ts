@@ -5458,9 +5458,14 @@ export type Database = {
           cohort_size: number
           cohort_week: string
           cohort_week_start: string
-          retained_count: number
-          retained_pct: number
-          week_offset: number
+          w0: number
+          w1: number
+          w2: number
+          w3: number
+          w4: number
+          w5: number
+          w6: number
+          w7: number
         }[]
       }
       admin_get_funnel_summary_30d: {
