@@ -1,38 +1,26 @@
 ## Cilj
 
-Zamijeniti trenutnu Lucide ikonu na "Krug" tabu u `BottomNav` s prilagođenim simbolom: krug podijeljen na 4 luka razdvojena gapovima, svaki u jednoj boji iz `MODULE_HSL`.
+Stari Lucide `Circle` simbol u Krug ekranima zamijeniti novim `KrugBrandIcon` (4-segmentni krug u modulskim bojama).
 
-## Boje (iz `src/lib/moduleColors.ts`)
+## Pronađene pozicije
 
-| Segment | Modul | HSL |
-|---|---|---|
-| Gore-lijevo | Projekti | `217 91% 60%` (plava) |
-| Gore-desno | Novčanik | `142 71% 45%` (zelena) |
-| Dolje-lijevo | Budžeti | `258 90% 66%` (ljubičasta) |
-| Dolje-desno | Krug | `25 95% 53%` (narančasta) |
+Pregled koda pokazuje **samo jednu** poziciju s "old circle" simbolom u Krug flowu:
 
-Pregled (teal) namjerno izostavljen — predstavlja okvir, ne segment.
+- `src/components/krug/KrugListScreen.tsx:60` — empty state, `<Circle className="w-10 h-10 ...">`
 
-## Implementacija
+Ostale Lucide ikone u Krug komponentama (`Users`, `Crown`, `UserPlus`, `Heart`, `HomeIcon`) su **semantičke** (članovi, vlasnik, preset tip) i ne predstavljaju "simbol kruga" — ne diram ih.
 
-1. **Nova komponenta** `src/components/krug/KrugBrandIcon.tsx`
-   - SVG 24×24, `viewBox="0 0 24 24"`, prima `className` + `size`
-   - 4 `<path>` luka (po 72°, 18° gap između), `stroke-linecap="round"`, `fill="none"`, `stroke-width="2.5"`
-   - Boje preko `stroke={hsl(...)}` literalno (ne preko `currentColor`) jer su 4 različite — `aria-hidden`
-   - Centri lukova na 45°/135°/225°/315°, redoslijed boja kao u tablici
+`PageHeader` u `src/pages/Krug.tsx` ne prikazuje ikonu pored naslova (komponenta nema `icon` prop), pa tamo nema starog simbola za zamijeniti.
 
-2. **BottomNav** (`src/components/BottomNav.tsx`)
-   - Pronaći stavku za rutu `/krug` i zamijeniti `icon: SomeLucideIcon` s renderiranjem `<KrugBrandIcon />`
-   - Aktivno/neaktivno stanje: ikona ostaje multi-color uvijek (to je poanta brandinga); samo label i indikator i dalje koriste `MODULE_NAV_CLASSES.krug` kao i prije
-   - Touch target ≥44px ostaje nepromijenjen
+## Izmjene
+
+**`src/components/krug/KrugListScreen.tsx`**
+- Maknuti `Circle` iz lucide importa
+- Dodati `import { KrugBrandIcon } from './KrugBrandIcon'`
+- Zamijeniti `<Circle className="w-10 h-10 mx-auto text-module/70" strokeWidth={1.5} />` s `<KrugBrandIcon size={40} className="mx-auto" />`
 
 ## Out of scope
 
-- Header `/krug` stranice, app logo, splash, prazni state — nije traženo
-- Ostali tabovi (zadržavaju svoje Lucide ikone)
-- DB/i18n promjene (none)
-- Version bump (samo UI, nije native promjena)
-
-## Test
-
-Vizualna provjera u previewu na 384px; ikona mora ostati čitljiva na ~24px i centrirana u BottomNav slotu.
+- Dodavanje ikone u `PageHeader` (zahtijeva novi prop, van traženog opsega)
+- BottomNav (već zamijenjeno u prethodnom koraku)
+- `Users`/`Crown`/`Heart` ikone (različita semantika, nisu "simbol kruga")
