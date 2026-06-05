@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Wallet, Receipt, Target, X, Sparkles } from 'lucide-react';
@@ -8,8 +8,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { logFunnelEvent } from '@/lib/funnelTracking';
 
 const DISMISS_KEY_PREFIX = 'welcome_checklist_dismissed:';
+const VIEWED_KEY_PREFIX = 'welcome_checklist_viewed:';
+const COMPLETED_KEY_PREFIX = 'welcome_checklist_completed:';
 
 interface WelcomeChecklistProps {
   hasPaymentSources: boolean;
