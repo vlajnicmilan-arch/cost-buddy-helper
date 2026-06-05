@@ -4436,6 +4436,47 @@
       "layersIndependentNote": "Billing and Admin override are independent layers. A billing change does not remove existing override grants. A revoke does not change billing. Effective access remains as long as at least one active source exists."
     }
   },
+  "adminRetention": {
+    "title": "Cohort Retention",
+    "subtitle": "User retention by signup week cohort, last 180 days. Active = ≥1 transaction in week. Activation = ≥3 transactions lifetime.",
+    "loading": "Loading...",
+    "error": "Failed to load",
+    "kpi": {
+      "w1": "W1 retention",
+      "w4": "W4 retention",
+      "activation": "Activation",
+      "medianExpenses": "Median transactions",
+      "perActiveUser": "per active user",
+      "basedOn": "{{cohorts}} cohorts · {{users}} users",
+      "infoAria": "Metric explanation",
+      "w1Tooltip": "Percent of users who logged ≥1 transaction in the week after signup. Calculated across cohorts with ≥20 users and sufficient maturity, weighted by cohort size.",
+      "w4Tooltip": "Percent of users active in the 4th week after signup. Monthly retention proxy. Same restrictions as W1.",
+      "activationTooltip": "Percent of users in the cohort who logged ≥3 transactions lifetime. Calculated across cohorts with ≥20 users.",
+      "medianTooltip": "Cohort-level estimate: weighted average of per-cohort medians, weighted by activated count. Not an absolute global median — use as a trend signal."
+    },
+    "funnel": {
+      "title": "Funnel (30 days)",
+      "subtitle": "Daily count of key events and total for the period.",
+      "events": {
+        "install": "Install",
+        "signup": "Signup",
+        "onboarding_complete": "Onboarding complete",
+        "first_transaction": "First transaction",
+        "day7_active": "D7 active",
+        "paid_conversion": "Paid conversion"
+      }
+    },
+    "heatmap": {
+      "title": "Cohort heatmap",
+      "subtitle": "Percent of returning users by week W0..W7. Darker cell = higher percent. Future cells shown in gray.",
+      "cohortHeader": "Cohort (ISO week)",
+      "sizeHeader": "N",
+      "smallSample": "Small sample",
+      "futureCell": "Cohort has not reached this week yet",
+      "cellTitle": "{{count}} of {{size}}",
+      "empty": "No cohorts in the last 180 days."
+    }
+  },
   "onboardingV2": {
     "finishLater": "Finish later",
     "saving": "Saving...",
