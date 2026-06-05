@@ -3561,6 +3561,7 @@ export type Database = {
           deletion_scheduled_at: string | null
           display_name: string | null
           id: string
+          is_e2e_user: boolean
           multi_currency_enabled: boolean | null
           onboarding_completed: boolean
           preferred_language: string | null
@@ -3575,6 +3576,7 @@ export type Database = {
           deletion_scheduled_at?: string | null
           display_name?: string | null
           id?: string
+          is_e2e_user?: boolean
           multi_currency_enabled?: boolean | null
           onboarding_completed?: boolean
           preferred_language?: string | null
@@ -3589,6 +3591,7 @@ export type Database = {
           deletion_scheduled_at?: string | null
           display_name?: string | null
           id?: string
+          is_e2e_user?: boolean
           multi_currency_enabled?: boolean | null
           onboarding_completed?: boolean
           preferred_language?: string | null
@@ -5606,6 +5609,7 @@ export type Database = {
           pending_summary: Json
         }[]
       }
+      e2e_reset_user: { Args: { p_user_id: string }; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number

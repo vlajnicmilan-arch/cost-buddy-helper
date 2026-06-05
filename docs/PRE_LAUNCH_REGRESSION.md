@@ -3,6 +3,16 @@
 > Ručno proći prije svakog "Publish" prema produkciji (vmbalance.com / Play Store).
 > Označi: ✅ prošlo · ⚠️ prošlo s napomenom · ❌ blocker
 > Datum prolaska: __________  Verzija: __________
+>
+> **Napomena (Sprint 2 E2E):** Tokovi 1, 2, 3, 4-minimal i 5 (CSV import) automatizirani su
+> u Playwrightu (`e2e/flows/`). Ako CI E2E run zeleni u zadnjih 24h, te sekcije se mogu spot-checkirati,
+> ne moraju cijele ručno. Stavke koje **OSTAJU isključivo ručno**:
+> - Project completion wizard (3 koraka)
+> - Project reopen gumb
+> - Project read-only gate (owner downgrade)
+> - Manual ↔ bank merge / unmerge
+> - OCR / AI Insights / Krug / Stripe checkout / Email delivery
+> Te ulaze u E2E tek kad pojavi se ≥1 produkcijski bug ili podržan signal.
 
 ---
 
