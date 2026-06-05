@@ -61,8 +61,8 @@ export function useKrugDeletionRequest(krugId: string | null | undefined) {
       if (reqRes.error && reqRes.error.code !== 'PGRST116') throw reqRes.error;
       if (voteRes.error) throw voteRes.error;
       return {
-        request: (reqRes.data as KrugDeletionRequestRow | null) ?? null,
-        votes: (voteRes.data as KrugDeletionVoteRow[] | null) ?? [],
+        request: ((reqRes.data as unknown) as KrugDeletionRequestRow | null) ?? null,
+        votes: ((voteRes.data as unknown) as KrugDeletionVoteRow[] | null) ?? [],
       };
     },
   });
