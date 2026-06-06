@@ -570,7 +570,14 @@ export const ProjectTransactionsTab = ({
               {t('projects.viewerNote', 'Vaše transakcije zahtijevaju odobrenje člana')}
             </div>
           )}
-          <Button onClick={() => setAddDialogOpen(true)} size="sm" className={needsApproval ? '' : 'ml-auto'}>
+          <Button
+            onClick={() => { if (!guard()) return; setAddDialogOpen(true); }}
+            size="sm"
+            className={needsApproval ? '' : 'ml-auto'}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
+            title={roTitle}
+          >
             <Plus className="w-4 h-4 mr-2" />
             {needsApproval
               ? t('projects.submitExpense', 'Predloži trošak')
