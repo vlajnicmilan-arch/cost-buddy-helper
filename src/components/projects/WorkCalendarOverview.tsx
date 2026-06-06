@@ -902,8 +902,8 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
 
             {/* Add entry section */}
             {!showAddForm ? (
-              workers.length > 0 && (
-                <Button onClick={() => setShowAddForm(true)} variant="outline" className="w-full" size="sm">
+              workers.length > 0 && !isReadOnly && (
+                <Button onClick={() => { if (!guard()) return; setShowAddForm(true); }} variant="outline" className="w-full" size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   {t('workers.addWorkDay', 'Dodaj radni dan')}
                 </Button>
