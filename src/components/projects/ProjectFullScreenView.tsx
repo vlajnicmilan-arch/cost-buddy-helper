@@ -16,10 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { 
+import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw, MoreHorizontal
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -45,12 +45,20 @@ import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
+import { useProjectDocuments } from '@/hooks/useProjectDocuments';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
+import { ProjectHeaderMenu } from './ProjectHeaderMenu';
+import { ProjectBudgetTab } from './ProjectBudgetTab';
+import { ProjectMoreTabsSheet, type MoreTabItem } from './ProjectMoreTabsSheet';
+import { ProjectQuickStartCards } from './ProjectQuickStartCards';
+import { useProjectViewMode } from '@/hooks/useProjectViewMode';
+import { isLiteProject } from '@/lib/isLiteProject';
+import { LocalStorage } from '@/hooks/useLocalStorage';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
