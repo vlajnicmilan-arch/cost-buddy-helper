@@ -18,6 +18,8 @@ import { type Category, type TransactionType } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useBalanceUpdater } from '@/hooks/useBalanceUpdater';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useAppState } from '@/contexts/AppStateContext';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
@@ -59,6 +61,8 @@ interface ProjectTransactionsTabProps {
   userRole: ProjectRole;
   loading: boolean;
   onRefetch: () => void;
+  /** When true, all write paths (Add/Edit/Delete) are gated with the read-only toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectTransactionsTab = ({
@@ -70,6 +74,7 @@ export const ProjectTransactionsTab = ({
   userRole,
   loading,
   onRefetch,
+  isReadOnly = false,
 }: ProjectTransactionsTabProps) => {
   const { t, i18n } = useTranslation();
   const reportOwner = useReportOwner();
