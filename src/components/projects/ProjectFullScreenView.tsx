@@ -722,7 +722,7 @@ export const ProjectFullScreenView = ({
                 )}
 
                 {/* Sub-tabs for active group */}
-                {!isWorkerOnly && (
+                {!isLite && !isWorkerOnly && (
                 <div className="relative mb-6">
                   <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
