@@ -85,6 +85,10 @@ export const ProjectTransactionsTab = ({
   const { activeBusinessProfileId } = useAppState();
   const { customPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
+  // Reuse canonical soft-delete path (Trash + RPC + balance reverse + owner-loan cleanup).
+  const { deleteExpense } = useExpenses();
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
+  const roTitle = isReadOnly ? blockProps.title : undefined;
   const {
     pendingTransactions,
     approveTransaction,
