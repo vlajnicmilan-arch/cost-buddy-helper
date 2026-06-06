@@ -892,6 +892,27 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
+                {/* Budget tab — extracted KPI panel; available in both Lite and Full mode */}
+                <TabsContent value="budget" className="m-0">
+                  <ProjectBudgetTab
+                    project={project}
+                    budget={budget}
+                    originalContract={originalContract}
+                    totalReceived={totalReceived}
+                    totalSpent={totalSpent}
+                    costPct={costPct}
+                    collectionPct={collectionPct}
+                    marginPct={marginPct}
+                    marginStatusKey={marginStatusKey}
+                    showBudgetAlarm={showBudgetAlarm}
+                    showCollectionAlarm={showCollectionAlarm}
+                    canAccessBusinessTabs={canAccessBusinessTabs}
+                    onOpenBudgetHistory={() => setBudgetHistoryOpen(true)}
+                    onRequestEdit={onRequestEdit ? () => onRequestEdit(project) : undefined}
+                  />
+                </TabsContent>
+
+
                 {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                 <TabsContent value="phases" className="m-0 space-y-3">
                   {canSeeTab('timeline') && (
