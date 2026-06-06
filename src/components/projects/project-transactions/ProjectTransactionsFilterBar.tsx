@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import type { Locale } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { makeCalendarDisabled } from '@/lib/dateValidation';
+import { makeCalendarDisabled, type DateRange as DateLimits } from '@/lib/dateValidation';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import type { ProjectMilestone } from '@/types/project';
 import type { DateRange } from 'react-day-picker';
