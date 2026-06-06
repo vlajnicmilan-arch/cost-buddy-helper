@@ -324,6 +324,7 @@ export const ProjectTransactionsTab = ({
   };
 
   const handleDeleteExpense = (expenseId: string) => {
+    if (!guard()) return;
     setExpenseToDelete(expenseId);
     setDeleteDialogOpen(true);
   };
@@ -331,14 +332,12 @@ export const ProjectTransactionsTab = ({
   const confirmDelete = async () => {
     if (!expenseToDelete) return;
     try {
-      const { deleteOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
-      deleteOwnerLoanForExpense(expenseToDelete).catch((e) =>
-        console.error('Owner-loan delete failed:', e),
-      );
-
-      const { error } = await supabase.from('expenses').delete().eq('id', expenseToDelete);
-      if (error) throw error;
-
+      // Use canonical deleteExpense path:
+      // - soft delete via RPC (goes to Trash with 30d retention)
+      // - reverses balance for custom: payment sources
+      // - cleans up linked owner-loan (cross-mode)
+      // silent=true to keep the existing project-tab toast wording.
+      await deleteExpense(expenseToDelete, { silent: true });
       showSuccess(t('common.deleted'));
       onRefetch();
     } catch (error) {
@@ -348,6 +347,7 @@ export const ProjectTransactionsTab = ({
       setDeleteDialogOpen(false);
       setExpenseToDelete(null);
     }
+
   };
 
   const handleOpenEdit = (expense: ProjectExpense) => {
