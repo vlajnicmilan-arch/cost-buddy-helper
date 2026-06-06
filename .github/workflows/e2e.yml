@@ -1,15 +1,17 @@
 name: E2E
 
+# DEFERRED: Infrastructure is in place but disabled until E2E secrets are configured.
+# To activate: add E2E_SUPABASE_URL, E2E_SUPABASE_ANON_KEY, E2E_SUPABASE_SERVICE_ROLE_KEY,
+# E2E_USER_PASSWORD to GitHub repo secrets, then change `on:` triggers back to pull_request/push.
+# See docs/E2E_TESTING.md.
+
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
+
 
 jobs:
   e2e:

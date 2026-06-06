@@ -1,6 +1,12 @@
-# E2E Testing (Sprint 2)
+# E2E Testing (Sprint 2) — DEFERRED
+
+> **Status: infrastruktura postavljena, nije aktivirana.**
+> CI workflow je u `workflow_dispatch` modu (ne pokreće se na PR/push).
+> Aktivacija zahtijeva GitHub repo secrets (vidi "Aktivacija" na dnu).
+> Do tada zaštitu daju: vitest unit testovi + `PRE_LAUNCH_REGRESSION.md` ručna checklista.
 
 Playwright + Chromium mobile (Pixel 5 viewport, 384px). Pokriva 5 kritičnih korisničkih tokova.
+
 
 ## Tokovi
 
@@ -77,4 +83,18 @@ Selektori centralizirani u `e2e/helpers/selectors.ts`. Sprint 2 zahtijeva dodava
 - [ ] p95 trajanje < 6 min
 - [x] `docs/E2E_TESTING.md`
 - [ ] `PRE_LAUNCH_REGRESSION.md` updated
+
+---
+
+## Aktivacija (kasnije)
+
+1. U GitHub repu → **Settings → Secrets and variables → Actions → New repository secret** dodaj:
+   - `E2E_SUPABASE_URL` = `https://fzalxjretvtvokiotvkf.supabase.co`
+   - `E2E_SUPABASE_ANON_KEY` = (anon key iz Lovable Cloud)
+   - `E2E_SUPABASE_SERVICE_ROLE_KEY` = (service_role key iz Lovable Cloud → Backend → API keys)
+   - `E2E_USER_PASSWORD` = bilo koji jak string
+2. U `.github/workflows/e2e.yml` zamijeni `on: workflow_dispatch:` blok s originalnim trigerima (`pull_request` + `push: main`).
+3. Dodaj `data-testid` atribute za preostale flowove (Flow 2 ih već ima).
+4. Ukloni `test.skip` iz spec fajlova jedan po jedan.
+
 - [ ] `mem://features/e2e-test-suite` entry
