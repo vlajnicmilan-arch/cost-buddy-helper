@@ -378,6 +378,7 @@ export const BusinessProjects = ({ onRefreshExpenses }: BusinessProjectsProps) =
         onClose={handleCloseFullScreen}
         project={selectedProject}
         onRequestEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
+        onRequestDelete={(id) => { setProjectToDelete(id); setDeleteConfirmOpen(true); }}
         onRefreshExpenses={() => { refetch(); fetchAllStats(); onRefreshExpenses?.(); }}
       />
 

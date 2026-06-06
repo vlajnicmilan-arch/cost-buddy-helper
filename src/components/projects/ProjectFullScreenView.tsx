@@ -16,10 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { 
+import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw, MoreHorizontal
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -45,12 +45,20 @@ import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
+import { useProjectDocuments } from '@/hooks/useProjectDocuments';
 import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
+import { ProjectHeaderMenu } from './ProjectHeaderMenu';
+import { ProjectBudgetTab } from './ProjectBudgetTab';
+import { ProjectMoreTabsSheet, type MoreTabItem } from './ProjectMoreTabsSheet';
+import { ProjectQuickStartCards } from './ProjectQuickStartCards';
+import { useProjectViewMode } from '@/hooks/useProjectViewMode';
+import { isLiteProject } from '@/lib/isLiteProject';
+import { LocalStorage } from '@/hooks/useLocalStorage';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -65,6 +73,10 @@ interface ProjectFullScreenViewProps {
   initialTab?: string;
   /** Called when user wants to edit the project (e.g. from "enter contract value" CTA). */
   onRequestEdit?: (project: ProjectWithOwnership) => void;
+  /** Optional: archive/unarchive trigger from the header ⋮ menu. */
+  onRequestArchive?: (id: string, archive: boolean) => void;
+  /** Optional: delete trigger from the header ⋮ menu (only enabled for archived projects). */
+  onRequestDelete?: (id: string) => void;
 }
 
 export const ProjectFullScreenView = ({
@@ -73,11 +85,13 @@ export const ProjectFullScreenView = ({
   project,
   onRefreshExpenses,
   initialTab,
-  onRequestEdit
+  onRequestEdit,
+  onRequestArchive,
+  onRequestDelete
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [activeTab, setActiveTab] = useState(initialTab || 'phases');
+  const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   const [activeGroup, setActiveGroup] = useState<TabGroup>('work');
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
@@ -102,6 +116,35 @@ export const ProjectFullScreenView = ({
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
+  const { documents } = useProjectDocuments(project?.id || null);
+
+  // Lite-mode plumbing (Wave 2)
+  const litePref = isLiteProject({
+    contract_value: project?.contract_value ?? null,
+    total_budget: project?.total_budget ?? null,
+    milestonesCount: milestones.length,
+    membersCount: members.length,
+    documentsCount: documents.length,
+  });
+  const { mode: viewMode, toggle: toggleViewMode } = useProjectViewMode(
+    project?.id,
+    litePref ? 'lite' : 'full'
+  );
+  const isLite = viewMode === 'lite';
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [quickStartDismissed, setQuickStartDismissed] = useState(false);
+  useEffect(() => {
+    if (!project?.id) return;
+    LocalStorage.get(`projectQuickStart_dismissed:${project.id}`)
+      .then((v) => setQuickStartDismissed(v === '1'))
+      .catch(() => setQuickStartDismissed(false));
+  }, [project?.id]);
+  const dismissQuickStart = () => {
+    setQuickStartDismissed(true);
+    if (project?.id) {
+      LocalStorage.set(`projectQuickStart_dismissed:${project.id}`, '1').catch(() => {});
+    }
+  };
 
   // Razlika prikaza i računanja:
   // - effectiveContract (=contract_value, koji već uključuje aneks) koristi se za marže/% potrošnje/% naplate/alarme.
@@ -159,7 +202,7 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab(isWorkerOnly ? 'worklog' : 'phases');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
       setActiveGroup('work');
     } else if (isWorkerOnly) {
       setActiveTab('worklog');
@@ -337,74 +380,53 @@ export const ProjectFullScreenView = ({
                 )}
 
                 {!isWorkerOnly && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setReportsOpen(true)}
-                  className="shrink-0"
-                >
-                  <BarChart3 className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">{t('projects.reports', 'Izvještaji')}</span>
-                </Button>
-                )}
-
-                {!isWorkerOnly && isManager && project.status !== 'completed' && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    if (isReadOnly) {
-                      showError(t('projects.access.readOnlyBlockedToast'));
-                      return;
-                    }
-                    setCompleteWizardOpen(true);
-                  }}
-                  disabled={isReadOnly}
-                  className="shrink-0 gap-1"
-                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.headerCta', 'Završi projekt')}
-                >
-                  <Flag className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">{t('projects.complete.headerCta', 'Završi projekt')}</span>
-                </Button>
-                )}
-
-                {!isWorkerOnly && isManager && project.status === 'completed' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={reopening || isReadOnly}
-                  onClick={async () => {
-                    if (isReadOnly) {
-                      showError(t('projects.access.readOnlyBlockedToast'));
-                      return;
-                    }
-                    setReopening(true);
-                    try {
-                      const { error } = await supabase
-                        .from('projects')
-                        .update({ status: 'active', archived_at: null })
-                        .eq('id', project.id);
-                      if (error) throw error;
-                      showSuccess(t('projects.complete.reopened', 'Projekt ponovo otvoren'));
-                      onRefreshExpenses?.();
-                      onClose();
-                    } catch (e) {
-                      console.error('Reopen project error:', e);
-                      if (isProjectsReadonlyError(e)) {
+                  <ProjectHeaderMenu
+                    isManager={isManager}
+                    isReadOnly={isReadOnly}
+                    projectCompleted={project.status === 'completed'}
+                    projectArchived={!!project.archived_at}
+                    viewMode={viewMode}
+                    canDelete={!!onRequestDelete && !!project.archived_at}
+                    canArchive={!!onRequestArchive}
+                    onEdit={() => onRequestEdit?.(project)}
+                    onOpenReports={() => setReportsOpen(true)}
+                    onComplete={() => {
+                      if (isReadOnly) {
                         showError(t('projects.access.readOnlyBlockedToast'));
-                      } else {
-                        showError(t('common.error'));
+                        return;
                       }
-                    } finally {
-                      setReopening(false);
-                    }
-                  }}
-                  className="shrink-0 gap-1"
-                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
-                >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">{t('projects.complete.reopenCta', 'Ponovo otvori')}</span>
-                </Button>
+                      setCompleteWizardOpen(true);
+                    }}
+                    onReopen={async () => {
+                      if (isReadOnly) {
+                        showError(t('projects.access.readOnlyBlockedToast'));
+                        return;
+                      }
+                      setReopening(true);
+                      try {
+                        const { error } = await supabase
+                          .from('projects')
+                          .update({ status: 'active', archived_at: null })
+                          .eq('id', project.id);
+                        if (error) throw error;
+                        showSuccess(t('projects.complete.reopened', 'Projekt ponovo otvoren'));
+                        onRefreshExpenses?.();
+                        onClose();
+                      } catch (e) {
+                        console.error('Reopen project error:', e);
+                        if (isProjectsReadonlyError(e)) {
+                          showError(t('projects.access.readOnlyBlockedToast'));
+                        } else {
+                          showError(t('common.error'));
+                        }
+                      } finally {
+                        setReopening(false);
+                      }
+                    }}
+                    onArchiveToggle={() => onRequestArchive?.(project.id, !project.archived_at)}
+                    onDelete={() => onRequestDelete?.(project.id)}
+                    onToggleViewMode={toggleViewMode}
+                  />
                 )}
               </div>
             </div>
@@ -455,8 +477,8 @@ export const ProjectFullScreenView = ({
                   className="mb-4"
                 />
               )}
-              {/* Budget Overview - only show if user can see funding */}
-              {canSeeTab('funding') && (
+              {/* Budget Overview - only show if user can see funding (Full mode only; Lite has dedicated Budget tab) */}
+              {!isLite && canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -568,15 +590,104 @@ export const ProjectFullScreenView = ({
               </div>
               )}
 
-              {/* Forecast section */}
-              {canSeeTab('funding') && budget > 0 && (
+              {/* Forecast section (Full mode only; Lite keeps Pregled minimal) */}
+              {!isLite && canSeeTab('funding') && budget > 0 && (
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
-              {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}
+              {/* Tabs - Lite (3 base + auto-promoted + More) or Full (Posao / Ljudi / Novac) */}
               <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
-                {/* Top group selector — hidden for restricted workers */}
-                {!isWorkerOnly && (
+                {/* --- LITE TAB STRIP --- */}
+                {isLite && !isWorkerOnly && (() => {
+                  const hasPhases = canSeeTab('milestones') && milestones.length > 0;
+                  const hasTeam = canSeeTab('team') && (members.length + invitations.length) > 1;
+                  const hasDocs = documents.length > 0;
+                  const moreItems: MoreTabItem[] = [];
+                  if (!hasPhases && canSeeTab('milestones')) {
+                    moreItems.push({ value: 'phases', label: labels.milestonesLabel, icon: Target });
+                  }
+                  if (!hasTeam && canSeeTab('team')) {
+                    moreItems.push({ value: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users });
+                  }
+                  if (!hasDocs) {
+                    moreItems.push({ value: 'documents', label: labels.documentsLabel, icon: FolderOpen });
+                  }
+                  if (canSeeTab('funding')) {
+                    moreItems.push({ value: 'funding', label: t('projects.funding', 'Financiranje'), icon: Wallet });
+                  }
+                  if (canSeeTab('worklog')) {
+                    moreItems.push({ value: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen });
+                  }
+                  moreItems.push({ value: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity });
+
+                  const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
+
+                  return (
+                    <div className="relative mb-6">
+                      <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                        <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
+                          <TabsTrigger value="overview" className={triggerCls}>
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            {t('projects.overview', 'Pregled')}
+                          </TabsTrigger>
+                          {canSeeTab('transactions') && (
+                            <TabsTrigger value="transactions" className={triggerCls}>
+                              <FileText className="w-3.5 h-3.5" />
+                              {t('projects.transactions', 'Transakcije')}
+                              {expenses.length > 0 && (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                              )}
+                            </TabsTrigger>
+                          )}
+                          <TabsTrigger value="budget" className={triggerCls}>
+                            <Wallet className="w-3.5 h-3.5" />
+                            {t('projects.budgetTab.label', 'Budžet')}
+                          </TabsTrigger>
+                          {hasPhases && (
+                            <TabsTrigger value="phases" className={triggerCls}>
+                              <Target className="w-3.5 h-3.5" />
+                              {labels.milestonesLabel}
+                              <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                            </TabsTrigger>
+                          )}
+                          {hasTeam && (
+                            <TabsTrigger value="team" className={triggerCls}>
+                              <Users className="w-3.5 h-3.5" />
+                              {t('projects.projectTeam', 'Tim projekta')}
+                            </TabsTrigger>
+                          )}
+                          {hasDocs && (
+                            <TabsTrigger value="documents" className={triggerCls}>
+                              <FolderOpen className="w-3.5 h-3.5" />
+                              {labels.documentsLabel}
+                            </TabsTrigger>
+                          )}
+                          {moreItems.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setMoreSheetOpen(true)}
+                              className={cn(triggerCls, 'text-muted-foreground')}
+                              aria-label={t('projects.moreTabs.title', 'Više')}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                              {t('projects.moreTabs.title', 'Više')}
+                            </button>
+                          )}
+                        </TabsList>
+                      </div>
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+                      <ProjectMoreTabsSheet
+                        open={moreSheetOpen}
+                        onOpenChange={setMoreSheetOpen}
+                        items={moreItems}
+                        onSelect={(v) => setActiveTab(v)}
+                      />
+                    </div>
+                  );
+                })()}
+
+                {/* --- FULL MODE: Posao / Ljudi / Novac groups --- */}
+                {!isLite && !isWorkerOnly && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-1 bg-muted/40 rounded-2xl border border-border/30">
                   {([
                     { id: 'work' as TabGroup, icon: Briefcase, label: t('projects.tabs.work', 'Posao') },
@@ -611,7 +722,7 @@ export const ProjectFullScreenView = ({
                 )}
 
                 {/* Sub-tabs for active group */}
-                {!isWorkerOnly && (
+                {!isLite && !isWorkerOnly && (
                 <div className="relative mb-6">
                   <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
                     <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
@@ -702,6 +813,22 @@ export const ProjectFullScreenView = ({
                 )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
+                  {/* Lite Quick Start cards — only in Lite mode, only until dismissed */}
+                  {isLite && !quickStartDismissed && (
+                    <ProjectQuickStartCards
+                      hasMilestones={milestones.length > 0}
+                      hasTransactions={expenses.length > 0}
+                      hasBudget={budget > 0}
+                      hasTeam={(members.length + invitations.length) > 1}
+                      isManager={isManager}
+                      onAddMilestone={() => setActiveTab('phases')}
+                      onAddTransaction={() => setActiveTab('transactions')}
+                      onSetBudget={() => onRequestEdit?.(project)}
+                      onInviteTeam={() => setActiveTab('team')}
+                      onDismiss={dismissQuickStart}
+                    />
+                  )}
+
 
                   {/* Timeline */}
                   {(project.start_date || project.end_date) && (
@@ -764,6 +891,27 @@ export const ProjectFullScreenView = ({
                     <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
                   )}
                 </TabsContent>
+
+                {/* Budget tab — extracted KPI panel; available in both Lite and Full mode */}
+                <TabsContent value="budget" className="m-0">
+                  <ProjectBudgetTab
+                    project={project}
+                    budget={budget}
+                    originalContract={originalContract}
+                    totalReceived={totalReceived}
+                    totalSpent={totalSpent}
+                    costPct={costPct}
+                    collectionPct={collectionPct}
+                    marginPct={marginPct}
+                    marginStatusKey={marginStatusKey}
+                    showBudgetAlarm={showBudgetAlarm}
+                    showCollectionAlarm={showCollectionAlarm}
+                    canAccessBusinessTabs={canAccessBusinessTabs}
+                    onOpenBudgetHistory={() => setBudgetHistoryOpen(true)}
+                    onRequestEdit={onRequestEdit ? () => onRequestEdit(project) : undefined}
+                  />
+                </TabsContent>
+
 
                 {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                 <TabsContent value="phases" className="m-0 space-y-3">

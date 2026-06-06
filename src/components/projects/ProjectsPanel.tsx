@@ -362,12 +362,15 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         project={selectedProject}
         initialTab={pendingExpenseId ? 'transactions' : undefined}
         onRequestEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
+        onRequestArchive={(id, archive) => archiveProject(id, archive)}
+        onRequestDelete={(id) => handleDelete(id)}
         onRefreshExpenses={() => {
           refetch();
           fetchAllStats();
           onRefreshExpenses?.();
         }}
       />
+
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

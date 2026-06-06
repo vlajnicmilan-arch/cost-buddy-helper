@@ -27,6 +27,10 @@ interface ProjectHeaderMenuProps {
   projectCompleted: boolean;
   projectArchived: boolean;
   viewMode: 'lite' | 'full';
+  /** When false, hide the Archive/Unarchive item (caller did not wire a handler). */
+  canArchive?: boolean;
+  /** When false, hide the permanent-delete item (e.g. project still active). */
+  canDelete?: boolean;
   onEdit: () => void;
   onOpenReports: () => void;
   onComplete: () => void;
@@ -47,6 +51,8 @@ export const ProjectHeaderMenu = ({
   projectCompleted,
   projectArchived,
   viewMode,
+  canArchive = true,
+  canDelete = true,
   onEdit,
   onOpenReports,
   onComplete,
@@ -118,24 +124,26 @@ export const ProjectHeaderMenu = ({
           )}
         </DropdownMenuItem>
 
-        {isManager && (
+        {isManager && (canArchive || (canDelete && projectArchived)) && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onArchiveToggle)(); }}>
-              {projectArchived ? (
-                <>
-                  <ArchiveRestore className="w-4 h-4 mr-2" />
-                  {t('projects.menu.unarchive', 'Vrati iz arhive')}
-                </>
-              ) : (
-                <>
-                  <Archive className="w-4 h-4 mr-2" />
-                  {t('projects.menu.archive', 'Arhiviraj projekt')}
-                </>
-              )}
-            </DropdownMenuItem>
+            {canArchive && (
+              <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onArchiveToggle)(); }}>
+                {projectArchived ? (
+                  <>
+                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                    {t('projects.menu.unarchive', 'Vrati iz arhive')}
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4 mr-2" />
+                    {t('projects.menu.archive', 'Arhiviraj projekt')}
+                  </>
+                )}
+              </DropdownMenuItem>
+            )}
 
-            {projectArchived && (
+            {canDelete && projectArchived && (
               <DropdownMenuItem
                 disabled={isReadOnly}
                 className="text-destructive focus:text-destructive"
