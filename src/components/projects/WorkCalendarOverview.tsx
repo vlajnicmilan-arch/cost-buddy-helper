@@ -541,9 +541,14 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
             size="sm"
             className="flex-1 gap-2"
             onClick={toggleMultiSelectMode}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
+            title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
           >
             <CheckSquare className="w-4 h-4" />
-            {multiSelectMode ? 'Višestruki odabir uključen' : 'Označi više dana'}
+            {multiSelectMode
+              ? t('workers.calendar.multiSelectOn', 'Višestruki odabir uključen')
+              : t('workers.calendar.multiSelectOff', 'Označi više dana')}
           </Button>
           {multiSelectMode && multiSelectedDates.length > 0 && (
             <>
@@ -557,10 +562,12 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
               <Button
                 size="sm"
                 className="gap-2"
-                onClick={() => { resetBulkForm(); setShowBulkDialog(true); }}
+                onClick={() => { if (!guard()) return; resetBulkForm(); setShowBulkDialog(true); }}
+                disabled={isReadOnly}
+                aria-disabled={isReadOnly}
               >
                 <Plus className="w-4 h-4" />
-                {multiSelectedDates.length} dana
+                {t('workers.calendar.bulkDaysShort', '{{count}} dana', { count: multiSelectedDates.length })}
               </Button>
             </>
           )}
