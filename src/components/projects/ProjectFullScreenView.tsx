@@ -116,6 +116,35 @@ export const ProjectFullScreenView = ({
   const { totalPaid: collaboratorsPaid, totalCost: collaboratorsAgreed } = useProjectCollaborators(project?.id || null);
   const { isTabVisible, loading: permsLoading } = useProjectMemberPermissions(project?.id || null);
   const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
+  const { documents } = useProjectDocuments(project?.id || null);
+
+  // Lite-mode plumbing (Wave 2)
+  const litePref = isLiteProject({
+    contract_value: project?.contract_value ?? null,
+    total_budget: project?.total_budget ?? null,
+    milestonesCount: milestones.length,
+    membersCount: members.length,
+    documentsCount: documents.length,
+  });
+  const { mode: viewMode, toggle: toggleViewMode } = useProjectViewMode(
+    project?.id,
+    litePref ? 'lite' : 'full'
+  );
+  const isLite = viewMode === 'lite';
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [quickStartDismissed, setQuickStartDismissed] = useState(false);
+  useEffect(() => {
+    if (!project?.id) return;
+    LocalStorage.get(`projectQuickStart_dismissed:${project.id}`)
+      .then((v) => setQuickStartDismissed(v === '1'))
+      .catch(() => setQuickStartDismissed(false));
+  }, [project?.id]);
+  const dismissQuickStart = () => {
+    setQuickStartDismissed(true);
+    if (project?.id) {
+      LocalStorage.set(`projectQuickStart_dismissed:${project.id}`, '1').catch(() => {});
+    }
+  };
 
   // Razlika prikaza i računanja:
   // - effectiveContract (=contract_value, koji već uključuje aneks) koristi se za marže/% potrošnje/% naplate/alarme.
