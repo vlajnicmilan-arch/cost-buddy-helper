@@ -3752,7 +3752,17 @@
     "noMatches": "No search results",
     "activeWorkers": "active",
     "totalLabel": "Total",
-    "workedShort": "worked"
+    "workedShort": "worked",
+    "calendar": {
+      "multiSelectOn": "Multi-select enabled",
+      "multiSelectOff": "Select multiple days",
+      "multiSelectHint": "Pick days, then press the button for bulk add ({{count}} selected)",
+      "bulkDialogTitle": "Bulk add — {{count}} days",
+      "bulkSubmit": "Add to {{count}} days",
+      "bulkDaysShort": "{{count}} days",
+      "bulkAdded": "Added {{count}} work days",
+      "bulkAddedWithSkipped": "Added {{count}} work days ({{skipped}} skipped — already exists)"
+    }
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

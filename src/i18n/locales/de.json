@@ -3752,7 +3752,17 @@
     "noMatches": "Keine Suchergebnisse",
     "activeWorkers": "aktiv",
     "totalLabel": "Gesamt",
-    "workedShort": "geleistet"
+    "workedShort": "geleistet",
+    "calendar": {
+      "multiSelectOn": "Mehrfachauswahl aktiv",
+      "multiSelectOff": "Mehrere Tage auswählen",
+      "multiSelectHint": "Tage auswählen und Schaltfläche für Massenanlage drücken ({{count}} ausgewählt)",
+      "bulkDialogTitle": "Massenanlage — {{count}} Tage",
+      "bulkSubmit": "Zu {{count}} Tagen hinzufügen",
+      "bulkDaysShort": "{{count}} Tage",
+      "bulkAdded": "{{count}} Arbeitstage hinzugefügt",
+      "bulkAddedWithSkipped": "{{count}} Arbeitstage hinzugefügt ({{skipped}} übersprungen — existiert bereits)"
+    }
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
