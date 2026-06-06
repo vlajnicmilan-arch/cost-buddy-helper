@@ -813,21 +813,29 @@ export const ProjectFullScreenView = ({
                 )}
 
                 <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Lite Quick Start cards — only in Lite mode, only until dismissed */}
-                  {isLite && !quickStartDismissed && (
-                    <ProjectQuickStartCards
-                      hasMilestones={milestones.length > 0}
-                      hasTransactions={expenses.length > 0}
-                      hasBudget={budget > 0}
-                      hasTeam={(members.length + invitations.length) > 1}
-                      isManager={isManager}
-                      onAddMilestone={() => setActiveTab('phases')}
-                      onAddTransaction={() => setActiveTab('transactions')}
-                      onSetBudget={() => onRequestEdit?.(project)}
-                      onInviteTeam={() => setActiveTab('team')}
-                      onDismiss={dismissQuickStart}
-                    />
-                  )}
+                  {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka */}
+                  {!quickStartDismissed && (() => {
+                    const hasMilestones = milestones.length > 0;
+                    const hasTransactions = expenses.length > 0;
+                    const hasBudget = budget > 0;
+                    const hasTeam = (members.length + invitations.length) > 1;
+                    const allDone = hasMilestones && hasTransactions && hasBudget && hasTeam;
+                    if (allDone) return null;
+                    return (
+                      <ProjectQuickStartCards
+                        hasMilestones={hasMilestones}
+                        hasTransactions={hasTransactions}
+                        hasBudget={hasBudget}
+                        hasTeam={hasTeam}
+                        isManager={isManager}
+                        onAddMilestone={() => setActiveTab('phases')}
+                        onAddTransaction={() => setActiveTab('transactions')}
+                        onSetBudget={() => onRequestEdit?.(project)}
+                        onInviteTeam={() => setActiveTab('team')}
+                        onDismiss={dismissQuickStart}
+                      />
+                    );
+                  })()}
 
 
                   {/* Timeline */}
