@@ -19,6 +19,7 @@ import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pe
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface WorkEntry {
   id: string;
@@ -43,11 +44,14 @@ interface Worker {
 interface WorkCalendarOverviewProps {
   projectId: string;
   milestones: ProjectMilestone[];
+  /** Owner-readonly downgrade: blocks add/edit/delete/bulk with toast. */
+  isReadOnly?: boolean;
 }
 
-export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOverviewProps) => {
+export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false }: WorkCalendarOverviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);

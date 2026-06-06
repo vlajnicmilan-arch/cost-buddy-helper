@@ -509,7 +509,7 @@ export const ProjectWorkersTab = ({
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-4">
-          <WorkCalendarOverview projectId={projectId} milestones={milestones} />
+          <WorkCalendarOverview projectId={projectId} milestones={milestones} isReadOnly={isReadOnly} />
         </TabsContent>
       </Tabs>
 
