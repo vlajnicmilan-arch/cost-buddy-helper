@@ -225,7 +225,8 @@
       "collection": "Eingang"
     },
     "alerts": {
-      "lossZone": "Projekt {{name}} gerät in die Verlustzone — nur noch {{pct}}% Marge übrig"
+      "lossZone": "Projekt {{name}} gerät in die Verlustzone — nur noch {{pct}}% Marge übrig",
+      "budgetHigh": "Mehr als das geplante Budget ausgegeben."
     },
     "forecast": {
       "title": "🔮 Prognose — beim aktuellen Tempo",
@@ -690,6 +691,44 @@
       "readOnlyBlockedToast": "Aktion nicht erlaubt — Projekt ist schreibgeschützt.",
       "cta": "Projekte aktivieren",
       "orphanGroup": "Persönliche Projekte"
+    },
+    "budgetTab": {
+      "label": "Budget"
+    },
+    "activity": {
+      "tab": "Aktivität"
+    },
+    "moreTabs": {
+      "title": "Mehr",
+      "description": "Weitere Projektbereiche."
+    },
+    "budgetEmptyTitle": "Projektbudget festlegen",
+    "budgetEmptyCta": "Budget festlegen",
+    "budgetHistory": "Budgetverlauf",
+    "advancedOptions": "Erweiterte Optionen",
+    "deleteHint": "Vor dem Löschen archivieren",
+    "menu": {
+      "editProject": "Projekt bearbeiten",
+      "report": "Bericht",
+      "complete": "Projekt abschließen",
+      "reopen": "Wieder öffnen",
+      "showAllTabs": "Alle Tabs anzeigen",
+      "showLiteTabs": "Lite-Ansicht",
+      "unarchive": "Aus Archiv holen",
+      "archive": "Projekt archivieren",
+      "deletePermanently": "Endgültig löschen"
+    },
+    "quickStartCards": {
+      "title": "Schnellstart",
+      "subtitle": "Richte dein Projekt in wenigen Klicks ein.",
+      "addMilestone": "Erste Phase hinzufügen",
+      "addMilestoneDesc": "Projekt in Schritte unterteilen",
+      "addTransaction": "Erste Transaktion hinzufügen",
+      "addTransactionDesc": "Ausgabe oder Einnahme erfassen",
+      "setBudget": "Budget festlegen",
+      "setBudgetDesc": "Marge und Inkasso verfolgen",
+      "inviteTeam": "Team einladen",
+      "inviteTeamDesc": "Am Projekt mitarbeiten"
     }
   },
   "estimates": {
@@ -1424,7 +1463,9 @@
     "termsOfService": "Nutzungsbedingungen",
     "signOut": "Abmelden",
     "unknown": "Unbekannt",
-    "clearSearch": "Suche löschen"
+    "clearSearch": "Suche löschen",
+    "dismiss": "Ausblenden",
+    "actions": "Aktionen"
   },
   "auth": {
     "login": "Anmelden",
@@ -4662,7 +4703,17 @@
   },
   "krug": {
     "title": "Krug",
-    "create": "Neuer Krug",
+    "create": {
+      "cta": "Neuer Krug",
+      "title": "Neuer Krug",
+      "nameLabel": "Krug-Name",
+      "namePlaceholder": "z. B. Unser Zuhause",
+      "nameHint": "Min. 2 Zeichen. Für den ganzen Krug sichtbar.",
+      "presetLabel": "Krug-Typ",
+      "maxPunopravni": "Max. Vollmitglieder: {{n}}",
+      "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
+      "submit": "Krug erstellen"
+    },
     "createSoon": "Krug-Erstellung kommt bald",
     "backToList": "Zurück zur Liste",
     "emptyTitle": "Du hast noch keinen Krug",
@@ -4750,17 +4801,6 @@
       "A4": "Vorschlag zurückziehen",
       "A5": "Erneut vorschlagen",
       "A7": "Auf persönlich umschalten"
-    },
-    "create": {
-      "cta": "Neuer Krug",
-      "title": "Neuer Krug",
-      "nameLabel": "Krug-Name",
-      "namePlaceholder": "z. B. Unser Zuhause",
-      "nameHint": "Min. 2 Zeichen. Für den ganzen Krug sichtbar.",
-      "presetLabel": "Krug-Typ",
-      "maxPunopravni": "Max. Vollmitglieder: {{n}}",
-      "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
-      "submit": "Krug erstellen"
     },
     "member": {
       "you": "du",

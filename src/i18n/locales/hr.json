@@ -229,7 +229,8 @@
       "collection": "Naplata"
     },
     "alerts": {
-      "lossZone": "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže"
+      "lossZone": "Projekt {{name}} ulazi u zonu gubitka — preostalo samo {{pct}}% marže",
+      "budgetHigh": "Potrošeno više od planiranog budžeta."
     },
     "forecast": {
       "title": "🔮 Prognoza — po trenutnom tempu",
@@ -694,6 +695,44 @@
       "readOnlyBlockedToast": "Akcija nije moguća — projekt je u read-only stanju.",
       "cta": "Aktiviraj Projekte",
       "orphanGroup": "Osobni projekti"
+    },
+    "budgetTab": {
+      "label": "Budžet"
+    },
+    "activity": {
+      "tab": "Aktivnost"
+    },
+    "moreTabs": {
+      "title": "Više",
+      "description": "Dodatni dijelovi projekta."
+    },
+    "budgetEmptyTitle": "Postavi budžet projekta",
+    "budgetEmptyCta": "Postavi budžet",
+    "budgetHistory": "Povijest budžeta",
+    "advancedOptions": "Napredne opcije",
+    "deleteHint": "Arhiviraj prije brisanja",
+    "menu": {
+      "editProject": "Uredi projekt",
+      "report": "Izvještaj",
+      "complete": "Završi projekt",
+      "reopen": "Ponovo otvori",
+      "showAllTabs": "Prikaži sve tabove",
+      "showLiteTabs": "Lite prikaz",
+      "unarchive": "Vrati iz arhive",
+      "archive": "Arhiviraj projekt",
+      "deletePermanently": "Obriši trajno"
+    },
+    "quickStartCards": {
+      "title": "Brzi početak",
+      "subtitle": "Postavi projekt u nekoliko klikova.",
+      "addMilestone": "Dodaj prvu fazu",
+      "addMilestoneDesc": "Razbij projekt na korake",
+      "addTransaction": "Dodaj prvu transakciju",
+      "addTransactionDesc": "Zabilježi trošak ili prihod",
+      "setBudget": "Postavi budžet",
+      "setBudgetDesc": "Prati maržu i naplatu",
+      "inviteTeam": "Pozovi tim",
+      "inviteTeamDesc": "Surađuj na projektu"
     }
   },
   "estimates": {
@@ -1428,7 +1467,9 @@
     "termsOfService": "Uvjeti korištenja",
     "signOut": "Odjava",
     "unknown": "Nepoznato",
-    "clearSearch": "Očisti pretragu"
+    "clearSearch": "Očisti pretragu",
+    "dismiss": "Sakrij",
+    "actions": "Akcije"
   },
   "auth": {
     "login": "Prijava",
@@ -4673,7 +4714,17 @@
   },
   "krug": {
     "title": "Krug",
-    "create": "Novi krug",
+    "create": {
+      "cta": "Novi Krug",
+      "title": "Novi Krug",
+      "nameLabel": "Naziv Kruga",
+      "namePlaceholder": "npr. Naš dom",
+      "nameHint": "Min 2 znaka. Naziv vidi cijeli Krug.",
+      "presetLabel": "Tip Kruga",
+      "maxPunopravni": "Maks. punopravnih: {{n}}",
+      "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
+      "submit": "Kreiraj Krug"
+    },
     "createSoon": "Kreiranje Kruga uskoro",
     "backToList": "Natrag na popis",
     "emptyTitle": "Još nemaš Krug",
@@ -4761,17 +4812,6 @@
       "A4": "Povuci prijedlog",
       "A5": "Predloži ponovo",
       "A7": "Prebaci na osobno"
-    },
-    "create": {
-      "cta": "Novi Krug",
-      "title": "Novi Krug",
-      "nameLabel": "Naziv Kruga",
-      "namePlaceholder": "npr. Naš dom",
-      "nameHint": "Min 2 znaka. Naziv vidi cijeli Krug.",
-      "presetLabel": "Tip Kruga",
-      "maxPunopravni": "Maks. punopravnih: {{n}}",
-      "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
-      "submit": "Kreiraj Krug"
     },
     "member": {
       "you": "ti",

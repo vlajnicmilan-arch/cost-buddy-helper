@@ -229,7 +229,8 @@
       "collection": "Collection"
     },
     "alerts": {
-      "lossZone": "Project {{name}} is entering the loss zone — only {{pct}}% margin left"
+      "lossZone": "Project {{name}} is entering the loss zone — only {{pct}}% margin left",
+      "budgetHigh": "Spent more than the planned budget."
     },
     "forecast": {
       "title": "🔮 Forecast — at the current pace",
@@ -690,6 +691,44 @@
       "readOnlyBlockedToast": "Action not allowed — this project is read-only.",
       "cta": "Activate Projects",
       "orphanGroup": "Personal projects"
+    },
+    "budgetTab": {
+      "label": "Budget"
+    },
+    "activity": {
+      "tab": "Activity"
+    },
+    "moreTabs": {
+      "title": "More",
+      "description": "Additional project sections."
+    },
+    "budgetEmptyTitle": "Set project budget",
+    "budgetEmptyCta": "Set budget",
+    "budgetHistory": "Budget history",
+    "advancedOptions": "Advanced options",
+    "deleteHint": "Archive before deleting",
+    "menu": {
+      "editProject": "Edit project",
+      "report": "Report",
+      "complete": "Complete project",
+      "reopen": "Reopen",
+      "showAllTabs": "Show all tabs",
+      "showLiteTabs": "Lite view",
+      "unarchive": "Unarchive",
+      "archive": "Archive project",
+      "deletePermanently": "Delete permanently"
+    },
+    "quickStartCards": {
+      "title": "Quick start",
+      "subtitle": "Set up your project in a few clicks.",
+      "addMilestone": "Add first phase",
+      "addMilestoneDesc": "Break the project into steps",
+      "addTransaction": "Add first transaction",
+      "addTransactionDesc": "Record an expense or income",
+      "setBudget": "Set budget",
+      "setBudgetDesc": "Track margin and collection",
+      "inviteTeam": "Invite team",
+      "inviteTeamDesc": "Collaborate on the project"
     }
   },
   "estimates": {
@@ -1424,7 +1463,9 @@
     "termsOfService": "Terms of Service",
     "signOut": "Sign out",
     "unknown": "Unknown",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear search",
+    "dismiss": "Dismiss",
+    "actions": "Actions"
   },
   "auth": {
     "login": "Login",
@@ -4662,7 +4703,17 @@
   },
   "krug": {
     "title": "Krug",
-    "create": "New Krug",
+    "create": {
+      "cta": "New Krug",
+      "title": "New Krug",
+      "nameLabel": "Krug name",
+      "namePlaceholder": "e.g. Our home",
+      "nameHint": "Min 2 chars. Visible to the whole Krug.",
+      "presetLabel": "Krug type",
+      "maxPunopravni": "Max full members: {{n}}",
+      "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
+      "submit": "Create Krug"
+    },
     "createSoon": "Krug creation coming soon",
     "backToList": "Back to list",
     "emptyTitle": "You don't have a Krug yet",
@@ -4750,17 +4801,6 @@
       "A4": "Withdraw proposal",
       "A5": "Re-propose",
       "A7": "Flip to personal"
-    },
-    "create": {
-      "cta": "New Krug",
-      "title": "New Krug",
-      "nameLabel": "Krug name",
-      "namePlaceholder": "e.g. Our home",
-      "nameHint": "Min 2 chars. Visible to the whole Krug.",
-      "presetLabel": "Krug type",
-      "maxPunopravni": "Max full members: {{n}}",
-      "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
-      "submit": "Create Krug"
     },
     "member": {
       "you": "you",
