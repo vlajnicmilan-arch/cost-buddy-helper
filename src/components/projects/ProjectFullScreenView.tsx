@@ -202,7 +202,7 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      setActiveTab(isWorkerOnly ? 'worklog' : 'phases');
+      setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
       setActiveGroup('work');
     } else if (isWorkerOnly) {
       setActiveTab('worklog');
