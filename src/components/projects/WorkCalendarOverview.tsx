@@ -199,6 +199,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   };
 
   const toggleMultiSelectMode = () => {
+    if (!multiSelectMode && !guard()) return;
     setMultiSelectMode(prev => {
       if (prev) {
         setMultiSelectedDates([]);
@@ -232,6 +233,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   };
 
   const handleBulkSubmit = async () => {
+    if (!guard()) return;
     if (!bulkWorkerId || multiSelectedDates.length === 0) return;
     setIsBulkSubmitting(true);
     try {
@@ -276,8 +278,8 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
       }
 
       const msg = skippedCount > 0
-        ? `Dodano ${newDates.length} radnih dana (${skippedCount} preskočeno - već postoji)`
-        : `Dodano ${newDates.length} radnih dana`;
+        ? t('workers.calendar.bulkAddedWithSkipped', 'Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)', { count: newDates.length, skipped: skippedCount })
+        : t('workers.calendar.bulkAdded', 'Dodano {{count}} radnih dana', { count: newDates.length });
       showSuccess(msg);
       
       setShowBulkDialog(false);
@@ -326,6 +328,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   };
 
   const handleAddSubmit = async () => {
+    if (!guard()) return;
     if (!selectedWorkerId || !selectedDate) return;
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -385,6 +388,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   }
 
   const handleStartEdit = (entry: WorkEntry) => {
+    if (!guard()) return;
     setEditingEntryId(entry.id);
     setEditWorkerId(entry.worker_id);
     setEditScheduledHours(entry.scheduled_hours.toString());
@@ -409,6 +413,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   };
 
   const handleUpdateEntry = async () => {
+    if (!guard()) return;
     if (!editingEntryId) return;
     setIsSubmitting(true);
     try {
@@ -443,6 +448,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   };
 
   const handleDeleteEntry = async (entryId: string) => {
+    if (!guard()) return;
     try {
       const { error } = await supabase
         .from('project_work_entries')
