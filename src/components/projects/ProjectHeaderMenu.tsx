@@ -27,6 +27,10 @@ interface ProjectHeaderMenuProps {
   projectCompleted: boolean;
   projectArchived: boolean;
   viewMode: 'lite' | 'full';
+  /** When false, hide the Archive/Unarchive item (caller did not wire a handler). */
+  canArchive?: boolean;
+  /** When false, hide the permanent-delete item (e.g. project still active). */
+  canDelete?: boolean;
   onEdit: () => void;
   onOpenReports: () => void;
   onComplete: () => void;
