@@ -18,6 +18,8 @@ import { type Category, type TransactionType } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useBalanceUpdater } from '@/hooks/useBalanceUpdater';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useAppState } from '@/contexts/AppStateContext';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole } from '@/types/project';
@@ -59,6 +61,8 @@ interface ProjectTransactionsTabProps {
   userRole: ProjectRole;
   loading: boolean;
   onRefetch: () => void;
+  /** When true, all write paths (Add/Edit/Delete) are gated with the read-only toast. */
+  isReadOnly?: boolean;
 }
 
 export const ProjectTransactionsTab = ({
@@ -70,6 +74,7 @@ export const ProjectTransactionsTab = ({
   userRole,
   loading,
   onRefetch,
+  isReadOnly = false,
 }: ProjectTransactionsTabProps) => {
   const { t, i18n } = useTranslation();
   const reportOwner = useReportOwner();
@@ -80,6 +85,10 @@ export const ProjectTransactionsTab = ({
   const { activeBusinessProfileId } = useAppState();
   const { customPaymentSources } = useCustomPaymentSources({ includePersonal: true });
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated: onRefetch });
+  // Reuse canonical soft-delete path (Trash + RPC + balance reverse + owner-loan cleanup).
+  const { deleteExpense } = useExpenses();
+  const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
+  const roTitle = isReadOnly ? blockProps.title : undefined;
   const {
     pendingTransactions,
     approveTransaction,
@@ -225,6 +234,7 @@ export const ProjectTransactionsTab = ({
 
   const handleAddExpense = async () => {
     if (!amount || !description.trim() || !user) return;
+    if (!guard()) return;
     setSaving(true);
     try {
       const status = needsApproval ? 'pending' : 'approved';
@@ -315,6 +325,7 @@ export const ProjectTransactionsTab = ({
   };
 
   const handleDeleteExpense = (expenseId: string) => {
+    if (!guard()) return;
     setExpenseToDelete(expenseId);
     setDeleteDialogOpen(true);
   };
@@ -322,14 +333,12 @@ export const ProjectTransactionsTab = ({
   const confirmDelete = async () => {
     if (!expenseToDelete) return;
     try {
-      const { deleteOwnerLoanForExpense } = await import('@/lib/ownerLoanLogic');
-      deleteOwnerLoanForExpense(expenseToDelete).catch((e) =>
-        console.error('Owner-loan delete failed:', e),
-      );
-
-      const { error } = await supabase.from('expenses').delete().eq('id', expenseToDelete);
-      if (error) throw error;
-
+      // Use canonical deleteExpense path:
+      // - soft delete via RPC (goes to Trash with 30d retention)
+      // - reverses balance for custom: payment sources
+      // - cleans up linked owner-loan (cross-mode)
+      // silent=true to keep the existing project-tab toast wording.
+      await deleteExpense(expenseToDelete, { silent: true });
       showSuccess(t('common.deleted'));
       onRefetch();
     } catch (error) {
@@ -339,9 +348,11 @@ export const ProjectTransactionsTab = ({
       setDeleteDialogOpen(false);
       setExpenseToDelete(null);
     }
+
   };
 
   const handleOpenEdit = (expense: ProjectExpense) => {
+    if (!guard()) return;
     setEditingExpense(expense);
     setEditType(expense.type as TransactionType);
     setEditAmount(expense.amount.toString());
@@ -358,6 +369,7 @@ export const ProjectTransactionsTab = ({
 
   const handleSaveEdit = async () => {
     if (!editingExpense || !editAmount || !editDescription.trim()) return;
+    if (!guard()) return;
     setSaving(true);
     try {
       const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
@@ -558,7 +570,14 @@ export const ProjectTransactionsTab = ({
               {t('projects.viewerNote', 'Vaše transakcije zahtijevaju odobrenje člana')}
             </div>
           )}
-          <Button onClick={() => setAddDialogOpen(true)} size="sm" className={needsApproval ? '' : 'ml-auto'}>
+          <Button
+            onClick={() => { if (!guard()) return; setAddDialogOpen(true); }}
+            size="sm"
+            className={needsApproval ? '' : 'ml-auto'}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
+            title={roTitle}
+          >
             <Plus className="w-4 h-4 mr-2" />
             {needsApproval
               ? t('projects.submitExpense', 'Predloži trošak')

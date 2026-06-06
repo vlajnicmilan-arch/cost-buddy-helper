@@ -1032,6 +1032,7 @@ export const ProjectFullScreenView = ({
                     isManager={isManager}
                     userRole={currentUserRole}
                     loading={statsLoading}
+                    isReadOnly={isReadOnly}
                     onRefetch={() => {
                       refetchStats();
                       refetchMilestones();
