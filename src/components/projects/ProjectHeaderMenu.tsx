@@ -51,6 +51,8 @@ export const ProjectHeaderMenu = ({
   projectCompleted,
   projectArchived,
   viewMode,
+  canArchive = true,
+  canDelete = true,
   onEdit,
   onOpenReports,
   onComplete,
