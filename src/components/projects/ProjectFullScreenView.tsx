@@ -590,8 +590,8 @@ export const ProjectFullScreenView = ({
               </div>
               )}
 
-              {/* Forecast section */}
-              {canSeeTab('funding') && budget > 0 && (
+              {/* Forecast section (Full mode only; Lite keeps Pregled minimal) */}
+              {!isLite && canSeeTab('funding') && budget > 0 && (
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
