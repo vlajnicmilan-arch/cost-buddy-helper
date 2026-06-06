@@ -380,74 +380,53 @@ export const ProjectFullScreenView = ({
                 )}
 
                 {!isWorkerOnly && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setReportsOpen(true)}
-                  className="shrink-0"
-                >
-                  <BarChart3 className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">{t('projects.reports', 'Izvještaji')}</span>
-                </Button>
-                )}
-
-                {!isWorkerOnly && isManager && project.status !== 'completed' && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    if (isReadOnly) {
-                      showError(t('projects.access.readOnlyBlockedToast'));
-                      return;
-                    }
-                    setCompleteWizardOpen(true);
-                  }}
-                  disabled={isReadOnly}
-                  className="shrink-0 gap-1"
-                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.headerCta', 'Završi projekt')}
-                >
-                  <Flag className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">{t('projects.complete.headerCta', 'Završi projekt')}</span>
-                </Button>
-                )}
-
-                {!isWorkerOnly && isManager && project.status === 'completed' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={reopening || isReadOnly}
-                  onClick={async () => {
-                    if (isReadOnly) {
-                      showError(t('projects.access.readOnlyBlockedToast'));
-                      return;
-                    }
-                    setReopening(true);
-                    try {
-                      const { error } = await supabase
-                        .from('projects')
-                        .update({ status: 'active', archived_at: null })
-                        .eq('id', project.id);
-                      if (error) throw error;
-                      showSuccess(t('projects.complete.reopened', 'Projekt ponovo otvoren'));
-                      onRefreshExpenses?.();
-                      onClose();
-                    } catch (e) {
-                      console.error('Reopen project error:', e);
-                      if (isProjectsReadonlyError(e)) {
+                  <ProjectHeaderMenu
+                    isManager={isManager}
+                    isReadOnly={isReadOnly}
+                    projectCompleted={project.status === 'completed'}
+                    projectArchived={!!project.archived_at}
+                    viewMode={viewMode}
+                    canDelete={!!onRequestDelete && !!project.archived_at}
+                    canArchive={!!onRequestArchive}
+                    onEdit={() => onRequestEdit?.(project)}
+                    onOpenReports={() => setReportsOpen(true)}
+                    onComplete={() => {
+                      if (isReadOnly) {
                         showError(t('projects.access.readOnlyBlockedToast'));
-                      } else {
-                        showError(t('common.error'));
+                        return;
                       }
-                    } finally {
-                      setReopening(false);
-                    }
-                  }}
-                  className="shrink-0 gap-1"
-                  title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : t('projects.complete.reopenCta', 'Ponovo otvori projekt')}
-                >
-                  <RotateCcw className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">{t('projects.complete.reopenCta', 'Ponovo otvori')}</span>
-                </Button>
+                      setCompleteWizardOpen(true);
+                    }}
+                    onReopen={async () => {
+                      if (isReadOnly) {
+                        showError(t('projects.access.readOnlyBlockedToast'));
+                        return;
+                      }
+                      setReopening(true);
+                      try {
+                        const { error } = await supabase
+                          .from('projects')
+                          .update({ status: 'active', archived_at: null })
+                          .eq('id', project.id);
+                        if (error) throw error;
+                        showSuccess(t('projects.complete.reopened', 'Projekt ponovo otvoren'));
+                        onRefreshExpenses?.();
+                        onClose();
+                      } catch (e) {
+                        console.error('Reopen project error:', e);
+                        if (isProjectsReadonlyError(e)) {
+                          showError(t('projects.access.readOnlyBlockedToast'));
+                        } else {
+                          showError(t('common.error'));
+                        }
+                      } finally {
+                        setReopening(false);
+                      }
+                    }}
+                    onArchiveToggle={() => onRequestArchive?.(project.id, !project.archived_at)}
+                    onDelete={() => onRequestDelete?.(project.id)}
+                    onToggleViewMode={toggleViewMode}
+                  />
                 )}
               </div>
             </div>
