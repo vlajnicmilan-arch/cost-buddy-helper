@@ -11,15 +11,16 @@ import { useProjectFunding } from '@/hooks/useProjectFunding';
 import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions';
+import { useProjectDocuments } from '@/hooks/useProjectDocuments';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { 
+import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw, Layers
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -31,8 +32,14 @@ import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
 import { ProjectForecastCard } from './ProjectForecastCard';
 import { useProjectLossZoneAlert } from '@/hooks/useProjectLossZoneAlert';
 import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
+import { useProjectViewMode } from '@/hooks/useProjectViewMode';
+import { isLiteProject } from '@/lib/isLiteProject';
 
 import { ProjectBudgetHistoryDialog } from './ProjectBudgetHistoryDialog';
+import { ProjectBudgetTab } from './ProjectBudgetTab';
+import { ProjectMoreTabsSheet, MoreTabItem } from './ProjectMoreTabsSheet';
+import { ProjectHeaderMenu } from './ProjectHeaderMenu';
+import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { ProjectMilestonesTab } from './ProjectMilestonesTab';
