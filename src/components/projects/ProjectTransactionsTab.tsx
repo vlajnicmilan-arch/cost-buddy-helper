@@ -234,6 +234,7 @@ export const ProjectTransactionsTab = ({
 
   const handleAddExpense = async () => {
     if (!amount || !description.trim() || !user) return;
+    if (!guard()) return;
     setSaving(true);
     try {
       const status = needsApproval ? 'pending' : 'approved';
@@ -351,6 +352,7 @@ export const ProjectTransactionsTab = ({
   };
 
   const handleOpenEdit = (expense: ProjectExpense) => {
+    if (!guard()) return;
     setEditingExpense(expense);
     setEditType(expense.type as TransactionType);
     setEditAmount(expense.amount.toString());
@@ -367,6 +369,7 @@ export const ProjectTransactionsTab = ({
 
   const handleSaveEdit = async () => {
     if (!editingExpense || !editAmount || !editDescription.trim()) return;
+    if (!guard()) return;
     setSaving(true);
     try {
       const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
