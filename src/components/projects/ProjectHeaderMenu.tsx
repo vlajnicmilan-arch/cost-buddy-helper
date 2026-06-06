@@ -124,24 +124,26 @@ export const ProjectHeaderMenu = ({
           )}
         </DropdownMenuItem>
 
-        {isManager && (
+        {isManager && (canArchive || (canDelete && projectArchived)) && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onArchiveToggle)(); }}>
-              {projectArchived ? (
-                <>
-                  <ArchiveRestore className="w-4 h-4 mr-2" />
-                  {t('projects.menu.unarchive', 'Vrati iz arhive')}
-                </>
-              ) : (
-                <>
-                  <Archive className="w-4 h-4 mr-2" />
-                  {t('projects.menu.archive', 'Arhiviraj projekt')}
-                </>
-              )}
-            </DropdownMenuItem>
+            {canArchive && (
+              <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onArchiveToggle)(); }}>
+                {projectArchived ? (
+                  <>
+                    <ArchiveRestore className="w-4 h-4 mr-2" />
+                    {t('projects.menu.unarchive', 'Vrati iz arhive')}
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4 mr-2" />
+                    {t('projects.menu.archive', 'Arhiviraj projekt')}
+                  </>
+                )}
+              </DropdownMenuItem>
+            )}
 
-            {projectArchived && (
+            {canDelete && projectArchived && (
               <DropdownMenuItem
                 disabled={isReadOnly}
                 className="text-destructive focus:text-destructive"
