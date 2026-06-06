@@ -1,6 +1,12 @@
-# E2E Testing (Sprint 2)
+# E2E Testing (Sprint 2) — DEFERRED
+
+> **Status: infrastruktura postavljena, nije aktivirana.**
+> CI workflow je u `workflow_dispatch` modu (ne pokreće se na PR/push).
+> Aktivacija zahtijeva GitHub repo secrets (vidi "Aktivacija" na dnu).
+> Do tada zaštitu daju: vitest unit testovi + `PRE_LAUNCH_REGRESSION.md` ručna checklista.
 
 Playwright + Chromium mobile (Pixel 5 viewport, 384px). Pokriva 5 kritičnih korisničkih tokova.
+
 
 ## Tokovi
 
