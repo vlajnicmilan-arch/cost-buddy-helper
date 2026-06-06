@@ -73,6 +73,10 @@ interface ProjectFullScreenViewProps {
   initialTab?: string;
   /** Called when user wants to edit the project (e.g. from "enter contract value" CTA). */
   onRequestEdit?: (project: ProjectWithOwnership) => void;
+  /** Optional: archive/unarchive trigger from the header ⋮ menu. */
+  onRequestArchive?: (id: string, archive: boolean) => void;
+  /** Optional: delete trigger from the header ⋮ menu (only enabled for archived projects). */
+  onRequestDelete?: (id: string) => void;
 }
 
 export const ProjectFullScreenView = ({
@@ -81,7 +85,9 @@ export const ProjectFullScreenView = ({
   project,
   onRefreshExpenses,
   initialTab,
-  onRequestEdit
+  onRequestEdit,
+  onRequestArchive,
+  onRequestDelete
 }: ProjectFullScreenViewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
