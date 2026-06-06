@@ -3762,7 +3762,17 @@
     "noMatches": "Nema rezultata za pretragu",
     "activeWorkers": "aktivnih",
     "totalLabel": "Ukupno",
-    "workedShort": "odrađeno"
+    "workedShort": "odrađeno",
+    "calendar": {
+      "multiSelectOn": "Višestruki odabir uključen",
+      "multiSelectOff": "Označi više dana",
+      "multiSelectHint": "Odaberite dane pa pritisnite gumb za grupno dodavanje ({{count}} odabrano)",
+      "bulkDialogTitle": "Grupno dodavanje — {{count}} dana",
+      "bulkSubmit": "Dodaj na {{count}} dana",
+      "bulkDaysShort": "{{count}} dana",
+      "bulkAdded": "Dodano {{count}} radnih dana",
+      "bulkAddedWithSkipped": "Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)"
+    }
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

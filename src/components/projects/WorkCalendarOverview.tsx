@@ -19,6 +19,7 @@ import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pe
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 
 interface WorkEntry {
   id: string;
@@ -43,11 +44,14 @@ interface Worker {
 interface WorkCalendarOverviewProps {
   projectId: string;
   milestones: ProjectMilestone[];
+  /** Owner-readonly downgrade: blocks add/edit/delete/bulk with toast. */
+  isReadOnly?: boolean;
 }
 
-export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOverviewProps) => {
+export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false }: WorkCalendarOverviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { guard } = useProjectWriteGuard({ isReadOnly });
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,6 +199,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const toggleMultiSelectMode = () => {
+    if (!multiSelectMode && !guard()) return;
     setMultiSelectMode(prev => {
       if (prev) {
         setMultiSelectedDates([]);
@@ -228,6 +233,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const handleBulkSubmit = async () => {
+    if (!guard()) return;
     if (!bulkWorkerId || multiSelectedDates.length === 0) return;
     setIsBulkSubmitting(true);
     try {
@@ -272,8 +278,8 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
       }
 
       const msg = skippedCount > 0
-        ? `Dodano ${newDates.length} radnih dana (${skippedCount} preskočeno - već postoji)`
-        : `Dodano ${newDates.length} radnih dana`;
+        ? t('workers.calendar.bulkAddedWithSkipped', 'Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)', { count: newDates.length, skipped: skippedCount })
+        : t('workers.calendar.bulkAdded', 'Dodano {{count}} radnih dana', { count: newDates.length });
       showSuccess(msg);
       
       setShowBulkDialog(false);
@@ -322,6 +328,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const handleAddSubmit = async () => {
+    if (!guard()) return;
     if (!selectedWorkerId || !selectedDate) return;
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -381,6 +388,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   }
 
   const handleStartEdit = (entry: WorkEntry) => {
+    if (!guard()) return;
     setEditingEntryId(entry.id);
     setEditWorkerId(entry.worker_id);
     setEditScheduledHours(entry.scheduled_hours.toString());
@@ -405,6 +413,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const handleUpdateEntry = async () => {
+    if (!guard()) return;
     if (!editingEntryId) return;
     setIsSubmitting(true);
     try {
@@ -439,6 +448,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
   };
 
   const handleDeleteEntry = async (entryId: string) => {
+    if (!guard()) return;
     try {
       const { error } = await supabase
         .from('project_work_entries')
@@ -531,9 +541,14 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
             size="sm"
             className="flex-1 gap-2"
             onClick={toggleMultiSelectMode}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
+            title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}
           >
             <CheckSquare className="w-4 h-4" />
-            {multiSelectMode ? 'Višestruki odabir uključen' : 'Označi više dana'}
+            {multiSelectMode
+              ? t('workers.calendar.multiSelectOn', 'Višestruki odabir uključen')
+              : t('workers.calendar.multiSelectOff', 'Označi više dana')}
           </Button>
           {multiSelectMode && multiSelectedDates.length > 0 && (
             <>
@@ -547,10 +562,12 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
               <Button
                 size="sm"
                 className="gap-2"
-                onClick={() => { resetBulkForm(); setShowBulkDialog(true); }}
+                onClick={() => { if (!guard()) return; resetBulkForm(); setShowBulkDialog(true); }}
+                disabled={isReadOnly}
+                aria-disabled={isReadOnly}
               >
                 <Plus className="w-4 h-4" />
-                {multiSelectedDates.length} dana
+                {t('workers.calendar.bulkDaysShort', '{{count}} dana', { count: multiSelectedDates.length })}
               </Button>
             </>
           )}
@@ -601,7 +618,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
 
       <p className="text-xs text-muted-foreground text-center">
         {multiSelectMode
-          ? `Odaberite dane pa pritisnite gumb za grupno dodavanje (${multiSelectedDates.length} odabrano)`
+          ? t('workers.calendar.multiSelectHint', 'Odaberite dane pa pritisnite gumb za grupno dodavanje ({{count}} odabrano)', { count: multiSelectedDates.length })
           : t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
 
@@ -611,7 +628,7 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckSquare className="w-5 h-5" />
-              Grupno dodavanje — {multiSelectedDates.length} dana
+              {t('workers.calendar.bulkDialogTitle', 'Grupno dodavanje — {{count}} dana', { count: multiSelectedDates.length })}
             </DialogTitle>
           </DialogHeader>
 
@@ -698,7 +715,9 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                 {t('common.cancel', 'Odustani')}
               </Button>
               <Button size="sm" className="flex-1" onClick={handleBulkSubmit} disabled={!bulkWorkerId || isBulkSubmitting}>
-                {isBulkSubmitting ? t('common.saving', 'Spremanje...') : `Dodaj na ${multiSelectedDates.length} dana`}
+                {isBulkSubmitting
+                  ? t('common.saving', 'Spremanje...')
+                  : t('workers.calendar.bulkSubmit', 'Dodaj na {{count}} dana', { count: multiSelectedDates.length })}
               </Button>
             </div>
           </div>
@@ -824,12 +843,16 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">{worker.position}</Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleStartEdit(entry)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry.id)}>
-                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                            </Button>
+                            {!isReadOnly && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleStartEdit(entry)}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry.id)}>
+                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -883,8 +906,8 @@ export const WorkCalendarOverview = ({ projectId, milestones }: WorkCalendarOver
 
             {/* Add entry section */}
             {!showAddForm ? (
-              workers.length > 0 && (
-                <Button onClick={() => setShowAddForm(true)} variant="outline" className="w-full" size="sm">
+              workers.length > 0 && !isReadOnly && (
+                <Button onClick={() => { if (!guard()) return; setShowAddForm(true); }} variant="outline" className="w-full" size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   {t('workers.addWorkDay', 'Dodaj radni dan')}
                 </Button>
