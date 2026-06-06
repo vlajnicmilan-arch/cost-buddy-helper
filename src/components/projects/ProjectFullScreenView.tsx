@@ -595,10 +595,99 @@ export const ProjectFullScreenView = ({
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
-              {/* Tabs - reorganized in 3 groups: Posao / Ljudi / Novac */}
+              {/* Tabs - Lite (3 base + auto-promoted + More) or Full (Posao / Ljudi / Novac) */}
               <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
-                {/* Top group selector — hidden for restricted workers */}
-                {!isWorkerOnly && (
+                {/* --- LITE TAB STRIP --- */}
+                {isLite && !isWorkerOnly && (() => {
+                  const hasPhases = canSeeTab('milestones') && milestones.length > 0;
+                  const hasTeam = canSeeTab('team') && (members.length + invitations.length) > 1;
+                  const hasDocs = documents.length > 0;
+                  const moreItems: MoreTabItem[] = [];
+                  if (!hasPhases && canSeeTab('milestones')) {
+                    moreItems.push({ value: 'phases', label: labels.milestonesLabel, icon: Target });
+                  }
+                  if (!hasTeam && canSeeTab('team')) {
+                    moreItems.push({ value: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users });
+                  }
+                  if (!hasDocs) {
+                    moreItems.push({ value: 'documents', label: labels.documentsLabel, icon: FolderOpen });
+                  }
+                  if (canSeeTab('funding')) {
+                    moreItems.push({ value: 'funding', label: t('projects.funding', 'Financiranje'), icon: Wallet });
+                  }
+                  if (canSeeTab('worklog')) {
+                    moreItems.push({ value: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen });
+                  }
+                  moreItems.push({ value: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity });
+
+                  const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
+
+                  return (
+                    <div className="relative mb-6">
+                      <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                        <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
+                          <TabsTrigger value="overview" className={triggerCls}>
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            {t('projects.overview', 'Pregled')}
+                          </TabsTrigger>
+                          {canSeeTab('transactions') && (
+                            <TabsTrigger value="transactions" className={triggerCls}>
+                              <FileText className="w-3.5 h-3.5" />
+                              {t('projects.transactions', 'Transakcije')}
+                              {expenses.length > 0 && (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                              )}
+                            </TabsTrigger>
+                          )}
+                          <TabsTrigger value="budget" className={triggerCls}>
+                            <Wallet className="w-3.5 h-3.5" />
+                            {t('projects.budgetTab.label', 'Budžet')}
+                          </TabsTrigger>
+                          {hasPhases && (
+                            <TabsTrigger value="phases" className={triggerCls}>
+                              <Target className="w-3.5 h-3.5" />
+                              {labels.milestonesLabel}
+                              <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                            </TabsTrigger>
+                          )}
+                          {hasTeam && (
+                            <TabsTrigger value="team" className={triggerCls}>
+                              <Users className="w-3.5 h-3.5" />
+                              {t('projects.projectTeam', 'Tim projekta')}
+                            </TabsTrigger>
+                          )}
+                          {hasDocs && (
+                            <TabsTrigger value="documents" className={triggerCls}>
+                              <FolderOpen className="w-3.5 h-3.5" />
+                              {labels.documentsLabel}
+                            </TabsTrigger>
+                          )}
+                          {moreItems.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setMoreSheetOpen(true)}
+                              className={cn(triggerCls, 'text-muted-foreground')}
+                              aria-label={t('projects.moreTabs.title', 'Više')}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                              {t('projects.moreTabs.title', 'Više')}
+                            </button>
+                          )}
+                        </TabsList>
+                      </div>
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+                      <ProjectMoreTabsSheet
+                        open={moreSheetOpen}
+                        onOpenChange={setMoreSheetOpen}
+                        items={moreItems}
+                        onSelect={(v) => setActiveTab(v)}
+                      />
+                    </div>
+                  );
+                })()}
+
+                {/* --- FULL MODE: Posao / Ljudi / Novac groups --- */}
+                {!isLite && !isWorkerOnly && (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-1 bg-muted/40 rounded-2xl border border-border/30">
                   {([
                     { id: 'work' as TabGroup, icon: Briefcase, label: t('projects.tabs.work', 'Posao') },
