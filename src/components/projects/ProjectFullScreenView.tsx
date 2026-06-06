@@ -477,8 +477,8 @@ export const ProjectFullScreenView = ({
                   className="mb-4"
                 />
               )}
-              {/* Budget Overview - only show if user can see funding */}
-              {canSeeTab('funding') && (
+              {/* Budget Overview - only show if user can see funding (Full mode only; Lite has dedicated Budget tab) */}
+              {!isLite && canSeeTab('funding') && (
               <div className="p-4 rounded-lg bg-muted/50 space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
