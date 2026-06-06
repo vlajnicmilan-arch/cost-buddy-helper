@@ -618,7 +618,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
 
       <p className="text-xs text-muted-foreground text-center">
         {multiSelectMode
-          ? `Odaberite dane pa pritisnite gumb za grupno dodavanje (${multiSelectedDates.length} odabrano)`
+          ? t('workers.calendar.multiSelectHint', 'Odaberite dane pa pritisnite gumb za grupno dodavanje ({{count}} odabrano)', { count: multiSelectedDates.length })
           : t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
 
@@ -628,7 +628,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckSquare className="w-5 h-5" />
-              Grupno dodavanje — {multiSelectedDates.length} dana
+              {t('workers.calendar.bulkDialogTitle', 'Grupno dodavanje — {{count}} dana', { count: multiSelectedDates.length })}
             </DialogTitle>
           </DialogHeader>
 
@@ -715,7 +715,9 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                 {t('common.cancel', 'Odustani')}
               </Button>
               <Button size="sm" className="flex-1" onClick={handleBulkSubmit} disabled={!bulkWorkerId || isBulkSubmitting}>
-                {isBulkSubmitting ? t('common.saving', 'Spremanje...') : `Dodaj na ${multiSelectedDates.length} dana`}
+                {isBulkSubmitting
+                  ? t('common.saving', 'Spremanje...')
+                  : t('workers.calendar.bulkSubmit', 'Dodaj na {{count}} dana', { count: multiSelectedDates.length })}
               </Button>
             </div>
           </div>
