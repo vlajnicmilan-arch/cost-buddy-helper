@@ -40,7 +40,7 @@ interface ProjectTransactionsFilterBarProps {
   customCategories: any[];
   getPaymentSourceLabel: (s: string) => string;
   dateLocale: Locale;
-  reportDateLimits: { minDate?: Date; maxDate?: Date };
+  reportDateLimits: DateLimits;
   // actions
   onClearAll: () => void;
 }
