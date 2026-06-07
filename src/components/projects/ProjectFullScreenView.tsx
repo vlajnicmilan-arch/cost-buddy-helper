@@ -60,8 +60,7 @@ import { LocalStorage } from '@/hooks/useLocalStorage';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Legacy group keys preserved for back-compat TAB_TO_GROUP resolver only — UI no longer uses groups.
-type TabGroup = 'work' | 'people' | 'money';
+
 
 interface ProjectFullScreenViewProps {
   open: boolean;
