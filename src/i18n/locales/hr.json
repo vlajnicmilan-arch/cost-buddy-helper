@@ -4850,16 +4850,17 @@
         "emailLabel": "Email",
         "emailHint": "Pozivamo postojećeg korisnika aplikacije. Pozivi novim korisnicima dolaze u sljedećem valu.",
         "roleLabel": "Uloga",
+        "roleHint": "S pravom odluke: odobrava zajedničke troškove i glasa o promjenama Kruga. Bez prava odluke: vidi i dodaje troškove, ali ne odlučuje.",
         "submit": "Dodaj",
         "success": "Član dodan",
-        "punopravniCapReached": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
+        "punopravniCapReached": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
         "errors": {
           "user_not_found": "Korisnik s tim emailom još nema račun.",
           "already_member": "Korisnik je već član ovog Kruga.",
           "cannot_add_self": "Ne možeš dodati samog sebe.",
           "not_owner": "Samo vlasnik Kruga može dodavati članove.",
           "invalid_input": "Neispravan email.",
-          "cap_exceeded": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
+          "cap_exceeded": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
           "generic": "Greška pri dodavanju člana."
         }
       },
