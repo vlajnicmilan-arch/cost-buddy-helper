@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { CompleteProjectWizard } from './CompleteProjectWizard';
+import { ProjectTabsStrip } from './ProjectTabsStrip';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectDeleteDialog } from './ProjectDeleteDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
