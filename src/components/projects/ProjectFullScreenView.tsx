@@ -418,7 +418,6 @@ export const ProjectFullScreenView = ({
                       }
                       setDeleteDialogOpen(true);
                     }}
-                    onToggleViewMode={toggleViewMode}
                   />
                 )}
               </div>
