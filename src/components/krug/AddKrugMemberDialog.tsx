@@ -113,9 +113,15 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
                 {t('krug.role.obicni', 'Obični član')}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'krug.member.add.roleHint',
+                'S pravom odluke: odobrava zajedničke troškove i glasa o promjenama Kruga. Bez prava odluke: vidi i dodaje troškove, ali ne odlučuje.',
+              )}
+            </p>
             {punopravniDisabled && (
-              <p className="text-xs text-muted-foreground">
-                {t('krug.member.add.punopravniCapReached', 'Dosegnut je maks. broj punopravnih članova za ovaj preset.')}
+              <p className="text-xs text-destructive">
+                {t('krug.member.add.punopravniCapReached', 'Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.')}
               </p>
             )}
           </div>
