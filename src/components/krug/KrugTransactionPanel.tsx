@@ -33,7 +33,7 @@ import {
 } from '@/lib/krugDecisions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Lock, Eye, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
+import { Loader2, Users, User, EyeOff, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -212,10 +212,10 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
     }) === 'ok_governed_to_personal';
 
   // ---- UI ----
-  const privacyOptions: { key: KrugPrivacy; label: string; icon: JSX.Element }[] = [
-    { key: 'personal', label: t('krug.privacy.personal', 'Osobno'), icon: <Eye className="w-3.5 h-3.5" /> },
-    { key: 'private', label: t('krug.privacy.private', 'Privatno'), icon: <Lock className="w-3.5 h-3.5" /> },
-    { key: 'shared', label: t('krug.privacy.shared', 'Zajedničko'), icon: <Users className="w-3.5 h-3.5" /> },
+  const privacyOptions: { key: KrugPrivacy; label: string; hint: string; icon: JSX.Element }[] = [
+    { key: 'personal', label: t('krug.privacy.personal', 'Moje'), hint: t('krug.privacyHint.personal', 'Ne ide na potvrdu Krugu.'), icon: <User className="w-3.5 h-3.5" /> },
+    { key: 'private', label: t('krug.privacy.private', 'Skriveno od Kruga'), hint: t('krug.privacyHint.private', 'Ostali članovi ovo ne vide.'), icon: <EyeOff className="w-3.5 h-3.5" /> },
+    { key: 'shared', label: t('krug.privacy.shared', 'Za Krug'), hint: t('krug.privacyHint.shared', 'Šalje se ostalima na potvrdu.'), icon: <Users className="w-3.5 h-3.5" /> },
   ];
 
   const statusLabel: Record<KrugSharedStatus, string> = {
@@ -262,10 +262,15 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
                 variant={active ? 'default' : 'outline'}
                 disabled={!enabled || active}
                 onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
-                className="h-8 px-2.5 text-xs gap-1.5"
+                className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
               >
-                {opt.icon}
-                {opt.label}
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  {opt.icon}
+                  {opt.label}
+                </span>
+                <span className={cn('text-[10px] leading-tight', active ? 'opacity-90' : 'text-muted-foreground')}>
+                  {opt.hint}
+                </span>
               </Button>
             );
           })}
