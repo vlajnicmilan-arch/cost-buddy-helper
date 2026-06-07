@@ -4769,8 +4769,8 @@
     "notFound": "Krug not found.",
     "role": {
       "owner": "Owner",
-      "punopravni": "Full member",
-      "obicni": "Ordinary member"
+      "punopravni": "With decision rights",
+      "obicni": "Without decision rights"
     },
     "preset": {
       "obitelj": "Family",
