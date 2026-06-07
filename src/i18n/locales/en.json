@@ -4746,8 +4746,14 @@
     "noSharedSources": "No linked payment sources.",
     "queue": {
       "title": "Awaiting decision",
-      "empty": "No proposals to decide on.",
-      "noDescription": "(no description)"
+      "subtitle": "Your approval for shared expenses proposed by Krug members.",
+      "empty": "Nothing to approve. When someone marks an expense \"For the Krug\", it appears here.",
+      "noDescription": "(no description)",
+      "row": {
+        "status": "Proposed for sharing",
+        "confirm": "Approve",
+        "reject": "Reject"
+      }
     },
     "sharedSource": {
       "attach": {

@@ -4757,8 +4757,14 @@
     "noSharedSources": "Nema povezanih izvora plaćanja.",
     "queue": {
       "title": "Za odlučivanje",
-      "empty": "Nema prijedloga za odluku.",
-      "noDescription": "(bez opisa)"
+      "subtitle": "Tvoja potvrda za zajedničke troškove koje su predložili članovi Kruga.",
+      "empty": "Nema prijedloga za potvrdu. Kad netko označi trošak kao \"Za Krug\", pojavit će se ovdje.",
+      "noDescription": "(bez opisa)",
+      "row": {
+        "status": "Predloženo za dijeljenje",
+        "confirm": "Potvrdi",
+        "reject": "Odbij"
+      }
     },
     "sharedSource": {
       "attach": {
