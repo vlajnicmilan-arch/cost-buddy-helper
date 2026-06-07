@@ -112,6 +112,12 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
           </Badge>
         )}
       </h3>
+      <p className="text-xs text-muted-foreground">
+        {t(
+          'krug.queue.subtitle',
+          'Tvoja potvrda za zajedničke troškove koje su predložili članovi Kruga.',
+        )}
+      </p>
 
       {isLoading ? (
         <Card className="p-4 text-xs text-muted-foreground flex items-center gap-2">
@@ -120,7 +126,10 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
         </Card>
       ) : pending.length === 0 ? (
         <Card className="p-4 text-xs text-muted-foreground">
-          {t('krug.queue.empty', 'Nema prijedloga za odluku.')}
+          {t(
+            'krug.queue.empty',
+            'Nema prijedloga za potvrdu. Kad netko označi trošak kao "Za Krug", pojavit će se ovdje.',
+          )}
         </Card>
       ) : (
         <Card className="divide-y divide-border">
@@ -138,55 +147,67 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
             return (
               <div
                 key={e.id}
-                className="px-4 py-3 flex items-center justify-between gap-2 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                className="px-4 py-3 space-y-2 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 {...clickableProps(() => openDetail(e))}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate">
-                    {e.description || t('krug.queue.noDescription', '(bez opisa)')}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground truncate">
-                    {format(e.date, 'd. MMM yyyy.', { locale })}
-                    {authorName ? ` · ${authorName}` : ''}
-                    {e.merchant_name ? ` · ${e.merchant_name}` : ''}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="text-sm font-mono tabular-nums">{amountFormatted}</div>
-                  {(canConfirm || canNegate) && (
-                    <div className="flex items-center gap-1 ml-1.5" onClick={(ev) => ev.stopPropagation()}>
-                      {canConfirm && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
-                          disabled={busy}
-                          aria-label={t('krug.act.A1', 'Potvrdi')}
-                          onClick={() => handleAct(e, 'A1')}
-                        >
-                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        </Button>
-                      )}
-                      {canNegate && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
-                          disabled={busy}
-                          aria-label={t('krug.act.A2', 'Negiraj')}
-                          onClick={() => handleAct(e, 'A2')}
-                        >
-                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                        </Button>
-                      )}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 mb-1"
+                    >
+                      {t('krug.queue.row.status', 'Predloženo za dijeljenje')}
+                    </Badge>
+                    <div className="text-sm font-medium truncate">
+                      {e.description || t('krug.queue.noDescription', '(bez opisa)')}
                     </div>
-                  )}
+                    <div className="text-[11px] text-muted-foreground truncate">
+                      {format(e.date, 'd. MMM yyyy.', { locale })}
+                      {authorName ? ` · ${authorName}` : ''}
+                      {e.merchant_name ? ` · ${e.merchant_name}` : ''}
+                    </div>
+                  </div>
+                  <div className="text-sm font-mono tabular-nums shrink-0">{amountFormatted}</div>
                 </div>
+                {(canConfirm || canNegate) && (
+                  <div
+                    className="flex items-center justify-end gap-2"
+                    onClick={(ev) => ev.stopPropagation()}
+                  >
+                    {canConfirm && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2.5 text-xs gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                        disabled={busy}
+                        aria-label={t('krug.queue.row.confirm', 'Potvrdi')}
+                        onClick={() => handleAct(e, 'A1')}
+                      >
+                        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        {t('krug.queue.row.confirm', 'Potvrdi')}
+                      </Button>
+                    )}
+                    {canNegate && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2.5 text-xs gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
+                        disabled={busy}
+                        aria-label={t('krug.queue.row.reject', 'Odbij')}
+                        onClick={() => handleAct(e, 'A2')}
+                      >
+                        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                        {t('krug.queue.row.reject', 'Odbij')}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </Card>
       )}
+
 
       <TransactionDetailDialog
         expense={selected}
