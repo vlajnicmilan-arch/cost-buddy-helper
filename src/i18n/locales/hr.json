@@ -4914,7 +4914,7 @@
       },
       "errors": {
         "not_owner": "Samo vlasnik može pokrenuti brisanje",
-        "not_eligible": "Samo punopravni članovi mogu glasati",
+        "not_eligible": "Samo članovi s pravom odluke mogu glasati",
         "request_already_pending": "Već postoji aktivan zahtjev",
         "no_pending_request": "Nema aktivnog zahtjeva",
         "krug_not_found": "Krug ne postoji",
