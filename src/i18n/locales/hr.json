@@ -4888,7 +4888,7 @@
       "cta": "Obriši Krug",
       "title": "Brisanje Kruga",
       "confirmSolo": "Premjesti Krug \"{{name}}\" u koš? Krug ostaje 30 dana prije trajnog brisanja.",
-      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje zahtijeva suglasnost svih punopravnih članova ({{count}}).",
+      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje zahtijeva suglasnost svih članova s pravom odluke ({{count}}).",
       "reasonLabel": "Razlog (opcionalno)",
       "reasonPlaceholder": "Npr. testni krug, više se ne koristi…",
       "submit": "Pošalji zahtjev",
