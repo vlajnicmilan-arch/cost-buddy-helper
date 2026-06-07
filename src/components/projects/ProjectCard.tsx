@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
+import { ProjectDeleteDialog } from './ProjectDeleteDialog';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
