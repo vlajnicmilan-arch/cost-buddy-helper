@@ -58,7 +58,6 @@ import { ProjectBudgetTab } from './ProjectBudgetTab';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Legacy group keys preserved for back-compat TAB_TO_GROUP resolver only — UI no longer uses groups.
