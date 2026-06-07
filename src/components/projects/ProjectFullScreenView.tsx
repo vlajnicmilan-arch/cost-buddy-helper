@@ -426,7 +426,13 @@ export const ProjectFullScreenView = ({
                       }
                     }}
                     onArchiveToggle={() => onRequestArchive?.(project.id, !project.archived_at)}
-                    onDelete={() => onRequestDelete?.(project.id)}
+                    onDelete={() => {
+                      if (isReadOnly) {
+                        showError(t('projects.access.readOnlyBlockedToast'));
+                        return;
+                      }
+                      setDeleteDialogOpen(true);
+                    }}
                     onToggleViewMode={toggleViewMode}
                   />
                 )}
