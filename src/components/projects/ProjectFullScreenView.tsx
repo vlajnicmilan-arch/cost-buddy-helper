@@ -99,6 +99,7 @@ export const ProjectFullScreenView = ({
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [completeWizardOpen, setCompleteWizardOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [phasesView, setPhasesView] = useState<'list' | 'timeline'>('list');
 
