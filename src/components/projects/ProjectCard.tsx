@@ -61,6 +61,7 @@ export const ProjectCard = ({
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   // Auto-derive access level from project so list views don't have to wire isReadOnly per card.
   const derivedAccessLevel = useProjectAccessLevel(
