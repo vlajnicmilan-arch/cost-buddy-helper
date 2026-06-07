@@ -24,7 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { CompleteProjectWizard } from './CompleteProjectWizard';
-import { ProjectTabsStrip } from './ProjectTabsStrip';
+import { MobileProjectTabs, type MobileTabDef } from './MobileProjectTabs';
 import { ProjectShareDialog } from './ProjectShareDialog';
 import { ProjectDeleteDialog } from './ProjectDeleteDialog';
 import { ProjectProfitLossCard } from './ProjectProfitLossCard';
@@ -461,65 +461,117 @@ export const ProjectFullScreenView = ({
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
-              {/* Wave 2: unified single tab strip (no Lite/Full split, no group nav, no "More" sheet). */}
+              {/* Wave 2: unified single tab strip.
+                  Mobile: fixed 4+1 (Overview, Budget, Phases, Team) + "More" sheet for overflow.
+                  Desktop (sm+): full horizontal TabsList. */}
               <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
                 {!isWorkerOnly && (() => {
                   const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
+
+                  // Mobile fixed primary order: Overview, Budget, Phases, Team.
+                  // Invisible primaries are skipped (slot omitted) — positions of visible ones never change.
+                  const primary: MobileTabDef[] = [
+                    { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
+                    { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
+                    ...(canSeeTab('milestones') || canSeeTab('timeline')
+                      ? [{
+                          key: 'phases',
+                          label: labels.milestonesLabel,
+                          icon: Target,
+                          badge: milestones.length > 0 ? (
+                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                          ) : undefined,
+                        } as MobileTabDef]
+                      : []),
+                    { key: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users },
+                  ];
+
+                  const overflow: MobileTabDef[] = [
+                    ...(canSeeTab('funding')
+                      ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
+                      : []),
+                    ...(canSeeTab('transactions')
+                      ? [{
+                          key: 'transactions',
+                          label: t('projects.transactions', 'Transakcije'),
+                          icon: FileText,
+                          badge: expenses.length > 0 ? (
+                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                          ) : undefined,
+                        } as MobileTabDef]
+                      : []),
+                    ...(canSeeTab('worklog')
+                      ? [{ key: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen } as MobileTabDef]
+                      : []),
+                    { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
+                    { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
+                  ];
+
                   return (
-                    <ProjectTabsStrip>
-                      <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max scroll-pl-2">
-                        <TabsTrigger value="overview" className={triggerCls}>
-                          <TrendingUp className="w-3.5 h-3.5" />
-                          {t('projects.overview', 'Pregled')}
-                        </TabsTrigger>
-                        <TabsTrigger value="budget" className={triggerCls}>
-                          <Wallet className="w-3.5 h-3.5" />
-                          {t('projects.budgetTab.label', 'Budžet')}
-                        </TabsTrigger>
-                        {(canSeeTab('milestones') || canSeeTab('timeline')) && (
-                          <TabsTrigger value="phases" className={triggerCls}>
-                            <Target className="w-3.5 h-3.5" />
-                            {labels.milestonesLabel}
-                            {milestones.length > 0 && (
-                              <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                    <>
+                      <MobileProjectTabs
+                        value={resolvedActiveTab}
+                        onValueChange={setActiveTab}
+                        primary={primary}
+                        overflow={overflow}
+                      />
+                      <div className="hidden sm:block mb-6">
+                        <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                          <TabsList className="inline-flex gap-1 h-auto p-1 bg-transparent w-auto min-w-max">
+                            <TabsTrigger value="overview" className={triggerCls}>
+                              <TrendingUp className="w-3.5 h-3.5" />
+                              {t('projects.overview', 'Pregled')}
+                            </TabsTrigger>
+                            <TabsTrigger value="budget" className={triggerCls}>
+                              <Wallet className="w-3.5 h-3.5" />
+                              {t('projects.budgetTab.label', 'Budžet')}
+                            </TabsTrigger>
+                            {(canSeeTab('milestones') || canSeeTab('timeline')) && (
+                              <TabsTrigger value="phases" className={triggerCls}>
+                                <Target className="w-3.5 h-3.5" />
+                                {labels.milestonesLabel}
+                                {milestones.length > 0 && (
+                                  <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                                )}
+                              </TabsTrigger>
                             )}
-                          </TabsTrigger>
-                        )}
-                        {canSeeTab('funding') && (
-                          <TabsTrigger value="funding" className={triggerCls}>
-                            <Handshake className="w-3.5 h-3.5" />
-                            {t('projects.funding', 'Financiranje')}
-                          </TabsTrigger>
-                        )}
-                        {canSeeTab('transactions') && (
-                          <TabsTrigger value="transactions" className={triggerCls}>
-                            <FileText className="w-3.5 h-3.5" />
-                            {t('projects.transactions', 'Transakcije')}
-                            {expenses.length > 0 && (
-                              <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                            {canSeeTab('funding') && (
+                              <TabsTrigger value="funding" className={triggerCls}>
+                                <Handshake className="w-3.5 h-3.5" />
+                                {t('projects.funding', 'Financiranje')}
+                              </TabsTrigger>
                             )}
-                          </TabsTrigger>
-                        )}
-                        <TabsTrigger value="team" className={triggerCls}>
-                          <Users className="w-3.5 h-3.5" />
-                          {t('projects.projectTeam', 'Tim projekta')}
-                        </TabsTrigger>
-                        {canSeeTab('worklog') && (
-                          <TabsTrigger value="worklog" className={triggerCls}>
-                            <BookOpen className="w-3.5 h-3.5" />
-                            {t('workLog.tab', 'Dnevnik rada')}
-                          </TabsTrigger>
-                        )}
-                        <TabsTrigger value="documents" className={triggerCls}>
-                          <FolderOpen className="w-3.5 h-3.5" />
-                          {labels.documentsLabel}
-                        </TabsTrigger>
-                        <TabsTrigger value="activity" className={triggerCls}>
-                          <Activity className="w-3.5 h-3.5" />
-                          {t('projects.activity.tab', 'Aktivnost')}
-                        </TabsTrigger>
-                      </TabsList>
-                    </ProjectTabsStrip>
+                            {canSeeTab('transactions') && (
+                              <TabsTrigger value="transactions" className={triggerCls}>
+                                <FileText className="w-3.5 h-3.5" />
+                                {t('projects.transactions', 'Transakcije')}
+                                {expenses.length > 0 && (
+                                  <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                                )}
+                              </TabsTrigger>
+                            )}
+                            <TabsTrigger value="team" className={triggerCls}>
+                              <Users className="w-3.5 h-3.5" />
+                              {t('projects.projectTeam', 'Tim projekta')}
+                            </TabsTrigger>
+                            {canSeeTab('worklog') && (
+                              <TabsTrigger value="worklog" className={triggerCls}>
+                                <BookOpen className="w-3.5 h-3.5" />
+                                {t('workLog.tab', 'Dnevnik rada')}
+                              </TabsTrigger>
+                            )}
+                            <TabsTrigger value="documents" className={triggerCls}>
+                              <FolderOpen className="w-3.5 h-3.5" />
+                              {labels.documentsLabel}
+                            </TabsTrigger>
+                            <TabsTrigger value="activity" className={triggerCls}>
+                              <Activity className="w-3.5 h-3.5" />
+                              {t('projects.activity.tab', 'Aktivnost')}
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
+                      </div>
+                    </>
                   );
                 })()}
 
