@@ -707,6 +707,13 @@
     "budgetHistory": "Budgetverlauf",
     "advancedOptions": "Erweiterte Optionen",
     "deleteHint": "Vor dem Löschen archivieren",
+    "deleteDialog": {
+      "title": "Projekt löschen?",
+      "description": "Du kannst es ins Archiv verschieben (sicher, jederzeit wiederherstellbar) oder löschen. Gelöschte Projekte landen im Papierkorb und werden dort 30 Tage aufbewahrt, bevor sie endgültig entfernt werden.",
+      "descriptionArchived": "Das Projekt ist archiviert. Beim Löschen landet es im Papierkorb und bleibt dort 30 Tage, bevor es endgültig entfernt wird.",
+      "archiveAction": "Ins Archiv verschieben",
+      "deleteAction": "Endgültig löschen"
+    },
     "menu": {
       "editProject": "Projekt bearbeiten",
       "report": "Bericht",
@@ -716,6 +723,7 @@
       "showLiteTabs": "Lite-Ansicht",
       "unarchive": "Aus Archiv holen",
       "archive": "Projekt archivieren",
+      "delete": "Projekt löschen…",
       "deletePermanently": "Endgültig löschen"
     },
     "quickStartCards": {
