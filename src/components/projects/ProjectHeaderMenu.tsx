@@ -143,14 +143,16 @@ export const ProjectHeaderMenu = ({
               </DropdownMenuItem>
             )}
 
-            {canDelete && projectArchived && (
+            {canDelete && (
               <DropdownMenuItem
                 disabled={isReadOnly}
                 className="text-destructive focus:text-destructive"
                 onSelect={(e) => { e.preventDefault(); closeAnd(onDelete)(); }}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                {t('projects.menu.deletePermanently', 'Obriši trajno')}
+                {projectArchived
+                  ? t('projects.menu.deletePermanently', 'Obriši trajno')
+                  : t('projects.menu.delete', 'Obriši projekt…')}
               </DropdownMenuItem>
             )}
           </>
