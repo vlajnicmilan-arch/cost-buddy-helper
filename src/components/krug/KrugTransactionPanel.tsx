@@ -262,10 +262,15 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
                 variant={active ? 'default' : 'outline'}
                 disabled={!enabled || active}
                 onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
-                className="h-8 px-2.5 text-xs gap-1.5"
+                className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
               >
-                {opt.icon}
-                {opt.label}
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  {opt.icon}
+                  {opt.label}
+                </span>
+                <span className={cn('text-[10px] leading-tight', active ? 'opacity-90' : 'text-muted-foreground')}>
+                  {opt.hint}
+                </span>
               </Button>
             );
           })}
