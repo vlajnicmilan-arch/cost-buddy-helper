@@ -4808,9 +4808,14 @@
       "loading": "Loading…"
     },
     "privacy": {
-      "personal": "Personal",
-      "private": "Private",
-      "shared": "Shared"
+      "personal": "Mine",
+      "private": "Hidden from Krug",
+      "shared": "For the Krug"
+    },
+    "privacyHint": {
+      "personal": "Doesn't go to the Krug for confirmation.",
+      "private": "Other members can't see this.",
+      "shared": "Sent to others for confirmation."
     },
     "status": {
       "predlozena": "Proposed",
