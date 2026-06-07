@@ -19,7 +19,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw, MoreHorizontal
+  Briefcase, FolderOpen, HelpCircle, Share2, Activity, BookOpen, Flag, RotateCcw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -55,10 +55,7 @@ import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
 import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
-import { ProjectMoreTabsSheet, type MoreTabItem } from './ProjectMoreTabsSheet';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
-import { useProjectViewMode } from '@/hooks/useProjectViewMode';
-import { isLiteProject } from '@/lib/isLiteProject';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
