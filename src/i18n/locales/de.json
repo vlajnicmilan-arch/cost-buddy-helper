@@ -4877,7 +4877,7 @@
       "cta": "Krug löschen",
       "title": "Krug löschen",
       "confirmSolo": "Krug \"{{name}}\" in den Papierkorb verschieben? Bleibt 30 Tage vor endgültiger Löschung.",
-      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Alle Vollmitglieder ({{count}}) müssen zustimmen.",
+      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Alle Mitglieder mit Entscheidungsrecht ({{count}}) müssen zustimmen.",
       "reasonLabel": "Grund (optional)",
       "reasonPlaceholder": "z.B. Test-Krug, nicht mehr verwendet…",
       "submit": "Antrag senden",
