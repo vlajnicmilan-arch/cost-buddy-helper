@@ -556,32 +556,24 @@ export const ProjectFullScreenView = ({
                     );
                   })()}
 
+                  {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
 
-                  {/* Timeline */}
-                  {(project.start_date || project.end_date) && (
-                    <div className="p-4 rounded-lg border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('projects.timeline')}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm flex-wrap">
-                        {project.start_date && (
-                          <div>
-                            <span className="text-muted-foreground">{t('projects.start')}:</span>{' '}
-                            {format(new Date(project.start_date), 'd. MMMM yyyy', { locale: hr })}
-                          </div>
-                        )}
-                        {project.end_date && (
-                          <div>
-                            <span className="text-muted-foreground">{t('projects.end')}:</span>{' '}
-                            {format(new Date(project.end_date), 'd. MMMM yyyy', { locale: hr })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  {/* 1. P&L Card — primary financial KPI (business view) */}
+                  {canAccessBusinessTabs && (
+                    <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
                   )}
 
-                  {/* Milestones summary */}
+                  {/* 2. Earned Value Card — margin, EAC, contract-based health */}
+                  {isBusinessView && (
+                    <ProjectEarnedValueCard
+                      project={project}
+                      spent={stats.totalSpent}
+                      milestones={milestones}
+                      onEnterContract={() => onRequestEdit?.(project)}
+                    />
+                  )}
+
+                  {/* 3. Milestones progress */}
                   {milestones.length > 0 && (
                     <div className="p-4 rounded-lg border">
                       <div className="flex items-center justify-between mb-3">
@@ -603,19 +595,28 @@ export const ProjectFullScreenView = ({
                     </div>
                   )}
 
-                  {/* Earned Value Card — margin, EAC, contract-based health */}
-                  {isBusinessView && (
-                    <ProjectEarnedValueCard
-                      project={project}
-                      spent={stats.totalSpent}
-                      milestones={milestones}
-                      onEnterContract={() => onRequestEdit?.(project)}
-                    />
-                  )}
-
-                  {/* P&L Card - only in business view */}
-                  {canAccessBusinessTabs && (
-                    <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
+                  {/* 4. Timeline — meta context at the bottom */}
+                  {(project.start_date || project.end_date) && (
+                    <div className="p-4 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{t('projects.timeline')}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm flex-wrap">
+                        {project.start_date && (
+                          <div>
+                            <span className="text-muted-foreground">{t('projects.start')}:</span>{' '}
+                            {format(new Date(project.start_date), 'd. MMMM yyyy', { locale: hr })}
+                          </div>
+                        )}
+                        {project.end_date && (
+                          <div>
+                            <span className="text-muted-foreground">{t('projects.end')}:</span>{' '}
+                            {format(new Date(project.end_date), 'd. MMMM yyyy', { locale: hr })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </TabsContent>
 
