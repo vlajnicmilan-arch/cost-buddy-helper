@@ -4903,7 +4903,7 @@
       },
       "errors": {
         "not_owner": "Only the owner can start a deletion",
-        "not_eligible": "Only full members can vote",
+        "not_eligible": "Only members with decision rights can vote",
         "request_already_pending": "A pending request already exists",
         "no_pending_request": "No pending request",
         "krug_not_found": "Krug not found",
