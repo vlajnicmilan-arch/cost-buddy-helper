@@ -4780,8 +4780,8 @@
     "notFound": "Krug ne postoji.",
     "role": {
       "owner": "Vlasnik",
-      "punopravni": "Punopravni član",
-      "obicni": "Obični član"
+      "punopravni": "S pravom odluke",
+      "obicni": "Bez prava odluke"
     },
     "preset": {
       "obitelj": "Obitelj",
