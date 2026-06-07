@@ -124,7 +124,7 @@ export const ProjectHeaderMenu = ({
           )}
         </DropdownMenuItem>
 
-        {isManager && (canArchive || (canDelete && projectArchived)) && (
+        {isManager && (canArchive || canDelete) && (
           <>
             <DropdownMenuSeparator />
             {canArchive && (
