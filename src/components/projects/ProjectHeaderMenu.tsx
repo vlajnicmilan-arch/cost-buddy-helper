@@ -2,6 +2,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -82,6 +83,9 @@ export const ProjectHeaderMenu = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 z-[70]">
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+          {t('projects.menu.groupProject', 'Projekt')}
+        </DropdownMenuLabel>
         {isManager && (
           <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onEdit)(); }}>
             <Pencil className="w-4 h-4 mr-2" />
@@ -110,6 +114,9 @@ export const ProjectHeaderMenu = ({
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+          {t('projects.menu.groupDisplay', 'Prikaz')}
+        </DropdownMenuLabel>
         <DropdownMenuItem onSelect={(e) => { e.preventDefault(); closeAnd(onToggleViewMode)(); }}>
           {viewMode === 'lite' ? (
             <>
@@ -127,6 +134,9 @@ export const ProjectHeaderMenu = ({
         {isManager && (canArchive || canDelete) && (
           <>
             <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+              {t('projects.menu.groupArchive', 'Arhiva i brisanje')}
+            </DropdownMenuLabel>
             {canArchive && (
               <DropdownMenuItem disabled={isReadOnly} onSelect={(e) => { e.preventDefault(); closeAnd(onArchiveToggle)(); }}>
                 {projectArchived ? (

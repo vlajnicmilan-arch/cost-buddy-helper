@@ -724,7 +724,10 @@
       "unarchive": "Unarchive",
       "archive": "Archive project",
       "delete": "Delete project…",
-      "deletePermanently": "Delete permanently"
+      "deletePermanently": "Delete permanently",
+      "groupProject": "Project",
+      "groupDisplay": "Display",
+      "groupArchive": "Archive & delete"
     },
     "quickStartCards": {
       "title": "Quick start",

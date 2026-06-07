@@ -728,7 +728,10 @@
       "unarchive": "Vrati iz arhive",
       "archive": "Arhiviraj projekt",
       "delete": "Obriši projekt…",
-      "deletePermanently": "Obriši trajno"
+      "deletePermanently": "Obriši trajno",
+      "groupProject": "Projekt",
+      "groupDisplay": "Prikaz",
+      "groupArchive": "Arhiva i brisanje"
     },
     "quickStartCards": {
       "title": "Brzi početak",

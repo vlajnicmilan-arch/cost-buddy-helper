@@ -724,7 +724,10 @@
       "unarchive": "Aus Archiv holen",
       "archive": "Projekt archivieren",
       "delete": "Projekt löschen…",
-      "deletePermanently": "Endgültig löschen"
+      "deletePermanently": "Endgültig löschen",
+      "groupProject": "Projekt",
+      "groupDisplay": "Ansicht",
+      "groupArchive": "Archiv & Löschen"
     },
     "quickStartCards": {
       "title": "Schnellstart",
