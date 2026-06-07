@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Check, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, Check, X, Loader2, Trash2 } from 'lucide-react';
 import {
   useKrugDeletionRequest,
   useKrugVoteDeletion,
