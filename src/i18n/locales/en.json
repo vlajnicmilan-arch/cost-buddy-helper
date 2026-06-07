@@ -584,7 +584,9 @@
     "tabs": {
       "work": "Work",
       "people": "People",
-      "money": "Money"
+      "money": "Money",
+      "more": "More",
+      "moreSheetTitle": "All sections"
     },
     "tooltips": {
       "team": "Other app users with access to the project",

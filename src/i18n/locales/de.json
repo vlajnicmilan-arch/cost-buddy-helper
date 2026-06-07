@@ -656,7 +656,9 @@
     "tabs": {
       "work": "Arbeit",
       "people": "Personen",
-      "money": "Finanzen"
+      "money": "Finanzen",
+      "more": "Mehr",
+      "moreSheetTitle": "Alle Bereiche"
     },
     "advances": {
       "sectionTitle": "Vorschuss / Mitarbeiter",
