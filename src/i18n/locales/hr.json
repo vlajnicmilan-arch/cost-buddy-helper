@@ -588,7 +588,9 @@
     "tabs": {
       "work": "Posao",
       "people": "Ljudi",
-      "money": "Novac"
+      "money": "Novac",
+      "more": "Više",
+      "moreSheetTitle": "Sve sekcije"
     },
     "tooltips": {
       "team": "Drugi korisnici aplikacije s pristupom projektu",
