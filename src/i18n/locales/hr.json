@@ -4869,8 +4869,8 @@
         "member": "Krug još nema drugih članova."
       },
       "role": {
-        "promoted": "Promovirano u punopravnog člana",
-        "demoted": "Promijenjeno u običnog člana",
+        "promoted": "Pravo odluke dodijeljeno",
+        "demoted": "Pravo odluke uklonjeno",
         "error": "Greška pri promjeni uloge"
       },
       "remove": {
@@ -4879,8 +4879,8 @@
         "error": "Greška pri uklanjanju člana"
       },
       "actions": {
-        "promote": "Promoviraj u punopravnog",
-        "demote": "Vrati na običnog",
+        "promote": "Daj pravo odluke",
+        "demote": "Ukloni pravo odluke",
         "remove": "Ukloni iz Kruga"
       }
     },
