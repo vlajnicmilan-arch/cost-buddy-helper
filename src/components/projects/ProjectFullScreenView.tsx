@@ -190,30 +190,10 @@ export const ProjectFullScreenView = ({
   useEffect(() => {
     if (!open) {
       setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
-      setActiveGroup('work');
     } else if (isWorkerOnly) {
       setActiveTab('worklog');
-      setActiveGroup('work');
     }
   }, [open, project?.id, isWorkerOnly]);
-
-  // Map tab to its group (for auto-switching group when initialTab is set)
-  const TAB_TO_GROUP: Record<string, TabGroup> = {
-    overview: 'work',
-    phases: 'work',
-    // legacy aliases — resolved to phases below
-    timeline: 'work',
-    milestones: 'work',
-    documents: 'work',
-    activity: 'work',
-    worklog: 'people',
-    team: 'people',
-    members: 'people',
-    workers: 'people',
-    collaborators: 'people',
-    funding: 'money',
-    transactions: 'money',
-  };
 
   // Resolve legacy tab keys to the unified tabs
   const resolvedActiveTab = (() => {
@@ -231,11 +211,6 @@ export const ProjectFullScreenView = ({
     else if (activeTab === 'milestones') setPhasesView('list');
   }, [activeTab]);
 
-  useEffect(() => {
-    const grp = TAB_TO_GROUP[activeTab];
-    if (grp && grp !== activeGroup) setActiveGroup(grp);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
 
   // Handle browser back button
   useEffect(() => {
