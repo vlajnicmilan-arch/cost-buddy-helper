@@ -118,20 +118,7 @@ export const ProjectFullScreenView = ({
   const { total: amendmentsTotal } = useProjectContractAmendments(project?.id || null);
   const { documents } = useProjectDocuments(project?.id || null);
 
-  // Lite-mode plumbing (Wave 2)
-  const litePref = isLiteProject({
-    contract_value: project?.contract_value ?? null,
-    total_budget: project?.total_budget ?? null,
-    milestonesCount: milestones.length,
-    membersCount: members.length,
-    documentsCount: documents.length,
-  });
-  const { mode: viewMode, toggle: toggleViewMode } = useProjectViewMode(
-    project?.id,
-    litePref ? 'lite' : 'full'
-  );
-  const isLite = viewMode === 'lite';
-  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  // Wave 2: Lite vs Full unifikacija — single tab strip, no view-mode toggle, no "More" sheet.
   const [quickStartDismissed, setQuickStartDismissed] = useState(false);
   useEffect(() => {
     if (!project?.id) return;
