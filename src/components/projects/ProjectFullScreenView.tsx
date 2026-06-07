@@ -61,7 +61,7 @@ import { LocalStorage } from '@/hooks/useLocalStorage';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type TabGroup = 'work' | 'people' | 'money';
+type TabGroup = 'work' | 'people' | 'money'; // legacy alias for back-compat in TAB_TO_GROUP map only
 
 interface ProjectFullScreenViewProps {
   open: boolean;
