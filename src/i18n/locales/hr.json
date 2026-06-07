@@ -4744,8 +4744,8 @@
       "namePlaceholder": "npr. Naš dom",
       "nameHint": "Min 2 znaka. Naziv vidi cijeli Krug.",
       "presetLabel": "Tip Kruga",
-      "maxPunopravni": "Maks. punopravnih: {{n}}",
-      "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
+      "maxPunopravni": "Najviše članova s pravom odluke: {{n}}",
+      "confirmHint": "Bit ćeš vlasnik Kruga i automatski imaš pravo odluke. Tip se kasnije ne mijenja.",
       "submit": "Kreiraj Krug"
     },
     "createSoon": "Kreiranje Kruga uskoro",
