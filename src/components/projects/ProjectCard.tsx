@@ -21,6 +21,7 @@ import { useMemo, useState } from 'react';
 import { clickableProps } from '@/lib/a11y';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
+import { ProjectDeleteDialog } from './ProjectDeleteDialog';
 
 interface ProjectCardProps {
   project: ProjectWithOwnership;
@@ -60,6 +61,7 @@ export const ProjectCard = ({
   const { formatAmount } = useCurrency();
   const { t, i18n } = useTranslation();
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
   // Auto-derive access level from project so list views don't have to wire isReadOnly per card.
   const derivedAccessLevel = useProjectAccessLevel(
@@ -393,29 +395,33 @@ export const ProjectCard = ({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {isArchived ? (
-                <DropdownMenuItem
-                  disabled={isReadOnly}
-                  className="text-destructive focus:text-destructive"
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setActionsOpen(false);
-                    if (!guard()) return;
-                    onDelete(project.id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {t('projects.menu.deletePermanently', 'Obriši trajno')}
-                </DropdownMenuItem>
-              ) : (
-                <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-                  {t('projects.deleteHint', 'Arhiviraj prije brisanja')}
-                </div>
-              )}
+              <DropdownMenuItem
+                disabled={isReadOnly}
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setActionsOpen(false);
+                  if (!guard()) return;
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {isArchived
+                  ? t('projects.menu.deletePermanently', 'Obriši trajno')
+                  : t('projects.menu.delete', 'Obriši projekt…')}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       )}
+
+      <ProjectDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isArchived={!!isArchived}
+        onArchive={onArchive ? () => onArchive(project.id) : undefined}
+        onDelete={() => onDelete(project.id)}
+      />
     </motion.div>
   );
 };

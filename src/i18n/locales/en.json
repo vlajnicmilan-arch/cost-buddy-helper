@@ -707,6 +707,13 @@
     "budgetHistory": "Budget history",
     "advancedOptions": "Advanced options",
     "deleteHint": "Archive before deleting",
+    "deleteDialog": {
+      "title": "Delete project?",
+      "description": "You can move it to the archive (safe, restore anytime) or delete it. Deleted projects go to Trash and are kept for 30 days before permanent removal.",
+      "descriptionArchived": "This project is archived. Deleting moves it to Trash where it stays for 30 days before permanent removal.",
+      "archiveAction": "Move to archive",
+      "deleteAction": "Delete permanently"
+    },
     "menu": {
       "editProject": "Edit project",
       "report": "Report",
@@ -716,6 +723,7 @@
       "showLiteTabs": "Lite view",
       "unarchive": "Unarchive",
       "archive": "Archive project",
+      "delete": "Delete project…",
       "deletePermanently": "Delete permanently"
     },
     "quickStartCards": {

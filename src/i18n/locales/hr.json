@@ -711,6 +711,13 @@
     "budgetHistory": "Povijest budžeta",
     "advancedOptions": "Napredne opcije",
     "deleteHint": "Arhiviraj prije brisanja",
+    "deleteDialog": {
+      "title": "Obrisati projekt?",
+      "description": "Možeš ga premjestiti u arhivu (sigurno, vraćaš ga kad želiš) ili obrisati. Obrisani projekt ide u Otpad i čuva se 30 dana prije trajnog uklanjanja.",
+      "descriptionArchived": "Projekt je u arhivi. Brisanjem ide u Otpad gdje ostaje 30 dana prije trajnog uklanjanja.",
+      "archiveAction": "Premjesti u arhivu",
+      "deleteAction": "Obriši trajno"
+    },
     "menu": {
       "editProject": "Uredi projekt",
       "report": "Izvještaj",
@@ -720,6 +727,7 @@
       "showLiteTabs": "Lite prikaz",
       "unarchive": "Vrati iz arhive",
       "archive": "Arhiviraj projekt",
+      "delete": "Obriši projekt…",
       "deletePermanently": "Obriši trajno"
     },
     "quickStartCards": {
