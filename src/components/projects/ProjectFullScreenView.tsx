@@ -372,7 +372,7 @@ export const ProjectFullScreenView = ({
                     isReadOnly={isReadOnly}
                     projectCompleted={project.status === 'completed'}
                     projectArchived={!!project.archived_at}
-                    viewMode={viewMode}
+                    
                     canDelete={!!onRequestDelete}
                     canArchive={!!onRequestArchive}
                     onEdit={() => onRequestEdit?.(project)}
