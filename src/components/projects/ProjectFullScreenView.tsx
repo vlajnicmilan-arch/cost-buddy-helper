@@ -447,6 +447,19 @@ export const ProjectFullScreenView = ({
               isReadOnly={isReadOnly}
             />
 
+            <ProjectDeleteDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              isArchived={!!project.archived_at}
+              onArchive={
+                onRequestArchive
+                  ? () => onRequestArchive(project.id, true)
+                  : undefined
+              }
+              onDelete={() => onRequestDelete?.(project.id)}
+            />
+
+
 
             {/* Reports Dialog */}
             <ProjectReportsDialog
