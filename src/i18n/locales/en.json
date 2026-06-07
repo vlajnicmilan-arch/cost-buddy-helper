@@ -4733,8 +4733,8 @@
       "namePlaceholder": "e.g. Our home",
       "nameHint": "Min 2 chars. Visible to the whole Krug.",
       "presetLabel": "Krug type",
-      "maxPunopravni": "Max full members: {{n}}",
-      "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
+      "maxPunopravni": "Max members with decision rights: {{n}}",
+      "confirmHint": "You will be the owner and automatically have decision rights. Type cannot be changed later.",
       "submit": "Create Krug"
     },
     "createSoon": "Krug creation coming soon",
