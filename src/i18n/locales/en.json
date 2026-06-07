@@ -4858,8 +4858,8 @@
         "member": "Krug has no other members yet."
       },
       "role": {
-        "promoted": "Promoted to full member",
-        "demoted": "Demoted to regular member",
+        "promoted": "Decision rights granted",
+        "demoted": "Decision rights removed",
         "error": "Failed to change role"
       },
       "remove": {
@@ -4868,8 +4868,8 @@
         "error": "Failed to remove member"
       },
       "actions": {
-        "promote": "Promote to full",
-        "demote": "Demote to regular",
+        "promote": "Grant decision rights",
+        "demote": "Remove decision rights",
         "remove": "Remove from Krug"
       }
     },
