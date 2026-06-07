@@ -4819,9 +4819,14 @@
       "loading": "Učitavam…"
     },
     "privacy": {
-      "personal": "Osobno",
-      "private": "Privatno",
-      "shared": "Zajedničko"
+      "personal": "Moje",
+      "private": "Skriveno od Kruga",
+      "shared": "Za Krug"
+    },
+    "privacyHint": {
+      "personal": "Ne ide na potvrdu Krugu.",
+      "private": "Ostali članovi ovo ne vide.",
+      "shared": "Šalje se ostalima na potvrdu."
     },
     "status": {
       "predlozena": "Predloženo",
