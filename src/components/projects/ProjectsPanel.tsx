@@ -155,9 +155,14 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const confirmDelete = async () => {
     if (projectToDelete) {
       const id = projectToDelete;
-      await wrapDeleteWithUndo(() => deleteProject(id), 'project', id);
-      setDeleteConfirmOpen(false);
-      setProjectToDelete(null);
+      try {
+        await wrapDeleteWithUndo(() => deleteProject(id), 'project', id);
+      } catch {
+        // deleteProject već prikazuje showError; samo spriječi neuhvaćeni promise reject.
+      } finally {
+        setDeleteConfirmOpen(false);
+        setProjectToDelete(null);
+      }
     }
   };
 

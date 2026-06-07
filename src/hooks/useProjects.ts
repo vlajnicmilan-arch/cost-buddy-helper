@@ -6,6 +6,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
 import { instantCache } from '@/lib/instantCache';
+import { softDelete } from '@/lib/softDelete';
 
 const LOCAL_PROJECTS_KEY = 'finmate.projects';
 
@@ -301,18 +302,18 @@ export const useProjects = () => {
         return;
       }
 
-      const { error } = await (supabase
-        .from('projects') as any)
-        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
-        .eq('id', id);
-
-      if (error) throw error;
+      // Soft-delete via SECURITY DEFINER RPC. Direct UPDATE triggers the
+      // `hide_soft_deleted` RESTRICTIVE policy on PostgREST's return=representation
+      // (the post-update row has deleted_at != NULL → 42501).
+      await softDelete('projects', id, user?.id ?? '');
 
       setProjects(prev => prev.filter(p => p.id !== id));
       showSuccess(t('projects.deleted'));
     } catch (error) {
       console.error('Error deleting project:', error);
       showError(t('common.error'));
+      // Rethrow so wrapDeleteWithUndo doesn't surface a false "moved to trash" UNDO toast.
+      throw error;
     }
   };
 
