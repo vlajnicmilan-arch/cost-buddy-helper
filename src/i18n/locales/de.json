@@ -4733,8 +4733,8 @@
       "namePlaceholder": "z. B. Unser Zuhause",
       "nameHint": "Min. 2 Zeichen. Für den ganzen Krug sichtbar.",
       "presetLabel": "Krug-Typ",
-      "maxPunopravni": "Max. Vollmitglieder: {{n}}",
-      "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
+      "maxPunopravni": "Max. Mitglieder mit Entscheidungsrecht: {{n}}",
+      "confirmHint": "Du bist Eigentümer und hast automatisch Entscheidungsrecht. Der Typ kann später nicht geändert werden.",
       "submit": "Krug erstellen"
     },
     "createSoon": "Krug-Erstellung kommt bald",
