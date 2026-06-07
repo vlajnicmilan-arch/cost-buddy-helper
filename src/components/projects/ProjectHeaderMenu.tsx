@@ -16,8 +16,6 @@ import {
   Archive,
   ArchiveRestore,
   Trash2,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
@@ -27,7 +25,6 @@ interface ProjectHeaderMenuProps {
   isReadOnly: boolean;
   projectCompleted: boolean;
   projectArchived: boolean;
-  viewMode: 'lite' | 'full';
   /** When false, hide the Archive/Unarchive item (caller did not wire a handler). */
   canArchive?: boolean;
   /** When false, hide the permanent-delete item (e.g. project still active). */
@@ -38,12 +35,11 @@ interface ProjectHeaderMenuProps {
   onReopen: () => void;
   onArchiveToggle: () => void;
   onDelete: () => void;
-  onToggleViewMode: () => void;
 }
 
 /**
  * ⋮ dropdown in the ProjectFullScreenView header.
- * Consolidates Edit / Reports / Complete / Reopen / Archive / Delete / view-mode toggle.
+ * Wave 2: view-mode toggle removed — Lite vs Full unified into single tab strip.
  * Share button stays in the header proper (high-frequency action for multi-user projects).
  */
 export const ProjectHeaderMenu = ({
@@ -51,7 +47,6 @@ export const ProjectHeaderMenu = ({
   isReadOnly,
   projectCompleted,
   projectArchived,
-  viewMode,
   canArchive = true,
   canDelete = true,
   onEdit,
@@ -60,7 +55,6 @@ export const ProjectHeaderMenu = ({
   onReopen,
   onArchiveToggle,
   onDelete,
-  onToggleViewMode,
 }: ProjectHeaderMenuProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -111,25 +105,6 @@ export const ProjectHeaderMenu = ({
             {t('projects.menu.reopen', 'Ponovo otvori')}
           </DropdownMenuItem>
         )}
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-          {t('projects.menu.groupDisplay', 'Prikaz')}
-        </DropdownMenuLabel>
-        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); closeAnd(onToggleViewMode)(); }}>
-          {viewMode === 'lite' ? (
-            <>
-              <Eye className="w-4 h-4 mr-2" />
-              {t('projects.menu.showAllTabs', 'Prikaži sve tabove')}
-            </>
-          ) : (
-            <>
-              <EyeOff className="w-4 h-4 mr-2" />
-              {t('projects.menu.showLiteTabs', 'Lite prikaz')}
-            </>
-          )}
-        </DropdownMenuItem>
 
         {isManager && (canArchive || canDelete) && (
           <>
