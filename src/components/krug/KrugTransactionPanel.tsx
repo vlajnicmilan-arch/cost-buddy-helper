@@ -33,7 +33,7 @@ import {
 } from '@/lib/krugDecisions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Lock, Eye, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
+import { Loader2, Users, User, EyeOff, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
