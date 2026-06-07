@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -59,7 +59,6 @@ import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
 import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
-import { useRef } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -173,18 +172,17 @@ export const ProjectFullScreenView = ({
   // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view
   const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
 
-  // Determine if current user can see a tab (with business-level filtering)
-  const canSeeTab = (tabKey: string) => {
-    // Workers (restricted role) only see the work log
-    if (isWorkerOnly) return tabKey === 'worklog';
-    if (tabKey === 'workers' && !canSeeWorkers) return false;
-    if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
-    // Documents always visible to project members
-    if (tabKey === 'documents') return true;
-    // Worklog tab in People group: only visible if project has at least one worker
-    if (tabKey === 'worklog') return (workers?.length ?? 0) > 0 && (isManager || isTabVisible('worklog'));
-    return isManager || isTabVisible(tabKey);
-  };
+  // Determine if current user can see a tab — delegated to pure helper (1:1 with prior inline logic).
+  const canSeeTab = (tabKey: string) =>
+    resolveProjectTabVisibility({
+      tabKey,
+      isWorkerOnly,
+      isManager,
+      isTabVisible,
+      canSeeWorkers,
+      canSeeCollaborators,
+      hasWorkers: (workers?.length ?? 0) > 0,
+    });
 
   // Reset tab when project changes or closes
   useEffect(() => {
@@ -195,15 +193,10 @@ export const ProjectFullScreenView = ({
     }
   }, [open, project?.id, isWorkerOnly]);
 
-  // Resolve legacy tab keys to the unified tabs
-  const resolvedActiveTab = (() => {
-    if (['members', 'workers', 'collaborators'].includes(activeTab)) return 'team';
-    if (['timeline', 'milestones'].includes(activeTab)) return 'phases';
-    return activeTab;
-  })();
-  const teamInitialSubTab = (['members', 'workers', 'collaborators'] as const).includes(activeTab as any)
-    ? (activeTab as 'members' | 'workers' | 'collaborators')
-    : undefined;
+  // Resolve legacy tab keys to the unified tabs (pure helper — covered by tests)
+  const aliasResolution = resolveLegacyTabAlias(activeTab);
+  const resolvedActiveTab = aliasResolution.tab;
+  const teamInitialSubTab = aliasResolution.teamSubTab;
 
   // Sync internal view-switchers when arriving via legacy initialTab
   useEffect(() => {
