@@ -212,10 +212,10 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
     }) === 'ok_governed_to_personal';
 
   // ---- UI ----
-  const privacyOptions: { key: KrugPrivacy; label: string; icon: JSX.Element }[] = [
-    { key: 'personal', label: t('krug.privacy.personal', 'Osobno'), icon: <Eye className="w-3.5 h-3.5" /> },
-    { key: 'private', label: t('krug.privacy.private', 'Privatno'), icon: <Lock className="w-3.5 h-3.5" /> },
-    { key: 'shared', label: t('krug.privacy.shared', 'Zajedničko'), icon: <Users className="w-3.5 h-3.5" /> },
+  const privacyOptions: { key: KrugPrivacy; label: string; hint: string; icon: JSX.Element }[] = [
+    { key: 'personal', label: t('krug.privacy.personal', 'Moje'), hint: t('krug.privacyHint.personal', 'Ne ide na potvrdu Krugu.'), icon: <User className="w-3.5 h-3.5" /> },
+    { key: 'private', label: t('krug.privacy.private', 'Skriveno od Kruga'), hint: t('krug.privacyHint.private', 'Ostali članovi ovo ne vide.'), icon: <EyeOff className="w-3.5 h-3.5" /> },
+    { key: 'shared', label: t('krug.privacy.shared', 'Za Krug'), hint: t('krug.privacyHint.shared', 'Šalje se ostalima na potvrdu.'), icon: <Users className="w-3.5 h-3.5" /> },
   ];
 
   const statusLabel: Record<KrugSharedStatus, string> = {
