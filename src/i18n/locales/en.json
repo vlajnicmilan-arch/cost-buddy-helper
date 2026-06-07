@@ -4839,16 +4839,17 @@
         "emailLabel": "Email",
         "emailHint": "Invites an existing app user. Invites for new users will arrive in the next wave.",
         "roleLabel": "Role",
+        "roleHint": "With decision rights: approves shared expenses and votes on Krug changes. Without: sees and adds expenses, but doesn't decide.",
         "submit": "Add",
         "success": "Member added",
-        "punopravniCapReached": "Max number of full members reached for this preset.",
+        "punopravniCapReached": "Maximum members with decision rights reached for this Krug type.",
         "errors": {
           "user_not_found": "No user with that email yet.",
           "already_member": "User is already a member of this Krug.",
           "cannot_add_self": "You cannot add yourself.",
           "not_owner": "Only the Krug owner can add members.",
           "invalid_input": "Invalid email.",
-          "cap_exceeded": "The maximum number of full members for this preset has been reached.",
+          "cap_exceeded": "Maximum members with decision rights reached for this Krug type.",
           "generic": "Failed to add member."
         }
       },
