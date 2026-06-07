@@ -4858,8 +4858,8 @@
         "member": "Der Krug hat noch keine weiteren Mitglieder."
       },
       "role": {
-        "promoted": "Zum Vollmitglied befördert",
-        "demoted": "Zum regulären Mitglied gestuft",
+        "promoted": "Entscheidungsrecht erteilt",
+        "demoted": "Entscheidungsrecht entzogen",
         "error": "Rollenänderung fehlgeschlagen"
       },
       "remove": {
@@ -4868,8 +4868,8 @@
         "error": "Entfernen fehlgeschlagen"
       },
       "actions": {
-        "promote": "Zu Vollmitglied befördern",
-        "demote": "Zu regulärem Mitglied stufen",
+        "promote": "Entscheidungsrecht erteilen",
+        "demote": "Entscheidungsrecht entziehen",
         "remove": "Aus Krug entfernen"
       }
     },
