@@ -4808,9 +4808,14 @@
       "loading": "Lädt…"
     },
     "privacy": {
-      "personal": "Persönlich",
-      "private": "Privat",
-      "shared": "Gemeinsam"
+      "personal": "Meins",
+      "private": "Vor dem Krug verborgen",
+      "shared": "Für den Krug"
+    },
+    "privacyHint": {
+      "personal": "Geht nicht zur Bestätigung an den Krug.",
+      "private": "Andere Mitglieder sehen es nicht.",
+      "shared": "Wird zur Bestätigung an andere gesendet."
     },
     "status": {
       "predlozena": "Vorgeschlagen",
