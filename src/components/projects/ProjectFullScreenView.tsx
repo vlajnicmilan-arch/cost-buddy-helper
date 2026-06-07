@@ -57,6 +57,9 @@ import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
+import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
+import { useRef } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
