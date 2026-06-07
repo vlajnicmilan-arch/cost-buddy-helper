@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Check, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, Check, X, Loader2, Trash2 } from 'lucide-react';
 import {
   useKrugDeletionRequest,
   useKrugVoteDeletion,
@@ -41,6 +41,10 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
   const total = fullMembers.length;
   const myVote = currentUserId ? votes.find((v) => v.user_id === currentUserId) : null;
   const amFullMember = !!currentUserId && fullMembers.some((m) => m.user_id === currentUserId);
+  const firstReject = votes.find((v) => !v.approve) ?? null;
+  const rejectorName = firstReject
+    ? getMemberDisplayName(profiles.get(firstReject.user_id), firstReject.user_id, t('krug.member.unknown', 'Nepoznat član'))
+    : null;
 
   const initiatorName = getMemberDisplayName(
     profiles.get(req.initiated_by),
@@ -66,6 +70,19 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
         <Badge variant="outline" className="text-[10px] shrink-0">
           {t('krug.delete.votePanel.progress', { approved: approveCount, total })}
         </Badge>
+      </div>
+
+      {rejectorName ? (
+        <div className="text-xs text-destructive">
+          {t('krug.delete.votePanel.statusHintRejected', { name: rejectorName })}
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground">
+          {t('krug.delete.votePanel.statusHint', { approved: approveCount, total })}
+        </div>
+      )}
+      <div className="text-xs text-muted-foreground">
+        {t('krug.delete.votePanel.timeoutNote', 'Zahtjev ostaje otvoren dok ga vlasnik ne povuče ili svi ne odluče.')}
       </div>
 
       <div className="space-y-1.5">
@@ -97,9 +114,14 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
               variant="destructive"
               onClick={() => vote.mutate({ krugId, approve: true })}
               disabled={vote.isPending}
+              className="gap-1.5"
             >
-              {vote.isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-              {t('krug.delete.votePanel.approve', 'Odobri')}
+              {vote.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              {t('krug.delete.votePanel.approve', 'Glasam za brisanje')}
             </Button>
             <Button
               size="sm"
@@ -107,7 +129,7 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
               onClick={() => vote.mutate({ krugId, approve: false })}
               disabled={vote.isPending}
             >
-              {t('krug.delete.votePanel.reject', 'Odbij')}
+              {t('krug.delete.votePanel.reject', 'Protiv brisanja')}
             </Button>
           </>
         )}
