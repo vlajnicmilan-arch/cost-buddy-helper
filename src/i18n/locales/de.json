@@ -4746,8 +4746,14 @@
     "noSharedSources": "Keine verknüpften Zahlungsquellen.",
     "queue": {
       "title": "Zur Entscheidung",
-      "empty": "Keine Vorschläge zur Entscheidung.",
-      "noDescription": "(keine Beschreibung)"
+      "subtitle": "Deine Bestätigung für gemeinsame Ausgaben, die Krug-Mitglieder vorgeschlagen haben.",
+      "empty": "Nichts zu bestätigen. Wenn jemand eine Ausgabe als \"Für den Krug\" markiert, erscheint sie hier.",
+      "noDescription": "(keine Beschreibung)",
+      "row": {
+        "status": "Zur Teilung vorgeschlagen",
+        "confirm": "Bestätigen",
+        "reject": "Ablehnen"
+      }
     },
     "sharedSource": {
       "attach": {
