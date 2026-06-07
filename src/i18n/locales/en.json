@@ -4733,8 +4733,8 @@
       "namePlaceholder": "e.g. Our home",
       "nameHint": "Min 2 chars. Visible to the whole Krug.",
       "presetLabel": "Krug type",
-      "maxPunopravni": "Max full members: {{n}}",
-      "confirmHint": "You will be the owner and an automatic full member. Type cannot be changed later.",
+      "maxPunopravni": "Max members with decision rights: {{n}}",
+      "confirmHint": "You will be the owner and automatically have decision rights. Type cannot be changed later.",
       "submit": "Create Krug"
     },
     "createSoon": "Krug creation coming soon",
@@ -4769,8 +4769,8 @@
     "notFound": "Krug not found.",
     "role": {
       "owner": "Owner",
-      "punopravni": "Full member",
-      "obicni": "Ordinary member"
+      "punopravni": "With decision rights",
+      "obicni": "Without decision rights"
     },
     "preset": {
       "obitelj": "Family",
@@ -4839,16 +4839,17 @@
         "emailLabel": "Email",
         "emailHint": "Invites an existing app user. Invites for new users will arrive in the next wave.",
         "roleLabel": "Role",
+        "roleHint": "With decision rights: approves shared expenses and votes on Krug changes. Without: sees and adds expenses, but doesn't decide.",
         "submit": "Add",
         "success": "Member added",
-        "punopravniCapReached": "Max number of full members reached for this preset.",
+        "punopravniCapReached": "Maximum members with decision rights reached for this Krug type.",
         "errors": {
           "user_not_found": "No user with that email yet.",
           "already_member": "User is already a member of this Krug.",
           "cannot_add_self": "You cannot add yourself.",
           "not_owner": "Only the Krug owner can add members.",
           "invalid_input": "Invalid email.",
-          "cap_exceeded": "The maximum number of full members for this preset has been reached.",
+          "cap_exceeded": "Maximum members with decision rights reached for this Krug type.",
           "generic": "Failed to add member."
         }
       },
@@ -4857,8 +4858,8 @@
         "member": "Krug has no other members yet."
       },
       "role": {
-        "promoted": "Promoted to full member",
-        "demoted": "Demoted to regular member",
+        "promoted": "Decision rights granted",
+        "demoted": "Decision rights removed",
         "error": "Failed to change role"
       },
       "remove": {
@@ -4867,8 +4868,8 @@
         "error": "Failed to remove member"
       },
       "actions": {
-        "promote": "Promote to full",
-        "demote": "Demote to regular",
+        "promote": "Grant decision rights",
+        "demote": "Remove decision rights",
         "remove": "Remove from Krug"
       }
     },
@@ -4876,7 +4877,7 @@
       "cta": "Delete Krug",
       "title": "Delete Krug",
       "confirmSolo": "Move Krug \"{{name}}\" to trash? Krug stays 30 days before permanent deletion.",
-      "confirmMulti": "Start a deletion request for Krug \"{{name}}\". All full members ({{count}}) must approve.",
+      "confirmMulti": "Start a deletion request for Krug \"{{name}}\". All members with decision rights ({{count}}) must approve.",
       "reasonLabel": "Reason (optional)",
       "reasonPlaceholder": "e.g. test krug, no longer used…",
       "submit": "Send request",
@@ -4902,7 +4903,7 @@
       },
       "errors": {
         "not_owner": "Only the owner can start a deletion",
-        "not_eligible": "Only full members can vote",
+        "not_eligible": "Only members with decision rights can vote",
         "request_already_pending": "A pending request already exists",
         "no_pending_request": "No pending request",
         "krug_not_found": "Krug not found",

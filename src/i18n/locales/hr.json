@@ -4744,8 +4744,8 @@
       "namePlaceholder": "npr. Naš dom",
       "nameHint": "Min 2 znaka. Naziv vidi cijeli Krug.",
       "presetLabel": "Tip Kruga",
-      "maxPunopravni": "Maks. punopravnih: {{n}}",
-      "confirmHint": "Bit ćeš vlasnik Kruga i automatski punopravni član. Tip se kasnije ne mijenja.",
+      "maxPunopravni": "Najviše članova s pravom odluke: {{n}}",
+      "confirmHint": "Bit ćeš vlasnik Kruga i automatski imaš pravo odluke. Tip se kasnije ne mijenja.",
       "submit": "Kreiraj Krug"
     },
     "createSoon": "Kreiranje Kruga uskoro",
@@ -4780,8 +4780,8 @@
     "notFound": "Krug ne postoji.",
     "role": {
       "owner": "Vlasnik",
-      "punopravni": "Punopravni član",
-      "obicni": "Obični član"
+      "punopravni": "S pravom odluke",
+      "obicni": "Bez prava odluke"
     },
     "preset": {
       "obitelj": "Obitelj",
@@ -4850,16 +4850,17 @@
         "emailLabel": "Email",
         "emailHint": "Pozivamo postojećeg korisnika aplikacije. Pozivi novim korisnicima dolaze u sljedećem valu.",
         "roleLabel": "Uloga",
+        "roleHint": "S pravom odluke: odobrava zajedničke troškove i glasa o promjenama Kruga. Bez prava odluke: vidi i dodaje troškove, ali ne odlučuje.",
         "submit": "Dodaj",
         "success": "Član dodan",
-        "punopravniCapReached": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
+        "punopravniCapReached": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
         "errors": {
           "user_not_found": "Korisnik s tim emailom još nema račun.",
           "already_member": "Korisnik je već član ovog Kruga.",
           "cannot_add_self": "Ne možeš dodati samog sebe.",
           "not_owner": "Samo vlasnik Kruga može dodavati članove.",
           "invalid_input": "Neispravan email.",
-          "cap_exceeded": "Dosegnut je maks. broj punopravnih članova za ovaj preset.",
+          "cap_exceeded": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
           "generic": "Greška pri dodavanju člana."
         }
       },
@@ -4868,8 +4869,8 @@
         "member": "Krug još nema drugih članova."
       },
       "role": {
-        "promoted": "Promovirano u punopravnog člana",
-        "demoted": "Promijenjeno u običnog člana",
+        "promoted": "Pravo odluke dodijeljeno",
+        "demoted": "Pravo odluke uklonjeno",
         "error": "Greška pri promjeni uloge"
       },
       "remove": {
@@ -4878,8 +4879,8 @@
         "error": "Greška pri uklanjanju člana"
       },
       "actions": {
-        "promote": "Promoviraj u punopravnog",
-        "demote": "Vrati na običnog",
+        "promote": "Daj pravo odluke",
+        "demote": "Ukloni pravo odluke",
         "remove": "Ukloni iz Kruga"
       }
     },
@@ -4887,7 +4888,7 @@
       "cta": "Obriši Krug",
       "title": "Brisanje Kruga",
       "confirmSolo": "Premjesti Krug \"{{name}}\" u koš? Krug ostaje 30 dana prije trajnog brisanja.",
-      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje zahtijeva suglasnost svih punopravnih članova ({{count}}).",
+      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje zahtijeva suglasnost svih članova s pravom odluke ({{count}}).",
       "reasonLabel": "Razlog (opcionalno)",
       "reasonPlaceholder": "Npr. testni krug, više se ne koristi…",
       "submit": "Pošalji zahtjev",
@@ -4913,7 +4914,7 @@
       },
       "errors": {
         "not_owner": "Samo vlasnik može pokrenuti brisanje",
-        "not_eligible": "Samo punopravni članovi mogu glasati",
+        "not_eligible": "Samo članovi s pravom odluke mogu glasati",
         "request_already_pending": "Već postoji aktivan zahtjev",
         "no_pending_request": "Nema aktivnog zahtjeva",
         "krug_not_found": "Krug ne postoji",

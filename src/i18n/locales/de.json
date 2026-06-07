@@ -4733,8 +4733,8 @@
       "namePlaceholder": "z. B. Unser Zuhause",
       "nameHint": "Min. 2 Zeichen. Für den ganzen Krug sichtbar.",
       "presetLabel": "Krug-Typ",
-      "maxPunopravni": "Max. Vollmitglieder: {{n}}",
-      "confirmHint": "Du bist Eigentümer und automatisch Vollmitglied. Der Typ kann später nicht geändert werden.",
+      "maxPunopravni": "Max. Mitglieder mit Entscheidungsrecht: {{n}}",
+      "confirmHint": "Du bist Eigentümer und hast automatisch Entscheidungsrecht. Der Typ kann später nicht geändert werden.",
       "submit": "Krug erstellen"
     },
     "createSoon": "Krug-Erstellung kommt bald",
@@ -4769,8 +4769,8 @@
     "notFound": "Krug nicht gefunden.",
     "role": {
       "owner": "Eigentümer",
-      "punopravni": "Vollmitglied",
-      "obicni": "Reguläres Mitglied"
+      "punopravni": "Mit Entscheidungsrecht",
+      "obicni": "Ohne Entscheidungsrecht"
     },
     "preset": {
       "obitelj": "Familie",
@@ -4839,16 +4839,17 @@
         "emailLabel": "E-Mail",
         "emailHint": "Lädt einen bestehenden App-Nutzer ein. Einladungen für neue Nutzer folgen in der nächsten Welle.",
         "roleLabel": "Rolle",
+        "roleHint": "Mit Entscheidungsrecht: bestätigt gemeinsame Ausgaben und stimmt über Krug-Änderungen ab. Ohne: sieht und fügt Ausgaben hinzu, entscheidet aber nicht.",
         "submit": "Hinzufügen",
         "success": "Mitglied hinzugefügt",
-        "punopravniCapReached": "Max. Anzahl Vollmitglieder für diesen Preset erreicht.",
+        "punopravniCapReached": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
         "errors": {
           "user_not_found": "Kein Nutzer mit dieser E-Mail vorhanden.",
           "already_member": "Nutzer ist bereits Mitglied dieses Krug.",
           "cannot_add_self": "Du kannst dich nicht selbst hinzufügen.",
           "not_owner": "Nur der Krug-Eigentümer kann Mitglieder hinzufügen.",
           "invalid_input": "Ungültige E-Mail.",
-          "cap_exceeded": "Die maximale Anzahl von Vollmitgliedern für dieses Preset ist erreicht.",
+          "cap_exceeded": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
           "generic": "Fehler beim Hinzufügen."
         }
       },
@@ -4857,8 +4858,8 @@
         "member": "Der Krug hat noch keine weiteren Mitglieder."
       },
       "role": {
-        "promoted": "Zum Vollmitglied befördert",
-        "demoted": "Zum regulären Mitglied gestuft",
+        "promoted": "Entscheidungsrecht erteilt",
+        "demoted": "Entscheidungsrecht entzogen",
         "error": "Rollenänderung fehlgeschlagen"
       },
       "remove": {
@@ -4867,8 +4868,8 @@
         "error": "Entfernen fehlgeschlagen"
       },
       "actions": {
-        "promote": "Zu Vollmitglied befördern",
-        "demote": "Zu regulärem Mitglied stufen",
+        "promote": "Entscheidungsrecht erteilen",
+        "demote": "Entscheidungsrecht entziehen",
         "remove": "Aus Krug entfernen"
       }
     },
@@ -4876,7 +4877,7 @@
       "cta": "Krug löschen",
       "title": "Krug löschen",
       "confirmSolo": "Krug \"{{name}}\" in den Papierkorb verschieben? Bleibt 30 Tage vor endgültiger Löschung.",
-      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Alle Vollmitglieder ({{count}}) müssen zustimmen.",
+      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Alle Mitglieder mit Entscheidungsrecht ({{count}}) müssen zustimmen.",
       "reasonLabel": "Grund (optional)",
       "reasonPlaceholder": "z.B. Test-Krug, nicht mehr verwendet…",
       "submit": "Antrag senden",
@@ -4902,7 +4903,7 @@
       },
       "errors": {
         "not_owner": "Nur der Eigentümer kann die Löschung starten",
-        "not_eligible": "Nur Vollmitglieder dürfen abstimmen",
+        "not_eligible": "Nur Mitglieder mit Entscheidungsrecht dürfen abstimmen",
         "request_already_pending": "Es besteht bereits ein offener Antrag",
         "no_pending_request": "Kein offener Antrag",
         "krug_not_found": "Krug nicht gefunden",
