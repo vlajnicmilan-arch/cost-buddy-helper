@@ -259,10 +259,20 @@ export const useExpenseFetch = () => {
     }
   }, [user?.id, isLocalMode, user]);
 
-  // Initial data load (hiddenIds handled by useHiddenPaymentSources hook)
+  // Initial data load (hiddenIds handled by useHiddenPaymentSources hook).
+  // P0: fetchOwnedSources MUST complete before fetchExpenses, otherwise the
+  // first SELECT runs with an empty shared set and legitimately-shared
+  // payment-source transactions disappear on first render.
   useEffect(() => {
-    fetchOwnedSources();
-    fetchExpenses();
+    let cancelled = false;
+    (async () => {
+      const { sharedIds } = await fetchOwnedSources();
+      if (cancelled) return;
+      await fetchExpenses(sharedIds);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [fetchOwnedSources, fetchExpenses]);
 
   // Realtime subscription for cloud mode
@@ -274,6 +284,15 @@ export const useExpenseFetch = () => {
       supabase.removeChannel(realtimeChannelRef.current);
     }
 
+    // P0: realtime events bypass the SELECT filter, so we must re-check
+    // scope client-side. Without this, foreign project transactions still
+    // stream in via postgres_changes on the is_project_member RLS branch.
+    const inScope = (row: Record<string, unknown>): boolean =>
+      belongsToMyScope(row as any, {
+        userId: user.id,
+        sharedPaymentSourceIds: sharedIdsRef.current,
+      });
+
     const channel = supabase
       .channel(`expenses-realtime-${user.id}`)
       .on(
@@ -284,6 +303,7 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          if (!inScope(payload.new as Record<string, unknown>)) return;
           const newExpense = parseExpense(payload.new as Record<string, unknown>);
           setExpenses(prev => {
             // Avoid duplicate if already added optimistically
@@ -300,6 +320,12 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          if (!inScope(payload.new as Record<string, unknown>)) {
+            // Row may have moved out of scope — drop it from local state.
+            const id = (payload.new as { id?: string })?.id;
+            if (id) setExpenses(prev => prev.filter(e => e.id !== id));
+            return;
+          }
           const updated = parseExpense(payload.new as Record<string, unknown>);
           setExpenses(prev => prev.map(e => e.id === updated.id ? updated : e));
         }
