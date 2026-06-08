@@ -71,12 +71,18 @@ export async function registerNativePush(): Promise<boolean> {
         console.log('[Push] Tapped:', a);
         try {
           const data = (a?.notification?.data ?? {}) as Record<string, string | undefined>;
-          const route = resolveRouteFromPushData(data);
+          // Standardized payload: route + highlight come from the edge function,
+          // with legacy fallback inside normalizePayload for old notifications.
+          const payload = normalizePayload(data.type ?? null, data as Record<string, unknown>);
+          const route = payload.route ?? payload.fallback_route;
+          if (payload.highlight) {
+            // Set BEFORE navigation so cold-start App mount finds it immediately.
+            setPendingHighlight(payload.highlight, route);
+          }
           if (route && typeof window !== 'undefined') {
-            // Use hash-safe navigation. window.location.assign forces a full
-            // route change which works regardless of where React Router is.
-            // Small timeout lets the OS finish bringing the app to foreground.
-            setTimeout(() => { window.location.assign(route); }, 80);
+            // window.location.replace handles both cold start (no router yet)
+            // and warm tap. Small delay lets the OS bring the app to foreground.
+            setTimeout(() => { window.location.replace(route); }, 80);
           }
         } catch (e) {
           console.error('[Push] tap navigation error:', e);
