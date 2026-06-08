@@ -11,9 +11,13 @@ import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
+import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
+// v2: bumped after P0 Core Financial Contamination fix — invalidates any
+// cached datasets that may have leaked foreign project transactions via
+// the is_project_member RLS branch.
 const expensesCacheKey = (userId: string | undefined) =>
-  `expenses:v1:${userId || 'anon'}`;
+  `expenses:v2:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
