@@ -9,6 +9,7 @@ import { Project, ProjectWithOwnership } from '@/types/project';
 import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
+import { peekPendingHighlight } from '@/lib/pendingHighlight';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,10 +88,6 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     let openNewProject = !!state?.openNewProject;
 
     if (!state && projects.length > 0) {
-      // Lazy import to avoid coupling at module top — pending highlight only
-      // matters here for cold-start native push that bypasses router state.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { peekPendingHighlight } = require('@/lib/pendingHighlight') as typeof import('@/lib/pendingHighlight');
       const pending = peekPendingHighlight();
       if (pending?.route && pending.route.startsWith('/projects')) {
         const qIdx = pending.route.indexOf('?');
