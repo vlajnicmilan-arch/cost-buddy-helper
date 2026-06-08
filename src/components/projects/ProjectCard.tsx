@@ -120,6 +120,7 @@ export const ProjectCard = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
+        data-highlight-id={`project:${project.id}`}
         className="relative p-4 rounded-2xl border border-border/50 backdrop-blur-md transition-all duration-300 overflow-hidden"
         style={{
           borderLeftColor: projectColor,
@@ -153,6 +154,7 @@ export const ProjectCard = ({
         scale: 1.01,
         boxShadow: `0 4px 20px ${projectColor}18`
       }}
+      data-highlight-id={`project:${project.id}`}
       className="relative group p-4 rounded-2xl border border-border/50 backdrop-blur-md transition-all duration-300 overflow-hidden"
       style={{ 
         borderLeftColor: projectColor, 
