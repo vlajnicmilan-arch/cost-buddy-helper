@@ -3251,6 +3251,8 @@ export type Database = {
           family_override_push: boolean
           family_reactions_push: boolean
           id: string
+          participant_digest_enabled: boolean
+          participant_digest_hour: number
           pending_enabled: boolean
           projects_enabled: boolean
           reminders_enabled: boolean
@@ -3273,6 +3275,8 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          participant_digest_enabled?: boolean
+          participant_digest_hour?: number
           pending_enabled?: boolean
           projects_enabled?: boolean
           reminders_enabled?: boolean
@@ -3295,6 +3299,8 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          participant_digest_enabled?: boolean
+          participant_digest_hour?: number
           pending_enabled?: boolean
           projects_enabled?: boolean
           reminders_enabled?: boolean
