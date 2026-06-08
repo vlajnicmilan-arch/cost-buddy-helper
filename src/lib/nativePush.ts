@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { normalizePayload } from '@/lib/notificationPayload';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
 
-export async function registerNativePush(): Promise<boolean> {
+let listenersAttached = false;
+
   if (!Capacitor.isNativePlatform()) return false;
 
   // Granular boot-trace diagnostics. These prove exactly how far the native
