@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNotificationNavigation } from '@/hooks/useNotificationNavigation';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
