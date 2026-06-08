@@ -249,14 +249,12 @@ serve(async (req) => {
       project: "project_invitation",
       budget: "budget_invitation",
       payment_source: "payment_source_invitation",
-      family: "family_invitation",
     };
 
     const titleMap: Record<string, string> = {
       project: "Pozivnica za projekt",
       budget: "Pozivnica za budžet",
       payment_source: "Pozivnica za dijeljeni račun",
-      family: "Pozivnica za obiteljsku grupu",
     };
 
     // Resolve worker name (best-effort) for the email greeting
