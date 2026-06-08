@@ -98,7 +98,7 @@ export const NotificationsDropdown = () => {
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
     notification: Notification;
-    invitationType: 'project' | 'budget' | 'payment_source' | 'family';
+    invitationType: 'project' | 'budget' | 'payment_source';
     invitationId: string;
   } | null>(null);
 
