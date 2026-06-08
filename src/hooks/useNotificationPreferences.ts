@@ -26,6 +26,8 @@ export interface NotificationPreferences {
   daily_summary_weekend_enabled: boolean;
   family_override_push: boolean;
   family_reactions_push: boolean;
+  participant_digest_enabled: boolean;
+  participant_digest_hour: number;
 }
 
 const DEFAULT_PREFS: NotificationPreferences = {
@@ -41,6 +43,8 @@ const DEFAULT_PREFS: NotificationPreferences = {
   daily_summary_weekend_enabled: true,
   family_override_push: false,
   family_reactions_push: false,
+  participant_digest_enabled: true,
+  participant_digest_hour: 19,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
