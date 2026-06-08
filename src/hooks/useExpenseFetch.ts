@@ -41,15 +41,27 @@ export const useExpenseFetch = () => {
   const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
+  // Kept in a ref so the realtime handler always sees the current shared set
+  // without re-subscribing the channel on every shared-source change.
+  const sharedIdsRef = useRef<Set<string>>(new Set());
 
   const isLocalMode = storageMode === 'local' && !user;
 
-  const fetchOwnedSources = useCallback(async () => {
+  /**
+   * Fetches the caller's payment-source memberships and owned income sources.
+   * Returns the fresh shared set so `fetchExpenses` can apply scope filtering
+   * synchronously on the first render (no race where expenses query fires
+   * before shared ids are known).
+   */
+  const fetchOwnedSources = useCallback(async (): Promise<{
+    sharedIds: Set<string>;
+  }> => {
     if (isLocalMode || !user) {
       setOwnedSourceIds(new Set());
       setSharedPaymentSourceIds(new Set());
       setFullAccessSourceIds(new Set());
-      return;
+      sharedIdsRef.current = new Set();
+      return { sharedIds: new Set() };
     }
 
     try {
@@ -75,6 +87,7 @@ export const useExpenseFetch = () => {
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+      sharedIdsRef.current = psIds;
 
       // Map source.id -> business_profile_id (or null when personal)
       const map = new Map<string, string | null>();
@@ -82,12 +95,15 @@ export const useExpenseFetch = () => {
         map.set(s.id, s.business_profile_id || null);
       });
       setSourceBusinessMap(map);
+
+      return { sharedIds: psIds };
     } catch (error) {
       console.error('Error fetching owned sources:', error);
+      return { sharedIds: sharedIdsRef.current };
     }
   }, [user, isLocalMode]);
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => {
     const cacheKey = expensesCacheKey(user?.id);
     const hasHydrated = hydratedKeyRef.current === cacheKey;
     if (!hasHydrated) setLoading(true);
@@ -103,17 +119,32 @@ export const useExpenseFetch = () => {
           return;
         }
 
+        // P0: explicit personal-scope filter. Server-side narrows to
+        // "my rows OR rows on a payment source I have access to". Without
+        // this the RLS is_project_member branch leaks foreign project
+        // transactions into the personal dataset.
+        const sharedIds = sharedIdsOverride ?? sharedIdsRef.current;
+        const scopeCtx: ScopeContext = {
+          userId: user.id,
+          sharedPaymentSourceIds: sharedIds,
+        };
+        const orFilter = buildExpenseScopeFilter(scopeCtx);
+
         // Paginated fetch to bypass Supabase 1000-row limit
         let allData: any[] = [];
         let from = 0;
         const pageSize = 1000;
 
         while (true) {
-          const { data, error } = await supabase
+          let query = supabase
             .from('expenses')
             .select('*')
             .order('date', { ascending: false })
             .range(from, from + pageSize - 1);
+
+          if (orFilter) query = query.or(orFilter);
+
+          const { data, error } = await query;
 
           if (error) throw error;
           if (!data || data.length === 0) break;
@@ -143,15 +174,24 @@ export const useExpenseFetch = () => {
         console.log('[Expenses] Auth error, refreshing session and retrying...');
         try {
           await supabase.auth.refreshSession();
-          // Retry with pagination
+          // Retry with pagination — SAME scope filter as primary path.
+          const sharedIds = sharedIdsOverride ?? sharedIdsRef.current;
+          const scopeCtx: ScopeContext = {
+            userId: user!.id,
+            sharedPaymentSourceIds: sharedIds,
+          };
+          const orFilter = buildExpenseScopeFilter(scopeCtx);
+
           let retryData: any[] = [];
           let retryFrom = 0;
           while (true) {
-            const { data, error: retryError } = await supabase
+            let q = supabase
               .from('expenses')
               .select('*')
               .order('date', { ascending: false })
               .range(retryFrom, retryFrom + 999);
+            if (orFilter) q = q.or(orFilter);
+            const { data, error: retryError } = await q;
             if (retryError || !data || data.length === 0) break;
             retryData = retryData.concat(data);
             if (data.length < 1000) break;
