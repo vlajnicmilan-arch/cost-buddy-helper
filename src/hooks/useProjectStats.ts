@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  calculateProjectSpent,
+  calculateProjectIncomeFromTransactions,
+  calculateNetExpenseAmount,
+  isCountedProjectTransaction,
+  type RawProjectExpense,
+} from '@/lib/projectCalculations';
 
 interface ProjectExpense {
   id: string;
@@ -15,6 +22,9 @@ interface ProjectExpense {
   submitted_by?: string | null;
   expense_nature?: string | null;
   payment_source?: string | null;
+  is_advance?: boolean | null;
+  collaborator_id?: string | null;
+  linked_advance_ids?: string[] | null;
 }
 
 interface ProjectStats {
@@ -80,29 +90,28 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
   }, [fetchExpenses]);
 
   const stats: ProjectStats = useMemo(() => {
-    const expenseTransactions = expenses.filter(e => e.type === 'expense');
-    const incomeTransactions = expenses.filter(e => e.type === 'income');
-
-    const totalSpent = expenseTransactions.reduce((sum, e) => sum + e.amount, 0);
-    const totalIncome = incomeTransactions.reduce((sum, e) => sum + e.amount, 0);
+    // F1 — use unified helpers (filters: approved, no transfer, no correction, advance-netting).
+    const raw: RawProjectExpense[] = expenses as unknown as RawProjectExpense[];
+    const totalSpent = calculateProjectSpent(raw);
+    const totalIncome = calculateProjectIncomeFromTransactions(raw);
     const balance = totalIncome - totalSpent;
 
-    // Budget used percentage
-    const budgetUsedPercentage = totalBudget > 0 
-      ? Math.min((totalSpent / totalBudget) * 100, 100) 
+    const budgetUsedPercentage = totalBudget > 0
+      ? Math.min((totalSpent / totalBudget) * 100, 100)
       : 0;
 
-    // Expenses by category
+    // Per-category / per-milestone breakdowns use the SAME exclusion rules
+    // (no transfer / correction / pending) and net advance amounts.
     const expensesByCategory: Record<string, number> = {};
-    expenseTransactions.forEach(e => {
-      expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + e.amount;
-    });
-
-    // Expenses by milestone
     const expensesByMilestone: Record<string, number> = {};
-    expenseTransactions.forEach(e => {
+    expenses.forEach(e => {
+      const row = e as unknown as RawProjectExpense;
+      if (!isCountedProjectTransaction(row) || row.type !== 'expense') return;
+      const netAmount = calculateNetExpenseAmount(row, raw);
+      if (netAmount <= 0) return;
+      expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + netAmount;
       if (e.milestone_id) {
-        expensesByMilestone[e.milestone_id] = (expensesByMilestone[e.milestone_id] || 0) + e.amount;
+        expensesByMilestone[e.milestone_id] = (expensesByMilestone[e.milestone_id] || 0) + netAmount;
       }
     });
 
@@ -114,9 +123,8 @@ export const useProjectStats = (projectId: string | null, totalBudget: number) =
       budgetUsedPercentage,
       expensesByCategory,
       expensesByMilestone,
-      // Legacy fields for backward compatibility
       totalExpenseTransactions: totalSpent,
-      totalIncomeTransactions: totalIncome
+      totalIncomeTransactions: totalIncome,
     };
   }, [expenses, totalBudget]);
 
