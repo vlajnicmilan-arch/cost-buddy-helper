@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { format, startOfMonth, endOfMonth, addMonths, addYears, parseISO } from 'date-fns';
+import { buildExpenseScopeFilter, type ScopeContext } from '@/lib/expenseScope';
 
 export interface CalendarEvent {
   id: string;
@@ -42,12 +43,28 @@ export const useCalendarEvents = (currentMonth: Date) => {
     try {
       const bpFilter = activeBusinessProfileId || null;
 
+      // P0: resolve caller's shared payment-source set BEFORE the expenses
+      // query so we can restrict it to "my rows OR rows on a source I share".
+      // Without this filter the RLS is_project_member branch leaks foreign
+      // project transactions into the personal calendar.
+      const [ownedPsRes, memberRes] = await Promise.all([
+        supabase.from('custom_payment_sources').select('id').eq('user_id', user.id),
+        supabase.from('payment_source_members').select('payment_source_id').eq('user_id', user.id),
+      ]);
+      const sharedIds = new Set<string>();
+      (ownedPsRes.data || []).forEach((s: any) => sharedIds.add(s.id));
+      (memberRes.data || []).forEach((m: any) => sharedIds.add(m.payment_source_id));
+      const scopeCtx: ScopeContext = { userId: user.id, sharedPaymentSourceIds: sharedIds };
+      const scopeFilter = buildExpenseScopeFilter(scopeCtx);
+
       // Fetch expenses for the month
       let expQ = supabase
         .from('expenses')
-        .select('id, description, amount, date, type, category, merchant_name')
+        .select('id, description, amount, date, type, category, merchant_name, user_id, payment_source, income_source_id')
         .gte('date', `${monthStart}T00:00:00`)
         .lte('date', `${monthEnd}T23:59:59`);
+
+      if (scopeFilter) expQ = expQ.or(scopeFilter);
 
       if (bpFilter) {
         expQ = expQ.eq('business_profile_id', bpFilter);

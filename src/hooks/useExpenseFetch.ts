@@ -11,9 +11,13 @@ import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
+import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
+// v2: bumped after P0 Core Financial Contamination fix — invalidates any
+// cached datasets that may have leaked foreign project transactions via
+// the is_project_member RLS branch.
 const expensesCacheKey = (userId: string | undefined) =>
-  `expenses:v1:${userId || 'anon'}`;
+  `expenses:v2:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
@@ -37,15 +41,27 @@ export const useExpenseFetch = () => {
   const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
+  // Kept in a ref so the realtime handler always sees the current shared set
+  // without re-subscribing the channel on every shared-source change.
+  const sharedIdsRef = useRef<Set<string>>(new Set());
 
   const isLocalMode = storageMode === 'local' && !user;
 
-  const fetchOwnedSources = useCallback(async () => {
+  /**
+   * Fetches the caller's payment-source memberships and owned income sources.
+   * Returns the fresh shared set so `fetchExpenses` can apply scope filtering
+   * synchronously on the first render (no race where expenses query fires
+   * before shared ids are known).
+   */
+  const fetchOwnedSources = useCallback(async (): Promise<{
+    sharedIds: Set<string>;
+  }> => {
     if (isLocalMode || !user) {
       setOwnedSourceIds(new Set());
       setSharedPaymentSourceIds(new Set());
       setFullAccessSourceIds(new Set());
-      return;
+      sharedIdsRef.current = new Set();
+      return { sharedIds: new Set() };
     }
 
     try {
@@ -71,6 +87,7 @@ export const useExpenseFetch = () => {
       });
       setSharedPaymentSourceIds(psIds);
       setFullAccessSourceIds(fullIds);
+      sharedIdsRef.current = psIds;
 
       // Map source.id -> business_profile_id (or null when personal)
       const map = new Map<string, string | null>();
@@ -78,12 +95,15 @@ export const useExpenseFetch = () => {
         map.set(s.id, s.business_profile_id || null);
       });
       setSourceBusinessMap(map);
+
+      return { sharedIds: psIds };
     } catch (error) {
       console.error('Error fetching owned sources:', error);
+      return { sharedIds: sharedIdsRef.current };
     }
   }, [user, isLocalMode]);
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (sharedIdsOverride?: Set<string>) => {
     const cacheKey = expensesCacheKey(user?.id);
     const hasHydrated = hydratedKeyRef.current === cacheKey;
     if (!hasHydrated) setLoading(true);
@@ -99,17 +119,32 @@ export const useExpenseFetch = () => {
           return;
         }
 
+        // P0: explicit personal-scope filter. Server-side narrows to
+        // "my rows OR rows on a payment source I have access to". Without
+        // this the RLS is_project_member branch leaks foreign project
+        // transactions into the personal dataset.
+        const sharedIds = sharedIdsOverride ?? sharedIdsRef.current;
+        const scopeCtx: ScopeContext = {
+          userId: user.id,
+          sharedPaymentSourceIds: sharedIds,
+        };
+        const orFilter = buildExpenseScopeFilter(scopeCtx);
+
         // Paginated fetch to bypass Supabase 1000-row limit
         let allData: any[] = [];
         let from = 0;
         const pageSize = 1000;
 
         while (true) {
-          const { data, error } = await supabase
+          let query = supabase
             .from('expenses')
             .select('*')
             .order('date', { ascending: false })
             .range(from, from + pageSize - 1);
+
+          if (orFilter) query = query.or(orFilter);
+
+          const { data, error } = await query;
 
           if (error) throw error;
           if (!data || data.length === 0) break;
@@ -139,15 +174,24 @@ export const useExpenseFetch = () => {
         console.log('[Expenses] Auth error, refreshing session and retrying...');
         try {
           await supabase.auth.refreshSession();
-          // Retry with pagination
+          // Retry with pagination — SAME scope filter as primary path.
+          const sharedIds = sharedIdsOverride ?? sharedIdsRef.current;
+          const scopeCtx: ScopeContext = {
+            userId: user!.id,
+            sharedPaymentSourceIds: sharedIds,
+          };
+          const orFilter = buildExpenseScopeFilter(scopeCtx);
+
           let retryData: any[] = [];
           let retryFrom = 0;
           while (true) {
-            const { data, error: retryError } = await supabase
+            let q = supabase
               .from('expenses')
               .select('*')
               .order('date', { ascending: false })
               .range(retryFrom, retryFrom + 999);
+            if (orFilter) q = q.or(orFilter);
+            const { data, error: retryError } = await q;
             if (retryError || !data || data.length === 0) break;
             retryData = retryData.concat(data);
             if (data.length < 1000) break;
@@ -215,10 +259,20 @@ export const useExpenseFetch = () => {
     }
   }, [user?.id, isLocalMode, user]);
 
-  // Initial data load (hiddenIds handled by useHiddenPaymentSources hook)
+  // Initial data load (hiddenIds handled by useHiddenPaymentSources hook).
+  // P0: fetchOwnedSources MUST complete before fetchExpenses, otherwise the
+  // first SELECT runs with an empty shared set and legitimately-shared
+  // payment-source transactions disappear on first render.
   useEffect(() => {
-    fetchOwnedSources();
-    fetchExpenses();
+    let cancelled = false;
+    (async () => {
+      const { sharedIds } = await fetchOwnedSources();
+      if (cancelled) return;
+      await fetchExpenses(sharedIds);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [fetchOwnedSources, fetchExpenses]);
 
   // Realtime subscription for cloud mode
@@ -230,6 +284,15 @@ export const useExpenseFetch = () => {
       supabase.removeChannel(realtimeChannelRef.current);
     }
 
+    // P0: realtime events bypass the SELECT filter, so we must re-check
+    // scope client-side. Without this, foreign project transactions still
+    // stream in via postgres_changes on the is_project_member RLS branch.
+    const inScope = (row: Record<string, unknown>): boolean =>
+      belongsToMyScope(row as any, {
+        userId: user.id,
+        sharedPaymentSourceIds: sharedIdsRef.current,
+      });
+
     const channel = supabase
       .channel(`expenses-realtime-${user.id}`)
       .on(
@@ -240,6 +303,7 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          if (!inScope(payload.new as Record<string, unknown>)) return;
           const newExpense = parseExpense(payload.new as Record<string, unknown>);
           setExpenses(prev => {
             // Avoid duplicate if already added optimistically
@@ -256,6 +320,12 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
+          if (!inScope(payload.new as Record<string, unknown>)) {
+            // Row may have moved out of scope — drop it from local state.
+            const id = (payload.new as { id?: string })?.id;
+            if (id) setExpenses(prev => prev.filter(e => e.id !== id));
+            return;
+          }
           const updated = parseExpense(payload.new as Record<string, unknown>);
           setExpenses(prev => prev.map(e => e.id === updated.id ? updated : e));
         }
