@@ -1,11 +1,3 @@
-
-# Spremanje rasprave o modelu monetizacije
-
-Ništa u kodu se ne mijenja. Samo dvije memory datoteke.
-
-## 1. Novi memory file: `mem://features/monetization-model-discussion`
-
-```
 ---
 name: monetization-model-discussion
 description: Otvorena rasprava o novom modelu monetizacije po modulima (opt-in aktivacija, PDF snapshot pri isteku, besplatna baza zauvijek). NIJE implementacija.
@@ -44,10 +36,3 @@ Kratak dokument koji odgovara na 9 pitanja iznad PRIJE bilo kakve tehničke spec
 - `mem://features/eu-saas-monetization-decision` — Paddle vs Stripe odluka
 - `mem://features/krug-deletion-flow` — referenca za pitanje 3
 - `mem://features/account-deletion-gdpr` — referenca za PDF snapshot + brisanje obrazac
-```
-
-## 2. Dodati liniju u `mem://index.md` pod "## Memories"
-
-```
-- [Monetization Model Discussion](mem://features/monetization-model-discussion) — Otvorena rasprava: opt-in po modulu, PDF snapshot pri isteku, besplatna baza zauvijek; 9 otvorenih pitanja; BEZ implementacije dok nisu sva odgovorena
-```
