@@ -57,6 +57,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null);
+  const [pendingInitialTab, setPendingInitialTab] = useState<string | null>(null);
   const [migrateConfirmOpen, setMigrateConfirmOpen] = useState(false);
   const [projectToMigrate, setProjectToMigrate] = useState<ProjectWithOwnership | null>(null);
   const [migrateTargetProfileId, setMigrateTargetProfileId] = useState<string>('');
@@ -68,31 +69,62 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setDialogOpen(true);
   };
 
-  // Handle navigation from notification click or dashboard quick-actions
+  // Handle navigation from notification click or dashboard quick-actions.
+  // Two paths:
+  //  1. React Router state (bell flow + warm push) → state.openProjectId/initialTab.
+  //  2. Native cold start → state is empty, ali `peekPendingHighlight()` ima
+  //     pending namjeru (route + tab). Ne consume-amo je ovdje — to ostaje na
+  //     `HighlightTarget`-u nakon što DOM marker bude pronađen.
   useEffect(() => {
     const state = location.state as
-      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean; from?: string }
+      | { openProjectId?: string; openExpenseId?: string; openNewProject?: boolean; from?: string; initialTab?: string }
       | null;
-    if (!state) return;
 
-    if (state.openNewProject) {
-      if (state.from) returnToRef.current = state.from;
+    let resolvedProjectId: string | undefined = state?.openProjectId;
+    let resolvedExpenseId: string | undefined = state?.openExpenseId;
+    let resolvedTab: string | undefined = state?.initialTab;
+    let fromState: string | undefined = state?.from;
+    let openNewProject = !!state?.openNewProject;
+
+    if (!state && projects.length > 0) {
+      // Lazy import to avoid coupling at module top — pending highlight only
+      // matters here for cold-start native push that bypasses router state.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { peekPendingHighlight } = require('@/lib/pendingHighlight') as typeof import('@/lib/pendingHighlight');
+      const pending = peekPendingHighlight();
+      if (pending?.route && pending.route.startsWith('/projects')) {
+        const qIdx = pending.route.indexOf('?');
+        if (qIdx !== -1) {
+          try {
+            const params = new URLSearchParams(pending.route.slice(qIdx + 1));
+            const pid = params.get('id');
+            if (pid) {
+              resolvedProjectId = pid;
+              resolvedTab = pending.tab ?? undefined;
+              if (pending.type === 'expense') resolvedExpenseId = pending.id;
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    }
+
+    if (openNewProject) {
+      if (fromState) returnToRef.current = fromState;
       handleOpenBlankDialog();
       window.history.replaceState({}, '');
       return;
     }
 
-    if (state.openProjectId && projects.length > 0) {
-      const project = projects.find(p => p.id === state.openProjectId);
+    if (resolvedProjectId && projects.length > 0) {
+      const project = projects.find(p => p.id === resolvedProjectId);
       if (project) {
-        if (state.from) returnToRef.current = state.from;
+        if (fromState) returnToRef.current = fromState;
         setSelectedProject(project as ProjectWithOwnership);
         setDetailDialogOpen(true);
-        if (state.openExpenseId) {
-          setPendingExpenseId(state.openExpenseId);
-        }
+        if (resolvedExpenseId) setPendingExpenseId(resolvedExpenseId);
+        if (resolvedTab) setPendingInitialTab(resolvedTab);
         // Clear the state so it doesn't re-trigger
-        window.history.replaceState({}, '');
+        if (state) window.history.replaceState({}, '');
       }
     }
   }, [location.state, projects]);
