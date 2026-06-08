@@ -48,10 +48,6 @@ const getNotificationIcon = (type: string) => {
     case 'payment_source_invitation':
     case 'payment_source_transaction':
       return <Wallet className="w-4 h-4 text-primary" />;
-    case 'family_invitation':
-      return <UserPlus className="w-4 h-4 text-primary" />;
-    case 'family_message':
-      return <Bell className="w-4 h-4 text-primary" />;
     case 'reminder':
       return <Clock className="w-4 h-4 text-orange-500" />;
     case 'app_update':
@@ -62,13 +58,12 @@ const getNotificationIcon = (type: string) => {
 };
 
 const isInvitationNotification = (type: string) => {
-  return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation' || type === 'family_invitation';
+  return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation';
 };
 
-const getInvitationType = (type: string): 'project' | 'budget' | 'payment_source' | 'family' => {
+const getInvitationType = (type: string): 'project' | 'budget' | 'payment_source' => {
   if (type === 'project_invitation') return 'project';
   if (type === 'budget_invitation') return 'budget';
-  if (type === 'family_invitation') return 'family';
   return 'payment_source';
 };
 
@@ -103,7 +98,7 @@ export const NotificationsDropdown = () => {
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [invitationDialog, setInvitationDialog] = useState<{
     notification: Notification;
-    invitationType: 'project' | 'budget' | 'payment_source' | 'family';
+    invitationType: 'project' | 'budget' | 'payment_source';
     invitationId: string;
   } | null>(null);
 
@@ -162,13 +157,8 @@ export const NotificationsDropdown = () => {
         return { path: '/', state: { openExpenseId: data.expense_id } };
       case 'app_update':
         return { path: '/install', state: { version: data.version, apkUrl: data.apkUrl } };
-      case 'invitation_accepted': {
-        const targetType = data.type as string;
-        if (targetType === 'family') {
-          return { path: '/family', state: { openGroupId: data.target_id } };
-        }
+      case 'invitation_accepted':
         return null;
-      }
       default:
         return null;
     }

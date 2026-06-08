@@ -28,7 +28,6 @@ import { useNativeShare } from '@/hooks/useNativeShare';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
-import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 
 
 interface TransactionDetailDialogProps {

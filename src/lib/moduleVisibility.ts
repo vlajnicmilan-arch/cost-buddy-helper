@@ -24,7 +24,7 @@ export interface ModuleState {
 /**
  * Je li modul "aktivan" — user ga je uključio AND tier dopušta.
  * Koristi se kao guard za cross-cut UI fragmente (project picker u
- * AddExpense, family split controls itd.).
+ * AddExpense kontrole itd.).
  */
 export function isModuleActive(module: AppModule, state: ModuleState): boolean {
   if (module === 'core') return true;

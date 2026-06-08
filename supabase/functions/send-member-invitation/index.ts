@@ -112,12 +112,6 @@ serve(async (req) => {
       invitationTable = "payment_source_invitations";
       targetTable = "custom_payment_sources";
       targetLabel = "računu";
-    } else if (type === "family") {
-      memberTable = "family_members";
-      idColumn = "group_id";
-      invitationTable = "family_invitations";
-      targetTable = "family_groups";
-      targetLabel = "obiteljskoj grupi";
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),
@@ -255,14 +249,12 @@ serve(async (req) => {
       project: "project_invitation",
       budget: "budget_invitation",
       payment_source: "payment_source_invitation",
-      family: "family_invitation",
     };
 
     const titleMap: Record<string, string> = {
       project: "Pozivnica za projekt",
       budget: "Pozivnica za budžet",
       payment_source: "Pozivnica za dijeljeni račun",
-      family: "Pozivnica za obiteljsku grupu",
     };
 
     // Resolve worker name (best-effort) for the email greeting
@@ -310,7 +302,7 @@ serve(async (req) => {
           invitation_id: invitation.id,
           target_id: targetId,
           type: notificationTypeMap[type],
-          category: type === 'family' ? 'chat' : type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
+          category: type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
         },
         source: "send-member-invitation",
       });

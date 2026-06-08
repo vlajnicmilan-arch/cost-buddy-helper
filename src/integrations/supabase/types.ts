@@ -1289,7 +1289,6 @@ export type Database = {
           income_source_id: string | null
           invoice_id: string | null
           is_advance: boolean
-          is_private: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
           krug_shared_status:
@@ -1306,7 +1305,6 @@ export type Database = {
           possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
-          split_overrides: Json | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           type: string
@@ -1339,7 +1337,6 @@ export type Database = {
           income_source_id?: string | null
           invoice_id?: string | null
           is_advance?: boolean
-          is_private?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
           krug_shared_status?:
@@ -1356,7 +1353,6 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
-          split_overrides?: Json | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -1389,7 +1385,6 @@ export type Database = {
           income_source_id?: string | null
           invoice_id?: string | null
           is_advance?: boolean
-          is_private?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
           krug_shared_status?:
@@ -1406,7 +1401,6 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
-          split_overrides?: Json | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -4925,7 +4919,6 @@ export type Database = {
           income_source_id: string | null
           invoice_id: string | null
           is_advance: boolean
-          is_private: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
           krug_shared_status:
@@ -4942,7 +4935,6 @@ export type Database = {
           possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
-          split_overrides: Json | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           type: string

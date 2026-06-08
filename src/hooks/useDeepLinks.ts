@@ -38,7 +38,6 @@ export const useDeepLinks = () => {
 
             // Match known deep link patterns
             const patterns = [
-              /^\/join-family\/(.+)$/,
               /^\/join-budget\/(.+)$/,
               /^\/join-project\/(.+)$/,
             ];

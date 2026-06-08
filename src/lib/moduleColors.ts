@@ -28,7 +28,6 @@ export const MODULE_HSL: Record<ModuleKey, string> = {
 /**
  * Mapiranje rute → modul. Provjereno u kodu:
  *  - /krug   → kanonska ruta Krug modula
- *  - /family → legacy entrypoint, isti modul/akcent (dok ekran postoji)
  *  - /dashboard → alias za /home (BottomNav.activePaths)
  */
 const ROUTE_TO_MODULE: Array<[string, ModuleKey]> = [
@@ -37,7 +36,6 @@ const ROUTE_TO_MODULE: Array<[string, ModuleKey]> = [
   ['/projects', 'projects'],
   ['/wallet', 'wallet'],
   ['/budgets', 'budgets'],
-  ['/family', 'krug'],
   ['/krug', 'krug'],
   ['/home', 'overview'],
 ];
