@@ -7,6 +7,7 @@ import { setPendingHighlight } from '@/lib/pendingHighlight';
 
 let listenersAttached = false;
 
+export async function registerNativePush(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
   // Granular boot-trace diagnostics. These prove exactly how far the native
