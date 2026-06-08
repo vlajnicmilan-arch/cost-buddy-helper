@@ -58,13 +58,12 @@ const getNotificationIcon = (type: string) => {
 };
 
 const isInvitationNotification = (type: string) => {
-  return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation' || type === 'family_invitation';
+  return type === 'project_invitation' || type === 'budget_invitation' || type === 'payment_source_invitation';
 };
 
-const getInvitationType = (type: string): 'project' | 'budget' | 'payment_source' | 'family' => {
+const getInvitationType = (type: string): 'project' | 'budget' | 'payment_source' => {
   if (type === 'project_invitation') return 'project';
   if (type === 'budget_invitation') return 'budget';
-  if (type === 'family_invitation') return 'family';
   return 'payment_source';
 };
 
