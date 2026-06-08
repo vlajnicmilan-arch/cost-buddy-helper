@@ -7,7 +7,7 @@
  * `error` field returned by the edge function.
  */
 
-export type InvitationType = "project" | "budget" | "payment_source" | "family";
+export type InvitationType = "project" | "budget" | "payment_source";
 
 export type InvitationOutcome =
   | "ok"
