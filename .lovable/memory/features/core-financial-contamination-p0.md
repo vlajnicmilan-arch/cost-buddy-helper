@@ -1,8 +1,11 @@
 ---
 name: Core Financial Contamination P0 Fix
-description: Server-side scope filter u useExpenseFetch i useCalendarEvents sprječava da is_project_member RLS branch leakira tuđe projektne transakcije u osobni dataset
+description: Server-side scope filter u useExpenseFetch i useCalendarEvents sprječava da is_project_member RLS branch leakira tuđe projektne transakcije u osobni dataset. Tehnički zatvoreno; NIJE production-verified dok se ne odradi ručni Milan/Petar smoke.
 type: feature
 ---
+
+> **Status:** tehnički zatvoreno (686/686 vitest zelena, regresijski pure test pokriva Petar-worker scenarij).
+> **TODO prije produkcije:** ručni smoke s dva stvarna usera (owner + worker) — provjera Dashboard/Reports/Calendar/Search da ne sadrže foreign project txn, i da shared payment source txn i dalje dolaze.
 
 # P0 — Core Financial Contamination Fix
 
