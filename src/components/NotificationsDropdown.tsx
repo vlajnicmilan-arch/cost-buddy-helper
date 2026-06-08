@@ -48,10 +48,6 @@ const getNotificationIcon = (type: string) => {
     case 'payment_source_invitation':
     case 'payment_source_transaction':
       return <Wallet className="w-4 h-4 text-primary" />;
-    case 'family_invitation':
-      return <UserPlus className="w-4 h-4 text-primary" />;
-    case 'family_message':
-      return <Bell className="w-4 h-4 text-primary" />;
     case 'reminder':
       return <Clock className="w-4 h-4 text-orange-500" />;
     case 'app_update':
