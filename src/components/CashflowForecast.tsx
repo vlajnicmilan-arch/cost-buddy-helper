@@ -3,15 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useRecurringTransactions, RecurringTransaction } from '@/hooks/useRecurringTransactions';
 import { useInstallments } from '@/hooks/useInstallments';
-import { useFamilyForecastObligations } from '@/hooks/useFamilyForecastObligations';
-import { computeFamilyOutflowsPerWeek } from '@/lib/familyForecastContrib';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppState } from '@/contexts/AppStateContext';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, ArrowRight, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, addWeeks, addMonths, addYears, format, isWithinInterval, startOfDay } from 'date-fns';
+
 
 import {
   AreaChart,
@@ -83,9 +80,8 @@ export const CashflowForecast = () => {
   const { formatAmount, currency } = useCurrency();
   const { recurringTransactions } = useRecurringTransactions();
   const { plans } = useInstallments();
-  const { settlements: familyObligations } = useFamilyForecastObligations();
   const { user } = useAuth();
-  const { familyModeEnabled } = useAppState();
+
 
   const forecastData = useMemo(() => {
     const today = startOfDay(new Date());
