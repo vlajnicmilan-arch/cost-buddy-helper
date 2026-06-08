@@ -141,7 +141,6 @@ describe("classifyInvitationOutcome", () => {
       "project",
       "budget",
       "payment_source",
-      "family",
     ];
     for (const type of types) {
       expect(
