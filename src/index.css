@@ -450,3 +450,17 @@
     min-height: -webkit-fill-available;
   }
 }
+
+/* Notification highlight pulse — used by HighlightTarget after navigating
+   from a bell click or native push tap. ~2s teal ring + scroll into view. */
+@keyframes notification-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
+  50%  { box-shadow: 0 0 0 8px hsl(var(--primary) / 0.18); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+.highlight-pulse {
+  animation: notification-highlight-pulse 1s ease-out 2;
+  border-radius: 0.5rem;
+  position: relative;
+  z-index: 1;
+}

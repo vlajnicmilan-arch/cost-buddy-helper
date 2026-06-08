@@ -164,6 +164,7 @@ const RouteAwareGlobalOverlays = () => {
       <FeedbackFAB />
       <FileSavedDialog />
       <GlobalScanQuotaDialog />
+      <HighlightTarget />
     </>
   );
 };
