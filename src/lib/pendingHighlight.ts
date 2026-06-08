@@ -4,17 +4,28 @@
  * Cold start native push: sessionStorage može biti prazan dok WebView ne završi
  * boot. Zato držimo i in-memory kopiju koju listener može postaviti odmah pri
  * primitku tapa, prije nego što navigiramo na route.
+ *
+ * TTL: 30s za project-bound tipove (cold start + projekti fetch može biti spor),
+ * 10s za sve ostalo.
  */
-import type { NormalizedPayload } from './notificationPayload';
+import type { HighlightType, NormalizedHighlight } from './notificationPayload';
 
 const KEY = 'pendingHighlight';
-const TTL_MS = 10_000;
+const LONG_TTL_MS = 30_000;
+const SHORT_TTL_MS = 10_000;
+
+const LONG_TTL_TYPES = new Set<HighlightType>([
+  'project',
+  'milestone',
+  'invoice',
+  'expense',
+]);
 
 export interface PendingHighlight {
-  type: NormalizedPayload['highlight'] extends infer H
-    ? H extends { type: infer T } ? T : never
-    : never;
+  type: HighlightType;
   id: string;
+  /** Tab to open inside the destination surface (e.g. ProjectFullScreenView). */
+  tab: string | null;
   route: string | null;
   expiresAt: number;
 }
@@ -25,15 +36,20 @@ function now() {
   return Date.now();
 }
 
+function ttlFor(type: HighlightType): number {
+  return LONG_TTL_TYPES.has(type) ? LONG_TTL_MS : SHORT_TTL_MS;
+}
+
 export function setPendingHighlight(
-  highlight: NonNullable<NormalizedPayload['highlight']>,
+  highlight: NormalizedHighlight,
   route: string | null,
 ) {
   const value: PendingHighlight = {
-    type: highlight.type as PendingHighlight['type'],
+    type: highlight.type,
     id: highlight.id,
+    tab: highlight.tab ?? null,
     route,
-    expiresAt: now() + TTL_MS,
+    expiresAt: now() + ttlFor(highlight.type),
   };
   memory = value;
   try {
