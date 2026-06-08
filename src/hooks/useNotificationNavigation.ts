@@ -10,8 +10,8 @@
  */
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '@/i18n';
-import { showInfo } from '@/lib/statusFeedback';
+import { useTranslation } from 'react-i18next';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
 
