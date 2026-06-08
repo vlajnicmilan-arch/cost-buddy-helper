@@ -11,7 +11,7 @@ export type Feature =
   | 'pdf_import'
   | 'reports'
   | 'ai_assistant'
-  | 'family_groups'
+  | 'krug'
   | 'sharing'
   | 'recurring_transactions'
   | 'savings_goals'
@@ -33,7 +33,7 @@ const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
   pdf_import: 'pro',
   reports: 'pro',
   ai_assistant: 'pro',
-  family_groups: 'pro',
+  krug: 'pro',
   sharing: 'pro',
   recurring_transactions: 'pro',
   savings_goals: 'pro',

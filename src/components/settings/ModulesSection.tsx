@@ -67,8 +67,8 @@ export const ModulesSection = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
-    familyModeEnabled,
-    setFamilyModeEnabled,
+    krugModeEnabled,
+    setKrugModeEnabled,
     projectsModuleEnabled,
     setProjectsModuleEnabled,
     businessFeatureEnabled,
@@ -76,22 +76,22 @@ export const ModulesSection = ({
   } = useAppState();
   const moduleStates = useModuleStates();
   const { getGrant } = useMyActiveModuleGrants();
-  const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
+  const [showKrugDisableConfirm, setShowKrugDisableConfirm] = useState(false);
 
   if (isLocalMode) return null;
 
 
   const cards: ModuleCardConfig[] = [
     {
-      module: 'family',
+      module: 'krug',
       icon: Users,
-      title: t('settings.modules.family.title', 'Obitelj'),
+      title: t('settings.modules.krug.title', 'Krug'),
       description: t(
-        'settings.modules.family.description',
-        'Obiteljske grupe, dijeljeni računi i budžeti'
+        'settings.modules.krug.description',
+        'Dijeljene grupe — zajednički računi, projekti i budžeti'
       ),
       lockedDescription: t(
-        'settings.modules.family.locked',
+        'settings.modules.krug.locked',
         'Dostupno uz Pro pretplatu'
       ),
     },
@@ -131,13 +131,13 @@ export const ModulesSection = ({
       return;
     }
 
-    if (module === 'family') {
+    if (module === 'krug') {
       if (!nextEnabled) {
-        setShowFamilyDisableConfirm(true);
+        setShowKrugDisableConfirm(true);
         return;
       }
-      setFamilyModeEnabled(true);
-      showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
+      setKrugModeEnabled(true);
+      showSuccess(t('settings.krugModeEnabled', 'Krug uključen'));
       return;
     }
 
@@ -248,8 +248,8 @@ export const ModulesSection = ({
         <Switch
           id={`module-${cfg.module}`}
           checked={
-            cfg.module === 'family'
-              ? familyModeEnabled
+            cfg.module === 'krug'
+              ? krugModeEnabled
               : cfg.module === 'projects'
                 ? projectsModuleEnabled
                 : businessFeatureEnabled && state.tierUnlocked
@@ -279,36 +279,23 @@ export const ModulesSection = ({
       </div>
 
       <AlertDialog
-        open={showFamilyDisableConfirm}
-        onOpenChange={setShowFamilyDisableConfirm}
+        open={showKrugDisableConfirm}
+        onOpenChange={setShowKrugDisableConfirm}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
               <Users className="w-5 h-5" />
-              {t('settings.familyDisableTitle', 'Isključiti obiteljski način?')}
+              {t('settings.krugDisableTitle', 'Isključiti Krug?')}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>{t('settings.familyDisableDesc', 'Isključivanjem obiteljskog načina:')}</p>
+              <p>{t('settings.krugDisableDesc', 'Isključivanjem Kruga:')}</p>
               <ul className="list-disc list-inside text-sm space-y-1">
-                <li>
-                  {t(
-                    'settings.familyDisableWarn1',
-                    'Nećete više vidjeti obiteljske grupe u navigaciji'
-                  )}
-                </li>
-                <li>
-                  {t(
-                    'settings.familyDisableWarn2',
-                    'Dijeljeni računi, budžeti i ciljevi štednje neće biti vidljivi'
-                  )}
-                </li>
+                <li>{t('settings.krugDisableWarn1', 'Nećete više vidjeti Krug tab u navigaciji')}</li>
+                <li>{t('settings.krugDisableWarn2', 'Dijeljene grupe (računi, projekti, budžeti) neće biti vidljive')}</li>
               </ul>
               <p className="font-medium text-foreground mt-3">
-                {t(
-                  'settings.familyDisableKeep',
-                  'Vaši podaci ostaju sačuvani i bit će dostupni ako ponovno uključite obiteljski način.'
-                )}
+                {t('settings.krugDisableKeep', 'Vaši podaci ostaju sačuvani i bit će dostupni ako ponovno uključite Krug.')}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -317,14 +304,12 @@ export const ModulesSection = ({
             <AlertDialogAction
               className="bg-amber-600 text-white hover:bg-amber-700"
               onClick={() => {
-                setFamilyModeEnabled(false);
-                setShowFamilyDisableConfirm(false);
-                showSuccess(
-                  t('settings.familyModeDisabled', 'Obiteljski način isključen')
-                );
+                setKrugModeEnabled(false);
+                setShowKrugDisableConfirm(false);
+                showSuccess(t('settings.krugModeDisabled', 'Krug isključen'));
               }}
             >
-              {t('settings.familyDisableConfirm', 'Isključi')}
+              {t('settings.krugDisableConfirm', 'Isključi')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

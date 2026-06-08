@@ -52,9 +52,7 @@ const StorageSetup = lazy(() => import("./pages/StorageSetup"));
 const Install = lazy(() => import("./pages/Install"));
 const JoinProject = lazy(() => import("./pages/JoinProject"));
 const JoinBudget = lazy(() => import("./pages/JoinBudget"));
-const Family = lazy(() => import("./pages/Family"));
 const Krug = lazy(() => import("./pages/Krug"));
-const JoinFamily = lazy(() => import("./pages/JoinFamily"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Impressum = lazy(() => import("./pages/Impressum"));
@@ -296,9 +294,7 @@ const AppRoutes = () => {
       <Route path="/calendar" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<CalendarPage />)}</Suspense>} />
       <Route path="/budgets" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Budgets />)}</Suspense>} />
       <Route path="/wallet" element={<Suspense fallback={<WalletSkeleton />}>{requireOnboarding(<Wallet />)}</Suspense>} />
-      <Route path="/family" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Family />)}</Suspense>} />
       <Route path="/krug" element={<Suspense fallback={<GenericPageSkeleton />}>{requireOnboarding(<Krug />)}</Suspense>} />
-      <Route path="/join-family/:token" element={<Suspense fallback={<PageLoader />}><JoinFamily /></Suspense>} />
       <Route path="/auth" element={<Suspense fallback={<PageLoader />}>{user ? <Navigate to={authReturnPath || "/home"} replace /> : <Auth />}</Suspense>} />
       <Route path="/native-oauth/callback" element={<Suspense fallback={<PageLoader />}><NativeOAuthCallback /></Suspense>} />
       <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />

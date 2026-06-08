@@ -3,15 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useRecurringTransactions, RecurringTransaction } from '@/hooks/useRecurringTransactions';
 import { useInstallments } from '@/hooks/useInstallments';
-import { useFamilyForecastObligations } from '@/hooks/useFamilyForecastObligations';
-import { computeFamilyOutflowsPerWeek } from '@/lib/familyForecastContrib';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppState } from '@/contexts/AppStateContext';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, ArrowRight, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, addWeeks, addMonths, addYears, format, isWithinInterval, startOfDay } from 'date-fns';
+
 
 import {
   AreaChart,
@@ -83,9 +80,8 @@ export const CashflowForecast = () => {
   const { formatAmount, currency } = useCurrency();
   const { recurringTransactions } = useRecurringTransactions();
   const { plans } = useInstallments();
-  const { settlements: familyObligations } = useFamilyForecastObligations();
   const { user } = useAuth();
-  const { familyModeEnabled } = useAppState();
+
 
   const forecastData = useMemo(() => {
     const today = startOfDay(new Date());
@@ -96,11 +92,7 @@ export const CashflowForecast = () => {
       const ws = addWeeks(today, w);
       return { start: ws, end: addDays(ws, 6) };
     });
-    const familyPerWeek = computeFamilyOutflowsPerWeek(
-      familyObligations,
-      user?.id || '',
-      weekRanges,
-    );
+
 
 
 
@@ -140,8 +132,7 @@ export const CashflowForecast = () => {
         }
       }
 
-      // Family obligations (current user as debtor, pending)
-      weekExpenses += familyPerWeek[w] || 0;
+      // Family obligations removed (modul uklonjen).
 
       const net = weekIncome - weekExpenses;
       cumulative += net;
@@ -158,12 +149,12 @@ export const CashflowForecast = () => {
     }
 
     return weeks;
-  }, [recurringTransactions, plans, familyObligations, user?.id, t]);
+  }, [recurringTransactions, plans, t]);
 
-  const familyTotal = useMemo(
-    () => familyObligations.reduce((s, r) => s + Number(r.amount || 0), 0),
-    [familyObligations],
-  );
+
+
+
+
 
 
   const totalProjectedIncome = forecastData.reduce((s, w) => s + w.income, 0);
@@ -188,14 +179,8 @@ export const CashflowForecast = () => {
       transition={{ delay: 0.28 }}
     >
 
-      {familyModeEnabled && familyTotal > 0 && (
-        <div className="flex justify-end mb-2">
-          <Badge variant="secondary" className="gap-1 text-[10px] h-5">
-            <Users className="w-3 h-3" />
-            {t('dashboard.cashflow.familyObligations.chip', { amount: formatAmount(familyTotal) })}
-          </Badge>
-        </div>
-      )}
+
+
 
       {/* Summary row */}
 

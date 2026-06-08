@@ -24,7 +24,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
-import { SplitPredictionHint } from '@/components/family/SplitPredictionHint';
+
 
 interface ManualExpenseFormProps {
   // Type
@@ -130,7 +130,7 @@ interface ManualExpenseFormProps {
 
 export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
   const { t } = useTranslation();
-  const { projectsModuleEnabled, familyModeEnabled } = useAppState();
+  const { projectsModuleEnabled } = useAppState();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -588,16 +588,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         )}
       </div>
 
-      {/* Family split prediction — Faza 1 modularnog UI-a: gated by Family modul.
-          Komponenta i dalje interno provjerava je li source dijeljen, ali gate je tu
-          da skroz isključi pristup hooku/UI-u kad modul nije aktivan. */}
-      {familyModeEnabled && props.type === 'expense' && (
-        <SplitPredictionHint
-          paymentSource={props.paymentSource}
-          amount={parseFloat(props.amount) || 0}
-          currency={props.selectedSourceCurrency}
-        />
-      )}
 
       {/* Description */}
       <div className="space-y-2">

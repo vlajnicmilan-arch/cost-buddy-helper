@@ -9,7 +9,7 @@
  * u `useFeatureAccess` / `useSubscription` i NE smije se duplicirati ovdje.
  */
 
-export type AppModule = 'core' | 'family' | 'projects' | 'business';
+export type AppModule = 'core' | 'krug' | 'projects' | 'business';
 
 export type ModuleVisibility = 'visible' | 'hidden' | 'locked';
 export type SettingsCardState = 'active' | 'inactive' | 'locked';
