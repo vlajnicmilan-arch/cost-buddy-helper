@@ -157,13 +157,8 @@ export const NotificationsDropdown = () => {
         return { path: '/', state: { openExpenseId: data.expense_id } };
       case 'app_update':
         return { path: '/install', state: { version: data.version, apkUrl: data.apkUrl } };
-      case 'invitation_accepted': {
-        const targetType = data.type as string;
-        if (targetType === 'family') {
-          return { path: '/family', state: { openGroupId: data.target_id } };
-        }
+      case 'invitation_accepted':
         return null;
-      }
       default:
         return null;
     }
