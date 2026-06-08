@@ -11,17 +11,17 @@ const corsHeaders = {
 const TABLES_TO_PURGE = [
   "activation_nudge_log","app_diagnostics_logs","bank_connections","budget_members",
   "bug_reports","business_debts","business_premises","cash_registers","chat_messages",
-  "clients","custom_categories","family_activity_log","family_members",
+  "clients","custom_categories",
   "income_source_members","installments","installment_plans","inventory_items","invoices",
   "milestone_budget_alerts","milestone_budget_revisions","milestone_checklist_items",
   "notification_preferences","notifications","payment_source_cards","payment_source_members",
   "project_activity_log","project_budget_revisions","project_estimates",
   "project_member_permissions","project_members","project_work_logs",
   "push_delivery_logs","push_tokens","recurring_transactions","reminders","savings_goals",
-  "time_clock_entries","transaction_notes","travel_orders","user_login_logs","user_memories",
+  "transaction_notes","travel_orders","user_login_logs","user_memories",
   "user_roles","user_subscriptions","transaction_notes","expenses",
   // Resursi koji su roditelji (obrisi nakon dependentne):
-  "budget_plans","custom_payment_sources","family_groups","income_sources","projects",
+  "budget_plans","custom_payment_sources","income_sources","projects",
   "business_profiles","profiles",
 ];
 
