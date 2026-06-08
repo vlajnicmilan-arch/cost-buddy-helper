@@ -394,7 +394,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         open={detailDialogOpen}
         onClose={handleCloseFullScreen}
         project={selectedProject}
-        initialTab={pendingExpenseId ? 'transactions' : undefined}
+        initialTab={pendingInitialTab ?? (pendingExpenseId ? 'transactions' : undefined)}
         onRequestEdit={(p) => { setEditingProject(p); setDialogOpen(true); }}
         onRequestArchive={(id, archive) => archiveProject(id, archive)}
         onRequestDelete={(id) => handleDelete(id)}
