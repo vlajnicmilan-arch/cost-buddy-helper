@@ -300,14 +300,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Telemetry: write a single funnel_events row per run (best-effort).
+    // Telemetry: one funnel_events row per run with non-zero sent count.
     try {
       if (sentCount > 0) {
         await admin.from("funnel_events").insert({
-          user_id: null,
-          event: "digest_sent",
-          source: "flush-participant-digest",
+          event_name: "digest_sent",
+          platform: "edge",
           metadata: {
+            source: "flush-participant-digest",
             due: dueCount,
             sent: sentCount,
             tz_skipped: tzSkipped,
