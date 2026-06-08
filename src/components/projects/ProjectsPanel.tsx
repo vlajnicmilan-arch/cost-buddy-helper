@@ -237,6 +237,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setDetailDialogOpen(false);
     setSelectedProject(null);
     setPendingExpenseId(null);
+    setPendingInitialTab(null);
     refetch();
     fetchAllStats();
     if (returnToRef.current) {
