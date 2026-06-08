@@ -24,8 +24,6 @@ export interface NotificationPreferences {
   broadcast_enabled: boolean;
   daily_summary_enabled: boolean;
   daily_summary_weekend_enabled: boolean;
-  family_override_push: boolean;
-  family_reactions_push: boolean;
   participant_digest_enabled: boolean;
   participant_digest_hour: number;
 }
@@ -41,8 +39,6 @@ const DEFAULT_PREFS: NotificationPreferences = {
   broadcast_enabled: true,
   daily_summary_enabled: true,
   daily_summary_weekend_enabled: true,
-  family_override_push: false,
-  family_reactions_push: false,
   participant_digest_enabled: true,
   participant_digest_hour: 19,
 };
@@ -89,8 +85,6 @@ export const useNotificationPreferences = () => {
           broadcast_enabled: data.broadcast_enabled,
           daily_summary_enabled: data.daily_summary_enabled ?? true,
           daily_summary_weekend_enabled: data.daily_summary_weekend_enabled ?? true,
-          family_override_push: data.family_override_push ?? false,
-          family_reactions_push: data.family_reactions_push ?? false,
           participant_digest_enabled: data.participant_digest_enabled ?? true,
           participant_digest_hour: data.participant_digest_hour ?? 19,
         });

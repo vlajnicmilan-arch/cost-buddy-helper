@@ -8,10 +8,8 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { KrugListScreen } from '@/components/krug/KrugListScreen';
@@ -19,15 +17,8 @@ import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';
 
 export default function Krug() {
   const { t } = useTranslation();
-  const { hasAccess } = useFeatureAccess();
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
 
-  // Krug je gated isključivo po pretplati (Foundation odluka). UI ne treba
-  // dupli toggle u Settings — slot zauzima nav i pojavljuje se tek kad
-  // plan dopušta.
-  if (!hasAccess('family_groups')) {
-    return <Navigate to="/paywall" replace state={{ feature: 'krug' }} />;
-  }
 
   return (
     <div className="min-h-screen bg-background pb-20">

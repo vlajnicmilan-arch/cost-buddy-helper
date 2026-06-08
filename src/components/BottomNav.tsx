@@ -27,10 +27,9 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/projects', icon: FolderKanban, labelKey: 'nav.projects', fallback: 'Projekti', activePaths: ['/projects'], module: 'projects', colorKey: 'projects' },
   { path: '/wallet', icon: Wallet, labelKey: 'nav.wallet', fallback: 'Novčanik', activePaths: ['/wallet'], module: 'core', colorKey: 'wallet' },
   { path: '/budgets', icon: Target, labelKey: 'nav.budgets', fallback: 'Budžeti', activePaths: ['/budgets'], module: 'core', colorKey: 'budgets' },
-  // Krug zauzima slot bivšeg Obitelj taba (odluka 04.06.2026). Gating ostaje
-  // preko `family` modula: tierUnlocked = plaćen paket. Legacy /family
-  // ostaje dostupan kao ruta dok se ne odluči o migraciji, ali ne u nav-u.
-  { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'family', colorKey: 'krug' },
+  // Krug: dijeljene grupe (računi, projekti, budžeti). Gated po `krug` AppModule-u
+  // (toggle u Settings → Moduli) + tier (Pro+).
+  { path: '/krug', icon: Circle, labelKey: 'nav.krug', fallback: 'Krug', activePaths: ['/krug'], module: 'krug', colorKey: 'krug' },
 ];
 
 export const BottomNav = () => {

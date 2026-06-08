@@ -76,22 +76,22 @@ export const ModulesSection = ({
   } = useAppState();
   const moduleStates = useModuleStates();
   const { getGrant } = useMyActiveModuleGrants();
-  const [showFamilyDisableConfirm, setShowFamilyDisableConfirm] = useState(false);
+  const [showKrugDisableConfirm, setShowKrugDisableConfirm] = useState(false);
 
   if (isLocalMode) return null;
 
 
   const cards: ModuleCardConfig[] = [
     {
-      module: 'family',
+      module: 'krug',
       icon: Users,
-      title: t('settings.modules.family.title', 'Obitelj'),
+      title: t('settings.modules.krug.title', 'Krug'),
       description: t(
-        'settings.modules.family.description',
-        'Obiteljske grupe, dijeljeni računi i budžeti'
+        'settings.modules.krug.description',
+        'Dijeljene grupe — zajednički računi, projekti i budžeti'
       ),
       lockedDescription: t(
-        'settings.modules.family.locked',
+        'settings.modules.krug.locked',
         'Dostupno uz Pro pretplatu'
       ),
     },
@@ -131,13 +131,13 @@ export const ModulesSection = ({
       return;
     }
 
-    if (module === 'family') {
+    if (module === 'krug') {
       if (!nextEnabled) {
-        setShowFamilyDisableConfirm(true);
+        setShowKrugDisableConfirm(true);
         return;
       }
-      setFamilyModeEnabled(true);
-      showSuccess(t('settings.familyModeEnabled', 'Obiteljski način uključen'));
+      setKrugModeEnabled(true);
+      showSuccess(t('settings.krugModeEnabled', 'Krug uključen'));
       return;
     }
 

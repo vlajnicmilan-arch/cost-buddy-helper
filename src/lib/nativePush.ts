@@ -15,10 +15,6 @@ function resolveRouteFromPushData(data: Record<string, string | undefined>): str
   if (!type) return null;
 
   switch (type) {
-    case 'family_message':
-      return data.group_id ? `/family?group=${data.group_id}` : '/family';
-    case 'family_invitation':
-      return '/family';
     case 'project_transaction':
     case 'project_note_added':
       return data.project_id ? `/projects?id=${data.project_id}` : '/projects';

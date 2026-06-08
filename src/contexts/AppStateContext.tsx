@@ -20,8 +20,8 @@ interface AppStateContextValue {
   setAiAssistantEnabled: (enabled: boolean) => void;
   simpleModeEnabled: boolean;
   setSimpleModeEnabled: (enabled: boolean) => void;
-  familyModeEnabled: boolean;
-  setFamilyModeEnabled: (enabled: boolean) => void;
+  krugModeEnabled: boolean;
+  setKrugModeEnabled: (enabled: boolean) => void;
   // Master switch (controlled from Settings) — does the user want business features at all?
   businessFeatureEnabled: boolean;
   setBusinessFeatureEnabled: (enabled: boolean) => void;
@@ -67,12 +67,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   const [simpleModeEnabled, setSimpleModeEnabledState] = useState<boolean>(
     () => localStorage.getItem('simple_mode_enabled') === 'true'
   );
-  // Faza 1 modularnog UI-a: family default je sada OFF za nove korisnike.
-  // Postojeći korisnici koji su eksplicitno toggleali ostaju na svojoj vrijednosti.
-  // Backfill auto-on za korisnike s aktivnim family membershipom radi se niže
-  // u resolveOnboarding() (jedan SELECT na `family_members`).
-  const [familyModeEnabled, setFamilyModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('family_mode_enabled') === 'true'
+  // Krug modul — default ON za sve. User može isključiti u Settings → Moduli.
+  const [krugModeEnabled, setKrugModeEnabledState] = useState<boolean>(
+    () => localStorage.getItem('krug_mode_enabled') !== 'false'
   );
   // Master switch from Settings — persisted. If user upgrades from old build,
   // migrate from the previous `business_mode_enabled` key (which used to act as master).
@@ -201,18 +198,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
         // postojeće korisnike koji nisu eksplicitno toggleali u Settings.
         // Smjer je "auto-on kad postoji signal koji modul treba", nikad off.
         try {
-          if (localStorage.getItem('family_mode_enabled') === null) {
-            const { count } = await supabase
-              .from('family_members')
-              .select('id', { count: 'exact', head: true })
-              .eq('user_id', session.user.id);
-            if ((count ?? 0) > 0) {
-              localStorage.setItem('family_mode_enabled', 'true');
-              setFamilyModeEnabledState(true);
-            } else {
-              // Persist eksplicitno "false" da se ne pokreće query svaki mount.
-              localStorage.setItem('family_mode_enabled', 'false');
-            }
+          // Krug: default ON, ali poštuj eksplicitnu user odluku.
+          if (localStorage.getItem('krug_mode_enabled') === null) {
+            localStorage.setItem('krug_mode_enabled', 'true');
+            setKrugModeEnabledState(true);
           }
           if (localStorage.getItem('projects_module_enabled') === null) {
             const usage = localStorage.getItem('usage_profile');
@@ -287,9 +276,9 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('simple_mode_enabled', enabled.toString());
   }, []);
 
-  const setFamilyModeEnabled = useCallback((enabled: boolean) => {
-    setFamilyModeEnabledState(enabled);
-    localStorage.setItem('family_mode_enabled', enabled.toString());
+  const setKrugModeEnabled = useCallback((enabled: boolean) => {
+    setKrugModeEnabledState(enabled);
+    localStorage.setItem('krug_mode_enabled', enabled.toString());
   }, []);
 
   const setBusinessFeatureEnabled = useCallback((enabled: boolean) => {
@@ -381,8 +370,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setAiAssistantEnabled,
     simpleModeEnabled,
     setSimpleModeEnabled,
-    familyModeEnabled,
-    setFamilyModeEnabled,
+    krugModeEnabled,
+    setKrugModeEnabled,
     businessFeatureEnabled,
     setBusinessFeatureEnabled,
     businessModeEnabled,
@@ -408,7 +397,7 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
     simpleModeEnabled, setSimpleModeEnabled,
-    familyModeEnabled, setFamilyModeEnabled,
+    krugModeEnabled, setKrugModeEnabled,
     businessFeatureEnabled, setBusinessFeatureEnabled,
     businessModeEnabled, setBusinessModeEnabled,
     activeBusinessProfileId, setActiveBusinessProfileId,

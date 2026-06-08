@@ -11,14 +11,14 @@ import type { AppModule, ModuleState } from '@/lib/moduleVisibility';
  * AppStateContext-a koji je već jedini izvor istine.
  */
 export function useModuleStates(): Record<AppModule, ModuleState> {
-  const { familyModeEnabled, projectsModuleEnabled, businessFeatureEnabled } = useAppState();
+  const { krugModeEnabled, projectsModuleEnabled, businessFeatureEnabled } = useAppState();
   const { hasAccess } = useFeatureAccess();
 
   return useMemo<Record<AppModule, ModuleState>>(() => ({
     core: { enabled: true, tierUnlocked: true },
-    family: {
-      enabled: familyModeEnabled,
-      tierUnlocked: hasAccess('family_groups'),
+    krug: {
+      enabled: krugModeEnabled,
+      tierUnlocked: hasAccess('krug'),
     },
     projects: {
       enabled: projectsModuleEnabled,
@@ -28,5 +28,5 @@ export function useModuleStates(): Record<AppModule, ModuleState> {
       enabled: businessFeatureEnabled,
       tierUnlocked: hasAccess('business_module'),
     },
-  }), [familyModeEnabled, projectsModuleEnabled, businessFeatureEnabled, hasAccess]);
+  }), [krugModeEnabled, projectsModuleEnabled, businessFeatureEnabled, hasAccess]);
 }
