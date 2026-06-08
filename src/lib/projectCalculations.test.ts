@@ -9,9 +9,10 @@ import {
   calculateExpectedProfit,
   calculateCollectionProgress,
   calculateRemainingToCollect,
+  calculateFundingTotal,
   RawProjectExpense,
-  RawFundingRow,
 } from './projectCalculations';
+
 
 
 const exp = (over: Partial<RawProjectExpense> = {}): RawProjectExpense => ({
@@ -118,20 +119,20 @@ describe('calculateProjectIncomeFromTransactions', () => {
   });
 });
 
-describe('calculateProjectBalance', () => {
-  const funding: RawFundingRow[] = [{ allocated_amount: 500 }];
-
+describe('calculateProjectBalance (Option A: funding NOT in income)', () => {
   it('returns 0 with no data', () => {
-    expect(calculateProjectBalance([], [])).toBe(0);
+    expect(calculateProjectBalance([])).toBe(0);
   });
 
-  it('balance = income (tx + funding) − spent', () => {
+  it('balance = realized income − spent (funding excluded)', () => {
     const txs = [exp({ amount: 100 }), exp({ type: 'income', amount: 200 })];
-    expect(calculateProjectBalance(txs, funding)).toBe(600); // 200 + 500 - 100
+    expect(calculateProjectBalance(txs)).toBe(100); // 200 − 100
   });
 
-  it('handles funding only', () => {
-    expect(calculateProjectBalance([], funding)).toBe(500);
+  it('funding rows are not consumed (separate KPI)', () => {
+    // calculateFundingTotal is the public way to read planned funding.
+    expect(calculateFundingTotal([{ allocated_amount: 500 }])).toBe(500);
+    expect(calculateProjectBalance([])).toBe(0);
   });
 
   it('excludes pending/transfer/correction from balance', () => {
@@ -140,12 +141,10 @@ describe('calculateProjectBalance', () => {
       exp({ amount: 50, status: 'pending' }),
       exp({ type: 'transfer', amount: 999 }),
       exp({ amount: 999, expense_nature: 'correction' }),
+      exp({ type: 'income', amount: 999, expense_nature: 'correction' }),
+      exp({ type: 'income', amount: 999, status: 'pending' }),
     ];
-    expect(calculateProjectBalance(txs, [])).toBe(-100);
-  });
-
-  it('handles null funding amounts', () => {
-    expect(calculateProjectBalance([], [{ allocated_amount: null }])).toBe(0);
+    expect(calculateProjectBalance(txs)).toBe(-100);
   });
 });
 
@@ -254,47 +253,57 @@ describe('calculateExpectedProfit', () => {
   });
 });
 
-describe('calculateCollectionProgress', () => {
+describe('calculateCollectionProgress (Option A: funding NOT counted as collected)', () => {
   it('returns 0 when contract is 0', () => {
-    expect(calculateCollectionProgress({ contract_value: 0 }, [], [])).toBe(0);
+    expect(calculateCollectionProgress({ contract_value: 0 }, [])).toBe(0);
   });
 
   it('returns 0 for null project', () => {
-    expect(calculateCollectionProgress(null, [], [])).toBe(0);
+    expect(calculateCollectionProgress(null, [])).toBe(0);
   });
 
-  it('percentage of collected vs contract', () => {
+  it('percentage of realized income vs contract', () => {
     const txs = [exp({ type: 'income', amount: 250 })];
-    expect(calculateCollectionProgress({ contract_value: 1000 }, txs, [])).toBe(25);
+    expect(calculateCollectionProgress({ contract_value: 1000 }, txs)).toBe(25);
   });
 
   it('caps at 100', () => {
     const txs = [exp({ type: 'income', amount: 2000 })];
-    expect(calculateCollectionProgress({ contract_value: 1000 }, txs, [])).toBe(100);
+    expect(calculateCollectionProgress({ contract_value: 1000 }, txs)).toBe(100);
   });
 
-  it('counts funding allocations as collected income', () => {
-    expect(calculateCollectionProgress({ contract_value: 1000 }, [], [{ allocated_amount: 500 }])).toBe(50);
+  it('funding does NOT count as collected', () => {
+    // Only realized income matters; funding is "Planirano", not "Naplaćeno".
+    expect(calculateCollectionProgress({ contract_value: 1000 }, [])).toBe(0);
+  });
+
+  it('excludes pending/correction income from collection', () => {
+    const txs = [
+      exp({ type: 'income', amount: 250 }),
+      exp({ type: 'income', amount: 500, status: 'pending' }),
+      exp({ type: 'income', amount: 999, expense_nature: 'correction' }),
+    ];
+    expect(calculateCollectionProgress({ contract_value: 1000 }, txs)).toBe(25);
   });
 });
 
-describe('calculateRemainingToCollect', () => {
-  it('contract − collected', () => {
+describe('calculateRemainingToCollect (Option A)', () => {
+  it('contract − realized income', () => {
     const txs = [exp({ type: 'income', amount: 300 })];
-    expect(calculateRemainingToCollect({ contract_value: 1000 }, txs, [])).toBe(700);
+    expect(calculateRemainingToCollect({ contract_value: 1000 }, txs)).toBe(700);
   });
 
   it('never negative', () => {
     const txs = [exp({ type: 'income', amount: 5000 })];
-    expect(calculateRemainingToCollect({ contract_value: 1000 }, txs, [])).toBe(0);
+    expect(calculateRemainingToCollect({ contract_value: 1000 }, txs)).toBe(0);
   });
 
   it('returns contract when nothing collected', () => {
-    expect(calculateRemainingToCollect({ contract_value: 1000 }, [], [])).toBe(1000);
+    expect(calculateRemainingToCollect({ contract_value: 1000 }, [])).toBe(1000);
   });
 
   it('handles null project gracefully', () => {
-    expect(calculateRemainingToCollect(null, [], [])).toBe(0);
+    expect(calculateRemainingToCollect(null, [])).toBe(0);
   });
 });
 

@@ -80,13 +80,19 @@ export const useProjectInvoices = () => {
         setPayments({});
         return;
       }
+      // F5 — invoice payments count ONLY approved income rows.
+      // Transfers, corrections, expense rows and pending/rejected income MUST NOT
+      // be summed into "paid" or the invoice could flip to PAID without real payment.
       const { data: payRows } = await (supabase
         .from('expenses') as any)
-        .select('id, invoice_id, amount, date, description')
-        .in('invoice_id', ids);
+        .select('id, invoice_id, amount, date, description, type, status, expense_nature')
+        .in('invoice_id', ids)
+        .eq('type', 'income')
+        .eq('status', 'approved');
       const map: Record<string, InvoicePaymentSummary> = {};
       list.forEach(inv => { map[inv.id] = { paid: 0, remaining: Number(inv.total_amount) || 0, payments: [] }; });
       (payRows || []).forEach((row: any) => {
+        if (row.expense_nature === 'correction') return;
         const bucket = map[row.invoice_id];
         if (!bucket) return;
         bucket.paid += Number(row.amount) || 0;

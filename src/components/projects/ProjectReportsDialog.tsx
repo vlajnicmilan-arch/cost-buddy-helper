@@ -128,11 +128,14 @@ export const ProjectReportsDialog = ({
     fetchWorkersAndCollaborators();
   }, [open, project.id]);
 
-  // Calculate completed milestones budget as "spent" (unified logic)
+  // F6 — Reports must show the REAL spent per milestone (no "completed → budget"
+  // substitution). Otherwise overrun on a completed milestone is hidden.
   const completedMilestones = milestones.filter(m => m.status === 'completed');
-  const spentFromCompletedMilestones = completedMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+  void completedMilestones; // kept for potential downstream use
 
-  // Calculate spending by milestone (for chart visualization - shows expense transactions per milestone)
+
+
+  // Calculate spending by milestone (chart) — real expense sum from approved/non-transfer/non-correction rows
   const spendingByMilestone = useMemo(() => {
     const byMilestone: Record<string, number> = {};
     let unassigned = 0;
@@ -147,10 +150,9 @@ export const ProjectReportsDialog = ({
       }
     });
 
-    // Use milestone budget for completed milestones, expense sum for others
     const data = milestones.map((m, i) => ({
       name: m.name,
-      spent: m.status === 'completed' ? m.budget : (byMilestone[m.id] || 0),
+      spent: byMilestone[m.id] || 0,
       budget: m.budget,
       status: m.status,
       color: COLORS[i % COLORS.length],
@@ -187,11 +189,10 @@ export const ProjectReportsDialog = ({
     }));
   }, [expenses, members]);
 
-  // Milestone progress data for chart - use budget for completed milestones
+  // Milestone progress data for chart — real spent (no completed→budget swap)
   const milestoneProgressData = useMemo(() => {
     return milestones.map(m => {
-      // For completed milestones, "spent" equals budget (the full budget is consumed)
-      const spent = m.status === 'completed' ? m.budget : (m.spent || 0);
+      const spent = m.spent || 0;
       const percent = m.budget > 0 ? (spent / m.budget) * 100 : 0;
       return {
         name: m.name.length > 15 ? m.name.substring(0, 15) + '...' : m.name,

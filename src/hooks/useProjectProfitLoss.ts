@@ -52,7 +52,7 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
           .maybeSingle(),
         supabase
           .from('expenses')
-          .select('type, amount')
+          .select('id, type, amount, status, expense_nature, is_advance, linked_advance_ids')
           .eq('project_id', projectId),
         supabase
           .from('project_work_entries')

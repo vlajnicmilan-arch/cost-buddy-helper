@@ -6,7 +6,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { PendingRevisionInput } from '@/types/milestoneRevision';
 import { notifyProjectActivity } from '@/lib/notifyProjectActivity';
-import { applyContractAmendment } from '@/lib/projectCalculations';
+import { applyContractAmendment, calculateNetExpenseAmount, isCountedProjectTransaction, type RawProjectExpense } from '@/lib/projectCalculations';
 
 export const useProjectMilestones = (projectId: string | null) => {
   const { user } = useAuth();
@@ -31,21 +31,24 @@ export const useProjectMilestones = (projectId: string | null) => {
 
       if (error) throw error;
 
-      // Fetch spent amounts per milestone
+      // F4 — per-milestone spent uses unified filter (approved expense only, no
+      // transfer / correction, advance-netted) so it matches Spent on Budget tab.
       const { data: expenses } = await supabase
         .from('expenses')
-        .select('milestone_id, amount')
+        .select('id, milestone_id, amount, type, status, expense_nature, is_advance, linked_advance_ids')
         .eq('project_id', projectId)
         .not('milestone_id', 'is', null);
 
+      const allRows = ((expenses ?? []) as unknown as RawProjectExpense[]);
       const spentByMilestone = new Map<string, number>();
-      expenses?.forEach(e => {
-        if (e.milestone_id) {
-          spentByMilestone.set(
-            e.milestone_id, 
-            (spentByMilestone.get(e.milestone_id) || 0) + Number(e.amount)
-          );
-        }
+      allRows.forEach(row => {
+        if (!isCountedProjectTransaction(row)) return;
+        if (row.type !== 'expense') return;
+        const mid = (row as any).milestone_id as string | null | undefined;
+        if (!mid) return;
+        const net = calculateNetExpenseAmount(row, allRows);
+        if (net <= 0) return;
+        spentByMilestone.set(mid, (spentByMilestone.get(mid) || 0) + net);
       });
 
       setMilestones((data || []).map((m: any) => ({

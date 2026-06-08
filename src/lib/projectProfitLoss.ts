@@ -23,8 +23,13 @@ export interface PLProjectRow {
 }
 
 export interface PLTransactionRow {
+  id?: string;
   type: string;
   amount: number | string | null;
+  status?: string | null;
+  expense_nature?: string | null;
+  is_advance?: boolean | null;
+  linked_advance_ids?: string[] | null;
 }
 
 export interface PLWorkEntryRow {
@@ -92,17 +97,51 @@ const num = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+const isCountedTx = (t: PLTransactionRow): boolean => {
+  if (t.type === 'transfer') return false;
+  if (t.expense_nature === 'correction') return false;
+  if (t.status && t.status !== 'approved') return false;
+  return true;
+};
+
+/**
+ * Net amount of an expense after subtracting linked advances.
+ * Mirrors calculateNetExpenseAmount in projectCalculations.ts (duplicated locally
+ * so this helper has no cross-module dependency).
+ */
+const netExpenseAmount = (e: PLTransactionRow, all: PLTransactionRow[]): number => {
+  const amount = num(e.amount);
+  if (e.is_advance) {
+    const linked = all.some(o =>
+      !o.is_advance &&
+      Array.isArray(o.linked_advance_ids) &&
+      e.id != null &&
+      o.linked_advance_ids.includes(e.id)
+    );
+    return linked ? 0 : amount;
+  }
+  const ids = e.linked_advance_ids || [];
+  if (ids.length === 0) return amount;
+  const sumLinked = ids.reduce((s, id) => {
+    const a = all.find(o => o.id === id && o.is_advance);
+    return a ? s + num(a.amount) : s;
+  }, 0);
+  return Math.max(amount - sumLinked, 0);
+};
+
 export const computeProjectProfitLoss = (input: PLInput): PLResult => {
   const cv = num(input.project?.contract_value);
   const contractValue = cv > 0 ? cv : num(input.project?.total_budget);
 
+  const txs = input.transactions ?? [];
   let totalIncome = 0;
   let totalExpenses = 0;
-  for (const t of input.transactions ?? []) {
-    const amt = num(t.amount);
-    if (t.type === 'income') totalIncome += amt;
-    else if (t.type === 'expense') totalExpenses += amt;
+  for (const t of txs) {
+    if (!isCountedTx(t)) continue;
+    if (t.type === 'income') totalIncome += num(t.amount);
+    else if (t.type === 'expense') totalExpenses += netExpenseAmount(t, txs);
   }
+
 
   const workerMap = new Map<string, { name: string; rate: number; hours: number }>();
   for (const w of input.workers ?? []) {
