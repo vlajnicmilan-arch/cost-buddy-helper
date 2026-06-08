@@ -47,7 +47,7 @@ export function useNotificationNavigation() {
       );
       const ok = navigateFromPayload(payload);
       if (!ok) {
-        showInfo(t('notifications.itemNotAvailable', 'Stavka više nije dostupna'));
+        showSuccess(t('notifications.itemNotAvailable', 'Stavka više nije dostupna'));
       }
       return ok;
     },

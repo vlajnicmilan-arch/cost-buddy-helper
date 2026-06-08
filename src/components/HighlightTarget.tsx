@@ -9,8 +9,8 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { peekPendingHighlight, clearPendingHighlight } from '@/lib/pendingHighlight';
-import { useTranslation } from '@/i18n';
-import { showInfo } from '@/lib/statusFeedback';
+import { useTranslation } from 'react-i18next';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 const PULSE_MS = 2000;
 const WAIT_MS = 8000;
@@ -78,7 +78,7 @@ export function HighlightTarget() {
       observer?.disconnect();
       // Stavka više ne postoji — bili smo barem na ispravnoj ruti.
       clearPendingHighlight();
-      showInfo(t('notifications.itemNotAvailable', 'Stavka više nije dostupna'));
+      showSuccess(t('notifications.itemNotAvailable', 'Stavka više nije dostupna'));
     }, WAIT_MS);
 
     return () => {
