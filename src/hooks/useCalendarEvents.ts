@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { format, startOfMonth, endOfMonth, addMonths, addYears, parseISO } from 'date-fns';
+import { buildExpenseScopeFilter, type ScopeContext } from '@/lib/expenseScope';
 
 export interface CalendarEvent {
   id: string;
