@@ -2222,6 +2222,7 @@
   },
   "notifications": {
     "title": "Benachrichtigungen",
+    "itemNotAvailable": "Eintrag ist nicht mehr verfügbar",
     "markAllRead": "Alle markieren",
     "empty": "Keine Benachrichtigungen",
     "delete": "Löschen",

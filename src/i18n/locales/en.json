@@ -2222,6 +2222,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "itemNotAvailable": "Item is no longer available",
     "markAllRead": "Mark all",
     "empty": "No notifications",
     "delete": "Delete",
