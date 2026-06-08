@@ -302,7 +302,7 @@ serve(async (req) => {
           invitation_id: invitation.id,
           target_id: targetId,
           type: notificationTypeMap[type],
-          category: type === 'family' ? 'chat' : type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
+          category: type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
         },
         source: "send-member-invitation",
       });
