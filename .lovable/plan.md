@@ -1,74 +1,82 @@
-# Plan: 3-slojni push notification model
+# Plan: Potpuno uklanjanje Family modula
 
-## Cilj
+## Sažetak provjere ovisnosti
 
-Smanjiti notification fatigue grupiranjem broadcast/suradničkih pusheva u jedan dnevni digest u **19:00 lokalno**, uz zadržavanje:
-- **instant** pusheva za vremenski osjetljive evente
-- postojećeg **daily summary** vlastite potrošnje u **21:00 lokalno** (nepromijenjeno)
+**Krug ↔ Family — provjerena 1 točka spoja:**
+- `src/pages/Krug.tsx:28` — `hasAccess('family_groups')` gate (legacy, slučajno preuzet). Krug nema FK, RPC ni triger ovisnost o family_*.
 
-## Slojevi (finalna klasifikacija)
+**DB stanje (verificirano):**
+- 13 family_* tablica, ukupno **24 retka testnih podataka**
+- 0 vanjskih FK pokazuje na family_* → CASCADE neće zahvatiti ništa van family domene
+- 19 PL/pgSQL funkcija + 13 trigera na family_* tablicama
+- 3 retka `payment_source_members.role='limited'` stvorenih kroz family auto-sync — postaju siročad nakon brisanja (FK ide na custom_payment_sources). Korisnik potvrdio: sve testno, briše se.
 
-### Sloj 1 — INSTANT (ostaje real-time)
-Zadržavaju trenutni push, ne diraju se:
-- `notify-budget-shared` / `notify-project-shared` / `notify-family-invitation` / `send-member-invitation` — pozivnice
-- `notify-note-added` kad je @mention (direktno spominjanje)
-- `check-milestone-deadlines` — deadline danas/sutra
-- Account/security eventi (password reset, login alert)
-- Krug deletion vote requests
+**Edge funkcije pogođene:**
+- `notify-family-event` — brisanje
+- `send-member-invitation`, `respond-to-invitation`, `process-pending-deletions` + `consume_invitation_token` RPC — uklanjanje `family` grane (zadrži budget/project/krug)
 
-### Sloj 2 — DIGEST u 19:00 lokalno (NOVO, zamjenjuje real-time)
-Sve broadcast/suradničke aktivnosti idu kroz postojeći `participant_digest_state` mehanizam:
-- `notify-project-transaction` (već enqueue-a)
-- `notify-project-activity` (već enqueue-a)
-- `notify-note-added` bez @mentiona (TREBA prebaciti s instant na enqueue)
-- Family aktivnost (novi enqueue path za `family_activity`)
-- Budget shared activity (nove transakcije u shared budgetu)
+**Frontend (33 fajla):**
+- Stranice: `Family.tsx`, `JoinFamily.tsx` + rute u `App.tsx`
+- Cijeli `src/components/family/` direktorij
+- 13 `useFamily*` hookova + `src/lib/familySplitSuggestion.ts`
+- Reference: `AppStateContext.tsx`, `HomeHeader.tsx`, `PageHeader.tsx`, `SettingsDialog.tsx`, `NotificationsSection.tsx`, `NotificationsDropdown.tsx`, `useFeatureAccess.ts`, `useModuleStates.ts`, `useNotificationPreferences.ts`, `dataExportZip.ts`, `nativePush.ts`
 
-### Sloj 3 — DAILY SUMMARY u 21:00 lokalno (NEPROMIJENJENO)
-`send-daily-summary` ostaje točno kako je sada. Nema preklapanja s 19:00 jer su 2h razmaka i potpuno različite teme (vlastita potrošnja vs aktivnost drugih).
+**Drugi moduli netaknuti (provjereno):** Krug, Bank sync, Trash, Soft delete, Budgets, Projects, Subscriptions, Shared Wallet (`payment_source_members` ručno upravljanje ostaje).
 
-## Tehničke promjene
+---
 
-### A. Cron — pomak postojećeg flush-a s 19:00 UTC na 19:00 lokalno
-Trenutno: `flush-participant-digest-daily` cron radi u **19:00 UTC** (fiksno). To znači da u HR ljeti puca u 21:00 lokalno → sudara se s daily summaryjem.
+## Koraci
 
-Promjena:
-- Cron pucati **svaki sat** (poput `send-daily-summary`)
-- Edge function dodaje filter: pošalji samo korisnicima čije lokalno vrijeme je trenutno 19:00 (čita `profiles.timezone`, ista logika kao `send-daily-summary`)
-- Po (user, project) i dalje min interval 20h (guard ostaje)
-- Empty-digest skip ostaje (već implementirano)
+### 1. DB migracija (jedna)
+- DROP 13 trigera na family_* tablicama
+- DROP 15 family funkcija (is_family_*, audit_family_*, fss_*, fm_*, compute_family_*, refresh_family_*, apply_split_override, record_settlement, add_family_owner_as_member)
+- ALTER `consume_invitation_token` — ukloniti `family` ELSIF granu
+- ALTER `e2e_reset_user` — ukloniti family DELETE-ove
+- DROP 13 family_* tablica CASCADE
+- ALTER `profiles` DROP `family_override_push`, `family_reactions_push` (i `family_mode_enabled` ako postoji)
+- DELETE 3 orphan `payment_source_members` redaka s `role='limited'`
 
-### B. Migracija novih event tipova u digest
-- `notify-note-added`: kad poruka **NIJE** @mention i nije od managera koji direktno traži pažnju → `enqueue_participant_digest_event` umjesto `sendPushNotificationToMany`
-- Family aktivnost: novi enqueue path (analogno project digestu), zasebna tablica `family_digest_state` (mirror sheme) ili reuse generičkog mehanizma — odluka u implementaciji
-- Budget aktivnost: analogno
+### 2. Edge funkcije
+- Brisanje `supabase/functions/notify-family-event/` (rm + delete_edge_functions)
+- Patch `send-member-invitation`, `respond-to-invitation`, `process-pending-deletions` — bez family grane
 
-### C. Korisničke postavke (minimum viable)
-U `NotificationsSection`:
-- Toggle "Sažetak aktivnosti suradnika" (on/off) — gasi sloj 2
-- Vrijeme sažetka — slider/select (default 19:00, opcije 17/18/19/20)
-- Per-projekt mute ostaje izvan ovog plana (odgodit ćemo)
+### 3. Brisanje koda
+- `src/pages/Family.tsx`, `src/pages/JoinFamily.tsx`
+- Cijeli `src/components/family/` direktorij
+- 13 `useFamily*.ts` hookova
+- `src/lib/familySplitSuggestion.ts`
+- Rute `/family`, `/join-family` u `App.tsx`
 
-### D. Telemetrija
-- Funnel event `digest_sent` (već postoji indirektno kroz logove) — dodati formalni `funnel_events` red sa source='participant_digest'
-- Brojiti open rate (push tap → app open) za usporedbu s prijašnjim instant modelom
+### 4. Čišćenje referenci
+- `Krug.tsx`: ukloniti `hasAccess('family_groups')` gate (opcija a)
+- `useFeatureAccess.ts`, `useModuleStates.ts`: ukloniti `family_groups`/`family_mode` ključeve
+- `AppStateContext.tsx`: ukloniti `familyModeEnabled` state + setter
+- `HomeHeader.tsx`, `PageHeader.tsx`, `SettingsDialog.tsx`: ukloniti Family menu stavke
+- `NotificationsSection.tsx`, `NotificationsDropdown.tsx`, `useNotificationPreferences.ts`: ukloniti family toggle-ove i invitation kategorije
+- `dataExportZip.ts`: ukloniti family_* iz exporta
+- `nativePush.ts`: ukloniti `/family/...` deeplinke
 
-## Što se NE radi u ovom planu
-- Per-projekt mute (odgoda)
-- Quiet hours napredne postavke (odgoda)
-- Threshold "pošalji ranije ako >N evenata" (odgoda — krećemo s čistim 19:00, mjerimo)
-- Promjena `send-daily-summary` u 21:00 (ostaje točno kako je)
+### 5. i18n
+Ukloniti `family.*` namespace iz `hr.json`, `en.json`, `de.json`.
 
-## Redoslijed implementacije
+### 6. Memory cleanup
+Označiti deprecated: `family-module-phase-1`, `family-proportional-split`, `family-and-collaboration-system`, `family-chat-removed`, `family-shared-source-auto-limited`.
 
-1. Pomak `flush-participant-digest` na hourly cron + tz-aware filter (čitanje `profiles.timezone`)
-2. Migracija `notify-note-added` (bez mentiona) na enqueue
-3. Family digest enqueue path
-4. Budget digest enqueue path
-5. UI toggle + vrijeme u `NotificationsSection`
-6. Telemetrija `funnel_events`
+---
 
-## Verifikacija
-- Vitest za novu tz-filter logiku (reuse helpera iz `send-daily-summary`)
-- Manual test kroz postojeći `test:true` mode u `flush-participant-digest`
-- Provjera da `send-daily-summary` u 21:00 nije dirnut
+## Verifikacija (nakon izvršenja)
+
+1. `rg "family_|useFamily|/family" src/ supabase/functions/` → prazno (osim povijesnih migracija)
+2. Krug se otvara bez blokade
+3. `npm test` prolazi
+4. TypeScript build prolazi (types.ts se regenerira nakon migracije)
+5. Smoke: dashboard, Krug, projekti, budžeti, postavke, transaction detail, invitation flow
+
+---
+
+## Što NE diramo
+- Krug i sve `krug_*`
+- Povijesne migracije (immutable)
+- `payment_source_members` tablica (samo se brišu 3 orphan reda)
+- Budget/Project invitation tokovi (samo se uklanja family grana iz dijeljene edge funkcije)
+- `email_send_log` povijesni redovi
