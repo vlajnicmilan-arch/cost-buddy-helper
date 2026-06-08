@@ -245,18 +245,60 @@ export const NotificationsSection = ({
       </div>
 
       {!isLocalMode && hasAccess('projects') && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-xs h-8 px-3"
-          onClick={sendDigestTest}
-          disabled={sendingDigestTest || !user}
-        >
-          <FolderKanban className="w-3.5 h-3.5 mr-2" />
-          {sendingDigestTest
-            ? t('settings.digestTestSending', 'Šaljem sažetak…')
-            : t('settings.digestTestButton', 'Pošalji testni sažetak projekta')}
-        </Button>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <FolderKanban className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="participant-digest" className="text-sm font-medium cursor-pointer">
+                  {t('settings.participantDigest', 'Sažetak aktivnosti suradnika')}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.participantDigestDesc', 'Jedan dnevni sažetak po projektu umjesto svake izmjene zasebno.')}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="participant-digest"
+              checked={prefs.participant_digest_enabled}
+              onCheckedChange={(v) => setFlag('participant_digest_enabled', v)}
+            />
+          </div>
+
+          {prefs.participant_digest_enabled && (
+            <>
+              <div className="flex items-center justify-between p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg gap-3">
+                <Label htmlFor="participant-digest-hour" className="text-xs font-medium">
+                  {t('settings.participantDigestHour', 'Vrijeme slanja')}
+                </Label>
+                <select
+                  id="participant-digest-hour"
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                  value={prefs.participant_digest_hour}
+                  onChange={(e) => setDigestHour(parseInt(e.target.value, 10))}
+                >
+                  {[17, 18, 19, 20].map((h) => (
+                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-xs h-8 px-3"
+                onClick={sendDigestTest}
+                disabled={sendingDigestTest || !user}
+              >
+                <FolderKanban className="w-3.5 h-3.5 mr-2" />
+                {sendingDigestTest
+                  ? t('settings.digestTestSending', 'Šaljem sažetak…')
+                  : t('settings.digestTestButton', 'Pošalji testni sažetak projekta')}
+              </Button>
+            </>
+          )}
+        </div>
       )}
 
 
