@@ -169,5 +169,21 @@ export const useNotificationPreferences = () => {
     [user, prefs],
   );
 
-  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, refetch: fetchPrefs };
+  const setDigestHour = useCallback(async (hour: number) => {
+    if (!user) return;
+    const safe = Math.max(6, Math.min(23, Math.round(hour)));
+    setPrefs((p) => ({ ...p, participant_digest_hour: safe }));
+    try {
+      await (supabase as any)
+        .from('notification_preferences')
+        .upsert(
+          { user_id: user.id, ...prefs, participant_digest_hour: safe },
+          { onConflict: 'user_id' },
+        );
+    } catch (e) {
+      console.error('[notif-prefs] digest hour update failed:', e);
+    }
+  }, [user, prefs]);
+
+  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, setDigestHour, refetch: fetchPrefs };
 };
