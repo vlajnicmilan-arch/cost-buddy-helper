@@ -2,52 +2,8 @@
 // Used outside React context (e.g. from SettingsDialog handlers).
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-
-let listenersAttached = false;
-
-/**
- * Map push notification `data` payload to an in-app route.
- * Each notify-* edge function sets `data.type` (and relevant ids) so the
- * device can deep-link the user to the correct screen on tap.
- */
-function resolveRouteFromPushData(data: Record<string, string | undefined>): string | null {
-  const type = data.type;
-  if (!type) return null;
-
-  switch (type) {
-    case 'project_transaction':
-    case 'project_note_added':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'project_invitation':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'project_member_joined':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'milestone_deadline':
-    case 'milestone_budget':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'pending_transaction':
-    case 'pending_auto_rejected':
-      return '/';
-    case 'payment_source_transaction':
-      return data.payment_source_id ? `/wallet?source=${data.payment_source_id}` : '/wallet';
-    case 'payment_source_invitation':
-      return '/wallet';
-    case 'budget_alert':
-    case 'budget_invitation':
-      return data.budget_id ? `/budgets?id=${data.budget_id}` : '/budgets';
-    case 'reminder':
-    case 'calendar_event':
-      return '/calendar';
-    case 'trial_reminder':
-      return '/paywall';
-    case 'app_update':
-      return '/install';
-    case 'broadcast':
-      return data.url ?? '/';
-    default:
-      return null;
-  }
-}
+import { normalizePayload } from '@/lib/notificationPayload';
+import { setPendingHighlight } from '@/lib/pendingHighlight';
 
 export async function registerNativePush(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
