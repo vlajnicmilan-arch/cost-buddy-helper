@@ -345,6 +345,7 @@ export const ProjectMilestonesTab = ({
             return (
               <div 
                 key={milestone.id}
+                data-highlight-id={`milestone:${milestone.id}`}
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
                   isOverBudget && "border-destructive/40 bg-destructive/5",

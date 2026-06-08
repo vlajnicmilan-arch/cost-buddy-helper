@@ -113,6 +113,7 @@ export const BudgetCard = ({
           boxShadow: `0 2px 12px ${budgetColor}08`,
         }}
         onClick={onClick}
+        data-highlight-id={`budget:${(typeof onClick === 'function' && (onClick as any).budgetId) || ''}`}
       >
         {/* Subtle radial glow */}
         <div
