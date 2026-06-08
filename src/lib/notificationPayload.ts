@@ -1,12 +1,13 @@
 /**
  * Standardizirani payload za in-app obavijesti (zvono) i FCM push.
  *
- * Cilj: jedinstveni `{ route, highlight: { type, id }, fallback_route }` ishod
- * neovisno o tome dolazi li `data` iz baze (jsonb, može sadržavati nested
- * objekt `highlight`) ili iz FCM push payloada (samo flat stringovi).
+ * Cilj: jedinstveni `{ route, highlight: { type, id, tab? }, fallback_route }`
+ * neovisno o izvoru (DB jsonb ili FCM flat strings). `tab` polje omogućava
+ * tab-aware highlight — npr. milestone → `phases`, invoice → `funding` —
+ * tako da `ProjectFullScreenView` otvori ispravnu listu prije nego
+ * `HighlightTarget` počne tražiti DOM marker.
  *
- * Legacy obavijesti bez `route` i dalje rade kroz `legacyResolve` koji preslikava
- * stari `type` + ID polja u istu strukturu.
+ * Legacy obavijesti bez `route` rade kroz `legacyResolve`.
  */
 
 export type HighlightType =
@@ -21,11 +22,18 @@ export type HighlightType =
   | 'app_update'
   | 'note';
 
+export interface NormalizedHighlight {
+  type: HighlightType;
+  id: string;
+  /** Optional target tab inside the destination route (e.g. ProjectFullScreenView). */
+  tab?: string;
+}
+
 export interface NormalizedPayload {
   type: string | null;
   route: string | null;
   fallback_route: string | null;
-  highlight: { type: HighlightType; id: string } | null;
+  highlight: NormalizedHighlight | null;
   raw: Record<string, unknown>;
 }
 
@@ -38,13 +46,13 @@ const pickStr = (...vals: unknown[]): string | null => {
 };
 
 /**
- * Backward-kompatibilno mapiranje starih notifikacija (bez `route`/`highlight_*`)
- * u istu strukturu kao novi payload. Pokriva 12 tipova.
+ * Backward-kompatibilno mapiranje starih notifikacija u standardni payload,
+ * uključujući determinističku `tab` vrijednost za projekt-related tipove.
  */
 function legacyResolve(type: string | null, d: Record<string, unknown>): {
   route: string | null;
   fallback_route: string | null;
-  highlight: NormalizedPayload['highlight'];
+  highlight: NormalizedHighlight | null;
 } {
   if (!type) return { route: null, fallback_route: null, highlight: null };
 
@@ -62,7 +70,9 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
-        highlight: expenseId ? { type: 'expense', id: expenseId } : null,
+        highlight: expenseId
+          ? { type: 'expense', id: expenseId, tab: 'transactions' }
+          : null,
       };
     case 'note_added':
     case 'project_note_added':
@@ -70,9 +80,9 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
         highlight: noteId
-          ? { type: 'note', id: noteId }
+          ? { type: 'note', id: noteId, tab: 'activity' }
           : expenseId
-          ? { type: 'expense', id: expenseId }
+          ? { type: 'expense', id: expenseId, tab: 'transactions' }
           : null,
       };
     case 'project_activity':
@@ -80,27 +90,35 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
-        highlight: projectId ? { type: 'project', id: projectId } : null,
+        highlight: projectId
+          ? { type: 'project', id: projectId, tab: 'activity' }
+          : null,
       };
     case 'milestone_deadline':
     case 'milestone_budget':
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
-        highlight: milestoneId ? { type: 'milestone', id: milestoneId } : null,
+        highlight: milestoneId
+          ? { type: 'milestone', id: milestoneId, tab: 'phases' }
+          : null,
       };
     case 'overdue_invoice':
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
-        highlight: invoiceId ? { type: 'invoice', id: invoiceId } : null,
+        highlight: invoiceId
+          ? { type: 'invoice', id: invoiceId, tab: 'funding' }
+          : null,
       };
     case 'project_loss_zone':
     case 'cashflow_risk':
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
         fallback_route: '/projects',
-        highlight: projectId ? { type: 'project', id: projectId } : null,
+        highlight: projectId
+          ? { type: 'project', id: projectId, tab: 'overview' }
+          : null,
       };
     case 'budget_alert':
     case 'budget_burn':
@@ -155,25 +173,25 @@ export function normalizePayload(
   const d: Record<string, unknown> = (data && typeof data === 'object') ? data : {};
   const resolvedType = isStr(type) ? type : (isStr(d.type) ? (d.type as string) : null);
 
-  // Direct fields on the new standardized payload.
   const directRoute = pickStr(d.route);
   const directFallback = pickStr(d.fallback_route);
 
   // Highlight may arrive as nested object (DB) or flat fields (FCM).
-  let highlight: NormalizedPayload['highlight'] = null;
+  let highlight: NormalizedHighlight | null = null;
   const nested = d.highlight as Record<string, unknown> | undefined;
   if (nested && typeof nested === 'object') {
     const ht = pickStr(nested.type) as HighlightType | null;
     const hid = pickStr(nested.id);
-    if (ht && hid) highlight = { type: ht, id: hid };
+    const htab = pickStr(nested.tab) ?? undefined;
+    if (ht && hid) highlight = htab ? { type: ht, id: hid, tab: htab } : { type: ht, id: hid };
   }
   if (!highlight) {
     const ht = pickStr(d.highlight_type) as HighlightType | null;
     const hid = pickStr(d.highlight_id);
-    if (ht && hid) highlight = { type: ht, id: hid };
+    const htab = pickStr(d.highlight_tab) ?? undefined;
+    if (ht && hid) highlight = htab ? { type: ht, id: hid, tab: htab } : { type: ht, id: hid };
   }
 
-  // If we already have a standardized payload, return it.
   if (directRoute || highlight) {
     return {
       type: resolvedType,
@@ -184,7 +202,6 @@ export function normalizePayload(
     };
   }
 
-  // Fall back to legacy resolver.
   const legacy = legacyResolve(resolvedType, d);
   return {
     type: resolvedType,

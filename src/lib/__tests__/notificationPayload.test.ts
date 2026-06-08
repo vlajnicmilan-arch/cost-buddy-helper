@@ -28,10 +28,28 @@ describe('normalizePayload', () => {
     expect(p.highlight).toEqual({ type: 'milestone', id: 'M1' });
   });
 
+  it('reads highlight.tab from nested DB payload', () => {
+    const p = normalizePayload('milestone_deadline', {
+      route: '/projects?id=P1',
+      highlight: { type: 'milestone', id: 'M1', tab: 'phases' },
+    });
+    expect(p.highlight).toEqual({ type: 'milestone', id: 'M1', tab: 'phases' });
+  });
+
+  it('reads highlight_tab from flat FCM payload', () => {
+    const p = normalizePayload('overdue_invoice', {
+      route: '/projects?id=P1',
+      highlight_type: 'invoice',
+      highlight_id: 'I1',
+      highlight_tab: 'funding',
+    });
+    expect(p.highlight).toEqual({ type: 'invoice', id: 'I1', tab: 'funding' });
+  });
+
   it('falls back to legacy mapping for project_transaction without route', () => {
     const p = normalizePayload('project_transaction', { project_id: 'P1', expense_id: 'E1' });
     expect(p.route).toBe('/projects?id=P1');
-    expect(p.highlight).toEqual({ type: 'expense', id: 'E1' });
+    expect(p.highlight).toEqual({ type: 'expense', id: 'E1', tab: 'transactions' });
     expect(p.fallback_route).toBe('/projects');
   });
 
@@ -50,15 +68,35 @@ describe('normalizePayload', () => {
     expect(p.highlight).toEqual({ type: 'expense', id: 'E2' });
   });
 
-  it('legacy milestone_deadline highlights milestone', () => {
+  it('legacy milestone_deadline maps to phases tab', () => {
     const p = normalizePayload('milestone_deadline', { project_id: 'P1', milestone_id: 'M1' });
     expect(p.route).toBe('/projects?id=P1');
-    expect(p.highlight).toEqual({ type: 'milestone', id: 'M1' });
+    expect(p.highlight).toEqual({ type: 'milestone', id: 'M1', tab: 'phases' });
   });
 
-  it('legacy overdue_invoice highlights invoice', () => {
+  it('legacy milestone_budget maps to phases tab', () => {
+    const p = normalizePayload('milestone_budget', { project_id: 'P1', milestone_id: 'M2' });
+    expect(p.highlight).toEqual({ type: 'milestone', id: 'M2', tab: 'phases' });
+  });
+
+  it('legacy overdue_invoice maps to funding tab', () => {
     const p = normalizePayload('overdue_invoice', { project_id: 'P1', invoice_id: 'I1' });
-    expect(p.highlight).toEqual({ type: 'invoice', id: 'I1' });
+    expect(p.highlight).toEqual({ type: 'invoice', id: 'I1', tab: 'funding' });
+  });
+
+  it('legacy project_activity maps to activity tab', () => {
+    const p = normalizePayload('project_activity', { project_id: 'P1' });
+    expect(p.highlight).toEqual({ type: 'project', id: 'P1', tab: 'activity' });
+  });
+
+  it('legacy note_added maps to activity tab', () => {
+    const p = normalizePayload('note_added', { project_id: 'P1', note_id: 'N1' });
+    expect(p.highlight).toEqual({ type: 'note', id: 'N1', tab: 'activity' });
+  });
+
+  it('legacy project_loss_zone maps to overview tab', () => {
+    const p = normalizePayload('project_loss_zone', { project_id: 'P1' });
+    expect(p.highlight).toEqual({ type: 'project', id: 'P1', tab: 'overview' });
   });
 
   it('legacy app_update resolves to /install', () => {

@@ -49,6 +49,14 @@ export function HighlightTarget() {
     const pending = peekPendingHighlight();
     if (!pending) return;
 
+    // Reminder/calendar event nemaju realan DOM marker (mjesečni grid nije
+    // per-reminder). Otvorimo kalendar bez 8s timeouta i bez lažne poruke
+    // "Stavka više nije dostupna".
+    if (pending.type === 'reminder') {
+      clearPendingHighlight();
+      return;
+    }
+
     let cancelled = false;
     let observer: MutationObserver | null = null;
     let timeout: number | null = null;
