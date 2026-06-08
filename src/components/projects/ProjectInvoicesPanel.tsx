@@ -130,7 +130,7 @@ export const ProjectInvoicesPanel = ({ projectId, compact = false, isReadOnly = 
             const total = Number(inv.total_amount) || 0;
             const pct = total > 0 ? Math.min(100, Math.round((paidAmount / total) * 100)) : 0;
             return (
-              <div key={inv.id} className="p-3 rounded-lg border bg-card">
+              <div key={inv.id} data-highlight-id={`invoice:${inv.id}`} className="p-3 rounded-lg border bg-card">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">

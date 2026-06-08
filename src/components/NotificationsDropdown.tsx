@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNotificationNavigation } from '@/hooks/useNotificationNavigation';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -143,26 +144,7 @@ export const NotificationsDropdown = () => {
     loadProjectContext();
   }, [invitationDialog, user]);
 
-  const getNavigationTarget = (type: string, data: Record<string, unknown>) => {
-    switch (type) {
-      case 'project_transaction':
-      case 'note_added':
-        return { path: '/projects', state: { openProjectId: data.project_id, openExpenseId: data.expense_id } };
-      case 'budget_alert':
-      case 'budget_burn':
-        return { path: '/budgets', state: { openBudgetId: data.budget_id } };
-      case 'project_loss_zone':
-        return { path: '/projects', state: { openProjectId: data.project_id, from: '/home' } };
-      case 'payment_source_transaction':
-        return { path: '/', state: { openExpenseId: data.expense_id } };
-      case 'app_update':
-        return { path: '/install', state: { version: data.version, apkUrl: data.apkUrl } };
-      case 'invitation_accepted':
-        return null;
-      default:
-        return null;
-    }
-  };
+  const { navigateFromNotification } = useNotificationNavigation();
 
   const handleNotificationClick = async (notification: Notification) => {
     const isInvitation = isInvitationNotification(notification.type);
@@ -189,22 +171,22 @@ export const NotificationsDropdown = () => {
       await markAsRead(notification.id);
     }
 
-    const target = getNavigationTarget(notification.type, data);
-    if (target) {
-      setOpen(false);
-      navigate(target.path, { state: target.state });
-      return;
+    // Issue-type notifications without a direct route: open AI assistant.
+    if (notification.type === 'overdue_invoice' || notification.type === 'cashflow_risk') {
+      const hasRouteData = (data?.project_id || data?.invoice_id);
+      if (!hasRouteData) {
+        const titleVars = (data?.title_vars as Record<string, unknown>) ?? {};
+        const messageVars = (data?.message_vars as Record<string, unknown>) ?? {};
+        const title = resolveNotificationText(notification.title, titleVars, t);
+        const message = resolveNotificationText(notification.message, messageVars, t);
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent('ai-assistant:ask', { detail: { prompt: `${title} — ${message}` } }));
+        return;
+      }
     }
 
-    // Fallback for issue-type notifications without a direct route (overdue_invoice, cashflow_risk)
-    if (notification.type === 'overdue_invoice' || notification.type === 'cashflow_risk') {
-      const titleVars = (data?.title_vars as Record<string, unknown>) ?? {};
-      const messageVars = (data?.message_vars as Record<string, unknown>) ?? {};
-      const title = resolveNotificationText(notification.title, titleVars, t);
-      const message = resolveNotificationText(notification.message, messageVars, t);
-      setOpen(false);
-      window.dispatchEvent(new CustomEvent('ai-assistant:ask', { detail: { prompt: `${title} — ${message}` } }));
-    }
+    setOpen(false);
+    navigateFromNotification(notification.type, data);
   };
 
   const handleRespondToInvitation = async (action: 'accept' | 'decline') => {

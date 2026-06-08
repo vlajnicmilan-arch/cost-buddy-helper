@@ -180,6 +180,7 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
       className="relative overflow-hidden rounded-lg"
       data-testid="transaction-row"
       data-expense-id={expense.id}
+      data-highlight-id={`expense:${expense.id}`}
     >
       {/* Delete background — revealed on swipe */}
       <motion.div

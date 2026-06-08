@@ -2,52 +2,10 @@
 // Used outside React context (e.g. from SettingsDialog handlers).
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizePayload } from '@/lib/notificationPayload';
+import { setPendingHighlight } from '@/lib/pendingHighlight';
 
 let listenersAttached = false;
-
-/**
- * Map push notification `data` payload to an in-app route.
- * Each notify-* edge function sets `data.type` (and relevant ids) so the
- * device can deep-link the user to the correct screen on tap.
- */
-function resolveRouteFromPushData(data: Record<string, string | undefined>): string | null {
-  const type = data.type;
-  if (!type) return null;
-
-  switch (type) {
-    case 'project_transaction':
-    case 'project_note_added':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'project_invitation':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'project_member_joined':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'milestone_deadline':
-    case 'milestone_budget':
-      return data.project_id ? `/projects?id=${data.project_id}` : '/projects';
-    case 'pending_transaction':
-    case 'pending_auto_rejected':
-      return '/';
-    case 'payment_source_transaction':
-      return data.payment_source_id ? `/wallet?source=${data.payment_source_id}` : '/wallet';
-    case 'payment_source_invitation':
-      return '/wallet';
-    case 'budget_alert':
-    case 'budget_invitation':
-      return data.budget_id ? `/budgets?id=${data.budget_id}` : '/budgets';
-    case 'reminder':
-    case 'calendar_event':
-      return '/calendar';
-    case 'trial_reminder':
-      return '/paywall';
-    case 'app_update':
-      return '/install';
-    case 'broadcast':
-      return data.url ?? '/';
-    default:
-      return null;
-  }
-}
 
 export async function registerNativePush(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
@@ -113,12 +71,18 @@ export async function registerNativePush(): Promise<boolean> {
         console.log('[Push] Tapped:', a);
         try {
           const data = (a?.notification?.data ?? {}) as Record<string, string | undefined>;
-          const route = resolveRouteFromPushData(data);
+          // Standardized payload: route + highlight come from the edge function,
+          // with legacy fallback inside normalizePayload for old notifications.
+          const payload = normalizePayload(data.type ?? null, data as Record<string, unknown>);
+          const route = payload.route ?? payload.fallback_route;
+          if (payload.highlight) {
+            // Set BEFORE navigation so cold-start App mount finds it immediately.
+            setPendingHighlight(payload.highlight, route);
+          }
           if (route && typeof window !== 'undefined') {
-            // Use hash-safe navigation. window.location.assign forces a full
-            // route change which works regardless of where React Router is.
-            // Small timeout lets the OS finish bringing the app to foreground.
-            setTimeout(() => { window.location.assign(route); }, 80);
+            // window.location.replace handles both cold start (no router yet)
+            // and warm tap. Small delay lets the OS bring the app to foreground.
+            setTimeout(() => { window.location.replace(route); }, 80);
           }
         } catch (e) {
           console.error('[Push] tap navigation error:', e);

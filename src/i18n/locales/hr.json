@@ -2227,6 +2227,7 @@
   },
   "notifications": {
     "title": "Obavijesti",
+    "itemNotAvailable": "Stavka više nije dostupna",
     "markAllRead": "Označi sve",
     "empty": "Nemate obavijesti",
     "delete": "Obriši",
