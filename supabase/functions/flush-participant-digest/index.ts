@@ -1,16 +1,12 @@
-// Daily flush of participant_digest_state.
-// - Triggered by pg_cron at 19:00 UTC.
-// - Per (user_id, project_id) row with pending_count > 0 AND
-//   (last_sent_at IS NULL OR last_sent_at < now() - 20h),
-//   atomically drains pending events via drain_participant_digest RPC,
-//   then sends ONE push per project space ("po prostoru") with a short summary.
-// - Best-effort: a push failure does NOT roll back the drain — events are
-//   considered "delivered as digest" once we have called the function once
-//   per (user, project) per day.
-//
-// Recipient-type independent: enqueue_participant_digest_event already adds
-// every recipient (owner + members minus actor); this function does not
-// re-segment by role.
+// Hourly flush of participant_digest_state.
+// - Cron pings this function every hour on the hour.
+// - For each due (user, project), checks the user's local hour vs their
+//   `notification_preferences.participant_digest_hour` (default 19).
+//   Only users whose local hour matches AND who have
+//   `participant_digest_enabled = true` get drained.
+// - Sends ONE push per (user, project) per day.
+// - Test mode (POST { test:true }) bypasses tz/cooldown gates and pushes
+//   immediately to the caller — used by the Settings test button.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendPushNotificationToMany } from "../_shared/sendPushNotification.ts";
@@ -23,14 +19,15 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Min interval between digest sends per (user, project). Cron is daily, but
-// keep an explicit guard so manual invocations cannot double-send.
 const MIN_INTERVAL_HOURS = 20;
+const DEFAULT_HOUR = 19;
+const DEFAULT_TZ = "Europe/Zagreb";
 
 interface PendingRow {
   user_id: string;
   project_id: string;
   pending_count: number;
+  last_sent_at: string | null;
 }
 
 interface ProjectMeta {
@@ -45,16 +42,27 @@ interface DrainedRow {
   pending_summary: unknown;
 }
 
+function localHourForTz(tz: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      hour: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date());
+    const h = parts.find((p) => p.type === "hour")?.value ?? "0";
+    return parseInt(h, 10);
+  } catch {
+    return new Date().getUTCHours();
+  }
+}
+
 function buildSummaryBody(count: number, summary: unknown[]): string {
-  // Sažeta poruka: ukupan broj + prve 3 stavke ako su strukturirane.
   if (count <= 0) return "Nema novih događaja.";
   const headline = count === 1
     ? "1 nova promjena u projektu"
     : `${count} novih promjena u projektu`;
 
-  if (!Array.isArray(summary) || summary.length === 0) {
-    return headline;
-  }
+  if (!Array.isArray(summary) || summary.length === 0) return headline;
   const sample = summary
     .slice(0, 3)
     .map((evt) => {
@@ -73,21 +81,17 @@ function buildSummaryBody(count: number, summary: unknown[]): string {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const startedAt = Date.now();
   let dueCount = 0;
   let sentCount = 0;
   let errorCount = 0;
+  let tzSkipped = 0;
+  let optOutSkipped = 0;
 
   // --- Test mode ---------------------------------------------------------
-  // Body: { test: true } → require Authorization header, scope strictly to
-  // the caller's user_id, bypass 20h cooldown, and auto-enqueue a synthetic
-  // event into one of the caller's projects if no pending row exists yet.
-  // This closes the QA loop: enqueue → drain → push with one click.
   let testMode = false;
   let testUserId: string | null = null;
   let testProjectIdHint: string | null = null;
@@ -95,10 +99,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (req.method === "POST") {
       const raw = await req.text();
       if (raw) {
-        const parsed = JSON.parse(raw) as {
-          test?: boolean;
-          project_id?: string;
-        };
+        const parsed = JSON.parse(raw) as { test?: boolean; project_id?: string };
         if (parsed?.test === true) {
           const authHeader = req.headers.get("Authorization");
           if (!authHeader?.startsWith("Bearer ")) {
@@ -132,28 +133,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Test bootstrap: ensure caller has a pending row to drain.
+    // Test mode bootstrap: synthetic event in a project the caller has.
     if (testMode && testUserId) {
-      // Pick a project: explicit hint > most recent owned/joined project.
       let projectId = testProjectIdHint;
       if (!projectId) {
         const { data: ownProj } = await admin
-          .from("projects")
-          .select("id, created_at")
+          .from("projects").select("id, created_at")
           .eq("user_id", testUserId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (ownProj?.id) {
-          projectId = ownProj.id;
-        } else {
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (ownProj?.id) projectId = ownProj.id;
+        else {
           const { data: memProj } = await admin
-            .from("project_members")
-            .select("project_id, created_at")
+            .from("project_members").select("project_id, created_at")
             .eq("user_id", testUserId)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
           projectId = memProj?.project_id ?? null;
         }
       }
@@ -163,8 +156,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      // Inject a synthetic pending event directly (bypass enqueue RPC which
-      // filters out the actor — in test we WANT to push to the caller).
       await admin
         .from("participant_digest_state")
         .upsert({
@@ -182,12 +173,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
         }, { onConflict: "user_id,project_id" });
     }
 
-    // 1) Collect due rows. In test mode: only the caller's rows, no cooldown.
+    // 1) Due rows (pending > 0, cooldown respected unless test).
     let query = admin
       .from("participant_digest_state")
       .select("user_id, project_id, pending_count, last_sent_at")
       .gt("pending_count", 0)
-      .limit(1000);
+      .limit(2000);
 
     if (testMode && testUserId) {
       query = query.eq("user_id", testUserId);
@@ -202,35 +193,69 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (dueCount === 0) {
       return new Response(
-        JSON.stringify({
-          success: true,
-          due: 0,
-          sent: 0,
-          test_mode: testMode,
-          took_ms: Date.now() - startedAt,
-        }),
+        JSON.stringify({ success: true, due: 0, sent: 0, test_mode: testMode, took_ms: Date.now() - startedAt }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // 2) Pre-fetch project metadata in batch.
+    // 2) Pre-fetch tz prefs (skip in test mode — bypass gates).
+    const userIds = Array.from(new Set((due as PendingRow[]).map((r) => r.user_id)));
+    const prefsByUser = new Map<string, { tz: string; hour: number; enabled: boolean }>();
+
+    if (!testMode) {
+      const { data: profs } = await admin
+        .from("profiles")
+        .select("user_id, timezone")
+        .in("user_id", userIds);
+      const tzByUser = new Map<string, string>(
+        (profs ?? []).map((p: { user_id: string; timezone: string | null }) => [p.user_id, p.timezone || DEFAULT_TZ]),
+      );
+
+      const { data: prefRows } = await admin
+        .from("notification_preferences")
+        .select("user_id, participant_digest_enabled, participant_digest_hour")
+        .in("user_id", userIds);
+      const prefMap = new Map<string, { enabled: boolean; hour: number }>(
+        (prefRows ?? []).map((r: { user_id: string; participant_digest_enabled: boolean | null; participant_digest_hour: number | null }) => [
+          r.user_id,
+          {
+            enabled: r.participant_digest_enabled ?? true,
+            hour: r.participant_digest_hour ?? DEFAULT_HOUR,
+          },
+        ]),
+      );
+
+      for (const uid of userIds) {
+        prefsByUser.set(uid, {
+          tz: tzByUser.get(uid) ?? DEFAULT_TZ,
+          hour: prefMap.get(uid)?.hour ?? DEFAULT_HOUR,
+          enabled: prefMap.get(uid)?.enabled ?? true,
+        });
+      }
+    }
+
+    // 3) Project meta batch.
     const projectIds = Array.from(new Set((due as PendingRow[]).map((r) => r.project_id)));
     const { data: projects } = await admin
-      .from("projects")
-      .select("id, name, icon, color")
-      .in("id", projectIds);
+      .from("projects").select("id, name, icon, color").in("id", projectIds);
     const projectById = new Map<string, ProjectMeta>(
       (projects ?? []).map((p: ProjectMeta) => [p.id, p]),
     );
 
-    // 3) Per row: drain → send push (best-effort).
+    // 4) Per row: tz/opt-out gate → drain → push.
     for (const row of due as PendingRow[]) {
+      if (!testMode) {
+        const prefs = prefsByUser.get(row.user_id);
+        if (!prefs) continue;
+        if (!prefs.enabled) { optOutSkipped += 1; continue; }
+        const localHour = localHourForTz(prefs.tz);
+        if (localHour !== prefs.hour) { tzSkipped += 1; continue; }
+      }
+
       const project = projectById.get(row.project_id);
       if (!project) {
-        // Project gone (cascaded). Drain anyway so the row resets.
         await admin.rpc("drain_participant_digest", {
-          p_user_id: row.user_id,
-          p_project_id: row.project_id,
+          p_user_id: row.user_id, p_project_id: row.project_id,
         });
         continue;
       }
@@ -245,9 +270,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         continue;
       }
 
-      const snapshot = (Array.isArray(drained) ? drained[0] : drained) as
-        | DrainedRow
-        | undefined;
+      const snapshot = (Array.isArray(drained) ? drained[0] : drained) as DrainedRow | undefined;
       const count = snapshot?.pending_count ?? 0;
       const summary = (snapshot?.pending_summary ?? []) as unknown[];
       if (count <= 0) continue;
@@ -274,8 +297,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       } catch (pushErr) {
         console.error("[flush-participant-digest] push error", row, pushErr);
         errorCount += 1;
-        // Already drained — do not re-enqueue. Acceptable per "best-effort" contract.
       }
+    }
+
+    // Telemetry: one funnel_events row per run with non-zero sent count.
+    try {
+      if (sentCount > 0) {
+        await admin.from("funnel_events").insert({
+          event_name: "digest_sent",
+          platform: "edge",
+          metadata: {
+            source: "flush-participant-digest",
+            due: dueCount,
+            sent: sentCount,
+            tz_skipped: tzSkipped,
+            opt_out_skipped: optOutSkipped,
+            errors: errorCount,
+            test_mode: testMode,
+          },
+        });
+      }
+    } catch (telErr) {
+      console.warn("[flush-participant-digest] funnel log skipped", telErr);
     }
 
     return new Response(
@@ -283,6 +326,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         success: true,
         due: dueCount,
         sent: sentCount,
+        tz_skipped: tzSkipped,
+        opt_out_skipped: optOutSkipped,
         errors: errorCount,
         test_mode: testMode,
         took_ms: Date.now() - startedAt,

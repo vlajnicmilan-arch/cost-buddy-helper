@@ -26,6 +26,8 @@ export interface NotificationPreferences {
   daily_summary_weekend_enabled: boolean;
   family_override_push: boolean;
   family_reactions_push: boolean;
+  participant_digest_enabled: boolean;
+  participant_digest_hour: number;
 }
 
 const DEFAULT_PREFS: NotificationPreferences = {
@@ -41,6 +43,8 @@ const DEFAULT_PREFS: NotificationPreferences = {
   daily_summary_weekend_enabled: true,
   family_override_push: false,
   family_reactions_push: false,
+  participant_digest_enabled: true,
+  participant_digest_hour: 19,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -87,6 +91,8 @@ export const useNotificationPreferences = () => {
           daily_summary_weekend_enabled: data.daily_summary_weekend_enabled ?? true,
           family_override_push: data.family_override_push ?? false,
           family_reactions_push: data.family_reactions_push ?? false,
+          participant_digest_enabled: data.participant_digest_enabled ?? true,
+          participant_digest_hour: data.participant_digest_hour ?? 19,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
@@ -163,5 +169,21 @@ export const useNotificationPreferences = () => {
     [user, prefs],
   );
 
-  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, refetch: fetchPrefs };
+  const setDigestHour = useCallback(async (hour: number) => {
+    if (!user) return;
+    const safe = Math.max(6, Math.min(23, Math.round(hour)));
+    setPrefs((p) => ({ ...p, participant_digest_hour: safe }));
+    try {
+      await (supabase as any)
+        .from('notification_preferences')
+        .upsert(
+          { user_id: user.id, ...prefs, participant_digest_hour: safe },
+          { onConflict: 'user_id' },
+        );
+    } catch (e) {
+      console.error('[notif-prefs] digest hour update failed:', e);
+    }
+  }, [user, prefs]);
+
+  return { prefs, loading, setCategory, setWeekendEnabled, setFlag, setDigestHour, refetch: fetchPrefs };
 };
