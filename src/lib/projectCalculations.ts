@@ -1,14 +1,14 @@
 /**
  * Unified project financial calculations.
- * All three views (ProjectsPanel, ProjectFullScreenView, BusinessProjects) use these functions
- * to ensure the "Spent" / "Income" / "Balance" numbers are always identical.
  *
- * Rules:
+ * Rules (F1–F5 — Option A: funding is NOT income):
  * - Only `status = 'approved'` (or null) transactions are counted
  * - Transfers (`type = 'transfer'`) are excluded
  * - Manual balance corrections (`expense_nature = 'correction'`) are excluded
- * - Spent = sum of approved EXPENSE transactions
- * - Income = sum of approved INCOME transactions + project_funding allocations
+ * - Spent  = sum of approved EXPENSE transactions (with advance/invoice netting)
+ * - Income = sum of approved INCOME transactions ONLY
+ *            `project_funding.allocated_amount` is "Planirano financiranje" and
+ *            MUST NOT be summed into Income / Balance / Collection.
  */
 
 export interface RawProjectExpense {
@@ -33,16 +33,14 @@ const isCounted = (e: RawProjectExpense): boolean => {
   return true;
 };
 
+/** Exposed for hooks that need the same filter against in-memory rows. */
+export const isCountedProjectTransaction = isCounted;
+
 /**
  * Net amount of an expense after subtracting linked advances.
- * - For an advance itself: returns 0 (it is "consumed" by the final invoice that links it,
- *   if any). If unlinked, the advance still counts at its full amount (real cash out).
- * - For a final invoice: returns max(amount - sum(linked advances), 0).
- *   Surplus (when advances exceed invoice) is handled by business_debts elsewhere.
- * - For everything else: returns raw amount.
- *
- * This eliminates double-counting when both an advance and a final invoice exist for the
- * same job (e.g. 500 advance + 3640 final invoice → net 3141, not 4140).
+ * - Advance linked to a final invoice → 0 (consumed). Unlinked advance → full amount.
+ * - Final invoice → max(amount - sum(linked advances), 0).
+ * - Anything else → raw amount.
  */
 export const calculateNetExpenseAmount = (
   expense: RawProjectExpense,
@@ -50,7 +48,6 @@ export const calculateNetExpenseAmount = (
 ): number => {
   const amount = Number(expense.amount || 0);
   if (expense.is_advance) {
-    // Is this advance linked to any final invoice in the set?
     const linked = allExpenses.some(e =>
       !e.is_advance &&
       Array.isArray(e.linked_advance_ids) &&
@@ -84,18 +81,20 @@ export const calculateFundingTotal = (funding: RawFundingRow[]): number => {
   return funding.reduce((sum, f) => sum + Number(f.allocated_amount || 0), 0);
 };
 
-export const calculateProjectIncome = (
-  expenses: RawProjectExpense[],
-  funding: RawFundingRow[]
-): number => {
-  return calculateProjectIncomeFromTransactions(expenses) + calculateFundingTotal(funding);
+/**
+ * Realized project income (Option A).
+ * Funding is intentionally NOT included — it is a separate KPI ("Planirano").
+ */
+export const calculateProjectIncome = (expenses: RawProjectExpense[]): number => {
+  return calculateProjectIncomeFromTransactions(expenses);
 };
 
-export const calculateProjectBalance = (
-  expenses: RawProjectExpense[],
-  funding: RawFundingRow[]
-): number => {
-  return calculateProjectIncome(expenses, funding) - calculateProjectSpent(expenses);
+/**
+ * Realized cashflow balance = realized income − spent.
+ * Funding is excluded (Option A).
+ */
+export const calculateProjectBalance = (expenses: RawProjectExpense[]): number => {
+  return calculateProjectIncome(expenses) - calculateProjectSpent(expenses);
 };
 
 export const calculateProjectProgress = (
@@ -107,7 +106,7 @@ export const calculateProjectProgress = (
 };
 
 // ─────────────────────────────────────────────────────────────────────
-// Accrual / Contract-based calculations (dual P&L view)
+// Accrual / Contract-based calculations
 // ─────────────────────────────────────────────────────────────────────
 
 export interface RawProjectForContract {
@@ -115,11 +114,6 @@ export interface RawProjectForContract {
   total_budget?: number | string | null;
 }
 
-/**
- * Resolves the project's contracted value (accrual basis).
- * Falls back to total_budget when contract_value is not set.
- * Returns 0 only when both are missing/zero.
- */
 export const calculateContractValue = (project: RawProjectForContract | null | undefined): number => {
   if (!project) return 0;
   const cv = Number(project.contract_value || 0);
@@ -127,10 +121,6 @@ export const calculateContractValue = (project: RawProjectForContract | null | u
   return Number(project.total_budget || 0);
 };
 
-/**
- * Expected profit = contract value − all incurred costs (cash basis spent).
- * Use this for "how profitable is this contract as a whole".
- */
 export const calculateExpectedProfit = (
   project: RawProjectForContract | null | undefined,
   expenses: RawProjectExpense[]
@@ -139,45 +129,35 @@ export const calculateExpectedProfit = (
 };
 
 /**
- * Collection progress = collected income / contract value × 100.
- * Caps at 100. Returns 0 when contract value is 0.
+ * Collection progress = realized income / contract value × 100 (capped at 100).
+ * Funding is NOT counted as collected (Option A).
  */
 export const calculateCollectionProgress = (
   project: RawProjectForContract | null | undefined,
-  expenses: RawProjectExpense[],
-  funding: RawFundingRow[] = []
+  expenses: RawProjectExpense[]
 ): number => {
   const contract = calculateContractValue(project);
   if (contract <= 0) return 0;
-  const collected = calculateProjectIncome(expenses, funding);
+  const collected = calculateProjectIncome(expenses);
   return Math.min((collected / contract) * 100, 100);
 };
 
 /**
- * Remaining amount to collect from the client (contract − collected income).
- * Never negative.
+ * Remaining to collect = contract − realized income, floored at 0.
+ * Funding is NOT counted as collected (Option A).
  */
 export const calculateRemainingToCollect = (
   project: RawProjectForContract | null | undefined,
-  expenses: RawProjectExpense[],
-  funding: RawFundingRow[] = []
+  expenses: RawProjectExpense[]
 ): number => {
   const contract = calculateContractValue(project);
-  const collected = calculateProjectIncome(expenses, funding);
+  const collected = calculateProjectIncome(expenses);
   return Math.max(contract - collected, 0);
 };
 
 /**
  * Computes the new contract value after applying a scope-change amendment.
- *
- * Baseline rule (regression test target):
- * - When contract_value > 0, amendments stack on top of it.
- * - When contract_value is null/0, total_budget is used as the baseline so the
- *   original contract isn't lost (otherwise amendments would accumulate from 0).
- * - When both are missing/0, baseline is 0 and only the amendment remains.
- *
- * Amendments are signed: positive grows the contract, negative reduces it.
- * Result is clamped at 0 so the contract can never go below zero.
+ * Baseline = contract_value if > 0, else total_budget, else 0. Result floored at 0.
  */
 export const applyContractAmendment = (
   contractValue: number | string | null | undefined,
@@ -190,4 +170,3 @@ export const applyContractAmendment = (
   const baseline = cv > 0 ? cv : tb;
   return Math.max(baseline + delta, 0);
 };
-

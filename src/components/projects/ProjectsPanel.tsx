@@ -150,18 +150,19 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
 
     for (const project of projects) {
       const projExpenses = allExpenses.filter((e: any) => e.project_id === project.id);
-      const projFunding = allFunding.filter((f: any) => f.project_id === project.id);
       const projMilestones = allMilestones.filter((m: any) => m.project_id === project.id);
       const memberCount = allMembers.filter((m: any) => m.project_id === project.id).length;
 
       stats[project.id] = {
         spent: calculateProjectSpent(projExpenses),
-        income: calculateProjectIncome(projExpenses, projFunding),
+        // F3 (Option A): realized income only — funding is a separate KPI, not income.
+        income: calculateProjectIncome(projExpenses),
         memberCount,
         milestoneCount: projMilestones.length,
         milestones: projMilestones.map((m: any) => ({ status: m.status, due_date: m.due_date })),
       };
     }
+    void allFunding;
 
     setProjectStats(stats);
   }, [projects]);
