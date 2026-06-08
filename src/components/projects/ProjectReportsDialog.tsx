@@ -131,10 +131,9 @@ export const ProjectReportsDialog = ({
   // F6 — Reports must show the REAL spent per milestone (no "completed → budget"
   // substitution). Otherwise overrun on a completed milestone is hidden.
   const completedMilestones = milestones.filter(m => m.status === 'completed');
-  const spentFromCompletedMilestones = completedMilestones.reduce(
-    (sum, m) => sum + (m.spent || 0),
-    0
-  );
+  void completedMilestones; // kept for potential downstream use
+
+
 
   // Calculate spending by milestone (chart) — real expense sum from approved/non-transfer/non-correction rows
   const spendingByMilestone = useMemo(() => {
