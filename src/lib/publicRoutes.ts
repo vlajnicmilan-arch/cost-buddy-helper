@@ -31,7 +31,6 @@ const PUBLIC_ROUTES: ReadonlyArray<string> = [
 const PUBLIC_ROUTE_PREFIXES: ReadonlyArray<string> = [
   "/join-project/",
   "/join-budget/",
-  "/join-family/",
   "/p/",
 ];
 
