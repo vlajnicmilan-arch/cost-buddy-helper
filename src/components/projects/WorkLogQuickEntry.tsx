@@ -18,8 +18,12 @@ interface WorkLogQuickEntryProps {
 export const WorkLogQuickEntry = ({ open, onOpenChange, projectId, onSaved, project, isReadOnly }: WorkLogQuickEntryProps) => {
   const { create } = useProjectWorkLogs(projectId);
   const { milestones } = useProjectMilestones(projectId);
+  // QuickEntry is invoked only from worker/member/owner contexts; allow the
+  // narrow own-work-log exception so 'participant' accessLevel doesn't block it.
   const { guard } = useProjectWriteGuard(
-    isReadOnly !== undefined ? { isReadOnly } : { project: project ?? null },
+    isReadOnly !== undefined
+      ? { isReadOnly, allowOwnWorkLog: true }
+      : { project: project ?? null, allowOwnWorkLog: true },
   );
 
   return (

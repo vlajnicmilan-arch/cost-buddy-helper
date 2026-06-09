@@ -15,43 +15,30 @@ interface UseProjectWriteGuardInput {
   isReadOnly?: boolean | null;
   /** Project descriptor; hook derives accessLevel + isReadOnly automatically. */
   project?: ProjectInput | null;
+  /**
+   * Opt-in narrow exception: callers performing own-work-log writes (worker/member)
+   * may proceed even when accessLevel === 'participant'. Owner-readonly remains blocked.
+   */
+  allowOwnWorkLog?: boolean;
 }
 
 export interface ProjectWriteGuard {
   isReadOnly: boolean;
   accessLevel: ProjectAccessLevel | null;
-  /**
-   * Returns true when write is allowed. Otherwise shows the standardized
-   * read-only toast and returns false. Use inside onClick / onSubmit:
-   *
-   *   const handleSave = () => { if (!guard()) return; ...do write }
-   */
   guard: () => boolean;
-  /**
-   * Wraps any async/sync action so it bails out + toasts when read-only.
-   */
   guardedAction: <Args extends any[], R>(fn: (...a: Args) => R) => (...a: Args) => R | undefined;
-  /**
-   * Spread on Buttons that should stay visible-but-disabled in read-only mode:
-   *   <Button {...blockProps} onClick={guardedAction(handleClick)}>
-   */
   blockProps: { disabled: boolean; 'aria-disabled': boolean; title?: string };
 }
 
-/**
- * Centralised UX gate for Projects domain write paths (Module Access Model v2).
- * RLS remains the second line of defense — this hook only ensures the user
- * sees a consistent, localized message instead of a raw 42501 error.
- *
- * Two ways to call:
- *   useProjectWriteGuard({ isReadOnly })          // when caller already knows
- *   useProjectWriteGuard({ project })             // hook derives via useProjectAccessLevel
- */
 export function useProjectWriteGuard(input: UseProjectWriteGuardInput = {}): ProjectWriteGuard {
   const { t } = useTranslation();
   const derivedLevel = useProjectAccessLevel(input.project ?? null);
   const accessLevel: ProjectAccessLevel | null = input.project ? derivedLevel : null;
-  const isReadOnly = isProjectReadOnly({ isReadOnly: input.isReadOnly, accessLevel });
+  const isReadOnly = isProjectReadOnly({
+    isReadOnly: input.isReadOnly,
+    accessLevel,
+    allowOwnWorkLog: input.allowOwnWorkLog,
+  });
 
   const guard = useCallback((): boolean => {
     if (!isReadOnly) return true;

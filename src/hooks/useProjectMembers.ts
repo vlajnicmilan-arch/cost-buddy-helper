@@ -48,26 +48,30 @@ export const useProjectMembers = (projectId: string | null) => {
       const memberRole = (currentMember?.role as string | undefined) ?? null;
       setCurrentRole(isCurrentOwner ? 'owner' : memberRole);
 
-      // Profiles for members + owner
-      const userIds = new Set<string>((membersData || []).map(m => m.user_id));
-      if (ownerUserId) userIds.add(ownerUserId);
-      let profilesMap = new Map<string, string>();
-      if (userIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, display_name')
-          .in('user_id', Array.from(userIds));
-        profiles?.forEach(p => {
-          profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
-        });
+      // Profiles for members + owner — fetched via SECURITY DEFINER RPC because
+      // the public `profiles` SELECT policy only exposes the caller's own row.
+      // RPC enforces that caller is owner/member of the project before returning rows.
+      const profilesMap = new Map<string, string>();
+      const { data: profileRows, error: profilesErr } = await (supabase as any).rpc(
+        'get_project_member_profiles',
+        { _project_id: projectId },
+      );
+      if (profilesErr) {
+        console.warn('[useProjectMembers] profiles RPC failed', profilesErr);
       }
+      (profileRows || []).forEach((row: { user_id: string; display_name: string | null }) => {
+        const name = (row.display_name || '').trim();
+        if (name) profilesMap.set(row.user_id, name);
+      });
+      const fallbackName = (uid: string) =>
+        profilesMap.get(uid) || `#${uid.slice(0, 6)}`;
 
       const persisted: ProjectMember[] = (membersData || []).map(m => ({
         ...m,
         role: m.role as ProjectRoleKey,
         member_context: ((m as any).member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
         member_business_profile_id: (m as any).member_business_profile_id ?? null,
-        display_name: profilesMap.get(m.user_id) || 'Nepoznato'
+        display_name: fallbackName(m.user_id),
       }));
 
       // Synthesize owner virtual row (owner is NOT in project_members anymore).
@@ -86,6 +90,7 @@ export const useProjectMembers = (projectId: string | null) => {
           ...persisted,
         ];
       }
+
 
       setMembers(combined);
 

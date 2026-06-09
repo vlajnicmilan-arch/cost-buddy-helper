@@ -37,18 +37,17 @@ export const useProjectWorkLogs = (projectId: string | null) => {
         .eq('project_id', projectId);
       const msMap = new Map<string, string>((msRows || []).map((m: any) => [m.id, m.name]));
 
-      // 3) profile names for authors
-      const userIds = Array.from(
-        new Set((logRows || []).map((r: any) => r.user_id).filter(Boolean))
-      ) as string[];
+      // 3) profile names for authors — via SECURITY DEFINER RPC because
+      // global profiles SELECT policy hides other users' rows.
       const nameMap = new Map<string, string>();
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, display_name')
-          .in('user_id', userIds);
-        profiles?.forEach((p: any) => nameMap.set(p.user_id, p.display_name || ''));
-      }
+      const { data: profileRows } = await (supabase as any).rpc(
+        'get_project_member_profiles',
+        { _project_id: projectId },
+      );
+      (profileRows || []).forEach((p: { user_id: string; display_name: string | null }) => {
+        const n = (p.display_name || '').trim();
+        if (n) nameMap.set(p.user_id, n);
+      });
 
       const enriched: ProjectWorkLog[] = (logRows || []).map((r: any) => ({
         ...r,

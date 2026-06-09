@@ -31,14 +31,22 @@ interface ProjectWorkLogTabProps {
   isManager: boolean;
   projectName?: string;
   isReadOnly?: boolean;
+  /**
+   * Role-based gate: true when caller is owner/member/worker and project
+   * is not under owner-readonly downgrade. Decoupled from coarse isReadOnly,
+   * which conflates subscription state with role-based write rights.
+   */
+  canLogOwnWork?: boolean;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnly = false }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnly = false, canLogOwnWork = false }: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { guard } = useProjectWriteGuard({ isReadOnly });
+  // Worklog-specific write gate: participant may write own work logs.
+  // Owner-readonly (downgrade) still blocks via isReadOnly flag.
+  const { guard } = useProjectWriteGuard({ isReadOnly, allowOwnWorkLog: canLogOwnWork });
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
@@ -143,7 +151,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             <Badge variant="secondary" className="text-[10px]">{filteredLogs.length}</Badge>
           )}
         </h3>
-        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl" disabled={isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
+        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl" disabled={!canLogOwnWork || isReadOnly} title={(!canLogOwnWork || isReadOnly) ? t('projects.access.readOnlyBlockedToast') : undefined}>
           <Plus className="w-4 h-4" />
           {t('workLog.newEntry', 'Novi zapis')}
         </Button>
@@ -252,8 +260,9 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             const totalHours = dayHours.reduce((s, h) => s + h.actual_hours, 0);
             const dayDate = parseISO(log.log_date);
             const isAuthor = log.user_id === user?.id;
-            const canEdit = isAuthor && !isReadOnly;
-            const canDelete = (isAuthor || isManager) && !isReadOnly;
+            // Own-log edit/delete uses role-based gate; cross-log delete needs full owner write.
+            const canEdit = isAuthor && canLogOwnWork && !isReadOnly;
+            const canDelete = (isAuthor && canLogOwnWork && !isReadOnly) || (isManager && !isReadOnly);
 
             return (
               <Card key={log.id} className="overflow-hidden">
