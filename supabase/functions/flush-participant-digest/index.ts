@@ -278,25 +278,49 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const title = `Sažetak: „${project.name}"`;
       const body = buildSummaryBody(count, summary);
 
+      const payloadData = {
+        type: "participant_digest",
+        category: "projects",
+        project_id: project.id,
+        project_name: project.name,
+        project_icon: project.icon,
+        project_color: project.color,
+        event_count: count,
+        route: `/projects?id=${project.id}`,
+        fallback_route: "/projects",
+        highlight_type: "project",
+        highlight_id: project.id,
+        highlight_tab: "activity",
+      };
+
       try {
         await sendPushNotificationToMany([row.user_id], {
           title,
           body,
-          data: {
-            type: "participant_digest",
-            category: "projects",
-            project_id: project.id,
-            project_name: project.name,
-            project_icon: project.icon,
-            project_color: project.color,
-            event_count: count,
-          },
+          data: payloadData,
           source: "flush-participant-digest",
         });
         sentCount += 1;
       } catch (pushErr) {
         console.error("[flush-participant-digest] push error", row, pushErr);
         errorCount += 1;
+      }
+
+      // Bell entry — jedan red po (user, project) digestu, isti payload
+      // kao push da klik u zvonu otvori istu rutu + highlight.
+      if (!testMode) {
+        try {
+          await admin.from("notifications").insert({
+            user_id: row.user_id,
+            type: "participant_digest",
+            title,
+            message: body,
+            data: payloadData,
+            dedup_key: `digest:${project.id}:${new Date().toISOString().slice(0, 10)}`,
+          });
+        } catch (bellErr) {
+          console.warn("[flush-participant-digest] bell insert skipped", row, bellErr);
+        }
       }
     }
 
