@@ -12,6 +12,11 @@ export const useProjectMembers = (projectId: string | null) => {
   const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isManager, setIsManager] = useState(false);
+  // F8–F10: owner detected via projects.user_id (seeded as project_members.role='manager').
+  // Surface separately so destructive actions (delete project, transfer ownership,
+  // promote/demote managers) can distinguish owner from manager.
+  const [isOwner, setIsOwner] = useState(false);
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
 
   const fetchMembers = useCallback(async () => {
     if (!projectId || !user) {
@@ -31,9 +36,20 @@ export const useProjectMembers = (projectId: string | null) => {
 
       if (membersError) throw membersError;
 
-      // Check if current user is manager
+      // Determine owner separately (projects.user_id is the source of truth).
+      const { data: projectRow } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .maybeSingle();
+      const isCurrentOwner = projectRow?.user_id === user.id;
+      setIsOwner(isCurrentOwner);
+
+      // Check if current user is manager (owner is seeded as manager too).
       const currentMember = membersData?.find(m => m.user_id === user.id);
-      const isCurrentManager = currentMember?.role === 'manager';
+      const memberRole = (currentMember?.role as string | undefined) ?? null;
+      setCurrentRole(isCurrentOwner ? 'owner' : memberRole);
+      const isCurrentManager = isCurrentOwner || memberRole === 'manager';
       setIsManager(isCurrentManager);
 
       // Fetch display names
@@ -274,6 +290,8 @@ export const useProjectMembers = (projectId: string | null) => {
     invitations,
     loading,
     isManager,
+    isOwner,
+    currentRole,
     updateMemberRole,
     removeMember,
     cancelInvitation,

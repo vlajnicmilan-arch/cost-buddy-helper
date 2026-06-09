@@ -215,8 +215,10 @@ export const ProjectTransactionsTab = ({
   );
   const reportDateLimits = useMemo(() => getDateRange('report'), []);
 
-  const canAddTransaction = isManager || userRole === 'member' || userRole === 'viewer';
-  const needsApproval = userRole === 'viewer';
+  // F8–F10: viewer is strictly read-only (no pending either); worker manages only own work.
+  // Approved write: manager (incl. owner) or regular member.
+  const canAddTransaction = isManager || userRole === 'member';
+  const needsApproval = false;
 
   const resetForm = () => {
     setExpenseType('expense');
