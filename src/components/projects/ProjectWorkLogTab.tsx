@@ -156,7 +156,7 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             <Badge variant="secondary" className="text-[10px]">{filteredLogs.length}</Badge>
           )}
         </h3>
-        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl" disabled={!canLogOwnWork || isReadOnly} title={(!canLogOwnWork || isReadOnly) ? t('projects.access.readOnlyBlockedToast') : undefined}>
+        <Button size="sm" onClick={openCreate} className="gap-1 rounded-xl" disabled={!canWorklog} title={!canWorklog ? t('projects.access.readOnlyBlockedToast') : undefined}>
           <Plus className="w-4 h-4" />
           {t('workLog.newEntry', 'Novi zapis')}
         </Button>
