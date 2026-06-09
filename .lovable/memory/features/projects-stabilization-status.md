@@ -33,6 +33,11 @@ type: feature
 - **Code invariante:** `ProjectRole = 'member'|'viewer'|'worker'`, `ProjectRoleKey = 'owner'|ProjectRole`. Owner se sintetizira u `useProjectMembers` (virtual row). `isManager` ostaje kao backwards-compat alias za `isOwner` u hooku — semantika identična.
 - **Verifikacija (09.06.2026):** DB query potvrđuje 0 redova s `role='manager'`, postoje samo `member`/`worker`/`viewer`; CHECK constraints aktivni; postojeći projekti se učitavaju.
 
+### Post-Option-A hotfixevi (09.06.2026)
+- **Hotfix A — "Nepoznato" u Team tabu / work log autorima.** Root cause: globalna `profiles` SELECT policy je `auth.uid() = user_id`, pa klijent nije mogao čitati `display_name` drugih članova. Fix: uska SECURITY DEFINER funkcija `public.get_project_member_profiles(_project_id)` — vraća `(user_id, display_name)` za ownera + članove, samo ako je pozivatelj owner/član projekta. `EXECUTE` revokano od PUBLIC, dodijeljeno `authenticated` + `service_role`. `useProjectMembers` i `useProjectWorkLogs` koriste RPC umjesto direktnog selecta. Fallback ime kad profil postoji ali je prazan: `#<uid prefix>`, NIKAD "Nepoznato".
+- **Hotfix B — worker ne može unijeti dnevnik rada.** Root cause: `ProjectWorkLogTab` je gasio "Novi zapis" preko coarse `isReadOnly` (true za svaki `participant`, uključujući worker/member). Fix: novi prop `canLogOwnWork` (`owner || member || worker`) razdvaja role-based gate od subscription downgrade-a. `useProjectWriteGuard` + `isProjectWriteAllowed` dobili opcionalni `allowOwnWorkLog` koji dopušta `participant` ali NE `owner_readonly` (billing gate i dalje vrijedi). `WorkLogQuickEntry` prosljeđuje `allowOwnWorkLog: true`.
+- **Ne dirano:** P0 filteri, F1–F6 financial sanitization, RLS na `project_*` tablicama, manager rola se NE vraća, globalna `profiles` policy ostaje uska.
+
 ## Out of scope (otvoreno)
 - UI gate centralization kroz `useProjectRole()` — može ići sada kad je model poravnat, ali NE bez korisnikove odluke.
 - F11 invoices/estimates visibility — čeka odobrenje.
