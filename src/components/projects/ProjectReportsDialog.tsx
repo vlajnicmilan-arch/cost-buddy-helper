@@ -707,7 +707,7 @@ export const ProjectReportsDialog = ({
                           <div>
                             <p className="font-medium">{member.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {member.role === 'manager' ? 'Manager' : member.role === 'member' ? 'Član' : 'Promatrač'}
+                              {member.role === 'owner' ? 'Vlasnik' : member.role === 'member' ? 'Član' : member.role === 'worker' ? 'Radnik' : 'Promatrač'}
                             </p>
                           </div>
                         </div>

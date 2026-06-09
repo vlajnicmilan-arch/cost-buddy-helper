@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ProjectMember, ProjectInvitation, ProjectRole } from '@/types/project';
+import { ProjectMember, ProjectInvitation, ProjectRole, ProjectRoleKey } from '@/types/project';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
@@ -11,10 +11,8 @@ export const useProjectMembers = (projectId: string | null) => {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isManager, setIsManager] = useState(false);
-  // F8–F10: owner detected via projects.user_id (seeded as project_members.role='manager').
-  // Surface separately so destructive actions (delete project, transfer ownership,
-  // promote/demote managers) can distinguish owner from manager.
+  // Owner is the source of truth for all destructive/management actions.
+  // 'manager' role no longer exists — see F8–F10 realign migration.
   const [isOwner, setIsOwner] = useState(false);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
 
@@ -28,7 +26,17 @@ export const useProjectMembers = (projectId: string | null) => {
 
     setLoading(true);
     try {
-      // Fetch members
+      // Owner is determined via projects.user_id (single source of truth).
+      const { data: projectRow } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .maybeSingle();
+      const ownerUserId = projectRow?.user_id ?? null;
+      const isCurrentOwner = !!ownerUserId && ownerUserId === user.id;
+      setIsOwner(isCurrentOwner);
+
+      // Fetch persisted members (member | viewer | worker)
       const { data: membersData, error: membersError } = await supabase
         .from('project_members')
         .select('*')
@@ -36,47 +44,53 @@ export const useProjectMembers = (projectId: string | null) => {
 
       if (membersError) throw membersError;
 
-      // Determine owner separately (projects.user_id is the source of truth).
-      const { data: projectRow } = await supabase
-        .from('projects')
-        .select('user_id')
-        .eq('id', projectId)
-        .maybeSingle();
-      const isCurrentOwner = projectRow?.user_id === user.id;
-      setIsOwner(isCurrentOwner);
-
-      // Check if current user is manager (owner is seeded as manager too).
       const currentMember = membersData?.find(m => m.user_id === user.id);
       const memberRole = (currentMember?.role as string | undefined) ?? null;
       setCurrentRole(isCurrentOwner ? 'owner' : memberRole);
-      const isCurrentManager = isCurrentOwner || memberRole === 'manager';
-      setIsManager(isCurrentManager);
 
-      // Fetch display names
-      const userIds = membersData?.map(m => m.user_id) || [];
+      // Profiles for members + owner
+      const userIds = new Set<string>((membersData || []).map(m => m.user_id));
+      if (ownerUserId) userIds.add(ownerUserId);
       let profilesMap = new Map<string, string>();
-      
-      if (userIds.length > 0) {
+      if (userIds.size > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, display_name')
-          .in('user_id', userIds);
-
+          .in('user_id', Array.from(userIds));
         profiles?.forEach(p => {
           profilesMap.set(p.user_id, p.display_name || 'Nepoznato');
         });
       }
 
-      setMembers((membersData || []).map(m => ({
+      const persisted: ProjectMember[] = (membersData || []).map(m => ({
         ...m,
-        role: m.role as ProjectRole,
+        role: m.role as ProjectRoleKey,
         member_context: ((m as any).member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
         member_business_profile_id: (m as any).member_business_profile_id ?? null,
         display_name: profilesMap.get(m.user_id) || 'Nepoznato'
-      })));
+      }));
 
-      // Fetch invitations if manager
-      if (isCurrentManager) {
+      // Synthesize owner virtual row (owner is NOT in project_members anymore).
+      let combined: ProjectMember[] = persisted;
+      if (ownerUserId && !persisted.find(p => p.user_id === ownerUserId)) {
+        combined = [
+          {
+            id: `owner:${ownerUserId}`,
+            project_id: projectId,
+            user_id: ownerUserId,
+            role: 'owner' as ProjectRoleKey,
+            display_name: profilesMap.get(ownerUserId) || 'Vlasnik',
+            member_context: 'personal',
+            member_business_profile_id: null,
+          },
+          ...persisted,
+        ];
+      }
+
+      setMembers(combined);
+
+      // Invitations — only owner sees them
+      if (isCurrentOwner) {
         const { data: invitationsData } = await supabase
           .from('project_invitations')
           .select('*')
@@ -289,7 +303,9 @@ export const useProjectMembers = (projectId: string | null) => {
     members,
     invitations,
     loading,
-    isManager,
+    // Backwards-compat: callers still read isManager. After F8–F10 realign,
+    // manager role is gone — only owner has management privileges.
+    isManager: isOwner,
     isOwner,
     currentRole,
     updateMemberRole,

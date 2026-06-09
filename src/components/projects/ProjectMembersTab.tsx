@@ -98,7 +98,7 @@ export const ProjectMembersTab = ({
     () => members.find(m => m.user_id === user?.id),
     [members, user?.id]
   );
-  const isOwnerInList = currentMember?.role === 'manager';
+  const isOwnerInList = currentMember?.role === 'owner';
 
   // Self-relocation state
   const [businessProfiles, setBusinessProfiles] = useState<BusinessProfileLite[]>([]);
@@ -508,16 +508,16 @@ export const ProjectMembersTab = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-medium truncate">{member.display_name}</p>
-                {member.role === 'manager' && (
+                {member.role === 'owner' && (
                   <Crown className="w-4 h-4 text-amber-500" />
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role])}
+                {member.role === 'owner' ? t('projects.owner', 'Vlasnik') : t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role as ProjectRole])}
               </p>
             </div>
 
-            {isManager && member.role !== 'manager' && (
+            {isManager && member.role !== 'owner' && (
               <div className="flex items-center gap-2">
                 <Select 
                   value={member.role} 

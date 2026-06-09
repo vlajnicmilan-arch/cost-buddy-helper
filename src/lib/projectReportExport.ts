@@ -268,7 +268,7 @@ export const generateProjectPDFReport = async (
 
     const memberData = data.members.map(m => [
       toAscii(m.display_name || 'Nepoznato'),
-      toAscii(m.role === 'manager' ? 'Manager' : m.role === 'member' ? 'Clan' : 'Promatrac'),
+      toAscii(m.role === 'owner' ? 'Vlasnik' : m.role === 'member' ? 'Clan' : m.role === 'worker' ? 'Radnik' : 'Promatrac'),
       formatCurrency(m.spent || 0, data.currency),
     ]);
 
@@ -396,7 +396,7 @@ export const generateProjectCSVReport = async (data: ProjectReportData, mode: Ex
   summaryRows.push('', '"--- ČLANOVI ---"', '"Ime","Uloga","Potrošnja"');
   
   data.members.forEach(m => {
-    const role = m.role === 'manager' ? 'Manager' : m.role === 'member' ? 'Član' : 'Promatrač';
+    const role = m.role === 'owner' ? 'Vlasnik' : m.role === 'member' ? 'Član' : m.role === 'worker' ? 'Radnik' : 'Promatrač';
     summaryRows.push(`"${s(m.display_name || 'Nepoznato')}","${role}","${m.spent || 0}"`);
   });
 

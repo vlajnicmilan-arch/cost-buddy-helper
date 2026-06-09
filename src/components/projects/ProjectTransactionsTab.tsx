@@ -22,7 +22,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { useAppState } from '@/contexts/AppStateContext';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
-import { ProjectMilestone, ProjectRole } from '@/types/project';
+import { ProjectMilestone, ProjectRole, ProjectRoleKey } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
@@ -58,7 +58,7 @@ interface ProjectTransactionsTabProps {
   expenses: ProjectExpense[];
   milestones: ProjectMilestone[];
   isManager: boolean;
-  userRole: ProjectRole;
+  userRole: ProjectRoleKey;
   loading: boolean;
   onRefetch: () => void;
   /** When true, all write paths (Add/Edit/Delete) are gated with the read-only toast. */

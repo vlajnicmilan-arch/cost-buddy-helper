@@ -1,21 +1,22 @@
 /**
- * F8–F10 Permissions Hardening — pure helper.
+ * Project role permissions — pure helper.
  *
  * Single source of truth for project role capabilities. Mirrors the SQL
- * policies installed in migration `f8-f10-permissions-hardening`. UI gates
- * MUST consume this; backend RLS is the second line of defense.
+ * policies installed in the F8–F10 realign migration. UI gates MUST consume
+ * this; backend RLS is the second line of defense.
  *
- * Roles (project-scoped):
- *   - 'owner'   : projects.user_id === auth.uid()  (also seeded as manager row)
- *   - 'manager' : operativno upravlja projektom
- *   - 'member'  : moze unositi transakcije i vlastiti rad
- *   - 'worker'  : samo svoj rad / dnevnik
- *   - 'viewer'  : strogo read-only
+ * Roles (matches UI exactly):
+ *   - 'owner'  : projects.user_id === auth.uid()  — full power
+ *   - 'member' : Član — može unositi vlastite transakcije i vlastiti rad
+ *   - 'worker' : Radnik — samo svoj rad / dnevnik
+ *   - 'viewer' : Promatrač — strogo read-only
+ *
+ * 'manager' više ne postoji kao zasebna rola (UI je nikad nije nudila).
  *
  * Naming convention: `can<Action>` returns boolean.
  */
 
-export type ProjectRoleKey = 'owner' | 'manager' | 'member' | 'worker' | 'viewer';
+export type ProjectRoleKey = 'owner' | 'member' | 'worker' | 'viewer';
 
 export interface ProjectRoleContext {
   /** Effective role. NULL when user is not on the project. */
@@ -27,8 +28,8 @@ export interface ProjectRoleContext {
 export interface ProjectPermissions {
   // Members / invitations
   canInviteMembers: boolean;
-  canRemoveMember: (targetRole: ProjectRoleKey) => boolean;
-  canChangeMemberRole: (currentRole: ProjectRoleKey, nextRole: ProjectRoleKey) => boolean;
+  canRemoveMember: boolean;
+  canChangeMemberRole: boolean;
   /** Per-tab visibility delegation — owner only by product decision. */
   canManageMemberPermissions: boolean;
 
@@ -61,8 +62,8 @@ export interface ProjectPermissions {
 
 const EMPTY: ProjectPermissions = {
   canInviteMembers: false,
-  canRemoveMember: () => false,
-  canChangeMemberRole: () => false,
+  canRemoveMember: false,
+  canChangeMemberRole: false,
   canManageMemberPermissions: false,
   canAddWorker: false,
   canEditWorker: false,
@@ -88,62 +89,52 @@ export function deriveProjectPermissions(ctx: ProjectRoleContext): ProjectPermis
   const { role, isOwner } = ctx;
   if (!role) return EMPTY;
 
-  const isManager = isOwner || role === 'manager';
+  const isOwnerEffective = isOwner || role === 'owner';
   const isViewer = role === 'viewer';
   const isWorker = role === 'worker';
-  const canDoOwnWork = role === 'owner' || role === 'manager' || role === 'member' || role === 'worker';
+  const isMember = role === 'member';
+  const canDoOwnWork = isOwnerEffective || isMember || isWorker;
 
   return {
-    // ── Members / invitations ─────────────────────────────
-    canInviteMembers: isManager,
-    // Promoting/demoting a manager always requires owner.
-    canRemoveMember: (targetRole) => {
-      if (isOwner) return true;
-      if (!isManager) return false;
-      return targetRole !== 'manager';
-    },
-    canChangeMemberRole: (currentRole, nextRole) => {
-      if (isOwner) return true;
-      if (!isManager) return false;
-      // Manager cannot touch a manager-row and cannot promote anyone to manager.
-      return currentRole !== 'manager' && nextRole !== 'manager';
-    },
-    canManageMemberPermissions: isOwner, // owner-only by product decision
+    // ── Members / invitations — owner only ──────────────
+    canInviteMembers: isOwnerEffective,
+    canRemoveMember: isOwnerEffective,
+    canChangeMemberRole: isOwnerEffective,
+    canManageMemberPermissions: isOwnerEffective,
 
-    // ── Workers ──────────────────────────────────────────
-    canAddWorker: isManager,
-    canEditWorker: isManager,
-    canDeleteWorker: isManager,
-    canSeeAllWorkers: isManager, // worker sees only own row (RLS-enforced)
+    // ── Workers — owner only ────────────────────────────
+    canAddWorker: isOwnerEffective,
+    canEditWorker: isOwnerEffective,
+    canDeleteWorker: isOwnerEffective,
+    canSeeAllWorkers: isOwnerEffective,
 
-    // ── Work logs / entries ──────────────────────────────
+    // ── Work logs / entries ─────────────────────────────
     canLogOwnWork: canDoOwnWork,
     canEditOwnWorkLog: canDoOwnWork,
-    canEditOthersWorkLog: isManager,
+    canEditOthersWorkLog: isOwnerEffective,
     canDeleteOwnWorkLog: canDoOwnWork,
-    canDeleteOthersWorkLog: isManager,
+    canDeleteOthersWorkLog: isOwnerEffective,
 
-    // ── Project financials ───────────────────────────────
-    canEditMilestones: isManager,
-    canEditFunding: isManager,
-    canEditCollaborators: isManager,
-    canApprovePendingTransactions: isManager,
-    // Viewer is strictly read-only — does NOT add transactions, not even pending.
-    canAddTransaction: !isViewer && !isWorker,
-    canEditOthersTransaction: isManager,
+    // ── Project financials ──────────────────────────────
+    canEditMilestones: isOwnerEffective,
+    canEditFunding: isOwnerEffective,
+    canEditCollaborators: isOwnerEffective,
+    canApprovePendingTransactions: isOwnerEffective,
+    // Viewer i Worker ne unose transakcije.
+    canAddTransaction: isOwnerEffective || isMember,
+    canEditOthersTransaction: isOwnerEffective,
 
-    // ── Project lifecycle ────────────────────────────────
-    canCompleteOrReopenProject: isManager,
-    canDeleteProject: isOwner,
-    canTransferOwnership: isOwner,
+    // ── Project lifecycle ───────────────────────────────
+    canCompleteOrReopenProject: isOwnerEffective,
+    canDeleteProject: isOwnerEffective,
+    canTransferOwnership: isOwnerEffective,
   };
 }
 
 /**
  * Worker-only UI mode: user is restricted to the work-log tab.
- * Worker role + not manager (owner-with-manager-row should still see everything).
  */
 export function isWorkerOnlyMode(ctx: ProjectRoleContext): boolean {
-  if (ctx.isOwner) return false;
+  if (ctx.isOwner || ctx.role === 'owner') return false;
   return ctx.role === 'worker';
 }

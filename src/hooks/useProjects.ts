@@ -36,7 +36,7 @@ export const useProjects = () => {
         const stored = localStorage.getItem(LOCAL_PROJECTS_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          setProjects(parsed.map((p: Project) => ({ ...p, isOwner: true, role: 'manager' as ProjectRole })));
+          setProjects(parsed.map((p: Project) => ({ ...p, isOwner: true, role: 'owner' as const })));
         } else {
           setProjects([]);
         }
@@ -117,7 +117,7 @@ export const useProjects = () => {
             ...p, 
             status: p.status as ProjectStatus,
             isOwner: true, 
-            role: 'manager' as ProjectRole,
+            role: 'owner' as const,
             total_budget: Number(p.total_budget) || 0
           })),
           ...sharedProjects.map(p => ({ 
@@ -182,7 +182,7 @@ export const useProjects = () => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           isOwner: true,
-          role: 'manager'
+          role: 'owner'
         };
         const updated = [newProject, ...projects];
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));
@@ -219,7 +219,7 @@ export const useProjects = () => {
         status: data.status as ProjectStatus,
         total_budget: Number(data.total_budget) || 0,
         isOwner: true,
-        role: 'manager'
+        role: 'owner'
       };
       
       setProjects(prev => [newProject, ...prev]);
@@ -238,7 +238,7 @@ export const useProjects = () => {
       if (isLocalMode) {
         const updated = projects.map(p => 
           p.id === project.id 
-            ? { ...project, updated_at: new Date().toISOString(), isOwner: true, role: 'manager' as ProjectRole } 
+            ? { ...project, updated_at: new Date().toISOString(), isOwner: true, role: 'owner' as const } 
             : p
         );
         localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updated));

@@ -71,14 +71,8 @@ Deno.serve(async (req) => {
         .single();
       if (!project) continue;
 
-      const { data: managers } = await supabase
-        .from("project_members")
-        .select("user_id")
-        .eq("project_id", m.project_id)
-        .eq("role", "manager");
-
+      // Recipients: project owner only (manager role removed in F8–F10 realign).
       const userIds = new Set<string>([project.user_id]);
-      managers?.forEach((mm) => userIds.add(mm.user_id));
 
       // Anti-spam: skip recipients who already received this threshold for this milestone.
       const { data: alreadySent } = await supabase

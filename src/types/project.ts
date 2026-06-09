@@ -1,6 +1,21 @@
 import type { ProjectType } from '@/lib/projectTypes';
 
-export type ProjectRole = 'manager' | 'member' | 'viewer' | 'worker';
+/**
+ * Project roles as stored in the database (`project_members.role`,
+ * `project_invitations.role`). Owner is **not** included — owner is derived
+ * runtime from `projects.user_id === auth.uid()`.
+ *
+ * For runtime contexts that need to express "owner OR member/viewer/worker",
+ * use `ProjectRoleKey` below.
+ */
+export type ProjectRole = 'member' | 'viewer' | 'worker';
+
+/**
+ * Runtime-extended role key. Used by hooks/components that present the
+ * current user's effective role (owner is virtual — never persisted).
+ */
+export type ProjectRoleKey = 'owner' | ProjectRole;
+
 export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
@@ -35,7 +50,8 @@ export interface Project {
 
 export interface ProjectWithOwnership extends Project {
   isOwner: boolean;
-  role: ProjectRole;
+  /** Runtime role — 'owner' for project owner, else DB role. */
+  role: ProjectRoleKey;
   member_context?: 'personal' | 'business';
   member_business_profile_id?: string | null;
 }
@@ -44,7 +60,11 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
-  role: ProjectRole;
+  /**
+   * Runtime role — owner row is synthesised by `useProjectMembers` with
+   * role='owner'. Persisted rows only carry 'member' | 'viewer' | 'worker'.
+   */
+  role: ProjectRoleKey;
   joined_at?: string;
   created_at?: string;
   display_name?: string;
@@ -133,8 +153,8 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
   overdue: 'Zakašnjelo'
 };
 
+/** Labels for selectable (DB) roles only — owner is rendered separately via Crown badge. */
 export const PROJECT_ROLE_LABELS: Record<ProjectRole, string> = {
-  manager: 'Voditelj',
   member: 'Član',
   viewer: 'Promatrač',
   worker: 'Radnik'

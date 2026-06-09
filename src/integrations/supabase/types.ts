@@ -5102,10 +5102,6 @@ export type Database = {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
-      is_project_manager: {
-        Args: { _project_id: string; _user_id: string }
-        Returns: boolean
-      }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
