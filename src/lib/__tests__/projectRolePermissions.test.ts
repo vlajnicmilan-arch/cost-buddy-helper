@@ -31,46 +31,9 @@ describe('deriveProjectPermissions — owner', () => {
     expect(p.canManageMemberPermissions).toBe(true);
   });
 
-  it('can manage manager rows', () => {
-    expect(p.canRemoveMember('manager')).toBe(true);
-    expect(p.canRemoveMember('member')).toBe(true);
-    expect(p.canChangeMemberRole('member', 'manager')).toBe(true);
-    expect(p.canChangeMemberRole('manager', 'viewer')).toBe(true);
-  });
-});
-
-describe('deriveProjectPermissions — manager (non-owner)', () => {
-  const p = deriveProjectPermissions(ctx('manager', false));
-
-  it('runs the project operationally', () => {
-    expect(p.canInviteMembers).toBe(true);
-    expect(p.canAddWorker).toBe(true);
-    expect(p.canEditWorker).toBe(true);
-    expect(p.canDeleteWorker).toBe(true);
-    expect(p.canEditMilestones).toBe(true);
-    expect(p.canEditFunding).toBe(true);
-    expect(p.canEditCollaborators).toBe(true);
-    expect(p.canApprovePendingTransactions).toBe(true);
-    expect(p.canEditOthersWorkLog).toBe(true);
-    expect(p.canDeleteOthersWorkLog).toBe(true);
-    expect(p.canCompleteOrReopenProject).toBe(true);
-    expect(p.canAddTransaction).toBe(true);
-  });
-
-  it('cannot perform owner-only destructive actions', () => {
-    expect(p.canDeleteProject).toBe(false);
-    expect(p.canTransferOwnership).toBe(false);
-    expect(p.canManageMemberPermissions).toBe(false);
-  });
-
-  it('cannot touch manager rows or promote to manager', () => {
-    expect(p.canRemoveMember('manager')).toBe(false);
-    expect(p.canRemoveMember('member')).toBe(true);
-    expect(p.canRemoveMember('worker')).toBe(true);
-    expect(p.canRemoveMember('viewer')).toBe(true);
-    expect(p.canChangeMemberRole('member', 'manager')).toBe(false);
-    expect(p.canChangeMemberRole('manager', 'member')).toBe(false);
-    expect(p.canChangeMemberRole('member', 'viewer')).toBe(true);
+  it('can manage members', () => {
+    expect(p.canRemoveMember).toBe(true);
+    expect(p.canChangeMemberRole).toBe(true);
   });
 });
 
@@ -96,6 +59,8 @@ describe('deriveProjectPermissions — member', () => {
     expect(p.canEditOthersTransaction).toBe(false);
     expect(p.canDeleteProject).toBe(false);
     expect(p.canCompleteOrReopenProject).toBe(false);
+    expect(p.canRemoveMember).toBe(false);
+    expect(p.canChangeMemberRole).toBe(false);
   });
 });
 
@@ -158,15 +123,16 @@ describe('deriveProjectPermissions — null role (non-member)', () => {
   });
 });
 
-describe('owner-with-manager-row regression', () => {
-  // Owner is always seeded as project_members.role='manager', so the hook
-  // may pass role='manager' with isOwner=true. Must keep owner privileges.
-  const p = deriveProjectPermissions(ctx('manager', true));
+describe('isOwner flag honoured even if role string differs', () => {
+  // Defensive: if some caller passes role='member' but isOwner=true (e.g. legacy
+  // hook before refactor finished), owner privileges still apply.
+  const p = deriveProjectPermissions(ctx('member', true));
   it('keeps owner-only privileges via isOwner flag', () => {
     expect(p.canDeleteProject).toBe(true);
     expect(p.canTransferOwnership).toBe(true);
     expect(p.canManageMemberPermissions).toBe(true);
-    expect(p.canRemoveMember('manager')).toBe(true);
-    expect(p.canChangeMemberRole('member', 'manager')).toBe(true);
+    expect(p.canRemoveMember).toBe(true);
+    expect(p.canChangeMemberRole).toBe(true);
+    expect(p.canEditMilestones).toBe(true);
   });
 });

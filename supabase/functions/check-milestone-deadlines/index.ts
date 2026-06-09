@@ -60,14 +60,8 @@ Deno.serve(async (req) => {
 
       if (!project) continue;
 
-      const { data: managers } = await supabase
-        .from("project_members")
-        .select("user_id")
-        .eq("project_id", milestone.project_id)
-        .eq("role", "manager");
-
+      // Recipients: project owner only (manager role removed in F8–F10 realign).
       const userIds = new Set<string>([project.user_id]);
-      managers?.forEach((m) => userIds.add(m.user_id));
 
       const daysUntilDue = Math.ceil(
         (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
