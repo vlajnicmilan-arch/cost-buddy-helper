@@ -265,9 +265,10 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
             const totalHours = dayHours.reduce((s, h) => s + h.actual_hours, 0);
             const dayDate = parseISO(log.log_date);
             const isAuthor = log.user_id === user?.id;
-            // Own-log edit/delete uses role-based gate; cross-log delete needs full owner write.
-            const canEdit = isAuthor && canLogOwnWork && !isReadOnly;
-            const canDelete = (isAuthor && canLogOwnWork && !isReadOnly) || (isManager && !isReadOnly);
+            // Own-log edit/delete uses worklog-specific gate (role + non-readonly).
+            // Cross-log delete still needs full owner write (isManager + not isReadOnly).
+            const canEdit = isAuthor && canWorklog;
+            const canDelete = (isAuthor && canWorklog) || (isManager && !isReadOnly);
 
             return (
               <Card key={log.id} className="overflow-hidden">
