@@ -45,8 +45,13 @@ export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnl
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   // Worklog-specific write gate: participant may write own work logs.
-  // Owner-readonly (downgrade) still blocks via isReadOnly flag.
-  const { guard } = useProjectWriteGuard({ isReadOnly, allowOwnWorkLog: canLogOwnWork });
+  // Owner-readonly (billing downgrade) still blocks via the isReadOnly flag
+  // propagated through useProjectWriteGuard.
+  const { guard, isReadOnly: worklogReadOnly } = useProjectWriteGuard({ isReadOnly, allowOwnWorkLog: canLogOwnWork });
+  // Final per-action gate for own-work-log writes:
+  // role must allow it AND worklog-specific guard must not be read-only
+  // (owner-readonly billing gate still blocks).
+  const canWorklog = canLogOwnWork && !worklogReadOnly;
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
