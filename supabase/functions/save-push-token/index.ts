@@ -31,13 +31,15 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid token" }, 400);
     }
 
+    const now = new Date().toISOString();
     const { error } = await supabase.from("push_tokens").upsert(
       {
         user_id: authData.user.id,
         token,
         platform: typeof platform === "string" && platform ? platform : "android",
+        last_used_at: now,
       },
-      { onConflict: "user_id,token" },
+      { onConflict: "token" },
     );
 
     if (error) throw error;

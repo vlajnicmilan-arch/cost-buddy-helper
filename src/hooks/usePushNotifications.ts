@@ -25,15 +25,12 @@ export const usePushNotifications = () => {
         console.log('[Push] Token:', token.value);
         registeredRef.current = true;
 
-        // Save token to DB
-        await supabase.from('push_tokens').upsert(
-          {
-            user_id: user.id,
+        await supabase.functions.invoke('save-push-token', {
+          body: {
             token: token.value,
             platform: Capacitor.getPlatform(),
           },
-          { onConflict: 'user_id,token' }
-        );
+        });
       });
 
       PushNotifications.addListener('registrationError', (err) => {
