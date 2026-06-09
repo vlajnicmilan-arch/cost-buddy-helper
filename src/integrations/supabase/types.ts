@@ -4952,6 +4952,10 @@ export type Database = {
         }
       }
       assert_projects_write_allowed: { Args: never; Returns: undefined }
+      can_log_own_work: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_write_payment_source: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
@@ -5033,6 +5037,10 @@ export type Database = {
       }
       get_founding_member_count: { Args: never; Returns: number }
       get_next_founding_member_number: { Args: never; Returns: number }
+      get_project_role: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: string
+      }
       grant_module_access: {
         Args: {
           p_expires_at: string
@@ -5092,6 +5100,10 @@ export type Database = {
       }
       is_payment_source_owner: {
         Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_manager: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       is_project_member: {
