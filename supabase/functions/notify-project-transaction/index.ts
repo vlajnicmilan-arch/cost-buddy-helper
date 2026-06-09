@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
-import { splitInstantVsDigest } from '../_shared/participantFilter.ts';
+// Note: instant push disabled for project transactions. Svi primatelji idu u
+// 19h digest preko enqueue_participant_digest_event + flush-participant-digest.
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -173,26 +174,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Filter: Core participants (non-owner, non-subscriber) → digest only, no instant push.
-    const { instant: pushTargets, digestOnly } = await splitInstantVsDigest(
-      supabaseAdmin,
-      project.user_id,
-      Array.from(usersToNotify),
-    );
-    if (digestOnly.length > 0) {
-      console.log(
-        `[notify-project-transaction] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
-      );
-    }
+    // Instant push disabled — svi primatelji čekaju 19h digest (flush-participant-digest).
+    // In-app notification (zvonce) je već upisan iznad i pojavljuje se odmah.
 
-    if (pushTargets.length > 0) {
-      await sendPushNotificationToMany(pushTargets, {
-        title: `Transakcija u projektu "${project.name}"`,
-        body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
-        data: { expense_id: expense.id, project_id: project.id, type: 'project_transaction', category: 'transactions' },
-        source: 'notify-project-transaction',
-      });
-    }
 
     // Daily digest enqueue (po prostoru, recipient-type independent).
     try {

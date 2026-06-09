@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendPushNotification, sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
-import { splitInstantVsDigest } from '../_shared/participantFilter.ts';
+// Instant push disabled za sve napomene — primatelji čekaju 19h digest (projekti)
+// odnosno samo in-app zvonce (računi/krug). In-app notifications ulaze odmah.
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -169,26 +170,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      // Filter: Core participants → digest only, no instant push.
-      const { instant: pushTargets, digestOnly } = await splitInstantVsDigest(
-        supabaseAdmin,
-        project.user_id,
-        Array.from(usersToNotify),
-      );
-      if (digestOnly.length > 0) {
-        console.log(
-          `[notify-note-added] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
-        );
-      }
+      // Instant push disabled — komentari u projektu čekaju 19h digest.
 
-      if (pushTargets.length > 0) {
-        await sendPushNotificationToMany(pushTargets, {
-          title: `Novi komentar u projektu "${project.name}"`,
-          body: `${memberName}: ${truncatedNote}`,
-          data: { expense_id: expense.id, project_id: project.id, type: 'project_note_added', category: 'chat' },
-          source: 'notify-note-added',
-        });
-      }
 
       // Daily digest enqueue (po prostoru, recipient-type independent).
       try {
@@ -268,13 +251,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      await sendPushNotification({
-        user_id: source.user_id,
-        title: 'Nova napomena na transakciji',
-        body: `${memberName}: ${truncatedNote}`,
-        data: { expense_id: expense.id, income_source_id: source.id, type: 'note_added', category: 'chat' },
-        source: 'notify-note-added',
-      });
+      // Instant push disabled — vlasnik kruga vidi komentar kao in-app zvonce.
+
 
       console.log(`Note notification sent to owner ${source.user_id} from ${memberName}`);
 
@@ -352,12 +330,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         );
       }
 
-      await sendPushNotificationToMany(Array.from(usersToNotify), {
-        title: `Novi komentar na računu "${source.name}"`,
-        body: `${memberName}: ${truncatedNote}`,
-        data: { expense_id: expense.id, payment_source_id: source.id, type: 'payment_source_note_added', category: 'chat' },
-        source: 'notify-note-added',
-      });
+      // Instant push disabled — komentari na dijeljenim računima ostaju samo in-app.
+
 
       console.log(`Payment source note notifications sent to ${usersToNotify.size} user(s)`);
 

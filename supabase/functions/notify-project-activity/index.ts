@@ -4,9 +4,8 @@
 // In-app notifications are always inserted.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { sendPushNotificationToMany } from "../_shared/sendPushNotification.ts";
-import { decidePushThrottle, type ActivityBucket } from "../_shared/projectActivityThrottle.ts";
-import { splitInstantVsDigest } from "../_shared/participantFilter.ts";
+// Instant push disabled — sve projektne aktivnosti idu u 19h digest.
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,10 +28,6 @@ interface RequestBody {
   };
 }
 
-function bucketFor(type: ActivityType): ActivityBucket {
-  if (type.startsWith("milestone")) return "milestone";
-  return "work_log";
-}
 
 function buildText(
   type: ActivityType,
@@ -176,54 +171,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const { error: notifErr } = await supabaseAdmin.from("notifications").insert(inAppRows);
     if (notifErr) console.error("[notify-project-activity] notifications insert error", notifErr);
 
-    // Filter: Core participants (non-owner project members WITHOUT their own Projects
-    // subscription) must NOT get an instant push — they are covered by the daily digest.
-    const { instant: instantRecipients, digestOnly } = await splitInstantVsDigest(
-      supabaseAdmin,
-      project.user_id,
-      Array.from(recipients),
-    );
-    if (digestOnly.length > 0) {
-      console.log(
-        `[notify-project-activity] suppressing instant push for ${digestOnly.length} participant(s); digest only`,
-      );
-    }
+    // Instant push disabled — sva aktivnost čeka 19h digest. In-app zvonce ostaje odmah.
 
-    // Push: per-recipient throttle, only over instant-eligible recipients
-    const bucket = bucketFor(body.activity_type);
-    const pushRecipients: string[] = [];
-    let groupedFor: { recipient: string; pendingCount: number } | null = null;
-
-    for (const rid of instantRecipients) {
-      const decision = await decidePushThrottle(rid, project.id, bucket);
-      if (decision.shouldSendPush) {
-        pushRecipients.push(rid);
-        if (decision.pendingCount > 0 && !groupedFor) {
-          groupedFor = { recipient: rid, pendingCount: decision.pendingCount };
-        }
-      }
-    }
-
-    if (pushRecipients.length > 0) {
-      // If anyone has carried-over pending events, append a small grouped suffix.
-      const extra = groupedFor?.pendingCount ?? 0;
-      const finalBody = extra > 0
-        ? `${pushBody} (+${extra} ${extra === 1 ? "prethodna promjena" : "prethodnih promjena"})`
-        : pushBody;
-
-      await sendPushNotificationToMany(pushRecipients, {
-        title,
-        body: finalBody,
-        data: {
-          project_id: project.id,
-          activity_type: body.activity_type,
-          ref_id: body.ref_id ?? null,
-          type: "project_activity",
-          category: "projects",
-        },
-        source: "notify-project-activity",
-      });
-    }
 
     // Enqueue daily digest event (po prostoru). Best-effort; failure must not
     // break the immediate notify flow. Recipient selection happens server-side
@@ -248,10 +197,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       JSON.stringify({
         success: true,
         recipients: recipients.size,
-        pushed: pushRecipients.length,
+        pushed: 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (err) {
     console.error("[notify-project-activity] unhandled error", err);
     return new Response(JSON.stringify({ error: "Greška u funkciji" }), {

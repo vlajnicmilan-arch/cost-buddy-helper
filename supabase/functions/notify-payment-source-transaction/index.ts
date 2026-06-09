@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendPushNotificationToMany } from '../_shared/sendPushNotification.ts';
+// Instant push disabled — transakcije na dijeljenim računima ostaju samo in-app zvonce.
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -145,17 +146,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Best-effort push fan-out
-    await sendPushNotificationToMany(Array.from(usersToNotify), {
-      title: `Transakcija na računu "${paymentSource.name}"`,
-      body: `${submitterName} je ${actionText} ${transactionType} "${expense.description}" (${formattedAmount})`,
-      data: {
-        expense_id: expense.id,
-        payment_source_id: paymentSource.id,
-        type: 'payment_source_transaction',
-      },
-      source: 'notify-payment-source-transaction',
-    });
+    // Instant push disabled — primatelji vide u in-app zvoncu; bez bannera.
+
 
     console.log(`Notifications sent to ${usersToNotify.size} user(s) for payment source transaction`);
 
