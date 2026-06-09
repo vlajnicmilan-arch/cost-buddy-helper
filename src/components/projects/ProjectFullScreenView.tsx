@@ -776,7 +776,8 @@ export const ProjectFullScreenView = ({
                     isManager={isManager}
                     projectName={project.name}
                     isReadOnly={isReadOnly}
-                    canLogOwnWork={isOwner || currentUserRole === 'member' || currentUserRole === 'worker'}
+                    canLogOwnWork={worklogPerms.canLogOwnWork}
+                    isOwnerReadonly={isOwnerReadonly}
                   />
                 </TabsContent>
                 )}
