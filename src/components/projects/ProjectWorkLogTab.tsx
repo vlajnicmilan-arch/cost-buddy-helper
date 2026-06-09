@@ -30,28 +30,45 @@ interface ProjectWorkLogTabProps {
   projectId: string;
   isManager: boolean;
   projectName?: string;
+  /**
+   * Coarse project read-only flag (true for participant AND owner-readonly).
+   * Used only for cross-log delete (owner-only path). MUST NOT gate own
+   * work-log writes — those use canLogOwnWork + isOwnerReadonly.
+   */
   isReadOnly?: boolean;
   /**
-   * Role-based gate: true when caller is owner/member/worker and project
-   * is not under owner-readonly downgrade. Decoupled from coarse isReadOnly,
-   * which conflates subscription state with role-based write rights.
+   * Role-based gate: true when caller is owner/member/worker. Single source
+   * of truth comes from deriveProjectPermissions in the parent.
    */
   canLogOwnWork?: boolean;
+  /**
+   * Billing downgrade gate: true only when the current user is the owner and
+   * project is in owner-readonly state (no active Projects subscription).
+   * Worker / member / participant should NOT set this.
+   */
+  isOwnerReadonly?: boolean;
 }
 
 type MonthFilter = 'current' | 'previous' | 'last3' | 'all';
 
-export const ProjectWorkLogTab = ({ projectId, isManager, projectName, isReadOnly = false, canLogOwnWork = false }: ProjectWorkLogTabProps) => {
+export const ProjectWorkLogTab = ({
+  projectId,
+  isManager,
+  projectName,
+  isReadOnly = false,
+  canLogOwnWork = false,
+  isOwnerReadonly = false,
+}: ProjectWorkLogTabProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  // Worklog-specific write gate: participant may write own work logs.
-  // Owner-readonly (billing downgrade) still blocks via the isReadOnly flag
-  // propagated through useProjectWriteGuard.
-  const { guard, isReadOnly: worklogReadOnly } = useProjectWriteGuard({ isReadOnly, allowOwnWorkLog: canLogOwnWork });
+  // Worklog-specific write gate. We intentionally DO NOT feed the coarse
+  // `isReadOnly` prop into the guard, because that flag is true for every
+  // participant (incl. workers/members who legitimately may log own work).
+  // Owner-readonly billing downgrade is still respected via isOwnerReadonly.
+  const { guard } = useProjectWriteGuard({ isReadOnly: isOwnerReadonly });
   // Final per-action gate for own-work-log writes:
-  // role must allow it AND worklog-specific guard must not be read-only
-  // (owner-readonly billing gate still blocks).
-  const canWorklog = canLogOwnWork && !worklogReadOnly;
+  //   role allows it AND not under owner-readonly billing downgrade.
+  const canWorklog = canLogOwnWork && !isOwnerReadonly;
   const dateLocale = i18n.language === 'de' ? de : i18n.language === 'en' ? enUS : hr;
 
   const { logs, hoursByDate, loading, create, update, remove } = useProjectWorkLogs(projectId);
