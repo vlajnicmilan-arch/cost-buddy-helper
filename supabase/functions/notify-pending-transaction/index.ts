@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendPushNotification } from '../_shared/sendPushNotification.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,14 +136,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Best-effort push
-    await sendPushNotification({
-      user_id: source.user_id,
-      title: 'Nova transakcija na čekanju',
-      body: `${submitterName} je dodao ${transactionType} "${expense.description}" (${formattedAmount})`,
-      data: { expense_id: expense.id, income_source_id: source.id, type: 'pending_transaction', category: 'pending' },
-      source: 'notify-pending-transaction',
-    });
+    // Instant push disabled — in-app notification is inserted immediately;
+    // shared/pending transaction pushes must not interrupt users during the day.
 
     console.log(`Notification sent to owner ${source.user_id} for pending transaction from ${submitterName}`);
 
