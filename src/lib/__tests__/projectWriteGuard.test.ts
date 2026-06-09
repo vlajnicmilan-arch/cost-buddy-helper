@@ -23,4 +23,22 @@ describe('projectWriteGuard', () => {
     expect(isProjectWriteAllowed({ accessLevel: null })).toBe(false);
     expect(isProjectWriteAllowed({ isReadOnly: null })).toBe(false);
   });
+
+  describe('allowOwnWorkLog narrow exception', () => {
+    it('allows participant when allowOwnWorkLog=true', () => {
+      expect(isProjectWriteAllowed({ accessLevel: 'participant', allowOwnWorkLog: true })).toBe(true);
+    });
+
+    it('still blocks owner_readonly even with allowOwnWorkLog=true (billing gate)', () => {
+      expect(isProjectWriteAllowed({ accessLevel: 'owner_readonly', allowOwnWorkLog: true })).toBe(false);
+    });
+
+    it('still blocks none even with allowOwnWorkLog=true', () => {
+      expect(isProjectWriteAllowed({ accessLevel: 'none', allowOwnWorkLog: true })).toBe(false);
+    });
+
+    it('explicit isReadOnly=true wins over allowOwnWorkLog', () => {
+      expect(isProjectWriteAllowed({ isReadOnly: true, allowOwnWorkLog: true })).toBe(false);
+    });
+  });
 });
