@@ -4960,6 +4960,7 @@ export type Database = {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_duplicate_push_tokens: { Args: never; Returns: undefined }
       cleanup_old_ai_usage: { Args: never; Returns: undefined }
       cleanup_old_chat_messages: { Args: never; Returns: undefined }
       cleanup_old_diagnostic_logs: { Args: never; Returns: undefined }
