@@ -52,6 +52,7 @@ import { useProjectTypeLabels } from '@/hooks/useProjectTypeLabels';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
+import { deriveProjectPermissions } from '@/lib/projectRolePermissions';
 import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
 import { ProjectHeaderMenu } from './ProjectHeaderMenu';
