@@ -764,7 +764,13 @@ export const ProjectFullScreenView = ({
 
                 {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">
-                  <ProjectWorkLogTab projectId={project.id} isManager={isManager} projectName={project.name} isReadOnly={isReadOnly} />
+                  <ProjectWorkLogTab
+                    projectId={project.id}
+                    isManager={isManager}
+                    projectName={project.name}
+                    isReadOnly={isReadOnly}
+                    canLogOwnWork={isOwner || currentUserRole === 'member' || currentUserRole === 'worker'}
+                  />
                 </TabsContent>
                 )}
 

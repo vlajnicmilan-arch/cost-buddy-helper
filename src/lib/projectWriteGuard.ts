@@ -10,24 +10,30 @@ export interface GuardDecisionInput {
   isReadOnly?: boolean | null;
   /** Resolved access level (when caller doesn't pre-compute isReadOnly). */
   accessLevel?: ProjectAccessLevel | null;
+  /**
+   * Narrow exception: caller is performing an own-work-log write (worker/member).
+   * When true, 'participant' is allowed. Owner-readonly (subscription downgrade)
+   * stays blocked — that is a billing gate, independent of role.
+   */
+  allowOwnWorkLog?: boolean;
 }
 
 /**
  * Returns true when the caller is allowed to perform a write action.
  * Read-only states (owner_readonly, participant) and 'none' all block writes.
  *
- * Note: 'participant' is NOT inherently read-only for every action — participants
+ * 'participant' is NOT inherently read-only for every action — participants
  * may be allowed to perform some writes (e.g. work logs) via separate RBAC.
- * That nuance is handled by callers passing isReadOnly explicitly when needed.
- * This pure helper only encodes the strict "owner_readonly OR explicit override"
- * gate, which matches what ProjectFullScreenView already computes.
+ * Pass `allowOwnWorkLog: true` to opt-in for that narrow exception.
  */
 export function isProjectWriteAllowed(input: GuardDecisionInput): boolean {
   if (input.isReadOnly === true) return false;
   if (input.isReadOnly === false) return true;
   const lvl = input.accessLevel;
   if (!lvl) return false;
-  return lvl === 'owner_subscriber';
+  if (lvl === 'owner_subscriber') return true;
+  if (lvl === 'participant' && input.allowOwnWorkLog) return true;
+  return false;
 }
 
 export function isProjectReadOnly(input: GuardDecisionInput): boolean {
