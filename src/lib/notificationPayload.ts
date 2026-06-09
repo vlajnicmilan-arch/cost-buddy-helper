@@ -144,6 +144,14 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         fallback_route: '/',
         highlight: expenseId ? { type: 'pending_transaction', id: expenseId } : null,
       };
+    case 'participant_digest':
+      return {
+        route: projectId ? `/projects?id=${projectId}` : '/projects',
+        fallback_route: '/projects',
+        highlight: projectId
+          ? { type: 'project', id: projectId, tab: 'activity' }
+          : null,
+      };
     case 'reminder':
     case 'calendar_event':
       return {

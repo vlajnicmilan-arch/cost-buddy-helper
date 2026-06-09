@@ -37,8 +37,11 @@ Pending transactions: koriste TransactionItem (`expense:<id>`). Reminders: nemaj
 # Bell flow
 `NotificationsDropdown.handleNotificationClick` koristi `navigateFromNotification`. Invitation/`ai-assistant:ask` slučajevi ostaju netaknuti.
 
+# Pokriveno i za 19h batch
+- `participant_digest` (iz `flush-participant-digest`) sada šalje `route=/projects?id=<id>`, `highlight_type=project`, `highlight_tab=activity` u FCM `data`. Ista stavka se piše u `notifications` tablicu s `dedup_key=digest:<projectId>:<YYYY-MM-DD>` da bell klik radi identično push tap-u. `legacyResolve` ima backup case.
+
 # Ograničenja
-- Edge funkcije još NE šalju nove `route`/`highlight_*` fieldove. Legacy resolver pokriva sve preko ID polja + tipa.
+- Ostale edge funkcije još NE šalju nove `route`/`highlight_*` fieldove. Legacy resolver pokriva sve preko ID polja + tipa.
 - Reminder/calendar event = bez highlightа (samo otvori `/calendar`).
 - BudgetDetailView mountanje preko `?id=`: ako se ne otvori automatski, highlight padne na toast nakon 8s.
 
