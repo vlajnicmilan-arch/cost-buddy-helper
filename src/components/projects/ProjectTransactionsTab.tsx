@@ -58,7 +58,7 @@ interface ProjectTransactionsTabProps {
   expenses: ProjectExpense[];
   milestones: ProjectMilestone[];
   isManager: boolean;
-  userRole: ProjectRole;
+  userRole: ProjectRoleKey;
   loading: boolean;
   onRefetch: () => void;
   /** When true, all write paths (Add/Edit/Delete) are gated with the read-only toast. */
