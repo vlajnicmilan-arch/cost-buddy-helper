@@ -83,7 +83,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Get the expense details
     const { data: expense, error: expenseError } = await supabaseAdmin
       .from('expenses')
-      .select('id, description, amount, type')
+      .select('id, description, amount, type, project_id')
       .eq('id', expense_id)
       .single();
 
@@ -138,6 +138,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Instant push disabled — in-app notification is inserted immediately;
     // shared/pending transaction pushes must not interrupt users during the day.
+    if (expense.project_id) {
+      try {
+        await supabaseAdmin.rpc('enqueue_participant_digest_event', {
+          p_project_id: expense.project_id,
+          p_actor_user_id: user.id,
+          p_event: {
+            kind: 'pending_transaction_created',
+            actor_name: submitterName,
+            label: expense.description ?? null,
+            ref_id: expense.id ?? null,
+            at: new Date().toISOString(),
+          },
+        });
+      } catch (digestErr) {
+        console.error('[notify-pending-transaction] digest enqueue error', digestErr);
+      }
+    }
 
     console.log(`Notification sent to owner ${source.user_id} for pending transaction from ${submitterName}`);
 
