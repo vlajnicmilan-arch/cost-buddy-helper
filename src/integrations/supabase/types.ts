@@ -5037,6 +5037,13 @@ export type Database = {
       }
       get_founding_member_count: { Args: never; Returns: number }
       get_next_founding_member_number: { Args: never; Returns: number }
+      get_project_member_profiles: {
+        Args: { _project_id: string }
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
+      }
       get_project_role: {
         Args: { _project_id: string; _user_id: string }
         Returns: string
