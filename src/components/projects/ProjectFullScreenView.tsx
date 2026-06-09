@@ -161,6 +161,12 @@ export const ProjectFullScreenView = ({
     project ? { user_id: project.user_id, isParticipant: !isOwner } : null
   );
   const isReadOnly = isReadOnlyAccess(accessLevel);
+  // Owner-readonly billing downgrade — only true when the current user IS the
+  // owner but lacks an active Projects subscription. Participants never get
+  // this flag (they fall under 'participant' accessLevel).
+  const isOwnerReadonly = accessLevel === 'owner_readonly';
+  // Single source of truth for role-based worklog permission.
+  const worklogPerms = deriveProjectPermissions({ role: currentUserRole, isOwner });
   const handleUpgradeProjects = () => navigate('/paywall');
 
   // Business view supports both owned business projects and shared projects joined under this business profile.
