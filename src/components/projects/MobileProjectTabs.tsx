@@ -109,13 +109,19 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                 )}
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl pb-6">
-              <SheetHeader className="text-left">
+            <SheetContent
+              side="bottom"
+              className="rounded-t-2xl p-0 max-h-[85svh] flex flex-col"
+            >
+              <SheetHeader className="text-left px-6 pt-6 pb-2 shrink-0">
                 <SheetTitle>
                   {t('projects.tabs.moreSheetTitle', 'Sve sekcije')}
                 </SheetTitle>
               </SheetHeader>
-              <div className="mt-4 flex flex-col gap-1">
+              <div
+                className="mt-2 flex flex-col gap-1 overflow-y-auto px-6"
+                style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}
+              >
                 {overflow.map((tab) => {
                   const Icon = tab.icon;
                   const selected = value === tab.key;
