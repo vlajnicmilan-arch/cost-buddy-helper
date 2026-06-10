@@ -1,34 +1,57 @@
-## Problem
-Na mobitelu, kad član klikne "Više" u projektu, otvara se `Sheet` s listom svih sekcija ("Sve sekcije"). Sadržaj se ne skrolira i preraste viewport — vidljive su samo 2 stavke (Dokumenti, pola Aktivnosti), ostatak (Procjene, Računi, Rizici, …) je odsječen i nedostupan.
+## Cilj
+Sastaviti jedan strukturirani DOCX dokument koji sadrži:
+1. Trenutno stanje aplikacije V&M Balance (faktualno, na temelju koda + memorije).
+2. Ocjenu i kritički osvrt po oblastima od strane "tima stručnjaka".
+3. Konkretne prijedloge poboljšanja po oblasti.
+4. Viziju — čemu težimo (srednji/dugi rok).
 
-## Uzrok
-`src/components/ui/sheet.tsx` — `sheetVariants` za `side: "bottom"` ima samo `inset-x-0 bottom-0 border-t` bez ikakvog max-height ni overflow pravila. Visina raste s sadržajem dok ne prijeđe vrh viewporta, ali nema scrolla pa korisnik ne može doći do donjih stavki.
+## Tim stručnjaka (7 uloga, paralelni subagenti)
 
-`MobileProjectTabs.tsx` `SheetContent` također nema `max-h` ni `overflow`.
+Svaki dobiva isti pristup repou (read-only) i vraća strukturirani izvještaj: **Stanje · Ocjena (1–10) · Top 3 problema · Top 3 prijedloga**.
 
-## Rješenje (minimalno, samo UI sloj)
+1. **Product / UX strateg** — onboarding, aktivacijski lijevak, navigacija, Projects/Wallet/Budget tokovi, mobile UX (384px), feedback (StatusFeedback), feature gating.
+2. **Frontend arhitekt** — React 18 + Vite, struktura `src/components`, context providers, TanStack Query usage, lazy loading, veličina komponenti (pravilo ~300 linija), i18n (`t()`) pokrivenost.
+3. **Backend / Data arhitekt** — Supabase shema, RLS policies, RBAC (`user_roles`), edge funkcije (FCM v1, digesti, invitations), trigger/RPC sloj, soft delete, migracije.
+4. **Security & Compliance auditor** — RLS coverage, grants, security definer funkcije, secrets, GDPR account deletion, OAuth (Native), Stripe webhooks, RestrictIVE policies (module-access v2).
+5. **Mobile / Native inženjer** — Capacitor (Camera/Haptics/StatusBar/Browser), bundle ID, version-bump pravilo, native OAuth flow, push notifications (FCM v1), offline queue, performance na low-end Android.
+6. **QA / Reliability** — pokrivenost vitest, E2E Playwright suite, CI workflows (test + e2e + android-build), crash alerts, error localization, dialog lifecycle guard, graceful errors.
+7. **Business / Monetizacija** — subscription tiers (Free/Pro/Business), Stripe integracija, EU SaaS odluka, AI quota, project type presets, retention/cohort dashboard, acquisition funnel.
 
-### 1. `src/components/ui/sheet.tsx`
-Dodati u `sheetVariants` `side.bottom` default ponašanje:
-- `max-h-[85svh]` (svh radi ispravno s mobilnim adresnim trakama; fallback nije nužan)
-- `overflow-y-auto`
-- `flex flex-col` (da `SheetHeader` ostane na vrhu, a lista skrola ispod)
+Svaki subagent radi read-only pretragu: čita `mem://index.md` + relevantne memory fileove + uzorak ključnih izvornih datoteka iz svoje oblasti. Ne piše kod.
 
-Ne diram `top/left/right` varijante.
+## Output dokument
 
-### 2. `src/components/projects/MobileProjectTabs.tsx`
-`SheetContent` za "Sve sekcije" obaviti listu u skrolabilni kontejner:
-- `SheetHeader` ostaje sticky-like na vrhu (jednostavno: kao prvi child)
-- Lista (`<div className="mt-4 flex flex-col gap-1">`) dobiva `overflow-y-auto` i `pb-safe` da zadnja stavka nije skrivena ispod Android nav bara.
+Format: `.docx`, hrvatski, generiran preko docx-js skill-a, pohranjen u `/mnt/documents/vm-balance-audit-{datum}.docx`.
 
-Konkretno: dodati `flex flex-col` + `max-h-[85svh]` na `SheetContent` (overrida default ako default već postoji u sheet.tsx — onda samo dodati `pb-[max(env(safe-area-inset-bottom),1.5rem)]`).
+Struktura:
 
-## Verifikacija
-- Otvoriti projekt kao član, kliknuti "Više" na viewportu 384×705 → lista se mora moći skrolati do zadnje stavke i Android system bar ne smije pokrivati zadnji item.
-- Vlasnik na istom projektu također otvori "Više" → ista lista, isto ponašanje.
-- Desktop ostaje netaknut (`sm:hidden` na MobileProjectTabs, side="right" varijanta sheet-a nepromijenjena).
+```
+Naslovna
+Sadržaj
+1. Sažetak (executive summary) — 1 stranica
+2. Trenutno stanje aplikacije
+   2.1 Tehnologija i arhitektura
+   2.2 Ključni moduli (Projects, Wallet, Budgets, Krug, Family, Business)
+   2.3 Status stabilizacije (iz mem://features/projects-stabilization-status i sl.)
+3. Ekspertski osvrti (7 sekcija, jedna po stručnjaku)
+   - Stanje
+   - Ocjena
+   - Kritički osvrt
+   - Prijedlozi poboljšanja
+4. Konsolidirana matrica prioriteta (P0/P1/P2)
+5. Vizija — čemu težimo (3, 6, 12 mjeseci)
+6. Prilog: izvori (lista memory dokumenata i ključnih datoteka)
+```
 
-## Što NE diram
-- Read-only banner ("Projekti su u načinu samo za pregled") — ostaje kako je.
-- Sadržaj/popis sekcija u overflow listi — ne mijenjam koje su sekcije vidljive članu.
-- Bilo kakvu poslovnu logiku, role, RLS.
+Stil: teal (HSL 172 66% 40%) za naslove gdje je moguće, Inter/Arial font. Bez emojija. Tablice s ocjenama i prioritetima.
+
+## Što NE radim
+- Ne mijenjam kod ni postavke.
+- Ne izmišljam metrike (retention %, MAU itd.) — ako nema podatka u kodu/memoriji, eksplicitno označiti "nemam podatak".
+- Ne kopiram cijeli kod u dokument — samo file:line reference gdje je relevantno.
+
+## Procjena dužine
+20–30 stranica DOCX-a. Generacija ~5–10 minuta (paralelni subagenti + docx-js + QA pregled stranica).
+
+## Verifikacija prije isporuke
+Konvertirati DOCX → PDF → slike, vizualno provjeriti svaku stranicu (clipping, prelijevanje tablica, prazne stranice). Ispraviti i regenerirati ako treba.
