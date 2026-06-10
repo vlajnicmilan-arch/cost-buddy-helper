@@ -1,68 +1,34 @@
-# Cilj
-Klik na 19h sažetak push (i odgovarajuću stavku u zvonu) otvori projekt na **Activity** tabu, s blagim pulse highlightom na kartici projekta. Bez novih sustava — samo dovršiti integraciju koja je ostala napola nakon prebacivanja na batch.
+## Problem
+Na mobitelu, kad član klikne "Više" u projektu, otvara se `Sheet` s listom svih sekcija ("Sve sekcije"). Sadržaj se ne skrolira i preraste viewport — vidljive su samo 2 stavke (Dokumenti, pola Aktivnosti), ostatak (Procjene, Računi, Rizici, …) je odsječen i nedostupan.
 
-# Root cause (provjereno u kodu)
+## Uzrok
+`src/components/ui/sheet.tsx` — `sheetVariants` za `side: "bottom"` ima samo `inset-x-0 bottom-0 border-t` bez ikakvog max-height ni overflow pravila. Visina raste s sadržajem dok ne prijeđe vrh viewporta, ali nema scrolla pa korisnik ne može doći do donjih stavki.
 
-1. `supabase/functions/flush-participant-digest/index.ts` šalje push s:
-   ```
-   data: { type: "participant_digest", project_id, project_name, ... }
-   ```
-   **Nedostaju** `route`, `highlight_type`, `highlight_id`, `highlight_tab`.
-2. `src/lib/notificationPayload.ts` `legacyResolve` **nema case** za `participant_digest` → vraća `{ route: null, highlight: null }`.
-3. `useNotificationNavigation.navigateFromNotification` u tom slučaju samo prikaže "Stavka više nije dostupna" — ništa se ne otvara.
-4. Digest se ne upisuje u `notifications` tablicu, pa u zvonu ne postoji sažetak-stavka (samo pojedinačne instant zvono-stavke, ali korisnik ne zna povezati push sa zvonom).
+`MobileProjectTabs.tsx` `SheetContent` također nema `max-h` ni `overflow`.
 
-# Plan
+## Rješenje (minimalno, samo UI sloj)
 
-## 1) Edge function: `flush-participant-digest/index.ts`
-Pri slanju push-a, u `data` payload dodati standardne route + highlight fieldove (FCM flat string oblik koji `normalizePayload` već razumije):
+### 1. `src/components/ui/sheet.tsx`
+Dodati u `sheetVariants` `side.bottom` default ponašanje:
+- `max-h-[85svh]` (svh radi ispravno s mobilnim adresnim trakama; fallback nije nužan)
+- `overflow-y-auto`
+- `flex flex-col` (da `SheetHeader` ostane na vrhu, a lista skrola ispod)
 
-```
-data: {
-  type: "participant_digest",
-  category: "projects",
-  project_id: project.id,
-  project_name: project.name,
-  project_icon: project.icon,
-  project_color: project.color,
-  event_count: count,
-  route: `/projects?id=${project.id}`,
-  fallback_route: "/projects",
-  highlight_type: "project",
-  highlight_id: project.id,
-  highlight_tab: "activity",
-}
-```
+Ne diram `top/left/right` varijante.
 
-Nakon uspješnog push-a, **upisati jednu zvono-stavku** u `notifications` tablicu da korisnik vidi sažetak i u zvonu (osim ako test mode), s istim `data` payloadom. Tip `participant_digest`, naslov i tekst identični push-u.
+### 2. `src/components/projects/MobileProjectTabs.tsx`
+`SheetContent` za "Sve sekcije" obaviti listu u skrolabilni kontejner:
+- `SheetHeader` ostaje sticky-like na vrhu (jednostavno: kao prvi child)
+- Lista (`<div className="mt-4 flex flex-col gap-1">`) dobiva `overflow-y-auto` i `pb-safe` da zadnja stavka nije skrivena ispod Android nav bara.
 
-## 2) `src/lib/notificationPayload.ts`
-U `legacyResolve` dodati case kao backup za stare zvono-stavke ili push bez `route` polja:
+Konkretno: dodati `flex flex-col` + `max-h-[85svh]` na `SheetContent` (overrida default ako default već postoji u sheet.tsx — onda samo dodati `pb-[max(env(safe-area-inset-bottom),1.5rem)]`).
 
-```ts
-case 'participant_digest':
-  return {
-    route: projectId ? `/projects?id=${projectId}` : '/projects',
-    fallback_route: '/projects',
-    highlight: projectId
-      ? { type: 'project', id: projectId, tab: 'activity' }
-      : null,
-  };
-```
+## Verifikacija
+- Otvoriti projekt kao član, kliknuti "Više" na viewportu 384×705 → lista se mora moći skrolati do zadnje stavke i Android system bar ne smije pokrivati zadnji item.
+- Vlasnik na istom projektu također otvori "Više" → ista lista, isto ponašanje.
+- Desktop ostaje netaknut (`sm:hidden` na MobileProjectTabs, side="right" varijanta sheet-a nepromijenjena).
 
-## 3) `HighlightType` union
-Dodati `'participant_digest'` nije potrebno — koristimo postojeći `'project'` highlight. Bez schema promjena.
-
-## 4) Verifikacija nakon implementacije
-- Manualni trigger digest-a iz Settings test gumba → provjeriti payload u `push_delivery_logs` (sadrži `route`, `highlight_*`).
-- Klik na push (web): otvori se `/projects`, `ProjectsPanel` čita `location.state.openProjectId` + `initialTab='activity'`, `HighlightTarget` pulse-a `[data-highlight-id="project:<id>"]` (marker već postoji na `ProjectCard`).
-- Klik na zvono stavku tipa `participant_digest`: isti efekt preko `useNotificationNavigation`.
-- Native push tap (Android): `nativePush.ts` već poziva `normalizePayload` i `setPendingHighlight` prije `window.location.replace` — radi automatski.
-
-# Što NE radimo
-- Bez novih tablica, bez schema migracija.
-- Bez promjene digest cron rasporeda ili 19h logike.
-- Bez novih highlight tipova — `project` + `activity` tab je dovoljan jer sažetak pokriva više raznih događaja.
-
-# Memory update
-Ažurirati `mem://features/notification-navigation-and-highlight` — dodati `participant_digest` u listu pokrivenih tipova i zabilježiti FCM payload contract koji edge funkcije moraju slati.
+## Što NE diram
+- Read-only banner ("Projekti su u načinu samo za pregled") — ostaje kako je.
+- Sadržaj/popis sekcija u overflow listi — ne mijenjam koje su sekcije vidljive članu.
+- Bilo kakvu poslovnu logiku, role, RLS.
