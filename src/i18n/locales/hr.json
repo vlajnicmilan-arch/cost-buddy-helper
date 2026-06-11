@@ -20,9 +20,9 @@
     },
     "issues": {
       "lossZone": {
-        "title": "Projekt {{projectName}} ulazi u zonu gubitka",
-        "message": "Preostalo samo {{marginPct}}% marže",
-        "messageOver": "Projekt prelazi ugovorenu vrijednost ({{marginPct}}% marže)"
+        "title": "Projekt {{projectName}}: marža blizu nule",
+        "message": "Preostala marža: {{marginPct}}%",
+        "messageOver": "Projekt prelazi ugovorenu vrijednost (marža {{marginPct}}%)"
       },
       "overdueInvoice": {
         "title": "Faktura {{invoiceNumber}} u kašnjenju",
@@ -40,8 +40,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Vaš 30-dnevni probni period je istekao",
-    "chooseToContinue": "Odaberite plan za nastavak korištenja V&M Balance",
+    "trialExpiredTitle": "Probni period od 30 dana je istekao",
+    "chooseToContinue": "Odaberi plan da nastaviš koristiti V&M Balance",
     "interval": {
       "monthly": "Mjesečno",
       "yearly": "Godišnje",
@@ -718,7 +718,7 @@
       "description": "Možeš ga premjestiti u arhivu (sigurno, vraćaš ga kad želiš) ili obrisati. Obrisani projekt ide u Otpad i čuva se 30 dana prije trajnog uklanjanja.",
       "descriptionArchived": "Projekt je u arhivi. Brisanjem ide u Otpad gdje ostaje 30 dana prije trajnog uklanjanja.",
       "archiveAction": "Premjesti u arhivu",
-      "deleteAction": "Obriši trajno"
+      "deleteAction": "Premjesti u Otpad"
     },
     "menu": {
       "editProject": "Uredi projekt",
@@ -730,7 +730,7 @@
       "unarchive": "Vrati iz arhive",
       "archive": "Arhiviraj projekt",
       "delete": "Obriši projekt…",
-      "deletePermanently": "Obriši trajno",
+      "deletePermanently": "Premjesti u Otpad",
       "groupProject": "Projekt",
       "groupDisplay": "Prikaz",
       "groupArchive": "Arhiva i brisanje"
@@ -2152,9 +2152,9 @@
     }
   },
   "welcome": {
-    "title": "Dobrodošli",
-    "subtitle": "Spremni ste za upravljanje financijama!",
-    "autoHide": "Automatski nestaje za trenutak..."
+    "title": "Postavke spremljene",
+    "subtitle": "Idemo na pregled.",
+    "autoHide": "Otvaram pregled…"
   },
   "budget": {
     "title": "Budžeti",
@@ -4622,7 +4622,7 @@
       "cta": "Obriši Krug",
       "title": "Brisanje Kruga",
       "confirmSolo": "Premjesti Krug \"{{name}}\" u koš? Krug ostaje 30 dana prije trajnog brisanja.",
-      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Za trajno brisanje potrebna je suglasnost svih članova s pravom odluke ({{count}}). Ako bilo tko glasa protiv, brisanje neće proći. Zahtjev možeš povući u svakom trenutku.",
+      "confirmMulti": "Pokreni zahtjev za brisanje Kruga \"{{name}}\". Brisanje prolazi samo ako se slože svi članovi s pravom odluke ({{count}}); jedan glas protiv ga zaustavlja. Zahtjev možeš povući u bilo kojem trenutku.",
       "reasonLabel": "Razlog (opcionalno)",
       "reasonPlaceholder": "Npr. testni krug, više se ne koristi…",
       "submit": "Pošalji zahtjev",
