@@ -4643,8 +4643,8 @@
         "ok_cancelled": "Antrag zurückgezogen"
       },
       "errors": {
-        "not_owner": "Nur der Eigentümer kann die Löschung starten",
-        "not_eligible": "Nur Mitglieder mit Entscheidungsrecht dürfen abstimmen",
+        "not_owner": "Nur der Eigentümer kann das Löschen dieses Krugs starten.",
+        "not_eligible": "An dieser Abstimmung können nur Mitglieder mit Entscheidungsrecht teilnehmen.",
         "request_already_pending": "Es besteht bereits ein offener Antrag",
         "no_pending_request": "Kein offener Antrag",
         "krug_not_found": "Krug nicht gefunden",
