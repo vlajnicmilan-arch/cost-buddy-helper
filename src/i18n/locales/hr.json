@@ -4650,8 +4650,8 @@
         "ok_cancelled": "Zahtjev povučen"
       },
       "errors": {
-        "not_owner": "Samo vlasnik može pokrenuti brisanje",
-        "not_eligible": "Samo članovi s pravom odluke mogu glasati",
+        "not_owner": "Brisanje Kruga može pokrenuti samo vlasnik.",
+        "not_eligible": "U ovom glasanju mogu sudjelovati samo članovi s pravom odluke.",
         "request_already_pending": "Već postoji aktivan zahtjev",
         "no_pending_request": "Nema aktivnog zahtjeva",
         "krug_not_found": "Krug ne postoji",
