@@ -58,15 +58,15 @@ Zatvoren popis. Novi surface = PR + odluka, ne ad-hoc.
 
 | ID | Surface | Title limit | Body limit | CTA | Dopušten registar | Inventory |
 |----|---------|-------------|------------|-----|-------------------|-----------|
-| S1 | push notification | ≤40 znakova | ≤120 znakova | 1 implicitna (deep-link) | informativni, interpersonalni | I1, I2, I5 |
+| S1 | push notification | ≤65 znakova | ≤120 znakova | 1 implicitna (deep-link) | informativni, interpersonalni | I1, I2, I5 |
 | S2 | in-app notification (zvonce) | ≤60 znakova | ≤140 znakova | 1 deep-link | informativni, interpersonalni, upozoravajući | I2, I5 |
 | S3 | banner (top/inline) | ≤50 znakova | ≤100 znakova | 0–1 | informativni, upozoravajući | I8, I11 |
 | S4 | card (dashboard) | ≤40 znakova | ≤180 znakova | 0–2 | informativni, upozoravajući | I3, I4 |
 | S5 | chip / pill | n/a | ≤24 znaka | 1 (klikom) | informativni | I11 |
-| S6 | alert-dialog / modal | ≤40 znakova | ≤200 znakova | 2–3 (uvijek Odustani) | po klasi (vidi §5) | I9, I13 |
+| S6 | alert-dialog / modal | ≤40 znakova | ≤240 znakova | 2–3 (uvijek Odustani) | po klasi (vidi §5) | I9, I13 |
 | S7 | full-screen state | ≤40 znakova | ≤140 znakova | 1 (auto-redirect preferiran) | informativni | I12 |
-| S8 | status-feedback overlay | n/a | ≤4 riječi | 0 | mikro-feedback (V2) | I7 |
-| S9 | inline empty state | ≤32 znaka | ≤100 znakova | 0–1 (CTA = "stvori prvi…") | informativni | I10 |
+| S8 | status-feedback overlay | n/a | ≤5 riječi *ili* ≤32 znaka | 0 | mikro-feedback (V2) | I7 |
+| S9 | inline empty state | ≤40 znakova | ≤100 znakova | 0–1 (CTA = "stvori prvi…") | informativni | I10 |
 
 Pravilo: limiti se enforce-aju u review-u, ne runtime-om. Prekoračenje je dopušteno samo s eksplicitnim opravdanjem u PR opisu i samo za S6 (vidi §8).
 
