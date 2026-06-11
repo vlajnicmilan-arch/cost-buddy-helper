@@ -4643,8 +4643,8 @@
         "ok_cancelled": "Request withdrawn"
       },
       "errors": {
-        "not_owner": "Only the owner can start a deletion",
-        "not_eligible": "Only members with decision rights can vote",
+        "not_owner": "Only the owner can start deleting this Krug.",
+        "not_eligible": "Only members with decision rights can take part in this vote.",
         "request_already_pending": "A pending request already exists",
         "no_pending_request": "No pending request",
         "krug_not_found": "Krug not found",
