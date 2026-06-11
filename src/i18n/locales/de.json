@@ -20,9 +20,9 @@
     },
     "issues": {
       "lossZone": {
-        "title": "Projekt {{projectName}} in der Verlustzone",
-        "message": "Nur noch {{marginPct}}% Marge",
-        "messageOver": "Projekt überschreitet Vertragswert ({{marginPct}}% Marge)"
+        "title": "Projekt {{projectName}}: Marge nahe Null",
+        "message": "Verbleibende Marge: {{marginPct}}%",
+        "messageOver": "Projekt überschreitet Vertragswert (Marge {{marginPct}}%)"
       },
       "overdueInvoice": {
         "title": "Rechnung {{invoiceNumber}} überfällig",
@@ -40,8 +40,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Ihre 30-tägige Testphase ist abgelaufen",
-    "chooseToContinue": "Wählen Sie einen Plan, um V&M Balance weiter zu nutzen",
+    "trialExpiredTitle": "Deine 30-tägige Testphase ist abgelaufen",
+    "chooseToContinue": "Wähle einen Plan, um V&M Balance weiter zu nutzen",
     "interval": {
       "monthly": "Monatlich",
       "yearly": "Jährlich",
@@ -714,7 +714,7 @@
       "description": "Du kannst es ins Archiv verschieben (sicher, jederzeit wiederherstellbar) oder löschen. Gelöschte Projekte landen im Papierkorb und werden dort 30 Tage aufbewahrt, bevor sie endgültig entfernt werden.",
       "descriptionArchived": "Das Projekt ist archiviert. Beim Löschen landet es im Papierkorb und bleibt dort 30 Tage, bevor es endgültig entfernt wird.",
       "archiveAction": "Ins Archiv verschieben",
-      "deleteAction": "Endgültig löschen"
+      "deleteAction": "In den Papierkorb"
     },
     "menu": {
       "editProject": "Projekt bearbeiten",
@@ -726,7 +726,7 @@
       "unarchive": "Aus Archiv holen",
       "archive": "Projekt archivieren",
       "delete": "Projekt löschen…",
-      "deletePermanently": "Endgültig löschen",
+      "deletePermanently": "In den Papierkorb",
       "groupProject": "Projekt",
       "groupDisplay": "Ansicht",
       "groupArchive": "Archiv & Löschen"
@@ -2147,9 +2147,9 @@
     }
   },
   "welcome": {
-    "title": "Willkommen",
-    "subtitle": "Sie sind bereit, Ihre Finanzen zu verwalten!",
-    "autoHide": "Automatisch in einem Moment ausblenden..."
+    "title": "Einrichtung gespeichert",
+    "subtitle": "Übersicht wird geöffnet.",
+    "autoHide": "Übersicht wird geöffnet…"
   },
   "budget": {
     "title": "Budgets",
@@ -4615,7 +4615,7 @@
       "cta": "Krug löschen",
       "title": "Krug löschen",
       "confirmSolo": "Krug \"{{name}}\" in den Papierkorb verschieben? Bleibt 30 Tage vor endgültiger Löschung.",
-      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Die endgültige Löschung erfordert die Zustimmung aller Mitglieder mit Entscheidungsrecht ({{count}}). Stimmt jemand dagegen, wird nicht gelöscht. Du kannst den Antrag jederzeit zurückziehen.",
+      "confirmMulti": "Löschantrag für Krug \"{{name}}\" starten. Er geht nur durch, wenn alle Mitglieder mit Entscheidungsrecht ({{count}}) zustimmen; eine Gegenstimme stoppt ihn. Du kannst den Antrag jederzeit zurückziehen.",
       "reasonLabel": "Grund (optional)",
       "reasonPlaceholder": "z.B. Test-Krug, nicht mehr verwendet…",
       "submit": "Antrag senden",

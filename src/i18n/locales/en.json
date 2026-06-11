@@ -20,9 +20,9 @@
     },
     "issues": {
       "lossZone": {
-        "title": "Project {{projectName}} entering loss zone",
-        "message": "Only {{marginPct}}% margin remaining",
-        "messageOver": "Project exceeds contracted value ({{marginPct}}% margin)"
+        "title": "Project {{projectName}}: margin near zero",
+        "message": "Margin remaining: {{marginPct}}%",
+        "messageOver": "Project exceeds contracted value (margin {{marginPct}}%)"
       },
       "overdueInvoice": {
         "title": "Invoice {{invoiceNumber}} overdue",
@@ -40,8 +40,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Your 30-day trial has ended",
-    "chooseToContinue": "Choose a plan to keep using V&M Balance",
+    "trialExpiredTitle": "Your 30-day trial ended",
+    "chooseToContinue": "Pick a plan to keep using V&M Balance",
     "interval": {
       "monthly": "Monthly",
       "yearly": "Yearly",
@@ -714,7 +714,7 @@
       "description": "You can move it to the archive (safe, restore anytime) or delete it. Deleted projects go to Trash and are kept for 30 days before permanent removal.",
       "descriptionArchived": "This project is archived. Deleting moves it to Trash where it stays for 30 days before permanent removal.",
       "archiveAction": "Move to archive",
-      "deleteAction": "Delete permanently"
+      "deleteAction": "Move to Trash"
     },
     "menu": {
       "editProject": "Edit project",
@@ -726,7 +726,7 @@
       "unarchive": "Unarchive",
       "archive": "Archive project",
       "delete": "Delete project…",
-      "deletePermanently": "Delete permanently",
+      "deletePermanently": "Move to Trash",
       "groupProject": "Project",
       "groupDisplay": "Display",
       "groupArchive": "Archive & delete"
@@ -2147,9 +2147,9 @@
     }
   },
   "welcome": {
-    "title": "Welcome",
-    "subtitle": "You're ready to manage your finances!",
-    "autoHide": "Automatically hiding in a moment..."
+    "title": "Setup saved",
+    "subtitle": "Opening your overview.",
+    "autoHide": "Opening overview…"
   },
   "budget": {
     "title": "Budgets",
@@ -4615,7 +4615,7 @@
       "cta": "Delete Krug",
       "title": "Delete Krug",
       "confirmSolo": "Move Krug \"{{name}}\" to trash? Krug stays 30 days before permanent deletion.",
-      "confirmMulti": "Start a deletion request for Krug \"{{name}}\". Permanent deletion requires consent from every member with decision rights ({{count}}). If anyone votes against, the deletion will not proceed. You can withdraw the request at any time.",
+      "confirmMulti": "Start a deletion request for Krug \"{{name}}\". It passes only if every member with decision rights ({{count}}) agrees; a single vote against stops it. You can withdraw the request at any time.",
       "reasonLabel": "Reason (optional)",
       "reasonPlaceholder": "e.g. test krug, no longer used…",
       "submit": "Send request",
