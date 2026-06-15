@@ -633,7 +633,7 @@ export const GlobalPDFImportHost = () => {
                                 <p className="font-medium truncate text-xs">{existing.description}</p>
                                 <p className="text-[10px] text-muted-foreground">{(existing.date instanceof Date ? existing.date : new Date(existing.date)).toLocaleDateString()}</p>
                               </div>
-                              <p className={cn('font-mono text-xs shrink-0', existing.type === 'income' ? 'text-income' : 'text-expense')}>{existing.type === 'income' ? '+' : '-'}{formatAmount(Number(existing.amount))}</p>
+                              <p className={cn('font-mono text-xs shrink-0', amountColor(existing.type))}>{amountPrefix(existing.type)}{formatAmount(Number(existing.amount))}</p>
                             </div>
                             <div className="flex items-center gap-2 p-2 bg-emerald-500/5">
                               <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase w-14 shrink-0">{t('import.autoMerge.fromStatement')}</span>
@@ -641,7 +641,7 @@ export const GlobalPDFImportHost = () => {
                                 <p className="font-medium truncate text-xs">{tx.merchant_name || tx.description}</p>
                                 <p className="text-[10px] text-muted-foreground">{(tx.date instanceof Date ? tx.date : new Date(tx.date)).toLocaleDateString()}</p>
                               </div>
-                              <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+                              <p className={cn('font-mono text-xs shrink-0', amountColor(tx.type))}>{amountPrefix(tx.type)}{formatAmount(tx.amount)}</p>
                             </div>
                           </div>
                         ))}
@@ -785,13 +785,17 @@ export const GlobalPDFImportHost = () => {
   );
 };
 
+const amountPrefix = (type: string) => (type === 'income' ? '+' : type === 'transfer' ? '↔' : '-');
+const amountColor = (type: string) =>
+  type === 'income' ? 'text-income' : type === 'transfer' ? 'text-muted-foreground' : 'text-expense';
+
 const DuplicateRow = ({ tx, formatAmount }: { tx: ParsedTransaction; formatAmount: (amount: number) => string }) => (
   <div className="flex items-center justify-between gap-3 p-2 bg-destructive/5 rounded-lg text-sm border border-destructive/10 opacity-60">
     <div className="flex-1 min-w-0">
       <p className="font-medium truncate text-xs">{tx.description}</p>
       <p className="text-xs text-muted-foreground">{tx.date.toLocaleDateString()}</p>
     </div>
-    <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+    <p className={cn('font-mono text-xs shrink-0', amountColor(tx.type))}>{amountPrefix(tx.type)}{formatAmount(tx.amount)}</p>
   </div>
 );
 
@@ -823,7 +827,7 @@ const DecisionRow = ({ tx, matchedExpense, decision, onChange, formatAmount, t }
             <p className="font-medium truncate text-xs">{matchedExpense.description}</p>
             <p className="text-[10px] text-muted-foreground">{(matchedExpense.date instanceof Date ? matchedExpense.date : new Date(matchedExpense.date)).toLocaleDateString()}</p>
           </div>
-          <p className={cn('font-mono text-xs shrink-0', matchedExpense.type === 'income' ? 'text-income' : 'text-expense')}>{matchedExpense.type === 'income' ? '+' : '-'}{formatAmount(Number(matchedExpense.amount))}</p>
+          <p className={cn('font-mono text-xs shrink-0', amountColor(matchedExpense.type))}>{amountPrefix(matchedExpense.type)}{formatAmount(Number(matchedExpense.amount))}</p>
         </div>
       )}
       <div className="flex items-center gap-2 p-2 bg-amber-500/5">
@@ -832,7 +836,7 @@ const DecisionRow = ({ tx, matchedExpense, decision, onChange, formatAmount, t }
           <p className="font-medium truncate text-xs">{tx.description}</p>
           <p className="text-[10px] text-muted-foreground">{(tx.date instanceof Date ? tx.date : new Date(tx.date)).toLocaleDateString()}</p>
         </div>
-        <p className={cn('font-mono text-xs shrink-0', tx.type === 'income' ? 'text-income' : 'text-expense')}>{tx.type === 'income' ? '+' : '-'}{formatAmount(tx.amount)}</p>
+        <p className={cn('font-mono text-xs shrink-0', amountColor(tx.type))}>{amountPrefix(tx.type)}{formatAmount(tx.amount)}</p>
       </div>
       <div className="p-2 bg-background/40 border-t border-border/30 space-y-1.5">
         <ToggleGroup
