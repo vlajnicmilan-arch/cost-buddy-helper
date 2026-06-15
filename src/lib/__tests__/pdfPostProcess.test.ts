@@ -72,6 +72,20 @@ describe('reclassifyInternalTransfers', () => {
     expect(out[0].type).toBe('transfer');
   });
 
+  it('AI-transfer "Aircash Pay Jadrolinija" → expense (vanjsko plaćanje)', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'transfer', description: 'Aircash Pay Jadrolinija' },
+    ]);
+    expect(out[0].type).toBe('expense');
+  });
+
+  it('AI-expense "Aircash Pay Jadrolinija" ostaje expense', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'expense', description: 'Aircash Pay Jadrolinija' },
+    ]);
+    expect(out[0].type).toBe('expense');
+  });
+
   it('prazan/null description se ignorira', () => {
     const out = reclassifyInternalTransfers([
       { type: 'income', description: '' },
