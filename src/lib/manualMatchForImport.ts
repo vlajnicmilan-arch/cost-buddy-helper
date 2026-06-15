@@ -80,7 +80,10 @@ function roundAmount(n: number): string {
 }
 
 function isMatchableType(t: string): boolean {
-  return t === 'expense' || t === 'income';
+  // Auto-merge sada pokriva i transfere (npr. ručni "Aircash dopuna" vs
+  // bankovni "Uplata gotovine na Aircash"). Isti payment_source + iznos + ±1d
+  // ostaju uvjeti.
+  return t === 'expense' || t === 'income' || t === 'transfer';
 }
 
 function sameSource(a: string | null | undefined, b: string | null | undefined): boolean {

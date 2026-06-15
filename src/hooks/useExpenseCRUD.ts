@@ -650,7 +650,7 @@ export const useExpenseCRUD = ({
               .select('id, payment_source, type, amount, date, bank_match_status, bank_transaction_id')
               .eq('user_id', user.id)
               .in('payment_source', sources)
-              .in('type', ['income', 'expense'])
+              .in('type', ['income', 'expense', 'transfer'])
               .in('bank_match_status', ['manual', 'pending_bank'])
               .is('bank_transaction_id', null)
               .is('deleted_at', null)
