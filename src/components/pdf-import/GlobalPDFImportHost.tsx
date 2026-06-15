@@ -708,20 +708,47 @@ export const GlobalPDFImportHost = () => {
                   </div>
                 )}
               </div>
-              <div className="p-4 border-t border-border/50 flex flex-col sm:flex-row gap-2 sm:justify-end">
-                <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
-                <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">
-                  {isImporting
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</>
-                    : t('import.importCount', {
-                        count:
-                          duplicateInfo.unique.length
-                          + duplicateInfo.autoMergeMatches.length
-                          + Array.from(fuzzyDecisions.values()).filter(d => d === 'new' || d === 'merge').length
-                          + Array.from(suspiciousDecisions.values()).filter(d => d === 'new' || d === 'merge').length
-                          + (includeDuplicates ? duplicateInfo.duplicates.length : 0),
+              <div className="p-4 border-t border-border/50 flex flex-col gap-2">
+                {(() => {
+                  const newCount =
+                    duplicateInfo.unique.length
+                    + Array.from(fuzzyDecisions.values()).filter(d => d === 'new').length
+                    + Array.from(suspiciousDecisions.values()).filter(d => d === 'new').length
+                    + (includeDuplicates ? duplicateInfo.duplicates.length : 0);
+                  const mergeCount =
+                    duplicateInfo.autoMergeMatches.length
+                    + Array.from(fuzzyDecisions.values()).filter(d => d === 'merge').length
+                    + Array.from(suspiciousDecisions.values()).filter(d => d === 'merge').length;
+                  const skipCount =
+                    Array.from(fuzzyDecisions.values()).filter(d => d === 'skip').length
+                    + Array.from(suspiciousDecisions.values()).filter(d => d === 'skip').length
+                    + (includeDuplicates ? 0 : duplicateInfo.duplicates.length);
+                  return (
+                    <p className="text-xs text-muted-foreground text-center">
+                      {t('import.importBreakdown', {
+                        newCount,
+                        mergeCount,
+                        skipCount,
+                        defaultValue: 'Novo: {{newCount}} · Spojit će se: {{mergeCount}} · Preskočeno: {{skipCount}}',
                       })}
-                </Button>
+                    </p>
+                  );
+                })()}
+                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button variant="outline" onClick={resetAll} className="rounded-xl min-h-11">{t('common.cancel')}</Button>
+                  <Button onClick={handleImportDuplicates} disabled={isImporting} className="rounded-xl min-h-11">
+                    {isImporting
+                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('import.importing')}</>
+                      : t('import.importCount', {
+                          count:
+                            duplicateInfo.unique.length
+                            + duplicateInfo.autoMergeMatches.length
+                            + Array.from(fuzzyDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                            + Array.from(suspiciousDecisions.values()).filter(d => d === 'new' || d === 'merge').length
+                            + (includeDuplicates ? duplicateInfo.duplicates.length : 0),
+                        })}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
