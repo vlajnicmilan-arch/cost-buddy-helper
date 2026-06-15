@@ -28,7 +28,7 @@ export function reclassifyInternalTransfers<T extends ReclassifiableTransaction>
   transactions: T[],
 ): T[] {
   return transactions.map((tx) => {
-    if (tx.type !== 'income') return tx;
+    if (tx.type !== 'income' && tx.type !== 'expense') return tx;
     const desc = tx.description ?? '';
     if (!desc) return tx;
     if (!isInternalTransfer(desc)) return tx;
