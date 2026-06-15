@@ -78,7 +78,9 @@ export const useExpenses = (options?: UseExpensesOptions) => {
       const status = (e as any).bank_match_status;
       if (status && status !== 'manual' && status !== 'pending_bank') return false;
       if ((e as any).bank_transaction_id) return false;
-      return e.type === 'income' || e.type === 'expense';
+      // Auto-merge sada pokriva i transfere (npr. ručni "Aircash dopuna" ↔
+      // bankovni "Uplata gotovine na Aircash"). Vidi manualMatchForImport.ts.
+      return e.type === 'income' || e.type === 'expense' || e.type === 'transfer';
     });
     const mergeResult = matchManualToImported({
       imported: mergeCandidates,

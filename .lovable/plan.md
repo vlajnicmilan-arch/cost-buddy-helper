@@ -1,49 +1,41 @@
-## Uzrok
+## Što sam provjerio
 
-AI PDF parser je interne prijenose (top‑up Aircash računa preko INA/Tisak gotovinom **i** preko kartica tipa "Uplata na Aircash - Visa *** 7262") klasificirao kao `expense` umjesto `transfer`.
+- U bazi postoje 2 novija import batcha za istog korisnika:
+  - svibanj: 46 aktivnih `bank_only` redova
+  - lipanj: 52 redova ukupno, od toga 47 `bank_only`, 5 `confirmed`, 7 obrisanih transfera
+- Screenshot pokazuje gumb `Uvezi 47 transakcija` jer UI računa: `unique + autoMerge + review-merge/new`, a ne prikazuje jasno koliko je stvarno novo, koliko će se spojiti, a koliko će se preskočiti.
+- `imported_statements` nema zapis za ta 2 nova batcha (`rows_with_recent_batch_not_recorded = 121`) jer se u `recordImportedStatement` šalje `import_batch_id: null`. Zato zaštita “ovaj izvod je već uvezen” ne može pouzdano zaustaviti ponovni uvoz istog izvoda.
+- Row-level dedup postoji (`uniq_expenses_user_bank_tx`), ali fingerprint uključuje `type` i opis/merchant. Nakon promjene `expense -> transfer`, isti PDF može dobiti drugačiji fingerprint za iste stvarne transakcije. Zato re-import ne prepoznaje sve kao iste redove.
+- Auto-merge trenutno radi samo za `income`/`expense`, ne za `transfer`. To objašnjava Aircash dopune/prijenose nakon zadnjeg fixa.
 
-Postojeći safety net `reclassifyInternalTransfers` u `src/lib/pdfPostProcess.ts` pokriva samo `income → transfer`. Ne hvata `expense → transfer`, pa su top‑upovi završili kao isplate i napuhali rashode.
+## Plan
 
-Ključne riječi za sve te slučajeve ("uplata na aircash", "uplata gotovine", "uplata na aircash - visa ...", "aircash top up", "nadoplata aircash", "bankomat", "atm withdrawal", "prijenos na vlastiti račun"…) već postoje u `isInternalTransfer()` u `src/lib/csvParsers.ts`. Promjena je samo u grani koja te keywordse primjenjuje i na `expense`.
+1. **Popraviti evidenciju import batcha**
+   - `importFromCSV` treba vratiti stvarni rezultat importa: `batchId`, broj umetnutih, broj preskočenih po fingerprintu i broj spojenih.
+   - `GlobalPDFImportHost` mora u `recordImportedStatement` upisati stvarni `import_batch_id`, ne `null`.
+   - Ako nije umetnut nijedan novi red i sve je preskočeno/spojeno, ne zapisivati lažni “novi izvod”.
 
-## Promjena 1 — proširi safety net (kod)
+2. **Stabilizirati fingerprint za re-import istog izvoda**
+   - Za import fingerprint izbaciti `type` iz identiteta ili ga normalizirati tako da `expense/income/transfer` promjena ne mijenja identitet iste stavke.
+   - Zadržati `user + payment_source + date + amount + normalized merchant/description` kao osnovu.
+   - Dodati regresijske testove: ista Aircash top-up stavka s `expense` i `transfer` mora dati isti fingerprint.
 
-`src/lib/pdfPostProcess.ts`:
+3. **Proširiti auto-merge na transfere**
+   - `matchManualToImported` treba podržati `transfer` uz isti princip: isti izvor, isti iznos, ±1 dan, 1:1 kandidat.
+   - Query za manual kandidate u `importFromCSV` mora uključiti `transfer`.
+   - `findDuplicates` preview mora koristiti istu logiku da korisnik vidi “automatski će se spojiti”, umjesto da se cijeli izvod broji kao novi.
 
-- Trenutno: `if (tx.type !== 'income') return tx;`
-- Novo: obraditi i `income` i `expense`. Ako opis match‑a `isInternalTransfer(desc)`, pretvori u `transfer`.
-- `transfer` ostaje netaknut (AI ga već dobro pohvata).
-- Ostali tipovi (npr. `correction`) ostaju netaknuti.
+4. **Ispraviti broj u duplicate dialogu**
+   - Gumb ne smije govoriti samo `Uvezi 47 transakcija` kad dio redova ide u merge ili će biti preskočen.
+   - Prikazati jasne brojeve: `Novo`, `Spojit će se`, `Preskočeno/duplikati`.
+   - Tekst mora ići kroz i18n za HR/EN/DE.
 
-Zašto je sigurno proširiti i na `expense`: svi keywordsi u `isInternalTransfer` su definicijski interni prijenosi (top‑up Aircash/Revolut, ATM, prijenos na vlastiti račun). Klasifikacija `transfer` je točna bez obzira gleda li se iz source ili destination kuta.
+5. **Regresijski testovi**
+   - `manualMatchForImport`: transfer ↔ transfer se auto-spaja; različit source se ne spaja; više kandidata ostaje ambiguous.
+   - `importFingerprint`: promjena `type` ne mijenja fingerprint iste importirane stavke.
+   - Po potrebi prilagoditi postojeće testove koji očekuju stari fingerprint format.
 
-## Promjena 2 — regresijski testovi
-
-`src/lib/__tests__/pdfPostProcess.test.ts` — dodaj:
-
-- "Uplata gotovine na Aircash INA" + `expense` → `transfer`
-- "Uplata gotovine na Aircash Tisak" + `expense` → `transfer`
-- "Uplata na Aircash - Visa *** 7262" + `expense` → `transfer`
-- "Bankomat podizanje 100 EUR" + `expense` → `transfer`
-- Regular expense ("Konzum Maksimirska") + `expense` → ostaje `expense`
-- Postojeći income → transfer testovi i dalje prolaze
-
-## Promjena 3 — recovery svibanj/lipanj (opcija A, kako si izabrao)
-
-1. Korisnik u Wallet listi filtrira Aircash + razdoblje svibanj/lipanj 2026.
-2. Briše krive expense retke (Trash + UNDO ostaje sigurnosna mreža).
-3. Ponovi PDF uvoz istog izvoda — nakon Promjene 1 svi top‑upovi (i gotovinski i kartični) automatski postaju `transfer`.
-
-Bez bulk SQL update‑a — pravilan `transfer` zahtijeva i postavljanje destinacije (`income_source_id` = Aircash payment source), što je urednije napraviti kroz import flow nego u sirovom SQL‑u.
-
-## Što NE radim
-
-- Ne diram AI prompt (keyword safety net je deterministički, jeftiniji, pokriven testovima).
-- Ne diram CSV parser (Aircash CSV već koristi istu `isInternalTransfer` listu i radi ispravno).
-- Ne uvodim novu heuristiku temeljem +/- predznaka — AI parser ne izlaže sirovi predznak, samo izračunati `type`.
-- Ne radim memory update do nakon implementacije; ako prođe, ažurirat ću postojeći mem `pdf-import-internal-transfer-reclassification` da uključuje i expense granu.
-
-## Validacija
-
-- `npm test` mora proći (postojeći + 4 nova testa).
-- Ručni smoke: korisnik briše krive transakcije, ponovo uveze isti PDF, provjeri da su top‑upovi u Wallet listi prikazani kao Transfer (gotovina/Visa → Aircash) i da Aircash saldo + ukupan rashod za svibanj/lipanj pada na očekivanu razinu.
+6. **Sanacija postojećeg stanja**
+   - Ne raditi bulk update/delete bez dodatne potvrde.
+   - Nakon code fixa: preporuka je ne klikati `Uvezi 47` na trenutnom dialogu. Zatvoriti ga, ponovno otvoriti PDF import. Novi flow bi trebao prepoznati postojeće redove i/ili jasno pokazati što se spaja.
+   - Ako već postoje duplikati nakon pokušaja, napraviti zaseban read-only izvještaj po datumu/iznosu/opisu prije bilo kakvog čišćenja.

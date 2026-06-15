@@ -1727,6 +1727,7 @@
     "expenses": "Expenses",
     "total": "Total",
     "importCount": "Import {{count}} transactions",
+    "importBreakdown": "New: {{newCount}} · Will merge: {{mergeCount}} · Skipped: {{skipCount}}",
     "importedFromPDF": "Imported {{count}} transactions from PDF",
     "importing": "Importing...",
     "installment": {

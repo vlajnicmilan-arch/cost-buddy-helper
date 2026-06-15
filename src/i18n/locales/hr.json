@@ -1732,6 +1732,7 @@
     "expenses": "Rashodi",
     "total": "Ukupno",
     "importCount": "Uvezi {{count}} transakcija",
+    "importBreakdown": "Novo: {{newCount}} · Spojit će se: {{mergeCount}} · Preskočeno: {{skipCount}}",
     "importedFromPDF": "Uvezeno {{count}} transakcija iz PDF-a",
     "importing": "Uvozim...",
     "installment": {

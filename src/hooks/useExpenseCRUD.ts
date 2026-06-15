@@ -533,10 +533,18 @@ export const useExpenseCRUD = ({
 
   const importFromCSV = useCallback(async (
     transactions: ParsedTransaction[],
-    opts?: { forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }> },
+    opts?: {
+      forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }>;
+      /**
+       * Optional sink za pravu evidenciju izvoda — pozove se NAKON što su
+       * redovi obrađeni s pravim `batchId` i brojevima. Ne mijenja
+       * povratni tip funkcije, samo opcionalna telemetrija + statement record.
+       */
+      onMeta?: (meta: { batchId: string; inserted: number; merged: number; skipped: number }) => void;
+    },
   ) => {
+    const batchId = crypto.randomUUID();
     try {
-      const batchId = crypto.randomUUID();
       const forcedMerges = opts?.forcedManualMerges ?? [];
 
       if (isLocalMode) {
@@ -650,7 +658,7 @@ export const useExpenseCRUD = ({
               .select('id, payment_source, type, amount, date, bank_match_status, bank_transaction_id')
               .eq('user_id', user.id)
               .in('payment_source', sources)
-              .in('type', ['income', 'expense'])
+              .in('type', ['income', 'expense', 'transfer'])
               .in('bank_match_status', ['manual', 'pending_bank'])
               .is('bank_transaction_id', null)
               .is('deleted_at', null)
@@ -874,6 +882,8 @@ export const useExpenseCRUD = ({
         } else {
           showSuccess(t('import.importedTransactions', { count: insertedData.length }));
         }
+
+        try { opts?.onMeta?.({ batchId, inserted: insertedData.length, merged: mergedCount, skipped: skippedCount }); } catch {}
       }
 
     } catch (error) {

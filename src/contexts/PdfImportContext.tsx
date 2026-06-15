@@ -20,10 +20,12 @@ export type FindPdfDuplicatesHandler = (transactions: ParsedTransaction[]) => {
 
 export type ForcedManualMerge = { tx: ParsedTransaction; manualId: string };
 
+export type ImportMeta = { batchId: string; inserted: number; merged: number; skipped: number };
+
 interface PdfImportHandlers {
   onImportCSV: (
     transactions: ParsedTransaction[],
-    opts?: { forcedManualMerges?: ForcedManualMerge[] },
+    opts?: { forcedManualMerges?: ForcedManualMerge[]; onMeta?: (meta: ImportMeta) => void },
   ) => Promise<void>;
   findDuplicates?: FindPdfDuplicatesHandler;
 }
@@ -57,7 +59,7 @@ interface PdfImportContextValue {
   _setDuplicates: () => void;
   _setIdle: () => void;
   _setImporting: (importing: boolean) => void;
-  _runImport: (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[] }) => Promise<void>;
+  _runImport: (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[]; onMeta?: (meta: ImportMeta) => void }) => Promise<void>;
   _runFindDuplicates: (transactions: ParsedTransaction[]) => ReturnType<FindPdfDuplicatesHandler> | null;
   _pendingPdfRef: MutableRefObject<StartPdfImportOptions | null>;
   _pendingHtmlRef: MutableRefObject<StartHtmlImportOptions | null>;
@@ -139,7 +141,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setPhase(importing ? 'importing' : 'preview');
   }, []);
 
-  const _runImport = useCallback(async (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[] }) => {
+  const _runImport = useCallback(async (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[]; onMeta?: (meta: ImportMeta) => void }) => {
     const handlers = handlersRef.current;
     if (!handlers) {
       try { logDiagnostic({ event: 'global_pdf_import_no_handler', severity: 'error', details: { count: transactions.length } }); } catch {}
