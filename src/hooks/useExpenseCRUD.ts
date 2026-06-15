@@ -534,9 +534,9 @@ export const useExpenseCRUD = ({
   const importFromCSV = useCallback(async (
     transactions: ParsedTransaction[],
     opts?: { forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }> },
-  ) => {
+  ): Promise<{ batchId: string; inserted: number; merged: number; skipped: number }> => {
+    const batchId = crypto.randomUUID();
     try {
-      const batchId = crypto.randomUUID();
       const forcedMerges = opts?.forcedManualMerges ?? [];
 
       if (isLocalMode) {
