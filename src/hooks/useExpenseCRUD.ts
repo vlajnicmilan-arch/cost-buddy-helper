@@ -882,6 +882,8 @@ export const useExpenseCRUD = ({
         } else {
           showSuccess(t('import.importedTransactions', { count: insertedData.length }));
         }
+
+        try { opts?.onMeta?.({ batchId, inserted: insertedData.length, merged: mergedCount, skipped: skippedCount }); } catch {}
       }
 
     } catch (error) {
