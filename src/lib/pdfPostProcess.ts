@@ -1,16 +1,17 @@
 /**
  * Post-process transactions extracted by the AI PDF/HTML/photo parser.
  *
- * AI ponekad cash/wallet top-upove ("Uplata gotovine na Aircash Tisak",
- * "Uplata na Aircash - Visa *** 7262", "Revolut top up"...) klasificira kao
- * `income` jer s računa na koji ide novac to izgleda kao priljev. CSV import
- * to već rješava preko `isInternalTransfer()`, a PDF flow nije — pa interni
- * prijenosi završavaju kao prihod i napuhuju ukupni income.
+ * AI ponekad interne prijenose ("Uplata gotovine na Aircash Tisak/INA",
+ * "Uplata na Aircash - Visa *** 7262", "Revolut top up", ATM podizanja...)
+ * klasificira ili kao `income` (gledano s računa koji prima novac) ili kao
+ * `expense` (gledano s računa koji šalje novac). Oba su pogrešna — to su
+ * interni prijenosi i moraju biti `transfer`, inače napuhuju prihode ili
+ * rashode.
  *
- * Ovaj helper je deterministički safety net koji se primjenjuje nakon AI
- * outputa, ali prije nego što transakcije uđu u UI/import. Ne pretvara
- * expense → transfer (banka legitimno ima outgoing transfere koje AI često
- * dobro pohvata kao `transfer`).
+ * CSV import to već rješava preko `isInternalTransfer()`. Ovaj helper je
+ * deterministički safety net koji se primjenjuje nakon AI outputa, ali prije
+ * nego što transakcije uđu u UI/import. Postojeći `transfer` retci ostaju
+ * netaknuti (AI ih često dobro pohvata).
  */
 import { isInternalTransfer } from './csvParsers';
 
@@ -28,7 +29,7 @@ export function reclassifyInternalTransfers<T extends ReclassifiableTransaction>
   transactions: T[],
 ): T[] {
   return transactions.map((tx) => {
-    if (tx.type !== 'income') return tx;
+    if (tx.type !== 'income' && tx.type !== 'expense') return tx;
     const desc = tx.description ?? '';
     if (!desc) return tx;
     if (!isInternalTransfer(desc)) return tx;

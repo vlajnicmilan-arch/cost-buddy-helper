@@ -1,57 +1,49 @@
-## Cilj
-Sastaviti jedan strukturirani DOCX dokument koji sadrži:
-1. Trenutno stanje aplikacije V&M Balance (faktualno, na temelju koda + memorije).
-2. Ocjenu i kritički osvrt po oblastima od strane "tima stručnjaka".
-3. Konkretne prijedloge poboljšanja po oblasti.
-4. Viziju — čemu težimo (srednji/dugi rok).
+## Uzrok
 
-## Tim stručnjaka (7 uloga, paralelni subagenti)
+AI PDF parser je interne prijenose (top‑up Aircash računa preko INA/Tisak gotovinom **i** preko kartica tipa "Uplata na Aircash - Visa *** 7262") klasificirao kao `expense` umjesto `transfer`.
 
-Svaki dobiva isti pristup repou (read-only) i vraća strukturirani izvještaj: **Stanje · Ocjena (1–10) · Top 3 problema · Top 3 prijedloga**.
+Postojeći safety net `reclassifyInternalTransfers` u `src/lib/pdfPostProcess.ts` pokriva samo `income → transfer`. Ne hvata `expense → transfer`, pa su top‑upovi završili kao isplate i napuhali rashode.
 
-1. **Product / UX strateg** — onboarding, aktivacijski lijevak, navigacija, Projects/Wallet/Budget tokovi, mobile UX (384px), feedback (StatusFeedback), feature gating.
-2. **Frontend arhitekt** — React 18 + Vite, struktura `src/components`, context providers, TanStack Query usage, lazy loading, veličina komponenti (pravilo ~300 linija), i18n (`t()`) pokrivenost.
-3. **Backend / Data arhitekt** — Supabase shema, RLS policies, RBAC (`user_roles`), edge funkcije (FCM v1, digesti, invitations), trigger/RPC sloj, soft delete, migracije.
-4. **Security & Compliance auditor** — RLS coverage, grants, security definer funkcije, secrets, GDPR account deletion, OAuth (Native), Stripe webhooks, RestrictIVE policies (module-access v2).
-5. **Mobile / Native inženjer** — Capacitor (Camera/Haptics/StatusBar/Browser), bundle ID, version-bump pravilo, native OAuth flow, push notifications (FCM v1), offline queue, performance na low-end Android.
-6. **QA / Reliability** — pokrivenost vitest, E2E Playwright suite, CI workflows (test + e2e + android-build), crash alerts, error localization, dialog lifecycle guard, graceful errors.
-7. **Business / Monetizacija** — subscription tiers (Free/Pro/Business), Stripe integracija, EU SaaS odluka, AI quota, project type presets, retention/cohort dashboard, acquisition funnel.
+Ključne riječi za sve te slučajeve ("uplata na aircash", "uplata gotovine", "uplata na aircash - visa ...", "aircash top up", "nadoplata aircash", "bankomat", "atm withdrawal", "prijenos na vlastiti račun"…) već postoje u `isInternalTransfer()` u `src/lib/csvParsers.ts`. Promjena je samo u grani koja te keywordse primjenjuje i na `expense`.
 
-Svaki subagent radi read-only pretragu: čita `mem://index.md` + relevantne memory fileove + uzorak ključnih izvornih datoteka iz svoje oblasti. Ne piše kod.
+## Promjena 1 — proširi safety net (kod)
 
-## Output dokument
+`src/lib/pdfPostProcess.ts`:
 
-Format: `.docx`, hrvatski, generiran preko docx-js skill-a, pohranjen u `/mnt/documents/vm-balance-audit-{datum}.docx`.
+- Trenutno: `if (tx.type !== 'income') return tx;`
+- Novo: obraditi i `income` i `expense`. Ako opis match‑a `isInternalTransfer(desc)`, pretvori u `transfer`.
+- `transfer` ostaje netaknut (AI ga već dobro pohvata).
+- Ostali tipovi (npr. `correction`) ostaju netaknuti.
 
-Struktura:
+Zašto je sigurno proširiti i na `expense`: svi keywordsi u `isInternalTransfer` su definicijski interni prijenosi (top‑up Aircash/Revolut, ATM, prijenos na vlastiti račun). Klasifikacija `transfer` je točna bez obzira gleda li se iz source ili destination kuta.
 
-```
-Naslovna
-Sadržaj
-1. Sažetak (executive summary) — 1 stranica
-2. Trenutno stanje aplikacije
-   2.1 Tehnologija i arhitektura
-   2.2 Ključni moduli (Projects, Wallet, Budgets, Krug, Family, Business)
-   2.3 Status stabilizacije (iz mem://features/projects-stabilization-status i sl.)
-3. Ekspertski osvrti (7 sekcija, jedna po stručnjaku)
-   - Stanje
-   - Ocjena
-   - Kritički osvrt
-   - Prijedlozi poboljšanja
-4. Konsolidirana matrica prioriteta (P0/P1/P2)
-5. Vizija — čemu težimo (3, 6, 12 mjeseci)
-6. Prilog: izvori (lista memory dokumenata i ključnih datoteka)
-```
+## Promjena 2 — regresijski testovi
 
-Stil: teal (HSL 172 66% 40%) za naslove gdje je moguće, Inter/Arial font. Bez emojija. Tablice s ocjenama i prioritetima.
+`src/lib/__tests__/pdfPostProcess.test.ts` — dodaj:
+
+- "Uplata gotovine na Aircash INA" + `expense` → `transfer`
+- "Uplata gotovine na Aircash Tisak" + `expense` → `transfer`
+- "Uplata na Aircash - Visa *** 7262" + `expense` → `transfer`
+- "Bankomat podizanje 100 EUR" + `expense` → `transfer`
+- Regular expense ("Konzum Maksimirska") + `expense` → ostaje `expense`
+- Postojeći income → transfer testovi i dalje prolaze
+
+## Promjena 3 — recovery svibanj/lipanj (opcija A, kako si izabrao)
+
+1. Korisnik u Wallet listi filtrira Aircash + razdoblje svibanj/lipanj 2026.
+2. Briše krive expense retke (Trash + UNDO ostaje sigurnosna mreža).
+3. Ponovi PDF uvoz istog izvoda — nakon Promjene 1 svi top‑upovi (i gotovinski i kartični) automatski postaju `transfer`.
+
+Bez bulk SQL update‑a — pravilan `transfer` zahtijeva i postavljanje destinacije (`income_source_id` = Aircash payment source), što je urednije napraviti kroz import flow nego u sirovom SQL‑u.
 
 ## Što NE radim
-- Ne mijenjam kod ni postavke.
-- Ne izmišljam metrike (retention %, MAU itd.) — ako nema podatka u kodu/memoriji, eksplicitno označiti "nemam podatak".
-- Ne kopiram cijeli kod u dokument — samo file:line reference gdje je relevantno.
 
-## Procjena dužine
-20–30 stranica DOCX-a. Generacija ~5–10 minuta (paralelni subagenti + docx-js + QA pregled stranica).
+- Ne diram AI prompt (keyword safety net je deterministički, jeftiniji, pokriven testovima).
+- Ne diram CSV parser (Aircash CSV već koristi istu `isInternalTransfer` listu i radi ispravno).
+- Ne uvodim novu heuristiku temeljem +/- predznaka — AI parser ne izlaže sirovi predznak, samo izračunati `type`.
+- Ne radim memory update do nakon implementacije; ako prođe, ažurirat ću postojeći mem `pdf-import-internal-transfer-reclassification` da uključuje i expense granu.
 
-## Verifikacija prije isporuke
-Konvertirati DOCX → PDF → slike, vizualno provjeriti svaku stranicu (clipping, prelijevanje tablica, prazne stranice). Ispraviti i regenerirati ako treba.
+## Validacija
+
+- `npm test` mora proći (postojeći + 4 nova testa).
+- Ručni smoke: korisnik briše krive transakcije, ponovo uveze isti PDF, provjeri da su top‑upovi u Wallet listi prikazani kao Transfer (gotovina/Visa → Aircash) i da Aircash saldo + ukupan rashod za svibanj/lipanj pada na očekivanu razinu.

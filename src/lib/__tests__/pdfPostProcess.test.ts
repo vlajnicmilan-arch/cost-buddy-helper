@@ -30,9 +30,37 @@ describe('reclassifyInternalTransfers', () => {
     expect(out[0].type).toBe('income');
   });
 
-  it('expense se ne dira čak i kad opis sadrži transfer keyword', () => {
+  it('expense "Uplata gotovine na Aircash INA" → transfer', () => {
     const out = reclassifyInternalTransfers([
-      { type: 'expense', description: 'Uplata na Aircash' },
+      { type: 'expense', description: 'Uplata gotovine na Aircash INA' },
+    ]);
+    expect(out[0].type).toBe('transfer');
+  });
+
+  it('expense "Uplata gotovine na Aircash Tisak" → transfer', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'expense', description: 'Uplata gotovine na Aircash Tisak' },
+    ]);
+    expect(out[0].type).toBe('transfer');
+  });
+
+  it('expense "Uplata na Aircash - Visa *** 7262" → transfer', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'expense', description: 'Uplata na Aircash - Visa *** 7262' },
+    ]);
+    expect(out[0].type).toBe('transfer');
+  });
+
+  it('expense "Bankomat podizanje" → transfer', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'expense', description: 'Bankomat podizanje 100 EUR' },
+    ]);
+    expect(out[0].type).toBe('transfer');
+  });
+
+  it('regularni expense ostaje expense', () => {
+    const out = reclassifyInternalTransfers([
+      { type: 'expense', description: 'Konzum Maksimirska' },
     ]);
     expect(out[0].type).toBe('expense');
   });
