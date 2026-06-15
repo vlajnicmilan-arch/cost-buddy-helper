@@ -341,7 +341,7 @@ export const GlobalPDFImportHost = () => {
     void recover();
   }, [fetchPDFParseJob, normalizeJobResult, pdfImport, waitForPDFParseJob]);
 
-  const persistStatementRecord = useCallback(async (count: number) => {
+  const persistStatementRecord = useCallback(async (count: number, importBatchId: string | null) => {
     if (!user?.id || !pdfImport.source) return;
     // Ensure we have a content hash even if guard 2 was skipped (force re-import path).
     let contentHash = contentHashRef.current;
@@ -365,7 +365,7 @@ export const GlobalPDFImportHost = () => {
       fileSize: fileMetaRef.current?.size ?? null,
       mimeType: fileMetaRef.current?.type ?? null,
       transactionsCount: count,
-      importBatchId: null,
+      importBatchId,
     });
   }, [user?.id, pdfImport.source, pdfImport.result]);
 
@@ -419,9 +419,10 @@ export const GlobalPDFImportHost = () => {
         return;
       }
       // No reviewable duplicates — auto-merge (if any) happens silently inside importFromCSV.
-      await pdfImport._runImport(transactions);
-      await persistStatementRecord(transactions.length);
-      const mergedCount = duplicateResult?.autoMergeMatches?.length ?? 0;
+      let meta: { batchId: string; inserted: number; merged: number; skipped: number } | null = null;
+      await pdfImport._runImport(transactions, { onMeta: (m) => { meta = m; } });
+      await persistStatementRecord(transactions.length, meta?.batchId ?? null);
+      const mergedCount = meta?.merged ?? duplicateResult?.autoMergeMatches?.length ?? 0;
       if (mergedCount > 0) {
         showSuccess(t('import.importedWithAutoMerge', { count: transactions.length - mergedCount, merged: mergedCount }));
       } else {
@@ -479,8 +480,9 @@ export const GlobalPDFImportHost = () => {
     }
     try {
       pdfImport._setImporting(true);
-      await pdfImport._runImport(transactions, { forcedManualMerges });
-      await persistStatementRecord(transactions.length);
+      let meta: { batchId: string; inserted: number; merged: number; skipped: number } | null = null;
+      await pdfImport._runImport(transactions, { forcedManualMerges, onMeta: (m) => { meta = m; } });
+      await persistStatementRecord(transactions.length, meta?.batchId ?? null);
       showSuccess(t('import.importedTransactions', { count: transactions.length }));
       resetAll();
     } catch (error) {
