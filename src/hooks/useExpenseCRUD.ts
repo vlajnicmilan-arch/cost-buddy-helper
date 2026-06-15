@@ -533,8 +533,16 @@ export const useExpenseCRUD = ({
 
   const importFromCSV = useCallback(async (
     transactions: ParsedTransaction[],
-    opts?: { forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }> },
-  ): Promise<{ batchId: string; inserted: number; merged: number; skipped: number }> => {
+    opts?: {
+      forcedManualMerges?: Array<{ tx: ParsedTransaction; manualId: string }>;
+      /**
+       * Optional sink za pravu evidenciju izvoda — pozove se NAKON što su
+       * redovi obrađeni s pravim `batchId` i brojevima. Ne mijenja
+       * povratni tip funkcije, samo opcionalna telemetrija + statement record.
+       */
+      onMeta?: (meta: { batchId: string; inserted: number; merged: number; skipped: number }) => void;
+    },
+  ) => {
     const batchId = crypto.randomUUID();
     try {
       const forcedMerges = opts?.forcedManualMerges ?? [];
