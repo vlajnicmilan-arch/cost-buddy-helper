@@ -19,7 +19,8 @@ import { LoanDetectionDialog } from '@/components/business/LoanDetectionDialog';
 import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 
-import { showSuccess } from '@/hooks/useStatusFeedback';
+import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { IMPORT_FROZEN } from '@/lib/featureFlags';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAuth } from '@/hooks/useAuth';
@@ -275,6 +276,10 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   };
 
   const handleImport = async () => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      return;
+    }
     let selectedTransactions = transactions.filter((_, i) => selectedIndices.has(i));
 
     // Collect auto-gen replacements

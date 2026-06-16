@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { logFunnelEvent } from '@/lib/funnelTracking';
+import { IMPORT_FROZEN } from '@/lib/featureFlags';
 import {
   canMergeSelection,
   type MergeCandidateExpense,
@@ -23,6 +24,10 @@ export function useManualBankMerge() {
 
   const mergePair = useCallback(
     async (manualId: string, bankId: string): Promise<boolean> => {
+      if (IMPORT_FROZEN) {
+        showError(t('import.frozen'));
+        return false;
+      }
       setIsMerging(true);
       try {
         const { error } = await supabase.rpc('merge_manual_with_bank' as any, {

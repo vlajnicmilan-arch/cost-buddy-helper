@@ -1,9 +1,12 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Expense } from '@/types/expense';
 import type { CustomPaymentSource } from '@/types/customPaymentSource';
 import type { ParsedTransaction } from '@/lib/csvParsers';
 import type { PDFParseResult } from '@/hooks/usePDFParser';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { showError } from '@/hooks/useStatusFeedback';
+import { IMPORT_FROZEN } from '@/lib/featureFlags';
 
 export type PdfImportPhase = 'idle' | 'starting' | 'processing' | 'preview' | 'duplicates' | 'importing';
 
@@ -70,6 +73,7 @@ const noop = () => {};
 const PdfImportContext = createContext<PdfImportContextValue | null>(null);
 
 export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<PdfImportPhase>('idle');
   const [source, setSource] = useState<CustomPaymentSource | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -80,6 +84,12 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
   const pendingHtmlRef = useRef<StartHtmlImportOptions | null>(null);
 
   const startPdfImport = useCallback(async (options: StartPdfImportOptions) => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      try { options.releaseGuard?.(); } catch {}
+      try { logDiagnostic('global_pdf_import_blocked_frozen', { source_id: options.source.id }); } catch {}
+      return;
+    }
     pendingPdfRef.current = options;
     pendingHtmlRef.current = null;
     setSource(options.source);
@@ -87,9 +97,15 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setJobId(null);
     setPhase('starting');
     try { logDiagnostic('global_pdf_import_start_requested', { source_id: options.source.id, file_size: options.file.size }); } catch {}
-  }, []);
+  }, [t]);
 
   const startHtmlImport = useCallback(async (options: StartHtmlImportOptions) => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      try { options.releaseGuard?.(); } catch {}
+      try { logDiagnostic('global_html_import_blocked_frozen', { source_id: options.source.id }); } catch {}
+      return;
+    }
     pendingHtmlRef.current = options;
     pendingPdfRef.current = null;
     setSource(options.source);
@@ -97,7 +113,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setJobId(null);
     setPhase('starting');
     try { logDiagnostic('global_html_import_start_requested', { source_id: options.source.id, file_size: options.file.size }); } catch {}
-  }, []);
+  }, [t]);
 
   const registerHandlers = useCallback((handlers: PdfImportHandlers) => {
     handlersRef.current = handlers;
@@ -142,13 +158,18 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const _runImport = useCallback(async (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[]; onMeta?: (meta: ImportMeta) => void }) => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      try { logDiagnostic('global_pdf_import_run_blocked_frozen', { count: transactions.length }); } catch {}
+      return;
+    }
     const handlers = handlersRef.current;
     if (!handlers) {
       try { logDiagnostic({ event: 'global_pdf_import_no_handler', severity: 'error', details: { count: transactions.length } }); } catch {}
       return;
     }
     await handlers.onImportCSV(transactions, opts);
-  }, []);
+  }, [t]);
 
   const _runFindDuplicates = useCallback((transactions: ParsedTransaction[]) => {
     return handlersRef.current?.findDuplicates?.(transactions) ?? null;

@@ -1716,6 +1716,7 @@
     "backupInfoDesc": "Automatski backup čuva zadnjih 5 verzija podataka lokalno na uređaju. Backup se također sprema pri zatvaranju aplikacije."
   },
   "import": {
+    "frozen": "Uvoz izvoda i spajanje su privremeno zamrznuti. Radimo na trajnom rješenju.",
     "title": "Uvoz transakcija",
     "importCSV": "Uvezi CSV",
     "importPDF": "Uvezi iz PDF-a",
