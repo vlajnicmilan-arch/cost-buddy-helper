@@ -1711,6 +1711,7 @@
     "backupInfoDesc": "Auto-Backup speichert die letzten 5 Versionen der Daten lokal auf dem Gerät. Backup wird auch beim Schließen der App gespeichert."
   },
   "import": {
+    "frozen": "Auszugsimport und Zusammenführung sind vorübergehend deaktiviert. Wir arbeiten an einer dauerhaften Lösung.",
     "title": "Transaktionen importieren",
     "importCSV": "CSV importieren",
     "importPDF": "Aus PDF importieren",

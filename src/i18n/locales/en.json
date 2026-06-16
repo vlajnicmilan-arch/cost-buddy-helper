@@ -1711,6 +1711,7 @@
     "backupInfoDesc": "Auto backup keeps the last 5 versions of data locally on the device. Backup is also saved when closing the app."
   },
   "import": {
+    "frozen": "Statement import and merging are temporarily frozen. We're working on a permanent fix.",
     "title": "Import transactions",
     "importCSV": "Import CSV",
     "importPDF": "Import from PDF",
