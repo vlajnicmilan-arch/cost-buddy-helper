@@ -73,6 +73,7 @@ const noop = () => {};
 const PdfImportContext = createContext<PdfImportContextValue | null>(null);
 
 export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<PdfImportPhase>('idle');
   const [source, setSource] = useState<CustomPaymentSource | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -83,6 +84,12 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
   const pendingHtmlRef = useRef<StartHtmlImportOptions | null>(null);
 
   const startPdfImport = useCallback(async (options: StartPdfImportOptions) => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      try { options.releaseGuard?.(); } catch {}
+      try { logDiagnostic('global_pdf_import_blocked_frozen', { source_id: options.source.id }); } catch {}
+      return;
+    }
     pendingPdfRef.current = options;
     pendingHtmlRef.current = null;
     setSource(options.source);
@@ -90,9 +97,15 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setJobId(null);
     setPhase('starting');
     try { logDiagnostic('global_pdf_import_start_requested', { source_id: options.source.id, file_size: options.file.size }); } catch {}
-  }, []);
+  }, [t]);
 
   const startHtmlImport = useCallback(async (options: StartHtmlImportOptions) => {
+    if (IMPORT_FROZEN) {
+      showError(t('import.frozen'));
+      try { options.releaseGuard?.(); } catch {}
+      try { logDiagnostic('global_html_import_blocked_frozen', { source_id: options.source.id }); } catch {}
+      return;
+    }
     pendingHtmlRef.current = options;
     pendingPdfRef.current = null;
     setSource(options.source);
@@ -100,7 +113,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     setJobId(null);
     setPhase('starting');
     try { logDiagnostic('global_html_import_start_requested', { source_id: options.source.id, file_size: options.file.size }); } catch {}
-  }, []);
+  }, [t]);
 
   const registerHandlers = useCallback((handlers: PdfImportHandlers) => {
     handlersRef.current = handlers;
