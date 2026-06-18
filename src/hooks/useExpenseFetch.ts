@@ -394,13 +394,15 @@ export const useExpenseFetch = () => {
   const dashboardExpenses = useMemo(() => {
     let filtered = applyViewMode(expenses);
 
-    // Exclude transactions whose payment source is hidden from dashboard
+    // Exclude transactions whose payment source is hidden from dashboard.
+    // Uses canonical-aware `isPaymentSourceHidden` so it works regardless of
+    // whether the stored hidden id is raw UUID/slug and the expense row is
+    // `custom:UUID` (Foundation Plan canonical model).
     if (hiddenPaymentSourceIds.size > 0) {
       filtered = filtered.filter(e => {
-        const cleanPs = e.payment_source?.replace('custom:', '');
-        if (cleanPs && hiddenPaymentSourceIds.has(cleanPs)) return false;
+        if (isPaymentSourceHidden(e.payment_source)) return false;
         // For transfers, also exclude if destination source is hidden
-        if (e.type === 'transfer' && e.income_source_id && hiddenPaymentSourceIds.has(e.income_source_id)) {
+        if (e.type === 'transfer' && e.income_source_id && isPaymentSourceHidden(e.income_source_id)) {
           return false;
         }
         return true;
