@@ -25,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
+import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {
