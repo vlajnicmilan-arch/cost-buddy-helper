@@ -28,14 +28,6 @@ const STEP_NAMES: Record<number, string> = {
 const ATTEMPT_KEY = 'onboarding_attempt_count';
 const SESSION_KEY = 'onboarding_session_id';
 
-const INITIAL_PERCENTS: PercentMap = {
-  rent: 0,
-  food: 0,
-  car: 0,
-  utilities: 0,
-  other: 0,
-};
-
 const initTelemetrySession = (): { sessionId: string; attempt: number } => {
   let sessionId = '';
   let attempt = 1;
@@ -72,20 +64,13 @@ const Onboarding = () => {
     [],
   );
   const [displayName, setDisplayName] = useState(initialName);
-  const [usageProfile, setUsageProfileLocal] = useState<UsageProfile>(null);
-  const [income, setIncome] = useState<string>('');
-  const [percents, setPercents] = useState<PercentMap>(INITIAL_PERCENTS);
 
   // Namjerno NE prefillamo iz profiles.display_name — DB trigger handle_new_user
   // automatski upiše ime iz prefiksa maila (npr. "Hr Akrobat"), pa bi async fetch
   // prepisao ono što korisnik upravo tipka u Step 1.
 
-  const incomeNum = parseFloat(income) || 0;
-  const hasIncome = incomeNum > 0;
-
-  const selectedCategories = SLIDER_PRESETS.filter((p) => (percents[p.key] || 0) > 0);
-
   const progress = (step / TOTAL_STEPS) * 100;
+
 
   // --- Telemetry refs (stabilne kroz cijeli mount) ---
   const telemetryRef = useRef<{ sessionId: string; attempt: number } | null>(null);
