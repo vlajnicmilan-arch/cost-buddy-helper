@@ -20,6 +20,10 @@
  * Pure module — no React, no Supabase. Easy to unit-test.
  */
 
+import { resolvePaymentSourceKey } from './paymentSource/resolve';
+
+
+
 export interface ImportedRowForMatch {
   /** Stable index in the caller's imported rows array. */
   readonly index: number;
