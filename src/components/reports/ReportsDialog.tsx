@@ -357,12 +357,15 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
-  // Unique payment sources: only the user's own custom/shared sources
+  // Unique payment sources: only the user's own custom/shared sources.
+  // Both bucket key and lookup key go through resolvePaymentSourceKey so a
+  // mixed DB (legacy raw UUID + canonical `custom:UUID`) still counts correctly.
   const uniquePaymentSources = useMemo(() => {
     const txCountMap = new Map<string, number>();
     expenses.forEach(e => {
       if (e.payment_source) {
-        txCountMap.set(e.payment_source, (txCountMap.get(e.payment_source) || 0) + 1);
+        const key = resolvePaymentSourceKey(e.payment_source);
+        txCountMap.set(key, (txCountMap.get(key) || 0) + 1);
       }
     });
 
@@ -372,7 +375,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
         id: `custom:${cs.id}`,
         name: cs.name,
         icon: cs.icon,
-        count: txCountMap.get(cs.id) || 0,
+        count: txCountMap.get(`custom:${cs.id}`) || 0,
       }));
   }, [expenses, customPaymentSources]);
 
