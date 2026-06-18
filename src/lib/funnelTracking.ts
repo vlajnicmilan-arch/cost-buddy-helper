@@ -28,7 +28,9 @@ export type FunnelEventName =
   | 'checklist_viewed'
   | 'checklist_step_clicked'
   | 'checklist_dismissed'
-  | 'checklist_completed';
+  | 'checklist_completed'
+  | 'guided_home_entered'
+  | 'guided_home_exited';
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';
