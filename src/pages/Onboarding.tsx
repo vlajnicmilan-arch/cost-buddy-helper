@@ -191,27 +191,17 @@ const Onboarding = () => {
     setSaving(true);
     try {
       const trimmedName = displayName.trim();
-      const profile: UsageProfile = usageProfile ?? 'finance_only';
+      const profile: UsageProfile = 'finance_only';
 
-      // Atomic RPC — profile upsert + (opcionalno) budget + kategorije u jednoj transakciji.
-      // Sprječava polu-stanje kada bi neki od 3 zasebna upita pao (profil označen kao
-      // completed, ali budžet ostao nestvoren — ili budžet bez kategorija).
-      const categoriesPayload =
-        hasIncome && selectedCategories.length > 0
-          ? selectedCategories.map((p) => ({
-              category: p.key as SliderKey,
-              limit_amount: (incomeNum * percents[p.key]) / 100,
-              icon: p.emoji,
-              color: p.color,
-            }))
-          : [];
-
+      // Atomic RPC — zadrži postojeću signature za backwards-compat.
+      // usage_profile / income / kategorije izašle iz onboardinga; šaljemo
+      // kompatibilne defaulte (vidi mem://features/onboarding-strategy).
       const { error: rpcErr } = await supabase.rpc('complete_onboarding', {
         p_display_name: trimmedName || null,
         p_usage_profile: profile,
-        p_income: hasIncome ? incomeNum : null,
+        p_income: null,
         p_budget_name: t('onboardingV3.defaultBudgetName', 'Mjesečni budžet'),
-        p_categories: categoriesPayload as any,
+        p_categories: [] as any,
       });
       if (rpcErr) throw rpcErr;
 
@@ -229,13 +219,12 @@ const Onboarding = () => {
 
       // 4) Funnel telemetry — označi outcome PRIJE async loga da unmount handler ne ispali abandoned
       outcomeRef.current = 'completed';
-      // step_completed za zadnji korak (Ready) — finish CTA
       logStepCompleted(currentStepRef.current);
       logFunnelEvent('onboarding_complete', {
         ...baseMeta(),
         usage_profile: profile,
-        has_income: hasIncome,
-        expense_categories: selectedCategories.length,
+        has_income: false,
+        expense_categories: 0,
         total_duration_ms: Math.round(performance.now() - mountTimeRef.current),
       }).catch(() => {});
 
