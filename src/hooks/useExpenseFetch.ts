@@ -433,7 +433,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, applyViewMode]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isPaymentSourceHidden, isLocalMode, user, applyViewMode]);
 
   // View-mode filtered expenses (no payment source access filtering)
   const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);
