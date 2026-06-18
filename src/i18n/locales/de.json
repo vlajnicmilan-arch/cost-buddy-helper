@@ -2572,6 +2572,24 @@
       "recurringObligationsDesc": "Miete, Abonnements, Leasing und mehr"
     }
   },
+  "guidedHome": {
+    "zero": {
+      "greeting": "Hallo.",
+      "greetingNamed": "Hallo, {{name}}.",
+      "line": "Wenn du bereit bist, erfasse die erste Ausgabe. Alles Weitere ergibt sich daraus.",
+      "primaryCta": "Erste Ausgabe erfassen",
+      "secondary": "Vorerst überspringen"
+    },
+    "guided": {
+      "greeting": "Danke.",
+      "greetingNamed": "Danke, {{name}}.",
+      "line": "Du baust gerade deine Übersicht auf. Jeder weitere Eintrag vervollständigt das Bild.",
+      "weekAria": "Letzte 7 Tage",
+      "primaryCta": "Weitere hinzufügen",
+      "remaining": "Noch {{n}} bis zur vollständigen Ansicht.",
+      "skip": "Standardansicht öffnen"
+    }
+  },
   "gdpr": {
     "bannerTitle": "Datenschutz & Cookies",
     "bannerText": "Diese App verwendet localStorage und IndexedDB, um Ihre Einstellungen und Finanzdaten auf Ihrem Gerät zu speichern. Wir verwenden keine Marketing-Cookies und verfolgen Ihre Aktivitäten nicht außerhalb der App.",

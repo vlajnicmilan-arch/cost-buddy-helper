@@ -2704,6 +2704,24 @@
       "recurringObligationsDesc": "Rent, subscriptions, leasing and more"
     }
   },
+  "guidedHome": {
+    "zero": {
+      "greeting": "Hi.",
+      "greetingNamed": "Hi, {{name}}.",
+      "line": "When you're ready, log your first expense. Everything else follows from there.",
+      "primaryCta": "Log first expense",
+      "secondary": "Skip for now"
+    },
+    "guided": {
+      "greeting": "Thanks.",
+      "greetingNamed": "Thanks, {{name}}.",
+      "line": "You're starting to build your overview. Each new entry fills in the picture.",
+      "weekAria": "Last 7 days",
+      "primaryCta": "Add another",
+      "remaining": "{{n}} more until the full view.",
+      "skip": "Open standard view"
+    }
+  },
   "gdpr": {
     "bannerTitle": "Privacy & cookies",
     "bannerText": "This app uses localStorage and IndexedDB to store your settings and financial data on your device. We do not use marketing cookies or track your activities outside the app.",
