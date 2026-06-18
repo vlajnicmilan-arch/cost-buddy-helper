@@ -331,23 +331,10 @@ const Onboarding = () => {
             <StepGreeting displayName={displayName} onChange={setDisplayName} />
           )}
           {step === 2 && (
-            <StepUsageProfile selected={usageProfile} onSelect={handleUsageSelect} />
-          )}
-          {step === 3 && (
-            <StepIncome income={income} onChange={setIncome} />
-          )}
-          {step === 4 && (
-            <StepBudgetSliders
-              percents={percents}
-              income={incomeNum}
-              onChange={setPercents}
-            />
-          )}
-          {step === 5 && (
             <StepReady
               displayName={displayName}
-              hasIncome={hasIncome}
-              expenseCategoriesCount={selectedCategories.length}
+              hasIncome={false}
+              expenseCategoriesCount={0}
             />
           )}
         </AnimatePresence>
