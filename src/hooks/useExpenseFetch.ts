@@ -37,7 +37,7 @@ export const useExpenseFetch = () => {
   const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(new Map());
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
-  const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
+  const { hiddenIds: hiddenPaymentSourceIds, isHidden: isPaymentSourceHidden } = useHiddenPaymentSources();
   const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
