@@ -465,6 +465,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
           )}
         </div>
+          </>
+        )}
+
 
         {/* Footer */}
         <footer className="mt-8 py-4 text-center border-t border-border/30">
