@@ -96,6 +96,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
             expense_nature: 'correction',
           } as any);
         } else if (user) {
+          /* eslint-disable no-restricted-syntax -- balance-correction expense: locally-built canonical custom:UUID */
           const { error: insertError } = await supabase.from('expenses').insert({
             user_id: user.id,
             amount: correctionAmount,
@@ -103,10 +104,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
             category: 'other',
             type: correctionType,
             date: new Date().toISOString(),
-            payment_source: `custom:${sourceId}`,
+            payment_source: coerceCanonicalShape(`custom:${sourceId}`),
             note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
             expense_nature: 'correction',
           });
+          /* eslint-enable no-restricted-syntax */
 
           if (insertError) {
             // Revert balance since transaction record failed
