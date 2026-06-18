@@ -322,7 +322,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
       if (!includeBudgets && e.budget_id) return false;
       
       // Exclude payment sources if toggled off
-      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(resolvePaymentSourceKey(e.payment_source || 'cash'))) return false;
       
       // Filter by income source if selected
       if (selectedIncomeSourceId !== 'all') {
