@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 
 const LOCAL_KEY = 'dashboardHiddenSources';
 const SESSION_KEY = 'dashboardHiddenSources:cache';
