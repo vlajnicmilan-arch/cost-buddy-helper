@@ -9,6 +9,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { forgiveOwnerLoan, syncOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useAuth } from '@/hooks/useAuth';
 
