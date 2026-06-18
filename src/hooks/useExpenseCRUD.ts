@@ -369,7 +369,7 @@ export const useExpenseCRUD = ({
         setExpenses(prev => [newExpense, ...prev]);
 
         const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
-        await updateBalance(normalizedExpense.payment_source, normalizedExpense.amount, normalizedExpense.type);
+        await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
         if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
           await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income').catch(e =>
             console.error('Destination balance update failed:', e)
