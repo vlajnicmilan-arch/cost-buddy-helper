@@ -13,14 +13,6 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { logFunnelEvent } from '@/lib/funnelTracking';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
-import { StepUsageProfile } from '@/components/onboarding/steps/StepUsageProfile';
-import { StepIncome } from '@/components/onboarding/steps/StepIncome';
-import {
-  StepBudgetSliders,
-  SLIDER_PRESETS,
-  type PercentMap,
-  type SliderKey,
-} from '@/components/onboarding/steps/StepBudgetSliders';
 import { StepReady } from '@/components/onboarding/steps/StepReady';
 
 // Onboarding skraćen na 2 koraka: greeting + ready. usage_profile / income /
