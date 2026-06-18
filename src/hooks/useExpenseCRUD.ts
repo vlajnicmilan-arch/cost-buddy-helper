@@ -425,6 +425,15 @@ export const useExpenseCRUD = ({
           if (dbOldExpense) oldExpense = dbOldExpense as unknown as Expense;
         }
 
+        // Foundation Plan Val 1: normalize before update.
+        let canonicalPaymentSource: string;
+        try {
+          canonicalPaymentSource = normalizePs(expense.payment_source, 'cash', 'updateExpense.update');
+        } catch {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+          return;
+        }
+
         const { error } = await supabase
           .from('expenses')
           .update({
@@ -434,7 +443,7 @@ export const useExpenseCRUD = ({
             category: expense.type === 'transfer' ? 'transfer' : expense.category,
             type: expense.type,
             date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
-            payment_source: expense.payment_source || 'cash',
+            payment_source: canonicalPaymentSource,
             payment_source_card_id: expense.payment_source_card_id || null,
             merchant_name: expense.merchant_name,
             income_source_id: expense.income_source_id,
