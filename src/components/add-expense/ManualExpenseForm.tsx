@@ -250,8 +250,12 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         <div className="space-y-3">
           <Label className="text-sm font-medium">📥 Na račun (kamo)</Label>
           <Select
-            value={props.transferDestination || 'none'}
-            onValueChange={(value) => props.onTransferDestinationChange(value === 'none' ? null : value)}
+            value={props.transferDestination ? (props.customPaymentSources.some(s => s.id === props.transferDestination) ? `custom:${props.transferDestination}` : props.transferDestination) : 'none'}
+            onValueChange={(value) => {
+              if (value === 'none') return props.onTransferDestinationChange(null);
+              const stripped = value.startsWith('custom:') ? value.slice(7) : value;
+              props.onTransferDestinationChange(stripped);
+            }}
           >
             <SelectTrigger className="h-12 rounded-xl bg-background">
               <SelectValue placeholder={t('placeholders.selectDestinationAccount')}>
