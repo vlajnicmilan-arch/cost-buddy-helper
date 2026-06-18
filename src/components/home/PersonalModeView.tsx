@@ -16,6 +16,9 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
+import { ZeroDataQuietState } from '@/components/home/ZeroDataQuietState';
+import { GuidedHomeView } from '@/components/home/GuidedHomeView';
+import { useGuidedMode } from '@/hooks/useGuidedMode';
 
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { ActiveIssuesSection } from '@/components/dashboard/ActiveIssuesSection';
