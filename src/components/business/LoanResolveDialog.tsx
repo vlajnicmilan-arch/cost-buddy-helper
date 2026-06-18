@@ -83,11 +83,12 @@ export const LoanResolveDialog = ({ debt, open, onOpenChange, onResolved, onDele
       if (fetchErr) throw fetchErr;
       if (!expense) throw new Error('Expense not found');
 
-      // eslint-disable-next-line no-restricted-syntax -- canonical-shaped value, owner-loan source-change is a narrow business-debt fix-up
+      /* eslint-disable no-restricted-syntax -- canonical-shaped value, owner-loan source-change is a narrow business-debt fix-up */
       const { error: updErr } = await supabase
         .from('expenses')
         .update({ payment_source: newPaymentSource })
         .eq('id', debt.source_expense_id);
+      /* eslint-enable no-restricted-syntax */
       if (updErr) throw updErr;
 
       await syncOwnerLoanForExpense({
