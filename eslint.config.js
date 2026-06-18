@@ -13,7 +13,7 @@ import tseslint from "typescript-eslint";
 // raw UUIDs and bypass the DB CHECK constraint via a stale client path.
 const paymentSourceGuard = {
   selector:
-    "CallExpression[callee.property.name=/^(insert|update|upsert)$/] Property[key.name='payment_source']",
+    "CallExpression[callee.object.callee.property.name='from'][callee.object.arguments.0.value='expenses'][callee.property.name=/^(insert|update|upsert)$/] Property[key.name='payment_source']",
   message:
     "Direct writes to `expenses.payment_source` are forbidden outside `src/hooks/useExpenseCRUD.ts`. Use `normalizePaymentSource` or `coerceCanonicalShape` from `@/lib/paymentSource/normalize` and route writes through the CRUD chokepoint.",
 };
