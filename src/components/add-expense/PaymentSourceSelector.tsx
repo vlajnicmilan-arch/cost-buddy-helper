@@ -48,7 +48,8 @@ export const PaymentSourceSelector = ({
         <SelectTrigger className="h-12 rounded-xl bg-background">
           <SelectValue placeholder={t('transactions.selectPaymentMethod')}>
             {(() => {
-              const customSource = customPaymentSources.find(s => s.id === paymentSource);
+              const rawId = paymentSource?.startsWith('custom:') ? paymentSource.slice(7) : paymentSource;
+              const customSource = customPaymentSources.find(s => s.id === rawId);
               if (customSource) {
                 return (
                   <span className="flex items-center gap-2">
