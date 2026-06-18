@@ -16,6 +16,9 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 import { WelcomeConfetti } from '@/components/WelcomeConfetti';
 import { TrialBanner } from '@/components/TrialBanner';
+import { ZeroDataQuietState } from '@/components/home/ZeroDataQuietState';
+import { GuidedHomeView } from '@/components/home/GuidedHomeView';
+import { useGuidedMode } from '@/hooks/useGuidedMode';
 
 import { AIInsightBubble } from '@/components/AIInsightBubble';
 import { ActiveIssuesSection } from '@/components/dashboard/ActiveIssuesSection';
@@ -156,6 +159,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
 
+  // Guided home — server-side per-user signal + broj stvarnih unosa.
+  // Standardni layout zamjenjuje se ZeroDataQuietState / GuidedHomeView dok
+  // korisnik ne dosegne prag ili eksplicitno ne dismissa.
+  const guided = useGuidedMode(props.allExpenses.length);
+  const showGuidedLayout =
+    !props.isLocalMode &&
+    !isBusinessChip &&
+    guided.ready &&
+    (guided.status === 'zero_data' || guided.status === 'guided');
+
   // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
   useDashboardScrollDepth(v2);
 
@@ -249,19 +262,40 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
-        {/* Welcome Checklist — Guided Empty State za nove korisnike (post-onboarding).
-            Komponenta sama gateira: skriva se za pro/business, korisnike s business profilom,
-            te nakon dismiss-a. Auto-dismiss 3s nakon kompletiranja svih koraka. */}
-        {!props.isLocalMode && !isBusinessChip && (
-          <WelcomeChecklist
-            hasPaymentSources={props.customPaymentSources.length > 0}
-            hasTransactions={props.allExpenses.length > 0}
-            hasBudgets={props.budgetsCount > 0}
-            onAddPaymentSource={() => navigate('/wallet')}
-            onAddTransaction={() => props.onExpenseDialogChange(true)}
-            onAddBudget={() => navigate('/budgets')}
-          />
-        )}
+        {/* Guided home — zamjenjuje standardne sekcije dok korisnik ne dosegne
+            prag stvarnih unosa (GUIDED_EXPENSE_THRESHOLD) ili eksplicitno ne
+            dismissa. Source of truth: profiles.guided_home_exited_at (server). */}
+        {showGuidedLayout ? (
+          guided.status === 'zero_data' ? (
+            <ZeroDataQuietState
+              displayName={props.displayName}
+              onAddExpense={() => props.onExpenseDialogChange(true)}
+              onDismiss={() => guided.exit('manual_dismiss')}
+            />
+          ) : (
+            <GuidedHomeView
+              displayName={props.displayName}
+              allExpenses={props.allExpenses}
+              onAddExpense={() => props.onExpenseDialogChange(true)}
+              onDismiss={() => guided.exit('manual_dismiss')}
+            />
+          )
+        ) : (
+          <>
+            {/* Welcome Checklist — sekundarni nudge nakon izlaska iz guided faze.
+                Skriva se za pro/business, korisnike s business profilom, te nakon
+                dismiss-a (per-user lokalno). */}
+            {!props.isLocalMode && !isBusinessChip && (
+              <WelcomeChecklist
+                hasPaymentSources={props.customPaymentSources.length > 0}
+                hasTransactions={props.allExpenses.length > 0}
+                hasBudgets={props.budgetsCount > 0}
+                onAddPaymentSource={() => navigate('/wallet')}
+                onAddTransaction={() => props.onExpenseDialogChange(true)}
+                onAddBudget={() => navigate('/budgets')}
+              />
+            )}
+
 
 
         {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
@@ -431,6 +465,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
           )}
         </div>
+          </>
+        )}
+
 
         {/* Footer */}
         <footer className="mt-8 py-4 text-center border-t border-border/30">

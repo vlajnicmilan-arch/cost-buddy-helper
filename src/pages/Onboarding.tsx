@@ -13,36 +13,20 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { logFunnelEvent } from '@/lib/funnelTracking';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
-import { StepUsageProfile } from '@/components/onboarding/steps/StepUsageProfile';
-import { StepIncome } from '@/components/onboarding/steps/StepIncome';
-import {
-  StepBudgetSliders,
-  SLIDER_PRESETS,
-  type PercentMap,
-  type SliderKey,
-} from '@/components/onboarding/steps/StepBudgetSliders';
 import { StepReady } from '@/components/onboarding/steps/StepReady';
 
-const TOTAL_STEPS = 5;
+// Onboarding skraćen na 2 koraka: greeting + ready. usage_profile / income /
+// budget sliders su namjerno izvan ranog flowa — moduli i budžet dolaze kroz
+// app tek nakon prvog stvarnog unosa (guided home). Vidi mem://features/onboarding-strategy.
+const TOTAL_STEPS = 2;
 
 const STEP_NAMES: Record<number, string> = {
   1: 'greeting',
-  2: 'usage_profile',
-  3: 'income',
-  4: 'budget_sliders',
-  5: 'ready',
+  2: 'ready',
 };
 
 const ATTEMPT_KEY = 'onboarding_attempt_count';
 const SESSION_KEY = 'onboarding_session_id';
-
-const INITIAL_PERCENTS: PercentMap = {
-  rent: 0,
-  food: 0,
-  car: 0,
-  utilities: 0,
-  other: 0,
-};
 
 const initTelemetrySession = (): { sessionId: string; attempt: number } => {
   let sessionId = '';
@@ -80,20 +64,13 @@ const Onboarding = () => {
     [],
   );
   const [displayName, setDisplayName] = useState(initialName);
-  const [usageProfile, setUsageProfileLocal] = useState<UsageProfile>(null);
-  const [income, setIncome] = useState<string>('');
-  const [percents, setPercents] = useState<PercentMap>(INITIAL_PERCENTS);
 
   // Namjerno NE prefillamo iz profiles.display_name — DB trigger handle_new_user
   // automatski upiše ime iz prefiksa maila (npr. "Hr Akrobat"), pa bi async fetch
   // prepisao ono što korisnik upravo tipka u Step 1.
 
-  const incomeNum = parseFloat(income) || 0;
-  const hasIncome = incomeNum > 0;
-
-  const selectedCategories = SLIDER_PRESETS.filter((p) => (percents[p.key] || 0) > 0);
-
   const progress = (step / TOTAL_STEPS) * 100;
+
 
   // --- Telemetry refs (stabilne kroz cijeli mount) ---
   const telemetryRef = useRef<{ sessionId: string; attempt: number } | null>(null);
@@ -109,9 +86,6 @@ const Onboarding = () => {
   const hasValueForStepRef = useRef<(s: number) => boolean>(() => false);
   hasValueForStepRef.current = (s: number): boolean => {
     if (s === 1) return displayName.trim().length > 0;
-    if (s === 2) return usageProfile !== null;
-    if (s === 3) return incomeNum > 0;
-    if (s === 4) return selectedCategories.length > 0;
     return true;
   };
 
@@ -180,21 +154,6 @@ const Onboarding = () => {
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
-  const handleUsageSelect = (p: Exclude<UsageProfile, null>) => {
-    setUsageProfileLocal(p);
-    lightTap().catch(() => {});
-    // Auto-advance — log completion za step 2 odmah (has_value=true jer smo upravo selektirali)
-    logFunnelEvent('onboarding_step_completed', {
-      ...baseMeta(),
-      step: 2,
-      step_name: STEP_NAMES[2],
-      duration_ms: Math.round(performance.now() - stepEnterTimeRef.current),
-      has_value: true,
-      auto_advance: true,
-    }).catch(() => {});
-    setTimeout(() => setStep((s) => Math.min(TOTAL_STEPS, s + 1)), 220);
-  };
-
   const handleSkip = () => {
     outcomeRef.current = 'skipped';
     logFunnelEvent('onboarding_step_skipped', {
@@ -204,14 +163,15 @@ const Onboarding = () => {
       reason: 'finish_later',
       time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
     }).catch(() => {});
-    // Završi kasnije: označi onboarding kao gotov + minimalni defaulti
+    // Završi kasnije: označi onboarding kao gotov + minimalni defaulti.
+    // usage_profile = 'finance_only' default (modul gate zamijenjen u Settings).
     setOnboardingCompleted(true);
     localStorage.setItem('onboarding_completed', 'true');
     if (displayName.trim()) {
       localStorage.setItem('user_display_name', displayName.trim());
       setContextDisplayName(displayName.trim());
     }
-    const profile: UsageProfile = usageProfile ?? 'finance_only';
+    const profile: UsageProfile = 'finance_only';
     setUsageProfile(profile);
     localStorage.setItem('usage_profile', profile);
     navigate('/home', { replace: true });
@@ -219,9 +179,9 @@ const Onboarding = () => {
 
   const canAdvance = () => {
     if (step === 1) return displayName.trim().length > 0;
-    if (step === 2) return usageProfile !== null;
-    return true; // koraci 3 i 4 su opcionalni
+    return true;
   };
+
 
   const handleComplete = async () => {
     if (!user) {
@@ -231,27 +191,17 @@ const Onboarding = () => {
     setSaving(true);
     try {
       const trimmedName = displayName.trim();
-      const profile: UsageProfile = usageProfile ?? 'finance_only';
+      const profile: UsageProfile = 'finance_only';
 
-      // Atomic RPC — profile upsert + (opcionalno) budget + kategorije u jednoj transakciji.
-      // Sprječava polu-stanje kada bi neki od 3 zasebna upita pao (profil označen kao
-      // completed, ali budžet ostao nestvoren — ili budžet bez kategorija).
-      const categoriesPayload =
-        hasIncome && selectedCategories.length > 0
-          ? selectedCategories.map((p) => ({
-              category: p.key as SliderKey,
-              limit_amount: (incomeNum * percents[p.key]) / 100,
-              icon: p.emoji,
-              color: p.color,
-            }))
-          : [];
-
+      // Atomic RPC — zadrži postojeću signature za backwards-compat.
+      // usage_profile / income / kategorije izašle iz onboardinga; šaljemo
+      // kompatibilne defaulte (vidi mem://features/onboarding-strategy).
       const { error: rpcErr } = await supabase.rpc('complete_onboarding', {
         p_display_name: trimmedName || null,
         p_usage_profile: profile,
-        p_income: hasIncome ? incomeNum : null,
+        p_income: null,
         p_budget_name: t('onboardingV3.defaultBudgetName', 'Mjesečni budžet'),
-        p_categories: categoriesPayload as any,
+        p_categories: [] as any,
       });
       if (rpcErr) throw rpcErr;
 
@@ -269,13 +219,12 @@ const Onboarding = () => {
 
       // 4) Funnel telemetry — označi outcome PRIJE async loga da unmount handler ne ispali abandoned
       outcomeRef.current = 'completed';
-      // step_completed za zadnji korak (Ready) — finish CTA
       logStepCompleted(currentStepRef.current);
       logFunnelEvent('onboarding_complete', {
         ...baseMeta(),
         usage_profile: profile,
-        has_income: hasIncome,
-        expense_categories: selectedCategories.length,
+        has_income: false,
+        expense_categories: 0,
         total_duration_ms: Math.round(performance.now() - mountTimeRef.current),
       }).catch(() => {});
 
@@ -345,23 +294,10 @@ const Onboarding = () => {
             <StepGreeting displayName={displayName} onChange={setDisplayName} />
           )}
           {step === 2 && (
-            <StepUsageProfile selected={usageProfile} onSelect={handleUsageSelect} />
-          )}
-          {step === 3 && (
-            <StepIncome income={income} onChange={setIncome} />
-          )}
-          {step === 4 && (
-            <StepBudgetSliders
-              percents={percents}
-              income={incomeNum}
-              onChange={setPercents}
-            />
-          )}
-          {step === 5 && (
             <StepReady
               displayName={displayName}
-              hasIncome={hasIncome}
-              expenseCategoriesCount={selectedCategories.length}
+              hasIncome={false}
+              expenseCategoriesCount={0}
             />
           )}
         </AnimatePresence>

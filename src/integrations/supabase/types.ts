@@ -2971,6 +2971,7 @@ export type Database = {
           deleted_at: string | null
           deletion_scheduled_at: string | null
           display_name: string | null
+          guided_home_exited_at: string | null
           id: string
           is_e2e_user: boolean
           multi_currency_enabled: boolean | null
@@ -2986,6 +2987,7 @@ export type Database = {
           deleted_at?: string | null
           deletion_scheduled_at?: string | null
           display_name?: string | null
+          guided_home_exited_at?: string | null
           id?: string
           is_e2e_user?: boolean
           multi_currency_enabled?: boolean | null
@@ -3001,6 +3003,7 @@ export type Database = {
           deleted_at?: string | null
           deletion_scheduled_at?: string | null
           display_name?: string | null
+          guided_home_exited_at?: string | null
           id?: string
           is_e2e_user?: boolean
           multi_currency_enabled?: boolean | null
@@ -5202,6 +5205,7 @@ export type Database = {
           title: string
         }[]
       }
+      mark_guided_home_exited: { Args: never; Returns: string }
       merge_manual_with_bank: {
         Args: { p_bank_id: string; p_manual_id: string }
         Returns: Json
