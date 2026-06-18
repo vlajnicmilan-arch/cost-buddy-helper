@@ -459,12 +459,14 @@ export const useExpenseCRUD = ({
 
         if (error) throw error;
 
-        setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
+        // Reflect canonical value in local state + downstream balance/owner-loan calls.
+        const canonicalExpense: Expense = { ...expense, payment_source: canonicalPaymentSource as PaymentSource };
+        setExpenses(prev => prev.map(e => e.id === expense.id ? canonicalExpense : e));
 
         if (oldExpense) {
           await handleTransactionUpdate(
             oldExpense.payment_source, oldExpense.amount, oldExpense.type,
-            expense.payment_source, expense.amount, expense.type,
+            canonicalPaymentSource, expense.amount, expense.type,
             oldExpense.income_source_id, expense.income_source_id
           );
           onBalanceUpdated?.();
