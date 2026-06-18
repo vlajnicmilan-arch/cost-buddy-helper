@@ -352,7 +352,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
       const expenseDate = e.date.getTime();
       if (!(expenseDate >= compareDateRanges.period2.start.getTime() && 
              expenseDate <= compareDateRanges.period2.end.getTime() + 86400000)) return false;
-      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(resolvePaymentSourceKey(e.payment_source || 'cash'))) return false;
       return true;
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
