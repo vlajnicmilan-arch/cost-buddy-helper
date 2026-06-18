@@ -138,9 +138,12 @@ const calculateStats = (expenseList: Expense[]) => {
       byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
     });
 
+  // Bucket by canonical payment source key so raw UUID / `custom:UUID` /
+  // built-in slug collapse into one stable bucket. NULL/empty → '__unknown__'
+  // via resolver — downstream renderer should treat that as "Bez izvora".
   const byPaymentSource: Record<string, number> = {};
   expenseList.forEach(e => {
-    const source = e.payment_source || 'cash';
+    const source = resolvePaymentSourceKey(e.payment_source);
     byPaymentSource[source] = (byPaymentSource[source] || 0) + e.amount;
   });
 
