@@ -58,6 +58,7 @@ export const useExpenseCRUD = ({
   expenses,
   setExpenses,
   onBalanceUpdated,
+  knownCustomSourceIds,
 }: UseExpenseCRUDOptions) => {
   const { t } = useTranslation();
   const { user, authReady } = useAuth();
@@ -65,8 +66,56 @@ export const useExpenseCRUD = ({
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
 
+  // Single chokepoint za payment_source normalizaciju (Foundation Plan, Val 1).
+  // Svaki .from('expenses').(insert|update|upsert) write u ovom hooku MORA
+  // koristiti `normalizePs` neposredno prije writea.
+  const normalizeCtx = useMemo<NormalizeContext>(() => ({
+    knownCustomSourceIds: knownCustomSourceIds ?? new Set<string>(),
+  }), [knownCustomSourceIds]);
+
+  /**
+   * Normalize for writers. Vraća canonical (built-in slug ili `custom:UUID`).
+   * Na grešku loga diagnostic, prikazuje user-facing toast i throwa — caller
+   * mora abort-ati save. NE silent-fall-back-amo na 'cash' jer bi to
+   * zatrlo izvor s krivim balansom.
+   */
+  const normalizePs = useCallback((
+    value: string | null | undefined,
+    fallback: 'cash' | 'other',
+    site: string,
+  ): string => {
+    const raw = (value == null || String(value).trim() === '') ? fallback : value;
+    try {
+      return normalizePaymentSource(raw, normalizeCtx);
+    } catch (e) {
+      const reason = e instanceof PaymentSourceNormalizeError ? e.reason : 'unknown';
+      console.error('[ExpenseCRUD] payment_source normalize failed', { site, raw, reason });
+      // Best-effort diagnostic log; never block insert with telemetry failure.
+      if (user) {
+        supabase.from('app_diagnostics_logs').insert([{
+          session_id: 'expense-crud',
+          event: 'payment_source_normalize_failed',
+          route: typeof window !== 'undefined' ? window.location.pathname : null,
+          user_id: user.id,
+          app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+          device_info: {},
+          severity: 'error',
+          details: { site, raw_preview: String(raw).slice(0, 80), reason },
+        }]).then(() => {}, () => {});
+      }
+      throw e;
+    }
+  }, [normalizeCtx, user]);
+
   // Object-payload overload je definiran na module-scope-u (vidi AddExpensePayload).
   const addExpense = useCallback(async (
+    expenseOrPayload:
+      | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+      | AddExpensePayload,
+    itemsArg?: ReceiptItem[],
+    isPendingMemberTransactionArg?: boolean,
+    entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
+  ) => {
     expenseOrPayload:
       | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
       | AddExpensePayload,
