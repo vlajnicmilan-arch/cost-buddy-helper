@@ -35,7 +35,11 @@ export const PaymentSourceSelector = ({
       </Label>
       
       <Select
-        value={paymentSource.startsWith('custom:') ? paymentSource : (customPaymentSources.find(s => s.id === paymentSource) ? paymentSource : paymentSource)}
+        value={
+          paymentSource && customPaymentSources.some(s => s.id === paymentSource)
+            ? `custom:${paymentSource}`
+            : paymentSource
+        }
         onValueChange={(value) => {
           onPaymentSourceChange(value as PaymentSource);
           onSelectedCardIdChange(null);
