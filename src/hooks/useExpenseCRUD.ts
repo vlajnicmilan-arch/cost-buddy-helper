@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
@@ -20,12 +20,25 @@ import {
 } from '@/lib/storage/indexedDB';
 import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
 import { invokeNotifyFunction } from '@/lib/notifyHelper';
+import {
+  normalizePaymentSource,
+  tryNormalizePaymentSource,
+  PaymentSourceNormalizeError,
+  type NormalizeContext,
+} from '@/lib/paymentSource/normalize';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
   expenses: Expense[];
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   onBalanceUpdated?: () => void;
+  /**
+   * UUID-ovi custom payment source-a koje korisnik smije referencirati
+   * (vlastiti + shared via payment_source_members).
+   * Foundation Plan, Val 1: koristi se za normalizaciju payment_source
+   * prije svakog write-a u `expenses`.
+   */
+  knownCustomSourceIds?: ReadonlySet<string>;
 }
 
 // Object-payload form za addExpense — sprječava regresiju gdje wrapper
