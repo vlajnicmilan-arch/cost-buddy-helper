@@ -1,54 +1,120 @@
-## Cilj
 
-Zamrznuti uvoz izvoda dok ne napravimo audit i čistu re-arhitekturu. Bez ikakvih daljnjih “zakrpa” na postojećoj logici.
+# Acceptance-fix pass — guided / 0-data home
 
-## Faza 1 — Feature flag “import frozen” (odmah)
+Fix samo runtime ponašanja koja odstupaju od zaključane arhitekture. Bez novog scopea.
 
-- Dodati globalni flag `IMPORT_FROZEN = true` u jednoj konstanti (`src/lib/featureFlags.ts`).
-- U svim ulaznim točkama uvoza (PDF, foto, HTML, CSV, manual merge gumb):
-  - Sakriti/disable-ati gumbe za “Uvezi izvod”, “Spoji”, “Analiziraj PDF”.
-  - Umjesto akcije prikazati lokaliziranu poruku: “Uvoz izvoda je privremeno zamrznut. Radimo na trajnom rješenju.”
-- Edge funkcija `parse-pdf-statement` vraća 423 (Locked) dok je flag aktivan na klijentu — backend ostaje netaknut, samo se ne poziva.
-- Svi i18n stringovi u `hr/en/de`.
+## Što je stvarno krivo (potvrđeno iz koda)
 
-Rezultat: nitko (ni ti, ni drugi korisnici) ne može više kvariti podatke uvozom.
+1. **0-data nije izoliran** — `PersonalModeView.tsx` renderira `HomeHeader`, `WalletViewModeChips`, `TrialBanner`, `FinancialAssistantDialog`, `SharedDialogs`, `AIInsightBubble`, `BottomNav` i footer **izvan** `showGuidedLayout` ternarya. Gateira se samo srednji blok (Summary / ActiveProjects / Transactions / QuickLinks). Search bar i primarne akcije (Reports/Scan/Manual) sjede u `HomeHeader` → uvijek vidljivi.
+2. **CTA "Zabilježi prvi trošak" otvara browse modal** — `ZeroDataQuietState` i `GuidedHomeView` zovu `props.onExpenseDialogChange(true)`. U `SharedDialogs.tsx` (linija 101–109) `expenseDialogOpen` montira `TransactionListDialog` tipa `expense` (popis troškova), ne add flow. Stvarni add entry je `useReceiptScan().openManualAdd(...)` (vidi `ManualAddTriggerButton.tsx`).
+3. **Skip path izlazi iz guideda** — `onDismiss` u `ZeroDataQuietState` poziva `guided.exit('manual_dismiss')` što postavlja `guided_home_exited_at` i prebacuje korisnika u standard. User izričito traži da skip ostavlja korisnika u 0-data quiet state.
+4. **Confetti / pop-up sloj** — `WelcomeConfetti` se montira u `PersonalModeView` na temelju `localStorage.show_welcome_animation`. Sam overlay je strukturalno bezopasan, ali trenutno se prikazuje **preko** standardnih home sekcija koje vire iza njega → pojačava utisak "stari home s overlayem". Nakon što izolacija u točki 1 prođe, confetti će sjediti preko quiet/guided viewa što je dosljedno.
 
-## Faza 2 — Audit postojećeg stanja (read-only)
+Telemetrija (`guided_home_entered`, `guided_home_exited`) i server RPC `mark_guided_home_exited` ostaju netaknuti.
 
-Bez ikakvih izmjena u bazi. Generiram ti izvještaj po `user_id`:
+## Fix plan
 
-1. Po `import_batch_id`: ukupno, aktivno, bank_only, confirmed, manual, soft-deleted.
-2. Lista “sumnjivih” redaka:
-   - `type=transfer` s opisom koji izgleda kao plaćanje (npr. `Aircash Pay …`).
-   - `type=expense`/`income` s opisom internog prijenosa.
-   - Duplikati: isti `payment_source` + `date` + `amount` + sličan opis u istom batchu.
-3. Lista `bank_only` redaka koji već imaju očiti par u ručnim transakcijama (kandidati za spajanje).
+### 1. `src/components/home/PersonalModeView.tsx` — stvarna izolacija
 
-Sve ide u jedan markdown izvještaj u `/mnt/documents/import-audit.md` koji ti pošaljem.
+Kad `showGuidedLayout` true, **early return** minimalnog rendera. Ne dijeli render strukturu sa standardnim layoutom.
 
-## Faza 3 — Odluka o trajnoj arhitekturi (na temelju audita)
+```text
+if (showGuidedLayout) {
+  return (
+    <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
+      <div className="max-w-md mx-auto px-4 py-8">
+        {status === 'zero_data' ? <ZeroDataQuietState ... />
+                                : <GuidedHomeView ... />}
+      </div>
+      {showWelcome && <WelcomeConfetti ... onComplete={...} />}
+      <BottomNav />
+    </div>
+  );
+}
+```
 
-Nakon što vidimo brojke, biramo jedan smjer:
+Što izostaje u guided/quiet renderu:
+- `HomeHeader` (logo, greeting, search bar, Reports/Scan/Manual quick actions)
+- `WalletViewModeChips`
+- `TrialBanner`
+- `FinancialAssistantDialog`, `AIInsightBubble`
+- `SharedDialogs` (browse/edit/transfer/recurring dialogs)
+- `ActiveProjectsStrip`, `PaymentSourcesSection`, `SummarySection`, `ActiveIssuesSection`, `TransactionListSection`, `QuickLinksSection`, `CashflowForecast`
+- `WelcomeChecklist`
 
-A. **Staging tablica**: uvezeni redovi idu prvo u `imported_statement_rows` (odvojeno od `expenses`). Korisnik ručno potvrđuje svaki red prije nego što uđe u `expenses`. Nema više “tihih” bank_only zapisa u glavnoj tablici.
+Što ostaje:
+- `BottomNav` — globalna navigacija mora ostati funkcionalna (to nije "home sekcija").
+- `WelcomeConfetti` overlay ako je `showWelcome` true — payoff za onboarding, sjeda preko quiet/guided viewa, ne preko stare home pozadine (jer je nema).
 
-B. **Strict dedupe + validacija na razini baze**: unique index na `(user_id, payment_source, date, amount, fingerprint)`, server-side validacija prije inserta, sve klasifikacijske odluke u jednom pure helperu s testovima.
+Standardni branch (else grana) ostaje neizmijenjen.
 
-C. **Vratiti na zadnju radnu verziju uvoza** (history rollback) i graditi od nule samo ono što stvarno treba.
+### 2. CTA wiring — pravi add-expense flow
 
-Ne biram sad — odluka tek nakon Faze 2.
+U `PersonalModeView` dodaj `const { openManualAdd } = useReceiptScan();` i proslijedi callback umjesto `onExpenseDialogChange(true)`:
 
-## Faza 4 — Čišćenje postojećih krivih zapisa
+```text
+onAddExpense={() => openManualAdd({ businessProfileId: activeBusinessProfileId })}
+```
 
-Tek nakon dogovorene arhitekture, na temelju liste iz audita, izvedemo ciljani SQL (UPDATE/soft-delete) s tvojim potpisom red-po-red ili batch-po-batch. Nikakve bulk operacije bez tvoje eksplicitne potvrde.
+To je identičan entry point kao `ManualAddTriggerButton` u `HomeHeader` → otvara globalni `AddExpenseDialog` u manual modu (preživljava Android camera lifecycle, kao i ostatak appa).
 
-## Što SADA radim ako odobriš
+Acceptance: klik na `Zabilježi prvi trošak` i `Dodaj još jedan` otvara isti dijalog koji se inače otvara preko `+` gumba u headeru.
 
-Samo Faza 1 + Faza 2. Ništa drugo. Nikakve nove “heuristike”, nikakve izmjene postojećih transakcija.
+### 3. `ZeroDataQuietState` — ukloni krivu "skip" semantiku
 
-## Tehnički detalji (za referencu)
+Tekstualni link `Preskoči za sada` trenutno zove `onDismiss` koji izlazi iz guideda. Per zaključanoj odluci, skip mora **ostati** u 0-data quiet state. Stoga:
 
-- Flag: `export const IMPORT_FROZEN = true;` + helper `useImportFrozen()`.
-- Točke gašenja: `GlobalPDFImportHost`, `PdfImportContext`, `useManualBankMerge`, svi “Spoji” gumbi, ulazna točka CSV importa.
-- Audit upiti: agregati po `import_batch_id`, regex match na `description`, self-join na `expenses` za kandidate spajanja.
-- Audit izlaz: jedan `.md` file, bez izmjena u bazi.
+- Ukloni `onDismiss` prop i tekstualni button iz `ZeroDataQuietState`.
+- Quiet state ostaje quiet dok god je `expenseCount === 0` i `guided_home_exited_at IS NULL`. Izlazak je isključivo:
+  - dodavanjem prvog unosa (prelaz na `guided`), ili
+  - dosezanjem thresholda (auto-exit), ili
+  - eksplicitnim "Otvori standardni prikaz" linkom u `GuidedHomeView` nakon ≥1 unosa.
+
+Onboarding skip path već dolazi ovamo (per ranija implementacija) i sada stvarno ostaje u quiet state.
+
+### 4. `GuidedHomeView` — nepromijenjeno osim CTA bindinga
+
+- `onAddExpense` → `openManualAdd(...)` (kao u točki 2).
+- Tekstualni "Otvori standardni prikaz" ostaje — to je legitiman manualni exit iz guided faze (1–2 unosa).
+
+### 5. Confetti — provjeriti runtime
+
+Nakon izolacije iz točke 1, `WelcomeConfetti` sjeda preko quiet viewa. Provjeriti u previewu da overlay:
+- ne zaklanja CTA dugmad nakon `onComplete`,
+- ne ostavlja artefakte iznad guided/quiet sloja.
+
+Ako se runtime ponaša ispravno → ostaviti. Ako sudara → ograničiti mount na `!showGuidedLayout || showZeroOnly` (odluka u trenutku testa, ne unaprijed).
+
+## Diranje fileova
+
+- `src/components/home/PersonalModeView.tsx` — early return za guided/zero, useReceiptScan import, prosljeđivanje `openManualAdd`.
+- `src/components/home/ZeroDataQuietState.tsx` — ukloni `onDismiss` prop i secondary tekstualni button, ukloni nekorišten i18n key iz call sitea.
+- `src/i18n/locales/{hr,en,de}.json` — može ostati `guidedHome.zero.secondary` neiskorišten (mrtav ključ) ili obrisati. Plan: obrisati ključ u sva tri jezika da ne ostane dead i18n.
+
+Bez DB migracija. Bez novih komponenti. Bez promjene RPC potpisa. `useGuidedMode` hook nepromijenjen.
+
+## Testovi / build
+
+- `npm test` — postojeći `src/test/guidedMode.test.ts` ostaje validan (čista logika, nepromijenjena).
+- E2E `01-signup-onboarding.spec.ts` — provjeriti da test ne polaže `ZeroDataQuietState` dismiss linka (ako polaže, ukloniti taj korak iz E2E zajedno s UI promjenom).
+
+## Runtime acceptance provjera (browser preview, viewport 384)
+
+Nakon builda, kroz `browser--view_preview` provjeriti 4 scenarija sa živim `hr.akrobat@gmail.com` (već resetiran prije: `onboarding_completed=false`, 0 unosa, `guided_home_exited_at=NULL`):
+
+1. **Complete path, 0 unosa** → `/home` prikazuje samo `ZeroDataQuietState`. Nema headera, search bara, action gumba, summary kartica, project stripa, issues, transaction liste, WelcomeChecklist. Vidljiv samo `BottomNav` na dnu.
+2. **Skip path (klik "preskoči" u onboardingu), 0 unosa** → `/home` identično kao #1. Nigdje "Preskoči za sada" link unutar quiet statea (uklonjen).
+3. **Klik "Zabilježi prvi trošak"** → otvara se globalni `AddExpenseDialog` (manual mode), isti koji se otvara preko `+` u standardnom headeru. Ne `TransactionListDialog`, ne search, ne reports.
+4. **1 unos, još u guidedu** → `/home` prikazuje samo `GuidedHomeView` (week strip + zadnji unos + CTA + "Otvori standardni prikaz" link). Bez standardnih sekcija u pozadini. Klik CTA otvara stvarni add flow.
+
+Ako confetti overlay vizualno sudara s quiet/guided viewom u koraku 1 ili 2, ograničiti ga na non-guided render.
+
+## Regresijski rizici
+
+- Standardni home (post-threshold ili post-exit) ostaje isti — early return ne dira `else` granu.
+- BottomNav ostaje montirana u oba slučaja → cross-tab navigacija ne regresira.
+- `openManualAdd` je već production-tested entry point (koristi ga `ManualAddTriggerButton`) → nema novog koda za camera lifecycle.
+
+## Finalni sud
+
+Plan je acceptance-driven, sve točke fix-a vežu se na konkretne linije koda potvrđene u istraživanju. Spreman za ulazak u build.

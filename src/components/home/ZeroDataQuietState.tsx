@@ -4,20 +4,19 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ZeroDataQuietStateProps {
-  displayName?: string;
+  displayName?: string | null;
   onAddExpense: () => void;
-  onDismiss: () => void;
 }
 
 /**
- * Tihi 0-data home za skip / complete put bez prvog unosa.
- * Namjerno minimalan: pozdrav + jedna rečenica + jedan primarni CTA + jedan
- * tekstualni link. Ničega drugoga.
+ * Tihi 0-data home. Korisnik ostaje ovdje dok ne unese prvi trošak (prijelaz u
+ * guided), dosegne threshold (auto-exit) ili eksplicitno ne izađe iz guided
+ * faze. Nema "skip" linka — skip path iz onboardinga već vodi ovamo i quiet
+ * state mora ostati quiet (nema exita iz 0-data UI-jem).
  */
 export const ZeroDataQuietState = ({
   displayName,
   onAddExpense,
-  onDismiss,
 }: ZeroDataQuietStateProps) => {
   const { t } = useTranslation();
   const name = (displayName || '').trim();
@@ -48,13 +47,6 @@ export const ZeroDataQuietState = ({
         <Plus className="w-4 h-4" />
         {t('guidedHome.zero.primaryCta', 'Zabilježi prvi trošak')}
       </Button>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline min-h-[44px]"
-      >
-        {t('guidedHome.zero.secondary', 'Preskoči za sada')}
-      </button>
     </motion.div>
   );
 };
