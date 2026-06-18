@@ -159,6 +159,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
 
+  // Guided home — server-side per-user signal + broj stvarnih unosa.
+  // Standardni layout zamjenjuje se ZeroDataQuietState / GuidedHomeView dok
+  // korisnik ne dosegne prag ili eksplicitno ne dismissa.
+  const guided = useGuidedMode(props.allExpenses.length);
+  const showGuidedLayout =
+    !props.isLocalMode &&
+    !isBusinessChip &&
+    guided.ready &&
+    (guided.status === 'zero_data' || guided.status === 'guided');
+
   // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
   useDashboardScrollDepth(v2);
 
