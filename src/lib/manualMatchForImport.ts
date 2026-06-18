@@ -87,7 +87,9 @@ function isMatchableType(t: string): boolean {
 }
 
 function sameSource(a: string | null | undefined, b: string | null | undefined): boolean {
-  return (a ?? '') === (b ?? '');
+  // Tolerant compare: raw UUID and `custom:UUID` collapse to the same key
+  // (Foundation Plan, Val 1 read-side resolver).
+  return resolvePaymentSourceKey(a) === resolvePaymentSourceKey(b);
 }
 
 export function matchManualToImported(input: MatchInput): MatchOutput {
