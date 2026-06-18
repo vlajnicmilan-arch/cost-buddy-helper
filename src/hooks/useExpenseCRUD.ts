@@ -222,9 +222,20 @@ export const useExpenseCRUD = ({
           user.id,
           (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
         );
+
+        // Foundation Plan Val 1: normalize payment_source to canonical form
+        // (built-in slug or `custom:UUID`) before insert. Throws if unknown UUID.
+        let canonicalPaymentSource: string;
+        try {
+          canonicalPaymentSource = normalizePs(normalizedExpense.payment_source, 'cash', 'addExpense.insert');
+        } catch {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+          throw new Error('payment_source normalize failed');
+        }
+
         const bankMatchStatus = getInitialBankMatchStatus({
           source: entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual'),
-          paymentSource: normalizedExpense.payment_source,
+          paymentSource: canonicalPaymentSource,
           bankLinkedSourceIds,
         });
 
@@ -237,7 +248,7 @@ export const useExpenseCRUD = ({
             category: normalizedExpense.category,
             type: normalizedExpense.type,
             date: normalizedExpense.date.toISOString(),
-            payment_source: normalizedExpense.payment_source || 'cash',
+            payment_source: canonicalPaymentSource,
             payment_source_card_id: normalizedExpense.payment_source_card_id || null,
             receipt_url: normalizedExpense.receipt_url,
             merchant_name: normalizedExpense.merchant_name,
