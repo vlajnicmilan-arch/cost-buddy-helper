@@ -23,14 +23,14 @@ import {
 } from '@/components/onboarding/steps/StepBudgetSliders';
 import { StepReady } from '@/components/onboarding/steps/StepReady';
 
-const TOTAL_STEPS = 5;
+// Onboarding skraćen na 2 koraka: greeting + ready. usage_profile / income /
+// budget sliders su namjerno izvan ranog flowa — moduli i budžet dolaze kroz
+// app tek nakon prvog stvarnog unosa (guided home). Vidi mem://features/onboarding-strategy.
+const TOTAL_STEPS = 2;
 
 const STEP_NAMES: Record<number, string> = {
   1: 'greeting',
-  2: 'usage_profile',
-  3: 'income',
-  4: 'budget_sliders',
-  5: 'ready',
+  2: 'ready',
 };
 
 const ATTEMPT_KEY = 'onboarding_attempt_count';
