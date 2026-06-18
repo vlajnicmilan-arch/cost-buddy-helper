@@ -119,6 +119,38 @@ export function normalizePaymentSource(
 }
 
 /**
+ * Shape-only canonicalizer — bez DB lookupa.
+ *
+ * Koristi se u 2 uska slučaja gdje normalizePaymentSource nije
+ * primjenjiv jer kontekst (knownCustomSourceIds) nije dostupan:
+ *
+ *   1) LoanResolveDialog – konstruira `custom:${id}` lokalno
+ *   2) SettingsDialog backup-restore – učitava JSON s mogućim
+ *      raw UUID vrijednostima iz starih izvoza
+ *
+ * Pravila (regex-only):
+ *   - built-in slug → passthrough
+ *   - `custom:UUID` → lowercase passthrough
+ *   - raw UUID → prefiks `custom:` (shape upgrade, bez postojanje-check)
+ *   - sve ostalo / prazno → `fallback` (default: `'cash'`)
+ *
+ * DB CHECK constraint će svejedno odbiti malformed vrijednost.
+ */
+export function coerceCanonicalShape(
+  input: string | null | undefined,
+  fallback: CanonicalPaymentSource = 'cash',
+): CanonicalPaymentSource {
+  if (input == null) return fallback;
+  const trimmed = String(input).trim();
+  if (trimmed === '') return fallback;
+  if (BUILT_IN_SLUGS.has(trimmed)) return trimmed;
+  const customMatch = /^custom:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(trimmed);
+  if (customMatch) return `custom:${customMatch[1].toLowerCase()}`;
+  if (UUID_RE.test(trimmed)) return `custom:${trimmed.toLowerCase()}`;
+  return fallback;
+}
+
+/**
  * Soft varijanta — vraća `null` umjesto throwa.
  * Koristiti samo za read-side dijagnostiku, ne za write path.
  */

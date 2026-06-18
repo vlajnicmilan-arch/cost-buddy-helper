@@ -33,6 +33,7 @@ import { DateRange } from 'react-day-picker';
 import { getDateRange } from '@/lib/dateValidation';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName } from '@/lib/reportDesign';
@@ -240,9 +241,10 @@ export const ProjectTransactionsTab = ({
     setSaving(true);
     try {
       const status = needsApproval ? 'pending' : 'approved';
-      const paymentSourceForInsert = paymentSourceValue !== 'none' ? paymentSourceValue : null;
+      const paymentSourceForInsert = paymentSourceValue !== 'none' ? coerceCanonicalShape(paymentSourceValue) : null;
       const parsedAmount = parseFloat(amount);
 
+      /* eslint-disable no-restricted-syntax -- project transaction insert: payment_source pre-coerced via coerceCanonicalShape */
       const { data: inserted, error } = await supabase
         .from('expenses')
         .insert({
@@ -265,6 +267,7 @@ export const ProjectTransactionsTab = ({
         } as any)
         .select()
         .single();
+      /* eslint-enable no-restricted-syntax */
 
       if (error) throw error;
 
@@ -374,12 +377,13 @@ export const ProjectTransactionsTab = ({
     if (!guard()) return;
     setSaving(true);
     try {
-      const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
+      const newPaymentSource = editPaymentSourceValue !== 'none' ? coerceCanonicalShape(editPaymentSourceValue) : null;
       const newAmount = parseFloat(editAmount);
       const oldPaymentSource = editingExpense.payment_source || undefined;
       const oldAmount = editingExpense.amount;
       const oldType = editingExpense.type as TransactionType;
 
+      /* eslint-disable no-restricted-syntax -- project transaction edit: payment_source pre-coerced via coerceCanonicalShape */
       const { error } = await supabase
         .from('expenses')
         .update({
@@ -396,6 +400,7 @@ export const ProjectTransactionsTab = ({
           linked_advance_ids: editType === 'expense' && !editIsAdvance ? editLinkedAdvanceIds : [],
         } as any)
         .eq('id', editingExpense.id);
+      /* eslint-enable no-restricted-syntax */
 
       if (error) throw error;
 

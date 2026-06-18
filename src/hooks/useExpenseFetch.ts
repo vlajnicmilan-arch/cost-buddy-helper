@@ -37,7 +37,7 @@ export const useExpenseFetch = () => {
   const [sourceBusinessMap, setSourceBusinessMap] = useState<Map<string, string | null>>(new Map());
   // Hidden source ids come from a shared, sessionStorage-seeded cache to avoid
   // any flicker when navigating back to the dashboard.
-  const { hiddenIds: hiddenPaymentSourceIds } = useHiddenPaymentSources();
+  const { hiddenIds: hiddenPaymentSourceIds, isHidden: isPaymentSourceHidden } = useHiddenPaymentSources();
   const [loading, setLoading] = useState(initialExpenses.length === 0);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hydratedKeyRef = useRef<string | null>(initialExpenses.length > 0 ? initialExpensesKey : null);
@@ -394,13 +394,15 @@ export const useExpenseFetch = () => {
   const dashboardExpenses = useMemo(() => {
     let filtered = applyViewMode(expenses);
 
-    // Exclude transactions whose payment source is hidden from dashboard
+    // Exclude transactions whose payment source is hidden from dashboard.
+    // Uses canonical-aware `isPaymentSourceHidden` so it works regardless of
+    // whether the stored hidden id is raw UUID/slug and the expense row is
+    // `custom:UUID` (Foundation Plan canonical model).
     if (hiddenPaymentSourceIds.size > 0) {
       filtered = filtered.filter(e => {
-        const cleanPs = e.payment_source?.replace('custom:', '');
-        if (cleanPs && hiddenPaymentSourceIds.has(cleanPs)) return false;
+        if (isPaymentSourceHidden(e.payment_source)) return false;
         // For transfers, also exclude if destination source is hidden
-        if (e.type === 'transfer' && e.income_source_id && hiddenPaymentSourceIds.has(e.income_source_id)) {
+        if (e.type === 'transfer' && e.income_source_id && isPaymentSourceHidden(e.income_source_id)) {
           return false;
         }
         return true;
@@ -431,7 +433,7 @@ export const useExpenseFetch = () => {
       if (ownedSourceIds.has(expense.income_source_id)) return true;
       return false;
     });
-  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isLocalMode, user, applyViewMode]);
+  }, [expenses, ownedSourceIds, sharedPaymentSourceIds, fullAccessSourceIds, hiddenPaymentSourceIds, isPaymentSourceHidden, isLocalMode, user, applyViewMode]);
 
   // View-mode filtered expenses (no payment source access filtering)
   const contextFilteredExpenses = useMemo(() => applyViewMode(expenses), [expenses, applyViewMode]);

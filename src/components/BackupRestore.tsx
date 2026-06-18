@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { ExportButton } from '@/components/ui/export-button';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -198,6 +199,7 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
         let itemCount = 0;
 
         for (const expense of data.expenses) {
+          /* eslint-disable no-restricted-syntax -- backup-restore: shape-coerced via coerceCanonicalShape */
           const { data: inserted, error: insertError } = await supabase
             .from('expenses')
             .insert({
@@ -207,12 +209,13 @@ export const BackupRestore = ({ onDataImported }: BackupRestoreProps) => {
               category: expense.category || 'other',
               type: expense.type || 'expense',
               date: expense.date,
-              payment_source: expense.payment_source || 'cash',
+              payment_source: coerceCanonicalShape(expense.payment_source, 'cash'),
               merchant_name: expense.merchant_name,
               ai_extracted: expense.ai_extracted || false
             })
             .select()
             .single();
+          /* eslint-enable no-restricted-syntax */
 
           if (insertError) continue;
           expenseCount++;

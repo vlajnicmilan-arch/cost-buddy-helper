@@ -25,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { useCustomIncomeCategories } from '@/hooks/useCustomIncomeCategories';
+import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {
@@ -137,9 +138,12 @@ const calculateStats = (expenseList: Expense[]) => {
       byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
     });
 
+  // Bucket by canonical payment source key so raw UUID / `custom:UUID` /
+  // built-in slug collapse into one stable bucket. NULL/empty → '__unknown__'
+  // via resolver — downstream renderer should treat that as "Bez izvora".
   const byPaymentSource: Record<string, number> = {};
   expenseList.forEach(e => {
-    const source = e.payment_source || 'cash';
+    const source = resolvePaymentSourceKey(e.payment_source);
     byPaymentSource[source] = (byPaymentSource[source] || 0) + e.amount;
   });
 
@@ -318,7 +322,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
       if (!includeBudgets && e.budget_id) return false;
       
       // Exclude payment sources if toggled off
-      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(resolvePaymentSourceKey(e.payment_source || 'cash'))) return false;
       
       // Filter by income source if selected
       if (selectedIncomeSourceId !== 'all') {
@@ -338,7 +342,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
       const expenseDate = e.date.getTime();
       if (!(expenseDate >= compareDateRanges.period1.start.getTime() && 
              expenseDate <= compareDateRanges.period1.end.getTime() + 86400000)) return false;
-      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(resolvePaymentSourceKey(e.payment_source || 'cash'))) return false;
       return true;
     });
   }, [expenses, compareDateRanges.period1, excludedPaymentSources]);
@@ -348,17 +352,20 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
       const expenseDate = e.date.getTime();
       if (!(expenseDate >= compareDateRanges.period2.start.getTime() && 
              expenseDate <= compareDateRanges.period2.end.getTime() + 86400000)) return false;
-      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(e.payment_source || 'cash')) return false;
+      if (excludedPaymentSources.size > 0 && excludedPaymentSources.has(resolvePaymentSourceKey(e.payment_source || 'cash'))) return false;
       return true;
     });
   }, [expenses, compareDateRanges.period2, excludedPaymentSources]);
 
-  // Unique payment sources: only the user's own custom/shared sources
+  // Unique payment sources: only the user's own custom/shared sources.
+  // Both bucket key and lookup key go through resolvePaymentSourceKey so a
+  // mixed DB (legacy raw UUID + canonical `custom:UUID`) still counts correctly.
   const uniquePaymentSources = useMemo(() => {
     const txCountMap = new Map<string, number>();
     expenses.forEach(e => {
       if (e.payment_source) {
-        txCountMap.set(e.payment_source, (txCountMap.get(e.payment_source) || 0) + 1);
+        const key = resolvePaymentSourceKey(e.payment_source);
+        txCountMap.set(key, (txCountMap.get(key) || 0) + 1);
       }
     });
 
@@ -368,7 +375,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
         id: `custom:${cs.id}`,
         name: cs.name,
         icon: cs.icon,
-        count: txCountMap.get(cs.id) || 0,
+        count: txCountMap.get(`custom:${cs.id}`) || 0,
       }));
   }, [expenses, customPaymentSources]);
 
