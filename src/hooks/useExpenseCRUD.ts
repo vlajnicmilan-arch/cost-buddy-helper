@@ -735,9 +735,19 @@ export const useExpenseCRUD = ({
           }
         }
         try {
-          const sources = Array.from(new Set(fingerprinted
+          // Expand sources IN-list with BOTH canonical and raw-UUID variants so
+          // we still find legacy rows pre-backfill (read-side tolerant reader).
+          const rawSources = Array.from(new Set(fingerprinted
             .map(r => r.tx.payment_source || 'other')
             .filter(Boolean))) as string[];
+          const sources = Array.from(new Set(rawSources.flatMap((s) => {
+            const variants = new Set<string>([s]);
+            if (s.startsWith('custom:')) variants.add(s.slice('custom:'.length));
+            else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
+              variants.add(`custom:${s}`);
+            }
+            return Array.from(variants);
+          })));
 
           const dates = fingerprinted.map(r => r.tx.date.getTime());
           if (dates.length > 0 && sources.length > 0) {
