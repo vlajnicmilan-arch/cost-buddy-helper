@@ -2578,6 +2578,24 @@
       "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo"
     }
   },
+  "guidedHome": {
+    "zero": {
+      "greeting": "Bok.",
+      "greetingNamed": "Bok, {{name}}.",
+      "line": "Kada budeš spreman, zabilježi prvi trošak. Sve ostalo dolazi iz toga.",
+      "primaryCta": "Zabilježi prvi trošak",
+      "secondary": "Preskoči za sada"
+    },
+    "guided": {
+      "greeting": "Hvala.",
+      "greetingNamed": "Hvala, {{name}}.",
+      "line": "Počinješ graditi pregled. Svaki sljedeći unos popunjava sliku.",
+      "weekAria": "Zadnjih 7 dana",
+      "primaryCta": "Dodaj još jedan",
+      "remaining": "Još {{n}} do potpunog prikaza.",
+      "skip": "Otvori standardni prikaz"
+    }
+  },
   "gdpr": {
     "bannerTitle": "Privatnost i kolačići",
     "bannerText": "Ova aplikacija koristi localStorage i IndexedDB za pohranu vaših postavki i financijskih podataka na uređaju. Ne koristimo marketinške kolačiće niti pratimo vaše aktivnosti izvan aplikacije.",
