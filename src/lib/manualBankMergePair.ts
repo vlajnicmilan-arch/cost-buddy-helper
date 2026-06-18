@@ -10,6 +10,10 @@
  * Pure module — no React, no Supabase.
  */
 
+import { isSamePaymentSource } from './paymentSource/resolve';
+
+
+
 export interface MergeCandidateExpense {
   readonly id: string;
   readonly user_id?: string | null;
