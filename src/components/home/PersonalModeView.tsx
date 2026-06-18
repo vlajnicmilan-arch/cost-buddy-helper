@@ -262,19 +262,40 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
-        {/* Welcome Checklist — Guided Empty State za nove korisnike (post-onboarding).
-            Komponenta sama gateira: skriva se za pro/business, korisnike s business profilom,
-            te nakon dismiss-a. Auto-dismiss 3s nakon kompletiranja svih koraka. */}
-        {!props.isLocalMode && !isBusinessChip && (
-          <WelcomeChecklist
-            hasPaymentSources={props.customPaymentSources.length > 0}
-            hasTransactions={props.allExpenses.length > 0}
-            hasBudgets={props.budgetsCount > 0}
-            onAddPaymentSource={() => navigate('/wallet')}
-            onAddTransaction={() => props.onExpenseDialogChange(true)}
-            onAddBudget={() => navigate('/budgets')}
-          />
-        )}
+        {/* Guided home — zamjenjuje standardne sekcije dok korisnik ne dosegne
+            prag stvarnih unosa (GUIDED_EXPENSE_THRESHOLD) ili eksplicitno ne
+            dismissa. Source of truth: profiles.guided_home_exited_at (server). */}
+        {showGuidedLayout ? (
+          guided.status === 'zero_data' ? (
+            <ZeroDataQuietState
+              displayName={props.displayName}
+              onAddExpense={() => props.onExpenseDialogChange(true)}
+              onDismiss={() => guided.exit('manual_dismiss')}
+            />
+          ) : (
+            <GuidedHomeView
+              displayName={props.displayName}
+              allExpenses={props.allExpenses}
+              onAddExpense={() => props.onExpenseDialogChange(true)}
+              onDismiss={() => guided.exit('manual_dismiss')}
+            />
+          )
+        ) : (
+          <>
+            {/* Welcome Checklist — sekundarni nudge nakon izlaska iz guided faze.
+                Skriva se za pro/business, korisnike s business profilom, te nakon
+                dismiss-a (per-user lokalno). */}
+            {!props.isLocalMode && !isBusinessChip && (
+              <WelcomeChecklist
+                hasPaymentSources={props.customPaymentSources.length > 0}
+                hasTransactions={props.allExpenses.length > 0}
+                hasBudgets={props.budgetsCount > 0}
+                onAddPaymentSource={() => navigate('/wallet')}
+                onAddTransaction={() => props.onExpenseDialogChange(true)}
+                onAddBudget={() => navigate('/budgets')}
+              />
+            )}
+
 
 
         {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
