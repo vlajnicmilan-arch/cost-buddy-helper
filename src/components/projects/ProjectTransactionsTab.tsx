@@ -244,6 +244,7 @@ export const ProjectTransactionsTab = ({
       const paymentSourceForInsert = paymentSourceValue !== 'none' ? coerceCanonicalShape(paymentSourceValue) : null;
       const parsedAmount = parseFloat(amount);
 
+      /* eslint-disable no-restricted-syntax -- project transaction insert: payment_source pre-coerced via coerceCanonicalShape */
       const { data: inserted, error } = await supabase
         .from('expenses')
         .insert({
@@ -266,6 +267,7 @@ export const ProjectTransactionsTab = ({
         } as any)
         .select()
         .single();
+      /* eslint-enable no-restricted-syntax */
 
       if (error) throw error;
 
