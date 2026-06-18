@@ -819,16 +819,28 @@ export const useExpenseCRUD = ({
         }
 
         // Redovi za upsert = svi osim onih koji su uspješno mergeani.
-        const rows = fingerprinted
+        // Foundation Plan Val 1: normalize payment_source per row. Failed
+        // normalizations su skipped (logirano) — ne fake-amo 'cash'/'other'.
+        const upsertCandidates = fingerprinted
           .filter(r => !mergedFingerprints.has(r.fingerprint))
-          .map(({ tx, fingerprint }) => ({
+          .map(({ tx, fingerprint }) => {
+            const canonical = tryNormalizePaymentSource(tx.payment_source || 'other', normalizeCtx);
+            return { tx, fingerprint, canonical };
+          });
+        const importSkipped = upsertCandidates.filter(r => r.canonical == null);
+        if (importSkipped.length > 0) {
+          console.warn('[importFromCSV] skipped rows with unknown payment_source:', importSkipped.length);
+        }
+        const rows = upsertCandidates
+          .filter(r => r.canonical != null)
+          .map(({ tx, fingerprint, canonical }) => ({
             user_id: user.id,
             amount: tx.amount,
             description: tx.description,
             category: tx.category,
             type: tx.type,
             date: tx.date.toISOString(),
-            payment_source: tx.payment_source || 'other',
+            payment_source: canonical as string,
             merchant_name: tx.merchant_name || null,
             ai_extracted: false,
             import_batch_id: batchId,
