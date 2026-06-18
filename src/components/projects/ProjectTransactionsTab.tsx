@@ -383,6 +383,7 @@ export const ProjectTransactionsTab = ({
       const oldAmount = editingExpense.amount;
       const oldType = editingExpense.type as TransactionType;
 
+      /* eslint-disable no-restricted-syntax -- project transaction edit: payment_source pre-coerced via coerceCanonicalShape */
       const { error } = await supabase
         .from('expenses')
         .update({
@@ -399,6 +400,7 @@ export const ProjectTransactionsTab = ({
           linked_advance_ids: editType === 'expense' && !editIsAdvance ? editLinkedAdvanceIds : [],
         } as any)
         .eq('id', editingExpense.id);
+      /* eslint-enable no-restricted-syntax */
 
       if (error) throw error;
 
