@@ -199,10 +199,30 @@ export const useHiddenPaymentSources = () => {
     return () => window.removeEventListener('hidden-payment-sources-changed', handler);
   }, [fetchHidden]);
 
-  const isHidden = useCallback((sourceId: string) => hiddenIds.has(sourceId), [hiddenIds]);
+  // Canonical resolver-keyed set so callers can compare against
+  // `expense.payment_source` (which is `custom:UUID`) without ad-hoc strips.
+  // Stored hidden IDs themselves remain in their original DB shape (raw UUID
+  // for custom sources / built-in slug) — that contract is unchanged.
+  const hiddenKeysCanonical = useMemo(() => {
+    const out = new Set<string>();
+    hiddenIds.forEach(id => out.add(resolvePaymentSourceKey(id)));
+    return out;
+  }, [hiddenIds]);
+
+  const isHidden = useCallback(
+    (sourceIdOrPaymentSource: string | null | undefined) => {
+      if (!sourceIdOrPaymentSource) return false;
+      // Direct raw-id check (for `source.id` lookups from custom sources list)
+      if (hiddenIds.has(sourceIdOrPaymentSource)) return true;
+      // Canonical-key check (for `expense.payment_source` style inputs)
+      return hiddenKeysCanonical.has(resolvePaymentSourceKey(sourceIdOrPaymentSource));
+    },
+    [hiddenIds, hiddenKeysCanonical],
+  );
 
   return {
     hiddenIds,
+    hiddenKeysCanonical,
     isHidden,
     toggleHidden,
     loading,
