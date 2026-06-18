@@ -325,11 +325,12 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
           // Backup-restore: older exports may carry raw UUID payment sources.
           // Coerce to canonical shape so DB CHECK constraint accepts the row.
           const canonicalPaymentSource = coerceCanonicalShape(expense.payment_source, 'cash');
-          // eslint-disable-next-line no-restricted-syntax -- backup-restore is a one-shot import path with shape-coerced value
+          /* eslint-disable no-restricted-syntax -- backup-restore is a one-shot import path with shape-coerced value */
           const { data: inserted, error: insertError } = await supabase
             .from('expenses')
             .insert({ user_id: user.id, amount: expense.amount, description: expense.description, category: expense.category || 'other', type: expense.type || 'expense', date: expense.date, payment_source: canonicalPaymentSource, merchant_name: expense.merchant_name, ai_extracted: expense.ai_extracted || false })
             .select().single();
+          /* eslint-enable no-restricted-syntax */
           if (insertError) continue;
           expenseCount++;
           if (data.receiptItems && inserted) {
