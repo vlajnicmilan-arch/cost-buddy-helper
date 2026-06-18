@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { saveLocalExpense } from '@/lib/storage/indexedDB';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import {
   AlertDialog,
