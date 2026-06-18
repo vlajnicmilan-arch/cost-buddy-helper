@@ -499,7 +499,7 @@ export const useExpenseCRUD = ({
             expenseId: expense.id,
             userId: user.id,
             businessProfileId: updatedBpId,
-            paymentSource: expense.payment_source,
+            paymentSource: canonicalPaymentSource,
             amount: expense.amount,
             description: expense.description,
           }).catch(e => console.error('Owner-loan sync failed:', e));
