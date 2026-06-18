@@ -377,7 +377,7 @@ export const ProjectTransactionsTab = ({
     if (!guard()) return;
     setSaving(true);
     try {
-      const newPaymentSource = editPaymentSourceValue !== 'none' ? editPaymentSourceValue : null;
+      const newPaymentSource = editPaymentSourceValue !== 'none' ? coerceCanonicalShape(editPaymentSourceValue) : null;
       const newAmount = parseFloat(editAmount);
       const oldPaymentSource = editingExpense.payment_source || undefined;
       const oldAmount = editingExpense.amount;
