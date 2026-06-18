@@ -241,7 +241,7 @@ export const ProjectTransactionsTab = ({
     setSaving(true);
     try {
       const status = needsApproval ? 'pending' : 'approved';
-      const paymentSourceForInsert = paymentSourceValue !== 'none' ? paymentSourceValue : null;
+      const paymentSourceForInsert = paymentSourceValue !== 'none' ? coerceCanonicalShape(paymentSourceValue) : null;
       const parsedAmount = parseFloat(amount);
 
       const { data: inserted, error } = await supabase
