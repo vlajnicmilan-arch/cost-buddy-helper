@@ -153,7 +153,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const projectsHidden = !projectsModuleEnabled;
   const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
-  const { registerHandlers } = useReceiptScan();
+  const { registerHandlers, openManualAdd } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const { formatAmount } = useCurrency();
   const [debtsOpen, setDebtsOpen] = useState(false);
@@ -181,6 +181,43 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     });
   }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
+  // Stvaran add-expense entry — identičan onome iz ManualAddTriggerButton-a u
+  // headeru. Otvara globalni AddExpenseDialog u manual modu (preživljava
+  // Android camera lifecycle). Ne otvarati `TransactionListDialog` (browse).
+  const openFirstExpense = () =>
+    openManualAdd({ businessProfileId: activeBusinessProfileId ?? null });
+
+  // Guided/zero render — STVARNA izolacija od standardnog homea. Bez header-a,
+  // search bara, action gumba, summary kartica, project stripa, issues, lista,
+  // WelcomeChecklist. Samo quiet/guided view + BottomNav (+ confetti overlay).
+  if (showGuidedLayout) {
+    return (
+      <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
+        <div className="max-w-md mx-auto px-4 py-8">
+          {guided.status === 'zero_data' ? (
+            <ZeroDataQuietState
+              displayName={props.displayName}
+              onAddExpense={openFirstExpense}
+            />
+          ) : (
+            <GuidedHomeView
+              displayName={props.displayName}
+              allExpenses={props.allExpenses}
+              onAddExpense={openFirstExpense}
+              onDismiss={() => guided.exit('manual_dismiss')}
+            />
+          )}
+        </div>
+        {props.showWelcome && (
+          <WelcomeConfetti
+            displayName={props.displayName || 'Korisnik'}
+            onComplete={props.onWelcomeComplete}
+          />
+        )}
+        <BottomNav />
+      </div>
+    );
+  }
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
     if (hiddenIds.has(s.id)) return sum;
@@ -194,6 +231,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   return (
     <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+
 
         {/* Financial Assistant Dialog */}
         {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
