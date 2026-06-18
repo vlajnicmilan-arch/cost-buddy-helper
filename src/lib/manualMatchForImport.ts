@@ -84,10 +84,10 @@ function roundAmount(n: number): string {
 }
 
 function isMatchableType(t: string): boolean {
-  // Auto-merge sada pokriva i transfere (npr. ručni "Aircash dopuna" vs
-  // bankovni "Uplata gotovine na Aircash"). Isti payment_source + iznos + ±1d
-  // ostaju uvjeti.
-  return t === 'expense' || t === 'income' || t === 'transfer';
+  // Transferi su namjerno isključeni iz auto-merge-a: imaju parni leg
+  // (out/in) na različitim izvorima pa ih sigurnije obraditi kroz normalan
+  // upsert / dedicirani transfer-match put.
+  return t === 'expense' || t === 'income';
 }
 
 function sameSource(a: string | null | undefined, b: string | null | undefined): boolean {

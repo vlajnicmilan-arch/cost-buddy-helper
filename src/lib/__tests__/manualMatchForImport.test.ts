@@ -14,7 +14,7 @@ describe('matchManualToImported', () => {
     expect(res.ambiguous).toEqual([]);
   });
 
-  it('1:1 spaja TRANSFER ↔ TRANSFER (Aircash dopuna scenario)', () => {
+  it('transferi se NIKAD ne auto-spajaju (ostaju unmatched)', () => {
     const res = matchManualToImported({
       imported: [{
         index: 0,
@@ -31,7 +31,8 @@ describe('matchManualToImported', () => {
         date: d('2026-05-14'),
       }],
     });
-    expect(res.matches).toEqual([{ importedIndex: 0, manualId: 'm1' }]);
+    expect(res.matches).toEqual([]);
+    expect(res.unmatched).toEqual([0]);
   });
 
   it('ne spaja transfere s različitim izvorom', () => {
