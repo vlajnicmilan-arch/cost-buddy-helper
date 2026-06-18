@@ -326,7 +326,7 @@ export const useExpenseCRUD = ({
               expenseId: data.id,
               userId: user.id,
               businessProfileId: expenseBpId,
-              paymentSource: normalizedExpense.payment_source,
+              paymentSource: canonicalPaymentSource,
               amount: normalizedExpense.amount,
               description: normalizedExpense.description,
             });
