@@ -70,7 +70,9 @@ export const LoanResolveDialog = ({ debt, open, onOpenChange, onResolved, onDele
     if (!debt?.source_expense_id || !newSourceId || !user || !activeBusinessProfileId) return;
     setBusy(true);
     try {
-      const newPaymentSource = `custom:${newSourceId}`;
+      // Locally constructed canonical value — passes through the shape-only
+      // canonicalizer to keep this in sync with the DB CHECK contract.
+      const newPaymentSource = coerceCanonicalShape(`custom:${newSourceId}`);
 
       // Fetch expense to keep amount/description for sync
       const { data: expense, error: fetchErr } = await supabase
@@ -81,6 +83,7 @@ export const LoanResolveDialog = ({ debt, open, onOpenChange, onResolved, onDele
       if (fetchErr) throw fetchErr;
       if (!expense) throw new Error('Expense not found');
 
+      // eslint-disable-next-line no-restricted-syntax -- canonical-shaped value, owner-loan source-change is a narrow business-debt fix-up
       const { error: updErr } = await supabase
         .from('expenses')
         .update({ payment_source: newPaymentSource })
