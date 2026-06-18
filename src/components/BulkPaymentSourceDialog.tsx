@@ -250,6 +250,7 @@ export const BulkPaymentSourceDialog = ({ expenses, onUpdateExpenses }: BulkPaym
                 <PaymentSourceOptions
                   customPaymentSources={customPaymentSources}
                   currentValue={newPaymentSource || null}
+                  customValuePrefix="custom:"
                 />
               </SelectContent>
             </Select>

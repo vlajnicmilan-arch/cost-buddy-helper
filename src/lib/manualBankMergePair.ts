@@ -10,6 +10,10 @@
  * Pure module — no React, no Supabase.
  */
 
+import { isSamePaymentSource } from './paymentSource/resolve';
+
+
+
 export interface MergeCandidateExpense {
   readonly id: string;
   readonly user_id?: string | null;
@@ -106,7 +110,7 @@ export function isMergeablePair(
     return { ok: false, reason: 'transactions.merge.errors.correctionNature' };
   }
 
-  if ((a.payment_source ?? '') !== (b.payment_source ?? '')) {
+  if (!isSamePaymentSource(a.payment_source ?? null, b.payment_source ?? null)) {
     return { ok: false, reason: 'transactions.merge.errors.differentSource' };
   }
 

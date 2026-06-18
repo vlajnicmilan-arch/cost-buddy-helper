@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
@@ -20,12 +20,25 @@ import {
 } from '@/lib/storage/indexedDB';
 import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanForExpense } from '@/lib/ownerLoanLogic';
 import { invokeNotifyFunction } from '@/lib/notifyHelper';
+import {
+  normalizePaymentSource,
+  tryNormalizePaymentSource,
+  PaymentSourceNormalizeError,
+  type NormalizeContext,
+} from '@/lib/paymentSource/normalize';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
   expenses: Expense[];
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   onBalanceUpdated?: () => void;
+  /**
+   * UUID-ovi custom payment source-a koje korisnik smije referencirati
+   * (vlastiti + shared via payment_source_members).
+   * Foundation Plan, Val 1: koristi se za normalizaciju payment_source
+   * prije svakog write-a u `expenses`.
+   */
+  knownCustomSourceIds?: ReadonlySet<string>;
 }
 
 // Object-payload form za addExpense — sprječava regresiju gdje wrapper
@@ -45,12 +58,54 @@ export const useExpenseCRUD = ({
   expenses,
   setExpenses,
   onBalanceUpdated,
+  knownCustomSourceIds,
 }: UseExpenseCRUDOptions) => {
   const { t } = useTranslation();
   const { user, authReady } = useAuth();
   const { updateBalance, handleTransactionUpdate } = useBalanceUpdater({ onBalanceUpdated });
   const { checkBudgetAlerts } = useBudgetAlerts();
   const { emitAvatarEvent, activeBusinessProfileId } = useAppState();
+
+  // Single chokepoint za payment_source normalizaciju (Foundation Plan, Val 1).
+  // Svaki .from('expenses').(insert|update|upsert) write u ovom hooku MORA
+  // koristiti `normalizePs` neposredno prije writea.
+  const normalizeCtx = useMemo<NormalizeContext>(() => ({
+    knownCustomSourceIds: knownCustomSourceIds ?? new Set<string>(),
+  }), [knownCustomSourceIds]);
+
+  /**
+   * Normalize for writers. Vraća canonical (built-in slug ili `custom:UUID`).
+   * Na grešku loga diagnostic, prikazuje user-facing toast i throwa — caller
+   * mora abort-ati save. NE silent-fall-back-amo na 'cash' jer bi to
+   * zatrlo izvor s krivim balansom.
+   */
+  const normalizePs = useCallback((
+    value: string | null | undefined,
+    fallback: 'cash' | 'other',
+    site: string,
+  ): string => {
+    const raw = (value == null || String(value).trim() === '') ? fallback : value;
+    try {
+      return normalizePaymentSource(raw, normalizeCtx);
+    } catch (e) {
+      const reason = e instanceof PaymentSourceNormalizeError ? e.reason : 'unknown';
+      console.error('[ExpenseCRUD] payment_source normalize failed', { site, raw, reason });
+      // Best-effort diagnostic log; never block insert with telemetry failure.
+      if (user) {
+        supabase.from('app_diagnostics_logs').insert([{
+          session_id: 'expense-crud',
+          event: 'payment_source_normalize_failed',
+          route: typeof window !== 'undefined' ? window.location.pathname : null,
+          user_id: user.id,
+          app_version: (import.meta as any).env?.VITE_APP_VERSION ?? 'unknown',
+          device_info: {},
+          severity: 'error',
+          details: { site, raw_preview: String(raw).slice(0, 80), reason },
+        }]).then(() => {}, () => {});
+      }
+      throw e;
+    }
+  }, [normalizeCtx, user]);
 
   // Object-payload overload je definiran na module-scope-u (vidi AddExpensePayload).
   const addExpense = useCallback(async (
@@ -167,9 +222,20 @@ export const useExpenseCRUD = ({
           user.id,
           (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
         );
+
+        // Foundation Plan Val 1: normalize payment_source to canonical form
+        // (built-in slug or `custom:UUID`) before insert. Throws if unknown UUID.
+        let canonicalPaymentSource: string;
+        try {
+          canonicalPaymentSource = normalizePs(normalizedExpense.payment_source, 'cash', 'addExpense.insert');
+        } catch {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+          throw new Error('payment_source normalize failed');
+        }
+
         const bankMatchStatus = getInitialBankMatchStatus({
           source: entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual'),
-          paymentSource: normalizedExpense.payment_source,
+          paymentSource: canonicalPaymentSource,
           bankLinkedSourceIds,
         });
 
@@ -182,7 +248,7 @@ export const useExpenseCRUD = ({
             category: normalizedExpense.category,
             type: normalizedExpense.type,
             date: normalizedExpense.date.toISOString(),
-            payment_source: normalizedExpense.payment_source || 'cash',
+            payment_source: canonicalPaymentSource,
             payment_source_card_id: normalizedExpense.payment_source_card_id || null,
             receipt_url: normalizedExpense.receipt_url,
             merchant_name: normalizedExpense.merchant_name,
@@ -260,7 +326,7 @@ export const useExpenseCRUD = ({
               expenseId: data.id,
               userId: user.id,
               businessProfileId: expenseBpId,
-              paymentSource: normalizedExpense.payment_source,
+              paymentSource: canonicalPaymentSource,
               amount: normalizedExpense.amount,
               description: normalizedExpense.description,
             });
@@ -303,7 +369,7 @@ export const useExpenseCRUD = ({
         setExpenses(prev => [newExpense, ...prev]);
 
         const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
-        await updateBalance(normalizedExpense.payment_source, normalizedExpense.amount, normalizedExpense.type);
+        await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
         if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
           await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income').catch(e =>
             console.error('Destination balance update failed:', e)
@@ -331,7 +397,7 @@ export const useExpenseCRUD = ({
       }
       throw error; // Re-throw so callers know the operation failed
     }
-  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId]);
+  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId, normalizePs]);
 
   const updateExpense = useCallback(async (expense: Expense) => {
     try {
@@ -359,6 +425,15 @@ export const useExpenseCRUD = ({
           if (dbOldExpense) oldExpense = dbOldExpense as unknown as Expense;
         }
 
+        // Foundation Plan Val 1: normalize before update.
+        let canonicalPaymentSource: string;
+        try {
+          canonicalPaymentSource = normalizePs(expense.payment_source, 'cash', 'updateExpense.update');
+        } catch {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+          return;
+        }
+
         const { error } = await supabase
           .from('expenses')
           .update({
@@ -368,7 +443,7 @@ export const useExpenseCRUD = ({
             category: expense.type === 'transfer' ? 'transfer' : expense.category,
             type: expense.type,
             date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
-            payment_source: expense.payment_source || 'cash',
+            payment_source: canonicalPaymentSource,
             payment_source_card_id: expense.payment_source_card_id || null,
             merchant_name: expense.merchant_name,
             income_source_id: expense.income_source_id,
@@ -384,12 +459,14 @@ export const useExpenseCRUD = ({
 
         if (error) throw error;
 
-        setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
+        // Reflect canonical value in local state + downstream balance/owner-loan calls.
+        const canonicalExpense: Expense = { ...expense, payment_source: canonicalPaymentSource as PaymentSource };
+        setExpenses(prev => prev.map(e => e.id === expense.id ? canonicalExpense : e));
 
         if (oldExpense) {
           await handleTransactionUpdate(
             oldExpense.payment_source, oldExpense.amount, oldExpense.type,
-            expense.payment_source, expense.amount, expense.type,
+            canonicalPaymentSource, expense.amount, expense.type,
             oldExpense.income_source_id, expense.income_source_id
           );
           onBalanceUpdated?.();
@@ -422,7 +499,7 @@ export const useExpenseCRUD = ({
             expenseId: expense.id,
             userId: user.id,
             businessProfileId: updatedBpId,
-            paymentSource: expense.payment_source,
+            paymentSource: canonicalPaymentSource,
             amount: expense.amount,
             description: expense.description,
           }).catch(e => console.error('Owner-loan sync failed:', e));
@@ -434,7 +511,7 @@ export const useExpenseCRUD = ({
       console.error('Error updating expense:', error);
       showError(t('toasts.recategorizeError'));
     }
-  }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated]);
+  }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated, normalizePs, t, authReady, activeBusinessProfileId]);
 
   const bulkUpdateExpenses = useCallback(async (expensesToUpdate: Expense[]) => {
     try {
@@ -449,12 +526,28 @@ export const useExpenseCRUD = ({
         if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
-        await Promise.all(expensesToUpdate.map(async (expense) => {
+        // Foundation Plan Val 1: normalize each row before bulk update. Failed
+        // normalizations are skipped (not silently 'cash'-faked) and logged.
+        const normalizedRows = expensesToUpdate.map((expense) => {
+          try {
+            const canonical = normalizePs(expense.payment_source, 'cash', 'bulkUpdateExpenses.update');
+            return { expense, canonical };
+          } catch {
+            return { expense, canonical: null as string | null };
+          }
+        });
+        const skipped = normalizedRows.filter(r => r.canonical == null);
+        if (skipped.length > 0) {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+        }
+        const toWrite = normalizedRows.filter(r => r.canonical != null) as Array<{ expense: Expense; canonical: string }>;
+
+        await Promise.all(toWrite.map(async ({ expense, canonical }) => {
           const { error } = await supabase
             .from('expenses')
             .update({
               category: expense.category,
-              payment_source: expense.payment_source || 'cash',
+              payment_source: canonical,
               updated_at: new Date().toISOString()
             })
             .eq('id', expense.id);
@@ -462,7 +555,7 @@ export const useExpenseCRUD = ({
         }));
 
         setExpenses(prev => {
-          const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
+          const updatedMap = new Map(toWrite.map(r => [r.expense.id, { ...r.expense, payment_source: r.canonical as PaymentSource }]));
           return prev.map(e => updatedMap.get(e.id) || e);
         });
       }
@@ -471,7 +564,7 @@ export const useExpenseCRUD = ({
       showError(t('feedback.bulkUpdateError'));
       throw error;
     }
-  }, [isLocalMode, user, setExpenses]);
+  }, [isLocalMode, user, setExpenses, normalizePs, authReady, t]);
 
   const deleteExpense = useCallback(async (id: string, options?: { silent?: boolean }) => {
     try {
@@ -642,9 +735,19 @@ export const useExpenseCRUD = ({
           }
         }
         try {
-          const sources = Array.from(new Set(fingerprinted
+          // Expand sources IN-list with BOTH canonical and raw-UUID variants so
+          // we still find legacy rows pre-backfill (read-side tolerant reader).
+          const rawSources = Array.from(new Set(fingerprinted
             .map(r => r.tx.payment_source || 'other')
             .filter(Boolean))) as string[];
+          const sources = Array.from(new Set(rawSources.flatMap((s) => {
+            const variants = new Set<string>([s]);
+            if (s.startsWith('custom:')) variants.add(s.slice('custom:'.length));
+            else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
+              variants.add(`custom:${s}`);
+            }
+            return Array.from(variants);
+          })));
 
           const dates = fingerprinted.map(r => r.tx.date.getTime());
           if (dates.length > 0 && sources.length > 0) {
@@ -716,16 +819,28 @@ export const useExpenseCRUD = ({
         }
 
         // Redovi za upsert = svi osim onih koji su uspješno mergeani.
-        const rows = fingerprinted
+        // Foundation Plan Val 1: normalize payment_source per row. Failed
+        // normalizations su skipped (logirano) — ne fake-amo 'cash'/'other'.
+        const upsertCandidates = fingerprinted
           .filter(r => !mergedFingerprints.has(r.fingerprint))
-          .map(({ tx, fingerprint }) => ({
+          .map(({ tx, fingerprint }) => {
+            const canonical = tryNormalizePaymentSource(tx.payment_source || 'other', normalizeCtx);
+            return { tx, fingerprint, canonical };
+          });
+        const importSkipped = upsertCandidates.filter(r => r.canonical == null);
+        if (importSkipped.length > 0) {
+          console.warn('[importFromCSV] skipped rows with unknown payment_source:', importSkipped.length);
+        }
+        const rows = upsertCandidates
+          .filter(r => r.canonical != null)
+          .map(({ tx, fingerprint, canonical }) => ({
             user_id: user.id,
             amount: tx.amount,
             description: tx.description,
             category: tx.category,
             type: tx.type,
             date: tx.date.toISOString(),
-            payment_source: tx.payment_source || 'other',
+            payment_source: canonical as string,
             merchant_name: tx.merchant_name || null,
             ai_extracted: false,
             import_batch_id: batchId,
@@ -891,7 +1006,7 @@ export const useExpenseCRUD = ({
       showError(t('toasts.importError'));
       throw error;
     }
-  }, [isLocalMode, user, authReady, activeBusinessProfileId, setExpenses, updateBalance, onBalanceUpdated, t]);
+  }, [isLocalMode, user, authReady, activeBusinessProfileId, setExpenses, updateBalance, onBalanceUpdated, t, normalizeCtx]);
 
   return { addExpense, updateExpense, bulkUpdateExpenses, deleteExpense, importFromCSV };
 };

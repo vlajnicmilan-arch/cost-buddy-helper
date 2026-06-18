@@ -20,6 +20,10 @@
  * Pure module — no React, no Supabase. Easy to unit-test.
  */
 
+import { resolvePaymentSourceKey } from './paymentSource/resolve';
+
+
+
 export interface ImportedRowForMatch {
   /** Stable index in the caller's imported rows array. */
   readonly index: number;
@@ -87,7 +91,9 @@ function isMatchableType(t: string): boolean {
 }
 
 function sameSource(a: string | null | undefined, b: string | null | undefined): boolean {
-  return (a ?? '') === (b ?? '');
+  // Tolerant compare: raw UUID and `custom:UUID` collapse to the same key
+  // (Foundation Plan, Val 1 read-side resolver).
+  return resolvePaymentSourceKey(a) === resolvePaymentSourceKey(b);
 }
 
 export function matchManualToImported(input: MatchInput): MatchOutput {
