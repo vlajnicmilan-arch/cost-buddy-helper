@@ -180,21 +180,6 @@ const Onboarding = () => {
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
-  const handleUsageSelect = (p: Exclude<UsageProfile, null>) => {
-    setUsageProfileLocal(p);
-    lightTap().catch(() => {});
-    // Auto-advance — log completion za step 2 odmah (has_value=true jer smo upravo selektirali)
-    logFunnelEvent('onboarding_step_completed', {
-      ...baseMeta(),
-      step: 2,
-      step_name: STEP_NAMES[2],
-      duration_ms: Math.round(performance.now() - stepEnterTimeRef.current),
-      has_value: true,
-      auto_advance: true,
-    }).catch(() => {});
-    setTimeout(() => setStep((s) => Math.min(TOTAL_STEPS, s + 1)), 220);
-  };
-
   const handleSkip = () => {
     outcomeRef.current = 'skipped';
     logFunnelEvent('onboarding_step_skipped', {
@@ -204,14 +189,15 @@ const Onboarding = () => {
       reason: 'finish_later',
       time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
     }).catch(() => {});
-    // Završi kasnije: označi onboarding kao gotov + minimalni defaulti
+    // Završi kasnije: označi onboarding kao gotov + minimalni defaulti.
+    // usage_profile = 'finance_only' default (modul gate zamijenjen u Settings).
     setOnboardingCompleted(true);
     localStorage.setItem('onboarding_completed', 'true');
     if (displayName.trim()) {
       localStorage.setItem('user_display_name', displayName.trim());
       setContextDisplayName(displayName.trim());
     }
-    const profile: UsageProfile = usageProfile ?? 'finance_only';
+    const profile: UsageProfile = 'finance_only';
     setUsageProfile(profile);
     localStorage.setItem('usage_profile', profile);
     navigate('/home', { replace: true });
@@ -219,9 +205,9 @@ const Onboarding = () => {
 
   const canAdvance = () => {
     if (step === 1) return displayName.trim().length > 0;
-    if (step === 2) return usageProfile !== null;
-    return true; // koraci 3 i 4 su opcionalni
+    return true;
   };
+
 
   const handleComplete = async () => {
     if (!user) {
