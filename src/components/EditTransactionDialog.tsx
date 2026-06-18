@@ -411,9 +411,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           <div className="space-y-2">
             <Label>{t('transactions.paymentSource')}</Label>
             <Select 
-              value={paymentSource} 
+              value={customPaymentSources.some(s => s.id === paymentSource) ? `custom:${paymentSource}` : paymentSource} 
               onValueChange={(v) => {
-                setPaymentSource(v as PaymentSource);
+                const stripped = v.startsWith('custom:') ? v.slice(7) : v;
+                setPaymentSource(stripped as PaymentSource);
                 setSelectedCardId(null); // Reset card when changing source
               }}
             >
