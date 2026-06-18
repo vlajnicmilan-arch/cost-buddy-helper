@@ -217,7 +217,7 @@ function scorePair(
   );
   const descMatch = descriptionsOverlap(existing.description, tx.description);
   const samePaymentSource =
-    !!existing.payment_source && !!tx.payment_source && existing.payment_source === tx.payment_source;
+    !!existing.payment_source && !!tx.payment_source && isSamePaymentSource(existing.payment_source, tx.payment_source);
 
 
   // ── STRICT (90–100) ──────────────────────────────────────────────────────
