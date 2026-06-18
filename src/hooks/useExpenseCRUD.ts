@@ -397,7 +397,7 @@ export const useExpenseCRUD = ({
       }
       throw error; // Re-throw so callers know the operation failed
     }
-  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId]);
+  }, [isLocalMode, user, setExpenses, updateBalance, emitAvatarEvent, checkBudgetAlerts, activeBusinessProfileId, normalizePs]);
 
   const updateExpense = useCallback(async (expense: Expense) => {
     try {
@@ -511,7 +511,7 @@ export const useExpenseCRUD = ({
       console.error('Error updating expense:', error);
       showError(t('toasts.recategorizeError'));
     }
-  }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated]);
+  }, [isLocalMode, user, expenses, setExpenses, handleTransactionUpdate, onBalanceUpdated, normalizePs, t, authReady, activeBusinessProfileId]);
 
   const bulkUpdateExpenses = useCallback(async (expensesToUpdate: Expense[]) => {
     try {
@@ -564,7 +564,7 @@ export const useExpenseCRUD = ({
       showError(t('feedback.bulkUpdateError'));
       throw error;
     }
-  }, [isLocalMode, user, setExpenses]);
+  }, [isLocalMode, user, setExpenses, normalizePs, authReady, t]);
 
   const deleteExpense = useCallback(async (id: string, options?: { silent?: boolean }) => {
     try {
@@ -1006,7 +1006,7 @@ export const useExpenseCRUD = ({
       showError(t('toasts.importError'));
       throw error;
     }
-  }, [isLocalMode, user, authReady, activeBusinessProfileId, setExpenses, updateBalance, onBalanceUpdated, t]);
+  }, [isLocalMode, user, authReady, activeBusinessProfileId, setExpenses, updateBalance, onBalanceUpdated, t, normalizeCtx]);
 
   return { addExpense, updateExpense, bulkUpdateExpenses, deleteExpense, importFromCSV };
 };
