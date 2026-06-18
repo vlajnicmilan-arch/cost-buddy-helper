@@ -207,8 +207,8 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
             <div className="space-y-2">
               <Label className="text-sm font-medium">📥 {t('transactions.destinationAccount', 'Odredišni račun')}</Label>
               <Select
-                value={transferDestination || 'none'}
-                onValueChange={(value) => setTransferDestination(value === 'none' ? null : value)}
+                value={transferDestination ? (customPaymentSources.some(s => s.id === transferDestination) ? `custom:${transferDestination}` : transferDestination) : 'none'}
+                onValueChange={(value) => setTransferDestination(value === 'none' ? null : (value.startsWith('custom:') ? value.slice(7) : value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('placeholders.selectDestinationAccount', 'Odaberi odredišni račun')}>
@@ -411,9 +411,10 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           <div className="space-y-2">
             <Label>{t('transactions.paymentSource')}</Label>
             <Select 
-              value={paymentSource} 
+              value={customPaymentSources.some(s => s.id === paymentSource) ? `custom:${paymentSource}` : paymentSource} 
               onValueChange={(v) => {
-                setPaymentSource(v as PaymentSource);
+                const stripped = v.startsWith('custom:') ? v.slice(7) : v;
+                setPaymentSource(stripped as PaymentSource);
                 setSelectedCardId(null); // Reset card when changing source
               }}
             >

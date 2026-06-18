@@ -35,7 +35,11 @@ export const PaymentSourceSelector = ({
       </Label>
       
       <Select
-        value={paymentSource.startsWith('custom:') ? paymentSource : (customPaymentSources.find(s => s.id === paymentSource) ? paymentSource : paymentSource)}
+        value={
+          paymentSource && customPaymentSources.some(s => s.id === paymentSource)
+            ? `custom:${paymentSource}`
+            : paymentSource
+        }
         onValueChange={(value) => {
           onPaymentSourceChange(value as PaymentSource);
           onSelectedCardIdChange(null);
@@ -44,7 +48,8 @@ export const PaymentSourceSelector = ({
         <SelectTrigger className="h-12 rounded-xl bg-background">
           <SelectValue placeholder={t('transactions.selectPaymentMethod')}>
             {(() => {
-              const customSource = customPaymentSources.find(s => s.id === paymentSource);
+              const rawId = paymentSource?.startsWith('custom:') ? paymentSource.slice(7) : paymentSource;
+              const customSource = customPaymentSources.find(s => s.id === rawId);
               if (customSource) {
                 return (
                   <span className="flex items-center gap-2">
@@ -58,7 +63,7 @@ export const PaymentSourceSelector = ({
                   </span>
                 );
               }
-              const standardSource = PAYMENT_SOURCES.find(s => s.id === paymentSource);
+              const standardSource = PAYMENT_SOURCES.find(s => s.id === rawId);
               if (standardSource) {
                 return (
                   <span className="flex items-center gap-2">
