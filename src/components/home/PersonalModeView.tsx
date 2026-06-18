@@ -485,8 +485,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
           )}
         </div>
-          </>
-        )}
+
 
 
         {/* Footer */}
