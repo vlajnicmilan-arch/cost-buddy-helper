@@ -63,7 +63,7 @@ export const PaymentSourceSelector = ({
                   </span>
                 );
               }
-              const standardSource = PAYMENT_SOURCES.find(s => s.id === paymentSource);
+              const standardSource = PAYMENT_SOURCES.find(s => s.id === rawId);
               if (standardSource) {
                 return (
                   <span className="flex items-center gap-2">
