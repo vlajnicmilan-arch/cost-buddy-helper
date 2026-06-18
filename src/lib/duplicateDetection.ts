@@ -14,6 +14,8 @@
  *   unique     0–29    No conflict
  */
 
+import { isSamePaymentSource } from './paymentSource/resolve';
+
 import type { Expense } from '@/types/expense';
 
 export type DuplicateLevel = 'strict' | 'fuzzy' | 'suspicious' | 'unique';
