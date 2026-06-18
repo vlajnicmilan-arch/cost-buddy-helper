@@ -86,9 +86,6 @@ const Onboarding = () => {
   const hasValueForStepRef = useRef<(s: number) => boolean>(() => false);
   hasValueForStepRef.current = (s: number): boolean => {
     if (s === 1) return displayName.trim().length > 0;
-    if (s === 2) return usageProfile !== null;
-    if (s === 3) return incomeNum > 0;
-    if (s === 4) return selectedCategories.length > 0;
     return true;
   };
 
