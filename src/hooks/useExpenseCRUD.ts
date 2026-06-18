@@ -526,12 +526,28 @@ export const useExpenseCRUD = ({
         if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
 
-        await Promise.all(expensesToUpdate.map(async (expense) => {
+        // Foundation Plan Val 1: normalize each row before bulk update. Failed
+        // normalizations are skipped (not silently 'cash'-faked) and logged.
+        const normalizedRows = expensesToUpdate.map((expense) => {
+          try {
+            const canonical = normalizePs(expense.payment_source, 'cash', 'bulkUpdateExpenses.update');
+            return { expense, canonical };
+          } catch {
+            return { expense, canonical: null as string | null };
+          }
+        });
+        const skipped = normalizedRows.filter(r => r.canonical == null);
+        if (skipped.length > 0) {
+          showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
+        }
+        const toWrite = normalizedRows.filter(r => r.canonical != null) as Array<{ expense: Expense; canonical: string }>;
+
+        await Promise.all(toWrite.map(async ({ expense, canonical }) => {
           const { error } = await supabase
             .from('expenses')
             .update({
               category: expense.category,
-              payment_source: expense.payment_source || 'cash',
+              payment_source: canonical,
               updated_at: new Date().toISOString()
             })
             .eq('id', expense.id);
@@ -539,7 +555,7 @@ export const useExpenseCRUD = ({
         }));
 
         setExpenses(prev => {
-          const updatedMap = new Map(expensesToUpdate.map(e => [e.id, e]));
+          const updatedMap = new Map(toWrite.map(r => [r.expense.id, { ...r.expense, payment_source: r.canonical as PaymentSource }]));
           return prev.map(e => updatedMap.get(e.id) || e);
         });
       }
