@@ -2577,8 +2577,8 @@
       "greeting": "Hallo.",
       "greetingNamed": "Hallo, {{name}}.",
       "line": "Wenn du bereit bist, erfasse die erste Ausgabe. Alles Weitere ergibt sich daraus.",
-      "primaryCta": "Erste Ausgabe erfassen",
-      "secondary": "Vorerst überspringen"
+      "primaryCta": "Erste Ausgabe erfassen"
+
     },
     "guided": {
       "greeting": "Danke.",

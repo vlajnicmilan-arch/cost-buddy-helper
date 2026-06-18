@@ -2583,8 +2583,8 @@
       "greeting": "Bok.",
       "greetingNamed": "Bok, {{name}}.",
       "line": "Kada budeš spreman, zabilježi prvi trošak. Sve ostalo dolazi iz toga.",
-      "primaryCta": "Zabilježi prvi trošak",
-      "secondary": "Preskoči za sada"
+      "primaryCta": "Zabilježi prvi trošak"
+
     },
     "guided": {
       "greeting": "Hvala.",

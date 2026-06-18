@@ -2709,8 +2709,8 @@
       "greeting": "Hi.",
       "greetingNamed": "Hi, {{name}}.",
       "line": "When you're ready, log your first expense. Everything else follows from there.",
-      "primaryCta": "Log first expense",
-      "secondary": "Skip for now"
+      "primaryCta": "Log first expense"
+
     },
     "guided": {
       "greeting": "Thanks.",
