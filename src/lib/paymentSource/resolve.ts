@@ -46,3 +46,17 @@ export function isSamePaymentSource(
 ): boolean {
   return resolvePaymentSourceKey(a) === resolvePaymentSourceKey(b);
 }
+
+/**
+ * Strip the `custom:` prefix when present, returning the raw UUID/slug.
+ * Use for parents that store payment_source as raw UUID (e.g. EditTransactionDialog,
+ * transferDestination as income_source_id). Built-in slugs are passed through.
+ */
+export function stripCustomPrefix(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  if (trimmed === '') return null;
+  if (trimmed.startsWith('custom:')) return trimmed.slice('custom:'.length);
+  return trimmed;
+}
+
