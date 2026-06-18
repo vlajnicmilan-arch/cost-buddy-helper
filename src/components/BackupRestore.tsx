@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { exportTextFile, type ExportMode } from '@/lib/fileExport';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { ExportButton } from '@/components/ui/export-button';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
