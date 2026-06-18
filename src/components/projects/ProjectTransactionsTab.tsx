@@ -33,6 +33,7 @@ import { DateRange } from 'react-day-picker';
 import { getDateRange } from '@/lib/dateValidation';
 import { Capacitor } from '@capacitor/core';
 import { exportTextFile } from '@/lib/fileExport';
+import { coerceCanonicalShape } from '@/lib/paymentSource/normalize';
 import { buildReportHtml, renderHtmlKpiStrip } from '@/lib/printHtmlTemplate';
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName } from '@/lib/reportDesign';
