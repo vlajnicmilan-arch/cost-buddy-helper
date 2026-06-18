@@ -116,13 +116,6 @@ export const useExpenseCRUD = ({
     isPendingMemberTransactionArg?: boolean,
     entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
   ) => {
-    expenseOrPayload:
-      | Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>
-      | AddExpensePayload,
-    itemsArg?: ReceiptItem[],
-    isPendingMemberTransactionArg?: boolean,
-    entrySourceArg?: import('@/lib/bankMatchStatus').ExpenseEntrySource,
-  ) => {
     const expense = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.expense : expenseOrPayload;
     const items = isAddExpensePayload(expenseOrPayload) ? expenseOrPayload.items : itemsArg;
     const isPendingMemberTransaction = isAddExpensePayload(expenseOrPayload)
