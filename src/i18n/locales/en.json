@@ -2718,8 +2718,7 @@
       "line": "You're starting to build your overview. Each new entry fills in the picture.",
       "weekAria": "Last 7 days",
       "primaryCta": "Add another",
-      "remaining": "{{n}} more until the full view.",
-      "skip": "Open standard view"
+      "remaining": "{{n}} more until the full view."
     }
   },
   "gdpr": {

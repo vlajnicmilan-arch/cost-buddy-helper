@@ -208,7 +208,6 @@ const Onboarding = () => {
 
       // 3) Lokalno stanje
       localStorage.setItem('onboarding_completed', 'true');
-      localStorage.setItem('show_welcome_animation', 'true');
       localStorage.setItem('usage_profile', profile);
       if (trimmedName) {
         localStorage.setItem('user_display_name', trimmedName);

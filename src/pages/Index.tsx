@@ -78,7 +78,7 @@ const Index = () => {
   const [dashboardFilters, setDashboardFilters] = useState<FilterState>(defaultFilters);
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  
   const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
 
   // Global "ai-assistant:ask" event — opens dialog with a pre-seeded prompt.
@@ -126,13 +126,7 @@ const Index = () => {
   const { recurringTransactions, processDueTransactions, updateRecurring, refetch: refetchRecurring } = useRecurringTransactions();
   const { findMatches } = useRecurringMatcher();
 
-  // Load welcome animation flag
   useEffect(() => {
-    const shouldShowWelcome = localStorage.getItem('show_welcome_animation');
-    if (shouldShowWelcome === 'true') {
-      setShowWelcome(true);
-      localStorage.removeItem('show_welcome_animation');
-    }
     const localName = localStorage.getItem('user_display_name');
     if (!localName && user) {
       supabase
@@ -573,8 +567,6 @@ const Index = () => {
       projects={projects}
       isBusinessMode={isBusinessMode}
       businessProfileName={businessProfile?.company_name}
-      showWelcome={showWelcome}
-      onWelcomeComplete={() => setShowWelcome(false)}
       assistantDialogOpen={assistantDialogOpen}
       onAssistantDialogChange={setAssistantDialogOpen}
     />
