@@ -14,7 +14,7 @@ import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog'
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
-import { WelcomeConfetti } from '@/components/WelcomeConfetti';
+
 import { TrialBanner } from '@/components/TrialBanner';
 import { ZeroDataQuietState } from '@/components/home/ZeroDataQuietState';
 import { GuidedHomeView } from '@/components/home/GuidedHomeView';
@@ -109,9 +109,6 @@ interface PersonalModeViewProps {
   contextLookup: any;
   allCards: any[];
   allTransfers: Expense[];
-  // Welcome
-  showWelcome: boolean;
-  onWelcomeComplete: () => void;
   // Dialogs
   assistantDialogOpen: boolean;
   onAssistantDialogChange: (open: boolean) => void;
@@ -204,16 +201,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
               displayName={props.displayName}
               allExpenses={props.allExpenses}
               onAddExpense={openFirstExpense}
-              onDismiss={() => guided.exit('manual_dismiss')}
             />
           )}
         </div>
-        {props.showWelcome && (
-          <WelcomeConfetti
-            displayName={props.displayName || 'Korisnik'}
-            onComplete={props.onWelcomeComplete}
-          />
-        )}
         <BottomNav />
       </div>
     );
@@ -531,12 +521,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         onRecurringMatchConfirm={props.onRecurringMatchConfirm}
       />
 
-      {props.showWelcome && (
-        <WelcomeConfetti
-          displayName={props.displayName || 'Korisnik'}
-          onComplete={props.onWelcomeComplete}
-        />
-      )}
 
       {props.aiAssistantEnabled && !props.simpleModeEnabled && (
         <div data-tutorial="ai-assistant">

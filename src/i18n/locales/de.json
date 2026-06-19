@@ -2586,8 +2586,7 @@
       "line": "Du baust gerade deine Übersicht auf. Jeder weitere Eintrag vervollständigt das Bild.",
       "weekAria": "Letzte 7 Tage",
       "primaryCta": "Weitere hinzufügen",
-      "remaining": "Noch {{n}} bis zur vollständigen Ansicht.",
-      "skip": "Standardansicht öffnen"
+      "remaining": "Noch {{n}} bis zur vollständigen Ansicht."
     }
   },
   "gdpr": {

@@ -17,8 +17,8 @@ interface UseGuidedModeResult {
   ready: boolean;
   /** ISO string ili `null` ako još nije izašao. */
   guidedHomeExitedAt: string | null;
-  /** Ručni / dismiss exit. Idempotentno na serveru. */
-  exit: (reason?: 'manual_dismiss' | 'threshold_reached') => Promise<void>;
+  /** Auto-exit po thresholdu. Idempotentno na serveru. */
+  exit: (reason?: 'threshold_reached') => Promise<void>;
 }
 
 /**
@@ -91,7 +91,7 @@ export function useGuidedMode(expenseCount: number): UseGuidedModeResult {
   }, [ready, status, expenseCount]);
 
   const exit = useCallback(
-    async (reason: 'manual_dismiss' | 'threshold_reached' = 'manual_dismiss') => {
+    async (reason: 'threshold_reached' = 'threshold_reached') => {
       if (!user?.id) return;
       if (exitedAt) return; // idempotentno na klijentu
       try {

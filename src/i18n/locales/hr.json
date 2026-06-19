@@ -2592,8 +2592,7 @@
       "line": "Počinješ graditi pregled. Svaki sljedeći unos popunjava sliku.",
       "weekAria": "Zadnjih 7 dana",
       "primaryCta": "Dodaj još jedan",
-      "remaining": "Još {{n}} do potpunog prikaza.",
-      "skip": "Otvori standardni prikaz"
+      "remaining": "Još {{n}} do potpunog prikaza."
     }
   },
   "gdpr": {

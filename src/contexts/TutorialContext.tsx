@@ -96,16 +96,13 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
     const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
-    const showWelcome = localStorage.getItem('show_welcome_animation') === 'true';
-    
-    // Start tutorial after welcome animation for new users
-    if (onboardingCompleted && showWelcome && !tutorialSeen) {
-      // Delay to let welcome animation play first
+
+    if (onboardingCompleted && !tutorialSeen) {
       const timer = setTimeout(() => {
         setIsActive(true);
         localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
       }, 4000);
-      
+
       return () => clearTimeout(timer);
     }
   }, []);

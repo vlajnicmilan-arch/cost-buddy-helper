@@ -11,7 +11,6 @@ interface GuidedHomeViewProps {
   /** Sve transakcije korisnika (sve vrste). Hook već garantira da je broj < THRESHOLD. */
   allExpenses: Expense[];
   onAddExpense: () => void;
-  onDismiss: () => void;
 }
 
 /**
@@ -23,7 +22,6 @@ export const GuidedHomeView = ({
   displayName,
   allExpenses,
   onAddExpense,
-  onDismiss,
 }: GuidedHomeViewProps) => {
   const { t } = useTranslation();
   const count = allExpenses.length;
@@ -115,14 +113,6 @@ export const GuidedHomeView = ({
           ? t('guidedHome.guided.remaining', { defaultValue: 'Još {{n}} do potpunog prikaza.', n: remaining })
           : ''}
       </p>
-
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline self-start min-h-[44px]"
-      >
-        {t('guidedHome.guided.skip', 'Otvori standardni prikaz')}
-      </button>
     </motion.div>
   );
 };
