@@ -1305,6 +1305,7 @@ export type Database = {
           possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
+          recurring_transaction_id: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           type: string
@@ -1353,6 +1354,7 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
+          recurring_transaction_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -1401,6 +1403,7 @@ export type Database = {
           possible_duplicate_of?: string | null
           project_id?: string | null
           receipt_url?: string | null
+          recurring_transaction_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           type?: string
@@ -1486,6 +1489,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_recurring_transaction_id_fkey"
+            columns: ["recurring_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -4938,6 +4948,7 @@ export type Database = {
           possible_duplicate_of: string | null
           project_id: string | null
           receipt_url: string | null
+          recurring_transaction_id: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           type: string
