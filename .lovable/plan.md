@@ -1,99 +1,37 @@
-## Cilj
+## Status
 
-Ukloniti drift između `mem://features/onboarding-strategy` (2 koraka, ništa se ne setupa u onboardingu) i stvarnog izgleda ekrana (Step 2 i dalje slavi "Sve je postavljeno" i pokazuje šuplji setup checklist). Zatvoriti temu jednom.
+**Već napravljeno (uz tvoje odobrenje):**
+- Migracija: dodana kolona `expenses.recurring_transaction_id` + jedinstveni indeks `(user_id, recurring_transaction_id, date)` koji garantira idempotenciju na DB razini.
+- Soft-delete 3 Vinkina duplikata (kasniji od para u svakom slučaju). U Smeću su, može ih vratiti.
 
-## Scope (uski)
+## Preostaje (zahtijeva build mode da krenem s kodom)
 
-1. **Step 2 copy + payoff** — preraditi da ton odgovara "tek smo te upoznali, ostalo radimo usput"
-2. **Confetti konsolidacija** — ukloniti confetti iz `StepReady`, zadržati samo `WelcomeConfetti` (post-onboarding) i guided home payoff (post-first-expense)
-3. **Mrtav kod** — obrisati `StepUsageProfile.tsx`, `StepIncome.tsx`, `StepBudgetSliders.tsx` (već se ne importaju)
-4. **Step 1 sitni dodatak** — signal brevity ("dva pitanja, gotovi smo")
-5. **Memorija** — proširiti `onboarding-strategy` doc da pokriva copy zadnjeg koraka i celebration layer pravilo
+### 1. `src/types/expense.ts`
+Dodati polje `recurring_transaction_id?: string | null` u `Expense` interface.
 
-## Detalji
+### 2. `src/hooks/useExpenseCRUD.ts` — `addExpense`
+Proslijediti `recurring_transaction_id` u insert payload (line ~244–267). Uhvatiti error code `23505` na uniq indexu i tretirati ga kao "već generirano" (no-op, bez throw, bez toast greške).
 
-### Step 2 (`StepReady.tsx`)
+### 3. `src/hooks/useRecurringTransactions.ts` — `processDueTransactions`
+Promijeniti redoslijed iz "insert → update next_due_date" u **claim-first**:
+```
+const { data: claimed } = await supabase
+  .from('recurring_transactions')
+  .update({ next_due_date: nextDate, last_generated_date: today })
+  .eq('id', recurring.id)
+  .eq('next_due_date', recurring.next_due_date) // compare-and-swap
+  .select('id');
+if (!claimed || claimed.length === 0) continue; // netko drugi je claim-ao
+await addExpense({ ..., recurring_transaction_id: recurring.id }, ...);
+```
+Dodati i `useRef` lock unutar hooka tako da paralelni pozivi iz StrictMode / remount-a samo prvi prolaze (drugi rano izlazi). Lock je suvišan uz claim+uniq, ali smanjuje nepotreban network traffic.
 
-Trenutno:
-- Naslov: "Tvoja aplikacija je spremna!"
-- Podnaslov: "Sve je postavljeno. Krenimo."
-- Checklist `budget/cats/income` (uvijek prazan jer su koraci izbačeni)
-- `PartyPopper` ikona + `react-confetti` 3.5s
+### 4. Vitest test
+`src/hooks/__tests__/processDueTransactions.test.ts` — mock supabase, pozvati 2× paralelno, expect-ati točno 1 addExpense poziv po pravilu.
 
-Novo:
-- Naslov: "{name}, spremni smo." (ili "Spremni smo." bez imena)
-- Podnaslov: nešto u smjeru "Sve ostalo namještamo zajedno dok koristiš aplikaciju — kreni s prvim troškom."
-- **Bez checklista** (uklanjamo `items` blok i propse `hasIncome`, `expenseCategoriesCount`)
-- **Bez confettija** (uklanjamo `Confetti` lazy import + render)
-- Ikona ostaje (`PartyPopper` ili nešto mirnije — `Rocket`/`ArrowRight`; predlažem `Rocket`)
-- Tipke i navigacija ostaju kako jesu
+### 5. Bez dodatnih promjena
+Bez UI promjena, bez i18n promjena, bez novih guarda/timeoutova.
 
-### Step 1 (`StepGreeting.tsx`)
+---
 
-Dodati jedan mali signal kratkoće. Npr. iznad `askName` ili kao caption ispod intro paragrafa:
-- "Samo jedno pitanje i krećemo."
-
-Bez drugih promjena.
-
-### Onboarding.tsx
-
-- Ukloniti `hasIncome`/`expenseCategoriesCount` proslijeđivanje u `StepReady` (više se ne koristi)
-- `handleComplete` ostaje isti (RPC poziv, defaulti, navigacija) — to je već po doc-u
-
-### Mrtav kod
-
-Obrisati:
-- `src/components/onboarding/steps/StepUsageProfile.tsx`
-- `src/components/onboarding/steps/StepIncome.tsx`
-- `src/components/onboarding/steps/StepBudgetSliders.tsx`
-
-Provjeriti da nigdje drugdje nisu importirani (rg pretraga prije brisanja).
-
-### i18n
-
-Dodati / ažurirati ključeve u `hr.json`, `en.json`, `de.json`:
-- `onboardingV3.greeting.brevityHint` ("Samo jedno pitanje i krećemo.")
-- `onboardingV3.ready.title` / `ready.titleNamed` — novi tekst
-- `onboardingV3.ready.subtitle` — novi tekst
-
-Stari ključevi (`ready.budget`, `ready.cats`, `ready.income`) — ostavljam u JSON-u jedno čišćenje dalje; nisu više korišteni, ali brisanje ide u zaseban sweep da ne miješam i18n cleanup s ovim passom.
-
-### Memorija
-
-Update `mem://features/onboarding-strategy`:
-- Eksplicitno locknuti copy Step 2 (naslov + podnaslov + "bez checklista")
-- Pravilo: "Onboarding ne slavi setup koji se nije dogodio."
-- Pravilo: "Celebration layer — `WelcomeConfetti` je jedini confetti u toku Auth→Onboarding→Home. Guided home payoff je drugi, nezavisan. Step 2 onboardinga nema confetti."
-
-### Test (lagani)
-
-Dodati u `src/test/` jedan vitest koji ne ovisi o renderiranju:
-- Statičan assert: `StepReady.tsx` ne importa `react-confetti`
-- Statičan assert: `StepReady.tsx` ne sadrži stringove `budget`, `income`, `cats` u JSX kontekstu (ili lakše — provjera da prop interface više nema `hasIncome`/`expenseCategoriesCount`)
-
-Cilj: tonalni drift na ovom mjestu hvata CI prije nego stigne u preview.
-
-## Fileovi koji se diraju
-
-- `src/components/onboarding/steps/StepGreeting.tsx`
-- `src/components/onboarding/steps/StepReady.tsx`
-- `src/pages/Onboarding.tsx`
-- `src/i18n/locales/hr.json`
-- `src/i18n/locales/en.json`
-- `src/i18n/locales/de.json`
-- `.lovable/memory/features/onboarding-strategy.md`
-- `src/test/onboardingCopy.test.ts` (novi)
-- **Brisanje:** `src/components/onboarding/steps/StepUsageProfile.tsx`, `StepIncome.tsx`, `StepBudgetSliders.tsx`
-
-## Izvan scope-a
-
-- `WelcomeConfetti` u `Auth.tsx` — ostaje netaknut
-- Guided home payoff — ostaje netaknut
-- Cleanup neiskorištenih i18n ključeva (`ready.budget/cats/income`) — zaseban sweep
-- Promjena RPC signature `complete_onboarding` — ostaje (Opcija A iz doc-a)
-
-## Verifikacija
-
-1. Vitest prolazi (uključujući novi `onboardingCopy.test.ts`)
-2. Build prolazi
-3. Manual: ponovo proći kroz onboarding (već si resetiran u DB-u) → Step 2 ne smije reći "sve je postavljeno" i ne smije pucati confetti
+Za nastavak (kod): prebaci u build mode. Migration + brisanje duplikata su gotovi neovisno.
