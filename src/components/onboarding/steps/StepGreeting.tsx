@@ -42,6 +42,9 @@ export const StepGreeting = ({ displayName, onChange }: Props) => {
             'Pomoći ću ti otkriti gdje ti odlazi novac i predlagati kako njime efikasnije upravljati.',
           )}
         </p>
+        <p className="text-xs text-muted-foreground/80">
+          {t('onboardingV3.greeting.brevityHint', 'Samo jedno pitanje i krećemo.')}
+        </p>
         <p className="text-sm font-medium">
           {t('onboardingV3.greeting.askName', 'Kako da te zovem?')}
         </p>

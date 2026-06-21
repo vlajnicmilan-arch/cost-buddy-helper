@@ -4355,6 +4355,7 @@
       "title": "Bok!",
       "titleNamed": "Drago mi je, {{name}}!",
       "intro": "Pomoći ću ti otkriti gdje ti odlazi novac i predlagati kako njime efikasnije upravljati.",
+      "brevityHint": "Samo jedno pitanje i krećemo.",
       "askName": "Kako da te zovem?",
       "namePlaceholder": "npr. Marko"
     },
@@ -4391,12 +4392,9 @@
       }
     },
     "ready": {
-      "title": "Tvoja aplikacija je spremna!",
-      "titleNamed": "{{name}}, tvoja aplikacija je spremna!",
-      "subtitle": "Sve je postavljeno. Krenimo.",
-      "budget": "Mjesečni budžet napravljen",
-      "cats": "{{count}} kategorija troškova dodano",
-      "income": "Prihod postavljen"
+      "title": "Spremni smo.",
+      "titleNamed": "Spremni smo, {{name}}.",
+      "subtitle": "Ostalo namještamo zajedno dok koristiš aplikaciju. Krenimo s prvim troškom."
     }
   },
   "openBanking": {

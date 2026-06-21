@@ -293,11 +293,7 @@ const Onboarding = () => {
             <StepGreeting displayName={displayName} onChange={setDisplayName} />
           )}
           {step === 2 && (
-            <StepReady
-              displayName={displayName}
-              hasIncome={false}
-              expenseCategoriesCount={0}
-            />
+            <StepReady displayName={displayName} />
           )}
         </AnimatePresence>
       </div>
