@@ -215,6 +215,8 @@ export interface Expense {
   bank_transaction_id?: string | null;
   bank_account_id?: string | null;
   possible_duplicate_of?: string | null;
+  // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
+  recurring_transaction_id?: string | null;
 }
 
 // Helper to get transaction type display info

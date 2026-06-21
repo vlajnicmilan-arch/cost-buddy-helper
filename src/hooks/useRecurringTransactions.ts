@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
@@ -138,64 +138,88 @@ export const useRecurringTransactions = () => {
   };
 
   // Process due recurring transactions - generates actual expenses
+  // In-flight lock: spriječi paralelne pozive iz StrictMode / remount-a.
+  // Pravu idempotenciju garantira DB uniq index `uniq_recurring_per_day` +
+  // compare-and-swap UPDATE niže. Lock samo smanjuje suvišan network promet.
+  const processingRef = useRef(false);
+
   const processDueTransactions = useCallback(async (
     addExpense: (expense: any, items?: any, isPending?: any, entrySource?: any) => Promise<void>
   ) => {
     if (!user || isLocalMode) return 0;
+    if (processingRef.current) return 0;
+    processingRef.current = true;
 
-    const today = new Date().toISOString().split('T')[0];
-    const dueTransactions = recurringTransactions.filter(
-      r => r.is_active && r.next_due_date <= today
-    );
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const dueTransactions = recurringTransactions.filter(
+        r => r.is_active && r.next_due_date <= today
+      );
 
-    let generated = 0;
+      let generated = 0;
 
-    for (const recurring of dueTransactions) {
-      try {
-        // Create the expense — entrySource='recurring' forsira bank_match_status='manual'
-        // bez obzira na to je li payment_source vezan na banku (banka kasnije matcha).
-        await addExpense({
-          amount: recurring.amount,
-          description: recurring.description,
-          category: recurring.category,
-          type: recurring.type,
-          date: new Date(recurring.next_due_date),
-          payment_source: recurring.payment_source || 'cash',
-          payment_source_card_id: recurring.payment_source_card_id,
-          income_source_id: recurring.type === 'transfer' ? recurring.transfer_to_source : recurring.income_source_id,
-          merchant_name: recurring.merchant_name,
-          note: recurring.note ? `${recurring.note} (auto)` : '(ponavljajuća transakcija)',
-        }, undefined, undefined, 'recurring');
+      for (const recurring of dueTransactions) {
+        try {
+          // Claim-first: compare-and-swap na next_due_date. Ako je drugi
+          // proces (drugi tab, remount, drugi uređaj) već generirao za ovaj
+          // datum, UPDATE pogađa 0 redova i preskačemo. Belt-and-suspenders
+          // s DB uniq indeksom na (user_id, recurring_transaction_id, date).
+          const nextDate = calculateNextDueDate(
+            new Date(recurring.next_due_date),
+            recurring.frequency,
+            recurring.day_of_month,
+            recurring.day_of_week
+          );
 
-        // Calculate next due date
-        const nextDate = calculateNextDueDate(
-          new Date(recurring.next_due_date),
-          recurring.frequency,
-          recurring.day_of_month,
-          recurring.day_of_week
-        );
+          const { data: claimed, error: claimError } = await supabase
+            .from('recurring_transactions')
+            .update({
+              next_due_date: nextDate.toISOString().split('T')[0],
+              last_generated_date: today,
+            } as any)
+            .eq('id', recurring.id)
+            .eq('next_due_date', recurring.next_due_date)
+            .select('id');
 
-        // Update the recurring transaction
-        await supabase
-          .from('recurring_transactions')
-          .update({
-            next_due_date: nextDate.toISOString().split('T')[0],
-            last_generated_date: today,
-          } as any)
-          .eq('id', recurring.id);
+          if (claimError) {
+            console.error('Error claiming recurring transaction:', recurring.id, claimError);
+            continue;
+          }
+          if (!claimed || claimed.length === 0) {
+            // Drugi proces je već claim-ao — preskoči.
+            continue;
+          }
 
-        generated++;
-      } catch (error) {
-        console.error('Error processing recurring transaction:', recurring.id, error);
+          // entrySource='recurring' forsira bank_match_status='manual'
+          await addExpense({
+            amount: recurring.amount,
+            description: recurring.description,
+            category: recurring.category,
+            type: recurring.type,
+            date: new Date(recurring.next_due_date),
+            payment_source: recurring.payment_source || 'cash',
+            payment_source_card_id: recurring.payment_source_card_id,
+            income_source_id: recurring.type === 'transfer' ? recurring.transfer_to_source : recurring.income_source_id,
+            merchant_name: recurring.merchant_name,
+            note: recurring.note ? `${recurring.note} (auto)` : '(ponavljajuća transakcija)',
+            recurring_transaction_id: recurring.id,
+          }, undefined, undefined, 'recurring');
+
+          generated++;
+        } catch (error) {
+          console.error('Error processing recurring transaction:', recurring.id, error);
+        }
       }
-    }
 
-    if (generated > 0) {
-      await fetchRecurring();
-      toast.info(`Generirano ${generated} ponavljajućih transakcija`);
-    }
+      if (generated > 0) {
+        await fetchRecurring();
+        toast.info(`Generirano ${generated} ponavljajućih transakcija`);
+      }
 
-    return generated;
+      return generated;
+    } finally {
+      processingRef.current = false;
+    }
   }, [user, isLocalMode, recurringTransactions, fetchRecurring]);
 
   return {
