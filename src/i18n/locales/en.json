@@ -4348,6 +4348,7 @@
       "title": "Hi there!",
       "titleNamed": "Nice to meet you, {{name}}!",
       "intro": "I'll help you see where your money goes and suggest how to manage it more efficiently.",
+      "brevityHint": "Just one question and we're off.",
       "askName": "What should I call you?",
       "namePlaceholder": "e.g. Alex"
     },
@@ -4384,12 +4385,9 @@
       }
     },
     "ready": {
-      "title": "Your app is ready!",
-      "titleNamed": "{{name}}, your app is ready!",
-      "subtitle": "Everything is set up. Let's go.",
-      "budget": "Monthly budget created",
-      "cats": "{{count}} expense categories added",
-      "income": "Income set"
+      "title": "We're ready.",
+      "titleNamed": "We're ready, {{name}}.",
+      "subtitle": "We'll set up the rest together as you use the app. Let's start with your first expense."
     }
   },
   "openBanking": {
