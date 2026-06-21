@@ -211,12 +211,15 @@ export const useRecurringTransactions = () => {
         }
       }
 
-    if (generated > 0) {
-      await fetchRecurring();
-      toast.info(`Generirano ${generated} ponavljajućih transakcija`);
-    }
+      if (generated > 0) {
+        await fetchRecurring();
+        toast.info(`Generirano ${generated} ponavljajućih transakcija`);
+      }
 
-    return generated;
+      return generated;
+    } finally {
+      processingRef.current = false;
+    }
   }, [user, isLocalMode, recurringTransactions, fetchRecurring]);
 
   return {
