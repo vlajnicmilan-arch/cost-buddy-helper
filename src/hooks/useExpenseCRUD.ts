@@ -264,11 +264,21 @@ export const useExpenseCRUD = ({
             
             currency: (normalizedExpense as any).currency || null,
             bank_match_status: bankMatchStatus,
+            recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
           })
           .select()
           .single();
 
         if (error) {
+          // Idempotency: uniq_recurring_per_day (recurring auto-gen). Drugi paralelni
+          // pokušaj za isti dan/pravilo je odbijen na DB razini — tretiraj kao no-op.
+          if (error.code === '23505' && (normalizedExpense as any).recurring_transaction_id) {
+            console.log('[ExpenseCRUD] recurring already generated for this day, skipping', {
+              recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id,
+              date: normalizedExpense.date,
+            });
+            return;
+          }
           console.error('Supabase insert error details:', { error, code: error.code, message: error.message, details: error.details });
           throw error;
         }
