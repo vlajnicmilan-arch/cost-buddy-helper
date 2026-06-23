@@ -206,10 +206,10 @@ export const ProjectWorkLogTab = ({
       ) : (
       <>
 
-      {/* My pay (worker linked to this project) */}
-      {myWorker && !isManager && (
+      {/* My pay (worker linked to this project, or hint when not yet linked) */}
+      {!isManager && canWorklog && (
         <MyWorkerPayCard
-          hourlyRate={myWorker.hourly_rate}
+          hourlyRate={myWorker ? myWorker.hourly_rate : null}
           hours={myHoursInPeriod}
           periodLabel={periodLabelMap[monthFilter]}
         />
