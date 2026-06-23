@@ -3597,7 +3597,8 @@
       "hourlyRate": "Hourly rate",
       "hoursInPeriod": "Hours",
       "payout": "Payout",
-      "noRateSet": "The project owner hasn't set an hourly rate yet."
+      "noRateSet": "The project owner hasn't set an hourly rate yet.",
+      "notLinkedYet": "The owner hasn't added you as a worker on this project yet. Your earnings will appear once they set your hourly rate."
     },
     "hours": "Work hours",
     "hoursPlaceholder": "e.g. 8",
