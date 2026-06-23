@@ -3597,7 +3597,8 @@
       "hourlyRate": "Stundensatz",
       "hoursInPeriod": "Stunden",
       "payout": "Auszahlung",
-      "noRateSet": "Der Projektinhaber hat noch keinen Stundensatz festgelegt."
+      "noRateSet": "Der Projektinhaber hat noch keinen Stundensatz festgelegt.",
+      "notLinkedYet": "Der Inhaber hat dich noch nicht als Mitarbeiter in diesem Projekt hinzugefügt. Dein Verdienst erscheint, sobald dein Stundensatz festgelegt ist."
     },
     "hours": "Arbeitsstunden",
     "hoursPlaceholder": "z. B. 8",
