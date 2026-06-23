@@ -3603,7 +3603,8 @@
       "hourlyRate": "Satnica",
       "hoursInPeriod": "Sati",
       "payout": "Za isplatu",
-      "noRateSet": "Vlasnik projekta još nije postavio satnicu."
+      "noRateSet": "Vlasnik projekta još nije postavio satnicu.",
+      "notLinkedYet": "Vlasnik te još nije dodao kao radnika na ovom projektu. Zarada će se prikazati nakon što ti postavi satnicu."
     },
     "hours": "Sati rada",
     "hoursPlaceholder": "npr. 8",
