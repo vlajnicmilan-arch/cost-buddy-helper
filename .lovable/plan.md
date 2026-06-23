@@ -1,37 +1,41 @@
-## Status
+## Opseg
 
-**Već napravljeno (uz tvoje odobrenje):**
-- Migracija: dodana kolona `expenses.recurring_transaction_id` + jedinstveni indeks `(user_id, recurring_transaction_id, date)` koji garantira idempotenciju na DB razini.
-- Soft-delete 3 Vinkina duplikata (kasniji od para u svakom slučaju). U Smeću su, može ih vratiti.
+Samo jedna izmjena. Ništa drugo se ne dira — bez backfilla, bez edge function promjena, bez auto-create radnika.
 
-## Preostaje (zahtijeva build mode da krenem s kodom)
+## Problem
 
-### 1. `src/types/expense.ts`
-Dodati polje `recurring_transaction_id?: string | null` u `Expense` interface.
+Kad korisnik s `project_members.role = worker` otvori "Dnevnik rada" na projektu gdje vlasnik još nije kreirao odgovarajući `project_workers` zapis (s `user_id = njegov`), `MyWorkerPayCard` se uopće ne prikazuje. Korisnik ne zna je li to bug, propust ili namjera.
 
-### 2. `src/hooks/useExpenseCRUD.ts` — `addExpense`
-Proslijediti `recurring_transaction_id` u insert payload (line ~244–267). Uhvatiti error code `23505` na uniq indexu i tretirati ga kao "već generirano" (no-op, bez throw, bez toast greške).
+Točno se to dogodilo Petru na projektu "Lucija i Mate" — riješeno tek kad je vlasnik ručno dodao Petra kao radnika.
 
-### 3. `src/hooks/useRecurringTransactions.ts` — `processDueTransactions`
-Promijeniti redoslijed iz "insert → update next_due_date" u **claim-first**:
+## Rješenje
+
+U `src/components/projects/ProjectWorkLogTab.tsx`, blok:
+
+```tsx
+{myWorker && !isManager && ( <MyWorkerPayCard ... /> )}
 ```
-const { data: claimed } = await supabase
-  .from('recurring_transactions')
-  .update({ next_due_date: nextDate, last_generated_date: today })
-  .eq('id', recurring.id)
-  .eq('next_due_date', recurring.next_due_date) // compare-and-swap
-  .select('id');
-if (!claimed || claimed.length === 0) continue; // netko drugi je claim-ao
-await addExpense({ ..., recurring_transaction_id: recurring.id }, ...);
-```
-Dodati i `useRef` lock unutar hooka tako da paralelni pozivi iz StrictMode / remount-a samo prvi prolaze (drugi rano izlazi). Lock je suvišan uz claim+uniq, ali smanjuje nepotreban network traffic.
 
-### 4. Vitest test
-`src/hooks/__tests__/processDueTransactions.test.ts` — mock supabase, pozvati 2× paralelno, expect-ati točno 1 addExpense poziv po pravilu.
+zamijeniti s granom koja, kad `myWorker` ne postoji a korisnik nije manager, prikazuje istu `Card` ljusku (`border-primary/30 bg-primary/5`) s jednom rečenicom objašnjenja umjesto kartice satnice.
 
-### 5. Bez dodatnih promjena
-Bez UI promjena, bez i18n promjena, bez novih guarda/timeoutova.
+Tekst (i18n, novi ključ `workLog.myPay.notLinkedYet`):
 
----
+> *"Vlasnik te još nije dodao kao radnika na ovom projektu. Zarada će se prikazati nakon što ti postavi satnicu."*
 
-Za nastavak (kod): prebaci u build mode. Migration + brisanje duplikata su gotovi neovisno.
+Bez CTA, bez gumba, bez ikone "fix me". Samo objašnjenje da kartice nema namjerno.
+
+## Tehnički detalji
+
+- **Datoteka:** `src/components/projects/ProjectWorkLogTab.tsx` — samo render blok oko linije 210.
+- **Nova komponenta:** nije potrebna. Može se napraviti inline mali `Card` ili (čišće) proširiti `MyWorkerPayCard` da prima `hourlyRate?: number | null` i kad je `null` renderira "not linked" varijantu. Predlažem drugu opciju zbog konzistentnog stylinga.
+- **i18n:** dodati ključ `workLog.myPay.notLinkedYet` u `hr.json`, `en.json`, `de.json`.
+- **Bez DB izmjena, bez edge function izmjena, bez migracija.**
+- **Gating:** prikazati samo kad `!isManager && canLogOwnWork` (znači: stvarni worker, ne participant/viewer).
+
+## Što se NE radi
+
+- Nema auto-create `project_workers` retka na accept invitation.
+- Nema backfill migracije za postojeće slučajeve (Petar je već ručno riješen).
+- Nema promjene odnosa `project_work_logs` ↔ `project_work_entries`.
+
+Ostavljamo eksplicitan model: vlasnik mora svjesno dodati radnika i postaviti satnicu. UI samo prestaje šutjeti kad to još nije učinjeno.
