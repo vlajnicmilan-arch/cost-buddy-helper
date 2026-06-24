@@ -4917,6 +4917,10 @@ export type Database = {
         Args: { p_days?: number }
         Returns: number
       }
+      apply_balance_delta_if_unanchored: {
+        Args: { p_delta: number; p_source_id: string }
+        Returns: number
+      }
       apply_split_override: {
         Args: { p_expense_id: string; p_overrides: Json }
         Returns: {
