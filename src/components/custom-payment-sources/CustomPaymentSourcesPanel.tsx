@@ -61,7 +61,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
     const sourceId = balanceCorrectionSource.id;
 
     try {
-      // Fetch fresh balance from DB to avoid stale data
+      // Fetch fresh balance for the audit description
       let freshBalance = balanceCorrectionSource.balance || 0;
       if (!isLocalMode && user) {
         const { data: freshData } = await supabase
@@ -75,46 +75,56 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
       }
 
       const difference = newBalance - freshBalance;
+      const nowIso = new Date().toISOString();
 
-      // Update only the balance field
-      await updateCustomPaymentSource(sourceId, { balance: newBalance });
-
-      // Create a correction transaction so it shows in history
-      if (difference !== 0) {
-        const correctionType = difference > 0 ? 'income' : 'expense';
-        const correctionAmount = Math.abs(difference);
-
-        if (isLocalMode) {
+      if (isLocalMode) {
+        // Local mode: keep legacy behaviour (no anchor model on IndexedDB)
+        await updateCustomPaymentSource(sourceId, { balance: newBalance });
+        if (difference !== 0) {
           await saveLocalExpense({
-            amount: correctionAmount,
+            amount: Math.abs(difference),
             description: `Korekcija salda — ${balanceCorrectionSource.name}`,
             category: 'other',
-            type: correctionType,
+            type: difference > 0 ? 'income' : 'expense',
             date: new Date(),
             payment_source: `custom:${sourceId}`,
             note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
             expense_nature: 'correction',
           } as any);
-        } else if (user) {
+        }
+      } else if (user) {
+        // Cloud mode: anchor-based model. Set anchor atomically with balance, then
+        // insert audit row. Trigger will recompute and arrive back at newBalance
+        // because the audit row has expense_nature='correction' (excluded from sum).
+        const { error: anchorError } = await supabase
+          .from('custom_payment_sources' as any)
+          .update({
+            balance: newBalance,
+            correction_anchor_date: nowIso,
+            correction_anchor_balance: newBalance,
+            updated_at: nowIso,
+          })
+          .eq('id', sourceId);
+
+        if (anchorError) throw anchorError;
+
+        if (difference !== 0) {
+          const correctionType = difference > 0 ? 'income' : 'expense';
           /* eslint-disable no-restricted-syntax -- balance-correction expense: locally-built canonical custom:UUID */
           const { error: insertError } = await supabase.from('expenses').insert({
             user_id: user.id,
-            amount: correctionAmount,
+            amount: Math.abs(difference),
             description: `Korekcija salda — ${balanceCorrectionSource.name}`,
             category: 'other',
             type: correctionType,
-            date: new Date().toISOString(),
+            date: nowIso,
             payment_source: coerceCanonicalShape(`custom:${sourceId}`),
             note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
             expense_nature: 'correction',
           });
           /* eslint-enable no-restricted-syntax */
 
-          if (insertError) {
-            // Revert balance since transaction record failed
-            await updateCustomPaymentSource(sourceId, { balance: freshBalance });
-            throw insertError;
-          }
+          if (insertError) throw insertError;
         }
       }
 
@@ -126,6 +136,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
       showError(t('paymentSources.correctionError', 'Greška pri korekciji salda'));
     }
   };
+
 
   const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
     if (editingSource) {
