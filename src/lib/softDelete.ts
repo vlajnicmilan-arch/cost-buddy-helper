@@ -73,26 +73,12 @@ export async function listTrash(): Promise<TrashItem[]> {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Primjenjuje balance delta na custom_payment_sources zapis.
- * Mirror logike iz useBalanceUpdater.updateBalance — koristi se iz ne-hook kontekstā
- * (Trash page, undo callback) kako bi se nakon restore-a balance vratio.
+ * NOTE: Balance recompute for custom payment sources is handled by the database
+ * trigger `trg_expenses_recompute_source_balance` (anchor-based model).
+ * Soft-delete and restore both perform UPDATE on `expenses` (via RPC), which
+ * fires the trigger and recomputes the affected source(s). Client-side delta
+ * application would double-count and is therefore a no-op now.
  */
-async function applyBalanceDelta(paymentSource: string | undefined, delta: number): Promise<void> {
-  if (!paymentSource || delta === 0) return;
-  const cleanId = paymentSource.startsWith('custom:') ? paymentSource.replace('custom:', '') : paymentSource;
-  if (!UUID_RE.test(cleanId)) return;
-  const { data: src } = await supabase
-    .from('custom_payment_sources')
-    .select('id, balance')
-    .eq('id', cleanId)
-    .maybeSingle();
-  if (!src) return;
-  await supabase
-    .from('custom_payment_sources')
-    .update({ balance: (src.balance ?? 0) + delta, updated_at: new Date().toISOString() })
-    .eq('id', src.id);
-}
-
 interface ExpenseLike {
   type: 'expense' | 'income' | 'transfer';
   amount: number;
@@ -100,20 +86,11 @@ interface ExpenseLike {
   income_source_id?: string | null;
 }
 
-/** Re-applies the balance side-effect for a restored expense (forward direction). */
-export async function reapplyExpenseBalance(expense: ExpenseLike): Promise<void> {
-  const amount = Number(expense.amount) || 0;
-  if (expense.type === 'income') {
-    await applyBalanceDelta(expense.payment_source ?? undefined, amount);
-  } else if (expense.type === 'expense') {
-    await applyBalanceDelta(expense.payment_source ?? undefined, -amount);
-  } else if (expense.type === 'transfer') {
-    await applyBalanceDelta(expense.payment_source ?? undefined, -amount);
-    if (expense.income_source_id) {
-      await applyBalanceDelta(expense.income_source_id, amount);
-    }
-  }
+export async function reapplyExpenseBalance(_expense: ExpenseLike): Promise<void> {
+  // No-op: trigger recomputes source balance on UPDATE of `expenses`.
+  return;
 }
+
 
 /** Restore + balance reapply za soft-obrisanu transakciju. */
 export async function restoreExpenseFull(id: string): Promise<void> {
