@@ -58,42 +58,14 @@ export const useBalanceUpdater = (options?: UseBalanceUpdaterOptions) => {
         localStorage.setItem('customPaymentSources', JSON.stringify(updatedSources));
       }
     } else {
-      if (!user) return;
-
-      try {
-        const { data: sourceData, error: fetchError } = await supabase
-          .from('custom_payment_sources')
-          .select('balance, id, name')
-          .eq('id', cleanSourceId)
-          .maybeSingle();
-
-        if (fetchError) {
-          console.error('[BalanceUpdater] Error fetching payment source:', fetchError);
-          return;
-        }
-
-        if (!sourceData) return;
-
-        const currentBalance = sourceData?.balance || 0;
-        const newBalance = currentBalance + balanceChange;
-
-        const { error: updateError } = await supabase
-          .from('custom_payment_sources')
-          .update({
-            balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', sourceData.id);
-
-        if (updateError) {
-          console.error('[BalanceUpdater] Error updating balance:', updateError);
-        } else {
-          onBalanceUpdated?.();
-        }
-      } catch (error) {
-        console.error('[BalanceUpdater] Error in updateBalance:', error);
-      }
+      // Cloud mode: balance recompute is handled by the database trigger
+      // `trg_expenses_recompute_source_balance` on the `expenses` table.
+      // Anchor-based recompute (correction_anchor_date + post-anchor sum) is the
+      // single source of truth — client-side incremental updates are obsolete and
+      // would double-count against the trigger.
+      onBalanceUpdated?.();
     }
+
   }, [user, isLocalMode, onBalanceUpdated]);
 
   /**
