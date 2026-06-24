@@ -1037,6 +1037,8 @@ export type Database = {
           balance: number
           business_profile_id: string | null
           color: string
+          correction_anchor_balance: number | null
+          correction_anchor_date: string | null
           created_at: string
           currency: string | null
           description: string | null
@@ -1051,6 +1053,8 @@ export type Database = {
           balance?: number
           business_profile_id?: string | null
           color?: string
+          correction_anchor_balance?: number | null
+          correction_anchor_date?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
@@ -1065,6 +1069,8 @@ export type Database = {
           balance?: number
           business_profile_id?: string | null
           color?: string
+          correction_anchor_balance?: number | null
+          correction_anchor_date?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
@@ -4867,6 +4873,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _extract_custom_source_id: {
+        Args: { p_payment_source: string }
+        Returns: string
+      }
       _require_admin: { Args: never; Returns: undefined }
       admin_get_activation_by_cohort: {
         Args: never
@@ -5247,6 +5257,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      recompute_custom_source_balance: {
+        Args: { p_source_id: string }
+        Returns: number
       }
       refresh_family_split_snapshot: {
         Args: {
