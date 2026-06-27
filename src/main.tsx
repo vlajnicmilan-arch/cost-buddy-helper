@@ -188,29 +188,52 @@ try {
 // see it in app_diagnostics_logs without needing logcat.
 const BOOT_FLAG = 'vmb-boot-in-progress';
 const BOOT_TS_FLAG = 'vmb-boot-in-progress-started-at';
-try {
-  const prevFlag = localStorage.getItem(BOOT_FLAG);
-  const prevTs = localStorage.getItem(BOOT_TS_FLAG);
-  if (prevFlag === '1') {
-    // We don't await this — diagnosticLogger is loaded async. Use idle so it
-    // doesn't compete with React boot.
-    idle(() => {
-      import('./lib/diagnosticLogger')
-        .then(({ logDiagnostic }) => logDiagnostic({
-          event: 'previous_boot_crashed',
-          severity: 'critical',
-          details: {
-            previous_started_at: prevTs,
-            isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),
-            href: window.location.href,
-          },
-        }))
-        .catch(() => {});
-    });
+
+// Skip watchdog entirely in Vite dev (HMR reloads cause false-positive
+// `previous_boot_crashed` events because React unmount clears the flag too late).
+const isDevHmr = import.meta.env.DEV;
+
+// In Lovable preview deploys (non-native, lovable.app host) we still want
+// visibility but at lower severity — these environments get frequent reloads
+// from the editor and are not representative of real user crashes.
+const isPreviewEnv = (() => {
+  try {
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isNative) return false;
+    const host = window.location.hostname;
+    return host.endsWith('.lovable.app') || host.endsWith('.lovableproject.com');
+  } catch {
+    return false;
   }
-  localStorage.setItem(BOOT_FLAG, '1');
-  localStorage.setItem(BOOT_TS_FLAG, new Date().toISOString());
-} catch { /* localStorage unavailable */ }
+})();
+
+if (!isDevHmr) {
+  try {
+    const prevFlag = localStorage.getItem(BOOT_FLAG);
+    const prevTs = localStorage.getItem(BOOT_TS_FLAG);
+    if (prevFlag === '1') {
+      // We don't await this — diagnosticLogger is loaded async. Use idle so it
+      // doesn't compete with React boot.
+      idle(() => {
+        import('./lib/diagnosticLogger')
+          .then(({ logDiagnostic }) => logDiagnostic({
+            event: 'previous_boot_crashed',
+            severity: isPreviewEnv ? 'info' : 'critical',
+            details: {
+              previous_started_at: prevTs,
+              isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),
+              href: window.location.href,
+              env: isPreviewEnv ? 'preview' : 'production',
+            },
+          }))
+          .catch(() => {});
+      });
+    }
+    localStorage.setItem(BOOT_FLAG, '1');
+    localStorage.setItem(BOOT_TS_FLAG, new Date().toISOString());
+  } catch { /* localStorage unavailable */ }
+}
+
 
 const markBootCompleted = () => {
   try {

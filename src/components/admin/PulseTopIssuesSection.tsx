@@ -42,6 +42,14 @@ const severityConfig = {
     badge: 'bg-yellow-500 text-white',
     emoji: '🟡',
   },
+  info: {
+    icon: AlertTriangle,
+    label: 'Info',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10 border-blue-500/30',
+    badge: 'bg-blue-500 text-white',
+    emoji: '🔵',
+  },
 } as const;
 
 const formatRelative = (iso: string, t: (k: string, d: string) => string) => {
