@@ -87,6 +87,7 @@ export const ScannedDataPreview = ({
   isSaving,
   onAccept,
   onReject,
+  onDateOrTimeEdited,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
