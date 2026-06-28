@@ -2705,19 +2705,16 @@
     }
   },
   "guidedHome": {
-    "zero": {
-      "greeting": "Hi.",
-      "greetingNamed": "Hi, {{name}}.",
-      "line": "When you're ready, log your first expense. Everything else follows from there.",
-      "primaryCta": "Log first expense"
-
-    },
-    "guided": {
-      "greeting": "Thanks.",
-      "greetingNamed": "Thanks, {{name}}.",
-      "line": "You're starting to build your overview. Each new entry fills in the picture.",
+    "entry": {
+      "greetingZero": "Hi.",
+      "greetingZeroNamed": "Hi, {{name}}.",
+      "greetingGuided": "Thanks.",
+      "greetingGuidedNamed": "Thanks, {{name}}.",
+      "lineZero": "Log your first event. Everything else follows from there.",
+      "lineGuided": "Each next event fills in the picture.",
       "weekAria": "Last 7 days",
-      "primaryCta": "Add another",
+      "scanCta": "Scan",
+      "manualCta": "Enter manually",
       "remaining": "{{n}} more until the full view."
     }
   },
@@ -4361,7 +4358,6 @@
     "greeting": {
       "title": "Hi there!",
       "titleNamed": "Nice to meet you, {{name}}!",
-      "intro": "I'll help you see where your money goes and suggest how to manage it more efficiently.",
       "brevityHint": "Just one question and we're off.",
       "askName": "What should I call you?",
       "namePlaceholder": "e.g. Alex"
@@ -4401,7 +4397,7 @@
     "ready": {
       "title": "We're ready.",
       "titleNamed": "We're ready, {{name}}.",
-      "subtitle": "We'll set up the rest together as you use the app. Let's start with your first expense."
+      "subtitle": "Let's start with your first event."
     }
   },
   "openBanking": {

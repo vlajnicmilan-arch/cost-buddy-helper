@@ -2579,19 +2579,16 @@
     }
   },
   "guidedHome": {
-    "zero": {
-      "greeting": "Bok.",
-      "greetingNamed": "Bok, {{name}}.",
-      "line": "Kada budeš spreman, zabilježi prvi trošak. Sve ostalo dolazi iz toga.",
-      "primaryCta": "Zabilježi prvi trošak"
-
-    },
-    "guided": {
-      "greeting": "Hvala.",
-      "greetingNamed": "Hvala, {{name}}.",
-      "line": "Počinješ graditi pregled. Svaki sljedeći unos popunjava sliku.",
+    "entry": {
+      "greetingZero": "Bok.",
+      "greetingZeroNamed": "Bok, {{name}}.",
+      "greetingGuided": "Hvala.",
+      "greetingGuidedNamed": "Hvala, {{name}}.",
+      "lineZero": "Zabilježi svoj prvi događaj. Sve ostalo dolazi iz toga.",
+      "lineGuided": "Svaki sljedeći događaj popunjava sliku.",
       "weekAria": "Zadnjih 7 dana",
-      "primaryCta": "Dodaj još jedan",
+      "scanCta": "Skeniraj",
+      "manualCta": "Unesi ručno",
       "remaining": "Još {{n}} do potpunog prikaza."
     }
   },
@@ -4368,8 +4365,7 @@
     "greeting": {
       "title": "Bok!",
       "titleNamed": "Drago mi je, {{name}}!",
-      "intro": "Pomoći ću ti otkriti gdje ti odlazi novac i predlagati kako njime efikasnije upravljati.",
-      "brevityHint": "Samo jedno pitanje i krećemo.",
+      "brevityHint": "Samo jedno pitanje pa krećemo.",
       "askName": "Kako da te zovem?",
       "namePlaceholder": "npr. Marko"
     },
@@ -4408,7 +4404,7 @@
     "ready": {
       "title": "Spremni smo.",
       "titleNamed": "Spremni smo, {{name}}.",
-      "subtitle": "Ostalo namještamo zajedno dok koristiš aplikaciju. Krenimo s prvim troškom."
+      "subtitle": "Krenimo s prvim događajem."
     }
   },
   "openBanking": {

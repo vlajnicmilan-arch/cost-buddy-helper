@@ -2573,19 +2573,16 @@
     }
   },
   "guidedHome": {
-    "zero": {
-      "greeting": "Hallo.",
-      "greetingNamed": "Hallo, {{name}}.",
-      "line": "Wenn du bereit bist, erfasse die erste Ausgabe. Alles Weitere ergibt sich daraus.",
-      "primaryCta": "Erste Ausgabe erfassen"
-
-    },
-    "guided": {
-      "greeting": "Danke.",
-      "greetingNamed": "Danke, {{name}}.",
-      "line": "Du baust gerade deine Übersicht auf. Jeder weitere Eintrag vervollständigt das Bild.",
+    "entry": {
+      "greetingZero": "Hallo.",
+      "greetingZeroNamed": "Hallo, {{name}}.",
+      "greetingGuided": "Danke.",
+      "greetingGuidedNamed": "Danke, {{name}}.",
+      "lineZero": "Erfasse dein erstes Ereignis. Alles Weitere ergibt sich daraus.",
+      "lineGuided": "Jedes weitere Ereignis vervollständigt das Bild.",
       "weekAria": "Letzte 7 Tage",
-      "primaryCta": "Weitere hinzufügen",
+      "scanCta": "Scannen",
+      "manualCta": "Manuell eingeben",
       "remaining": "Noch {{n}} bis zur vollständigen Ansicht."
     }
   },
@@ -4361,7 +4358,6 @@
     "greeting": {
       "title": "Hallo!",
       "titleNamed": "Schön, dich kennenzulernen, {{name}}!",
-      "intro": "Ich helfe dir herauszufinden, wohin dein Geld fließt, und schlage vor, wie du es effizienter verwalten kannst.",
       "brevityHint": "Nur eine Frage, dann los.",
       "askName": "Wie soll ich dich nennen?",
       "namePlaceholder": "z. B. Alex"
@@ -4401,7 +4397,7 @@
     "ready": {
       "title": "Wir sind bereit.",
       "titleNamed": "Wir sind bereit, {{name}}.",
-      "subtitle": "Den Rest richten wir gemeinsam ein, während du die App nutzt. Starten wir mit deiner ersten Ausgabe."
+      "subtitle": "Starten wir mit deinem ersten Ereignis."
     }
   },
   "openBanking": {
