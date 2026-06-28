@@ -17,6 +17,7 @@ import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 
 import { TrialBanner } from '@/components/TrialBanner';
 import { GuidedEntryView } from '@/components/onboarding/GuidedEntryView';
+import { GuidedFinalPayoff } from '@/components/onboarding/GuidedFinalPayoff';
 import { useGuidedMode } from '@/hooks/useGuidedMode';
 
 import { AIInsightBubble } from '@/components/AIInsightBubble';
