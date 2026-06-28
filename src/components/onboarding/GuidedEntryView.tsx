@@ -149,8 +149,8 @@ export const GuidedEntryView = ({
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-3">
-        <Button onClick={onScan} size="lg" className="gap-2 min-h-[44px] w-full">
+      <div className={cn('flex flex-col gap-3', locking && 'pointer-events-none opacity-60')}>
+        <Button onClick={onScan} size="lg" className="gap-2 min-h-[44px] w-full" disabled={locking}>
           <Camera className="w-4 h-4" />
           {t('guidedHome.entry.scanCta', 'Skeniraj')}
         </Button>
@@ -159,11 +159,13 @@ export const GuidedEntryView = ({
           size="lg"
           variant="outline"
           className="gap-2 min-h-[44px] w-full"
+          disabled={locking}
         >
           <PencilLine className="w-4 h-4" />
           {t('guidedHome.entry.manualCta', 'Unesi ručno')}
         </Button>
       </div>
+
 
       {remaining > 0 && !isZero && (
         <p className="text-xs text-muted-foreground mt-4 text-center">
