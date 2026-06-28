@@ -200,3 +200,316 @@ describe("Rule B — anchor cuts the whole calendar day", () => {
     expect(balance).toBe(125);
   });
 });
+
+describe("Val 3 — hybrid mode (per-row cut by time_confidence)", () => {
+  const HSRC = "src-A";
+  const HOTHER = "src-B";
+  // Anchor at a precise instant — afternoon of 2026-06-24 in UTC.
+  const HANCHOR = "2026-06-24T14:00:00.000Z";
+  const HBAL = 100;
+
+  const hrow = (overrides: Partial<AnchorExpenseRow>): AnchorExpenseRow => ({
+    date: "2026-06-25T00:00:00.000Z",
+    type: "expense",
+    amount: 10,
+    paymentSourceId: HSRC,
+    incomeSourceId: null,
+    expenseNature: "regular",
+    deletedAt: null,
+    eventAt: null,
+    timeConfidence: "C3",
+    ...overrides,
+  });
+
+  it("H1. C1 row with event_at AFTER anchor → counted by timestamp", () => {
+    // Same calendar day as anchor; under day_cut this would be excluded.
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T15:00:00.000Z",
+          eventAt: "2026-06-24T15:00:00.000Z",
+          timeConfidence: "C1",
+          type: "income",
+          amount: 40,
+        }),
+      ],
+    });
+    expect(balance).toBe(140);
+  });
+
+  it("H2. C1 row with event_at BEFORE anchor → excluded", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T13:00:00.000Z",
+          eventAt: "2026-06-24T13:00:00.000Z",
+          timeConfidence: "C1",
+          type: "income",
+          amount: 999,
+        }),
+      ],
+    });
+    expect(balance).toBe(100);
+  });
+
+  it("H3. C1 row with event_at EXACTLY at anchor → excluded (strict >)", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: HANCHOR,
+          eventAt: HANCHOR,
+          timeConfidence: "C1",
+          type: "income",
+          amount: 50,
+        }),
+      ],
+    });
+    expect(balance).toBe(100);
+  });
+
+  it("H4. C2 row behaves like C1 (precise tier, timestamp cut)", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T20:00:00.000Z",
+          eventAt: "2026-06-24T20:00:00.000Z",
+          timeConfidence: "C2",
+          type: "income",
+          amount: 30,
+        }),
+        hrow({
+          date: "2026-06-24T10:00:00.000Z",
+          eventAt: "2026-06-24T10:00:00.000Z",
+          timeConfidence: "C2",
+          type: "income",
+          amount: 999,
+        }),
+      ],
+    });
+    expect(balance).toBe(130);
+  });
+
+  it("H5. C3 row on anchor day stays EXCLUDED (day-cut fallback)", () => {
+    // Even with an event_at after the anchor instant, C3 must fall back to day cut.
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T20:00:00.000Z",
+          eventAt: "2026-06-24T20:00:00.000Z",
+          timeConfidence: "C3",
+          type: "income",
+          amount: 999,
+        }),
+      ],
+    });
+    expect(balance).toBe(100);
+  });
+
+  it("H6. C4 row on anchor day stays EXCLUDED (day-cut fallback)", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T22:00:00.000Z",
+          eventAt: "2026-06-24T22:00:00.000Z",
+          timeConfidence: "C4",
+          type: "income",
+          amount: 999,
+        }),
+      ],
+    });
+    expect(balance).toBe(100);
+  });
+
+  it("H7. NULL time_confidence falls back to day cut", () => {
+    const sameDay = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-24T23:00:00.000Z",
+          eventAt: "2026-06-24T23:00:00.000Z",
+          timeConfidence: null,
+          type: "income",
+          amount: 200,
+        }),
+      ],
+    });
+    const nextDay = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-25T00:00:00.000Z",
+          eventAt: null,
+          timeConfidence: null,
+          type: "income",
+          amount: 200,
+        }),
+      ],
+    });
+    expect(sameDay).toBe(100);
+    expect(nextDay).toBe(300);
+  });
+
+  it("H8. C1 row with NULL event_at is SKIPPED (cannot apply timestamp cut)", () => {
+    // Defensive: a precise tier without a timestamp is malformed; do not silently
+    // promote it to day-cut behaviour.
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        hrow({
+          date: "2026-06-26T00:00:00.000Z",
+          eventAt: null,
+          timeConfidence: "C1",
+          type: "income",
+          amount: 999,
+        }),
+      ],
+    });
+    expect(balance).toBe(100);
+  });
+
+  it("H9. correction and deleted filters apply BEFORE tier branching", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        // C1 correction — never counted, even with precise post-anchor timestamp.
+        hrow({
+          date: "2026-06-24T18:00:00.000Z",
+          eventAt: "2026-06-24T18:00:00.000Z",
+          timeConfidence: "C1",
+          expenseNature: "correction",
+          type: "income",
+          amount: 9999,
+        }),
+        // C1 deleted — never counted.
+        hrow({
+          date: "2026-06-25T10:00:00.000Z",
+          eventAt: "2026-06-25T10:00:00.000Z",
+          timeConfidence: "C1",
+          deletedAt: "2026-06-25T11:00:00.000Z",
+          type: "income",
+          amount: 9999,
+        }),
+        // Regular C1 income that DOES count.
+        hrow({
+          date: "2026-06-24T16:00:00.000Z",
+          eventAt: "2026-06-24T16:00:00.000Z",
+          timeConfidence: "C1",
+          type: "income",
+          amount: 25,
+        }),
+      ],
+    });
+    expect(balance).toBe(125);
+  });
+
+  it("H10. mixed scenario: C1 timestamp wins, C3 same-day excluded, transfers obey per-row cut", () => {
+    const balance = computeAnchoredBalance({
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      mode: "hybrid",
+      expenses: [
+        // C1 income after anchor instant, same day → +50 (vs day_cut would exclude)
+        hrow({
+          date: "2026-06-24T15:00:00.000Z",
+          eventAt: "2026-06-24T15:00:00.000Z",
+          timeConfidence: "C1",
+          type: "income",
+          amount: 50,
+        }),
+        // C3 expense same day as anchor → excluded by day cut
+        hrow({
+          date: "2026-06-24T20:00:00.000Z",
+          timeConfidence: "C3",
+          type: "expense",
+          amount: 999,
+        }),
+        // C3 income next day → +20 (day cut)
+        hrow({
+          date: "2026-06-25T00:00:00.000Z",
+          timeConfidence: "C3",
+          type: "income",
+          amount: 20,
+        }),
+        // C1 transfer-in from another source, same day, after anchor → +15
+        hrow({
+          date: "2026-06-24T17:00:00.000Z",
+          eventAt: "2026-06-24T17:00:00.000Z",
+          timeConfidence: "C1",
+          type: "transfer",
+          amount: 15,
+          paymentSourceId: HOTHER,
+          incomeSourceId: HSRC,
+        }),
+        // C1 transfer-out same day, before anchor → excluded
+        hrow({
+          date: "2026-06-24T09:00:00.000Z",
+          eventAt: "2026-06-24T09:00:00.000Z",
+          timeConfidence: "C1",
+          type: "transfer",
+          amount: 999,
+          paymentSourceId: HSRC,
+          incomeSourceId: HOTHER,
+        }),
+      ],
+    });
+    // 100 + 50 + 20 + 15
+    expect(balance).toBe(185);
+  });
+
+  it("H11. default mode is day_cut — same input differs between modes", () => {
+    // Sanity: omitting `mode` keeps Rule B; supplying 'hybrid' diverges.
+    const input = {
+      sourceId: HSRC,
+      anchorDate: HANCHOR,
+      anchorBalance: HBAL,
+      expenses: [
+        hrow({
+          date: "2026-06-24T15:00:00.000Z",
+          eventAt: "2026-06-24T15:00:00.000Z",
+          timeConfidence: "C1" as const,
+          type: "income",
+          amount: 40,
+        }),
+      ],
+    };
+    expect(computeAnchoredBalance(input)).toBe(100);
+    expect(computeAnchoredBalance({ ...input, mode: "hybrid" })).toBe(140);
+  });
+});
