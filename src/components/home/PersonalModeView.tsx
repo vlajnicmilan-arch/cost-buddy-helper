@@ -270,8 +270,14 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   }, 0);
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
+    <motion.div
+      className="min-h-dvh bg-background overflow-x-hidden pb-20"
+      initial={phase === 'reveal' ? { opacity: 0, y: 8 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+
 
 
         {/* Financial Assistant Dialog */}
