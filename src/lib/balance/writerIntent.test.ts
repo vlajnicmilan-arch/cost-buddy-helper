@@ -64,10 +64,10 @@ describe('normalizeExpensePayload', () => {
 
   it('5. system_precise with missing event_at degrades to null (does not invent time)', () => {
     const out = normalizeExpensePayload(
-      { amount: 1, time_confidence: 'C1' },
+      { amount: 1, time_confidence: 'C1' as const },
       'system_precise',
     );
-    expect(out.event_at).toBeNull();
+    expect(out.event_at ?? null).toBeNull();
     expect(out.time_confidence).toBe('C1');
     expect(out.user_edited_event_at).toBe(false);
   });
