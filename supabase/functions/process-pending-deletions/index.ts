@@ -1,127 +1,80 @@
+// process-pending-deletions
+// Cron-triggered processor for accounts whose 30-day grace period has elapsed.
+// Thin wrapper over the shared purgeUser engine — single source of truth for
+// "fully deleted user" lives in supabase/functions/_shared/.
+//
+// Foundation pass: this function NO LONGER hardcodes the purge list. See
+// docs/HARD_DELETE.md for the canonical model and rationale.
+
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import { purgeUser } from "../_shared/purgeUser.ts";
+import type { PurgeResult } from "../_shared/purgeUser.types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Tablice za brisanje (52). Redoslijed nije bitan jer ne koristimo FK na auth.users.
-// Stavljamo account_deletion_log NA KRAJ (upisujemo status:completed prije nego ga obrišemo).
-const TABLES_TO_PURGE = [
-  "activation_nudge_log","app_diagnostics_logs","bank_connections","budget_members",
-  "bug_reports","business_debts","business_premises","cash_registers","chat_messages",
-  "clients","custom_categories",
-  "income_source_members","installments","installment_plans","inventory_items","invoices",
-  "milestone_budget_alerts","milestone_budget_revisions","milestone_checklist_items",
-  "notification_preferences","notifications","payment_source_cards","payment_source_members",
-  "project_activity_log","project_budget_revisions","project_estimates",
-  "project_member_permissions","project_members","project_work_logs",
-  "push_delivery_logs","push_tokens","recurring_transactions","reminders","savings_goals",
-  "transaction_notes","travel_orders","user_login_logs","user_memories",
-  "user_roles","user_subscriptions","transaction_notes","expenses",
-  // Resursi koji su roditelji (obrisi nakon dependentne):
-  "budget_plans","custom_payment_sources","income_sources","projects",
-  "business_profiles","profiles",
-];
-
-const STORAGE_BUCKETS = ["receipts","certificates","project-documents"];
-
-async function purgeStorage(admin: any, userId: string): Promise<string[]> {
-  const purged: string[] = [];
-  for (const bucket of STORAGE_BUCKETS) {
-    try {
-      const { data: files } = await admin.storage.from(bucket).list(userId, { limit: 1000 });
-      if (files && files.length > 0) {
-        const paths = files.map((f: any) => `${userId}/${f.name}`);
-        await admin.storage.from(bucket).remove(paths);
-        purged.push(`${bucket}: ${paths.length}`);
-      }
-    } catch (e) {
-      console.warn(`[storage] ${bucket}:`, e);
-    }
-  }
-  return purged;
-}
-
-async function cancelStripeSubscription(userEmail: string | null): Promise<boolean> {
-  if (!userEmail) return false;
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  if (!stripeKey) return false;
+async function sendCompletionEmail(admin: any, log: any): Promise<void> {
+  if (!log.user_email) return;
   try {
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-    if (customers.data.length === 0) return false;
-    const subs = await stripe.subscriptions.list({
-      customer: customers.data[0].id, status: "active", limit: 10,
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "account-deletion-completed",
+        recipientEmail: log.user_email,
+        idempotencyKey: `deletion-completed-${log.id}`,
+      },
     });
-    for (const sub of subs.data) {
-      await stripe.subscriptions.cancel(sub.id);
-    }
-    return subs.data.length > 0;
   } catch (e) {
-    console.error("[stripe]", e);
-    return false;
+    console.error("[process-pending-deletions] completion email failed:", e);
   }
 }
 
-async function processOne(admin: any, log: any): Promise<{ ok: boolean; error?: string; tables?: string[] }> {
-  const userId = log.user_id;
-  const tablesPurged: string[] = [];
+function buildAuditUpdate(result: PurgeResult): Record<string, unknown> {
+  if (result.blockedBy) {
+    return {
+      status: "blocked",
+      error_message: `blocked_by:${result.blockedBy}`,
+      tables_purged: {
+        blocked: { reason: result.blockedBy, details: result.blockedDetails ?? {} },
+      },
+    };
+  }
 
+  const hasResiduals = result.residualScan.total > 0;
+  const status = !result.authDeleted
+    ? "failed"
+    : hasResiduals
+    ? "completed_with_residuals"
+    : "completed";
+
+  return {
+    status,
+    completed_at: new Date().toISOString(),
+    stripe_subscription_cancelled: result.stripeSubscriptionCancelled,
+    user_email: null, // anonymize email in audit row
+    error_message: result.errors.length > 0 ? JSON.stringify(result.errors).slice(0, 500) : null,
+    tables_purged: {
+      tables: result.tablesPurged,
+      storage: result.storagePurged,
+      invitations: result.invitationsByEmail,
+      residuals: result.residualScan,
+    },
+  };
+}
+
+async function logResidualWarning(admin: any, userId: string, result: PurgeResult): Promise<void> {
+  if (result.residualScan.total === 0) return;
   try {
-    // 1. Pošalji potvrdni email PRIJE brisanja (poslije nemamo email)
-    if (log.user_email) {
-      try {
-        await admin.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: 'account-deletion-completed',
-            recipientEmail: log.user_email,
-            idempotencyKey: `deletion-completed-${log.id}`,
-          },
-        });
-      } catch (e) {
-        console.error('[email] completion notification failed:', e);
-      }
-    }
-
-    // 2. Stripe
-    const subCancelled = await cancelStripeSubscription(log.user_email);
-
-    // 3. Storage
-    const storagePurged = await purgeStorage(admin, userId);
-
-    // 4. Database tables
-    for (const table of [...new Set(TABLES_TO_PURGE)]) {
-      const { error } = await admin.from(table).delete().eq("user_id", userId);
-      if (error) {
-        console.warn(`[purge ${table}]`, error.message);
-      } else {
-        tablesPurged.push(table);
-      }
-    }
-
-    // 5. Auth user (zadnje)
-    const { error: authErr } = await admin.auth.admin.deleteUser(userId);
-    if (authErr) throw new Error(`Auth delete failed: ${authErr.message}`);
-
-    // 5. Mark completed (prije brisanja log retka, ali u ovom slučaju zadržavamo log za audit)
-    // NAPOMENA: account_deletion_log NIJE u TABLES_TO_PURGE — zadržavamo ga 90 dana za GDPR audit.
-    await admin.from("account_deletion_log").update({
-      status: "completed",
-      completed_at: new Date().toISOString(),
-      stripe_subscription_cancelled: subCancelled,
-      tables_purged: { tables: tablesPurged, storage: storagePurged },
-      user_email: null, // anonimiziraj email u logu
-    }).eq("id", log.id);
-
-    return { ok: true, tables: tablesPurged };
+    await admin.from("app_diagnostics_logs").insert({
+      user_id: null,
+      event_type: "hard_delete_residual",
+      severity: "warning",
+      message: `User ${userId} purge left ${result.residualScan.total} residual rows`,
+      metadata: result.residualScan,
+    });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    await admin.from("account_deletion_log").update({
-      status: "failed", error_message: msg,
-    }).eq("id", log.id);
-    return { ok: false, error: msg };
+    console.warn("[process-pending-deletions] residual log insert failed:", e);
   }
 }
 
@@ -133,31 +86,58 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    // Dohvati sve pending zahtjeve čiji je grace period prošao
     const { data: pending, error } = await admin
       .from("account_deletion_log")
       .select("*")
       .eq("status", "pending")
       .lte("scheduled_for", new Date().toISOString())
       .limit(50);
-
     if (error) throw error;
 
-    const results = [];
+    const results: Array<Record<string, unknown>> = [];
     for (const log of pending ?? []) {
-      const r = await processOne(admin, log);
-      results.push({ user_id: log.user_id, ...r });
+      // Notify BEFORE purge — email is gone afterwards.
+      await sendCompletionEmail(admin, log);
+
+      const purgeResult = await purgeUser(admin, {
+        userId: log.user_id,
+        userEmail: log.user_email,
+        policy: {
+          sourceTag: "cron_grace",
+          // Cron path stays conservative: never destroy multi-member krugs,
+          // never silently delete paid records. Admin can override later.
+          allowKrugDestruction: false,
+          deletePaidRecords: false,
+          cancelStripeSubscription: true,
+        },
+      });
+
+      await admin
+        .from("account_deletion_log")
+        .update(buildAuditUpdate(purgeResult))
+        .eq("id", log.id);
+
+      await logResidualWarning(admin, log.user_id, purgeResult);
+
+      results.push({
+        user_id: log.user_id,
+        ok: purgeResult.ok,
+        blockedBy: purgeResult.blockedBy ?? null,
+        residualTotal: purgeResult.residualScan.total,
+        errors: purgeResult.errors.length,
+      });
     }
 
-    return new Response(JSON.stringify({
-      processed: results.length,
-      results,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    return new Response(
+      JSON.stringify({ processed: results.length, results }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[process-pending-deletions]", msg);
     return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
