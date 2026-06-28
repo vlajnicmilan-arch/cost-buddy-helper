@@ -114,6 +114,8 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user?.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let homeReady = false;
+    let exitedSeen = false;
 
     const passesGate = () => {
       const seenPerUser = localStorage.getItem(seenKeyFor(user.id));
@@ -127,7 +129,13 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       return true;
     };
 
-    const scheduleStart = (delayMs: number) => {
+    const tryStart = (delayMs: number) => {
+      // O3: Tutorial start zahtijeva DA su oba signala stigla — ceremony je
+      // dovršen (`home-ready-for-tutorial`) I guided exit RPC je upisao
+      // localStorage (`guided-home-exited`). Bez parovanja postoji prozor u
+      // kojem home-ready stigne prije nego RPC završi pa gate padne na
+      // `guidedExitedAt`-u i tutorial se nikad ne pokrene.
+      if (!homeReady || !exitedSeen) return;
       if (!passesGate()) return;
       if (timer) return;
       timer = setTimeout(() => {
@@ -136,11 +144,27 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       }, delayMs);
     };
 
-    const onHomeReady = () => scheduleStart(600);
+    const onHomeReady = () => {
+      homeReady = true;
+      tryStart(600);
+    };
+    const onGuidedExited = () => {
+      exitedSeen = true;
+      tryStart(600);
+    };
+
+    // Ako je guided exit već prije perzistiran (npr. cross-device sync ili
+    // refresh nakon prijelaza), ne čekaj event — odmah priznaj signal.
+    if (localStorage.getItem(`guided_home_exited_at:${user.id}`)) {
+      exitedSeen = true;
+    }
+
     window.addEventListener('home-ready-for-tutorial', onHomeReady);
+    window.addEventListener('guided-home-exited', onGuidedExited as EventListener);
 
     return () => {
       window.removeEventListener('home-ready-for-tutorial', onHomeReady);
+      window.removeEventListener('guided-home-exited', onGuidedExited as EventListener);
       if (timer) clearTimeout(timer);
     };
   }, [user?.id]);
