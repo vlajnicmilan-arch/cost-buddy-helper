@@ -455,27 +455,31 @@ export const useExpenseCRUD = ({
           return;
         }
 
+        // Val 2: default intent — strip precision fields. If `date` changes
+        // on a C3 row, the Val 1 trigger re-derives event_at. C1/C2 rows
+        // remain protected by the trigger's tier-aware branch.
+        const updatePayload = normalizeExpensePayload({
+          amount: expense.amount,
+          description: expense.description,
+          // Force system-reserved category for transfers
+          category: expense.type === 'transfer' ? 'transfer' : expense.category,
+          type: expense.type,
+          date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
+          payment_source: canonicalPaymentSource,
+          payment_source_card_id: expense.payment_source_card_id || null,
+          merchant_name: expense.merchant_name,
+          income_source_id: expense.income_source_id,
+          project_id: expense.project_id || null,
+          budget_id: expense.budget_id || null,
+          expense_nature: expense.expense_nature || null,
+          note: expense.note || null,
+          currency: expense.currency || null,
+          updated_at: new Date().toISOString(),
+        }, 'default');
+
         const { error } = await supabase
           .from('expenses')
-          .update({
-            amount: expense.amount,
-            description: expense.description,
-            // Force system-reserved category for transfers
-            category: expense.type === 'transfer' ? 'transfer' : expense.category,
-            type: expense.type,
-            date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
-            payment_source: canonicalPaymentSource,
-            payment_source_card_id: expense.payment_source_card_id || null,
-            merchant_name: expense.merchant_name,
-            income_source_id: expense.income_source_id,
-            project_id: expense.project_id || null,
-            budget_id: expense.budget_id || null,
-            expense_nature: expense.expense_nature || null,
-            note: expense.note || null,
-            
-            currency: expense.currency || null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updatePayload as any)
           .eq('id', expense.id);
 
         if (error) throw error;
