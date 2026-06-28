@@ -51,7 +51,13 @@ export const GuidedEntryView = ({
   const count = locking ? GUIDED_EXPENSE_THRESHOLD : rawCount;
   const isZero = count === 0;
   const remaining = Math.max(0, GUIDED_EXPENSE_THRESHOLD - count);
-  const last = allExpenses[0];
+  // Stabilni guided prikaz: do THRESHOLD najnovijih događaja, sortirano
+  // desc po datumu da redoslijed ne ovisi o tome je li unos stigao optimistički
+  // ili kroz realtime. Svaka kartica ima vlastiti `expense.id` key — React više
+  // ne zamjenjuje single karticu pa 1. događaj ne nestaje pri 2. unosu.
+  const guidedEntries = [...allExpenses]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, GUIDED_EXPENSE_THRESHOLD);
 
 
   return (
