@@ -4064,6 +4064,19 @@
     "readonlyFooter": "Schreibgeschützte Ansicht. Powered by V&M Balance."
   },
   "admin": {
+    "hardDelete": {
+      "menuLabel": "Endgültig löschen (Test)",
+      "dialogTitle": "Benutzer endgültig löschen",
+      "dialogWarning": "Diese Aktion löscht den Benutzer und alle Daten endgültig. Nicht umkehrbar.",
+      "confirmInputLabel": "Exakte E-Mail zur Bestätigung eingeben",
+      "confirmCta": "Endgültig löschen",
+      "cancel": "Abbrechen",
+      "successToast": "Benutzer endgültig gelöscht",
+      "blockedKrugToast": "Benutzer besitzt einen Krug mit weiteren Mitgliedern. Krug zuerst manuell auflösen.",
+      "blockedGenericToast": "Löschung blockiert",
+      "errorToast": "Löschung fehlgeschlagen",
+      "notInAllowlistTooltip": "E-Mail nicht in der Hard-Delete-Allowlist"
+    },
     "noFilterResults": "Keine Ergebnisse für die angegebenen Filter",
     "attempts": "Versuche",
     "errors": "Fehler",

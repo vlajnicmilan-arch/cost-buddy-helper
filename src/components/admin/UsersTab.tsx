@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck,
-  ShieldCheck, ShieldOff, Search, X, Filter,
+  ShieldCheck, ShieldOff, Search, X, Filter, Trash2,
 } from 'lucide-react';
+import { HardDeleteUserDialog, isEmailHardDeletable } from './HardDeleteUserDialog';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ export const UsersTab = ({
   const [filter, setFilterRaw] = useState<FilterKey>('all');
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
   const [activeContext, setActiveContext] = useState<DrilldownIntent | null>(null);
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<{ id: string; email: string } | null>(null);
 
   // Wrapper: ručna promjena filtera briše drill-down kontekst.
   const setFilter = useCallback((k: FilterKey) => {
@@ -464,6 +466,17 @@ export const UsersTab = ({
                           <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
                         </Button>
                       )}
+                      {isEmailHardDeletable(u.email) ? (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setHardDeleteTarget({ id: u.id, email: u.email ?? '' })}
+                          disabled={actionLoading === u.id}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          {t('admin.hardDelete.menuLabel', 'Trajno obriši (test)')}
+                        </Button>
+                      ) : null}
                     </div>
                   )}
                 </div>
@@ -484,6 +497,16 @@ export const UsersTab = ({
             </p>
           )}
         </div>
+      )}
+
+      {hardDeleteTarget && (
+        <HardDeleteUserDialog
+          open={!!hardDeleteTarget}
+          onOpenChange={(o) => { if (!o) setHardDeleteTarget(null); }}
+          userId={hardDeleteTarget.id}
+          email={hardDeleteTarget.email}
+          onDeleted={() => { setHardDeleteTarget(null); onRefresh(); }}
+        />
       )}
     </div>
   );

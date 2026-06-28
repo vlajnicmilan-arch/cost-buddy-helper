@@ -4064,6 +4064,19 @@
     "readonlyFooter": "Read-only view. Powered by V&M Balance."
   },
   "admin": {
+    "hardDelete": {
+      "menuLabel": "Hard delete (test)",
+      "dialogTitle": "Permanently delete user",
+      "dialogWarning": "This permanently deletes the user and all their data. Not reversible.",
+      "confirmInputLabel": "Type the exact email to confirm",
+      "confirmCta": "Delete permanently",
+      "cancel": "Cancel",
+      "successToast": "User permanently deleted",
+      "blockedKrugToast": "User owns a krug with other members. Disband the krug manually before deleting.",
+      "blockedGenericToast": "Deletion blocked",
+      "errorToast": "Deletion failed",
+      "notInAllowlistTooltip": "Email is not in hard-delete allowlist"
+    },
     "noFilterResults": "No results for the given filters",
     "attempts": "Attempts",
     "errors": "Errors",
