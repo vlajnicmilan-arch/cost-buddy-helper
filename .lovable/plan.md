@@ -1,43 +1,67 @@
+## Korekcija decision seta — semantika `issued_at_label_present`
 
-# Test pass za #3 — Rule B (anchor cuts the whole calendar day)
+### Što se mijenja u okviru
 
-Uski Vitest pass. Bez SQL fixa, bez UI-a, bez dirana ostalih 8 stavki.
+Dvije korekcije ulaze zajedno (prethodna + ova):
 
-## 1. Gdje pravilo živi danas
+1. **JIR / `fiscal_marker_present` izlazi** iz C1 odluke (ostaje samo telemetrija).
+2. **`issued_at_label_present` mijenja značenje** — više ne znači "doslovno piše Vrijeme izdavanja", nego "model je jasno prepoznao primarni timestamp događaja s nedvosmislenim labelom".
 
-Kanonska logika je u Postgres funkciji `public.recompute_custom_source_balance` (migracija `20260624131214`). U `src/` ne postoji čisti TS helper koji zrcali pravilo — `useBalanceUpdater.ts` samo zove RPC. Znači: nema postojećeg čistog mjesta za TS test.
+Prihvatljivi labeli (non-exhaustive, model odlučuje semantički):
+- "Vrijeme izdavanja"
+- "Datum/vrijeme"
+- "Datum i vrijeme"
+- "Izdano"
+- ekvivalentne DE/EN varijante ("Ausgestellt", "Datum/Uhrzeit", "Issued at", "Date/Time")
 
-**Najmanji siguran način:** dodati uski pure-TS port pravila B kao izvršivu specifikaciju i testirati njega. Port se NE uvozi iz runtime koda; služi isključivo testovima kao "ako se SQL promijeni, ovaj test pukne i to mora biti svjesna odluka". To je jedini način da se Rule B kodira u Vitestu bez dotjerivanja Postgresa.
+Odbacuje se (→ C3):
+- više različitih vremenskih polja bez jasnog prioriteta (npr. "Vrijeme dolaska" + "Vrijeme naplate" bez jasnog koji je glavni)
+- generičko vrijeme bez ikakvog labela ("samo neki HH:MM negdje na računu")
+- label koji ne označava vrijeme događaja (npr. "Vrijeme tiskanja kopije", "Sat blagajne", "Vrijeme smjene")
 
-## 2. Što se dodaje
+Ostali zaključani uvjeti za C1 (nepromijenjeni):
+- `userEditedDateOrTime === false`
+- `issued_at_iso` validan ISO datetime s HH:MM
+- `issued_at_raw` sadrži HH:MM iz `issued_at_iso`
+- `issued_at_iso` unutar +1h / -7d od `now`
 
-**Dva nova fajla, ništa drugo:**
+### Gdje pada odluka
 
-- `src/lib/balance/anchorBalance.ts` — pure funkcija `computeAnchoredBalance({sourceId, anchorDate, anchorBalance, expenses})`. Vraća `anchorBalance + SUM(post-anchor-day valid signed contributions)`. Bez vanjskih ovisnosti, bez importa iz `supabase/`. JSDoc na vrhu eksplicitno navodi Rule B i da je fajl test-only specifikacija.
-- `src/lib/balance/anchorBalance.test.ts` — Vitest suite sa 7 scenarija:
-  1. transakcije prije anchor dana → isključene
-  2. transakcije na anchor dan (čak i s vremenom nakon anchor sata) → isključene
-  3. transakcije nakon anchor dana → uključene
-  4. `expense_nature === 'correction'` → nikad ne računa
-  5. `deleted_at !== null` → nikad ne računa
-  6. mixed scenarij: `anchor + post-day valid sum` = 150 € (sa transferima u oba smjera, drugim sourceom, deleted/correction šumom)
-  7. čitljivost pravila: isti iznos na anchor dan = 100 €, na dan-poslije = 300 € — pravilo B jasno iz testa, ne skriveno u helperu
+Semantika labela je **AI odgovornost** (parse-receipt), ne TS helpera. TS helper i dalje vidi samo boolean `issued_at_label_present` i ne pokušava parsirati label tekst. To čuva `decideScanTier` kao SSOT za tier odluku bez da uvodi listu stringova koja bi se silently divergirala od prompta.
 
-## 3. Što se NE dira
+### Konkretne izmjene (build pass kad odobriš)
 
-- nikakva migracija
-- nikakav SQL
-- nikakav UI / helper text
-- nikakav refaktor `useBalanceUpdater` ili payment-source sustava
-- nikakav fix za #1, #2, #4, #9 ili ostale stavke
+**1. `supabase/functions/parse-receipt/index.ts`**
+- Prompt: proširiti definiciju `issued_at_label_present` s primjerima prihvatljivih i odbačenih labela (HR + DE/EN ekvivalenti, eksplicitno isključiti "vrijeme tiskanja", "kopija", "smjena").
+- Dodati pravilo: ako račun ima više vremena bez jasnog prioriteta → `issued_at_label_present=false`.
+- JSON schema **nepromijenjena** (i dalje boolean).
 
-## 4. Zašto pure-TS port nije bilo moguće izbjeći
+**2. `src/lib/balance/decideScanTier.ts`**
+- Ukloniti granu `fiscal_marker_present` (prethodna korekcija).
+- Ukloniti `'no_fiscal_marker'` iz `reason` union tipa.
+- Header komentar: pravilo 3 prepisati iz "explicit 'vrijeme izdavanja' label" u "model has identified a single primary event timestamp with an unambiguous label".
+- Logika ostaje identična (i dalje čita boolean).
 
-Postojeći kod pravilo zna samo preko RPC poziva na Postgres. Vitest ne može pozvati Postgres funkciju. Bilo bi ili (a) podići realnu DB u testu — širi scope nego što tražiš, ili (b) napisati uski TS port koji zrcali pravilo i držati ga kao spec. Odabran (b) jer ne mijenja runtime ponašanje i daje regresijsku mrežu odmah.
+**3. `src/lib/balance/decideScanTier.test.ts`**
+- T3 (`no_time_label`) ostaje, ali komentar/naslov prepisati da odražava novu semantiku.
+- T4 (`no_fiscal_marker`) flip → potvrđuje da `fiscal_marker_present=false` uz sve ostalo = C1.
+- Dodati T11: dva vremena bez prioriteta = simulacija `issued_at_label_present=false` → C3 (čisto za dokumentaciju namjere).
 
-## 5. Status nakon ovog passa
+**4. `src/components/add-expense/AddExpenseDialog.tsx`**
+- Bez promjene. `scan_tier_decision` log već nosi sve signale.
 
-- gdje su testovi: `src/lib/balance/anchorBalance.test.ts`
-- pokriveni scenariji: 7, navedeni iznad
-- jesu li prošli: bit će potvrđeno odmah po prebacivanju u build mod
-- spremnost #3 za kasniji fix pass: **da** — Rule B je sada izvršiva specifikacija; budući SQL/UI fix može se mjeriti spram ovog testa
+### Što se NE mijenja
+
+- TS helper API i tipovi (osim uklanjanja jedne `reason` vrijednosti).
+- Write-path, DB, anchor engine, UI, i18n.
+- Sanity range i raw↔iso check.
+
+### Posljedice
+
+- C1 hit-rate bi trebao porasti: računi koji nose "Datum/vrijeme: ..." (vrlo čest format na HR POS-evima) sada prolaze gate, dok ranije nisu jer prompt je tražio strogo "Vrijeme izdavanja".
+- Rizik false-C1 ostaje ograničen jer: (a) raw↔iso mismatch hvata model halucinacije, (b) sanity range hvata pogrešno parsirane godine, (c) ručna izmjena uvijek ruši na C3.
+- Retroaktivni audit nije potreban — `app_diagnostics_logs` zadržava povijest s prethodnom strožom semantikom.
+
+### Status
+
+Decision set zaključan. Build pass mehanički: 1 prompt update, 1 grana out u TS-u, 2 test izmjene + 1 novi test, 1 komentar. Bez migracije, UI ili i18n promjena.

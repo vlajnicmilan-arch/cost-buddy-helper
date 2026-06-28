@@ -31,16 +31,16 @@ describe('decideScanTier', () => {
     expect(d.eventAt).toBeNull();
   });
 
-  it('T3 — label not present → C3 / no_time_label', () => {
+  it('T3 — primary timestamp label missing (label_present=false) → C3 / no_time_label', () => {
     const d = decideScanTier(base({ issued_at_label_present: false }));
     expect(d.tier).toBe('C3');
     expect(d.reason).toBe('no_time_label');
   });
 
-  it('T4 — no fiscal marker → C3 / no_fiscal_marker', () => {
+  it('T4 — fiscal_marker_present=false MUST NOT block C1 (JIR removed from gate)', () => {
     const d = decideScanTier(base({ fiscal_marker_present: false }));
-    expect(d.tier).toBe('C3');
-    expect(d.reason).toBe('no_fiscal_marker');
+    expect(d.tier).toBe('C1');
+    expect(d.reason).toBe('c1_ok');
   });
 
   it('T5 — raw and iso time differ (hallucination guard) → C3 / raw_iso_mismatch', () => {
@@ -106,5 +106,15 @@ describe('decideScanTier', () => {
     const d = decideScanTier(base({ issued_at_raw: '' }));
     expect(d.tier).toBe('C3');
     expect(d.reason).toBe('raw_iso_mismatch');
+  });
+
+  // T11 — multiple times without clear primary on the receipt.
+  // The AI must encode this as `issued_at_label_present=false` (it is the
+  // sole owner of label semantics). Helper consequence is identical to T3,
+  // documented here as explicit regression of intent.
+  it('T11 — ambiguous primary timestamp (label_present=false from AI) → C3', () => {
+    const d = decideScanTier(base({ issued_at_label_present: false }));
+    expect(d.tier).toBe('C3');
+    expect(d.reason).toBe('no_time_label');
   });
 });
