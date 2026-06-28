@@ -107,4 +107,14 @@ describe('decideScanTier', () => {
     expect(d.tier).toBe('C3');
     expect(d.reason).toBe('raw_iso_mismatch');
   });
+
+  // T11 — multiple times without clear primary on the receipt.
+  // The AI must encode this as `issued_at_label_present=false` (it is the
+  // sole owner of label semantics). Helper consequence is identical to T3,
+  // documented here as explicit regression of intent.
+  it('T11 — ambiguous primary timestamp (label_present=false from AI) → C3', () => {
+    const d = decideScanTier(base({ issued_at_label_present: false }));
+    expect(d.tier).toBe('C3');
+    expect(d.reason).toBe('no_time_label');
+  });
 });
