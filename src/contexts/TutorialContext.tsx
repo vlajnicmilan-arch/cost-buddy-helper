@@ -95,39 +95,51 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
 
   const { user } = useAuth();
 
-  // Auto-start tutorial only AFTER the user has exited the guided onboarding
-  // phase (>= GUIDED_EXPENSE_THRESHOLD events). Source of truth is the
-  // localStorage cache key `guided_home_exited_at:<uid>` written by
-  // `useGuidedMode` when the server-side RPC `mark_guided_home_exited` runs.
-  // We re-evaluate on mount AND when `useGuidedMode` emits the in-process
-  // `guided-home-exited` CustomEvent (storage event ne okida unutar istog
-  // taba). `TUTORIAL_SEEN_KEY` osigurava jednokratan auto-start.
+  // Auto-start tutorial tek kad je full home stvarno spreman za coachmark targete.
+  // Trigger je `home-ready-for-tutorial` CustomEvent koji dispatcha
+  // `PersonalModeView` na završetku transition ceremony-ja (lock → payoff →
+  // reveal). Time je trigger odvojen od trenutka spremanja 3. unosa i od
+  // `guided_home_exited_at` timestampa.
+  //
+  // Fallback: korisnici koji su iz prošlih sesija već prošli guided fazu
+  // (`guided_home_exited_at:<uid>` cache postoji) auto-startaju tutorial pri
+  // mountu — nikad neće dobiti live `home-ready-for-tutorial` event.
+  // `TUTORIAL_SEEN_KEY` osigurava jednokratan auto-start.
   useEffect(() => {
     if (!user?.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const maybeAutoStart = () => {
+    const passesGate = () => {
       const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
-      if (tutorialSeen) return;
+      if (tutorialSeen) return false;
       const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
-      if (!onboardingCompleted) return;
+      if (!onboardingCompleted) return false;
       const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
-      if (!guidedExitedAt) return;
+      if (!guidedExitedAt) return false;
+      return true;
+    };
+
+    const scheduleStart = (delayMs: number) => {
+      if (!passesGate()) return;
       if (timer) return;
       timer = setTimeout(() => {
         setIsActive(true);
         localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
-      }, 4000);
+      }, delayMs);
     };
 
-    maybeAutoStart();
-    window.addEventListener('guided-home-exited', maybeAutoStart);
+    // Mount fallback za stale userse — bez ceremony eventa, kratak delay.
+    scheduleStart(600);
+    // Live trigger nakon završene transition ceremonije.
+    const onHomeReady = () => scheduleStart(600);
+    window.addEventListener('home-ready-for-tutorial', onHomeReady);
 
     return () => {
-      window.removeEventListener('guided-home-exited', maybeAutoStart);
+      window.removeEventListener('home-ready-for-tutorial', onHomeReady);
       if (timer) clearTimeout(timer);
     };
   }, [user?.id]);
+
 
   const startTutorial = useCallback(() => {
     setCurrentStep(0);
