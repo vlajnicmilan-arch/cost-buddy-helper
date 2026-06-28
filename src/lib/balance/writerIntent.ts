@@ -45,7 +45,7 @@ export type ExpenseWritePayload = Record<string, unknown> & PrecisionFields;
 export function normalizeExpensePayload<T extends ExpenseWritePayload>(
   payload: T,
   intent: WriterIntent,
-): T {
+): T & PrecisionFields {
   // Strip the three precision fields from a copy; we'll re-attach per intent.
   const {
     event_at: _ea,
