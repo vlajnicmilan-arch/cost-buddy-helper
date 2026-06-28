@@ -5278,6 +5278,10 @@ export type Database = {
         Args: { p_source_id: string }
         Returns: number
       }
+      recompute_custom_source_balance_preview: {
+        Args: { p_mode: string; p_source_id: string }
+        Returns: number
+      }
       refresh_family_split_snapshot: {
         Args: {
           p_group_id: string
