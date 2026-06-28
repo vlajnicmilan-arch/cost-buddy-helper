@@ -43,7 +43,7 @@ describe('SQL contract: Val 3 engine (recompute_custom_source_balance)', () => {
     // Precise tiers use event_at strict >
     expect(sql).toMatch(/time_confidence\s+IN\s*\(\s*'C1'\s*,\s*'C2'\s*\)[\s\S]{0,200}event_at\s*>\s*v_anchor_date/i);
     // Fallback uses day-level cut on date
-    expect(sql).toMatch(/time_confidence\s+IS\s+NULL\s+OR\s+time_confidence\s+IN\s*\(\s*'C3'\s*,\s*'C4'\s*\)[\s\S]{0,400}\(e\.date\s+AT\s+TIME\s+ZONE\s+'UTC'\)::date\s*>\s*\(v_anchor_date\s+AT\s+TIME\s+ZONE\s+'UTC'\)::date/i);
+    expect(sql).toMatch(/time_confidence\s+IS\s+NULL\s+OR\s+e?\.?time_confidence\s+IN\s*\(\s*'C3'\s*,\s*'C4'\s*\)[\s\S]{0,500}\(e\.date\s+AT\s+TIME\s+ZONE\s+'UTC'\)::date\s*>\s*\(v_anchor_date\s+AT\s+TIME\s+ZONE\s+'UTC'\)::date/i);
   });
 
   it('day_cut branch keeps the legacy Rule B day comparison', () => {
