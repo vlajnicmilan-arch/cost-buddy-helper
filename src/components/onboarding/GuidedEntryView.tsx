@@ -39,15 +39,20 @@ export const GuidedEntryView = ({
   customPaymentSources,
   onScan,
   onAddExpense,
+  locking = false,
 }: GuidedEntryViewProps) => {
   const { t } = useTranslation();
   const [manualOpen, setManualOpen] = useState(false);
 
   const name = (displayName || '').trim();
-  const count = allExpenses.length;
+  const rawCount = allExpenses.length;
+  // Tijekom 'lock' faze (prev<3 → next≥3) UI pokazuje sva 3 polja kao popunjena
+  // čak i ako je live count već ≥ THRESHOLD prije payoff cross-fade-a.
+  const count = locking ? GUIDED_EXPENSE_THRESHOLD : rawCount;
   const isZero = count === 0;
   const remaining = Math.max(0, GUIDED_EXPENSE_THRESHOLD - count);
   const last = allExpenses[0];
+
 
   return (
     <motion.div
