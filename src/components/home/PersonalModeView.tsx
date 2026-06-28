@@ -286,6 +286,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     );
   }
 
+  // O2: Anti-flash gate. Za logirane korisnike (ne local, ne business chip)
+  // standardni home ne smije bljesnuti prije nego znamo guided stanje i
+  // prije nego se expense fetch završio. Bez ovog gate-a postoji prozor u
+  // kojem `showGuidedLayout` još nije true (čeka `guided.ready`/`!loading`)
+  // pa render padne u standardni dashboard za 1+ frame nakon
+  // `Onboarding → /home` navigacije.
+  if (!props.isLocalMode && !isBusinessChip && (!guided.ready || props.expensesLoading)) {
+    return <div className="min-h-dvh bg-background" />;
+  }
+
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
     if (hiddenIds.has(s.id)) return sum;
