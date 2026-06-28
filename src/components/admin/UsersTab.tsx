@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Loader2, RefreshCw, User, Mail, Clock, Smartphone, Ban, UserCheck,
-  ShieldCheck, ShieldOff, Search, X, Filter,
+  ShieldCheck, ShieldOff, Search, X, Filter, Trash2,
 } from 'lucide-react';
+import { HardDeleteUserDialog, isEmailHardDeletable } from './HardDeleteUserDialog';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
