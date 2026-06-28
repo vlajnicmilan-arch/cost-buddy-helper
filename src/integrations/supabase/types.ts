@@ -1289,7 +1289,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           description: string
-          event_at: string
+          event_at: string | null
           expense_nature: string | null
           id: string
           import_batch_id: string | null
@@ -1340,7 +1340,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description: string
-          event_at: string
+          event_at?: string | null
           expense_nature?: string | null
           id?: string
           import_batch_id?: string | null
@@ -1391,7 +1391,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string
-          event_at?: string
+          event_at?: string | null
           expense_nature?: string | null
           id?: string
           import_batch_id?: string | null
@@ -4946,7 +4946,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           description: string
-          event_at: string
+          event_at: string | null
           expense_nature: string | null
           id: string
           import_batch_id: string | null
