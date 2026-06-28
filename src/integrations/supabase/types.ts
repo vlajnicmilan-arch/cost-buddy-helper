@@ -1318,6 +1318,7 @@ export type Database = {
           time_confidence: string
           type: string
           updated_at: string
+          user_edited_event_at: boolean
           user_id: string
           vat_amount: number | null
           vat_rate: number | null
@@ -1369,6 +1370,7 @@ export type Database = {
           time_confidence?: string
           type?: string
           updated_at?: string
+          user_edited_event_at?: boolean
           user_id: string
           vat_amount?: number | null
           vat_rate?: number | null
@@ -1420,6 +1422,7 @@ export type Database = {
           time_confidence?: string
           type?: string
           updated_at?: string
+          user_edited_event_at?: boolean
           user_id?: string
           vat_amount?: number | null
           vat_rate?: number | null
@@ -4975,6 +4978,7 @@ export type Database = {
           time_confidence: string
           type: string
           updated_at: string
+          user_edited_event_at: boolean
           user_id: string
           vat_amount: number | null
           vat_rate: number | null
@@ -5283,6 +5287,19 @@ export type Database = {
         Returns: undefined
       }
       refund_core_scan_quota: { Args: never; Returns: undefined }
+      resolve_event_at_merge: {
+        Args: {
+          existing_confidence: string
+          existing_event_at: string
+          existing_user_edited: boolean
+          incoming_confidence: string
+          incoming_event_at: string
+        }
+        Returns: {
+          event_at: string
+          time_confidence: string
+        }[]
+      }
       resolve_stale_issues: {
         Args: { p_active_dedup_keys: string[]; p_type_prefix: string }
         Returns: number

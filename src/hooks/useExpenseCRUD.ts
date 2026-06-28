@@ -26,6 +26,7 @@ import {
   PaymentSourceNormalizeError,
   type NormalizeContext,
 } from '@/lib/paymentSource/normalize';
+import { normalizeExpensePayload, type WriterIntent } from '@/lib/balance/writerIntent';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
@@ -239,33 +240,36 @@ export const useExpenseCRUD = ({
           bankLinkedSourceIds,
         });
 
+        // Val 2: foundation gate. Default intent strips precision fields,
+        // letting the Val 1 trigger derive event_at from `date` as C3.
+        const insertPayload = normalizeExpensePayload({
+          user_id: user.id,
+          amount: normalizedExpense.amount,
+          description: normalizedExpense.description,
+          category: normalizedExpense.category,
+          type: normalizedExpense.type,
+          date: normalizedExpense.date.toISOString(),
+          payment_source: canonicalPaymentSource,
+          payment_source_card_id: normalizedExpense.payment_source_card_id || null,
+          receipt_url: normalizedExpense.receipt_url,
+          merchant_name: normalizedExpense.merchant_name,
+          ai_extracted: normalizedExpense.ai_extracted,
+          income_source_id: normalizedExpense.income_source_id,
+          project_id: normalizedExpense.project_id || null,
+          budget_id: normalizedExpense.budget_id || null,
+          note: normalizedExpense.note || null,
+          expense_nature: normalizedExpense.expense_nature || null,
+          status: isPendingMemberTransaction ? 'pending' : 'approved',
+          submitted_by: isPendingMemberTransaction ? user.id : null,
+          business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+          currency: (normalizedExpense as any).currency || null,
+          bank_match_status: bankMatchStatus,
+          recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
+        }, 'default');
+
         const { data, error } = await supabase
           .from('expenses')
-          .insert({
-            user_id: user.id,
-            amount: normalizedExpense.amount,
-            description: normalizedExpense.description,
-            category: normalizedExpense.category,
-            type: normalizedExpense.type,
-            date: normalizedExpense.date.toISOString(),
-            payment_source: canonicalPaymentSource,
-            payment_source_card_id: normalizedExpense.payment_source_card_id || null,
-            receipt_url: normalizedExpense.receipt_url,
-            merchant_name: normalizedExpense.merchant_name,
-            ai_extracted: normalizedExpense.ai_extracted,
-            income_source_id: normalizedExpense.income_source_id,
-            project_id: normalizedExpense.project_id || null,
-            budget_id: normalizedExpense.budget_id || null,
-            note: normalizedExpense.note || null,
-            expense_nature: normalizedExpense.expense_nature || null,
-            status: isPendingMemberTransaction ? 'pending' : 'approved',
-            submitted_by: isPendingMemberTransaction ? user.id : null,
-            business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
-            
-            currency: (normalizedExpense as any).currency || null,
-            bank_match_status: bankMatchStatus,
-            recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
-          })
+          .insert(insertPayload as any)
           .select()
           .single();
 
@@ -451,27 +455,31 @@ export const useExpenseCRUD = ({
           return;
         }
 
+        // Val 2: default intent — strip precision fields. If `date` changes
+        // on a C3 row, the Val 1 trigger re-derives event_at. C1/C2 rows
+        // remain protected by the trigger's tier-aware branch.
+        const updatePayload = normalizeExpensePayload({
+          amount: expense.amount,
+          description: expense.description,
+          // Force system-reserved category for transfers
+          category: expense.type === 'transfer' ? 'transfer' : expense.category,
+          type: expense.type,
+          date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
+          payment_source: canonicalPaymentSource,
+          payment_source_card_id: expense.payment_source_card_id || null,
+          merchant_name: expense.merchant_name,
+          income_source_id: expense.income_source_id,
+          project_id: expense.project_id || null,
+          budget_id: expense.budget_id || null,
+          expense_nature: expense.expense_nature || null,
+          note: expense.note || null,
+          currency: expense.currency || null,
+          updated_at: new Date().toISOString(),
+        }, 'default');
+
         const { error } = await supabase
           .from('expenses')
-          .update({
-            amount: expense.amount,
-            description: expense.description,
-            // Force system-reserved category for transfers
-            category: expense.type === 'transfer' ? 'transfer' : expense.category,
-            type: expense.type,
-            date: expense.date instanceof Date ? expense.date.toISOString() : expense.date,
-            payment_source: canonicalPaymentSource,
-            payment_source_card_id: expense.payment_source_card_id || null,
-            merchant_name: expense.merchant_name,
-            income_source_id: expense.income_source_id,
-            project_id: expense.project_id || null,
-            budget_id: expense.budget_id || null,
-            expense_nature: expense.expense_nature || null,
-            note: expense.note || null,
-            
-            currency: expense.currency || null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updatePayload as any)
           .eq('id', expense.id);
 
         if (error) throw error;
@@ -560,13 +568,15 @@ export const useExpenseCRUD = ({
         const toWrite = normalizedRows.filter(r => r.canonical != null) as Array<{ expense: Expense; canonical: string }>;
 
         await Promise.all(toWrite.map(async ({ expense, canonical }) => {
+          // Val 2: default intent — strip any precision fields.
+          const bulkPayload = normalizeExpensePayload({
+            category: expense.category,
+            payment_source: canonical,
+            updated_at: new Date().toISOString(),
+          }, 'default');
           const { error } = await supabase
             .from('expenses')
-            .update({
-              category: expense.category,
-              payment_source: canonical,
-              updated_at: new Date().toISOString()
-            })
+            .update(bulkPayload as any)
             .eq('id', expense.id);
           if (error) throw error;
         }));
