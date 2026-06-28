@@ -496,6 +496,15 @@ export const AddExpenseDialog = ({
         ? result.description.trim()
         : (result.merchant?.trim() || result.issuer_name?.trim() || 'Račun');
 
+    // Val 4 — snimi strukturirane signale i resetiraj edit flag za novi scan.
+    scanSignalsRef.current = {
+      issued_at_iso: result.issued_at_iso ?? null,
+      issued_at_raw: result.issued_at_raw ?? null,
+      issued_at_label_present: result.issued_at_label_present === true,
+      fiscal_marker_present: result.fiscal_marker_present === true,
+    };
+    userEditedDateOrTimeRef.current = false;
+
     // Sync key form fields too so the data survives even if the preview
     // somehow doesn't render (e.g. dialog state desync).
     setAmount(String(result.amount ?? ''));
