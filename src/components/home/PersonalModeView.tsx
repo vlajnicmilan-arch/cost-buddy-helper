@@ -42,6 +42,8 @@ import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+
 
 interface PersonalModeViewProps {
   displayName: string | null;
