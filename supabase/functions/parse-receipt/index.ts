@@ -310,12 +310,27 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "description": "Tjedna kupovina",
   "category": "food",
   "date": "2025-01-20",
+  "issued_at_iso": "2025-01-20T15:30:42+01:00",
+  "issued_at_raw": "20.01.2025 15:30:42",
+  "issued_at_label_present": true,
+  "fiscal_marker_present": true,
+  "jir_value": null,
   "payment_method": "card",
   "transaction_type": "expense",
   "transfer_destination_name": null,
   "recipient_name": null,
   "issuer_name": "KONZUM PLUS d.o.o.",
   "issuer_oib": "62226620908",
+  "custom_payment_source_id": null,
+  "payment_source_card_id": null,
+  "is_installment": false,
+  "installment_count": null,
+  "installment_amount": null,
+  "items": [
+    {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
+    {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
+  ]
+}
   "custom_payment_source_id": null,
   "payment_source_card_id": null,
   "is_installment": false,
