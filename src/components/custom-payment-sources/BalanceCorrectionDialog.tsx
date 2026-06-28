@@ -82,6 +82,9 @@ export const BalanceCorrectionDialog = ({
               </span>
             </p>
           )}
+          <p className="text-xs text-muted-foreground border-t pt-3">
+            {t('paymentSources.correctionHelper', 'Korekcija vrijedi za današnji dan. Novi unosi se zbrajaju od sutra.')}
+          </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

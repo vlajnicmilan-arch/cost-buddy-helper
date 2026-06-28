@@ -1590,6 +1590,7 @@
     "addNew": "Dodaj novu kategoriju"
   },
   "paymentSources": {
+    "correctionHelper": "Korekcija vrijedi za današnji dan. Novi unosi se zbrajaju od sutra.",
     "cash": "Gotovina",
     "bank": "Banka",
     "revolut": "Revolut",
