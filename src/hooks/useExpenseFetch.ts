@@ -241,13 +241,20 @@ export const useExpenseFetch = () => {
     currency: (raw as any).currency || null,
   }), []);
 
-  // Hydrate from cache instantly on user change
+  // Hydrate from cache instantly on user change.
+  // Bug A fix: depend only on `user?.id` (not the whole `user` object) AND
+  // skip rehydration when the same key was already hydrated/loaded.
+  // Without this guard, every AuthContext refresh that mints a new `user`
+  // object identity (session revalidation, focus) re-runs this effect and
+  // overwrites freshly added optimistic expenses with stale cached data —
+  // in the guided phase this manifests as the 1st/2nd entry briefly
+  // disappearing before the network refetch catches up.
   useEffect(() => {
-    if (isLocalMode || !user) return;
+    if (isLocalMode || !user?.id) return;
     const key = expensesCacheKey(user.id);
+    if (hydratedKeyRef.current === key) return;
     const cached = instantCache.read<Expense[]>(key);
     if (cached && cached.length > 0) {
-      // Defensive: ensure dates are Date objects (reviver should already do this)
       setExpenses(cached.map(e => ({
         ...e,
         date: e.date instanceof Date ? e.date : new Date(e.date as unknown as string),
@@ -257,7 +264,7 @@ export const useExpenseFetch = () => {
     } else {
       hydratedKeyRef.current = null;
     }
-  }, [user?.id, isLocalMode, user]);
+  }, [user?.id, isLocalMode]);
 
   // Initial data load (hiddenIds handled by useHiddenPaymentSources hook).
   // P0: fetchOwnedSources MUST complete before fetchExpenses, otherwise the

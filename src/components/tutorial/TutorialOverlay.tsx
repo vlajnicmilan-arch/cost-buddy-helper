@@ -39,93 +39,105 @@ export const TutorialOverlay = () => {
       return;
     }
 
-    const updatePosition = () => {
-      const element = document.querySelector(currentStepData.targetSelector);
-      
-      if (element) {
-        // Scroll element into view first
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Delay position calculation to allow scroll to complete
-        setTimeout(() => {
-          const rect = element.getBoundingClientRect();
-          const padding = 8;
-          
-          // Use viewport-relative coordinates (no scrollY since overlay is fixed)
-          setHighlightPosition({
-            top: rect.top - padding,
-            left: rect.left - padding,
-            width: rect.width + padding * 2,
-            height: rect.height + padding * 2,
-          });
+    // Bug B fix: reset highlight immediately on step change so the previous
+    // step's spotlight does not linger over a wrong target while we resolve
+    // the new one (e.g. payment-sources step when PaymentSourcesSection
+    // hasn't mounted yet — it renders null until at least 1 visible source
+    // exists, which races with the post-onboarding refetch).
+    setHighlightPosition(null);
 
-          // Calculate tooltip position
-          const tooltipWidth = 320;
-          const windowWidth = window.innerWidth;
-          const windowHeight = window.innerHeight;
-          
-          let newPosition: TooltipPosition = {};
-          
-          const centerX = Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, windowWidth - tooltipWidth - 16));
-          
-          switch (currentStepData.position) {
-            case 'top':
-              newPosition = {
-                bottom: windowHeight - rect.top + 16,
-                left: centerX,
-              };
-              break;
-            case 'bottom':
-              newPosition = {
-                top: rect.bottom + 16,
-                left: centerX,
-              };
-              break;
-            case 'left':
-              newPosition = {
-                top: rect.top + rect.height / 2 - 100,
-                right: windowWidth - rect.left + 16,
-              };
-              break;
-            case 'right':
-              newPosition = {
-                top: rect.top + rect.height / 2 - 100,
-                left: rect.right + 16,
-              };
-              break;
-            default:
-              newPosition = {
-                top: rect.bottom + 16,
-                left: centerX,
-              };
-          }
-          
-          // Ensure tooltip stays within viewport
-          if (newPosition.top !== undefined && newPosition.top + 220 > windowHeight) {
-            // Move tooltip above the element
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let positionTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const measureAndPosition = (element: Element) => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      positionTimer = setTimeout(() => {
+        if (cancelled) return;
+        const rect = element.getBoundingClientRect();
+        const padding = 8;
+
+        setHighlightPosition({
+          top: rect.top - padding,
+          left: rect.left - padding,
+          width: rect.width + padding * 2,
+          height: rect.height + padding * 2,
+        });
+
+        const tooltipWidth = 320;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        let newPosition: TooltipPosition = {};
+
+        const centerX = Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, windowWidth - tooltipWidth - 16));
+
+        switch (currentStepData.position) {
+          case 'top':
             newPosition = { bottom: windowHeight - rect.top + 16, left: centerX };
-          }
-          if (newPosition.bottom !== undefined && newPosition.bottom + 220 > windowHeight) {
+            break;
+          case 'bottom':
             newPosition = { top: rect.bottom + 16, left: centerX };
-          }
-          
-          setTooltipPosition(newPosition);
-        }, 350);
+            break;
+          case 'left':
+            newPosition = { top: rect.top + rect.height / 2 - 100, right: windowWidth - rect.left + 16 };
+            break;
+          case 'right':
+            newPosition = { top: rect.top + rect.height / 2 - 100, left: rect.right + 16 };
+            break;
+          default:
+            newPosition = { top: rect.bottom + 16, left: centerX };
+        }
+
+        if (newPosition.top !== undefined && newPosition.top + 220 > windowHeight) {
+          newPosition = { bottom: windowHeight - rect.top + 16, left: centerX };
+        }
+        if (newPosition.bottom !== undefined && newPosition.bottom + 220 > windowHeight) {
+          newPosition = { top: rect.bottom + 16, left: centerX };
+        }
+
+        setTooltipPosition(newPosition);
+      }, 350);
+    };
+
+    const tryResolve = (attempt: number) => {
+      if (cancelled) return;
+      const element = document.querySelector(currentStepData.targetSelector);
+      if (element) {
+        measureAndPosition(element);
+        return;
+      }
+      // Bug B fix: one short retry (~250ms) to absorb mount-lag of late targets
+      // (e.g. PaymentSourcesSection appearing after custom-source refetch).
+      // If still missing, skip rather than highlight a wrong element.
+      if (attempt === 0) {
+        retryTimer = setTimeout(() => tryResolve(1), 250);
+        return;
+      }
+      if (currentStep < steps.length - 1) {
+        nextStep();
+      } else {
+        skipTutorial();
       }
     };
 
-    // Initial position update
-    const timer = setTimeout(updatePosition, 100);
-    
-    // Update on resize and scroll
-    const handleResize = () => updatePosition();
+    const initialTimer = setTimeout(() => tryResolve(0), 100);
+
+    const handleResize = () => {
+      const element = document.querySelector(currentStepData.targetSelector);
+      if (element) measureAndPosition(element);
+    };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      clearTimeout(timer);
+      cancelled = true;
+      clearTimeout(initialTimer);
+      if (retryTimer) clearTimeout(retryTimer);
+      if (positionTimer) clearTimeout(positionTimer);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isActive, currentStep, currentStepData]);
+  }, [isActive, currentStep, currentStepData, nextStep, skipTutorial, steps.length]);
 
   if (!isActive || !currentStepData) return null;
 
