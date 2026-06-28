@@ -114,8 +114,9 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user?.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    let homeReady = false;
-    let exitedSeen = false;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollAttempts = 0;
+    let started = false;
 
     const passesGate = () => {
       const seenPerUser = localStorage.getItem(seenKeyFor(user.id));
@@ -129,45 +130,61 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       return true;
     };
 
-    const tryStart = (delayMs: number) => {
-      // O3: Tutorial start zahtijeva DA su oba signala stigla — ceremony je
-      // dovršen (`home-ready-for-tutorial`) I guided exit RPC je upisao
-      // localStorage (`guided-home-exited`). Bez parovanja postoji prozor u
-      // kojem home-ready stigne prije nego RPC završi pa gate padne na
-      // `guidedExitedAt`-u i tutorial se nikad ne pokrene.
-      if (!homeReady || !exitedSeen) return;
-      if (!passesGate()) return;
-      if (timer) return;
+    const scheduleStart = (delayMs: number) => {
+      if (started || timer) return;
       timer = setTimeout(() => {
+        started = true;
         setIsActive(true);
         localStorage.setItem(seenKeyFor(user.id), 'true');
       }, delayMs);
     };
 
+    // Bug 1: Ranija iteracija je zahtijevala parovanje dva eventa
+    // (home-ready + guided-exited). Ako bi jedan signal kasnio ili izostao
+    // (npr. exit RPC je upisao localStorage nakon ceremony dispatcha, ili je
+    // guided exit perzistiran u prethodnoj sjednici a ceremony se izvodi
+    // tek sada), tutorial se nikad ne bi pokrenuo.
+    //
+    // Stvarni precizni okidač je `home-ready-for-tutorial` jer ga
+    // `PersonalModeView` dispatcha SAMO ako je ovaj mount stvarno bio u
+    // guided fazi. Postojeći korisnici (status='standard' od starta) ga
+    // nikad ne dobiju, pa je sigurno koristiti ga kao samostalni okidač.
+    // Ako gate padne samo zbog `guided_home_exited_at` (RPC sporiji od
+    // ceremony-ja), kratko poll-aj localStorage (≤2s).
     const onHomeReady = () => {
-      homeReady = true;
-      tryStart(600);
+      if (started) return;
+      if (passesGate()) {
+        scheduleStart(600);
+        return;
+      }
+      // Polling fallback za RPC race
+      if (pollTimer) return;
+      pollAttempts = 0;
+      const tick = () => {
+        pollAttempts += 1;
+        if (passesGate()) {
+          pollTimer = null;
+          scheduleStart(300);
+          return;
+        }
+        if (pollAttempts >= 10) {
+          pollTimer = null;
+          return;
+        }
+        pollTimer = setTimeout(tick, 200);
+      };
+      pollTimer = setTimeout(tick, 200);
     };
-    const onGuidedExited = () => {
-      exitedSeen = true;
-      tryStart(600);
-    };
-
-    // Ako je guided exit već prije perzistiran (npr. cross-device sync ili
-    // refresh nakon prijelaza), ne čekaj event — odmah priznaj signal.
-    if (localStorage.getItem(`guided_home_exited_at:${user.id}`)) {
-      exitedSeen = true;
-    }
 
     window.addEventListener('home-ready-for-tutorial', onHomeReady);
-    window.addEventListener('guided-home-exited', onGuidedExited as EventListener);
 
     return () => {
       window.removeEventListener('home-ready-for-tutorial', onHomeReady);
-      window.removeEventListener('guided-home-exited', onGuidedExited as EventListener);
       if (timer) clearTimeout(timer);
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [user?.id]);
+
 
 
   const startTutorial = useCallback(() => {
