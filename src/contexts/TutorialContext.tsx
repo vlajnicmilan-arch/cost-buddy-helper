@@ -29,7 +29,12 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 const TUTORIAL_STORAGE_KEY = 'app_tutorial_completed';
-const TUTORIAL_SEEN_KEY = 'app_tutorial_seen';
+// Legacy globalni key — zadržan SAMO kao backward-compat anti-repeat čitanje
+// (korisnici koji su ga prije imali ne smiju ponovno dobiti auto-tutorial).
+// Novi upisi idu na per-user key kako isti browser s različitim računima ne bi
+// dijelio "seen" status (Fix 4).
+const TUTORIAL_SEEN_KEY_LEGACY = 'app_tutorial_seen';
+const seenKeyFor = (uid: string) => `app_tutorial_seen:${uid}`;
 
 const DEFAULT_STEPS: TutorialStep[] = [
   {
