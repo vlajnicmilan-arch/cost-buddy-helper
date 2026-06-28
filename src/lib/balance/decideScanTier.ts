@@ -11,14 +11,21 @@
  *
  * Rules (locked):
  *   1. Any manual edit of date/time before save → C3.
- *   2. No fiscal marker (JIR/ZKI) → C3.
- *   3. No explicit "vrijeme izdavanja" label next to the time → C3.
- *   4. `issued_at_iso` not a valid ISO datetime with time component → C3.
- *   5. `issued_at_raw` doesn't contain the HH:MM from `issued_at_iso` → C3
+ *   2. Model has NOT identified a single primary event timestamp with an
+ *      unambiguous label (`issued_at_label_present=false`) → C3.
+ *      Label semantics (accept/reject) live in the parse-receipt prompt;
+ *      this helper only consumes the boolean.
+ *   3. `issued_at_iso` not a valid ISO datetime with time component → C3.
+ *   4. `issued_at_raw` doesn't contain the HH:MM from `issued_at_iso` → C3
  *      (guards against model hallucinating a time it didn't read).
- *   6. `issued_at_iso` outside the sanity range (>1h in the future, or
+ *   5. `issued_at_iso` outside the sanity range (>1h in the future, or
  *      >7 days in the past from `now`) → C3.
- *   7. Otherwise → C1, `eventAt = issued_at_iso`.
+ *   6. Otherwise → C1, `eventAt = issued_at_iso`.
+ *
+ * `fiscal_marker_present` is intentionally NOT part of the decision. It
+ * proves the document is fiscalized but does not prove that the time of
+ * issue was correctly read. It is still carried in ScanSignals for
+ * telemetry/logging only.
  *
  * No partial credit. No "almost C1". Any uncertainty → C3.
  */
