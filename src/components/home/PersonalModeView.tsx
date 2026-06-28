@@ -169,21 +169,35 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     guided.ready &&
     (guided.status === 'zero_data' || guided.status === 'guided');
 
-  // D5 — UI-only payoff gate vezan na live prijelaz 2 -> 3 unosa.
-  // Bez localStorage perzistencije: refresh nakon prijelaza neće reokinuti
-  // payoff jer prev === current count (≥ 3).
-  const [payoffActive, setPayoffActive] = useState(false);
+  // Transition ceremony — uski 3-fazni gate vezan na live prijelaz 2 -> 3 unosa.
+  // Faze: 'idle' | 'lock' (250ms — guided ostaje, treća kockica popunjena, interakcije off)
+  //       → 'payoff' (1400ms — GuidedFinalPayoff cross-fade)
+  //       → 'reveal' (250ms — standard home fade-in)
+  //       → 'idle'  (dispatch 'home-ready-for-tutorial')
+  // Bez localStorage perzistencije; refresh nakon prijelaza ne reokida (prev === current).
+  type CeremonyPhase = 'idle' | 'lock' | 'payoff' | 'reveal';
+  const [phase, setPhase] = useState<CeremonyPhase>('idle');
   const prevCountRef = useRef<number>(props.allExpenses.length);
   useEffect(() => {
     const next = props.allExpenses.length;
     const prev = prevCountRef.current;
-    if (prev < 3 && next >= 3 && !props.isLocalMode && !isBusinessChip) {
-      setPayoffActive(true);
-      const tid = window.setTimeout(() => setPayoffActive(false), 1800);
-      prevCountRef.current = next;
-      return () => window.clearTimeout(tid);
-    }
     prevCountRef.current = next;
+    if (prev < 3 && next >= 3 && !props.isLocalMode && !isBusinessChip) {
+      setPhase('lock');
+      const t1 = window.setTimeout(() => setPhase('payoff'), 250);
+      const t2 = window.setTimeout(() => setPhase('reveal'), 250 + 1400);
+      const t3 = window.setTimeout(() => {
+        setPhase('idle');
+        try {
+          window.dispatchEvent(new CustomEvent('home-ready-for-tutorial'));
+        } catch { /* noop */ }
+      }, 250 + 1400 + 250);
+      return () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+        window.clearTimeout(t3);
+      };
+    }
   }, [props.allExpenses.length, props.isLocalMode, isBusinessChip]);
 
   // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
@@ -205,15 +219,29 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const openOnboardingScan = () =>
     openScan({ businessProfileId: activeBusinessProfileId ?? null });
 
-  // D5 — payoff ekran ima prednost nad guided i standard layoutom.
-  if (payoffActive) {
-    return <GuidedFinalPayoff />;
+  // Tijekom 'payoff' faze prikazujemo isključivo završni ekran (cross-fade
+  // pokriva i ulazak i izlazak preko `AnimatePresence`).
+  if (phase === 'payoff') {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="payoff"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          <GuidedFinalPayoff />
+        </motion.div>
+      </AnimatePresence>
+    );
   }
 
-  // Guided/zero render — STVARNA izolacija od standardnog homea. Bez header-a,
-  // search bara, action gumba, summary kartica, project stripa, issues, lista,
-  // WelcomeChecklist. Samo onboarding entry view + BottomNav.
-  if (showGuidedLayout) {
+  // Guided/zero render — STVARNA izolacija od standardnog homea.
+  // Tijekom 'lock' faze (prijelaz 2 -> 3) ostajemo ovdje kratko da treća kockica
+  // ostane vidljivo popunjena prije payoff cross-fade-a.
+  const stillGuided = showGuidedLayout || phase === 'lock';
+  if (stillGuided) {
     return (
       <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
         <div className="max-w-md mx-auto px-4 py-8">
@@ -223,12 +251,14 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             customPaymentSources={props.customPaymentSources}
             onScan={openOnboardingScan}
             onAddExpense={props.onAddExpense}
+            locking={phase === 'lock'}
           />
         </div>
         <BottomNav />
       </div>
     );
   }
+
 
   const accountBalance = props.customPaymentSources.reduce((sum, s) => {
     if (hiddenIds.has(s.id)) return sum;
