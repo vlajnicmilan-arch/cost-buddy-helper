@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState, type UsageProfile } from '@/contexts/AppStateContext';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import logo from '@/assets/logo.webp';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,16 +13,14 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { logFunnelEvent } from '@/lib/funnelTracking';
 
 import { StepGreeting } from '@/components/onboarding/steps/StepGreeting';
-import { StepReady } from '@/components/onboarding/steps/StepReady';
 
-// Onboarding skraćen na 2 koraka: greeting + ready. usage_profile / income /
-// budget sliders su namjerno izvan ranog flowa — moduli i budžet dolaze kroz
-// app tek nakon prvog stvarnog unosa (guided home). Vidi mem://features/onboarding-strategy.
-const TOTAL_STEPS = 2;
+// Onboarding skraćen na 1 korak: greeting. Po D1: "Spremni smo" ekran je
+// uklonjen — greeting ide ravno u prvi guided event entry preko /home.
+// Modul i budget setup ne ulaze u onboarding (vidi mem://features/onboarding-strategy).
+const TOTAL_STEPS = 1;
 
 const STEP_NAMES: Record<number, string> = {
   1: 'greeting',
-  2: 'ready',
 };
 
 const ATTEMPT_KEY = 'onboarding_attempt_count';
@@ -56,7 +54,7 @@ const Onboarding = () => {
   const { setOnboardingCompleted, setDisplayName: setContextDisplayName, setUsageProfile } = useAppState();
   const { lightTap, successVibration } = useHaptics();
 
-  const [step, setStep] = useState(1);
+  const [step] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const initialName = useMemo(
@@ -65,14 +63,7 @@ const Onboarding = () => {
   );
   const [displayName, setDisplayName] = useState(initialName);
 
-  // Namjerno NE prefillamo iz profiles.display_name — DB trigger handle_new_user
-  // automatski upiše ime iz prefiksa maila (npr. "Hr Akrobat"), pa bi async fetch
-  // prepisao ono što korisnik upravo tipka u Step 1.
-
-  const progress = (step / TOTAL_STEPS) * 100;
-
-
-  // --- Telemetry refs (stabilne kroz cijeli mount) ---
+  // --- Telemetry ---
   const telemetryRef = useRef<{ sessionId: string; attempt: number } | null>(null);
   if (telemetryRef.current === null) {
     telemetryRef.current = initTelemetrySession();
@@ -82,7 +73,6 @@ const Onboarding = () => {
   const outcomeRef = useRef<'completed' | 'skipped' | null>(null);
   const currentStepRef = useRef<number>(1);
 
-  // has_value po koraku — koristi najsvježije vrijednosti
   const hasValueForStepRef = useRef<(s: number) => boolean>(() => false);
   hasValueForStepRef.current = (s: number): boolean => {
     if (s === 1) return displayName.trim().length > 0;
@@ -94,20 +84,18 @@ const Onboarding = () => {
     attempt: telemetryRef.current!.attempt,
   });
 
-  // onboarding_started — jednom po mountu (sessionStorage flag spriječi dvostruko firanje pri remountu unutar iste sesije)
   useEffect(() => {
     try {
       const FIRED_KEY = 'onboarding_started_fired_' + telemetryRef.current!.sessionId;
       if (sessionStorage.getItem(FIRED_KEY) === '1') return;
       sessionStorage.setItem(FIRED_KEY, '1');
     } catch {
-      /* noop — sve-jedno emitiramo */
+      /* noop */
     }
     logFunnelEvent('onboarding_started', { ...baseMeta(), entry: 'mount' }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // step_viewed — pri svakom ulasku u korak (uključujući Back)
   useEffect(() => {
     currentStepRef.current = step;
     stepEnterTimeRef.current = performance.now();
@@ -119,7 +107,6 @@ const Onboarding = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  // unmount → abandoned (samo ako nije bio completed/skipped)
   useEffect(() => {
     return () => {
       if (outcomeRef.current !== null) return;
@@ -144,58 +131,19 @@ const Onboarding = () => {
     }).catch(() => {});
   };
 
-  const goBack = () => {
-    lightTap().catch(() => {});
-    setStep((s) => Math.max(1, s - 1));
-  };
-  const goNext = () => {
-    lightTap().catch(() => {});
-    logStepCompleted(currentStepRef.current);
-    setStep((s) => Math.min(TOTAL_STEPS, s + 1));
-  };
-
-  const handleSkip = () => {
-    outcomeRef.current = 'skipped';
-    logFunnelEvent('onboarding_step_skipped', {
-      ...baseMeta(),
-      step: currentStepRef.current,
-      step_name: STEP_NAMES[currentStepRef.current] ?? String(currentStepRef.current),
-      reason: 'finish_later',
-      time_spent_ms: Math.round(performance.now() - mountTimeRef.current),
-    }).catch(() => {});
-    // Završi kasnije: označi onboarding kao gotov + minimalni defaulti.
-    // usage_profile = 'finance_only' default (modul gate zamijenjen u Settings).
-    setOnboardingCompleted(true);
-    localStorage.setItem('onboarding_completed', 'true');
-    if (displayName.trim()) {
-      localStorage.setItem('user_display_name', displayName.trim());
-      setContextDisplayName(displayName.trim());
-    }
-    const profile: UsageProfile = 'finance_only';
-    setUsageProfile(profile);
-    localStorage.setItem('usage_profile', profile);
-    navigate('/home', { replace: true });
-  };
-
-  const canAdvance = () => {
-    if (step === 1) return displayName.trim().length > 0;
-    return true;
-  };
-
+  const canAdvance = () => displayName.trim().length > 0;
 
   const handleComplete = async () => {
     if (!user) {
       showError(t('errors.generic', 'Došlo je do greške'));
       return;
     }
+    lightTap().catch(() => {});
     setSaving(true);
     try {
       const trimmedName = displayName.trim();
       const profile: UsageProfile = 'finance_only';
 
-      // Atomic RPC — zadrži postojeću signature za backwards-compat.
-      // usage_profile / income / kategorije izašle iz onboardinga; šaljemo
-      // kompatibilne defaulte (vidi mem://features/onboarding-strategy).
       const { error: rpcErr } = await supabase.rpc('complete_onboarding', {
         p_display_name: trimmedName || null,
         p_usage_profile: profile,
@@ -205,8 +153,6 @@ const Onboarding = () => {
       });
       if (rpcErr) throw rpcErr;
 
-
-      // 3) Lokalno stanje
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('usage_profile', profile);
       if (trimmedName) {
@@ -216,7 +162,6 @@ const Onboarding = () => {
       setUsageProfile(profile);
       setOnboardingCompleted(true);
 
-      // 4) Funnel telemetry — označi outcome PRIJE async loga da unmount handler ne ispali abandoned
       outcomeRef.current = 'completed';
       logStepCompleted(currentStepRef.current);
       logFunnelEvent('onboarding_complete', {
@@ -246,85 +191,29 @@ const Onboarding = () => {
           <img src={logo} alt="V&M Balance" className="w-10 h-10 object-contain" />
           <span className="font-semibold text-lg">V&M Balance</span>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Step dots */}
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i + 1 === step
-                    ? 'w-5 bg-primary'
-                    : i + 1 < step
-                      ? 'w-1.5 bg-primary'
-                      : 'w-1.5 bg-muted'
-                }`}
-              />
-            ))}
-          </div>
-          {step < TOTAL_STEPS && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSkip}
-              className="text-xs h-8"
-              disabled={saving}
-            >
-              {t('onboardingV3.finishLater', 'Završi kasnije')}
-            </Button>
-          )}
-        </div>
       </header>
 
-      {/* Progress (slim, ispod headera) */}
-      <div className="h-0.5 bg-muted">
-        <motion.div
-          className="h-full bg-primary"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
-
-      {/* Content — centriran, bez vertikalnog scrolla na malim mobilnim viewportima. */}
+      {/* Content — centriran */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-0">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <StepGreeting displayName={displayName} onChange={setDisplayName} />
-          )}
-          {step === 2 && (
-            <StepReady displayName={displayName} />
           )}
         </AnimatePresence>
       </div>
 
       {/* Footer */}
       <footer className="p-4 border-t bg-background/80 backdrop-blur-sm safe-area-bottom">
-        <div className="max-w-md mx-auto flex gap-3">
-          {step > 1 && (
-            <Button variant="outline" onClick={goBack} className="gap-2" disabled={saving}>
-              <ChevronLeft className="w-4 h-4" />
-              {t('common.back', 'Natrag')}
-            </Button>
-          )}
+        <div className="max-w-md mx-auto">
           <Button
-            onClick={step === TOTAL_STEPS ? handleComplete : goNext}
-            className="flex-1 gap-2 min-h-[44px]"
+            onClick={handleComplete}
+            className="w-full gap-2 min-h-[44px]"
             disabled={saving || !canAdvance()}
           >
-            {step === TOTAL_STEPS ? (
-              <>
-                <Sparkles className="w-4 h-4" />
-                {saving
-                  ? t('onboardingV3.saving', 'Spremam...')
-                  : t('onboardingV3.finish', 'Uđi u aplikaciju')}
-              </>
-            ) : (
-              <>
-                {t('common.next', 'Dalje')}
-                <ChevronRight className="w-4 h-4" />
-              </>
-            )}
+            <Sparkles className="w-4 h-4" />
+            {saving
+              ? t('onboardingV3.saving', 'Spremam...')
+              : t('onboardingV3.startCta', 'Krenimo')}
           </Button>
         </div>
       </footer>
