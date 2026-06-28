@@ -114,6 +114,15 @@ export function useGuidedMode(expenseCount: number): UseGuidedModeResult {
         try {
           localStorage.setItem(`${CACHE_KEY_PREFIX}${user.id}`, ts);
         } catch { /* noop */ }
+        // Obavijesti in-process listenere (TutorialContext) da se guided faza
+        // upravo zatvorila. `storage` event ne okida unutar istog taba, pa
+        // koristimo custom event. Idempotentno — guard `if (exitedAt) return`
+        // gore osigurava jednokratnu emisiju po sesiji.
+        try {
+          window.dispatchEvent(new CustomEvent('guided-home-exited', {
+            detail: { userId: user.id, ts, reason },
+          }));
+        } catch { /* noop */ }
         logFunnelEvent('guided_home_exited', {
           reason,
           expense_count: expenseCount,
