@@ -167,6 +167,15 @@ export const AddExpenseDialog = ({
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const multiCameraInputRef = useRef<HTMLInputElement>(null);
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
+  // Val 4 — strukturirani signali iz zadnjeg scana (samo za decideScanTier).
+  const scanSignalsRef = useRef<{
+    issued_at_iso: string | null;
+    issued_at_raw: string | null;
+    issued_at_label_present: boolean;
+    fiscal_marker_present: boolean;
+  } | null>(null);
+  // Val 4 — postaje true ako korisnik ručno promijeni datum/vrijeme u review koraku.
+  const userEditedDateOrTimeRef = useRef(false);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
