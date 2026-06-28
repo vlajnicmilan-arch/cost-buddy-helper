@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface TutorialStep {
   id: string;
@@ -92,20 +93,30 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
     return t(step.descriptionKey);
   }, [t]);
 
-  // Auto-start tutorial for new users (after onboarding)
+  const { user } = useAuth();
+
+  // Auto-start tutorial only AFTER the user has exited the guided onboarding
+  // phase (>= GUIDED_EXPENSE_THRESHOLD events). Source of truth is the
+  // localStorage cache key `guided_home_exited_at:<uid>` written by
+  // `useGuidedMode` when the server-side RPC `mark_guided_home_exited` runs.
+  // No retroactive auto-start for existing users without the cache key —
+  // they can launch the tutorial manually from Settings via `startTutorial`.
   useEffect(() => {
+    if (!user?.id) return;
     const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
+    if (tutorialSeen) return;
     const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
+    if (!onboardingCompleted) return;
+    const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
+    if (!guidedExitedAt) return;
 
-    if (onboardingCompleted && !tutorialSeen) {
-      const timer = setTimeout(() => {
-        setIsActive(true);
-        localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
-      }, 4000);
+    const timer = setTimeout(() => {
+      setIsActive(true);
+      localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+    }, 4000);
 
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    return () => clearTimeout(timer);
+  }, [user?.id]);
 
   const startTutorial = useCallback(() => {
     setCurrentStep(0);

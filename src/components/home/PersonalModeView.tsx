@@ -16,8 +16,7 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 
 import { TrialBanner } from '@/components/TrialBanner';
-import { ZeroDataQuietState } from '@/components/home/ZeroDataQuietState';
-import { GuidedHomeView } from '@/components/home/GuidedHomeView';
+import { GuidedEntryView } from '@/components/onboarding/GuidedEntryView';
 import { useGuidedMode } from '@/hooks/useGuidedMode';
 
 import { AIInsightBubble } from '@/components/AIInsightBubble';
@@ -150,15 +149,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const projectsHidden = !projectsModuleEnabled;
   const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
-  const { registerHandlers, openManualAdd } = useReceiptScan();
+  const { registerHandlers, openManualAdd, openScan } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const { formatAmount } = useCurrency();
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
 
   // Guided home — server-side per-user signal + broj stvarnih unosa.
-  // Standardni layout zamjenjuje se ZeroDataQuietState / GuidedHomeView dok
-  // korisnik ne dosegne prag ili eksplicitno ne dismissa.
+  // Standardni layout zamjenjuje se jedinstvenim `GuidedEntryView`-om kroz
+  // cijelu guided fazu (0..THRESHOLD-1). Auto-exit (>= THRESHOLD) prebacuje
+  // na standardni home.
   const guided = useGuidedMode(props.allExpenses.length);
   const showGuidedLayout =
     !props.isLocalMode &&
@@ -178,31 +178,26 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     });
   }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
-  // Stvaran add-expense entry — identičan onome iz ManualAddTriggerButton-a u
-  // headeru. Otvara globalni AddExpenseDialog u manual modu (preživljava
-  // Android camera lifecycle). Ne otvarati `TransactionListDialog` (browse).
-  const openFirstExpense = () =>
+  // Onboarding entrypoint — koristi isti globalni scan/manual flow kao header,
+  // pa preživljava Android camera lifecycle i ne duplicira logiku.
+  const openOnboardingScan = () =>
+    openScan({ businessProfileId: activeBusinessProfileId ?? null });
+  const openOnboardingManual = () =>
     openManualAdd({ businessProfileId: activeBusinessProfileId ?? null });
 
   // Guided/zero render — STVARNA izolacija od standardnog homea. Bez header-a,
   // search bara, action gumba, summary kartica, project stripa, issues, lista,
-  // WelcomeChecklist. Samo quiet/guided view + BottomNav (+ confetti overlay).
+  // WelcomeChecklist. Samo onboarding entry view + BottomNav.
   if (showGuidedLayout) {
     return (
       <div className="min-h-dvh bg-background overflow-x-hidden pb-20">
         <div className="max-w-md mx-auto px-4 py-8">
-          {guided.status === 'zero_data' ? (
-            <ZeroDataQuietState
-              displayName={props.displayName}
-              onAddExpense={openFirstExpense}
-            />
-          ) : (
-            <GuidedHomeView
-              displayName={props.displayName}
-              allExpenses={props.allExpenses}
-              onAddExpense={openFirstExpense}
-            />
-          )}
+          <GuidedEntryView
+            displayName={props.displayName}
+            allExpenses={props.allExpenses}
+            onScan={openOnboardingScan}
+            onManualAdd={openOnboardingManual}
+          />
         </div>
         <BottomNav />
       </div>
