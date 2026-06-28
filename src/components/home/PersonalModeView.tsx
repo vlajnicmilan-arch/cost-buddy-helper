@@ -162,11 +162,18 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   // Standardni layout zamjenjuje se jedinstvenim `GuidedEntryView`-om kroz
   // cijelu guided fazu (0..THRESHOLD-1). Auto-exit (>= THRESHOLD) prebacuje
   // na standardni home, uz jednokratni `GuidedFinalPayoff` (D5).
+  //
+  // Fix 2 (existing-user leak): `showGuidedLayout` mora čekati i da je
+  // expense fetch završio. Inače postojeći korisnik tijekom hydrationa kratko
+  // izgleda kao `expenseCount=0` (status === 'zero_data') pa bi guided layout
+  // bljesnuo iako je `guided_home_exited_at` već postavljen ili će count
+  // odmah skočiti iznad threshold-a.
   const guided = useGuidedMode(props.allExpenses.length);
   const showGuidedLayout =
     !props.isLocalMode &&
     !isBusinessChip &&
     guided.ready &&
+    !props.expensesLoading &&
     (guided.status === 'zero_data' || guided.status === 'guided');
 
   // Transition ceremony — uski 3-fazni gate vezan na live prijelaz 2 -> 3 unosa.
@@ -175,14 +182,34 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   //       → 'reveal' (250ms — standard home fade-in)
   //       → 'idle'  (dispatch 'home-ready-for-tutorial')
   // Bez localStorage perzistencije; refresh nakon prijelaza ne reokida (prev === current).
+  //
+  // Fix 1 (existing-user leak): ceremony se NE smije pokrenuti samo zato što
+  // je `allExpenses.length` async skočio s 0 na >=3 tijekom hydrationa
+  // postojećeg korisnika. `guidedSessionActiveRef` postaje true isključivo
+  // kad je `showGuidedLayout` stvarno bio aktivan u ovoj sesiji (potvrđena
+  // live guided faza). Bez tog flag-a skok count-a se ignorira.
   type CeremonyPhase = 'idle' | 'lock' | 'payoff' | 'reveal';
   const [phase, setPhase] = useState<CeremonyPhase>('idle');
   const prevCountRef = useRef<number>(props.allExpenses.length);
+  const guidedSessionActiveRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (showGuidedLayout) {
+      guidedSessionActiveRef.current = true;
+    }
+  }, [showGuidedLayout]);
+
   useEffect(() => {
     const next = props.allExpenses.length;
     const prev = prevCountRef.current;
     prevCountRef.current = next;
-    if (prev < 3 && next >= 3 && !props.isLocalMode && !isBusinessChip) {
+    if (
+      prev < 3 &&
+      next >= 3 &&
+      !props.isLocalMode &&
+      !isBusinessChip &&
+      guidedSessionActiveRef.current
+    ) {
       setPhase('lock');
       const t1 = window.setTimeout(() => setPhase('payoff'), 250);
       const t2 = window.setTimeout(() => setPhase('reveal'), 250 + 1400);
