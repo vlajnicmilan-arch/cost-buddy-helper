@@ -100,23 +100,26 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
 
   const { user } = useAuth();
 
-  // Auto-start tutorial tek kad je full home stvarno spreman za coachmark targete.
-  // Trigger je `home-ready-for-tutorial` CustomEvent koji dispatcha
-  // `PersonalModeView` na završetku transition ceremony-ja (lock → payoff →
-  // reveal). Time je trigger odvojen od trenutka spremanja 3. unosa i od
-  // `guided_home_exited_at` timestampa.
+  // Auto-start tutorial isključivo nakon potvrđene live guided ceremony-ja.
+  // Trigger je `home-ready-for-tutorial` CustomEvent koji `PersonalModeView`
+  // dispatcha SAMO ako je ovaj mount stvarno bio u guided fazi
+  // (`guidedSessionActiveRef`). Time postojeći korisnik kojem se transakcije
+  // async učitaju s 0 na ≥3 ne dobiva tutorial (Fix 1+4).
   //
-  // Fallback: korisnici koji su iz prošlih sesija već prošli guided fazu
-  // (`guided_home_exited_at:<uid>` cache postoji) auto-startaju tutorial pri
-  // mountu — nikad neće dobiti live `home-ready-for-tutorial` event.
-  // `TUTORIAL_SEEN_KEY` osigurava jednokratan auto-start.
+  // Mount fallback iz prethodne iteracije je uklonjen. Per-user "seen" key
+  // (`app_tutorial_seen:<uid>`) sprječava da isti browser s različitim
+  // računima dijeli "seen" status. Legacy globalni key se i dalje čita kao
+  // backward-compat tako da korisnici koji su tutorial već vidjeli ne dobiju
+  // ponovno auto-start.
   useEffect(() => {
     if (!user?.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const passesGate = () => {
-      const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
-      if (tutorialSeen) return false;
+      const seenPerUser = localStorage.getItem(seenKeyFor(user.id));
+      if (seenPerUser) return false;
+      const seenLegacy = localStorage.getItem(TUTORIAL_SEEN_KEY_LEGACY);
+      if (seenLegacy) return false;
       const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
       if (!onboardingCompleted) return false;
       const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
@@ -129,13 +132,10 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       if (timer) return;
       timer = setTimeout(() => {
         setIsActive(true);
-        localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+        localStorage.setItem(seenKeyFor(user.id), 'true');
       }, delayMs);
     };
 
-    // Mount fallback za stale userse — bez ceremony eventa, kratak delay.
-    scheduleStart(600);
-    // Live trigger nakon završene transition ceremonije.
     const onHomeReady = () => scheduleStart(600);
     window.addEventListener('home-ready-for-tutorial', onHomeReady);
 
@@ -181,10 +181,11 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
 
   const resetTutorial = useCallback(() => {
     localStorage.removeItem(TUTORIAL_STORAGE_KEY);
-    localStorage.removeItem(TUTORIAL_SEEN_KEY);
+    localStorage.removeItem(TUTORIAL_SEEN_KEY_LEGACY);
+    if (user?.id) localStorage.removeItem(seenKeyFor(user.id));
     setHasCompletedTutorial(false);
     setCurrentStep(0);
-  }, []);
+  }, [user?.id]);
 
   return (
     <TutorialContext.Provider value={{
