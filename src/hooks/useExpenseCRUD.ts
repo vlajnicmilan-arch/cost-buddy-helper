@@ -26,6 +26,7 @@ import {
   PaymentSourceNormalizeError,
   type NormalizeContext,
 } from '@/lib/paymentSource/normalize';
+import { normalizeExpensePayload, type WriterIntent } from '@/lib/balance/writerIntent';
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
