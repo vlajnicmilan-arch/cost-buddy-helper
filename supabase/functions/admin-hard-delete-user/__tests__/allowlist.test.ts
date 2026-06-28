@@ -2,7 +2,7 @@
 // Pure logic — no network, no Supabase client.
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { isEmailAllowed } from "../index.ts";
+import { isEmailAllowed } from "../allowlist.ts";
 
 Deno.test("allows explicit email vinkabalance@gmail.com", () => {
   assertEquals(isEmailAllowed("vinkabalance@gmail.com"), true);

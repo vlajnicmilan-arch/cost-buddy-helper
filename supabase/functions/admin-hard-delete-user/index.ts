@@ -12,6 +12,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { purgeUser } from "../_shared/purgeUser.ts";
 import type { PurgeResult } from "../_shared/purgeUser.types.ts";
+import { isEmailAllowed } from "./allowlist.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
