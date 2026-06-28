@@ -41,10 +41,10 @@ export const StepReady = ({ displayName }: Props) => {
             ? t('onboardingV3.ready.titleNamed', { name, defaultValue: 'Spremni smo, {{name}}.' })
             : t('onboardingV3.ready.title', 'Spremni smo.')}
         </h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-base text-muted-foreground leading-relaxed">
           {t(
             'onboardingV3.ready.subtitle',
-            'Ostalo namještamo zajedno dok koristiš aplikaciju. Krenimo s prvim troškom.',
+            'Krenimo s prvim događajem.',
           )}
         </p>
       </div>

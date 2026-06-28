@@ -36,16 +36,10 @@ export const StepGreeting = ({ displayName, onChange }: Props) => {
             : t('onboardingV3.greeting.title', 'Bok!')}
         </h1>
 
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {t(
-            'onboardingV3.greeting.intro',
-            'Pomoći ću ti otkriti gdje ti odlazi novac i predlagati kako njime efikasnije upravljati.',
-          )}
+        <p className="text-base text-muted-foreground leading-relaxed">
+          {t('onboardingV3.greeting.brevityHint', 'Samo jedno pitanje pa krećemo.')}
         </p>
-        <p className="text-xs text-muted-foreground/80">
-          {t('onboardingV3.greeting.brevityHint', 'Samo jedno pitanje i krećemo.')}
-        </p>
-        <p className="text-sm font-medium">
+        <p className="text-base font-medium">
           {t('onboardingV3.greeting.askName', 'Kako da te zovem?')}
         </p>
       </div>

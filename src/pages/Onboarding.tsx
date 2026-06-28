@@ -286,8 +286,8 @@ const Onboarding = () => {
         />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-start p-4 overflow-y-auto">
+      {/* Content — centriran, bez vertikalnog scrolla na malim mobilnim viewportima. */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-0">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <StepGreeting displayName={displayName} onChange={setDisplayName} />
