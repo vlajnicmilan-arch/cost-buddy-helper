@@ -522,6 +522,13 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         description: receiptData.description,
         category: receiptData.category,
         date: receiptData.date || null,
+        // Val 4 — strukturirani signali za deterministički scan-C1 helper.
+        // Sami signali; tier odluku donosi klijent kod (decideScanTier).
+        issued_at_iso: typeof receiptData.issued_at_iso === 'string' ? receiptData.issued_at_iso : null,
+        issued_at_raw: typeof receiptData.issued_at_raw === 'string' ? receiptData.issued_at_raw : null,
+        issued_at_label_present: receiptData.issued_at_label_present === true,
+        fiscal_marker_present: receiptData.fiscal_marker_present === true,
+        jir_value: typeof receiptData.jir_value === 'string' ? receiptData.jir_value : null,
         payment_method: receiptData.payment_method || null,
         transaction_type: receiptData.transaction_type || 'expense',
         transfer_destination_name: receiptData.transfer_destination_name || null,
