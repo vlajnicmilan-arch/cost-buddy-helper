@@ -2162,7 +2162,9 @@
       "sourceNameLabel": "Name",
       "sourceNamePlaceholder": "e.g. Cash",
       "sourceContinue": "Continue",
-      "defaultSourceName": "Cash"
+      "defaultSourceName": "Cash",
+      "optionCash": "Cash",
+      "optionCard": "Card"
     },
     "payoff": {
       "title": "Nice.",

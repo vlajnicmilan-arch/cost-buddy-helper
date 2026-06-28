@@ -2162,7 +2162,9 @@
       "sourceNameLabel": "Name",
       "sourceNamePlaceholder": "z. B. Bargeld",
       "sourceContinue": "Weiter",
-      "defaultSourceName": "Bargeld"
+      "defaultSourceName": "Bargeld",
+      "optionCash": "Bargeld",
+      "optionCard": "Karte"
     },
     "payoff": {
       "title": "Super.",

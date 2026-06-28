@@ -2167,7 +2167,9 @@
       "sourceNameLabel": "Naziv",
       "sourceNamePlaceholder": "npr. Gotovina",
       "sourceContinue": "Nastavi",
-      "defaultSourceName": "Gotovina"
+      "defaultSourceName": "Gotovina",
+      "optionCash": "Gotovina",
+      "optionCard": "Kartica"
     },
     "payoff": {
       "title": "Super.",
