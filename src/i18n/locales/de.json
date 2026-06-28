@@ -1586,6 +1586,7 @@
     "addNew": "Neue Kategorie hinzufügen"
   },
   "paymentSources": {
+    "correctionHelper": "Die Korrektur gilt für heute. Neue Einträge werden ab morgen gezählt.",
     "cash": "Bargeld",
     "bank": "Bank",
     "revolut": "Revolut",
