@@ -240,33 +240,36 @@ export const useExpenseCRUD = ({
           bankLinkedSourceIds,
         });
 
+        // Val 2: foundation gate. Default intent strips precision fields,
+        // letting the Val 1 trigger derive event_at from `date` as C3.
+        const insertPayload = normalizeExpensePayload({
+          user_id: user.id,
+          amount: normalizedExpense.amount,
+          description: normalizedExpense.description,
+          category: normalizedExpense.category,
+          type: normalizedExpense.type,
+          date: normalizedExpense.date.toISOString(),
+          payment_source: canonicalPaymentSource,
+          payment_source_card_id: normalizedExpense.payment_source_card_id || null,
+          receipt_url: normalizedExpense.receipt_url,
+          merchant_name: normalizedExpense.merchant_name,
+          ai_extracted: normalizedExpense.ai_extracted,
+          income_source_id: normalizedExpense.income_source_id,
+          project_id: normalizedExpense.project_id || null,
+          budget_id: normalizedExpense.budget_id || null,
+          note: normalizedExpense.note || null,
+          expense_nature: normalizedExpense.expense_nature || null,
+          status: isPendingMemberTransaction ? 'pending' : 'approved',
+          submitted_by: isPendingMemberTransaction ? user.id : null,
+          business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
+          currency: (normalizedExpense as any).currency || null,
+          bank_match_status: bankMatchStatus,
+          recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
+        }, 'default');
+
         const { data, error } = await supabase
           .from('expenses')
-          .insert({
-            user_id: user.id,
-            amount: normalizedExpense.amount,
-            description: normalizedExpense.description,
-            category: normalizedExpense.category,
-            type: normalizedExpense.type,
-            date: normalizedExpense.date.toISOString(),
-            payment_source: canonicalPaymentSource,
-            payment_source_card_id: normalizedExpense.payment_source_card_id || null,
-            receipt_url: normalizedExpense.receipt_url,
-            merchant_name: normalizedExpense.merchant_name,
-            ai_extracted: normalizedExpense.ai_extracted,
-            income_source_id: normalizedExpense.income_source_id,
-            project_id: normalizedExpense.project_id || null,
-            budget_id: normalizedExpense.budget_id || null,
-            note: normalizedExpense.note || null,
-            expense_nature: normalizedExpense.expense_nature || null,
-            status: isPendingMemberTransaction ? 'pending' : 'approved',
-            submitted_by: isPendingMemberTransaction ? user.id : null,
-            business_profile_id: (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null,
-            
-            currency: (normalizedExpense as any).currency || null,
-            bank_match_status: bankMatchStatus,
-            recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
-          })
+          .insert(insertPayload as any)
           .select()
           .single();
 
