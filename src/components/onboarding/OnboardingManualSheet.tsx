@@ -114,7 +114,7 @@ export const OnboardingManualSheet = ({
         description: '',
         date: new Date(),
         type,
-        paymentSource: `custom:${sourceId}` as any,
+        payment_source: `custom:${sourceId}` as any,
         currency: currencyCode,
       } as any;
       await onAddExpense(payload);
