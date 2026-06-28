@@ -159,13 +159,30 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   // Guided home — server-side per-user signal + broj stvarnih unosa.
   // Standardni layout zamjenjuje se jedinstvenim `GuidedEntryView`-om kroz
   // cijelu guided fazu (0..THRESHOLD-1). Auto-exit (>= THRESHOLD) prebacuje
-  // na standardni home.
+  // na standardni home, uz jednokratni `GuidedFinalPayoff` (D5).
   const guided = useGuidedMode(props.allExpenses.length);
   const showGuidedLayout =
     !props.isLocalMode &&
     !isBusinessChip &&
     guided.ready &&
     (guided.status === 'zero_data' || guided.status === 'guided');
+
+  // D5 — UI-only payoff gate vezan na live prijelaz 2 -> 3 unosa.
+  // Bez localStorage perzistencije: refresh nakon prijelaza neće reokinuti
+  // payoff jer prev === current count (≥ 3).
+  const [payoffActive, setPayoffActive] = useState(false);
+  const prevCountRef = useRef<number>(props.allExpenses.length);
+  useEffect(() => {
+    const next = props.allExpenses.length;
+    const prev = prevCountRef.current;
+    if (prev < 3 && next >= 3 && !props.isLocalMode && !isBusinessChip) {
+      setPayoffActive(true);
+      const tid = window.setTimeout(() => setPayoffActive(false), 1800);
+      prevCountRef.current = next;
+      return () => window.clearTimeout(tid);
+    }
+    prevCountRef.current = next;
+  }, [props.allExpenses.length, props.isLocalMode, isBusinessChip]);
 
   // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
   useDashboardScrollDepth(v2);
@@ -179,12 +196,17 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     });
   }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
-  // Onboarding entrypoint — koristi isti globalni scan/manual flow kao header,
-  // pa preživljava Android camera lifecycle i ne duplicira logiku.
+  // Onboarding scan entrypoint — koristi globalni scan flow (preživljava
+  // Android camera lifecycle, ne duplicira logiku). Manual onboarding entry
+  // ide kroz `OnboardingManualSheet` unutar `GuidedEntryView` (D3) — ne ide
+  // kroz `openManualAdd` da se standardni `AddExpenseDialog` ne aktivira.
   const openOnboardingScan = () =>
     openScan({ businessProfileId: activeBusinessProfileId ?? null });
-  const openOnboardingManual = () =>
-    openManualAdd({ businessProfileId: activeBusinessProfileId ?? null });
+
+  // D5 — payoff ekran ima prednost nad guided i standard layoutom.
+  if (payoffActive) {
+    return <GuidedFinalPayoff />;
+  }
 
   // Guided/zero render — STVARNA izolacija od standardnog homea. Bez header-a,
   // search bara, action gumba, summary kartica, project stripa, issues, lista,
@@ -196,8 +218,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           <GuidedEntryView
             displayName={props.displayName}
             allExpenses={props.allExpenses}
+            customPaymentSources={props.customPaymentSources}
             onScan={openOnboardingScan}
-            onManualAdd={openOnboardingManual}
+            onAddExpense={props.onAddExpense}
           />
         </div>
         <BottomNav />
