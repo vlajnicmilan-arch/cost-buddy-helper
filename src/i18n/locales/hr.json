@@ -4070,6 +4070,19 @@
     "readonlyFooter": "Pregled samo za čitanje. Powered by V&M Balance."
   },
   "admin": {
+    "hardDelete": {
+      "menuLabel": "Trajno obriši (test)",
+      "dialogTitle": "Trajno obriši korisnika",
+      "dialogWarning": "Ova akcija trajno briše korisnika i sve podatke. Nije reverzibilno.",
+      "confirmInputLabel": "Utipkaj točan email za potvrdu",
+      "confirmCta": "Trajno obriši",
+      "cancel": "Odustani",
+      "successToast": "Korisnik trajno obrisan",
+      "blockedKrugToast": "Korisnik posjeduje krug s drugim članovima. Raspusti krug ručno prije brisanja.",
+      "blockedGenericToast": "Brisanje blokirano",
+      "errorToast": "Brisanje nije uspjelo",
+      "notInAllowlistTooltip": "Email nije u allowlisti za hard delete"
+    },
     "noFilterResults": "Nema rezultata za zadane filtere",
     "attempts": "Pokušaja",
     "errors": "Greške",
