@@ -111,7 +111,12 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
         if (difference !== 0) {
           const correctionType = difference > 0 ? 'income' : 'expense';
           /* eslint-disable no-restricted-syntax -- balance-correction expense: locally-built canonical custom:UUID */
-          const { error: insertError } = await supabase.from('expenses').insert({
+          // Val 2: balance correction is the first and only real C1 producer.
+          // The system observed the precise moment the user submitted the
+          // correction, so we send `event_at = now()` with C1 confidence
+          // through the `system_precise` writer intent gate.
+          const { normalizeExpensePayload } = await import('@/lib/balance/writerIntent');
+          const correctionPayload = normalizeExpensePayload({
             user_id: user.id,
             amount: Math.abs(difference),
             description: `Korekcija salda — ${balanceCorrectionSource.name}`,
@@ -121,7 +126,10 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
             payment_source: coerceCanonicalShape(`custom:${sourceId}`),
             note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
             expense_nature: 'correction',
-          });
+            event_at: nowIso,
+            time_confidence: 'C1' as const,
+          }, 'system_precise');
+          const { error: insertError } = await supabase.from('expenses').insert(correctionPayload as any);
           /* eslint-enable no-restricted-syntax */
 
           if (insertError) throw insertError;
