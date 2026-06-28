@@ -232,12 +232,20 @@ KORAK 3: Ako nema podudaranja brojeva
    - VAŽNO: Uvijek vrati u formatu YYYY-MM-DD
 
 3a. STRUKTURIRANO VRIJEME IZDAVANJA (Val 4 — precizno vrijeme)
-   - Posebno traži oznaku „Vrijeme izdavanja", „Datum/vrijeme", „Izdano", „Vrijeme:", „Time:", „Time of issue"
+   - Cilj: prepoznati JEDNO primarno vrijeme događaja (vrijeme izdavanja računa).
    - Vrati issued_at_raw kao DOSLOVAN tekst kako stoji na slici (npr. "20.01.2025 15:30:42")
    - Vrati issued_at_iso kao ISO-8601 datetime s vremenom i HR offsetom (npr. "2025-01-20T15:30:42+01:00" zimi, "+02:00" ljeti). Ako nemaš pouzdano vrijeme → null
-   - Vrati issued_at_label_present: true SAMO ako uz vrijeme STVARNO piše jedna od navedenih oznaka identifikacije vremena izdavanja. NIKAD true ako je vrijeme samo „neko vrijeme na računu" (npr. vrijeme kartične autorizacije bez labela)
-   - NE pogađaj. Ako oznake nema, label_present = false i iso ostaje null
-   - NIKAD ne miješaj vrijeme kartične autorizacije, vrijeme printa ili POS timestamp s vremenom izdavanja
+   - issued_at_label_present: true SAMO ako uz to vrijeme stoji JASAN label koji nedvosmisleno označava PRIMARNO vrijeme događaja izdavanja. Prihvatljivi labeli (primjeri, ne iscrpno):
+       HR: „Vrijeme izdavanja", „Datum/vrijeme", „Datum i vrijeme", „Izdano", „Vrijeme:"
+       DE: „Ausgestellt", „Datum/Uhrzeit", „Ausstellungszeit"
+       EN: „Issued at", „Date/Time", „Time of issue"
+   - issued_at_label_present: false ako:
+       • račun ima više različitih vremena bez jasnog prioriteta (npr. „Vrijeme dolaska" + „Vrijeme naplate") i nije nedvosmisleno koje je glavno
+       • label označava nešto što NIJE vrijeme događaja izdavanja: „Vrijeme tiskanja", „Kopija", „Vrijeme smjene", „Sat blagajne", vrijeme kartične autorizacije, POS print timestamp
+       • vrijeme je samo „neki HH:MM negdje na računu" bez labela
+   - NE pogađaj. Ako nisi siguran je li to baš primarno vrijeme događaja → label_present=false i iso=null.
+   - NIKAD ne miješaj vrijeme kartične autorizacije, vrijeme printa ili POS timestamp s vremenom izdavanja.
+
 
 3b. FISKALNI MARKER (Val 4)
    - fiscal_marker_present: true SAMO ako na računu vidiš JIR (Jedinstveni Identifikator Računa) ili ZKI (Zaštitni Kod Izdavatelja) ili izričito „Račun fiskaliziran"/„Fiskalizirano"
