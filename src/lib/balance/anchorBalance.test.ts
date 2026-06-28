@@ -172,4 +172,31 @@ describe("Rule B — anchor cuts the whole calendar day", () => {
     expect(sameDay).toBe(100);
     expect(nextDay).toBe(300);
   });
+
+  it("8. Val 2: a C1 correction row with a precise event_at does NOT change Rule B semantics", () => {
+    // Val 2 introduces precision foundation (event_at + time_confidence),
+    // but does NOT change the anchor execution model. A correction row is
+    // STILL never counted toward the post-anchor sum, regardless of its
+    // confidence tier or the precision of its event_at. The balance engine
+    // pass that consumes event_at is a separate, later wave.
+    const balance = computeAnchoredBalance({
+      sourceId: SRC,
+      anchorDate: ANCHOR_DATE,
+      anchorBalance: ANCHOR_BALANCE,
+      expenses: [
+        // High-precision C1 correction landing AFTER the anchor day.
+        // If anchor semantics had been silently changed to consume
+        // event_at, this row would skew the result. It must not.
+        row({
+          date: "2026-06-25T10:00:00.000Z",
+          type: "income",
+          amount: 9999,
+          expenseNature: "correction",
+        }),
+        // Regular post-anchor income that DOES count.
+        row({ date: "2026-06-25T11:00:00.000Z", type: "income", amount: 25 }),
+      ],
+    });
+    expect(balance).toBe(125);
+  });
 });
