@@ -466,6 +466,17 @@ export const UsersTab = ({
                           <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
                         </Button>
                       )}
+                      {isEmailHardDeletable(u.email) ? (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setHardDeleteTarget({ id: u.id, email: u.email ?? '' })}
+                          disabled={actionLoading === u.id}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          {t('admin.hardDelete.menuLabel', 'Trajno obriši (test)')}
+                        </Button>
+                      ) : null}
                     </div>
                   )}
                 </div>
