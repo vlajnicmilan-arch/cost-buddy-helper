@@ -56,6 +56,13 @@ interface ScannedDataPreviewProps {
   isSaving: boolean;
   onAccept: () => void;
   onReject: () => void;
+  /**
+   * Val 4 — pozove se kad korisnik ručno promijeni datum (ili vrijeme) u
+   * preview koraku. Tier-odluka u write-pathu mora zbog toga pasti na C3.
+   * Optional: stari pozivi ne moraju ga proslijediti — odsutnost se tretira
+   * kao da edit nije zabilježen (i scan-C1 ostaje moguć).
+   */
+  onDateOrTimeEdited?: () => void;
 }
 
 export const ScannedDataPreview = ({
