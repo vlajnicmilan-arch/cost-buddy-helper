@@ -242,7 +242,17 @@ export const useExpenseCRUD = ({
 
         // Val 2: foundation gate. Default intent strips precision fields,
         // letting the Val 1 trigger derive event_at from `date` as C3.
-        const insertPayload = normalizeExpensePayload({
+        //
+        // Val 4: scan-C1 producent. Ako write-path proslijedi `precision`
+        // objekt (samo decideScanTier ga dodjeljuje), prebacujemo se na
+        // `system_precise` intent koji propušta event_at + time_confidence
+        // i postavlja user_edited_event_at=false. Bilo koji drugi writer
+        // (manual, recurring, import) NEMA precision i ostaje na 'default'.
+        const precision = (normalizedExpense as any).precision as
+          | { event_at: string; time_confidence: 'C1' | 'C2' | 'C3' | 'C4' }
+          | undefined;
+        const writerIntent: WriterIntent = precision ? 'system_precise' : 'default';
+        const basePayload = {
           user_id: user.id,
           amount: normalizedExpense.amount,
           description: normalizedExpense.description,
@@ -265,7 +275,9 @@ export const useExpenseCRUD = ({
           currency: (normalizedExpense as any).currency || null,
           bank_match_status: bankMatchStatus,
           recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
-        }, 'default');
+          ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
+        };
+        const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
 
         const { data, error } = await supabase
           .from('expenses')

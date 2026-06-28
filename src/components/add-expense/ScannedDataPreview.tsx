@@ -56,6 +56,13 @@ interface ScannedDataPreviewProps {
   isSaving: boolean;
   onAccept: () => void;
   onReject: () => void;
+  /**
+   * Val 4 — pozove se kad korisnik ručno promijeni datum (ili vrijeme) u
+   * preview koraku. Tier-odluka u write-pathu mora zbog toga pasti na C3.
+   * Optional: stari pozivi ne moraju ga proslijediti — odsutnost se tretira
+   * kao da edit nije zabilježen (i scan-C1 ostaje moguć).
+   */
+  onDateOrTimeEdited?: () => void;
 }
 
 export const ScannedDataPreview = ({
@@ -80,6 +87,7 @@ export const ScannedDataPreview = ({
   isSaving,
   onAccept,
   onReject,
+  onDateOrTimeEdited,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -228,7 +236,10 @@ export const ScannedDataPreview = ({
             <Input
               type="date"
               value={scannedData.date || ''}
-              onChange={(e) => onScannedDataChange({ ...scannedData, date: e.target.value || null })}
+              onChange={(e) => {
+                onDateOrTimeEdited?.();
+                onScannedDataChange({ ...scannedData, date: e.target.value || null });
+              }}
               className="mt-1 h-10 rounded-lg text-sm"
             />
           </div>

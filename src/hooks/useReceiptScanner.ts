@@ -29,6 +29,13 @@ interface ParsedReceipt {
   recipient_name: string | null;
   issuer_name: string | null;
   issuer_oib: string | null;
+  // Val 4 — strukturirani signali za scan-C1. Tier odluku NE radi ovaj hook;
+  // odluku donosi decideScanTier u write-pathu (AddExpenseDialog).
+  issued_at_iso: string | null;
+  issued_at_raw: string | null;
+  issued_at_label_present: boolean;
+  fiscal_marker_present: boolean;
+  jir_value: string | null;
 }
 
 const isAbortLikeError = (error: unknown) => {
@@ -320,6 +327,11 @@ export const useReceiptScanner = () => {
         recipient_name: data.recipient_name || null,
         issuer_name: data.issuer_name || merchantName || null,
         issuer_oib: data.issuer_oib || null,
+        issued_at_iso: typeof data.issued_at_iso === 'string' ? data.issued_at_iso : null,
+        issued_at_raw: typeof data.issued_at_raw === 'string' ? data.issued_at_raw : null,
+        issued_at_label_present: data.issued_at_label_present === true,
+        fiscal_marker_present: data.fiscal_marker_present === true,
+        jir_value: typeof data.jir_value === 'string' ? data.jir_value : null,
         items: (data.items || []).map((item: any) => ({
           name: item.name || '',
           quantity: item.quantity || 1,

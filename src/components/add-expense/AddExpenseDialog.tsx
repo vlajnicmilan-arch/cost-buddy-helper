@@ -167,6 +167,15 @@ export const AddExpenseDialog = ({
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const multiCameraInputRef = useRef<HTMLInputElement>(null);
   const multiGalleryInputRef = useRef<HTMLInputElement>(null);
+  // Val 4 — strukturirani signali iz zadnjeg scana (samo za decideScanTier).
+  const scanSignalsRef = useRef<{
+    issued_at_iso: string | null;
+    issued_at_raw: string | null;
+    issued_at_label_present: boolean;
+    fiscal_marker_present: boolean;
+  } | null>(null);
+  // Val 4 — postaje true ako korisnik ručno promijeni datum/vrijeme u review koraku.
+  const userEditedDateOrTimeRef = useRef(false);
   
   const { scanning, scanReceipt, scanMultipleReceipts, uploadReceiptImage } = useReceiptScanner();
   const { takePhoto: nativeTakePhoto, pickFromGallery: nativePickFromGallery, isNative } = useNativeCamera();
@@ -487,6 +496,15 @@ export const AddExpenseDialog = ({
         ? result.description.trim()
         : (result.merchant?.trim() || result.issuer_name?.trim() || 'Račun');
 
+    // Val 4 — snimi strukturirane signale i resetiraj edit flag za novi scan.
+    scanSignalsRef.current = {
+      issued_at_iso: result.issued_at_iso ?? null,
+      issued_at_raw: result.issued_at_raw ?? null,
+      issued_at_label_present: result.issued_at_label_present === true,
+      fiscal_marker_present: result.fiscal_marker_present === true,
+    };
+    userEditedDateOrTimeRef.current = false;
+
     // Sync key form fields too so the data survives even if the preview
     // somehow doesn't render (e.g. dialog state desync).
     setAmount(String(result.amount ?? ''));
@@ -666,6 +684,33 @@ export const AddExpenseDialog = ({
           : (tipNote || undefined),
       } as any;
 
+      // Val 4 — scan-C1 grana. Strogi deterministički gate; bilo kakva
+      // dvojba → C3 (default put, bez precision polja). Helper je SINGLE
+      // SOURCE OF TRUTH za tier odluku; nigdje drugdje se ne odlučuje.
+      if (scanSignalsRef.current) {
+        const { decideScanTier } = await import('@/lib/balance/decideScanTier');
+        const decision = decideScanTier({
+          ...scanSignalsRef.current,
+          userEditedDateOrTime: userEditedDateOrTimeRef.current,
+          now: new Date(),
+        });
+        try {
+          logDiagnostic('scan_tier_decision', {
+            tier: decision.tier,
+            reason: decision.reason,
+            label_present: scanSignalsRef.current.issued_at_label_present,
+            fiscal_marker: scanSignalsRef.current.fiscal_marker_present,
+            user_edited: userEditedDateOrTimeRef.current,
+          });
+        } catch {}
+        if (decision.tier === 'C1' && decision.eventAt) {
+          (newExpense as any).precision = {
+            event_at: decision.eventAt,
+            time_confidence: 'C1' as const,
+          };
+        }
+      }
+
       if (checkDuplicate) {
         const duplicate = checkDuplicate({
           amount: scannedData.amount,
@@ -720,6 +765,8 @@ export const AddExpenseDialog = ({
 
   const rejectScannedData = () => {
     scannedPreviewActiveRef.current = false;
+    scanSignalsRef.current = null;
+    userEditedDateOrTimeRef.current = false;
     setScannedData(null);
     setShowScannedPreview(false);
     setReceiptImage(null);
@@ -1127,6 +1174,7 @@ export const AddExpenseDialog = ({
                 isSaving={isSaving}
                 onAccept={acceptScannedData}
                 onReject={rejectScannedData}
+                onDateOrTimeEdited={() => { userEditedDateOrTimeRef.current = true; }}
               />
             </div>
           )}
