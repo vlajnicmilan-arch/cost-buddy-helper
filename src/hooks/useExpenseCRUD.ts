@@ -568,13 +568,15 @@ export const useExpenseCRUD = ({
         const toWrite = normalizedRows.filter(r => r.canonical != null) as Array<{ expense: Expense; canonical: string }>;
 
         await Promise.all(toWrite.map(async ({ expense, canonical }) => {
+          // Val 2: default intent — strip any precision fields.
+          const bulkPayload = normalizeExpensePayload({
+            category: expense.category,
+            payment_source: canonical,
+            updated_at: new Date().toISOString(),
+          }, 'default');
           const { error } = await supabase
             .from('expenses')
-            .update({
-              category: expense.category,
-              payment_source: canonical,
-              updated_at: new Date().toISOString()
-            })
+            .update(bulkPayload as any)
             .eq('id', expense.id);
           if (error) throw error;
         }));
