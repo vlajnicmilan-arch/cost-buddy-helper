@@ -67,7 +67,7 @@ function fallback(reason: ScanTierDecision['reason']): ScanTierDecision {
 
 export function decideScanTier(input: DecideScanTierInput): ScanTierDecision {
   if (input.userEditedDateOrTime) return fallback('user_edited');
-  if (input.fiscal_marker_present !== true) return fallback('no_fiscal_marker');
+  // fiscal_marker_present is intentionally ignored — see header.
   if (input.issued_at_label_present !== true) return fallback('no_time_label');
 
   const iso = input.issued_at_iso;
