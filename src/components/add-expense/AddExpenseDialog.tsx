@@ -1172,6 +1172,7 @@ export const AddExpenseDialog = ({
                 isSaving={isSaving}
                 onAccept={acceptScannedData}
                 onReject={rejectScannedData}
+                onDateOrTimeEdited={() => { userEditedDateOrTimeRef.current = true; }}
               />
             </div>
           )}
