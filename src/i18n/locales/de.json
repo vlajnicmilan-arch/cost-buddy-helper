@@ -2146,6 +2146,27 @@
           "b3": "Team & Mitarbeiter"
         }
       }
+    },
+    "manual": {
+      "title": "Schnelle Eingabe",
+      "typeExpense": "Ausgabe",
+      "typeIncome": "Einnahme",
+      "amountLabel": "Betrag",
+      "amountPlaceholder": "0,00",
+      "paymentLabel": "Zahlungsmethode",
+      "paymentPlaceholder": "Auswählen",
+      "save": "Speichern",
+      "saving": "Speichern…",
+      "addSourceTitle": "Erste Zahlungsmethode hinzufügen",
+      "addSourceHint": "Wähle vor der ersten Eingabe einen Namen für deine Geldbörse.",
+      "sourceNameLabel": "Name",
+      "sourceNamePlaceholder": "z. B. Bargeld",
+      "sourceContinue": "Weiter",
+      "defaultSourceName": "Bargeld"
+    },
+    "payoff": {
+      "title": "Super.",
+      "subtitle": "Wir haben genug für das erste Bild."
     }
   },
   "welcome": {
@@ -2580,10 +2601,13 @@
       "greetingGuidedNamed": "Danke, {{name}}.",
       "lineZero": "Erfasse dein erstes Ereignis. Alles Weitere ergibt sich daraus.",
       "lineGuided": "Jedes weitere Ereignis vervollständigt das Bild.",
-      "weekAria": "Letzte 7 Tage",
       "scanCta": "Scannen",
       "manualCta": "Manuell eingeben",
       "remaining": "Noch {{n}} bis zur vollständigen Ansicht."
+    },
+    "progress": {
+      "aria": "Fortschritt: {{count}} von {{total}}",
+      "stepLabel": "Ereignis {{n}}"
     }
   },
   "gdpr": {
@@ -4394,11 +4418,7 @@
         "other": "Sonstiges"
       }
     },
-    "ready": {
-      "title": "Wir sind bereit.",
-      "titleNamed": "Wir sind bereit, {{name}}.",
-      "subtitle": "Starten wir mit deinem ersten Ereignis."
-    }
+    "startCta": "Los geht’s"
   },
   "openBanking": {
     "title": "Bank verbinden (Open Banking)",

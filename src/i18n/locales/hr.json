@@ -2151,6 +2151,27 @@
           "b3": "Tim i suradnici"
         }
       }
+    },
+    "manual": {
+      "title": "Brzi unos",
+      "typeExpense": "Trošak",
+      "typeIncome": "Prihod",
+      "amountLabel": "Iznos",
+      "amountPlaceholder": "0,00",
+      "paymentLabel": "Način plaćanja",
+      "paymentPlaceholder": "Odaberi",
+      "save": "Spremi",
+      "saving": "Spremam…",
+      "addSourceTitle": "Dodaj prvi način plaćanja",
+      "addSourceHint": "Prije prvog unosa odaberi naziv za svoj novčanik.",
+      "sourceNameLabel": "Naziv",
+      "sourceNamePlaceholder": "npr. Gotovina",
+      "sourceContinue": "Nastavi",
+      "defaultSourceName": "Gotovina"
+    },
+    "payoff": {
+      "title": "Super.",
+      "subtitle": "Imamo dovoljno za prvu sliku."
     }
   },
   "welcome": {
@@ -2586,10 +2607,13 @@
       "greetingGuidedNamed": "Hvala, {{name}}.",
       "lineZero": "Zabilježi svoj prvi događaj. Sve ostalo dolazi iz toga.",
       "lineGuided": "Svaki sljedeći događaj popunjava sliku.",
-      "weekAria": "Zadnjih 7 dana",
       "scanCta": "Skeniraj",
       "manualCta": "Unesi ručno",
       "remaining": "Još {{n}} do potpunog prikaza."
+    },
+    "progress": {
+      "aria": "Napredak: {{count}} od {{total}}",
+      "stepLabel": "Događaj {{n}}"
     }
   },
   "gdpr": {
@@ -4401,11 +4425,7 @@
         "other": "Ostalo"
       }
     },
-    "ready": {
-      "title": "Spremni smo.",
-      "titleNamed": "Spremni smo, {{name}}.",
-      "subtitle": "Krenimo s prvim događajem."
-    }
+    "startCta": "Krenimo"
   },
   "openBanking": {
     "title": "Spoji banku (Open Banking)",

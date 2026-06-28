@@ -1,36 +1,27 @@
 /**
  * Onboarding copy & celebration regression test.
  *
- * Locks the contract from `mem://features/onboarding-strategy`:
- *  - Step 2 (StepReady) MUST NOT import `react-confetti`
- *  - Step 2 MUST NOT reintroduce the setup checklist (`hasIncome` / `expenseCategoriesCount` props or `ready.budget|cats|income` keys)
- *  - Step 1 (StepGreeting) MUST include the brevity hint
- *  - i18n `ready.title` MUST NOT claim that something was "set up" / "spremna" / "bereit ist"
- *
- * If this test fails, do NOT loosen the assertion — re-read the memory doc;
- * the regression is the bug.
+ * Lock contract from D1 ("Spremni smo" ekran uklonjen) i mem://features/onboarding-strategy:
+ *  - StepReady.tsx više NE smije postojati (D1).
+ *  - Step 1 (StepGreeting) MORA sadržavati brevity hint.
+ *  - i18n MORA imati onboardingV3.startCta (D1 CTA "Krenimo").
+ *  - i18n NE smije više sadržavati onboardingV3.ready.* ključeve.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf-8');
 
 describe('onboarding copy contract', () => {
-  describe('StepReady', () => {
-    const src = read('src/components/onboarding/steps/StepReady.tsx');
-
-    it('does not import react-confetti', () => {
-      expect(src).not.toMatch(/react-confetti/);
+  describe('StepReady removal (D1)', () => {
+    it('StepReady.tsx no longer exists', () => {
+      expect(existsSync(resolve(process.cwd(), 'src/components/onboarding/steps/StepReady.tsx'))).toBe(false);
     });
 
-    it('does not accept hasIncome or expenseCategoriesCount props', () => {
-      expect(src).not.toMatch(/hasIncome/);
-      expect(src).not.toMatch(/expenseCategoriesCount/);
-    });
-
-    it('does not reference deprecated checklist i18n keys', () => {
-      expect(src).not.toMatch(/onboardingV3\.ready\.(budget|cats|income)/);
+    it('Onboarding.tsx does not import StepReady', () => {
+      const src = read('src/pages/Onboarding.tsx');
+      expect(src).not.toMatch(/StepReady/);
     });
   });
 
@@ -42,21 +33,14 @@ describe('onboarding copy contract', () => {
     });
   });
 
-  describe('i18n ready.title', () => {
-    const forbiddenSubstrings: Record<string, string[]> = {
-      'src/i18n/locales/hr.json': ['aplikacija je spremna', 'Sve je postavljeno'],
-      'src/i18n/locales/en.json': ['app is ready', 'Everything is set up'],
-      'src/i18n/locales/de.json': ['App ist bereit', 'Alles ist eingerichtet'],
-    };
-
-    for (const [path, banned] of Object.entries(forbiddenSubstrings)) {
-      it(`${path} does not claim setup completion`, () => {
+  describe('i18n', () => {
+    for (const path of ['src/i18n/locales/hr.json', 'src/i18n/locales/en.json', 'src/i18n/locales/de.json']) {
+      it(`${path} has startCta and no ready.*`, () => {
         const json = JSON.parse(read(path));
-        const ready = json?.onboardingV3?.ready ?? {};
-        const blob = JSON.stringify(ready);
-        for (const s of banned) {
-          expect(blob).not.toContain(s);
-        }
+        const v3 = json?.onboardingV3 ?? {};
+        expect(typeof v3.startCta).toBe('string');
+        expect(v3.startCta.length).toBeGreaterThan(0);
+        expect(v3.ready).toBeUndefined();
       });
     }
   });
