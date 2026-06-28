@@ -127,31 +127,45 @@ export const GuidedEntryView = ({
         </div>
       </div>
 
-      {/* Last entry kartica — zadržano po D4 mikro-odluci. */}
-      <AnimatePresence mode="popLayout">
-        {last && (
-          <motion.div
-            key={last.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+      {/* Guided lista događaja — stabilna kroz cijelu guided fazu (0..THRESHOLD-1).
+          Svaka kartica ima vlastiti expense.id key da React ne zamjenjuje single
+          element kad stigne sljedeći unos (prethodno: nestajanje 1. događaja
+          pri unosu 2.). */}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {guidedEntries.length > 0 && (
+          <motion.ul
+            key="guided-entries"
+            className="mb-6 space-y-2 list-none p-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="mb-6 p-3 rounded-xl bg-muted/30 border border-border/40"
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {last.description || t('common.noDescription', 'Bez opisa')}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(last.date).toLocaleDateString()}
-                </p>
-              </div>
-              <p className="text-sm font-semibold shrink-0 tabular-nums">
-                {last.amount.toFixed(2)} {last.currency || 'EUR'}
-              </p>
-            </div>
-          </motion.div>
+            {guidedEntries.map((entry) => (
+              <motion.li
+                key={entry.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="p-3 rounded-xl bg-muted/30 border border-border/40"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {entry.description || t('common.noDescription', 'Bez opisa')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(entry.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold shrink-0 tabular-nums">
+                    {entry.amount.toFixed(2)} {entry.currency || 'EUR'}
+                  </p>
+                </div>
+              </motion.li>
+            ))}
+          </motion.ul>
         )}
       </AnimatePresence>
 
