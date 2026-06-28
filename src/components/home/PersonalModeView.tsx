@@ -602,6 +602,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
       </Dialog>
 
       <BottomNav />
-    </div>
+    </motion.div>
+
   );
 };
