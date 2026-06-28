@@ -1,182 +1,124 @@
+# Admin Hard Delete Entrypoint — Implementation Plan
 
-# Hard Delete Foundation — Implementation Plan
+Scope je zaključan. Foundation (`purgeUser` engine, `tablesToPurge`, residual scan, `process-pending-deletions` refaktor) ostaje netaknut.
 
-Implementiramo shared purge engine i refaktoriramo `process-pending-deletions` da ga koristi. Bez admin entrypointa, bez UI-a, bez izmjena user-facing 30-day flowa.
+## 1. Nova edge funkcija `admin-hard-delete-user`
 
-## Nova otkrića (korigiraju prošli foundation pass)
+Lokacija: `supabase/functions/admin-hard-delete-user/index.ts`
 
-Provjereno protiv žive sheme i `storage.objects`:
+Tok (fail-fast, redom):
 
-1. **`invoice-pdfs` bucket postoji i ima per-user prefix** (`{user_id}/...`) — nije bio u prošloj listi. Mora u Phase 4.
-2. **`public-assets` NEMA user-specific prefix** — samo `releases/*.apk`. Sistemski bucket, **ne ide** u purge. (Pitanje V1 iz prošlog plana: odgovor = ne.)
-3. **`email-assets`** sistemski (`logo.png`). Ne ide.
-4. **`certificates` bucket** — postoji u kodu, ali u bazi je trenutno prazan. Ostavljamo u listi (defensive).
+1. CORS preflight handler.
+2. **JWT check** preko `supabase.auth.getClaims(token)` — 401 ako nema/loš.
+3. **Admin role check** preko `has_role(auth.uid(), 'admin')` (service-role klijent) — 403 ako nije admin.
+4. **Env gate**: `Deno.env.get('ALLOW_HARD_DELETE') === 'true'` — 403 inače. Log u `app_diagnostics_logs` s `level='warning'`.
+5. **Zod schema**: `{ userId: string().uuid(), email: string().email() }`. Bez array-a, bez bulk-a. 400 na invalid.
+6. **Allowlist check** (eksplicitno):
+   ```ts
+   const ALLOWLIST_EMAILS = ['vinkabalance@gmail.com'];
+   const ALLOWLIST_DOMAIN_SUFFIX = '@test.vmbalance.com';
+   const isAllowed = ALLOWLIST_EMAILS.includes(email.toLowerCase())
+     || email.toLowerCase().endsWith(ALLOWLIST_DOMAIN_SUFFIX);
+   ```
+   403 + audit log ako nije.
+7. **Dual-confirmation lookup**: `auth.admin.getUserById(userId)`; ako `user.email !== email` (case-insensitive) → 409.
+8. **Pre-audit zapis** u `account_deletion_log`: `source='admin_hard_delete'`, `requested_by=<admin uid>`, `target_user_id`, `target_email`, `status='started'`.
+9. **Poziv `purgeUser`** s policy:
+   ```ts
+   { sourceTag: 'admin_hard_delete', allowKrugDestruction: true, deletePaidRecords: true }
+   ```
+10. **Post-audit update**: rezultat (`deleted` | `blocked` | `failed`), residual scan summary, error string ako postoji.
+11. Response: `{ status, blockedBy?, residualTables?: string[] }` + odgovarajući HTTP code.
 
-Ovo se odražava u final listi bucketa: `receipts`, `certificates`, `project-documents`, **`invoice-pdfs`** (novi).
+Bez funkcijskog overridea u `config.toml` (default `verify_jwt = false`, validacija u kodu).
 
-## Files
+## 2. Environment gate
 
-### Novi
+Secret: `ALLOW_HARD_DELETE` (runtime secret, ne build secret).
+- Postavlja se preko `add_secret` tijekom builda.
+- Vrijednost: `'true'` za uključeno, bilo što drugo / nepostavljeno = isključeno.
+- Bez deploya može se ugasiti brisanjem ili promjenom vrijednosti.
 
-- `supabase/functions/_shared/tablesToPurge.ts` — kanonska kategorizirana lista (single source of truth)
-- `supabase/functions/_shared/purgeUser.ts` — engine s fazama 0–7
-- `supabase/functions/_shared/purgeUser.types.ts` — `PurgePolicy`, `PurgeResult`, `ResidualScanReport`
-- `docs/HARD_DELETE.md` — foundation dokumentacija
+## 3. Allowlist
 
-### Izmijenjeni
-
-- `supabase/functions/process-pending-deletions/index.ts` — thin wrapper nad `purgeUser`
-
-### Netaknuti (eksplicitno)
-
-- `request-account-deletion`, `cancel-account-deletion`, `e2e_reset_user`, admin UI, sve client komponente.
-
-## `tablesToPurge.ts` — kanonska struktura
-
-```ts
-export const PURGE_BY_USER_ID: readonly string[] = [/* 60 tablica */];
-export const PURGE_BY_EMAIL: readonly { table: string; column: string }[] = [/* 6 */];
-export const PURGE_DEPENDENT: readonly {
-  table: string;
-  via: 'expense_id' | 'invoice_id' | 'travel_order_id' | 'budget_id' | 'project_id' | 'krug_id' | 'created_by' | 'generated_by' | 'referrer_or_referred';
-  parentTable?: string;
-}[] = [/* 18 */];
-export const INTENTIONALLY_KEPT: readonly { table: string; reason: string }[] = [/* 7 */];
-export const STORAGE_BUCKETS: readonly string[] = ['receipts','certificates','project-documents','invoice-pdfs'];
-export const PAID_RECORDS_TABLES: readonly string[] = ['lifetime_purchases'];
-```
-
-Sve `public` tablice iz `information_schema` moraju biti pokrivene jednom od pet kategorija (po `user_id` / po emailu / dependent / intentionally kept / nije korisnička). Inače pada coverage test (vidi dolje).
-
-## `purgeUser.ts` — kontrakt
+Hardcoded u funkciji (jedan source of truth, server autoritativan):
 
 ```ts
-purgeUser(admin, {
-  userId, userEmail,
-  policy: {
-    sourceTag: 'cron_grace' | 'admin_hard_delete',
-    allowKrugDestruction?: boolean,   // default false
-    deletePaidRecords?: boolean,      // default false
-    cancelStripeSubscription?: boolean, // default true
-  }
-}) => Promise<PurgeResult>
+const ALLOWLIST_EMAILS = ['vinkabalance@gmail.com'] as const;
+const ALLOWLIST_DOMAIN_SUFFIX = '@test.vmbalance.com';
 ```
 
-### Faze (zaključano redoslijedom)
+Nema regex-a za Gmail aliase. Nema generičkih `+test` patterna. Za proširenje — edit u kodu i novi deploy (namjerno trenje).
 
-```text
-0  pre-flight
-   - load auth user
-   - krug guard: ako postoji krug_ownership za usera, i bilo koji od tih krugova
-     ima krug_membership redak s drugim user_id → return { ok:false, blockedBy:'krug_multi_member', krugIds:[...] }
-     (bez allowKrugDestruction override)
-   - paid records guard: COUNT(lifetime_purchases) > 0 i !deletePaidRecords → blockedBy:'paid_records_present'
-1  dependent rows (joins) — prije roditelja
-2  user-owned (po user_id)
-3  invitations & subscriptions po emailu
-4  storage cleanup (4 bucketa)
-5  Stripe subscription cancel (po emailu)
-6  profile + auth.admin.deleteUser
-7  residual scan + audit upis
-```
+## 4. Admin panel UI (minimalno)
 
-### Residual scan
+Trenutna admin Users sekcija: pronaći postojeću tablicu/listu (`src/components/admin/...` user-management komponentu) i dodati:
 
-Nakon faza 1–6, izvodi se `SELECT count(*) FROM <table> WHERE user_id=$1` za svaku tablicu iz `PURGE_BY_USER_ID`, plus join-counts za dependent listu, plus email counts. Sve > 0 ulazi u `ResidualScanReport`. Upisuje se u `account_deletion_log.tables_purged` JSONB kao `{ tables, storage, residuals, blocked }`. Ako residuals ima ijedan ne-nulti unos → log status postaje `completed_with_residuals` i ide insert u `app_diagnostics_logs` (severity warning).
+- **Dropdown item** "Hard delete (test only)" — disabled (sa tooltipom "Nije u allowlisti") ako email nije u frontend mirror allowlisti. Server ostaje autoritativan.
+- **`HardDeleteUserDialog`** (`src/components/admin/HardDeleteUserDialog.tsx`):
+  - Naslov + opis (crveni alert ton): "Trajno briše korisnika i sve podatke. Nije reverzibilno."
+  - Prikazuje `userId` (read-only) i `email` (read-only).
+  - Input "Utipkaj točan email za potvrdu" — gumb **disabled** dok se ne podudara case-insensitive.
+  - Action gumb: "Trajno obriši" (destructive).
+  - Na klik: `supabase.functions.invoke('admin-hard-delete-user', { body: { userId, email } })`.
+  - Toast s rezultatom (preko `StatusFeedback`):
+    - `deleted` → success
+    - `blocked: krug_multi_member` → warning s porukom da treba ručno raspustiti krug
+    - `failed` / non-200 → error
+  - Sve stringove preko `t()`, ključevi u `admin.hardDelete.*` (hr/en/de).
+- Bez novih ruta, bez novih tabova.
 
-## Krug multi-member zaštita
+## 5. i18n
 
-```sql
--- pseudo
-SELECT k.id FROM krug_ownership ko
-JOIN krug k ON k.id = ko.krug_id
-WHERE ko.user_id = $1
-  AND EXISTS (
-    SELECT 1 FROM krug_membership km
-    WHERE km.krug_id = k.id AND km.user_id <> $1
-  );
-```
+Novi ključevi u `src/i18n/locales/{hr,en,de}.json` pod `admin.hardDelete`:
+`menuLabel`, `dialogTitle`, `dialogWarning`, `confirmInputLabel`, `confirmCta`, `cancel`, `successToast`, `blockedKrugToast`, `errorToast`, `notInAllowlistTooltip`.
 
-Ako bilo koji redak vraćen → `blocked`. Briše se SAMO ako je solo krug. Bez nove product odluke za multi-member — to ostaje cron-safe blocked status; admin se kasnije može svjesno odlučiti override.
+## 6. Audit
 
-## `process-pending-deletions` refaktor
+Reuse postojeće `account_deletion_log` tablice. Bez nove migracije (ako tablica već ima `source`, `requested_by`, `target_user_id`, `target_email`, `status`, `details` JSONB kolone). Ako nedostaje neka kolona — odustaje se od izmjene sheme; spremaju se dostupne, ostatak ide u `details` JSONB. **Provjeravam stvarni schema prije writeanja koda** (`supabase--read_query` na `information_schema`).
 
-Postaje ~40 linija:
+## 7. Testovi i build status provjera
 
+- **Deno test** za guardrail logiku: `supabase/functions/admin-hard-delete-user/__tests__/allowlist.test.ts` — čisti unit testovi `isEmailAllowed()` helpera (allowed/disallowed slučajevi, case-insensitive, prazni string).
+- **Coverage test** iz foundation passa (`purgeUser.coverage.test.ts`) ostaje — nije diran.
+- Vitest suite na frontendu: bez novih testova ako `HardDeleteUserDialog` ostane thin presentational (logika je na serveru).
+- Build: standardni `npm run build` koji CI radi.
+- **Bez** stvarnog purgea testnog korisnika u sklopu ovog passa.
+
+## 8. Što se ne dira
+
+- `purgeUser.ts`, `tablesToPurge.ts`, `process-pending-deletions/index.ts`
+- soft delete / Trash flow
+- user-facing account deletion (30d grace)
+- billing / Stripe refund logika
+- krug ownership transfer UI
+- bulk admin akcije
+- širi admin redesign
+
+## Tehnički detalji
+
+**Files touched (novi)**:
+- `supabase/functions/admin-hard-delete-user/index.ts`
+- `supabase/functions/admin-hard-delete-user/__tests__/allowlist.test.ts`
+- `src/components/admin/HardDeleteUserDialog.tsx`
+
+**Files touched (izmjena)**:
+- Postojeća admin user-list komponenta (otkriva se `code--list_dir src/components/admin` i `rg`, vjerojatno `AdminUsersTable.tsx` ili sl.) — dodaje dropdown item + dialog mount.
+- `src/i18n/locales/hr.json`, `en.json`, `de.json` — `admin.hardDelete.*` ključevi.
+
+**Secret**:
+- `ALLOW_HARD_DELETE` — postavlja se preko `add_secret` u build fazi.
+
+**Response shape**:
 ```ts
-Deno.serve(async (req) => {
-  // CORS
-  const { data: pending } = await admin.from('account_deletion_log')
-    .select('*').eq('status','pending').lte('scheduled_for', now).limit(50);
-
-  const results = [];
-  for (const log of pending ?? []) {
-    // pošalji completion email PRIJE brisanja
-    await sendCompletionEmail(log);
-    const r = await purgeUser(admin, {
-      userId: log.user_id,
-      userEmail: log.user_email,
-      policy: { sourceTag: 'cron_grace' }, // konzervativno: blokira krug+paid
-    });
-    await admin.from('account_deletion_log').update(
-      mapResultToAuditUpdate(r)
-    ).eq('id', log.id);
-    results.push({ user_id: log.user_id, ok: r.ok, blockedBy: r.blockedBy });
-  }
-
-  return jsonOk({ processed: results.length, results });
-});
+type Response =
+  | { status: 'deleted'; residualTables: string[] }
+  | { status: 'blocked'; blockedBy: 'krug_multi_member' | 'has_paid_records' }
+  | { status: 'failed'; error: string };
 ```
 
-Bitno: današnji bug (cron tiho prelazi krug s drugim članovima) postaje vidljiv kao `blocked` log umjesto data corruptiona.
+**Sigurnosna granica**: čak i ako frontend bug propusti krivi email u dialog, server odbija (allowlist + dual-confirmation). Čak i ako se funkcija zove kroz `supabase.functions.invoke` izvan UI-ja, JWT + admin role + env gate + allowlist čine 4 nezavisne barijere.
 
-## Coverage test
+## Finalni sud
 
-`supabase/functions/_shared/__tests__/purgeUser.coverage.test.ts` (Deno test, ne vitest):
-
-- Otvara migracije / koristi `information_schema` snapshot (statičku listu fiksiranu u testu, da ne ovisi o DB connectionu u CI-ju).
-- Za svaku tablicu provjerava: nalazi se u jednoj od 5 kategorija (`BY_USER_ID`, `BY_EMAIL`, `DEPENDENT`, `INTENTIONALLY_KEPT`, ili eksplicitnoj listi `NON_USER_TABLES` koja sadrži `app_settings`, `email_send_state`, `monitor_alerts_log`, …).
-- Failure poruka: "Tablica X nije kategorizirana — dodaj je u tablesToPurge.ts ili NON_USER_TABLES".
-
-## Dokumentacija — `docs/HARD_DELETE.md`
-
-Sekcije:
-
-1. Što engine briše (5 kategorija + bucketi)
-2. Što namjerno ostaje i zašto (audit, financijski)
-3. Krug multi-member pravilo
-4. Paid records pravilo
-5. Residual scan — kako čitati log
-6. Kako proširiti listu kad se doda nova tablica (i test koji to enforce-a)
-7. Zašto admin entrypoint NIJE u ovom passu (sigurnost: prvo dokazati potpunost na cron flowu)
-
-## Što namjerno ostaje izvan purgea
-
-| Tablica | Razlog |
-|---|---|
-| `account_deletion_log` | GDPR audit (90 dana), email anonimiziran |
-| `admin_module_grants` | audit admin akcija (granted_by/revoked_by tragovi) |
-| `subscription_migration_log` | financijski audit |
-| `monitor_alerts_log` | sistemski |
-| `email_send_log` | outbound audit |
-| `email_send_state` | sistemski |
-| `app_settings` | sistemski |
-| `lifetime_purchases` | uvjetno — samo s `deletePaidRecords:true` |
-
-Operativni audit (`bug_reports`, `support_tickets`, `feedback_submissions`, `dpa_requests`) **se briše** — sadrže osobne podatke. Opciju anonimizacije ostavljamo za admin tool layer (nije ovaj pass).
-
-## Provjere prije završetka
-
-1. `deno check supabase/functions/_shared/purgeUser.ts`
-2. Coverage test pokrenut
-3. Lint čist
-4. Manual sanity: pozvati `process-pending-deletions` s 0 pending zapisa — mora vratiti `{processed:0}`
-5. Build status zelen
-
-## Otvoreni rizici nakon ovog passa
-
-- **R1 zatvoren:** cron više ne ostavlja tragove u 16+ tablica.
-- **R2:** prvi cron run nakon deploya može logirati `blocked` za stvarne pending zahtjeve gdje korisnik ima multi-member krug. To je značajka, ne bug — admin to mora ručno riješiti (kasniji admin tool).
-- **R3:** ako se ikad doda nova tablica s `user_id` bez ažuriranja `tablesToPurge.ts`, coverage test pada u CI-ju → drift se ne može tiho dogoditi.
-
-Nema blockera za kasniji admin hard delete entrypoint — on će biti tanak wrapper s `policy: { sourceTag: 'admin_hard_delete', allowKrugDestruction: true, deletePaidRecords: true }` + allowlist guard.
+Spreman za build. Jedina runtime ovisnost je `ALLOW_HARD_DELETE` secret — postavlja se kao prvi korak builda preko `add_secret`.
