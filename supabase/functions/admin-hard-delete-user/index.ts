@@ -20,20 +20,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// ---------------------------------------------------------------------------
-// Allowlist (server-authoritative). Edit + redeploy to extend.
-// ---------------------------------------------------------------------------
-const ALLOWLIST_EMAILS: readonly string[] = ["vinkabalance@gmail.com"];
-const ALLOWLIST_DOMAIN_SUFFIX = "@test.vmbalance.com";
-
-export function isEmailAllowed(email: string | null | undefined): boolean {
-  if (!email) return false;
-  const e = email.trim().toLowerCase();
-  if (!e) return false;
-  if (ALLOWLIST_EMAILS.includes(e)) return true;
-  if (e.endsWith(ALLOWLIST_DOMAIN_SUFFIX)) return true;
-  return false;
-}
+// Allowlist lives in ./allowlist.ts so unit tests can import without Deno deps.
 
 const BodySchema = z.object({
   userId: z.string().uuid(),
