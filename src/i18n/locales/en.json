@@ -2146,6 +2146,27 @@
           "b3": "Team & collaborators"
         }
       }
+    },
+    "manual": {
+      "title": "Quick entry",
+      "typeExpense": "Expense",
+      "typeIncome": "Income",
+      "amountLabel": "Amount",
+      "amountPlaceholder": "0.00",
+      "paymentLabel": "Payment method",
+      "paymentPlaceholder": "Select",
+      "save": "Save",
+      "saving": "Saving…",
+      "addSourceTitle": "Add your first payment method",
+      "addSourceHint": "Pick a name for your wallet before the first entry.",
+      "sourceNameLabel": "Name",
+      "sourceNamePlaceholder": "e.g. Cash",
+      "sourceContinue": "Continue",
+      "defaultSourceName": "Cash"
+    },
+    "payoff": {
+      "title": "Nice.",
+      "subtitle": "We've got enough for the first picture."
     }
   },
   "welcome": {
@@ -2712,10 +2733,13 @@
       "greetingGuidedNamed": "Thanks, {{name}}.",
       "lineZero": "Log your first event. Everything else follows from there.",
       "lineGuided": "Each next event fills in the picture.",
-      "weekAria": "Last 7 days",
       "scanCta": "Scan",
       "manualCta": "Enter manually",
       "remaining": "{{n}} more until the full view."
+    },
+    "progress": {
+      "aria": "Progress: {{count}} of {{total}}",
+      "stepLabel": "Event {{n}}"
     }
   },
   "gdpr": {
@@ -4394,11 +4418,7 @@
         "other": "Other"
       }
     },
-    "ready": {
-      "title": "We're ready.",
-      "titleNamed": "We're ready, {{name}}.",
-      "subtitle": "Let's start with your first event."
-    }
+    "startCta": "Let's go"
   },
   "openBanking": {
     "title": "Connect bank (Open Banking)",
