@@ -331,16 +331,6 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
     {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
   ]
 }
-  "custom_payment_source_id": null,
-  "payment_source_card_id": null,
-  "is_installment": false,
-  "installment_count": null,
-  "installment_amount": null,
-  "items": [
-    {"name": "MLIJEKO DUKAT 1L", "quantity": 2, "unit_price": 1.29, "total_price": 2.58},
-    {"name": "KRUH BIJELI", "quantity": 1, "unit_price": null, "total_price": 1.50}
-  ]
-}
 
 PRIMJER ZA DOPUNU/TRANSFER:
 {
