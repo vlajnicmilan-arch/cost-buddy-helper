@@ -765,6 +765,8 @@ export const AddExpenseDialog = ({
 
   const rejectScannedData = () => {
     scannedPreviewActiveRef.current = false;
+    scanSignalsRef.current = null;
+    userEditedDateOrTimeRef.current = false;
     setScannedData(null);
     setShowScannedPreview(false);
     setReceiptImage(null);
