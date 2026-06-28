@@ -78,6 +78,7 @@ export const UsersTab = ({
   const [filter, setFilterRaw] = useState<FilterKey>('all');
   const [grants, setGrants] = useState<ActiveGrantLike[]>([]);
   const [activeContext, setActiveContext] = useState<DrilldownIntent | null>(null);
+  const [hardDeleteTarget, setHardDeleteTarget] = useState<{ id: string; email: string } | null>(null);
 
   // Wrapper: ručna promjena filtera briše drill-down kontekst.
   const setFilter = useCallback((k: FilterKey) => {
