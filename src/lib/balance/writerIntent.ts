@@ -57,7 +57,7 @@ export function normalizeExpensePayload<T extends ExpenseWritePayload>(
   switch (intent) {
     case 'default': {
       // No precision fields sent — Val 1 trigger derives event_at from `date`.
-      return rest as T;
+      return rest as T & PrecisionFields;
     }
 
     case 'explicit_time_edit': {
@@ -67,7 +67,7 @@ export function normalizeExpensePayload<T extends ExpenseWritePayload>(
         ...rest,
         event_at: payload.event_at ?? null,
         user_edited_event_at: true,
-      } as T;
+      } as T & PrecisionFields;
     }
 
     case 'system_precise': {
@@ -78,7 +78,7 @@ export function normalizeExpensePayload<T extends ExpenseWritePayload>(
         event_at: payload.event_at ?? null,
         time_confidence: payload.time_confidence ?? null,
         user_edited_event_at: false,
-      } as T;
+      } as T & PrecisionFields;
     }
   }
 }
