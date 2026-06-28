@@ -29,6 +29,13 @@ interface ParsedReceipt {
   recipient_name: string | null;
   issuer_name: string | null;
   issuer_oib: string | null;
+  // Val 4 — strukturirani signali za scan-C1. Tier odluku NE radi ovaj hook;
+  // odluku donosi decideScanTier u write-pathu (AddExpenseDialog).
+  issued_at_iso: string | null;
+  issued_at_raw: string | null;
+  issued_at_label_present: boolean;
+  fiscal_marker_present: boolean;
+  jir_value: string | null;
 }
 
 const isAbortLikeError = (error: unknown) => {
