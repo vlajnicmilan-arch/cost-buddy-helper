@@ -48,7 +48,6 @@ export type ScanTierDecision = {
   reason:
     | 'c1_ok'
     | 'user_edited'
-    | 'no_fiscal_marker'
     | 'no_time_label'
     | 'iso_invalid'
     | 'raw_iso_mismatch'
