@@ -59,6 +59,9 @@ export function useGuidedMode(expenseCount: number): UseGuidedModeResult {
           .maybeSingle();
         if (cancelled) return;
         const serverValue = (data?.guided_home_exited_at as string | null) ?? null;
+        const prevCached = (() => {
+          try { return localStorage.getItem(`${CACHE_KEY_PREFIX}${user.id}`); } catch { return null; }
+        })();
         setExitedAt(serverValue);
         try {
           if (serverValue) {
@@ -67,6 +70,15 @@ export function useGuidedMode(expenseCount: number): UseGuidedModeResult {
             localStorage.removeItem(`${CACHE_KEY_PREFIX}${user.id}`);
           }
         } catch { /* noop */ }
+        // Cross-device: ako je server tek sada otkrio postavljen timestamp
+        // (prije ga lokalno nismo imali), obavijesti listenere u istom tabu.
+        if (serverValue && !prevCached) {
+          try {
+            window.dispatchEvent(new CustomEvent('guided-home-exited', {
+              detail: { userId: user.id, ts: serverValue },
+            }));
+          } catch { /* noop */ }
+        }
       } catch {
         // Mreža je pala — ostavi cache vrijednost, kasniji refetch će je ispraviti.
       } finally {
@@ -101,6 +113,15 @@ export function useGuidedMode(expenseCount: number): UseGuidedModeResult {
         setExitedAt(ts);
         try {
           localStorage.setItem(`${CACHE_KEY_PREFIX}${user.id}`, ts);
+        } catch { /* noop */ }
+        // Obavijesti in-process listenere (TutorialContext) da se guided faza
+        // upravo zatvorila. `storage` event ne okida unutar istog taba, pa
+        // koristimo custom event. Idempotentno — guard `if (exitedAt) return`
+        // gore osigurava jednokratnu emisiju po sesiji.
+        try {
+          window.dispatchEvent(new CustomEvent('guided-home-exited', {
+            detail: { userId: user.id, ts, reason },
+          }));
         } catch { /* noop */ }
         logFunnelEvent('guided_home_exited', {
           reason,

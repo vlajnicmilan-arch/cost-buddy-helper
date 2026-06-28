@@ -99,23 +99,34 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   // phase (>= GUIDED_EXPENSE_THRESHOLD events). Source of truth is the
   // localStorage cache key `guided_home_exited_at:<uid>` written by
   // `useGuidedMode` when the server-side RPC `mark_guided_home_exited` runs.
-  // No retroactive auto-start for existing users without the cache key —
-  // they can launch the tutorial manually from Settings via `startTutorial`.
+  // We re-evaluate on mount AND when `useGuidedMode` emits the in-process
+  // `guided-home-exited` CustomEvent (storage event ne okida unutar istog
+  // taba). `TUTORIAL_SEEN_KEY` osigurava jednokratan auto-start.
   useEffect(() => {
     if (!user?.id) return;
-    const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
-    if (tutorialSeen) return;
-    const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
-    if (!onboardingCompleted) return;
-    const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
-    if (!guidedExitedAt) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const timer = setTimeout(() => {
-      setIsActive(true);
-      localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
-    }, 4000);
+    const maybeAutoStart = () => {
+      const tutorialSeen = localStorage.getItem(TUTORIAL_SEEN_KEY);
+      if (tutorialSeen) return;
+      const onboardingCompleted = localStorage.getItem('onboarding_completed') === 'true';
+      if (!onboardingCompleted) return;
+      const guidedExitedAt = localStorage.getItem(`guided_home_exited_at:${user.id}`);
+      if (!guidedExitedAt) return;
+      if (timer) return;
+      timer = setTimeout(() => {
+        setIsActive(true);
+        localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+      }, 4000);
+    };
 
-    return () => clearTimeout(timer);
+    maybeAutoStart();
+    window.addEventListener('guided-home-exited', maybeAutoStart);
+
+    return () => {
+      window.removeEventListener('guided-home-exited', maybeAutoStart);
+      if (timer) clearTimeout(timer);
+    };
   }, [user?.id]);
 
   const startTutorial = useCallback(() => {
