@@ -376,7 +376,14 @@ export const useExpenseCRUD = ({
           expense_nature: (data.expense_nature as 'regular' | 'extraordinary') || undefined
         };
 
-        setExpenses(prev => [newExpense, ...prev]);
+        // Optimistic prepend + sort by date desc kako bi `allExpenses[0]`
+        // odmah odražavao najnoviju transakciju (Bug 2: guided "last entry"
+        // kartica). Realtime grana već radi isto sortiranje.
+        setExpenses(prev => {
+          const next = [newExpense, ...prev];
+          next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          return next;
+        });
 
         const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
         await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
