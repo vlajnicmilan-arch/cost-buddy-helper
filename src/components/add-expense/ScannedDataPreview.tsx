@@ -236,7 +236,10 @@ export const ScannedDataPreview = ({
             <Input
               type="date"
               value={scannedData.date || ''}
-              onChange={(e) => onScannedDataChange({ ...scannedData, date: e.target.value || null })}
+              onChange={(e) => {
+                onDateOrTimeEdited?.();
+                onScannedDataChange({ ...scannedData, date: e.target.value || null });
+              }}
               className="mt-1 h-10 rounded-lg text-sm"
             />
           </div>
