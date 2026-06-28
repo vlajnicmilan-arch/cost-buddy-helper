@@ -45,7 +45,8 @@ export const OnboardingManualSheet = ({
   onAddExpense,
 }: OnboardingManualSheetProps) => {
   const { t } = useTranslation();
-  const { currencyCode } = useCurrency();
+  const { currency } = useCurrency();
+  const currencyCode = currency.code;
   const { lightTap, successVibration } = useHaptics();
   const { addCustomPaymentSource } = useCustomPaymentSources();
 
