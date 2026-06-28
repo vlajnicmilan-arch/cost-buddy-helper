@@ -150,7 +150,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const projectsHidden = !projectsModuleEnabled;
   const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
-  const { registerHandlers, openManualAdd, openScan } = useReceiptScan();
+  const { registerHandlers, openScan } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   const { formatAmount } = useCurrency();
   const [debtsOpen, setDebtsOpen] = useState(false);
