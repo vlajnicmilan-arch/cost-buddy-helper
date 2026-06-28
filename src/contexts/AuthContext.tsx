@@ -79,15 +79,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      setSession(existing);
-      setUser(existing?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session: existing } }) => {
+      // Validate the restored session against the backend. A locally cached
+      // JWT remains "valid" (signature OK, not expired) even after the
+      // backend user has been hard-deleted, which would otherwise let the
+      // app keep treating that ghost session as logged in and route the
+      // user straight into onboarding. `getUser()` hits the Auth server and
+      // returns an error (user_not_found / invalid token) in that case.
+      let validatedSession = existing;
+      if (existing?.user) {
+        try {
+          const { data: userData, error: userErr } = await supabase.auth.getUser();
+          if (userErr || !userData?.user) {
+            console.warn('[auth] Restored session rejected by server, signing out:', userErr?.message);
+            await supabase.auth.signOut().catch(() => {});
+            try {
+              const { instantCache } = await import('@/lib/instantCache');
+              instantCache.clearAll();
+            } catch { /* noop */ }
+            validatedSession = null;
+          }
+        } catch (e) {
+          // Network failure — keep the cached session rather than locking
+          // the user out on a transient hiccup. Next foreground will retry.
+          console.warn('[auth] getUser() validation failed (network?):', (e as Error)?.message);
+        }
+      }
+
+      setSession(validatedSession);
+      setUser(validatedSession?.user ?? null);
       setLoading(false);
       initialSessionCheckedRef.current = true;
       setAuthReady(true);
 
-      if (existing?.user) {
-        lastSignedInUserRef.current = existing.user.id;
+      if (validatedSession?.user) {
+        lastSignedInUserRef.current = validatedSession.user.id;
         const deviceInfo = {
           userAgent: navigator.userAgent,
           language: navigator.language,
@@ -100,11 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           eventType: 'app_open',
         };
         supabase.from('user_login_logs').insert({
-          user_id: existing.user.id,
+          user_id: validatedSession.user.id,
           device_info: deviceInfo,
         } as any).then(() => {});
       }
     });
+
 
     return () => subscription.unsubscribe();
   }, []);
