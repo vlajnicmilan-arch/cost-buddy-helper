@@ -498,6 +498,16 @@ export const UsersTab = ({
           )}
         </div>
       )}
+
+      {hardDeleteTarget && (
+        <HardDeleteUserDialog
+          open={!!hardDeleteTarget}
+          onOpenChange={(o) => { if (!o) setHardDeleteTarget(null); }}
+          userId={hardDeleteTarget.id}
+          email={hardDeleteTarget.email}
+          onDeleted={() => { setHardDeleteTarget(null); onRefresh(); }}
+        />
+      )}
     </div>
   );
 };
