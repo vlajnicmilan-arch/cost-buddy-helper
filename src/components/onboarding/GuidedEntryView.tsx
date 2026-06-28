@@ -22,7 +22,10 @@ interface GuidedEntryViewProps {
     items?: ReceiptItem[],
     isPendingMemberTransaction?: boolean,
   ) => Promise<void>;
+  /** Transition ceremony lock-in (~250ms): treća kockica popunjena, CTA-i disabled. */
+  locking?: boolean;
 }
+
 
 /**
  * Jedinstveni onboarding entrypoint kroz cijelu guided fazu (0..THRESHOLD-1
