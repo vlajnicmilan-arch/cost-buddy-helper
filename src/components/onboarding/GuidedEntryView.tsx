@@ -22,7 +22,10 @@ interface GuidedEntryViewProps {
     items?: ReceiptItem[],
     isPendingMemberTransaction?: boolean,
   ) => Promise<void>;
+  /** Transition ceremony lock-in (~250ms): treća kockica popunjena, CTA-i disabled. */
+  locking?: boolean;
 }
+
 
 /**
  * Jedinstveni onboarding entrypoint kroz cijelu guided fazu (0..THRESHOLD-1
@@ -36,15 +39,20 @@ export const GuidedEntryView = ({
   customPaymentSources,
   onScan,
   onAddExpense,
+  locking = false,
 }: GuidedEntryViewProps) => {
   const { t } = useTranslation();
   const [manualOpen, setManualOpen] = useState(false);
 
   const name = (displayName || '').trim();
-  const count = allExpenses.length;
+  const rawCount = allExpenses.length;
+  // Tijekom 'lock' faze (prev<3 → next≥3) UI pokazuje sva 3 polja kao popunjena
+  // čak i ako je live count već ≥ THRESHOLD prije payoff cross-fade-a.
+  const count = locking ? GUIDED_EXPENSE_THRESHOLD : rawCount;
   const isZero = count === 0;
   const remaining = Math.max(0, GUIDED_EXPENSE_THRESHOLD - count);
   const last = allExpenses[0];
+
 
   return (
     <motion.div
@@ -141,8 +149,8 @@ export const GuidedEntryView = ({
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-3">
-        <Button onClick={onScan} size="lg" className="gap-2 min-h-[44px] w-full">
+      <div className={cn('flex flex-col gap-3', locking && 'pointer-events-none opacity-60')}>
+        <Button onClick={onScan} size="lg" className="gap-2 min-h-[44px] w-full" disabled={locking}>
           <Camera className="w-4 h-4" />
           {t('guidedHome.entry.scanCta', 'Skeniraj')}
         </Button>
@@ -151,11 +159,13 @@ export const GuidedEntryView = ({
           size="lg"
           variant="outline"
           className="gap-2 min-h-[44px] w-full"
+          disabled={locking}
         >
           <PencilLine className="w-4 h-4" />
           {t('guidedHome.entry.manualCta', 'Unesi ručno')}
         </Button>
       </div>
+
 
       {remaining > 0 && !isZero && (
         <p className="text-xs text-muted-foreground mt-4 text-center">
