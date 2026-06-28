@@ -1289,6 +1289,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           description: string
+          event_at: string | null
           expense_nature: string | null
           id: string
           import_batch_id: string | null
@@ -1314,6 +1315,7 @@ export type Database = {
           recurring_transaction_id: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
+          time_confidence: string
           type: string
           updated_at: string
           user_id: string
@@ -1338,6 +1340,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description: string
+          event_at?: string | null
           expense_nature?: string | null
           id?: string
           import_batch_id?: string | null
@@ -1363,6 +1366,7 @@ export type Database = {
           recurring_transaction_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
+          time_confidence?: string
           type?: string
           updated_at?: string
           user_id: string
@@ -1387,6 +1391,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string
+          event_at?: string | null
           expense_nature?: string | null
           id?: string
           import_batch_id?: string | null
@@ -1412,6 +1417,7 @@ export type Database = {
           recurring_transaction_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
+          time_confidence?: string
           type?: string
           updated_at?: string
           user_id?: string
@@ -4940,6 +4946,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           description: string
+          event_at: string | null
           expense_nature: string | null
           id: string
           import_batch_id: string | null
@@ -4965,6 +4972,7 @@ export type Database = {
           recurring_transaction_id: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
+          time_confidence: string
           type: string
           updated_at: string
           user_id: string
