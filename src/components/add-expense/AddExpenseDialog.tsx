@@ -533,6 +533,7 @@ export const AddExpenseDialog = ({
       recipient_name: result.recipient_name,
       issuer_name: result.issuer_name,
       issuer_oib: result.issuer_oib,
+      issued_at_iso: result.issued_at_iso ?? null,
     });
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
