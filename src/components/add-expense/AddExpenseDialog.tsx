@@ -513,8 +513,27 @@ export const AddExpenseDialog = ({
     if (result.merchant) setMerchantName(result.merchant);
     if (result.category) setCategory(result.category as Category);
     if (result.date) setExpenseDate(result.date);
-    if (result.payment_source) setPaymentSource(result.payment_source);
     if (result.payment_source_card_id) setSelectedCardId(result.payment_source_card_id);
+
+    // Uski fallback: ako AI nije vratio metodu plaćanja niti matched custom id,
+    // koristi isti default koji već koristi dialog-level state (pickDefaultPaymentSource).
+    // OGRADA: ovo nije "točan gotovinski izvor", samo konzistencija s dialog fallbackom.
+    let resolvedPaymentSource: PaymentSource | null = result.payment_source;
+    let resolvedCustomId: string | null = result.custom_payment_source_id;
+    if (!resolvedCustomId && !resolvedPaymentSource) {
+      const fallback = pickDefaultPaymentSource(customPaymentSources);
+      if (typeof fallback === 'string' && fallback.startsWith('custom:')) {
+        resolvedCustomId = fallback.slice('custom:'.length);
+        resolvedPaymentSource = null;
+      } else {
+        resolvedPaymentSource = fallback;
+      }
+    }
+    if (resolvedCustomId) {
+      setPaymentSource(`custom:${resolvedCustomId}` as PaymentSource);
+    } else if (resolvedPaymentSource) {
+      setPaymentSource(resolvedPaymentSource);
+    }
 
     setScannedData({
       amount: result.amount,
@@ -522,8 +541,8 @@ export const AddExpenseDialog = ({
       description: safeDescription,
       category: result.category,
       date: result.date,
-      payment_source: result.payment_source,
-      custom_payment_source_id: result.custom_payment_source_id,
+      payment_source: resolvedPaymentSource,
+      custom_payment_source_id: resolvedCustomId,
       payment_source_card_id: result.payment_source_card_id,
       items: result.items,
       is_installment: result.is_installment,
