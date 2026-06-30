@@ -248,6 +248,7 @@ KORAK 3: Ako nema podudaranja brojeva
      - Pregledaj CIJELI račun (zaglavlje, sredinu, podnožje). Pozicija sama po sebi nije ni dovoljan ni diskvalificirajući signal.
      - Datetime smije biti priznat ako je jedini uvjerljivi kandidat za stvarno vrijeme izdavanja računa,
      - ILI ako drugi datetime kandidati postoje, ali su jasno sekundarni i pripadaju STOP-LISTI ispod.
+      - Uski HR fiskalni obrazac koji se priznaje: naziv izdavatelja/OIB/adresa → „Račun br." / broj računa → jedan puni datetime (DD.MM.YYYY HH:MM[:SS]) → tablica stavki/ukupno, bez konkurentskog glavnog datetimea. U tom obrascu datetime je primarni timestamp računa i issued_at_label_present=true.
      - Ako nisi siguran koji je glavni → false.
 
    STOP-LISTA (datetime u TIM kontekstima NIKAD nije glavni i mora biti odbačen):
@@ -262,7 +263,7 @@ KORAK 3: Ako nema podudaranja brojeva
      - Ako postoji više datetime kandidata IZVAN stop-liste bez jasnog primata → label_present=false.
 
    ZABRANE HEURISTIKE:
-     - NE zaključuj true samo zato što je datetime „uz Račun br." ili u zaglavlju. Pozicija nije dovoljan signal.
+      - NE zaključuj true samo zato što je datetime „uz Račun br." ili u zaglavlju; mora postojati puni strukturni obrazac iz Slučaja B ili eksplicitni label iz Slučaja A.
      - NE zaključuj false samo zato što datetime nije u zaglavlju. Glavni timestamp može legitimno biti između stavki i totala ili u podnožju.
      - Postojanje ili nepostojanje JIR / ZKI / fiskalnog markera / QR fiskalnog bloka NE SMIJE utjecati na ovu odluku.
 
