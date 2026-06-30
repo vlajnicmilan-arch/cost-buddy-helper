@@ -18,8 +18,11 @@
  *   3. `issued_at_iso` not a valid ISO datetime with time component → C3.
  *   4. `issued_at_raw` doesn't contain the HH:MM from `issued_at_iso` → C3
  *      (guards against model hallucinating a time it didn't read).
- *   5. `issued_at_iso` outside the sanity range (>1h in the future, or
- *      >7 days in the past from `now`) → C3.
+ *   5. `issued_at_iso` more than 1h in the future from `now` → C3
+ *      (anti-hallucination / wrongly parsed year). There is NO past-window
+ *      guard — age of the receipt is not a tier signal. Whether an old but
+ *      reliably read receipt affects current balance is solely the anchor /
+ *      hybrid engine's job via `event_at`.
  *   6. Otherwise → C1, `eventAt = issued_at_iso`.
  *
  * `fiscal_marker_present` is intentionally NOT part of the decision. It
@@ -59,7 +62,6 @@ export type ScanTierDecision = {
 const ISO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function fallback(reason: ScanTierDecision['reason']): ScanTierDecision {
   return { tier: 'C3', eventAt: null, reason };
@@ -90,10 +92,12 @@ export function decideScanTier(input: DecideScanTierInput): ScanTierDecision {
   const needle = new RegExp(`${hh}[:.h ]${mm}`);
   if (!needle.test(raw)) return fallback('raw_iso_mismatch');
 
+  // Future-only sanity guard: timestamp >1h ahead of now is a hallucination
+  // or wrongly parsed year. No past-window guard — see header rule 5.
   const nowMs = input.now.getTime();
   const isoMs = parsed.getTime();
   if (isoMs > nowMs + ONE_HOUR_MS) return fallback('out_of_range');
-  if (isoMs < nowMs - SEVEN_DAYS_MS) return fallback('out_of_range');
+
 
   return { tier: 'C1', eventAt: iso, reason: 'c1_ok' };
 }
