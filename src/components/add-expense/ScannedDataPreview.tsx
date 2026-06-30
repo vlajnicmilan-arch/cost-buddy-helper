@@ -32,6 +32,12 @@ interface ScannedData {
   recipient_name?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
+  /**
+   * Val 4 — očitani ISO timestamp izdavanja računa (s vremenom). Prikazuje
+   * se read-only uz datum kako bi korisnik mogao provjeriti je li točno.
+   * Editiranje vremena nije podržano u ovom passu.
+   */
+  issued_at_iso?: string | null;
 }
 
 interface ScannedDataPreviewProps {
