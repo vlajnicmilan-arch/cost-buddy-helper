@@ -1644,6 +1644,7 @@
     "itemsFound": "Artikli",
     "merchant": "Trgovina",
     "dateNotFound": "Nije pronađen",
+    "timeReadOnly": "Očitano vrijeme: {{time}}",
     "analyzingPages": "Analiziram {{count}} stranica...",
     "multiPageReceipt": "Višestraničan račun",
     "multiPageTitle": "Dodaj sve stranice računa ({{count}}/{{max}})",
