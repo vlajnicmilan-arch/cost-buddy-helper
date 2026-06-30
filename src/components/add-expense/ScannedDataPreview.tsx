@@ -32,6 +32,12 @@ interface ScannedData {
   recipient_name?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
+  /**
+   * Val 4 — očitani ISO timestamp izdavanja računa (s vremenom). Prikazuje
+   * se read-only uz datum kako bi korisnik mogao provjeriti je li točno.
+   * Editiranje vremena nije podržano u ovom passu.
+   */
+  issued_at_iso?: string | null;
 }
 
 interface ScannedDataPreviewProps {
@@ -242,6 +248,26 @@ export const ScannedDataPreview = ({
               }}
               className="mt-1 h-10 rounded-lg text-sm"
             />
+            {(() => {
+              const iso = scannedData.issued_at_iso;
+              if (!iso) return null;
+              try {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return null;
+                const time = new Intl.DateTimeFormat('hr-HR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Europe/Zagreb',
+                }).format(d);
+                return (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t('scanner.timeReadOnly', { time, defaultValue: 'Očitano vrijeme: {{time}}' })}
+                  </p>
+                );
+              } catch {
+                return null;
+              }
+            })()}
           </div>
         </div>
 

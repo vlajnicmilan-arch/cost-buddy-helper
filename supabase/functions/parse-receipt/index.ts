@@ -232,25 +232,47 @@ KORAK 3: Ako nema podudaranja brojeva
    - VAŽNO: Uvijek vrati u formatu YYYY-MM-DD
 
 3a. STRUKTURIRANO VRIJEME IZDAVANJA (Val 4 — precizno vrijeme)
-   - Cilj: prepoznati JEDNO primarno vrijeme događaja (vrijeme izdavanja računa).
+   - Cilj: prepoznati JEDAN primarni timestamp događaja izdavanja računa.
    - Vrati issued_at_raw kao DOSLOVAN tekst kako stoji na slici (npr. "20.01.2025 15:30:42")
    - Vrati issued_at_iso kao ISO-8601 datetime s vremenom i HR offsetom (npr. "2025-01-20T15:30:42+01:00" zimi, "+02:00" ljeti). Ako nemaš pouzdano vrijeme → null
-   - issued_at_label_present: true SAMO ako uz to vrijeme stoji JASAN label koji nedvosmisleno označava PRIMARNO vrijeme događaja izdavanja. Prihvatljivi labeli (primjeri, ne iscrpno):
-       HR: „Vrijeme izdavanja", „Datum/vrijeme", „Datum i vrijeme", „Izdano", „Vrijeme:"
-       DE: „Ausgestellt", „Datum/Uhrzeit", „Ausstellungszeit"
-       EN: „Issued at", „Date/Time", „Time of issue"
-   - issued_at_label_present: false ako:
-       • račun ima više različitih vremena bez jasnog prioriteta (npr. „Vrijeme dolaska" + „Vrijeme naplate") i nije nedvosmisleno koje je glavno
-       • label označava nešto što NIJE vrijeme događaja izdavanja: „Vrijeme tiskanja", „Kopija", „Vrijeme smjene", „Sat blagajne", vrijeme kartične autorizacije, POS print timestamp
-       • vrijeme je samo „neki HH:MM negdje na računu" bez labela
-   - NE pogađaj. Ako nisi siguran je li to baš primarno vrijeme događaja → label_present=false i iso=null.
-   - NIKAD ne miješaj vrijeme kartične autorizacije, vrijeme printa ili POS timestamp s vremenom izdavanja.
 
+   issued_at_label_present smije biti true SAMO u jednom od ova dva slučaja:
 
-3b. FISKALNI MARKER (Val 4)
+   SLUČAJ A — Eksplicitni label uz puni datetime (datum + HH:MM):
+     HR: „Vrijeme izdavanja", „Datum/vrijeme", „Datum i vrijeme", „Izdano", „Vrijeme:"
+     DE: „Ausgestellt", „Datum/Uhrzeit", „Ausstellungszeit"
+     EN: „Issued at", „Date/Time", „Time of issue"
+     Posebno: „Datum računa" / „Invoice date" / „Rechnungsdatum" vrijedi SAMO ako uz njega stoji i vrijeme (HH:MM). Goli datum nije dovoljan.
+
+   SLUČAJ B — Nedvosmisleni glavni timestamp bez doslovnog labela:
+     - Pregledaj CIJELI račun (zaglavlje, sredinu, podnožje). Pozicija sama po sebi nije ni dovoljan ni diskvalificirajući signal.
+     - Datetime smije biti priznat ako je jedini uvjerljivi kandidat za stvarno vrijeme izdavanja računa,
+     - ILI ako drugi datetime kandidati postoje, ali su jasno sekundarni i pripadaju STOP-LISTI ispod.
+     - Ako nisi siguran koji je glavni → false.
+
+   STOP-LISTA (datetime u TIM kontekstima NIKAD nije glavni i mora biti odbačen):
+     - Kartični slip / POS autorizacija: „Autorizacija", „Approved", „Auth", „Odobreno", „AID", „RRN", broj transakcije kartice, vrijeme terećenja kartice
+     - „Vrijeme tiska", „Tiskano", „Kopija", „Reprint", „Duplikat"
+     - „Smjena", „Sat blagajne", „Vrijeme smjene", „Otvorena smjena"
+     - „Vrijeme dolaska", „Vrijeme naplate", „Vrijeme narudžbe"
+     - Bilo koji sekundarni ispis ili pomoćni dokument na istom papiru (ponuda uz račun, narudžbenica, R1 zahtjev)
+
+   PRAVILA RAZDVAJANJA:
+     - Ako postoji jedan očito glavni datetime i jedan iz stop-liste → glavni se priznaje (label_present=true po slučaju B).
+     - Ako postoji više datetime kandidata IZVAN stop-liste bez jasnog primata → label_present=false.
+
+   ZABRANE HEURISTIKE:
+     - NE zaključuj true samo zato što je datetime „uz Račun br." ili u zaglavlju. Pozicija nije dovoljan signal.
+     - NE zaključuj false samo zato što datetime nije u zaglavlju. Glavni timestamp može legitimno biti između stavki i totala ili u podnožju.
+     - Postojanje ili nepostojanje JIR / ZKI / fiskalnog markera / QR fiskalnog bloka NE SMIJE utjecati na ovu odluku.
+
+   Ako nemaš pouzdano vrijeme → issued_at_iso=null i label_present=false. NE pogađaj.
+
+3b. FISKALNI MARKER (Val 4 — SAMO TELEMETRIJA, ne utječe na odluku o vremenu)
    - fiscal_marker_present: true SAMO ako na računu vidiš JIR (Jedinstveni Identifikator Računa) ili ZKI (Zaštitni Kod Izdavatelja) ili izričito „Račun fiskaliziran"/„Fiskalizirano"
    - Ako pročitaš JIR vrati ga kao jir_value (string), inače null
    - Ne-fiskalni dokumenti (ponude, predračuni, interni bonovi, ručno pisani) → fiscal_marker_present: false
+   - VAŽNO: ovi signali su isključivo telemetrijski. Ne smiju utjecati ni na issued_at_label_present ni na bilo koju drugu odluku o vremenu.
 
 4. NAČIN PLAĆANJA (KRITIČNO!)
    - Za karticu traži: VISA, MASTERCARD, MC, MAESTRO, AMEX, DEBIT, CREDIT, POS, KARTICA, CARD, KARTIČNO, BEZGOTOVINSKI, CONTACTLESS

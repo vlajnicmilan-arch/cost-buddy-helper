@@ -1640,6 +1640,7 @@
     "itemsFound": "Artikel",
     "merchant": "Händler",
     "dateNotFound": "Nicht gefunden",
+    "timeReadOnly": "Erkannte Uhrzeit: {{time}}",
     "analyzingPages": "Analysiere {{count}} Seiten...",
     "multiPageReceipt": "Mehrseitiger Beleg",
     "multiPageTitle": "Alle Belegseiten hinzufügen ({{count}}/{{max}})",

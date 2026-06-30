@@ -1640,6 +1640,7 @@
     "itemsFound": "Items",
     "merchant": "Merchant",
     "dateNotFound": "Not found",
+    "timeReadOnly": "Detected time: {{time}}",
     "analyzingPages": "Analyzing {{count}} pages...",
     "multiPageReceipt": "Multi-page receipt",
     "multiPageTitle": "Add all receipt pages ({{count}}/{{max}})",
