@@ -92,6 +92,7 @@ interface ScannedData {
   recipient_name?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
+  issued_at_iso?: string | null;
 }
 
 export const AddExpenseDialog = ({
