@@ -61,16 +61,17 @@ describe('decideScanTier', () => {
     expect(d.reason).toBe('out_of_range');
   });
 
-  it('T7 — iso > 7 days in the past → C3 / out_of_range', () => {
-    const past = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  it('T7 — stari račun s pouzdano očitanim vremenom → C1 (starost nije tier signal)', () => {
+    // 31 days old — past-window guard removed; age is the anchor engine's job.
+    const past = new Date(NOW.getTime() - 31 * 24 * 60 * 60 * 1000).toISOString();
     const hh = past.slice(11, 13);
     const mm = past.slice(14, 16);
     const d = decideScanTier(base({
       issued_at_iso: past.replace('Z', '+00:00'),
-      issued_at_raw: `${hh}:${mm}`,
+      issued_at_raw: `Datum/vrijeme ${hh}:${mm}`,
     }));
-    expect(d.tier).toBe('C3');
-    expect(d.reason).toBe('out_of_range');
+    expect(d.tier).toBe('C1');
+    expect(d.reason).toBe('c1_ok');
   });
 
   it('T8 — user edited date/time → C3 / user_edited (even with perfect signals)', () => {
