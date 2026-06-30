@@ -62,7 +62,6 @@ export type ScanTierDecision = {
 const ISO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function fallback(reason: ScanTierDecision['reason']): ScanTierDecision {
   return { tier: 'C3', eventAt: null, reason };
@@ -93,10 +92,12 @@ export function decideScanTier(input: DecideScanTierInput): ScanTierDecision {
   const needle = new RegExp(`${hh}[:.h ]${mm}`);
   if (!needle.test(raw)) return fallback('raw_iso_mismatch');
 
+  // Future-only sanity guard: timestamp >1h ahead of now is a hallucination
+  // or wrongly parsed year. No past-window guard — see header rule 5.
   const nowMs = input.now.getTime();
   const isoMs = parsed.getTime();
   if (isoMs > nowMs + ONE_HOUR_MS) return fallback('out_of_range');
-  if (isoMs < nowMs - SEVEN_DAYS_MS) return fallback('out_of_range');
+
 
   return { tier: 'C1', eventAt: iso, reason: 'c1_ok' };
 }
