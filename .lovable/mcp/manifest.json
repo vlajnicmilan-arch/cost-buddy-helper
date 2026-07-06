@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://fzalxjretvtvokiotvkf.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "vm-balance-mcp",
+      "version": "0.1.0",
+      "title": "V&M Balance MCP"
+    },
+    "tools": [
+      {
+        "name": "list_recent_expenses",
+        "title": "List recent transactions",
+        "description": "List the signed-in user's most recent transactions (expenses, income, transfers) from V&M Balance, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "How many rows to return (1-50). Defaults to 20."
+            }
+          },
+          "required": [
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_wallet_balances",
+        "title": "Get wallet balances",
+        "description": "Return the signed-in user's custom payment sources (wallets) with their current stored balance and currency.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_expense",
+        "title": "Create expense",
+        "description": "Insert a new expense (troška) for the signed-in user in V&M Balance. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Positive amount (e.g. 12.50)"
+            },
+            "currency": {
+              "type": "string",
+              "description": "ISO 4217 currency code, e.g. 'EUR'. Defaults to 'EUR'."
+            },
+            "date": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD. Defaults to today if omitted."
+            },
+            "category": {
+              "type": "string",
+              "description": "Category name, e.g. 'groceries'."
+            },
+            "description": {
+              "type": "string",
+              "description": "Short description / merchant note."
+            },
+            "payment_source": {
+              "type": "string",
+              "description": "Payment source id. Either a system id like 'cash' or 'custom:<uuid>' for a user wallet. Defaults to 'cash'."
+            }
+          },
+          "required": [
+            "amount",
+            "currency",
+            "date",
+            "category",
+            "description",
+            "payment_source"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

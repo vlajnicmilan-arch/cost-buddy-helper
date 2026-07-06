@@ -68,6 +68,7 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 
 
@@ -176,7 +177,10 @@ const AppRoutes = () => {
   const { onboardingCompleted, appStateReady } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
   const { user, authReady } = useAuth();
-  const authReturnPath = (location.state as { from?: string } | null)?.from;
+  const stateReturn = (location.state as { from?: string } | null)?.from;
+  const queryNext = new URLSearchParams(location.search).get("next");
+  const safeNext = queryNext && queryNext.startsWith("/") && !queryNext.startsWith("//") ? queryNext : null;
+  const authReturnPath = safeNext || stateReturn;
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
@@ -220,6 +224,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
@@ -245,6 +250,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
@@ -273,6 +279,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </Routes>
       </Suspense>
@@ -316,6 +323,7 @@ const AppRoutes = () => {
       <Route path="/landing" element={<Navigate to="/" replace />} />
       <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
       <Route path="/p/:token" element={<Suspense fallback={<PageLoader />}><PublicProject /></Suspense>} />
+      <Route path="/.lovable/oauth/consent" element={<Suspense fallback={<PageLoader />}><OAuthConsent /></Suspense>} />
       <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>
   );

@@ -26,6 +26,7 @@ const PUBLIC_ROUTES: ReadonlyArray<string> = [
   "/help",
   "/unsubscribe",
   "/landing",
+  "/.lovable/oauth/consent",
 ];
 
 const PUBLIC_ROUTE_PREFIXES: ReadonlyArray<string> = [

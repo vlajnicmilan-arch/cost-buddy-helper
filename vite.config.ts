@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { visualizer } from "rollup-plugin-visualizer";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 import fs from "fs";
 
 // Read version from version.json
@@ -23,6 +24,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    mcpPlugin(),
     mode === "development" && componentTagger(),
     // Bundle analyzer — generates dist/stats.html after `vite build`.
     // Only runs when ANALYZE=true to avoid slowing down normal builds.
