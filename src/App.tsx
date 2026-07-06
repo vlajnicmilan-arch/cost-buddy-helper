@@ -177,7 +177,10 @@ const AppRoutes = () => {
   const { onboardingCompleted, appStateReady } = useAppState();
   const { trialExpired, subscribed, loading: subLoading } = useSubscription();
   const { user, authReady } = useAuth();
-  const authReturnPath = (location.state as { from?: string } | null)?.from;
+  const stateReturn = (location.state as { from?: string } | null)?.from;
+  const queryNext = new URLSearchParams(location.search).get("next");
+  const safeNext = queryNext && queryNext.startsWith("/") && !queryNext.startsWith("//") ? queryNext : null;
+  const authReturnPath = safeNext || stateReturn;
 
   // Wait for all readiness signals before making routing decisions
   const allReady = isInitialized && authReady && appStateReady;
