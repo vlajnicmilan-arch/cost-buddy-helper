@@ -247,6 +247,7 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/paywall" replace />} />
         </Routes>
       </Suspense>
@@ -275,6 +276,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </Routes>
       </Suspense>
@@ -318,6 +320,7 @@ const AppRoutes = () => {
       <Route path="/landing" element={<Navigate to="/" replace />} />
       <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
       <Route path="/p/:token" element={<Suspense fallback={<PageLoader />}><PublicProject /></Suspense>} />
+      <Route path="/.lovable/oauth/consent" element={<Suspense fallback={<PageLoader />}><OAuthConsent /></Suspense>} />
       <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>
   );
