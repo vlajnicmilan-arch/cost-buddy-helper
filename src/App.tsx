@@ -68,6 +68,7 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 
 
@@ -220,6 +221,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
