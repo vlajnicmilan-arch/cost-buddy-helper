@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "vm-balance-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "V&M Balance MCP"
     },
     "tools": [
@@ -103,6 +103,392 @@
             "category",
             "description",
             "payment_source"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_budgets",
+        "title": "List budgets",
+        "description": "List the signed-in user's budget plans (name, total amount, period, active flag).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "only_active": {
+              "type": "boolean",
+              "description": "If true, only active budgets. Defaults to true."
+            }
+          },
+          "required": [
+            "only_active"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_budget_details",
+        "title": "Get budget details",
+        "description": "For a given budget_id, return the plan, its categories with planned amounts, and actual spending (sum of expenses with matching budget_id).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "budget_id": {
+              "type": "string",
+              "description": "Budget plan UUID."
+            }
+          },
+          "required": [
+            "budget_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_budget",
+        "title": "Create budget plan",
+        "description": "Create a new budget plan for the signed-in user. period_type is one of 'monthly', 'weekly', 'yearly', 'custom'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Budget name, e.g. 'Kućni budžet listopad'."
+            },
+            "total_amount": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Total planned amount."
+            },
+            "period_type": {
+              "type": "string",
+              "description": "'monthly' | 'weekly' | 'yearly' | 'custom'. Defaults to 'monthly'."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD. Optional."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD. Optional."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional description."
+            }
+          },
+          "required": [
+            "name",
+            "total_amount",
+            "period_type",
+            "start_date",
+            "end_date",
+            "description"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_budget_category",
+        "title": "Add category to budget",
+        "description": "Add a category with a planned limit to an existing budget plan.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "budget_id": {
+              "type": "string",
+              "description": "Target budget plan UUID."
+            },
+            "category": {
+              "type": "string",
+              "description": "Category name, e.g. 'groceries'."
+            },
+            "limit_amount": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Planned limit for this category."
+            },
+            "icon": {
+              "type": "string",
+              "description": "Optional emoji/icon."
+            },
+            "color": {
+              "type": "string",
+              "description": "Optional hex color, e.g. '#3b82f6'."
+            }
+          },
+          "required": [
+            "budget_id",
+            "category",
+            "limit_amount",
+            "icon",
+            "color"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_projects",
+        "title": "List projects",
+        "description": "List projects the signed-in user owns or is a member of, with total income/expense/profit derived from expenses.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "only_active": {
+              "type": "boolean",
+              "description": "If true, exclude archived. Defaults to true."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max projects to return. Defaults to 50."
+            }
+          },
+          "required": [
+            "only_active",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_project_details",
+        "title": "Get project details",
+        "description": "Return a project with its milestones, team members, and aggregated income/expense totals.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "description": "Project UUID."
+            }
+          },
+          "required": [
+            "project_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_project_milestones",
+        "title": "List project milestones",
+        "description": "List milestones for a project with planned and actual dates plus a delay flag if the actual end passed the due date.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "description": "Project UUID."
+            }
+          },
+          "required": [
+            "project_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_project",
+        "title": "Create project",
+        "description": "Create a new project for the signed-in user. project_type is a preset key like 'construction', 'freelance', 'event', 'renovation', 'other'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Project name."
+            },
+            "project_type": {
+              "type": "string",
+              "description": "Preset key. Defaults to 'other'."
+            },
+            "total_budget": {
+              "type": "number",
+              "description": "Planned total budget. Defaults to 0."
+            },
+            "description": {
+              "type": "string",
+              "description": "Optional description."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD. Optional."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "ISO date YYYY-MM-DD. Optional."
+            },
+            "status": {
+              "type": "string",
+              "description": "'active' | 'on_hold' | 'completed'. Defaults to 'active'."
+            }
+          },
+          "required": [
+            "name",
+            "project_type",
+            "total_budget",
+            "description",
+            "start_date",
+            "end_date",
+            "status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_project_work_entries",
+        "title": "List project work entries",
+        "description": "List worker time entries for a project (scheduled vs actual hours, notes).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "description": "Project UUID."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max entries. Defaults to 50."
+            }
+          },
+          "required": [
+            "project_id",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_krugs",
+        "title": "List krugs (shared circles)",
+        "description": "List krugs (shared/family circles) the signed-in user is a member of, with their role in each.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_krug_summary",
+        "title": "Get krug summary",
+        "description": "For a krug_id return its members, shared payment sources, and total expenses on those shared sources in the last 30 days.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "krug_id": {
+              "type": "string",
+              "description": "Krug UUID."
+            }
+          },
+          "required": [
+            "krug_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_krug_expenses",
+        "title": "List krug expenses",
+        "description": "List recent expenses/incomes booked to any payment source shared with a given krug.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "krug_id": {
+              "type": "string",
+              "description": "Krug UUID."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max rows. Defaults to 30."
+            }
+          },
+          "required": [
+            "krug_id",
+            "limit"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"

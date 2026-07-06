@@ -167,18 +167,490 @@ var create_expense_default = defineTool3({
   }
 });
 
+// src/lib/mcp/tools/list-budgets.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_client.ts
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.91.0";
+function supabaseForUser4(ctx) {
+  return createClient4(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY,
+    {
+      global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    }
+  );
+}
+
+// src/lib/mcp/tools/list-budgets.ts
+var list_budgets_default = defineTool4({
+  name: "list_budgets",
+  title: "List budgets",
+  description: "List the signed-in user's budget plans (name, total amount, period, active flag).",
+  inputSchema: {
+    only_active: z3.boolean().describe("If true, only active budgets. Defaults to true.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ only_active }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    let q = sb.from("budget_plans").select(
+      "id,name,description,total_amount,period_type,start_date,end_date,is_active,project_id,created_at"
+    ).order("created_at", { ascending: false });
+    if (only_active !== false) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { budgets: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-budget-details.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z4 } from "npm:zod@^3.25.76";
+var get_budget_details_default = defineTool5({
+  name: "get_budget_details",
+  title: "Get budget details",
+  description: "For a given budget_id, return the plan, its categories with planned amounts, and actual spending (sum of expenses with matching budget_id).",
+  inputSchema: {
+    budget_id: z4.string().describe("Budget plan UUID.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ budget_id }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const [plan, categories, spent] = await Promise.all([
+      sb.from("budget_plans").select("*").eq("id", budget_id).maybeSingle(),
+      sb.from("budget_categories").select("id,category,limit_amount,icon,color").eq("budget_id", budget_id),
+      sb.from("expenses").select("category,amount,type").eq("budget_id", budget_id).is("deleted_at", null)
+    ]);
+    if (plan.error) return { content: [{ type: "text", text: plan.error.message }], isError: true };
+    if (!plan.data) return { content: [{ type: "text", text: "Budget not found" }], isError: true };
+    const spentByCat = /* @__PURE__ */ new Map();
+    let totalSpent = 0;
+    for (const e of spent.data ?? []) {
+      if (e.type !== "expense") continue;
+      const cur = spentByCat.get(e.category) ?? 0;
+      spentByCat.set(e.category, cur + Number(e.amount));
+      totalSpent += Number(e.amount);
+    }
+    const cats = (categories.data ?? []).map((c) => ({
+      ...c,
+      spent: spentByCat.get(c.category) ?? 0,
+      remaining: Number(c.limit_amount) - (spentByCat.get(c.category) ?? 0)
+    }));
+    const result = {
+      plan: plan.data,
+      total_spent: totalSpent,
+      total_remaining: Number(plan.data.total_amount) - totalSpent,
+      categories: cats
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-budget.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+var create_budget_default = defineTool6({
+  name: "create_budget",
+  title: "Create budget plan",
+  description: "Create a new budget plan for the signed-in user. period_type is one of 'monthly', 'weekly', 'yearly', 'custom'.",
+  inputSchema: {
+    name: z5.string().describe("Budget name, e.g. 'Ku\u0107ni bud\u017Eet listopad'."),
+    total_amount: z5.number().positive().describe("Total planned amount."),
+    period_type: z5.string().describe("'monthly' | 'weekly' | 'yearly' | 'custom'. Defaults to 'monthly'."),
+    start_date: z5.string().describe("ISO date YYYY-MM-DD. Optional."),
+    end_date: z5.string().describe("ISO date YYYY-MM-DD. Optional."),
+    description: z5.string().describe("Optional description.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const row = {
+      user_id: ctx.getUserId(),
+      name: input.name,
+      total_amount: input.total_amount,
+      period_type: input.period_type || "monthly",
+      start_date: input.start_date || null,
+      end_date: input.end_date || null,
+      description: input.description || null,
+      is_active: true
+    };
+    const { data, error } = await supabaseForUser4(ctx).from("budget_plans").insert(row).select().single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created budget ${data.id}` }],
+      structuredContent: { budget: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/add-budget-category.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+var add_budget_category_default = defineTool7({
+  name: "add_budget_category",
+  title: "Add category to budget",
+  description: "Add a category with a planned limit to an existing budget plan.",
+  inputSchema: {
+    budget_id: z6.string().describe("Target budget plan UUID."),
+    category: z6.string().describe("Category name, e.g. 'groceries'."),
+    limit_amount: z6.number().positive().describe("Planned limit for this category."),
+    icon: z6.string().describe("Optional emoji/icon."),
+    color: z6.string().describe("Optional hex color, e.g. '#3b82f6'.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { data, error } = await supabaseForUser4(ctx).from("budget_categories").insert({
+      budget_id: input.budget_id,
+      category: input.category,
+      limit_amount: input.limit_amount,
+      icon: input.icon || null,
+      color: input.color || null
+    }).select().single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Added category ${data.id}` }],
+      structuredContent: { category: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-projects.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z7 } from "npm:zod@^3.25.76";
+var list_projects_default = defineTool8({
+  name: "list_projects",
+  title: "List projects",
+  description: "List projects the signed-in user owns or is a member of, with total income/expense/profit derived from expenses.",
+  inputSchema: {
+    only_active: z7.boolean().describe("If true, exclude archived. Defaults to true."),
+    limit: z7.number().int().describe("Max projects to return. Defaults to 50.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ only_active, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const capped = Math.max(1, Math.min(200, Math.floor(limit ?? 50)));
+    let q = sb.from("projects").select("id,name,description,status,project_type,total_budget,contract_value,start_date,end_date,archived_at,business_profile_id").is("deleted_at", null).order("created_at", { ascending: false }).limit(capped);
+    if (only_active !== false) q = q.is("archived_at", null);
+    const { data: projects, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const ids = (projects ?? []).map((p) => p.id);
+    let totals = /* @__PURE__ */ new Map();
+    if (ids.length) {
+      const { data: exp } = await sb.from("expenses").select("project_id,type,amount").in("project_id", ids).is("deleted_at", null);
+      for (const e of exp ?? []) {
+        const key = e.project_id;
+        const cur = totals.get(key) ?? { income: 0, expense: 0 };
+        if (e.type === "income") cur.income += Number(e.amount);
+        else if (e.type === "expense") cur.expense += Number(e.amount);
+        totals.set(key, cur);
+      }
+    }
+    const enriched = (projects ?? []).map((p) => {
+      const t = totals.get(p.id) ?? { income: 0, expense: 0 };
+      return { ...p, total_income: t.income, total_expense: t.expense, profit: t.income - t.expense };
+    });
+    return {
+      content: [{ type: "text", text: JSON.stringify(enriched) }],
+      structuredContent: { projects: enriched }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-project-details.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z8 } from "npm:zod@^3.25.76";
+var get_project_details_default = defineTool9({
+  name: "get_project_details",
+  title: "Get project details",
+  description: "Return a project with its milestones, team members, and aggregated income/expense totals.",
+  inputSchema: {
+    project_id: z8.string().describe("Project UUID.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ project_id }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const [project, milestones, members, expenses] = await Promise.all([
+      sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
+      sb.from("project_milestones").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
+      sb.from("project_members").select("*").eq("project_id", project_id),
+      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null)
+    ]);
+    if (project.error) return { content: [{ type: "text", text: project.error.message }], isError: true };
+    if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
+    let income = 0, expense = 0;
+    for (const e of expenses.data ?? []) {
+      if (e.type === "income") income += Number(e.amount);
+      else if (e.type === "expense") expense += Number(e.amount);
+    }
+    const result = {
+      project: project.data,
+      milestones: milestones.data ?? [],
+      members: members.data ?? [],
+      total_income: income,
+      total_expense: expense,
+      profit: income - expense
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-project-milestones.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z9 } from "npm:zod@^3.25.76";
+var list_project_milestones_default = defineTool10({
+  name: "list_project_milestones",
+  title: "List project milestones",
+  description: "List milestones for a project with planned and actual dates plus a delay flag if the actual end passed the due date.",
+  inputSchema: {
+    project_id: z9.string().describe("Project UUID.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ project_id }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { data, error } = await supabaseForUser4(ctx).from("project_milestones").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at,sort_order").eq("project_id", project_id).is("deleted_at", null).order("sort_order");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const enriched = (data ?? []).map((m) => {
+      const end = m.actual_end_date || (m.completed_at ? String(m.completed_at).slice(0, 10) : null);
+      const delayed = end && m.due_date ? end > m.due_date : false;
+      return { ...m, is_delayed: delayed };
+    });
+    return {
+      content: [{ type: "text", text: JSON.stringify(enriched) }],
+      structuredContent: { milestones: enriched }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-project.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z10 } from "npm:zod@^3.25.76";
+var create_project_default = defineTool11({
+  name: "create_project",
+  title: "Create project",
+  description: "Create a new project for the signed-in user. project_type is a preset key like 'construction', 'freelance', 'event', 'renovation', 'other'.",
+  inputSchema: {
+    name: z10.string().describe("Project name."),
+    project_type: z10.string().describe("Preset key. Defaults to 'other'."),
+    total_budget: z10.number().describe("Planned total budget. Defaults to 0."),
+    description: z10.string().describe("Optional description."),
+    start_date: z10.string().describe("ISO date YYYY-MM-DD. Optional."),
+    end_date: z10.string().describe("ISO date YYYY-MM-DD. Optional."),
+    status: z10.string().describe("'active' | 'on_hold' | 'completed'. Defaults to 'active'.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const row = {
+      user_id: ctx.getUserId(),
+      name: input.name,
+      project_type: input.project_type || "other",
+      total_budget: input.total_budget ?? 0,
+      description: input.description || null,
+      start_date: input.start_date || null,
+      end_date: input.end_date || null,
+      status: input.status || "active"
+    };
+    const { data, error } = await supabaseForUser4(ctx).from("projects").insert(row).select().single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created project ${data.id}` }],
+      structuredContent: { project: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-project-work-entries.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+var list_project_work_entries_default = defineTool12({
+  name: "list_project_work_entries",
+  title: "List project work entries",
+  description: "List worker time entries for a project (scheduled vs actual hours, notes).",
+  inputSchema: {
+    project_id: z11.string().describe("Project UUID."),
+    limit: z11.number().int().describe("Max entries. Defaults to 50.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ project_id, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const capped = Math.max(1, Math.min(200, Math.floor(limit ?? 50)));
+    const { data, error } = await supabaseForUser4(ctx).from("project_work_entries").select("id,worker_id,work_date,scheduled_hours,actual_hours,note,milestone_ids").eq("project_id", project_id).order("work_date", { ascending: false }).limit(capped);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { entries: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-krugs.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_krugs_default = defineTool13({
+  name: "list_krugs",
+  title: "List krugs (shared circles)",
+  description: "List krugs (shared/family circles) the signed-in user is a member of, with their role in each.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const { data: memberships, error } = await sb.from("krug_membership").select("krug_id,role,krug:krug_id(id,name,preset,lifecycle_state,created_at)").eq("user_id", ctx.getUserId());
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const rows = (memberships ?? []).map((m) => ({
+      krug_id: m.krug_id,
+      role: m.role,
+      ...m.krug ?? {}
+    }));
+    return {
+      content: [{ type: "text", text: JSON.stringify(rows) }],
+      structuredContent: { krugs: rows }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-krug-summary.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z12 } from "npm:zod@^3.25.76";
+var get_krug_summary_default = defineTool14({
+  name: "get_krug_summary",
+  title: "Get krug summary",
+  description: "For a krug_id return its members, shared payment sources, and total expenses on those shared sources in the last 30 days.",
+  inputSchema: {
+    krug_id: z12.string().describe("Krug UUID.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ krug_id }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const [krug, members, sources] = await Promise.all([
+      sb.from("krug").select("id,name,preset,lifecycle_state,created_at").eq("id", krug_id).maybeSingle(),
+      sb.from("krug_membership").select("user_id,role,created_at").eq("krug_id", krug_id),
+      sb.from("krug_shared_payment_source").select("payment_source_id,linked_by,linked_at").eq("krug_id", krug_id)
+    ]);
+    if (krug.error) return { content: [{ type: "text", text: krug.error.message }], isError: true };
+    if (!krug.data) return { content: [{ type: "text", text: "Krug not found" }], isError: true };
+    const srcIds = (sources.data ?? []).map((s) => s.payment_source_id);
+    let recent_expense_total = 0;
+    if (srcIds.length) {
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString();
+      const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null);
+      for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
+    }
+    const result = {
+      krug: krug.data,
+      members: members.data ?? [],
+      shared_sources: sources.data ?? [],
+      recent_expense_total_30d: recent_expense_total
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-krug-expenses.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z13 } from "npm:zod@^3.25.76";
+var list_krug_expenses_default = defineTool15({
+  name: "list_krug_expenses",
+  title: "List krug expenses",
+  description: "List recent expenses/incomes booked to any payment source shared with a given krug.",
+  inputSchema: {
+    krug_id: z13.string().describe("Krug UUID."),
+    limit: z13.number().int().describe("Max rows. Defaults to 30.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ krug_id, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const sb = supabaseForUser4(ctx);
+    const { data: sources, error: srcErr } = await sb.from("krug_shared_payment_source").select("payment_source_id").eq("krug_id", krug_id);
+    if (srcErr) return { content: [{ type: "text", text: srcErr.message }], isError: true };
+    const srcIds = (sources ?? []).map((s) => s.payment_source_id);
+    if (!srcIds.length) {
+      return {
+        content: [{ type: "text", text: "No shared sources in this krug." }],
+        structuredContent: { rows: [] }
+      };
+    }
+    const capped = Math.max(1, Math.min(200, Math.floor(limit ?? 30)));
+    const { data, error } = await sb.from("expenses").select("id,date,type,amount,currency,category,description,merchant_name,payment_source,user_id").in("payment_source", srcIds).is("deleted_at", null).order("date", { ascending: false }).limit(capped);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { rows: data ?? [] }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "fzalxjretvtvokiotvkf";
 var mcp_default = defineMcp({
   name: "vm-balance-mcp",
   title: "V&M Balance MCP",
-  version: "0.1.0",
-  instructions: "Tools for V&M Balance, a personal & small-business finance app. Use `list_recent_expenses` to fetch the signed-in user's recent transactions, `get_wallet_balances` to see their payment sources, and `create_expense` to record a new expense.",
+  version: "0.2.0",
+  instructions: "Tools for V&M Balance, a personal & small-business finance app. Domains: (1) Transactions \u2014 list_recent_expenses, get_wallet_balances, create_expense. (2) Budgets \u2014 list_budgets, get_budget_details, create_budget, add_budget_category. (3) Projects \u2014 list_projects, get_project_details, list_project_milestones, create_project, list_project_work_entries. (4) Krug (shared/family circles) \u2014 list_krugs, get_krug_summary, list_krug_expenses. All tools run as the signed-in user via Supabase RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
-  tools: [list_recent_expenses_default, get_wallet_balances_default, create_expense_default]
+  tools: [
+    list_recent_expenses_default,
+    get_wallet_balances_default,
+    create_expense_default,
+    list_budgets_default,
+    get_budget_details_default,
+    create_budget_default,
+    add_budget_category_default,
+    list_projects_default,
+    get_project_details_default,
+    list_project_milestones_default,
+    create_project_default,
+    list_project_work_entries_default,
+    list_krugs_default,
+    get_krug_summary_default,
+    list_krug_expenses_default
+  ]
 });
 
 // lovable-mcp-supabase-entry.ts
