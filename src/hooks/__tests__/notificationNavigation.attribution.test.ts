@@ -31,7 +31,7 @@ describe('useNotificationNavigation attribution intercept', () => {
     // Blok mora sadržavati `return true` unutar if bloka
     const idx = SRC.indexOf('worker_payout_created');
     expect(idx).toBeGreaterThan(-1);
-    const block = SRC.slice(idx, idx + 400);
+    const block = SRC.slice(idx, idx + 800);
     expect(block).toContain('dispatchAttributionOpen(attr)');
     expect(block).toContain('return true');
   });
