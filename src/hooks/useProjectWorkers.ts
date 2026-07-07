@@ -177,6 +177,8 @@ export const useProjectWorkers = (projectId: string | null) => {
             actualCostTotal: w.actualHoursTotal * worker.hourly_rate,
             currentMonthHours: w.currentMonthHours,
             currentMonthCost: w.currentMonthHours * worker.hourly_rate,
+            remainingHours: w.remainingHours,
+            remainingCost: w.remainingHours * worker.hourly_rate,
           };
         }
         return w;
