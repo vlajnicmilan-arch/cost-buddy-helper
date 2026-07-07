@@ -3565,7 +3565,8 @@
       "editLockedReasonLabel": "Reason for change (required)",
       "editLockedReasonPlaceholder": "e.g. hours correction...",
       "lockedDeleteBlocked": "Entry is locked by a payout — unlock first.",
-      "reasonRequired": "Reason is required"
+      "reasonRequired": "Reason is required",
+      "lockedLegend": "Orange ring = day contains a locked entry (payout)"
     },
     "payouts": {
       "openTitle": "Payouts",
