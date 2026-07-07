@@ -26,3 +26,4 @@
 20260707164727_*.sql   # V1-B: rate history + per-day payout compute + payout_rate_segments
 20260707164808_*.sql   # V2-A: batch worker payouts (create_worker_payout_batch + cascade void)
 20260707204848_*.sql   # V2-B: server-side worker payout notifications (trigger + enqueue helper + batch supresija)
+20260707211951_*.sql   # Attribution v1: worker_payout_batch_id kolona + unique indexi + get_my_incoming_payouts RPC
