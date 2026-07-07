@@ -17,4 +17,6 @@
 20260628205415_*.sql   # hybrid vs day_cut engine mode via app_settings
 20260630202419_*.sql   # backfill anchors for NULL anchor sources
 20260707064657_*.sql   # PR2 Phase A: set_source_anchor RPC (atomarni SET sidra)
+20260707070825_*.sql   # PR2 Phase A hardening: REVOKE EXECUTE ... FROM anon
+
 
