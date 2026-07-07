@@ -18,7 +18,6 @@ import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useExpenses } from '@/hooks/useExpenses';
 import { getUnlinkedAdvancesFromExpenses } from '@/hooks/useCollaboratorAdvances';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { clickableProps } from '@/lib/a11y';
 
 interface Props {
   projectId: string;
