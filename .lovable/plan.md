@@ -1,106 +1,158 @@
-# Analiza: Worker Payouts v2 — dva zahtjeva
+# Radnik pripisuje isplatu svom izvoru — kritički osvrt + varijante
 
-Trenutno stanje relevantno za analizu:
-- `project_workers.hourly_rate` je jedan skalar po redu; nema povijesti. Jedan projekt = jedan `project_workers` red po osobi. Isti fizički radnik na dva projekta = dva reda, potencijalno različit `user_id` link (nullable).
-- `project_work_entries` bilježi sate po danu; NE snima efektivnu satnicu za taj dan. Cijena rada se računa live kao `sum(actual_hours) * project_workers.hourly_rate`.
-- `project_worker_payouts` ima `hourly_rate_snapshot` po isplati (jedan skalar za cijeli period) i `period_start/end`; zaključava obuhvaćene `project_work_entries` preko `payout_id` i `project_work_entry_locks`. Payout je vezan na **jedan** `project_id`.
+Zadatak nema koda u ovom turnu. Ovo je dizajn-review; nakon odobrenja vlasnika slijedi build turn.
+
+## Nalaz iz koda (verificirano, ne pretpostavka)
+
+- `expenses` već ima `worker_payout_id` (kolona postoji). Znači postoji infrastruktura da bilo koji `expenses` red bude vezan na payout. Trenutno je vjerojatno korišten samo na owner strani; za radnikov red je isti stupac dostupan.
+- `expenses` također ima `bank_transaction_id` + `bank_match_status` → bank matcher već postoji kao mehanizam koji povezuje ručne unose s bank transakcijama. To je ključno za dedup.
+- `bank_accounts.linked_payment_source_id` → točno kaže koji su `custom_payment_sources` bank-linkani. Detektabilno bez novih polja.
+- Writer intent sustav (`src/lib/balance/writerIntent.ts`) ima intent `manual_entry`: forsira `event_at = now()`, `time_confidence = C2`, `user_edited_event_at = false`. Točno ono što treba za pripis.
+- Notifikacija (`notify-worker-payout/index.ts`) već piše `data.payout_ids[]`, `data.batch_id`, `data.paid_amount_total` u `notifications.data`. Deep link ima sve što treba.
+- Push (`send-push`) — ne znam podržava li Android/iOS notification action buttons u trenutnoj implementaciji; nisam otvarao. Za varijantu s inline akcijom to bi trebalo provjeriti u build turnu.
+
+## Odgovori na 6 točaka
+
+### 1. Dvostruko knjiženje (bank sync duplikat)
+
+Postoji zreo mehanizam: bank matcher spaja bank tx s postojećim `expenses` redovima po (payment_source, type, amount, ±1 dan), popunjava `bank_transaction_id` + `bank_match_status`. Ako pripis stvori manual income red, kasniji bank sync ga treba prepoznati kao match, ne kao duplikat.
+
+**Rizici:**
+- Bank matcher trenutno mapira `type=expense`; treba potvrditi da radi i za `type=income` (nisam čitao matcher kod — build turn).
+- Vremenski prozor ±1 dan možda nije dovoljan: worker klikne pripis na push (dan T), banka bookira uplatu T+1..T+3.
+- Više isplata istog iznosa u istom tjednu → matcher promašaj.
+
+**Preporuka v1 (najjednostavnije sigurno):**
+- **Nema hard restrikcije po tipu izvora.** Dozvoli pripis i na bank-linkane izvore, ali:
+  - Pri odabiru bank-linkanog izvora prikaži inline upozorenje: *"Ovaj izvor je spojen s bankom. Kad uplata stigne kroz sinkronizaciju, automatski će se spojiti s ovim unosom."*
+  - Novi red ima marker `bank_match_status = 'awaiting_bank'` (novi enum) ili `pending_bank_match=true`, uz `worker_payout_id`. Prošireni matcher kod stiže s bank tx traži prvo redove s ovim markerom u proširenom prozoru (npr. ±7 dana) prije nego što razmatra postojeće expenses.
+  - Ako matcher pronađe kandidata s `worker_payout_id`, spaja umjesto stvaranja novog.
+
+**Alt v1 minimum (ako ne želimo dirati matcher):** samo pokaži upozorenje na bank-linkanim izvorima; korisnik odgovoran za brisanje duplikata. Slabije, ali ne mijenja balance/matcher.
+
+### 2. Storno
+
+**Slažem se s prijedlogom vlasnika: BEZ automatskog diranja radnikovih zapisa u v1.**
+
+Argumenti:
+- Radnikov red je u njegovom RLS prostoru; owner ga tehnički ne smije mijenjati (data boundary).
+- Auto-void bi zahtijevao SECURITY DEFINER RPC koji bi radio DELETE/UPDATE nad tuđim `expenses` redovima. Novi vektor napada.
+- Novac je stvarno primljen; ako owner naknadno stornira "iz sustava", ne znači da je uplata vraćena. Radnik zna svoju stvarnost.
+
+**Ponašanje v1:**
+- Postojeća "voided" push obavijest se proširuje: ako je payout imao pripis u worker izvoru (`expenses` red s `worker_payout_id = X` u worker prostoru), notifikacija sadrži tekst *"Ako ste ovu isplatu pripisali izvoru, provjerite je li potrebno stornirati unos."* + deep link na taj radnikov unos.
+- Tap na notifikaciju → otvara radnikov unos u wallet detail viewu; radnik sam bira: obriši / ostavi / dodaj bilješku.
+- **Ne odustajemo** od future automatizacije — samo je izvan v1.
+
+### 3. Writer intent
+
+**`manual_entry`.** Razlozi:
+- Pripis se događa u trenutku klika (dan T, sat H); to nije stvarni trenutak transfera novca (koji je banka zabilježila neovisno). Za balance semantiku, ovo je manual korisnički unos → `event_at = now()`, `C2`, sudjeluje u post-anchor cutu.
+- `system_precise` je pogrešan — sustav nije observirao stvarni transfer novca, samo korisnikovu deklaraciju.
+- Poseban novi intent (`worker_payout_attribution`) — nepotreban. Semantika je identična `manual_entry`; jedina razlika je porijeklo (`worker_payout_id`) koje je već izvan intent scopea.
+
+**Balance testing policy gate:** pripis kroz `manual_entry` intent → NE treba novu SQL suite migraciju (intent postoji, ponašanje tester scenarija se ne mijenja). Dodati vitest scenario koji ubacuje pripis red i provjerava agregate.
+
+### 4. Granica podataka
+
+**Struktura reda u radnikovom prostoru:**
+```
+expenses:
+  user_id            = worker.user_id       (radnikov)
+  type               = 'income'
+  category           = 'salary' (defaultno; korisnik može promijeniti)
+  amount             = payout.paid_amount
+  payment_source     = radnikov custom:UUID
+  worker_payout_id   = payout.id            (FK referenca)
+  event_at, time_conf = kroz manual_entry intent
+  business_profile_id = NULL (osobni prostor)
+  project_id         = NULL (nije njegov projekt)
+```
+
+**Curi li nešto?**
+- `worker_payout_id` je samo UUID. RLS na `project_worker_payouts` mora ostati stroga: worker NE smije čitati `project_worker_payouts` red direktno (to je ownerov zapis). Ako želimo da mu UI pokaže "iz projekta X", posebna SECURITY DEFINER f-ja `get_my_incoming_payout(payout_id) → {project_name, period_start, period_end, gross}` koja provjerava da je caller = payout.worker.user_id i vraća isključivo whitelistan set polja (bez `payment_source`, `note`, `paid_at` timestampa u UTC ownerovoj mikrosekundi, itd.). REVOKE anon.
+- FK na `project_worker_payouts` s CASCADE? **NE.** Ako owner obriše payout, radnikov income red ne smije nestati (točka 2). Postavi ON DELETE SET NULL.
+
+**Referenca DA ili NE?** DA — bez reference ne možemo:
+- upozoriti kod stornoa (točka 2),
+- spriječiti dvostruki pripis istog payouta (worker klikne dva puta iz dvije notifikacije).
+
+Uz unique index `(user_id, worker_payout_id) WHERE worker_payout_id IS NOT NULL` — jamči 1:1 pripis po payoutu po workeru.
+
+### 5. UX tok
+
+**v1 preporuka: deep link u dialog (bez inline notification actions).**
+
+Razlozi:
+- Manje platformski osjetljivo (Android/iOS/PWA). Native action buttons zahtijevaju rukovanje s FCM data-only + service worker + notification click handler + PWA fallback + prazan slučaj kad nije bilo push tokena. Rizik izvan v1.
+- Deep link već imamo (`notifications.data.payout_ids`); dodajemo router handler koji otvara `AttributionSheet`.
+
+**Sheet UX:**
+- Naslov: *"Pripisati {{amount}} nekom izvoru?"*
+- Podaci: projekt(i), period, iznos.
+- Lista `custom_payment_sources` (radnikov filter). Bank-linkani → warning ikona + tooltip (točka 1).
+- Akcije: **[Preskoči]** / **[Pripiši]**.
+- Nakon uspješnog pripisa: StatusFeedback success + link "Otvori u novčaniku".
+
+**Ignoriranje:** notifikacija ostaje u listi `Notifications` kao `worker_payout_created` s badgeom "Nije pripisano" (izvedeno iz odsutnosti `expenses` reda s `worker_payout_id = X` u user prostoru). Klik iz liste → isti sheet. Nova stranica "Moje isplate" NIJE potrebna u v1 — sve isplate ionako prolaze kroz notifikaciju.
+
+### 6. Izbaciti iz v1 / nedostaje u zahtjevu
+
+**Izbaciti iz v1:**
+- Inline notification action buttons (točka 5).
+- Auto-void radnikovih redova na storno (točka 2).
+- Zasebna stranica "Moje isplate" (točka 5).
+- Multi-source split (npr. 60% na račun, 40% na gotovinu) — jedan pripis = jedan izvor.
+
+**Nedostaje u zahtjevu, treba potvrditi prije builda:**
+1. **Valuta:** payout je uvijek EUR (project); custom_payment_sources imaju `currency`. Što ako radnikov izvor nije EUR? Prijedlog v1: prikaži samo izvore u istoj valuti kao payout; ostali disabled s hintom.
+2. **Batch (više projekata istoj osobi):** jedna notifikacija, jedan sheet, jedan pripis (ukupan iznos) ILI N pripisa (po projektu)? Prijedlog v1: **jedan pripis ukupnog iznosa** s bilješkom "Zbirna isplata: {{project_names}}". Jednostavnije, matcher friendly.
+3. **Advance/partial status:** što ako payout ima `status='advance'` (0 sati, samo predujam)? UX identičan; radnik gleda samo `paid_amount`.
+4. **Family/shared source:** pripis na family shared izvor — dozvoljeno? Prijedlog v1: da, ista logika (RLS već provjerava tko smije pisati u shared izvor).
+5. **Dashboard telemetrija:** trebamo li tracking event `worker_payout_attributed`? (Nije blokirajuće za v1, ali korisno za retention analitiku.)
 
 ---
 
-## ZAHTJEV 1 — Sidro (effective_from) na promjeni satnice
+## Tri varijante dizajna (usporedba)
 
-### V1-A. Minimalno: `effective_from` na `project_workers` bez povijesti
-- Dodaje se kolona `hourly_rate_effective_from date` (default = danas na promjeni). Sve zaključavanje neisplaćenih unosa dalje računa live.
-- Trade-off: rješava UI/procesni zahtjev ("označi od kada"), ali NIJE povijest — sljedeća promjena briše prethodno sidro. Retroaktivnu izmjenu i dalje ne možeš rekonstruirati. "Preostalo radnicima" KPI koji već računa `sum(remaining_hours) * current_rate` postaje pogrešan za unose PRIJE `effective_from` (koristi novi rate za stare sate).
-- Ne rješava `worker_rate_history` blocker.
+Sve tri zajedničke: deep-link sheet, `manual_entry` writer intent, `worker_payout_id` na radnikovom `expenses` redu, unique index (user_id, worker_payout_id).
 
-### V1-B. Srednje: `project_worker_rate_history` tablica, forward-only sidro
-- Nova tablica: `worker_id, rate, effective_from date, created_by, created_at`. `project_workers.hourly_rate` postaje derivat (view ili trigger sync s "najnovijim redom čiji effective_from <= today"). Efektivna satnica za dan D = red s najvećim `effective_from <= D`.
-- Cijena rada za entry na datum D = `actual_hours * rate_at(worker_id, D)`. "Preostalo" KPI mora agregirati po datumu, ne skalarno.
-- `create_worker_payout` snima `hourly_rate_snapshot` kao **weighted average** (ili array po sub-periodu). Alternativa: payout se automatski cijepa na više redova po rate segmentu unutar perioda.
-- Zaključana povijest: promjena sidra u periodu koji sadrži zaključane unose je zabranjena (samo forward od `max(period_end) + 1` za tog radnika). Owner dobija poruku "postoji isplata do X.Y.2026, sidro može biti najranije Z".
-- Retroaktivnu izmjenu (npr. "od 1.10., a danas je 15.10., unosi 1-14.10. nisu isplaćeni") DOZVOLJAVAMO samo ako u tom rasponu nema `payout_id != NULL`. Ako ima — blokada uz razlog.
-- Rješava blocker u potpunosti. Konzistentno s postojećim lock semantikom.
+### Varijanta A — Minimalna, samo manual izvori u v1
 
-### V1-C. Potpuno: rate history + retroaktivni "rate adjustment" payout
-- Kao B, ali dozvoljava promjenu sidra i unutar zaključanog perioda — sustav automatski generira "rate_adjustment" payout (delta = novi_rate - stari_rate) × hours_covered, pozitivan ili negativan. Efektivno reverse+re-issue u pozadini.
-- Snažno, ali komplicira void semantiku, P&L rekonstrukciju i push obavijesti ("primio si -47€ korekciju" na gradilištu = spor). Traži audit UI koji Free/Pro plan vjerojatno ne opravdava.
-- Preporuka: ne u v1.
+Pripis dopušten SAMO na izvore koji NISU bank-linkani. Bank-linkani izvori se prikazuju u listi ali su disabled s hintom *"Bankovni izvor — uplata će stići automatski"*.
 
-### Kritički osvrt V1
-- **KPI "Preostalo radnicima"** trenutno je skalarni umnožak. Uz rate history mora prijeći na `SUM(hours * rate_at(date))` — inače laže na svakoj promjeni sidra. Ovo je skriveni trošak V1-B/C.
-- **`hourly_rate_snapshot` semantika**: već postoji, ali kao skalar. Uz varijabilnu satnicu unutar perioda treba ili (a) prisiliti payout period da bude unutar jednog rate segmenta, ili (b) prihvatiti weighted avg i pohraniti breakdown u zasebnu tablicu `payout_rate_segments`. Opcija (a) je jednostavnija ali frustrira ownera ako period spans promjenu.
-- **UI kalendar unosa**: mora prikazati koji rate se primjenjuje na koji dan (obojena legenda po segmentu), inače će owner pogrešno računati u glavi.
-- **Migracija postojećih redova**: prvi rate history red = `{rate: project_workers.hourly_rate, effective_from: project_workers.created_at::date}` da postojeći nezaključani unosi zadrže istu cijenu.
+- **Za:** nula rizika duplikata, nula promjena u bank matcheru.
+- **Protiv:** ne pokriva realan slučaj (radnik primljen na tekući račun koji je open-bankan i želi taj balance vidjeti odmah, ne čekati 3 dana). Frustrirajuće.
 
----
+### Varijanta B — Sve izvore, warning na bank-linkanim (NULA promjene matchera)
 
-## ZAHTJEV 2 — Isplata preko više projekata
+Pripis dopušten svima. Bank-linkani → warning tooltip u sheetu i toast nakon spremanja. Duplikat rješava korisnik ručno ako se pojavi.
 
-Prvo mora se odgovoriti: **što je "isti fizički radnik"** kad `project_workers.user_id` može biti NULL na oba reda?
+- **Za:** minimalna promjena, brzo isporučivo, korisnik dobija fleksibilnost.
+- **Protiv:** duplikat se DEFINITIVNO pojaviti (banka će nakon 1-3 dana vratiti istu uplatu kroz sync). Push notifikacija radniku *"Nova bank transakcija ne odgovara ničemu"* → loš UX.
 
-### V2-A. Minimalno: bez cross-project agregata, samo UX "batch"
-- Dialog isplate dobija "+" za dodati redove iz drugih projekata istog ownera. Iza kulisa: N zasebnih `project_worker_payout` redova (po jedan po projektu), N `expenses`, ali s istim `paid_at`, `payment_source` i zajedničkim `batch_id text` (novi indeks). Push i CSV grupiraju po batch_id.
-- Identifikacija radnika: owner mora ručno selektirati `project_workers` redove koje smatra istom osobom (checkbox lista "Marko Marić / Projekt A", "Marko Marić / Projekt B"). Nema DB spajanja identiteta.
-- Trade-off: P&L po projektu ostaje čist (svaki payout vezan na svoj `project_id`), void radi per-red. Owner vidi jednu "isplatu 950€ Marku" u historyju.
-- Rizik: owner slučajno spoji dva različita Marka. Nema garancije.
+### Varijanta C — Sve izvore + prošireni matcher (PREPORUKA)
 
-### V2-B. Srednje: entitet `people` (owner-scoped registar radnika)
-- Nova tablica `people (id, owner_user_id, first_name, last_name, phone?, user_id?)`. `project_workers.person_id` (nullable za backward compat, migracija spaja po `(owner, first_name, last_name, phone/email/user_id)` s owner review korakom "provjeri je li ovo ista osoba").
-- Isplata radi u dva moda: **per-project** (kao sada) ili **per-person cross-project**. Cross-mode: owner bira osobu → sustav lista sve nezaključane unose iz svih projekata te osobe → owner potvrđuje raspon → jedan `payout_group` red + N `project_worker_payout` redova (po jedan po projektu, s alokacijom sati/iznosa po projektu) + N `expenses` (jedan po projektu radi P&L integriteta).
-- `linked_payment_source_id`, `paid_at`, `hourly_rate_snapshot` per red (svaki projekt može imati različit rate za istu osobu).
-- Push radniku: jedna agregirana obavijest ("Isplaćeno 1.240€ za 3 projekta"), a ne 3.
-- Trade-off: srednji migration effort, čist model, per-project P&L netaknut. Traži disambiguation UI ("spoji ove dvije Marije?") kojim vlasnik potvrđuje identitet.
+Pripis dopušten svima. Novi `expenses` red dobija `bank_match_status='awaiting_bank'` kad se pripisuje na bank-linkani izvor. Bank matcher, kad stiže bank tx za isti izvor + iznos, prvo traži `awaiting_bank` red s `worker_payout_id` u proširenom prozoru (±7 dana) i, ako nađe, spaja umjesto stvaranja duplikata. Fallback na postojeći ±1 dan match ako nema kandidata.
 
-### V2-C. Potpuno: `people` + zajednički rate history po osobi (ne po projektu)
-- Kao B, plus `person_rate_history` (rate vezan za osobu, ne za projekt-worker par). Isti Marko = ista satnica na svim projektima. Owner override postoji ali je izuzetak.
-- Elegantno za gradilišta gdje osoba "košta" fiksno, bez obzira gdje radi. Pucanje: firme koje NAMJERNO plaćaju istu osobu različito po projektu (npr. specijalizirana faza) gube fleksibilnost, moraju raditi override na svakom projektu.
-- Velik obim promjene semantike Zahtjeva 1. Ne v1.
+- **Za:** pokriva realan slučaj, dedup se dogodi bez ručne intervencije, `worker_payout_id` je jak dedup ključ (jači od amount+date).
+- **Protiv:** dira bank matcher — mora se pisati SQL matcher gran + testirati u SQL suite. Više radnog opterećenja.
+- **Rizik:** ako matcher ne radi po očekivanju, dobijemo trajno "awaiting_bank" redove. Mitigation: nakon 30 dana bez matcha, alat auto-flip u `unmatched` sa notifikacijom.
 
-### Kritički osvrt V2
-- **Identitet bez `user_id`**: velika većina radnika na gradilištu NEMA app account. Auto-merge po imenu+prezimenu je nesiguran (dva "Ivan Horvat"), po telefonu je pouzdanije ali telefon trenutno nije obavezno polje na `project_workers`. Bez pouzdanog ključa **owner MORA biti loop-in** — batch isplata bez identiteta = potencijalna kriva atribucija.
-- **P&L alokacija**: MORA ostati per-project. Ako zbirna isplata generira jedan expense na "prvi projekt", drugi projekt ima podcijenjen trošak rada i "Preostalo" laže. Zato B/C imaju N expense redova (po projektu), samo UI/push/CSV agregira. Ne skraćivati na jedan expense.
-- **Lock semantika**: cross-project payout mora zaključati unose PO PROJEKTIMA kojima pripadaju — postojeći `project_work_entry_locks(project_id, entry_id, payout_id)` to podržava, ali `payout_id` mora referirati na svih N pojedinačnih payout redova, ne na batch. Batch je gornji sloj.
-- **Void**: brisanje batch isplate = kaskadni void N pojedinačnih payouta u jednoj transakciji. Ako user_id na payment_source nije isti kroz sve projekte (dva projekta = dva biznisa = dvije blagajne), batch NIJE moguć — mora blokirati s porukom "izvori isplate se ne poklapaju".
-- **"Preostalo radnicima" KPI po projektu** ostaje isti (per-project). Ali za people-view treba novi KPI "Preostalo osobi X (sve projekti)".
+**Preporuka:** **Varijanta C**, ali isporuka u dvije faze:
+- **v1.0** — Varijanta B (brzo u produkciju, prikupi telemetriju koliko korisnika pripisuje na bank-linkane izvore).
+- **v1.1** — Nadogradnja na C ako telemetrija pokaže značajan udio bank-linkanih pripisa.
+
+Ako vlasnik želi jedan turn, idemo direktno na C.
 
 ---
 
-## Odnos Zahtjeva 1 prema `worker_rate_history` blockeru
+## Otvoreni odgovori tražim prije build turna
 
-- V1-A ne rješava blocker (nema history).
-- V1-B ga rješava u potpunosti: warning "rate se mijenja unutar isplaćenog perioda" postaje precizan (znamo `effective_from` svakog rate reda i imamo lock info). Sistem može autoritativno reći "sidro X.Y.2026 se sudara s isplatom #123 (do Z), blokirano".
-- V1-C ga rješava agresivnije uz automatsku korekciju, ali uvodi novu klasu edge caseova (negativne isplate).
+1. **Varijanta A/B/C** — koja?
+2. **Batch pripis** — jedan zbirni red ILI po projektu?
+3. **Cross-currency** — dopustiti pripis EUR isplate na HRK/CHF izvor (s konverzijom kroz `useExchangeRates`) ili blokirati u v1?
+4. **Family shared source** — dozvoljen ciljni izvor?
+5. **Telemetrija** — funnel event `worker_payout_attributed` uključiti u v1 ili odgoditi?
 
-Preporuka: V1-B je čisti "unblock".
-
----
-
-## Procjena opsega
-
-| Varijanta | Migracija | Backend (RPC/trigger) | Frontend | Test | Ukupno |
-|---|---|---|---|---|---|
-| V1-A `effective_from` skalar | mala | mala (edit trigger) | mala (date picker) | mali | **mali** |
-| V1-B rate history | srednja (nova tablica, backfill, KPI rewrite) | srednja (`rate_at()` fn, izmjena create/update payout RPC-a, KPI query) | srednja (rate segment legend, edit dialog "od kada") | srednji (P4/P5 novi scenariji: rate segment split, retroaktivna promjena) | **srednji-veliki** |
-| V1-C + rate_adjustment payout | srednja | velika (novi payout kind, audit) | velika (negativne stavke, obavijesti) | velik | **veliki** |
-| V2-A batch UX | mala (batch_id) | mala (transakcija N insert-a) | srednja (multi-select cross-project dialog) | srednji | **srednji** |
-| V2-B `people` entitet | srednja-velika (nova tablica, merge UI, backfill) | srednja (per-person listing RPC, cross-project payout RPC, dedup constraints) | velika (people page, disambiguation, cross-project dialog) | srednji (P8 novi scenariji: cross-project, ownership, void kaskada) | **veliki** |
-| V2-C shared rate | velika | velika | velika | veliki | **vrlo veliki** |
-
----
-
-## Preporuka za v1 (izbacio bih)
-
-**U v1 uzeti:** V1-B + V2-A.
-- V1-B rješava blocker i sidro pravilno; skuplji je, ali "pola-rješenja" (V1-A) generira laž u KPI-u i morat ćemo ga rušiti.
-- V2-A daje 80% praktične koristi (jedna radnja isplate) bez ulaska u identity graf. Owner ručno bira redove, sustav pošteno kaže "vi tvrdite da su ovo iste osobe".
-
-**Izvan v1 (v2):**
-- V2-B (`people` entitet) — vrijedi kad korisnici zatraže "prikaz po osobi kroz sve projekte" ili kad dodamo obavezan telefon/OIB na radnika kao stabilan ključ.
-- V1-C — samo ako se pojavi realan use-case retroaktivne korekcije isplaćenog.
-
-**Otvorena pitanja za vlasnika prije build faze:**
-1. Za V1-B: dozvoljavamo li retroaktivni `effective_from` (unutar nezaključanog raspona), ili samo `>= today`? Utječe na UX i broj edge caseova.
-2. Za V1-B: kada payout period spans dvije rate segmentacije — dozvoljavamo weighted avg snapshot, ili prisiljavamo split payout? Prvo je jednostavnije, drugo je čišće za audit.
-3. Za V2-A: batch isplata zahtijeva isti `payment_source` kroz sve projekte — ok, ili treba dozvoliti različit po projektu unutar iste "vizualne" isplate?
-4. Za V2-A: push radniku — jedna agregirana ili N pojedinačnih? (Ako N, obavijesti postaju šum.)
+Nakon tvog odgovora slijedi build turn s: (a) migracija (SECURITY DEFINER `get_my_incoming_payout`, unique index, opcionalno matcher grana za C, RLS), (b) `AttributionSheet.tsx`, (c) notification router handler, (d) proširenje `notify-worker-payout` obavijesti za storno tekst, (e) vitest za attribution flow + writer intent + dedup guard, (f) i18n hr/en/de, (g) balance SQL suite scenario ako mijenjamo matcher.
