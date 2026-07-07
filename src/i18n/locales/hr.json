@@ -3572,7 +3572,8 @@
       "editLockedReasonPlaceholder": "Npr. ispravak sati...",
       "lockedDeleteBlocked": "Unos je zaključan isplatom — prvo otključaj.",
       "reasonRequired": "Razlog je obavezan",
-      "lockedLegend": "Narančasti prsten = dan sadrži zaključan unos (isplata)"
+      "lockedLegend": "Narančasti prsten = dan sadrži zaključan unos (isplata)",
+      "historicRateBadge": "satnica tog datuma"
     },
     "payouts": {
       "openTitle": "Isplate",
