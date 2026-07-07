@@ -13,7 +13,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -29,17 +29,21 @@ import { ArrowRight, ChevronDown } from 'lucide-react';
 import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
 import { TransferListDialog } from '@/components/TransferListDialog';
 import { useMemo } from 'react';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { setPendingHighlight } from '@/lib/pendingHighlight';
 
 const Wallet = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { storageMode } = useStorage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     importFromCSV, findDuplicates, refetch, isLocalMode, allExpenses, rawExpenses,
     updateExpense, deleteExpense, monthlyTransfers, monthlyTransferCount, totalTransfers,
   } = useExpenses();
   const { dashboardV2Enabled } = useAppState();
+  const { customPaymentSources } = useCustomPaymentSources();
   const [selectedPaymentSource, setSelectedPaymentSource] = useState<CustomPaymentSource | null>(null);
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
@@ -90,6 +94,56 @@ const Wallet = () => {
       navigate('/', { replace: true });
     }
   }, [user, authLoading, navigate, storageMode]);
+
+  // BUG B fix — `?highlight=<expense_id>` deep link:
+  // otvori PaymentSourceTransactionsDialog za izvor te transakcije i postavi
+  // pendingHighlight (`expense:<id>`) — HighlightTarget će uhvatiti DOM marker
+  // (`data-highlight-id="expense:<id>"` na TransactionItem) čim se lista mount-a,
+  // scrollati je u vidno polje i pulsati je. Deep link koristi AttributionSheet
+  // voided flow ("Otvori pripisan unos") i sve buduće `/wallet?highlight=` linkove.
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (!highlightId) return;
+    // Čekaj dok podaci ne budu spremni — rawExpenses/customPaymentSources dolaze async.
+    if (rawExpenses.length === 0 || customPaymentSources.length === 0) return;
+
+    const expense = rawExpenses.find(e => e.id === highlightId);
+    if (!expense || !expense.payment_source) {
+      // Transakcija ne postoji ili nije vezana za custom izvor → očisti param.
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('highlight');
+        return next;
+      }, { replace: true });
+      return;
+    }
+    const sourceId = expense.payment_source.startsWith('custom:')
+      ? expense.payment_source.slice(7)
+      : expense.payment_source;
+    const source = customPaymentSources.find(s => s.id === sourceId);
+    if (!source) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('highlight');
+        return next;
+      }, { replace: true });
+      return;
+    }
+    setPendingHighlight(
+      { type: 'expense', id: highlightId, tab: null },
+      '/wallet',
+    );
+    setSelectedPaymentSource(source);
+    setPaymentSourceDialogOpen(true);
+    // Očisti query param nakon što smo pokrenuli protok — highlight odrađuje
+    // HighlightTarget preko pendingHighlight state-a; dodatni re-run nije potreban.
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('highlight');
+      return next;
+    }, { replace: true });
+  }, [searchParams, rawExpenses, customPaymentSources, setSearchParams]);
+
 
   if (authLoading && storageMode === 'cloud') {
     return (

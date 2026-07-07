@@ -1161,8 +1161,105 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p19;
 
+-- ------------------------------------------------------------
+-- P20 — _guard_expense_payout_write suženje (BUG C):
+--       (a) ownerov auto-expense — direktan DELETE odbijen (42501)
+--       (b) radnikov attribution red — soft-delete od strane radnika PROLAZI
+--       (c) radnikov attribution red — hard DELETE od strane radnika PROLAZI
+--       (d) batch attribution — soft-delete od strane radnika PROLAZI
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p20;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000020';
+  v_payout_id uuid;
+  v_owner_expense_id uuid;
+  v_worker_expense_id uuid;
+  v_batch_expense_id uuid;
+  v_batch uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p20@test')
+    ON CONFLICT (id) DO NOTHING;
+
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  -- Kreiraj ownerov auto-expense preko create_worker_payout.
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P20', true
+  );
+
+  SELECT id, expense_id
+    INTO v_payout_id, v_owner_expense_id
+    FROM public.project_worker_payouts
+    WHERE created_by = (SELECT val FROM _bfix WHERE key='user')
+    ORDER BY created_at DESC LIMIT 1;
+
+  -- (a) DELETE ownerovog auto-expense mora pasti (42501).
+  BEGIN
+    DELETE FROM public.expenses WHERE id = v_owner_expense_id;
+    RAISE EXCEPTION 'FAIL P20a — DELETE ownerovog payout expense-a je prošao (guard neaktivan)';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P20a — DELETE ownerovog auto-expense blokiran (42501)';
+  END;
+
+  -- (b) Radnikov attribution red — insert pa soft-delete kao radnik.
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
+    VALUES (v_worker_user, 100, 'income',
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            'radnikov attribution P20b', v_payout_id,
+            '2026-06-03', '2026-06-03 12:05:00+00', 'C2')
+    RETURNING id INTO v_worker_expense_id;
+
+  UPDATE public.expenses
+    SET deleted_at = now()
+    WHERE id = v_worker_expense_id;
+  IF (SELECT deleted_at FROM public.expenses WHERE id = v_worker_expense_id) IS NULL THEN
+    RAISE EXCEPTION 'FAIL P20b — soft-delete radnikovog attribution reda nije primijenjen';
+  END IF;
+  RAISE NOTICE 'PASS P20b — radnikov soft-delete attribution reda dopušten';
+
+  -- (c) Hard DELETE radnikovog attribution reda (drugi insert).
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
+    VALUES (v_worker_user, 100, 'income',
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            'radnikov attribution P20c', gen_random_uuid(),
+            '2026-06-03', '2026-06-03 12:06:00+00', 'C2')
+    RETURNING id INTO v_worker_expense_id;
+
+  DELETE FROM public.expenses WHERE id = v_worker_expense_id;
+  IF EXISTS (SELECT 1 FROM public.expenses WHERE id = v_worker_expense_id) THEN
+    RAISE EXCEPTION 'FAIL P20c — hard DELETE radnikovog attribution reda nije prošao';
+  END IF;
+  RAISE NOTICE 'PASS P20c — hard DELETE radnikovog attribution reda dopušten';
+
+  -- (d) Batch attribution — insert pa soft-delete.
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id, date, event_at, time_confidence)
+    VALUES (v_worker_user, 250, 'income',
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            'radnikov batch attribution P20d', v_batch,
+            '2026-06-03', '2026-06-03 12:07:00+00', 'C2')
+    RETURNING id INTO v_batch_expense_id;
+
+  UPDATE public.expenses
+    SET deleted_at = now()
+    WHERE id = v_batch_expense_id;
+  IF (SELECT deleted_at FROM public.expenses WHERE id = v_batch_expense_id) IS NULL THEN
+    RAISE EXCEPTION 'FAIL P20d — soft-delete batch attribution reda nije primijenjen';
+  END IF;
+  RAISE NOTICE 'PASS P20d — radnikov soft-delete batch attribution reda dopušten';
+END $$;
+RELEASE SAVEPOINT s_p20;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
 
 
 
