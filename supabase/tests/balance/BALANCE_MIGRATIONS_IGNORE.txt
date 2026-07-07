@@ -8,4 +8,11 @@
 #
 # Format: one glob per line. Blank/comment lines skipped.
 
-# (empty — no exceptions yet)
+# Pre-existing balance-adjacent migrations (grandfathered — pre-date the gate).
+# All balance-neutral: neither touches trigger, recompute function, anchor
+# columns, event_at semantics, nor engine mode.
+20260605143443_*.sql  # E2E: profiles flag + RPC (accidentally matches "expenses" in a comment)
+20260608150431_*.sql  # DROP unused expenses.is_private / split_overrides
+20260618193820_*.sql  # CHECK constraint on expenses.payment_source string format
+20260621145942_*.sql  # Add expenses.recurring_transaction_id FK (no balance impact)
+20260628163350_*.sql  # Relax NOT NULL on event_at — trigger still populates
