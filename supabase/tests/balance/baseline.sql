@@ -127,7 +127,19 @@ $$;
 CREATE OR REPLACE FUNCTION public.is_project_member(_project_id uuid, _user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT public.is_project_owner(_project_id, _user_id)
-$$;
+
+-- public.notifications (minimal — enough for worker payout notify tests P14-P16)
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL,
+  type         text NOT NULL,
+  title        text,
+  message      text,
+  data         jsonb,
+  read         boolean NOT NULL DEFAULT false,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
 
 
 
