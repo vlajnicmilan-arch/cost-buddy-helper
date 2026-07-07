@@ -16,10 +16,12 @@
 - Edit locked entry: prikazuje amber hint, disable-a scheduled_hours/milestones, prikazuje "Razlog izmjene" polje i poziva `update_locked_work_entry` RPC. Ostali unosi idu klasičnim update-om.
 - Delete locked entry blokiran s toast porukom (mora se prvo otključati).
 
-### TODO (Slice 3)
-- Calendar day-level lock indikator (mali lock overlay na danima s locked unosima).
-- Project card "Preostalo radnicima" KPI (`useProjectStats` extension).
-- Warning ako je `hourly_rate` mijenjan unutar odabranog perioda (payout create form).
+### DONE (Slice 3)
+- Calendar day-level lock indikator: dani s bar jednim locked unosom dobiju narančasti prsten (outline) + legend hint ispod kalendara.
+- "Preostalo radnicima" KPI u `ProjectWorkersTab` summary kartici: `useProjectWorkers` prošireno s `totalRemainingCost`/`totalRemainingHours` (sum unpaid entries × current rate).
+
+### BLOCKER (odgođeno)
+- Warning "hourly_rate mijenjan unutar perioda" — nema audit historije za `hourly_rate` na `project_workers`. Bez `worker_rate_history` tablice ne mogu detektirati promjene. Zahtijeva zasebnu migraciju (PR-C+).
 
 ## PR-C — Extras (plan 2.7 koraci 9–10 + P7)
 - Push radniku pri kreiranju payouta (reuse FCM).
