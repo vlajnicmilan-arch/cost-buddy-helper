@@ -846,6 +846,8 @@ DECLARE
   v_before int;
   v_after int;
 BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p14@test')
+    ON CONFLICT (id) DO NOTHING;
   UPDATE public.project_workers
      SET user_id = v_worker_user
    WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
@@ -891,6 +893,8 @@ DECLARE
   v_batch uuid;
   v_notif_batch_id uuid;
 BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p15@test')
+    ON CONFLICT (id) DO NOTHING;
   DELETE FROM public.project_work_entries WHERE project_id = v_proj2;
   DELETE FROM public.project_workers WHERE project_id = v_proj2;
   DELETE FROM public.projects WHERE id = v_proj2;
