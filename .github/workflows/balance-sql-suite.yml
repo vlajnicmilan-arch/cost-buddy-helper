@@ -1,9 +1,15 @@
 name: Balance SQL Regression Suite
 
 # Deploy gate for the balance engine. See mem://features/balance-regression-testing-policy.
-# Runs the authoritative SQL harness against a real Postgres 16 with all
-# Supabase migrations applied. Vitest mirror is not sufficient — this suite
-# is the source of truth for anchor/recompute/trigger semantics.
+# Runs the authoritative SQL harness against a real Postgres 16 loaded with a
+# curated balance baseline + the balance-relevant migrations listed in
+# supabase/tests/balance/BALANCE_MIGRATIONS.txt.
+#
+# Why curated baseline (not "apply all migrations"):
+# see .lovable/plan.md — "Redizajn balance-sql-suite.yml". Full migration
+# history is not linearly replayable on plain postgres:16 (missing Supabase
+# extensions + inter-migration conflicts). The gate protects balance
+# semantics, so we test balance semantics — nothing more.
 
 on:
   pull_request:
@@ -18,10 +24,11 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/tests/**'
       - 'src/lib/balance/**'
+      - '.github/workflows/balance-sql-suite.yml'
 
 jobs:
   balance-sql:
-    name: Balance SQL suite (postgres:16)
+    name: Balance SQL suite (postgres:16, curated baseline)
     runs-on: ubuntu-latest
 
     services:
@@ -49,6 +56,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # drift-check needs history to diff vs base ref
 
       - name: Install psql client
         run: |
@@ -64,28 +73,53 @@ jobs:
           echo "Postgres did not become ready" >&2
           exit 1
 
+      - name: Detect balance-relevant migration drift
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref && format('origin/{0}', github.event.pull_request.base.ref) || 'origin/main' }}
+        run: bash supabase/tests/balance/detect-drift.sh
+
       - name: Bootstrap Supabase-compatible schema stubs
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/bootstrap.sql
 
-      - name: Apply migrations in order
+      - name: Apply curated balance baseline
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/baseline.sql
+
+      - name: Apply balance-relevant migrations in order
         run: |
           set -euo pipefail
-          for f in $(ls supabase/migrations/*.sql | sort); do
+          # Read whitelist, strip trailing `# comments`, skip blank lines.
+          patterns=$(sed -E 's/[[:space:]]*#.*$//' supabase/tests/balance/BALANCE_MIGRATIONS.txt | awk 'NF')
+          if [ -z "$patterns" ]; then
+            echo "BALANCE_MIGRATIONS.txt is empty — refusing to run suite" >&2
+            exit 1
+          fi
+          # Expand each pattern to concrete files, then sort chronologically.
+          files=""
+          while IFS= read -r pat; do
+            for f in supabase/migrations/$pat; do
+              if [ ! -f "$f" ]; then
+                echo "Whitelist pattern '$pat' did not match any migration" >&2
+                exit 1
+              fi
+              files="$files"$'\n'"$f"
+            done
+          done <<< "$patterns"
+          echo "$files" | awk 'NF' | sort | while IFS= read -r f; do
             echo "==> Applying $f"
             psql -v ON_ERROR_STOP=1 -f "$f"
           done
 
-      - name: Run balance regression suite — setup
-        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/00_setup.sql
-
-      - name: Run balance regression suite — scenarios
+      - name: Run balance regression suite (setup + scenarios in one session)
         run: |
           set -euo pipefail
-          # Any FAIL in a scenario RAISEs EXCEPTION → non-zero exit under ON_ERROR_STOP.
-          # Also grep the output as a belt-and-suspenders check.
-          psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/10_scenarios.sql 2>&1 | tee /tmp/suite.out
+          # 00_setup.sql opens BEGIN + SAVEPOINT before_scenarios; 10_scenarios.sql
+          # relies on both. They MUST run in the same psql session — piping both
+          # into one invocation preserves transaction state.
+          cat supabase/tests/balance/00_setup.sql supabase/tests/balance/10_scenarios.sql \
+            | psql -v ON_ERROR_STOP=1 2>&1 | tee /tmp/suite.out
           if grep -E '^(psql:.*ERROR|FAIL )' /tmp/suite.out; then
             echo "Balance SQL suite reported failures" >&2
             exit 1
           fi
-          echo "Balance SQL suite: all assertions PASS"
+          echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
+

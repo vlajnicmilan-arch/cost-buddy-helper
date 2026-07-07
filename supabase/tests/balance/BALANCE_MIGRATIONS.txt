@@ -1,0 +1,18 @@
+# Whitelist of balance-relevant migrations applied on top of baseline.sql
+# by .github/workflows/balance-sql-suite.yml.
+#
+# Format: one glob per line. Blank lines and lines starting with `#` are
+# skipped. Trailing `# comment` on a line is stripped before use.
+# Globs are expanded relative to supabase/migrations/.
+#
+# Order MUST match filename sort order (timestamps ascending).
+# Add new balance-relevant migrations at the correct chronological position.
+# See supabase/tests/balance/README.md (section "CI arhitektura").
+
+20260624083605_*.sql   # anchor columns + baseline recompute + trigger
+20260624131214_*.sql   # restore old balances + recompute becomes no-op unanchored
+20260624132036_*.sql   # trigger split: anchored=full recompute, unanchored=delta
+20260628163325_*.sql   # event_at + time_confidence + expenses_event_at_sync trigger
+20260628174219_*.sql   # user_edited_event_at + resolve_event_at_merge helper
+20260628205415_*.sql   # hybrid vs day_cut engine mode via app_settings
+20260630202419_*.sql   # backfill anchors for NULL anchor sources
