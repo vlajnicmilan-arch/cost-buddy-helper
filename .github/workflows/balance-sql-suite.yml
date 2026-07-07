@@ -1,0 +1,91 @@
+name: Balance SQL Regression Suite
+
+# Deploy gate for the balance engine. See mem://features/balance-regression-testing-policy.
+# Runs the authoritative SQL harness against a real Postgres 16 with all
+# Supabase migrations applied. Vitest mirror is not sufficient — this suite
+# is the source of truth for anchor/recompute/trigger semantics.
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'src/lib/balance/**'
+      - '.github/workflows/balance-sql-suite.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'src/lib/balance/**'
+
+jobs:
+  balance-sql:
+    name: Balance SQL suite (postgres:16)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: balance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: balance_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/balance_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && exit 0
+            sleep 1
+          done
+          echo "Postgres did not become ready" >&2
+          exit 1
+
+      - name: Bootstrap Supabase-compatible schema stubs
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/bootstrap.sql
+
+      - name: Apply migrations in order
+        run: |
+          set -euo pipefail
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "==> Applying $f"
+            psql -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: Run balance regression suite — setup
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/00_setup.sql
+
+      - name: Run balance regression suite — scenarios
+        run: |
+          set -euo pipefail
+          # Any FAIL in a scenario RAISEs EXCEPTION → non-zero exit under ON_ERROR_STOP.
+          # Also grep the output as a belt-and-suspenders check.
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/10_scenarios.sql 2>&1 | tee /tmp/suite.out
+          if grep -E '^(psql:.*ERROR|FAIL )' /tmp/suite.out; then
+            echo "Balance SQL suite reported failures" >&2
+            exit 1
+          fi
+          echo "Balance SQL suite: all assertions PASS"
