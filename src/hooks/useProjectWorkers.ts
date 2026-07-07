@@ -265,6 +265,3 @@ export const useProjectWorkers = (projectId: string | null) => {
     totalRemainingHours,
   };
 };
-    totalActualHours
-  };
-};
