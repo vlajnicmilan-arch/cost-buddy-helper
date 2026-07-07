@@ -132,23 +132,24 @@ describe("Balance regression — Group A (external SQL harness)", () => {
     expect(eng.balanceOf(SRC_A)).toBe(926.6);
   });
 
-  it.skip("A4 — direct anchor backfill without recompute → next write leaks post-anchor delta [SKIP: BUG 2 fix]", () => {
-    // Contract: after the atomic SET-anchor fix lands, calling setAnchorBuggy
-    // must be impossible in the SQL path. This vitest asserts the invariant:
-    // stored NIKAD ≠ engine after SET. Today the mirror reproduces the bug.
+  it("A4 — atomic SET-anchor: stored == recompute immediately after setAnchor [PR2 Phase A]", () => {
+    // Contract: after set_source_anchor RPC (or mirror's atomic setAnchor),
+    // stored balance MUST already equal engine recompute — no dependency on
+    // the next write to trigger reconciliation. Direct anchor UPDATE without
+    // recompute is the bug this fixes; Phase B guard trigger will make the
+    // buggy path impossible at the DB level.
     const eng = newEngine("hybrid");
-    // Existing post-anchor expense already in DB
+    // Existing post-anchor expense already in the ledger
     eng.insert(mkExpense({ type: "expense", amount: 100, date: d("2026-06-05T00:00:00Z") }));
-    // Buggy backfill: sets anchor cols directly, no recompute
-    eng.setAnchorBuggy(SRC_A, d("2026-06-01T09:00:00Z"), 500);
-    // stored balance is still the pre-anchor incremental value (-100)
-    const storedBeforeNextWrite = eng.balanceOf(SRC_A);
-    // Next write triggers recompute → jumps to anchor(500) + post(-100) = 400
+    // Atomic SET: anchor + recompute in one call
+    eng.setAnchor(SRC_A, d("2026-06-01T09:00:00Z"), 500);
+    // Stored is ALREADY anchor(500) + post-anchor(-100) = 400 — no next write needed
+    expect(eng.balanceOf(SRC_A)).toBe(400);
+    // Sanity: a subsequent write doesn't shift the invariant
     eng.insert(mkExpense({ type: "income", amount: 1, date: d("2026-06-06T00:00:00Z") }));
-    // Assertion the fix must satisfy: stored is ALREADY consistent right
-    // after SET (i.e. equal to 400 before the next write). Today it isn't.
-    expect(storedBeforeNextWrite).toBe(400);
+    expect(eng.balanceOf(SRC_A)).toBe(401);
   });
+
 
   it("A5 — correction row does not count in post-anchor sum [PASS today]", () => {
     const eng = seedAnchoredA("hybrid");
