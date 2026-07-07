@@ -3572,7 +3572,8 @@
       "editLockedReasonPlaceholder": "Npr. ispravak sati...",
       "lockedDeleteBlocked": "Unos je zaključan isplatom — prvo otključaj.",
       "reasonRequired": "Razlog je obavezan",
-      "lockedLegend": "Narančasti prsten = dan sadrži zaključan unos (isplata)"
+      "lockedLegend": "Narančasti prsten = dan sadrži zaključan unos (isplata)",
+      "historicRateBadge": "satnica tog datuma"
     },
     "payouts": {
       "openTitle": "Isplate",
@@ -3598,13 +3599,28 @@
       "createdToast": "Isplata evidentirana",
       "voidedToast": "Isplata poništena",
       "exportCsv": "Izvezi CSV",
+      "previewTitle": "Raščlamba po satnici",
+      "batchBadge": "Zbirno",
+      "batchSectionTitle": "Uključi i druge projekte",
+      "batchSectionHint": "Ista osoba na drugim projektima (isti vlasnik). Odabrani redovi bit će zbirno isplaćeni istim izvorom.",
+      "submitBatch": "Spremi zbirnu isplatu ({{count}})",
+      "batchCreatedToast": "Zbirna isplata evidentirana",
+      "batchVoidedToast": "Zbirna isplata poništena",
+      "batchNotAllOwnerError": "Nemate ovlast za sve odabrane projekte",
+      "voidBatchAction": "Poništi cijelu zbirnu isplatu",
+      "voidBatchConfirmTitle": "Poništiti cijelu zbirnu isplatu?",
+      "voidBatchConfirmMessage": "Svi troškovi u zbirnoj isplati bit će obrisani, a zaključani unosi ponovno otvoreni.",
       "status": {
         "paid": "Isplaćeno",
         "partial": "Djelomično",
         "advance": "Predujam",
         "voided": "Poništeno"
       }
-    }
+    },
+    "rateEffectiveFromLabel": "Nova satnica vrijedi od",
+    "rateEffectiveFromHint": "Retroaktivna promjena je dopuštena samo do prve isplate koja pokriva period.",
+    "rateEffectiveFromRequired": "Odaberi datum \"vrijedi od\"",
+    "rateCollisionError": "Postoji isplata koja pokriva ovaj period. Najraniji dozvoljeni datum: {{date}}."
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

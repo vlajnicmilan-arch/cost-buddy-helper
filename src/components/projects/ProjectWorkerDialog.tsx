@@ -44,6 +44,12 @@ export const ProjectWorkerDialog = ({
   const [hourlyRate, setHourlyRate] = useState('');
   const [workStartTime, setWorkStartTime] = useState('08:00');
   const [workEndTime, setWorkEndTime] = useState('16:00');
+  // V1-B: obavezan "vrijedi od" datum kada se satnica mijenja u edit modu
+  const [rateEffectiveFrom, setRateEffectiveFrom] = useState<string>(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [savingRate, setSavingRate] = useState(false);
 
   // Invite state (only for existing workers)
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -59,7 +65,7 @@ export const ProjectWorkerDialog = ({
   const [unlinking, setUnlinking] = useState(false);
 
   const { generateInviteLink, sendInviteEmail, members } = useProjectMembers(projectId || null);
-  const { workers: allWorkers, linkWorkerToMember } = useProjectWorkers(projectId || null);
+  const { workers: allWorkers, linkWorkerToMember, setWorkerRate } = useProjectWorkers(projectId || null);
 
   const isEditing = !!worker;
 
@@ -139,19 +145,51 @@ export const ProjectWorkerDialog = ({
     loadLinkedUser();
   }, [worker?.user_id, t]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const parsedRate = parseFloat(hourlyRate) || 0;
+  const rateChanged = isEditing && worker != null && parsedRate !== Number(worker.hourly_rate);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!firstName.trim() || !lastName.trim() || !position.trim()) return;
+
+    // V1-B: kad se satnica mijenja u edit modu, route promjenu kroz RPC uz
+    // obvezan "vrijedi od" datum. Kolizija s isplaćenim periodom = blokada.
+    if (rateChanged && worker) {
+      if (!rateEffectiveFrom) {
+        setRateError(t('workers.rateEffectiveFromRequired', 'Odaberi datum "vrijedi od"'));
+        return;
+      }
+      setSavingRate(true);
+      setRateError(null);
+      const res = await setWorkerRate(worker.id, parsedRate, rateEffectiveFrom);
+      setSavingRate(false);
+      if (!res.success) {
+        if (res.error === 'collision' && res.earliestAllowedDate) {
+          setRateError(
+            t(
+              'workers.rateCollisionError',
+              'Postoji isplata koja pokriva ovaj period. Najraniji dozvoljeni datum: {{date}}.',
+              { date: res.earliestAllowedDate },
+            ),
+          );
+        } else if (res.error === 'not_owner') {
+          setRateError(t('projects.access.readOnlyBlockedToast'));
+        } else {
+          setRateError(t('common.error'));
+        }
+        return;
+      }
+    }
 
     onSave({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       position: position.trim(),
       work_hours: parseFloat(workHours) || 0,
-      hourly_rate: parseFloat(hourlyRate) || 0,
+      hourly_rate: parsedRate,
       work_start_time: workStartTime,
-      work_end_time: workEndTime
+      work_end_time: workEndTime,
     });
 
     onOpenChange(false);
@@ -304,6 +342,34 @@ export const ProjectWorkerDialog = ({
               />
             </div>
           </div>
+
+          {rateChanged && (
+            <div className="space-y-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30">
+              <Label htmlFor="rateEffectiveFrom" className="text-xs font-medium">
+                {t('workers.rateEffectiveFromLabel', 'Nova satnica vrijedi od')}
+              </Label>
+              <Input
+                id="rateEffectiveFrom"
+                type="date"
+                value={rateEffectiveFrom}
+                onChange={(e) => { setRateEffectiveFrom(e.target.value); setRateError(null); }}
+                required
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {t('workers.rateEffectiveFromHint',
+                  'Retroaktivna promjena je dopuštena samo do prve isplate koja pokriva period.')}
+              </p>
+              {rateError && (
+                <p className="text-xs text-destructive">{rateError}</p>
+              )}
+              {savingRate && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {t('common.loading', 'Učitavanje...')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Invite-to-app section — only for existing workers */}
           {isEditing && projectId && (

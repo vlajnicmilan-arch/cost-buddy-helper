@@ -23,16 +23,30 @@ export interface WorkerPayout {
   voided_at: string | null;
   void_reason: string | null;
   created_at: string;
+  batch_id: string | null;
+}
+
+export interface RateSegment {
+  rate: number;
+  mind: string;
+  maxd: string;
+  hh: number;
+}
+
+export interface PayoutPreview {
+  hours: number;
+  gross: number;
+  segments: RateSegment[];
 }
 
 export interface CreatePayoutInput {
   workerId: string;
   projectId: string;
-  periodStart: string;   // YYYY-MM-DD
-  periodEnd: string;     // YYYY-MM-DD
+  periodStart: string;
+  periodEnd: string;
   paidAmount: number;
   paymentSource: string;
-  paidAt: string;        // ISO
+  paidAt: string;
   note?: string | null;
   lockEntries?: boolean;
 }
@@ -43,14 +57,37 @@ export interface CreatePayoutResult {
   hours_covered: number;
   gross_amount: number;
   paid_amount: number;
+  hourly_rate_snapshot?: number;
   status: PayoutStatus;
   entries_locked: number;
+}
+
+export interface BatchItemInput {
+  workerId: string;
+  projectId: string;
+  periodStart: string;
+  periodEnd: string;
+  paidAmount: number;
+}
+
+export interface CreateBatchInput {
+  items: BatchItemInput[];
+  paymentSource: string;
+  paidAt: string;
+  note?: string | null;
+  lockEntries?: boolean;
+}
+
+export interface CreateBatchResult {
+  batch_id: string;
+  payouts: CreatePayoutResult[];
+  payouts_count: number;
 }
 
 /**
  * Pure helper: maps our camelCase input to the SECURITY DEFINER RPC signature.
  * Exported for unit tests — must stay stable with the SQL contract in
- * supabase/migrations/20260707080136_*.sql.
+ * supabase/migrations/20260707080136_*.sql (+ V1-B rewrite in 20260707164727_*.sql).
  */
 export function buildCreatePayoutRpcArgs(input: CreatePayoutInput) {
   return {
@@ -59,6 +96,27 @@ export function buildCreatePayoutRpcArgs(input: CreatePayoutInput) {
     p_period_start: input.periodStart,
     p_period_end: input.periodEnd,
     p_paid_amount: input.paidAmount,
+    p_payment_source: input.paymentSource,
+    p_paid_at: input.paidAt,
+    p_note: input.note ?? null,
+    p_lock_entries: input.lockEntries ?? true,
+  };
+}
+
+/**
+ * Pure helper: maps batch input to the create_worker_payout_batch RPC.
+ * Enforces the "same payment_source across batch" invariant at the client
+ * boundary — the RPC only accepts a single source parameter.
+ */
+export function buildCreateBatchRpcArgs(input: CreateBatchInput) {
+  return {
+    p_items: input.items.map((i) => ({
+      project_id: i.projectId,
+      worker_id: i.workerId,
+      period_start: i.periodStart,
+      period_end: i.periodEnd,
+      paid_amount: i.paidAmount,
+    })),
     p_payment_source: input.paymentSource,
     p_paid_at: input.paidAt,
     p_note: input.note ?? null,
@@ -99,6 +157,37 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
     fetchPayouts();
   }, [fetchPayouts]);
 
+  const previewPayout = async (
+    workerIdArg: string,
+    projectIdArg: string,
+    periodStart: string,
+    periodEnd: string,
+  ): Promise<PayoutPreview | null> => {
+    try {
+      const { data, error } = await supabase.rpc('preview_worker_payout', {
+        p_worker_id: workerIdArg,
+        p_project_id: projectIdArg,
+        p_period_start: periodStart,
+        p_period_end: periodEnd,
+      });
+      if (error) throw error;
+      const raw = (data ?? { hours: 0, gross: 0, segments: [] }) as any;
+      return {
+        hours: Number(raw.hours ?? 0),
+        gross: Number(raw.gross ?? 0),
+        segments: (raw.segments ?? []).map((s: any) => ({
+          rate: Number(s.rate),
+          mind: s.mind,
+          maxd: s.maxd,
+          hh: Number(s.hh),
+        })),
+      };
+    } catch (err) {
+      console.error('preview_worker_payout failed:', err);
+      return null;
+    }
+  };
+
   const createPayout = async (input: CreatePayoutInput): Promise<CreatePayoutResult | null> => {
     try {
       const args = buildCreatePayoutRpcArgs(input);
@@ -107,7 +196,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       const result = (data as unknown) as CreatePayoutResult;
       showSuccess(t('workers.payouts.createdToast', 'Isplata evidentirana'));
       await fetchPayouts();
-      // Fire-and-forget: notify linked worker (bell + push).
       if (result?.payout_id) {
         supabase.functions
           .invoke('notify-worker-payout', { body: { payout_id: result.payout_id, action: 'created' } })
@@ -126,8 +214,55 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
     }
   };
 
+  const createBatchPayout = async (input: CreateBatchInput): Promise<CreateBatchResult | null> => {
+    try {
+      const args = buildCreateBatchRpcArgs(input);
+      const { data, error } = await supabase.rpc('create_worker_payout_batch', args as any);
+      if (error) throw error;
+      const result = (data as unknown) as CreateBatchResult;
+      showSuccess(t('workers.payouts.batchCreatedToast', 'Zbirna isplata evidentirana'));
+      await fetchPayouts();
+      if (result?.batch_id) {
+        supabase.functions
+          .invoke('notify-worker-payout', { body: { batch_id: result.batch_id, action: 'created' } })
+          .catch((e) => console.error('[useWorkerPayouts] notify batch created failed:', e));
+      }
+      return result;
+    } catch (err: any) {
+      console.error('create_worker_payout_batch failed:', err);
+      const msg = err?.message || '';
+      if (msg.includes('not owner of all projects')) {
+        showError(t('workers.payouts.batchNotAllOwnerError', 'Nemate ovlast za sve odabrane projekte'));
+      } else {
+        showError(t('common.error'));
+      }
+      return null;
+    }
+  };
+
+  /**
+   * Void a payout. If the payout belongs to a batch, cascades to all sibling
+   * payouts in the batch.
+   */
   const voidPayout = async (payoutId: string, reason?: string): Promise<boolean> => {
     try {
+      const target = payouts.find((p) => p.id === payoutId);
+      const batchId = target?.batch_id ?? null;
+
+      if (batchId) {
+        const { error } = await supabase.rpc('void_worker_payout_batch', {
+          p_batch_id: batchId,
+          p_reason: reason ?? null,
+        });
+        if (error) throw error;
+        showSuccess(t('workers.payouts.batchVoidedToast', 'Zbirna isplata poništena'));
+        await fetchPayouts();
+        supabase.functions
+          .invoke('notify-worker-payout', { body: { batch_id: batchId, action: 'voided' } })
+          .catch((e) => console.error('[useWorkerPayouts] notify batch voided failed:', e));
+        return true;
+      }
+
       const { error } = await supabase.rpc('void_worker_payout', {
         p_payout_id: payoutId,
         p_reason: reason ?? null,
@@ -135,7 +270,6 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       if (error) throw error;
       showSuccess(t('workers.payouts.voidedToast', 'Isplata poništena'));
       await fetchPayouts();
-      // Fire-and-forget: notify linked worker (bell + push).
       supabase.functions
         .invoke('notify-worker-payout', { body: { payout_id: payoutId, action: 'voided' } })
         .catch((e) => console.error('[useWorkerPayouts] notify-worker-payout voided failed:', e));
@@ -151,6 +285,8 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
     payouts,
     loading,
     createPayout,
+    createBatchPayout,
+    previewPayout,
     voidPayout,
     refetch: fetchPayouts,
   };

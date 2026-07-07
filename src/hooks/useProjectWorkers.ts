@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ProjectWorker, ProjectWorkerInput, ProjectWorkEntry } from '@/types/projectWorker';
+import { ProjectWorker, ProjectWorkerInput } from '@/types/projectWorker';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
+import {
+  computeWorkerCostTotals,
+  type RateHistoryRow,
+  type WorkEntryForCost,
+} from '@/lib/workerRateHistory';
 
-interface WorkEntryLite {
-  worker_id: string;
-  work_date: string;
-  actual_hours: number;
-  payout_id?: string | null;
-}
+interface WorkEntryLite extends WorkEntryForCost {}
 
 interface WorkerWithStats extends ProjectWorker {
   actualHoursTotal: number;
@@ -20,16 +20,27 @@ interface WorkerWithStats extends ProjectWorker {
   remainingCost: number;
 }
 
+export interface SetWorkerRateResult {
+  success: boolean;
+  /** payout_id blocking the change (collision) */
+  collisionPayoutId?: string;
+  /** earliest allowed effective_from date (YYYY-MM-DD) */
+  earliestAllowedDate?: string;
+  error?: string;
+}
+
 export const useProjectWorkers = (projectId: string | null) => {
   const { t } = useTranslation();
   const [workers, setWorkers] = useState<WorkerWithStats[]>([]);
   const [entries, setEntries] = useState<WorkEntryLite[]>([]);
+  const [rateHistory, setRateHistory] = useState<RateHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchWorkers = useCallback(async () => {
     if (!projectId) {
       setWorkers([]);
       setEntries([]);
+      setRateHistory([]);
       setLoading(false);
       return;
     }
@@ -45,58 +56,60 @@ export const useProjectWorkers = (projectId: string | null) => {
         supabase
           .from('project_work_entries')
           .select('worker_id, actual_hours, work_date, payout_id')
-          .eq('project_id', projectId)
+          .eq('project_id', projectId),
       ]);
 
       if (workersRes.error) throw workersRes.error;
-      
-      const rawEntries = (entriesRes.data || []).map(e => ({
+
+      const workerIds = (workersRes.data || []).map((w: any) => w.id as string);
+      let history: RateHistoryRow[] = [];
+      if (workerIds.length > 0) {
+        const { data: histData, error: histErr } = await supabase
+          .from('project_worker_rate_history' as any)
+          .select('worker_id, rate, effective_from')
+          .in('worker_id', workerIds);
+        if (histErr) {
+          console.warn('rate history fetch failed:', histErr);
+        } else {
+          history = ((histData ?? []) as any[]).map((r) => ({
+            worker_id: r.worker_id,
+            rate: Number(r.rate),
+            effective_from: r.effective_from,
+          }));
+        }
+      }
+
+      const rawEntries: WorkEntryLite[] = (entriesRes.data || []).map((e: any) => ({
         worker_id: e.worker_id,
         work_date: e.work_date,
         actual_hours: Number(e.actual_hours),
-        payout_id: (e as any).payout_id ?? null,
+        payout_id: e.payout_id ?? null,
       }));
 
-      // Calculate totals
-      const hoursByWorker: Record<string, number> = {};
-      const currentMonthHoursByWorker: Record<string, number> = {};
-      const remainingHoursByWorker: Record<string, number> = {};
+      const fallbackByWorker: Record<string, number> = {};
+      for (const w of workersRes.data || []) {
+        fallbackByWorker[(w as any).id] = Number((w as any).hourly_rate);
+      }
+      const totals = computeWorkerCostTotals(rawEntries, history, fallbackByWorker);
 
-      const now = new Date();
-      const cmStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const cmEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-      rawEntries.forEach(entry => {
-        hoursByWorker[entry.worker_id] = (hoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
-        const d = new Date(entry.work_date);
-        if (d >= cmStart && d < cmEnd) {
-          currentMonthHoursByWorker[entry.worker_id] = (currentMonthHoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
-        }
-        if (!entry.payout_id) {
-          remainingHoursByWorker[entry.worker_id] = (remainingHoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
-        }
-      });
-      
-      const workersWithStats: WorkerWithStats[] = (workersRes.data || []).map(w => {
-        const actualHours = hoursByWorker[w.id] || 0;
-        const cmHours = currentMonthHoursByWorker[w.id] || 0;
-        const remHours = remainingHoursByWorker[w.id] || 0;
-        const hourlyRate = Number(w.hourly_rate);
+      const workersWithStats: WorkerWithStats[] = (workersRes.data || []).map((w: any) => {
+        const t0 = totals[w.id];
         return {
           ...w,
           work_hours: Number(w.work_hours),
-          hourly_rate: hourlyRate,
-          actualHoursTotal: actualHours,
-          actualCostTotal: actualHours * hourlyRate,
-          currentMonthHours: cmHours,
-          currentMonthCost: cmHours * hourlyRate,
-          remainingHours: remHours,
-          remainingCost: remHours * hourlyRate,
+          hourly_rate: Number(w.hourly_rate),
+          actualHoursTotal: t0?.totalHours ?? 0,
+          actualCostTotal: t0?.totalCost ?? 0,
+          currentMonthHours: t0?.currentMonthHours ?? 0,
+          currentMonthCost: t0?.currentMonthCost ?? 0,
+          remainingHours: t0?.remainingHours ?? 0,
+          remainingCost: t0?.remainingCost ?? 0,
         };
       });
-      
+
       setWorkers(workersWithStats);
       setEntries(rawEntries);
+      setRateHistory(history);
     } catch (error) {
       console.error('Error fetching project workers:', error);
       showError(t('common.error'));
@@ -111,7 +124,6 @@ export const useProjectWorkers = (projectId: string | null) => {
 
   const addWorker = async (worker: Omit<ProjectWorkerInput, 'project_id'>): Promise<ProjectWorker | null> => {
     if (!projectId) return null;
-
     try {
       const { data, error } = await supabase
         .from('project_workers')
@@ -123,17 +135,30 @@ export const useProjectWorkers = (projectId: string | null) => {
           work_hours: worker.work_hours,
           hourly_rate: worker.hourly_rate,
           work_start_time: worker.work_start_time || '08:00',
-          work_end_time: worker.work_end_time || '16:00'
+          work_end_time: worker.work_end_time || '16:00',
         })
         .select()
         .single();
-
       if (error) throw error;
 
+      // Backfill initial rate history entry so rate_at() has a row from day 1.
+      // (Migration backfill covers pre-existing rows; new rows use RPC below via
+      // effective_from = today. Fire-and-forget: on failure user can retry via
+      // rate edit; INSERT trigger will still create baseline on first payout.)
+      try {
+        await supabase.rpc('set_worker_hourly_rate', {
+          p_worker_id: (data as any).id,
+          p_rate: worker.hourly_rate,
+          p_effective_from: new Date().toISOString().slice(0, 10),
+        });
+      } catch (e) {
+        console.warn('[addWorker] initial rate history seed failed (non-fatal):', e);
+      }
+
       const newWorker: WorkerWithStats = {
-        ...data,
-        work_hours: Number(data.work_hours),
-        hourly_rate: Number(data.hourly_rate),
+        ...(data as any),
+        work_hours: Number((data as any).work_hours),
+        hourly_rate: Number((data as any).hourly_rate),
         actualHoursTotal: 0,
         actualCostTotal: 0,
         currentMonthHours: 0,
@@ -141,9 +166,9 @@ export const useProjectWorkers = (projectId: string | null) => {
         remainingHours: 0,
         remainingCost: 0,
       };
-
-      setWorkers(prev => [newWorker, ...prev]);
+      setWorkers((prev) => [newWorker, ...prev]);
       showSuccess(t('workers.added', 'Radnik dodan'));
+      await fetchWorkers();
       return newWorker;
     } catch (error) {
       console.error('Error adding worker:', error);
@@ -152,6 +177,50 @@ export const useProjectWorkers = (projectId: string | null) => {
     }
   };
 
+  /**
+   * V1-B: change hourly rate through the RPC. Effective_from is REQUIRED.
+   * Returns SetWorkerRateResult; caller (dialog) shows a friendly message on
+   * collision including the earliest allowed date.
+   */
+  const setWorkerRate = async (
+    workerId: string,
+    rate: number,
+    effectiveFrom: string, // YYYY-MM-DD
+  ): Promise<SetWorkerRateResult> => {
+    try {
+      const { error } = await supabase.rpc('set_worker_hourly_rate', {
+        p_worker_id: workerId,
+        p_rate: rate,
+        p_effective_from: effectiveFrom,
+      });
+      if (error) throw error;
+      await fetchWorkers();
+      return { success: true };
+    } catch (err: any) {
+      const msg = String(err?.message ?? '');
+      // Parse collision payload: 'rate_change_collides_with_payout|<uuid>|<date>'
+      const m = msg.match(/rate_change_collides_with_payout\|([0-9a-f-]+)\|(\d{4}-\d{2}-\d{2})/);
+      if (m) {
+        return {
+          success: false,
+          collisionPayoutId: m[1],
+          earliestAllowedDate: m[2],
+          error: 'collision',
+        };
+      }
+      if (msg.includes('not project owner')) {
+        return { success: false, error: 'not_owner' };
+      }
+      console.error('set_worker_hourly_rate failed:', err);
+      return { success: false, error: msg || 'unknown' };
+    }
+  };
+
+  /**
+   * V1-B: rate change goes through setWorkerRate — this UPDATE deliberately
+   * OMITS hourly_rate. The DB guard trigger enforces the same at the schema
+   * level.
+   */
   const updateWorker = async (worker: ProjectWorker): Promise<void> => {
     try {
       const { error } = await supabase
@@ -161,28 +230,12 @@ export const useProjectWorkers = (projectId: string | null) => {
           last_name: worker.last_name,
           position: worker.position,
           work_hours: worker.work_hours,
-          hourly_rate: worker.hourly_rate,
           work_start_time: worker.work_start_time,
-          work_end_time: worker.work_end_time
+          work_end_time: worker.work_end_time,
         })
         .eq('id', worker.id);
-
       if (error) throw error;
-
-      setWorkers(prev => prev.map(w => {
-        if (w.id === worker.id) {
-          return {
-            ...worker,
-            actualHoursTotal: w.actualHoursTotal,
-            actualCostTotal: w.actualHoursTotal * worker.hourly_rate,
-            currentMonthHours: w.currentMonthHours,
-            currentMonthCost: w.currentMonthHours * worker.hourly_rate,
-            remainingHours: w.remainingHours,
-            remainingCost: w.remainingHours * worker.hourly_rate,
-          };
-        }
-        return w;
-      }));
+      await fetchWorkers();
       showSuccess(t('workers.updated', 'Radnik ažuriran'));
     } catch (error) {
       console.error('Error updating worker:', error);
@@ -196,11 +249,9 @@ export const useProjectWorkers = (projectId: string | null) => {
         .from('project_workers')
         .delete()
         .eq('id', id);
-
       if (error) throw error;
-
-      setWorkers(prev => prev.filter(w => w.id !== id));
-      setEntries(prev => prev.filter(e => e.worker_id !== id));
+      setWorkers((prev) => prev.filter((w) => w.id !== id));
+      setEntries((prev) => prev.filter((e) => e.worker_id !== id));
       showSuccess(t('workers.deleted', 'Radnik uklonjen'));
     } catch (error) {
       console.error('Error deleting worker:', error);
@@ -210,7 +261,7 @@ export const useProjectWorkers = (projectId: string | null) => {
 
   const linkWorkerToMember = async (
     workerId: string,
-    userId: string | null
+    userId: string | null,
   ): Promise<{ success: boolean; backfilled?: number; error?: string }> => {
     try {
       const { data, error } = await supabase.rpc('link_worker_to_member', {
@@ -227,7 +278,7 @@ export const useProjectWorkers = (projectId: string | null) => {
         showSuccess(
           n > 0
             ? t('projects.workerLinkedWithBackfill', 'Povezano — obračunato {{count}} unosa', { count: n })
-            : t('projects.workerLinkedNoBackfill', 'Povezano')
+            : t('projects.workerLinkedNoBackfill', 'Povezano'),
         );
       }
       return { success: true, backfilled: Number(result.backfilled || 0) };
@@ -244,7 +295,6 @@ export const useProjectWorkers = (projectId: string | null) => {
     }
   };
 
-  // Total cost based on actual worked hours
   const totalCost = workers.reduce((sum, w) => sum + w.actualCostTotal, 0);
   const totalActualHours = workers.reduce((sum, w) => sum + w.actualHoursTotal, 0);
   const totalRemainingCost = workers.reduce((sum, w) => sum + w.remainingCost, 0);
@@ -253,9 +303,11 @@ export const useProjectWorkers = (projectId: string | null) => {
   return {
     workers,
     entries,
+    rateHistory,
     loading,
     addWorker,
     updateWorker,
+    setWorkerRate,
     deleteWorker,
     linkWorkerToMember,
     refetch: fetchWorkers,

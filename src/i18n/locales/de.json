@@ -3566,7 +3566,8 @@
       "editLockedReasonPlaceholder": "z. B. Stundenkorrektur...",
       "lockedDeleteBlocked": "Eintrag ist durch eine Auszahlung gesperrt — zuerst entsperren.",
       "reasonRequired": "Grund ist erforderlich",
-      "lockedLegend": "Oranger Ring = Tag enthält gesperrten Eintrag (Auszahlung)"
+      "lockedLegend": "Oranger Ring = Tag enthält gesperrten Eintrag (Auszahlung)",
+      "historicRateBadge": "Stundensatz an diesem Datum"
     },
     "payouts": {
       "openTitle": "Auszahlungen",
@@ -3592,13 +3593,28 @@
       "createdToast": "Auszahlung erfasst",
       "voidedToast": "Auszahlung storniert",
       "exportCsv": "CSV exportieren",
+      "previewTitle": "Aufschlüsselung nach Stundensatz",
+      "batchBadge": "Sammel",
+      "batchSectionTitle": "Andere Projekte einbeziehen",
+      "batchSectionHint": "Dieselbe Person in anderen Projekten (gleicher Eigentümer). Ausgewählte Zeilen werden zusammen mit derselben Quelle ausgezahlt.",
+      "submitBatch": "Sammelauszahlung speichern ({{count}})",
+      "batchCreatedToast": "Sammelauszahlung erfasst",
+      "batchVoidedToast": "Sammelauszahlung storniert",
+      "batchNotAllOwnerError": "Sie besitzen nicht alle ausgewählten Projekte",
+      "voidBatchAction": "Gesamte Sammelauszahlung stornieren",
+      "voidBatchConfirmTitle": "Gesamte Sammelauszahlung stornieren?",
+      "voidBatchConfirmMessage": "Alle Ausgaben in der Sammelauszahlung werden gelöscht und gesperrte Einträge wieder geöffnet.",
       "status": {
         "paid": "Ausgezahlt",
         "partial": "Teilweise",
         "advance": "Vorschuss",
         "voided": "Storniert"
       }
-    }
+    },
+    "rateEffectiveFromLabel": "Neuer Stundensatz gültig ab",
+    "rateEffectiveFromHint": "Rückwirkende Änderungen sind nur bis zur ersten Auszahlung erlaubt, die den Zeitraum abdeckt.",
+    "rateEffectiveFromRequired": "Datum \"gültig ab\" wählen",
+    "rateCollisionError": "Eine Auszahlung deckt diesen Zeitraum bereits ab. Frühestes zulässiges Datum: {{date}}."
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",

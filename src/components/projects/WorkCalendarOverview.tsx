@@ -21,6 +21,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
 import { UnlockEntryDialog } from './UnlockEntryDialog';
+import { rateAtLocal, type RateHistoryRow } from '@/lib/workerRateHistory';
 
 interface WorkEntry {
   id: string;
@@ -56,6 +57,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   const { guard, canManageWorkerPayouts } = useProjectWriteGuard({ isReadOnly });
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [rateHistory, setRateHistory] = useState<RateHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date>(new Date());
@@ -120,10 +122,32 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
         scheduled_hours: Number(e.scheduled_hours),
         actual_hours: Number(e.actual_hours)
       })));
-      setWorkers((workersRes.data || []).map(w => ({
+      const workerRows = (workersRes.data || []).map(w => ({
         ...w,
         hourly_rate: Number(w.hourly_rate)
-      })));
+      }));
+      setWorkers(workerRows);
+
+      // V1-B: pull rate history for date-aware cost calc in the calendar.
+      const workerIds = workerRows.map((w) => w.id);
+      if (workerIds.length > 0) {
+        const { data: histData, error: histErr } = await supabase
+          .from('project_worker_rate_history' as any)
+          .select('worker_id, rate, effective_from')
+          .in('worker_id', workerIds);
+        if (histErr) {
+          console.warn('[WorkCalendarOverview] rate history fetch failed:', histErr);
+          setRateHistory([]);
+        } else {
+          setRateHistory(((histData ?? []) as any[]).map((r) => ({
+            worker_id: r.worker_id,
+            rate: Number(r.rate),
+            effective_from: r.effective_from,
+          })));
+        }
+      } else {
+        setRateHistory([]);
+      }
     } catch (error) {
       console.error('Error fetching work calendar data:', error);
     } finally {
@@ -815,7 +839,9 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                         {formatAmount(
                           selectedDateEntries.reduce((sum, e) => {
                             const w = getWorker(e.worker_id);
-                            return sum + (w ? e.actual_hours * w.hourly_rate : 0);
+                            if (!w) return sum;
+                            const rate = rateAtLocal(rateHistory, w.id, e.work_date, w.hourly_rate);
+                            return sum + e.actual_hours * rate;
                           }, 0)
                         )}
                       </p>
@@ -827,7 +853,9 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                 {selectedDateEntries.map((entry) => {
                   const worker = getWorker(entry.worker_id);
                   if (!worker) return null;
-                  const cost = entry.actual_hours * worker.hourly_rate;
+                  const rate = rateAtLocal(rateHistory, worker.id, entry.work_date, worker.hourly_rate);
+                  const cost = entry.actual_hours * rate;
+                  const rateDiffersFromCurrent = rate !== worker.hourly_rate;
                   const diff = entry.actual_hours - entry.scheduled_hours;
                   const isEditing = editingEntryId === entry.id;
                   const isLocked = !!entry.payout_id;
@@ -964,8 +992,16 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           )}
                         </div>
 
-                        <div className="text-sm font-medium text-primary">
+                        <div className="text-sm font-medium text-primary flex items-center gap-2">
                           = {formatAmount(cost)}
+                          <span className="text-[10px] font-normal text-muted-foreground">
+                            ({entry.actual_hours}h × {formatAmount(rate)})
+                          </span>
+                          {rateDiffersFromCurrent && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {t('workers.calendar.historicRateBadge', 'satnica tog datuma')}
+                            </Badge>
+                          )}
                         </div>
 
                         {getMilestoneNames(entry.milestone_ids) && (
