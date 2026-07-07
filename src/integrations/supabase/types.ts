@@ -5317,6 +5317,15 @@ export type Database = {
         Args: { p_grant_id: string; p_revoke_reason: string }
         Returns: Json
       }
+      set_source_anchor: {
+        Args: {
+          p_anchor_balance: number
+          p_anchor_ts: string
+          p_correction?: Json
+          p_source_id: string
+        }
+        Returns: Json
+      }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
