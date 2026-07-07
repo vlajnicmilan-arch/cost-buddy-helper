@@ -168,6 +168,7 @@ const RouteAwareGlobalOverlays = () => {
       <FileSavedDialog />
       <GlobalScanQuotaDialog />
       <HighlightTarget />
+      <AttributionSheetHost />
     </>
   );
 };
