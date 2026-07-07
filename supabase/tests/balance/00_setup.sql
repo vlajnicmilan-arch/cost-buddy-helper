@@ -108,4 +108,46 @@ BEGIN
 END;
 $$;
 
+-- ---- PR-A worker payout fixtures & helpers -------------------------------
+INSERT INTO _bfix VALUES
+  ('proj', '11111111-2222-3333-4444-000000000001'),
+  ('wrk',  '11111111-2222-3333-4444-000000000002');
+
+CREATE OR REPLACE FUNCTION pg_temp.seed_payout_fixtures(
+  p_rate numeric DEFAULT 25,
+  p_hours numeric DEFAULT 4,
+  p_entries int DEFAULT 2,
+  p_anchor_bal numeric DEFAULT 1000
+) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v_user uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_src  uuid := (SELECT val FROM _bfix WHERE key='src_a');
+  v_proj uuid := (SELECT val FROM _bfix WHERE key='proj');
+  v_wrk  uuid := (SELECT val FROM _bfix WHERE key='wrk');
+  i int;
+BEGIN
+  PERFORM pg_temp.reset_sources();
+  PERFORM pg_temp.set_mode('hybrid');
+  PERFORM pg_temp.set_anchor(v_src, '2026-06-01 09:00:00+00', p_anchor_bal);
+
+  DELETE FROM public.project_work_entry_locks WHERE project_id = v_proj;
+  DELETE FROM public.project_worker_payouts   WHERE project_id = v_proj;
+  DELETE FROM public.project_work_entries     WHERE project_id = v_proj;
+  DELETE FROM public.project_workers          WHERE project_id = v_proj;
+  DELETE FROM public.projects                 WHERE id         = v_proj;
+
+  INSERT INTO public.projects (id, user_id, name) VALUES (v_proj, v_user, 'P1');
+  INSERT INTO public.project_workers (id, project_id, first_name, last_name, hourly_rate)
+    VALUES (v_wrk, v_proj, 'Test', 'Worker', p_rate);
+
+  FOR i IN 1..p_entries LOOP
+    INSERT INTO public.project_work_entries (project_id, worker_id, work_date, actual_hours)
+    VALUES (v_proj, v_wrk, DATE '2026-06-02' + (i-1), p_hours);
+  END LOOP;
+
+  PERFORM set_config('request.jwt.claim.sub', v_user::text, true);
+END;
+$$;
+
 SAVEPOINT before_scenarios;
+
