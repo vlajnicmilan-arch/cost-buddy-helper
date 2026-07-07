@@ -53,7 +53,7 @@ interface WorkCalendarOverviewProps {
 export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false }: WorkCalendarOverviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { guard } = useProjectWriteGuard({ isReadOnly });
+  const { guard, canManageWorkerPayouts } = useProjectWriteGuard({ isReadOnly });
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
