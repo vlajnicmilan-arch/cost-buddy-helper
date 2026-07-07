@@ -540,7 +540,47 @@ SELECT pg_temp.assert_eq('P6 balance restored', 1000,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_p6;
 
+-- ------------------------------------------------------------
+-- P7 — RLS: non-owner caller cannot call create_worker_payout.
+--      Expect SQLSTATE 42501 ('not project owner').
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p7;
+SELECT pg_temp.seed_payout_fixtures();
+
+-- Impersonate a stranger (random uuid different from _bfix.user).
+SELECT set_config('request.jwt.claim.sub',
+  '99999999-9999-9999-9999-999999999999', true);
+
+DO $$
+DECLARE v_err text;
+BEGIN
+  BEGIN
+    PERFORM public.create_worker_payout(
+      (SELECT val FROM _bfix WHERE key='wrk'),
+      (SELECT val FROM _bfix WHERE key='proj'),
+      DATE '2026-06-02', DATE '2026-06-05', 100,
+      'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+      '2026-06-05 12:00:00+00', 'P7 rls', true
+    );
+    RAISE EXCEPTION 'FAIL P7 — non-owner call unexpectedly succeeded';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P7 — non-owner blocked (SQLSTATE 42501)';
+  WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS v_err = MESSAGE_TEXT;
+    RAISE EXCEPTION 'FAIL P7 — unexpected error: %', v_err;
+  END;
+END $$;
+
+-- P7b — no payout row was created for the impersonation attempt.
+SELECT pg_temp.assert_eq('P7 no payout created', 0,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj'))::numeric);
+
+RELEASE SAVEPOINT s_p7;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
+
 
 
