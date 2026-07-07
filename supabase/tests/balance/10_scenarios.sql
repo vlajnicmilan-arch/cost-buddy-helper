@@ -330,5 +330,25 @@ SELECT pg_temp.assert_eq('B8 recompute idempotent', 896.60,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_b8;
 
+-- ============================================================
+-- B9 — guard trigger: direct UPDATE of anchor cols outside RPC → 42501
+-- SKIP u Fazi A. Aktivira se u Fazi B kad guard trigger
+-- (_prevent_direct_anchor_update) bude deployan.
+--
+-- Planirani test (Faza B):
+--   SET LOCAL ROLE authenticated;
+--   BEGIN
+--     UPDATE public.custom_payment_sources
+--        SET correction_anchor_date = now(),
+--            correction_anchor_balance = 123
+--      WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+--     RAISE EXCEPTION 'FAIL B9: guard did not fire';
+--   EXCEPTION WHEN insufficient_privilege THEN
+--     RAISE NOTICE 'PASS B9 — guard blocked direct anchor UPDATE';
+--   END;
+-- ============================================================
+DO $$ BEGIN RAISE NOTICE 'SKIP B9 — awaits Phase B guard trigger'; END $$;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
