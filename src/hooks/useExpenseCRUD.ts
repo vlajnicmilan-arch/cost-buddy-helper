@@ -492,6 +492,10 @@ export const useExpenseCRUD = ({
           expense_nature: expense.expense_nature || null,
           note: expense.note || null,
           currency: expense.currency || null,
+          // Collaborator advances — održi paritet s insert putem.
+          is_advance: (expense as any).is_advance ?? false,
+          collaborator_id: (expense as any).collaborator_id ?? null,
+          linked_advance_ids: (expense as any).linked_advance_ids ?? [],
           updated_at: new Date().toISOString(),
         }, 'default');
 
