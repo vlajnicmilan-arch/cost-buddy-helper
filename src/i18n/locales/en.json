@@ -3591,6 +3591,7 @@
       "voidReasonLabel": "Reason",
       "createdToast": "Payout recorded",
       "voidedToast": "Payout voided",
+      "exportCsv": "Export CSV",
       "status": {
         "paid": "Paid",
         "partial": "Partial",

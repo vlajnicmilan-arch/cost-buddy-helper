@@ -19,11 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Plus, XCircle, Ban } from 'lucide-react';
+import { Loader2, Plus, XCircle, Ban, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWorkerPayouts, type WorkerPayout, type PayoutStatus } from '@/hooks/useWorkerPayouts';
+import { exportTextFile } from '@/lib/fileExport';
+import { showError } from '@/hooks/useStatusFeedback';
 import type { ProjectWorker } from '@/types/projectWorker';
 
 interface WorkerPayoutsDialogProps {
@@ -127,17 +129,60 @@ export const WorkerPayoutsDialog = ({
     Number(paidAmount) >= 0 &&
     paidAmount !== '';
 
+  const handleExportCsv = async () => {
+    if (!worker || payouts.length === 0) return;
+    const escape = (v: unknown) => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = [
+      'period_start', 'period_end', 'status', 'hours_covered',
+      'hourly_rate_snapshot', 'gross_amount', 'paid_amount',
+      'payment_source', 'paid_at', 'note', 'voided_at', 'void_reason',
+    ];
+    const rows = payouts.map((p) => [
+      p.period_start, p.period_end, p.status,
+      Number(p.hours_covered).toFixed(2),
+      Number(p.hourly_rate_snapshot).toFixed(2),
+      Number(p.gross_amount).toFixed(2),
+      Number(p.paid_amount).toFixed(2),
+      p.payment_source ?? '',
+      p.paid_at,
+      p.note ?? '',
+      p.voided_at ?? '',
+      p.void_reason ?? '',
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(escape).join(',')).join('\n');
+    const fileName = `isplate_${worker.last_name}_${worker.first_name}_${new Date().toISOString().slice(0, 10)}.csv`;
+    const ok = await exportTextFile(csv, fileName, 'text/csv', true);
+    if (!ok) showError(t('common.error'));
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {t('workers.payouts.dialogTitle', 'Isplate')}
-              {worker && (
-                <span className="ml-2 text-sm text-muted-foreground font-normal">
-                  {worker.first_name} {worker.last_name}
-                </span>
+            <DialogTitle className="flex items-center justify-between gap-2 pr-6">
+              <span>
+                {t('workers.payouts.dialogTitle', 'Isplate')}
+                {worker && (
+                  <span className="ml-2 text-sm text-muted-foreground font-normal">
+                    {worker.first_name} {worker.last_name}
+                  </span>
+                )}
+              </span>
+              {payouts.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 text-xs font-normal"
+                  onClick={handleExportCsv}
+                  title={t('workers.payouts.exportCsv', 'Izvezi CSV')}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  CSV
+                </Button>
               )}
             </DialogTitle>
           </DialogHeader>
