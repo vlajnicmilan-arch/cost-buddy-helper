@@ -3540,6 +3540,8 @@
     "searchPlaceholder": "Suche nach Name/Position...",
     "noMatches": "Keine Suchergebnisse",
     "activeWorkers": "aktiv",
+    "remainingToPay": "Offen für Arbeiter",
+    "unpaid": "unbezahlt",
     "totalLabel": "Gesamt",
     "workedShort": "geleistet",
     "calendar": {
@@ -3563,7 +3565,8 @@
       "editLockedReasonLabel": "Grund der Änderung (erforderlich)",
       "editLockedReasonPlaceholder": "z. B. Stundenkorrektur...",
       "lockedDeleteBlocked": "Eintrag ist durch eine Auszahlung gesperrt — zuerst entsperren.",
-      "reasonRequired": "Grund ist erforderlich"
+      "reasonRequired": "Grund ist erforderlich",
+      "lockedLegend": "Oranger Ring = Tag enthält gesperrten Eintrag (Auszahlung)"
     },
     "payouts": {
       "openTitle": "Auszahlungen",

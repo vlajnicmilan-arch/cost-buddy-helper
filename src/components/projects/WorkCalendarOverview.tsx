@@ -173,6 +173,17 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     }
   });
 
+  // Locked-day set: date has at least one entry with payout_id.
+  const lockedDates: Date[] = [];
+  const seenLocked = new Set<string>();
+  filteredEntries.forEach(e => {
+    if (e.payout_id && !seenLocked.has(e.work_date)) {
+      seenLocked.add(e.work_date);
+      lockedDates.push(parseISO(e.work_date));
+    }
+  });
+
+
   const selectedDateEntries = selectedDate
     ? filteredEntries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
     : [];
@@ -626,6 +637,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           modifiers={{
             hasEntry: datesWithoutColor,
             multiSelected: multiSelectedDates,
+            lockedDay: lockedDates,
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, dates], idx) => [`color_${idx}`, dates])
             )
@@ -641,6 +653,11 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
               fontWeight: 'bold',
               borderRadius: '50%',
               boxShadow: 'inset 0 0 0 2px hsl(var(--primary))'
+            },
+            lockedDay: {
+              outline: '2px solid hsl(38 92% 50%)',
+              outlineOffset: '-3px',
+              borderRadius: '50%'
             },
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, _], idx) => [
@@ -662,6 +679,12 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           ? t('workers.calendar.multiSelectHint', 'Odaberite dane pa pritisnite gumb za grupno dodavanje ({{count}} odabrano)', { count: multiSelectedDates.length })
           : t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
+      {lockedDates.length > 0 && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1">
+          <Lock className="w-3 h-3" />
+          {t('workers.calendar.lockedLegend', 'Narančasti prsten = dan sadrži zaključan unos (isplata)')}
+        </p>
+      )}
 
       {/* Bulk Add Dialog */}
       <Dialog open={showBulkDialog} onOpenChange={(open) => { if (!open) { setShowBulkDialog(false); resetBulkForm(); } }}>

@@ -3546,6 +3546,8 @@
     "searchPlaceholder": "Pretraga po imenu/poziciji...",
     "noMatches": "Nema rezultata za pretragu",
     "activeWorkers": "aktivnih",
+    "remainingToPay": "Preostalo radnicima",
+    "unpaid": "neisplaćeno",
     "totalLabel": "Ukupno",
     "workedShort": "odrađeno",
     "calendar": {
@@ -3569,7 +3571,8 @@
       "editLockedReasonLabel": "Razlog izmjene (obavezno)",
       "editLockedReasonPlaceholder": "Npr. ispravak sati...",
       "lockedDeleteBlocked": "Unos je zaključan isplatom — prvo otključaj.",
-      "reasonRequired": "Razlog je obavezan"
+      "reasonRequired": "Razlog je obavezan",
+      "lockedLegend": "Narančasti prsten = dan sadrži zaključan unos (isplata)"
     },
     "payouts": {
       "openTitle": "Isplate",

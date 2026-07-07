@@ -8,6 +8,7 @@ interface WorkEntryLite {
   worker_id: string;
   work_date: string;
   actual_hours: number;
+  payout_id?: string | null;
 }
 
 interface WorkerWithStats extends ProjectWorker {
@@ -15,6 +16,8 @@ interface WorkerWithStats extends ProjectWorker {
   actualCostTotal: number;
   currentMonthHours: number;
   currentMonthCost: number;
+  remainingHours: number;
+  remainingCost: number;
 }
 
 export const useProjectWorkers = (projectId: string | null) => {
@@ -41,7 +44,7 @@ export const useProjectWorkers = (projectId: string | null) => {
           .order('created_at', { ascending: false }),
         supabase
           .from('project_work_entries')
-          .select('worker_id, actual_hours, work_date')
+          .select('worker_id, actual_hours, work_date, payout_id')
           .eq('project_id', projectId)
       ]);
 
@@ -51,11 +54,13 @@ export const useProjectWorkers = (projectId: string | null) => {
         worker_id: e.worker_id,
         work_date: e.work_date,
         actual_hours: Number(e.actual_hours),
+        payout_id: (e as any).payout_id ?? null,
       }));
 
       // Calculate totals
       const hoursByWorker: Record<string, number> = {};
       const currentMonthHoursByWorker: Record<string, number> = {};
+      const remainingHoursByWorker: Record<string, number> = {};
 
       const now = new Date();
       const cmStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -67,11 +72,15 @@ export const useProjectWorkers = (projectId: string | null) => {
         if (d >= cmStart && d < cmEnd) {
           currentMonthHoursByWorker[entry.worker_id] = (currentMonthHoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
         }
+        if (!entry.payout_id) {
+          remainingHoursByWorker[entry.worker_id] = (remainingHoursByWorker[entry.worker_id] || 0) + entry.actual_hours;
+        }
       });
       
       const workersWithStats: WorkerWithStats[] = (workersRes.data || []).map(w => {
         const actualHours = hoursByWorker[w.id] || 0;
         const cmHours = currentMonthHoursByWorker[w.id] || 0;
+        const remHours = remainingHoursByWorker[w.id] || 0;
         const hourlyRate = Number(w.hourly_rate);
         return {
           ...w,
@@ -81,6 +90,8 @@ export const useProjectWorkers = (projectId: string | null) => {
           actualCostTotal: actualHours * hourlyRate,
           currentMonthHours: cmHours,
           currentMonthCost: cmHours * hourlyRate,
+          remainingHours: remHours,
+          remainingCost: remHours * hourlyRate,
         };
       });
       
@@ -127,6 +138,8 @@ export const useProjectWorkers = (projectId: string | null) => {
         actualCostTotal: 0,
         currentMonthHours: 0,
         currentMonthCost: 0,
+        remainingHours: 0,
+        remainingCost: 0,
       };
 
       setWorkers(prev => [newWorker, ...prev]);
@@ -164,6 +177,8 @@ export const useProjectWorkers = (projectId: string | null) => {
             actualCostTotal: w.actualHoursTotal * worker.hourly_rate,
             currentMonthHours: w.currentMonthHours,
             currentMonthCost: w.currentMonthHours * worker.hourly_rate,
+            remainingHours: w.remainingHours,
+            remainingCost: w.remainingHours * worker.hourly_rate,
           };
         }
         return w;
@@ -232,6 +247,8 @@ export const useProjectWorkers = (projectId: string | null) => {
   // Total cost based on actual worked hours
   const totalCost = workers.reduce((sum, w) => sum + w.actualCostTotal, 0);
   const totalActualHours = workers.reduce((sum, w) => sum + w.actualHoursTotal, 0);
+  const totalRemainingCost = workers.reduce((sum, w) => sum + w.remainingCost, 0);
+  const totalRemainingHours = workers.reduce((sum, w) => sum + w.remainingHours, 0);
 
   return {
     workers,
@@ -243,6 +260,8 @@ export const useProjectWorkers = (projectId: string | null) => {
     linkWorkerToMember,
     refetch: fetchWorkers,
     totalCost,
-    totalActualHours
+    totalActualHours,
+    totalRemainingCost,
+    totalRemainingHours,
   };
 };

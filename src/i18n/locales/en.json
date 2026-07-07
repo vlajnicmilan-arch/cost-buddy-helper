@@ -3540,6 +3540,8 @@
     "searchPlaceholder": "Search by name/position...",
     "noMatches": "No search results",
     "activeWorkers": "active",
+    "remainingToPay": "Remaining for workers",
+    "unpaid": "unpaid",
     "totalLabel": "Total",
     "workedShort": "worked",
     "calendar": {
@@ -3563,7 +3565,8 @@
       "editLockedReasonLabel": "Reason for change (required)",
       "editLockedReasonPlaceholder": "e.g. hours correction...",
       "lockedDeleteBlocked": "Entry is locked by a payout — unlock first.",
-      "reasonRequired": "Reason is required"
+      "reasonRequired": "Reason is required",
+      "lockedLegend": "Orange ring = day contains a locked entry (payout)"
     },
     "payouts": {
       "openTitle": "Payouts",
