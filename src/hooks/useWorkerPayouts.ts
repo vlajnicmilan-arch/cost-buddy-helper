@@ -157,7 +157,7 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
     fetchPayouts();
   }, [fetchPayouts]);
 
-  const previewPayout = async (
+  const previewPayout = useCallback(async (
     workerIdArg: string,
     projectIdArg: string,
     periodStart: string,
@@ -186,7 +186,7 @@ export const useWorkerPayouts = (projectId: string | null, workerId: string | nu
       console.error('preview_worker_payout failed:', err);
       return null;
     }
-  };
+  }, []);
 
   const createPayout = async (input: CreatePayoutInput): Promise<CreatePayoutResult | null> => {
     try {
