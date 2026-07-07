@@ -637,6 +637,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           modifiers={{
             hasEntry: datesWithoutColor,
             multiSelected: multiSelectedDates,
+            lockedDay: lockedDates,
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, dates], idx) => [`color_${idx}`, dates])
             )
@@ -652,6 +653,11 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
               fontWeight: 'bold',
               borderRadius: '50%',
               boxShadow: 'inset 0 0 0 2px hsl(var(--primary))'
+            },
+            lockedDay: {
+              outline: '2px solid hsl(38 92% 50%)',
+              outlineOffset: '-3px',
+              borderRadius: '50%'
             },
             ...Object.fromEntries(
               Array.from(colorGroups.entries()).map(([color, _], idx) => [
