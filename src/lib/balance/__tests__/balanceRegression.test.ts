@@ -86,9 +86,11 @@ describe("Balance regression — Group A (external SQL harness)", () => {
       expect(eng.balanceOf(SRC_A)).toBe(946.6);
     });
 
-    it.skip("manual_entry variant → included → 926.60 [SKIP: BUG 1 fix]", () => {
-      // When the manual_entry intent lands, manual writes MUST be promoted to
-      // C2 (event_at-precision) so this row is included: 946.60 − 20 = 926.60.
+    it('manual_entry variant → included → 926.60 [PR1 manual_entry, PASS]', () => {
+      // Post-PR1: manual writes go through writerIntent='manual_entry' which
+      // authoritatively sets event_at=now() + C2. This mirror test seeds
+      // event_at/C2 directly to fixate the invariant: a C2 same-day row
+      // AFTER the anchor MUST be included in hybrid mode (946.60 − 20).
       const eng = seedAnchoredA("hybrid");
       eng.insert(
         mkExpense({
