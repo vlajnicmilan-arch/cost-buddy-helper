@@ -3566,7 +3566,8 @@
       "editLockedReasonPlaceholder": "e.g. hours correction...",
       "lockedDeleteBlocked": "Entry is locked by a payout — unlock first.",
       "reasonRequired": "Reason is required",
-      "lockedLegend": "Orange ring = day contains a locked entry (payout)"
+      "lockedLegend": "Orange ring = day contains a locked entry (payout)",
+      "historicRateBadge": "rate on that date"
     },
     "payouts": {
       "openTitle": "Payouts",
@@ -3592,13 +3593,28 @@
       "createdToast": "Payout recorded",
       "voidedToast": "Payout voided",
       "exportCsv": "Export CSV",
+      "previewTitle": "Breakdown by rate",
+      "batchBadge": "Batch",
+      "batchSectionTitle": "Include other projects",
+      "batchSectionHint": "Same person on other projects (same owner). Selected rows will be paid together with the same source.",
+      "submitBatch": "Save batch payout ({{count}})",
+      "batchCreatedToast": "Batch payout recorded",
+      "batchVoidedToast": "Batch payout voided",
+      "batchNotAllOwnerError": "You don't own all selected projects",
+      "voidBatchAction": "Void entire batch",
+      "voidBatchConfirmTitle": "Void the entire batch payout?",
+      "voidBatchConfirmMessage": "All expenses in the batch will be deleted and locked entries reopened.",
       "status": {
         "paid": "Paid",
         "partial": "Partial",
         "advance": "Advance",
         "voided": "Voided"
       }
-    }
+    },
+    "rateEffectiveFromLabel": "New rate effective from",
+    "rateEffectiveFromHint": "Retroactive changes are allowed only up to the first payout covering the period.",
+    "rateEffectiveFromRequired": "Choose an \"effective from\" date",
+    "rateCollisionError": "A payout already covers this period. Earliest allowed date: {{date}}."
   },
   "collaboratorsFilters": {
     "filterStatus": "Status",
