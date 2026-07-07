@@ -1098,6 +1098,13 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           </div>
         </DialogContent>
       </Dialog>
+
+      <UnlockEntryDialog
+        open={!!unlockEntryId}
+        onOpenChange={(open) => { if (!open) setUnlockEntryId(null); }}
+        entryId={unlockEntryId}
+        onUnlocked={handleEntryUnlocked}
+      />
     </div>
   );
 };
