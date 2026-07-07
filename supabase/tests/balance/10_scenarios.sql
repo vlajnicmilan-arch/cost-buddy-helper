@@ -75,10 +75,30 @@ SELECT pg_temp.assert_eq('A3 C1 same-day after anchor', 926.60,
 RELEASE SAVEPOINT s_a3;
 
 -- ============================================================
--- A4 — direct anchor backfill without recompute (BUG 2)
--- SKIP: fix mora učiniti nemogućim SET sidra bez recomputea.
+-- A4 — atomarni SET sidra kroz set_source_anchor RPC (PR2 Faza A)
+-- Contract: stored balance je ISPRAVAN odmah po povratku iz RPC-a —
+-- ne ovisi o sljedećem write-u da pokrene reconciliation.
 -- ============================================================
-DO $$ BEGIN RAISE NOTICE 'SKIP A4 — awaits BUG 2 atomic SET fix'; END $$;
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_a4;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+-- Već postojeći post-anchor expense u ledgeru
+SELECT pg_temp.mk_expense('expense', 100,
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-05 00:00:00+00');
+-- RPC zahtijeva auth.uid() = owner → simuliraj JWT sub claim.
+SET LOCAL "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
+SELECT public.set_source_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00'::timestamptz,
+  500::numeric,
+  NULL
+);
+-- Stored = anchor(500) + post-anchor(-100) = 400 ODMAH, bez daljnjeg write-a.
+SELECT pg_temp.assert_eq('A4 stored == recompute after RPC (no leak)', 400,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_a4;
+
 
 -- ============================================================
 -- A5 — correction row does not count in post-anchor sum
@@ -310,5 +330,25 @@ SELECT pg_temp.assert_eq('B8 recompute idempotent', 896.60,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_b8;
 
+-- ============================================================
+-- B9 — guard trigger: direct UPDATE of anchor cols outside RPC → 42501
+-- SKIP u Fazi A. Aktivira se u Fazi B kad guard trigger
+-- (_prevent_direct_anchor_update) bude deployan.
+--
+-- Planirani test (Faza B):
+--   SET LOCAL ROLE authenticated;
+--   BEGIN
+--     UPDATE public.custom_payment_sources
+--        SET correction_anchor_date = now(),
+--            correction_anchor_balance = 123
+--      WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+--     RAISE EXCEPTION 'FAIL B9: guard did not fire';
+--   EXCEPTION WHEN insufficient_privilege THEN
+--     RAISE NOTICE 'PASS B9 — guard blocked direct anchor UPDATE';
+--   END;
+-- ============================================================
+DO $$ BEGIN RAISE NOTICE 'SKIP B9 — awaits Phase B guard trigger'; END $$;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+

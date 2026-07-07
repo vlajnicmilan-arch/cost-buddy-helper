@@ -93,48 +93,31 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
           } as any);
         }
       } else if (user) {
-        // Cloud mode: anchor-based model. Set anchor atomically with balance, then
-        // insert audit row. Trigger will recompute and arrive back at newBalance
-        // because the audit row has expense_nature='correction' (excluded from sum).
-        const { error: anchorError } = await supabase
-          .from('custom_payment_sources' as any)
-          .update({
-            balance: newBalance,
-            correction_anchor_date: nowIso,
-            correction_anchor_balance: newBalance,
-            updated_at: nowIso,
-          })
-          .eq('id', sourceId);
+        // Cloud mode: atomarni SET sidra kroz RPC (PR2 Faza A).
+        // RPC radi: anchor kolone + balance + (opcionalni) audit correction
+        // red + recompute — sve u jednoj transakciji. Stored balance je
+        // ispravan odmah po povratku, bez ovisnosti o sljedećem write-u.
+        const correctionPayload =
+          difference !== 0
+            ? {
+                amount: difference, // predznak: + income, − expense
+                type: difference > 0 ? 'income' : 'expense',
+                description: `Korekcija salda — ${balanceCorrectionSource.name}`,
+                category: 'other',
+                note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
+              }
+            : null;
 
-        if (anchorError) throw anchorError;
+        const { error: rpcError } = await supabase.rpc('set_source_anchor' as any, {
+          p_source_id: sourceId,
+          p_anchor_ts: nowIso,
+          p_anchor_balance: newBalance,
+          p_correction: correctionPayload,
+        });
 
-        if (difference !== 0) {
-          const correctionType = difference > 0 ? 'income' : 'expense';
-          /* eslint-disable no-restricted-syntax -- balance-correction expense: locally-built canonical custom:UUID */
-          // Val 2: balance correction is the first and only real C1 producer.
-          // The system observed the precise moment the user submitted the
-          // correction, so we send `event_at = now()` with C1 confidence
-          // through the `system_precise` writer intent gate.
-          const { normalizeExpensePayload } = await import('@/lib/balance/writerIntent');
-          const correctionPayload = normalizeExpensePayload({
-            user_id: user.id,
-            amount: Math.abs(difference),
-            description: `Korekcija salda — ${balanceCorrectionSource.name}`,
-            category: 'other',
-            type: correctionType,
-            date: nowIso,
-            payment_source: coerceCanonicalShape(`custom:${sourceId}`),
-            note: `Saldo korigiran s ${freshBalance.toFixed(2)} na ${newBalance.toFixed(2)}`,
-            expense_nature: 'correction',
-            event_at: nowIso,
-            time_confidence: 'C1' as const,
-          }, 'system_precise');
-          const { error: insertError } = await supabase.from('expenses').insert(correctionPayload as any);
-          /* eslint-enable no-restricted-syntax */
-
-          if (insertError) throw insertError;
-        }
+        if (rpcError) throw rpcError;
       }
+
 
       // Refresh expenses list so the correction appears immediately
       onRefetchExpenses?.();
