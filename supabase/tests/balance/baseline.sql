@@ -65,3 +65,69 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
   value jsonb NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- PR-A worker payouts prerequisites
+-- Minimal stubs for project_worker_payouts / project_work_entry_locks
+-- migrations (20260707080136_*, 20260707081138_*). Only columns referenced
+-- by payout RPCs / guard triggers are included.
+-- ---------------------------------------------------------------------------
+
+-- expenses.project_id (referenced by create_worker_payout INSERT)
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS project_id uuid;
+
+-- public.projects (id + owner)
+CREATE TABLE IF NOT EXISTS public.projects (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name       text NOT NULL DEFAULT 'test-project',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- public.project_workers (id + project + name + rate + optional linked user)
+CREATE TABLE IF NOT EXISTS public.project_workers (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id   uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id      uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  first_name   text NOT NULL DEFAULT '',
+  last_name    text NOT NULL DEFAULT '',
+  hourly_rate  numeric(12,2) NOT NULL DEFAULT 0,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- public.project_work_entries (columns referenced by RPC + guard trigger)
+CREATE TABLE IF NOT EXISTS public.project_work_entries (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id       uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  worker_id        uuid NOT NULL REFERENCES public.project_workers(id) ON DELETE CASCADE,
+  work_date        date NOT NULL,
+  actual_hours     numeric(8,2) NOT NULL DEFAULT 0,
+  scheduled_hours  numeric(8,2),
+  milestone_ids    uuid[],
+  note             text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+
+-- Shared trigger fn used by many migrations
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$;
+
+-- Membership helpers used by RLS in payout migration
+CREATE OR REPLACE FUNCTION public.is_project_owner(_project_id uuid, _user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.projects WHERE id = _project_id AND user_id = _user_id)
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_project_member(_project_id uuid, _user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT public.is_project_owner(_project_id, _user_id)
+$$;
+
+
+

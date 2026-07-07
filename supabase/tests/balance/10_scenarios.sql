@@ -349,6 +349,198 @@ RELEASE SAVEPOINT s_b8;
 -- ============================================================
 DO $$ BEGIN RAISE NOTICE 'SKIP B9 — awaits Phase B guard trigger'; END $$;
 
+-- ============================================================
+-- PR-A worker payouts (P1–P6)
+-- Contract: create/void/lock RPCs + guard triggers on expenses &
+-- project_work_entries.
+-- Each scenario resets to before_scenarios so SET LOCAL flags
+-- (app.allow_payout_write) from prior RPC calls are rolled back.
+-- ============================================================
+
+-- Fixtures & pg_temp.seed_payout_fixtures live in 00_setup.sql so they
+-- survive ROLLBACK TO SAVEPOINT before_scenarios.
+
+
+
+-- ------------------------------------------------------------
+-- P1 — create_worker_payout happy path (full pay, entries locked)
+-- gross = 2 × 4 × 25 = 200; paid = 200 → status='paid'
+-- balance: 1000 − 200 = 800 (C2 event_at, day after anchor)
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p1;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-06-02', DATE '2026-06-05',
+  200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00',
+  'P1 full pay',
+  true
+);
+SELECT pg_temp.assert_eq('P1 hours_covered', 8,
+  (SELECT SUM(hours_covered) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')));
+SELECT pg_temp.assert_eq('P1 gross_amount', 200,
+  (SELECT SUM(gross_amount) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')));
+
+-- Verify status via table (avoids double-invoke)
+SELECT pg_temp.assert_eq('P1 payout status=paid (1=yes)',
+  1,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status='paid')::numeric);
+SELECT pg_temp.assert_eq('P1 entries locked',
+  2,
+  (SELECT COUNT(*) FROM public.project_work_entries
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND payout_id IS NOT NULL)::numeric);
+SELECT pg_temp.assert_eq('P1 balance after payout', 800,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_p1;
+
+-- ------------------------------------------------------------
+-- P2 — partial payout (paid < gross → status='partial')
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p2;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-06-02', DATE '2026-06-05',
+  150, -- < 200 gross
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'P2 partial', false
+);
+SELECT pg_temp.assert_eq('P2 status=partial',
+  1,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status='partial')::numeric);
+SELECT pg_temp.assert_eq('P2 entries NOT locked (lock=false)',
+  0,
+  (SELECT COUNT(*) FROM public.project_work_entries
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND payout_id IS NOT NULL)::numeric);
+SELECT pg_temp.assert_eq('P2 balance after 150 paid', 850,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_p2;
+
+-- ------------------------------------------------------------
+-- P3 — advance (no hours in period, paid > 0 → status='advance')
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p3;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-07-01', DATE '2026-07-05', -- period WITHOUT entries
+  100,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-07-05 12:00:00+00', 'P3 advance', true
+);
+SELECT pg_temp.assert_eq('P3 status=advance',
+  1,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status='advance')::numeric);
+SELECT pg_temp.assert_eq('P3 gross_amount=0',
+  0,
+  (SELECT COALESCE(SUM(gross_amount),0) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')));
+RELEASE SAVEPOINT s_p3;
+
+-- ------------------------------------------------------------
+-- P4 — guard: direct UPDATE amount on payout-linked expense → 42501
+-- (allow_payout_write flag is rolled back by SAVEPOINT after P1)
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p4;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-06-02', DATE '2026-06-05', 200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'P4', true
+);
+-- Reset guard flag so direct UPDATE hits the trigger
+SELECT set_config('app.allow_payout_write', '', true);
+DO $$
+DECLARE v_exp uuid;
+BEGIN
+  SELECT expense_id INTO v_exp FROM public.project_worker_payouts
+    WHERE project_id = (SELECT val FROM _bfix WHERE key='proj') LIMIT 1;
+  BEGIN
+    UPDATE public.expenses SET amount = amount + 1 WHERE id = v_exp;
+    RAISE EXCEPTION 'FAIL P4: guard did not block direct expense UPDATE';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P4 — guard blocked expense mutation on payout-linked row';
+  END;
+END $$;
+RELEASE SAVEPOINT s_p4;
+
+-- ------------------------------------------------------------
+-- P5 — guard: direct DELETE on locked work_entry → 42501
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p5;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-06-02', DATE '2026-06-05', 200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'P5', true
+);
+SELECT set_config('app.allow_payout_write', '', true);
+DO $$
+DECLARE v_entry uuid;
+BEGIN
+  SELECT id INTO v_entry FROM public.project_work_entries
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')
+      AND payout_id IS NOT NULL LIMIT 1;
+  BEGIN
+    DELETE FROM public.project_work_entries WHERE id = v_entry;
+    RAISE EXCEPTION 'FAIL P5: guard did not block locked work_entry DELETE';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P5 — guard blocked DELETE on locked entry';
+  END;
+END $$;
+RELEASE SAVEPOINT s_p5;
+
+-- ------------------------------------------------------------
+-- P6 — void_worker_payout: soft-deletes expense, unlocks entries,
+--      restores balance, status='voided'
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p6;
+SELECT pg_temp.seed_payout_fixtures();
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
+  DATE '2026-06-02', DATE '2026-06-05', 200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00', 'P6 pre-void', true
+);
+SELECT pg_temp.assert_eq('P6 balance pre-void', 800,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+DO $$
+DECLARE v_payout uuid;
+BEGIN
+  SELECT id INTO v_payout FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') LIMIT 1;
+  PERFORM public.void_worker_payout(v_payout, 'P6 test');
+END $$;
+
+SELECT pg_temp.assert_eq('P6 status=voided',
+  1,
+  (SELECT COUNT(*) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND status='voided')::numeric);
+SELECT pg_temp.assert_eq('P6 entries unlocked',
+  0,
+  (SELECT COUNT(*) FROM public.project_work_entries
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj') AND payout_id IS NOT NULL)::numeric);
+SELECT pg_temp.assert_eq('P6 balance restored', 1000,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_p6;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
 
