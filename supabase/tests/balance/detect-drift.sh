@@ -46,14 +46,19 @@ matches_globs() {
 # Determine changed migration files vs BASE_REF. If git ref is missing (e.g.
 # shallow clone without base), fall back to scanning ALL migrations so drift
 # is still visible.
+# Determine changed migration files vs BASE_REF. If git ref is missing (e.g.
+# shallow clone without base), warn but pass — fallback would produce noise
+# over grandfathered pre-gate migrations. Real CI uses fetch-depth: 0 so
+# BASE_REF is always resolvable.
 if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   changed="$(git diff --name-only --diff-filter=AM "$BASE_REF"...HEAD -- "$MIG_DIR" || true)"
   scope="changed vs $BASE_REF"
 else
-  echo "detect-drift: BASE_REF '$BASE_REF' not available, scanning all migrations"
-  changed="$(ls "$MIG_DIR"/*.sql 2>/dev/null || true)"
-  scope="ALL migrations (no base ref)"
+  echo "detect-drift: BASE_REF '$BASE_REF' not available — skipping drift check" >&2
+  echo "detect-drift: (CI should provide fetch-depth: 0 so this branch never runs)" >&2
+  exit 0
 fi
+
 
 if [ -z "$changed" ]; then
   echo "detect-drift: no migration files in scope ($scope) — OK"
