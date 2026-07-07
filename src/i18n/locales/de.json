@@ -3550,7 +3550,20 @@
       "bulkSubmit": "Zu {{count}} Tagen hinzufügen",
       "bulkDaysShort": "{{count}} Tage",
       "bulkAdded": "{{count}} Arbeitstage hinzugefügt",
-      "bulkAddedWithSkipped": "{{count}} Arbeitstage hinzugefügt ({{skipped}} übersprungen — existiert bereits)"
+      "bulkAddedWithSkipped": "{{count}} Arbeitstage hinzugefügt ({{skipped}} übersprungen — existiert bereits)",
+      "lockedBadge": "Gesperrt",
+      "unlockAction": "Entsperren",
+      "unlockDialogTitle": "Arbeitseintrag entsperren?",
+      "unlockDialogMessage": "Damit wird die Verknüpfung mit der Auszahlung entfernt (nur für diesen Eintrag).",
+      "unlockReasonLabel": "Grund (erforderlich)",
+      "unlockReasonPlaceholder": "z. B. Stundenkorrektur...",
+      "unlockSubmit": "Entsperren",
+      "unlockedToast": "Arbeitseintrag entsperrt",
+      "editLockedHint": "Dieser Eintrag ist durch eine Auszahlung gesperrt — nur tatsächliche Stunden/Notiz können mit einem Grund geändert werden.",
+      "editLockedReasonLabel": "Grund der Änderung (erforderlich)",
+      "editLockedReasonPlaceholder": "z. B. Stundenkorrektur...",
+      "lockedDeleteBlocked": "Eintrag ist durch eine Auszahlung gesperrt — zuerst entsperren.",
+      "reasonRequired": "Grund ist erforderlich"
     },
     "payouts": {
       "openTitle": "Auszahlungen",
