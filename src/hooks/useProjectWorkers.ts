@@ -247,6 +247,8 @@ export const useProjectWorkers = (projectId: string | null) => {
   // Total cost based on actual worked hours
   const totalCost = workers.reduce((sum, w) => sum + w.actualCostTotal, 0);
   const totalActualHours = workers.reduce((sum, w) => sum + w.actualHoursTotal, 0);
+  const totalRemainingCost = workers.reduce((sum, w) => sum + w.remainingCost, 0);
+  const totalRemainingHours = workers.reduce((sum, w) => sum + w.remainingHours, 0);
 
   return {
     workers,
@@ -258,6 +260,11 @@ export const useProjectWorkers = (projectId: string | null) => {
     linkWorkerToMember,
     refetch: fetchWorkers,
     totalCost,
+    totalActualHours,
+    totalRemainingCost,
+    totalRemainingHours,
+  };
+};
     totalActualHours
   };
 };
