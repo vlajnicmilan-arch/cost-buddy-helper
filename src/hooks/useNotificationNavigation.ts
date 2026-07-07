@@ -80,6 +80,17 @@ export function useNotificationNavigation() {
 
   const navigateFromNotification = useCallback(
     (type: string | null | undefined, data: unknown): boolean => {
+      // Attribution intercept: worker_payout_created/voided otvara AttributionSheet
+      // overlay-em preko CustomEvent-a — bez rute promjene. Ostale obavijesti
+      // idu kroz standardni route flow.
+      if (type === 'worker_payout_created' || type === 'worker_payout_voided') {
+        const action = type === 'worker_payout_created' ? 'created' : 'voided';
+        const attr = parseAttributionPayload(action, data);
+        if (attr) {
+          dispatchAttributionOpen(attr);
+          return true;
+        }
+      }
       const payload = normalizePayload(
         type ?? null,
         (data && typeof data === 'object') ? (data as Record<string, unknown>) : null,
