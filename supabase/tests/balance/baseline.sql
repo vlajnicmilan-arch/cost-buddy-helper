@@ -111,3 +111,15 @@ CREATE TABLE IF NOT EXISTS public.project_work_entries (
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
+-- Membership helpers used by RLS in payout migration
+CREATE OR REPLACE FUNCTION public.is_project_owner(_project_id uuid, _user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.projects WHERE id = _project_id AND user_id = _user_id)
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_project_member(_project_id uuid, _user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT public.is_project_owner(_project_id, _user_id)
+$$;
+
+
