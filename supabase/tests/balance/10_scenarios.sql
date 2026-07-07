@@ -1021,12 +1021,12 @@ BEGIN
 
   -- Simuliraj radnikov attribution insert #1 (custom user, ne owner).
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id)
-    VALUES (v_worker_user, 100, 'income', 'custom:xyz', 'radnikov attribution', v_payout_id);
+    VALUES (v_worker_user, 100, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'radnikov attribution', v_payout_id);
 
   -- Pokušaj #2 — mora pasti na uniq_expenses_user_worker_payout.
   BEGIN
     INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id)
-      VALUES (v_worker_user, 100, 'income', 'custom:xyz', 'race duplikat', v_payout_id);
+      VALUES (v_worker_user, 100, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'race duplikat', v_payout_id);
     RAISE EXCEPTION 'FAIL P17 — druga attribution insertacija je uspjela (unique index ne radi)';
   EXCEPTION WHEN unique_violation THEN
     RAISE NOTICE 'PASS P17 — race guard blokirao dvostruki pripis (23505)';
@@ -1049,11 +1049,11 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
-    VALUES (v_worker_user, 250, 'income', 'custom:xyz', 'batch attribution #1', v_batch);
+    VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'batch attribution #1', v_batch);
 
   BEGIN
     INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
-      VALUES (v_worker_user, 250, 'income', 'custom:xyz', 'batch attribution #2 (duplikat)', v_batch);
+      VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'batch attribution #2 (duplikat)', v_batch);
     RAISE EXCEPTION 'FAIL P18 — druga batch attribution insertacija je uspjela';
   EXCEPTION WHEN unique_violation THEN
     RAISE NOTICE 'PASS P18 — batch race guard blokirao dvostruki pripis (23505)';
@@ -1061,7 +1061,7 @@ BEGIN
 
   -- Različiti batch → mora proći (partial index, samo istina za isti batch).
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
-    VALUES (v_worker_user, 250, 'income', 'custom:xyz', 'drugi batch', gen_random_uuid());
+    VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'drugi batch', gen_random_uuid());
   RAISE NOTICE 'PASS P18 — različit batch dopušten';
 END $$;
 RELEASE SAVEPOINT s_p18;
