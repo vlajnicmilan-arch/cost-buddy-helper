@@ -109,17 +109,17 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
           done
 
-      - name: Run balance regression suite — setup
-        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/00_setup.sql
-
-      - name: Run balance regression suite — scenarios
+      - name: Run balance regression suite (setup + scenarios in one session)
         run: |
           set -euo pipefail
-          # Any FAIL in a scenario RAISEs EXCEPTION → non-zero exit under ON_ERROR_STOP.
-          # Also grep the output as a belt-and-suspenders check.
-          psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/10_scenarios.sql 2>&1 | tee /tmp/suite.out
+          # 00_setup.sql opens BEGIN + SAVEPOINT before_scenarios; 10_scenarios.sql
+          # relies on both. They MUST run in the same psql session — piping both
+          # into one invocation preserves transaction state.
+          cat supabase/tests/balance/00_setup.sql supabase/tests/balance/10_scenarios.sql \
+            | psql -v ON_ERROR_STOP=1 2>&1 | tee /tmp/suite.out
           if grep -E '^(psql:.*ERROR|FAIL )' /tmp/suite.out; then
             echo "Balance SQL suite reported failures" >&2
             exit 1
           fi
-          echo "Balance SQL suite: all assertions PASS"
+          echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
+
