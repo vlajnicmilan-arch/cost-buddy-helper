@@ -246,12 +246,23 @@ export const useExpenseCRUD = ({
         // Val 4: scan-C1 producent. Ako write-path proslijedi `precision`
         // objekt (samo decideScanTier ga dodjeljuje), prebacujemo se na
         // `system_precise` intent koji propušta event_at + time_confidence
-        // i postavlja user_edited_event_at=false. Bilo koji drugi writer
-        // (manual, recurring, import) NEMA precision i ostaje na 'default'.
+        // i postavlja user_edited_event_at=false.
+        //
+        // BUG 1 remediation: ručni unos iz UI-a (entrySource === 'manual')
+        // ide na `manual_entry` intent — helper autoritativno postavlja
+        // event_at = now() (klijent) + time_confidence='C2', pa red
+        // sudjeluje u hybrid post-anchor cutu istog dana. csv/pdf/recurring
+        // /ocr/bank ostaju na 'default' — trigger derivira event_at iz `date`.
         const precision = (normalizedExpense as any).precision as
           | { event_at: string; time_confidence: 'C1' | 'C2' | 'C3' | 'C4' }
           | undefined;
-        const writerIntent: WriterIntent = precision ? 'system_precise' : 'default';
+        const effectiveEntrySource =
+          entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual');
+        const writerIntent: WriterIntent = precision
+          ? 'system_precise'
+          : effectiveEntrySource === 'manual'
+            ? 'manual_entry'
+            : 'default';
         const basePayload = {
           user_id: user.id,
           amount: normalizedExpense.amount,
@@ -305,6 +316,38 @@ export const useExpenseCRUD = ({
           throw error;
         }
         console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
+
+        // BUG 1 remediation — clock-skew osigurač.
+        // manual_entry stavlja event_at s klijentskog sata. Ako je sat pomaknut
+        // (posebno unatrag), event_at bi mogao pasti PRIJE sidra i tiho
+        // reproducirati baš bug koji ovim popravljamo. Ne blokiramo insert —
+        // samo pišemo warning event u app_diagnostics_logs kad je razlika
+        // između klijentskog event_at i serverskog created_at > 5 minuta.
+        if (writerIntent === 'manual_entry' && data?.created_at && (insertPayload as any).event_at) {
+          try {
+            const clientMs = new Date((insertPayload as any).event_at).getTime();
+            const serverMs = new Date(data.created_at).getTime();
+            if (Number.isFinite(clientMs) && Number.isFinite(serverMs)) {
+              const skewSeconds = Math.round((clientMs - serverMs) / 1000);
+              if (Math.abs(skewSeconds) > 300) {
+                const { logDiagnostic } = await import('@/lib/diagnosticLogger');
+                logDiagnostic({
+                  event: 'manual_entry_clock_skew',
+                  severity: 'warning',
+                  details: {
+                    event_at: (insertPayload as any).event_at,
+                    created_at: data.created_at,
+                    skew_seconds: skewSeconds,
+                    expense_id: data.id,
+                  },
+                });
+              }
+            }
+          } catch {
+            /* telemetry only — never blocks the write */
+          }
+        }
+
 
         // Funnel: log first_transaction (idempotent — DB unique index dedups).
         import('@/lib/funnelTracking')

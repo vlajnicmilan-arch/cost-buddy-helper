@@ -83,4 +83,54 @@ describe('normalizeExpensePayload', () => {
     normalizeExpensePayload(input, 'default');
     expect(input).toEqual(snapshot);
   });
+
+  // ---------- manual_entry (BUG 1 remediation) ----------
+
+  it('7. manual_entry forces event_at=now() (client), C2, user_edited_event_at=false', () => {
+    const before = Date.now();
+    const out = normalizeExpensePayload({ amount: 42, description: 'kava' }, 'manual_entry');
+    const after = Date.now();
+    expect(out.time_confidence).toBe('C2');
+    expect(out.user_edited_event_at).toBe(false);
+    expect(typeof out.event_at).toBe('string');
+    const ts = new Date(out.event_at as string).getTime();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+    // non-precision fields pass through
+    expect(out.amount).toBe(42);
+    expect((out as any).description).toBe('kava');
+  });
+
+  it('8. manual_entry IGNORES payload event_at / time_confidence (helper is authoritative)', () => {
+    const attackerInput = {
+      amount: 10,
+      event_at: '1999-01-01T00:00:00.000Z', // clearly wrong — pre-anchor
+      time_confidence: 'C3' as const,
+      user_edited_event_at: true,
+    };
+    const before = Date.now();
+    const out = normalizeExpensePayload(attackerInput, 'manual_entry');
+    const after = Date.now();
+    // event_at replaced with fresh now(), NOT the 1999 value
+    expect(out.event_at).not.toBe('1999-01-01T00:00:00.000Z');
+    const ts = new Date(out.event_at as string).getTime();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+    // confidence forced to C2, NOT incoming C3
+    expect(out.time_confidence).toBe('C2');
+    // user_edited flag forced to false, NOT incoming true
+    expect(out.user_edited_event_at).toBe(false);
+  });
+
+  it('9. manual_entry does not mutate input payload', () => {
+    const input = {
+      amount: 5,
+      event_at: '2020-05-05T05:05:05.000Z',
+      time_confidence: 'C1' as const,
+      user_edited_event_at: true,
+    };
+    const snapshot = { ...input };
+    normalizeExpensePayload(input, 'manual_entry');
+    expect(input).toEqual(snapshot);
+  });
 });

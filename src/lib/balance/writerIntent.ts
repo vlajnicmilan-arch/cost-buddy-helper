@@ -27,7 +27,11 @@
  *                           `user_edited_event_at = false`.
  */
 
-export type WriterIntent = 'default' | 'explicit_time_edit' | 'system_precise';
+export type WriterIntent =
+  | 'default'
+  | 'explicit_time_edit'
+  | 'system_precise'
+  | 'manual_entry';
 
 /** Fields this helper is concerned with — others pass through untouched. */
 type PrecisionFields = Partial<{
@@ -77,6 +81,21 @@ export function normalizeExpensePayload<T extends ExpenseWritePayload>(
         ...rest,
         event_at: payload.event_at ?? null,
         time_confidence: payload.time_confidence ?? null,
+        user_edited_event_at: false,
+      } as T & PrecisionFields;
+    }
+
+    case 'manual_entry': {
+      // BUG 1 remediation: manual UI writes get authoritative client-side
+      // now() with C2 confidence so they participate in hybrid-mode
+      // post-anchor cut on the same day. Helper is authoritative:
+      // any event_at / time_confidence coming in via payload is IGNORED,
+      // preventing an accidental degraded (00:00:00 / C3) row from a
+      // careless caller.
+      return {
+        ...rest,
+        event_at: new Date().toISOString(),
+        time_confidence: 'C2',
         user_edited_event_at: false,
       } as T & PrecisionFields;
     }
