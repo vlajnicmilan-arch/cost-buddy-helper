@@ -135,10 +135,7 @@ export const AdvanceLinkSection = ({
         )}
       </div>
 
-      <div
-        className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-muted/50"
-        {...clickableProps(() => toggleAdvance(!isAdvance))}
-      >
+      <label className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-muted/50">
         <Checkbox
           checked={isAdvance}
           onCheckedChange={(c) => toggleAdvance(c === true)}
@@ -152,7 +149,7 @@ export const AdvanceLinkSection = ({
             {t('projects.advances.isAdvanceHelp', 'Označi ako se ovaj iznos kasnije oduzima od konačnog računa')}
           </div>
         </div>
-      </div>
+      </label>
 
       {/* Collaborator selector — shown whenever collaborator dimension is needed */}
       <div className="space-y-2">
