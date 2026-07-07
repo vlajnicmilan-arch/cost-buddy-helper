@@ -485,14 +485,24 @@ export const ProjectWorkersTab = ({
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => handleOpenSchedule(worker)}
                           title={t('workers.openSchedule', 'Otvori raspored')}
                         >
                           <CalendarDays className="w-4 h-4" />
                         </Button>
+                        {canManageWorkerPayouts && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setPayoutWorker(worker)}
+                            title={t('workers.payouts.openTitle', 'Isplate')}
+                          >
+                            <Wallet className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(worker)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -541,6 +551,15 @@ export const ProjectWorkersTab = ({
           isManager={isManager}
         />
       )}
+
+      {/* Payouts Dialog (owner + Projects subscriber only) */}
+      <WorkerPayoutsDialog
+        open={!!payoutWorker}
+        onOpenChange={(open) => !open && setPayoutWorker(null)}
+        projectId={projectId}
+        worker={payoutWorker}
+        canManage={canManageWorkerPayouts}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
