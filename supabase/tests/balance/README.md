@@ -1,11 +1,16 @@
 # Balance Regression SQL Suite
 
 **Authoritative** regression harness for the balance engine. Runs against a
-real Postgres with the migration-defined functions and trigger:
+real Postgres with the migration-defined functions and trigger. **Obavezne
+migracije koje moraju biti primijenjene prije harnessa:**
 
 - `20260624083605` — anchor columns, baseline recompute + trigger
 - `20260624132036` — trigger split: full recompute for anchored, incremental
   delta for unanchored
+- `20260628163325` — `expenses_event_at_sync` trigger koji dopunjava
+  `event_at` / `time_confidence` iz `date` kad su NULL. Harness `mk_expense`
+  helper ubacuje redove s NULL-ovima i oslanja se na ovaj trigger —
+  **bez njega suite pada s NOT NULL violation umjesto stvarnim rezultatom.**
 - `20260628205415` — hybrid vs day_cut via `app_settings.anchor_engine_mode`
   + `recompute_custom_source_balance_preview`
 
@@ -16,10 +21,19 @@ anchor semantika, migracije nad `expenses` ili `custom_payment_sources`) NE
 IDE bez zelene ove suite. Vitest zelen nije dovoljan — istina živi u PG
 funkcijama. Vidi `mem://features/balance-regression-testing-policy`.
 
+CI job: `.github/workflows/balance-sql-suite.yml` — podiže `postgres:16`,
+primjenjuje `bootstrap.sql` (auth/storage stubovi + role) pa sve
+`supabase/migrations/*.sql` po redu, i pokreće suite. Trigger: PR-ovi koji
+diraju `supabase/migrations/**`, `supabase/tests/**` ili `src/lib/balance/**`.
+
 ## Pokretanje (lokalno)
 
 ```bash
-# Podigni čisti Postgres s primijenjenim migracijama, pa:
+# Čisti postgres:16 (bez Supabase image-a):
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/balance/bootstrap.sql
+for f in $(ls supabase/migrations/*.sql | sort); do
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+done
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/balance/00_setup.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/balance/10_scenarios.sql
 ```
