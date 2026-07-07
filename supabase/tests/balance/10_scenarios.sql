@@ -833,8 +833,156 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p13;
 
+-- ------------------------------------------------------------
+-- P14 — server-side notification: single create_worker_payout inserts
+--       exactly one notifications row for the linked worker.user_id.
+--       Regression for "payout kreiran ali notifikacija nije" bug.
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p14;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000014';
+  v_before int;
+  v_after int;
+BEGIN
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+  SELECT COUNT(*) INTO v_before FROM public.notifications WHERE user_id = v_worker_user;
+
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P14', true
+  );
+
+  SELECT COUNT(*) INTO v_after
+    FROM public.notifications
+   WHERE user_id = v_worker_user
+     AND type = 'worker_payout_created';
+
+  IF v_after <> v_before + 1 THEN
+    RAISE EXCEPTION 'FAIL P14 single-payout notification — expected=%, actual=%',
+      v_before + 1, v_after;
+  END IF;
+  RAISE NOTICE 'PASS P14 — single payout inserted worker_payout_created notification';
+END $$;
+RELEASE SAVEPOINT s_p14;
+
+-- ------------------------------------------------------------
+-- P15 — batch create_worker_payout_batch inserts EXACTLY ONE
+--       aggregated notification per linked recipient (not N per project).
+--       Direct regression for the production bug (batch of 2 -> 0 notifs).
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p15;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_user uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_proj2 uuid := '11111111-2222-3333-4444-000000000010';
+  v_wrk2  uuid := '11111111-2222-3333-4444-000000000011';
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000015';
+  v_notif_count int;
+  v_batch uuid;
+  v_notif_batch_id uuid;
+BEGIN
+  DELETE FROM public.project_work_entries WHERE project_id = v_proj2;
+  DELETE FROM public.project_workers WHERE project_id = v_proj2;
+  DELETE FROM public.projects WHERE id = v_proj2;
+  INSERT INTO public.projects (id, user_id, name) VALUES (v_proj2, v_user, 'P2');
+  INSERT INTO public.project_workers (id, project_id, first_name, last_name, hourly_rate, user_id)
+    VALUES (v_wrk2, v_proj2, 'Test', 'Worker', 25, v_worker_user);
+  INSERT INTO public.project_work_entries (project_id, worker_id, work_date, actual_hours)
+    VALUES (v_proj2, v_wrk2, DATE '2026-06-02', 4);
+
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+
+  SELECT (public.create_worker_payout_batch(
+    jsonb_build_array(
+      jsonb_build_object(
+        'project_id', (SELECT val FROM _bfix WHERE key='proj'),
+        'worker_id',  (SELECT val FROM _bfix WHERE key='wrk'),
+        'period_start','2026-06-02','period_end','2026-06-03','paid_amount', 100
+      ),
+      jsonb_build_object(
+        'project_id', v_proj2, 'worker_id', v_wrk2,
+        'period_start','2026-06-02','period_end','2026-06-02','paid_amount', 50
+      )
+    ),
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P15 batch', true
+  )->>'batch_id')::uuid INTO v_batch;
+
+  SELECT COUNT(*) INTO v_notif_count
+    FROM public.notifications
+   WHERE user_id = v_worker_user AND type = 'worker_payout_created';
+
+  IF v_notif_count <> 1 THEN
+    RAISE EXCEPTION 'FAIL P15 batch notification — expected=1 aggregated, actual=%', v_notif_count;
+  END IF;
+
+  SELECT (data->>'batch_id')::uuid INTO v_notif_batch_id
+    FROM public.notifications
+   WHERE user_id = v_worker_user AND type = 'worker_payout_created'
+   LIMIT 1;
+
+  IF v_notif_batch_id IS DISTINCT FROM v_batch THEN
+    RAISE EXCEPTION 'FAIL P15 batch_id mismatch — expected=%, actual=%', v_batch, v_notif_batch_id;
+  END IF;
+
+  RAISE NOTICE 'PASS P15 — batch produced 1 aggregated notification with batch_id=%', v_batch;
+END $$;
+RELEASE SAVEPOINT s_p15;
+
+-- ------------------------------------------------------------
+-- P16 — actor==recipient suppression: owner who is also linked as their
+--       own worker (edge case) does NOT get self-notified.
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p16;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_user uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_before int;
+  v_after int;
+BEGIN
+  UPDATE public.project_workers
+     SET user_id = v_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  SELECT COUNT(*) INTO v_before
+    FROM public.notifications WHERE user_id = v_user AND type = 'worker_payout_created';
+
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P16', true
+  );
+
+  SELECT COUNT(*) INTO v_after
+    FROM public.notifications WHERE user_id = v_user AND type = 'worker_payout_created';
+
+  IF v_after <> v_before THEN
+    RAISE EXCEPTION 'FAIL P16 self-notify suppression — before=%, after=%', v_before, v_after;
+  END IF;
+  RAISE NOTICE 'PASS P16 — actor==recipient did NOT self-notify';
+END $$;
+RELEASE SAVEPOINT s_p16;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
 
 
 
