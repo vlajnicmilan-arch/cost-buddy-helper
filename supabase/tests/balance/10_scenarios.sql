@@ -1012,9 +1012,9 @@ BEGIN
     '2026-06-03 12:00:00+00', 'P17', true
   );
 
-  SELECT id INTO v_payout_id
+  SELECT project_worker_payouts.id INTO v_payout_id
     FROM public.project_worker_payouts
-    JOIN public.project_workers w ON w.id = worker_id
+    JOIN public.project_workers w ON w.id = project_worker_payouts.worker_id
     WHERE w.user_id = v_worker_user
     ORDER BY project_worker_payouts.created_at DESC
     LIMIT 1;
@@ -1099,9 +1099,9 @@ BEGIN
     '2026-06-03 12:00:00+00', 'ownerov note (ne smije curiti)', true
   );
 
-  SELECT id INTO v_payout_id
+  SELECT project_worker_payouts.id INTO v_payout_id
     FROM public.project_worker_payouts
-    JOIN public.project_workers w ON w.id = worker_id
+    JOIN public.project_workers w ON w.id = project_worker_payouts.worker_id
     WHERE w.user_id = v_worker_user
     ORDER BY project_worker_payouts.created_at DESC
     LIMIT 1;
