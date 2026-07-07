@@ -138,6 +138,8 @@ export const useProjectWorkers = (projectId: string | null) => {
         actualCostTotal: 0,
         currentMonthHours: 0,
         currentMonthCost: 0,
+        remainingHours: 0,
+        remainingCost: 0,
       };
 
       setWorkers(prev => [newWorker, ...prev]);
