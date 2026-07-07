@@ -317,6 +317,38 @@ export const useExpenseCRUD = ({
         }
         console.log('✅ Expense saved to DB:', data?.id, 'project_id:', data?.project_id ?? 'NULL');
 
+        // BUG 1 remediation — clock-skew osigurač.
+        // manual_entry stavlja event_at s klijentskog sata. Ako je sat pomaknut
+        // (posebno unatrag), event_at bi mogao pasti PRIJE sidra i tiho
+        // reproducirati baš bug koji ovim popravljamo. Ne blokiramo insert —
+        // samo pišemo warning event u app_diagnostics_logs kad je razlika
+        // između klijentskog event_at i serverskog created_at > 5 minuta.
+        if (writerIntent === 'manual_entry' && data?.created_at && (insertPayload as any).event_at) {
+          try {
+            const clientMs = new Date((insertPayload as any).event_at).getTime();
+            const serverMs = new Date(data.created_at).getTime();
+            if (Number.isFinite(clientMs) && Number.isFinite(serverMs)) {
+              const skewSeconds = Math.round((clientMs - serverMs) / 1000);
+              if (Math.abs(skewSeconds) > 300) {
+                const { logDiagnostic } = await import('@/lib/diagnosticLogger');
+                logDiagnostic({
+                  event: 'manual_entry_clock_skew',
+                  severity: 'warning',
+                  details: {
+                    event_at: (insertPayload as any).event_at,
+                    created_at: data.created_at,
+                    skew_seconds: skewSeconds,
+                    expense_id: data.id,
+                  },
+                });
+              }
+            }
+          } catch {
+            /* telemetry only — never blocks the write */
+          }
+        }
+
+
         // Funnel: log first_transaction (idempotent — DB unique index dedups).
         import('@/lib/funnelTracking')
           .then(({ logFunnelEvent }) => logFunnelEvent('first_transaction', {
