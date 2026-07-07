@@ -3597,6 +3597,7 @@
       "voidReasonLabel": "Razlog",
       "createdToast": "Isplata evidentirana",
       "voidedToast": "Isplata poništena",
+      "exportCsv": "Izvezi CSV",
       "status": {
         "paid": "Isplaćeno",
         "partial": "Djelomično",
