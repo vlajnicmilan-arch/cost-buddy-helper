@@ -8,6 +8,7 @@ interface WorkEntryLite {
   worker_id: string;
   work_date: string;
   actual_hours: number;
+  payout_id?: string | null;
 }
 
 interface WorkerWithStats extends ProjectWorker {
@@ -15,6 +16,8 @@ interface WorkerWithStats extends ProjectWorker {
   actualCostTotal: number;
   currentMonthHours: number;
   currentMonthCost: number;
+  remainingHours: number;
+  remainingCost: number;
 }
 
 export const useProjectWorkers = (projectId: string | null) => {
