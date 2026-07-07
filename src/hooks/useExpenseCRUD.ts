@@ -275,6 +275,12 @@ export const useExpenseCRUD = ({
           currency: (normalizedExpense as any).currency || null,
           bank_match_status: bankMatchStatus,
           recurring_transaction_id: (normalizedExpense as any).recurring_transaction_id || null,
+          // Collaborator advances (see mem://features/collaborator-advances).
+          // Bez ovih polja globalni AddExpense put tiho gubi is_advance/collaborator_id/linked_advance_ids
+          // koje ManualExpenseForm/AdvanceLinkSection ispravno postavljaju.
+          is_advance: (normalizedExpense as any).is_advance ?? false,
+          collaborator_id: (normalizedExpense as any).collaborator_id ?? null,
+          linked_advance_ids: (normalizedExpense as any).linked_advance_ids ?? [],
           ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
@@ -486,6 +492,10 @@ export const useExpenseCRUD = ({
           expense_nature: expense.expense_nature || null,
           note: expense.note || null,
           currency: expense.currency || null,
+          // Collaborator advances — održi paritet s insert putem.
+          is_advance: (expense as any).is_advance ?? false,
+          collaborator_id: (expense as any).collaborator_id ?? null,
+          linked_advance_ids: (expense as any).linked_advance_ids ?? [],
           updated_at: new Date().toISOString(),
         }, 'default');
 

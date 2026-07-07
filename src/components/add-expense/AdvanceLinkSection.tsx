@@ -18,7 +18,6 @@ import { useProjectCollaborators } from '@/hooks/useProjectCollaborators';
 import { useExpenses } from '@/hooks/useExpenses';
 import { getUnlinkedAdvancesFromExpenses } from '@/hooks/useCollaboratorAdvances';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { clickableProps } from '@/lib/a11y';
 
 interface Props {
   projectId: string;
@@ -136,10 +135,7 @@ export const AdvanceLinkSection = ({
         )}
       </div>
 
-      <div
-        className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-muted/50"
-        {...clickableProps(() => toggleAdvance(!isAdvance))}
-      >
+      <label className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-muted/50">
         <Checkbox
           checked={isAdvance}
           onCheckedChange={(c) => toggleAdvance(c === true)}
@@ -153,7 +149,7 @@ export const AdvanceLinkSection = ({
             {t('projects.advances.isAdvanceHelp', 'Označi ako se ovaj iznos kasnije oduzima od konačnog računa')}
           </div>
         </div>
-      </div>
+      </label>
 
       {/* Collaborator selector — shown whenever collaborator dimension is needed */}
       <div className="space-y-2">
@@ -243,10 +239,9 @@ export const AdvanceLinkSection = ({
               const checked = linkedAdvanceIds.includes(adv.id);
               const label = `${formatAmount(Number(adv.amount))} • ${new Date(adv.date as any).toLocaleDateString('hr-HR')}${adv.description ? ` • ${adv.description}` : ''}`;
               return (
-                <div
+                <label
                   key={adv.id}
                   className="flex items-start gap-2 rounded-md bg-background p-2 cursor-pointer hover:bg-muted/40"
-                  {...clickableProps(() => toggleLinkedAdvance(adv.id, !checked))}
                 >
                   <Checkbox
                     checked={checked}
@@ -254,7 +249,7 @@ export const AdvanceLinkSection = ({
                     className="mt-0.5"
                   />
                   <div className="flex-1 text-xs">{label}</div>
-                </div>
+                </label>
               );
             })}
           </div>
