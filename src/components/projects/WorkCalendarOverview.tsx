@@ -679,6 +679,12 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           ? t('workers.calendar.multiSelectHint', 'Odaberite dane pa pritisnite gumb za grupno dodavanje ({{count}} odabrano)', { count: multiSelectedDates.length })
           : t('workers.calendarHint', 'Kliknite na datum za detalje ili dodavanje zapisa')}
       </p>
+      {lockedDates.length > 0 && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 text-center flex items-center justify-center gap-1">
+          <Lock className="w-3 h-3" />
+          {t('workers.calendar.lockedLegend', 'Narančasti prsten = dan sadrži zaključan unos (isplata)')}
+        </p>
+      )}
 
       {/* Bulk Add Dialog */}
       <Dialog open={showBulkDialog} onOpenChange={(open) => { if (!open) { setShowBulkDialog(false); resetBulkForm(); } }}>
