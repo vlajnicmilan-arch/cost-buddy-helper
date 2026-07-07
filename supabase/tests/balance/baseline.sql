@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   expense_nature text DEFAULT 'regular',
   description text,
   category text,
+  note text,
+
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
