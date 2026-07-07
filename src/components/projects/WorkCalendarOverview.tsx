@@ -807,6 +807,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                   const cost = entry.actual_hours * worker.hourly_rate;
                   const diff = entry.actual_hours - entry.scheduled_hours;
                   const isEditing = editingEntryId === entry.id;
+                  const isLocked = !!entry.payout_id;
 
                   if (isEditing) {
                     return (
@@ -819,10 +820,17 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                         </div>
 
+                        {isLocked && (
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                            <Lock className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                            <span>{t('workers.calendar.editLockedHint', 'Ovaj unos je zaključan isplatom — dopuštena je samo izmjena odrađenih sati/napomene uz razlog.')}</span>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-xs">{t('workers.scheduledHours', 'Planirano sati')}</Label>
-                            <Input type="number" step="0.5" min="0" max="24" value={editScheduledHours} onChange={(e) => setEditScheduledHours(e.target.value)} />
+                            <Input type="number" step="0.5" min="0" max="24" value={editScheduledHours} onChange={(e) => setEditScheduledHours(e.target.value)} disabled={isLocked} />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs">{t('workers.actualHours', 'Odrađeno sati')}</Label>
@@ -843,9 +851,9 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                                     id={`cal-edit-ms-${milestone.id}`}
                                     checked={editMilestones.includes(milestone.id)}
                                     onCheckedChange={() => toggleEditMilestone(milestone.id)}
-                                    disabled={!editMilestones.includes(milestone.id) && editMilestones.length >= 3}
+                                    disabled={isLocked || (!editMilestones.includes(milestone.id) && editMilestones.length >= 3)}
                                   />
-                                  <label htmlFor={`cal-edit-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", !editMilestones.includes(milestone.id) && editMilestones.length >= 3 && "opacity-50")}>
+                                  <label htmlFor={`cal-edit-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", (isLocked || (!editMilestones.includes(milestone.id) && editMilestones.length >= 3)) && "opacity-50")}>
                                     {milestone.name}
                                   </label>
                                 </div>
@@ -862,11 +870,18 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                         </div>
 
+                        {isLocked && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('workers.calendar.editLockedReasonLabel', 'Razlog izmjene (obavezno)')}</Label>
+                            <Textarea value={editReason} onChange={(e) => setEditReason(e.target.value)} rows={2} placeholder={t('workers.calendar.editLockedReasonPlaceholder', 'Npr. ispravak sati...')} />
+                          </div>
+                        )}
+
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" className="flex-1" onClick={handleCancelEdit}>
                             {t('common.cancel', 'Odustani')}
                           </Button>
-                          <Button size="sm" className="flex-1" onClick={handleUpdateEntry} disabled={isSubmitting}>
+                          <Button size="sm" className="flex-1" onClick={handleUpdateEntry} disabled={isSubmitting || (isLocked && editReason.trim().length < 3)}>
                             {isSubmitting ? t('common.saving', 'Spremanje...') : t('common.save', 'Spremi')}
                           </Button>
                         </div>
@@ -884,18 +899,33 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">{worker.position}</Badge>
+                            {isLocked && (
+                              <Badge variant="secondary" className="text-xs gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                                <Lock className="w-3 h-3" />
+                                {t('workers.calendar.lockedBadge', 'Zaključano')}
+                              </Badge>
+                            )}
                             {!isReadOnly && (
                               <>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleStartEdit(entry)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry.id)}>
-                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                                </Button>
+                                {isLocked ? (
+                                  canManageWorkerPayouts && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => setUnlockEntryId(entry.id)} title={t('workers.calendar.unlockAction', 'Otključaj')}>
+                                      <Unlock className="w-3.5 h-3.5 text-amber-600" />
+                                    </Button>
+                                  )
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry)}>
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                )}
                               </>
                             )}
                           </div>
                         </div>
+
 
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
