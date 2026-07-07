@@ -592,10 +592,10 @@ RELEASE SAVEPOINT s_p7;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p8;
 SELECT pg_temp.seed_payout_fixtures();
 -- Backfill has NO history rows for fresh fixture worker; seed one via RPC.
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 25, DATE '2026-06-01'
 );
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 30, DATE '2026-06-04'
 );
 SELECT pg_temp.assert_eq('P8 rate_at Jun-02', 25,
@@ -612,10 +612,10 @@ RELEASE SAVEPOINT s_p8;
 -- ------------------------------------------------------------
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p9;
 SELECT pg_temp.seed_payout_fixtures();
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 25, DATE '2026-06-01'
 );
-PERFORM public.create_worker_payout(
+SELECT public.create_worker_payout(
   (SELECT val FROM _bfix WHERE key='wrk'),
   (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05', 200,
@@ -640,7 +640,7 @@ BEGIN
   END;
 END $$;
 -- Forward-only change AFTER paid period end is allowed.
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 40, DATE '2026-06-06'
 );
 SELECT pg_temp.assert_eq('P9 forward-only allowed', 3,
@@ -657,10 +657,10 @@ RELEASE SAVEPOINT s_p9;
 -- ------------------------------------------------------------
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p10;
 SELECT pg_temp.seed_payout_fixtures();
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 25, DATE '2026-06-01'
 );
-PERFORM public.set_worker_hourly_rate(
+SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 30, DATE '2026-06-04'
 );
 -- Add a Jun-04 entry to cross the segment boundary.
@@ -668,7 +668,7 @@ INSERT INTO public.project_work_entries (project_id, worker_id, work_date, actua
 VALUES ((SELECT val FROM _bfix WHERE key='proj'), (SELECT val FROM _bfix WHERE key='wrk'),
         DATE '2026-06-04', 4);
 
-PERFORM public.create_worker_payout(
+SELECT public.create_worker_payout(
   (SELECT val FROM _bfix WHERE key='wrk'),
   (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05', 320,
