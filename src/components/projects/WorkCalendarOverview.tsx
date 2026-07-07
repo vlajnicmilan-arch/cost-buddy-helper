@@ -104,7 +104,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
       const [entriesRes, workersRes] = await Promise.all([
         supabase
           .from('project_work_entries')
-          .select('id, worker_id, work_date, scheduled_hours, actual_hours, note, milestone_ids')
+          .select('id, worker_id, work_date, scheduled_hours, actual_hours, note, milestone_ids, payout_id')
           .eq('project_id', projectId),
         supabase
           .from('project_workers')
