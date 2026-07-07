@@ -643,7 +643,9 @@ END $$;
 SELECT public.set_worker_hourly_rate(
   (SELECT val FROM _bfix WHERE key='wrk'), 40, DATE '2026-06-06'
 );
-SELECT pg_temp.assert_eq('P9 forward-only allowed', 3,
+-- Expected = 2: initial backfill (25 @ Jun-01) + forward (40 @ Jun-06).
+-- Retroactive (40 @ Jun-03) raised inside DO block → row rolled back, not counted.
+SELECT pg_temp.assert_eq('P9 forward-only allowed', 2,
   (SELECT COUNT(*) FROM public.project_worker_rate_history
     WHERE worker_id = (SELECT val FROM _bfix WHERE key='wrk'))::numeric);
 RELEASE SAVEPOINT s_p9;
