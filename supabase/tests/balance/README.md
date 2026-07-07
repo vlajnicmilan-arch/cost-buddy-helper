@@ -13,6 +13,12 @@ migracije koje moraju biti primijenjene prije harnessa:**
   **bez njega suite pada s NOT NULL violation umjesto stvarnim rezultatom.**
 - `20260628205415` — hybrid vs day_cut via `app_settings.anchor_engine_mode`
   + `recompute_custom_source_balance_preview`
+- `20260707064657` — **PR2 Phase A:** `set_source_anchor` RPC (atomarni
+  SET sidra + opcionalni audit correction red + eksplicitni recompute u
+  istoj transakciji). BUG 2 remediation na razini pisanja.
+  Phase B guard trigger dolazi 2-3 dana nakon Phase A deploya i zatvara
+  direktni UPDATE anchor kolona izvan RPC-a.
+
 
 ## Deploy Gate (project rule)
 
