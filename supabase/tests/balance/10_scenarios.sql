@@ -846,6 +846,8 @@ DECLARE
   v_before int;
   v_after int;
 BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p14@test')
+    ON CONFLICT (id) DO NOTHING;
   UPDATE public.project_workers
      SET user_id = v_worker_user
    WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
