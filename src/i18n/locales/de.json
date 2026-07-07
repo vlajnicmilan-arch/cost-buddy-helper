@@ -3591,6 +3591,7 @@
       "voidReasonLabel": "Grund",
       "createdToast": "Auszahlung erfasst",
       "voidedToast": "Auszahlung storniert",
+      "exportCsv": "CSV exportieren",
       "status": {
         "paid": "Ausgezahlt",
         "partial": "Teilweise",
