@@ -26,9 +26,21 @@ SELECT pg_temp.assert_eq('A1 historic C3 excluded', 946.60,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 RELEASE SAVEPOINT s_a1_hist;
 
--- A1 manual_entry variant → SKIP until manual_entry intent lands
--- Expected after fix: C2 same-day AFTER anchor → included → 926.60
-DO $$ BEGIN RAISE NOTICE 'SKIP A1 manual_entry — awaits BUG 1 fix'; END $$;
+-- A1 manual_entry variant (PR1) — C2 same-day AFTER anchor → included → 926.60
+-- Post-PR1 writerIntent='manual_entry' upisuje event_at=now() + C2, ovdje
+-- fiksiramo C2 event_at eksplicitno da testiramo invariant na DB stazi.
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_a1_manual;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+SELECT pg_temp.set_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00', 946.60);
+SELECT pg_temp.mk_expense('expense', 20,
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 00:00:00+00', '2026-06-01 14:00:00+00', 'C2');
+SELECT pg_temp.assert_eq('A1 manual_entry C2 same-day after anchor', 926.60,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_a1_manual;
 
 -- ============================================================
 -- A2 — C3 next day after anchor → included
