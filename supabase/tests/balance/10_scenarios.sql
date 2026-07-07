@@ -1218,7 +1218,7 @@ BEGIN
     RETURNING id INTO v_worker_expense_id;
 
   UPDATE public.expenses
-    SET deleted_at = now(), deleted_by = v_worker_user
+    SET deleted_at = now()
     WHERE id = v_worker_expense_id;
   IF (SELECT deleted_at FROM public.expenses WHERE id = v_worker_expense_id) IS NULL THEN
     RAISE EXCEPTION 'FAIL P20b — soft-delete radnikovog attribution reda nije primijenjen';
