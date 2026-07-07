@@ -239,10 +239,9 @@ export const AdvanceLinkSection = ({
               const checked = linkedAdvanceIds.includes(adv.id);
               const label = `${formatAmount(Number(adv.amount))} • ${new Date(adv.date as any).toLocaleDateString('hr-HR')}${adv.description ? ` • ${adv.description}` : ''}`;
               return (
-                <div
+                <label
                   key={adv.id}
                   className="flex items-start gap-2 rounded-md bg-background p-2 cursor-pointer hover:bg-muted/40"
-                  {...clickableProps(() => toggleLinkedAdvance(adv.id, !checked))}
                 >
                   <Checkbox
                     checked={checked}
@@ -250,7 +249,7 @@ export const AdvanceLinkSection = ({
                     className="mt-0.5"
                   />
                   <div className="flex-1 text-xs">{label}</div>
-                </div>
+                </label>
               );
             })}
           </div>
