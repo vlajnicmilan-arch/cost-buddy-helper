@@ -86,10 +86,11 @@ CREATE TABLE IF NOT EXISTS public.projects (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- public.project_workers (id + project + name + rate)
+-- public.project_workers (id + project + name + rate + optional linked user)
 CREATE TABLE IF NOT EXISTS public.project_workers (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id   uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id      uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   first_name   text NOT NULL DEFAULT '',
   last_name    text NOT NULL DEFAULT '',
   hourly_rate  numeric(12,2) NOT NULL DEFAULT 0,
