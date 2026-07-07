@@ -1,0 +1,11 @@
+# Migrations that touch balance-related tables (expenses / custom_payment_sources
+# / app_settings) but are intentionally EXCLUDED from balance-sql-suite.yml.
+#
+# Each entry MUST be justified in the comment. Drift-check
+# (supabase/tests/balance/detect-drift.sh) reads this file to permit changes
+# to balance-relevant tables that do not affect balance semantics
+# (e.g. RLS-only, GRANT-only, or unrelated column additions).
+#
+# Format: one glob per line. Blank/comment lines skipped.
+
+# (empty — no exceptions yet)
