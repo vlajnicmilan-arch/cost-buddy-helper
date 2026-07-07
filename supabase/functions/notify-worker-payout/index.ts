@@ -149,20 +149,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
           : `Zbirna isplata ${amount} za ${projectNames.length} projekata je poništena.`;
       }
 
-      await admin.from('notifications').insert({
-        user_id: recipientUserId,
-        type: isCreated ? 'worker_payout_created' : 'worker_payout_voided',
-        title,
-        message,
-        data: {
-          batch_id: batch_id ?? recPayouts[0].batch_id ?? null,
-          payout_ids: recPayouts.map((p) => p.id),
-          project_ids: [...new Set(recPayouts.map((p) => p.project_id))],
-          project_names: projectNames,
-          paid_amount_total: total,
-          action,
-        },
-      });
+      // NOTE: in-app notification row is inserted by the DB trigger on
+      // project_worker_payouts (migration V2-B). Do NOT insert here — would
+      // create duplicates and was the source of prior client-abort loss.
+
+
 
       try {
         await admin.functions.invoke('send-push', {
