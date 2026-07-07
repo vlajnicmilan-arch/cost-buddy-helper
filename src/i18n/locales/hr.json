@@ -3557,6 +3557,36 @@
       "bulkDaysShort": "{{count}} dana",
       "bulkAdded": "Dodano {{count}} radnih dana",
       "bulkAddedWithSkipped": "Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)"
+    },
+    "payouts": {
+      "openTitle": "Isplate",
+      "dialogTitle": "Isplate",
+      "empty": "Nema evidentiranih isplata",
+      "newButton": "Nova isplata",
+      "periodStart": "Od",
+      "periodEnd": "Do",
+      "paidAmount": "Isplaćeno",
+      "paymentSource": "Izvor isplate",
+      "paymentSourcePlaceholder": "Odaberi izvor",
+      "noSources": "Prvo dodaj izvor u Novčaniku",
+      "note": "Bilješka",
+      "notePlaceholder": "Neobavezno...",
+      "lockEntries": "Zaključaj radne unose u periodu",
+      "submit": "Spremi isplatu",
+      "hoursShort": "Sati",
+      "grossShort": "Bruto",
+      "voidAction": "Poništi isplatu",
+      "voidConfirmTitle": "Poništiti isplatu?",
+      "voidConfirmMessage": "Trošak će biti obrisan, a zaključani radni unosi ponovno otvoreni.",
+      "voidReasonLabel": "Razlog",
+      "createdToast": "Isplata evidentirana",
+      "voidedToast": "Isplata poništena",
+      "status": {
+        "paid": "Isplaćeno",
+        "partial": "Djelomično",
+        "advance": "Predujam",
+        "voided": "Poništeno"
+      }
     }
   },
   "collaboratorsFilters": {

@@ -28,6 +28,13 @@ export interface ProjectWriteGuard {
   guard: () => boolean;
   guardedAction: <Args extends any[], R>(fn: (...a: Args) => R) => (...a: Args) => R | undefined;
   blockProps: { disabled: boolean; 'aria-disabled': boolean; title?: string };
+  /**
+   * Owner-only, subscription-gated write capability for worker payouts.
+   * RPC `create_worker_payout` server-side requires project owner; UI mirrors
+   * that with `accessLevel === 'owner_subscriber'`. When the guard cannot
+   * derive an access level (no project passed), falls back to !isReadOnly.
+   */
+  canManageWorkerPayouts: boolean;
 }
 
 export function useProjectWriteGuard(input: UseProjectWriteGuardInput = {}): ProjectWriteGuard {
@@ -65,5 +72,9 @@ export function useProjectWriteGuard(input: UseProjectWriteGuardInput = {}): Pro
     [isReadOnly, t],
   );
 
-  return { isReadOnly, accessLevel, guard, guardedAction, blockProps };
+  const canManageWorkerPayouts = accessLevel
+    ? accessLevel === 'owner_subscriber'
+    : !isReadOnly;
+
+  return { isReadOnly, accessLevel, guard, guardedAction, blockProps, canManageWorkerPayouts };
 }

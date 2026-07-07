@@ -3551,6 +3551,36 @@
       "bulkDaysShort": "{{count}} days",
       "bulkAdded": "Added {{count}} work days",
       "bulkAddedWithSkipped": "Added {{count}} work days ({{skipped}} skipped — already exists)"
+    },
+    "payouts": {
+      "openTitle": "Payouts",
+      "dialogTitle": "Payouts",
+      "empty": "No payouts recorded",
+      "newButton": "New payout",
+      "periodStart": "From",
+      "periodEnd": "To",
+      "paidAmount": "Paid",
+      "paymentSource": "Payment source",
+      "paymentSourcePlaceholder": "Select source",
+      "noSources": "Add a source in Wallet first",
+      "note": "Note",
+      "notePlaceholder": "Optional...",
+      "lockEntries": "Lock work entries in period",
+      "submit": "Save payout",
+      "hoursShort": "Hours",
+      "grossShort": "Gross",
+      "voidAction": "Void payout",
+      "voidConfirmTitle": "Void this payout?",
+      "voidConfirmMessage": "The expense will be deleted and locked work entries reopened.",
+      "voidReasonLabel": "Reason",
+      "createdToast": "Payout recorded",
+      "voidedToast": "Payout voided",
+      "status": {
+        "paid": "Paid",
+        "partial": "Partial",
+        "advance": "Advance",
+        "voided": "Voided"
+      }
     }
   },
   "collaboratorsFilters": {

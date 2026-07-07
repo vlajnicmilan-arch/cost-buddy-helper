@@ -23,11 +23,12 @@ import {
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { ProjectWorker, ProjectWorkEntry } from '@/types/projectWorker';
 import { ProjectWorkerDialog } from './ProjectWorkerDialog';
+import { WorkerPayoutsDialog } from './WorkerPayoutsDialog';
 import { WorkerScheduleDialog } from './WorkerScheduleDialog';
 import { WorkerDataDisclaimerDialog, hasAcceptedWorkerDisclaimer } from '@/components/legal/WorkerDataDisclaimerDialog';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
-import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter, CheckCircle2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, User, Clock, Banknote, Loader2, CalendarDays, List, Download, FileText, FileSpreadsheet, FileJson, Search, Filter, CheckCircle2, Wallet } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WorkCalendarOverview } from './WorkCalendarOverview';
 import { useProjectMilestones } from '@/hooks/useProjectMilestones';
@@ -86,7 +87,7 @@ export const ProjectWorkersTab = ({
   const { workers, entries, loading, addWorker, updateWorker, deleteWorker, totalCost, totalActualHours, refetch } = useProjectWorkers(projectId);
   const { milestones } = useProjectMilestones(projectId);
   const [viewMode, setViewMode] = useState<string>('list');
-  const { guard } = useProjectWriteGuard({ isReadOnly });
+  const { guard, canManageWorkerPayouts } = useProjectWriteGuard({ isReadOnly });
 
   // Filter state
   const [period, setPeriod] = useState<PeriodKey>('currentMonth');
@@ -100,6 +101,7 @@ export const ProjectWorkersTab = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
   const [scheduleWorker, setScheduleWorker] = useState<ProjectWorker | null>(null);
+  const [payoutWorker, setPayoutWorker] = useState<ProjectWorker | null>(null);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
@@ -483,14 +485,24 @@ export const ProjectWorkersTab = ({
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
+                        <Button
+                          variant="outline"
+                          size="icon"
                           onClick={() => handleOpenSchedule(worker)}
                           title={t('workers.openSchedule', 'Otvori raspored')}
                         >
                           <CalendarDays className="w-4 h-4" />
                         </Button>
+                        {canManageWorkerPayouts && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setPayoutWorker(worker)}
+                            title={t('workers.payouts.openTitle', 'Isplate')}
+                          >
+                            <Wallet className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(worker)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -539,6 +551,15 @@ export const ProjectWorkersTab = ({
           isManager={isManager}
         />
       )}
+
+      {/* Payouts Dialog (owner + Projects subscriber only) */}
+      <WorkerPayoutsDialog
+        open={!!payoutWorker}
+        onOpenChange={(open) => !open && setPayoutWorker(null)}
+        projectId={projectId}
+        worker={payoutWorker}
+        canManage={canManageWorkerPayouts}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
