@@ -30,6 +30,7 @@ interface WorkEntry {
   actual_hours: number;
   note?: string | null;
   milestone_ids?: string[] | null;
+  payout_id?: string | null;
 }
 
 interface Worker {
