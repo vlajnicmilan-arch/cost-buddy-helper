@@ -2969,6 +2969,47 @@ export type Database = {
           },
         ]
       }
+      payout_rate_segments: {
+        Row: {
+          created_at: string
+          hours: number
+          id: string
+          payout_id: string
+          rate: number
+          segment_end: string
+          segment_start: string
+          subtotal: number
+        }
+        Insert: {
+          created_at?: string
+          hours: number
+          id?: string
+          payout_id: string
+          rate: number
+          segment_end: string
+          segment_start: string
+          subtotal: number
+        }
+        Update: {
+          created_at?: string
+          hours?: number
+          id?: string
+          payout_id?: string
+          rate?: number
+          segment_end?: string
+          segment_start?: string
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_rate_segments_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "project_worker_payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_parse_jobs: {
         Row: {
           created_at: string
@@ -4114,6 +4155,7 @@ export type Database = {
       }
       project_worker_payouts: {
         Row: {
+          batch_id: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -4138,6 +4180,7 @@ export type Database = {
           worker_id: string
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -4162,6 +4205,7 @@ export type Database = {
           worker_id: string
         }
         Update: {
+          batch_id?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -4202,6 +4246,41 @@ export type Database = {
           },
           {
             foreignKeyName: "project_worker_payouts_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "project_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_worker_rate_history: {
+        Row: {
+          created_at: string
+          created_by: string
+          effective_from: string
+          id: string
+          rate: number
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          effective_from: string
+          id?: string
+          rate: number
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          effective_from?: string
+          id?: string
+          rate?: number
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_worker_rate_history_worker_id_fkey"
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "project_workers"
@@ -5229,6 +5308,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_worker_payout_batch: {
+        Args: {
+          p_items: Json
+          p_lock_entries?: boolean
+          p_note?: string
+          p_paid_at: string
+          p_payment_source: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5459,11 +5548,21 @@ export type Database = {
         Returns: string
       }
       peek_core_scan_quota: { Args: never; Returns: Json }
+      preview_worker_payout: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_project_id: string
+          p_worker_id: string
+        }
+        Returns: Json
+      }
       purge_old_trash: { Args: { p_older_than_days?: number }; Returns: Json }
       purge_trash_item: {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      rate_at: { Args: { _d: string; _worker_id: string }; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -5523,6 +5622,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_worker_hourly_rate: {
+        Args: { p_effective_from: string; p_rate: number; p_worker_id: string }
+        Returns: Json
+      }
       soft_delete_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -5561,6 +5664,10 @@ export type Database = {
       }
       void_worker_payout: {
         Args: { p_payout_id: string; p_reason?: string }
+        Returns: Json
+      }
+      void_worker_payout_batch: {
+        Args: { p_batch_id: string; p_reason?: string }
         Returns: Json
       }
     }
