@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
+import { dispatchAttributionOpen, parseAttributionPayload } from '@/lib/attribution/events';
 
 /**
  * Izvuče project id iz route oblika `/projects?id=<UUID>`. Vraća null ako
