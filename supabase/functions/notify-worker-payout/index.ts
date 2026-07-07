@@ -1,13 +1,19 @@
-// Notify a project worker (if linked to an app user) about a payout event.
-// Supports single payout (payout_id) and batch (batch_id) modes.
-// Fire-and-forget: writes in-app notification + invokes send-push. Never throws
-// back to the caller — payout creation must not fail if notification fails.
+// Push (FCM) delivery for worker payout events.
+//
+// IMPORTANT: This function NO LONGER writes the in-app `notifications` row.
+// That is done reliably server-side by the AFTER INSERT/UPDATE triggers on
+// public.project_worker_payouts (see migration V2-B), which cannot be lost
+// when the client aborts. This function's sole job is best-effort push.
+//
+// Fire-and-forget: invoked from the client after create/void RPCs. Failures
+// (network abort, unmounted component) do NOT drop the in-app notification.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
 
 interface NotifyRequest {
   payout_id?: string;
