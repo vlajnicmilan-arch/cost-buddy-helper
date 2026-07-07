@@ -256,9 +256,11 @@ export const useExpenseCRUD = ({
         const precision = (normalizedExpense as any).precision as
           | { event_at: string; time_confidence: 'C1' | 'C2' | 'C3' | 'C4' }
           | undefined;
+        const effectiveEntrySource =
+          entrySource ?? (normalizedExpense.ai_extracted ? 'ocr' : 'manual');
         const writerIntent: WriterIntent = precision
           ? 'system_precise'
-          : entrySource === 'manual'
+          : effectiveEntrySource === 'manual'
             ? 'manual_entry'
             : 'default';
         const basePayload = {
