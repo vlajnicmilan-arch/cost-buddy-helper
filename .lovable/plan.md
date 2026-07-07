@@ -10,12 +10,16 @@
 - i18n hr/en/de (`workers.payouts.*`).
 - Vitest: 6 novih testova (RPC arg contract). Suite 871/871 zeleno.
 
-### TODO (Slice 2 — sljedeći PR-B nastavak)
-- Calendar lock ikone + audit (WorkCalendarOverview): prikaz `payout_id` na entry, "zaključan" badge.
-- `UnlockEntryDialog` (owner-only, poziva `unlock_work_entry` RPC).
-- `update_locked_work_entry` UI: inline edit locked entry s obaveznim razlogom.
+### DONE (Slice 2)
+- `UnlockEntryDialog` (owner-only, poziva `unlock_work_entry` RPC uz obavezan razlog).
+- `WorkCalendarOverview` fetcha `payout_id`, prikazuje "Zaključano" badge na entry karticama, mijenja Trash → Unlock ikonu za locked unose (samo `owner_subscriber`).
+- Edit locked entry: prikazuje amber hint, disable-a scheduled_hours/milestones, prikazuje "Razlog izmjene" polje i poziva `update_locked_work_entry` RPC. Ostali unosi idu klasičnim update-om.
+- Delete locked entry blokiran s toast porukom (mora se prvo otključati).
+
+### TODO (Slice 3)
+- Calendar day-level lock indikator (mali lock overlay na danima s locked unosima).
 - Project card "Preostalo radnicima" KPI (`useProjectStats` extension).
-- Warning ako je `hourly_rate` mijenjan unutar odabranog perioda (create form).
+- Warning ako je `hourly_rate` mijenjan unutar odabranog perioda (payout create form).
 
 ## PR-C — Extras (plan 2.7 koraci 9–10 + P7)
 - Push radniku pri kreiranju payouta (reuse FCM).

@@ -15,11 +15,12 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X, Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { UnlockEntryDialog } from './UnlockEntryDialog';
 
 interface WorkEntry {
   id: string;
@@ -29,6 +30,7 @@ interface WorkEntry {
   actual_hours: number;
   note?: string | null;
   milestone_ids?: string[] | null;
+  payout_id?: string | null;
 }
 
 interface Worker {
@@ -51,7 +53,7 @@ interface WorkCalendarOverviewProps {
 export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false }: WorkCalendarOverviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { guard } = useProjectWriteGuard({ isReadOnly });
+  const { guard, canManageWorkerPayouts } = useProjectWriteGuard({ isReadOnly });
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +93,10 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   const [editActualHours, setEditActualHours] = useState('8');
   const [editMilestones, setEditMilestones] = useState<string[]>([]);
   const [editNote, setEditNote] = useState('');
+  const [editReason, setEditReason] = useState('');
+
+  // Unlock dialog state
+  const [unlockEntryId, setUnlockEntryId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -98,7 +104,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
       const [entriesRes, workersRes] = await Promise.all([
         supabase
           .from('project_work_entries')
-          .select('id, worker_id, work_date, scheduled_hours, actual_hours, note, milestone_ids')
+          .select('id, worker_id, work_date, scheduled_hours, actual_hours, note, milestone_ids, payout_id')
           .eq('project_id', projectId),
         supabase
           .from('project_workers')
@@ -395,6 +401,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     setEditActualHours(entry.actual_hours.toString());
     setEditMilestones(entry.milestone_ids || []);
     setEditNote(entry.note || '');
+    setEditReason('');
     setShowAddForm(false);
   };
 
@@ -402,6 +409,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     setEditingEntryId(null);
     setEditNote('');
     setEditMilestones([]);
+    setEditReason('');
   };
 
   const toggleEditMilestone = (milestoneId: string) => {
@@ -415,30 +423,55 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   const handleUpdateEntry = async () => {
     if (!guard()) return;
     if (!editingEntryId) return;
+    const editingEntry = entries.find(e => e.id === editingEntryId);
+    const isLocked = !!editingEntry?.payout_id;
+
+    if (isLocked && editReason.trim().length < 3) {
+      showError(t('workers.calendar.reasonRequired', 'Razlog je obavezan'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('project_work_entries')
-        .update({
+      if (isLocked) {
+        const { error } = await supabase.rpc('update_locked_work_entry', {
+          p_entry_id: editingEntryId,
+          p_actual_hours: parseFloat(editActualHours) || 0,
+          p_note: editNote.trim() || undefined,
+          p_reason: editReason.trim(),
+        });
+        if (error) throw error;
+
+        setEntries(prev => prev.map(e => e.id === editingEntryId ? {
+          ...e,
+          actual_hours: parseFloat(editActualHours) || 0,
+          note: editNote.trim() || null,
+        } : e));
+      } else {
+        const { error } = await supabase
+          .from('project_work_entries')
+          .update({
+            scheduled_hours: parseFloat(editScheduledHours) || 8,
+            actual_hours: parseFloat(editActualHours) || 8,
+            milestone_ids: editMilestones,
+            note: editNote.trim() || null
+          })
+          .eq('id', editingEntryId);
+
+        if (error) throw error;
+
+        setEntries(prev => prev.map(e => e.id === editingEntryId ? {
+          ...e,
           scheduled_hours: parseFloat(editScheduledHours) || 8,
           actual_hours: parseFloat(editActualHours) || 8,
           milestone_ids: editMilestones,
           note: editNote.trim() || null
-        })
-        .eq('id', editingEntryId);
-
-      if (error) throw error;
-
-      setEntries(prev => prev.map(e => e.id === editingEntryId ? {
-        ...e,
-        scheduled_hours: parseFloat(editScheduledHours) || 8,
-        actual_hours: parseFloat(editActualHours) || 8,
-        milestone_ids: editMilestones,
-        note: editNote.trim() || null
-      } : e));
+        } : e));
+      }
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditingEntryId(null);
+      setEditReason('');
     } catch (error) {
       console.error('Error updating entry:', error);
       showError(t('common.error'));
@@ -447,22 +480,30 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     }
   };
 
-  const handleDeleteEntry = async (entryId: string) => {
+  const handleDeleteEntry = async (entry: WorkEntry) => {
     if (!guard()) return;
+    if (entry.payout_id) {
+      showError(t('workers.calendar.lockedDeleteBlocked', 'Unos je zaključan isplatom — prvo otključaj.'));
+      return;
+    }
     try {
       const { error } = await supabase
         .from('project_work_entries')
         .delete()
-        .eq('id', entryId);
+        .eq('id', entry.id);
 
       if (error) throw error;
 
-      setEntries(prev => prev.filter(e => e.id !== entryId));
+      setEntries(prev => prev.filter(e => e.id !== entry.id));
       showSuccess(t('common.deleted', 'Obrisano'));
     } catch (error) {
       console.error('Error deleting entry:', error);
       showError(t('common.error'));
     }
+  };
+
+  const handleEntryUnlocked = (entryId: string) => {
+    setEntries(prev => prev.map(e => e.id === entryId ? { ...e, payout_id: null } : e));
   };
 
   return (
@@ -766,6 +807,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                   const cost = entry.actual_hours * worker.hourly_rate;
                   const diff = entry.actual_hours - entry.scheduled_hours;
                   const isEditing = editingEntryId === entry.id;
+                  const isLocked = !!entry.payout_id;
 
                   if (isEditing) {
                     return (
@@ -778,10 +820,17 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                         </div>
 
+                        {isLocked && (
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                            <Lock className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                            <span>{t('workers.calendar.editLockedHint', 'Ovaj unos je zaključan isplatom — dopuštena je samo izmjena odrađenih sati/napomene uz razlog.')}</span>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-xs">{t('workers.scheduledHours', 'Planirano sati')}</Label>
-                            <Input type="number" step="0.5" min="0" max="24" value={editScheduledHours} onChange={(e) => setEditScheduledHours(e.target.value)} />
+                            <Input type="number" step="0.5" min="0" max="24" value={editScheduledHours} onChange={(e) => setEditScheduledHours(e.target.value)} disabled={isLocked} />
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs">{t('workers.actualHours', 'Odrađeno sati')}</Label>
@@ -802,9 +851,9 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                                     id={`cal-edit-ms-${milestone.id}`}
                                     checked={editMilestones.includes(milestone.id)}
                                     onCheckedChange={() => toggleEditMilestone(milestone.id)}
-                                    disabled={!editMilestones.includes(milestone.id) && editMilestones.length >= 3}
+                                    disabled={isLocked || (!editMilestones.includes(milestone.id) && editMilestones.length >= 3)}
                                   />
-                                  <label htmlFor={`cal-edit-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", !editMilestones.includes(milestone.id) && editMilestones.length >= 3 && "opacity-50")}>
+                                  <label htmlFor={`cal-edit-ms-${milestone.id}`} className={cn("text-xs cursor-pointer", (isLocked || (!editMilestones.includes(milestone.id) && editMilestones.length >= 3)) && "opacity-50")}>
                                     {milestone.name}
                                   </label>
                                 </div>
@@ -821,11 +870,18 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                         </div>
 
+                        {isLocked && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('workers.calendar.editLockedReasonLabel', 'Razlog izmjene (obavezno)')}</Label>
+                            <Textarea value={editReason} onChange={(e) => setEditReason(e.target.value)} rows={2} placeholder={t('workers.calendar.editLockedReasonPlaceholder', 'Npr. ispravak sati...')} />
+                          </div>
+                        )}
+
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" className="flex-1" onClick={handleCancelEdit}>
                             {t('common.cancel', 'Odustani')}
                           </Button>
-                          <Button size="sm" className="flex-1" onClick={handleUpdateEntry} disabled={isSubmitting}>
+                          <Button size="sm" className="flex-1" onClick={handleUpdateEntry} disabled={isSubmitting || (isLocked && editReason.trim().length < 3)}>
                             {isSubmitting ? t('common.saving', 'Spremanje...') : t('common.save', 'Spremi')}
                           </Button>
                         </div>
@@ -843,18 +899,33 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           </div>
                           <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-xs">{worker.position}</Badge>
+                            {isLocked && (
+                              <Badge variant="secondary" className="text-xs gap-1 border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                                <Lock className="w-3 h-3" />
+                                {t('workers.calendar.lockedBadge', 'Zaključano')}
+                              </Badge>
+                            )}
                             {!isReadOnly && (
                               <>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleStartEdit(entry)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry.id)}>
-                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                                </Button>
+                                {isLocked ? (
+                                  canManageWorkerPayouts && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => setUnlockEntryId(entry.id)} title={t('workers.calendar.unlockAction', 'Otključaj')}>
+                                      <Unlock className="w-3.5 h-3.5 text-amber-600" />
+                                    </Button>
+                                  )
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 min-h-[44px] min-w-[44px] touch-manipulation" onClick={() => handleDeleteEntry(entry)}>
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                )}
                               </>
                             )}
                           </div>
                         </div>
+
 
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
@@ -1027,6 +1098,13 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
           </div>
         </DialogContent>
       </Dialog>
+
+      <UnlockEntryDialog
+        open={!!unlockEntryId}
+        onOpenChange={(open) => { if (!open) setUnlockEntryId(null); }}
+        entryId={unlockEntryId}
+        onUnlocked={handleEntryUnlocked}
+      />
     </div>
   );
 };

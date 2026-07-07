@@ -3556,7 +3556,20 @@
       "bulkSubmit": "Dodaj na {{count}} dana",
       "bulkDaysShort": "{{count}} dana",
       "bulkAdded": "Dodano {{count}} radnih dana",
-      "bulkAddedWithSkipped": "Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)"
+      "bulkAddedWithSkipped": "Dodano {{count}} radnih dana ({{skipped}} preskočeno - već postoji)",
+      "lockedBadge": "Zaključano",
+      "unlockAction": "Otključaj",
+      "unlockDialogTitle": "Otključati radni unos?",
+      "unlockDialogMessage": "Time se poništava veza s isplatom (samo za ovaj unos).",
+      "unlockReasonLabel": "Razlog (obavezno)",
+      "unlockReasonPlaceholder": "Npr. ispravak sati...",
+      "unlockSubmit": "Otključaj",
+      "unlockedToast": "Radni unos otključan",
+      "editLockedHint": "Ovaj unos je zaključan isplatom — dopuštena je samo izmjena odrađenih sati/napomene uz razlog.",
+      "editLockedReasonLabel": "Razlog izmjene (obavezno)",
+      "editLockedReasonPlaceholder": "Npr. ispravak sati...",
+      "lockedDeleteBlocked": "Unos je zaključan isplatom — prvo otključaj.",
+      "reasonRequired": "Razlog je obavezan"
     },
     "payouts": {
       "openTitle": "Isplate",
