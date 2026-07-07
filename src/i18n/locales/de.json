@@ -3540,6 +3540,8 @@
     "searchPlaceholder": "Suche nach Name/Position...",
     "noMatches": "Keine Suchergebnisse",
     "activeWorkers": "aktiv",
+    "remainingToPay": "Offen für Arbeiter",
+    "unpaid": "unbezahlt",
     "totalLabel": "Gesamt",
     "workedShort": "geleistet",
     "calendar": {
