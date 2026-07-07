@@ -15,11 +15,12 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X } from 'lucide-react';
+import { CalendarDays, Clock, User, Flag, AlertCircle, Loader2, Plus, Filter, Pencil, Trash2, CheckSquare, X, Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { UnlockEntryDialog } from './UnlockEntryDialog';
 
 interface WorkEntry {
   id: string;
