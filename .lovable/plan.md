@@ -23,10 +23,14 @@
 ### BLOCKER (odgođeno)
 - Warning "hourly_rate mijenjan unutar perioda" — nema audit historije za `hourly_rate` na `project_workers`. Bez `worker_rate_history` tablice ne mogu detektirati promjene. Zahtijeva zasebnu migraciju (PR-C+).
 
-## PR-C — Extras (plan 2.7 koraci 9–10 + P7)
-- Push radniku pri kreiranju payouta (reuse FCM).
-- CSV export payouta (reuse `fileExport.ts`).
-- P7 RLS SQL scenarij.
+## PR-C — Extras: STANJE
+
+### DONE
+- Edge function `notify-worker-payout` (created + voided): resolve worker.user_id → in-app notification + `send-push` invoke uz category `worker_payouts`. Skip ako radnik nije povezan s user računom ili je actor == recipient.
+- `useWorkerPayouts.createPayout`/`voidPayout` fire-and-forget invoke bez blokiranja RPC-a.
+- CSV export payouta u `WorkerPayoutsDialog` header preko `exportTextFile` (BOM za Excel HR). i18n `workers.payouts.exportCsv`.
+- P7 RLS scenarij u `10_scenarios.sql`: non-owner poziv `create_worker_payout` → očekivan SQLSTATE 42501 + provjera da payout nije nastao.
 
 ## Otvoreno
-- CI Balance SQL suite: zadnji run (6h ago) failao je prije nego što je baseline stubao `public.projects`. Sljedeći push bi trebao biti zelen. Verifikacija odgođena.
+- CI Balance SQL suite: zadnji run (6h ago) failao je prije nego što je baseline stubao `public.projects`. Sljedeći push (uz P7 scenarij) trebao bi biti zelen. Verifikacija odgođena.
+- Push kategorija `worker_payouts` — koristi default fail-open u `send-push`. Ako želiš user-toggle u Postavke → Notifikacije, treba dodati stavku u `notification_preferences` UI.
