@@ -1323,6 +1323,7 @@ export type Database = {
           vat_amount: number | null
           vat_rate: number | null
           work_type: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_id: string | null
         }
         Insert: {
           ai_extracted?: boolean | null
@@ -1375,6 +1376,7 @@ export type Database = {
           vat_amount?: number | null
           vat_rate?: number | null
           work_type?: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_id?: string | null
         }
         Update: {
           ai_extracted?: boolean | null
@@ -1427,6 +1429,7 @@ export type Database = {
           vat_amount?: number | null
           vat_rate?: number | null
           work_type?: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_id?: string | null
         }
         Relationships: [
           {
@@ -1511,6 +1514,13 @@ export type Database = {
             columns: ["recurring_transaction_id"]
             isOneToOne: false
             referencedRelation: "recurring_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_worker_payout_id_fkey"
+            columns: ["worker_payout_id"]
+            isOneToOne: false
+            referencedRelation: "project_worker_payouts"
             referencedColumns: ["id"]
           },
         ]
@@ -3905,6 +3915,7 @@ export type Database = {
           id: string
           milestone_ids: string[] | null
           note: string | null
+          payout_id: string | null
           project_id: string | null
           scheduled_hours: number
           updated_at: string
@@ -3918,6 +3929,7 @@ export type Database = {
           id?: string
           milestone_ids?: string[] | null
           note?: string | null
+          payout_id?: string | null
           project_id?: string | null
           scheduled_hours?: number
           updated_at?: string
@@ -3931,6 +3943,7 @@ export type Database = {
           id?: string
           milestone_ids?: string[] | null
           note?: string | null
+          payout_id?: string | null
           project_id?: string | null
           scheduled_hours?: number
           updated_at?: string
@@ -3946,6 +3959,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_work_entries_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "project_worker_payouts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_work_entries_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -3954,6 +3974,71 @@ export type Database = {
           },
           {
             foreignKeyName: "project_work_entries_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "project_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_work_entry_locks: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          entry_id: string
+          id: string
+          payout_id: string
+          project_id: string
+          reason: string | null
+          worker_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          entry_id: string
+          id?: string
+          payout_id: string
+          project_id: string
+          reason?: string | null
+          worker_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          entry_id?: string
+          id?: string
+          payout_id?: string
+          project_id?: string
+          reason?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_work_entry_locks_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "project_work_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_entry_locks_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "project_worker_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_entry_locks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_entry_locks_worker_id_fkey"
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "project_workers"
@@ -4023,6 +4108,103 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_worker_payouts: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          expense_id: string | null
+          gross_amount: number
+          hourly_rate_snapshot: number
+          hours_covered: number
+          id: string
+          linked_advance_expense_ids: string[]
+          note: string | null
+          paid_amount: number
+          paid_at: string
+          payment_source: string | null
+          period_end: string
+          period_start: string
+          project_id: string
+          status: string
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          expense_id?: string | null
+          gross_amount?: number
+          hourly_rate_snapshot?: number
+          hours_covered?: number
+          id?: string
+          linked_advance_expense_ids?: string[]
+          note?: string | null
+          paid_amount: number
+          paid_at: string
+          payment_source?: string | null
+          period_end: string
+          period_start: string
+          project_id: string
+          status?: string
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          expense_id?: string | null
+          gross_amount?: number
+          hourly_rate_snapshot?: number
+          hours_covered?: number
+          id?: string
+          linked_advance_expense_ids?: string[]
+          note?: string | null
+          paid_amount?: number
+          paid_at?: string
+          payment_source?: string | null
+          period_end?: string
+          period_start?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_worker_payouts_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_worker_payouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_worker_payouts_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "project_workers"
             referencedColumns: ["id"]
           },
         ]
@@ -4983,6 +5165,7 @@ export type Database = {
           vat_amount: number | null
           vat_rate: number | null
           work_type: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -5032,6 +5215,20 @@ export type Database = {
             }[]
           }
         | { Args: { _token: string; _user_id: string }; Returns: Json }
+      create_worker_payout: {
+        Args: {
+          p_lock_entries?: boolean
+          p_note?: string
+          p_paid_amount: number
+          p_paid_at: string
+          p_payment_source: string
+          p_period_end: string
+          p_period_start: string
+          p_project_id: string
+          p_worker_id: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5331,10 +5528,23 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      unlock_work_entry: {
+        Args: { p_entry_id: string; p_reason?: string }
+        Returns: Json
+      }
       unmerge_import_row: { Args: { p_id: string }; Returns: undefined }
       update_budget_with_categories: {
         Args: { p_budget_id: string; p_categories: Json; p_patch: Json }
         Returns: undefined
+      }
+      update_locked_work_entry: {
+        Args: {
+          p_actual_hours: number
+          p_entry_id: string
+          p_note?: string
+          p_reason?: string
+        }
+        Returns: Json
       }
       upsert_active_issue: {
         Args: {
@@ -5348,6 +5558,10 @@ export type Database = {
           p_type: string
         }
         Returns: string
+      }
+      void_worker_payout: {
+        Args: { p_payout_id: string; p_reason?: string }
+        Returns: Json
       }
     }
     Enums: {
