@@ -3551,6 +3551,36 @@
       "bulkDaysShort": "{{count}} Tage",
       "bulkAdded": "{{count}} Arbeitstage hinzugefügt",
       "bulkAddedWithSkipped": "{{count}} Arbeitstage hinzugefügt ({{skipped}} übersprungen — existiert bereits)"
+    },
+    "payouts": {
+      "openTitle": "Auszahlungen",
+      "dialogTitle": "Auszahlungen",
+      "empty": "Keine Auszahlungen erfasst",
+      "newButton": "Neue Auszahlung",
+      "periodStart": "Von",
+      "periodEnd": "Bis",
+      "paidAmount": "Ausgezahlt",
+      "paymentSource": "Zahlungsquelle",
+      "paymentSourcePlaceholder": "Quelle wählen",
+      "noSources": "Zuerst eine Quelle im Wallet anlegen",
+      "note": "Notiz",
+      "notePlaceholder": "Optional...",
+      "lockEntries": "Arbeitseinträge im Zeitraum sperren",
+      "submit": "Auszahlung speichern",
+      "hoursShort": "Stunden",
+      "grossShort": "Brutto",
+      "voidAction": "Auszahlung stornieren",
+      "voidConfirmTitle": "Auszahlung stornieren?",
+      "voidConfirmMessage": "Die Ausgabe wird gelöscht und gesperrte Einträge wieder geöffnet.",
+      "voidReasonLabel": "Grund",
+      "createdToast": "Auszahlung erfasst",
+      "voidedToast": "Auszahlung storniert",
+      "status": {
+        "paid": "Ausgezahlt",
+        "partial": "Teilweise",
+        "advance": "Vorschuss",
+        "voided": "Storniert"
+      }
     }
   },
   "collaboratorsFilters": {
