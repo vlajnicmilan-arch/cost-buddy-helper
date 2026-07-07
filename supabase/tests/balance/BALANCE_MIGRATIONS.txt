@@ -16,3 +16,5 @@
 20260628174219_*.sql   # user_edited_event_at + resolve_event_at_merge helper
 20260628205415_*.sql   # hybrid vs day_cut engine mode via app_settings
 20260630202419_*.sql   # backfill anchors for NULL anchor sources
+20260707064657_*.sql   # PR2 Phase A: set_source_anchor RPC (atomarni SET sidra)
+
