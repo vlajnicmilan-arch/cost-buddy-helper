@@ -1,133 +1,159 @@
-# Plan: Redizajn `balance-sql-suite.yml` — kurirani baseline
 
-## Preporuka: opcija (a) — kurirani balance baseline + selektivne migracije
+# Isplata radnika na projektima — 3 varijante dizajna
 
-Ostale opcije odbačene niže s obrazloženjem. Bez izmjena u ovom passu — samo dizajn na pregled.
+## Kontekst postojećeg modela (verificirano u kodu i DB-u)
 
----
+- **`project_workers`** — interni radnici na projektu: `hourly_rate`, `work_hours`, `work_start_time/end_time`, `user_id` (opcionalno linkanje na prijavljenog korisnika). **Nema polja o isplati.**
+- **`project_work_entries`** — dnevni zapisi (`work_date`, `scheduled_hours`, `actual_hours`, `worker_id`, `milestone_ids`). Kalendar/standup source of truth za koliko je radnik radio.
+- **`project_collaborators`** — vanjski suradnici s fiksnom cijenom: `total_price` + `paid_amount` (skalar). Već ima primitivan payout tracker.
+- **`expenses`** — ima `collaborator_id`, `is_advance`, `linked_advance_ids`, `project_id`, `milestone_id`, `payment_source`, `work_type`. **Nema `worker_id`.**
+- **P&L (`useProjectProfitLoss`)** — trošak rada računa kao `sum(work_entries.actual_hours) × hourly_rate` (teoretski), + `collaborators.total_price`, + expenses. Znači: cost je već u P&L, ali **nigdje se ne vidi je li radnik stvarno primio novac**.
 
-## Zašto (a)
+**Ključna asimetrija**: suradnici imaju `paid_amount` + avanse kroz expenses, radnici nemaju ništa — samo teoretski cost bez traga isplate.
 
-Deploy gate mora testirati **balance semantiku** (anchor/recompute/trigger), ne cijelu povijest sheme. Trenutni pristup "apply all 246 migrations" pao je iz dva neovisna razloga koje si dokazao:
-1. Nedostajući Supabase stubovi (`storage.foldername`, `supabase_realtime` publikacija, vjerojatno još) — rješivo, ali beskrajno guranje repa.
-2. **Fundamentalno:** povijest nije linearno replayabilna (konflikt na #30 `projects`, kaskada od 10+ padova). Ovo nije bug u bootstrapu — to je stanje repozitorija.
-
-Vanjski harness s minimalnom shemom + stvarnim balance funkcijama već prolazi 23+ assertiona → dokaz da izolirani pristup radi tehnički i semantički.
-
-## Trade-offovi (iskreno)
-
-**Za (a):**
-- Deterministički, brz (< 10s vs. trenutnih 45s+ padova), izolira stvarnu regresiju.
-- Testira **točno** ono što policy štiti: balance trigger + recompute + writer intent.
-- Baseline je mali (3 tablice, ~15-20 stupaca) → lako se održava.
-
-**Protiv (a):**
-- Baseline se mora ručno održavati kad se doda stupac na `expenses`/`custom_payment_sources`/`app_settings`. Mitigacija: drift-check step (v. dolje).
-- Ne testira interakcije s drugim tablicama (npr. `budget_plans`, `krug_*`). Prihvatljivo — te interakcije nisu balance-invariant; imaju vlastite testove (vitest, e2e).
-
-## Odbačene opcije
-
-- **(b) `pg_dump --schema-only`**: veže CI na produkcijski snapshot (secret pipeline, rotacija), uvodi noise iz nebalance tablica, i dalje ne rješava konflikte kad se doda nova migracija koja pretpostavlja starije stanje. Ne rješava fundamentalni problem, samo ga premješta.
-- **(c) popraviti replayabilnost 246 migracija**: konflikt #30 znači da je barem jedna migracija editirana post-hoc. Popravak zahtijeva forenziku svih 246 + rekonstrukciju redoslijeda + testiranje svakog međukoraka. Procjena: dani rada, visok rizik regresije u drugim područjima, nula dobitka za balance gate. Odbačeno.
-- **(d) Supabase CLI + `db reset`**: prividno "službeni" put, ali koristi točno isti migracijski skup koji je već dokazano ne-replayabilan. Ne pomaže.
+**Vlasnikov zahtjev**: označiti da je radnik isplaćen za period (mjesec ili custom), jednostavno, točno, vezano na trošak projekta i izvor plaćanja, s podrškom za djelomične isplate.
 
 ---
 
-## Dizajn (opcija a)
+## Varijanta A — Minimal: expense s `worker_id` + period polja
 
-### 1. Novi fajl: `supabase/tests/balance/baseline.sql`
+**Ideja:** isplata radniku = obični `expenses` red, analogno kako suradnici već rade. Bez zasebne payout tablice.
 
-Kurirana minimalna shema, **samo balance-relevantne tablice** s **samo stupcima koje balance funkcije/trigger čitaju ili pišu**:
+**Podatkovni model:**
+- Dodati na `expenses`: `worker_id uuid` → `project_workers(id)`, `period_start date`, `period_end date`.
+- Isplata = `expense` s `worker_id`, `type='expense'`, `work_type='salary'`, `payment_source` (postojeći), `amount` (bruto), `period_start/end` (koji period pokriva).
 
-- `public.custom_payment_sources` — id, user_id, name, balance, currency, `correction_anchor_date`, `correction_anchor_balance`, `anchor_recompute_epoch`, created_at, updated_at (+ minimalni tipovi/defaulti).
-- `public.expenses` — id, user_id, amount, `payment_source`, `payment_source_id`, `type` (expense/income/transfer), `expense_nature`, `transfer_to_source`, `event_at`, `time_confidence`, `user_edited_event_at`, `date`, `deleted_at`, created_at, updated_at.
-- `public.app_settings` — key, value, updated_at (za `anchor_engine_mode`).
-- `auth.users` FK stub (već u `bootstrap.sql`).
+**UI tok:**
+- Na kartici radnika: gumb "Isplati". Dialog s izborom perioda (Ovaj mjesec / Prošli mjesec / Custom range).
+- Sustav automatski sumira `actual_hours` iz `work_entries` u tom rasponu × `hourly_rate` → prijedlog iznosa (edit dozvoljen za djelomično).
+- Odabir `payment_source`, opcionalno milestone, potvrda → INSERT jedan expense.
+- Status "isplaćen za period" = izračunat iz zbroja svih expensea s `worker_id` čiji `[period_start, period_end]` presijeca traženi raspon.
 
-**Ne uključuje:** RLS, GRANTs, indekse osim onih koje trigger/recompute koristi (npr. na `payment_source_id`, `event_at`). Bez ostalih 90+ tablica.
+**Djelomične isplate:** više expensea za isti period; UI sažima "isplaćeno X od Y (Z sati odrađeno)".
 
-### 2. Novi fajl: `supabase/tests/balance/BALANCE_MIGRATIONS.txt`
+**Vezanje na trošak/izvor:** automatski — expense već ulazi u P&L i troši iz payment source-a. Treba samo P&L prilagoditi da ne broji dvostruko (teoretski cost iz work_entries × rate **VS** stvarne isplate) — vjerojatno se prebaci na "stvarno isplaćeno" kao primary metric.
 
-Whitelist balance-relevantnih migracija u redoslijedu (točan popis potvrdim kad krene build, ali nacrt):
-```
-20260624083605_*.sql   # anchor kolone + baseline recompute + trigger
-20260624131214_*.sql   # (potvrditi je li balance-relevantna)
-20260624132036_*.sql   # trigger split anchored/unanchored
-20260628163325_*.sql   # expenses_event_at_sync trigger
-20260628174219_*.sql   # (potvrditi)
-20260628202419_*.sql   # (potvrditi)
-20260628205415_*.sql   # hybrid vs day_cut + preview funkcija
-# + buduće PR2 migracije (set_source_anchor RPC, _prevent_direct_anchor_update)
-```
-Fajl je jedini "source of truth" za suite — dodavanje/uklanjanje se radi ovdje.
+**Avansi radnicima:** postojeći `is_advance` + `linked_advance_ids` mehanizam se proširi da radi i za `worker_id` (danas radi samo za `collaborator_id`).
 
-### 3. Izmjena `.github/workflows/balance-sql-suite.yml`
+**Prednosti:**
+- Najmanje površine: jedna tablica, jedan UI pattern kao za trošak.
+- Nema sinkronizacijskih problema (jedan izvor istine).
+- Reuse postojećih flow-ova: soft-delete, budget/project filtriranje, bank matching, kartice, avansi.
+- Retrokompatibilno: postojeći expenses bez worker_id ostaju netaknuti.
 
-Zamijeniti "Apply migrations in order" korak s:
-```yaml
-- name: Apply curated balance baseline
-  run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/baseline.sql
-
-- name: Apply balance-relevant migrations in order
-  run: |
-    set -euo pipefail
-    while IFS= read -r pattern; do
-      [[ -z "$pattern" || "$pattern" =~ ^# ]] && continue
-      for f in supabase/migrations/${pattern}; do
-        echo "==> Applying $f"
-        psql -v ON_ERROR_STOP=1 -f "$f"
-      done
-    done < supabase/tests/balance/BALANCE_MIGRATIONS.txt
-```
-
-`bootstrap.sql` ostaje (auth/storage/role stubovi, `auth.users` seed).
-
-### 4. Drift-check (zaštita od baseline zastarjelosti)
-
-Novi korak u istom jobu, **prije** primjene baselinea:
-```yaml
-- name: Detect balance-relevant migration drift
-  run: |
-    # Fail ako je novi fajl u supabase/migrations/ dirao expenses/custom_payment_sources/app_settings
-    # a nije u BALANCE_MIGRATIONS.txt niti eksplicitno na ignore listi.
-    bash supabase/tests/balance/detect-drift.sh
-```
-Skripta: `git diff origin/main...HEAD -- supabase/migrations/` filtrirano na fajlove koji sadrže `expenses|custom_payment_sources|app_settings|anchor` → svaki takav fajl mora biti ili u `BALANCE_MIGRATIONS.txt` ili u `BALANCE_MIGRATIONS_IGNORE.txt` (s razlogom). Inače fail s uputom autoru PR-a.
-
-Ovo mehanički prisiljava da svaka izmjena balance sheme aktivno odluči: "ide u gate" ili "eksplicitno izuzeto (zašto)".
-
-### 5. README dopuna (`supabase/tests/balance/README.md`)
-
-Nova sekcija "CI arhitektura" objašnjava: kurirani baseline, whitelist, drift-check, kako dodati novu balance migraciju (2 koraka: commit migracije + upiši pattern u `BALANCE_MIGRATIONS.txt`).
+**Mane:**
+- Period je "meki" koncept — ništa ne sprječava dva overlapping expense-a za isti period (može se dodati validation trigger).
+- Nema first-class objekta "payroll run za lipanj" (npr. za bulk isplatu svih radnika odjednom treba petlja u UI).
+- Agregatni izvještaj "koliko sam isplatio radniku X ukupno kroz projekt" treba GROUP BY nad expenses.
+- P&L semantika treba redefiniciju: teoretski cost vs stvarne isplate.
 
 ---
 
-## Rizici i mitigacije
+## Varijanta B — Payout ledger: tablica `worker_payouts` + auto-generirani expense
 
-| Rizik | Mitigacija |
-|---|---|
-| Baseline drift (dodan stupac koji trigger čita, zaboravljen u baseline) | Drift-check step + fail-loud SQL greška u suiteu |
-| Balance migracija ovisi o nebalance tablici (npr. FK) | Dodati minimalni stub te tablice u `baseline.sql` s komentarom |
-| Netko doda migraciju u whitelist koja ovisi o preskočenoj | CI fail na apply → autor mora ili proširiti baseline ili razdvojiti migraciju |
-| Produkcijska shema divergira od baselinea | Kvartalni ručni audit (dodati u projektnu memoriju) |
+**Ideja:** payout je first-class objekt, expense se auto-generira iz njega. Kompromis između A i C.
 
-## Ne-ciljevi (eksplicitno)
+**Podatkovni model:**
+- Nova tablica `project_worker_payouts`:
+  - `worker_id`, `project_id`, `period_start`, `period_end`
+  - `hours_covered numeric` (koliko sati iz entries pokriva)
+  - `hourly_rate_snapshot numeric` (fiksirano u trenutku isplate — otporno na kasnije promjene satnice)
+  - `gross_amount numeric` (predloženo = hours × rate)
+  - `paid_amount numeric` (ono što je stvarno isplaćeno; može biti < gross)
+  - `payment_source text`, `paid_at timestamptz`, `note text`
+  - `expense_id uuid` (link na auto-generirani expense red)
+  - `status text` (`draft` | `paid` | `partial`)
 
-- Ne testira RLS, GRANT-ove, druge tablice, edge funkcije, cron jobove.
-- Ne zamjenjuje vitest suite (koja pokriva 17 scenarija na mirror logici).
-- Ne popravlja povijesnu ne-replayabilnost migracija (zaseban problem, izvan ovog scopea).
+**UI tok:**
+- Novi tab "Isplate" unutar radnikove kartice (ili globalni "Payroll" tab na projektu).
+- "Nova isplata" → odabir radnika (ili "Svi radnici" za bulk), odabir perioda, prikaz preview tablice (radnik, sati, satnica, gross), edit iznosa po redu (djelomična), payment_source za sve, "Potvrdi isplatu".
+- Backend: za svaki payout INSERT `project_worker_payouts` + INSERT `expenses` (s `worker_id`, `work_type='salary'`, `amount = paid_amount`, link natrag preko `expense_id`).
+- "Isplaćen za lipanj" = postoji payout(i) sa status=paid koji pokrivaju traženi period.
 
-## Redoslijed rada (nakon odobrenja)
+**Djelomične isplate:** ako `paid_amount < gross_amount` → `status='partial'`, kasnija dopuna = novi payout red za isti (ili preostali) period; UI sažima "isplaćeno 60% (900 od 1500 kn)".
 
-1. Napisati `baseline.sql` (introspekcija stvarnih migracija za točan popis stupaca).
-2. Napisati `BALANCE_MIGRATIONS.txt` + `detect-drift.sh`.
-3. Izmijeniti workflow.
-4. Push → CI zelen → potvrda.
-5. README dopuna.
-6. Zapis u projektnu memoriju (`mem://features/balance-regression-testing-policy`) — dopuna sekcije "CI arhitektura".
+**Vezanje na trošak/izvor:** payout kreira expense automatski, expense_id je referencirano; brisanje payouta soft-deletea expense (kaskada preko RPC-a).
 
-## Otvorena pitanja prije koda
+**Avansi radnicima:** payout može referencirati avanse (`linked_advance_ids` na payoutu, analogno današnjem invoice patternu za suradnike) — netira gross.
 
-1. **Točan whitelist:** Da introspektiram svih 246 migracija i predložim finalni popis balance-relevantnih (grep na `expenses|custom_payment_sources|app_settings|anchor|recompute`) prije početka implementacije, ili biraš popis ručno?
-2. **Drift-check strogost:** fail na svaku izmjenu tih tablica (strogo), ili samo warning uz manualni override label na PR-u?
-3. **Baseline lokacija:** `supabase/tests/balance/baseline.sql` (predloženo) ili `supabase/tests/balance/schema/000_baseline.sql` s prostorom za buduće particije?
+**Prednosti:**
+- Jasan audit trail: "sve isplate radniku X" je `SELECT * FROM worker_payouts WHERE worker_id = ?`.
+- Snapshotana satnica → nema retroaktivnog kvarenja povijesti kad se rate mijenja.
+- Bulk payroll run ("isplati sve radnike za lipanj u 2 klika") — first-class use case.
+- P&L može jasno razlikovati "planirani cost (entries × rate)" vs "stvarno isplaćeno (sum payouts)".
+- UX za vlasnika: mjesečni payroll ritam se prirodno mapira.
+
+**Mane:**
+- Dvije tablice → treba sinkronizacija (payout ↔ expense). Rizik od drift-a ako netko edita expense direktno.
+- Više SQL površine: nova tablica + RLS + GRANT + policies + trigger za dedup periode.
+- Više UI površine: novi tab, novi dialog, bulk selection.
+- Migracija postojećih projekata: ništa za retrofit-ati (radnici nemaju povijest isplata), ali expenses koji su možda ručno unesen kao "plaća radniku" ostaju odvojeni od payout ledgera.
+
+---
+
+## Varijanta C — Payout ledger + zaključavanje `work_entries` (najpotpunija)
+
+**Ideja:** kao B, ali svaki radni dan (`work_entries` red) pripada točno jednoj isplati. Nakon isplate — zaključan.
+
+**Podatkovni model:**
+- Sve iz B, plus:
+- `project_work_entries.payout_id uuid` → `project_worker_payouts(id)` (nullable).
+- Kad se kreira payout za period, svi entriji tog perioda dobiju `payout_id`. `payout_id IS NOT NULL` → entry je locked (ne može se editirati bez unlock-a payouta).
+
+**UI tok:**
+- Kao B, ali preview korak pokazuje koje točno dane isplata pokriva (checkbox lista); vlasnik može isključiti pojedine dane (djelomično po danima, ne samo po iznosu).
+- Kalendar radnog vremena vizualno označava isplaćene dane (zeleni marker ✓).
+- "Unlock payout" gumb za editiranje entrija (npr. kad se otkrije greška u satima naknadno).
+
+**Djelomične isplate:** dvije razine — (1) isključi neke dane iz payouta, (2) unutar payouta paid < gross.
+
+**Vezanje na trošak/izvor:** kao B.
+
+**Prednosti:**
+- Nemoguća dvostruka isplata istog dana (DB-level constraint kroz `payout_id`).
+- Vizualno u kalendaru se vidi što je "processed" vs "pending".
+- Najbliže pravom payroll sustavu.
+- P&L može reći "od 200 zabilježenih sati, 150 je isplaćeno".
+
+**Mane:**
+- Najveća implementacijska površina i UI kompleksnost.
+- Lock/unlock flow → dodatna pravila (tko smije, što s soft-deleted entrijima, konfliktne izmjene).
+- Migracija: postojeći entriji trebaju backfill `payout_id = NULL` (trivijalno), ali ako se ikad izbriše radnik s entrijima koji imaju payout — treba kaskadna logika.
+- Više edge case-ova za testirati (SQL suite raste).
+
+---
+
+## Trade-off tablica
+
+```text
+                     A (expense-only)   B (payout ledger)   C (ledger + lock)
+implementacijska     mala               srednja             velika
+površina
+audit trail          slab (GROUP BY)    jak                 vrlo jak
+otpornost na         slaba (bez         jaka (snapshot)     jaka
+promjenu satnice     snapshot-a)
+bulk payroll run     ručno (petlja)     first-class         first-class
+double-pay zaštita   samo trigger       aplikativna         DB constraint
+djelomična isplata   po iznosu          po iznosu           po iznosu I danima
+UI površina          1 dialog           1 tab + 1 dialog    1 tab + 2 dialoga
+                                                            + kalendar overlay
+P&L jasnoća          treba redefinirati jasno (plan vs      jasno + per-day
+                     "cost"             stvarno)            granularnost
+migracijski rizik    nikakav            nizak               srednji
+```
+
+---
+
+## Otvorene pretpostavke (potvrditi prije odabira)
+
+1. **Bruto = neto** (nema poreznog/doprinosnog obračuna u sustavu). Ako vlasnik želi bruto/neto split, sve tri varijante trebaju dodatna polja.
+2. **Valuta isplate** = valuta projekta (naslijeđeno iz payment_source). Multi-currency isplate nisu u scope-u.
+3. **Avansi radnicima** želimo podržati (danas radi samo za suradnike). Sve tri varijante mogu reuse-ati `is_advance` + linkanje.
+4. **P&L reinterpretacija**: dogovor treba li "cost" biti (a) entries × rate (teoretski, planiran) ili (b) sum(payouts) (stvarni cashflow). Vjerojatno oboje uz labele.
+5. **RBAC**: samo owner projekta smije evidentirati isplatu, ili i member/worker (npr. worker sam sebi potvrdi da je primio novac)? Očekivano — samo owner.
+
+---
+
+## Preporuka za sljedeći korak
+
+Bez daljnjeg guranja: **B je sweet-spot** za "jednostavno + točno + audit". A je premalo (nema payroll runa, teško izvještaje), C je overkill za trenutnu bolnu točku. Ali odluka je vlasnikova — sve tri su izvedive.
