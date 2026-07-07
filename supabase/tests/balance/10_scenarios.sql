@@ -407,20 +407,23 @@ $$;
 -- ------------------------------------------------------------
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p1;
 SELECT pg_temp.seed_payout_fixtures();
-WITH r AS (
-  SELECT public.create_worker_payout(
-    (SELECT val FROM _bfix WHERE key='proj'),
-    (SELECT val FROM _bfix WHERE key='wrk'),
-    DATE '2026-06-02', DATE '2026-06-05',
-    200,
-    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
-    '2026-06-05 12:00:00+00',
-    'P1 full pay',
-    true
-  ) AS j
-)
-SELECT pg_temp.assert_eq('P1 hours_covered',  8,    (r.j->>'hours_covered')::numeric) FROM r;
-SELECT pg_temp.assert_eq('P1 gross_amount',   200,  (r.j->>'gross_amount')::numeric)  FROM (SELECT public.create_worker_payout AS j FROM (VALUES (1)) v(x)) _ WHERE false; -- noop: above WITH already asserted
+SELECT public.create_worker_payout(
+  (SELECT val FROM _bfix WHERE key='proj'),
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  DATE '2026-06-02', DATE '2026-06-05',
+  200,
+  'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+  '2026-06-05 12:00:00+00',
+  'P1 full pay',
+  true
+);
+SELECT pg_temp.assert_eq('P1 hours_covered', 8,
+  (SELECT SUM(hours_covered) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')));
+SELECT pg_temp.assert_eq('P1 gross_amount', 200,
+  (SELECT SUM(gross_amount) FROM public.project_worker_payouts
+    WHERE project_id=(SELECT val FROM _bfix WHERE key='proj')));
+
 -- Verify status via table (avoids double-invoke)
 SELECT pg_temp.assert_eq('P1 payout status=paid (1=yes)',
   1,
