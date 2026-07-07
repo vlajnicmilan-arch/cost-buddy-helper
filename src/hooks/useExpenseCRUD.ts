@@ -246,12 +246,21 @@ export const useExpenseCRUD = ({
         // Val 4: scan-C1 producent. Ako write-path proslijedi `precision`
         // objekt (samo decideScanTier ga dodjeljuje), prebacujemo se na
         // `system_precise` intent koji propušta event_at + time_confidence
-        // i postavlja user_edited_event_at=false. Bilo koji drugi writer
-        // (manual, recurring, import) NEMA precision i ostaje na 'default'.
+        // i postavlja user_edited_event_at=false.
+        //
+        // BUG 1 remediation: ručni unos iz UI-a (entrySource === 'manual')
+        // ide na `manual_entry` intent — helper autoritativno postavlja
+        // event_at = now() (klijent) + time_confidence='C2', pa red
+        // sudjeluje u hybrid post-anchor cutu istog dana. csv/pdf/recurring
+        // /ocr/bank ostaju na 'default' — trigger derivira event_at iz `date`.
         const precision = (normalizedExpense as any).precision as
           | { event_at: string; time_confidence: 'C1' | 'C2' | 'C3' | 'C4' }
           | undefined;
-        const writerIntent: WriterIntent = precision ? 'system_precise' : 'default';
+        const writerIntent: WriterIntent = precision
+          ? 'system_precise'
+          : entrySource === 'manual'
+            ? 'manual_entry'
+            : 'default';
         const basePayload = {
           user_id: user.id,
           amount: normalizedExpense.amount,
