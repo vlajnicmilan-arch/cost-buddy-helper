@@ -292,6 +292,12 @@ export const useExpenseCRUD = ({
           is_advance: (normalizedExpense as any).is_advance ?? false,
           collaborator_id: (normalizedExpense as any).collaborator_id ?? null,
           linked_advance_ids: (normalizedExpense as any).linked_advance_ids ?? [],
+          // Worker payout attribution (radnik pripisuje isplatu svom izvoru).
+          // AttributionSheet postavlja worker_payout_id (single) ili
+          // worker_payout_batch_id (batch). Unique indexi na (user_id, *)
+          // sprječavaju dvostruki pripis; caller mora ručno hendlati 23505.
+          worker_payout_id: (normalizedExpense as any).worker_payout_id ?? null,
+          worker_payout_batch_id: (normalizedExpense as any).worker_payout_batch_id ?? null,
           ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);

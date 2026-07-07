@@ -1323,6 +1323,7 @@ export type Database = {
           vat_amount: number | null
           vat_rate: number | null
           work_type: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_batch_id: string | null
           worker_payout_id: string | null
         }
         Insert: {
@@ -1376,6 +1377,7 @@ export type Database = {
           vat_amount?: number | null
           vat_rate?: number | null
           work_type?: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_batch_id?: string | null
           worker_payout_id?: string | null
         }
         Update: {
@@ -1429,6 +1431,7 @@ export type Database = {
           vat_amount?: number | null
           vat_rate?: number | null
           work_type?: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_batch_id?: string | null
           worker_payout_id?: string | null
         }
         Relationships: [
@@ -5244,6 +5247,7 @@ export type Database = {
           vat_amount: number | null
           vat_rate: number | null
           work_type: Database["public"]["Enums"]["expense_work_type"] | null
+          worker_payout_batch_id: string | null
           worker_payout_id: string | null
         }
         SetofOptions: {
@@ -5373,6 +5377,23 @@ export type Database = {
         }[]
       }
       get_founding_member_count: { Args: never; Returns: number }
+      get_my_incoming_payouts: {
+        Args: { p_payout_ids: string[] }
+        Returns: {
+          batch_id: string
+          gross_amount: number
+          hourly_rate_snapshot: number
+          hours_covered: number
+          paid_amount: number
+          paid_at: string
+          payout_id: string
+          period_end: string
+          period_start: string
+          project_id: string
+          project_name: string
+          status: string
+        }[]
+      }
       get_next_founding_member_number: { Args: never; Returns: number }
       get_project_member_profiles: {
         Args: { _project_id: string }

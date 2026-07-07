@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
+import { dispatchAttributionOpen, parseAttributionPayload } from '@/lib/attribution/events';
 
 /**
  * Izvuče project id iz route oblika `/projects?id=<UUID>`. Vraća null ako
@@ -79,6 +80,17 @@ export function useNotificationNavigation() {
 
   const navigateFromNotification = useCallback(
     (type: string | null | undefined, data: unknown): boolean => {
+      // Attribution intercept: worker_payout_created/voided otvara AttributionSheet
+      // overlay-em preko CustomEvent-a — bez rute promjene. Ostale obavijesti
+      // idu kroz standardni route flow.
+      if (type === 'worker_payout_created' || type === 'worker_payout_voided') {
+        const action = type === 'worker_payout_created' ? 'created' : 'voided';
+        const attr = parseAttributionPayload(action, data);
+        if (attr) {
+          dispatchAttributionOpen(attr);
+          return true;
+        }
+      }
       const payload = normalizePayload(
         type ?? null,
         (data && typeof data === 'object') ? (data as Record<string, unknown>) : null,

@@ -35,6 +35,7 @@ import { FileSavedDialog } from "@/components/FileSavedDialog";
 import { ModuleThemeProvider } from "@/components/ModuleThemeProvider";
 import { GlobalScanQuotaDialog } from "@/components/scanner/GlobalScanQuotaDialog";
 import { HighlightTarget } from "@/components/HighlightTarget";
+import { AttributionSheetHost } from "@/components/attribution/AttributionSheetHost";
 import { useAuth } from "@/hooks/useAuth";
 import { HomeSkeleton, DashboardSkeleton, WalletSkeleton, GenericPageSkeleton } from "@/components/skeletons";
 import { BusinessModeGuard } from "@/components/guards/BusinessModeGuard";
@@ -167,6 +168,7 @@ const RouteAwareGlobalOverlays = () => {
       <FileSavedDialog />
       <GlobalScanQuotaDialog />
       <HighlightTarget />
+      <AttributionSheetHost />
     </>
   );
 };

@@ -30,7 +30,8 @@ export type FunnelEventName =
   | 'checklist_dismissed'
   | 'checklist_completed'
   | 'guided_home_entered'
-  | 'guided_home_exited';
+  | 'guided_home_exited'
+  | 'worker_payout_attributed';
 
 const SESSION_KEY = 'funnel_session_id';
 const INSTALL_FLAG = 'funnel_install_logged';

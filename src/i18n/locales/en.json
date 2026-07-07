@@ -4776,5 +4776,44 @@
         "unknown": "Unknown error"
       }
     }
+  },
+  "attribution": {
+    "title": "Attribute payout to source",
+    "titleVoided": "Payout voided",
+    "singleLabel": "Payout",
+    "batchLabel": "Combined payout",
+    "paidAt": "Paid",
+    "pickSource": "Pick your source",
+    "descSingle": "Payout: {{name}}",
+    "descBatch": "Combined payout: {{names}}",
+    "alreadyAttributed": "You have already attributed this payout.",
+    "success": "Payout attributed to source",
+    "disabled": {
+      "pickSource": "Pick a source",
+      "noAmount": "Payout amount unknown",
+      "alreadyAttributed": "Already attributed"
+    },
+    "actions": {
+      "attribute": "Attribute",
+      "skip": "Skip"
+    },
+    "empty": {
+      "text": "You have no payment sources. Add one in Wallet to attribute the payout.",
+      "cta": "Add source in Wallet"
+    },
+    "warnings": {
+      "crossCurrency": "{{currency}} source — conversion not supported in v1.",
+      "bankLinked": "Source linked to bank — when the bank sync brings the payment, a duplicate may appear. Check and delete one of the entries."
+    },
+    "voided": {
+      "attributed": "This payout was voided and you had attributed it. Check if the entry needs to be removed manually.",
+      "notAttributed": "This payout was voided. If you attributed it, review the entry in your Wallet.",
+      "openEntry": "Open attributed entry"
+    },
+    "errors": {
+      "loadFailed": "Cannot load payout data",
+      "alreadyAttributed": "Already attributed",
+      "generic": "Attribution failed, try again"
+    }
   }
 }

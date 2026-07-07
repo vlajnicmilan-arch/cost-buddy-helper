@@ -984,6 +984,183 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p16;
 
+-- ------------------------------------------------------------
+-- P17 — Attribution race guard: unique index (user_id, worker_payout_id)
+--       WHERE worker_payout_id IS NOT NULL blokira dvostruki pripis iste
+--       isplate od strane istog korisnika. Regresija za "worker klikne
+--       dvije notifikacije" slučaj iz plana (odjeljak 4e).
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p17;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000017';
+  v_payout_id uuid;
+  v_dup_error text;
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p17@test')
+    ON CONFLICT (id) DO NOTHING;
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P17', true
+  );
+
+  SELECT project_worker_payouts.id INTO v_payout_id
+    FROM public.project_worker_payouts
+    JOIN public.project_workers w ON w.id = project_worker_payouts.worker_id
+    WHERE w.user_id = v_worker_user
+    ORDER BY project_worker_payouts.created_at DESC
+    LIMIT 1;
+
+  -- Simuliraj radnikov attribution insert #1 (custom user, ne owner).
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id)
+    VALUES (v_worker_user, 100, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'radnikov attribution', v_payout_id);
+
+  -- Pokušaj #2 — mora pasti na uniq_expenses_user_worker_payout.
+  BEGIN
+    INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id)
+      VALUES (v_worker_user, 100, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'race duplikat', v_payout_id);
+    RAISE EXCEPTION 'FAIL P17 — druga attribution insertacija je uspjela (unique index ne radi)';
+  EXCEPTION WHEN unique_violation THEN
+    RAISE NOTICE 'PASS P17 — race guard blokirao dvostruki pripis (23505)';
+  END;
+END $$;
+RELEASE SAVEPOINT s_p17;
+
+-- ------------------------------------------------------------
+-- P18 — Attribution batch race guard: unique index (user_id, worker_payout_batch_id)
+--       WHERE worker_payout_batch_id IS NOT NULL blokira dvostruki pripis
+--       istog batcha.
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p18;
+DO $$
+DECLARE
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000018';
+  v_batch uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p18@test')
+    ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
+    VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'batch attribution #1', v_batch);
+
+  BEGIN
+    INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
+      VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'batch attribution #2 (duplikat)', v_batch);
+    RAISE EXCEPTION 'FAIL P18 — druga batch attribution insertacija je uspjela';
+  EXCEPTION WHEN unique_violation THEN
+    RAISE NOTICE 'PASS P18 — batch race guard blokirao dvostruki pripis (23505)';
+  END;
+
+  -- Različiti batch → mora proći (partial index, samo istina za isti batch).
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id)
+    VALUES (v_worker_user, 250, 'income', 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text, 'drugi batch', gen_random_uuid());
+  RAISE NOTICE 'PASS P18 — različit batch dopušten';
+END $$;
+RELEASE SAVEPOINT s_p18;
+
+-- ------------------------------------------------------------
+-- P19 — get_my_incoming_payouts SECURITY DEFINER:
+--       (a) vraća SAMO payoute čiji je worker.user_id = auth.uid()
+--       (b) NE curi ownerov `note`, `payment_source`, `voided_by`
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p19;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_owner uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000019';
+  v_other_worker_user uuid := '99999999-aaaa-bbbb-cccc-00000000001A';
+  v_payout_id uuid;
+  v_rows int;
+  v_cols text[];
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p19@test')
+    ON CONFLICT (id) DO NOTHING;
+  INSERT INTO auth.users (id, email) VALUES (v_other_worker_user, 'p19other@test')
+    ON CONFLICT (id) DO NOTHING;
+
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'ownerov note (ne smije curiti)', true
+  );
+
+  SELECT project_worker_payouts.id INTO v_payout_id
+    FROM public.project_worker_payouts
+    JOIN public.project_workers w ON w.id = project_worker_payouts.worker_id
+    WHERE w.user_id = v_worker_user
+    ORDER BY project_worker_payouts.created_at DESC
+    LIMIT 1;
+
+  -- (a) glumi radnika: postavi request.jwt.claim.sub → get_my_incoming_payouts vidi jedan red
+  PERFORM set_config('request.jwt.claim.sub', v_worker_user::text, true);
+  SELECT COUNT(*) INTO v_rows FROM public.get_my_incoming_payouts(ARRAY[v_payout_id]);
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'FAIL P19a — očekivano 1 red za radnika, dobiveno %', v_rows;
+  END IF;
+  RAISE NOTICE 'PASS P19a — radnik dobio svoj payout';
+
+  -- (a2) glumi DRUGOG radnika (nije povezan s payoutom) → 0 redova
+  PERFORM set_config('request.jwt.claim.sub', v_other_worker_user::text, true);
+  SELECT COUNT(*) INTO v_rows FROM public.get_my_incoming_payouts(ARRAY[v_payout_id]);
+  IF v_rows <> 0 THEN
+    RAISE EXCEPTION 'FAIL P19a2 — drugi radnik ne smije vidjeti tuđi payout, dobiveno %', v_rows;
+  END IF;
+  RAISE NOTICE 'PASS P19a2 — drugi korisnik ne vidi tuđi payout';
+
+  -- (b) whitelist: kolone RPC-a ne uključuju ownerova osjetljiva polja
+  SELECT array_agg(attname::text ORDER BY attnum)
+    INTO v_cols
+    FROM pg_attribute
+   WHERE attrelid = 'public.project_worker_payouts'::regclass
+     AND attnum > 0
+     AND attname IN ('note', 'payment_source', 'voided_by', 'void_reason', 'created_by');
+
+  -- Provjera kroz introspekciju povratnog tipa RPC-a.
+  PERFORM 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'get_my_incoming_payouts';
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'FAIL P19b — get_my_incoming_payouts nije registrirana';
+  END IF;
+
+  -- SEKUNDARNA provjera: dohvati OID i argumente povratnih kolona.
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    JOIN unnest(p.proargnames) WITH ORDINALITY AS a(name, ord) ON true
+    WHERE n.nspname = 'public'
+      AND p.proname = 'get_my_incoming_payouts'
+      AND a.name IN ('note', 'payment_source', 'voided_by', 'void_reason', 'created_by')
+  ) THEN
+    RAISE EXCEPTION 'FAIL P19b — RPC izlaže ownerova osjetljiva polja';
+  END IF;
+  RAISE NOTICE 'PASS P19b — RPC ne izlaže note/payment_source/voided_by/void_reason/created_by';
+
+  -- (c) anon NEMA execute pravo
+  IF has_function_privilege('anon', 'public.get_my_incoming_payouts(uuid[])', 'EXECUTE') THEN
+    RAISE EXCEPTION 'FAIL P19c — anon smije zvati get_my_incoming_payouts';
+  END IF;
+  RAISE NOTICE 'PASS P19c — anon revoked';
+END $$;
+RELEASE SAVEPOINT s_p19;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
 
