@@ -23,3 +23,5 @@
 20260707080136_*.sql   # PR-A: worker payout ledger + guard triggers + RPCs
 20260707081138_*.sql   # PR-A hardening: REVOKE EXECUTE ... FROM anon (payout RPCs)
 20260707094959_*.sql   # PR-A fix: reorder INSERT-a u create_worker_payout (expense prije payouta)
+20260707164727_*.sql   # V1-B: rate history + per-day payout compute + payout_rate_segments
+20260707164808_*.sql   # V2-A: batch worker payouts (create_worker_payout_batch + cascade void)
