@@ -20,3 +20,5 @@
 20260707070825_*.sql   # PR2 Phase A hardening: REVOKE EXECUTE ... FROM anon
 
 
+20260707080136_*.sql   # PR-A: worker payout ledger + guard triggers + RPCs
+20260707081138_*.sql   # PR-A hardening: REVOKE EXECUTE ... FROM anon (payout RPCs)
