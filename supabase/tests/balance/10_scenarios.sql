@@ -1209,6 +1209,14 @@ BEGIN
     RAISE NOTICE 'PASS P20a — DELETE ownerovog auto-expense blokiran (42501)';
   END;
 
+  -- (a2) Soft-delete (UPDATE deleted_at) ownerovog auto-expense mora pasti.
+  BEGIN
+    UPDATE public.expenses SET deleted_at = now() WHERE id = v_owner_expense_id;
+    RAISE EXCEPTION 'FAIL P20a2 — soft-delete ownerovog payout expense-a je prošao (guard neaktivan)';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P20a2 — soft-delete ownerovog auto-expense blokiran (42501)';
+  END;
+
   -- (b) Radnikov attribution red — insert pa soft-delete kao radnik.
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
     VALUES (v_worker_user, 100, 'income',
