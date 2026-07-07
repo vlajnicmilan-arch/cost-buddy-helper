@@ -273,6 +273,32 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     fetchCustomPaymentSources();
   }, [fetchCustomPaymentSources]);
 
+  // BUG A fix — display sync za out-of-band promjene `custom_payment_sources.balance`.
+  // Server-side triggeri (`_expenses_recompute_source_balance`) i emergency
+  // recompute (npr. `recompute_custom_source_balance` RPC) ažuriraju stored
+  // balance bez ikakvog klijentskog INSERT-a. Bez ovog refetcha korisnik vidi
+  // stale vrijednost dok se ne dogodi sljedeći expense write na ovom uređaju.
+  //
+  // Odabir invalidation strategije: window focus + visibilitychange (jeftino,
+  // pokriva app-resume i tab-return) umjesto Realtime postgres_changes subscribea
+  // na `custom_payment_sources`. Realtime bi zahtijevao dodavanje tablice u
+  // publikaciju + per-session kanal (bill), a benefit za sub-second sync ovdje
+  // je marginalan jer je engine već konzistentan na serveru.
+  useEffect(() => {
+    if (isLocalMode || !user) return;
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCustomPaymentSources();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [isLocalMode, user, fetchCustomPaymentSources]);
+
   // Subscribe to reorder events via Context to sync state across hook instances
   useEffect(() => {
     const unsubscribe = onPaymentSourcesReordered((sources) => {
