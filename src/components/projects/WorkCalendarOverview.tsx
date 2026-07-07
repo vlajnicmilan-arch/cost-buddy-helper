@@ -401,6 +401,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     setEditActualHours(entry.actual_hours.toString());
     setEditMilestones(entry.milestone_ids || []);
     setEditNote(entry.note || '');
+    setEditReason('');
     setShowAddForm(false);
   };
 
@@ -408,6 +409,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     setEditingEntryId(null);
     setEditNote('');
     setEditMilestones([]);
+    setEditReason('');
   };
 
   const toggleEditMilestone = (milestoneId: string) => {
@@ -421,30 +423,55 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   const handleUpdateEntry = async () => {
     if (!guard()) return;
     if (!editingEntryId) return;
+    const editingEntry = entries.find(e => e.id === editingEntryId);
+    const isLocked = !!editingEntry?.payout_id;
+
+    if (isLocked && editReason.trim().length < 3) {
+      showError(t('workers.calendar.reasonRequired', 'Razlog je obavezan'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('project_work_entries')
-        .update({
+      if (isLocked) {
+        const { error } = await supabase.rpc('update_locked_work_entry', {
+          p_entry_id: editingEntryId,
+          p_actual_hours: parseFloat(editActualHours) || 0,
+          p_note: editNote.trim() || undefined,
+          p_reason: editReason.trim(),
+        });
+        if (error) throw error;
+
+        setEntries(prev => prev.map(e => e.id === editingEntryId ? {
+          ...e,
+          actual_hours: parseFloat(editActualHours) || 0,
+          note: editNote.trim() || null,
+        } : e));
+      } else {
+        const { error } = await supabase
+          .from('project_work_entries')
+          .update({
+            scheduled_hours: parseFloat(editScheduledHours) || 8,
+            actual_hours: parseFloat(editActualHours) || 8,
+            milestone_ids: editMilestones,
+            note: editNote.trim() || null
+          })
+          .eq('id', editingEntryId);
+
+        if (error) throw error;
+
+        setEntries(prev => prev.map(e => e.id === editingEntryId ? {
+          ...e,
           scheduled_hours: parseFloat(editScheduledHours) || 8,
           actual_hours: parseFloat(editActualHours) || 8,
           milestone_ids: editMilestones,
           note: editNote.trim() || null
-        })
-        .eq('id', editingEntryId);
-
-      if (error) throw error;
-
-      setEntries(prev => prev.map(e => e.id === editingEntryId ? {
-        ...e,
-        scheduled_hours: parseFloat(editScheduledHours) || 8,
-        actual_hours: parseFloat(editActualHours) || 8,
-        milestone_ids: editMilestones,
-        note: editNote.trim() || null
-      } : e));
+        } : e));
+      }
 
       showSuccess(t('common.saved', 'Spremljeno'));
       setEditingEntryId(null);
+      setEditReason('');
     } catch (error) {
       console.error('Error updating entry:', error);
       showError(t('common.error'));
@@ -453,22 +480,30 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     }
   };
 
-  const handleDeleteEntry = async (entryId: string) => {
+  const handleDeleteEntry = async (entry: WorkEntry) => {
     if (!guard()) return;
+    if (entry.payout_id) {
+      showError(t('workers.calendar.lockedDeleteBlocked', 'Unos je zaključan isplatom — prvo otključaj.'));
+      return;
+    }
     try {
       const { error } = await supabase
         .from('project_work_entries')
         .delete()
-        .eq('id', entryId);
+        .eq('id', entry.id);
 
       if (error) throw error;
 
-      setEntries(prev => prev.filter(e => e.id !== entryId));
+      setEntries(prev => prev.filter(e => e.id !== entry.id));
       showSuccess(t('common.deleted', 'Obrisano'));
     } catch (error) {
       console.error('Error deleting entry:', error);
       showError(t('common.error'));
     }
+  };
+
+  const handleEntryUnlocked = (entryId: string) => {
+    setEntries(prev => prev.map(e => e.id === entryId ? { ...e, payout_id: null } : e));
   };
 
   return (
