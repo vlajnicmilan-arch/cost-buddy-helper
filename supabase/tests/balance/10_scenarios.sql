@@ -370,8 +370,8 @@ DO $$ BEGIN RAISE NOTICE 'SKIP B9 — awaits Phase B guard trigger'; END $$;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p1;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05',
   200,
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
@@ -405,8 +405,8 @@ RELEASE SAVEPOINT s_p1;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p2;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05',
   150, -- < 200 gross
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
@@ -430,8 +430,8 @@ RELEASE SAVEPOINT s_p2;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p3;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-07-01', DATE '2026-07-05', -- period WITHOUT entries
   100,
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
@@ -454,8 +454,8 @@ RELEASE SAVEPOINT s_p3;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p4;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05', 200,
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
   '2026-06-05 12:00:00+00', 'P4', true
@@ -482,8 +482,8 @@ RELEASE SAVEPOINT s_p4;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p5;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05', 200,
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
   '2026-06-05 12:00:00+00', 'P5', true
@@ -511,8 +511,8 @@ RELEASE SAVEPOINT s_p5;
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p6;
 SELECT pg_temp.seed_payout_fixtures();
 SELECT public.create_worker_payout(
-  __SWAP__
-  __SWAP__
+  (SELECT val FROM _bfix WHERE key='wrk'),
+  (SELECT val FROM _bfix WHERE key='proj'),
   DATE '2026-06-02', DATE '2026-06-05', 200,
   'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
   '2026-06-05 12:00:00+00', 'P6 pre-void', true
