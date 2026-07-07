@@ -353,6 +353,17 @@ export const ProjectWorkersTab = ({
                 </div>
                 <span className="text-base font-semibold text-foreground">{formatAmount(periodTotals.cost)}</span>
               </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-muted-foreground truncate">{t('workers.remainingToPay', 'Preostalo radnicima')}:</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {totalRemainingHours.toFixed(1)}h {t('workers.unpaid', 'neisplaćeno')}
+                  </span>
+                </div>
+                <span className={`text-base font-semibold ${totalRemainingCost > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                  {formatAmount(totalRemainingCost)}
+                </span>
+              </div>
             </Card>
           )}
 
