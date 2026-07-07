@@ -112,6 +112,12 @@ CREATE TABLE IF NOT EXISTS public.project_work_entries (
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
+-- Shared trigger fn used by many migrations
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$;
+
 -- Membership helpers used by RLS in payout migration
 CREATE OR REPLACE FUNCTION public.is_project_owner(_project_id uuid, _user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
@@ -122,5 +128,6 @@ CREATE OR REPLACE FUNCTION public.is_project_member(_project_id uuid, _user_id u
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT public.is_project_owner(_project_id, _user_id)
 $$;
+
 
 
