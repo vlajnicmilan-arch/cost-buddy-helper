@@ -93,6 +93,10 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
   const [editActualHours, setEditActualHours] = useState('8');
   const [editMilestones, setEditMilestones] = useState<string[]>([]);
   const [editNote, setEditNote] = useState('');
+  const [editReason, setEditReason] = useState('');
+
+  // Unlock dialog state
+  const [unlockEntryId, setUnlockEntryId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
