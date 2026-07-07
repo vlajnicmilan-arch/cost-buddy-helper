@@ -1,82 +1,119 @@
-## Kritički osvrt — samo analiza, nula izmjena
+# PR2 — Atomarni SET sidra (BUG 2 remediation)
 
-### Q1 — BUG 1 (same-day blind spot)
+**Cilj:** onemogućiti scenarij u kojem se `custom_payment_sources.correction_anchor_date/_balance` promijene bez pratećeg `recompute_custom_source_balance()`, čime `stored balance` privremeno divergira od engineove istine dok sljedeći write ne trigger-a recompute (BUG 2 / test A4).
 
-**Slažem se s dijagnozom.** Engine na liniji 61–62 (0628205415) filtrira C3/C4/NULL sa `(e.date AT TIME ZONE 'UTC')::date > (v_anchor_date AT TIME ZONE 'UTC')::date`. Za manualne unose koji dobiju `date = danas 00:00:00 UTC` i `time_confidence = C3` (default), svaki red na točan dan sidra trajno je isključen. Filter za `expense_nature <> 'correction'` uklanja samo sam correction-red; ostali same-day C3 unosi ispadaju kolateralno.
-
-**Je li `>` namjerno?** Da, ali iz drugog razloga nego što se čini. Kad je sidro postavljeno preko UI-ja u trenutku T, korekcija zapisuje "trenutno stanje = Y" — sve prethodne aktivnosti tog dana su već "zapečene" u Y. Uključivanje C3 redova istog dana bi ih dvostruko brojalo, jer C3 nema pravi event time da razlikuje "prije korekcije" od "poslije korekcije". Strogo `>` je defenzivan izbor za rješavanje te ambigviteta — ne bug u smislu greške u dizajnu, nego **posljedica gubitka precizne informacije o vremenu na C3 razini**.
-
-**Kako tretirati dokazivo izgubljene same-day unose?** Retroaktivno ih nije moguće razriješiti iz podataka jer stvarno ne znamo dogodilo li se prije ili poslije korekcije. Jedini legitiman put: **jednokratni forenzički backfill** koji sam-dan C3 redove postavi na `event_at = anchor_ts + 1s`, `time_confidence = C2`, `user_edited_event_at = true` — čime izjavljujemo "korisnički intent: dogodilo se poslije korekcije". To je politička odluka, ne tehnička, pa je iznosim kao opciju umjesto akcije.
-
-### Q2 — Prijedlog (a): rizici i rubni slučajevi
-
-**Rizici trenutne formulacije "datum = danas → C1":**
-1. **00:30 slučaj:** korisnik unosi trošak od jučer navečer. `date = jučer`, ne aktivira C1 granu, ostaje C3. Ako je jučer bio dan sidra — trošak trajno nevidljiv. Vaš prijedlog to ne pokriva.
-2. **Retroaktivni unos na dan starijeg sidra:** korekcija otprije 3 dana, danas dodaje "zaboravio sam kavu od prekjučer". `date = prekjučer ≠ danas`, ostaje C3. Ako se poklopi s danom sidra — nevidljiv.
-3. **`event_at = now` s `date = danas 00:00`:** stvara nesklad između `date` (koristi se u filterima/reportima) i `event_at` (koristi se u anchor cut). Za engine je to točno; za sortiranje po datumu OK; za tjedne/mjesečne grupe OK. Nema regresije.
-
-**Bolji pristup — "manual entry uvijek precizan":**
-Umjesto grananja po `date == today`, jednostavnije pravilo:
-- **Svaki manual entry → `system_precise` s `event_at = now()`, `time_confidence = C2`, `user_edited_event_at = false`.**
-- `date` ostaje ono što korisnik odabere (za reporting, filtere, mjesečne grupe).
-- Engine u hybrid modu koristi `event_at > anchor_ts` → red se uključuje ako je unos napravljen POSLIJE korekcije, isključuje ako PRIJE.
-
-**Semantika:** "user records this transaction at wall-clock time now, on date X". Sidro znači "u trenutku T sve prije zaboravi". Sve što korisnik nakon T upiše — bilo za danas, jučer ili prekjučer — svjesna je post-anchor izjava i treba se brojati. To rješava sva 3 rubna slučaja iznad **bez izuzetka**.
-
-**Jedina prava kontraindikacija:** korisnik danas dokumentira retroaktivnu transakciju od prije 2 mjeseca (davno prije sidra). `event_at = now > anchor_ts` → uključuje se. To je ispravno — svjesno je dodao kasnije. Ako želi da bude pre-anchor, mora postaviti novo sidro ili tu transakciju izbrisati.
-
-**Preporuka:** ići s ovim proširenim pravilom, ne "date == today" heuristikom.
-
-### Q3 — Obavezni recompute uz SET sidra
-
-**Nizak rizik, ali dvije stvari za provjeriti:**
-1. **UI put "Postavi korekciju stanja"** — trenutno vjerojatno okida recompute preko insert-triggera na correction-red. Treba potvrditi da nije usput moguć redoslijed UPDATE-anchor-first pa INSERT-correction — inače imamo tihi drift čak i u UI toku.
-2. **Bulk backfill migracije** — recompute po redu za N stotina izvora unutar jedne transakcije može biti spor (svaki poziva pun scan po `expenses`). Rješenje: pozvati recompute u istoj migraciji, ali batchano po `source_id` ili nakon COMMIT-a (npr. `PERFORM recompute...` u petlji na kraju migracije). Neće ništa razbiti, treba samo predvidjeti trajanje.
-
-**Ništa ne bi trebalo pući.** Trigger `_expenses_recompute_source_balance` već tretira anchored path kao "full recompute from anchor", pa je obavezni recompute uz SET semantički identičan onome što se ionako događa na prvi write.
-
-### Q4 — Rupе u test coverageu
-
-Testovi (`anchorBalance.sqlParity.test.ts`, `writerIntent.test.ts`) pokrivaju kontrat, ne scenarije. Nedostaje:
-
-1. **C2 redovi** — user-edited event_at koji se poklopi s anchor_ts na sekundu.
-2. **Transferi između dva anchored izvora s različitim `anchor_date`.** Trenutni engine radi per-source; provjeriti da se transfer-in/out ispravno pojavljuje na obje strane s obzirom na dva različita sidra.
-3. **DST prijelaz Europe/Zagreb** — sidro postavljeno u noći prijelaza (25.10. / 30.3.), unos par sati kasnije. `deriveC3EventAt` traži offset [1,2] pa bi trebao izdržati, ali nema testa.
-4. **Ponoć UTC vs ponoć Europe/Zagreb** — `date` u bazi je `YYYY-MM-DD 00:00:00 UTC` (tj. 01:00/02:00 lokalno). Za korisnika koji unosi u 23:30 lokalno, `date::date` u UTC-u može ispasti sutrašnji dan. Vrijedno je test slučaj.
-5. **Istovremeni unosi + recompute** — dvije transakcije u istoj sekundi, jedan `event_at == anchor_ts`. Strogo `>` isključuje, `>=` uključuje. Trenutno je `>`; dokumentirati.
-6. **Correction na dan drugog correctiona** — dva sidra istog dana, koje pobjeđuje. Backfill uzima `DISTINCT ON ... ORDER BY created_at DESC`, ali engine ne provjerava.
-7. **Backfill idempotentnost** — ponovno pokretanje ne smije razbiti već postavljena sidra (trenutni WHERE `correction_anchor_date IS NULL` to štiti, ali nije testirano).
-8. **`custom_payment_sources.balance` write pod concurrent recompute** — dvije transakcije istovremeno recompute istog sourcea; nedostaje advisory lock ili SELECT FOR UPDATE.
-
-### Q5 — Redoslijed sanacije
-
-**Slažem se, s jednom nadopunom.**
-
-Vaš redoslijed (1) fix koda → (2) testovi zeleno → (3) reconcile → ispravan je. Dodatak:
-
-**Između (2) i (3), obavezno:**
-- **2a.** Backfill istorijskih C3 redova koji su bili na dan sidra (dokazivi blind-spot iznosi: 229,50 / −330,61 / 130,40 / −43,15 / 20,00). Odluka gdje ih staviti (event_at = anchor_ts + 1s + C2 + user_edited=true) je politika koju treba potvrditi prije pisanja SQL-a. Bez ovog koraka, fix (a) pomaže samo budućim unosima; postojeći gubitak ostaje.
-- **2b.** Recompute svih anchored sourceova (osobito Milan Keš gdje je "bomba" +2.674,31 neaktivirana). Ovo neutralizira BUG 2 driftove prije nego bilo koji korisnički write to učini u neočekivanom trenutku.
-
-Tek onda (3) reconcile s korekcijama za stvarno stanje — koje će, kao što ste primijetili, biti bitno manje jer se blind-spot iznosi vraćaju automatski.
-
-**Guard za korak (3):** korekcija u UI-ju već piše correction-red s `created_at = now()`, što postaje novo sidro. Između "brojanja stvarnog stanja" i "unosa korekcije" ne smije proći transakcijski write — inače brojani iznos ne odgovara sidru. Preporuka: mobile app friendly window je "korisnik prebroji, odmah upiše", bez UI guardova. Za forenzičke reconciliations koje radimo mi — raditi u tihom prozoru (npr. noć) ili s privremenim admin flagom koji blokira write na tom source-u.
+Sve iz PR1 ostaje netaknuto. Ovaj PR **NE dira** trigger `expenses_event_at_sync`, `recompute_custom_source_balance`, `trg_expenses_recompute_source_balance`, `hybrid/day_cut` sematiku ni podatke.
 
 ---
 
-### Kritični rizik koji NIJE u dijagnozi
+## 1. Novi RPC `public.set_source_anchor`
 
-**Backfill migracija 0630202419 već je izvršena u produkciji.** To znači da je fix redoslijed:
-- Prvo (b) — obavezni recompute — treba biti izvršen jednokratno na svim postojećim anchored sourceovima **prije** bilo kakvog daljnjeg rada. Inače, prvi user write okida iznenadni skok koji korisnik doživljava kao bug ("saldo se sam promijenio kad sam nešto malo dodao").
-- Milan Keš (+2.674,31 drift) je aktivna bomba **sada, danas**. Ovaj recompute je najhitniji korak, hitniji od fix-a BUG 1.
+**Potpis:**
+```
+set_source_anchor(
+  p_source_id uuid,
+  p_anchor_ts timestamptz,
+  p_anchor_balance numeric,
+  p_correction jsonb DEFAULT NULL
+) RETURNS jsonb
+```
 
-### Preporučena sekvenca
+**Ponašanje (u jednoj transakciji, tim redom, identično sadašnjem UI flowu):**
+1. `SET LOCAL app.allow_anchor_write = 'on'` — otključava guard za trajanje ove transakcije.
+2. Provjera vlasništva: `SELECT user_id FROM custom_payment_sources WHERE id = p_source_id` mora biti `= auth.uid()`. Ako ne, `RAISE insufficient_privilege`. (Ako uvedemo shared sources kasnije, dodat će se has_role/membership provjera — trenutno vlasnik = user_id, isti model kao postojeći UPDATE.)
+3. `UPDATE custom_payment_sources SET correction_anchor_date = p_anchor_ts, correction_anchor_balance = p_anchor_balance, balance = p_anchor_balance, updated_at = now() WHERE id = p_source_id` — **anchor prvi**, isti timestamp kao u UI-u (`p_anchor_ts` klijentski `now()` — zadržavamo postojeći ugovor).
+4. Ako je `p_correction` prisutan (razlika ≠ 0): `INSERT INTO expenses (...)` s `expense_nature='correction'`, `event_at=p_anchor_ts`, `time_confidence='C1'`, `user_edited_event_at=false`. Trigger na expenses će sam pozvati recompute jer je izvor sada anchored — ali za sigurnost:
+5. `PERFORM recompute_custom_source_balance(p_source_id)` — eksplicitni završni recompute. Idempotentan (B8 test), garantira `stored == engine` prije nego RPC vrati.
+6. `RETURN jsonb_build_object('id', p_source_id, 'balance', new_balance, 'anchor_ts', p_anchor_ts)`.
 
-1. **HITNO (danas):** jednokratni recompute svih anchored sourceova — samo `SELECT recompute_custom_source_balance(id) FROM custom_payment_sources WHERE correction_anchor_date IS NOT NULL`. Deaktivira sve neaktivirane bombe iz backfilla.
-2. Fix (b): backfill i budući SET sidra atomarno pozivaju recompute u istoj migraciji/RPC-u.
-3. Fix (a) prošireno: manual entry uvijek `system_precise` s `event_at = now()`, C2, `user_edited = false`.
-4. Regresijski testovi za: same-day post-anchor manual entry (uključuje se), retroaktivni C3 na dan sidra (isključuje se preko `date::date`), C2 tie-break na anchor_ts, backfill idempotentnost, obavezni recompute po SET.
-5. Politička odluka: dirati li istorijske blind-spot C3 redove (229,50 / −330,61 / …). Ako da — forenzički backfill.
-6. Reconcile preostalih razlika unosom korekcije, jedan po jedan izvor.
+**Atributi:** `LANGUAGE plpgsql`, `SECURITY DEFINER`, `SET search_path = public`. `GRANT EXECUTE ON FUNCTION public.set_source_anchor(...) TO authenticated, service_role`. Bez granta anon.
 
-Odgovori na sva pitanja i moji ne-slaganja jasno označeni. Molim potvrdu prije prelaska u build mode — posebno oko točke (1) hitnog recomputea i točke 3 (šire pravilo umjesto date==today).
+**Zašto SECURITY DEFINER:** vlasnik funkcije (postgres) je izuzet iz guard triggera (vidi §2), pa RPC može upisati anchor kolone. Bez definer-a bi guard morao check-ati `current_setting`, što radi, ali definer daje nam čist "single door" kroz koji svi anchor writeovi prolaze.
+
+---
+
+## 2. Guard trigger `_prevent_direct_anchor_update`
+
+**Definicija (BEFORE UPDATE OF correction_anchor_date, correction_anchor_balance ON custom_payment_sources FOR EACH ROW):**
+
+Odbija UPDATE koji mijenja bilo koju od anchor kolona (`NEW.correction_anchor_date IS DISTINCT FROM OLD.correction_anchor_date` OR isti test za `_balance`) osim ako je zadovoljen jedan od uvjeta:
+
+- `current_setting('app.allow_anchor_write', true) = 'on'` — RPC-set flag (jedini legitiman UI put).
+- `current_user IN ('postgres', 'supabase_admin')` — vlasnik/migracije.
+- `session_user = 'postgres'` — dodatni safety net za psql migracije.
+
+Inače: `RAISE EXCEPTION 'anchor columns can only be modified via set_source_anchor()' USING ERRCODE = 'insufficient_privilege'`.
+
+**Kolonska klauzula `UPDATE OF anchor_date, anchor_balance`:** trigger se ne aktivira za obični `UPDATE balance = ...` (kojeg radi recompute funkcija ili incremental delta trigger) — samo za direktne izmjene anchor kolona. Time recompute i incremental staza rade nepromijenjeno.
+
+### Kako postojeće migracije/backfillovi rade s guardom
+
+- Sve tri postojeće migracije koje UPDATE-aju anchor kolone (`20260624083605`, `20260624131214`, `20260630202419`) izvršene su davno i **ne pokreću se ponovno**. Nove migracije trče kao `postgres` role → automatski bypass kroz `current_user = 'postgres'` uvjet.
+- SQL harness (`supabase/tests/balance/00_setup.sql`) trči kao `postgres` — bypass. Helper `pg_temp.set_anchor` nastavlja raditi.
+- Ako se ubuduće piše nova admin migracija koja treba direktan UPDATE anchor kolona, ostaje mogućnost eksplicitnog `SET LOCAL app.allow_anchor_write = 'on'` u početku migracije — dokumentirati u `supabase/tests/balance/README.md`.
+
+---
+
+## 3. UI migracija — jedini call-site
+
+`src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx:handleBalanceCorrection`:
+- Zamijeniti trenutna dva izraza (`.from('custom_payment_sources').update({...anchor...})` + `.from('expenses').insert(correctionPayload)`) **jednim** pozivom:
+  ```
+  await supabase.rpc('set_source_anchor', {
+    p_source_id: sourceId,
+    p_anchor_ts: nowIso,
+    p_anchor_balance: newBalance,
+    p_correction: difference !== 0
+      ? { amount: Math.abs(difference), type: correctionType, description, note }
+      : null,
+  });
+  ```
+- Ostatak (localMode grana, `onRefetchExpenses`, error handling) ostaje isti.
+- `writerIntent.ts` promjena nije potrebna — `system_precise` intent više se ne koristi na ovom mjestu, ali helper i njegovi testovi ostaju (koristi ga scan-C1 producent).
+
+**Backward compat (stariji klijent bez RPC-a):**
+
+Rizik: user ima otvoren tab s prije-PR2 buildom, guard je aktivan → njihov "Ispravi saldo" gumb će failati (guard baca 42501). Mitigacija u dvije faze migracija u istom PR:
+
+- **Faza A migracija** (deploy #1): kreiraj RPC `set_source_anchor` + kreiraj UI koji zove RPC. **Guard NE dodaj.** Deploy. RPC živi zajedno s novim UI-em, ali stari UI koji pokušava direktni UPDATE i dalje radi.
+- **Faza B migracija** (deploy #2, ≥7 dana kasnije, nakon što je force-refresh cache-a većine klijenata isporučen): dodaj `_prevent_direct_anchor_update` guard trigger. Od tog trenutka stari raw-UPDATE putevi failaju s jasnom porukom.
+
+Alternativa (jedan deploy): odmah guard + odmah RPC + UI. Cijena: mali prozor u kojem otvoreni prije-PR2 tabovi vide error "anchor columns can only be modified via set_source_anchor()". Ovaj tekst je prijateljski za support, ali radi user-visible failure dok korisnik ne refresha. **Preporuka: dvije faze**, ali odluku ostavljam tebi.
+
+---
+
+## 4. Test coverage
+
+### Vitest (`src/lib/balance/__tests__/balanceRegression.test.ts`)
+- Skinuti `it.skip` s A4 → invariant: nakon `setAnchor()` u mirroru, `balanceOf()` odmah vraća punu vrijednost (mirror već ima `setAnchor` s ugrađenim recomputeom; test već postoji kao skip). Očekivano PASS bez daljnjih izmjena mirror engine-a.
+- Ostaviti `setAnchorBuggy` u mirroru — koristan za dokumentiranje bug-a, ali test A4 više ne poziva buggy varijantu.
+
+### SQL suite (`supabase/tests/balance/10_scenarios.sql`)
+- **A4 aktivacija:** `SELECT public.set_source_anchor(src_a, '2026-06-01 09:00:00+00', 500, NULL)` → `assert_eq('A4 stored == anchor after atomic SET', 500, pg_temp.bal(src_a))` **prije** ikakvog daljnjeg writea. Danas ovaj test u čistom UPDATE modelu FAIL-a — nakon PR2 PASS.
+- **B9 novi guard test:** unutar svog `SAVEPOINT s_b9`, pokušaj `UPDATE custom_payment_sources SET correction_anchor_balance = 999 WHERE id = src_a` **bez** `SET LOCAL app.allow_anchor_write`. Očekivano: `EXCEPTION SQLSTATE '42501'`. Koristiti `DO $$ BEGIN ... EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'PASS B9 guard blocks raw UPDATE'; RETURN; END $$; RAISE EXCEPTION 'FAIL B9 guard did not fire';`. Napomena: harness trči kao `postgres` (bypass), pa B9 treba privremeno `SET LOCAL role authenticated` unutar bloka da simulira klijentsku sesiju — ili alternativno `SET LOCAL session_authorization` na non-postgres rolu. Točan mehanizam dogovoriti prije pisanja koda.
+- Dopuniti `supabase/tests/balance/README.md`: novi preduvjet — PR2 migracije `set_source_anchor` + guard trigger moraju biti primijenjene.
+
+### CI (`.github/workflows/balance-sql-suite.yml`)
+- Bez izmjena; workflow primjenjuje sve migracije po redu, uključujući PR2 migracije.
+
+---
+
+## 5. Redoslijed isporuke (deploy gate)
+
+1. Vitest zeleno lokalno (A4 skip skinut).
+2. SQL suite zeleno lokalno protiv PG16 s primijenjenim PR2 migracijama (A4 PASS, B9 PASS).
+3. CI `balance-sql-suite.yml` zeleno na PR.
+4. Faza A migracija (RPC + UI) → deploy.
+5. Faza B migracija (guard trigger) → deploy nakon dogovorenog grace prozora.
+
+Balance Regression Testing Policy iz PR1 vrijedi: bez zelene SQL suite nema merge-a.
+
+---
+
+## Otvorena pitanja prije koda
+
+1. **Grace prozor za guard:** dvije faze (preporuka) ili jedna? Ako jedna, prihvaćaš user-visible failure za tabove otvorene prije deploya?
+2. **Non-postgres rola u B9:** OK da guard test koristi `SET LOCAL ROLE authenticated` unutar SAVEPOINTa? Alternativa je zaseban SQL fajl `20_guard.sql` koji se pušta preko `psql -U <non_superuser>`.
+3. **`p_anchor_ts` izvor:** klijentski `now().toISOString()` (zadržavamo trenutno ponašanje) ili server `now()` unutar RPC-a? Preporuka: klijent (retkompatibilnost s postojećim audit tekstom koji citira `nowIso`); ako pređemo na server, `p_anchor_ts` postaje optional s default `now()`.
+
+Bez koda, bez migracija dok ne odobriš plan i odgovore na 3 pitanja gore.
