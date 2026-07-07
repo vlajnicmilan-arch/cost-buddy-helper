@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Plus, XCircle, Ban, Download, Layers } from 'lucide-react';
+import { Loader2, Plus, XCircle, Ban, Download, Layers, RefreshCw, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -34,6 +34,12 @@ import { exportTextFile } from '@/lib/fileExport';
 import { showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import type { ProjectWorker } from '@/types/projectWorker';
+import { parseAmountFlexible } from '@/lib/amountValidation';
+import {
+  formatAutoFillAmount,
+  nextAmountFromPreview,
+  shouldShowApplyCalcHint,
+} from '@/lib/payouts/payoutAmountAutofill';
 
 interface WorkerPayoutsDialogProps {
   open: boolean;
@@ -61,8 +67,10 @@ interface CandidateRow {
 interface BatchRowState {
   selected: boolean;
   paidAmount: string;
-  preview: PayoutPreview | null;
+  dirty: boolean;
 }
+
+type PreviewSlot = { state: 'loading' } | { state: 'ready'; preview: PayoutPreview | null };
 
 export const WorkerPayoutsDialog = ({
   open,
@@ -88,6 +96,7 @@ export const WorkerPayoutsDialog = ({
   const [periodStart, setPeriodStart] = useState(defaultStart);
   const [periodEnd, setPeriodEnd] = useState(defaultEnd);
   const [paidAmount, setPaidAmount] = useState('');
+  const [paidAmountDirty, setPaidAmountDirty] = useState(false);
   const [paymentSource, setPaymentSource] = useState<string>('');
   const [note, setNote] = useState('');
   const [lockEntries, setLockEntries] = useState(true);
@@ -96,22 +105,42 @@ export const WorkerPayoutsDialog = ({
   // Batch state
   const [candidates, setCandidates] = useState<CandidateRow[]>([]);
   const [batchState, setBatchState] = useState<Record<string, BatchRowState>>({});
+  // Previews for ALL candidates (needed to decide if row has hours in the period)
+  const [candidatePreviews, setCandidatePreviews] = useState<Record<string, PreviewSlot>>({});
+  const [dropNotice, setDropNotice] = useState<string[]>([]);
 
   const sourceOptions = useMemo(
     () => customPaymentSources.map((s) => ({ value: `custom:${s.id}`, label: s.name })),
     [customPaymentSources],
   );
 
-  // Load main preview when period changes
+  // Load main preview when period changes; auto-fill amount unless user edited it
   useEffect(() => {
     if (!showForm || !worker) { setMainPreview(null); return; }
     if (!periodStart || !periodEnd || periodEnd < periodStart) { setMainPreview(null); return; }
     let cancelled = false;
     previewPayout(worker.id, projectId, periodStart, periodEnd).then((p) => {
-      if (!cancelled) setMainPreview(p);
+      if (cancelled) return;
+      setMainPreview(p);
     });
     return () => { cancelled = true; };
   }, [showForm, worker, projectId, periodStart, periodEnd, previewPayout]);
+
+  // Auto-fill effect: reacts to mainPreview change without depending on paidAmount to avoid loops
+  const paidAmountRef = useRef(paidAmount);
+  paidAmountRef.current = paidAmount;
+  const paidDirtyRef = useRef(paidAmountDirty);
+  paidDirtyRef.current = paidAmountDirty;
+  useEffect(() => {
+    if (!mainPreview) return;
+    const r = nextAmountFromPreview(paidAmountRef.current, paidDirtyRef.current, mainPreview.gross);
+    if (r.nextValue !== paidAmountRef.current) {
+      setPaidAmount(r.nextValue);
+    }
+    if (r.clearDirty && paidDirtyRef.current) {
+      setPaidAmountDirty(false);
+    }
+  }, [mainPreview]);
 
   // Fetch cross-project candidates (same first+last name, owner-scoped via RLS)
   useEffect(() => {
@@ -148,51 +177,117 @@ export const WorkerPayoutsDialog = ({
     return () => { cancelled = true; };
   }, [showForm, worker, projectId]);
 
-  // Refresh previews for candidates when period changes (only for selected ones to save calls)
+  // Prefetch previews for ALL candidates whenever candidates or period changes.
+  // Needed so we can disable rows with no hours in the period.
   useEffect(() => {
     if (!showForm) return;
-    Object.entries(batchState).forEach(([wid, st]) => {
-      if (!st.selected || st.preview) return;
-      const cand = candidates.find((c) => c.worker_id === wid);
-      if (!cand) return;
-      previewPayout(wid, cand.project_id, periodStart, periodEnd).then((p) => {
-        setBatchState((prev) => {
-          const cur = prev[wid];
-          if (!cur) return prev;
-          return {
-            ...prev,
-            [wid]: {
-              ...cur,
-              preview: p,
-              paidAmount: cur.paidAmount || (p ? p.gross.toFixed(2) : ''),
-            },
-          };
-        });
-      });
+    if (!periodStart || !periodEnd || periodEnd < periodStart) return;
+    if (candidates.length === 0) { setCandidatePreviews({}); return; }
+    let cancelled = false;
+    // Mark all as loading (fresh fetch on period change)
+    setCandidatePreviews(() => {
+      const next: Record<string, PreviewSlot> = {};
+      for (const c of candidates) next[c.worker_id] = { state: 'loading' };
+      return next;
     });
+    (async () => {
+      const results = await Promise.all(
+        candidates.map((c) =>
+          previewPayout(c.worker_id, c.project_id, periodStart, periodEnd).then(
+            (p) => [c.worker_id, p] as const,
+          ),
+        ),
+      );
+      if (cancelled) return;
+      setCandidatePreviews(() => {
+        const next: Record<string, PreviewSlot> = {};
+        for (const [wid, p] of results) next[wid] = { state: 'ready', preview: p };
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [showForm, candidates, periodStart, periodEnd, previewPayout]);
+
+  // On preview arrival: auto-fill selected batch rows (not dirty) and drop
+  // any already-selected rows that now have 0 hours in the period.
+  useEffect(() => {
+    if (Object.keys(candidatePreviews).length === 0) return;
+    const dropped: string[] = [];
+    setBatchState((prev) => {
+      const next: Record<string, BatchRowState> = { ...prev };
+      for (const [wid, slot] of Object.entries(candidatePreviews)) {
+        if (slot.state !== 'ready') continue;
+        const gross = slot.preview?.gross ?? 0;
+        const hours = slot.preview?.hours ?? 0;
+        const row = next[wid];
+        if (row?.selected && hours <= 0) {
+          const cand = candidates.find((c) => c.worker_id === wid);
+          dropped.push(cand?.project_name ?? wid);
+          next[wid] = { ...row, selected: false };
+          continue;
+        }
+        if (row?.selected) {
+          const r = nextAmountFromPreview(row.paidAmount, row.dirty, gross);
+          if (r.nextValue !== row.paidAmount || (r.clearDirty && row.dirty)) {
+            next[wid] = {
+              ...row,
+              paidAmount: r.nextValue,
+              dirty: r.clearDirty ? false : row.dirty,
+            };
+          }
+        }
+      }
+      return next;
+    });
+    if (dropped.length > 0) setDropNotice(dropped);
+    else setDropNotice([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchState, periodStart, periodEnd, showForm, candidates]);
+  }, [candidatePreviews]);
 
   const toggleCandidate = (wid: string) => {
+    const slot = candidatePreviews[wid];
+    const gross = slot?.state === 'ready' ? slot.preview?.gross ?? 0 : 0;
+    const hours = slot?.state === 'ready' ? slot.preview?.hours ?? 0 : 0;
     setBatchState((prev) => {
       const cur = prev[wid];
-      if (cur) {
-        return { ...prev, [wid]: { ...cur, selected: !cur.selected } };
+      if (cur?.selected) {
+        return { ...prev, [wid]: { ...cur, selected: false } };
       }
-      return { ...prev, [wid]: { selected: true, paidAmount: '', preview: null } };
+      // Newly selected → auto-fill from preview (if ready)
+      const initialPaid = hours > 0 ? formatAutoFillAmount(gross) : '';
+      return {
+        ...prev,
+        [wid]: { selected: true, paidAmount: cur?.paidAmount || initialPaid, dirty: cur?.dirty ?? false },
+      };
     });
+  };
+
+  const applyBatchRowCalc = (wid: string) => {
+    const slot = candidatePreviews[wid];
+    if (slot?.state !== 'ready' || !slot.preview) return;
+    setBatchState((prev) => ({
+      ...prev,
+      [wid]: {
+        ...(prev[wid] ?? { selected: true, paidAmount: '', dirty: false }),
+        paidAmount: formatAutoFillAmount(slot.preview.gross),
+        dirty: false,
+      },
+    }));
   };
 
   const resetForm = () => {
     setPeriodStart(defaultStart);
     setPeriodEnd(defaultEnd);
     setPaidAmount('');
+    setPaidAmountDirty(false);
     setPaymentSource('');
     setNote('');
     setLockEntries(true);
     setShowForm(false);
     setMainPreview(null);
     setBatchState({});
+    setCandidatePreviews({});
+    setDropNotice([]);
   };
 
   const selectedBatchIds = useMemo(
@@ -200,10 +295,11 @@ export const WorkerPayoutsDialog = ({
     [batchState],
   );
 
+  const mainAmountParsed = parseAmountFlexible(paidAmount);
+
   const handleSubmit = async () => {
     if (!worker) return;
-    const amount = Number(paidAmount);
-    if (!Number.isFinite(amount) || amount < 0) return;
+    if (!mainAmountParsed.valid) return;
     if (!paymentSource) return;
 
     setSubmitting(true);
@@ -214,7 +310,7 @@ export const WorkerPayoutsDialog = ({
           projectId,
           periodStart,
           periodEnd,
-          paidAmount: amount,
+          paidAmount: mainAmountParsed.value,
           paymentSource,
           paidAt: new Date().toISOString(),
           note: note.trim() || null,
@@ -228,21 +324,21 @@ export const WorkerPayoutsDialog = ({
             projectId,
             periodStart,
             periodEnd,
-            paidAmount: amount,
+            paidAmount: mainAmountParsed.value,
           },
           ...selectedBatchIds
             .map((wid) => {
               const st = batchState[wid];
               const cand = candidates.find((c) => c.worker_id === wid);
               if (!cand) return null;
-              const a = Number(st.paidAmount);
-              if (!Number.isFinite(a) || a < 0) return null;
+              const a = parseAmountFlexible(st.paidAmount);
+              if (!a.valid) return null;
               return {
                 workerId: wid,
                 projectId: cand.project_id,
                 periodStart,
                 periodEnd,
-                paidAmount: a,
+                paidAmount: a.value,
               };
             })
             .filter((x): x is BatchItemInput => !!x),
@@ -270,14 +366,38 @@ export const WorkerPayoutsDialog = ({
     }
   };
 
-  const canSubmit =
-    !!worker &&
-    !!paymentSource &&
-    !!periodStart &&
-    !!periodEnd &&
-    periodEnd >= periodStart &&
-    Number(paidAmount) >= 0 &&
-    paidAmount !== '';
+  // Disabled hint — which condition is missing?
+  const disabledReason = useMemo(() => {
+    if (!worker) return null;
+    if (!periodStart || !periodEnd || periodEnd < periodStart) {
+      return t('workers.payouts.hintPeriod', 'Odaberi valjan period');
+    }
+    if (!mainAmountParsed.valid) {
+      return t('workers.payouts.hintAmount', 'Unesi iznos');
+    }
+    if (!paymentSource) {
+      return t('workers.payouts.hintSource', 'Odaberi izvor isplate');
+    }
+    // Validate all selected batch rows have a valid amount too
+    for (const wid of selectedBatchIds) {
+      const st = batchState[wid];
+      if (!st || !parseAmountFlexible(st.paidAmount).valid) {
+        return t('workers.payouts.hintBatchAmount', 'Unesi iznos za sve odabrane projekte');
+      }
+    }
+    return null;
+  }, [worker, periodStart, periodEnd, mainAmountParsed.valid, paymentSource, selectedBatchIds, batchState, t]);
+
+  const canSubmit = disabledReason === null;
+
+  const grandTotal = useMemo(() => {
+    let sum = mainAmountParsed.valid ? mainAmountParsed.value : 0;
+    for (const wid of selectedBatchIds) {
+      const p = parseAmountFlexible(batchState[wid]?.paidAmount ?? '');
+      if (p.valid) sum += p.value;
+    }
+    return sum;
+  }, [mainAmountParsed, selectedBatchIds, batchState]);
 
   const handleExportCsv = async () => {
     if (!worker || payouts.length === 0) return;
@@ -291,7 +411,6 @@ export const WorkerPayoutsDialog = ({
       'hourly_rate_snapshot', 'gross_amount', 'paid_amount',
       'payment_source', 'paid_at', 'note', 'voided_at', 'void_reason',
     ];
-    // Group by batch (batch rows together), singletons after.
     const grouped = [...payouts].sort((a, b) => {
       const ba = a.batch_id ?? `zzz-${a.id}`;
       const bb = b.batch_id ?? `zzz-${b.id}`;
@@ -316,6 +435,8 @@ export const WorkerPayoutsDialog = ({
     const ok = await exportTextFile(csv, fileName, 'text/csv', true);
     if (!ok) showError(t('common.error'));
   };
+
+  const showApplyMainCalc = shouldShowApplyCalcHint(paidAmount, mainPreview?.gross ?? null);
 
   return (
     <>
@@ -450,11 +571,30 @@ export const WorkerPayoutsDialog = ({
                   <div>
                     <Label className="text-xs">{t('workers.payouts.paidAmount', 'Isplaćeno')}</Label>
                     <Input
-                      type="number" inputMode="decimal" step="0.01" min="0"
+                      type="text"
+                      inputMode="decimal"
                       value={paidAmount}
-                      onChange={(e) => setPaidAmount(e.target.value)}
-                      placeholder={mainPreview ? mainPreview.gross.toFixed(2) : '0.00'}
+                      onChange={(e) => {
+                        setPaidAmount(e.target.value);
+                        setPaidAmountDirty(true);
+                      }}
+                      placeholder={mainPreview ? formatAutoFillAmount(mainPreview.gross) : '0.00'}
                     />
+                    {showApplyMainCalc && mainPreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaidAmount(formatAutoFillAmount(mainPreview.gross));
+                          setPaidAmountDirty(false);
+                        }}
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        {t('workers.payouts.applyCalc', 'Primijeni izračun ({{amount}})', {
+                          amount: formatAmount(mainPreview.gross),
+                        })}
+                      </button>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs">{t('workers.payouts.paymentSource', 'Izvor isplate')}</Label>
@@ -495,38 +635,85 @@ export const WorkerPayoutsDialog = ({
                         {t('workers.payouts.batchSectionHint',
                           'Ista osoba na drugim projektima (isti vlasnik). Odabrani redovi bit će zbirno isplaćeni istim izvorom.')}
                       </div>
+                      {dropNotice.length > 0 && (
+                        <div className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                          <AlertCircle className="w-3.5 h-3.5 mt-[1px] shrink-0" />
+                          <span>
+                            {t('workers.payouts.batchDroppedNotice',
+                              'Izbačeno iz odabira jer nema sati u periodu: {{names}}',
+                              { names: dropNotice.join(', ') })}
+                          </span>
+                        </div>
+                      )}
                       {candidates.map((c) => {
                         const st = batchState[c.worker_id];
                         const selected = !!st?.selected;
+                        const slot = candidatePreviews[c.worker_id];
+                        const isLoading = !slot || slot.state === 'loading';
+                        const preview = slot?.state === 'ready' ? slot.preview : null;
+                        const hasHours = (preview?.hours ?? 0) > 0;
+                        const disabled = !isLoading && !hasHours;
+                        const showRowApply =
+                          selected &&
+                          preview &&
+                          shouldShowApplyCalcHint(st?.paidAmount ?? '', preview.gross);
                         return (
-                          <div key={c.worker_id} className="flex items-center gap-2 text-xs">
+                          <div key={c.worker_id} className="flex items-start gap-2 text-xs">
                             <Checkbox
                               checked={selected}
+                              disabled={disabled}
                               onCheckedChange={() => toggleCandidate(c.worker_id)}
+                              className="mt-1"
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="truncate">{c.project_name}</div>
-                              {selected && st?.preview && (
+                              <div className={`truncate ${disabled ? 'text-muted-foreground' : ''}`}>
+                                {c.project_name}
+                              </div>
+                              {isLoading && (
                                 <div className="text-[11px] text-muted-foreground">
-                                  {st.preview.hours}h · {formatAmount(st.preview.gross)}
+                                  {t('workers.payouts.loadingPreview', 'Provjera sati...')}
                                 </div>
+                              )}
+                              {!isLoading && !hasHours && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  {t('workers.payouts.batchNoHours', 'nema sati u periodu')}
+                                </div>
+                              )}
+                              {!isLoading && hasHours && preview && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  {preview.hours}h · {formatAmount(preview.gross)}
+                                </div>
+                              )}
+                              {showRowApply && preview && (
+                                <button
+                                  type="button"
+                                  onClick={() => applyBatchRowCalc(c.worker_id)}
+                                  className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                  {t('workers.payouts.applyCalc', 'Primijeni izračun ({{amount}})', {
+                                    amount: formatAmount(preview.gross),
+                                  })}
+                                </button>
                               )}
                             </div>
                             {selected && (
                               <Input
-                                type="number" inputMode="decimal" step="0.01" min="0"
+                                type="text"
+                                inputMode="decimal"
                                 className="h-7 w-24 text-xs"
                                 value={st?.paidAmount ?? ''}
                                 onChange={(e) =>
                                   setBatchState((prev) => ({
                                     ...prev,
                                     [c.worker_id]: {
-                                      ...(prev[c.worker_id] ?? { selected: true, paidAmount: '', preview: null }),
+                                      ...(prev[c.worker_id] ?? { selected: true, paidAmount: '', dirty: false }),
                                       paidAmount: e.target.value,
+                                      dirty: true,
                                     },
                                   }))
                                 }
-                                placeholder={st?.preview ? st.preview.gross.toFixed(2) : '0.00'}
+                                placeholder={preview ? formatAutoFillAmount(preview.gross) : '0.00'}
                               />
                             )}
                           </div>
@@ -535,20 +722,34 @@ export const WorkerPayoutsDialog = ({
                     </div>
                   )}
 
-                  <DialogFooter className="gap-2 sm:gap-2">
-                    <Button variant="ghost" onClick={resetForm} disabled={submitting}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
-                      {submitting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4 mr-2" />
-                      )}
-                      {selectedBatchIds.length > 0
-                        ? t('workers.payouts.submitBatch', 'Spremi zbirnu isplatu ({{count}})', { count: selectedBatchIds.length + 1 })
-                        : t('workers.payouts.submit', 'Spremi isplatu')}
-                    </Button>
+                  {(selectedBatchIds.length > 0 || mainAmountParsed.valid) && (
+                    <div className="flex justify-between items-center text-sm font-medium border-t pt-2">
+                      <span>{t('workers.payouts.grandTotal', 'Ukupno za isplatu')}</span>
+                      <span>{formatAmount(grandTotal)}</span>
+                    </div>
+                  )}
+
+                  <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-col items-stretch">
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" onClick={resetForm} disabled={submitting}>
+                        {t('common.cancel')}
+                      </Button>
+                      <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
+                        {submitting ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4 mr-2" />
+                        )}
+                        {selectedBatchIds.length > 0
+                          ? t('workers.payouts.submitBatch', 'Spremi zbirnu isplatu ({{count}})', { count: selectedBatchIds.length + 1 })
+                          : t('workers.payouts.submit', 'Spremi isplatu')}
+                      </Button>
+                    </div>
+                    {disabledReason && (
+                      <div className="text-[11px] text-muted-foreground text-right">
+                        {disabledReason}
+                      </div>
+                    )}
                   </DialogFooter>
                 </div>
               )}

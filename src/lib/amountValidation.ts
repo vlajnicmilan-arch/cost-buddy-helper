@@ -17,3 +17,17 @@ export const validateAmountInput = (raw: string): AmountValidationResult => {
   const valid = Number.isFinite(value) && value > 0;
   return { valid, value };
 };
+
+/**
+ * Like validateAmountInput but allows 0 (used for payouts where a partial
+ * amount could technically be 0 — the RPC accepts >= 0 and derives status).
+ * Accepts both `,` and `.` as decimal separator; rejects empty / NaN / negative.
+ */
+export const parseAmountFlexible = (raw: string): AmountValidationResult => {
+  const trimmed = (raw ?? '').trim();
+  if (trimmed === '') return { valid: false, value: 0 };
+  const normalized = normalizeAmountInput(trimmed);
+  const value = parseFloat(normalized);
+  const valid = Number.isFinite(value) && value >= 0;
+  return { valid, value };
+};
