@@ -3546,6 +3546,8 @@
     "searchPlaceholder": "Pretraga po imenu/poziciji...",
     "noMatches": "Nema rezultata za pretragu",
     "activeWorkers": "aktivnih",
+    "remainingToPay": "Preostalo radnicima",
+    "unpaid": "neisplaćeno",
     "totalLabel": "Ukupno",
     "workedShort": "odrađeno",
     "calendar": {
