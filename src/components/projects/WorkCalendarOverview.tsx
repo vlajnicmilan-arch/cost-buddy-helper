@@ -173,6 +173,17 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
     }
   });
 
+  // Locked-day set: date has at least one entry with payout_id.
+  const lockedDates: Date[] = [];
+  const seenLocked = new Set<string>();
+  filteredEntries.forEach(e => {
+    if (e.payout_id && !seenLocked.has(e.work_date)) {
+      seenLocked.add(e.work_date);
+      lockedDates.push(parseISO(e.work_date));
+    }
+  });
+
+
   const selectedDateEntries = selectedDate
     ? filteredEntries.filter(e => isSameDay(parseISO(e.work_date), selectedDate))
     : [];
