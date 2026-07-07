@@ -4783,5 +4783,44 @@
         "unknown": "Nepoznata greška"
       }
     }
+  },
+  "attribution": {
+    "title": "Pripiši isplatu izvoru",
+    "titleVoided": "Isplata poništena",
+    "singleLabel": "Isplata",
+    "batchLabel": "Zbirna isplata",
+    "paidAt": "Uplaćeno",
+    "pickSource": "Odaberi svoj izvor",
+    "descSingle": "Isplata: {{name}}",
+    "descBatch": "Zbirna isplata: {{names}}",
+    "alreadyAttributed": "Ovu isplatu ste već pripisali izvoru.",
+    "success": "Isplata pripisana izvoru",
+    "disabled": {
+      "pickSource": "Odaberi izvor isplate",
+      "noAmount": "Iznos isplate nije poznat",
+      "alreadyAttributed": "Već pripisano ovoj isplati"
+    },
+    "actions": {
+      "attribute": "Pripiši izvoru",
+      "skip": "Preskoči"
+    },
+    "empty": {
+      "text": "Nemate niti jedan izvor plaćanja. Dodajte izvor u Novčaniku da biste pripisali isplatu.",
+      "cta": "Dodaj izvor u Novčaniku"
+    },
+    "warnings": {
+      "crossCurrency": "{{currency}} izvor — konverzija nije podržana u v1.",
+      "bankLinked": "Izvor je spojen s bankom — kad uplata stigne sinkronizacijom, može doći do duplikata. Provjerite i obrišite jedan od unosa."
+    },
+    "voided": {
+      "attributed": "Isplata je poništena, a vi ste je već pripisali izvoru. Provjerite treba li unos stornirati ručno.",
+      "notAttributed": "Isplata je poništena. Ako ste je već pripisali svom izvoru, provjerite unos u novčaniku.",
+      "openEntry": "Otvori pripisan unos"
+    },
+    "errors": {
+      "loadFailed": "Ne mogu učitati podatke o isplati",
+      "alreadyAttributed": "Već pripisano ovoj isplati",
+      "generic": "Pripis nije uspio, pokušaj ponovno"
+    }
   }
 }

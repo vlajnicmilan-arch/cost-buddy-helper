@@ -4776,5 +4776,44 @@
         "unknown": "Unbekannter Fehler"
       }
     }
+  },
+  "attribution": {
+    "title": "Auszahlung einer Quelle zuordnen",
+    "titleVoided": "Auszahlung storniert",
+    "singleLabel": "Auszahlung",
+    "batchLabel": "Sammelauszahlung",
+    "paidAt": "Bezahlt",
+    "pickSource": "Quelle wählen",
+    "descSingle": "Auszahlung: {{name}}",
+    "descBatch": "Sammelauszahlung: {{names}}",
+    "alreadyAttributed": "Sie haben diese Auszahlung bereits zugeordnet.",
+    "success": "Auszahlung wurde zugeordnet",
+    "disabled": {
+      "pickSource": "Quelle wählen",
+      "noAmount": "Betrag unbekannt",
+      "alreadyAttributed": "Bereits zugeordnet"
+    },
+    "actions": {
+      "attribute": "Zuordnen",
+      "skip": "Überspringen"
+    },
+    "empty": {
+      "text": "Sie haben keine Zahlungsquellen. Fügen Sie eine im Wallet hinzu.",
+      "cta": "Quelle im Wallet hinzufügen"
+    },
+    "warnings": {
+      "crossCurrency": "{{currency}}-Quelle — Konvertierung wird in v1 nicht unterstützt.",
+      "bankLinked": "Quelle mit Bank verknüpft — bei Sync kann ein Duplikat entstehen. Bitte prüfen und einen Eintrag löschen."
+    },
+    "voided": {
+      "attributed": "Diese Auszahlung wurde storniert, obwohl Sie sie zugeordnet haben. Prüfen Sie, ob der Eintrag manuell entfernt werden muss.",
+      "notAttributed": "Auszahlung storniert. Falls zugeordnet, prüfen Sie den Eintrag im Wallet.",
+      "openEntry": "Zugeordneten Eintrag öffnen"
+    },
+    "errors": {
+      "loadFailed": "Auszahlungsdaten können nicht geladen werden",
+      "alreadyAttributed": "Bereits zugeordnet",
+      "generic": "Zuordnung fehlgeschlagen, bitte erneut versuchen"
+    }
   }
 }
