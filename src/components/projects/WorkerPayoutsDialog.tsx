@@ -19,11 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Plus, XCircle, Ban } from 'lucide-react';
+import { Loader2, Plus, XCircle, Ban, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWorkerPayouts, type WorkerPayout, type PayoutStatus } from '@/hooks/useWorkerPayouts';
+import { exportTextFile } from '@/lib/fileExport';
+import { showError } from '@/hooks/useStatusFeedback';
 import type { ProjectWorker } from '@/types/projectWorker';
 
 interface WorkerPayoutsDialogProps {
