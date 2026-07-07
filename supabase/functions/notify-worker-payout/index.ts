@@ -1,13 +1,19 @@
-// Notify a project worker (if linked to an app user) about a payout event.
-// Supports single payout (payout_id) and batch (batch_id) modes.
-// Fire-and-forget: writes in-app notification + invokes send-push. Never throws
-// back to the caller — payout creation must not fail if notification fails.
+// Push (FCM) delivery for worker payout events.
+//
+// IMPORTANT: This function NO LONGER writes the in-app `notifications` row.
+// That is done reliably server-side by the AFTER INSERT/UPDATE triggers on
+// public.project_worker_payouts (see migration V2-B), which cannot be lost
+// when the client aborts. This function's sole job is best-effort push.
+//
+// Fire-and-forget: invoked from the client after create/void RPCs. Failures
+// (network abort, unmounted component) do NOT drop the in-app notification.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
 
 interface NotifyRequest {
   payout_id?: string;
@@ -143,20 +149,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
           : `Zbirna isplata ${amount} za ${projectNames.length} projekata je poništena.`;
       }
 
-      await admin.from('notifications').insert({
-        user_id: recipientUserId,
-        type: isCreated ? 'worker_payout_created' : 'worker_payout_voided',
-        title,
-        message,
-        data: {
-          batch_id: batch_id ?? recPayouts[0].batch_id ?? null,
-          payout_ids: recPayouts.map((p) => p.id),
-          project_ids: [...new Set(recPayouts.map((p) => p.project_id))],
-          project_names: projectNames,
-          paid_amount_total: total,
-          action,
-        },
-      });
+      // NOTE: in-app notification row is inserted by the DB trigger on
+      // project_worker_payouts (migration V2-B). Do NOT insert here — would
+      // create duplicates and was the source of prior client-abort loss.
+
+
 
       try {
         await admin.functions.invoke('send-push', {

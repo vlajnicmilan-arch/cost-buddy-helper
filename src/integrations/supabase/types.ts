@@ -5340,6 +5340,15 @@ export type Database = {
         Args: { p_actor_user_id: string; p_event: Json; p_project_id: string }
         Returns: undefined
       }
+      enqueue_worker_payout_notifications: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_batch_id: string
+          p_payout_ids: string[]
+        }
+        Returns: number
+      }
       filter_projects_subscribers: {
         Args: { p_user_ids: string[] }
         Returns: string[]
