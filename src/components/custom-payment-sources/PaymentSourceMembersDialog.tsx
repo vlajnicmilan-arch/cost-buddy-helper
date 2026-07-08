@@ -10,6 +10,7 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } from 'lucide-react';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { useTranslation } from 'react-i18next';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 
 interface PaymentSourceMembersDialogProps {
   open: boolean;
