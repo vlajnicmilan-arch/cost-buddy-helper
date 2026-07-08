@@ -4816,6 +4816,14 @@
       "loadFailed": "Auszahlungsdaten können nicht geladen werden",
       "alreadyAttributed": "Bereits zugeordnet",
       "generic": "Zuordnung fehlgeschlagen, bitte erneut versuchen"
+    },
+    "voidedPrompt": {
+      "title": "Auszahlung storniert",
+      "description": "Der Auftraggeber hat eine von Ihnen zugeordnete Auszahlung storniert. Möchten Sie den zugeordneten Eintrag aus dem Wallet entfernen?",
+      "keep": "Behalten",
+      "remove": "Zuordnung entfernen",
+      "removed": "Zuordnung entfernt",
+      "removeFailed": "Entfernen fehlgeschlagen"
     }
   }
 }
