@@ -2286,6 +2286,74 @@
         }
       },
       "fallback_project": "Projekt"
+    },
+    "project_transaction": {
+      "title": "Transaktion im Projekt „{{project}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} hat Einnahme „{{description}}\" ({{amount}}) hinzugefügt",
+          "expense": "{{actor}} hat Ausgabe „{{description}}\" ({{amount}}) hinzugefügt"
+        },
+        "updated": {
+          "income": "{{actor}} hat Einnahme „{{description}}\" ({{amount}}) aktualisiert",
+          "expense": "{{actor}} hat Ausgabe „{{description}}\" ({{amount}}) aktualisiert"
+        }
+      }
+    },
+    "payment_source_transaction": {
+      "title": "Transaktion auf Konto „{{source}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} hat Einnahme „{{description}}\" ({{amount}}) hinzugefügt",
+          "expense": "{{actor}} hat Ausgabe „{{description}}\" ({{amount}}) hinzugefügt",
+          "transfer": "{{actor}} hat Überweisung „{{description}}\" ({{amount}}) hinzugefügt"
+        },
+        "updated": {
+          "income": "{{actor}} hat Einnahme „{{description}}\" ({{amount}}) aktualisiert",
+          "expense": "{{actor}} hat Ausgabe „{{description}}\" ({{amount}}) aktualisiert",
+          "transfer": "{{actor}} hat Überweisung „{{description}}\" ({{amount}}) aktualisiert"
+        }
+      }
+    },
+    "pending_transaction": {
+      "title": "Neue ausstehende Transaktion",
+      "message": {
+        "income": "{{actor}} hat Einnahme „{{description}}\" ({{amount}}) zu Kreis „{{source}}\" hinzugefügt. Wartet auf Ihre Zustimmung.",
+        "expense": "{{actor}} hat Ausgabe „{{description}}\" ({{amount}}) zu Kreis „{{source}}\" hinzugefügt. Wartet auf Ihre Zustimmung."
+      }
+    },
+    "note_added": {
+      "project": {
+        "title": "Neuer Kommentar im Projekt „{{project}}\"",
+        "message": "{{actor}} hat Transaktion „{{description}}\" kommentiert: „{{note}}\""
+      },
+      "income_source": {
+        "title": "Neue Notiz zur Transaktion",
+        "message": "{{actor}} hat eine Notiz zur Transaktion „{{description}}\" im Projekt „{{source}}\" hinzugefügt: „{{note}}\""
+      },
+      "payment_source": {
+        "title": "Neuer Kommentar auf Konto „{{source}}\"",
+        "message": "{{actor}} hat Transaktion „{{description}}\" kommentiert: „{{note}}\""
+      }
+    },
+    "project_activity": {
+      "title": "Aktivität im Projekt „{{project}}\"",
+      "message": {
+        "work_log_added": "{{actor}} hat einen Arbeitseintrag hinzugefügt{{detail}}",
+        "work_log_updated": "{{actor}} hat einen Arbeitseintrag aktualisiert{{detail}}",
+        "work_log_deleted": "{{actor}} hat einen Arbeitseintrag gelöscht{{detail}}",
+        "milestone_added": "{{actor}} hat Meilenstein „{{milestone}}\" hinzugefügt",
+        "milestone_status_changed": "{{actor}} hat Status des Meilensteins „{{milestone}}\" geändert → {{status}}",
+        "milestone_deleted": "{{actor}} hat Meilenstein „{{milestone}}\" gelöscht"
+      }
+    },
+    "auto_reject_pending": {
+      "title": "Transaktion automatisch abgelehnt",
+      "message": "Ihre Transaktion „{{description}}\" wurde automatisch abgelehnt, weil sie nicht innerhalb von 24 Stunden genehmigt wurde."
+    },
+    "fallback": {
+      "actor": "Mitglied",
+      "project": "Projekt"
     }
   },
   "installments": {

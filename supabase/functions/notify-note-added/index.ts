@@ -1,7 +1,7 @@
+// WS3a-2 Batch A — refactored to write i18n keys into notification row.
+// Instant push disabled for all notes — recipients wait for 19h digest (projects)
+// or only see the in-app bell (income/payment sources).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-// Instant push disabled za sve napomene — primatelji čekaju 19h digest (projekti)
-// odnosno samo in-app zvonce (računi/krug). In-app notifications ulaze odmah.
-
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +17,6 @@ interface NotifyNoteAddedRequest {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,46 +25,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       console.log('Missing or invalid authorization header');
-      return new Response(
-        JSON.stringify({ error: 'Nedostaje autorizacija' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'unauthorized', code: 'missing_authorization' }, 401);
     }
 
-    // Extract token from header
     const token = authHeader.replace('Bearer ', '');
-
-    // Create admin client for privileged operations (including user verification)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify the token and get user using admin client with service role
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !user) {
       console.log('User auth error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Neautorizirani pristup' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'unauthorized', code: 'invalid_token' }, 401);
     }
 
     console.log('Authenticated user:', user.id);
 
-    // Parse request body
     const { expense_id, income_source_id, project_id, payment_source_id, note }: NotifyNoteAddedRequest = await req.json();
     console.log('Received request:', { expense_id, income_source_id, project_id, payment_source_id, note: note?.substring(0, 50) });
 
     if (!expense_id || (!income_source_id && !project_id && !payment_source_id) || !note) {
-      return new Response(
-        JSON.stringify({ error: 'Nedostaju potrebni podaci' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'bad_request', code: 'missing_fields' }, 400);
     }
 
-    // Get the expense details
     const { data: expense, error: expenseError } = await supabaseAdmin
       .from('expenses')
       .select('id, description, amount, type')
@@ -74,13 +56,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (expenseError || !expense) {
       console.error('Error fetching expense:', expenseError);
-      return new Response(
-        JSON.stringify({ error: 'Transakcija nije pronađena' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'not_found', code: 'expense_not_found' }, 404);
     }
 
-    // Get submitter's profile for display name
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('display_name')
@@ -92,7 +70,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Handle PROJECT notes
     if (project_id) {
-      // Get the project details
       const { data: project, error: projectError } = await supabaseAdmin
         .from('projects')
         .select('id, name, icon, color, user_id')
@@ -101,13 +78,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (projectError || !project) {
         console.error('Error fetching project:', projectError);
-        return new Response(
-          JSON.stringify({ error: 'Projekt nije pronađen' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'not_found', code: 'project_not_found' }, 404);
       }
 
-      // Get all project members to notify (except the current user)
       const { data: members, error: membersError } = await supabaseAdmin
         .from('project_members')
         .select('user_id')
@@ -117,35 +90,32 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (membersError) {
         console.error('Error fetching project members:', membersError);
-        return new Response(
-          JSON.stringify({ error: 'Greška pri dohvaćanju članova' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'internal', code: 'members_fetch_failed' }, 500);
       }
 
-      // Also notify the project owner if they're not the current user
       const usersToNotify = new Set<string>();
-      
-      if (project.user_id !== user.id) {
-        usersToNotify.add(project.user_id);
-      }
-      
+      if (project.user_id !== user.id) usersToNotify.add(project.user_id);
       members?.forEach(m => usersToNotify.add(m.user_id));
 
       if (usersToNotify.size === 0) {
-        console.log('No users to notify (current user is the only member/owner)');
-        return new Response(
-          JSON.stringify({ success: true, message: 'Nema korisnika za obavijestiti' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.log('No users to notify');
+        return jsonRes({ success: true, delivered: 0 });
       }
 
-      // Create notifications for all relevant users
+      const titleKey = 'notifications.note_added.project.title';
+      const messageKey = 'notifications.note_added.project.message';
+      const titleVars = { project: project.name };
+      const messageVars = {
+        actor: memberName,
+        description: expense.description,
+        note: truncatedNote,
+      };
+
       const notifications = Array.from(usersToNotify).map(userId => ({
         user_id: userId,
         type: 'project_note_added',
-        title: `Novi komentar u projektu "${project.name}"`,
-        message: `${memberName} je komentirao transakciju "${expense.description}": "${truncatedNote}"`,
+        title: titleKey,
+        message: messageKey,
         data: {
           expense_id: expense.id,
           project_id: project.id,
@@ -153,8 +123,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           project_icon: project.icon,
           project_color: project.color,
           member_name: memberName,
-          note: note,
-          description: expense.description
+          note,
+          description: expense.description,
+          title_vars: titleVars,
+          message_vars: messageVars,
         }
       }));
 
@@ -164,16 +136,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (notificationError) {
         console.error('Error creating notifications:', notificationError);
-        return new Response(
-          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'internal', code: 'notification_insert_failed' }, 500);
       }
 
       // Instant push disabled — komentari u projektu čekaju 19h digest.
 
-
-      // Daily digest enqueue (po prostoru, recipient-type independent).
       try {
         await supabaseAdmin.rpc('enqueue_participant_digest_event', {
           p_project_id: project.id,
@@ -191,16 +158,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       console.log(`Project note notifications sent to ${usersToNotify.size} user(s) from ${memberName}`);
-
-      return new Response(
-        JSON.stringify({ success: true, message: `Obavijesti poslane (${usersToNotify.size})` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ success: true, delivered: usersToNotify.size });
     }
 
-    // Handle INCOME SOURCE notes (original logic)
+    // Handle INCOME SOURCE notes
     if (income_source_id) {
-      // Get the income source to find the owner
       const { data: source, error: sourceError } = await supabaseAdmin
         .from('income_sources')
         .select('id, name, icon, user_id')
@@ -209,57 +171,52 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (sourceError || !source) {
         console.error('Error fetching income source:', sourceError);
-        return new Response(
-          JSON.stringify({ error: 'Izvor prihoda nije pronađen' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'not_found', code: 'income_source_not_found' }, 404);
       }
 
-      // Don't notify if the user adding the note is the owner
       if (source.user_id === user.id) {
         console.log('User is owner, skipping notification');
-        return new Response(
-          JSON.stringify({ success: true, message: 'Vlasnik ne treba notifikaciju' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ success: true, delivered: 0, reason: 'owner_is_submitter' });
       }
 
-      // Create notification for the owner
+      const titleKey = 'notifications.note_added.income_source.title';
+      const messageKey = 'notifications.note_added.income_source.message';
+      const titleVars = {};
+      const messageVars = {
+        actor: memberName,
+        description: expense.description,
+        source: source.name,
+        note: truncatedNote,
+      };
+
       const { error: notificationError } = await supabaseAdmin
         .from('notifications')
         .insert({
           user_id: source.user_id,
           type: 'note_added',
-          title: `Nova napomena na transakciji`,
-          message: `${memberName} je dodao napomenu uz transakciju "${expense.description}" u projektu "${source.name}": "${truncatedNote}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             expense_id: expense.id,
             income_source_id: source.id,
             income_source_name: source.name,
             income_source_icon: source.icon,
             member_name: memberName,
-            note: note,
-            description: expense.description
+            note,
+            description: expense.description,
+            title_vars: titleVars,
+            message_vars: messageVars,
           }
         });
 
       if (notificationError) {
         console.error('Error creating notification:', notificationError);
-        return new Response(
-          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'internal', code: 'notification_insert_failed' }, 500);
       }
 
       // Instant push disabled — vlasnik kruga vidi komentar kao in-app zvonce.
-
-
       console.log(`Note notification sent to owner ${source.user_id} from ${memberName}`);
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Obavijest poslana vlasniku' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ success: true, delivered: 1 });
     }
 
     // Handle PAYMENT SOURCE notes
@@ -272,13 +229,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (sourceError || !source) {
         console.error('Error fetching payment source:', sourceError);
-        return new Response(
-          JSON.stringify({ error: 'Račun nije pronađen' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'not_found', code: 'payment_source_not_found' }, 404);
       }
 
-      // Get all payment source members to notify (except the current user)
       const { data: members } = await supabaseAdmin
         .from('payment_source_members')
         .select('user_id')
@@ -286,26 +239,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .neq('user_id', user.id);
 
       const usersToNotify = new Set<string>();
-      
-      // Notify owner if not current user
-      if (source.user_id !== user.id) {
-        usersToNotify.add(source.user_id);
-      }
-      
+      if (source.user_id !== user.id) usersToNotify.add(source.user_id);
       members?.forEach(m => usersToNotify.add(m.user_id));
 
       if (usersToNotify.size === 0) {
-        return new Response(
-          JSON.stringify({ success: true, message: 'Nema korisnika za obavijestiti' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ success: true, delivered: 0 });
       }
+
+      const titleKey = 'notifications.note_added.payment_source.title';
+      const messageKey = 'notifications.note_added.payment_source.message';
+      const titleVars = { source: source.name };
+      const messageVars = {
+        actor: memberName,
+        description: expense.description,
+        note: truncatedNote,
+      };
 
       const notifications = Array.from(usersToNotify).map(userId => ({
         user_id: userId,
         type: 'payment_source_note_added',
-        title: `Novi komentar na računu "${source.name}"`,
-        message: `${memberName} je komentirao transakciju "${expense.description}": "${truncatedNote}"`,
+        title: titleKey,
+        message: messageKey,
         data: {
           expense_id: expense.id,
           payment_source_id: source.id,
@@ -313,8 +267,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           payment_source_icon: source.icon,
           payment_source_color: source.color,
           member_name: memberName,
-          note: note,
-          description: expense.description
+          note,
+          description: expense.description,
+          title_vars: titleVars,
+          message_vars: messageVars,
         }
       }));
 
@@ -324,33 +280,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       if (notificationError) {
         console.error('Error creating notifications:', notificationError);
-        return new Response(
-          JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return jsonRes({ error: 'internal', code: 'notification_insert_failed' }, 500);
       }
 
       // Instant push disabled — komentari na dijeljenim računima ostaju samo in-app.
-
-
       console.log(`Payment source note notifications sent to ${usersToNotify.size} user(s)`);
-
-      return new Response(
-        JSON.stringify({ success: true, message: `Obavijesti poslane (${usersToNotify.size})` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ success: true, delivered: usersToNotify.size });
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Nedostaje project_id, income_source_id ili payment_source_id' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonRes({ error: 'bad_request', code: 'missing_target_id' }, 400);
 
   } catch (error) {
     console.error('Error in notify-note-added:', error);
-    return new Response(
-      JSON.stringify({ error: 'Interna greška servera' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonRes({ error: 'internal', code: 'unhandled_exception' }, 500);
   }
 });
+
+function jsonRes(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}

@@ -1,11 +1,8 @@
+// WS3a-2 Batch A — refactored to write i18n keys into notification row.
 // Notifies all project members (except the actor) about project activity:
 // work logs (added/updated/deleted) and milestones (added/status changed/deleted).
-// Push notifications are throttled to 1 per 5 minutes per (user, project, bucket).
-// In-app notifications are always inserted.
-
+// All notifications go through the 19h participant digest — no instant push.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-// Instant push disabled — sve projektne aktivnosti idu u 19h digest.
-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,34 +25,19 @@ interface RequestBody {
   };
 }
 
-
-function buildText(
-  type: ActivityType,
-  submitterName: string,
-  projectName: string,
-  meta: RequestBody["meta"],
-): { title: string; body: string } {
-  const title = `Aktivnost u projektu „${projectName}"`;
-  switch (type) {
-    case "work_log_added":
-      return {
-        title,
-        body: `${submitterName} je upisao/la dnevnik${meta?.date ? ` (${meta.date}` : ""}${meta?.hours ? `, ${meta.hours}h)` : meta?.date ? ")" : ""}`,
-      };
-    case "work_log_updated":
-      return { title, body: `${submitterName} je ažurirao/la dnevnik${meta?.date ? ` (${meta.date})` : ""}` };
-    case "work_log_deleted":
-      return { title, body: `${submitterName} je obrisao/la dnevnik${meta?.date ? ` (${meta.date})` : ""}` };
-    case "milestone_added":
-      return { title, body: `${submitterName} je dodao/la fazu${meta?.milestone_name ? ` „${meta.milestone_name}"` : ""}` };
-    case "milestone_status_changed":
-      return {
-        title,
-        body: `${submitterName} je promijenio/la status faze${meta?.milestone_name ? ` „${meta.milestone_name}"` : ""}${meta?.status ? ` → ${meta.status}` : ""}`,
-      };
-    case "milestone_deleted":
-      return { title, body: `${submitterName} je obrisao/la fazu${meta?.milestone_name ? ` „${meta.milestone_name}"` : ""}` };
-  }
+/**
+ * Server pre-formats the parenthetical detail (locale-neutral: date/hours are
+ * pure numbers/ISO strings). The catalog template uses `{{detail}}` verbatim.
+ * Format:
+ *   - date+hours: " (2026-01-01, 8h)"
+ *   - date only:  " (2026-01-01)"
+ *   - neither:    ""
+ */
+function formatWorkLogDetail(meta: RequestBody["meta"]): string {
+  if (!meta?.date && !meta?.hours) return "";
+  if (meta?.date && meta?.hours) return ` (${meta.date}, ${meta.hours}h)`;
+  if (meta?.date) return ` (${meta.date})`;
+  return "";
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -70,10 +52,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Nedostaje autorizacija" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonRes({ error: "unauthorized", code: "missing_authorization" }, 401);
     }
 
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
@@ -87,23 +66,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (claimsError || !userId) {
       console.error("JWT validation error in notify-project-activity:", claimsError);
-      return new Response(JSON.stringify({ error: "Neautorizirani pristup" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonRes({ error: "unauthorized", code: "invalid_token" }, 401);
     }
 
     const body = (await req.json()) as RequestBody;
     if (!body?.project_id || !body?.activity_type) {
-      return new Response(JSON.stringify({ error: "Nedostaju podaci" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonRes({ error: "bad_request", code: "missing_fields" }, 400);
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch project
     const { data: project, error: projectError } = await supabaseAdmin
       .from("projects")
       .select("id, name, icon, color, user_id")
@@ -111,13 +83,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (projectError || !project) {
-      return new Response(JSON.stringify({ error: "Projekt nije pronađen" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonRes({ error: "not_found", code: "project_not_found" }, 404);
     }
 
-    // Submitter display name
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("display_name")
@@ -125,7 +93,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .single();
     const submitterName = profile?.display_name || userEmail?.split("@")[0] || "Član";
 
-    // Recipients: all members + owner, minus actor
     const { data: members } = await supabaseAdmin
       .from("project_members")
       .select("user_id")
@@ -138,24 +105,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
     members?.forEach((m: { user_id: string }) => recipients.add(m.user_id));
 
     if (recipients.size === 0) {
-      return new Response(JSON.stringify({ success: true, message: "Nema primatelja" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonRes({ success: true, delivered: 0 });
     }
 
-    const { title, body: pushBody } = buildText(
-      body.activity_type,
-      submitterName,
-      project.name,
-      body.meta,
-    );
+    const titleKey = "notifications.project_activity.title";
+    const messageKey = `notifications.project_activity.message.${body.activity_type}`;
+    const titleVars = { project: project.name };
+    const messageVars: Record<string, unknown> = { actor: submitterName };
+    if (body.activity_type.startsWith("work_log_")) {
+      messageVars.detail = formatWorkLogDetail(body.meta);
+    } else if (body.activity_type.startsWith("milestone_")) {
+      messageVars.milestone = body.meta?.milestone_name ?? "";
+      if (body.activity_type === "milestone_status_changed") {
+        messageVars.status = body.meta?.status ?? "";
+      }
+    }
 
-    // Always insert in-app notifications for everyone
     const inAppRows = Array.from(recipients).map((rid) => ({
       user_id: rid,
       type: "project_activity",
-      title,
-      message: pushBody,
+      title: titleKey,
+      message: messageKey,
       data: {
         project_id: project.id,
         project_name: project.name,
@@ -165,6 +135,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         activity_type: body.activity_type,
         ref_id: body.ref_id ?? null,
         meta: body.meta ?? null,
+        title_vars: titleVars,
+        message_vars: messageVars,
       },
     }));
 
@@ -173,10 +145,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Instant push disabled — sva aktivnost čeka 19h digest. In-app zvonce ostaje odmah.
 
-
-    // Enqueue daily digest event (po prostoru). Best-effort; failure must not
-    // break the immediate notify flow. Recipient selection happens server-side
-    // in the RPC (owner + all members minus actor), independent of role.
     try {
       await supabaseAdmin.rpc("enqueue_participant_digest_event", {
         p_project_id: project.id,
@@ -193,20 +161,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
       console.error("[notify-project-activity] digest enqueue error", digestErr);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        recipients: recipients.size,
-        pushed: 0,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return jsonRes({
+      success: true,
+      recipients: recipients.size,
+      pushed: 0,
+    });
 
   } catch (err) {
     console.error("[notify-project-activity] unhandled error", err);
-    return new Response(JSON.stringify({ error: "Greška u funkciji" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonRes({ error: "internal", code: "unhandled_exception" }, 500);
   }
 });
+
+function jsonRes(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

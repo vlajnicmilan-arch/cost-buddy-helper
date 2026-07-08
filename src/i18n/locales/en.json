@@ -2286,6 +2286,74 @@
         }
       },
       "fallback_project": "project"
+    },
+    "project_transaction": {
+      "title": "Transaction in project „{{project}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} added income „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} added expense „{{description}}\" ({{amount}})"
+        },
+        "updated": {
+          "income": "{{actor}} updated income „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} updated expense „{{description}}\" ({{amount}})"
+        }
+      }
+    },
+    "payment_source_transaction": {
+      "title": "Transaction on account „{{source}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} added income „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} added expense „{{description}}\" ({{amount}})",
+          "transfer": "{{actor}} added transfer „{{description}}\" ({{amount}})"
+        },
+        "updated": {
+          "income": "{{actor}} updated income „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} updated expense „{{description}}\" ({{amount}})",
+          "transfer": "{{actor}} updated transfer „{{description}}\" ({{amount}})"
+        }
+      }
+    },
+    "pending_transaction": {
+      "title": "New pending transaction",
+      "message": {
+        "income": "{{actor}} added income „{{description}}\" ({{amount}}) to circle „{{source}}\". Awaiting your approval.",
+        "expense": "{{actor}} added expense „{{description}}\" ({{amount}}) to circle „{{source}}\". Awaiting your approval."
+      }
+    },
+    "note_added": {
+      "project": {
+        "title": "New comment in project „{{project}}\"",
+        "message": "{{actor}} commented on transaction „{{description}}\": „{{note}}\""
+      },
+      "income_source": {
+        "title": "New note on transaction",
+        "message": "{{actor}} added a note to transaction „{{description}}\" in project „{{source}}\": „{{note}}\""
+      },
+      "payment_source": {
+        "title": "New comment on account „{{source}}\"",
+        "message": "{{actor}} commented on transaction „{{description}}\": „{{note}}\""
+      }
+    },
+    "project_activity": {
+      "title": "Activity in project „{{project}}\"",
+      "message": {
+        "work_log_added": "{{actor}} added a work log{{detail}}",
+        "work_log_updated": "{{actor}} updated a work log{{detail}}",
+        "work_log_deleted": "{{actor}} deleted a work log{{detail}}",
+        "milestone_added": "{{actor}} added milestone „{{milestone}}\"",
+        "milestone_status_changed": "{{actor}} changed milestone „{{milestone}}\" status → {{status}}",
+        "milestone_deleted": "{{actor}} deleted milestone „{{milestone}}\""
+      }
+    },
+    "auto_reject_pending": {
+      "title": "Transaction auto-rejected",
+      "message": "Your transaction „{{description}}\" was auto-rejected because it was not approved within 24 hours."
+    },
+    "fallback": {
+      "actor": "Member",
+      "project": "project"
     }
   },
   "installments": {
