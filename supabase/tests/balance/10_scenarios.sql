@@ -1289,10 +1289,10 @@ DECLARE
   v_hours numeric;
   v_gross numeric;
 BEGIN
-  -- Backfill fixture kreirao seed_payout_fixtures dodao je (možda) redak u
-  -- rate_history preko automatskog backfill DO $$ bloka iz migracije, ali
-  -- taj backfill se izvodi samo jednom pri migraciji, ne za nove workere.
-  -- Ovdje sami postavimo dva reda uz bypass flag.
+  -- Backfill iz migracije (koji dodaje redak u rate_history za nove workere)
+  -- se izvodi samo jednom pri migraciji, ne za dinamički kreirane workere iz
+  -- seed_payout_fixtures. Ovdje sami postavimo dva reda uz bypass flag.
+
   PERFORM set_config('app.allow_rate_write', 'on', true);
   DELETE FROM public.project_worker_rate_history WHERE worker_id = v_worker;
   INSERT INTO public.project_worker_rate_history (worker_id, rate, effective_from, created_by)
