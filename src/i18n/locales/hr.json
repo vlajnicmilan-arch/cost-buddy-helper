@@ -4823,6 +4823,14 @@
       "loadFailed": "Ne mogu učitati podatke o isplati",
       "alreadyAttributed": "Već pripisano ovoj isplati",
       "generic": "Pripis nije uspio, pokušaj ponovno"
+    },
+    "voidedPrompt": {
+      "title": "Isplata je poništena",
+      "description": "Poslodavac je poništio isplatu koju ste pripisali izvoru. Želite li ukloniti pripisan unos iz novčanika?",
+      "keep": "Zadrži",
+      "remove": "Ukloni pripis",
+      "removed": "Pripis uklonjen",
+      "removeFailed": "Uklanjanje nije uspjelo"
     }
   }
 }
