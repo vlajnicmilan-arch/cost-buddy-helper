@@ -294,8 +294,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const summary = (snapshot?.pending_summary ?? []) as unknown[];
       if (count <= 0) continue;
 
-      const title = `Sažetak: „${project.name}"`;
-      const body = buildSummaryBody(count, summary);
+      const titleKey = "notifications.participant_digest.title";
+      const titleVars = { project: project.name };
+      const bodySel = buildSummaryBodySelection(count, summary);
+
+      // HR fallback pre-rendered — send-push overrides via i18n keys per recipient.
+      const title = translate("hr", titleKey, titleVars);
+      const body = translate("hr", bodySel.key, bodySel.vars);
 
       const payloadData = {
         type: "participant_digest",
@@ -310,6 +315,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         highlight_type: "project",
         highlight_id: project.id,
         highlight_tab: "activity",
+        i18n_title_key: titleKey,
+        i18n_body_key: bodySel.key,
+        title_vars: titleVars,
+        message_vars: bodySel.vars,
       };
 
       try {
@@ -325,15 +334,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
         errorCount += 1;
       }
 
-      // Bell entry — jedan red po (user, project) digestu, isti payload
-      // kao push da klik u zvonu otvori istu rutu + highlight.
+      // Bell entry — store i18n keys so client renders per user language.
       if (!testMode) {
         try {
           await admin.from("notifications").insert({
             user_id: row.user_id,
             type: "participant_digest",
-            title,
-            message: body,
+            title: titleKey,
+            message: bodySel.key,
             data: payloadData,
             dedup_key: `digest:${project.id}:${new Date().toISOString().slice(0, 10)}`,
           });
