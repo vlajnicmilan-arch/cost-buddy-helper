@@ -652,8 +652,8 @@ export const ProjectFullScreenView = ({
                   {(project.start_date || project.end_date) && (
                     <div className="p-4 rounded-lg border">
                       <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('projects.timeline')}</span>
+                        <Calendar className="w-4 h-4 text-module" />
+                        <span className="font-medium text-module">{t('projects.timeline')}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm flex-wrap">
                         {project.start_date && (
