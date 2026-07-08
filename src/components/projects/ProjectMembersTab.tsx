@@ -18,6 +18,7 @@ import { OPTIONAL_TABS, TAB_LABELS } from '@/hooks/useProjectMemberPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 
 interface ProjectMembersTabProps {
   projectId: string;
