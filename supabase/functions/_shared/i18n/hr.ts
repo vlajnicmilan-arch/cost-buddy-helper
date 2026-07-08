@@ -88,4 +88,88 @@ export default {
     "Član",
   "notifications.fallback.project":
     "projekt",
+  "notifications.activation_nudge.day1.title":
+    "Dobrodošao u V&M Balance 👋",
+  "notifications.activation_nudge.day1.message":
+    "Kreni s prvim projektom — renoviranje, klijent ili osobni cilj.",
+  "notifications.activation_nudge.day3.title":
+    "Spreman za prvi projekt? 🎯",
+  "notifications.activation_nudge.day3.message":
+    "Projekti ti pomažu pratiti budžet i troškove na jednom mjestu.",
+  "notifications.activation_nudge.day7.title":
+    "Iskusi punu snagu V&M Balance 🚀",
+  "notifications.activation_nudge.day7.message":
+    "Otvori prvi projekt u 30s i drži troškove pod kontrolom.",
+  "notifications.app_update.title":
+    "Dostupno je ažuriranje aplikacije",
+  "notifications.app_update.message":
+    "Verzija {{version}} je spremna. Dodirni za preuzimanje i instalaciju.",
+  "notifications.budget_burn_push.title":
+    "⚠️ Budžet „{{name}}\" prekoračen!",
+  "notifications.budget_burn_push.message":
+    "Potrošili ste {{percentage}}% budžeta ({{spent}} / {{limit}}).",
+  "notifications.milestone_budget.warning.title":
+    "🟡 Faza „{{name}}\" je na {{percentage}}% budžeta",
+  "notifications.milestone_budget.warning.message":
+    "Faza „{{name}}\" u projektu „{{project}}\" potrošila je {{percentage}}% planiranog budžeta.",
+  "notifications.milestone_budget.over.title":
+    "🔴 Faza „{{name}}\" je premašila budžet",
+  "notifications.milestone_budget.over.message":
+    "Faza „{{name}}\" u projektu „{{project}}\" premašuje budžet za {{overPct}}%. Razmisli o reviziji ili povlačenju iz rezerve.",
+  "notifications.milestone_deadline.upcoming.title":
+    "⏰ Faza „{{name}}\" ističe za {{days}} dana",
+  "notifications.milestone_deadline.upcoming.message":
+    "Faza „{{name}}\" u projektu „{{project}}\" ističe {{date}}.",
+  "notifications.milestone_deadline.overdue.title":
+    "⚠️ Faza „{{name}}\" je istekla",
+  "notifications.milestone_deadline.overdue.message":
+    "Faza „{{name}}\" u projektu „{{project}}\" je prošla rok za {{days}} dana.",
+  "notifications.reminder.fallback_body":
+    "Podsjetnik: {{title}}",
+  "notifications.participant_digest.title":
+    "Sažetak: „{{project}}\"",
+  "notifications.participant_digest.body.empty":
+    "Nema novih događaja.",
+  "notifications.participant_digest.body.single_no_samples":
+    "1 nova promjena u projektu",
+  "notifications.participant_digest.body.many_no_samples":
+    "{{count}} novih promjena u projektu",
+  "notifications.participant_digest.body.single_with_samples":
+    "1 nova promjena u projektu: {{samples}}",
+  "notifications.participant_digest.body.many_with_samples":
+    "{{count}} novih promjena u projektu: {{samples}}",
+  "notifications.invitation_accepted.title":
+    "Pozivnica prihvaćena",
+  "notifications.invitation_accepted.message.project":
+    "{{userName}} je prihvatio/la pozivnicu za projekt „{{targetName}}\"",
+  "notifications.invitation_accepted.message.budget":
+    "{{userName}} je prihvatio/la pozivnicu za budžet „{{targetName}}\"",
+  "notifications.invitation_accepted.message.payment_source":
+    "{{userName}} je prihvatio/la pozivnicu za račun „{{targetName}}\"",
+  "notifications.invitation_accepted.push.project":
+    "{{userName}} se pridružio/la projektu „{{targetName}}\"",
+  "notifications.invitation_accepted.push.budget":
+    "{{userName}} se pridružio/la budžetu „{{targetName}}\"",
+  "notifications.invitation_accepted.push.payment_source":
+    "{{userName}} se pridružio/la računu „{{targetName}}\"",
+  "notifications.member_joined.project.title":
+    "Novi član projekta",
+  "notifications.member_joined.project.message":
+    "{{memberName}} se pridružio/la projektu „{{targetName}}\"",
+  "notifications.member_joined.budget.title":
+    "Novi član budžeta",
+  "notifications.member_joined.budget.message":
+    "{{memberName}} se pridružio/la budžetu „{{targetName}}\"",
+  "notifications.invitation_sent.project.title":
+    "Pozivnica za projekt",
+  "notifications.invitation_sent.project.message":
+    "{{inviterName}} vas poziva da se pridružite projektu „{{targetName}}\"",
+  "notifications.invitation_sent.budget.title":
+    "Pozivnica za budžet",
+  "notifications.invitation_sent.budget.message":
+    "{{inviterName}} vas poziva da se pridružite budžetu „{{targetName}}\"",
+  "notifications.invitation_sent.payment_source.title":
+    "Pozivnica za dijeljeni račun",
+  "notifications.invitation_sent.payment_source.message":
+    "{{inviterName}} vas poziva da se pridružite računu „{{targetName}}\"",
 } as const;

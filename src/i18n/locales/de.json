@@ -2354,6 +2354,98 @@
     "fallback": {
       "actor": "Mitglied",
       "project": "Projekt"
+    },
+    "activation_nudge": {
+      "day1": {
+        "title": "Willkommen bei V&M Balance 👋",
+        "message": "Starte mit deinem ersten Projekt — Renovierung, Kunde oder persönliches Ziel."
+      },
+      "day3": {
+        "title": "Bereit für dein erstes Projekt? 🎯",
+        "message": "Projekte helfen dir, Budget und Ausgaben an einem Ort zu verfolgen."
+      },
+      "day7": {
+        "title": "Entdecke die volle Power von V&M Balance 🚀",
+        "message": "Erstelle dein erstes Projekt in 30s und behalte Ausgaben im Griff."
+      }
+    },
+    "app_update": {
+      "title": "App-Update verfügbar",
+      "message": "Version {{version}} ist bereit. Tippen Sie zum Herunterladen und Installieren."
+    },
+    "budget_burn_push": {
+      "title": "⚠️ Budget „{{name}}\" überschritten!",
+      "message": "Sie haben {{percentage}}% des Budgets ausgegeben ({{spent}} / {{limit}})."
+    },
+    "milestone_budget": {
+      "warning": {
+        "title": "🟡 Phase „{{name}}\" ist bei {{percentage}}% des Budgets",
+        "message": "Phase „{{name}}\" im Projekt „{{project}}\" hat {{percentage}}% des geplanten Budgets verbraucht."
+      },
+      "over": {
+        "title": "🔴 Phase „{{name}}\" hat das Budget überschritten",
+        "message": "Phase „{{name}}\" im Projekt „{{project}}\" überschreitet das Budget um {{overPct}}%. Erwäge eine Überarbeitung oder Rücklagenentnahme."
+      }
+    },
+    "milestone_deadline": {
+      "upcoming": {
+        "title": "⏰ Phase „{{name}}\" ist in {{days}} Tagen fällig",
+        "message": "Phase „{{name}}\" im Projekt „{{project}}\" ist am {{date}} fällig."
+      },
+      "overdue": {
+        "title": "⚠️ Phase „{{name}}\" ist überfällig",
+        "message": "Phase „{{name}}\" im Projekt „{{project}}\" ist seit {{days}} Tagen überfällig."
+      }
+    },
+    "reminder": {
+      "fallback_body": "Erinnerung: {{title}}"
+    },
+    "participant_digest": {
+      "title": "Zusammenfassung: „{{project}}\"",
+      "body": {
+        "empty": "Keine neuen Ereignisse.",
+        "single_no_samples": "1 neue Änderung im Projekt",
+        "many_no_samples": "{{count}} neue Änderungen im Projekt",
+        "single_with_samples": "1 neue Änderung im Projekt: {{samples}}",
+        "many_with_samples": "{{count}} neue Änderungen im Projekt: {{samples}}"
+      }
+    },
+    "invitation_accepted": {
+      "title": "Einladung angenommen",
+      "message": {
+        "project": "{{userName}} hat die Einladung zum Projekt „{{targetName}}\" angenommen",
+        "budget": "{{userName}} hat die Einladung zum Budget „{{targetName}}\" angenommen",
+        "payment_source": "{{userName}} hat die Einladung zum Konto „{{targetName}}\" angenommen"
+      },
+      "push": {
+        "project": "{{userName}} ist dem Projekt „{{targetName}}\" beigetreten",
+        "budget": "{{userName}} ist dem Budget „{{targetName}}\" beigetreten",
+        "payment_source": "{{userName}} ist dem Konto „{{targetName}}\" beigetreten"
+      }
+    },
+    "member_joined": {
+      "project": {
+        "title": "Neues Projektmitglied",
+        "message": "{{memberName}} ist dem Projekt „{{targetName}}\" beigetreten"
+      },
+      "budget": {
+        "title": "Neues Budgetmitglied",
+        "message": "{{memberName}} ist dem Budget „{{targetName}}\" beigetreten"
+      }
+    },
+    "invitation_sent": {
+      "project": {
+        "title": "Projekt-Einladung",
+        "message": "{{inviterName}} lädt Sie ein, dem Projekt „{{targetName}}\" beizutreten"
+      },
+      "budget": {
+        "title": "Budget-Einladung",
+        "message": "{{inviterName}} lädt Sie ein, dem Budget „{{targetName}}\" beizutreten"
+      },
+      "payment_source": {
+        "title": "Einladung zum geteilten Konto",
+        "message": "{{inviterName}} lädt Sie ein, dem Konto „{{targetName}}\" beizutreten"
+      }
     }
   },
   "installments": {

@@ -88,4 +88,88 @@ export default {
     "Member",
   "notifications.fallback.project":
     "project",
+  "notifications.activation_nudge.day1.title":
+    "Welcome to V&M Balance 👋",
+  "notifications.activation_nudge.day1.message":
+    "Start with your first project — renovation, client or personal goal.",
+  "notifications.activation_nudge.day3.title":
+    "Ready for your first project? 🎯",
+  "notifications.activation_nudge.day3.message":
+    "Projects help you track budget and expenses in one place.",
+  "notifications.activation_nudge.day7.title":
+    "Unlock the full power of V&M Balance 🚀",
+  "notifications.activation_nudge.day7.message":
+    "Create your first project in 30s and stay on top of expenses.",
+  "notifications.app_update.title":
+    "App update available",
+  "notifications.app_update.message":
+    "Version {{version}} is ready. Tap to download and install it.",
+  "notifications.budget_burn_push.title":
+    "⚠️ Budget „{{name}}\" exceeded!",
+  "notifications.budget_burn_push.message":
+    "You've spent {{percentage}}% of your budget ({{spent}} / {{limit}}).",
+  "notifications.milestone_budget.warning.title":
+    "🟡 Phase „{{name}}\" is at {{percentage}}% of budget",
+  "notifications.milestone_budget.warning.message":
+    "Phase „{{name}}\" in project „{{project}}\" has used {{percentage}}% of the planned budget.",
+  "notifications.milestone_budget.over.title":
+    "🔴 Phase „{{name}}\" has exceeded budget",
+  "notifications.milestone_budget.over.message":
+    "Phase „{{name}}\" in project „{{project}}\" exceeds budget by {{overPct}}%. Consider revising or drawing from reserve.",
+  "notifications.milestone_deadline.upcoming.title":
+    "⏰ Phase „{{name}}\" is due in {{days}} days",
+  "notifications.milestone_deadline.upcoming.message":
+    "Phase „{{name}}\" in project „{{project}}\" is due on {{date}}.",
+  "notifications.milestone_deadline.overdue.title":
+    "⚠️ Phase „{{name}}\" is overdue",
+  "notifications.milestone_deadline.overdue.message":
+    "Phase „{{name}}\" in project „{{project}}\" is {{days}} days past due.",
+  "notifications.reminder.fallback_body":
+    "Reminder: {{title}}",
+  "notifications.participant_digest.title":
+    "Summary: „{{project}}\"",
+  "notifications.participant_digest.body.empty":
+    "No new events.",
+  "notifications.participant_digest.body.single_no_samples":
+    "1 new change in the project",
+  "notifications.participant_digest.body.many_no_samples":
+    "{{count}} new changes in the project",
+  "notifications.participant_digest.body.single_with_samples":
+    "1 new change in the project: {{samples}}",
+  "notifications.participant_digest.body.many_with_samples":
+    "{{count}} new changes in the project: {{samples}}",
+  "notifications.invitation_accepted.title":
+    "Invitation accepted",
+  "notifications.invitation_accepted.message.project":
+    "{{userName}} accepted the invitation to project „{{targetName}}\"",
+  "notifications.invitation_accepted.message.budget":
+    "{{userName}} accepted the invitation to budget „{{targetName}}\"",
+  "notifications.invitation_accepted.message.payment_source":
+    "{{userName}} accepted the invitation to account „{{targetName}}\"",
+  "notifications.invitation_accepted.push.project":
+    "{{userName}} joined project „{{targetName}}\"",
+  "notifications.invitation_accepted.push.budget":
+    "{{userName}} joined budget „{{targetName}}\"",
+  "notifications.invitation_accepted.push.payment_source":
+    "{{userName}} joined account „{{targetName}}\"",
+  "notifications.member_joined.project.title":
+    "New project member",
+  "notifications.member_joined.project.message":
+    "{{memberName}} joined project „{{targetName}}\"",
+  "notifications.member_joined.budget.title":
+    "New budget member",
+  "notifications.member_joined.budget.message":
+    "{{memberName}} joined budget „{{targetName}}\"",
+  "notifications.invitation_sent.project.title":
+    "Project invitation",
+  "notifications.invitation_sent.project.message":
+    "{{inviterName}} invites you to join project „{{targetName}}\"",
+  "notifications.invitation_sent.budget.title":
+    "Budget invitation",
+  "notifications.invitation_sent.budget.message":
+    "{{inviterName}} invites you to join budget „{{targetName}}\"",
+  "notifications.invitation_sent.payment_source.title":
+    "Shared account invitation",
+  "notifications.invitation_sent.payment_source.message":
+    "{{inviterName}} invites you to join account „{{targetName}}\"",
 } as const;
