@@ -1,7 +1,15 @@
 // FCM HTTP v1 API implementation with OAuth2 (RS256 JWT)
 // Requires FCM_SERVICE_ACCOUNT secret containing the full service account JSON
+//
+// WS3a-1: title/body may be sent as i18n keys via data.i18n_title_key /
+// data.i18n_body_key with data.title_vars / data.message_vars. This function
+// looks up the recipient's `profiles.preferred_language` and translates via
+// the shared server catalog (supabase/functions/_shared/i18n) before dispatch.
+// Legacy callers that pass pre-rendered strings continue to work unchanged.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { captureEdgeError } from "../_shared/sentry.ts";
+import { translate, resolveLang } from "../_shared/i18n/index.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
