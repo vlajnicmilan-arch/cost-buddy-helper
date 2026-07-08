@@ -42,6 +42,22 @@ export const useProjectWorkEntries = (workerId: string | null, projectId: string
     fetchEntries();
   }, [fetchEntries]);
 
+  // Realtime: filter by worker_id so a worker's tab refetches only on their own
+  // rows; owner viewing per-worker tab also refetches on that worker's changes.
+  // RLS still enforces visibility on the refetch itself.
+  useEffect(() => {
+    if (!workerId || !projectId) return;
+    const channel = supabase
+      .channel(`work-entries-${workerId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'project_work_entries', filter: `worker_id=eq.${workerId}` },
+        () => { fetchEntries(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [workerId, projectId, fetchEntries]);
+
   const addEntry = async (entry: {
     work_date: string;
     scheduled_hours: number;

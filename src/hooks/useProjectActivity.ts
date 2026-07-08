@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -13,39 +14,84 @@ export interface ActivityEntry {
   user_name?: string;
 }
 
+/**
+ * Project activity feed.
+ *
+ * N+1 fix: activity_log fetch and member-profile lookup run in parallel
+ * (Promise.all) instead of sequentially. The profile lookup uses the
+ * SECURITY DEFINER RPC `get_project_member_profiles` because the public
+ * `profiles` SELECT policy only exposes the caller's own row — a naive
+ * embedded join would silently return NULL names for other members.
+ *
+ * Realtime: subscribes to `project_activity_log` changes for this project
+ * and invalidates the query so the feed updates without manual refresh
+ * (e.g. owner sees worker's actions live). RLS still enforces which rows
+ * come back on refetch.
+ */
 export const useProjectActivity = (projectId: string | null) => {
   const { user } = useAuth();
-  const [activities, setActivities] = useState<ActivityEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+  const queryKey = ['project-activity', projectId, user?.id] as const;
 
-  const fetch = useCallback(async () => {
-    if (!projectId || !user) { setActivities([]); return; }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('project_activity_log')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      const userIds = Array.from(new Set((data || []).map(a => a.user_id).filter(Boolean))) as string[];
-      let nameMap = new Map<string, string>();
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, display_name')
-          .in('user_id', userIds);
-        profiles?.forEach(p => nameMap.set(p.user_id, p.display_name || ''));
-      }
-      setActivities((data || []).map(a => ({ ...a, user_name: a.user_id ? nameMap.get(a.user_id) : undefined })));
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [projectId, user]);
+  const query = useQuery({
+    queryKey,
+    enabled: !!projectId && !!user,
+    staleTime: 15_000,
+    queryFn: async (): Promise<ActivityEntry[]> => {
+      if (!projectId) return [];
+      const [activityRes, profilesRes] = await Promise.all([
+        supabase
+          .from('project_activity_log')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        (supabase as any).rpc('get_project_member_profiles', { _project_id: projectId }),
+      ]);
+      if (activityRes.error) throw activityRes.error;
 
-  useEffect(() => { fetch(); }, [fetch]);
+      const nameMap = new Map<string, string>();
+      const profileRows = (profilesRes?.data || []) as Array<{ user_id: string; display_name: string | null }>;
+      profileRows.forEach((row) => {
+        const name = (row.display_name || '').trim();
+        if (name) nameMap.set(row.user_id, name);
+      });
 
-  return { activities, loading, refetch: fetch };
+      return (activityRes.data || []).map((a: any) => ({
+        ...a,
+        user_name: a.user_id ? nameMap.get(a.user_id) : undefined,
+      }));
+    },
+  });
+
+  useEffect(() => {
+    if (!projectId || !user) return;
+    const channel = supabase
+      .channel(`project-activity-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_activity_log',
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, user?.id]);
+
+  return {
+    activities: query.data ?? [],
+    loading: query.isLoading,
+    refetch: query.refetch,
+  };
 };
 
 export const logProjectActivity = async (

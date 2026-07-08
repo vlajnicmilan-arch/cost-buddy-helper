@@ -118,6 +118,21 @@ export const useProjectMembers = (projectId: string | null) => {
     fetchMembers();
   }, [fetchMembers]);
 
+  // Realtime: refetch on member/invitation changes so owner sees new joins
+  // and members see role/context updates without leaving the screen.
+  useEffect(() => {
+    if (!projectId || !user) return;
+    const channel = supabase
+      .channel(`project-members-${projectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'project_members', filter: `project_id=eq.${projectId}` },
+        () => { fetchMembers(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId, user, fetchMembers]);
+
   const updateMemberRole = async (memberId: string, newRole: ProjectRole): Promise<void> => {
     try {
       const { error } = await supabase
