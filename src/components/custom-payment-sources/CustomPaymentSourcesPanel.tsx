@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,9 +36,14 @@ interface CustomPaymentSourcesPanelProps {
   hideHeader?: boolean;
   onSourceClick?: (source: CustomPaymentSource) => void;
   onRefetchExpenses?: () => void;
+  /**
+   * WS2 / Faza 2.1 — kad Wallet stigne s `?openSourceCreate=1`, panel
+   * automatski otvara Add dialog jednom po mount-u (ref-guard).
+   */
+  autoOpenNew?: boolean;
 }
 
-export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses }: CustomPaymentSourcesPanelProps) => {
+export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses, autoOpenNew = false }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, updateCard, reorderPaymentSources } = useCustomPaymentSources();
   const { isHidden, toggleHidden } = useHiddenPaymentSources();
   const { user } = useAuth();
@@ -163,6 +168,17 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
     setInitialData(undefined);
     setDialogOpen(true);
   };
+
+  // WS2 / Faza 2.1 — auto-otvori Add dialog kad je panel mountiran s
+  // `autoOpenNew` (Wallet ?openSourceCreate=1 iz AttributionSheet empty-state).
+  const autoOpenNewFiredRef = useRef(false);
+  useEffect(() => {
+    if (!autoOpenNew) return;
+    if (autoOpenNewFiredRef.current) return;
+    autoOpenNewFiredRef.current = true;
+    openNewDialog();
+  }, [autoOpenNew]);
+
 
   const handleSuggestionClick = (suggestion: { name: string; icon: string; color: string }) => {
     // Check if already exists
