@@ -4545,7 +4545,18 @@
         "addButton": "Grant module access"
       },
       "layersIndependentNote": "Billing and Admin override are independent layers. A billing change does not remove existing override grants. A revoke does not change billing. Effective access remains as long as at least one active source exists."
-    }
+    },
+    "broadcastLangNote": "Fill in all three language variants (HR is required and used as fallback for empty fields).",
+    "titleHr": "Title (HR)",
+    "titleEn": "Title (EN)",
+    "titleDe": "Title (DE)",
+    "messageHr": "Message (HR)",
+    "messageEn": "Message (EN)",
+    "messageDe": "Message (DE)",
+    "sendBroadcast": "Send notification",
+    "broadcastSuccess": "Notification sent to {{count}} users",
+    "broadcastMissingHr": "HR variant (title and message) is required",
+    "broadcastFooter": "The notification is delivered to every registered user in their preferred language (HR fallback for empty fields)."
   },
   "adminRetention": {
     "title": "Cohort Retention",

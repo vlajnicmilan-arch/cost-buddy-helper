@@ -4552,7 +4552,18 @@
         "addButton": "Dodijeli pristup modulu"
       },
       "layersIndependentNote": "Naplata i Admin override su nezavisni slojevi. Promjena naplate ne uklanja postojeće override grantove. Opoziv overridea ne mijenja naplatu. Efektivni pristup vrijedi dok postoji barem jedan aktivni izvor."
-    }
+    },
+    "broadcastLangNote": "Ispuni sve tri jezične verzije (HR je obavezan i koristi se kao fallback za prazna polja).",
+    "titleHr": "Naslov (HR)",
+    "titleEn": "Naslov (EN)",
+    "titleDe": "Naslov (DE)",
+    "messageHr": "Poruka (HR)",
+    "messageEn": "Poruka (EN)",
+    "messageDe": "Poruka (DE)",
+    "sendBroadcast": "Pošalji obavijest",
+    "broadcastSuccess": "Obavijest poslana za {{count}} korisnika",
+    "broadcastMissingHr": "HR verzija (naslov i poruka) je obavezna",
+    "broadcastFooter": "Obavijest će biti poslana svim registriranim korisnicima na njihovom preferiranom jeziku (HR fallback za prazna polja)."
   },
   "adminRetention": {
     "title": "Cohort Retention",

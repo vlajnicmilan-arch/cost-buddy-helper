@@ -4545,7 +4545,18 @@
         "addButton": "Modulzugriff gewähren"
       },
       "layersIndependentNote": "Abrechnung und Admin-Override sind unabhängige Ebenen. Eine Abrechnungsänderung entfernt bestehende Override-Grants nicht. Ein Entzug ändert die Abrechnung nicht. Der effektive Zugriff bleibt bestehen, solange mindestens eine aktive Quelle existiert."
-    }
+    },
+    "broadcastLangNote": "Fülle alle drei Sprachvarianten aus (HR ist Pflicht und dient als Fallback für leere Felder).",
+    "titleHr": "Titel (HR)",
+    "titleEn": "Titel (EN)",
+    "titleDe": "Titel (DE)",
+    "messageHr": "Nachricht (HR)",
+    "messageEn": "Nachricht (EN)",
+    "messageDe": "Nachricht (DE)",
+    "sendBroadcast": "Benachrichtigung senden",
+    "broadcastSuccess": "Benachrichtigung an {{count}} Nutzer gesendet",
+    "broadcastMissingHr": "HR-Variante (Titel und Nachricht) ist erforderlich",
+    "broadcastFooter": "Die Benachrichtigung wird jedem registrierten Nutzer in seiner bevorzugten Sprache zugestellt (HR-Fallback für leere Felder)."
   },
   "adminRetention": {
     "title": "Cohort Retention",
