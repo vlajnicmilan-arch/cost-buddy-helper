@@ -2269,7 +2269,30 @@
     "confirmDeleteAllTitle": "Obrisati sve obavijesti?",
     "confirmDeleteAllDesc": "Sve obavijesti će biti trajno uklonjene s popisa. Postojeće pozivnice ostaju aktivne i možeš ih prihvatiti preko linka koji ti je vlasnik poslao.",
     "allDeleted": "Sve obavijesti obrisane",
-    "tapToRespond": "Klikni za odgovor →"
+    "tapToRespond": "Klikni za odgovor →",
+    "worker_payout": {
+      "created": {
+        "single": {
+          "title": "Nova isplata — {{project}}",
+          "message": "Zaprimljena isplata {{amount}} za period {{period_start}} → {{period_end}}."
+        },
+        "batch": {
+          "title": "Zbirna isplata — {{count}} projekta",
+          "message": "Zaprimljeno {{amount}} za {{count}} projekata ({{project_names}})."
+        }
+      },
+      "voided": {
+        "single": {
+          "title": "Isplata poništena — {{project}}",
+          "message": "Vaša isplata {{amount}} ({{period_start}} → {{period_end}}) je poništena."
+        },
+        "batch": {
+          "title": "Zbirna isplata poništena — {{count}} projekta",
+          "message": "Zbirna isplata {{amount}} za {{count}} projekata je poništena."
+        }
+      },
+      "fallback_project": "projekt"
+    }
   },
   "installments": {
     "title": "Plaćanja na rate",
