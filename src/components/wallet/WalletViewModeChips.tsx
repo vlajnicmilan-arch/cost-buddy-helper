@@ -41,7 +41,7 @@ export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => 
             className={cn(
               'inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-medium transition-colors shrink-0 min-h-[36px]',
               active
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-module/10 text-module border border-module/30 shadow-sm'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
             )}
           >
