@@ -1238,11 +1238,12 @@ BEGIN
   END IF;
   RAISE NOTICE 'PASS P20b — radnikov soft-delete attribution reda dopušten';
 
-  -- (c) Hard DELETE radnikovog attribution reda (drugi insert).
+  -- (c) Hard DELETE radnikovog attribution reda (drugi insert). Koristi postojeći
+  --     v_payout_id — FK expenses_worker_payout_id_fkey zahtijeva postojeći payout.
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
     VALUES (v_worker_user, 100, 'income',
             'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
-            'radnikov attribution P20c', gen_random_uuid(),
+            'radnikov attribution P20c', v_payout_id,
             '2026-06-03', '2026-06-03 12:06:00+00', 'C2')
     RETURNING id INTO v_worker_expense_id;
 
@@ -1251,6 +1252,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL P20c — hard DELETE radnikovog attribution reda nije prošao';
   END IF;
   RAISE NOTICE 'PASS P20c — hard DELETE radnikovog attribution reda dopušten';
+
 
   -- (d) Batch attribution — insert pa soft-delete.
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id, date, event_at, time_confidence)
