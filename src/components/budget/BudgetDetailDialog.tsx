@@ -172,7 +172,7 @@ export const BudgetDetailDialog = ({
             {/* Categories Breakdown */}
             {budget.categories.length > 0 && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium">{t('budget.byCategories')}</h4>
+                <h4 className="text-sm font-medium text-module">{t('budget.byCategories')}</h4>
                 <div className="space-y-2">
                   {budget.categories.map((cat) => {
                     // Get category info for displaying original categories

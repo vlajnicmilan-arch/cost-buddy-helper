@@ -44,8 +44,8 @@ export const ProjectForecastCard = ({ totalBudget, spent, milestones }: Props) =
   const renderShell = (body: React.ReactNode) => (
     <div className="rounded-lg bg-muted/50 p-4 space-y-3 mb-6">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-primary" />
-        <span className="font-medium text-sm">
+        <Sparkles className="w-4 h-4 text-module" />
+        <span className="font-medium text-sm text-module">
           {t('projects.forecast.title', '🔮 Prognoza — po trenutnom tempu')}
         </span>
       </div>

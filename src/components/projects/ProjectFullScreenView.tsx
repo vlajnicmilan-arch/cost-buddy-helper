@@ -631,8 +631,8 @@ export const ProjectFullScreenView = ({
                     <div className="p-4 rounded-lg border">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{t('projects.milestonesProgress')}</span>
+                          <Target className="w-4 h-4 text-module" />
+                          <span className="font-medium text-module">{t('projects.milestonesProgress')}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">
                           {completedMilestones} / {milestones.length} {t('projects.completed')}
@@ -652,8 +652,8 @@ export const ProjectFullScreenView = ({
                   {(project.start_date || project.end_date) && (
                     <div className="p-4 rounded-lg border">
                       <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('projects.timeline')}</span>
+                        <Calendar className="w-4 h-4 text-module" />
+                        <span className="font-medium text-module">{t('projects.timeline')}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm flex-wrap">
                         {project.start_date && (
@@ -703,7 +703,7 @@ export const ProjectFullScreenView = ({
                         onClick={() => setPhasesView('list')}
                         className={cn(
                           'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                          phasesView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                          phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
                         )}
                       >
                         {t('projects.kanban.list', 'Lista')}
@@ -713,7 +713,7 @@ export const ProjectFullScreenView = ({
                         onClick={() => setPhasesView('timeline')}
                         className={cn(
                           'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                          phasesView === 'timeline' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                          phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
                         )}
                       >
                         <GanttChart className="w-3 h-3" />
