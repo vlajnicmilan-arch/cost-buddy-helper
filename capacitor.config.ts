@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
       // on certain Android WebView versions.
       launchShowDuration: 0,
       launchAutoHide: false,
-      backgroundColor: '#0f172a',
+      backgroundColor: '#0b0c0e',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: false,
