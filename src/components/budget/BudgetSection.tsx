@@ -80,10 +80,10 @@ export const BudgetSection = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-module/10 flex items-center justify-center">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-module" />
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-module-muted" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-module">{t('budget.title', 'Budžeti')}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-module-muted">{t('budget.title', 'Budžeti')}</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {budgets.length} {t('budget.activeBudgets', 'aktivnih budžeta')}
             </p>

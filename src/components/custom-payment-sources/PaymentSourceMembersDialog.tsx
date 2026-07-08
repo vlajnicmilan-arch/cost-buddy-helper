@@ -96,7 +96,7 @@ export const PaymentSourceMembersDialog = ({
       <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-module" />
+            <Users className="w-5 h-5 text-module-muted" />
             {t('paymentSourceMembers.title', { name: paymentSource.name })}
           </DialogTitle>
         </DialogHeader>
@@ -106,8 +106,8 @@ export const PaymentSourceMembersDialog = ({
           {isOwner && (
             <div className="p-4 rounded-lg border bg-muted/50 space-y-3">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-module" />
-                <span className="font-medium text-module">{t('paymentSourceMembers.inviteMember')}</span>
+                <UserPlus className="w-4 h-4 text-module-muted" />
+                <span className="font-medium text-module-muted">{t('paymentSourceMembers.inviteMember')}</span>
               </div>
               
               <div className="space-y-3">

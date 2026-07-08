@@ -41,10 +41,10 @@ export const WalletTransfersCard = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-module/10 flex items-center justify-center">
-            <ArrowLeftRight className="w-5 h-5 text-module" />
+            <ArrowLeftRight className="w-5 h-5 text-module-muted" />
           </div>
           <div>
-            <p className="text-sm font-medium text-module">{t('transactions.transfers')}</p>
+            <p className="text-sm font-medium text-module-muted">{t('transactions.transfers')}</p>
             <p className="text-xs text-muted-foreground">
               {monthlyTransferCount === 0
                 ? t('transactions.noTransfers')

@@ -114,7 +114,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
               className="rounded-t-2xl p-0 max-h-[85svh] flex flex-col"
             >
               <SheetHeader className="text-left px-6 pt-6 pb-2 shrink-0">
-                <SheetTitle className="text-module">
+                <SheetTitle className="text-module-muted">
                   {t('projects.tabs.moreSheetTitle', 'Sve sekcije')}
                 </SheetTitle>
               </SheetHeader>
@@ -140,7 +140,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                           : 'text-foreground hover:bg-muted'
                       )}
                     >
-                      <Icon className={cn('w-4 h-4 shrink-0', !selected && 'text-module')} />
+                      <Icon className={cn('w-4 h-4 shrink-0', !selected && 'text-module-muted opacity-70')} />
                       <span className="flex-1 truncate">{tab.label}</span>
                       {tab.badge && <span className="shrink-0">{tab.badge}</span>}
                     </button>

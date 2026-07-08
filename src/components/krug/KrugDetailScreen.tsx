@@ -176,8 +176,8 @@ export function KrugDetailScreen({ krugId }: Props) {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium flex items-center gap-2 text-module">
-            <Users className="w-4 h-4 text-module" />
+          <h3 className="text-sm font-medium flex items-center gap-2 text-module-muted">
+            <Users className="w-4 h-4 text-module-muted" />
             {t('krug.members', 'Članovi')}
             <span className="text-xs text-muted-foreground">({members.length})</span>
           </h3>

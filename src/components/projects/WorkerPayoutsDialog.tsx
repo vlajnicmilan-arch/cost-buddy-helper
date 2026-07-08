@@ -444,7 +444,7 @@ export const WorkerPayoutsDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between gap-2 pr-6 text-module">
+            <DialogTitle className="flex items-center justify-between gap-2 pr-6 text-module-muted">
               <span>
                 {t('workers.payouts.dialogTitle', 'Isplate')}
                 {worker && (
