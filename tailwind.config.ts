@@ -77,6 +77,7 @@ export default {
         module: {
           DEFAULT: "hsl(var(--module-accent))",
           foreground: "hsl(var(--module-accent-foreground))",
+          muted: "hsl(var(--module-accent-muted))",
         },
         category: {
           food: "hsl(var(--category-food))",

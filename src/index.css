@@ -52,9 +52,12 @@
     --ring: 172 66% 40%;
 
     /* Module Color System — aktivni akcent (postavlja ModuleThemeProvider).
-       Default = overview (teal), poklapa se s --primary. */
+       Default = overview (teal), poklapa se s --primary.
+       `--module-accent-muted` je desaturirana / posvijetljena varijanta za
+       pomoćne natpise, blage badge-ove i sekundarne ikonice unutar modula. */
     --module-accent: 172 66% 40%;
     --module-accent-foreground: 0 0% 100%;
+    --module-accent-muted: 172 40% 55%;
 
     --radius: 0.75rem;
 
@@ -292,6 +295,12 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 220 10% 17%;
     --sidebar-ring: 167 73% 48%;
+  }
+
+  /* Modul-aware fokus ring — svaki modul preusmjerava --ring na svoj akcent.
+     Postavlja ModuleThemeProvider preko data-module atributa na <body>. */
+  body[data-module] {
+    --ring: var(--module-accent);
   }
 }
 
