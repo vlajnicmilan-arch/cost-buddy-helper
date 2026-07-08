@@ -123,8 +123,8 @@ export const BudgetMembersTab = ({
       {isOwner && (
         <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-module" />
-            <span className="font-medium text-module">{t('budget.inviteMembers')}</span>
+            <UserPlus className="w-4 h-4 text-module-muted" />
+            <span className="font-medium text-module-muted">{t('budget.inviteMembers')}</span>
           </div>
           
           {/* Email invitation */}
@@ -202,8 +202,8 @@ export const BudgetMembersTab = ({
 
       {/* Members list */}
       <div className="space-y-3">
-        <h4 className="font-medium flex items-center gap-2 text-module">
-          <Users className="w-4 h-4 text-module" />
+        <h4 className="font-medium flex items-center gap-2 text-module-muted">
+          <Users className="w-4 h-4 text-module-muted" />
           {t('budget.members', 'Članovi')} ({members.length})
         </h4>
 

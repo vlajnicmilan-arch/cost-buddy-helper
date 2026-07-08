@@ -406,7 +406,7 @@ export const BudgetFullScreenView = ({
                     {/* Categories Breakdown */}
                     {budget.categories.length > 0 && (
                       <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-module">{t('budget.byCategories')}</h3>
+                        <h3 className="text-lg font-semibold text-module-muted">{t('budget.byCategories')}</h3>
                         <div className="space-y-3">
                           {budget.categories.map((cat) => (
                             <div key={cat.id} className="p-4 rounded-xl bg-card border border-border">

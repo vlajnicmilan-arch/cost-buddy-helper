@@ -252,8 +252,8 @@ export const ProjectDetailDialog = ({
               {(project.start_date || project.end_date) && (
                 <div className="p-4 rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-4 h-4 text-module" />
-                    <span className="font-medium text-module">{t('projects.timeline')}</span>
+                    <Calendar className="w-4 h-4 text-module-muted" />
+                    <span className="font-medium text-module-muted">{t('projects.timeline')}</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     {project.start_date && (
@@ -277,8 +277,8 @@ export const ProjectDetailDialog = ({
                 <div className="p-4 rounded-lg border">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-module" />
-                      <span className="font-medium text-module">{t('projects.milestonesProgress')}</span>
+                      <Target className="w-4 h-4 text-module-muted" />
+                      <span className="font-medium text-module-muted">{t('projects.milestonesProgress')}</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {completedMilestones} / {milestones.length} {t('projects.completed')}

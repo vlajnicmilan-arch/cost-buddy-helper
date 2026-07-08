@@ -285,8 +285,8 @@ export const ProjectWorkersTab = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <User className="w-5 h-5 text-module" />
-          <h3 className="font-semibold text-module">{t('workers.title')}</h3>
+          <User className="w-5 h-5 text-module-muted" />
+          <h3 className="font-semibold text-module-muted">{t('workers.title')}</h3>
           <Badge variant="secondary">{workers.length}</Badge>
         </div>
         <div className="flex items-center gap-1">
