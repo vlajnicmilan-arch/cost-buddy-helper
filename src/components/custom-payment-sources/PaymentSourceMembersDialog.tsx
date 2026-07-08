@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { usePaymentSourceMembers, PaymentSourceRole, PAYMENT_SOURCE_ROLE_LABELS } from '@/hooks/usePaymentSourceMembers';
+import { usePaymentSourceMembers, PaymentSourceRole } from '@/hooks/usePaymentSourceMembers';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus, Eye, Edit3 } from 'lucide-react';
