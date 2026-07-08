@@ -317,8 +317,8 @@ export const ProjectMembersTab = ({
       {isManager && !isProjectClosed && (
         <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4" />
-            <span className="font-medium">{t('projects.inviteMembers')}</span>
+            <UserPlus className="w-4 h-4 text-module" />
+            <span className="font-medium text-module">{t('projects.inviteMembers')}</span>
           </div>
 
           {/* Context picker — where the project will appear for the invitee */}
