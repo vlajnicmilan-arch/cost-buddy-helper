@@ -1604,11 +1604,11 @@ BEGIN
   RAISE NOTICE 'PASS P24b — single voided piše voided i18n ključeve';
 
   -- (c) batch created — dodaj drugi payout za drugi projekt kroz istog radnika
-  INSERT INTO public.projects (id, user_id, name, project_type, status, start_date)
-    VALUES (v_proj2, v_owner, 'P24 drugi projekt', 'construction', 'active', DATE '2026-06-01');
-  INSERT INTO public.project_workers (id, project_id, user_id, first_name, last_name,
-    hourly_rate, daily_rate, currency, workday_hours)
-    VALUES (v_wrk2, v_proj2, v_worker_user, 'P24', 'Batch', 20, NULL, 'EUR', 8);
+  -- Minimalne kolone koje curated baseline shema poznaje (identično kao P15).
+  INSERT INTO public.projects (id, user_id, name)
+    VALUES (v_proj2, v_owner, 'P24 drugi projekt');
+  INSERT INTO public.project_workers (id, project_id, first_name, last_name, hourly_rate, user_id)
+    VALUES (v_wrk2, v_proj2, 'P24', 'Batch', 20, v_worker_user);
 
   DELETE FROM public.notifications WHERE user_id = v_worker_user;
 
