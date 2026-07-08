@@ -112,7 +112,7 @@ const ResetPassword = () => {
       <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Provjeravam sesiju...</p>
+          <p className="text-muted-foreground">{t('auth.reset.checkingSession')}</p>
         </div>
       </div>
     );
