@@ -19,7 +19,7 @@ import { UsersTab } from '@/components/admin/UsersTab';
 import { AccessTab } from '@/components/admin/AccessTab';
 import type { DrilldownIntent } from '@/components/admin/access/ModuleAccessOverview';
 import { ReportsTab } from '@/components/admin/ReportsTab';
-import { NotifyTab } from '@/components/admin/NotifyTab';
+import { NotifyTab, type BroadcastLangPayload } from '@/components/admin/NotifyTab';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { friendlyError } from '@/lib/errorMessages';
@@ -54,8 +54,10 @@ const Admin = () => {
   }, [activeTab]);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [notifTitle, setNotifTitle] = useState('');
-  const [notifMessage, setNotifMessage] = useState('');
+  const [broadcastPayload, setBroadcastPayload] = useState<BroadcastLangPayload>({
+    title_hr: '', title_en: '', title_de: '',
+    message_hr: '', message_en: '', message_de: '',
+  });
   const [sendingNotif, setSendingNotif] = useState(false);
   const [usersPage, setUsersPage] = useState(1);
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
@@ -242,19 +244,28 @@ const Admin = () => {
   };
 
   const sendBroadcastNotification = async () => {
-    if (!notifTitle.trim() || !notifMessage.trim()) {
-      showError(t('toasts.enterTitleAndMessage'));
+    if (!broadcastPayload.title_hr.trim() || !broadcastPayload.message_hr.trim()) {
+      showError(t('admin.broadcastMissingHr'));
       return;
     }
     setSendingNotif(true);
     try {
       const { data, error } = await supabase.functions.invoke('broadcast-notification', {
-        body: { title: notifTitle.trim(), message: notifMessage.trim() },
+        body: {
+          title_hr: broadcastPayload.title_hr.trim(),
+          title_en: broadcastPayload.title_en.trim(),
+          title_de: broadcastPayload.title_de.trim(),
+          message_hr: broadcastPayload.message_hr.trim(),
+          message_en: broadcastPayload.message_en.trim(),
+          message_de: broadcastPayload.message_de.trim(),
+        },
       });
       if (error) throw error;
-      showSuccess(`Obavijest poslana ${data?.count || ''} korisnicima`);
-      setNotifTitle('');
-      setNotifMessage('');
+      showSuccess(t('admin.broadcastSuccess', { count: data?.count ?? 0 }));
+      setBroadcastPayload({
+        title_hr: '', title_en: '', title_de: '',
+        message_hr: '', message_en: '', message_de: '',
+      });
     } catch (err: any) {
       showError(friendlyError(err));
     }
@@ -419,10 +430,8 @@ const Admin = () => {
 
           <TabsContent value="notify">
             <NotifyTab
-              notifTitle={notifTitle}
-              setNotifTitle={setNotifTitle}
-              notifMessage={notifMessage}
-              setNotifMessage={setNotifMessage}
+              payload={broadcastPayload}
+              onChange={(patch) => setBroadcastPayload((prev) => ({ ...prev, ...patch }))}
               sendingNotif={sendingNotif}
               onSend={sendBroadcastNotification}
             />
