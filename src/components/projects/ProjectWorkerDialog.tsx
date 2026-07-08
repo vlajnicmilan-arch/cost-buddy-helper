@@ -13,6 +13,7 @@ import { useProjectMembers } from '@/hooks/useProjectMembers';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 import { Link2, Copy, CheckCircle2, Loader2, UserPlus, Mail, X, Users } from 'lucide-react';
 
 interface ProjectWorkerDialogProps {
