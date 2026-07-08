@@ -703,7 +703,7 @@ export const ProjectFullScreenView = ({
                         onClick={() => setPhasesView('list')}
                         className={cn(
                           'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                          phasesView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                          phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
                         )}
                       >
                         {t('projects.kanban.list', 'Lista')}
@@ -713,7 +713,7 @@ export const ProjectFullScreenView = ({
                         onClick={() => setPhasesView('timeline')}
                         className={cn(
                           'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                          phasesView === 'timeline' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+                          phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
                         )}
                       >
                         <GanttChart className="w-3 h-3" />
