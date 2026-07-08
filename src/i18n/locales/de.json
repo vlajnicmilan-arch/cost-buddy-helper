@@ -5051,5 +5051,16 @@
       "removed": "Zuordnung entfernt",
       "removeFailed": "Entfernen fehlgeschlagen"
     }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "Kein Benutzer mit dieser E-Mail gefunden",
+      "alreadyMember": "Dieser Benutzer ist bereits Mitglied",
+      "alreadyInvited": "Dieser Benutzer hat bereits eine ausstehende Einladung",
+      "projectClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind deaktiviert.",
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "projectNotFound": "Projekt nicht gefunden",
+      "generic": "Einladung konnte nicht gesendet werden"
+    }
   }
 }
