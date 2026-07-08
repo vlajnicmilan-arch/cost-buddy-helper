@@ -2284,6 +2284,11 @@
     "viewer": "Promatrač",
     "worker": "Radnik"
   },
+  "budgetRoles": {
+    "owner": "Vlasnik",
+    "member": "Član",
+    "viewer": "Gledatelj"
+  },
   "notifications": {
     "title": "Obavijesti",
     "itemNotAvailable": "Stavka više nije dostupna",
@@ -4561,6 +4566,26 @@
         "businessBilling": "Business kroz Naplatu",
         "businessOverride": "Business kroz Override",
         "reset": "Resetiraj"
+      },
+      "tab": {
+        "refresh": "Osvježi",
+        "countUsers_one": "{{count}} korisnik",
+        "countUsers_few": "{{count}} korisnika",
+        "countUsers_other": "{{count}} korisnika",
+        "loading": "Učitavanje...",
+        "unnamed": "Bez imena",
+        "banned": "Blokiran",
+        "invited_one": "{{count}} pozvan",
+        "invited_few": "{{count}} pozvana",
+        "invited_other": "{{count}} pozvanih",
+        "lastLogin": "Zadnja prijava",
+        "lastDevice": "Zadnji uređaj",
+        "unblock": "Odblokiraj",
+        "block": "Blokiraj",
+        "removeAdmin": "Ukloni admin",
+        "addAdmin": "Dodaj admin",
+        "loadMore": "Učitaj više",
+        "filterHint": "Filter radi na učitanim korisnicima. Za pretragu svih, isključi filter ili klikni \"Učitaj više\" bez filtera."
       }
     },
     "user": {

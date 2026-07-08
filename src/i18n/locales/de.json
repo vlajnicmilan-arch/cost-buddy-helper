@@ -2279,6 +2279,11 @@
     "viewer": "Betrachter",
     "worker": "Arbeiter"
   },
+  "budgetRoles": {
+    "owner": "Eigentümer",
+    "member": "Mitglied",
+    "viewer": "Betrachter"
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "itemNotAvailable": "Eintrag ist nicht mehr verfügbar",
@@ -4554,6 +4559,24 @@
         "businessBilling": "Business via Abrechnung",
         "businessOverride": "Business via Override",
         "reset": "Zurücksetzen"
+      },
+      "tab": {
+        "refresh": "Aktualisieren",
+        "countUsers_one": "{{count}} Benutzer",
+        "countUsers_other": "{{count}} Benutzer",
+        "loading": "Wird geladen...",
+        "unnamed": "Ohne Name",
+        "banned": "Gesperrt",
+        "invited_one": "{{count}} eingeladen",
+        "invited_other": "{{count}} eingeladen",
+        "lastLogin": "Letzte Anmeldung",
+        "lastDevice": "Letztes Gerät",
+        "unblock": "Entsperren",
+        "block": "Sperren",
+        "removeAdmin": "Admin entfernen",
+        "addAdmin": "Admin hinzufügen",
+        "loadMore": "Mehr laden",
+        "filterHint": "Filter arbeitet auf geladenen Benutzern. Für alle deaktivieren oder ohne Filter auf \"Mehr laden\" klicken."
       }
     },
     "user": {

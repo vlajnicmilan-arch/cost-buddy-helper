@@ -236,12 +236,12 @@ export const UsersTab = ({
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
           {filteredUsers.length === users.length
-            ? `${users.length} korisnika`
+            ? t('admin.users.tab.countUsers', { count: users.length })
             : `${filteredUsers.length} / ${users.length}`}
         </p>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={usersLoading}>
           {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
-          Osvježi
+          {t('admin.users.tab.refresh')}
         </Button>
       </div>
 
@@ -312,7 +312,7 @@ export const UsersTab = ({
       {usersLoading && users.length === 0 ? (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Učitavanje...</p>
+          <p className="text-sm text-muted-foreground">{t('admin.users.tab.loading')}</p>
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
@@ -331,15 +331,15 @@ export const UsersTab = ({
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold">{u.display_name || 'Bez imena'}</p>
+                        <p className="text-sm font-semibold">{u.display_name || t('admin.users.tab.unnamed')}</p>
                         {u.roles.includes('admin') && (
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">Admin</Badge>
                         )}
                         {isBanned(u) && (
-                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Blokiran</Badge>
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{t('admin.users.tab.banned')}</Badge>
                         )}
                         {u.referral_count > 0 && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/50">{u.referral_count} pozvan{u.referral_count === 1 ? '' : 'ih'}</Badge>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-accent/50">{t('admin.users.tab.invited', { count: u.referral_count })}</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -377,7 +377,7 @@ export const UsersTab = ({
                     const latestLoginAt = u.last_login_at ?? u.last_sign_in_at;
                     if (!latestLoginAt) return null;
                     return (
-                      <span>Zadnja prijava: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
+                      <span>{t('admin.users.tab.lastLogin')}: {format(new Date(latestLoginAt), 'dd.MM. HH:mm', { locale: hr })}</span>
                     );
                   })()}
                   {u.app_version && (
@@ -428,7 +428,7 @@ export const UsersTab = ({
                     return (
                       <div>
                         <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                          <Smartphone className="w-3 h-3" /> Zadnji uređaj:
+                          <Smartphone className="w-3 h-3" /> {t('admin.users.tab.lastDevice')}:
                         </p>
                         <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 space-y-1.5">
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -449,21 +449,21 @@ export const UsersTab = ({
                       {isBanned(u) ? (
                         <Button size="sm" variant="outline" onClick={() => onManageUser('unban', u.id)} disabled={actionLoading === u.id}>
                           {actionLoading === u.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <UserCheck className="w-3.5 h-3.5 mr-1" />}
-                          Odblokiraj
+                          {t('admin.users.tab.unblock')}
                         </Button>
                       ) : (
                         <Button size="sm" variant="destructive" onClick={() => onManageUser('ban', u.id)} disabled={actionLoading === u.id}>
                           {actionLoading === u.id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Ban className="w-3.5 h-3.5 mr-1" />}
-                          Blokiraj
+                          {t('admin.users.tab.block')}
                         </Button>
                       )}
                       {u.roles.includes('admin') ? (
                         <Button size="sm" variant="outline" onClick={() => onManageUser('remove_role', u.id, 'admin')} disabled={actionLoading === u.id}>
-                          <ShieldOff className="w-3.5 h-3.5 mr-1" /> Ukloni admin
+                          <ShieldOff className="w-3.5 h-3.5 mr-1" /> {t('admin.users.tab.removeAdmin')}
                         </Button>
                       ) : (
                         <Button size="sm" variant="outline" onClick={() => onManageUser('add_role', u.id, 'admin')} disabled={actionLoading === u.id}>
-                          <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Dodaj admin
+                          <ShieldCheck className="w-3.5 h-3.5 mr-1" /> {t('admin.users.tab.addAdmin')}
                         </Button>
                       )}
                       {isEmailHardDeletable(u.email) ? (
@@ -487,13 +487,13 @@ export const UsersTab = ({
             <div className="text-center pt-2">
               <Button variant="outline" size="sm" onClick={onLoadMore} disabled={usersLoading}>
                 {usersLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                Učitaj više
+                {t('admin.users.tab.loadMore')}
               </Button>
             </div>
           )}
           {hasMoreUsers && (filter !== 'all' || search) && (
             <p className="text-center text-[11px] text-muted-foreground pt-2">
-              Filter radi na učitanim korisnicima. Za pretragu svih, isključi filter ili klikni "Učitaj više" bez filtera.
+              {t('admin.users.tab.filterHint')}
             </p>
           )}
         </div>

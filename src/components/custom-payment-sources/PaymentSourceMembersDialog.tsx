@@ -18,9 +18,9 @@ interface PaymentSourceMembersDialogProps {
   paymentSource: CustomPaymentSource | null;
 }
 
-const INVITE_ROLE_OPTIONS: { value: 'limited' | 'full'; label: string; description: string; icon: React.ReactNode }[] = [
-  { value: 'limited', label: 'Ograničeni', description: 'Može samo knjižiti transakcije, vidi samo svoje', icon: <Edit3 className="w-4 h-4" /> },
-  { value: 'full', label: 'Potpuni pristup', description: 'Može knjižiti i vidi sve transakcije na računu', icon: <Eye className="w-4 h-4" /> },
+const INVITE_ROLE_OPTIONS: { value: 'limited' | 'full'; labelKey: string; descKey: string; icon: React.ReactNode }[] = [
+  { value: 'limited', labelKey: 'paymentSourceMembers.limited', descKey: 'paymentSourceMembers.limitedDesc', icon: <Edit3 className="w-4 h-4" /> },
+  { value: 'full', labelKey: 'paymentSourceMembers.fullAccess', descKey: 'paymentSourceMembers.fullAccessDesc', icon: <Eye className="w-4 h-4" /> },
 ];
 
 export const PaymentSourceMembersDialog = ({
@@ -72,7 +72,7 @@ export const PaymentSourceMembersDialog = ({
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (confirm('Jeste li sigurni da želite ukloniti ovog člana?')) {
+    if (confirm(t('paymentSourceMembers.confirmRemove'))) {
       await removeMember(memberId);
       refetch();
     }
@@ -84,9 +84,9 @@ export const PaymentSourceMembersDialog = ({
   };
 
   const getEffectiveRoleLabel = (role: PaymentSourceRole) => {
-    if (role === 'owner') return 'Vlasnik';
-    if (role === 'full') return 'Potpuni pristup';
-    return 'Ograničeni'; // 'limited' or legacy 'member'
+    if (role === 'owner') return t('paymentSourceMembers.owner');
+    if (role === 'full') return t('paymentSourceMembers.fullAccess');
+    return t('paymentSourceMembers.limited'); // 'limited' or legacy 'member'
   };
 
   if (!paymentSource) return null;
@@ -97,7 +97,7 @@ export const PaymentSourceMembersDialog = ({
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            Članovi računa "{paymentSource.name}"
+            {t('paymentSourceMembers.title', { name: paymentSource.name })}
           </DialogTitle>
         </DialogHeader>
 
@@ -107,13 +107,13 @@ export const PaymentSourceMembersDialog = ({
             <div className="p-4 rounded-lg border bg-muted/50 space-y-3">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-4 h-4" />
-                <span className="font-medium">Pozovi člana</span>
+                <span className="font-medium">{t('paymentSourceMembers.inviteMember')}</span>
               </div>
               
               <div className="space-y-3">
                 {/* Role selector */}
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Razina pristupa</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('paymentSourceMembers.accessLevel')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {INVITE_ROLE_OPTIONS.map((option) => (
                       <button
@@ -128,9 +128,9 @@ export const PaymentSourceMembersDialog = ({
                       >
                         <div className="flex items-center gap-2 mb-1">
                           {option.icon}
-                          <span className="text-sm font-medium">{option.label}</span>
+                          <span className="text-sm font-medium">{t(option.labelKey)}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">{option.description}</p>
+                        <p className="text-xs text-muted-foreground">{t(option.descKey)}</p>
                       </button>
                     ))}
                   </div>
@@ -139,7 +139,7 @@ export const PaymentSourceMembersDialog = ({
                 <div className="flex gap-2">
                   <Input 
                     type="email"
-                    placeholder="email@primjer.com"
+                    placeholder={t('paymentSourceMembers.emailPlaceholder')}
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     className="flex-1"
@@ -154,7 +154,7 @@ export const PaymentSourceMembersDialog = ({
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Korisnik će dobiti push obavijest u aplikaciji
+                  {t('paymentSourceMembers.pushNotice')}
                 </p>
               </div>
             </div>
@@ -169,7 +169,7 @@ export const PaymentSourceMembersDialog = ({
             <div className="space-y-3">
               <h4 className="font-medium flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Članovi ({members.length})
+                {t('paymentSourceMembers.members')} ({members.length})
               </h4>
 
               {members.map((member) => (
@@ -194,7 +194,7 @@ export const PaymentSourceMembersDialog = ({
                       )}
                     </div>
                     {member.role === 'owner' ? (
-                      <p className="text-xs text-muted-foreground">Vlasnik</p>
+                      <p className="text-xs text-muted-foreground">{t('paymentSourceMembers.owner')}</p>
                     ) : isOwner ? (
                       <Select
                         value={member.role === 'member' ? 'limited' : member.role}
@@ -206,12 +206,12 @@ export const PaymentSourceMembersDialog = ({
                         <SelectContent>
                           <SelectItem value="limited">
                             <span className="flex items-center gap-1.5">
-                              <Edit3 className="w-3 h-3" /> Ograničeni
+                              <Edit3 className="w-3 h-3" /> {t('paymentSourceMembers.limited')}
                             </span>
                           </SelectItem>
                           <SelectItem value="full">
                             <span className="flex items-center gap-1.5">
-                              <Eye className="w-3 h-3" /> Potpuni pristup
+                              <Eye className="w-3 h-3" /> {t('paymentSourceMembers.fullAccess')}
                             </span>
                           </SelectItem>
                         </SelectContent>
@@ -242,7 +242,7 @@ export const PaymentSourceMembersDialog = ({
           {isOwner && invitations.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-medium text-muted-foreground">
-                Aktivne pozivnice ({invitations.length})
+                {t('paymentSourceMembers.pendingInvitations')} ({invitations.length})
               </h4>
 
               {invitations.map((invitation) => (
@@ -257,7 +257,7 @@ export const PaymentSourceMembersDialog = ({
                     </p>
                   </div>
                   
-                  <Badge variant="outline">Na čekanju</Badge>
+                  <Badge variant="outline">{t('paymentSourceMembers.pending')}</Badge>
                   
                   <Button 
                     variant="ghost" 
@@ -274,15 +274,15 @@ export const PaymentSourceMembersDialog = ({
 
           {/* Legend */}
           <div className="p-3 rounded-lg bg-muted/30 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Razine pristupa</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('paymentSourceMembers.accessLevels')}</p>
             <div className="space-y-1.5">
               <div className="flex items-start gap-2 text-xs">
                 <Edit3 className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <span><strong>Ograničeni</strong> — može knjižiti transakcije, vidi samo svoje</span>
+                <span><strong>{t('paymentSourceMembers.limited')}</strong> — {t('paymentSourceMembers.limitedLegend')}</span>
               </div>
               <div className="flex items-start gap-2 text-xs">
                 <Eye className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <span><strong>Potpuni pristup</strong> — može knjižiti i vidi sve transakcije na računu</span>
+                <span><strong>{t('paymentSourceMembers.fullAccess')}</strong> — {t('paymentSourceMembers.fullLegend')}</span>
               </div>
             </div>
           </div>
