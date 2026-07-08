@@ -676,8 +676,8 @@ export const AddExpenseDialog = ({
           if (matchedDest) transferDestinationId = matchedDest.id;
         }
       }
-      const tipAmount = totalWithTip ? parseFloat(totalWithTip) - scannedData.amount : 0;
-      const finalAmount = totalWithTip ? parseFloat(totalWithTip) : scannedData.amount;
+      const tipAmount = totalWithTip ? validateAmountInput(totalWithTip).value - scannedData.amount : 0;
+      const finalAmount = totalWithTip ? validateAmountInput(totalWithTip).value : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
       const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
       const newExpense = {
