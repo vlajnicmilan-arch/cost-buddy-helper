@@ -537,7 +537,7 @@ const Auth = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Lozinka</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               {isLogin && (
                 <button
                   type="button"
@@ -547,7 +547,7 @@ const Auth = () => {
                   }}
                   className="text-xs text-primary hover:underline"
                 >
-                  Zaboravljena lozinka?
+                  {t('auth.forgotPassword')}
                 </button>
               )}
             </div>
