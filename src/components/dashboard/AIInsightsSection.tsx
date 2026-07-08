@@ -70,8 +70,8 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   return (
     <section className="mb-4">
       <div className="flex items-center gap-2 mb-2 px-1">
-        <AlertCircle className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">{t("attention.title")}</h2>
+        <AlertCircle className="w-4 h-4 text-module" />
+        <h2 className="text-sm font-semibold text-module">{t("attention.title")}</h2>
       </div>
       {loading && merged.length === 0 ? (
         <div className="space-y-1.5">

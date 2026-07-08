@@ -100,8 +100,8 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
 
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-medium flex items-center gap-2">
-        <Inbox className="w-4 h-4" />
+      <h3 className="text-sm font-medium flex items-center gap-2 text-module">
+        <Inbox className="w-4 h-4 text-module" />
         {t('krug.queue.title', 'Za odlučivanje')}
         {pending.length > 0 && (
           <Badge

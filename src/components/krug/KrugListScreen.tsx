@@ -27,7 +27,7 @@ export function KrugListScreen({ onSelect }: Props) {
   return (
     <div className="space-y-3">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('krug.title', 'Krug')}</h1>
+        <h1 className="text-2xl font-semibold text-module">{t('krug.title', 'Krug')}</h1>
         {krugs.length > 0 && (
           <Button size="sm" variant="module" onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-1" />
