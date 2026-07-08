@@ -399,16 +399,11 @@ export const ProjectDialog = ({
                       )}
                     </Label>
                     <div className="relative">
-                      <Input
+                      <MoneyInput
                         id="contractValue"
-                        type="text"
-                        inputMode="decimal"
                         value={contractValue}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-                          setContractValue(value);
-                        }}
-                        placeholder="0.00"
+                        onChange={(e) => setContractValue(e.target.value)}
+                        placeholder="0,00"
                         className="pr-12"
                         disabled={contractValueLocked}
                         aria-describedby={contractValueLocked ? 'contractValueLockedHint' : undefined}
