@@ -255,7 +255,7 @@ const ResetPassword = () => {
             disabled={loading}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Promijeni lozinku
+            {t('auth.reset.changePasswordButton')}
           </Button>
 
           <div className="text-center">
@@ -265,7 +265,7 @@ const ResetPassword = () => {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4 inline mr-1" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </button>
           </div>
         </form>
