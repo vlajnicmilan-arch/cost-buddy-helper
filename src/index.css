@@ -296,6 +296,12 @@
     --sidebar-border: 220 10% 17%;
     --sidebar-ring: 167 73% 48%;
   }
+
+  /* Modul-aware fokus ring — svaki modul preusmjerava --ring na svoj akcent.
+     Postavlja ModuleThemeProvider preko data-module atributa na <body>. */
+  body[data-module] {
+    --ring: var(--module-accent);
+  }
 }
 
 @layer base {
