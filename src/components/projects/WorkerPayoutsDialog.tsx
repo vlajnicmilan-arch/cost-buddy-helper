@@ -571,15 +571,13 @@ export const WorkerPayoutsDialog = ({
 
                   <div>
                     <Label className="text-xs">{t('workers.payouts.paidAmount', 'Isplaćeno')}</Label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       value={paidAmount}
                       onChange={(e) => {
                         setPaidAmount(e.target.value);
                         setPaidAmountDirty(true);
                       }}
-                      placeholder={mainPreview ? formatAutoFillAmount(mainPreview.gross) : '0.00'}
+                      placeholder={mainPreview ? formatAutoFillAmount(mainPreview.gross) : '0,00'}
                     />
                     {showApplyMainCalc && mainPreview && (
                       <button
