@@ -59,7 +59,7 @@ export const BusinessDebtTracker = () => {
       type: formType,
       contact_name: formContact,
       description: formDesc || null,
-      amount: parseFloat(formAmount),
+      amount: parseLocaleAmount(formAmount).value,
       paid_amount: 0,
       due_date: formDueDate || null,
       status: 'active',
