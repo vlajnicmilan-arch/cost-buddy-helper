@@ -1,3 +1,5 @@
+// WS3a-2 Batch A — refactored to write i18n keys into notification row and
+// dispatch push via send-push (translator uses recipient's preferred_language).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushNotification } from '../_shared/sendPushNotification.ts';
 
@@ -14,10 +16,9 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Find all pending transactions older than 24 hours
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { data: expiredTransactions, error: fetchError } = await supabase
@@ -40,9 +41,8 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${expiredTransactions.length} expired pending transactions`);
 
-    // Delete expired transactions
     const expiredIds = expiredTransactions.map(t => t.id);
-    
+
     const { error: deleteError } = await supabase
       .from('expenses')
       .delete()
@@ -53,19 +53,27 @@ Deno.serve(async (req) => {
       throw deleteError;
     }
 
-    // Send notifications to submitters
+    const titleKey = 'notifications.auto_reject_pending.title';
+    const messageKey = 'notifications.auto_reject_pending.message';
+
     const notifications = expiredTransactions
       .filter(t => t.submitted_by)
-      .map(t => ({
-        user_id: t.submitted_by,
-        type: 'transaction_auto_rejected',
-        title: 'Transakcija automatski odbijena',
-        message: `Vaša transakcija "${t.description}" je automatski odbijena jer nije odobrena u roku od 24 sata.`,
-        data: {
-          transaction_id: t.id,
-          project_id: t.project_id
-        }
-      }));
+      .map(t => {
+        const messageVars = { description: t.description };
+        return {
+          user_id: t.submitted_by,
+          type: 'transaction_auto_rejected',
+          title: titleKey,
+          message: messageKey,
+          data: {
+            transaction_id: t.id,
+            project_id: t.project_id,
+            description: t.description,
+            title_vars: {},
+            message_vars: messageVars,
+          },
+        };
+      });
 
     if (notifications.length > 0) {
       const { error: notifyError } = await supabase
@@ -77,14 +85,26 @@ Deno.serve(async (req) => {
         // Don't throw, notifications are not critical
       }
 
-      // Best-effort push fan-out
+      // Best-effort push fan-out — send-push translates via data.i18n_title_key
+      // + data.i18n_body_key using recipient's preferred_language.
       await Promise.all(
         notifications.map((n) =>
           sendPushNotification({
             user_id: n.user_id,
-            title: n.title,
-            body: n.message,
-            data: { ...n.data, type: 'transaction_auto_rejected', category: 'pending' },
+            // Fallback HR pre-rendered strings — send-push overrides with
+            // translated text when i18n keys are present in data.
+            title: 'Transakcija automatski odbijena',
+            body: `Vaša transakcija „${n.data.description}" je automatski odbijena jer nije odobrena u roku od 24 sata.`,
+            data: {
+              type: 'transaction_auto_rejected',
+              category: 'pending',
+              transaction_id: n.data.transaction_id,
+              project_id: n.data.project_id,
+              i18n_title_key: titleKey,
+              i18n_body_key: messageKey,
+              title_vars: n.data.title_vars,
+              message_vars: n.data.message_vars,
+            },
             source: 'auto-reject-pending',
           })
         )
@@ -92,8 +112,8 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        message: 'Auto-rejected expired transactions', 
+      JSON.stringify({
+        message: 'Auto-rejected expired transactions',
         count: expiredTransactions.length,
         notificationsSent: notifications.length
       }),
