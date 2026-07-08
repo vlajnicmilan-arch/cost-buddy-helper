@@ -78,20 +78,16 @@ export const ExpenseItemsList = ({
                   className="h-9 w-16 text-sm rounded-lg"
                   min="1"
                 />
-                <Input
-                  type="number"
-                  step="0.01"
+                <MoneyInput
                   placeholder={t('transactions.price')}
-                  value={item.unit_price || ''}
-                  onChange={(e) => onUpdateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                  value={item.unit_price ? String(item.unit_price) : ''}
+                  onChange={(e) => onUpdateItem(index, 'unit_price', parseLocaleAmount(e.target.value).value || 0)}
                   className="h-9 flex-1 text-sm rounded-lg"
                 />
-                <Input
-                  type="number"
-                  step="0.01"
+                <MoneyInput
                   placeholder={t('common.total')}
-                  value={item.total_price || ''}
-                  onChange={(e) => onUpdateItem(index, 'total_price', parseFloat(e.target.value) || 0)}
+                  value={item.total_price ? String(item.total_price) : ''}
+                  onChange={(e) => onUpdateItem(index, 'total_price', parseLocaleAmount(e.target.value).value || 0)}
                   className="h-9 w-24 text-sm rounded-lg font-medium"
                 />
               </div>
