@@ -2284,6 +2284,11 @@
     "member": "Mitglied",
     "viewer": "Betrachter"
   },
+  "runtimeDiagnostics": {
+    "versionsEqual": "✅ Versionen stimmen überein",
+    "versionsDiffer": "⚠️ Unterschied: lokal {{local}} vs remote {{remote}}",
+    "nativeRebuildHint": "ℹ️ Wenn Versionen abweichen, aber \"Aktualisieren\" nicht hilft, ist ein neuer APK-Build erforderlich (git pull → npm run build → npx cap sync → Android Studio)."
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "itemNotAvailable": "Eintrag ist nicht mehr verfügbar",

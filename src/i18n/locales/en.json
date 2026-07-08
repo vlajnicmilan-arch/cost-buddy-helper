@@ -2284,6 +2284,11 @@
     "member": "Member",
     "viewer": "Viewer"
   },
+  "runtimeDiagnostics": {
+    "versionsEqual": "✅ Versions match",
+    "versionsDiffer": "⚠️ Diff: local {{local}} vs remote {{remote}}",
+    "nativeRebuildHint": "ℹ️ If versions differ but \"Refresh\" does not help, a new APK build is required (git pull → npm run build → npx cap sync → Android Studio)."
+  },
   "notifications": {
     "title": "Notifications",
     "itemNotAvailable": "Item is no longer available",

@@ -2289,6 +2289,11 @@
     "member": "Član",
     "viewer": "Gledatelj"
   },
+  "runtimeDiagnostics": {
+    "versionsEqual": "✅ Verzije su jednake",
+    "versionsDiffer": "⚠️ Razlika: lokalno {{local}} vs remote {{remote}}",
+    "nativeRebuildHint": "ℹ️ Ako se verzije razlikuju ali \"Osvježi\" ne pomaže, potreban je novi APK build (git pull → npm run build → npx cap sync → Android Studio)."
+  },
   "notifications": {
     "title": "Obavijesti",
     "itemNotAvailable": "Stavka više nije dostupna",
