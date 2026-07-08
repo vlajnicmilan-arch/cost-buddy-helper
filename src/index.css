@@ -52,9 +52,12 @@
     --ring: 172 66% 40%;
 
     /* Module Color System — aktivni akcent (postavlja ModuleThemeProvider).
-       Default = overview (teal), poklapa se s --primary. */
+       Default = overview (teal), poklapa se s --primary.
+       `--module-accent-muted` je desaturirana / posvijetljena varijanta za
+       pomoćne natpise, blage badge-ove i sekundarne ikonice unutar modula. */
     --module-accent: 172 66% 40%;
     --module-accent-foreground: 0 0% 100%;
+    --module-accent-muted: 172 40% 55%;
 
     --radius: 0.75rem;
 
