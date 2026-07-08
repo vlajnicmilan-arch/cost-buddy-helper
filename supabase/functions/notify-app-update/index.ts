@@ -2,7 +2,7 @@
 // WS3a-2 Batch B — uses centralized i18n catalog; send-push translates per recipient.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
-import { translate, resolveLang } from "../_shared/i18n/index.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
