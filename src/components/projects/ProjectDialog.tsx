@@ -196,14 +196,14 @@ export const ProjectDialog = ({
 
     setSaving(true);
     try {
-      const parsedContract = parseFloat(contractValue);
+      const parsedContract = parseLocaleAmount(contractValue).value;
       const projectData = {
         name: name.trim(),
         description: description.trim() || null,
         icon,
         color,
         status,
-        total_budget: parseFloat(totalBudget) || 0,
+        total_budget: parseLocaleAmount(totalBudget).value || 0,
         contract_value:
           Number.isFinite(parsedContract) && parsedContract > 0 ? parsedContract : null,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
@@ -502,7 +502,7 @@ export const ProjectDialog = ({
                   </div>
 
                   {/* Contingency reserve (only when creating with a budget) */}
-                  {!isEdit && parseFloat(totalBudget) > 0 && (
+                  {!isEdit && parseLocaleAmount(totalBudget).value > 0 && (
                     <label className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors">
                       <input
                         type="checkbox"
