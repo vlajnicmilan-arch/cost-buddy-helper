@@ -195,6 +195,8 @@
     "totalBudget": "Gesamtbudget",
     "contractValue": "Vertragswert",
     "contractValueHint": "Betrag, den du dem Kunden berechnest. Wenn leer, wird das Gesamtbudget als erwarteter Umsatz verwendet.",
+    "contractValueLockedTooltip": "Basiswert ist gesperrt, weil Vertragsnachträge existieren. Statt diesen Wert zu ändern, füge einen neuen Nachtrag hinzu.",
+    "contractValueLockedHint": "Basiswert gesperrt — es existieren Vertragsnachträge. Neuen Nachtrag hinzufügen, um ihn zu ändern.",
     "currentStateCash": "Aktueller Stand (Bargeld)",
     "expectedContract": "Erwartet (Vertrag)",
     "collected": "Eingenommen",

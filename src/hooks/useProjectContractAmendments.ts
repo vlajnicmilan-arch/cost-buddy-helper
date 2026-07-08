@@ -53,6 +53,8 @@ export const useProjectContractAmendments = (projectId: string | null) => {
   }, [fetch]);
 
   const total = amendments.reduce((s, a) => s + (Number(a.amendment_amount) || 0), 0);
+  const hasAmendments = amendments.length > 0;
 
-  return { amendments, loading, total, refetch: fetch };
+  return { amendments, loading, total, hasAmendments, refetch: fetch };
 };
+

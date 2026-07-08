@@ -1223,6 +1223,9 @@ BEGIN
   END;
 
   -- (b) Radnikov attribution red — insert pa soft-delete kao radnik.
+  --     `uniq_expenses_user_worker_payout` (partial WHERE worker_payout_id IS NOT NULL)
+  --     ne isključuje soft-deleted redove, pa (c) hard-deleta ISTI red umjesto
+  --     drugog inserta.
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
     VALUES (v_worker_user, 100, 'income',
             'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
@@ -1238,19 +1241,14 @@ BEGIN
   END IF;
   RAISE NOTICE 'PASS P20b — radnikov soft-delete attribution reda dopušten';
 
-  -- (c) Hard DELETE radnikovog attribution reda (drugi insert).
-  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
-    VALUES (v_worker_user, 100, 'income',
-            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
-            'radnikov attribution P20c', gen_random_uuid(),
-            '2026-06-03', '2026-06-03 12:06:00+00', 'C2')
-    RETURNING id INTO v_worker_expense_id;
-
+  -- (c) Hard DELETE istog radnikovog attribution reda.
   DELETE FROM public.expenses WHERE id = v_worker_expense_id;
   IF EXISTS (SELECT 1 FROM public.expenses WHERE id = v_worker_expense_id) THEN
     RAISE EXCEPTION 'FAIL P20c — hard DELETE radnikovog attribution reda nije prošao';
   END IF;
   RAISE NOTICE 'PASS P20c — hard DELETE radnikovog attribution reda dopušten';
+
+
 
   -- (d) Batch attribution — insert pa soft-delete.
   INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id, date, event_at, time_confidence)
@@ -1270,8 +1268,140 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p20;
 
+-- ------------------------------------------------------------
+-- P21 — preview_worker_earnings RPC (WS1/1.2):
+--   (a) dva rate segmenta u periodu → točan gross (per-day rate_at)
+--   (b) anon NEMA execute pravo
+--   (c) unauthenticated poziv → 42501
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p21;
+SELECT pg_temp.seed_payout_fixtures(20, 4, 2, 1000);
+-- seed_payout_fixtures kreira: worker rate=20, 2 entries × 4h na 2026-06-02 i 2026-06-03.
+-- Dodajemo rate history s promjenom mid-period: 20→30 od 2026-06-03.
+--   entry 2026-06-02 (4h) × 20 = 80
+--   entry 2026-06-03 (4h) × 30 = 120
+--   Očekivano: hours=8, gross=200
+DO $$
+DECLARE
+  v_worker uuid := (SELECT val FROM _bfix WHERE key='wrk');
+  v_owner  uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_res jsonb;
+  v_hours numeric;
+  v_gross numeric;
+BEGIN
+  -- Backfill iz migracije (koji dodaje redak u rate_history za nove workere)
+  -- se izvodi samo jednom pri migraciji, ne za dinamički kreirane workere iz
+  -- seed_payout_fixtures. Ovdje sami postavimo dva reda uz bypass flag.
+
+  PERFORM set_config('app.allow_rate_write', 'on', true);
+  DELETE FROM public.project_worker_rate_history WHERE worker_id = v_worker;
+  INSERT INTO public.project_worker_rate_history (worker_id, rate, effective_from, created_by)
+    VALUES
+      (v_worker, 20, DATE '2026-06-01', v_owner),
+      (v_worker, 30, DATE '2026-06-03', v_owner);
+  PERFORM set_config('app.allow_rate_write', 'off', true);
+
+  -- (a) Owner poziv → očekuj hours=8, gross=200
+  PERFORM set_config('request.jwt.claim.sub', v_owner::text, true);
+  v_res := public.preview_worker_earnings(
+    v_worker,
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-01',
+    DATE '2026-06-05'
+  );
+  v_hours := (v_res->>'hours')::numeric;
+  v_gross := (v_res->>'gross')::numeric;
+  IF v_hours <> 8 THEN
+    RAISE EXCEPTION 'FAIL P21a — očekivan hours=8, dobiveno %', v_hours;
+  END IF;
+  IF v_gross <> 200 THEN
+    RAISE EXCEPTION 'FAIL P21a — očekivan gross=200, dobiveno %', v_gross;
+  END IF;
+  RAISE NOTICE 'PASS P21a — preview_worker_earnings vraća točan gross za 2 rate segmenta';
+
+  -- (b) anon nema EXECUTE
+  IF has_function_privilege(
+       'anon',
+       'public.preview_worker_earnings(uuid, uuid, date, date)',
+       'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'FAIL P21b — anon smije zvati preview_worker_earnings';
+  END IF;
+  RAISE NOTICE 'PASS P21b — anon revoked';
+
+  -- (c) unauthenticated (auth.uid() NULL) → 42501
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  BEGIN
+    PERFORM public.preview_worker_earnings(
+      v_worker,
+      (SELECT val FROM _bfix WHERE key='proj'),
+      DATE '2026-06-01', DATE '2026-06-05'
+    );
+    RAISE EXCEPTION 'FAIL P21c — unauthenticated poziv je prošao';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P21c — unauthenticated poziv odbijen (42501)';
+  END;
+END $$;
+RELEASE SAVEPOINT s_p21;
+
+-- ------------------------------------------------------------
+-- P22 — contract_value baseline lock (WS1/1.3):
+--   (a) projekt bez amendments → UPDATE contract_value prolazi
+--   (b) projekt s amendment → UPDATE contract_value blokiran (42501)
+--   (c) bypass flag (`app.allow_contract_baseline_write='on'`) → prolazi
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p22;
+DO $$
+DECLARE
+  v_user uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_proj uuid;
+BEGIN
+  -- Fresh projekt bez amendments
+  v_proj := gen_random_uuid();
+  INSERT INTO public.projects (id, user_id, name, contract_value)
+    VALUES (v_proj, v_user, 'P22-a', 10000);
+
+  -- (a) bez amendments — UPDATE prolazi
+  UPDATE public.projects SET contract_value = 12000 WHERE id = v_proj;
+  IF (SELECT contract_value FROM public.projects WHERE id = v_proj) <> 12000 THEN
+    RAISE EXCEPTION 'FAIL P22a — UPDATE contract_value bez amendments nije primijenjen';
+  END IF;
+  RAISE NOTICE 'PASS P22a — UPDATE contract_value bez amendments prolazi';
+
+  -- Dodaj amendment
+  INSERT INTO public.project_contract_amendments (project_id, user_id, amendment_amount, note)
+    VALUES (v_proj, v_user, 500, 'P22 aneks');
+
+  -- (b) s amendment — UPDATE mora pasti
+  BEGIN
+    UPDATE public.projects SET contract_value = 15000 WHERE id = v_proj;
+    RAISE EXCEPTION 'FAIL P22b — UPDATE contract_value s amendments je prošao (guard neaktivan)';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'PASS P22b — UPDATE contract_value s amendments blokiran (42501)';
+  END;
+  -- Vrijednost mora ostati 12000 (guard je odbio)
+  IF (SELECT contract_value FROM public.projects WHERE id = v_proj) <> 12000 THEN
+    RAISE EXCEPTION 'FAIL P22b — contract_value se ipak promijenio unatoč guardu';
+  END IF;
+
+  -- (b2) UPDATE koji NE mijenja contract_value (npr. rename) mora proći
+  UPDATE public.projects SET name = 'P22-renamed' WHERE id = v_proj;
+  RAISE NOTICE 'PASS P22b2 — UPDATE koji ne dira contract_value prolazi s amendments';
+
+  -- (c) bypass flag prolazi
+  PERFORM set_config('app.allow_contract_baseline_write', 'on', true);
+  UPDATE public.projects SET contract_value = 15000 WHERE id = v_proj;
+  PERFORM set_config('app.allow_contract_baseline_write', 'off', true);
+  IF (SELECT contract_value FROM public.projects WHERE id = v_proj) <> 15000 THEN
+    RAISE EXCEPTION 'FAIL P22c — bypass flag nije dopustio UPDATE';
+  END IF;
+  RAISE NOTICE 'PASS P22c — bypass flag app.allow_contract_baseline_write prolazi';
+END $$;
+RELEASE SAVEPOINT s_p22;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
+
 
 
 
