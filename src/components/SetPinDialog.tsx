@@ -81,7 +81,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
             }
             try {
               successVibration();
-              emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
+              emitAvatarEvent('proud', t('lock.shieldProtected', 'Zaštićeno! 🛡️'));
             } catch { /* non-critical */ }
             resetAndClose();
           } else if (newPin.length === firstPinRef.current.length) {
