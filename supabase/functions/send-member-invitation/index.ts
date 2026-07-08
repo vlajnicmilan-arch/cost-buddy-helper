@@ -54,7 +54,7 @@ serve(async (req) => {
     // Basic email validation (shared with classifyInvitationOutcome helper)
     if (!isValidInvitationEmail(invitedEmail)) {
       return new Response(
-        JSON.stringify({ error: "invalid_email", message: "Neispravna email adresa" }),
+        JSON.stringify({ error: "invalid_email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -83,7 +83,7 @@ serve(async (req) => {
     // invite link via email. For other types, keep the previous behavior.
     if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
       return new Response(
-        JSON.stringify({ error: "user_not_found", message: "Korisnik s tim emailom nije pronađen u sustavu" }),
+        JSON.stringify({ error: "user_not_found" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -129,7 +129,7 @@ serve(async (req) => {
         .maybeSingle();
       if (projectErr || !projectRow) {
         return new Response(
-          JSON.stringify({ error: "project_not_found", message: "Projekt nije pronađen" }),
+          JSON.stringify({ error: "project_not_found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -139,7 +139,7 @@ serve(async (req) => {
         projectRow.status === "cancelled"
       ) {
         return new Response(
-          JSON.stringify({ error: "project_closed", message: "Projekt je završen ili arhiviran — pozivnice nisu moguće" }),
+          JSON.stringify({ error: "project_closed" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -156,7 +156,7 @@ serve(async (req) => {
 
       if (existingMember) {
         return new Response(
-          JSON.stringify({ error: "already_member", message: "Korisnik je već član" }),
+          JSON.stringify({ error: "already_member" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -172,7 +172,7 @@ serve(async (req) => {
 
       if (existingInvitation) {
         return new Response(
-          JSON.stringify({ error: "already_invited", message: "Korisnik već ima aktivnu pozivnicu" }),
+          JSON.stringify({ error: "already_invited" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -188,7 +188,7 @@ serve(async (req) => {
 
       if (existingEmailInvite) {
         return new Response(
-          JSON.stringify({ error: "already_invited", message: "Već postoji aktivna pozivnica za tu email adresu" }),
+          JSON.stringify({ error: "already_invited" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
