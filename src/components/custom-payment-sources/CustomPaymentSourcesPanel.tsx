@@ -278,8 +278,8 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
     return (
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
+          <CardTitle className="text-lg flex items-center gap-2 text-module">
+            <CreditCard className="h-5 w-5 text-module" />
             {t('paymentSources.myAccounts')}
           </CardTitle>
         </CardHeader>
