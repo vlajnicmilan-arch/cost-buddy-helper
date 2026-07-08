@@ -72,18 +72,17 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
     // Only commas
     if (commaCount === 1) {
       const [intPart, decPart] = body.split(',');
-      if (decPart.length <= 2 && intPart.length > 0) {
-        // Decimal: 12,50
+      if (intPart.length > 0 && (decPart.length <= 2 || decPart.length > 3)) {
+        // Decimal: "12,50" or unusual precision like "12,3456"
         normalized = `${intPart}.${decPart}`;
       } else if (decPart.length === 3 && intPart.length > 0 && intPart.length <= 3) {
-        // Ambiguous "1,234" → treat as thousands
+        // Ambiguous "1,234" → treat as thousands (US convention)
         normalized = intPart + decPart;
       } else {
         return { valid: false, value: 0 };
       }
     } else {
-      // Multiple commas: must all be thousands (groups of 3) followed by nothing or decimal
-      // e.g. "1,234,567" but NOT "12,34,56"
+      // Multiple commas: must be thousands groups
       const parts = body.split(',');
       const head = parts[0];
       const rest = parts.slice(1);
@@ -94,16 +93,9 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
   } else {
     // Only dots
     if (dotCount === 1) {
-      const [intPart, decPart] = body.split('.');
-      if (decPart.length <= 2 && intPart.length > 0) {
-        // Decimal: 12.50
-        normalized = body;
-      } else if (decPart.length === 3 && intPart.length > 0 && intPart.length <= 3) {
-        // Ambiguous "1.234" → treat as thousands (EU convention)
-        normalized = intPart + decPart;
-      } else {
-        return { valid: false, value: 0 };
-      }
+      // Always treat single dot as decimal separator (preserves parseFloat semantics).
+      // EU thousands "1.234" is ambiguous with decimal — only multi-dot form implies thousands.
+      normalized = body;
     } else {
       // Multiple dots: EU thousands "1.234.567"
       const parts = body.split('.');
