@@ -199,6 +199,8 @@
     "totalBudget": "Ukupni budžet",
     "contractValue": "Ugovorena vrijednost",
     "contractValueHint": "Iznos koji naplaćuješ kupcu. Ako prazno, koristi se ukupan budžet kao očekivani prihod.",
+    "contractValueLockedTooltip": "Baseline je zaključan jer postoje aneksi ugovora. Umjesto izmjene ove vrijednosti, dodaj novi aneks.",
+    "contractValueLockedHint": "Baseline zaključan — postoje aneksi ugovora. Dodaj novi aneks za izmjenu.",
     "currentStateCash": "Trenutno stanje (gotovina)",
     "expectedContract": "Očekivano (ugovor)",
     "collected": "Naplaćeno",

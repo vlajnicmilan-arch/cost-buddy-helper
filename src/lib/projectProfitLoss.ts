@@ -9,13 +9,21 @@
  * Rules:
  *  - contract value falls back to total_budget when contract_value <= 0
  *  - material = max(0, expenses - labor - collaborator paid) so it never goes negative
- *  - labor cost = sum over workers of (sum of actual_hours) * hourly_rate (per-worker rates)
- *  - workers with 0 hours are omitted from worker details (but still in map)
+ *  - labor cost = per-entry rate_at (historical) with fallback to worker.hourly_rate
+ *    (delegated to computeProjectLaborCost). Legacy inputs without work_date /
+ *    rateHistory keep working via the fallback path.
+ *  - workers with 0 hours are omitted from worker details
  *  - collaborator cost uses paid_amount (cash basis)
  *  - margin / expectedMargin / collectedPercentage are 0 when denominator is 0
  *  - collectedPercentage is capped at 100
  *  - remainingToCollect is floored at 0
  */
+
+import {
+  computeProjectLaborCost,
+  type LaborRateHistoryRow,
+  type LaborWorkerDetail,
+} from './projectLaborCost';
 
 export interface PLProjectRow {
   contract_value?: number | string | null;
@@ -35,6 +43,11 @@ export interface PLTransactionRow {
 export interface PLWorkEntryRow {
   worker_id: string;
   actual_hours: number | string | null;
+  /**
+   * ISO date string. Optional for backwards-compatibility with older callers
+   * (tests without dates fall back to worker.hourly_rate, matching legacy behaviour).
+   */
+  work_date?: string | null;
 }
 
 export interface PLWorkerRow {
@@ -52,13 +65,7 @@ export interface PLCollaboratorRow {
   paid_amount?: number | string | null;
 }
 
-export interface PLWorkerDetail {
-  id: string;
-  name: string;
-  hours: number;
-  rate: number;
-  cost: number;
-}
+export type PLWorkerDetail = LaborWorkerDetail;
 
 export interface PLCollaboratorDetail {
   id: string;
@@ -73,6 +80,12 @@ export interface PLInput {
   workEntries: PLWorkEntryRow[] | null | undefined;
   workers: PLWorkerRow[] | null | undefined;
   collaborators: PLCollaboratorRow[] | null | undefined;
+  /**
+   * Optional per-day rate history. When absent, labor cost falls back to
+   * worker.hourly_rate (legacy behaviour). Provide this from
+   * useProjectProfitLoss for historically-accurate figures.
+   */
+  rateHistory?: LaborRateHistoryRow[] | null | undefined;
 }
 
 export interface PLResult {
@@ -143,28 +156,22 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
   }
 
 
-  const workerMap = new Map<string, { name: string; rate: number; hours: number }>();
-  for (const w of input.workers ?? []) {
-    workerMap.set(w.id, {
-      name: `${w.first_name} ${w.last_name}`,
-      rate: num(w.hourly_rate),
-      hours: 0,
-    });
-  }
-  for (const e of input.workEntries ?? []) {
-    const w = workerMap.get(e.worker_id);
-    if (w) w.hours += num(e.actual_hours);
-  }
-
-  let laborCost = 0;
-  const workerDetails: PLWorkerDetail[] = [];
-  workerMap.forEach((w, id) => {
-    const cost = w.hours * w.rate;
-    laborCost += cost;
-    if (w.hours > 0) {
-      workerDetails.push({ id, name: w.name, hours: w.hours, rate: w.rate, cost });
-    }
+  // Labor cost — per-day rate_at() with fallback to worker.hourly_rate.
+  // Delegated to the shared helper so useProjectProfitLoss, MyWorkerPayCard,
+  // and any future consumer produce identical numbers.
+  const labor = computeProjectLaborCost({
+    workers: input.workers ?? [],
+    workEntries: (input.workEntries ?? []).map((e) => ({
+      worker_id: e.worker_id,
+      actual_hours: e.actual_hours,
+      // Legacy callers without work_date get the fallback path (no history match).
+      work_date: e.work_date ?? '',
+    })),
+    rateHistory: input.rateHistory ?? [],
   });
+  const laborCost = labor.laborCost;
+  const workerDetails: PLWorkerDetail[] = labor.workerDetails;
+
 
   let collaboratorCost = 0;
   const collabDetails: PLCollaboratorDetail[] = [];

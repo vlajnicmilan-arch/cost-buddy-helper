@@ -28,3 +28,5 @@
 20260707204848_*.sql   # V2-B: server-side worker payout notifications (trigger + enqueue helper + batch supresija)
 20260707211951_*.sql   # Attribution v1: worker_payout_batch_id kolona + unique indexi + get_my_incoming_payouts RPC
 20260707215139_*.sql   # BUG C fix: _guard_expense_payout_write suženo na ownerov auto-expense (radnikov attribution slobodan)
+20260708051843_*.sql   # WS1: preview_worker_earnings RPC + _guard_contract_value_update trigger (contract baseline lock)
+

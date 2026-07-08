@@ -1,24 +1,55 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
-import { Wallet, Clock, Coins } from 'lucide-react';
+import { Wallet, Clock, Coins, Loader2 } from 'lucide-react';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useWorkerEarningsPreview } from '@/hooks/useWorkerEarningsPreview';
 
 interface MyWorkerPayCardProps {
   /**
-   * Hourly rate of the linked worker, or null when the current user is NOT
-   * yet linked to a project_workers row (owner hasn't added them as worker).
+   * Linked worker's id in project_workers, or null when the current user is
+   * NOT yet linked to a worker on this project.
+   */
+  workerId: string | null;
+  projectId: string;
+  /**
+   * Fallback hourly rate for display when the RPC preview is unavailable
+   * (network, permission) OR when hourlyRate itself is 0 (no rate set).
+   * Also used to detect "worker linked but no rate" state.
    */
   hourlyRate: number | null;
-  hours: number;
+  periodStart: string | null; // ISO date; null == show "not linked / no period"
+  periodEnd: string | null;
   periodLabel: string;
 }
 
-export const MyWorkerPayCard = ({ hourlyRate, hours, periodLabel }: MyWorkerPayCardProps) => {
+/**
+ * "Moja zarada na projektu" — historijski točan prikaz (per-day rate_at)
+ * preko `preview_worker_earnings` RPC-a. Ako RPC ne uspije ili radnik nema
+ * satnicu, prikazuje odgovarajuće stanje bez rušenja UI-ja.
+ */
+export const MyWorkerPayCard = ({
+  workerId,
+  projectId,
+  hourlyRate,
+  periodStart,
+  periodEnd,
+  periodLabel,
+}: MyWorkerPayCardProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const isLinked = hourlyRate !== null;
+
+  const isLinked = workerId !== null && hourlyRate !== null;
   const hasRate = isLinked && (hourlyRate as number) > 0;
-  const payout = hasRate ? hours * (hourlyRate as number) : 0;
+
+  const { data, loading } = useWorkerEarningsPreview(
+    hasRate ? workerId : null,
+    projectId,
+    hasRate ? periodStart : null,
+    hasRate ? periodEnd : null,
+  );
+
+  const hours = data?.hours ?? 0;
+  const payout = data?.gross ?? 0;
 
   return (
     <Card className="border-primary/30 bg-primary/5">
@@ -51,14 +82,26 @@ export const MyWorkerPayCard = ({ hourlyRate, hours, periodLabel }: MyWorkerPayC
                 <Clock className="w-3 h-3" />
                 {t('workLog.myPay.hoursInPeriod', 'Sati')}
               </p>
-              <p className="text-sm font-semibold">{hours.toFixed(1)}h</p>
+              <p className="text-sm font-semibold">
+                {loading ? (
+                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                ) : (
+                  `${hours.toFixed(1)}h`
+                )}
+              </p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
                 <Coins className="w-3 h-3" />
                 {t('workLog.myPay.payout', 'Za isplatu')}
               </p>
-              <p className="text-sm font-bold text-primary">{formatAmount(payout)}</p>
+              <p className="text-sm font-bold text-primary">
+                {loading ? (
+                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                ) : (
+                  formatAmount(payout)
+                )}
+              </p>
             </div>
           </div>
         ) : (

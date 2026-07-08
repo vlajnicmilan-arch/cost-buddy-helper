@@ -77,14 +77,31 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 ALTER TABLE public.expenses
   ADD COLUMN IF NOT EXISTS project_id uuid;
 
--- public.projects (id + owner)
+-- public.projects (id + owner + contract_value for WS1/1.3 baseline lock)
 CREATE TABLE IF NOT EXISTS public.projects (
-  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id    uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  name       text NOT NULL DEFAULT 'test-project',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name           text NOT NULL DEFAULT 'test-project',
+  contract_value numeric,
+  total_budget   numeric,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
 );
+
+-- Idempotent add for baselines that already existed without these columns
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS contract_value numeric;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS total_budget   numeric;
+
+-- WS1/1.3 — project_contract_amendments (needed by _guard_contract_value_update)
+CREATE TABLE IF NOT EXISTS public.project_contract_amendments (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id        uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id           uuid NOT NULL,
+  amendment_amount  numeric NOT NULL,
+  note              text,
+  created_at        timestamptz NOT NULL DEFAULT now()
+);
+
 
 -- public.project_workers (id + project + name + rate + optional linked user)
 CREATE TABLE IF NOT EXISTS public.project_workers (

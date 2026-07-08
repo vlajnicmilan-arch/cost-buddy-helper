@@ -134,12 +134,32 @@ export const ProjectWorkLogTab = ({
     return total;
   }, [myWorker, hoursByDate, monthFilter]);
 
+  // ISO period bounds for MyWorkerPayCard preview RPC. 'all' → wide range.
+  const { periodStartISO, periodEndISO } = useMemo(() => {
+    const toISO = (d: Date) => format(d, 'yyyy-MM-dd');
+    const now = new Date();
+    if (monthFilter === 'all') {
+      return { periodStartISO: '2000-01-01', periodEndISO: '2100-12-31' };
+    }
+    if (monthFilter === 'current') {
+      return { periodStartISO: toISO(startOfMonth(now)), periodEndISO: toISO(now) };
+    }
+    if (monthFilter === 'previous') {
+      const prevStart = startOfMonth(subMonths(now, 1));
+      const prevEnd = new Date(startOfMonth(now).getTime() - 1);
+      return { periodStartISO: toISO(prevStart), periodEndISO: toISO(prevEnd) };
+    }
+    // last3
+    return { periodStartISO: toISO(startOfMonth(subMonths(now, 2))), periodEndISO: toISO(now) };
+  }, [monthFilter]);
+
   const periodLabelMap: Record<MonthFilter, string> = {
     current: t('workLog.filter.currentMonth', 'Tekući mjesec'),
     previous: t('workLog.filter.previousMonth', 'Prošli mjesec'),
     last3: t('workLog.filter.last3', 'Zadnja 3 mjeseca'),
     all: t('workLog.filter.all', 'Sve'),
   };
+
 
 
   const handleSubmit = async (input: any) => {
@@ -209,11 +229,15 @@ export const ProjectWorkLogTab = ({
       {/* My pay (worker linked to this project, or hint when not yet linked) */}
       {!isManager && canWorklog && (
         <MyWorkerPayCard
+          workerId={myWorker?.id ?? null}
+          projectId={projectId}
           hourlyRate={myWorker ? myWorker.hourly_rate : null}
-          hours={myHoursInPeriod}
+          periodStart={periodStartISO}
+          periodEnd={periodEndISO}
           periodLabel={periodLabelMap[monthFilter]}
         />
       )}
+
 
       {/* Filters */}
       <div className="space-y-2">

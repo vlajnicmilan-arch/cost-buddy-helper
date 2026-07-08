@@ -199,6 +199,8 @@
     "totalBudget": "Total Budget",
     "contractValue": "Contract value",
     "contractValueHint": "Amount you bill the client. If empty, total budget is used as expected revenue.",
+    "contractValueLockedTooltip": "Baseline is locked because contract amendments exist. Instead of editing this value, add a new amendment.",
+    "contractValueLockedHint": "Baseline locked — contract amendments exist. Add a new amendment to change it.",
     "currentStateCash": "Current state (cash)",
     "expectedContract": "Expected (contract)",
     "collected": "Collected",

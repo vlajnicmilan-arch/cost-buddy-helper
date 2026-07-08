@@ -5578,6 +5578,15 @@ export type Database = {
         Returns: string
       }
       peek_core_scan_quota: { Args: never; Returns: Json }
+      preview_worker_earnings: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_project_id: string
+          p_worker_id: string
+        }
+        Returns: Json
+      }
       preview_worker_payout: {
         Args: {
           p_period_end: string

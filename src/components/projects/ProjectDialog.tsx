@@ -36,6 +36,10 @@ import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { useProjectAccessLevel, isReadOnlyAccess } from '@/hooks/useProjectAccessLevel';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { useProjectContractAmendments } from '@/hooks/useProjectContractAmendments';
+import { Lock } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const ADVANCED_OPEN_KEY = 'projectDialog_advancedOpen';
 
@@ -98,6 +102,12 @@ export const ProjectDialog = ({
 
   const isEdit = !!project;
   const { templates } = useProjectTemplates();
+  // WS1/1.3 — baseline contract_value is locked when the project has any
+  // amendments. UI mirrors the DB guard trigger so the user gets a friendly
+  // tooltip instead of a raw 42501.
+  const { hasAmendments } = useProjectContractAmendments(isEdit && project ? project.id : null);
+  const contractValueLocked = isEdit && hasAmendments;
+
 
   const activePreset = useMemo(() => getPreset(projectType), [projectType]);
 
@@ -368,11 +378,28 @@ export const ProjectDialog = ({
 
                   {/* Contract value */}
                   <div className="space-y-2">
-                    <Label htmlFor="contractValue">
+                    <Label htmlFor="contractValue" className="flex items-center gap-1.5">
                       {t('projects.contractValue', 'Ugovorena vrijednost')}
                       <span className="ml-1 text-xs font-normal text-muted-foreground">
                         ({t('common.optional', 'opcionalno')})
                       </span>
+                      {contractValueLocked && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Lock className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[260px] z-[70]">
+                              <p className="text-xs">
+                                {t(
+                                  'projects.contractValueLockedTooltip',
+                                  'Baseline je zaključan jer postoje aneksi ugovora. Umjesto izmjene ove vrijednosti, dodaj novi aneks.',
+                                )}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </Label>
                     <div className="relative">
                       <Input
@@ -386,16 +413,27 @@ export const ProjectDialog = ({
                         }}
                         placeholder="0.00"
                         className="pr-12"
+                        disabled={contractValueLocked}
+                        aria-describedby={contractValueLocked ? 'contractValueLockedHint' : undefined}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                         {currency.symbol}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {t(
-                        'projects.contractValueHint',
-                        'Iznos koji naplaćuješ kupcu. Ako prazno, koristi se ukupan budžet kao očekivani prihod.'
-                      )}
+                    <p
+                      id={contractValueLocked ? 'contractValueLockedHint' : undefined}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {contractValueLocked
+                        ? t(
+                            'projects.contractValueLockedHint',
+                            'Baseline zaključan — postoje aneksi ugovora. Dodaj novi aneks za izmjenu.',
+                          )
+                        : t(
+                            'projects.contractValueHint',
+                            'Iznos koji naplaćuješ kupcu. Ako prazno, koristi se ukupan budžet kao očekivani prihod.',
+                          )}
+
                     </p>
                   </div>
 
