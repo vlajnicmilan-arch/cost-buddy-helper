@@ -97,7 +97,7 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
     if (dotCount === 1) {
       const [intPart, decPart] = body.split('.');
       if (intPart.length === 0 || decPart.length === 0) return { valid: false, value: 0 };
-      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3) {
+      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3 && intPart[0] !== '0') {
         // HR convention: single dot + exactly 3 digits = thousands separator
         // ("1.234" → 1234, "12.500" → 12500, "2.500" → 2500). Money never has
         // 3 decimals, and interpreting "2.500" as 2,50 EUR is a silent
