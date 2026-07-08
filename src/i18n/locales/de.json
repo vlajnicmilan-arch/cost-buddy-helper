@@ -1047,6 +1047,11 @@
     "deleteForever": "Für immer löschen",
     "deleting": "Löschen...",
     "accountDeleted": "Konto erfolgreich gelöscht",
+    "deletionScheduled": "Ihr Konto wird am {{date}} endgültig gelöscht. Melden Sie sich vorher an, um dies abzubrechen.",
+    "deletionAlreadyScheduled": "Löschung ist bereits für {{date}} geplant",
+    "receiptCacheCleared_count": "{{count}} Belegbilder gelöscht",
+    "shareAppText": "Probiere V&M Balance — eine App zur Verwaltung deiner Finanzen!",
+    "selectLanguagePlaceholder": "Sprache",
     "resetData": "Neu anfangen",
     "resetDataDesc": "Löscht alle Transaktionen, Projekte und Budgets. Geldbörsen bleiben mit ihren Salden erhalten.",
     "resetDataBtn": "Daten zurücksetzen",
@@ -5045,6 +5050,17 @@
       "remove": "Zuordnung entfernen",
       "removed": "Zuordnung entfernt",
       "removeFailed": "Entfernen fehlgeschlagen"
+    }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "Kein Benutzer mit dieser E-Mail gefunden",
+      "alreadyMember": "Dieser Benutzer ist bereits Mitglied",
+      "alreadyInvited": "Dieser Benutzer hat bereits eine ausstehende Einladung",
+      "projectClosed": "Projekt ist abgeschlossen oder archiviert — Einladungen sind deaktiviert.",
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "projectNotFound": "Projekt nicht gefunden",
+      "generic": "Einladung konnte nicht gesendet werden"
     }
   }
 }

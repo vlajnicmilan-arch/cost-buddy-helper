@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 
 interface BudgetMembersTabProps {
   budgetId: string;
@@ -75,15 +76,7 @@ export const BudgetMembersTab = ({
       if (error) throw error;
       
       if (data.error) {
-        if (data.error === 'user_not_found') {
-          showError(t('budget.userNotFound', t('toasts.userNotFound')));
-        } else if (data.error === 'already_member') {
-          showError(t('budget.alreadyMember', t('toasts.alreadyMember')));
-        } else if (data.error === 'already_invited') {
-          showError(t('budget.alreadyInvited', t('toasts.alreadyInvited')));
-        } else {
-          showError(data.message || t('common.error'));
-        }
+        showError(invitationErrorMessage(data.error, data.message));
         return;
       }
 

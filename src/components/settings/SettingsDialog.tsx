@@ -430,20 +430,13 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         });
         if (error) throw error;
 
+        const scheduledDate = new Date(data.scheduled_for).toLocaleDateString(
+          i18n.language || 'hr-HR'
+        );
         if (data?.already_scheduled) {
-          showSuccess(
-            t('settings.deletionAlreadyScheduled', 'Brisanje je već zakazano za {{date}}').replace(
-              '{{date}}',
-              new Date(data.scheduled_for).toLocaleDateString('hr-HR')
-            )
-          );
+          showSuccess(t('settings.deletionAlreadyScheduled', { date: scheduledDate }));
         } else {
-          showSuccess(
-            t('settings.deletionScheduled', 'Račun će biti trajno obrisan {{date}}. Prijavite se prije tog datuma za otkazivanje.').replace(
-              '{{date}}',
-              new Date(data.scheduled_for).toLocaleDateString('hr-HR')
-            )
-          );
+          showSuccess(t('settings.deletionScheduled', { date: scheduledDate }));
         }
 
         await supabase.auth.signOut();
@@ -472,7 +465,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const handleShareApp = async () => {
     if (!user) return;
     try {
-      const text = 'Isprobaj V&M Balance - aplikaciju za praćenje financija!';
+      const text = t('settings.shareAppText', 'Isprobaj V&M Balance - aplikaciju za praćenje financija!');
       const url = `https://vmbalance.com?ref=${user.id}`;
       if (navigator.share) {
         await navigator.share({ title: 'V&M Balance', text, url });

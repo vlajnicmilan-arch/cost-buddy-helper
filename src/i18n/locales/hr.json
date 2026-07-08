@@ -1055,6 +1055,11 @@
     "deleteForever": "Obriši zauvijek",
     "deleting": "Brišem...",
     "accountDeleted": "Račun uspješno obrisan",
+    "deletionScheduled": "Račun će biti trajno obrisan {{date}}. Prijavite se prije tog datuma za otkazivanje.",
+    "deletionAlreadyScheduled": "Brisanje je već zakazano za {{date}}",
+    "receiptCacheCleared_count": "Obrisano {{count}} slika računa",
+    "shareAppText": "Isprobaj V&M Balance - aplikaciju za praćenje financija!",
+    "selectLanguagePlaceholder": "Jezik",
     "resetData": "Kreni ispočetka",
     "resetDataDesc": "Briše sve transakcije, projekte i budžete. Novčanici ostaju sa svojim stanjima.",
     "resetDataBtn": "Resetiraj podatke",
@@ -5052,6 +5057,17 @@
       "remove": "Ukloni pripis",
       "removed": "Pripis uklonjen",
       "removeFailed": "Uklanjanje nije uspjelo"
+    }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "Korisnik s tim emailom nije pronađen",
+      "alreadyMember": "Korisnik je već član",
+      "alreadyInvited": "Korisnik već ima aktivnu pozivnicu",
+      "projectClosed": "Projekt je završen ili arhiviran — pozivnice nisu moguće.",
+      "invalidEmail": "Neispravna email adresa",
+      "projectNotFound": "Projekt nije pronađen",
+      "generic": "Greška pri slanju pozivnice"
     }
   }
 }

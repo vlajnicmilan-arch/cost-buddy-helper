@@ -56,7 +56,7 @@ export const AppearanceSection = ({
         </div>
         <Select value={languageCode} onValueChange={onLanguageChange}>
           <SelectTrigger className="w-[130px] rounded-xl">
-            <SelectValue placeholder="Language" />
+            <SelectValue placeholder={t('settings.selectLanguagePlaceholder', 'Jezik')} />
           </SelectTrigger>
           <SelectContent>
             {languages.map((lang) => (

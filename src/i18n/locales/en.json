@@ -1047,6 +1047,11 @@
     "deleteForever": "Delete forever",
     "deleting": "Deleting...",
     "accountDeleted": "Account successfully deleted",
+    "deletionScheduled": "Your account will be permanently deleted on {{date}}. Sign in before that date to cancel.",
+    "deletionAlreadyScheduled": "Deletion is already scheduled for {{date}}",
+    "receiptCacheCleared_count": "Deleted {{count}} receipt images",
+    "shareAppText": "Try V&M Balance — an app for tracking your finances!",
+    "selectLanguagePlaceholder": "Language",
     "resetData": "Start Over",
     "resetDataDesc": "Deletes all transactions, projects and budgets. Wallets remain with their balances.",
     "resetDataBtn": "Reset data",
@@ -5045,6 +5050,17 @@
       "remove": "Remove attribution",
       "removed": "Attribution removed",
       "removeFailed": "Removal failed"
+    }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "No user with that email was found",
+      "alreadyMember": "This user is already a member",
+      "alreadyInvited": "This user already has a pending invitation",
+      "projectClosed": "Project is completed or archived — invitations are disabled.",
+      "invalidEmail": "Invalid email address",
+      "projectNotFound": "Project not found",
+      "generic": "Failed to send invitation"
     }
   }
 }

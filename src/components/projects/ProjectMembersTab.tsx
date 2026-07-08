@@ -18,6 +18,7 @@ import { OPTIONAL_TABS, TAB_LABELS } from '@/hooks/useProjectMemberPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectWriteGuard } from '@/hooks/useProjectWriteGuard';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 
 interface ProjectMembersTabProps {
   projectId: string;
@@ -187,17 +188,7 @@ export const ProjectMembersTab = ({
       if (error) throw error;
 
       if (data.error) {
-        if (data.error === 'user_not_found') {
-          showError(t('projects.userNotFound', t('toasts.userNotFound')));
-        } else if (data.error === 'already_member') {
-          showError(t('projects.alreadyMember', t('toasts.alreadyMember')));
-        } else if (data.error === 'already_invited') {
-          showError(t('projects.alreadyInvited', t('toasts.alreadyInvited')));
-        } else if (data.error === 'project_closed') {
-          showError(t('projects.invitationsDisabledClosed', 'Projekt je završen ili arhiviran — pozivnice nisu moguće.'));
-        } else {
-          showError(data.message || t('common.error'));
-        }
+        showError(invitationErrorMessage(data.error, data.message));
         return;
       }
 

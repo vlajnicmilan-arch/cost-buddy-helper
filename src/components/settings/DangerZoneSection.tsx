@@ -72,7 +72,7 @@ export const DangerZoneSection = ({
               try {
                 const { LocalFileCache } = await import('@/hooks/useLocalFileCache');
                 const count = await LocalFileCache.clearAllCachedReceipts();
-                showSuccess(t('settings.receiptCacheCleared', `Obrisano ${count} slika računa`));
+                showSuccess(t('settings.receiptCacheCleared_count', 'Obrisano {{count}} slika računa', { count }));
               } catch (e) {
                 showError(t('settings.receiptCacheClearError', 'Greška pri brisanju slika'));
               }
