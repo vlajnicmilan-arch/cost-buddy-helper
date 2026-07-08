@@ -243,17 +243,15 @@ export const BudgetDialog = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="totalAmount">{t('budget.totalAmount', 'Ukupni iznos')} *</Label>
-              <Input
+              <MoneyInput
                 id="totalAmount"
-                type="number"
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
+                placeholder="0,00"
               />
             </div>
           </div>
+
 
           {/* Recurring toggle */}
           {periodType !== 'one_time' && periodType !== 'custom' && (
