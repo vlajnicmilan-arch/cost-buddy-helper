@@ -28,8 +28,8 @@ export const PaymentSourcesFullScreenView = ({ open, onClose }: PaymentSourcesFu
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              <h1 className="text-lg font-semibold">
+              <CreditCard className="h-5 w-5 text-module" />
+              <h1 className="text-lg font-semibold text-module">
                 {t('paymentSources.myAccounts', 'Prilagođeni izvori plaćanja')}
               </h1>
             </div>
