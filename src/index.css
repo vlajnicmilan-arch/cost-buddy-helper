@@ -203,8 +203,9 @@
   }
 
   .dark {
-    /* #0A1A2F - anthracite blue background */
-    --background: 214 65% 11%;
+    /* Deep near-black background (~5% L, subtle cool tint).
+       Not pure #000 — shadows and depth need a floor above black. */
+    --background: 220 14% 5%;
 
     /* Category colors - adjusted for dark mode (more vibrant, higher lightness) */
     --category-food: 24 95% 60%;
@@ -233,65 +234,63 @@
     --category-investments: 158 80% 48%;
     --category-charity: 0 72% 62%;
     --category-other: 170 15% 60%;
-    --foreground: 0 0% 100%;
+    --foreground: 0 0% 98%;
 
     /* AI / Smart-scan accent (violet) — dark mode */
     --ai: 262 90% 70%;
     --ai-foreground: 0 0% 100%;
 
-    /* #111F34 - primary cards */
-    --card: 216 51% 14%;
-    --card-foreground: 0 0% 100%;
+    /* Card surface — one step above bg for layered depth */
+    --card: 220 12% 9%;
+    --card-foreground: 0 0% 98%;
 
-    /* #111F34 - popover same as card */
-    --popover: 216 51% 14%;
-    --popover-foreground: 0 0% 100%;
+    /* Popover slightly elevated above card */
+    --popover: 220 12% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    /* #21D4AE - teal accent */
+    /* #21D4AE - teal accent (unchanged) */
     --primary: 167 73% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* #15263E - secondary cards */
-    --secondary: 215 49% 16%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary surface — elevated */
+    --secondary: 220 11% 12%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* #1C324E - muted/hover */
-    --muted: 214 47% 21%;
-    --muted-foreground: 210 20% 70%;
+    /* Muted / hover — slightly lifted, foreground raised for WCAG on near-black */
+    --muted: 220 10% 14%;
+    --muted-foreground: 220 10% 74%;
 
-    /* #21D4AE - accent same as primary */
     --accent: 167 73% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --expense: 0 72% 55%;
+    --expense: 0 72% 58%;
     --expense-foreground: 0 0% 100%;
 
-    /* #21D4AE for income amounts */
     --income: 167 73% 48%;
     --income-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 0%;
 
-    --budget-warning: 25 95% 53%;
-    --budget-warning-foreground: 0 0% 100%;
+    --budget-warning: 25 95% 55%;
+    --budget-warning-foreground: 0 0% 0%;
 
-    /* #1C324E - border/input */
-    --border: 214 47% 21%;
-    --input: 214 47% 21%;
+    /* Suptilni rubovi — neutralno svjetliji ton umjesto plavog */
+    --border: 220 10% 17%;
+    --input: 220 10% 17%;
     --ring: 167 73% 48%;
 
-    /* Sidebar using same palette */
-    --sidebar-background: 214 65% 11%;
-    --sidebar-foreground: 0 0% 100%;
+    /* Sidebar — najdublja površina, sinkrona s bg */
+    --sidebar-background: 220 14% 4%;
+    --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 167 73% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 49% 16%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 214 47% 21%;
+    --sidebar-accent: 220 11% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 10% 17%;
     --sidebar-ring: 167 73% 48%;
   }
 }

@@ -9,7 +9,7 @@ export const useStatusBar = () => {
     try {
       const { StatusBar, Style } = await import('@capacitor/status-bar');
       await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light });
-      await StatusBar.setBackgroundColor({ color: isDark ? '#0f172a' : '#ffffff' });
+      await StatusBar.setBackgroundColor({ color: isDark ? '#0b0c0e' : '#ffffff' });
     } catch (e) {
       console.warn('StatusBar plugin not available:', e);
     }
