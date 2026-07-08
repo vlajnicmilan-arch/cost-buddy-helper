@@ -449,7 +449,7 @@ const Auth = () => {
               disabled={resetLoading}
             >
               {resetLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Pošalji link za resetiranje
+              {t('auth.sendResetLink')}
             </Button>
 
             <div className="text-center">
@@ -459,7 +459,7 @@ const Auth = () => {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 inline mr-1" />
-                Natrag na prijavu
+                {t('auth.backToLogin')}
               </button>
             </div>
           </form>
