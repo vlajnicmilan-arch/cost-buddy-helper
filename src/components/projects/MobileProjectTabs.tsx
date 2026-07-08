@@ -93,7 +93,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                   'relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   activeIsOverflow
-                    ? 'text-foreground'
+                    ? 'text-module'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -104,7 +104,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                 {activeIsOverflow && (
                   <span
                     aria-hidden
-                    className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-primary"
+                    className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-module"
                   />
                 )}
               </button>
