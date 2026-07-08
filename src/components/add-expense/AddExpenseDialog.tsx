@@ -979,7 +979,7 @@ export const AddExpenseDialog = ({
       }
     }
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = validateAmountInput(amount).value;
 
     if (isInstallment && type !== 'transfer') {
       await createInstallmentPlan({
