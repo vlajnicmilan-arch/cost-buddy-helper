@@ -333,17 +333,15 @@ export const ProjectWorkerDialog = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="hourlyRate">{t('workers.hourlyRate', 'Cijena sata')}</Label>
-              <Input
+              <MoneyInput
                 id="hourlyRate"
-                type="number"
-                step="0.01"
-                min="0"
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
           </div>
+
 
           {rateChanged && (
             <div className="space-y-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30">
