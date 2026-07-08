@@ -204,14 +204,14 @@ const ResetPassword = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
-            Unesite novu lozinku
+            {t('auth.reset.enterNewPassword')}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="password">Nova lozinka</Label>
+            <Label htmlFor="password">{t('auth.reset.newPasswordLabel')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
