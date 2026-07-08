@@ -81,9 +81,23 @@ export function useNotificationNavigation() {
   const navigateFromNotification = useCallback(
     (type: string | null | undefined, data: unknown): boolean => {
       // Attribution intercept: worker_payout_created/voided otvara AttributionSheet
-      // overlay-em preko CustomEvent-a — bez rute promjene. Ostale obavijesti
-      // idu kroz standardni route flow.
+      // overlay-em preko CustomEvent-a — bez rute promjene. Iznimka (WS2 / Faza 2.2):
+      // ako je storno obavijest već zna za pripisan expense red radnika
+      // (`worker_attribution_expense_id`), preskačemo sheet i vodimo radnika direktno
+      // na tu transakciju u /wallet?highlight=<id>&voidedAttribution=1 gdje ga
+      // dočekuje AlertDialog "Ukloni pripis".
       if (type === 'worker_payout_created' || type === 'worker_payout_voided') {
+        if (type === 'worker_payout_voided' && data && typeof data === 'object') {
+          const d = data as Record<string, unknown>;
+          const expenseId = typeof d.worker_attribution_expense_id === 'string'
+            && d.worker_attribution_expense_id.length > 0
+              ? d.worker_attribution_expense_id
+              : null;
+          if (expenseId) {
+            navigate(`/wallet?highlight=${expenseId}&voidedAttribution=1`);
+            return true;
+          }
+        }
         const action = type === 'worker_payout_created' ? 'created' : 'voided';
         const attr = parseAttributionPayload(action, data);
         if (attr) {
