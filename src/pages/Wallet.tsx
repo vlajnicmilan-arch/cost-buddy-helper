@@ -216,11 +216,15 @@ const Wallet = () => {
           title={t('nav.wallet', 'Novčanik')}
           onDataImported={refetch}
         />
-        <CustomPaymentSourcesPanel onRefetchExpenses={refetch} onSourceClick={(source) => {
-          setSelectedPaymentSource(source);
-          setPaymentSourceDialogOpen(true);
-          refetch();
-        }} />
+        <CustomPaymentSourcesPanel
+          onRefetchExpenses={refetch}
+          autoOpenNew={autoOpenNewSource}
+          onSourceClick={(source) => {
+            setSelectedPaymentSource(source);
+            setPaymentSourceDialogOpen(true);
+            refetch();
+          }}
+        />
         <WalletTransfersCard
           monthlyTransfers={monthlyTransfers}
           monthlyTransferCount={monthlyTransferCount}
