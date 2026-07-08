@@ -76,7 +76,7 @@ export const BudgetMembersTab = ({
       if (error) throw error;
       
       if (data.error) {
-        showError(invitationErrorMessage(data.error, t, data.message));
+        showError(invitationErrorMessage(data.error, data.message));
         return;
       }
 
