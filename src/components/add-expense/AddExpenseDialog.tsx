@@ -934,7 +934,7 @@ export const AddExpenseDialog = ({
     }
     // Surplus warning: linked advances exceed invoice amount
     if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
-      const parsedAmt = parseFloat(amount.replace(',', '.')) || 0;
+      const parsedAmt = validateAmountInput(amount).value || 0;
       // Recompute linkedSum from current expenses cache via the prop snapshot.
       // Best-effort: use a synchronous fetch via the global expenses cache is not available here,
       // so we rely on the trigger to validate and let the user proceed. The UI shows warning live.
