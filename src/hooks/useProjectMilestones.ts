@@ -72,6 +72,27 @@ export const useProjectMilestones = (projectId: string | null) => {
     fetchMilestones();
   }, [fetchMilestones]);
 
+  // Realtime: refetch when milestones change for this project (member additions,
+  // owner edits, status flips). RLS on refetch guarantees data scoping.
+  useEffect(() => {
+    if (!projectId || !user) return;
+    const channel = supabase
+      .channel(`project-milestones-${projectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'project_milestones', filter: `project_id=eq.${projectId}` },
+        () => { fetchMilestones(); },
+      )
+      // Milestone `spent` depends on expenses; refetch also when expenses change for this project.
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` },
+        () => { fetchMilestones(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId, user, fetchMilestones]);
+
   const addMilestone = async (
     milestone: Omit<ProjectMilestone, 'id' | 'created_at' | 'updated_at' | 'spent'>
   ): Promise<ProjectMilestone | null> => {
