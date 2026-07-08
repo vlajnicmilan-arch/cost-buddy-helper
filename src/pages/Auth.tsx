@@ -221,7 +221,7 @@ const Auth = () => {
     try {
       z.string().email().parse(trimmedEmail);
     } catch {
-      setErrors({ email: 'Nevažeća email adresa' });
+      setErrors({ email: t('auth.validation.invalidEmail') });
       return;
     }
     
