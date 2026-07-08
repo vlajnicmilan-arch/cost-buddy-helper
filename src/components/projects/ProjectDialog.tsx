@@ -360,16 +360,11 @@ export const ProjectDialog = ({
                   <div className="space-y-2">
                     <Label htmlFor="budget">{t('projects.budget')}</Label>
                     <div className="relative">
-                      <Input
+                      <MoneyInput
                         id="budget"
-                        type="text"
-                        inputMode="decimal"
                         value={totalBudget}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-                          setTotalBudget(value);
-                        }}
-                        placeholder="0.00"
+                        onChange={(e) => setTotalBudget(e.target.value)}
+                        placeholder="0,00"
                         className="pr-12"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
