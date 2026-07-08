@@ -396,7 +396,7 @@ const Auth = () => {
               onClick={backToLogin}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </Button>
           </div>
         </div>
