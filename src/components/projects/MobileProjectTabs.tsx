@@ -140,7 +140,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                           : 'text-foreground hover:bg-muted'
                       )}
                     >
-                      <Icon className={cn('w-4 h-4 shrink-0', !selected && 'text-module')} />
+                      <Icon className={cn('w-4 h-4 shrink-0', !selected && 'text-module-muted opacity-70')} />
                       <span className="flex-1 truncate">{tab.label}</span>
                       {tab.badge && <span className="shrink-0">{tab.badge}</span>}
                     </button>
