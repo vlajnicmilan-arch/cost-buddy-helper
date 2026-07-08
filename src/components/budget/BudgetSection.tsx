@@ -83,7 +83,7 @@ export const BudgetSection = ({
             <Target className="w-4 h-4 sm:w-5 sm:h-5 text-module" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold">{t('budget.title', 'Budžeti')}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-module">{t('budget.title', 'Budžeti')}</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
               {budgets.length} {t('budget.activeBudgets', 'aktivnih budžeta')}
             </p>
