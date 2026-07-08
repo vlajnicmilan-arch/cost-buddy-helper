@@ -234,12 +234,7 @@ export const ProjectWorkerDialog = ({
             : t('projects.workerEmailSent', 'Pozivnica poslana na {{email}}', { email })
         );
       } else {
-        const map: Record<string, string> = {
-          already_member: t('projects.alreadyMember', 'Korisnik je već član projekta'),
-          already_invited: t('projects.alreadyInvited', 'Korisnik već ima aktivnu pozivnicu'),
-          invalid_email: t('projects.invalidEmail', 'Neispravna email adresa'),
-        };
-        showError(map[result.error || ''] || t('common.error'));
+        showError(invitationErrorMessage(result.error || null));
       }
     } finally {
       setSendingEmail(false);
