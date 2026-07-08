@@ -631,8 +631,8 @@ export const ProjectFullScreenView = ({
                     <div className="p-4 rounded-lg border">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{t('projects.milestonesProgress')}</span>
+                          <Target className="w-4 h-4 text-module" />
+                          <span className="font-medium text-module">{t('projects.milestonesProgress')}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">
                           {completedMilestones} / {milestones.length} {t('projects.completed')}
