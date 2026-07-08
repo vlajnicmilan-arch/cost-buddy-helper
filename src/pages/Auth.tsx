@@ -705,7 +705,7 @@ const Auth = () => {
 
           <div className="text-center text-sm">
             <span className="text-muted-foreground">
-              {isLogin ? 'Nemate račun?' : 'Već imate račun?'}
+              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
             </span>
             {' '}
             <button
@@ -717,7 +717,7 @@ const Auth = () => {
               }}
               className="text-primary font-medium hover:underline"
             >
-              {isLogin ? 'Registrirajte se' : 'Prijavite se'}
+              {isLogin ? t('auth.signUp') : t('auth.signIn')}
             </button>
           </div>
         </form>
