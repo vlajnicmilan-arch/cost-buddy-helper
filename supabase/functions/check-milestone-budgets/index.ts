@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,25 +87,38 @@ Deno.serve(async (req) => {
 
       const isOver = threshold === 100;
       const overPct = usagePct - 100;
+      const percentageRounded = Math.round(usagePct);
 
-      const title = isOver
-        ? `🔴 Faza "${m.name}" je premašila budžet`
-        : `🟡 Faza "${m.name}" je na ${Math.round(usagePct)}% budžeta`;
-      const message = isOver
-        ? `Faza "${m.name}" u projektu "${project.name}" premašuje budžet za ${overPct.toFixed(0)}%. Razmisli o reviziji ili povlačenju iz rezerve.`
-        : `Faza "${m.name}" u projektu "${project.name}" potrošila je ${Math.round(usagePct)}% planiranog budžeta.`;
+      const titleKey = isOver
+        ? "notifications.milestone_budget.over.title"
+        : "notifications.milestone_budget.warning.title";
+      const messageKey = isOver
+        ? "notifications.milestone_budget.over.message"
+        : "notifications.milestone_budget.warning.message";
 
-      // 1) In-app notifications
+      const titleVars = isOver
+        ? { name: m.name }
+        : { name: m.name, percentage: percentageRounded };
+      const messageVars = isOver
+        ? { name: m.name, project: project.name, overPct: overPct.toFixed(0) }
+        : { name: m.name, project: project.name, percentage: percentageRounded };
+
+      const fallbackTitle = translate("hr", titleKey, titleVars);
+      const fallbackMessage = translate("hr", messageKey, messageVars);
+
+      // 1) In-app notifications — store i18n keys so client renders per user language.
       const notifications = targets.map((userId) => ({
         user_id: userId,
         type: "milestone_budget_alert",
-        title,
-        message,
+        title: titleKey,
+        message: messageKey,
         data: {
           milestone_id: m.id,
           project_id: m.project_id,
           threshold,
           usage_pct: Number(usagePct.toFixed(2)),
+          title_vars: titleVars,
+          message_vars: messageVars,
         },
       }));
 
@@ -129,20 +143,24 @@ Deno.serve(async (req) => {
         .insert(alertRows);
       if (!alertErr) alertsCreated += alertRows.length;
 
-      // 3) Push notifications (best effort) — budget alerts are approved instant exceptions.
+      // 3) Push notifications (best effort) — send-push translates via i18n keys.
       for (const userId of targets) {
         try {
           await supabase.functions.invoke("send-push", {
             body: {
               user_id: userId,
-              title,
-              body: message,
+              title: fallbackTitle,
+              body: fallbackMessage,
               data: {
                 type: "milestone_budget_alert",
                 milestone_id: m.id,
                 project_id: m.project_id,
                 threshold: String(threshold),
                 category: "budgets",
+                i18n_title_key: titleKey,
+                i18n_body_key: messageKey,
+                title_vars: titleVars,
+                message_vars: messageVars,
               },
             },
           });
