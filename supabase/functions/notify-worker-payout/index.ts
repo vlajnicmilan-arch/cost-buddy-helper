@@ -129,18 +129,52 @@ Deno.serve(async (req: Request): Promise<Response> => {
     for (const [recipientUserId, recPayouts] of byRecipient.entries()) {
       const total = recPayouts.reduce((sum, p) => sum + Number(p.paid_amount), 0);
       const projectNames = [...new Set(recPayouts.map((p) => projectMap.get(p.project_id) ?? 'projekt'))];
+      // Server-side amount format is locale-neutral; the {{amount}} placeholder
+      // is inserted verbatim by the catalog translator. Matches the DB trigger
+      // (enqueue_worker_payout_notifications) format for consistency.
       const amount = new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(total);
 
+      // WS3a-1: send-push translates via data.i18n_title_key / data.i18n_body_key
+      // using the recipient's profiles.preferred_language. `title` and `body`
+      // remain as fallback pre-rendered HR text in case translation fails so
+      // legacy delivery logs stay readable.
+      let titleKey: string;
+      let bodyKey: string;
+      let titleVars: Record<string, unknown>;
+      let bodyVars: Record<string, unknown>;
       let title: string;
       let message: string;
+
       if (recPayouts.length === 1) {
         const p = recPayouts[0];
         const projectName = projectMap.get(p.project_id) ?? 'projekt';
+        titleKey = isCreated
+          ? 'notifications.worker_payout.created.single.title'
+          : 'notifications.worker_payout.voided.single.title';
+        bodyKey = isCreated
+          ? 'notifications.worker_payout.created.single.message'
+          : 'notifications.worker_payout.voided.single.message';
+        titleVars = { project: projectName };
+        bodyVars = {
+          amount,
+          period_start: p.period_start,
+          period_end: p.period_end,
+        };
         title = isCreated ? `Nova isplata — ${projectName}` : `Isplata poništena — ${projectName}`;
         message = isCreated
           ? `Zaprimljena isplata ${amount} za period ${p.period_start} → ${p.period_end}.`
           : `Vaša isplata ${amount} (${p.period_start} → ${p.period_end}) je poništena${p.void_reason ? ` — razlog: ${p.void_reason}` : ''}.`;
       } else {
+        titleKey = isCreated
+          ? 'notifications.worker_payout.created.batch.title'
+          : 'notifications.worker_payout.voided.batch.title';
+        bodyKey = isCreated
+          ? 'notifications.worker_payout.created.batch.message'
+          : 'notifications.worker_payout.voided.batch.message';
+        titleVars = { count: projectNames.length };
+        bodyVars = isCreated
+          ? { amount, count: projectNames.length, project_names: projectNames.join(', ') }
+          : { amount, count: projectNames.length };
         title = isCreated
           ? `Zbirna isplata — ${projectNames.length} projekta`
           : `Zbirna isplata poništena — ${projectNames.length} projekta`;
@@ -152,8 +186,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // NOTE: in-app notification row is inserted by the DB trigger on
       // project_worker_payouts (migration V2-B). Do NOT insert here — would
       // create duplicates and was the source of prior client-abort loss.
-
-
 
       try {
         await admin.functions.invoke('send-push', {
@@ -167,6 +199,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
               batch_id: batch_id ?? recPayouts[0].batch_id ?? null,
               payout_count: recPayouts.length,
               action,
+              i18n_title_key: titleKey,
+              i18n_body_key: bodyKey,
+              title_vars: titleVars,
+              message_vars: bodyVars,
             },
           },
         });
@@ -175,6 +211,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
       delivered += 1;
     }
+
 
     return jsonRes({ success: true, delivered, recipients: byRecipient.size });
   } catch (error) {
