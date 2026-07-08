@@ -1,5 +1,5 @@
 /**
- * activation-nudge — Phase 3
+ * activation-nudge — Phase 3 (WS3a-2 Batch B: centralized i18n catalog)
  *
  * Sends Day 1, Day 3 and Day 7 push notifications to users who:
  *   • registered N days ago,
@@ -12,6 +12,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,49 +20,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type Lang = "hr" | "en" | "de";
-const COPY: Record<number, Record<Lang, { title: string; body: string }>> = {
+const KEYS: Record<number, { titleKey: string; bodyKey: string }> = {
   1: {
-    hr: {
-      title: "Dobrodošao u V&M Balance 👋",
-      body: "Kreni s prvim projektom — renoviranje, klijent ili osobni cilj.",
-    },
-    en: {
-      title: "Welcome to V&M Balance 👋",
-      body: "Start with your first project — renovation, client or personal goal.",
-    },
-    de: {
-      title: "Willkommen bei V&M Balance 👋",
-      body: "Starte mit deinem ersten Projekt — Renovierung, Kunde oder persönliches Ziel.",
-    },
+    titleKey: "notifications.activation_nudge.day1.title",
+    bodyKey: "notifications.activation_nudge.day1.message",
   },
   3: {
-    hr: {
-      title: "Spreman za prvi projekt? 🎯",
-      body: "Projekti ti pomažu pratiti budžet i troškove na jednom mjestu.",
-    },
-    en: {
-      title: "Ready for your first project? 🎯",
-      body: "Projects help you track budget and expenses in one place.",
-    },
-    de: {
-      title: "Bereit für dein erstes Projekt? 🎯",
-      body: "Projekte helfen dir, Budget und Ausgaben an einem Ort zu verfolgen.",
-    },
+    titleKey: "notifications.activation_nudge.day3.title",
+    bodyKey: "notifications.activation_nudge.day3.message",
   },
   7: {
-    hr: {
-      title: "Iskusi punu snagu V&M Balance 🚀",
-      body: "Otvori prvi projekt u 30s i drži troškove pod kontrolom.",
-    },
-    en: {
-      title: "Unlock the full power of V&M Balance 🚀",
-      body: "Create your first project in 30s and stay on top of expenses.",
-    },
-    de: {
-      title: "Entdecke die volle Power von V&M Balance 🚀",
-      body: "Erstelle dein erstes Projekt in 30s und behalte Ausgaben im Griff.",
-    },
+    titleKey: "notifications.activation_nudge.day7.title",
+    bodyKey: "notifications.activation_nudge.day7.message",
   },
 };
 
@@ -85,7 +55,6 @@ serve(async (req) => {
     const summary: Record<string, number> = { day1: 0, day3: 0, day7: 0 };
 
     for (const dayNumber of [1, 3, 7] as const) {
-      // Window: profiles.created_at between (now - day - 1d) and (now - day)
       const start = new Date(now);
       start.setUTCDate(start.getUTCDate() - dayNumber);
       start.setUTCHours(0, 0, 0, 0);
@@ -97,7 +66,6 @@ serve(async (req) => {
         end: end.toISOString(),
       });
 
-      // 1. Profiles registered exactly N days ago
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
         .select("user_id, created_at")
@@ -112,7 +80,6 @@ serve(async (req) => {
 
       const userIds = profiles.map((p: any) => p.user_id);
 
-      // 2. Exclude users who already created at least one project
       const { data: ownersOfProjects } = await supabase
         .from("projects")
         .select("user_id")
@@ -121,7 +88,6 @@ serve(async (req) => {
         (ownersOfProjects ?? []).map((r: any) => r.user_id)
       );
 
-      // 3. Exclude users who already received this day's nudge
       const { data: alreadySent } = await supabase
         .from("activation_nudge_log")
         .select("user_id")
@@ -142,8 +108,12 @@ serve(async (req) => {
         toSend: targets.length,
       });
 
+      const { titleKey, bodyKey } = KEYS[dayNumber];
+      // HR fallback pre-rendered; send-push overrides per recipient language.
+      const fallbackTitle = translate("hr", titleKey);
+      const fallbackBody = translate("hr", bodyKey);
+
       for (const userId of targets) {
-        // Respect per-user category preference for "projects"
         const { data: prefs } = await supabase
           .from("notification_preferences")
           .select("projects_enabled")
@@ -155,20 +125,19 @@ serve(async (req) => {
           continue;
         }
 
-        // Detect locale from profile (fallback to HR)
-        // We don't store locale on profiles; default to HR.
-        const lang: Lang = "hr";
-        const copy = COPY[dayNumber][lang];
-
         try {
           await sendPushNotification({
             user_id: userId,
-            title: copy.title,
-            body: copy.body,
+            title: fallbackTitle,
+            body: fallbackBody,
             data: {
               type: "activation_nudge",
               day: String(dayNumber),
               route: "/projects",
+              i18n_title_key: titleKey,
+              i18n_body_key: bodyKey,
+              title_vars: {},
+              message_vars: {},
             },
             source: "activation-nudge",
           });
@@ -185,11 +154,7 @@ serve(async (req) => {
       }
     }
 
-    // ============================================================
-    // Funnel: log day7_active for users who registered exactly 7 days ago
-    // and were active (login or app_open) in the last 24h.
-    // Idempotent: unique index (user_id, event_name='day7_active') in DB.
-    // ============================================================
+    // Funnel: day7_active logging (unchanged).
     let day7Logged = 0;
     try {
       const day7Start = new Date(now);
@@ -221,7 +186,6 @@ serve(async (req) => {
             platform: "cron",
             metadata: { source: "activation-nudge-cron" } as any,
           });
-          // 23505 = duplicate, expected if cron retries
           if (!insErr || insErr.code === "23505") day7Logged++;
         }
       }
