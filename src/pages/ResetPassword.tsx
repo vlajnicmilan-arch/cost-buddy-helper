@@ -175,9 +175,9 @@ const ResetPassword = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Lozinka promijenjena!</h2>
+              <h2 className="text-xl font-semibold">{t('auth.reset.successTitle')}</h2>
               <p className="text-muted-foreground text-sm">
-                Vaša lozinka je uspješno promijenjena. Sada se možete prijaviti s novom lozinkom.
+                {t('auth.reset.successDesc')}
               </p>
             </div>
 
@@ -185,7 +185,7 @@ const ResetPassword = () => {
               className="w-full h-12 rounded-xl"
               onClick={() => navigate('/auth')}
             >
-              Nastavi na prijavu
+              {t('auth.reset.continueToLogin')}
             </Button>
           </div>
         </div>
