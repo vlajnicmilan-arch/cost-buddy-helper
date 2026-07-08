@@ -4816,6 +4816,14 @@
       "loadFailed": "Cannot load payout data",
       "alreadyAttributed": "Already attributed",
       "generic": "Attribution failed, try again"
+    },
+    "voidedPrompt": {
+      "title": "Payout was voided",
+      "description": "The payer voided a payout you attributed to a source. Do you want to remove the attributed entry from your wallet?",
+      "keep": "Keep",
+      "remove": "Remove attribution",
+      "removed": "Attribution removed",
+      "removeFailed": "Removal failed"
     }
   }
 }
