@@ -480,8 +480,8 @@ export const ProjectMembersTab = ({
 
       {/* Members list */}
       <div className="space-y-3">
-        <h4 className="font-medium flex items-center gap-2">
-          <Users className="w-4 h-4" />
+        <h4 className="font-medium flex items-center gap-2 text-module">
+          <Users className="w-4 h-4 text-module" />
           {t('projects.teamMembers')} ({members.length})
         </h4>
 
