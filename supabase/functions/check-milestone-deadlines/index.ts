@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,24 +69,39 @@ Deno.serve(async (req) => {
       );
       const isOverdue = daysUntilDue < 0;
 
-      const title = isOverdue
-        ? `⚠️ Faza "${milestone.name}" je istekla`
-        : `⏰ Faza "${milestone.name}" ističe za ${daysUntilDue} dana`;
+      const titleKey = isOverdue
+        ? "notifications.milestone_deadline.overdue.title"
+        : "notifications.milestone_deadline.upcoming.title";
+      const messageKey = isOverdue
+        ? "notifications.milestone_deadline.overdue.message"
+        : "notifications.milestone_deadline.upcoming.message";
 
-      const message = isOverdue
-        ? `Faza "${milestone.name}" u projektu "${project.name}" je prošla rok za ${Math.abs(daysUntilDue)} dana.`
-        : `Faza "${milestone.name}" u projektu "${project.name}" ističe ${new Date(milestone.due_date).toLocaleDateString("hr-HR")}.`;
+      const titleVars = isOverdue
+        ? { name: milestone.name }
+        : { name: milestone.name, days: daysUntilDue };
+      const messageVars = isOverdue
+        ? { name: milestone.name, project: project.name, days: Math.abs(daysUntilDue) }
+        : {
+            name: milestone.name,
+            project: project.name,
+            date: new Date(milestone.due_date).toLocaleDateString("hr-HR"),
+          };
 
-      // Create notifications for all managers
+      const fallbackTitle = translate("hr", titleKey, titleVars);
+      const fallbackMessage = translate("hr", messageKey, messageVars);
+
+      // Create in-app notifications with i18n keys (client renders per language).
       const notifications = Array.from(userIds).map((userId) => ({
         user_id: userId,
         type: "milestone_deadline",
-        title,
-        message,
+        title: titleKey,
+        message: messageKey,
         data: {
           milestone_id: milestone.id,
           project_id: milestone.project_id,
           due_date: milestone.due_date,
+          title_vars: titleVars,
+          message_vars: messageVars,
         },
       }));
 
@@ -96,19 +112,22 @@ Deno.serve(async (req) => {
       if (!insertError) {
         notificationsCreated += notifications.length;
 
-        // Send push notifications to project managers
         for (const userId of userIds) {
           try {
             await supabase.functions.invoke("send-push", {
               body: {
                 user_id: userId,
-                title,
-                body: message,
+                title: fallbackTitle,
+                body: fallbackMessage,
                 data: {
                   type: "milestone_deadline",
                   milestone_id: milestone.id,
                   project_id: milestone.project_id,
                   category: "reminders",
+                  i18n_title_key: titleKey,
+                  i18n_body_key: messageKey,
+                  title_vars: titleVars,
+                  message_vars: messageVars,
                 },
               },
             });
