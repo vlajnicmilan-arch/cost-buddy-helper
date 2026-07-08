@@ -6,9 +6,12 @@
  *
  * Strategija:
  *  - Tailwind klase za module-aware surface-e (CTA/badge/progress/empty)
- *    koriste statički token `bg-module` / `text-module` koji čita aktivnu
- *    `--module-accent` CSS varijablu. Varijablu postavlja
- *    `ModuleThemeProvider` na <body> na osnovu rute.
+ *    koriste statički token `bg-module` / `text-module` / `text-module-muted`
+ *    koji čita aktivne CSS varijable `--module-accent` /
+ *    `--module-accent-muted`. Varijable postavlja `ModuleThemeProvider` na
+ *    <body> na osnovu rute.
+ *  - Fokus ring unutar modula preusmjeren je preko `body[data-module]`
+ *    override-a `--ring: var(--module-accent)` (v.d. index.css).
  *  - BottomNav (treba sve boje istovremeno) koristi statičku lookup mapu
  *    `MODULE_NAV_CLASSES` s literalnim arbitrary klasama — Tailwind JIT ih
  *    vidi u izvoru i ne razbijaju se kroz purge.
@@ -23,6 +26,19 @@ export const MODULE_HSL: Record<ModuleKey, string> = {
   wallet: '142 71% 45%',   // #16A34A
   budgets: '258 90% 66%',  // #8B5CF6
   krug: '25 95% 53%',      // #F97316
+};
+
+/**
+ * Muted / pomoćna varijanta iste boje — nižeg zasićenja i više svjetline
+ * za pomoćne natpise, sekundarne ikonice i blage badge-ove.
+ * Kontrast provjeren na near-black podlozi (≥ 4.5:1 za male natpise).
+ */
+export const MODULE_HSL_MUTED: Record<ModuleKey, string> = {
+  overview: '172 40% 60%',
+  projects: '217 60% 72%',
+  wallet: '142 45% 62%',
+  budgets: '258 55% 76%',
+  krug: '25 70% 66%',
 };
 
 /**
@@ -50,7 +66,7 @@ export function resolveModuleFromPath(pathname: string): ModuleKey {
 /**
  * Statičke literalne Tailwind klase po modulu — koristi ih SAMO BottomNav
  * (gdje moramo prikazati sve boje istovremeno). Ostatak app-a koristi
- * `bg-module` / `text-module` preko aktivnog tokena.
+ * `bg-module` / `text-module` / `text-module-muted` preko aktivnog tokena.
  */
 export const MODULE_NAV_CLASSES: Record<ModuleKey, { text: string; bg: string }> = {
   overview: { text: 'text-[hsl(172_66%_40%)]', bg: 'bg-[hsl(172_66%_40%)]' },
