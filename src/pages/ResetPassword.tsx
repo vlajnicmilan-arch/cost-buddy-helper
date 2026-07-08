@@ -137,9 +137,9 @@ const ResetPassword = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Nevažeći link</h2>
+              <h2 className="text-xl font-semibold">{t('auth.reset.invalidLinkTitle')}</h2>
               <p className="text-muted-foreground text-sm">
-                Link za resetiranje lozinke je istekao ili nije valjan. Zatražite novi link.
+                {t('auth.reset.invalidLinkDesc')}
               </p>
             </div>
 
@@ -148,7 +148,7 @@ const ResetPassword = () => {
               onClick={() => navigate('/auth')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </Button>
           </div>
         </div>
