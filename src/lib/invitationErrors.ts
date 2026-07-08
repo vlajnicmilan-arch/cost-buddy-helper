@@ -8,9 +8,9 @@
  *
  * Usage:
  *   import { invitationErrorMessage } from '@/lib/invitationErrors';
- *   showError(invitationErrorMessage(data.error, t, data.message));
+ *   showError(invitationErrorMessage(data.error, data.message));
  */
-import type { TFunc } from '@/lib/errorMessages';
+import { tr } from '@/lib/errorMessages';
 
 export type InvitationErrorCode =
   | 'user_not_found'
@@ -32,17 +32,16 @@ const KEY_MAP: Record<InvitationErrorCode, string> = {
 /**
  * Returns a localized message for an invitation error code.
  * Falls back to `serverMessage` (server-provided text) or the generic
- * invitation error string.
+ * invitation error string. Uses the global i18n instance so it works in
+ * hooks and non-React code paths.
  */
 export function invitationErrorMessage(
   code: string | null | undefined,
-  t: TFunc,
   serverMessage?: string | null,
 ): string {
   if (code && code in KEY_MAP) {
-    const key = KEY_MAP[code as InvitationErrorCode];
-    return t(key);
+    return tr(KEY_MAP[code as InvitationErrorCode]);
   }
   if (serverMessage && serverMessage.trim()) return serverMessage;
-  return t('invitations.errors.generic');
+  return tr('invitations.errors.generic');
 }
