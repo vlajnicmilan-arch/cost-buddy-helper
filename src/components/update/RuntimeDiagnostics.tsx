@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 import { isNativeApp, getPlatformName, fetchLatestVersion, type VersionCheckResult } from './updateUtils';
 import { getLastStorageResult } from '@/lib/secureStorage';
 import { ChevronDown, ChevronUp, Activity } from 'lucide-react';
 
 export const RuntimeDiagnostics = () => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [remoteCheck, setRemoteCheck] = useState<VersionCheckResult | null>(null);
   const [checking, setChecking] = useState(false);
@@ -103,8 +105,8 @@ export const RuntimeDiagnostics = () => {
                   label="Status"
                   value={
                     remoteCheck.version === APP_VERSION
-                      ? '✅ Verzije su jednake'
-                      : `⚠️ Razlika: lokalno ${APP_VERSION} vs remote ${remoteCheck.version}`
+                      ? t('runtimeDiagnostics.versionsEqual')
+                      : t('runtimeDiagnostics.versionsDiffer', { local: APP_VERSION, remote: remoteCheck.version })
                   }
                 />
               )}
@@ -113,7 +115,7 @@ export const RuntimeDiagnostics = () => {
 
           {isNativeApp && (
             <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-700 dark:text-amber-400">
-              ℹ️ Ako se verzije razlikuju ali "Osvježi" ne pomaže, potreban je novi APK build (git pull → npm run build → npx cap sync → Android Studio).
+              {t('runtimeDiagnostics.nativeRebuildHint')}
             </div>
           )}
         </div>
