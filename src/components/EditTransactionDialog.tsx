@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,7 +125,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
 
       await onSave({
         ...expense,
-        amount: parseFloat(amount),
+        amount: parseLocaleAmount(amount).value,
         description,
         category,
         payment_source: finalPaymentSource as PaymentSource,
@@ -275,15 +277,14 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
           {/* Amount */}
           <div className="space-y-2">
             <Label htmlFor="amount">{t('transactions.amountEur')}</Label>
-            <Input
+            <MoneyInput
               id="amount"
-              type="number"
-              step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
+              placeholder="0,00"
             />
           </div>
+
 
           {/* Description */}
           <div className="space-y-2">

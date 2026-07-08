@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -57,7 +59,7 @@ export const BusinessDebtTracker = () => {
       type: formType,
       contact_name: formContact,
       description: formDesc || null,
-      amount: parseFloat(formAmount),
+      amount: parseLocaleAmount(formAmount).value,
       paid_amount: 0,
       due_date: formDueDate || null,
       status: 'active',
@@ -294,7 +296,7 @@ export const BusinessDebtTracker = () => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">{t('business.debts.amount', 'Iznos')}</Label>
-                <Input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0.00" className="h-9" />
+                <MoneyInput value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0,00" className="h-9" />
               </div>
               <div>
                 <Label className="text-xs">{t('business.debts.dueDateOptional', 'Rok (opcionalno)')}</Label>

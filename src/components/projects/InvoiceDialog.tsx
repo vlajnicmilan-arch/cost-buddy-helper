@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useProjectInvoices, ProjectInvoice, InvoiceItem } from '@/hooks/useProjectInvoices';
@@ -276,7 +278,7 @@ export const InvoiceDialog = ({ open, onOpenChange, invoice, projectId, prefillF
                     <div className="grid grid-cols-12 gap-1">
                       <Input className="col-span-3" type="number" placeholder="Kol" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} />
                       <Input className="col-span-2" placeholder="Jed" value={item.unit || 'kom'} onChange={(e) => updateItem(idx, { unit: e.target.value })} />
-                      <Input className="col-span-3" type="number" placeholder="Cijena" value={item.unit_price} onChange={(e) => updateItem(idx, { unit_price: Number(e.target.value) })} />
+                      <MoneyInput className="col-span-3" placeholder="Cijena" value={item.unit_price != null ? String(item.unit_price) : ''} onChange={(e) => updateItem(idx, { unit_price: parseLocaleAmount(e.target.value).value })} />
                       <Input className="col-span-2" type="number" placeholder="PDV%" value={item.vat_rate} onChange={(e) => updateItem(idx, { vat_rate: Number(e.target.value) })} />
                       <div className="col-span-2 flex items-center justify-between gap-1">
                         <span className="text-xs font-medium">{lineTotal.toFixed(2)}</span>

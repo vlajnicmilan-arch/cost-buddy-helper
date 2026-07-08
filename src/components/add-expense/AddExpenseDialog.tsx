@@ -676,8 +676,8 @@ export const AddExpenseDialog = ({
           if (matchedDest) transferDestinationId = matchedDest.id;
         }
       }
-      const tipAmount = totalWithTip ? parseFloat(totalWithTip) - scannedData.amount : 0;
-      const finalAmount = totalWithTip ? parseFloat(totalWithTip) : scannedData.amount;
+      const tipAmount = totalWithTip ? validateAmountInput(totalWithTip).value - scannedData.amount : 0;
+      const finalAmount = totalWithTip ? validateAmountInput(totalWithTip).value : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
       const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
       const newExpense = {
@@ -934,7 +934,7 @@ export const AddExpenseDialog = ({
     }
     // Surplus warning: linked advances exceed invoice amount
     if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
-      const parsedAmt = parseFloat(amount.replace(',', '.')) || 0;
+      const parsedAmt = validateAmountInput(amount).value || 0;
       // Recompute linkedSum from current expenses cache via the prop snapshot.
       // Best-effort: use a synchronous fetch via the global expenses cache is not available here,
       // so we rely on the trigger to validate and let the user proceed. The UI shows warning live.
@@ -979,7 +979,7 @@ export const AddExpenseDialog = ({
       }
     }
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = validateAmountInput(amount).value;
 
     if (isInstallment && type !== 'transfer') {
       await createInstallmentPlan({

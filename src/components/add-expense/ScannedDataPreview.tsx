@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -121,7 +123,7 @@ export const ScannedDataPreview = ({
     if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
     return getCategoryInfo(scannedData.category);
   })();
-  const invalidTip = totalWithTip ? parseFloat(totalWithTip) < scannedData.amount : false;
+  const invalidTip = totalWithTip ? parseLocaleAmount(totalWithTip).value < scannedData.amount : false;
 
   return (
     <div className="h-full max-h-full flex flex-col min-h-0 overflow-hidden">
@@ -335,24 +337,20 @@ export const ScannedDataPreview = ({
             <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
               🫰 Sa napojnicom (ukupno):
             </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
+            <MoneyInput
               placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
               value={totalWithTip}
               onChange={(e) => onTotalWithTipChange(e.target.value)}
               className="rounded-lg text-sm"
-              min={scannedData.amount}
-              step="0.01"
             />
-            {totalWithTip && parseFloat(totalWithTip) > scannedData.amount && (
+            {totalWithTip && parseLocaleAmount(totalWithTip).value > scannedData.amount && (
               <div className="flex items-center justify-between p-2 rounded-md bg-income/10 border border-income/20">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">🫰</span>
                   <span className="text-sm font-medium text-income">Napojnica</span>
                 </div>
                 <span className="text-sm font-bold text-income">
-                  +{formatAmount(parseFloat(totalWithTip) - scannedData.amount)}
+                  +{formatAmount(parseLocaleAmount(totalWithTip).value - scannedData.amount)}
                 </span>
               </div>
             )}

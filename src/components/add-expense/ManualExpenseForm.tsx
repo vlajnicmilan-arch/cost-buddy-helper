@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { validateAmountInput } from '@/lib/amountValidation';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -557,31 +559,21 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             </span>
           )}
         </Label>
-        <Input
+        <MoneyInput
           id="amount"
           data-testid="manual-expense-amount"
-          type="text"
-          inputMode="decimal"
-          placeholder="0.00"
+          placeholder="0,00"
           value={props.amount}
-          onChange={(e) => {
-            // Auto-replace comma with dot, allow only digits and a single dot
-            let v = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
-            const firstDot = v.indexOf('.');
-            if (firstDot !== -1) {
-              v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
-            }
-            props.onAmountChange(v);
-          }}
+          onChange={(e) => props.onAmountChange(e.target.value)}
           className={cn(
             "h-12 text-lg font-mono rounded-xl",
-            props.amount !== '' && parseFloat(props.amount) <= 0 && "border-destructive focus-visible:ring-destructive"
+            props.amount !== '' && !validateAmountInput(props.amount).valid && "border-destructive focus-visible:ring-destructive"
           )}
           required
-          aria-invalid={props.amount !== '' && parseFloat(props.amount) <= 0}
+          aria-invalid={props.amount !== '' && !validateAmountInput(props.amount).valid}
           aria-describedby="amount-hint amount-error"
         />
-        {props.amount !== '' && parseFloat(props.amount) <= 0 ? (
+        {props.amount !== '' && !validateAmountInput(props.amount).valid ? (
           <p id="amount-error" className="text-xs text-destructive">
             {t('validation.amountGreaterThanZero')}
           </p>

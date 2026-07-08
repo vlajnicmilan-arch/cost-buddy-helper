@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -145,7 +147,7 @@ export const ProjectWorkerDialog = ({
     loadLinkedUser();
   }, [worker?.user_id, t]);
 
-  const parsedRate = parseFloat(hourlyRate) || 0;
+  const parsedRate = parseLocaleAmount(hourlyRate).value || 0;
   const rateChanged = isEditing && worker != null && parsedRate !== Number(worker.hourly_rate);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,7 +188,7 @@ export const ProjectWorkerDialog = ({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       position: position.trim(),
-      work_hours: parseFloat(workHours) || 0,
+      work_hours: parseLocaleAmount(workHours).value || 0,
       hourly_rate: parsedRate,
       work_start_time: workStartTime,
       work_end_time: workEndTime,
@@ -331,17 +333,15 @@ export const ProjectWorkerDialog = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="hourlyRate">{t('workers.hourlyRate', 'Cijena sata')}</Label>
-              <Input
+              <MoneyInput
                 id="hourlyRate"
-                type="number"
-                step="0.01"
-                min="0"
                 value={hourlyRate}
                 onChange={(e) => setHourlyRate(e.target.value)}
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
           </div>
+
 
           {rateChanged && (
             <div className="space-y-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30">

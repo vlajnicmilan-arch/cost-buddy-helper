@@ -3,6 +3,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -570,15 +571,13 @@ export const WorkerPayoutsDialog = ({
 
                   <div>
                     <Label className="text-xs">{t('workers.payouts.paidAmount', 'Isplaćeno')}</Label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       value={paidAmount}
                       onChange={(e) => {
                         setPaidAmount(e.target.value);
                         setPaidAmountDirty(true);
                       }}
-                      placeholder={mainPreview ? formatAutoFillAmount(mainPreview.gross) : '0.00'}
+                      placeholder={mainPreview ? formatAutoFillAmount(mainPreview.gross) : '0,00'}
                     />
                     {showApplyMainCalc && mainPreview && (
                       <button

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Banknote, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -161,9 +162,8 @@ export const OnboardingManualSheet = ({
           {/* Iznos */}
           <div className="space-y-2">
             <Label htmlFor="onb-amount">{t('onboarding.manual.amountLabel', 'Iznos')}</Label>
-            <Input
+            <MoneyInput
               id="onb-amount"
-              inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={t('onboarding.manual.amountPlaceholder', '0,00')}
@@ -171,6 +171,7 @@ export const OnboardingManualSheet = ({
               autoFocus
             />
           </div>
+
 
           {/* Način plaćanja — zatvoreni izbor: Gotovina / Kartica */}
           <div className="space-y-2">

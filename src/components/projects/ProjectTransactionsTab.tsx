@@ -45,6 +45,7 @@ import {
   computeProjectExpenseTotals,
   hasActiveProjectFilters,
 } from '@/lib/projectTransactionFilters';
+import { parseLocaleAmount } from '@/lib/money';
 import { PendingApprovalsStrip } from './project-transactions/PendingApprovalsStrip';
 import { ProjectTransactionsFilterBar } from './project-transactions/ProjectTransactionsFilterBar';
 import { ProjectTransactionsList } from './project-transactions/ProjectTransactionsList';
@@ -242,7 +243,7 @@ export const ProjectTransactionsTab = ({
     try {
       const status = needsApproval ? 'pending' : 'approved';
       const paymentSourceForInsert = paymentSourceValue !== 'none' ? coerceCanonicalShape(paymentSourceValue) : null;
-      const parsedAmount = parseFloat(amount);
+      const parsedAmount = parseLocaleAmount(amount).value;
 
       /* eslint-disable no-restricted-syntax -- project transaction insert: payment_source pre-coerced via coerceCanonicalShape */
       const { data: inserted, error } = await supabase
@@ -378,7 +379,7 @@ export const ProjectTransactionsTab = ({
     setSaving(true);
     try {
       const newPaymentSource = editPaymentSourceValue !== 'none' ? coerceCanonicalShape(editPaymentSourceValue) : null;
-      const newAmount = parseFloat(editAmount);
+      const newAmount = parseLocaleAmount(editAmount).value;
       const oldPaymentSource = editingExpense.payment_source || undefined;
       const oldAmount = editingExpense.amount;
       const oldType = editingExpense.type as TransactionType;

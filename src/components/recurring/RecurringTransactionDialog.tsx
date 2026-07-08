@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES, getCategoryInfo, INCOME_CATEGORIES, Category, IncomeCategory, TransactionType } from '@/types/expense';
@@ -79,7 +81,8 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
   };
 
   const handleSave = async () => {
-    if (!description.trim() || !amount || parseFloat(amount) <= 0) {
+    const parsedAmount = parseLocaleAmount(amount);
+    if (!description.trim() || !parsedAmount.valid || parsedAmount.value <= 0) {
       return;
     }
 
@@ -87,7 +90,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
     try {
       await onSave({
         description: description.trim(),
-        amount: parseFloat(amount),
+        amount: parsedAmount.value,
         type,
         category,
         payment_source: paymentSource,
@@ -172,15 +175,14 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
           {/* Amount */}
           <div className="space-y-1.5">
             <Label className="text-sm">{t('recurring.amountLabel')}</Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              placeholder="0.00"
+            <MoneyInput
+              placeholder="0,00"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="h-11 rounded-xl font-mono"
             />
           </div>
+
 
           {/* Category */}
           {type !== 'transfer' && (
@@ -320,7 +322,7 @@ export const RecurringTransactionDialog = ({ open, onOpenChange, onSave, editDat
             <Button
               className="flex-1 rounded-xl"
               onClick={handleSave}
-              disabled={saving || !description.trim() || !amount || parseFloat(amount) <= 0}
+              disabled={saving || !description.trim() || !parseLocaleAmount(amount).valid || parseLocaleAmount(amount).value <= 0}
             >
               <Save className="w-4 h-4 mr-1" /> {editData ? t('recurring.save') : t('recurring.add')}
             </Button>

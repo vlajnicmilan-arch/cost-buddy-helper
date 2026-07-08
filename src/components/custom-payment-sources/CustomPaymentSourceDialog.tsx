@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -121,7 +123,7 @@ export const CustomPaymentSourceDialog = ({
         name: name.trim(), 
         icon, 
         color, 
-        balance: parseFloat(balance) || 0,
+        balance: parseLocaleAmount(balance).value || 0,
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined,
         business_profile_id: businessProfileId,
@@ -210,7 +212,7 @@ export const CustomPaymentSourceDialog = ({
     setCards(cards.filter((_, i) => i !== index));
   };
 
-  const formattedBalance = parseFloat(balance) || 0;
+  const formattedBalance = parseLocaleAmount(balance).value || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -239,14 +241,13 @@ export const CustomPaymentSourceDialog = ({
               {t('common.balance')} ({multiCurrencyEnabled ? CURRENCIES.find(c => c.code === sourceCurrency)?.symbol || sourceCurrency : '€'})
             </Label>
             <div className="flex gap-2">
-              <Input
+              <MoneyInput
                 id="balance"
-                type="number"
-                step="0.01"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
-                placeholder="0.00"
+                placeholder="0,00"
                 className="font-mono flex-1"
+                allowNegative
               />
               {multiCurrencyEnabled && (
                 <Select value={sourceCurrency} onValueChange={(v) => setSourceCurrency(v as CurrencyCode)}>

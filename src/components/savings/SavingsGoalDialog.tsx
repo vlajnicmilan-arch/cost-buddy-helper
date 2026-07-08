@@ -4,6 +4,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { SavingsGoal } from '@/hooks/useSavingsGoals';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
@@ -38,8 +40,8 @@ export const SavingsGoalDialog = ({ open, onOpenChange, onSave, editGoal }: Savi
       description: null,
       icon,
       color,
-      target_amount: parseFloat(targetAmount),
-      current_amount: parseFloat(currentAmount) || 0,
+      target_amount: parseLocaleAmount(targetAmount).value,
+      current_amount: parseLocaleAmount(currentAmount).value || 0,
       target_date: targetDate || null,
     });
     onOpenChange(false);
@@ -69,11 +71,11 @@ export const SavingsGoalDialog = ({ open, onOpenChange, onSave, editGoal }: Savi
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{t('savingsGoals.targetAmount')} ({currency.symbol})</Label>
-              <Input type="number" step="0.01" min="0" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required />
+              <MoneyInput value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required />
             </div>
             <div>
               <Label>{t('savingsGoals.currentAmount')} ({currency.symbol})</Label>
-              <Input type="number" step="0.01" min="0" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} />
+              <MoneyInput value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} />
             </div>
           </div>
 

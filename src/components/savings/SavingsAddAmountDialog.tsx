@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
+import { parseLocaleAmount } from '@/lib/money';
 
 interface SavingsAddAmountDialogProps {
   open: boolean;
@@ -20,9 +21,9 @@ export const SavingsAddAmountDialog = ({ open, onOpenChange, goalName, onAdd }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(amount);
-    if (val > 0) {
-      onAdd(val);
+    const parsed = parseLocaleAmount(amount);
+    if (parsed.valid && parsed.value > 0) {
+      onAdd(parsed.value);
       setAmount('');
     }
   };
@@ -36,10 +37,7 @@ export const SavingsAddAmountDialog = ({ open, onOpenChange, goalName, onAdd }: 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>{t('savingsGoals.amount')} ({currency.symbol})</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0.01"
+            <MoneyInput
               value={amount}
               onChange={e => setAmount(e.target.value)}
               autoFocus

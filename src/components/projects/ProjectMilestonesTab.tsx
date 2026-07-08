@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -93,7 +95,7 @@ export const ProjectMilestonesTab = ({
 
   const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
   const previousBudget = editingMilestone ? editingMilestone.budget : 0;
-  const newBudgetNum = parseFloat(budget) || 0;
+  const newBudgetNum = parseLocaleAmount(budget).value || 0;
   const budgetChanged = !!editingMilestone && Math.abs(newBudgetNum - previousBudget) > 0.001;
 
   const MILESTONE_COLORS = [
@@ -185,7 +187,7 @@ export const ProjectMilestonesTab = ({
         project_id: projectId,
         name: name.trim(),
         description: description.trim() || null,
-        budget: parseFloat(budget) || 0,
+        budget: parseLocaleAmount(budget).value || 0,
         status,
         color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
@@ -199,7 +201,7 @@ export const ProjectMilestonesTab = ({
 
       if (editingMilestone) {
         // Build amendment payload only when scope_change + user enabled it + valid positive amount
-        const amendmentAmt = parseFloat(amendmentAmount) || 0;
+        const amendmentAmt = parseLocaleAmount(amendmentAmount).value || 0;
         const includeAmendment =
           budgetChanged &&
           revisionType === 'scope_change' &&
@@ -548,13 +550,10 @@ export const ProjectMilestonesTab = ({
               <div className="space-y-2">
                 <Label>{t('projects.budget')}</Label>
                 <div className="relative">
-                  <Input 
-                    type="number" 
+                  <MoneyInput 
                     value={budget} 
                     onChange={(e) => setBudget(e.target.value)} 
                     className="pr-12"
-                    min="0"
-                    step="0.01"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {currency.symbol}

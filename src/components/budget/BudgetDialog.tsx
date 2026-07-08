@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -120,7 +122,7 @@ export const BudgetDialog = ({
         icon,
         color,
         period_type: periodType,
-        total_amount: parseFloat(totalAmount),
+        total_amount: parseLocaleAmount(totalAmount).value,
         start_date: startDate || null,
         end_date: endDate || null,
         is_active: true,
@@ -241,17 +243,15 @@ export const BudgetDialog = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="totalAmount">{t('budget.totalAmount', 'Ukupni iznos')} *</Label>
-              <Input
+              <MoneyInput
                 id="totalAmount"
-                type="number"
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
+                placeholder="0,00"
               />
             </div>
           </div>
+
 
           {/* Recurring toggle */}
           {periodType !== 'one_time' && periodType !== 'custom' && (
@@ -362,14 +362,11 @@ export const BudgetDialog = ({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input
-                      type="number"
-                      value={cl.limit_amount || ''}
-                      onChange={(e) => handleCategoryChange(index, 'limit_amount', parseFloat(e.target.value) || 0)}
+                    <MoneyInput
+                      value={cl.limit_amount != null && cl.limit_amount !== 0 ? String(cl.limit_amount) : ''}
+                      onChange={(e) => handleCategoryChange(index, 'limit_amount', parseLocaleAmount(e.target.value).value || 0)}
                       placeholder="Limit"
                       className="w-24"
-                      min="0"
-                      step="0.01"
                     />
                     <Button 
                       type="button" 

@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -194,14 +196,14 @@ export const ProjectDialog = ({
 
     setSaving(true);
     try {
-      const parsedContract = parseFloat(contractValue);
+      const parsedContract = parseLocaleAmount(contractValue).value;
       const projectData = {
         name: name.trim(),
         description: description.trim() || null,
         icon,
         color,
         status,
-        total_budget: parseFloat(totalBudget) || 0,
+        total_budget: parseLocaleAmount(totalBudget).value || 0,
         contract_value:
           Number.isFinite(parsedContract) && parsedContract > 0 ? parsedContract : null,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
@@ -358,16 +360,11 @@ export const ProjectDialog = ({
                   <div className="space-y-2">
                     <Label htmlFor="budget">{t('projects.budget')}</Label>
                     <div className="relative">
-                      <Input
+                      <MoneyInput
                         id="budget"
-                        type="text"
-                        inputMode="decimal"
                         value={totalBudget}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-                          setTotalBudget(value);
-                        }}
-                        placeholder="0.00"
+                        onChange={(e) => setTotalBudget(e.target.value)}
+                        placeholder="0,00"
                         className="pr-12"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -402,16 +399,11 @@ export const ProjectDialog = ({
                       )}
                     </Label>
                     <div className="relative">
-                      <Input
+                      <MoneyInput
                         id="contractValue"
-                        type="text"
-                        inputMode="decimal"
                         value={contractValue}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-                          setContractValue(value);
-                        }}
-                        placeholder="0.00"
+                        onChange={(e) => setContractValue(e.target.value)}
+                        placeholder="0,00"
                         className="pr-12"
                         disabled={contractValueLocked}
                         aria-describedby={contractValueLocked ? 'contractValueLockedHint' : undefined}
@@ -500,7 +492,7 @@ export const ProjectDialog = ({
                   </div>
 
                   {/* Contingency reserve (only when creating with a budget) */}
-                  {!isEdit && parseFloat(totalBudget) > 0 && (
+                  {!isEdit && parseLocaleAmount(totalBudget).value > 0 && (
                     <label className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 cursor-pointer hover:bg-muted/60 transition-colors">
                       <input
                         type="checkbox"
