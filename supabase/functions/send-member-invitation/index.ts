@@ -252,11 +252,9 @@ serve(async (req) => {
       payment_source: "payment_source_invitation",
     };
 
-    const titleMap: Record<string, string> = {
-      project: "Pozivnica za projekt",
-      budget: "Pozivnica za budžet",
-      payment_source: "Pozivnica za dijeljeni račun",
-    };
+    const titleKey = `notifications.invitation_sent.${type}.title`;
+    const messageKey = `notifications.invitation_sent.${type}.message`;
+    const vars = { inviterName, targetName };
 
     // Resolve worker name (best-effort) for the email greeting
     let workerName: string | undefined;
@@ -278,8 +276,8 @@ serve(async (req) => {
         .insert({
           user_id: invitedUser.id,
           type: notificationTypeMap[type],
-          title: titleMap[type],
-          message: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             invitation_id: invitation.id,
             target_id: targetId,
@@ -288,6 +286,8 @@ serve(async (req) => {
             invited_by: user.id,
             inviter_name: inviterName,
             type: type,
+            title_vars: {},
+            message_vars: vars,
           },
         });
 
@@ -297,13 +297,17 @@ serve(async (req) => {
 
       await sendPushNotification({
         user_id: invitedUser.id,
-        title: titleMap[type],
-        body: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+        title: translate("hr", titleKey),
+        body: translate("hr", messageKey, vars),
         data: {
           invitation_id: invitation.id,
           target_id: targetId,
           type: notificationTypeMap[type],
           category: type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
+          i18n_title_key: titleKey,
+          i18n_body_key: messageKey,
+          title_vars: {},
+          message_vars: vars,
         },
         source: "send-member-invitation",
       });
