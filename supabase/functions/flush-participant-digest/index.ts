@@ -10,6 +10,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendPushNotificationToMany } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,28 +57,46 @@ function localHourForTz(tz: string): number {
   }
 }
 
-function buildSummaryBody(count: number, summary: unknown[]): string {
-  if (count <= 0) return "Nema novih događaja.";
-  const headline = count === 1
-    ? "1 nova promjena u projektu"
-    : `${count} novih promjena u projektu`;
+interface DigestBodySelection {
+  key: string;
+  vars: Record<string, unknown>;
+}
 
-  if (!Array.isArray(summary) || summary.length === 0) return headline;
-  const sample = summary
-    .slice(0, 3)
-    .map((evt) => {
-      if (typeof evt === "string") return evt;
-      const obj = evt as Record<string, unknown>;
-      const actor = typeof obj.actor_name === "string" ? obj.actor_name : null;
-      const kind = typeof obj.kind === "string" ? obj.kind : null;
-      const label = typeof obj.label === "string" ? obj.label : null;
-      const parts = [actor, kind, label].filter(Boolean);
-      return parts.length > 0 ? parts.join(" · ") : null;
-    })
-    .filter((s): s is string => !!s);
+// Event `kind` labels are code strings by design and never translated.
+// The summary suffix is code-composed and passed to the catalog as a single
+// `{{samples}}` variable so translations stay simple.
+function buildSummaryBodySelection(count: number, summary: unknown[]): DigestBodySelection {
+  if (count <= 0) {
+    return { key: "notifications.participant_digest.body.empty", vars: {} };
+  }
 
-  if (sample.length === 0) return headline;
-  return `${headline}: ${sample.join("; ")}${count > sample.length ? "…" : ""}`;
+  let samples = "";
+  if (Array.isArray(summary) && summary.length > 0) {
+    const parts = summary
+      .slice(0, 3)
+      .map((evt) => {
+        if (typeof evt === "string") return evt;
+        const obj = evt as Record<string, unknown>;
+        const actor = typeof obj.actor_name === "string" ? obj.actor_name : null;
+        const kind = typeof obj.kind === "string" ? obj.kind : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+        const parts2 = [actor, kind, label].filter(Boolean);
+        return parts2.length > 0 ? parts2.join(" · ") : null;
+      })
+      .filter((s): s is string => !!s);
+    if (parts.length > 0) {
+      samples = `${parts.join("; ")}${count > parts.length ? "…" : ""}`;
+    }
+  }
+
+  if (count === 1) {
+    return samples
+      ? { key: "notifications.participant_digest.body.single_with_samples", vars: { samples } }
+      : { key: "notifications.participant_digest.body.single_no_samples", vars: {} };
+  }
+  return samples
+    ? { key: "notifications.participant_digest.body.many_with_samples", vars: { count, samples } }
+    : { key: "notifications.participant_digest.body.many_no_samples", vars: { count } };
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
