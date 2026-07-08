@@ -124,16 +124,16 @@ export const BudgetMembersTab = ({
         <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4" />
-            <span className="font-medium">{t('budget.inviteMembers', 'Pozovi članove')}</span>
+            <span className="font-medium">{t('budget.inviteMembers')}</span>
           </div>
           
           {/* Email invitation */}
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{t('budget.inviteByEmail', 'Pozovi putem emaila')}</p>
+            <p className="text-sm text-muted-foreground">{t('budget.inviteByEmail')}</p>
             <div className="flex gap-2">
               <Input 
                 type="email"
-                placeholder={t('budget.emailPlaceholder', 'email@primjer.com')}
+                placeholder={t('budget.emailPlaceholder')}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="flex-1"
@@ -156,13 +156,13 @@ export const BudgetMembersTab = ({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('budget.inviteByEmailHint', 'Korisnik će dobiti obavijest u aplikaciji')}
+              {t('budget.inviteByEmailHint')}
             </p>
           </div>
 
           {/* Link invitation */}
           <div className="space-y-2 pt-2 border-t">
-            <p className="text-sm text-muted-foreground">{t('budget.orGenerateLink', 'Ili generiraj pozivni link')}</p>
+            <p className="text-sm text-muted-foreground">{t('budget.orGenerateLink')}</p>
             <div className="flex gap-2">
               <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as BudgetRole)}>
                 <SelectTrigger className="w-32">
@@ -180,7 +180,7 @@ export const BudgetMembersTab = ({
                 ) : (
                   <Link2 className="w-4 h-4 mr-2" />
                 )}
-                {t('budget.generateLink', 'Generiraj link')}
+                {t('budget.generateLink')}
               </Button>
             </div>
 
@@ -194,7 +194,7 @@ export const BudgetMembersTab = ({
             )}
 
             <p className="text-xs text-muted-foreground">
-              {t('budget.inviteLinkExpires', 'Link vrijedi 24 sata')}
+              {t('budget.inviteLinkExpires')}
             </p>
           </div>
         </div>

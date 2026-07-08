@@ -129,7 +129,7 @@ export const ProjectMembersTab = ({
 
   const handleSaveSelfContext = async () => {
     if (selfContext === 'business' && !selfBusinessProfileId) {
-      showError(t('projects.selectBusinessProfile', 'Odaberite poslovni profil ili odaberite Osobne financije.'));
+      showError(t('projects.selectBusinessProfile'));
       return;
     }
     setSavingContext(true);
@@ -240,11 +240,11 @@ export const ProjectMembersTab = ({
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-primary" />
             <span className="font-medium text-sm">
-              {t('projects.yourLocation', 'Lokacija projekta kod tebe')}
+              {t('projects.yourLocation')}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t('projects.yourLocationHint', 'Odaberi gdje želiš da se ovaj projekt prikazuje u tvojoj aplikaciji.')}
+            {t('projects.yourLocationHint')}
           </p>
 
           <div className="grid grid-cols-2 gap-2">
@@ -256,7 +256,7 @@ export const ProjectMembersTab = ({
               onClick={() => setSelfContext('personal')}
             >
               <User className="w-4 h-4 mr-2" />
-              {t('projects.contextPersonal', 'Osobne financije')}
+              {t('projects.contextPersonal')}
             </Button>
             <Button
               type="button"
@@ -267,14 +267,14 @@ export const ProjectMembersTab = ({
               disabled={businessProfiles.length === 0}
             >
               <Briefcase className="w-4 h-4 mr-2" />
-              {t('projects.contextBusiness', 'Poslovni mod')}
+              {t('projects.contextBusiness')}
             </Button>
           </div>
 
           {selfContext === 'business' && businessProfiles.length > 0 && (
             <Select value={selfBusinessProfileId} onValueChange={setSelfBusinessProfileId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+                <SelectValue placeholder={t('projects.selectProfile')} />
               </SelectTrigger>
               <SelectContent>
                 {businessProfiles.map(bp => (
@@ -286,7 +286,7 @@ export const ProjectMembersTab = ({
 
           {selfContext === 'business' && businessProfiles.length === 0 && (
             <p className="text-xs text-destructive">
-              {t('projects.noBusinessProfilesShort', 'Nemate poslovnih profila. Kreirajte ga u Postavkama.')}
+              {t('projects.noBusinessProfilesShort')}
             </p>
           )}
 
@@ -301,7 +301,7 @@ export const ProjectMembersTab = ({
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            {t('projects.saveLocation', 'Spremi lokaciju')}
+            {t('projects.saveLocation')}
           </Button>
         </div>
       )}
@@ -309,7 +309,7 @@ export const ProjectMembersTab = ({
       {/* Closed-project notice */}
       {isManager && isProjectClosed && (
         <div className="p-4 rounded-lg border border-warning/40 bg-warning/10 text-sm text-foreground">
-          {t('projects.invitationsDisabledClosed', 'Projekt je završen ili arhiviran — pozivnice nisu moguće.')}
+          {t('projects.invitationsDisabledClosed')}
         </div>
       )}
 
@@ -324,7 +324,7 @@ export const ProjectMembersTab = ({
           {/* Context picker — where the project will appear for the invitee */}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              {t('projects.suggestedContext', 'Gdje će član vidjeti projekt?')}
+              {t('projects.suggestedContext')}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -335,7 +335,7 @@ export const ProjectMembersTab = ({
                 onClick={() => setSuggestedContext('personal')}
               >
                 <User className="w-4 h-4 mr-2" />
-                {t('projects.contextPersonal', 'Osobne financije')}
+                {t('projects.contextPersonal')}
               </Button>
               <Button
                 type="button"
@@ -345,13 +345,13 @@ export const ProjectMembersTab = ({
                 onClick={() => setSuggestedContext('business')}
               >
                 <Briefcase className="w-4 h-4 mr-2" />
-                {t('projects.contextBusiness', 'Poslovni mod')}
+                {t('projects.contextBusiness')}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {suggestedContext === 'business'
-                ? t('projects.contextBusinessHint', 'Član će prilikom prihvaćanja odabrati svoj poslovni profil.')
-                : t('projects.contextPersonalHint', 'Projekt će se kod člana pojaviti u Osobnim financijama.')}
+                ? t('projects.contextBusinessHint')
+                : t('projects.contextPersonalHint')}
             </p>
           </div>
 
@@ -361,14 +361,14 @@ export const ProjectMembersTab = ({
               <Button variant="outline" size="sm" className="w-full justify-between">
                 <span className="flex items-center gap-2">
                   <Shield className="w-4 h-4" />
-                  {t('projects.initialPermissions', 'Početne dozvole (opcionalno)')}
+                  {t('projects.initialPermissions')}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${permsOpen ? 'rotate-180' : ''}`} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3 space-y-2">
               <p className="text-xs text-muted-foreground">
-                {t('projects.initialPermissionsHint', 'Odaberi koje će kartice novi član vidjeti odmah po pristupu. Možeš mijenjati kasnije.')}
+                {t('projects.initialPermissionsHint')}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {OPTIONAL_TABS.map(tab => (
@@ -397,7 +397,7 @@ export const ProjectMembersTab = ({
                   }}
                   className="text-xs"
                 >
-                  {t('projects.resetToDefaults', 'Vrati na zadane za ulogu')}
+                  {t('projects.resetToDefaults')}
                 </Button>
               )}
             </CollapsibleContent>
@@ -405,11 +405,11 @@ export const ProjectMembersTab = ({
 
           {/* Email invitation */}
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{t('projects.inviteByEmail', 'Pozovi putem emaila')}</p>
+            <p className="text-sm text-muted-foreground">{t('projects.inviteByEmail')}</p>
             <div className="flex gap-2">
               <Input 
                 type="email"
-                placeholder={t('projects.emailPlaceholder', 'email@primjer.com')}
+                placeholder={t('projects.emailPlaceholder')}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="flex-1"
@@ -433,13 +433,13 @@ export const ProjectMembersTab = ({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('projects.inviteByEmailHint', 'Korisnik će dobiti obavijest u aplikaciji')}
+              {t('projects.inviteByEmailHint')}
             </p>
           </div>
 
           {/* Link invitation */}
           <div className="space-y-2 pt-2 border-t">
-            <p className="text-sm text-muted-foreground">{t('projects.orGenerateLink', 'Ili generiraj pozivni link')}</p>
+            <p className="text-sm text-muted-foreground">{t('projects.orGenerateLink')}</p>
             <div className="flex gap-2">
               <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as ProjectRole)}>
                 <SelectTrigger className="w-32">
@@ -504,7 +504,7 @@ export const ProjectMembersTab = ({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {member.role === 'owner' ? t('projects.owner', 'Vlasnik') : t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role as ProjectRole])}
+                {member.role === 'owner' ? t('projects.owner') : t(`projectRoles.${member.role}`, PROJECT_ROLE_LABELS[member.role as ProjectRole])}
               </p>
             </div>
 
@@ -529,7 +529,7 @@ export const ProjectMembersTab = ({
                   size="icon" 
                   className="h-8 w-8"
                   onClick={() => setPermDialog({ open: true, userId: member.user_id, memberName: member.display_name || '?' })}
-                  title={t('projects.permissions', 'Dozvole')}
+                  title={t('projects.permissions')}
                 >
                   <Shield className="w-4 h-4" />
                 </Button>

@@ -845,7 +845,7 @@ export const WorkCalendarOverview = ({ projectId, milestones, isReadOnly = false
                           }, 0)
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}</p>
+                      <p className="text-xs text-muted-foreground">{t('workers.totalCost')}</p>
                     </div>
                   </div>
                 </Card>

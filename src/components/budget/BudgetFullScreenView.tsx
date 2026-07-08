@@ -329,7 +329,7 @@ export const BudgetFullScreenView = ({
                     {/* Main Progress Card */}
                     <div className="p-5 sm:p-6 rounded-2xl bg-card border border-border">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-muted-foreground">{t('budget.overallProgress', 'Ukupni napredak')}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{t('budget.overallProgress')}</span>
                         <div className="flex items-center gap-2">
                           {(budget.isOverBudget || budget.isWarning) && (
                             <AlertTriangle className={cn(
@@ -357,7 +357,7 @@ export const BudgetFullScreenView = ({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-mono font-bold text-2xl sm:text-3xl">{formatAmount(budget.spent)}</p>
-                          <p className="text-sm text-muted-foreground">{t('budget.spent', 'Potrošeno')}</p>
+                          <p className="text-sm text-muted-foreground">{t('budget.spent')}</p>
                         </div>
                         <div className="text-right">
                           <p className={cn(
@@ -366,7 +366,7 @@ export const BudgetFullScreenView = ({
                           )}>
                             {formatAmount(budget.remaining)}
                           </p>
-                          <p className="text-sm text-muted-foreground">{t('budget.remaining', 'Preostalo')}</p>
+                          <p className="text-sm text-muted-foreground">{t('budget.remaining')}</p>
                         </div>
                       </div>
                     </div>
@@ -374,16 +374,16 @@ export const BudgetFullScreenView = ({
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div className="p-4 rounded-xl bg-card border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget', 'Ukupni budžet')}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget')}</p>
                         <p className="font-mono font-bold text-lg">{formatAmount(budget.total_amount)}</p>
                       </div>
                       <div className="p-4 rounded-xl bg-card border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage', 'Prosj. dnevno')}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage')}</p>
                         <p className="font-mono font-bold text-lg">{formatAmount(budget.dailyAverage || 0)}</p>
                       </div>
                       {budget.trend && (
                         <div className="p-4 rounded-xl bg-card border border-border">
-                          <p className="text-xs text-muted-foreground mb-1">{t('budget.trend', 'Trend')}</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t('budget.trend')}</p>
                           <div className="flex items-center gap-2">
                             <div className={cn(
                               "p-1.5 rounded-lg",
@@ -394,9 +394,9 @@ export const BudgetFullScreenView = ({
                               <TrendIcon className="w-4 h-4" />
                             </div>
                             <span className="text-sm font-medium">
-                              {budget.trend === 'up' && t('budget.trendUp', 'Raste')}
-                              {budget.trend === 'down' && t('budget.trendDown', 'Pada')}
-                              {budget.trend === 'stable' && t('budget.trendStable', 'Stabilno')}
+                              {budget.trend === 'up' && t('budget.trendUp')}
+                              {budget.trend === 'down' && t('budget.trendDown')}
+                              {budget.trend === 'stable' && t('budget.trendStable')}
                             </span>
                           </div>
                         </div>
@@ -406,14 +406,14 @@ export const BudgetFullScreenView = ({
                     {/* Categories Breakdown */}
                     {budget.categories.length > 0 && (
                       <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">{t('budget.byCategories', 'Po kategorijama')}</h3>
+                        <h3 className="text-lg font-semibold">{t('budget.byCategories')}</h3>
                         <div className="space-y-3">
                           {budget.categories.map((cat) => (
                             <div key={cat.id} className="p-4 rounded-xl bg-card border border-border">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
                                   <span className="text-2xl">{cat.icon || '📂'}</span>
-                                  <span className="font-medium">{cat.category}</span>
+                                  <span className="font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {(cat.isOverBudget || cat.isWarning) && (
@@ -434,7 +434,7 @@ export const BudgetFullScreenView = ({
                               <div className="flex justify-between text-sm text-muted-foreground">
                                 <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
                                 <span className={cat.remaining < 0 ? "text-destructive" : ""}>
-                                  {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left', 'preostalo')}
+                                  {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left')}
                                 </span>
                               </div>
                             </div>
