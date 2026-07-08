@@ -29,10 +29,16 @@ describe('useNotificationNavigation attribution intercept', () => {
 
   it('intercept vraća true (nema toast "Stavka nije dostupna") kad je payload valjan', () => {
     // Blok mora sadržavati `return true` unutar if bloka
-    const idx = SRC.indexOf('worker_payout_created');
+    const idx = SRC.indexOf("if (type === 'worker_payout_created'");
     expect(idx).toBeGreaterThan(-1);
-    const block = SRC.slice(idx, idx + 800);
+    const block = SRC.slice(idx, idx + 1600);
     expect(block).toContain('dispatchAttributionOpen(attr)');
     expect(block).toContain('return true');
+  });
+
+  it('WS2 / Faza 2.2 — voided s worker_attribution_expense_id vodi na /wallet deep link umjesto sheet-a', () => {
+    expect(SRC).toContain('worker_attribution_expense_id');
+    expect(SRC).toContain('/wallet?highlight=');
+    expect(SRC).toContain('voidedAttribution=1');
   });
 });

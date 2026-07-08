@@ -31,6 +31,16 @@ import { TransferListDialog } from '@/components/TransferListDialog';
 import { useMemo } from 'react';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Wallet = () => {
   const { t } = useTranslation();
@@ -48,6 +58,13 @@ const Wallet = () => {
   const [paymentSourceDialogOpen, setPaymentSourceDialogOpen] = useState(false);
   const [paymentSourcePdfProcessing, setPaymentSourcePdfProcessing] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  // WS2 / Faza 2.1 + 2.2 — deep link parametri: `openSourceCreate` otvara Add dialog
+  // za novi izvor (empty-state CTA iz AttributionSheet); `voidedAttribution` prikazuje
+  // AlertDialog s CTA "Ukloni pripis" nad prethodno highlightaom transakcijom.
+  const autoOpenNewSource = searchParams.get('openSourceCreate') === '1';
+  const voidedAttribution = searchParams.get('voidedAttribution') === '1';
+  const [voidedPromptExpenseId, setVoidedPromptExpenseId] = useState<string | null>(null);
+  const [voidedPromptRemoving, setVoidedPromptRemoving] = useState(false);
 
   const allTransfers = useMemo(
     () => allExpenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
@@ -135,14 +152,48 @@ const Wallet = () => {
     );
     setSelectedPaymentSource(source);
     setPaymentSourceDialogOpen(true);
-    // Očisti query param nakon što smo pokrenuli protok — highlight odrađuje
+    // WS2 / Faza 2.2 — ako smo stigli iz storno obavijesti (voidedAttribution=1),
+    // memoriramo expense id za AlertDialog "Ukloni pripis". Ne otvaramo prompt
+    // prije nego što je izvor pronađen (sprječava mrtav prompt na već obrisan red).
+    if (voidedAttribution) {
+      setVoidedPromptExpenseId(highlightId);
+    }
+    // Očisti query paramove nakon što smo pokrenuli protok — highlight odrađuje
     // HighlightTarget preko pendingHighlight state-a; dodatni re-run nije potreban.
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.delete('highlight');
+      next.delete('voidedAttribution');
       return next;
     }, { replace: true });
-  }, [searchParams, rawExpenses, customPaymentSources, setSearchParams]);
+  }, [searchParams, rawExpenses, customPaymentSources, setSearchParams, voidedAttribution]);
+
+  // Očisti `openSourceCreate` iz URL-a nakon što je pročitan — autoOpenNew prop
+  // je već proslijeđen panelu i on drži interni ref-guard.
+  useEffect(() => {
+    if (!autoOpenNewSource) return;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('openSourceCreate');
+      return next;
+    }, { replace: true });
+  }, [autoOpenNewSource, setSearchParams]);
+
+  const handleRemoveVoidedAttribution = useCallback(async () => {
+    if (!voidedPromptExpenseId || voidedPromptRemoving) return;
+    setVoidedPromptRemoving(true);
+    try {
+      await deleteExpense(voidedPromptExpenseId, { silent: true });
+      refetch();
+      showSuccess(t('attribution.voidedPrompt.removed', 'Pripis uklonjen'));
+    } catch (e) {
+      showError(t('attribution.voidedPrompt.removeFailed', 'Uklanjanje nije uspjelo'));
+    } finally {
+      setVoidedPromptRemoving(false);
+      setVoidedPromptExpenseId(null);
+    }
+  }, [voidedPromptExpenseId, voidedPromptRemoving, deleteExpense, refetch, t]);
+
 
 
   if (authLoading && storageMode === 'cloud') {
@@ -165,11 +216,15 @@ const Wallet = () => {
           title={t('nav.wallet', 'Novčanik')}
           onDataImported={refetch}
         />
-        <CustomPaymentSourcesPanel onRefetchExpenses={refetch} onSourceClick={(source) => {
-          setSelectedPaymentSource(source);
-          setPaymentSourceDialogOpen(true);
-          refetch();
-        }} />
+        <CustomPaymentSourcesPanel
+          onRefetchExpenses={refetch}
+          autoOpenNew={autoOpenNewSource}
+          onSourceClick={(source) => {
+            setSelectedPaymentSource(source);
+            setPaymentSourceDialogOpen(true);
+            refetch();
+          }}
+        />
         <WalletTransfersCard
           monthlyTransfers={monthlyTransfers}
           monthlyTransferCount={monthlyTransferCount}
@@ -224,6 +279,37 @@ const Wallet = () => {
         transfers={allTransfers}
         totalAmount={totalTransfers}
       />
+
+      <AlertDialog
+        open={!!voidedPromptExpenseId}
+        onOpenChange={(o) => { if (!o) setVoidedPromptExpenseId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attribution.voidedPrompt.title', 'Isplata je poništena')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'attribution.voidedPrompt.description',
+                'Poslodavac je poništio isplatu koju ste pripisali izvoru. Želite li ukloniti pripisan unos iz novčanika?',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voidedPromptRemoving}>
+              {t('attribution.voidedPrompt.keep', 'Zadrži')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={voidedPromptRemoving}
+              onClick={handleRemoveVoidedAttribution}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('attribution.voidedPrompt.remove', 'Ukloni pripis')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>

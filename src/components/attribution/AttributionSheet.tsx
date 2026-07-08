@@ -99,6 +99,19 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
     }
   }, [open, payoutIds.join(',')]);
 
+  // WS2 / Faza 2.1 — nakon resume-a iz "Dodaj izvor u Novčaniku" flow-a,
+  // auto-predselektiraj prvi izvor čiji ID nije bio u snapshotu.
+  useEffect(() => {
+    if (!open) return;
+    if (selectedId) return;
+    const preIds = payload?.preSourceIds;
+    if (!preIds || preIds.length === 0) return;
+    if (!customPaymentSources || customPaymentSources.length === 0) return;
+    const preSet = new Set(preIds);
+    const fresh = customPaymentSources.find(s => !preSet.has(s.id));
+    if (fresh) setSelectedId(fresh.id);
+  }, [open, payload, customPaymentSources, selectedId]);
+
   // Bank-linkani izvori (za warning)
   useEffect(() => {
     if (!open || !user) return;
@@ -199,9 +212,13 @@ export function AttributionSheet({ open, payload, onClose }: Props) {
   };
 
   const handleAddSource = () => {
-    if (payload) persistAttributionResume(payload);
+    if (payload) {
+      // Snapshot postojećih izvora → nakon resume-a auto-predselektiramo novi.
+      const snapshot = (customPaymentSources ?? []).map(s => s.id);
+      persistAttributionResume({ ...payload, preSourceIds: snapshot });
+    }
     onClose();
-    navigate('/wallet');
+    navigate('/wallet?openSourceCreate=1');
   };
 
   return (

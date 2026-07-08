@@ -18,6 +18,13 @@ export interface AttributionOpenPayload {
   batchId: string | null;
   projectNames: string[];
   paidAmountTotal: number | null;
+  /**
+   * WS2 / Faza 2.1 — snapshot postojećih source ID-eva u trenutku kad je
+   * korisnik krenuo dodavati novi izvor iz empty-state CTA-a. Nakon što
+   * host resumira sheet, prvi source čiji ID nije u ovom setu se automatski
+   * predselektira. Nedostupno u standardnoj (bell/push) putanji.
+   */
+  preSourceIds?: string[];
 }
 
 export function dispatchAttributionOpen(payload: AttributionOpenPayload): void {

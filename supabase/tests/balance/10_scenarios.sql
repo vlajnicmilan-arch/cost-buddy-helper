@@ -1399,6 +1399,124 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p22;
 
+-- ------------------------------------------------------------
+-- P23 — WS2 / Faza 2.2: enqueue_worker_payout_notifications proširenje
+--   (a) void s pripisom (single) → notifications.data.worker_attribution_expense_id postoji
+--   (b) void bez pripisa → polje se ne dodaje
+--   (c) void batch s pripisom → polje pokazuje na batch attribution red
+--   (d) actor==recipient → nema obavijesti (owner ne šalje samom sebi)
+-- ------------------------------------------------------------
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p23;
+SELECT pg_temp.seed_payout_fixtures(25, 4, 2, 1000);
+DO $$
+DECLARE
+  v_owner   uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000023';
+  v_payout_id uuid;
+  v_expense_id uuid;
+  v_batch uuid := gen_random_uuid();
+  v_batch_expense_id uuid;
+  v_delivered integer;
+  v_data jsonb;
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p23@test')
+    ON CONFLICT (id) DO NOTHING;
+
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  -- Ownerov auto-payout kroz RPC (kreira project_worker_payouts + ownerov expense)
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P23', true
+  );
+  SELECT id INTO v_payout_id FROM public.project_worker_payouts
+    WHERE created_by = v_owner ORDER BY created_at DESC LIMIT 1;
+
+  -- Očisti obavijesti koje su nastale iz created triggera (irelevantne za P23)
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+
+  -- (b) Void BEZ pripisa → polje se ne dodaje
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id]::uuid[], 'voided', v_owner, NULL
+  );
+  IF v_delivered <> 1 THEN
+    RAISE EXCEPTION 'FAIL P23b — očekivano 1 dostavljena obavijest, dobiveno %', v_delivered;
+  END IF;
+  SELECT data INTO v_data FROM public.notifications
+    WHERE user_id = v_worker_user ORDER BY created_at DESC LIMIT 1;
+  IF v_data ? 'worker_attribution_expense_id' THEN
+    RAISE EXCEPTION 'FAIL P23b — polje worker_attribution_expense_id ne bi smjelo postojati bez pripisa';
+  END IF;
+  RAISE NOTICE 'PASS P23b — void bez pripisa ne dodaje worker_attribution_expense_id';
+
+  -- Radnikov attribution red za single payout
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_id, date, event_at, time_confidence)
+    VALUES (v_worker_user, 100, 'income',
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            'P23 single attribution', v_payout_id,
+            '2026-06-03', '2026-06-03 12:05:00+00', 'C2')
+    RETURNING id INTO v_expense_id;
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+
+  -- (a) Void S pripisom (single) → polje pokazuje na expense
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id]::uuid[], 'voided', v_owner, NULL
+  );
+  IF v_delivered <> 1 THEN
+    RAISE EXCEPTION 'FAIL P23a — očekivano 1 dostavljena obavijest, dobiveno %', v_delivered;
+  END IF;
+  SELECT data INTO v_data FROM public.notifications
+    WHERE user_id = v_worker_user ORDER BY created_at DESC LIMIT 1;
+  IF NOT (v_data ? 'worker_attribution_expense_id') THEN
+    RAISE EXCEPTION 'FAIL P23a — nedostaje worker_attribution_expense_id: %', v_data;
+  END IF;
+  IF (v_data->>'worker_attribution_expense_id')::uuid <> v_expense_id THEN
+    RAISE EXCEPTION 'FAIL P23a — worker_attribution_expense_id mismatch: %', v_data->>'worker_attribution_expense_id';
+  END IF;
+  RAISE NOTICE 'PASS P23a — void s pripisom (single) dodaje worker_attribution_expense_id';
+
+  -- (c) Batch varijanta — radnikov batch attribution red
+  INSERT INTO public.expenses (user_id, amount, type, payment_source, description, worker_payout_batch_id, date, event_at, time_confidence)
+    VALUES (v_worker_user, 250, 'income',
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            'P23 batch attribution', v_batch,
+            '2026-06-03', '2026-06-03 12:07:00+00', 'C2')
+    RETURNING id INTO v_batch_expense_id;
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id]::uuid[], 'voided', v_owner, v_batch
+  );
+  IF v_delivered <> 1 THEN
+    RAISE EXCEPTION 'FAIL P23c — očekivano 1 dostavljena obavijest, dobiveno %', v_delivered;
+  END IF;
+  SELECT data INTO v_data FROM public.notifications
+    WHERE user_id = v_worker_user ORDER BY created_at DESC LIMIT 1;
+  IF (v_data->>'worker_attribution_expense_id')::uuid <> v_batch_expense_id THEN
+    RAISE EXCEPTION 'FAIL P23c — batch worker_attribution_expense_id mismatch (očekivan %, dobiveno %)',
+      v_batch_expense_id, v_data->>'worker_attribution_expense_id';
+  END IF;
+  RAISE NOTICE 'PASS P23c — void s pripisom (batch) dodaje worker_attribution_expense_id';
+
+  -- (d) actor==recipient → nema obavijesti
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id]::uuid[], 'voided', v_worker_user, NULL
+  );
+  IF v_delivered <> 0 THEN
+    RAISE EXCEPTION 'FAIL P23d — actor==recipient je poslao %', v_delivered;
+  END IF;
+  RAISE NOTICE 'PASS P23d — actor==recipient ne dobiva obavijest';
+END $$;
+RELEASE SAVEPOINT s_p23;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
 
