@@ -2865,6 +2865,8 @@
     "reenterPin": "Unesite PIN ponovo za potvrdu",
     "pinsDontMatch": "PIN-ovi se ne podudaraju. Pokušajte ponovo.",
     "pinSet": "PIN je postavljen",
+    "pinSetWithFallback": "PIN postavljen (fallback: {{backend}})",
+    "shieldProtected": "Zaštićeno! 🛡️",
     "changePin": "Promijeni PIN",
     "removePin": "Ukloni PIN",
     "pinRemoved": "PIN je uklonjen",
