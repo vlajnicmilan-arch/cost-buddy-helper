@@ -362,14 +362,11 @@ export const BudgetDialog = ({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input
-                      type="number"
-                      value={cl.limit_amount || ''}
-                      onChange={(e) => handleCategoryChange(index, 'limit_amount', parseFloat(e.target.value) || 0)}
+                    <MoneyInput
+                      value={cl.limit_amount != null && cl.limit_amount !== 0 ? String(cl.limit_amount) : ''}
+                      onChange={(e) => handleCategoryChange(index, 'limit_amount', parseLocaleAmount(e.target.value).value || 0)}
                       placeholder="Limit"
                       className="w-24"
-                      min="0"
-                      step="0.01"
                     />
                     <Button 
                       type="button" 
