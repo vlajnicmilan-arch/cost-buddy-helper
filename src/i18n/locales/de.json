@@ -2263,7 +2263,30 @@
     "deleteAll": "Alle löschen",
     "confirmDeleteAllTitle": "Alle Benachrichtigungen löschen?",
     "confirmDeleteAllDesc": "Alle Benachrichtigungen werden dauerhaft aus dieser Liste entfernt. Bestehende Einladungen bleiben aktiv — du kannst sie weiterhin über den vom Eigentümer gesendeten Link annehmen.",
-    "allDeleted": "Alle Benachrichtigungen gelöscht"
+    "allDeleted": "Alle Benachrichtigungen gelöscht",
+    "worker_payout": {
+      "created": {
+        "single": {
+          "title": "Neue Auszahlung — {{project}}",
+          "message": "Auszahlung {{amount}} für den Zeitraum {{period_start}} → {{period_end}} erhalten."
+        },
+        "batch": {
+          "title": "Sammelauszahlung — {{count}} Projekte",
+          "message": "{{amount}} für {{count}} Projekte erhalten ({{project_names}})."
+        }
+      },
+      "voided": {
+        "single": {
+          "title": "Auszahlung storniert — {{project}}",
+          "message": "Ihre Auszahlung {{amount}} ({{period_start}} → {{period_end}}) wurde storniert."
+        },
+        "batch": {
+          "title": "Sammelauszahlung storniert — {{count}} Projekte",
+          "message": "Sammelauszahlung {{amount}} für {{count}} Projekte wurde storniert."
+        }
+      },
+      "fallback_project": "Projekt"
+    }
   },
   "installments": {
     "title": "Ratenzahlungen",

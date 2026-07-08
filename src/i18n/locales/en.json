@@ -2263,7 +2263,30 @@
     "deleteAll": "Delete all",
     "confirmDeleteAllTitle": "Delete all notifications?",
     "confirmDeleteAllDesc": "All notifications will be permanently removed from this list. Existing invitations remain active — you can still accept them via the link the owner sent you.",
-    "allDeleted": "All notifications deleted"
+    "allDeleted": "All notifications deleted",
+    "worker_payout": {
+      "created": {
+        "single": {
+          "title": "New payout — {{project}}",
+          "message": "Received payout {{amount}} for period {{period_start}} → {{period_end}}."
+        },
+        "batch": {
+          "title": "Batch payout — {{count}} projects",
+          "message": "Received {{amount}} for {{count}} projects ({{project_names}})."
+        }
+      },
+      "voided": {
+        "single": {
+          "title": "Payout voided — {{project}}",
+          "message": "Your payout {{amount}} ({{period_start}} → {{period_end}}) has been voided."
+        },
+        "batch": {
+          "title": "Batch payout voided — {{count}} projects",
+          "message": "Batch payout {{amount}} for {{count}} projects has been voided."
+        }
+      },
+      "fallback_project": "project"
+    }
   },
   "installments": {
     "title": "Installment Payments",
