@@ -296,7 +296,7 @@ export const BusinessDebtTracker = () => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">{t('business.debts.amount', 'Iznos')}</Label>
-                <Input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0.00" className="h-9" />
+                <MoneyInput value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0,00" className="h-9" />
               </div>
               <div>
                 <Label className="text-xs">{t('business.debts.dueDateOptional', 'Rok (opcionalno)')}</Label>
