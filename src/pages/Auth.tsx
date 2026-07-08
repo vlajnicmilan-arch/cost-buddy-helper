@@ -602,7 +602,7 @@ const Auth = () => {
             disabled={loading || (!isLogin && !gdprConsent)}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isLogin ? 'Prijava' : 'Registracija'}
+            {isLogin ? t('auth.login') : t('auth.register')}
           </Button>
 
           {/* Divider */}
@@ -611,7 +611,7 @@ const Auth = () => {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">ili</span>
+              <span className="bg-card px-2 text-muted-foreground">{t('auth.orDivider')}</span>
             </div>
           </div>
 
