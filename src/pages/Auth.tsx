@@ -318,19 +318,19 @@ const Auth = () => {
                 ) : (
                   <RefreshCw className="w-4 h-4 mr-2" />
                 )}
-                Pošalji ponovo
+                {t('auth.resend')}
               </Button>
               
               <Button
                 className="w-full h-12 rounded-xl"
                 onClick={resetToLogin}
               >
-                Već sam potvrdio/la - Prijavi se
+                {t('auth.alreadyConfirmed')}
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Pogrešan email?{' '}
+              {t('auth.wrongEmail')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -341,7 +341,7 @@ const Auth = () => {
                 }}
                 className="text-primary hover:underline"
               >
-                Registriraj se ponovo
+                {t('auth.registerAgain')}
               </button>
             </p>
           </div>
