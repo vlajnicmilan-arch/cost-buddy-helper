@@ -17,9 +17,10 @@ import { lovable } from '@/integrations/lovable/index';
 import { Capacitor } from '@capacitor/core';
 import { useNativeOAuth } from '@/hooks/useNativeOAuth';
 
+import i18n from '@/i18n';
 const authSchema = z.object({
-  email: z.string().trim().email('Nevažeća email adresa').max(255, 'Email je predugačak'),
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 znakova').max(72, 'Lozinka je predugačka')
+  email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
+  password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
 });
 
 const Auth = () => {
