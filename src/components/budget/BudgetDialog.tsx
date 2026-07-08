@@ -122,7 +122,7 @@ export const BudgetDialog = ({
         icon,
         color,
         period_type: periodType,
-        total_amount: parseFloat(totalAmount),
+        total_amount: parseLocaleAmount(totalAmount).value,
         start_date: startDate || null,
         end_date: endDate || null,
         is_active: true,
