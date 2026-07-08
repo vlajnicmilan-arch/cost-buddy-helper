@@ -56,15 +56,7 @@ export const PaymentSourceMembersDialog = ({
       if (error) throw error;
       
       if (data.error) {
-        if (data.error === 'user_not_found') {
-          showError(t('toasts.userNotFound'));
-        } else if (data.error === 'already_member') {
-          showError(t('toasts.alreadyMember'));
-        } else if (data.error === 'already_invited') {
-          showError(t('toasts.alreadyInvited'));
-        } else {
-          showError(data.message || t('toasts.error'));
-        }
+        showError(invitationErrorMessage(data.error, data.message));
         return;
       }
 
