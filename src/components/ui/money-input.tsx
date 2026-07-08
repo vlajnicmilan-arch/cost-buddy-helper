@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { sanitizeMoneyKeystroke } from '@/lib/money';
 
 /**
- * Drop-in replacement for `<Input type="number">` on money fields.
+ * Drop-in replacement for numeric Input on money fields.
  *
  * Behaviour:
  *   - Renders as `<input type="text" inputMode="decimal">` so mobile keyboards
