@@ -2991,6 +2991,8 @@
     "reenterPin": "Re-enter PIN to confirm",
     "pinsDontMatch": "PINs don't match. Try again.",
     "pinSet": "PIN has been set",
+    "pinSetWithFallback": "PIN set (fallback: {{backend}})",
+    "shieldProtected": "Protected! 🛡️",
     "changePin": "Change PIN",
     "removePin": "Remove PIN",
     "pinRemoved": "PIN has been removed",
