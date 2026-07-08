@@ -71,11 +71,19 @@ describe('parseLocaleAmount', () => {
   it('accepts unusual precision "1.2345" as decimal', () => {
     expect(parseLocaleAmount('1.2345')).toEqual({ valid: true, value: 1.2345 });
   });
-  it('rejects ambiguous "1,234" (comma + exactly 3 digits)', () => {
-    // In HR/EU the comma is the decimal separator, but money never has 3
-    // decimals — the input is genuinely ambiguous, so we refuse it.
-    expect(parseLocaleAmount('1,234').valid).toBe(false);
-    expect(parseLocaleAmount('12,345').valid).toBe(false);
+  it('treats single comma + 3 digits as thousands (symmetric with dot rule)', () => {
+    expect(parseLocaleAmount('1,234')).toEqual({ valid: true, value: 1234 });
+    expect(parseLocaleAmount('12,500')).toEqual({ valid: true, value: 12500 });
+    expect(parseLocaleAmount('999,000')).toEqual({ valid: true, value: 999000 });
+  });
+  it('does not treat leading-zero forms as thousands ("0.500", "0,500")', () => {
+    // No thousands number starts with 0 — keep as decimal.
+    expect(parseLocaleAmount('0.500')).toEqual({ valid: true, value: 0.5 });
+    expect(parseLocaleAmount('0,500')).toEqual({ valid: true, value: 0.5 });
+  });
+  it('handles negative thousands ("-2.500", "-1,234")', () => {
+    expect(parseLocaleAmount('-2.500')).toEqual({ valid: true, value: -2500 });
+    expect(parseLocaleAmount('-1,234')).toEqual({ valid: true, value: -1234 });
   });
   it('rejects double minus', () => {
     expect(parseLocaleAmount('--5').valid).toBe(false);
