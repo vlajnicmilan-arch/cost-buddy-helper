@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 import { isValidInvitationEmail } from "../_shared/invitationOutcome.ts";
 
 const corsHeaders = {
@@ -53,7 +54,7 @@ serve(async (req) => {
     // Basic email validation (shared with classifyInvitationOutcome helper)
     if (!isValidInvitationEmail(invitedEmail)) {
       return new Response(
-        JSON.stringify({ error: "invalid_email", message: "Neispravna email adresa" }),
+        JSON.stringify({ error: "invalid_email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -82,7 +83,7 @@ serve(async (req) => {
     // invite link via email. For other types, keep the previous behavior.
     if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
       return new Response(
-        JSON.stringify({ error: "user_not_found", message: "Korisnik s tim emailom nije pronađen u sustavu" }),
+        JSON.stringify({ error: "user_not_found" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -92,26 +93,22 @@ serve(async (req) => {
     let idColumn: string;
     let invitationTable: string;
     let targetTable: string;
-    let targetLabel: string;
 
     if (type === "project") {
       memberTable = "project_members";
       idColumn = "project_id";
       invitationTable = "project_invitations";
       targetTable = "projects";
-      targetLabel = "projektu";
     } else if (type === "budget") {
       memberTable = "budget_members";
       idColumn = "budget_id";
       invitationTable = "budget_invitations";
       targetTable = "budget_plans";
-      targetLabel = "budžetu";
     } else if (type === "payment_source") {
       memberTable = "payment_source_members";
       idColumn = "payment_source_id";
       invitationTable = "payment_source_invitations";
       targetTable = "custom_payment_sources";
-      targetLabel = "računu";
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),
@@ -128,7 +125,7 @@ serve(async (req) => {
         .maybeSingle();
       if (projectErr || !projectRow) {
         return new Response(
-          JSON.stringify({ error: "project_not_found", message: "Projekt nije pronađen" }),
+          JSON.stringify({ error: "project_not_found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -138,7 +135,7 @@ serve(async (req) => {
         projectRow.status === "cancelled"
       ) {
         return new Response(
-          JSON.stringify({ error: "project_closed", message: "Projekt je završen ili arhiviran — pozivnice nisu moguće" }),
+          JSON.stringify({ error: "project_closed" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -155,7 +152,7 @@ serve(async (req) => {
 
       if (existingMember) {
         return new Response(
-          JSON.stringify({ error: "already_member", message: "Korisnik je već član" }),
+          JSON.stringify({ error: "already_member" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -171,7 +168,7 @@ serve(async (req) => {
 
       if (existingInvitation) {
         return new Response(
-          JSON.stringify({ error: "already_invited", message: "Korisnik već ima aktivnu pozivnicu" }),
+          JSON.stringify({ error: "already_invited" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -187,7 +184,7 @@ serve(async (req) => {
 
       if (existingEmailInvite) {
         return new Response(
-          JSON.stringify({ error: "already_invited", message: "Već postoji aktivna pozivnica za tu email adresu" }),
+          JSON.stringify({ error: "already_invited" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -251,11 +248,9 @@ serve(async (req) => {
       payment_source: "payment_source_invitation",
     };
 
-    const titleMap: Record<string, string> = {
-      project: "Pozivnica za projekt",
-      budget: "Pozivnica za budžet",
-      payment_source: "Pozivnica za dijeljeni račun",
-    };
+    const titleKey = `notifications.invitation_sent.${type}.title`;
+    const messageKey = `notifications.invitation_sent.${type}.message`;
+    const vars = { inviterName, targetName };
 
     // Resolve worker name (best-effort) for the email greeting
     let workerName: string | undefined;
@@ -277,8 +272,8 @@ serve(async (req) => {
         .insert({
           user_id: invitedUser.id,
           type: notificationTypeMap[type],
-          title: titleMap[type],
-          message: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             invitation_id: invitation.id,
             target_id: targetId,
@@ -287,6 +282,8 @@ serve(async (req) => {
             invited_by: user.id,
             inviter_name: inviterName,
             type: type,
+            title_vars: {},
+            message_vars: vars,
           },
         });
 
@@ -296,13 +293,17 @@ serve(async (req) => {
 
       await sendPushNotification({
         user_id: invitedUser.id,
-        title: titleMap[type],
-        body: `${inviterName} vas poziva da se pridružite ${targetLabel} "${targetName}"`,
+        title: translate("hr", titleKey),
+        body: translate("hr", messageKey, vars),
         data: {
           invitation_id: invitation.id,
           target_id: targetId,
           type: notificationTypeMap[type],
           category: type === 'budget' ? 'budgets' : type === 'payment_source' ? 'transactions' : 'projects',
+          i18n_title_key: titleKey,
+          i18n_body_key: messageKey,
+          title_vars: {},
+          message_vars: vars,
         },
         source: "send-member-invitation",
       });

@@ -1,6 +1,8 @@
 // Sends in-app + native push update notifications after a release APK is published.
+// WS3a-2 Batch B — uses centralized i18n catalog; send-push translates per recipient.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,22 +11,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type Lang = "hr" | "en" | "de";
-
-const copy: Record<Lang, { title: string; body: (v: string) => string }> = {
-  hr: {
-    title: "Dostupno je ažuriranje aplikacije",
-    body: (v) => `Verzija ${v} je spremna. Dodirni za preuzimanje i instalaciju.`,
-  },
-  en: {
-    title: "App update available",
-    body: (v) => `Version ${v} is ready. Tap to download and install it.`,
-  },
-  de: {
-    title: "App-Update verfügbar",
-    body: (v) => `Version ${v} ist bereit. Tippen Sie zum Herunterladen und Installieren.`,
-  },
-};
+const TITLE_KEY = "notifications.app_update.title";
+const MESSAGE_KEY = "notifications.app_update.message";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -65,15 +53,6 @@ Deno.serve(async (req) => {
       return json({ success: true, targetedUsers: 0, inserted: 0, pushed: 0 });
     }
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, preferred_language")
-      .in("user_id", userIds);
-    const langByUser = new Map<string, Lang>();
-    (profiles ?? []).forEach((p: any) => {
-      langByUser.set(p.user_id, (["hr", "en", "de"].includes(p.preferred_language) ? p.preferred_language : "hr") as Lang);
-    });
-
     const { data: existing } = await supabase
       .from("notifications")
       .select("user_id")
@@ -86,36 +65,41 @@ Deno.serve(async (req) => {
       return json({ success: true, targetedUsers: userIds.length, inserted: 0, pushed: 0, skippedExisting: userIds.length });
     }
 
-    const notifications = pendingUserIds.map((userId) => {
-      const lang = langByUser.get(userId) ?? "hr";
-      return {
-        user_id: userId,
+    const titleVars = {};
+    const messageVars = { version: body.version };
+
+    const notifications = pendingUserIds.map((userId) => ({
+      user_id: userId,
+      type: "app_update",
+      title: TITLE_KEY,
+      message: MESSAGE_KEY,
+      data: {
         type: "app_update",
-        title: copy[lang].title,
-        message: copy[lang].body(body.version!),
-        data: {
-          type: "app_update",
-          category: "app_update",
-          version: body.version,
-          minSupportedVersion: body.minSupportedVersion ?? "0.0.0",
-          sha256: body.sha256 ?? null,
-          apkUrl: body.apkUrl ?? null,
-          deeplink: "/install",
-        },
-        read: false,
-      };
-    });
+        category: "app_update",
+        version: body.version,
+        minSupportedVersion: body.minSupportedVersion ?? "0.0.0",
+        sha256: body.sha256 ?? null,
+        apkUrl: body.apkUrl ?? null,
+        deeplink: "/install",
+        title_vars: titleVars,
+        message_vars: messageVars,
+      },
+      read: false,
+    }));
 
     const { error: insertError } = await supabase.from("notifications").insert(notifications);
     if (insertError) throw insertError;
 
     let pushed = 0;
+    // HR fallback pre-rendered (send-push overrides via i18n keys if present).
+    const fallbackTitle = translate("hr", TITLE_KEY, titleVars);
+    const fallbackBody = translate("hr", MESSAGE_KEY, messageVars);
+
     await Promise.all(pendingUserIds.map(async (userId) => {
-      const lang = langByUser.get(userId) ?? "hr";
       await sendPushNotification({
         user_id: userId,
-        title: copy[lang].title,
-        body: copy[lang].body(body.version!),
+        title: fallbackTitle,
+        body: fallbackBody,
         data: {
           type: "broadcast",
           category: "app_update",
@@ -123,6 +107,10 @@ Deno.serve(async (req) => {
           apkUrl: body.apkUrl ?? "",
           url: "/install",
           deeplink: "/install",
+          i18n_title_key: TITLE_KEY,
+          i18n_body_key: MESSAGE_KEY,
+          title_vars: titleVars,
+          message_vars: messageVars,
         },
         source: "notify-app-update",
       });

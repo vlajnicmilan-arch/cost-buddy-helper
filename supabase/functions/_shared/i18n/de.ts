@@ -88,4 +88,88 @@ export default {
     "Mitglied",
   "notifications.fallback.project":
     "Projekt",
+  "notifications.activation_nudge.day1.title":
+    "Willkommen bei V&M Balance 👋",
+  "notifications.activation_nudge.day1.message":
+    "Starte mit deinem ersten Projekt — Renovierung, Kunde oder persönliches Ziel.",
+  "notifications.activation_nudge.day3.title":
+    "Bereit für dein erstes Projekt? 🎯",
+  "notifications.activation_nudge.day3.message":
+    "Projekte helfen dir, Budget und Ausgaben an einem Ort zu verfolgen.",
+  "notifications.activation_nudge.day7.title":
+    "Entdecke die volle Power von V&M Balance 🚀",
+  "notifications.activation_nudge.day7.message":
+    "Erstelle dein erstes Projekt in 30s und behalte Ausgaben im Griff.",
+  "notifications.app_update.title":
+    "App-Update verfügbar",
+  "notifications.app_update.message":
+    "Version {{version}} ist bereit. Tippen Sie zum Herunterladen und Installieren.",
+  "notifications.budget_burn_push.title":
+    "⚠️ Budget „{{name}}\" überschritten!",
+  "notifications.budget_burn_push.message":
+    "Sie haben {{percentage}}% des Budgets ausgegeben ({{spent}} / {{limit}}).",
+  "notifications.milestone_budget.warning.title":
+    "🟡 Phase „{{name}}\" ist bei {{percentage}}% des Budgets",
+  "notifications.milestone_budget.warning.message":
+    "Phase „{{name}}\" im Projekt „{{project}}\" hat {{percentage}}% des geplanten Budgets verbraucht.",
+  "notifications.milestone_budget.over.title":
+    "🔴 Phase „{{name}}\" hat das Budget überschritten",
+  "notifications.milestone_budget.over.message":
+    "Phase „{{name}}\" im Projekt „{{project}}\" überschreitet das Budget um {{overPct}}%. Erwäge eine Überarbeitung oder Rücklagenentnahme.",
+  "notifications.milestone_deadline.upcoming.title":
+    "⏰ Phase „{{name}}\" ist in {{days}} Tagen fällig",
+  "notifications.milestone_deadline.upcoming.message":
+    "Phase „{{name}}\" im Projekt „{{project}}\" ist am {{date}} fällig.",
+  "notifications.milestone_deadline.overdue.title":
+    "⚠️ Phase „{{name}}\" ist überfällig",
+  "notifications.milestone_deadline.overdue.message":
+    "Phase „{{name}}\" im Projekt „{{project}}\" ist seit {{days}} Tagen überfällig.",
+  "notifications.reminder.fallback_body":
+    "Erinnerung: {{title}}",
+  "notifications.participant_digest.title":
+    "Zusammenfassung: „{{project}}\"",
+  "notifications.participant_digest.body.empty":
+    "Keine neuen Ereignisse.",
+  "notifications.participant_digest.body.single_no_samples":
+    "1 neue Änderung im Projekt",
+  "notifications.participant_digest.body.many_no_samples":
+    "{{count}} neue Änderungen im Projekt",
+  "notifications.participant_digest.body.single_with_samples":
+    "1 neue Änderung im Projekt: {{samples}}",
+  "notifications.participant_digest.body.many_with_samples":
+    "{{count}} neue Änderungen im Projekt: {{samples}}",
+  "notifications.invitation_accepted.title":
+    "Einladung angenommen",
+  "notifications.invitation_accepted.message.project":
+    "{{userName}} hat die Einladung zum Projekt „{{targetName}}\" angenommen",
+  "notifications.invitation_accepted.message.budget":
+    "{{userName}} hat die Einladung zum Budget „{{targetName}}\" angenommen",
+  "notifications.invitation_accepted.message.payment_source":
+    "{{userName}} hat die Einladung zum Konto „{{targetName}}\" angenommen",
+  "notifications.invitation_accepted.push.project":
+    "{{userName}} ist dem Projekt „{{targetName}}\" beigetreten",
+  "notifications.invitation_accepted.push.budget":
+    "{{userName}} ist dem Budget „{{targetName}}\" beigetreten",
+  "notifications.invitation_accepted.push.payment_source":
+    "{{userName}} ist dem Konto „{{targetName}}\" beigetreten",
+  "notifications.member_joined.project.title":
+    "Neues Projektmitglied",
+  "notifications.member_joined.project.message":
+    "{{memberName}} ist dem Projekt „{{targetName}}\" beigetreten",
+  "notifications.member_joined.budget.title":
+    "Neues Budgetmitglied",
+  "notifications.member_joined.budget.message":
+    "{{memberName}} ist dem Budget „{{targetName}}\" beigetreten",
+  "notifications.invitation_sent.project.title":
+    "Projekt-Einladung",
+  "notifications.invitation_sent.project.message":
+    "{{inviterName}} lädt Sie ein, dem Projekt „{{targetName}}\" beizutreten",
+  "notifications.invitation_sent.budget.title":
+    "Budget-Einladung",
+  "notifications.invitation_sent.budget.message":
+    "{{inviterName}} lädt Sie ein, dem Budget „{{targetName}}\" beizutreten",
+  "notifications.invitation_sent.payment_source.title":
+    "Einladung zum geteilten Konto",
+  "notifications.invitation_sent.payment_source.message":
+    "{{inviterName}} lädt Sie ein, dem Konto „{{targetName}}\" beizutreten",
 } as const;

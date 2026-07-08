@@ -2360,6 +2360,98 @@
     "fallback": {
       "actor": "Član",
       "project": "projekt"
+    },
+    "activation_nudge": {
+      "day1": {
+        "title": "Dobrodošao u V&M Balance 👋",
+        "message": "Kreni s prvim projektom — renoviranje, klijent ili osobni cilj."
+      },
+      "day3": {
+        "title": "Spreman za prvi projekt? 🎯",
+        "message": "Projekti ti pomažu pratiti budžet i troškove na jednom mjestu."
+      },
+      "day7": {
+        "title": "Iskusi punu snagu V&M Balance 🚀",
+        "message": "Otvori prvi projekt u 30s i drži troškove pod kontrolom."
+      }
+    },
+    "app_update": {
+      "title": "Dostupno je ažuriranje aplikacije",
+      "message": "Verzija {{version}} je spremna. Dodirni za preuzimanje i instalaciju."
+    },
+    "budget_burn_push": {
+      "title": "⚠️ Budžet „{{name}}\" prekoračen!",
+      "message": "Potrošili ste {{percentage}}% budžeta ({{spent}} / {{limit}})."
+    },
+    "milestone_budget": {
+      "warning": {
+        "title": "🟡 Faza „{{name}}\" je na {{percentage}}% budžeta",
+        "message": "Faza „{{name}}\" u projektu „{{project}}\" potrošila je {{percentage}}% planiranog budžeta."
+      },
+      "over": {
+        "title": "🔴 Faza „{{name}}\" je premašila budžet",
+        "message": "Faza „{{name}}\" u projektu „{{project}}\" premašuje budžet za {{overPct}}%. Razmisli o reviziji ili povlačenju iz rezerve."
+      }
+    },
+    "milestone_deadline": {
+      "upcoming": {
+        "title": "⏰ Faza „{{name}}\" ističe za {{days}} dana",
+        "message": "Faza „{{name}}\" u projektu „{{project}}\" ističe {{date}}."
+      },
+      "overdue": {
+        "title": "⚠️ Faza „{{name}}\" je istekla",
+        "message": "Faza „{{name}}\" u projektu „{{project}}\" je prošla rok za {{days}} dana."
+      }
+    },
+    "reminder": {
+      "fallback_body": "Podsjetnik: {{title}}"
+    },
+    "participant_digest": {
+      "title": "Sažetak: „{{project}}\"",
+      "body": {
+        "empty": "Nema novih događaja.",
+        "single_no_samples": "1 nova promjena u projektu",
+        "many_no_samples": "{{count}} novih promjena u projektu",
+        "single_with_samples": "1 nova promjena u projektu: {{samples}}",
+        "many_with_samples": "{{count}} novih promjena u projektu: {{samples}}"
+      }
+    },
+    "invitation_accepted": {
+      "title": "Pozivnica prihvaćena",
+      "message": {
+        "project": "{{userName}} je prihvatio/la pozivnicu za projekt „{{targetName}}\"",
+        "budget": "{{userName}} je prihvatio/la pozivnicu za budžet „{{targetName}}\"",
+        "payment_source": "{{userName}} je prihvatio/la pozivnicu za račun „{{targetName}}\""
+      },
+      "push": {
+        "project": "{{userName}} se pridružio/la projektu „{{targetName}}\"",
+        "budget": "{{userName}} se pridružio/la budžetu „{{targetName}}\"",
+        "payment_source": "{{userName}} se pridružio/la računu „{{targetName}}\""
+      }
+    },
+    "member_joined": {
+      "project": {
+        "title": "Novi član projekta",
+        "message": "{{memberName}} se pridružio/la projektu „{{targetName}}\""
+      },
+      "budget": {
+        "title": "Novi član budžeta",
+        "message": "{{memberName}} se pridružio/la budžetu „{{targetName}}\""
+      }
+    },
+    "invitation_sent": {
+      "project": {
+        "title": "Pozivnica za projekt",
+        "message": "{{inviterName}} vas poziva da se pridružite projektu „{{targetName}}\""
+      },
+      "budget": {
+        "title": "Pozivnica za budžet",
+        "message": "{{inviterName}} vas poziva da se pridružite budžetu „{{targetName}}\""
+      },
+      "payment_source": {
+        "title": "Pozivnica za dijeljeni račun",
+        "message": "{{inviterName}} vas poziva da se pridružite računu „{{targetName}}\""
+      }
     }
   },
   "installments": {
@@ -4460,7 +4552,18 @@
         "addButton": "Dodijeli pristup modulu"
       },
       "layersIndependentNote": "Naplata i Admin override su nezavisni slojevi. Promjena naplate ne uklanja postojeće override grantove. Opoziv overridea ne mijenja naplatu. Efektivni pristup vrijedi dok postoji barem jedan aktivni izvor."
-    }
+    },
+    "broadcastLangNote": "Ispuni sve tri jezične verzije (HR je obavezan i koristi se kao fallback za prazna polja).",
+    "titleHr": "Naslov (HR)",
+    "titleEn": "Naslov (EN)",
+    "titleDe": "Naslov (DE)",
+    "messageHr": "Poruka (HR)",
+    "messageEn": "Poruka (EN)",
+    "messageDe": "Poruka (DE)",
+    "sendBroadcast": "Pošalji obavijest",
+    "broadcastSuccess": "Obavijest poslana za {{count}} korisnika",
+    "broadcastMissingHr": "HR verzija (naslov i poruka) je obavezna",
+    "broadcastFooter": "Obavijest će biti poslana svim registriranim korisnicima na njihovom preferiranom jeziku (HR fallback za prazna polja)."
   },
   "adminRetention": {
     "title": "Cohort Retention",

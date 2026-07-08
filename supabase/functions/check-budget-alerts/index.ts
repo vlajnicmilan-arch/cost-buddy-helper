@@ -1,11 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const TITLE_KEY = "notifications.budget_burn_push.title";
+const MESSAGE_KEY = "notifications.budget_burn_push.message";
 
 interface BudgetAlert {
   budget_id: string;
@@ -162,14 +166,30 @@ serve(async (req) => {
 
       if (alreadyPushedAt100) continue;
 
-      const title = `⚠️ Budžet "${budget.name}" prekoračen!`;
-      const message = `Potrošili ste ${percentage.toFixed(0)}% budžeta (${totalSpent.toFixed(2)} / ${totalLimit.toFixed(2)}).`;
+      const titleVars = { name: budget.name };
+      const messageVars = {
+        percentage: percentage.toFixed(0),
+        spent: totalSpent.toFixed(2),
+        limit: totalLimit.toFixed(2),
+      };
+      // HR fallback pre-rendered — send-push overrides with recipient's language.
+      const title = translate("hr", TITLE_KEY, titleVars);
+      const message = translate("hr", MESSAGE_KEY, messageVars);
 
       await sendPushNotification({
         user_id: userId,
         title,
         body: message,
-        data: { budget_id: budget.id, threshold: 100, type: "budget_alert", category: "budgets" },
+        data: {
+          budget_id: budget.id,
+          threshold: 100,
+          type: "budget_alert",
+          category: "budgets",
+          i18n_title_key: TITLE_KEY,
+          i18n_body_key: MESSAGE_KEY,
+          title_vars: titleVars,
+          message_vars: messageVars,
+        },
         source: "check-budget-alerts",
       });
 

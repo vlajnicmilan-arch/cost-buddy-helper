@@ -2354,6 +2354,98 @@
     "fallback": {
       "actor": "Member",
       "project": "project"
+    },
+    "activation_nudge": {
+      "day1": {
+        "title": "Welcome to V&M Balance 👋",
+        "message": "Start with your first project — renovation, client or personal goal."
+      },
+      "day3": {
+        "title": "Ready for your first project? 🎯",
+        "message": "Projects help you track budget and expenses in one place."
+      },
+      "day7": {
+        "title": "Unlock the full power of V&M Balance 🚀",
+        "message": "Create your first project in 30s and stay on top of expenses."
+      }
+    },
+    "app_update": {
+      "title": "App update available",
+      "message": "Version {{version}} is ready. Tap to download and install it."
+    },
+    "budget_burn_push": {
+      "title": "⚠️ Budget „{{name}}\" exceeded!",
+      "message": "You've spent {{percentage}}% of your budget ({{spent}} / {{limit}})."
+    },
+    "milestone_budget": {
+      "warning": {
+        "title": "🟡 Phase „{{name}}\" is at {{percentage}}% of budget",
+        "message": "Phase „{{name}}\" in project „{{project}}\" has used {{percentage}}% of the planned budget."
+      },
+      "over": {
+        "title": "🔴 Phase „{{name}}\" has exceeded budget",
+        "message": "Phase „{{name}}\" in project „{{project}}\" exceeds budget by {{overPct}}%. Consider revising or drawing from reserve."
+      }
+    },
+    "milestone_deadline": {
+      "upcoming": {
+        "title": "⏰ Phase „{{name}}\" is due in {{days}} days",
+        "message": "Phase „{{name}}\" in project „{{project}}\" is due on {{date}}."
+      },
+      "overdue": {
+        "title": "⚠️ Phase „{{name}}\" is overdue",
+        "message": "Phase „{{name}}\" in project „{{project}}\" is {{days}} days past due."
+      }
+    },
+    "reminder": {
+      "fallback_body": "Reminder: {{title}}"
+    },
+    "participant_digest": {
+      "title": "Summary: „{{project}}\"",
+      "body": {
+        "empty": "No new events.",
+        "single_no_samples": "1 new change in the project",
+        "many_no_samples": "{{count}} new changes in the project",
+        "single_with_samples": "1 new change in the project: {{samples}}",
+        "many_with_samples": "{{count}} new changes in the project: {{samples}}"
+      }
+    },
+    "invitation_accepted": {
+      "title": "Invitation accepted",
+      "message": {
+        "project": "{{userName}} accepted the invitation to project „{{targetName}}\"",
+        "budget": "{{userName}} accepted the invitation to budget „{{targetName}}\"",
+        "payment_source": "{{userName}} accepted the invitation to account „{{targetName}}\""
+      },
+      "push": {
+        "project": "{{userName}} joined project „{{targetName}}\"",
+        "budget": "{{userName}} joined budget „{{targetName}}\"",
+        "payment_source": "{{userName}} joined account „{{targetName}}\""
+      }
+    },
+    "member_joined": {
+      "project": {
+        "title": "New project member",
+        "message": "{{memberName}} joined project „{{targetName}}\""
+      },
+      "budget": {
+        "title": "New budget member",
+        "message": "{{memberName}} joined budget „{{targetName}}\""
+      }
+    },
+    "invitation_sent": {
+      "project": {
+        "title": "Project invitation",
+        "message": "{{inviterName}} invites you to join project „{{targetName}}\""
+      },
+      "budget": {
+        "title": "Budget invitation",
+        "message": "{{inviterName}} invites you to join budget „{{targetName}}\""
+      },
+      "payment_source": {
+        "title": "Shared account invitation",
+        "message": "{{inviterName}} invites you to join account „{{targetName}}\""
+      }
     }
   },
   "installments": {
@@ -4453,7 +4545,18 @@
         "addButton": "Grant module access"
       },
       "layersIndependentNote": "Billing and Admin override are independent layers. A billing change does not remove existing override grants. A revoke does not change billing. Effective access remains as long as at least one active source exists."
-    }
+    },
+    "broadcastLangNote": "Fill in all three language variants (HR is required and used as fallback for empty fields).",
+    "titleHr": "Title (HR)",
+    "titleEn": "Title (EN)",
+    "titleDe": "Title (DE)",
+    "messageHr": "Message (HR)",
+    "messageEn": "Message (EN)",
+    "messageDe": "Message (DE)",
+    "sendBroadcast": "Send notification",
+    "broadcastSuccess": "Notification sent to {{count}} users",
+    "broadcastMissingHr": "HR variant (title and message) is required",
+    "broadcastFooter": "The notification is delivered to every registered user in their preferred language (HR fallback for empty fields)."
   },
   "adminRetention": {
     "title": "Cohort Retention",

@@ -1,11 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+type InvitationTypeKey = "project" | "budget" | "payment_source";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,26 +63,30 @@ serve(async (req) => {
     let idColumn: string;
     let memberTable: string;
     let targetTable: string;
-    let targetLabel: string;
+    let targetLabelFallback: string;
+    let typeKey: InvitationTypeKey;
 
     if (type === "project") {
       invitationTable = "project_invitations";
       idColumn = "project_id";
       memberTable = "project_members";
       targetTable = "projects";
-      targetLabel = "projekt";
+      targetLabelFallback = "projekt";
+      typeKey = "project";
     } else if (type === "budget") {
       invitationTable = "budget_invitations";
       idColumn = "budget_id";
       memberTable = "budget_members";
       targetTable = "budget_plans";
-      targetLabel = "budžet";
+      targetLabelFallback = "budžet";
+      typeKey = "budget";
     } else if (type === "payment_source") {
       invitationTable = "payment_source_invitations";
       idColumn = "payment_source_id";
       memberTable = "payment_source_members";
       targetTable = "custom_payment_sources";
-      targetLabel = "račun";
+      targetLabelFallback = "račun";
+      typeKey = "payment_source";
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),
@@ -202,31 +209,46 @@ serve(async (req) => {
         .eq("id", targetId)
         .single();
 
-      const targetName = targetData?.name || targetLabel;
+      const targetName = targetData?.name || targetLabelFallback;
       const userName = profile?.display_name || "Korisnik";
+
+      const titleKey = "notifications.invitation_accepted.title";
+      const messageKey = `notifications.invitation_accepted.message.${typeKey}`;
+      const pushMessageKey = `notifications.invitation_accepted.push.${typeKey}`;
+      const vars = { userName, targetName };
 
       await adminClient
         .from("notifications")
         .insert({
           user_id: invitation.invited_by,
           type: "invitation_accepted",
-          title: "Pozivnica prihvaćena",
-          message: `${userName} je prihvatio/la pozivnicu za ${targetLabel} "${targetName}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             target_id: targetId,
             target_name: targetName,
             type: type,
             user_id: user.id,
             user_name: userName,
+            title_vars: {},
+            message_vars: vars,
           },
         });
 
-      // Best-effort push to the inviter
+      // Best-effort push to the inviter — send-push translates per language.
       await sendPushNotification({
         user_id: invitation.invited_by,
-        title: "Pozivnica prihvaćena",
-        body: `${userName} se pridružio/la ${targetLabel} "${targetName}"`,
-        data: { target_id: targetId, type: "invitation_accepted", category: "projects" },
+        title: translate("hr", titleKey),
+        body: translate("hr", pushMessageKey, vars),
+        data: {
+          target_id: targetId,
+          type: "invitation_accepted",
+          category: "projects",
+          i18n_title_key: titleKey,
+          i18n_body_key: pushMessageKey,
+          title_vars: {},
+          message_vars: vars,
+        },
         source: "respond-to-invitation",
       });
 

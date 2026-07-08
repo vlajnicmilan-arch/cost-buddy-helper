@@ -1,11 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+import { translate, resolveLang } from "../_shared/i18n/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const FALLBACK_BODY_KEY = "notifications.reminder.fallback_body";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -44,7 +47,8 @@ serve(async (req) => {
     let processed = 0;
 
     for (const reminder of dueReminders) {
-      // Create notification
+      // E-10 rule: user-defined title/description are shown verbatim (recipient = creator).
+      // Only the fixed emoji prefix and the fallback "Reminder: X" phrase are localized.
       const typeEmoji = {
         payment: "💳",
         goal: "🎯",
@@ -53,7 +57,24 @@ serve(async (req) => {
       }[reminder.type] || "⏰";
 
       const notifTitle = `${typeEmoji} ${reminder.title}`;
-      const notifBody = reminder.description || `Podsjetnik: ${reminder.title}`;
+
+      // Resolve recipient (= creator) language for the fallback body phrase.
+      let lang = "hr";
+      try {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("preferred_language")
+          .eq("user_id", reminder.user_id)
+          .maybeSingle();
+        lang = resolveLang((prof as any)?.preferred_language ?? null);
+      } catch {
+        // ignore, keep hr fallback
+      }
+
+      const hasDescription = !!(reminder.description && String(reminder.description).trim());
+      const notifBody = hasDescription
+        ? reminder.description
+        : translate(lang, FALLBACK_BODY_KEY, { title: reminder.title });
 
       const { error: notifErr } = await supabase.from("notifications").insert({
         user_id: reminder.user_id,
@@ -72,7 +93,8 @@ serve(async (req) => {
         continue;
       }
 
-      // Best-effort push
+      // Best-effort push — verbatim strings, no i18n key delegation
+      // (recipient is the creator; text already resolved above).
       await sendPushNotification({
         user_id: reminder.user_id,
         title: notifTitle,
@@ -81,7 +103,6 @@ serve(async (req) => {
         source: "check-reminders",
       });
 
-      // Mark as notified
       await supabase
         .from("reminders")
         .update({ notified: true })
