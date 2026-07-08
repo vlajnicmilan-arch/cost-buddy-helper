@@ -143,8 +143,8 @@ export const BudgetMembersTab = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{BUDGET_ROLE_LABELS.member}</SelectItem>
-                  <SelectItem value="viewer">{BUDGET_ROLE_LABELS.viewer}</SelectItem>
+                  <SelectItem value="member">{t('budgetRoles.member', 'Član')}</SelectItem>
+                  <SelectItem value="viewer">{t('budgetRoles.viewer', 'Gledatelj')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSendInvite} disabled={sendingInvite}>
@@ -169,8 +169,8 @@ export const BudgetMembersTab = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{BUDGET_ROLE_LABELS.member}</SelectItem>
-                  <SelectItem value="viewer">{BUDGET_ROLE_LABELS.viewer}</SelectItem>
+                  <SelectItem value="member">{t('budgetRoles.member', 'Član')}</SelectItem>
+                  <SelectItem value="viewer">{t('budgetRoles.viewer', 'Gledatelj')}</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -226,7 +226,7 @@ export const BudgetMembersTab = ({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {BUDGET_ROLE_LABELS[member.role]}
+                {t(`budgetRoles.${member.role}`, BUDGET_ROLE_LABELS[member.role])}
               </p>
             </div>
 
@@ -240,8 +240,8 @@ export const BudgetMembersTab = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="member">{BUDGET_ROLE_LABELS.member}</SelectItem>
-                    <SelectItem value="viewer">{BUDGET_ROLE_LABELS.viewer}</SelectItem>
+                    <SelectItem value="member">{t('budgetRoles.member', 'Član')}</SelectItem>
+                    <SelectItem value="viewer">{t('budgetRoles.viewer', 'Gledatelj')}</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -279,7 +279,7 @@ export const BudgetMembersTab = ({
                   }
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {BUDGET_ROLE_LABELS[invitation.role]}
+                  {t(`budgetRoles.${invitation.role}`, BUDGET_ROLE_LABELS[invitation.role])}
                 </p>
               </div>
               

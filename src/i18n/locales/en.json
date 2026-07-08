@@ -2279,6 +2279,16 @@
     "viewer": "Viewer",
     "worker": "Worker"
   },
+  "budgetRoles": {
+    "owner": "Owner",
+    "member": "Member",
+    "viewer": "Viewer"
+  },
+  "runtimeDiagnostics": {
+    "versionsEqual": "✅ Versions match",
+    "versionsDiffer": "⚠️ Diff: local {{local}} vs remote {{remote}}",
+    "nativeRebuildHint": "ℹ️ If versions differ but \"Refresh\" does not help, a new APK build is required (git pull → npm run build → npx cap sync → Android Studio)."
+  },
   "notifications": {
     "title": "Notifications",
     "itemNotAvailable": "Item is no longer available",
@@ -4554,6 +4564,24 @@
         "businessBilling": "Business via Billing",
         "businessOverride": "Business via Override",
         "reset": "Reset"
+      },
+      "tab": {
+        "refresh": "Refresh",
+        "countUsers_one": "{{count}} user",
+        "countUsers_other": "{{count}} users",
+        "loading": "Loading...",
+        "unnamed": "Unnamed",
+        "banned": "Banned",
+        "invited_one": "{{count}} invited",
+        "invited_other": "{{count}} invited",
+        "lastLogin": "Last login",
+        "lastDevice": "Last device",
+        "unblock": "Unblock",
+        "block": "Block",
+        "removeAdmin": "Remove admin",
+        "addAdmin": "Add admin",
+        "loadMore": "Load more",
+        "filterHint": "Filter operates on loaded users. To search all, clear the filter or click \"Load more\" without a filter."
       }
     },
     "user": {
