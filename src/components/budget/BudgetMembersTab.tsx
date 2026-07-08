@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { Users, Copy, Link2, Trash2, UserMinus, Crown, Loader2, Mail, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { invitationErrorMessage } from '@/lib/invitationErrors';
 
 interface BudgetMembersTabProps {
   budgetId: string;
