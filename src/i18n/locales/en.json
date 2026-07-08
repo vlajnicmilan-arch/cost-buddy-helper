@@ -2286,6 +2286,7 @@
     "trendUp": "Rising",
     "trendDown": "Falling",
     "trendStable": "Stable",
+    "comparedToLastPeriod": "Compared with the previous period",
     "byCategories": "By category",
     "manualAssigned": "Manually assigned",
     "noCategories": "No categories defined",
