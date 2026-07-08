@@ -11,11 +11,13 @@ import logo from '@/assets/logo.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 
+import i18n from '@/i18n';
+
 const passwordSchema = z.object({
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 znakova').max(72, 'Lozinka je predugačka'),
+  password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong')),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Lozinke se ne podudaraju',
+  message: i18n.t('auth.validation.passwordsDontMatch'),
   path: ['confirmPassword']
 });
 
