@@ -1201,6 +1201,11 @@ BEGIN
     WHERE created_by = (SELECT val FROM _bfix WHERE key='user')
     ORDER BY created_at DESC LIMIT 1;
 
+  -- Reset guard bypass koji je create_worker_payout upalio (SET LOCAL traje do kraja tx).
+  -- U produkciji svaki HTTP poziv je zasebna tx pa se ovo ne događa; u SQL suite unutar
+  -- iste tx moramo eksplicitno vratiti flag da guard opet čuva DELETE/UPDATE.
+  PERFORM set_config('app.allow_payout_write', 'off', true);
+
   -- (a) DELETE ownerovog auto-expense mora pasti (42501).
   BEGIN
     DELETE FROM public.expenses WHERE id = v_owner_expense_id;
