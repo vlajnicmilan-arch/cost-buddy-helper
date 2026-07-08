@@ -1517,6 +1517,147 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p23;
 
+-- ============================================================
+-- P24 — enqueue_worker_payout_notifications piše i18n ključeve, ne HR tekst
+-- (WS3a-1: server catalog + resolveNotificationText na klijentu)
+-- ============================================================
+-- Očekivano: notifications.title/message = i18n ključ (npr.
+-- 'notifications.worker_payout.created.single.title'), a data.title_vars /
+-- data.message_vars sadrže interpolacijske vrijednosti. Provjeravamo:
+--   (a) single created  → title/message keys + title_vars.project + message_vars {amount, period_start, period_end}
+--   (b) single voided   → voided ključevi
+--   (c) batch created   → batch ključevi + message_vars.count/project_names
+--   Nijedan title/message ne smije sadržavati 'Nova isplata', 'Isplata poništena', 'Zbirna isplata'
+--   (dokaz da HR fallback tekst više ne curi u DB).
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_p24;
+SELECT pg_temp.seed_payout_fixtures(26, 4, 2, 1000);
+DO $$
+DECLARE
+  v_owner       uuid := (SELECT val FROM _bfix WHERE key='user');
+  v_worker_user uuid := '99999999-aaaa-bbbb-cccc-000000000024';
+  v_payout_id   uuid;
+  v_notif       RECORD;
+  v_delivered   integer;
+  v_proj2       uuid := gen_random_uuid();
+  v_wrk2        uuid := gen_random_uuid();
+  v_payout_id2  uuid;
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (v_worker_user, 'p24@test')
+    ON CONFLICT (id) DO NOTHING;
+
+  UPDATE public.project_workers
+     SET user_id = v_worker_user
+   WHERE id = (SELECT val FROM _bfix WHERE key='wrk');
+
+  -- (a) single created
+  PERFORM public.create_worker_payout(
+    (SELECT val FROM _bfix WHERE key='wrk'),
+    (SELECT val FROM _bfix WHERE key='proj'),
+    DATE '2026-06-02', DATE '2026-06-03', 100,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-03 12:00:00+00', 'P24', true
+  );
+  SELECT id INTO v_payout_id FROM public.project_worker_payouts
+    WHERE created_by = v_owner ORDER BY created_at DESC LIMIT 1;
+
+  -- create trigger već enqueue-uje obavijest — očitaj najnoviju
+  SELECT * INTO v_notif FROM public.notifications
+   WHERE user_id = v_worker_user
+   ORDER BY created_at DESC LIMIT 1;
+
+  IF v_notif.title <> 'notifications.worker_payout.created.single.title' THEN
+    RAISE EXCEPTION 'FAIL P24a — title nije i18n ključ: %', v_notif.title;
+  END IF;
+  IF v_notif.message <> 'notifications.worker_payout.created.single.message' THEN
+    RAISE EXCEPTION 'FAIL P24a — message nije i18n ključ: %', v_notif.message;
+  END IF;
+  IF NOT (v_notif.data ? 'title_vars') OR NOT (v_notif.data ? 'message_vars') THEN
+    RAISE EXCEPTION 'FAIL P24a — nedostaju title_vars/message_vars: %', v_notif.data;
+  END IF;
+  IF (v_notif.data->'title_vars'->>'project') IS NULL THEN
+    RAISE EXCEPTION 'FAIL P24a — title_vars.project prazan: %', v_notif.data->'title_vars';
+  END IF;
+  IF (v_notif.data->'message_vars'->>'amount') IS NULL
+     OR (v_notif.data->'message_vars'->>'period_start') IS NULL
+     OR (v_notif.data->'message_vars'->>'period_end') IS NULL THEN
+    RAISE EXCEPTION 'FAIL P24a — message_vars nedostaje amount/period_start/period_end: %',
+      v_notif.data->'message_vars';
+  END IF;
+  RAISE NOTICE 'PASS P24a — single created upisuje i18n ključeve + title/message_vars';
+
+  -- (b) single voided
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id]::uuid[], 'voided', v_owner, NULL
+  );
+  IF v_delivered <> 1 THEN
+    RAISE EXCEPTION 'FAIL P24b — očekivano 1 dostavljena obavijest, dobiveno %', v_delivered;
+  END IF;
+  SELECT * INTO v_notif FROM public.notifications
+   WHERE user_id = v_worker_user ORDER BY created_at DESC LIMIT 1;
+  IF v_notif.title <> 'notifications.worker_payout.voided.single.title' THEN
+    RAISE EXCEPTION 'FAIL P24b — voided title nije i18n ključ: %', v_notif.title;
+  END IF;
+  IF v_notif.message <> 'notifications.worker_payout.voided.single.message' THEN
+    RAISE EXCEPTION 'FAIL P24b — voided message nije i18n ključ: %', v_notif.message;
+  END IF;
+  RAISE NOTICE 'PASS P24b — single voided piše voided i18n ključeve';
+
+  -- (c) batch created — dodaj drugi payout za drugi projekt kroz istog radnika
+  INSERT INTO public.projects (id, user_id, name, project_type, status, start_date)
+    VALUES (v_proj2, v_owner, 'P24 drugi projekt', 'construction', 'active', DATE '2026-06-01');
+  INSERT INTO public.project_workers (id, project_id, user_id, first_name, last_name,
+    hourly_rate, daily_rate, currency, workday_hours)
+    VALUES (v_wrk2, v_proj2, v_worker_user, 'P24', 'Batch', 20, NULL, 'EUR', 8);
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+
+  PERFORM public.create_worker_payout(
+    v_wrk2, v_proj2,
+    DATE '2026-06-04', DATE '2026-06-05', 150,
+    'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+    '2026-06-05 12:00:00+00', 'P24-2', true
+  );
+  SELECT id INTO v_payout_id2 FROM public.project_worker_payouts
+    WHERE project_id = v_proj2 ORDER BY created_at DESC LIMIT 1;
+
+  DELETE FROM public.notifications WHERE user_id = v_worker_user;
+  v_delivered := public.enqueue_worker_payout_notifications(
+    ARRAY[v_payout_id, v_payout_id2]::uuid[], 'created', v_owner, gen_random_uuid()
+  );
+  IF v_delivered <> 1 THEN
+    RAISE EXCEPTION 'FAIL P24c — očekivano 1 dostavljena obavijest, dobiveno %', v_delivered;
+  END IF;
+  SELECT * INTO v_notif FROM public.notifications
+   WHERE user_id = v_worker_user ORDER BY created_at DESC LIMIT 1;
+  IF v_notif.title <> 'notifications.worker_payout.created.batch.title' THEN
+    RAISE EXCEPTION 'FAIL P24c — batch title nije i18n ključ: %', v_notif.title;
+  END IF;
+  IF (v_notif.data->'message_vars'->>'count')::int <> 2 THEN
+    RAISE EXCEPTION 'FAIL P24c — batch message_vars.count očekivan 2, dobiveno %',
+      v_notif.data->'message_vars'->>'count';
+  END IF;
+  IF (v_notif.data->'message_vars'->>'project_names') IS NULL THEN
+    RAISE EXCEPTION 'FAIL P24c — batch message_vars.project_names prazan';
+  END IF;
+  RAISE NOTICE 'PASS P24c — batch created piše batch i18n ključeve + count/project_names';
+
+  -- (d) Anti-regresija: HR fallback tekst se NE smije pojaviti u polju title/message
+  IF EXISTS (
+    SELECT 1 FROM public.notifications
+     WHERE user_id = v_worker_user
+       AND (title ILIKE 'Nova isplata%'
+         OR title ILIKE 'Isplata poništena%'
+         OR title ILIKE 'Zbirna isplata%'
+         OR message ILIKE 'Zaprimljen%'
+         OR message ILIKE 'Vaša isplata%')
+  ) THEN
+    RAISE EXCEPTION 'FAIL P24d — HR pre-rendered tekst curi u title/message (WS3a-1 regresija)';
+  END IF;
+  RAISE NOTICE 'PASS P24d — HR pre-rendered tekst nije u title/message';
+END $$;
+RELEASE SAVEPOINT s_p24;
+
 -- Always roll back the harness transaction.
 ROLLBACK;
 

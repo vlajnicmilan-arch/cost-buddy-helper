@@ -1,7 +1,15 @@
 // FCM HTTP v1 API implementation with OAuth2 (RS256 JWT)
 // Requires FCM_SERVICE_ACCOUNT secret containing the full service account JSON
+//
+// WS3a-1: title/body may be sent as i18n keys via data.i18n_title_key /
+// data.i18n_body_key with data.title_vars / data.message_vars. This function
+// looks up the recipient's `profiles.preferred_language` and translates via
+// the shared server catalog (supabase/functions/_shared/i18n) before dispatch.
+// Legacy callers that pass pre-rendered strings continue to work unchanged.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { captureEdgeError } from "../_shared/sentry.ts";
+import { translate, resolveLang } from "../_shared/i18n/index.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -267,6 +275,33 @@ Deno.serve(async (req) => {
         console.warn("[send-push] preference check failed, defaulting to allow:", e);
       }
     }
+
+    // WS3a-1: translate title/body if caller passed i18n keys.
+    // Contract: data.i18n_title_key / data.i18n_body_key hold catalog keys;
+    // data.title_vars / data.message_vars hold interpolation vars. Recipient
+    // language read from profiles.preferred_language (fallback 'hr'). Legacy
+    // callers that pass pre-rendered title/body without i18n keys skip this.
+    const titleKey = data?.i18n_title_key ? String(data.i18n_title_key) : null;
+    const bodyKey = data?.i18n_body_key ? String(data.i18n_body_key) : null;
+    if (titleKey || bodyKey) {
+      let lang = "hr";
+      try {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("preferred_language")
+          .eq("id", user_id)
+          .maybeSingle();
+        lang = resolveLang(prof?.preferred_language ?? null);
+      } catch (e) {
+        console.warn("[send-push] preferred_language lookup failed, defaulting hr:", e);
+      }
+      const titleVars = (data?.title_vars ?? {}) as Record<string, unknown>;
+      const bodyVars = (data?.message_vars ?? {}) as Record<string, unknown>;
+      if (titleKey) title = translate(lang, titleKey, titleVars);
+      if (bodyKey) body = translate(lang, bodyKey, bodyVars);
+    }
+
+
 
     const { data: tokens, error } = await supabase
       .from("push_tokens")

@@ -30,4 +30,5 @@
 20260707215139_*.sql   # BUG C fix: _guard_expense_payout_write suženo na ownerov auto-expense (radnikov attribution slobodan)
 20260708051843_*.sql   # WS1: preview_worker_earnings RPC + _guard_contract_value_update trigger (contract baseline lock)
 20260708135535_*.sql   # WS2/2.2: enqueue_worker_payout_notifications proširen — void obavijest dobiva worker_attribution_expense_id ako pripis postoji
+20260708181325_*.sql   # WS3a-1: enqueue_worker_payout_notifications piše i18n ključeve + title_vars/message_vars umjesto HR teksta (klijent/push prevodi u trenutku prikaza)
 
