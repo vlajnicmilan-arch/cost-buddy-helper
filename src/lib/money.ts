@@ -72,15 +72,14 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
     // Only commas
     if (commaCount === 1) {
       const [intPart, decPart] = body.split(',');
-      if (intPart.length > 0 && (decPart.length <= 2 || decPart.length > 3)) {
-        // Decimal: "12,50" or unusual precision like "12,3456"
-        normalized = `${intPart}.${decPart}`;
-      } else if (decPart.length === 3 && intPart.length > 0 && intPart.length <= 3) {
-        // Ambiguous "1,234" → treat as thousands (US convention)
-        normalized = intPart + decPart;
-      } else {
+      if (intPart.length === 0 || decPart.length === 0) return { valid: false, value: 0 };
+      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3) {
+        // Ambiguous "1,234" — in HR/EU comma is the decimal separator, but money
+        // never has 3 decimals. Reject to force the user to clarify.
         return { valid: false, value: 0 };
       }
+      // Otherwise treat comma as decimal separator ("12,50", "12,3456").
+      normalized = `${intPart}.${decPart}`;
     } else {
       // Multiple commas: must be thousands groups
       const parts = body.split(',');
@@ -93,9 +92,19 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
   } else {
     // Only dots
     if (dotCount === 1) {
-      // Always treat single dot as decimal separator (preserves parseFloat semantics).
-      // EU thousands "1.234" is ambiguous with decimal — only multi-dot form implies thousands.
-      normalized = body;
+      const [intPart, decPart] = body.split('.');
+      if (intPart.length === 0 || decPart.length === 0) return { valid: false, value: 0 };
+      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3) {
+        // HR convention: single dot + exactly 3 digits = thousands separator
+        // ("1.234" → 1234, "12.500" → 12500, "2.500" → 2500). Money never has
+        // 3 decimals, and interpreting "2.500" as 2,50 EUR is a silent
+        // catastrophic error in the typical range of amounts.
+        normalized = intPart + decPart;
+      } else {
+        // 1-2 decimals ("12.50", "12.5") or unusual precision ("1.2345")
+        // → decimal point.
+        normalized = body;
+      }
     } else {
       // Multiple dots: EU thousands "1.234.567"
       const parts = body.split('.');

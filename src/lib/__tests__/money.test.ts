@@ -58,6 +58,25 @@ describe('parseLocaleAmount', () => {
   it('rejects lone minus', () => {
     expect(parseLocaleAmount('-').valid).toBe(false);
   });
+  it('treats single dot + 3 digits as HR thousands separator', () => {
+    expect(parseLocaleAmount('1.234')).toEqual({ valid: true, value: 1234 });
+    expect(parseLocaleAmount('12.500')).toEqual({ valid: true, value: 12500 });
+    expect(parseLocaleAmount('2.500')).toEqual({ valid: true, value: 2500 });
+    expect(parseLocaleAmount('999.000')).toEqual({ valid: true, value: 999000 });
+  });
+  it('keeps 1-2 decimals as decimal point', () => {
+    expect(parseLocaleAmount('12.5')).toEqual({ valid: true, value: 12.5 });
+    expect(parseLocaleAmount('12.50')).toEqual({ valid: true, value: 12.5 });
+  });
+  it('accepts unusual precision "1.2345" as decimal', () => {
+    expect(parseLocaleAmount('1.2345')).toEqual({ valid: true, value: 1.2345 });
+  });
+  it('rejects ambiguous "1,234" (comma + exactly 3 digits)', () => {
+    // In HR/EU the comma is the decimal separator, but money never has 3
+    // decimals — the input is genuinely ambiguous, so we refuse it.
+    expect(parseLocaleAmount('1,234').valid).toBe(false);
+    expect(parseLocaleAmount('12,345').valid).toBe(false);
+  });
   it('rejects double minus', () => {
     expect(parseLocaleAmount('--5').valid).toBe(false);
   });

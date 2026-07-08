@@ -83,7 +83,7 @@ describe('shouldShowApplyCalcHint', () => {
   it('false when value matches preview (within rounding tolerance)', () => {
     expect(shouldShowApplyCalcHint('200.00', 200)).toBe(false);
     expect(shouldShowApplyCalcHint('200,00', 200)).toBe(false);
-    expect(shouldShowApplyCalcHint('200.001', 200)).toBe(false);
+    expect(shouldShowApplyCalcHint('200.0', 200)).toBe(false);
   });
   it('false when no preview', () => {
     expect(shouldShowApplyCalcHint('50', null)).toBe(false);
