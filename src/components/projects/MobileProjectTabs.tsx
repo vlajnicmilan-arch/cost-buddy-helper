@@ -114,7 +114,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
               className="rounded-t-2xl p-0 max-h-[85svh] flex flex-col"
             >
               <SheetHeader className="text-left px-6 pt-6 pb-2 shrink-0">
-                <SheetTitle className="text-module">
+                <SheetTitle className="text-module-muted">
                   {t('projects.tabs.moreSheetTitle', 'Sve sekcije')}
                 </SheetTitle>
               </SheetHeader>
