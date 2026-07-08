@@ -2859,6 +2859,8 @@
     "reenterPin": "PIN zur Bestätigung erneut eingeben",
     "pinsDontMatch": "PINs stimmen nicht überein. Versuchen Sie es erneut.",
     "pinSet": "PIN wurde festgelegt",
+    "pinSetWithFallback": "PIN festgelegt (Fallback: {{backend}})",
+    "shieldProtected": "Geschützt! 🛡️",
     "changePin": "PIN ändern",
     "removePin": "PIN entfernen",
     "pinRemoved": "PIN wurde entfernt",
