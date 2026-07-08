@@ -280,6 +280,37 @@ const Wallet = () => {
         totalAmount={totalTransfers}
       />
 
+      <AlertDialog
+        open={!!voidedPromptExpenseId}
+        onOpenChange={(o) => { if (!o) setVoidedPromptExpenseId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attribution.voidedPrompt.title', 'Isplata je poništena')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'attribution.voidedPrompt.description',
+                'Poslodavac je poništio isplatu koju ste pripisali izvoru. Želite li ukloniti pripisan unos iz novčanika?',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={voidedPromptRemoving}>
+              {t('attribution.voidedPrompt.keep', 'Zadrži')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={voidedPromptRemoving}
+              onClick={handleRemoveVoidedAttribution}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('attribution.voidedPrompt.remove', 'Ukloni pripis')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <BottomNav />
     </div>
   );
