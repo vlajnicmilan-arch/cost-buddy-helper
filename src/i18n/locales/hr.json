@@ -1529,7 +1529,32 @@
     "nameOptional": "Ime (opcionalno)",
     "nameHint": "Ako ne unesete ime, koristit će se ime iz email adrese",
     "resetEmailHint": "Unesite svoju email adresu i poslat ćemo vam link za resetiranje lozinke.",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "orDivider": "ili",
+    "continueWithGoogle": "Nastavi s Google računom",
+    "continueWithApple": "Nastavi s Apple računom",
+    "forgotPasswordTitle": "Zaboravljena lozinka",
+    "sendResetLink": "Pošalji link za resetiranje",
+    "backToLogin": "Natrag na prijavu",
+    "validation": {
+      "invalidEmail": "Nevažeća email adresa",
+      "emailTooLong": "Email je predugačak",
+      "passwordTooShort": "Lozinka mora imati najmanje 6 znakova",
+      "passwordTooLong": "Lozinka je predugačka",
+      "passwordsDontMatch": "Lozinke se ne podudaraju"
+    },
+    "reset": {
+      "checkingSession": "Provjeravam sesiju...",
+      "invalidLinkTitle": "Nevažeći link",
+      "invalidLinkDesc": "Link za resetiranje lozinke je istekao ili nije valjan. Zatražite novi link.",
+      "successTitle": "Lozinka promijenjena!",
+      "successDesc": "Vaša lozinka je uspješno promijenjena. Sada se možete prijaviti s novom lozinkom.",
+      "continueToLogin": "Nastavi na prijavu",
+      "enterNewPassword": "Unesite novu lozinku",
+      "newPasswordLabel": "Nova lozinka",
+      "confirmPasswordLabel": "Potvrdi lozinku",
+      "changePasswordButton": "Promijeni lozinku"
+    }
   },
   "categories": {
     "food": "Hrana",
@@ -2840,6 +2865,8 @@
     "reenterPin": "Unesite PIN ponovo za potvrdu",
     "pinsDontMatch": "PIN-ovi se ne podudaraju. Pokušajte ponovo.",
     "pinSet": "PIN je postavljen",
+    "pinSetWithFallback": "PIN postavljen (fallback: {{backend}})",
+    "shieldProtected": "Zaštićeno! 🛡️",
     "changePin": "Promijeni PIN",
     "removePin": "Ukloni PIN",
     "pinRemoved": "PIN je uklonjen",

@@ -66,7 +66,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
               });
               if (result.error) {
                 // Saved via fallback
-                showSuccess(`PIN postavljen (fallback: ${result.backend})`);
+                showSuccess(t('lock.pinSetWithFallback', 'PIN postavljen (fallback: {{backend}})', { backend: result.backend }));
               } else {
                 showSuccess(t('lock.pinSet', 'PIN je postavljen'));
               }
@@ -81,7 +81,7 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
             }
             try {
               successVibration();
-              emitAvatarEvent('proud', 'Zaštićeno! 🛡️');
+              emitAvatarEvent('proud', t('lock.shieldProtected', 'Zaštićeno! 🛡️'));
             } catch { /* non-critical */ }
             resetAndClose();
           } else if (newPin.length === firstPinRef.current.length) {

@@ -17,9 +17,10 @@ import { lovable } from '@/integrations/lovable/index';
 import { Capacitor } from '@capacitor/core';
 import { useNativeOAuth } from '@/hooks/useNativeOAuth';
 
+import i18n from '@/i18n';
 const authSchema = z.object({
-  email: z.string().trim().email('Nevažeća email adresa').max(255, 'Email je predugačak'),
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 znakova').max(72, 'Lozinka je predugačka')
+  email: z.string().trim().email(i18n.t('auth.validation.invalidEmail')).max(255, i18n.t('auth.validation.emailTooLong')),
+  password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong'))
 });
 
 const Auth = () => {
@@ -220,7 +221,7 @@ const Auth = () => {
     try {
       z.string().email().parse(trimmedEmail);
     } catch {
-      setErrors({ email: 'Nevažeća email adresa' });
+      setErrors({ email: t('auth.validation.invalidEmail') });
       return;
     }
     
@@ -317,19 +318,19 @@ const Auth = () => {
                 ) : (
                   <RefreshCw className="w-4 h-4 mr-2" />
                 )}
-                Pošalji ponovo
+                {t('auth.resend')}
               </Button>
               
               <Button
                 className="w-full h-12 rounded-xl"
                 onClick={resetToLogin}
               >
-                Već sam potvrdio/la - Prijavi se
+                {t('auth.alreadyConfirmed')}
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Pogrešan email?{' '}
+              {t('auth.wrongEmail')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -340,7 +341,7 @@ const Auth = () => {
                 }}
                 className="text-primary hover:underline"
               >
-                Registriraj se ponovo
+                {t('auth.registerAgain')}
               </button>
             </p>
           </div>
@@ -395,7 +396,7 @@ const Auth = () => {
               onClick={backToLogin}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </Button>
           </div>
         </div>
@@ -415,7 +416,7 @@ const Auth = () => {
             </div>
             <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
             <p className="text-muted-foreground mt-2">
-              Zaboravljena lozinka
+              {t('auth.forgotPasswordTitle')}
             </p>
           </div>
 
@@ -448,7 +449,7 @@ const Auth = () => {
               disabled={resetLoading}
             >
               {resetLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Pošalji link za resetiranje
+              {t('auth.sendResetLink')}
             </Button>
 
             <div className="text-center">
@@ -458,7 +459,7 @@ const Auth = () => {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 inline mr-1" />
-                Natrag na prijavu
+                {t('auth.backToLogin')}
               </button>
             </div>
           </form>
@@ -536,7 +537,7 @@ const Auth = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Lozinka</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               {isLogin && (
                 <button
                   type="button"
@@ -546,7 +547,7 @@ const Auth = () => {
                   }}
                   className="text-xs text-primary hover:underline"
                 >
-                  Zaboravljena lozinka?
+                  {t('auth.forgotPassword')}
                 </button>
               )}
             </div>
@@ -566,7 +567,7 @@ const Auth = () => {
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
            {!isLogin && (
               <p className="text-xs text-muted-foreground">
-                Minimalno 6 znakova
+                {t('auth.minPassword')}
               </p>
             )}
           </div>
@@ -601,7 +602,7 @@ const Auth = () => {
             disabled={loading || (!isLogin && !gdprConsent)}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isLogin ? 'Prijava' : 'Registracija'}
+            {isLogin ? t('auth.login') : t('auth.register')}
           </Button>
 
           {/* Divider */}
@@ -610,7 +611,7 @@ const Auth = () => {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">ili</span>
+              <span className="bg-card px-2 text-muted-foreground">{t('auth.orDivider')}</span>
             </div>
           </div>
 
@@ -657,7 +658,7 @@ const Auth = () => {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Nastavi s Google računom
+            {t('auth.continueWithGoogle')}
           </Button>
 
           {/* Apple Sign-In */}
@@ -699,12 +700,12 @@ const Auth = () => {
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
             </svg>
-            Nastavi s Apple računom
+            {t('auth.continueWithApple')}
           </Button>
 
           <div className="text-center text-sm">
             <span className="text-muted-foreground">
-              {isLogin ? 'Nemate račun?' : 'Već imate račun?'}
+              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
             </span>
             {' '}
             <button
@@ -716,7 +717,7 @@ const Auth = () => {
               }}
               className="text-primary font-medium hover:underline"
             >
-              {isLogin ? 'Registrirajte se' : 'Prijavite se'}
+              {isLogin ? t('auth.signUp') : t('auth.signIn')}
             </button>
           </div>
         </form>

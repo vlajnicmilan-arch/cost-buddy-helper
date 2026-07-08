@@ -11,11 +11,13 @@ import logo from '@/assets/logo.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 
+import i18n from '@/i18n';
+
 const passwordSchema = z.object({
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 znakova').max(72, 'Lozinka je predugačka'),
+  password: z.string().min(6, i18n.t('auth.validation.passwordTooShort')).max(72, i18n.t('auth.validation.passwordTooLong')),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Lozinke se ne podudaraju',
+  message: i18n.t('auth.validation.passwordsDontMatch'),
   path: ['confirmPassword']
 });
 
@@ -110,7 +112,7 @@ const ResetPassword = () => {
       <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Provjeravam sesiju...</p>
+          <p className="text-muted-foreground">{t('auth.reset.checkingSession')}</p>
         </div>
       </div>
     );
@@ -135,9 +137,9 @@ const ResetPassword = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Nevažeći link</h2>
+              <h2 className="text-xl font-semibold">{t('auth.reset.invalidLinkTitle')}</h2>
               <p className="text-muted-foreground text-sm">
-                Link za resetiranje lozinke je istekao ili nije valjan. Zatražite novi link.
+                {t('auth.reset.invalidLinkDesc')}
               </p>
             </div>
 
@@ -146,7 +148,7 @@ const ResetPassword = () => {
               onClick={() => navigate('/auth')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </Button>
           </div>
         </div>
@@ -173,9 +175,9 @@ const ResetPassword = () => {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Lozinka promijenjena!</h2>
+              <h2 className="text-xl font-semibold">{t('auth.reset.successTitle')}</h2>
               <p className="text-muted-foreground text-sm">
-                Vaša lozinka je uspješno promijenjena. Sada se možete prijaviti s novom lozinkom.
+                {t('auth.reset.successDesc')}
               </p>
             </div>
 
@@ -183,7 +185,7 @@ const ResetPassword = () => {
               className="w-full h-12 rounded-xl"
               onClick={() => navigate('/auth')}
             >
-              Nastavi na prijavu
+              {t('auth.reset.continueToLogin')}
             </Button>
           </div>
         </div>
@@ -202,14 +204,14 @@ const ResetPassword = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
           <p className="text-muted-foreground mt-2">
-            Unesite novu lozinku
+            {t('auth.reset.enterNewPassword')}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="password">Nova lozinka</Label>
+            <Label htmlFor="password">{t('auth.reset.newPasswordLabel')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -225,12 +227,12 @@ const ResetPassword = () => {
             </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
             <p className="text-xs text-muted-foreground">
-              Minimalno 6 znakova
+              {t('auth.minPassword')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Potvrdi lozinku</Label>
+            <Label htmlFor="confirmPassword">{t('auth.reset.confirmPasswordLabel')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -253,7 +255,7 @@ const ResetPassword = () => {
             disabled={loading}
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Promijeni lozinku
+            {t('auth.reset.changePasswordButton')}
           </Button>
 
           <div className="text-center">
@@ -263,7 +265,7 @@ const ResetPassword = () => {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4 inline mr-1" />
-              Natrag na prijavu
+              {t('auth.backToLogin')}
             </button>
           </div>
         </form>

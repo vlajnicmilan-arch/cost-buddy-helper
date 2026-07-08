@@ -1525,7 +1525,32 @@
     "nameOptional": "Name (optional)",
     "nameHint": "Wenn Sie keinen Namen eingeben, wird der Name aus Ihrer E-Mail verwendet",
     "resetEmailHint": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen des Passworts.",
-    "emailLabel": "E-Mail"
+    "emailLabel": "E-Mail",
+    "orDivider": "oder",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "continueWithApple": "Mit Apple fortfahren",
+    "forgotPasswordTitle": "Passwort vergessen",
+    "sendResetLink": "Reset-Link senden",
+    "backToLogin": "Zurück zur Anmeldung",
+    "validation": {
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "emailTooLong": "E-Mail ist zu lang",
+      "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein",
+      "passwordTooLong": "Passwort ist zu lang",
+      "passwordsDontMatch": "Passwörter stimmen nicht überein"
+    },
+    "reset": {
+      "checkingSession": "Sitzung wird überprüft...",
+      "invalidLinkTitle": "Ungültiger Link",
+      "invalidLinkDesc": "Der Link zum Zurücksetzen des Passworts ist abgelaufen oder ungültig. Fordern Sie einen neuen an.",
+      "successTitle": "Passwort geändert!",
+      "successDesc": "Ihr Passwort wurde erfolgreich aktualisiert. Sie können sich jetzt mit dem neuen Passwort anmelden.",
+      "continueToLogin": "Weiter zur Anmeldung",
+      "enterNewPassword": "Neues Passwort eingeben",
+      "newPasswordLabel": "Neues Passwort",
+      "confirmPasswordLabel": "Passwort bestätigen",
+      "changePasswordButton": "Passwort ändern"
+    }
   },
   "categories": {
     "food": "Essen",
@@ -2834,6 +2859,8 @@
     "reenterPin": "PIN zur Bestätigung erneut eingeben",
     "pinsDontMatch": "PINs stimmen nicht überein. Versuchen Sie es erneut.",
     "pinSet": "PIN wurde festgelegt",
+    "pinSetWithFallback": "PIN festgelegt (Fallback: {{backend}})",
+    "shieldProtected": "Geschützt! 🛡️",
     "changePin": "PIN ändern",
     "removePin": "PIN entfernen",
     "pinRemoved": "PIN wurde entfernt",
