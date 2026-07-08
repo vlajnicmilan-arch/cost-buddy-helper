@@ -142,7 +142,6 @@ export const OnboardingPaymentSourceCard = ({
       {/* Balance */}
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{t('common.currentBalance', 'Trenutno stanje')}</Label>
-        <Input
         <MoneyInput
           value={source.balance ? String(source.balance) : ''}
           onChange={(e) => onUpdate({ balance: parseLocaleAmount(e.target.value).value || 0 })}
