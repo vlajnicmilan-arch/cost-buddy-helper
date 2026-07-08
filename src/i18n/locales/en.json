@@ -1525,7 +1525,32 @@
     "nameOptional": "Name (optional)",
     "nameHint": "If you don't enter a name, the name from your email will be used",
     "resetEmailHint": "Enter your email and we'll send you a password reset link.",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "orDivider": "or",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "forgotPasswordTitle": "Forgot password",
+    "sendResetLink": "Send reset link",
+    "backToLogin": "Back to sign in",
+    "validation": {
+      "invalidEmail": "Invalid email address",
+      "emailTooLong": "Email is too long",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "passwordTooLong": "Password is too long",
+      "passwordsDontMatch": "Passwords don't match"
+    },
+    "reset": {
+      "checkingSession": "Checking session...",
+      "invalidLinkTitle": "Invalid link",
+      "invalidLinkDesc": "The password reset link has expired or is invalid. Request a new one.",
+      "successTitle": "Password changed!",
+      "successDesc": "Your password was updated successfully. You can now sign in with your new password.",
+      "continueToLogin": "Continue to sign in",
+      "enterNewPassword": "Enter a new password",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password",
+      "changePasswordButton": "Change password"
+    }
   },
   "categories": {
     "food": "Food",
