@@ -2292,6 +2292,74 @@
         }
       },
       "fallback_project": "projekt"
+    },
+    "project_transaction": {
+      "title": "Transakcija u projektu „{{project}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} je dodao/la prihod „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} je dodao/la trošak „{{description}}\" ({{amount}})"
+        },
+        "updated": {
+          "income": "{{actor}} je ažurirao/la prihod „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} je ažurirao/la trošak „{{description}}\" ({{amount}})"
+        }
+      }
+    },
+    "payment_source_transaction": {
+      "title": "Transakcija na računu „{{source}}\"",
+      "message": {
+        "created": {
+          "income": "{{actor}} je dodao/la prihod „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} je dodao/la trošak „{{description}}\" ({{amount}})",
+          "transfer": "{{actor}} je dodao/la prijenos „{{description}}\" ({{amount}})"
+        },
+        "updated": {
+          "income": "{{actor}} je ažurirao/la prihod „{{description}}\" ({{amount}})",
+          "expense": "{{actor}} je ažurirao/la trošak „{{description}}\" ({{amount}})",
+          "transfer": "{{actor}} je ažurirao/la prijenos „{{description}}\" ({{amount}})"
+        }
+      }
+    },
+    "pending_transaction": {
+      "title": "Nova transakcija na čekanju",
+      "message": {
+        "income": "{{actor}} je dodao prihod „{{description}}\" ({{amount}}) u krug „{{source}}\". Čeka vaše odobrenje.",
+        "expense": "{{actor}} je dodao trošak „{{description}}\" ({{amount}}) u krug „{{source}}\". Čeka vaše odobrenje."
+      }
+    },
+    "note_added": {
+      "project": {
+        "title": "Novi komentar u projektu „{{project}}\"",
+        "message": "{{actor}} je komentirao transakciju „{{description}}\": „{{note}}\""
+      },
+      "income_source": {
+        "title": "Nova napomena na transakciji",
+        "message": "{{actor}} je dodao napomenu uz transakciju „{{description}}\" u projektu „{{source}}\": „{{note}}\""
+      },
+      "payment_source": {
+        "title": "Novi komentar na računu „{{source}}\"",
+        "message": "{{actor}} je komentirao transakciju „{{description}}\": „{{note}}\""
+      }
+    },
+    "project_activity": {
+      "title": "Aktivnost u projektu „{{project}}\"",
+      "message": {
+        "work_log_added": "{{actor}} je upisao/la dnevnik{{detail}}",
+        "work_log_updated": "{{actor}} je ažurirao/la dnevnik{{detail}}",
+        "work_log_deleted": "{{actor}} je obrisao/la dnevnik{{detail}}",
+        "milestone_added": "{{actor}} je dodao/la fazu „{{milestone}}\"",
+        "milestone_status_changed": "{{actor}} je promijenio/la status faze „{{milestone}}\" → {{status}}",
+        "milestone_deleted": "{{actor}} je obrisao/la fazu „{{milestone}}\""
+      }
+    },
+    "auto_reject_pending": {
+      "title": "Transakcija automatski odbijena",
+      "message": "Vaša transakcija „{{description}}\" je automatski odbijena jer nije odobrena u roku od 24 sata."
+    },
+    "fallback": {
+      "actor": "Član",
+      "project": "projekt"
     }
   },
   "installments": {
