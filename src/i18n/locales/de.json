@@ -355,6 +355,10 @@
     "saveLocation": "Ort speichern",
     "owner": "Eigentümer",
     "permissions": "Berechtigungen",
+    "share": {
+      "description": "Erstelle einen Link, den der Kunde ohne Anmeldung öffnen kann. Sichtbar ist nur, was du auswählst.",
+      "generate": "Link erstellen"
+    },
     "created": "Projekt erstellt",
     "updated": "Projekt aktualisiert",
     "deleted": "Projekt gelöscht",

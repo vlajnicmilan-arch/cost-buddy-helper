@@ -359,6 +359,10 @@
     "saveLocation": "Save location",
     "owner": "Owner",
     "permissions": "Permissions",
+    "share": {
+      "description": "Generate a link the client can open without signing in. They see only what you choose.",
+      "generate": "Generate link"
+    },
     "created": "Project created",
     "updated": "Project updated",
     "deleted": "Project deleted",

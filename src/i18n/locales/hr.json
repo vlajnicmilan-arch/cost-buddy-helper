@@ -363,6 +363,10 @@
     "saveLocation": "Spremi lokaciju",
     "owner": "Vlasnik",
     "permissions": "Dozvole",
+    "share": {
+      "description": "Generiraj link koji klijent može otvoriti bez prijave. Vidi samo što ti odabereš.",
+      "generate": "Generiraj link"
+    },
     "created": "Projekt kreiran",
     "updated": "Projekt ažuriran",
     "deleted": "Projekt obrisan",
