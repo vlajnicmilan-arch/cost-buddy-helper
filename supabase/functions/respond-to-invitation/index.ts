@@ -209,31 +209,46 @@ serve(async (req) => {
         .eq("id", targetId)
         .single();
 
-      const targetName = targetData?.name || targetLabel;
+      const targetName = targetData?.name || targetLabelFallback;
       const userName = profile?.display_name || "Korisnik";
+
+      const titleKey = "notifications.invitation_accepted.title";
+      const messageKey = `notifications.invitation_accepted.message.${typeKey}`;
+      const pushMessageKey = `notifications.invitation_accepted.push.${typeKey}`;
+      const vars = { userName, targetName };
 
       await adminClient
         .from("notifications")
         .insert({
           user_id: invitation.invited_by,
           type: "invitation_accepted",
-          title: "Pozivnica prihvaćena",
-          message: `${userName} je prihvatio/la pozivnicu za ${targetLabel} "${targetName}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             target_id: targetId,
             target_name: targetName,
             type: type,
             user_id: user.id,
             user_name: userName,
+            title_vars: {},
+            message_vars: vars,
           },
         });
 
-      // Best-effort push to the inviter
+      // Best-effort push to the inviter — send-push translates per language.
       await sendPushNotification({
         user_id: invitation.invited_by,
-        title: "Pozivnica prihvaćena",
-        body: `${userName} se pridružio/la ${targetLabel} "${targetName}"`,
-        data: { target_id: targetId, type: "invitation_accepted", category: "projects" },
+        title: translate("hr", titleKey),
+        body: translate("hr", pushMessageKey, vars),
+        data: {
+          target_id: targetId,
+          type: "invitation_accepted",
+          category: "projects",
+          i18n_title_key: titleKey,
+          i18n_body_key: pushMessageKey,
+          title_vars: {},
+          message_vars: vars,
+        },
         source: "respond-to-invitation",
       });
 
