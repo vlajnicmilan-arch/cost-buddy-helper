@@ -286,7 +286,7 @@ export const ProjectWorkersTab = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <User className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold">{t('workers.title', 'Evidencija radnika')}</h3>
+          <h3 className="font-semibold">{t('workers.title')}</h3>
           <Badge variant="secondary">{workers.length}</Badge>
         </div>
         <div className="flex items-center gap-1">
@@ -316,7 +316,7 @@ export const ProjectWorkersTab = ({
           )}
           <Button onClick={handleAdd} size="sm">
             <Plus className="w-4 h-4 mr-1" />
-            {t('workers.add', 'Dodaj')}
+            {t('workers.add')}
           </Button>
         </div>
       </div>
@@ -325,11 +325,11 @@ export const ProjectWorkersTab = ({
         <TabsList className="w-full">
           <TabsTrigger value="list" className="flex-1 gap-1">
             <List className="w-4 h-4" />
-            {t('workers.listView', 'Popis')}
+            {t('workers.listView')}
           </TabsTrigger>
           <TabsTrigger value="calendar" className="flex-1 gap-1">
             <CalendarDays className="w-4 h-4" />
-            {t('workers.calendarView', 'Kalendar')}
+            {t('workers.calendarView')}
           </TabsTrigger>
         </TabsList>
 
@@ -339,8 +339,8 @@ export const ProjectWorkersTab = ({
             <Card className="p-4 bg-muted/50 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">{t('workers.totalCost', 'Ukupni trošak rada')}:</span>
-                  <span className="text-xs text-muted-foreground">{totalActualHours}h {t('workers.workedShort', 'odrađeno')}</span>
+                  <span className="text-sm text-muted-foreground">{t('workers.totalCost')}:</span>
+                  <span className="text-xs text-muted-foreground">{totalActualHours}h {t('workers.workedShort')}</span>
                 </div>
                 <span className="text-lg font-bold text-primary">{formatAmount(totalCost)}</span>
               </div>
@@ -348,16 +348,16 @@ export const ProjectWorkersTab = ({
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs text-muted-foreground truncate">{periodLabel}:</span>
                   <span className="text-[11px] text-muted-foreground">
-                    {periodTotals.active} {t('workers.activeWorkers', 'aktivnih')} · {periodTotals.hours.toFixed(1)}h
+                    {periodTotals.active} {t('workers.activeWorkers')} · {periodTotals.hours.toFixed(1)}h
                   </span>
                 </div>
                 <span className="text-base font-semibold text-foreground">{formatAmount(periodTotals.cost)}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-border/50">
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs text-muted-foreground truncate">{t('workers.remainingToPay', 'Preostalo radnicima')}:</span>
+                  <span className="text-xs text-muted-foreground truncate">{t('workers.remainingToPay')}:</span>
                   <span className="text-[11px] text-muted-foreground">
-                    {totalRemainingHours.toFixed(1)}h {t('workers.unpaid', 'neisplaćeno')}
+                    {totalRemainingHours.toFixed(1)}h {t('workers.unpaid')}
                   </span>
                 </div>
                 <span className={`text-base font-semibold ${totalRemainingCost > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>

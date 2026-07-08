@@ -81,11 +81,11 @@ export const BudgetDetailDialog = ({
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="w-4 h-4" />
-              {t('budget.overview', 'Pregled')}
+              {t('budget.overview')}
             </TabsTrigger>
             <TabsTrigger value="members" className="gap-2">
               <Users className="w-4 h-4" />
-              {t('budget.members', 'Članovi')} ({members.length})
+              {t('budget.members')} ({members.length})
             </TabsTrigger>
           </TabsList>
 
@@ -93,7 +93,7 @@ export const BudgetDetailDialog = ({
             {/* Main Progress */}
             <div className="p-4 rounded-xl bg-muted/30">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">{t('budget.overallProgress', 'Ukupni napredak')}</span>
+                <span className="text-sm text-muted-foreground">{t('budget.overallProgress')}</span>
                 <div className="flex items-center gap-2">
                   {(budget.isOverBudget || budget.isWarning) && (
                     <AlertTriangle className={cn(
@@ -119,7 +119,7 @@ export const BudgetDetailDialog = ({
               <div className="flex items-center justify-between text-sm">
                 <div>
                   <p className="font-mono font-bold text-lg">{formatAmount(budget.spent)}</p>
-                  <p className="text-xs text-muted-foreground">{t('budget.spent', 'Potrošeno')}</p>
+                  <p className="text-xs text-muted-foreground">{t('budget.spent')}</p>
                 </div>
                 <div className="text-right">
                   <p className={cn(
@@ -128,7 +128,7 @@ export const BudgetDetailDialog = ({
                   )}>
                     {formatAmount(budget.remaining)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t('budget.remaining', 'Preostalo')}</p>
+                  <p className="text-xs text-muted-foreground">{t('budget.remaining')}</p>
                 </div>
               </div>
             </div>
@@ -136,11 +136,11 @@ export const BudgetDetailDialog = ({
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-lg bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget', 'Ukupni budžet')}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('budget.totalBudget')}</p>
                 <p className="font-mono font-bold">{formatAmount(budget.total_amount)}</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage', 'Prosj. dnevno')}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('budget.dailyAverage')}</p>
                 <p className="font-mono font-bold">{formatAmount(budget.dailyAverage || 0)}</p>
               </div>
             </div>
@@ -158,12 +158,12 @@ export const BudgetDetailDialog = ({
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    {budget.trend === 'up' && t('budget.trendUp', 'Potrošnja raste')}
-                    {budget.trend === 'down' && t('budget.trendDown', 'Potrošnja pada')}
-                    {budget.trend === 'stable' && t('budget.trendStable', 'Potrošnja stabilna')}
+                    {budget.trend === 'up' && t('budget.trendUp')}
+                    {budget.trend === 'down' && t('budget.trendDown')}
+                    {budget.trend === 'stable' && t('budget.trendStable')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t('budget.comparedToLastPeriod', 'U odnosu na prošli period')}
+                    {t('budget.comparedToLastPeriod')}
                   </p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export const BudgetDetailDialog = ({
             {/* Categories Breakdown */}
             {budget.categories.length > 0 && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium">{t('budget.byCategories', 'Po kategorijama')}</h4>
+                <h4 className="text-sm font-medium">{t('budget.byCategories')}</h4>
                 <div className="space-y-2">
                   {budget.categories.map((cat) => {
                     // Get category info for displaying original categories
@@ -187,7 +187,7 @@ export const BudgetDetailDialog = ({
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{cat.icon || '📂'}</span>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{cat.category}</span>
+                            <span className="text-sm font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
                             {/* Show original categories for manually assigned expenses */}
                             {cat.originalCategories && cat.originalCategories.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
@@ -223,7 +223,7 @@ export const BudgetDetailDialog = ({
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
                         <span className={cat.remaining < 0 ? "text-destructive" : ""}>
-                          {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left', 'preostalo')}
+                          {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left')}
                         </span>
                       </div>
                     </div>

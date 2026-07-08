@@ -266,7 +266,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         categoriesWithStats.push({
           id: `${budget.id}-manual`,
           budget_id: budget.id,
-          category: 'Ručno dodijeljeno',
+          category: '__budget_manual_assigned__',
           limit_amount: 0, // No limit for manually assigned
           icon: '📌',
           color: '#6b7280',

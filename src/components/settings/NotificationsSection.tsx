@@ -253,10 +253,10 @@ export const NotificationsSection = ({
               </div>
               <div className="min-w-0">
                 <Label htmlFor="participant-digest" className="text-sm font-medium cursor-pointer">
-                  {t('settings.participantDigest', 'Sažetak aktivnosti suradnika')}
+                  {t('settings.participantDigest')}
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  {t('settings.participantDigestDesc', 'Jedan dnevni sažetak po projektu umjesto svake izmjene zasebno.')}
+                  {t('settings.participantDigestDesc')}
                 </p>
               </div>
             </div>
@@ -271,7 +271,7 @@ export const NotificationsSection = ({
             <>
               <div className="flex items-center justify-between p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg gap-3">
                 <Label htmlFor="participant-digest-hour" className="text-xs font-medium">
-                  {t('settings.participantDigestHour', 'Vrijeme slanja')}
+                  {t('settings.participantDigestHour')}
                 </Label>
                 <select
                   id="participant-digest-hour"

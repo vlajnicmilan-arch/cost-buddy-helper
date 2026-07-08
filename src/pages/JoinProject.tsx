@@ -223,11 +223,11 @@ const JoinProject = () => {
               {/* Context picker for the invitee */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">
-                  {t('projects.whereToShow', 'Gdje želite vidjeti ovaj projekt?')}
+                  {t('projects.whereToShow')}
                 </p>
                 {suggestedContext === 'business' && (
                   <p className="text-xs text-muted-foreground">
-                    {t('projects.ownerSuggestedBusiness', 'Vlasnik je predložio: Poslovni mod')}
+                    {t('projects.ownerSuggestedBusiness')}
                   </p>
                 )}
                 <div className="grid grid-cols-2 gap-2">
@@ -239,7 +239,7 @@ const JoinProject = () => {
                     onClick={() => setChosenContext('personal')}
                   >
                     <User className="w-4 h-4 mr-2" />
-                    {t('projects.contextPersonal', 'Osobne financije')}
+                    {t('projects.contextPersonal')}
                   </Button>
                   <Button
                     type="button"
@@ -249,14 +249,14 @@ const JoinProject = () => {
                     onClick={() => setChosenContext('business')}
                   >
                     <Briefcase className="w-4 h-4 mr-2" />
-                    {t('projects.contextBusiness', 'Poslovni mod')}
+                    {t('projects.contextBusiness')}
                   </Button>
                 </div>
 
                 {chosenContext === 'business' && businessProfiles.length > 0 && (
                   <Select value={chosenBusinessProfileId} onValueChange={setChosenBusinessProfileId}>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('projects.selectProfile', 'Odaberite profil')} />
+                      <SelectValue placeholder={t('projects.selectProfile')} />
                     </SelectTrigger>
                     <SelectContent>
                       {businessProfiles.map(bp => (
@@ -271,7 +271,7 @@ const JoinProject = () => {
                 {chosenContext === 'business' && businessProfiles.length === 0 && (
                   <div className="space-y-2 p-3 rounded-md border border-dashed bg-muted/40">
                     <p className="text-xs text-foreground">
-                      {t('projects.ownerSuggestedBusinessNoProfile', 'Voditelj predlaže poslovni mod, ali nemaš poslovni profil.')}
+                      {t('projects.ownerSuggestedBusinessNoProfile')}
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
@@ -280,7 +280,7 @@ const JoinProject = () => {
                         size="sm"
                         onClick={() => setChosenContext('personal')}
                       >
-                        {t('projects.fallbackToPersonal', 'Stavi u Osobne financije')}
+                        {t('projects.fallbackToPersonal')}
                       </Button>
                       <Button
                         type="button"

@@ -28,7 +28,7 @@ export const SecuritySection = ({ appLock, onShowSetPin }: SecuritySectionProps)
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        {t('settings.security', 'Sigurnost')}
+        {t('settings.security')}
       </h3>
       
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
@@ -97,7 +97,7 @@ export const SecuritySection = ({ appLock, onShowSetPin }: SecuritySectionProps)
                   <Label className="text-sm font-medium">
                     {appLock.biometricType === 'face'
                       ? t('lock.faceId', 'Prepoznavanje lica')
-                      : t('lock.fingerprint', 'Otisak prsta')}
+                      : t('lock.fingerprint')}
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     {t('lock.biometricDesc', 'Otključaj biometrijom')}
