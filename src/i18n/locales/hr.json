@@ -5058,5 +5058,16 @@
       "removed": "Pripis uklonjen",
       "removeFailed": "Uklanjanje nije uspjelo"
     }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "Korisnik s tim emailom nije pronađen",
+      "alreadyMember": "Korisnik je već član",
+      "alreadyInvited": "Korisnik već ima aktivnu pozivnicu",
+      "projectClosed": "Projekt je završen ili arhiviran — pozivnice nisu moguće.",
+      "invalidEmail": "Neispravna email adresa",
+      "projectNotFound": "Projekt nije pronađen",
+      "generic": "Greška pri slanju pozivnice"
+    }
   }
 }
