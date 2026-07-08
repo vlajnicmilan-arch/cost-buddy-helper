@@ -416,7 +416,7 @@ const Auth = () => {
             </div>
             <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
             <p className="text-muted-foreground mt-2">
-              Zaboravljena lozinka
+              {t('auth.forgotPasswordTitle')}
             </p>
           </div>
 
