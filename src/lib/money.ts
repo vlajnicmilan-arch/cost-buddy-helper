@@ -73,13 +73,16 @@ export const parseLocaleAmount = (raw: unknown): MoneyParseResult => {
     if (commaCount === 1) {
       const [intPart, decPart] = body.split(',');
       if (intPart.length === 0 || decPart.length === 0) return { valid: false, value: 0 };
-      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3) {
-        // Ambiguous "1,234" — in HR/EU comma is the decimal separator, but money
-        // never has 3 decimals. Reject to force the user to clarify.
-        return { valid: false, value: 0 };
+      // Symmetric thousands rule with the dot branch: single comma + exactly 3
+      // digits and a non-zero-leading integer part (1-3 chars) = thousands
+      // ("1,234" → 1234, "12,500" → 12500). "0,500" stays a decimal because
+      // no thousands number starts with 0.
+      if (decPart.length === 3 && intPart.length >= 1 && intPart.length <= 3 && intPart[0] !== '0') {
+        normalized = intPart + decPart;
+      } else {
+        // Otherwise comma is the decimal separator ("12,50", "0,500", "12,3456").
+        normalized = `${intPart}.${decPart}`;
       }
-      // Otherwise treat comma as decimal separator ("12,50", "12,3456").
-      normalized = `${intPart}.${decPart}`;
     } else {
       // Multiple commas: must be thousands groups
       const parts = body.split(',');
