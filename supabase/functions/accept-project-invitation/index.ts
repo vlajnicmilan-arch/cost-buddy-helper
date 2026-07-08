@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushNotification } from '../_shared/sendPushNotification.ts';
+import { translate } from '../_shared/i18n/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -380,17 +381,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Send notification to owner/inviter
     const ownerId = targetData?.user_id || invitation.invited_by;
     if (ownerId && ownerId !== user.id) {
+      const typeKey = type === 'project' ? 'project' : 'budget';
+      const titleKey = `notifications.member_joined.${typeKey}.title`;
+      const messageKey = `notifications.member_joined.${typeKey}.message`;
+      const vars = { memberName, targetName: invitation.target_name };
+
       const { error: notifyError } = await supabaseAdmin
         .from('notifications')
         .insert({
           user_id: ownerId,
           type: type === 'project' ? 'member_joined_project' : 'member_joined_budget',
-          title: type === 'project' ? 'Novi član projekta' : 'Novi član budžeta',
-          message: `${memberName} se pridružio/la ${type === 'project' ? 'projektu' : 'budžetu'} "${invitation.target_name}"`,
+          title: titleKey,
+          message: messageKey,
           data: {
             target_id: invitation.target_id,
             member_id: user.id,
-            member_name: memberName
+            member_name: memberName,
+            title_vars: {},
+            message_vars: vars,
           }
         });
 
@@ -401,12 +409,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Best-effort push to owner
       await sendPushNotification({
         user_id: ownerId,
-        title: type === 'project' ? 'Novi član projekta' : 'Novi član budžeta',
-        body: `${memberName} se pridružio/la "${invitation.target_name}"`,
+        title: translate('hr', titleKey),
+        body: translate('hr', messageKey, vars),
         data: {
           target_id: invitation.target_id,
           type: type === 'project' ? 'member_joined_project' : 'member_joined_budget',
           category: type === 'project' ? 'projects' : 'budgets',
+          i18n_title_key: titleKey,
+          i18n_body_key: messageKey,
+          title_vars: {},
+          message_vars: vars,
         },
         source: 'accept-project-invitation',
       });
