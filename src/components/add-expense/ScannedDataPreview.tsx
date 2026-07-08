@@ -123,7 +123,7 @@ export const ScannedDataPreview = ({
     if (custom) return { id: custom.id, name: custom.name, icon: custom.icon, color: custom.color };
     return getCategoryInfo(scannedData.category);
   })();
-  const invalidTip = totalWithTip ? parseFloat(totalWithTip) < scannedData.amount : false;
+  const invalidTip = totalWithTip ? parseLocaleAmount(totalWithTip).value < scannedData.amount : false;
 
   return (
     <div className="h-full max-h-full flex flex-col min-h-0 overflow-hidden">
@@ -347,14 +347,14 @@ export const ScannedDataPreview = ({
               min={scannedData.amount}
               step="0.01"
             />
-            {totalWithTip && parseFloat(totalWithTip) > scannedData.amount && (
+            {totalWithTip && parseLocaleAmount(totalWithTip).value > scannedData.amount && (
               <div className="flex items-center justify-between p-2 rounded-md bg-income/10 border border-income/20">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">🫰</span>
                   <span className="text-sm font-medium text-income">Napojnica</span>
                 </div>
                 <span className="text-sm font-bold text-income">
-                  +{formatAmount(parseFloat(totalWithTip) - scannedData.amount)}
+                  +{formatAmount(parseLocaleAmount(totalWithTip).value - scannedData.amount)}
                 </span>
               </div>
             )}
