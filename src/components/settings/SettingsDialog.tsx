@@ -465,7 +465,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const handleShareApp = async () => {
     if (!user) return;
     try {
-      const text = 'Isprobaj V&M Balance - aplikaciju za praćenje financija!';
+      const text = t('settings.shareAppText', 'Isprobaj V&M Balance - aplikaciju za praćenje financija!');
       const url = `https://vmbalance.com?ref=${user.id}`;
       if (navigator.share) {
         await navigator.share({ title: 'V&M Balance', text, url });
