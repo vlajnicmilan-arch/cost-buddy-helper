@@ -1,3 +1,4 @@
+// WS3a-2 Batch A — refactored to write i18n keys into notification row.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -11,7 +12,6 @@ interface NotifyPendingTransactionRequest {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,43 +21,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Nedostaje autorizacija' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'unauthorized', code: 'missing_authorization' }, 401);
     }
 
-    // Create client with user's token to get their info
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Get the current user
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Neautorizirani pristup' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'unauthorized', code: 'invalid_token' }, 401);
     }
 
-    // Parse request body
     const { expense_id, income_source_id }: NotifyPendingTransactionRequest = await req.json();
 
     if (!expense_id || !income_source_id) {
-      return new Response(
-        JSON.stringify({ error: 'Nedostaju potrebni podaci' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'bad_request', code: 'missing_fields' }, 400);
     }
 
-    // Create admin client for privileged operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the income source to find the owner
     const { data: source, error: sourceError } = await supabaseAdmin
       .from('income_sources')
       .select('id, name, icon, user_id')
@@ -66,21 +51,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (sourceError || !source) {
       console.error('Error fetching income source:', sourceError);
-      return new Response(
-        JSON.stringify({ error: 'Izvor prihoda nije pronađen' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'not_found', code: 'income_source_not_found' }, 404);
     }
 
-    // Don't notify if the user adding the transaction is the owner
     if (source.user_id === user.id) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'Vlasnik ne treba notifikaciju' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ success: true, delivered: 0, reason: 'owner_is_submitter' });
     }
 
-    // Get the expense details
     const { data: expense, error: expenseError } = await supabaseAdmin
       .from('expenses')
       .select('id, description, amount, type, project_id')
@@ -89,13 +66,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (expenseError || !expense) {
       console.error('Error fetching expense:', expenseError);
-      return new Response(
-        JSON.stringify({ error: 'Transakcija nije pronađena' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'not_found', code: 'expense_not_found' }, 404);
     }
 
-    // Get submitter's profile for display name
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('display_name')
@@ -103,20 +76,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .single();
 
     const submitterName = profile?.display_name || user.email?.split('@')[0] || 'Član';
-    const transactionType = expense.type === 'income' ? 'prihod' : 'trošak';
+    const typeSlot = expense.type === 'income' ? 'income' : 'expense';
     const formattedAmount = new Intl.NumberFormat('hr-HR', {
       style: 'currency',
       currency: 'EUR'
     }).format(expense.amount);
+    const titleKey = 'notifications.pending_transaction.title';
+    const messageKey = `notifications.pending_transaction.message.${typeSlot}`;
+    const titleVars = {};
+    const messageVars = {
+      actor: submitterName,
+      description: expense.description,
+      amount: formattedAmount,
+      source: source.name,
+    };
 
-    // Create notification for the owner
     const { error: notificationError } = await supabaseAdmin
       .from('notifications')
       .insert({
         user_id: source.user_id,
         type: 'pending_transaction',
-        title: `Nova transakcija na čekanju`,
-        message: `${submitterName} je dodao ${transactionType} "${expense.description}" (${formattedAmount}) u krug "${source.name}". Čeka vaše odobrenje.`,
+        title: titleKey,
+        message: messageKey,
         data: {
           expense_id: expense.id,
           income_source_id: source.id,
@@ -124,20 +105,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
           income_source_icon: source.icon,
           submitter_name: submitterName,
           amount: expense.amount,
-          description: expense.description
+          description: expense.description,
+          title_vars: titleVars,
+          message_vars: messageVars,
         }
       });
 
     if (notificationError) {
       console.error('Error creating notification:', notificationError);
-      return new Response(
-        JSON.stringify({ error: 'Greška pri slanju obavijesti' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonRes({ error: 'internal', code: 'notification_insert_failed' }, 500);
     }
 
-    // Instant push disabled — in-app notification is inserted immediately;
-    // shared/pending transaction pushes must not interrupt users during the day.
+    // Instant push disabled — in-app notification only; shared/pending pushes must
+    // not interrupt users during the day. Digest handles project-scope batching.
     if (expense.project_id) {
       try {
         await supabaseAdmin.rpc('enqueue_participant_digest_event', {
@@ -158,16 +138,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     console.log(`Notification sent to owner ${source.user_id} for pending transaction from ${submitterName}`);
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Obavijest poslana vlasniku' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonRes({ success: true, delivered: 1 });
 
   } catch (error) {
     console.error('Error in notify-pending-transaction:', error);
-    return new Response(
-      JSON.stringify({ error: 'Interna greška servera' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonRes({ error: 'internal', code: 'unhandled_exception' }, 500);
   }
 });
+
+function jsonRes(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
