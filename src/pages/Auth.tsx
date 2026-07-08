@@ -567,7 +567,7 @@ const Auth = () => {
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
            {!isLogin && (
               <p className="text-xs text-muted-foreground">
-                Minimalno 6 znakova
+                {t('auth.minPassword')}
               </p>
             )}
           </div>
