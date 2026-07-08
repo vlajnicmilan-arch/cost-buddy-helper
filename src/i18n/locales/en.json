@@ -5051,5 +5051,16 @@
       "removed": "Attribution removed",
       "removeFailed": "Removal failed"
     }
+  },
+  "invitations": {
+    "errors": {
+      "userNotFound": "No user with that email was found",
+      "alreadyMember": "This user is already a member",
+      "alreadyInvited": "This user already has a pending invitation",
+      "projectClosed": "Project is completed or archived — invitations are disabled.",
+      "invalidEmail": "Invalid email address",
+      "projectNotFound": "Project not found",
+      "generic": "Failed to send invitation"
+    }
   }
 }
