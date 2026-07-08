@@ -337,15 +337,11 @@ export const ScannedDataPreview = ({
             <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
               🫰 Sa napojnicom (ukupno):
             </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
+            <MoneyInput
               placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
               value={totalWithTip}
               onChange={(e) => onTotalWithTipChange(e.target.value)}
               className="rounded-lg text-sm"
-              min={scannedData.amount}
-              step="0.01"
             />
             {totalWithTip && parseLocaleAmount(totalWithTip).value > scannedData.amount && (
               <div className="flex items-center justify-between p-2 rounded-md bg-income/10 border border-income/20">
