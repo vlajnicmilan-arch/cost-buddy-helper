@@ -93,26 +93,22 @@ serve(async (req) => {
     let idColumn: string;
     let invitationTable: string;
     let targetTable: string;
-    let targetLabel: string;
 
     if (type === "project") {
       memberTable = "project_members";
       idColumn = "project_id";
       invitationTable = "project_invitations";
       targetTable = "projects";
-      targetLabel = "projektu";
     } else if (type === "budget") {
       memberTable = "budget_members";
       idColumn = "budget_id";
       invitationTable = "budget_invitations";
       targetTable = "budget_plans";
-      targetLabel = "budžetu";
     } else if (type === "payment_source") {
       memberTable = "payment_source_members";
       idColumn = "payment_source_id";
       invitationTable = "payment_source_invitations";
       targetTable = "custom_payment_sources";
-      targetLabel = "računu";
     } else {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),
