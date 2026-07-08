@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -133,14 +134,11 @@ export const ProjectTransactionAddDialog = ({
           <div className="space-y-2">
             <Label>{t('common.amount')}</Label>
             <div className="relative">
-              <Input
-                type="number"
+              <MoneyInput
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
+                placeholder="0,00"
                 className="pr-12 text-lg"
-                min="0"
-                step="0.01"
                 autoFocus
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">

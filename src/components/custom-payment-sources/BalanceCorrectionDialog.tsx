@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
+import { parseMoneySigned } from '@/lib/money';
 
 interface BalanceCorrectionDialogProps {
   open: boolean;
@@ -32,20 +33,21 @@ export const BalanceCorrectionDialog = ({
     }
   }, [open, currentBalance]);
 
+  const parsedNewBalance = parseMoneySigned(newBalance);
+  const isValid = parsedNewBalance.valid;
+
   const handleSave = async () => {
-    const parsed = parseFloat(newBalance.replace(',', '.'));
-    if (isNaN(parsed)) return;
+    if (!isValid) return;
     setSaving(true);
     try {
-      await onSave(parsed);
+      await onSave(parsedNewBalance.value);
       onOpenChange(false);
     } finally {
       setSaving(false);
     }
   };
 
-  const difference = parseFloat(newBalance.replace(',', '.')) - currentBalance;
-  const isValid = !isNaN(parseFloat(newBalance.replace(',', '.')));
+  const difference = isValid ? parsedNewBalance.value - currentBalance : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,14 +66,13 @@ export const BalanceCorrectionDialog = ({
           </div>
           <div>
             <Label htmlFor="new-balance">{t('paymentSources.newBalance', 'Novi saldo')}</Label>
-            <Input
+            <MoneyInput
               id="new-balance"
-              type="number"
-              step="0.01"
               value={newBalance}
               onChange={(e) => setNewBalance(e.target.value)}
               className="font-mono text-lg mt-1"
               autoFocus
+              allowNegative
             />
           </div>
           {isValid && difference !== 0 && (

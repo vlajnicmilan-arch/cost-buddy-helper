@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -76,8 +78,8 @@ export const ProjectCollaboratorDialog = ({
       last_name: lastName.trim(),
       company_name: companyName.trim() || null,
       service_description: serviceDescription.trim(),
-      total_price: parseFloat(totalPrice) || 0,
-      paid_amount: parseFloat(paidAmount) || 0,
+      total_price: parseLocaleAmount(totalPrice).value || 0,
+      paid_amount: parseLocaleAmount(paidAmount).value || 0,
       milestone_id: milestoneId === 'none' ? null : milestoneId,
       status,
       contact_info: contactInfo.trim() || null,
@@ -123,13 +125,13 @@ export const ProjectCollaboratorDialog = ({
 
           <div className="space-y-1.5">
             <Label>{t('collaborators.agreedPrice', 'Dogovoreni iznos')}</Label>
-            <Input type="number" step="0.01" min="0" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} required />
+            <MoneyInput value={totalPrice} onChange={e => setTotalPrice(e.target.value)} required />
             <p className="text-[11px] text-muted-foreground">{t('collaborators.agreedPriceHint', 'Za projekcije i predviđene troškove')}</p>
           </div>
 
           <div className="space-y-1.5">
             <Label>{t('collaborators.paidAmount', 'Isplaćeni iznos')}</Label>
-            <Input type="number" step="0.01" min="0" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
+            <MoneyInput value={paidAmount} onChange={e => setPaidAmount(e.target.value)} />
             <p className="text-[11px] text-muted-foreground">{t('collaborators.paidAmountHint', 'Utječe na stvarne obračune projekta')}</p>
           </div>
 

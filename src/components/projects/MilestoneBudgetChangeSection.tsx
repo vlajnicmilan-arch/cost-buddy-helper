@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -299,10 +300,7 @@ export const MilestoneBudgetChangeSection = ({
                   <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                  <MoneyInput
                     value={amendmentAmount}
                     onChange={(e) => onAmendmentAmountChange(e.target.value)}
                     className="pr-10 text-sm h-9"

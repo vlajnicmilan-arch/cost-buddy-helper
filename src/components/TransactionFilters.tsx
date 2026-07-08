@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
+import { parseLocaleAmount } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -294,29 +296,27 @@ export const TransactionFilters = ({
           {/* Amount Range */}
           {showAmountFilter && (
             <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
+              <MoneyInput
                 placeholder="Min €"
-                value={filters.minAmount ?? ''}
-                onChange={(e) =>
-                  updateFilter(
-                    'minAmount',
-                    e.target.value ? parseFloat(e.target.value) : undefined
-                  )
-                }
+                value={filters.minAmount != null ? String(filters.minAmount) : ''}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) return updateFilter('minAmount', undefined);
+                  const r = parseLocaleAmount(raw);
+                  updateFilter('minAmount', r.valid ? r.value : undefined);
+                }}
                 className="w-20 h-8 text-xs"
               />
               <span className="text-muted-foreground text-xs">-</span>
-              <Input
-                type="number"
+              <MoneyInput
                 placeholder="Max €"
-                value={filters.maxAmount ?? ''}
-                onChange={(e) =>
-                  updateFilter(
-                    'maxAmount',
-                    e.target.value ? parseFloat(e.target.value) : undefined
-                  )
-                }
+                value={filters.maxAmount != null ? String(filters.maxAmount) : ''}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (!raw) return updateFilter('maxAmount', undefined);
+                  const r = parseLocaleAmount(raw);
+                  updateFilter('maxAmount', r.valid ? r.value : undefined);
+                }}
                 className="w-20 h-8 text-xs"
               />
             </div>
