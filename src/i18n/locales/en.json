@@ -2348,7 +2348,13 @@
     "viewerNote": "Your transactions require approval from the plan owner",
     "checkDirectionCta": "Check direction",
     "history": "History",
-    "transactions": "Transactions"
+    "transactions": "transactions",
+    "ofFrame": "of frame",
+    "limit": "Frame",
+    "noHistory": "No historical data",
+    "categoryComparison": "Comparison by directions",
+    "spendingOverTime": "Trend over time",
+    "vsPrevPeriod": "vs previous period"
   },
   "projectStatus": {
     "draft": "Draft",

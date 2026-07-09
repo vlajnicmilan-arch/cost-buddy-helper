@@ -2353,7 +2353,13 @@
     "viewerNote": "Vaše transakcije zahtijevaju odobrenje vlasnika plana",
     "checkDirectionCta": "Provjeri smjer",
     "history": "Povijest",
-    "transactions": "Transakcije"
+    "transactions": "transakcija",
+    "ofFrame": "okvira",
+    "limit": "Okvir",
+    "noHistory": "Nema povijesnih podataka",
+    "categoryComparison": "Usporedba po smjerovima",
+    "spendingOverTime": "Kretanje kroz vrijeme",
+    "vsPrevPeriod": "u odnosu na prošli period"
   },
   "projectStatus": {
     "draft": "Nacrt",

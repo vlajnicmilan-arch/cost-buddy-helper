@@ -158,19 +158,22 @@ export const detectBudgetBurn = (budgets: BudgetInput[]): IssueCandidate[] => {
     const pct = (b.spent / b.planned) * 100;
     if (pct < 85) continue;
     const severity: IssueSeverity = pct >= 100 ? "critical" : "warning";
+    const spentPct = Math.round(pct);
     out.push({
       type: "budget_burn",
       dedup_key: `budget_burn:${b.id}`,
       severity,
       title_key: "attention.issues.budgetBurn.title",
-      title_vars: { budgetName: b.name },
+      // Title template references BOTH {{spentPct}} and {{budgetName}} —
+      // vars must include every placeholder used in title/message.
+      title_vars: { budgetName: b.name, spentPct },
       message_key: pct >= 100
         ? "attention.issues.budgetBurn.messageOver"
         : "attention.issues.budgetBurn.message",
-      message_vars: { spentPct: Math.round(pct) },
+      message_vars: { spentPct, budgetName: b.name },
       entity_type: "budget",
       entity_id: b.id,
-      data: { budget_id: b.id, budget_name: b.name, spent_pct: Math.round(pct), planned: b.planned, spent: b.spent },
+      data: { budget_id: b.id, budget_name: b.name, spent_pct: spentPct, planned: b.planned, spent: b.spent },
     });
   }
   return out;

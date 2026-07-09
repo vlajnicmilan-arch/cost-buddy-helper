@@ -4,15 +4,16 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
+import { CATEGORIES } from '@/types/expense';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
   ArrowRight,
   Loader2,
   Calendar
@@ -39,7 +40,7 @@ interface PeriodData {
   spent: number;
   limit: number;
   percentage: number;
-  categoryBreakdown: { category: string; icon: string; spent: number; limit: number; percentage: number }[];
+  categoryBreakdown: { category: string; name: string; icon: string; spent: number; limit: number; percentage: number }[];
   transactionCount: number;
 }
 
@@ -123,12 +124,20 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
       const spent = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
 
       // Category breakdown
-      const categoryMap = new Map<string, { icon: string; spent: number; limit: number }>();
-      
+      const categoryMap = new Map<string, { icon: string; name: string; spent: number; limit: number }>();
+
+      const resolveCat = (catId: string, fallbackIcon?: string) => {
+        const sys = CATEGORIES.find(c => c.id === catId);
+        if (sys) return { name: sys.name, icon: sys.icon };
+        return { name: catId, icon: fallbackIcon || '📂' };
+      };
+
       // Initialize from budget categories
       budget.categories.forEach(cat => {
+        const info = resolveCat(cat.category, cat.icon);
         categoryMap.set(cat.category, {
-          icon: cat.icon || '📂',
+          icon: info.icon,
+          name: info.name,
           spent: 0,
           limit: cat.limit_amount,
         });
@@ -140,18 +149,20 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           if (e.category === cat.category) return true;
           return false;
         });
-        
-        const catKey = matchedCat?.category || 'Ostalo';
+
+        const catKey = matchedCat?.category || 'other';
         const existing = categoryMap.get(catKey);
         if (existing) {
           existing.spent += e.amount;
         } else {
-          categoryMap.set(catKey, { icon: '📂', spent: e.amount, limit: 0 });
+          const info = resolveCat(catKey);
+          categoryMap.set(catKey, { icon: info.icon, name: info.name, spent: e.amount, limit: 0 });
         }
       });
 
       const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, data]) => ({
         category,
+        name: data.name,
         icon: data.icon,
         spent: data.spent,
         limit: data.limit,
@@ -248,9 +259,9 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
         className="p-4 rounded-xl bg-card border border-border space-y-3"
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{t('budget.spent', 'Potrošeno')}</span>
+          <span className="text-sm text-muted-foreground">{t('budget.spent', 'Stvarno')}</span>
           <span className="text-sm text-muted-foreground">
-            {currentPeriod.percentage.toFixed(0)}% {t('budget.ofBudget', 'budžeta')}
+            {currentPeriod.percentage.toFixed(0)}% {t('budget.ofFrame', 'okvira')}
           </span>
         </div>
         
@@ -259,33 +270,26 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           <p className="text-sm text-muted-foreground">/ {formatAmount(currentPeriod.limit)}</p>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — Smjer v1: neutralno (bg-module), bez alarm palete. */}
         <div className="h-2.5 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className={cn(
-              "h-full rounded-full",
-              currentPeriod.percentage > 100 ? "bg-destructive" :
-              currentPeriod.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
-            )}
+            className="h-full rounded-full bg-module"
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(currentPeriod.percentage, 100)}%` }}
             transition={{ duration: 0.4 }}
           />
         </div>
 
-        {/* Comparison with previous */}
+        {/* Comparison with previous — informativno, bez destructive tona */}
         {previousPeriod && (
           <div className="pt-2 border-t border-border/50 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">vs {previousPeriod.label}:</span>
+              <span className="text-muted-foreground">{t('budget.vsPrevPeriod', 'u odnosu na prošli period')} ({previousPeriod.label}):</span>
               <span className="font-medium text-muted-foreground">
                 {formatAmount(previousPeriod.spent)}
               </span>
             </div>
-            <Badge
-              variant={spentChange > 5 ? 'destructive' : spentChange < -5 ? 'default' : 'secondary'}
-              className="gap-1 text-xs"
-            >
+            <Badge variant="secondary" className="gap-1 text-xs">
               {spentChange > 0 ? (
                 <TrendingUp className="w-3 h-3" />
               ) : spentChange < 0 ? (
@@ -318,15 +322,12 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{cat.icon}</span>
-                      <span className="text-sm font-medium">{cat.category}</span>
+                      <span className="text-sm font-medium">{cat.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
                       {prevCat && Math.abs(catChange) > 5 && (
-                        <span className={cn(
-                          "text-xs font-medium",
-                          catChange > 0 ? "text-destructive" : "text-income"
-                        )}>
+                        <span className="text-xs font-medium text-muted-foreground">
                           {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
                         </span>
                       )}
@@ -335,11 +336,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                   {cat.limit > 0 && (
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          cat.percentage > 100 ? "bg-destructive" :
-                          cat.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
-                        )}
+                        className="h-full rounded-full transition-all bg-module"
                         style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                       />
                     </div>
@@ -383,7 +380,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     }}
                     formatter={(val: number, name: string) => [
                       formatAmount(val),
-                      name === 'spent' ? t('budget.spent', 'Potrošeno') : t('budget.limit', 'Limit')
+                      name === 'spent' ? t('budget.spent', 'Stvarno') : t('budget.limit', 'Okvir')
                     ]}
                   />
                   <Bar 
