@@ -290,16 +290,21 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                 {formatAmount(previousPeriod.spent)}
               </span>
             </div>
-            <Badge variant="secondary" className="gap-1 text-xs">
-              {spentChange > 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : spentChange < 0 ? (
-                <TrendingDown className="w-3 h-3" />
-              ) : (
-                <Minus className="w-3 h-3" />
-              )}
-              {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
-            </Badge>
+            {(() => {
+              const v = getDeviationVisual(spentChange);
+              return (
+                <Badge variant="secondary" className={cn("gap-1 text-xs bg-transparent", v.className)}>
+                  {spentChange > 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : spentChange < 0 ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                  {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
+                </Badge>
+              );
+            })()}
           </div>
         )}
       </motion.div>
