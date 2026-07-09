@@ -74,12 +74,38 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Constant-time string compare to avoid timing side-channels on the shared
+// secret used for internal auth.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // ---- Internal-auth guard ----
+  // notify-krug-event is a privileged writer (service_role client, push
+  // dispatch, recipient_override). It must not be publicly callable. All
+  // legitimate callers (RPC via net.http_post using the vault-stored service
+  // role key, `krug-add-member` edge fn via functions.invoke with the admin
+  // client) present the service_role key as their Bearer token. Anything else
+  // is rejected 401 before any work is done.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const presented = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : "";
+  if (!SERVICE_KEY || !presented || !timingSafeEqual(presented, SERVICE_KEY)) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
 
   let payload: Payload;
   try {
