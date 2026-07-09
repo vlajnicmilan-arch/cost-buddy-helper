@@ -27,7 +27,8 @@ interface PaymentSourceData {
   name: string;
   icon: string;
   color: string;
-  balance: number;
+  // Optional: u edit modu se namjerno NE šalje (mijenja se preko "Korekcija salda").
+  balance?: number;
   currency?: string;
   description?: string;
   business_profile_id?: string | null;
