@@ -327,11 +327,14 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
-                      {prevCat && Math.abs(catChange) > 5 && (
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
-                        </span>
-                      )}
+                      {prevCat && Math.abs(catChange) > 5 && (() => {
+                        const v = getDeviationVisual(catChange);
+                        return (
+                          <span className={cn("text-xs font-medium", v.className)}>
+                            {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                   {cat.limit > 0 && (
