@@ -29,9 +29,13 @@
         "message": "{{daysOverdue}} days overdue — €{{amount}}"
       },
       "budgetBurn": {
-        "title": "Budget {{budgetName}} almost spent",
-        "message": "{{spentPct}}% used",
-        "messageOver": "Budget exceeded ({{spentPct}}%)"
+        "title": "{{spentPct}}% of frame „{{budgetName}}“ used",
+        "message": "{{spentPct}}% of frame used",
+        "messageOver": "{{spentPct}}% of frame used"
+      },
+      "budgetPace": {
+        "title": "Spending is ahead of the period pace",
+        "message": "{{spentPct}}% of frame spent, {{elapsedPct}}% of period elapsed. Want to review or adjust the direction?"
       },
       "cashflowRisk": {
         "title": "Possible cash shortfall",
