@@ -138,3 +138,43 @@ describe('KrugTransactionPanel — legacy `private` runtime display', () => {
     expect(shared).not.toBeDisabled();
   });
 });
+
+/**
+ * WS4 — A3 retract runtime verification.
+ *
+ * Dokazujemo da UI stvarno nudi "Vrati na osobno" i da klik zove
+ * `useKrugRetract().mutate({ expenseId })` točno jednom s ispravnim argumentima.
+ * Fixture zadovoljava sve decideRetract uvjete: author + full member +
+ * shared + predlozena + not deleted.
+ */
+describe('KrugTransactionPanel — A3 retract runtime (WS4)', () => {
+  beforeEach(() => {
+    hoisted.expenseRow = {
+      krug_id: 'k1',
+      krug_privacy: 'shared',
+      krug_shared_status: 'predlozena',
+      deleted_at: null,
+    };
+  });
+
+  it('renderira A3 "Vrati na osobno" akciju kad su svi uvjeti zadovoljeni', () => {
+    render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="user-1" />);
+    const btn = screen.getByRole('button', { name: /Vrati na osobno/ });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('klik na A3 zove retract.mutate točno jednom s { expenseId }', () => {
+    render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="user-1" />);
+    const btn = screen.getByRole('button', { name: /Vrati na osobno/ });
+    fireEvent.click(btn);
+
+    expect(hoisted.retractMutate).toHaveBeenCalledTimes(1);
+    expect(hoisted.retractMutate).toHaveBeenCalledWith({ expenseId: 'e1' });
+  });
+
+  it('A3 se NE nudi kad korisnik nije autor (guard očuvan)', () => {
+    render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="someone-else" />);
+    expect(screen.queryByRole('button', { name: /Vrati na osobno/ })).toBeNull();
+  });
+});
