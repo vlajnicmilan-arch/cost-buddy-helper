@@ -151,12 +151,20 @@ Deno.serve(async (req) => {
     for (const r of members ?? []) if (isUuid(r.user_id)) recipients.add(r.user_id);
   }
 
-  // Actor is excluded for events where the actor is the source of the event;
-  // for confirmed/rejected the recipient IS the author, but caller (RPC)
-  // already scopes recipient_override to [author], so this exclusion is a
-  // no-op in that path. For member_added the subject is the recipient, not
-  // the actor — same, no-op. Keep the rule blanket for safety.
-  recipients.delete(actor_id);
+  // Actor exclusion is event-aware, not blanket.
+  // - member_added: subject is a fresh recipient; actor exclusion is a no-op.
+  // - expense_proposed: authored by actor, so actor must not receive.
+  // - expense_confirmed / expense_rejected: caller already scopes
+  //   recipient_override to [author]; exclusion would still be a safe no-op,
+  //   but we apply it to defend the resolver path.
+  // - deletion_requested: initiator should NOT be notified back.
+  // - deleted: fan-out MUST go to every snapshot member, including the
+  //   initiator. Do NOT drop actor here — the canonical plan requires the
+  //   initiator to receive the terminal "deleted" event.
+  if (event_type !== "krug_deleted") {
+    recipients.delete(actor_id);
+  }
+
 
   if (recipients.size === 0) {
     return json({ ok: true, delivered: 0, reason: "no_recipients" });
