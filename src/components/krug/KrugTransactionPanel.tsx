@@ -214,11 +214,19 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
     }) === 'ok_governed_to_personal';
 
   // ---- UI ----
-  const privacyOptions: { key: KrugPrivacy; label: string; hint: string; icon: JSX.Element }[] = [
+  // Semantics Lock v1: `private` je legacy-only. UI nudi isključivo personal/shared.
+  const privacyOptions: { key: 'personal' | 'shared'; label: string; hint: string; icon: JSX.Element }[] = [
     { key: 'personal', label: t('krug.privacy.personal', 'Moje'), hint: t('krug.privacyHint.personal', 'Ne ide na potvrdu Krugu.'), icon: <User className="w-3.5 h-3.5" /> },
-    { key: 'private', label: t('krug.privacy.private', 'Skriveno od Kruga'), hint: t('krug.privacyHint.private', 'Ostali članovi ovo ne vide.'), icon: <EyeOff className="w-3.5 h-3.5" /> },
     { key: 'shared', label: t('krug.privacy.shared', 'Za Krug'), hint: t('krug.privacyHint.shared', 'Šalje se ostalima na potvrdu.'), icon: <Users className="w-3.5 h-3.5" /> },
   ];
+  // Legacy `private` se za UI prikaz mapira u `personal` (identičan efekt na vidljivost).
+  const isLegacyPrivate = flags.prevPrivacy === 'private';
+  const displayPrivacy: 'personal' | 'shared' | null =
+    flags.prevPrivacy === 'shared'
+      ? 'shared'
+      : flags.prevPrivacy === 'personal' || flags.prevPrivacy === 'private'
+        ? 'personal'
+        : null;
 
   const statusLabel: Record<KrugSharedStatus, string> = {
     predlozena: t('krug.status.predlozena', 'Predloženo'),
@@ -253,29 +261,41 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
 
       {/* Privacy switcher — samo autor; iz shared se izlazi kroz A7 (full member) */}
       {flags.isAuthor && flags.prevPrivacy !== 'shared' && (
-        <div className="flex gap-1.5 flex-wrap">
-          {privacyOptions.map((opt) => {
-            const enabled = canSet(opt.key) && !pending;
-            const active = flags.prevPrivacy === opt.key;
-            return (
-              <Button
-                key={opt.key}
-                size="sm"
-                variant={active ? 'default' : 'outline'}
-                disabled={!enabled || active}
-                onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
-                className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
-              >
-                <span className="flex items-center gap-1.5 text-xs font-medium">
-                  {opt.icon}
-                  {opt.label}
-                </span>
-                <span className={cn('text-[10px] leading-tight', active ? 'opacity-90' : 'text-muted-foreground')}>
-                  {opt.hint}
-                </span>
-              </Button>
-            );
-          })}
+        <div className="space-y-2">
+          <div className="flex gap-1.5 flex-wrap">
+            {privacyOptions.map((opt) => {
+              // Legacy `private` je prikazan kao `personal`, ali NIJE "active" —
+              // dopuštamo eksplicitnu (re)selekciju da bi korisnik migrirao zapis.
+              const enabled = canSet(opt.key) && !pending;
+              const active = !isLegacyPrivate && displayPrivacy === opt.key;
+              return (
+                <Button
+                  key={opt.key}
+                  size="sm"
+                  variant={active ? 'default' : 'outline'}
+                  disabled={!enabled || active}
+                  onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
+                  className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-medium">
+                    {opt.icon}
+                    {opt.label}
+                  </span>
+                  <span className={cn('text-[10px] leading-tight', active ? 'opacity-90' : 'text-muted-foreground')}>
+                    {opt.hint}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+          {isLegacyPrivate && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
+              {t(
+                'krug.transaction.legacyPrivateHint',
+                'Ovaj je zapis izvorno bio „Skriveno od Kruga". U novoj verziji prikazuje se kao „Moje". Odaberi izbor za migraciju.',
+              )}
+            </p>
+          )}
         </div>
       )}
 
