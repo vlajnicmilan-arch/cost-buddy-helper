@@ -82,7 +82,7 @@ describe('KrugTransactionPanel — legacy `private` runtime display', () => {
     // Legacy hint mora biti vidljiv — potvrđuje da panel prepoznaje legacy stanje,
     // a ne da samo slučajno prikazuje personal jer je stvarno personal.
     expect(
-      screen.getByText(/legacy|Klikni „Moje" za migraciju|Moje/),
+      screen.getByText(/Klikni „Moje" za migraciju/),
     ).toBeInTheDocument();
   });
 
