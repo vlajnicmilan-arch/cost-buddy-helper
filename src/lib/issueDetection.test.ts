@@ -108,7 +108,8 @@ describe("detectBudgetBurn", () => {
   it("warning at 85-99%", () => {
     const out = detectBudgetBurn([{ id: "b1", name: "B", planned: 100, spent: 90 }]);
     expect(out[0].severity).toBe("warning");
-    expect(out[0].message_vars).toEqual({ spentPct: 90 });
+    expect(out[0].title_vars).toEqual({ budgetName: "B", spentPct: 90 });
+    expect(out[0].message_vars).toEqual({ spentPct: 90, budgetName: "B" });
   });
 
   it("critical at 100%+", () => {
