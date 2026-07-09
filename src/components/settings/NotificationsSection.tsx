@@ -101,6 +101,7 @@ export const NotificationsSection = ({
     { key: 'reminders', icon: CalendarClock, labelKey: 'settings.notifReminders', labelDefault: 'Podsjetnici i rokovi', descKey: 'settings.notifRemindersDesc', descDefault: 'Kalendar i rokovi faza projekta', enabled: prefs.reminders_enabled },
     { key: 'trial', icon: BadgePercent, labelKey: 'settings.notifTrial', labelDefault: 'Pretplata', descKey: 'settings.notifTrialDesc', descDefault: 'Podsjetnici o probnom razdoblju i naplati', enabled: prefs.trial_enabled },
     { key: 'broadcast', icon: Megaphone, labelKey: 'settings.notifBroadcast', labelDefault: 'Sustavske obavijesti', descKey: 'settings.notifBroadcastDesc', descDefault: 'Važne najave i nadogradnje aplikacije', enabled: prefs.broadcast_enabled },
+    { key: 'krug', icon: Users, labelKey: 'settings.notifKrug', labelDefault: 'Krug', descKey: 'settings.notifKrugDesc', descDefault: 'Odobrenja, članstvo i brisanje Kruga', enabled: prefs.krug_enabled },
   ];
 
   return (

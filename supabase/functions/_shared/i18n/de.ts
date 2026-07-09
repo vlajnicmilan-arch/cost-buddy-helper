@@ -176,4 +176,16 @@ export default {
     "Einladung zum geteilten Konto",
   "notifications.invitation_sent.payment_source.message":
     "{{inviterName}} lädt Sie ein, dem Konto „{{targetName}}\" beizutreten",
+  "notifications.krug.member_added.title": "Du wurdest zu einem Krug hinzugefügt",
+  "notifications.krug.member_added.message": "Du bist jetzt Mitglied eines neuen Krug.",
+  "notifications.krug.expense_proposed.title": "Neuer Krug-Vorschlag",
+  "notifications.krug.expense_proposed.message": "Eine Transaktion wartet auf deine Freigabe.",
+  "notifications.krug.expense_confirmed.title": "Dein Vorschlag wurde bestätigt",
+  "notifications.krug.expense_confirmed.message": "Ein Krug-Mitglied hat deinen Vorschlag bestätigt.",
+  "notifications.krug.expense_rejected.title": "Dein Vorschlag wurde abgelehnt",
+  "notifications.krug.expense_rejected.message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt.",
+  "notifications.krug.deletion_requested.title": "Krug-Löschung gestartet",
+  "notifications.krug.deletion_requested.message": "Der Eigentümer hat die Löschung des Krug angefordert.",
+  "notifications.krug.deleted.title": "Krug wurde gelöscht",
+  "notifications.krug.deleted.message": "Ein Krug, in dem du Mitglied warst, wurde endgültig entfernt.",
 } as const;

@@ -2430,6 +2430,32 @@
         }
       }
     },
+    "krug": {
+      "member_added": {
+        "title": "Du wurdest zu einem Krug hinzugefügt",
+        "message": "Du bist jetzt Mitglied eines neuen Krug."
+      },
+      "expense_proposed": {
+        "title": "Neuer Krug-Vorschlag",
+        "message": "Eine Transaktion wartet auf deine Freigabe."
+      },
+      "expense_confirmed": {
+        "title": "Dein Vorschlag wurde bestätigt",
+        "message": "Ein Krug-Mitglied hat deinen Vorschlag bestätigt."
+      },
+      "expense_rejected": {
+        "title": "Dein Vorschlag wurde abgelehnt",
+        "message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt."
+      },
+      "deletion_requested": {
+        "title": "Krug-Löschung gestartet",
+        "message": "Der Eigentümer hat die Löschung des Krug angefordert."
+      },
+      "deleted": {
+        "title": "Krug wurde gelöscht",
+        "message": "Ein Krug, in dem du Mitglied warst, wurde endgültig entfernt."
+      }
+    },
     "payment_source_transaction": {
       "title": "Transaktion auf Konto „{{source}}\"",
       "message": {

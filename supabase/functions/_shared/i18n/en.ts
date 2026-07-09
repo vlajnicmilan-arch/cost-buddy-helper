@@ -176,4 +176,16 @@ export default {
     "Shared account invitation",
   "notifications.invitation_sent.payment_source.message":
     "{{inviterName}} invites you to join account „{{targetName}}\"",
+  "notifications.krug.member_added.title": "You've been added to a Krug",
+  "notifications.krug.member_added.message": "You are now a member of a new Krug.",
+  "notifications.krug.expense_proposed.title": "New Krug proposal",
+  "notifications.krug.expense_proposed.message": "A transaction is awaiting your approval.",
+  "notifications.krug.expense_confirmed.title": "Your proposal was confirmed",
+  "notifications.krug.expense_confirmed.message": "A Krug member confirmed your proposal.",
+  "notifications.krug.expense_rejected.title": "Your proposal was rejected",
+  "notifications.krug.expense_rejected.message": "A Krug member rejected your proposal.",
+  "notifications.krug.deletion_requested.title": "Krug deletion started",
+  "notifications.krug.deletion_requested.message": "The owner requested Krug deletion.",
+  "notifications.krug.deleted.title": "Krug was deleted",
+  "notifications.krug.deleted.message": "A Krug you were part of has been permanently removed.",
 } as const;
