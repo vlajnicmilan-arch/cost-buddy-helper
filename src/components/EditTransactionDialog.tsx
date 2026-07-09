@@ -30,6 +30,7 @@ import { CustomIncomeCategoryDialog } from '@/components/custom-categories/Custo
 import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
+import { KrugSelector } from '@/components/krug/KrugSelector';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -58,6 +59,12 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
   const [note, setNote] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  // Krug WS1 — Semantics Lock v1. `private` je legacy: UI ga prikazuje kao `personal`,
+  // ali izvorna vrijednost se čuva u `initialKrugPrivacy` i vraća se u bazu ako korisnik ne mijenja izbor.
+  const [krugId, setKrugId] = useState<string | null>(null);
+  const [krugPrivacy, setKrugPrivacy] = useState<'personal' | 'shared'>('personal');
+  const [initialKrugPrivacy, setInitialKrugPrivacy] = useState<'personal' | 'private' | 'shared' | null>(null);
+
 
   
   const { customPaymentSources } = useCustomPaymentSources();
@@ -103,6 +110,11 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
         setExpenseNature((expense.expense_nature as 'regular' | 'extraordinary') || 'regular');
         setNote(expense.note || '');
         setTransferDestination(expense.income_source_id || null);
+        // Krug WS1: legacy `private` → UI prikaz kao `personal`; izvorna vrijednost pamti se za save-time preservation.
+        const rawPrivacy = (expense as any).krug_privacy as 'personal' | 'private' | 'shared' | null | undefined;
+        setKrugId((expense as any).krug_id || null);
+        setInitialKrugPrivacy(rawPrivacy ?? null);
+        setKrugPrivacy(rawPrivacy === 'shared' ? 'shared' : 'personal');
       } catch (err) {
         console.error('Error initializing edit form:', err);
         // Set safe defaults
@@ -123,6 +135,18 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
       const finalPaymentSource = isCustomSource ? `custom:${paymentSource}` : paymentSource;
       
 
+      // Krug WS1 — Semantics Lock v1 legacy preservation:
+      // ako je zapis izvorno imao krug_privacy='private' i korisnik nije promijenio UI izbor,
+      // vraćamo izvornu 'private' vrijednost u bazu bez migracije podataka.
+      const isBusinessExpense = !!(expense as any).business_profile_id;
+      const nextKrugId = !isBusinessExpense ? (krugId || null) : null;
+      let nextKrugPrivacy: 'personal' | 'private' | 'shared' | null = null;
+      if (nextKrugId) {
+        const legacyPrivate =
+          initialKrugPrivacy === 'private' && krugPrivacy === 'personal' && nextKrugId === ((expense as any).krug_id || null);
+        nextKrugPrivacy = legacyPrivate ? 'private' : krugPrivacy;
+      }
+
       await onSave({
         ...expense,
         amount: parseLocaleAmount(amount).value,
@@ -138,6 +162,8 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : null,
         income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined,
         note: note.trim() || null,
+        krug_id: nextKrugId,
+        krug_privacy: nextKrugPrivacy,
         updated_at: new Date().toISOString()
       });
       onOpenChange(false);
@@ -627,7 +653,18 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
             </div>
           )}
 
+          {/* Krug — WS1. Personal-only kontekst: skriven ako je zapis vezan uz poslovni profil. */}
+          {type !== 'transfer' && !(expense as any).business_profile_id && (
+            <KrugSelector
+              krugId={krugId}
+              privacy={krugPrivacy}
+              onChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
+              legacyPrivate={initialKrugPrivacy === 'private'}
+            />
+          )}
+
         </div>
+
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

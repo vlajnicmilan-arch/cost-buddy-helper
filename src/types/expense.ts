@@ -217,6 +217,12 @@ export interface Expense {
   possible_duplicate_of?: string | null;
   // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
   recurring_transaction_id?: string | null;
+  // Krug WS1 — vidi Krug Semantics Lock v1.
+  // krug_privacy: 'personal' | 'private' | 'shared' — `private` je legacy (UI ga prikazuje kao `personal`, v1 ga ne nudi).
+  // krug_shared_status je NULL osim kad je krug_privacy='shared' (setovi ga writer + RPC).
+  krug_id?: string | null;
+  krug_privacy?: 'personal' | 'private' | 'shared' | null;
+  krug_shared_status?: 'predlozena' | 'potvrdjena' | 'nepotvrdjena' | null;
 }
 
 // Helper to get transaction type display info

@@ -4980,6 +4980,16 @@
     "members": "Mitglieder",
     "sharedSources": "Gemeinsame Quellen",
     "noSharedSources": "Keine verknüpften Zahlungsquellen.",
+    "selector": {
+      "label": "Krug",
+      "placeholder": "Ohne Krug",
+      "none": "Ohne Krug",
+      "personal": "Privat",
+      "shared": "Für den Krug",
+      "hintPersonal": "Bleibt nur für dich sichtbar. Wird nicht dem Krug zur Bestätigung vorgelegt.",
+      "hintShared": "Wird den übrigen Krug-Mitgliedern zur Bestätigung vorgelegt. Der Krug führt eine gemeinsame Ausgabenspur — er rechnet keine Schulden ab.",
+      "legacyPrivateHint": "Dieser Beleg war ursprünglich als „Vor dem Krug verborgen“ markiert. In der neuen Version wird er als „Privat“ angezeigt. Ein Wechsel der Auswahl ersetzt die ursprüngliche Kennzeichnung."
+    },
     "queue": {
       "title": "Zur Entscheidung",
       "subtitle": "Deine Bestätigung für gemeinsame Ausgaben, die Krug-Mitglieder vorgeschlagen haben.",
