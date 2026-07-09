@@ -259,6 +259,8 @@ export const CustomPaymentSourceDialog = ({
                 placeholder="0,00"
                 className="font-mono flex-1"
                 allowNegative
+                disabled={!!source}
+                readOnly={!!source}
               />
               {multiCurrencyEnabled && (
                 <Select value={sourceCurrency} onValueChange={(v) => setSourceCurrency(v as CurrencyCode)}>
@@ -278,6 +280,11 @@ export const CustomPaymentSourceDialog = ({
                 </Select>
               )}
             </div>
+            {!!source && (
+              <p className="text-xs text-muted-foreground">
+                {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
+              </p>
+            )}
           </div>
 
           {/* Description */}
