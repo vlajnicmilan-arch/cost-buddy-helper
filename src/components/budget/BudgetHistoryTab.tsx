@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
 import { CATEGORIES } from '@/types/expense';
+import { getDeviationVisual } from '@/lib/deviationVisual';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
