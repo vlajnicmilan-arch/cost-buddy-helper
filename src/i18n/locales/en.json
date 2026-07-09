@@ -5079,7 +5079,28 @@
       "A3": "Move to personal",
       "A4": "Withdraw proposal",
       "A5": "Re-propose",
-      "A7": "Flip to personal"
+      "A7": "Flip to personal",
+      "success": {
+        "A1": "Expense confirmed.",
+        "A2": "Expense rejected.",
+        "A4": "Proposal withdrawn.",
+        "A5": "Proposal returned for decision.",
+        "noop": "Already in that state.",
+        "generic": "Saved."
+      },
+      "error": {
+        "unauthenticated": "Session expired. Sign in again.",
+        "invalid_act": "Unknown action.",
+        "missing_client_request_id": "Internal error: missing request ID.",
+        "not_found": "This expense no longer exists.",
+        "not_in_shared_flow": "This expense is not in the shared Krug flow.",
+        "author_cannot_govern": "The author of an expense cannot decide on it.",
+        "not_full_member": "You do not have decision rights in this Krug.",
+        "not_author": "Only the author of this expense can do that.",
+        "wrong_state": "This expense is no longer in a state that allows this action. Refresh the list.",
+        "unknown": "Unknown error. Please try again.",
+        "network": "Action failed right now. Check your connection and try again."
+      }
     },
     "member": {
       "you": "you",
