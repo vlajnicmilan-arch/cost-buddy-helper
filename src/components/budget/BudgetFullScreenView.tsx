@@ -478,7 +478,6 @@ export const BudgetFullScreenView = ({
                             </div>
                           </div>
                         </div>
-                        </div>
                       </div>
                     )}
                   </TabsContent>
