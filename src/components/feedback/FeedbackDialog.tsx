@@ -25,13 +25,14 @@ interface FeedbackDialogProps {
 // Lightweight in-memory ring buffer of recent console messages
 type LogEntry = { level: string; message: string; t: number };
 const consoleBuffer: LogEntry[] = [];
-const MAX_LOGS = 25;
+const MAX_LOGS = 15;
 let consolePatched = false;
 
 function patchConsole() {
   if (consolePatched || typeof window === 'undefined') return;
   consolePatched = true;
-  (['log', 'info', 'warn', 'error'] as const).forEach((level) => {
+  // Only capture warn + error. log/info commonly carry PII payloads and are skipped.
+  (['warn', 'error'] as const).forEach((level) => {
     const orig = (console as any)[level];
     (console as any)[level] = (...args: any[]) => {
       try {
