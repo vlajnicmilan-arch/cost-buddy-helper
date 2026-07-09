@@ -35,14 +35,19 @@ vi.mock('@/hooks/useKrug', () => ({
   }),
 }));
 
-const noopMutation = () => ({ mutate: vi.fn(), isPending: false });
-vi.mock('@/hooks/useKrugSetPrivacy', () => ({ useKrugSetPrivacy: noopMutation }));
-vi.mock('@/hooks/useKrugAct', () => ({
-  useKrugApplyAct: noopMutation,
-  useKrugWithdraw: noopMutation,
+vi.mock('@/hooks/useKrugSetPrivacy', () => ({
+  useKrugSetPrivacy: () => ({ mutate: vi.fn(), isPending: false }),
 }));
-vi.mock('@/hooks/useKrugRetract', () => ({ useKrugRetract: noopMutation }));
-vi.mock('@/hooks/useKrugGovernToPersonal', () => ({ useKrugGovernToPersonal: noopMutation }));
+vi.mock('@/hooks/useKrugAct', () => ({
+  useKrugApplyAct: () => ({ mutate: vi.fn(), isPending: false }),
+  useKrugWithdraw: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock('@/hooks/useKrugRetract', () => ({
+  useKrugRetract: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock('@/hooks/useKrugGovernToPersonal', () => ({
+  useKrugGovernToPersonal: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 
 // Panel poziva `useQuery` direktno za dohvat expense retka. Mockamo samo
 // useQuery iz tanstacka; ostatak modula ostaje realan (QueryClient nije nužan).
