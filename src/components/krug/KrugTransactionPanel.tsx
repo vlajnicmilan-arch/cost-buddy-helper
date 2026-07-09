@@ -264,16 +264,19 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
         <div className="space-y-2">
           <div className="flex gap-1.5 flex-wrap">
             {privacyOptions.map((opt) => {
-              // Legacy `private` je prikazan kao `personal`, ali NIJE "active" —
-              // dopuštamo eksplicitnu (re)selekciju da bi korisnik migrirao zapis.
+              // WS1b: legacy `private` se prikazuje kao aktivan `personal`
+              // (jer je učinak identičan), ali ostaje klikabilan kako bi
+              // korisnik migrirao zapis eksplicitnim (re)odabirom `personal`.
               const enabled = canSet(opt.key) && !pending;
-              const active = !isLegacyPrivate && displayPrivacy === opt.key;
+              const active = displayPrivacy === opt.key;
+              const isMigrationTarget = isLegacyPrivate && opt.key === 'personal';
+              const disabled = !enabled || (active && !isMigrationTarget);
               return (
                 <Button
                   key={opt.key}
                   size="sm"
                   variant={active ? 'default' : 'outline'}
-                  disabled={!enabled || active}
+                  disabled={disabled}
                   onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
                   className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
                 >
@@ -292,7 +295,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
             <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
               {t(
                 'krug.transaction.legacyPrivateHint',
-                'Ovaj je zapis izvorno bio „Skriveno od Kruga". U novoj verziji prikazuje se kao „Moje". Odaberi izbor za migraciju.',
+                'Ovaj je zapis izvorno bio „Skriveno od Kruga". Prikazuje se kao „Moje". Klikni „Moje" za migraciju ili odaberi „Za Krug".',
               )}
             </p>
           )}

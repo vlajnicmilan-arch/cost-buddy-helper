@@ -5058,7 +5058,7 @@
     "transaction": {
       "title": "Krug",
       "loading": "Loading…",
-      "legacyPrivateHint": "This record was originally marked \"Hidden from Krug\". In the new version it's shown as \"Mine\". Pick an option to migrate it."
+      "legacyPrivateHint": "This record was originally \"Hidden from Krug\". It's shown as \"Mine\". Click \"Mine\" to migrate or pick \"For Krug\"."
     },
     "privacy": {
       "personal": "Mine",

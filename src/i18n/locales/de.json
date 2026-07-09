@@ -5058,7 +5058,7 @@
     "transaction": {
       "title": "Krug",
       "loading": "Lädt…",
-      "legacyPrivateHint": "Dieser Eintrag war ursprünglich „Vor dem Krug verborgen\". In der neuen Version wird er als „Meins\" angezeigt. Wähle eine Option zur Migration."
+      "legacyPrivateHint": "Dieser Eintrag war ursprünglich „Vor dem Krug verborgen\". Wird als „Meins\" angezeigt. Klicke „Meins\" zur Migration oder wähle „Für den Krug\"."
     },
     "privacy": {
       "personal": "Meins",
