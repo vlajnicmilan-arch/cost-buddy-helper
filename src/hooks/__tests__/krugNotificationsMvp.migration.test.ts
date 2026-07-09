@@ -75,6 +75,22 @@ describe('Krug Notifications MVP migration', () => {
     expect(fn).toMatch(/notify-krug-event/);
   });
 
+  it('krug_emit_notification presents the service role key from vault (not anon)', () => {
+    // Corrected variant must exist in the migration history. It reads the
+    // service_role key from vault.decrypted_secrets and forwards it as
+    // Bearer so the edge fn internal-auth guard accepts the call.
+    const CORRECTED = loadMigrationWith(
+      "SELECT decrypted_secret\n    INTO _service_key\n    FROM vault.decrypted_secrets",
+    );
+    const fn = extractFunctionBody(CORRECTED, 'krug_emit_notification');
+    expect(fn).toMatch(/vault\.decrypted_secrets/);
+    expect(fn).toMatch(/email_queue_service_role_key/);
+    expect(fn).toMatch(/'Bearer '\s*\|\|\s*_service_key/);
+    // Anon-key JWT must not be embedded in the corrected helper.
+    expect(fn).not.toMatch(/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/);
+  });
+
+
   it('krug_set_privacy emits proposed only on shared+predlozena transition', () => {
     const fn = extractFunctionBody(SRC, 'krug_set_privacy');
     expect(fn).toMatch(/krug_emit_notification\(\s*'krug_expense_proposed'/);
