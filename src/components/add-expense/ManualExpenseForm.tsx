@@ -20,7 +20,7 @@ import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
-import { KrugSelector } from '@/components/krug/KrugSelector';
+import { AttachmentBar } from './AttachmentBar';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
