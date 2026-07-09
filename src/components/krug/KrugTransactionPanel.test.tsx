@@ -1,15 +1,21 @@
 /**
- * WS1c — runtime verification for legacy `private` display in KrugTransactionPanel.
+ * WS1c/WS1d — runtime verification for legacy `private` display in KrugTransactionPanel.
  *
  * Ovaj test namjerno NE koristi supabase / react-query runtime. Sve hookove
  * na koje se panel oslanja mockamo minimalno kako bismo izolirali odluku
  * koju panel donosi za legacy `krug_privacy='private'` zapis:
- *   1. "Moje" (personal) se prikazuje kao aktivan izbor,
+ *   1. "Moje" (personal) se prikazuje kao aktivan izbor (variant=default → bg-primary),
  *   2. taj gumb ostaje klikabilan (migracijski put),
- *   3. nema trećeg privacy izbora ("Skriveno" / private) u panelu.
+ *   3. klik zove `useKrugSetPrivacy().mutate` s `{ expenseId, newPrivacy: 'personal' }`,
+ *   4. nema trećeg privacy izbora ("Skriveno" / private) u panelu.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+
+// vi.hoisted — dostupno prije vi.mock factory-a, ali svježe po test datoteci.
+const hoisted = vi.hoisted(() => ({
+  setPrivacyMutate: vi.fn(),
+}));
 
 // --- Mocks ---------------------------------------------------------------
 
@@ -36,7 +42,7 @@ vi.mock('@/hooks/useKrug', () => ({
 }));
 
 vi.mock('@/hooks/useKrugSetPrivacy', () => ({
-  useKrugSetPrivacy: () => ({ mutate: vi.fn(), isPending: false }),
+  useKrugSetPrivacy: () => ({ mutate: hoisted.setPrivacyMutate, isPending: false }),
 }));
 vi.mock('@/hooks/useKrugAct', () => ({
   useKrugApplyAct: () => ({ mutate: vi.fn(), isPending: false }),
@@ -69,30 +75,50 @@ vi.mock('@tanstack/react-query', async () => {
 
 import { KrugTransactionPanel } from './KrugTransactionPanel';
 
+beforeEach(() => {
+  hoisted.setPrivacyMutate.mockClear();
+});
+
 describe('KrugTransactionPanel — legacy `private` runtime display', () => {
-  it('renderira "Moje" kao aktivan izbor i ostavlja ga klikabilnim za migraciju', () => {
+  it('renderira "Moje" kao AKTIVAN izbor (variant=default → bg-primary) i nije disabled', () => {
     render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="user-1" />);
 
     const mojeBtn = screen.getByRole('button', { name: /Moje/ });
     expect(mojeBtn).toBeInTheDocument();
-    // Aktivan izbor u shadcn Button varijanti `default` NE dobiva `variant="outline"` klasu.
-    // Ključni invariant: gumb NIJE disabled (legacy `private` → migracijski put ostaje otvoren).
     expect(mojeBtn).not.toBeDisabled();
+    // Aktivan izbor: shadcn Button variant="default" → `bg-module` klasa
+    // u ovom projektu (default varijanta je re-tema-rana). Neaktivan
+    // (`outline`) NEMA `bg-module`, pa je ovo ne-slučajni marker aktivnosti.
+    expect(mojeBtn.className).toMatch(/\bbg-module\b/);
 
-    // Legacy hint mora biti vidljiv — potvrđuje da panel prepoznaje legacy stanje,
-    // a ne da samo slučajno prikazuje personal jer je stvarno personal.
+    // "Za Krug" MORA biti neaktivan (variant=outline → bez bg-module).
+    const sharedBtn = screen.getByRole('button', { name: /Za Krug/ });
+    expect(sharedBtn.className).not.toMatch(/\bbg-module\b/);
+
+    // Legacy hint mora biti vidljiv.
     expect(
       screen.getByText(/Klikni „Moje" za migraciju/),
     ).toBeInTheDocument();
   });
 
+  it('klik na aktivan "Moje" u legacy slučaju zove setPrivacy.mutate({ expenseId, newPrivacy: "personal" })', () => {
+    render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="user-1" />);
+
+    const mojeBtn = screen.getByRole('button', { name: /Moje/ });
+    fireEvent.click(mojeBtn);
+
+    expect(hoisted.setPrivacyMutate).toHaveBeenCalledTimes(1);
+    expect(hoisted.setPrivacyMutate).toHaveBeenCalledWith({
+      expenseId: 'e1',
+      newPrivacy: 'personal',
+    });
+  });
+
   it('ne nudi treći privacy izbor (nema "Skriveno"/private gumba)', () => {
     render(<KrugTransactionPanel expenseId="e1" expenseAuthorId="user-1" />);
 
-    // Očekujemo točno dva privacy gumba: "Moje" i "Za Krug".
     expect(screen.getByRole('button', { name: /Moje/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Za Krug/ })).toBeInTheDocument();
-    // Nijedan gumb ne smije sadržavati string "Skriveno" (legacy private label).
     const skriveno = screen.queryByRole('button', { name: /Skriveno/i });
     expect(skriveno).toBeNull();
   });
