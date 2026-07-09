@@ -5067,7 +5067,7 @@
     "transaction": {
       "title": "Krug",
       "loading": "Učitavam…",
-      "legacyPrivateHint": "Ovaj je zapis izvorno bio „Skriveno od Kruga\". U novoj verziji prikazuje se kao „Moje\". Odaberi izbor za migraciju."
+      "legacyPrivateHint": "Ovaj je zapis izvorno bio „Skriveno od Kruga\". Prikazuje se kao „Moje\". Klikni „Moje\" za migraciju ili odaberi „Za Krug\"."
     },
     "privacy": {
       "personal": "Moje",
