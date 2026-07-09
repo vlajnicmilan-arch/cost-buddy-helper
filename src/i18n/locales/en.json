@@ -5062,12 +5062,10 @@
     },
     "privacy": {
       "personal": "Mine",
-      "private": "Hidden from Krug",
       "shared": "For the Krug"
     },
     "privacyHint": {
       "personal": "Doesn't go to the Krug for confirmation.",
-      "private": "Other members can't see this.",
       "shared": "Sent to others for confirmation."
     },
     "status": {
