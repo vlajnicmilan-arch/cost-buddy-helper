@@ -1,115 +1,175 @@
 
-# Krug — read-only audit (stanje danas)
+# Kritika plana dovršavanja Kruga (read-only)
 
-Napomena: ovo je **audit, ne plan**. Ništa se ne mijenja. Nalazi izvedeni iz čitanja src/components/krug/*, src/hooks/useKrug*, src/lib/krug*, src/pages/Krug.tsx, src/components/BottomNav.tsx, TransactionDetailDialog.tsx, entry formi, useFeatureAccess, i18n, testova i supabase/functions.
-
----
-
-## 1. Surface po surface
-
-### a) Krug list (`KrugListScreen`, `useMyKrugs`)
-- **Stanje:** gotovo. Query filtrira `deleted_at IS NULL`, empty state + header CTA otvara `CreateKrugDialog`, lifecycle badge po redu, klik otvara detail.
-- **Ozbiljnost gapova:** niska. Nema pretrage, sortiranja, grupiranja — u trenutnom skoupu i nije potrebno.
-
-### b) Create Krug flow / wizard (`CreateKrugDialog`)
-- **Stanje:** funkcionalno, ali **minimalno**. 3 koraka (naziv → preset → potvrda), izlaže samo 3 UI presetа (`partner`, `su_roditelj`, `cimer`) iz `KRUG_PRESETS`, INSERT direktno u `krug` uz oslon na `krug_bootstrap_creator` trigger.
-- **Nedostaje:** preset opis/mikrocopy razlike, preview posljedica (npr. cap na `punopravni`), postavljanje initialnog shared izvora u istom flowu, nema pozivanja članova iz wizarda.
-- **Ozbiljnost:** srednja. Radi, ali korisnik izlazi iz wizarda s praznim Krugom bez ijednog člana i bez izvora — ostatak konfiguracije mora naći sam.
-
-### c) Detail screen (`KrugDetailScreen`)
-- **Stanje:** gotovo za skeleton skope. Header s nazivom + preset + lifecycle badge, delete CTA (owner), deletion vote panel, approval queue, članovi, shared izvori. Ownership tretiran odvojeno (nije u membership enumu). 
-- **Nedostaje:** aktivnost/feed, sažetak potrošnje po Krugu, presuda "tko kome duguje" (v. `k`), pinovi/nedavno.
-- **Ozbiljnost:** srednja — funkcionalno da, ali detail izgleda više kao "administrativni" ekran nego kao svakodnevno mjesto boravka Krug korisnika.
-
-### d) Members / owner / role management (`useKrug`, `useKrugMembers`, `useKrugMemberMutations`, `AddKrugMemberDialog`)
-- **Stanje:** funkcionalno. Owner iz `krug_ownership`, membership enum samo `punopravni|obicni`, promocija/degradacija direct UPDATE preko RLS, remove direct DELETE, cap enforcan kao UX guard + baza vraća marker (`krug_punopravni_cap`).
-- **Ograničenje:** dodavanje ide **isključivo po emailu postojećeg registriranog korisnika** (edge `krug-add-member` → `user_not_found` inače). Nema poziva neregistriranima. Confirm remove je `window.confirm`, ne shadcn dijalog.
-- **Ozbiljnost:** visoka za realnu upotrebu — realna obiteljska/cimerska situacija često znači da druga strana **još nema račun**. Krug se u praksi ne može popuniti bez off-app usmene registracije.
-
-### e) Approval queue (`KrugApprovalQueue`, `useKrugPendingExpenses`)
-- **Stanje:** funkcionalno. Lista `predlozena` shared troškova (limit 50), inline A1/A2 gumbi (odluke iz `krugDecisions`), klik u red otvara `TransactionDetailDialog` → `KrugTransactionPanel`.
-- **Nedostaje:** filter/tab (moje predložene vs. tuđe), batch potvrda, "sve prazno" hint, badge s brojem pending na list ekranu i BottomNav-u.
-- **Ozbiljnost:** srednja. Queue je jasan ali "slijep" — bez broja pendinga na globalnoj navigaciji korisnik ne zna da nešto čeka.
-
-### f) Shared payment source (`KrugSharedSourcesSection`, `useKrugSharedPaymentSources`)
-- **Stanje:** funkcionalno za owner-owned **custom** izvore (`custom:UUID`). Built-in slugove UI **svjesno ne nudi** iako ih backend dopušta. Detach `window.confirm`.
-- **Nedostaje:** vidljivost tko je izvor koristio, saldo izvora unutar Kruga, uparivanje s Krug shared statusom transakcije.
-- **Ozbiljnost:** srednja. Konceptualno je čisto ali je izolirano — attach izvora ne generira nikakav follow-up UX (npr. "želiš li da se troškovi na ovom izvoru automatski predlažu Krugu?").
-
-### g) Transaction Krug panel (`KrugTransactionPanel`, `useKrugAct`, `useKrugRetract`, `useKrugSetPrivacy`, `useKrugGovernToPersonal`)
-- **Stanje:** logički kompletno za Wave 1 + 1.5. Pokriva `personal/private/shared` switch, A1/A2/A4/A5, A3 (autor retract), A7 (full member → personal). Odluke iz `krugDecisions` zrcale SQL RPC. Idempotencija preko `client_request_id`. Status badge (predlozena/potvrdjena/nepotvrdjena) prikazan.
-- **Nedostaje:** UI za A3 (48h auto-expiry) i A6 svjesno **nije** dio Wave 1.5 (dokumentirano u `useKrugAct` komentaru). Panel se pojavljuje samo kad transakcija **već ima** `krug_id`.
-- **Ozbiljnost:** srednja — sama logika je zrela, ali ulaz u nju je zatvoren (vidi `i)`).
-
-### h) Delete / deletion vote flow (`KrugDeleteDialog`, `KrugDeletionVotePanel`, `useKrugDeletion`, `krugDeletionDecisions`, `cleanup-krug-deleted`)
-- **Stanje:** **gotovo end-to-end i najviše dovršen dio modula.** Solo shortcut, multi-member glasovanje, jedan `reject` zatvara zahtjev, owner cancel, soft-delete + 30d grace + cron purge, pure helper s 19 vitest testova, `krug.delete.*` i18n potpun.
-- **Ozbiljnost:** niska. Ovo je najzreliji surface.
-
-### i) Lifecycle badge / poruke (`KrugLifecycleBadge`)
-- **Stanje:** izloženo je 6 stanja (`active`, `early_signal`, `ugrozen`, `continuity_window`, `read_only`, `deleted`) s tonovima, ikonama, i18n note-om. Nepoznata stanja se ne renderiraju (safe).
-- **Nedostaje:** **nema koda koji lifecycle prebacuje**. Nema hook-a/edge fn-a koji piše `early_signal`/`ugrozen`/`continuity_window`/`read_only` — polje je izloženo kao read-only prikaz onoga što baza upiše, a u repou ne postoji migracija koja to upisuje (grep na "early_signal" u src daje samo prikaz).
-- **Ozbiljnost:** visoka konceptualno — kompletan lifecycle model je vizualiziran ali **ne živi**. U praksi svi Krugovi ostaju `active` dok se ne obrišu.
-
-### j) Ulaz troška u Krug (entry surface)
-- **Stanje:** **rupa.** `rg krug_id` po `AddExpenseDialog`, `QuickExpense*`, `ExpenseForm*` — **nula pojavljivanja**. Krug se ne može odabrati pri kreiranju troška iz nijedne standardne entry forme.
-- Jedini put u Krug: transakcija već ima `krug_id` (vjerojatno automatikom kroz shared payment source na DB strani) pa se `KrugTransactionPanel` pojavi u `TransactionDetailDialog`. Ručno postavljanje `krug_id` na novi/postojeći trošak iz UI-a **ne postoji**.
-- **Ozbiljnost:** kritična. Bez ovoga cijeli T7/T8 aparat (privacy switcher, A-akti, approval queue) je nedostupan većini korisničkih tokova.
-
-### k) Split / settlement / tko kome duguje
-- **Stanje:** **ne postoji.** Grep na `settle|split|owes|duguje.*krug` u src ne vraća ništa vezano uz Krug. Nema izračuna zajedničke potrošnje, individualnog udjela, saldiranja, "poravnaj s X".
-- **Ozbiljnost:** kritična ako je namjera Kruga uključivala dijeljenje troška. Ako je namjera striktno "zajednički trag potrošnje bez saldiranja" (što `KRUG_PRESETS` opisi i `krug.privacyHint.shared` sugeriraju), onda je ovo *by design*. Trebalo bi eksplicitnu potvrdu vlasnika — audit ne može odlučiti umjesto namjere. **Ova jednoznačnost nedostaje u dokumentaciji.**
-
-### l) Invite flow
-- **Stanje:** samo lookup postojećeg korisnika po emailu (edge `krug-add-member`). **Nema** invitation tablice (usporedi `budget_invitations`, `project_invitations`, `payment_source_invitations` koje postoje), nema tokena, nema email šablone, nema join stranice tipa `JoinBudget`/`JoinProject`.
-- **Ozbiljnost:** visoka — usklađenost s ostalim modulima ne postoji.
-
-### m) Notifikacije / push
-- **Stanje:** **nula.** Grep krug u `useNotifications.ts` i `notificationPayload.ts` prazan. Nema push-a za "nova pending Krug transakcija", "netko je potvrdio/negirao tvoj trošak", "zahtjev za brisanje Kruga čeka tvoj glas", niti in-app notifikacije. `KrugApprovalQueue` je jedini indikator, i to samo unutar `/krug` ekrana.
-- **Ozbiljnost:** kritična za realan async workflow — bez notifikacija koauthoriring shared troškova ne funkcionira; potvrde bi u praksi kasnile danima.
-
-### n) Billing / access gating
-- **Stanje:** izloženo. `useFeatureAccess`: `krug` modul zaključan na `pro` tier. `BottomNav` gate-a Krug ikonu kroz `module: 'krug'` i skriva u business kontekstu.
-- **Ozbiljnost:** niska za funkcionalnost, ali pitanje je paketiranja (Krug=Pro dok je nedovršen).
-
-### o) Test coverage
-- **Stanje:** čisti unit testovi na pure helperima:
-  - `src/test/krugDeletionDecisions.test.ts` (19 testova)
-  - `src/lib/__tests__/krugDecisions.test.ts`
-  - `src/lib/__tests__/krugPresets.test.ts`
-- **Nedostaje:** integracijski testovi hookova, testovi za `KrugTransactionPanel` odluke, testovi za `useKrugMemberMutations`, SQL smoke-suite za RPC-e (nema pandana `supabase/tests/balance/*` za Krug).
-- **Ozbiljnost:** srednja. Logička jezgra (odluke) je pokrivena; sve što uključuje bazu / UI nije.
+Ovo NIJE implementacijski plan. Ovo je kritički osvrt na predloženi redoslijed od 11 workstreamova. Ništa se ne mijenja.
 
 ---
 
-## 2. TOP 5 gapova (po ozbiljnosti za stvarnu upotrebu)
+## 1. Gdje je predloženi redoslijed pogrešan
 
-1. **Nema ulaza troška u Krug iz entry formi** (j). Bez ručnog `krug_id` na novom trošku, cijeli approval/privacy aparat je dostupan samo transakcijama koje su u Krug dospjele auto-mehanizmom preko shared izvora.
-2. **Nema notifikacija** (m). Async potvrđivanje bez pusha/in-app signala u produkciji ne živi.
-3. **Nema invite flow-a za neregistrirane** (l). Krug se ne može popuniti realnim članovima obitelji ako još nemaju account; nema pandana `budget_invitations`.
-4. **Lifecycle model je samo vizualan** (i). 5 od 6 stanja nikad ne nastupi — engine koji piše `early_signal/ugrozen/continuity_window/read_only` ne postoji u repou.
-5. **Split/settlement nije definiran** (k). Ako je Krug zamišljen kao alat za dijeljenje troška, kritičan nedostatak; ako nije, kritičan je nedostatak *jasne izjave* da to nije namjera — bez toga korisnik očekuje "tko kome duguje".
+Kratko i bez uljepšavanja: **redoslijed je pogrešan na najvažnijem mjestu — stavlja UI ulaz (WS1: expense entry → Krug) ispred semantičkog zatvaranja (WS2: Krug expense semantics i WS3: split/settlement).** To je klasična greška "gradimo lijevak prije nego znamo što se u posudu smije natočiti".
 
-Napomena izvan top 5, ali blisko: bez badge-a na BottomNav-u za broj pendinga (e), i bez SQL smoke-suite za RPC-e (o), stabilnost Krug flowa neće biti dokazivo održiva.
+Konkretno:
+
+- **WS1 prije WS2 je inverzija.** Ne možeš dizajnirati entry surface za nešto čija semantika nije zaključana. Ako korisnik iz `AddExpenseDialog` odabere Krug, sustav mora u tom trenutku odlučiti: postaje li to odmah `shared+predlozena`, ide li u `personal` s `krug_id`, tko je autor u smislu A-akata, kako se ponaša ako izvor nije shared, što se događa s `krug_privacy`. Svaki od tih odgovora živi u WS2. Graditi WS1 sada znači kodirati privremene odluke koje će WS2 poništiti.
+
+- **WS3 (split/settlement) prije WS2 je nemoguće**, pa je red WS2 → WS3 formalno točan, ali WS3 je stavljen prerano u odnosu na cijeli ostatak. Split/settlement je najveća semantička odluka u modulu (i danas nedokumentirana — audit je to eksplicitno naznačio). Dok se ne odluči **je li Krug alat za saldiranje ili samo za zajednički trag**, sve iza toga (notifikacije, lifecycle, approval UX) gradi se u magli. WS3 nije "treći korak", to je **preduvjet svemu ostalom osim delete flow-a i pure decision helpera koji su već gotovi.**
+
+- **WS4 (invite) je prerano.** Nema smisla dovoditi neregistrirane članove u modul čija semantika sudjelovanja (tko što potvrđuje, tko što vidi, tko što duguje) nije zatvorena. Invite se radi kad je jasno u što pozivaš.
+
+- **WS5 (lifecycle operationalization) je stavljen prekasno i istovremeno prerano.** Prekasno jer lifecycle prijelaze (`early_signal`, `ugrozen`, `continuity_window`, `read_only`) direktno ovise o događajima koje generiraju WS1/WS2/WS3 (nema aktivnosti → `early_signal`; jedini punopravni ode → `ugrozen`; itd.). Prerano jer bez WS10 (notifikacije) lifecycle prijelazi su nevidljivi korisniku pa nemaju operativni smisao.
+
+- **WS6 (shared source unification) je skriveni preduvjet za WS1, ne posljedica.** Danas je Krug u praksi dostupan **samo** transakcijama koje su u njega dospjele preko shared izvora (audit). To znači da je shared source jedini živi ulaz. Ako se WS1 gradi prije WS6, dobiješ dva paralelna, potencijalno nekonzistentna ulaza u Krug (ručni odabir vs. auto-attach preko izvora) bez arbitraže između njih.
+
+- **WS7 (approval visibility) i WS10 (notifikacije) su umjetno razdvojeni.** Approval badge na BottomNav-u i push "netko je predložio trošak Krugu" su ista stvar iz dvije perspektive (in-app vs. out-of-app). Cijepanje ih čini oba pola-gotovima.
+
+- **WS8 (delete flow integration) je već gotov end-to-end** (audit: najzreliji dio modula, 19 vitest testova, cron purge). Kao workstream ne postoji; ako postoji, to je maksimalno "provjeri da lifecycle=deleted skriva Krug iz svih preostalih surfacea" — ne cijeli WS.
+
+- **WS9 (governance UX cleanup) nije workstream, to je poliranje.** Stavljanje u numerirani red daje mu težinu koju nema.
+
+**Skrivene ovisnosti koje plan ne priznaje:**
+
+1. **Autorstvo troška.** Tko je "autor" u Krug smislu — `user_id` na expensu, ili osoba koja je izvršila attach na Krug, ili onaj tko je vlasnik izvora s kojeg je plaćeno? Bez ovoga A3 (autor retract) i attribution u split modelu nisu definirani. Ovo mora biti odluka prije WS1.
+2. **Odnos `krug_privacy` (personal/private/shared) i split modela.** Ako Krug ima settlement, ulazi li `private` u obračun? Ako ne, koji je smisao `private` uopće?
+3. **Odnos `krug_id` na expensu i shared payment source atačmenta.** Danas su to dvije istine koje mogu divergirati (expense veže Krug X, izvor veže Krug Y). Bez arbitraže WS1 udvostručuje problem.
+4. **Currency u multi-member Krugu.** Ako članovi imaju izvore u različitim valutama, split model mora znati u kojoj se valuti saldira. Nije spomenuto.
+5. **Odnos Kruga i business/personal mode.** BottomNav skriva Krug u business kontekstu, ali expense entry surface u business modu nije reguliran prema Krugu. Sudar postoji.
 
 ---
 
-## 3. Koliko je Krug blizu gotovog modula
+## 2. Što je pravi prvi workstream
 
-- **Foundation sloj (DB+RLS+RPC decision zrcala):** procjena ~85%. `krugDecisions`, `krugDeletionDecisions`, `krugPresets` su čisti; delete flow potpuno; A1/A2/A3/A4/A5/A7 pokriveni; A6 i 48h expiry svjesno odgođeni.
-- **UI sloj po surface-ima:** procjena ~55%. List, detail, wizard, queue, shared sources, transaction panel postoje ali su često "honest skeleton" (self-priznato u komentarima).
-- **End-to-end korisnički journey (od poziva člana do naplate udjela):** procjena ~25%. Prekida se na: (i) pozivu neregistriranog, (ii) ulazu troška u Krug iz entry, (iii) notifikacijama, (iv) lifecycleu, (v) settlementu.
-- **Test coverage:** pure helperi ~visoko; sve iznad ~nisko.
+**`expense entry → Krug` NIJE pravi prvi execution workstream.** Pravi prvi workstream je **semantičko zatvaranje**, i on je *ne-UI*.
 
-Ukupno, kompozitno: **~45–50% do „gotov modul u smislu produkcijske uporabljivosti Pro korisnika"**.
+Zovem ga **WS0: Krug Semantics Lock**. Cilj: donijeti i pisano fiksirati odluke koje sve ostalo koristi kao ulaz. Bez koda, bez migracija — dokument + testovi na pure helperima gdje već postoje (`krugDecisions`, `krugDeletionDecisions`).
+
+Što mora ući u WS0:
+
+- **Namjena Kruga (jednoznačno):** je li Krug (a) zajednički trag potrošnje bez saldiranja, (b) split/settlement alat, ili (c) hibrid s eksplicitnim on/off po Krugu. Bez ovoga svaki daljnji WS je kockanje.
+- **Definicija autorstva** za A-akte i za split (ako postoji).
+- **Arbitraža između `expenses.krug_id` i `krug_shared_payment_source`** kad se ne slažu.
+- **Semantika `krug_privacy` u odnosu na split** (uključivo: smije li se `private` mijenjati u `shared` retroaktivno i što to znači za saldo).
+- **Currency pravilo** za multi-member Krug.
+- **Lifecycle triggeri kao ugovor:** koji događaj vodi u koje stanje. Danas u repou ne postoji, samo vizualna reprezentacija.
+- **Odnos prema business modeu:** je li Krug ikada dopušten u business kontekstu ili ostaje personal-only.
+
+Što **ne** ulazi u WS0: nikakav UI, nikakve nove tablice, nikakva mikro-kopija, nikakav notifikacijski tekst.
+
+Definition of done za WS0: postoji jedan dokument (npr. `docs/KRUG_SEMANTICS.md`) koji sadrži gornje odluke, i svaka odluka je referencirana iz `krugDecisions` / `krugDeletionDecisions` komentara. Tek nakon toga počinje bilo koji execution WS.
+
+Tek nakon WS0, **pravi prvi execution WS je WS3 (split/settlement) ili eksplicitna odluka "Krug v1 nema settlement, i to piše u UI-u"** — jer ta odluka blokira sve iza.
 
 ---
 
-## 4. Presuda
+## 3. Najmanji ispravan scope za prvi execution workstream
 
-**Krug je danas foundation + rani poluproizvod.**
+Pretpostavljam da vlasnik ne želi mjesec dana u dokument-mode. Onda: **prvi execution WS mora biti semantički najmanji korak koji ne otvara kaos i ne stvara privremena rješenja.**
 
-- Foundation (podatkovni model, odluke, delete flow, RLS zrcalo) je discipliniran i zreo.
-- Skeleton UI pokriva sve zaključane surface-e taxonomije, ali je namjerno minimalan.
-- Kritični dijelovi korisničkog jouneya (entry → notifikacije → invite → lifecycle → settlement) nedostaju ili nisu spojeni. Zbog toga je modul ispravno klasificirati kao **poluproizvod**, ne kao gotov proizvod — unatoč tome što je već iza `pro` gate-a u `useFeatureAccess`.
+Preporuka: **prvi execution WS = "Krug v1 semantika + eksplicitni no-settlement disclosure"**, minimalni scope:
 
-Bez pomaka na 5 gore navedenih gapova, Krug u praksi funkcionira samo za jednog korisnika koji ručno upravlja svojim shared izvorima — što nije njegova namjera.
+Ulazi:
+- Odluka "Krug v1 = zajednički trag, bez saldiranja" (ili obrnuto — bitno je da je odluka jedna i pisana).
+- Ta odluka postaje vidljiva u UI-u na točno jednom mjestu (npr. u `CreateKrugDialog` završnom koraku i u `KrugDetailScreen` empty stateu). Jedan i18n ključ, tri jezika.
+- Autorstvo troška fiksirano na `expenses.user_id` (jer je to danas jedina konzistentna istina) i to pisano.
+- Arbitraža `krug_id` vs. shared source: dokumentirana kao "expense.krug_id je istina, shared source je samo hint za auto-attach". Bez izmjena koda.
+
+Svjesno **ne** ulazi:
+- Nikakav entry UI za ručni odabir Kruga na expensu.
+- Nikakav split/settlement kod.
+- Nikakav invite flow.
+- Nikakve lifecycle tranzicije.
+- Nikakve notifikacije.
+
+Zašto ovo, a ne "napravimo entry": jer entry bez ovih odluka **kodira privremenu semantiku u UI**, a to je najskuplja vrsta duga u ovom modulu — svaki kasniji semantički shift zahtijeva data migraciju plus retraining korisnika koji su već vidjeli "kako to radi".
+
+---
+
+## 4. Najveći rizici ako se krene krivim redom (tj. po originalnom planu)
+
+**Domain semantika:**
+- Ako WS1 (entry) ide prije WS2/WS3, uvodi se ručni "attach na Krug" bez definicije što attach znači za saldo, autorstvo, i vidljivost. Kasnije uvođenje split modela zahtijeva backfill ili amnestiju povijesnih transakcija.
+- `krug_privacy` postaje "što god UI toga trenutka misli da znači", jer semantika `private` nije fiksirana u odnosu na (nepostojeći) split.
+
+**Data shape / persistence:**
+- Dvije istine (`expenses.krug_id` i shared source atačment) bez arbitraže znače da će queries za "što je u Krugu X" davati različite rezultate ovisno o hooku. To se već sluti u auditu.
+- Ako se split doda naknadno, potrebna je tablica ledgera (analogno `project_worker_payouts`). Ako se prije toga korisnici naviknu na "Krug bez ledgera", uvođenje ledger UI-a je breaking UX change.
+- Currency: ako se multi-member Krug pusti bez currency pravila, mixed-currency Krugovi u produkciji postaju permanentni tehnički dug.
+
+**UX kontradikcije:**
+- Approval queue bez notifikacija = korisnici vide "ništa se ne događa" i modul umire.
+- Lifecycle badge koji nikad ne mijenja stanje = korisnici gube povjerenje u statusni sustav.
+- Invite neregistriranih prije nego što je jasno u što pozivaš = pozvani član dolazi u prazan/nedefiniran prostor, negativan first-run.
+
+**Approval / shared source / lifecycle sudari:**
+- Shared source auto-generira `predlozena` transakcije. Ako WS1 uvede i ručni attach, imaš dva izvora `predlozena` s različitom autorship-semantikom. A3 (autor retract) tada nije jednoznačno definiran.
+- Lifecycle `read_only` prijelaz mora znati što s pending approvalima. Bez WS0 odluke, ovo je nedefinirano.
+- Delete flow (zreo) pretpostavlja da su `predlozena` samo "in-flight" — ali ako lifecycle uvede `read_only`, `predlozena` u `read_only` Krugu je legal state bez ijedne moguće akcije. Sudar.
+
+---
+
+## 5. Preporuka za WS4 (odnosno: za pravi prvi execution WS)
+
+Kratka verzija — nazvao bih ga **WS-A: Krug Semantics Lock v1**, ne WS4. Numeracija originalnog plana pretpostavlja da je entry pravi prvi execution — ta pretpostavka je pogrešna.
+
+```text
+WS-A: Krug Semantics Lock v1
+
+Cilj
+  Zaključati domain semantiku Kruga v1 tako da svaki
+  kasniji execution WS ima jednoznačan ugovor. Bez UI-a.
+  Bez migracija. Deliverable je dokument + minimalan
+  vidljivi disclosure na dva mjesta u postojećem UI-u.
+
+Ulazi
+  1. Pisana odluka o namjeni: trag vs. settlement vs. hibrid.
+     Jedna odluka, jedan dokument.
+  2. Definicija autorstva troška u Krug kontekstu
+     (preporuka: expenses.user_id, bez iznimki).
+  3. Arbitraža izmedju expenses.krug_id i
+     krug_shared_payment_source kad divergiraju
+     (preporuka: krug_id je istina).
+  4. Semantika krug_privacy u odnosu na (ne)postojeci split.
+  5. Currency pravilo za multi-member Krug.
+  6. Lifecycle ugovor: koji dogadjaj vodi u koje stanje.
+     Bez implementacije prijelaza — samo tablica ugovora.
+  7. Business/personal mode ugovor: Krug je personal-only
+     (ili nije — bitno da je pisano).
+  8. Minimalni UI disclosure "Krug v1 ne saldira"
+     (ili suprotno) na dva mjesta: CreateKrugDialog zavrsni
+     korak + KrugDetailScreen empty state. Jedan i18n
+     kljuc, HR/EN/DE.
+
+Svjesno NE ulazi
+  - Entry surface za rucni odabir Kruga na expensu.
+  - Bilo kakav split/settlement kod ili tablica.
+  - Invite flow za neregistrirane.
+  - Notifikacije (push ili in-app).
+  - Lifecycle tranzicijski engine.
+  - Bilo kakva izmjena postojecih RPC-a ili RLS-a.
+  - Redizajn shared source UI-a.
+
+Definition of done
+  - docs/KRUG_SEMANTICS.md postoji i sadrzi svih 7 odluka.
+  - Svaka odluka je referencirana iz komentara u
+    krugDecisions.ts i krugDeletionDecisions.ts.
+  - Dva UI disclosure mjesta koriste jedan novi i18n kljuc,
+    preveden na HR/EN/DE, pokriveno untranslated guardom.
+  - tsgo + vitest zeleni; nema novih runtime putanja pa
+    nema novih integracijskih testova.
+  - Vlasnik je potvrdio odluke pisanim odobrenjem
+    (isti mehanizam kao za dosadasnje "ODLUKA VLASNIKA").
+
+Glavni rizici
+  - Vlasnik ne zeli donijeti settlement odluku sada:
+    mitigacija = eksplicitno "v1 = bez settlementa",
+    ali pisano, tako da UI to komunicira i ne stvara
+    laznu ekspektaciju.
+  - Odluke se kasnije mijenjaju: mitigacija = verzionirati
+    dokument (v1, v2), a ne prepisivati.
+  - Doziva se raspravu umjesto isporuke: mitigacija =
+    fiksni rok (npr. jedan dan) za odluke; ako nema
+    odluke, modul ostaje zamrznut umjesto da se gradi
+    dalje na krivim pretpostavkama.
+```
+
+**Presuda o originalnom planu:** loš je u redoslijedu, ne u sadržaju. Svih 11 stavki eventualno mora biti napravljeno, ali WS1 kao prvi execution je greška. Pravi prvi korak je semantičko zatvaranje. Sve drugo je gradnja na pijesku — i audit je to već implicitno pokazao time što je pet od šest lifecycle stanja mrtvo, a entry surface je rupa: to su simptomi nedostatka semantičkog ugovora, ne simptomi nedostatka UI-a.
