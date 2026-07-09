@@ -213,30 +213,62 @@ export const BudgetDetailDialog = ({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {(cat.isOverBudget || cat.isWarning) && (
-                            <AlertTriangle className={cn(
-                              "w-3.5 h-3.5",
-                              cat.isOverBudget ? "text-destructive" : "text-warning"
-                            )} />
-                          )}
                           <span className="text-xs font-medium">{cat.percentage.toFixed(0)}%</span>
                         </div>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1.5">
                         <div 
-                          className={cn("h-full rounded-full", getProgressColor(cat.percentage, cat.isOverBudget, cat.isWarning))}
+                          className={cn("h-full rounded-full bg-primary")}
                           style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
-                        <span className={cat.remaining < 0 ? "text-destructive" : ""}>
-                          {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left')}
-                        </span>
+                      {/* Planirano / Stvarno / Odstupanje — neutralno */}
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">{t('budget.planned', 'Planirano')}</p>
+                          <p className="font-mono">{formatAmount(cat.limit_amount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">{t('budget.actualLabel', 'Stvarno')}</p>
+                          <p className="font-mono">{formatAmount(cat.spent)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-muted-foreground">{t('budget.deviation', 'Odstupanje')}</p>
+                          <p className="font-mono">
+                            {(() => {
+                              const dev = cat.spent - cat.limit_amount;
+                              const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
+                              return `${sign}${formatAmount(Math.abs(dev))}`;
+                            })()}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
                   })}
+
+                  {/* Ukupni red */}
+                  <div className="p-3 rounded-lg border border-border/50 bg-muted/40">
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">{t('budget.totalRow', 'Ukupno')} · {t('budget.planned', 'Planirano')}</p>
+                        <p className="font-mono font-semibold">{formatAmount(totalPlanned)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">{t('budget.actualLabel', 'Stvarno')}</p>
+                        <p className="font-mono font-semibold">{formatAmount(totalSpent)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-muted-foreground">{t('budget.deviation', 'Odstupanje')}</p>
+                        <p className="font-mono font-semibold">
+                          {(() => {
+                            const sign = totalDeviation > 0 ? '+' : totalDeviation < 0 ? '−' : '±';
+                            return `${sign}${formatAmount(Math.abs(totalDeviation))}`;
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
