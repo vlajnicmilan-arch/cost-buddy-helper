@@ -55,21 +55,15 @@ export const SetPinDialog = ({ open, onOpenChange }: SetPinDialogProps) => {
                   backend: result.backend,
                   error: result.error,
                 });
-                showError(t('errors.pin.setupFailed', 'PIN greška: {{reason}}', { reason: result.error || t('errors.unknownError', 'nepoznato') }));
+                showError(t('lock.pinSetWithFallback', 'PIN nije spremljen — sigurna pohrana nedostupna'));
                 return;
               }
               enableLock(true);
               console.log('[PIN] Saved OK', {
                 version: APP_VERSION,
                 backend: result.backend,
-                error: result.error,
               });
-              if (result.error) {
-                // Saved via fallback
-                showSuccess(t('lock.pinSetWithFallback', 'PIN postavljen (fallback: {{backend}})', { backend: result.backend }));
-              } else {
-                showSuccess(t('lock.pinSet', 'PIN je postavljen'));
-              }
+              showSuccess(t('lock.pinSet', 'PIN je postavljen'));
             } catch (err: any) {
               console.error('[PIN] Unexpected error', {
                 version: APP_VERSION,
