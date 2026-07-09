@@ -56,6 +56,7 @@ export const CustomPaymentSourceDialog = ({
   onDeleteCard,
   onUpdateCard,
   initialData,
+  onCorrectBalance,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('💳');
