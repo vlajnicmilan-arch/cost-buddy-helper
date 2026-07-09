@@ -298,6 +298,18 @@ export const useExpenseCRUD = ({
           // sprječavaju dvostruki pripis; caller mora ručno hendlati 23505.
           worker_payout_id: (normalizedExpense as any).worker_payout_id ?? null,
           worker_payout_batch_id: (normalizedExpense as any).worker_payout_batch_id ?? null,
+          // Krug WS1 — Semantics Lock v1: krug_id primarno; ako je privacy='shared',
+          // pripadajući status započinje kao 'predlozena' (paritet s krug_set_privacy RPC).
+          // CHECK constraint-ovi na tablici zahtijevaju da su shared/status polja koherentna.
+          krug_id: (normalizedExpense as any).krug_id ?? null,
+          krug_privacy: (normalizedExpense as any).krug_id
+            ? ((normalizedExpense as any).krug_privacy ?? 'personal')
+            : null,
+          krug_shared_status:
+            (normalizedExpense as any).krug_id &&
+            (normalizedExpense as any).krug_privacy === 'shared'
+              ? 'predlozena'
+              : null,
           ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
@@ -525,6 +537,27 @@ export const useExpenseCRUD = ({
         // Val 2: default intent — strip precision fields. If `date` changes
         // on a C3 row, the Val 1 trigger re-derives event_at. C1/C2 rows
         // remain protected by the trigger's tier-aware branch.
+        // Krug WS1 — derive coherent (krug_id, krug_privacy, krug_shared_status).
+        // Semantics Lock v1: krug_id primarno; caller (EditTransactionDialog) proslijedi
+        // krug_privacy koji uključuje legacy 'private' preservation.
+        const nextKrugId = (expense as any).krug_id ?? null;
+        const nextKrugPrivacy = nextKrugId
+          ? ((expense as any).krug_privacy ?? 'personal')
+          : null;
+        // Ako je prije bio shared i ostaje shared, zadrži postojeći status (potvrdjena/nepotvrdjena/predlozena).
+        // Ako novi ulazak u shared → 'predlozena' (paritet s krug_set_privacy RPC).
+        // Sve ostalo → null (CHECK: nonshared_status_null).
+        const prevKrugId = (oldExpense as any)?.krug_id ?? null;
+        const prevKrugPrivacy = (oldExpense as any)?.krug_privacy ?? null;
+        const prevKrugStatus = (oldExpense as any)?.krug_shared_status ?? null;
+        let nextKrugStatus: 'predlozena' | 'potvrdjena' | 'nepotvrdjena' | null = null;
+        if (nextKrugId && nextKrugPrivacy === 'shared') {
+          nextKrugStatus =
+            prevKrugId === nextKrugId && prevKrugPrivacy === 'shared' && prevKrugStatus
+              ? prevKrugStatus
+              : 'predlozena';
+        }
+
         const updatePayload = normalizeExpensePayload({
           amount: expense.amount,
           description: expense.description,
@@ -545,6 +578,10 @@ export const useExpenseCRUD = ({
           is_advance: (expense as any).is_advance ?? false,
           collaborator_id: (expense as any).collaborator_id ?? null,
           linked_advance_ids: (expense as any).linked_advance_ids ?? [],
+          // Krug WS1
+          krug_id: nextKrugId,
+          krug_privacy: nextKrugPrivacy,
+          krug_shared_status: nextKrugStatus,
           updated_at: new Date().toISOString(),
         }, 'default');
 

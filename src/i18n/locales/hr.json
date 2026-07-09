@@ -4989,6 +4989,16 @@
     "members": "Članovi",
     "sharedSources": "Zajednički izvori",
     "noSharedSources": "Nema povezanih izvora plaćanja.",
+    "selector": {
+      "label": "Krug",
+      "placeholder": "Bez Kruga",
+      "none": "Bez Kruga",
+      "personal": "Moje",
+      "shared": "Za Krug",
+      "hintPersonal": "Ostaje vidljivo samo tebi. Ne ide na potvrdu Krugu.",
+      "hintShared": "Šalje se ostalim članovima Kruga na potvrdu. Krug bilježi zajednički trag potrošnje — ne obračunava dugove.",
+      "legacyPrivateHint": "Ovaj je trošak izvorno bio označen kao „Skriveno od Kruga\". U novoj verziji prikazuje se kao „Moje\". Promjena izbora zamijenit će izvornu oznaku."
+    },
     "queue": {
       "title": "Za odlučivanje",
       "subtitle": "Tvoja potvrda za zajedničke troškove koje su predložili članovi Kruga.",

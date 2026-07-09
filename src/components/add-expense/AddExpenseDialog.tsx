@@ -156,6 +156,9 @@ export const AddExpenseDialog = ({
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(12);
   const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  // Krug WS1 — Semantics Lock v1: samo personal + shared, personal-only kontekst.
+  const [krugId, setKrugId] = useState<string | null>(null);
+  const [krugPrivacy, setKrugPrivacy] = useState<'personal' | 'shared'>('personal');
   
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [duplicateOf, setDuplicateOf] = useState<Expense | null>(null);
@@ -700,6 +703,9 @@ export const AddExpenseDialog = ({
         business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
+        // Krug WS1 — personal-only kontekst; ne šalji krug u business modu.
+        krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
+        krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
@@ -852,6 +858,8 @@ export const AddExpenseDialog = ({
     setTotalWithTip('');
     setLocationName(null);
     setLocationCoords(null);
+    setKrugId(null);
+    setKrugPrivacy('personal');
   };
 
   const executeAdd = async (
@@ -1054,7 +1062,10 @@ export const AddExpenseDialog = ({
       linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
       business_profile_id: effectiveBusinessProfileId || null,
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
-      income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined
+      income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined,
+      // Krug WS1 — personal-only kontekst.
+      krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
+      krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
     };
 
     if (checkDuplicate && type !== 'transfer') {
@@ -1298,6 +1309,10 @@ export const AddExpenseDialog = ({
               galleryInputRef={galleryInputRef}
               multiCameraInputRef={multiCameraInputRef}
               multiGalleryInputRef={multiGalleryInputRef}
+              krugId={krugId}
+              krugPrivacy={krugPrivacy}
+              onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
+              showKrugSelector={!effectiveBusinessProfileId}
               onSubmit={handleSubmit}
             />
           )}

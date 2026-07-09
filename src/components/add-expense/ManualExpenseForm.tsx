@@ -20,6 +20,7 @@ import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
+import { KrugSelector } from '@/components/krug/KrugSelector';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -126,6 +127,11 @@ interface ManualExpenseFormProps {
   galleryInputRef: React.RefObject<HTMLInputElement>;
   multiCameraInputRef: React.RefObject<HTMLInputElement>;
   multiGalleryInputRef: React.RefObject<HTMLInputElement>;
+  // Krug WS1 — samo personal kontekst (roditelj hida u business modu).
+  krugId?: string | null;
+  krugPrivacy?: 'personal' | 'shared';
+  onKrugChange?: (next: { krugId: string | null; privacy: 'personal' | 'shared' }) => void;
+  showKrugSelector?: boolean;
   // Submit
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -459,6 +465,16 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               </Select>
             </div>
           )}
+
+          {/* Krug — WS1. Personal-only kontekst; roditelj postavlja showKrugSelector=false u business modu. */}
+          {props.showKrugSelector && props.type !== 'transfer' && props.onKrugChange && (
+            <KrugSelector
+              krugId={props.krugId ?? null}
+              privacy={props.krugPrivacy ?? 'personal'}
+              onChange={props.onKrugChange}
+            />
+          )}
+
 
           {/* Expense Nature */}
           {(props.selectedProjectId || props.selectedBudgetId) && (
