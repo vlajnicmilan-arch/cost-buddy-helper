@@ -334,20 +334,24 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
-                      {prevCat && Math.abs(catChange) > 5 && (() => {
-                        const v = getDeviationVisual(catChange);
-                        return (
-                          <span className={cn("text-xs font-medium", v.className)}>
-                            {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
-                          </span>
-                        );
-                      })()}
+                      {prevCat && Math.abs(catChange) > 5 && (
+                        <span className={cn(
+                          "text-xs font-medium",
+                          catChange > 0 ? "text-destructive" : "text-income"
+                        )}>
+                          {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
+                        </span>
+                      )}
                     </div>
                   </div>
                   {cat.limit > 0 && (
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all bg-module"
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          cat.percentage > 100 ? "bg-destructive" :
+                          cat.percentage >= 80 ? "bg-warning" : "bg-primary"
+                        )}
                         style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                       />
                     </div>
