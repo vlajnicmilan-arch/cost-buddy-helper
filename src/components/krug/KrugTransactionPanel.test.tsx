@@ -56,7 +56,7 @@ vi.mock('@/hooks/useKrugAct', () => ({
   useKrugWithdraw: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('@/hooks/useKrugRetract', () => ({
-  useKrugRetract: () => ({ mutate: vi.fn(), isPending: false }),
+  useKrugRetract: () => ({ mutate: hoisted.retractMutate, isPending: false }),
 }));
 vi.mock('@/hooks/useKrugGovernToPersonal', () => ({
   useKrugGovernToPersonal: () => ({ mutate: vi.fn(), isPending: false }),
@@ -69,12 +69,7 @@ vi.mock('@tanstack/react-query', async () => {
   return {
     ...actual,
     useQuery: (_opts: any) => ({
-      data: {
-        krug_id: 'k1',
-        krug_privacy: 'private', // legacy zapis
-        krug_shared_status: null,
-        deleted_at: null,
-      },
+      data: hoisted.expenseRow,
       isLoading: false,
     }),
   };
@@ -84,6 +79,13 @@ import { KrugTransactionPanel } from './KrugTransactionPanel';
 
 beforeEach(() => {
   hoisted.setPrivacyMutate.mockClear();
+  hoisted.retractMutate.mockClear();
+  hoisted.expenseRow = {
+    krug_id: 'k1',
+    krug_privacy: 'private',
+    krug_shared_status: null,
+    deleted_at: null,
+  };
 });
 
 describe('KrugTransactionPanel — legacy `private` runtime display', () => {
