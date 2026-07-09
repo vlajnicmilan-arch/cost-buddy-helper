@@ -98,26 +98,31 @@ export const BudgetDetailDialog = ({
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">{t('budget.overallProgress')}</span>
                 <div className="flex items-center gap-2">
-                  {(budget.isOverBudget || budget.isWarning) && (
-                    <AlertTriangle className={cn(
-                      "w-4 h-4",
-                      budget.isOverBudget ? "text-destructive" : "text-warning"
-                    )} />
-                  )}
-                  <span className={cn(
-                    "font-medium",
-                    budget.isOverBudget && "text-destructive",
-                    budget.isWarning && !budget.isOverBudget && "text-warning"
-                  )}>
+                  <span className="font-medium text-foreground">
                     {budget.percentage.toFixed(1)}%
                   </span>
                 </div>
               </div>
               <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
                 <div 
-                  className={cn("h-full rounded-full transition-all", getProgressColor(budget.percentage, budget.isOverBudget, budget.isWarning))}
+                  className={cn("h-full rounded-full transition-all", getProgressColor())}
                   style={{ width: `${Math.min(budget.percentage, 100)}%` }}
                 />
+              </div>
+
+              {/* Neusmjereno / Preko okvira — neutralno */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                {alloc.isOverFrame ? (
+                  <>
+                    <span>{t('budget.overFrame', 'Preko okvira')}</span>
+                    <span className="font-mono">{formatAmount(alloc.overFrame)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('budget.unallocated', 'Neusmjereno')}</span>
+                    <span className="font-mono">{formatAmount(alloc.unallocated)}</span>
+                  </>
+                )}
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div>
