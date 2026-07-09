@@ -29,9 +29,13 @@
         "message": "{{daysOverdue}} Tage überfällig — {{amount}} €"
       },
       "budgetBurn": {
-        "title": "Budget {{budgetName}} fast aufgebraucht",
-        "message": "{{spentPct}}% verwendet",
-        "messageOver": "Budget überschritten ({{spentPct}}%)"
+        "title": "{{spentPct}}% des Rahmens „{{budgetName}}“ verbraucht",
+        "message": "{{spentPct}}% des Rahmens verbraucht",
+        "messageOver": "{{spentPct}}% des Rahmens verbraucht"
+      },
+      "budgetPace": {
+        "title": "Ausgaben liegen vor dem Zeitplan",
+        "message": "{{spentPct}}% des Rahmens ausgegeben, {{elapsedPct}}% des Zeitraums vergangen. Richtung prüfen oder anpassen?"
       },
       "cashflowRisk": {
         "title": "Möglicher Liquiditätsengpass",
