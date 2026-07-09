@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
 import { CATEGORIES } from '@/types/expense';
-import { getDeviationVisual } from '@/lib/deviationVisual';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -271,17 +271,21 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           <p className="text-sm text-muted-foreground">/ {formatAmount(currentPeriod.limit)}</p>
         </div>
 
-        {/* Progress bar — Smjer v1: neutralno (bg-module), bez alarm palete. */}
+        {/* Progress bar — history tab: živa paleta (kretanje kroz vrijeme) */}
         <div className="h-2.5 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-module"
+            className={cn(
+              "h-full rounded-full",
+              currentPeriod.percentage > 100 ? "bg-destructive" :
+              currentPeriod.percentage >= 80 ? "bg-warning" : "bg-primary"
+            )}
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(currentPeriod.percentage, 100)}%` }}
             transition={{ duration: 0.4 }}
           />
         </div>
 
-        {/* Comparison with previous — informativno, bez destructive tona */}
+        {/* Comparison with previous — destructive/default badge po smjeru */}
         {previousPeriod && (
           <div className="pt-2 border-t border-border/50 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
@@ -290,21 +294,19 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                 {formatAmount(previousPeriod.spent)}
               </span>
             </div>
-            {(() => {
-              const v = getDeviationVisual(spentChange);
-              return (
-                <Badge variant="secondary" className={cn("gap-1 text-xs bg-transparent", v.className)}>
-                  {spentChange > 0 ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : spentChange < 0 ? (
-                    <TrendingDown className="w-3 h-3" />
-                  ) : (
-                    <Minus className="w-3 h-3" />
-                  )}
-                  {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
-                </Badge>
-              );
-            })()}
+            <Badge
+              variant={spentChange > 5 ? 'destructive' : spentChange < -5 ? 'default' : 'secondary'}
+              className="gap-1 text-xs"
+            >
+              {spentChange > 0 ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : spentChange < 0 ? (
+                <TrendingDown className="w-3 h-3" />
+              ) : (
+                <Minus className="w-3 h-3" />
+              )}
+              {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
+            </Badge>
           </div>
         )}
       </motion.div>
@@ -332,20 +334,24 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
-                      {prevCat && Math.abs(catChange) > 5 && (() => {
-                        const v = getDeviationVisual(catChange);
-                        return (
-                          <span className={cn("text-xs font-medium", v.className)}>
-                            {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
-                          </span>
-                        );
-                      })()}
+                      {prevCat && Math.abs(catChange) > 5 && (
+                        <span className={cn(
+                          "text-xs font-medium",
+                          catChange > 0 ? "text-destructive" : "text-income"
+                        )}>
+                          {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
+                        </span>
+                      )}
                     </div>
                   </div>
                   {cat.limit > 0 && (
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all bg-module"
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          cat.percentage > 100 ? "bg-destructive" :
+                          cat.percentage >= 80 ? "bg-warning" : "bg-primary"
+                        )}
                         style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                       />
                     </div>
