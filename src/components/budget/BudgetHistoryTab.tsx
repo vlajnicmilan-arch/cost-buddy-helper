@@ -4,15 +4,16 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
+import { CATEGORIES } from '@/types/expense';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
   ArrowRight,
   Loader2,
   Calendar
@@ -39,7 +40,7 @@ interface PeriodData {
   spent: number;
   limit: number;
   percentage: number;
-  categoryBreakdown: { category: string; icon: string; spent: number; limit: number; percentage: number }[];
+  categoryBreakdown: { category: string; name: string; icon: string; spent: number; limit: number; percentage: number }[];
   transactionCount: number;
 }
 
