@@ -532,6 +532,11 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
           onDeleteCard={deleteCard}
           onUpdateCard={updateCard}
           initialData={initialData}
+          onCorrectBalance={editingSource ? () => {
+            const src = editingSource;
+            setDialogOpen(false);
+            setBalanceCorrectionSource(src);
+          } : undefined}
         />
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>
