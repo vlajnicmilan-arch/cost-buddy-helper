@@ -46,6 +46,7 @@ export const BudgetDialog = ({
   onSave,
 }: BudgetDialogProps) => {
   const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState('');
@@ -244,7 +245,7 @@ export const BudgetDialog = ({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="totalAmount">{t('budget.totalAmount', 'Ukupni iznos')} *</Label>
+              <Label htmlFor="totalAmount">{t('budget.frameLabel', 'Za ovaj period usmjeravam')} *</Label>
               <MoneyInput
                 id="totalAmount"
                 value={totalAmount}
@@ -253,6 +254,28 @@ export const BudgetDialog = ({
               />
             </div>
           </div>
+
+          {/* Neusmjereno / Preko okvira — neutralni prikaz, bez blokade */}
+          {(() => {
+            const total = parseLocaleAmount(totalAmount).value || 0;
+            const alloc = computeFrameAllocation(total, categoryLimits.map(c => Number(c.limit_amount) || 0));
+            if (total <= 0 && alloc.totalAllocated <= 0) return null;
+            return (
+              <div className="flex items-center justify-between text-sm rounded-lg border border-border/50 px-3 py-2 bg-muted/30">
+                {alloc.isOverFrame ? (
+                  <>
+                    <span className="text-muted-foreground">{t('budget.overFrame', 'Preko okvira')}</span>
+                    <span className="font-mono text-muted-foreground">{formatAmount(alloc.overFrame)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground">{t('budget.unallocated', 'Neusmjereno')}</span>
+                    <span className="font-mono text-muted-foreground">{formatAmount(alloc.unallocated)}</span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
 
           {/* Recurring toggle */}
