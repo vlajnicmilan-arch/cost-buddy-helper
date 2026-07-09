@@ -15,6 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
+import { KrugSelector, type KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 
 interface ScannedData {
   amount: number;
@@ -71,6 +72,16 @@ interface ScannedDataPreviewProps {
    * kao da edit nije zabilježen (i scan-C1 ostaje moguć).
    */
   onDateOrTimeEdited?: () => void;
+  /**
+   * WS2a — Krug entry parity. Scan preview pruža isti Krug izbor kao manual
+   * form. Selector se renderira samo kad je `showKrugSelector` true i tip
+   * transakcije nije `transfer`. Business kontekst gasi selector kroz
+   * `showKrugSelector={false}` na roditelju (AddExpenseDialog).
+   */
+  showKrugSelector?: boolean;
+  krugId?: string | null;
+  krugPrivacy?: KrugSelectorPrivacy;
+  onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy }) => void;
 }
 
 export const ScannedDataPreview = ({
@@ -96,6 +107,10 @@ export const ScannedDataPreview = ({
   onAccept,
   onReject,
   onDateOrTimeEdited,
+  showKrugSelector = false,
+  krugId = null,
+  krugPrivacy = 'personal',
+  onKrugChange,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -487,6 +502,15 @@ export const ScannedDataPreview = ({
               ))}
             </div>
           </div>
+        )}
+
+        {/* WS2a — Krug entry parity: personal-only, ne za transfer, ne u business */}
+        {showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange && (
+          <KrugSelector
+            krugId={krugId}
+            privacy={krugPrivacy}
+            onChange={onKrugChange}
+          />
         )}
 
         {/* Project / Budget selectors */}
