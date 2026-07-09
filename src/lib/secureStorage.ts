@@ -52,16 +52,32 @@ async function nativeRemove(key: string): Promise<void> {
 }
 
 export const SecureStorage = {
-  async set(key: string, value: string): Promise<StorageResult> {
+  /**
+   * @param opts.strict when true, do NOT fall back to localStorage on native
+   *   if the secure plugin fails. Use this for secrets (e.g. PIN hash).
+   */
+  async set(
+    key: string,
+    value: string,
+    opts?: { strict?: boolean },
+  ): Promise<StorageResult> {
     if (isNative) {
       const result = await nativeSet(key, value);
       if (!result.success) {
-        // Fallback to localStorage on native if plugin fails
-        try {
-          localStorage.setItem(key, value);
-          lastResult = { success: true, backend: 'localStorage', error: `native failed: ${result.error}` };
-        } catch (e: any) {
-          lastResult = { success: false, backend: 'localStorage', error: `both failed: native(${result.error}), ls(${e?.message})` };
+        if (opts?.strict) {
+          // Strict: do not touch localStorage for secrets.
+          lastResult = {
+            success: false,
+            backend: 'native',
+            error: result.error || 'secure storage unavailable',
+          };
+        } else {
+          try {
+            localStorage.setItem(key, value);
+            lastResult = { success: true, backend: 'localStorage', error: `native failed: ${result.error}` };
+          } catch (e: any) {
+            lastResult = { success: false, backend: 'localStorage', error: `both failed: native(${result.error}), ls(${e?.message})` };
+          }
         }
       } else {
         lastResult = result;
