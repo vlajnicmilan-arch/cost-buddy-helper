@@ -44,15 +44,17 @@ async function pbkdf2(
   iterations: number,
 ): Promise<Uint8Array> {
   const crypto = getCrypto();
+  const pinBytes = new TextEncoder().encode(pin);
   const key = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(pin),
+    pinBytes.buffer.slice(pinBytes.byteOffset, pinBytes.byteOffset + pinBytes.byteLength) as ArrayBuffer,
     { name: 'PBKDF2' },
     false,
     ['deriveBits'],
   );
+  const saltBuf = salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer;
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: saltBuf, iterations, hash: 'SHA-256' },
     key,
     HASH_BYTES * 8,
   );
