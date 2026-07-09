@@ -64,14 +64,14 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [rating, setRating] = useState<number | null>(null);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const diagnostics = useMemo(() => {
     if (typeof window === 'undefined') return null;
-    return {
+    const raw = {
       route: location.pathname + (location.search || ''),
       app_version: (import.meta as any).env?.VITE_APP_VERSION || 'web',
       language: i18n.language || 'hr',
@@ -80,6 +80,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
       user_agent: navigator.userAgent.slice(0, 500),
       console_tail: consoleBuffer.slice(-15),
     };
+    return sanitizeDiagnostics(raw);
   }, [location.pathname, location.search, i18n.language, open]);
 
   useEffect(() => {
