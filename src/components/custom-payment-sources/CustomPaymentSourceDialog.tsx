@@ -44,6 +44,7 @@ interface CustomPaymentSourceDialogProps {
   onDeleteCard?: (cardId: string) => Promise<void>;
   onUpdateCard?: (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
+  onCorrectBalance?: () => void;
 }
 
 export const CustomPaymentSourceDialog = ({
