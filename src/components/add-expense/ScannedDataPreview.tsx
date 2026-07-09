@@ -516,7 +516,7 @@ export const ScannedDataPreview = ({
           budgets={budgets}
           selectedBudgetId={selectedBudgetId}
           onSelectedBudgetIdChange={onSelectedBudgetIdChange}
-          showKrug={!!showKrugSelector && scannedData.transaction_type !== 'transfer' && !!onKrugChange}
+          showKrug={!!(showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange)}
           krugId={krugId}
           krugPrivacy={krugPrivacy}
           onKrugChange={onKrugChange}
