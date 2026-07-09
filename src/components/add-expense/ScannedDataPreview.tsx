@@ -107,6 +107,10 @@ export const ScannedDataPreview = ({
   onAccept,
   onReject,
   onDateOrTimeEdited,
+  showKrugSelector = false,
+  krugId = null,
+  krugPrivacy = 'personal',
+  onKrugChange,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
