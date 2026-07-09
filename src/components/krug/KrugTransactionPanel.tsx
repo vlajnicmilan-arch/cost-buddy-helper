@@ -5,10 +5,12 @@
  * ima `krug_id`. NE odlučuje o pristupu — sve odluke su zrcalo SQL-a
  * preko pure helpera u `@/lib/krugDecisions`. RPC ostaje izvor istine.
  *
- * Pokriva Wave 1 + 1.5 transakcijsku razinu:
- *   - T7: privacy switcher (personal / private / shared)
- *   - T8: A1 / A2 / A4 / A5
- *   - 1.5: A3 (autor retract), A7 (full member → personal)
+ * Semantics Lock v1 (WS1a):
+ *   - Privacy switcher nudi isključivo `personal` i `shared`.
+ *   - `private` više NIJE user-facing izbor. Legacy zapis s
+ *     `krug_privacy='private'` prikazuje se kao `personal` uz hint;
+ *     zapis se ne mijenja dok korisnik ne odabere novi izbor.
+ *   - T8: A1 / A2 / A4 / A5; 1.5: A3 (autor retract), A7 (full member → personal).
  *
  * Wizard kreiranja Kruga i prikaz po kontekstu nisu dio ovog panela.
  */
