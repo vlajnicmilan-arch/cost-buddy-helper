@@ -134,11 +134,15 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
   };
 
 
-  const handleSave = async (data: { name: string; icon: string; color: string; balance: number; description?: string }) => {
+  const handleSave = async (data: { name: string; icon: string; color: string; balance?: number; description?: string; currency?: string; business_profile_id?: string | null }) => {
     if (editingSource) {
-      await updateCustomPaymentSource(editingSource.id, data);
+      // Balance NIKAD ne ide kroz update — mijenja se preko "Korekcija salda"
+      // (set_source_anchor RPC). Guard trigger `_cps_balance_guard_before` u
+      // bazi bi ga svejedno auto-anchor-irao, ali frontend ne smije slati.
+      const { balance: _ignored, ...rest } = data;
+      await updateCustomPaymentSource(editingSource.id, rest);
     } else {
-      await addCustomPaymentSource(data);
+      await addCustomPaymentSource({ ...data, balance: data.balance ?? 0 });
     }
     setEditingSource(null);
     setInitialData(undefined);
