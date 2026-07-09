@@ -149,7 +149,34 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
 
   const unlock = async (pin: string): Promise<boolean> => {
     const storedHash = await SecureStorage.get(LOCK_PIN_KEY);
-    if (storedHash && hashPin(pin) === storedHash) {
+    if (!storedHash) return false;
+
+    if (isV2Hash(storedHash)) {
+      const ok = await verifyPinV2(pin, storedHash);
+      if (!ok) return false;
+      setIsLocked(false);
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      return true;
+    }
+
+    // Legacy migration path: compare against 32-bit hash, then transparently
+    // re-hash to v2 and persist. User never sees this.
+    if (legacyHashPin(pin) === storedHash) {
+      try {
+        const v2 = await hashPinV2(pin);
+        const strict = Capacitor.isNativePlatform();
+        const result = await SecureStorage.set(LOCK_PIN_KEY, v2, { strict });
+        if (result.success) {
+          // Clean up any stale legacy copy in localStorage on native.
+          if (strict) {
+            try { localStorage.removeItem(LOCK_PIN_KEY); } catch { /* ignore */ }
+          }
+        } else {
+          console.warn('[AppLock] v2 migration write failed', result.error);
+        }
+      } catch (err) {
+        console.warn('[AppLock] v2 migration hash failed', err);
+      }
       setIsLocked(false);
       localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
       return true;
@@ -176,11 +203,16 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setPin = async (pin: string): Promise<StorageResult> => {
-    const hashed = hashPin(pin);
-    const result = await SecureStorage.set(LOCK_PIN_KEY, hashed);
+    const hashed = await hashPinV2(pin);
+    const strict = Capacitor.isNativePlatform();
+    const result = await SecureStorage.set(LOCK_PIN_KEY, hashed, { strict });
     if (result.success) {
       setHasPinSet(true);
       localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      // On native strict path, ensure no legacy plaintext-hash copy lingers.
+      if (strict) {
+        try { localStorage.removeItem(LOCK_PIN_KEY); } catch { /* ignore */ }
+      }
     }
     return result;
   };
