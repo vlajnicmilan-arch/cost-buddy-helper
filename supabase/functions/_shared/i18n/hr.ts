@@ -105,9 +105,13 @@ export default {
   "notifications.app_update.message":
     "Verzija {{version}} je spremna. Dodirni za preuzimanje i instalaciju.",
   "notifications.budget_burn_push.title":
-    "⚠️ Budžet „{{name}}\" prekoračen!",
+    "Iskorišteno {{percentage}}% okvira „{{name}}“",
   "notifications.budget_burn_push.message":
-    "Potrošili ste {{percentage}}% budžeta ({{spent}} / {{limit}}).",
+    "Stvarno {{spent}} od {{limit}} okvira ovog perioda.",
+  "notifications.budget_pace_push.title":
+    "Trošenje je ispred tempa perioda",
+  "notifications.budget_pace_push.message":
+    "„{{name}}“: potrošeno {{spentPct}}% okvira, proteklo {{elapsedPct}}% perioda. Provjeri smjer.",
   "notifications.milestone_budget.warning.title":
     "🟡 Faza „{{name}}\" je na {{percentage}}% budžeta",
   "notifications.milestone_budget.warning.message":
