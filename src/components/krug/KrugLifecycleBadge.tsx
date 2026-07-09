@@ -1,13 +1,21 @@
 /**
  * KrugLifecycleBadge — colored status badge + optional explanatory line.
  *
- * Zaključanih 6 lifecycle stanja (vidi `krug.lifecycle.*` i18n):
+ * DB enum `krug_lifecycle_state` defines 6 values (vidi `krug.lifecycle.*` i18n):
  *  - active            → neutralan/uspjeh ton (default badge)
  *  - early_signal      → tihi warning
  *  - ugrozen           → snažan warning (amber)
  *  - continuity_window → info ton
  *  - read_only         → muted + zaključano
  *  - deleted           → destruktivan ton (rijetko prikazujemo)
+ *
+ * OPERATIVE REALITY (as of WS3 verification):
+ *  - Only `active` (DB default on INSERT) and `deleted` (deletion RPC path) are
+ *    actually written anywhere in the system.
+ *  - `early_signal`, `ugrozen`, `continuity_window`, `read_only` are reserved
+ *    enum variants with NO current writer — no trigger, RPC, cron, or client
+ *    code writes them. They exist in the schema and UI for future lifecycle
+ *    expansion, but today the backend can only produce `active` or `deleted`.
  *
  * `paused` i `terminated` NISU dio Krug lifecycle modela i ne smiju se
  * pojaviti ni kao display, ni kao fallback, ni kao enum varijanta.
