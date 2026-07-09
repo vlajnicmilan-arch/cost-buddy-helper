@@ -86,13 +86,14 @@ describe('KrugTransactionPanel — legacy `private` runtime display', () => {
     const mojeBtn = screen.getByRole('button', { name: /Moje/ });
     expect(mojeBtn).toBeInTheDocument();
     expect(mojeBtn).not.toBeDisabled();
-    // Aktivan izbor: shadcn Button variant="default" → primary background klasa.
-    // Neaktivan (`outline`) NEMA `bg-primary`, pa je ovo ne-slučajni marker aktivnosti.
-    expect(mojeBtn.className).toMatch(/\bbg-primary\b/);
+    // Aktivan izbor: shadcn Button variant="default" → `bg-module` klasa
+    // u ovom projektu (default varijanta je re-tema-rana). Neaktivan
+    // (`outline`) NEMA `bg-module`, pa je ovo ne-slučajni marker aktivnosti.
+    expect(mojeBtn.className).toMatch(/\bbg-module\b/);
 
-    // "Za Krug" MORA biti neaktivan (variant=outline → bez bg-primary).
+    // "Za Krug" MORA biti neaktivan (variant=outline → bez bg-module).
     const sharedBtn = screen.getByRole('button', { name: /Za Krug/ });
-    expect(sharedBtn.className).not.toMatch(/\bbg-primary\b/);
+    expect(sharedBtn.className).not.toMatch(/\bbg-module\b/);
 
     // Legacy hint mora biti vidljiv.
     expect(
