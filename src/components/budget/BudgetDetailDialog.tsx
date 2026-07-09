@@ -8,10 +8,10 @@ import { BudgetWithStats, BUDGET_PERIOD_LABELS } from '@/types/budget';
 import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
+import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
 import { cn } from '@/lib/utils';
 import { 
   Edit,
-  AlertTriangle,
   TrendingUp,
   TrendingDown,
   Minus,
