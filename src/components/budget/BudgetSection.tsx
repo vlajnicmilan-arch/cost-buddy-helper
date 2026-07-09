@@ -83,15 +83,15 @@ export const BudgetSection = ({
             <Target className="w-4 h-4 sm:w-5 sm:h-5 text-module-muted" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-module-muted">{t('budget.title', 'Budžeti')}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-module-muted">{t('budget.title', 'Smjer')}</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              {budgets.length} {t('budget.activeBudgets', 'aktivnih budžeta')}
+              {budgets.length} {t('budget.activeBudgets', 'aktivnih planova')}
             </p>
           </div>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)} size="sm" variant="module" className="gap-1.5">
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">{t('budget.create', 'Novi budžet')}</span>
+          <span className="hidden sm:inline">{t('budget.create', 'Novi plan smjera')}</span>
         </Button>
       </div>
 
