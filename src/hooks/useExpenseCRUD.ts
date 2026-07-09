@@ -301,11 +301,18 @@ export const useExpenseCRUD = ({
           // Krug WS1 — Semantics Lock v1: krug_id primarno; ako je privacy='shared',
           // pripadajući status započinje kao 'predlozena' (paritet s krug_set_privacy RPC).
           // CHECK constraint-ovi na tablici zahtijevaju da su shared/status polja koherentna.
-          krug_id: (normalizedExpense as any).krug_id ?? null,
-          krug_privacy: (normalizedExpense as any).krug_id
-            ? ((normalizedExpense as any).krug_privacy ?? 'personal')
-            : null,
+          // WS1e — transfer isključenje na write boundaryju: transferi ne mogu nositi Krug
+          // kontekst, bez obzira što je UI selector skriven (moglo bi zaostati iz prethodnog
+          // type-a). Autoritativno nuliramo krug_id/krug_privacy/krug_shared_status.
+          krug_id: normalizedExpense.type === 'transfer' ? null : ((normalizedExpense as any).krug_id ?? null),
+          krug_privacy:
+            normalizedExpense.type === 'transfer'
+              ? null
+              : (normalizedExpense as any).krug_id
+                ? ((normalizedExpense as any).krug_privacy ?? 'personal')
+                : null,
           krug_shared_status:
+            normalizedExpense.type !== 'transfer' &&
             (normalizedExpense as any).krug_id &&
             (normalizedExpense as any).krug_privacy === 'shared'
               ? 'predlozena'
