@@ -15,6 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
+import { KrugSelector, type KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 
 interface ScannedData {
   amount: number;
