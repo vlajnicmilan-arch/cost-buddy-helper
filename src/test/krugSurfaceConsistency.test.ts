@@ -80,3 +80,31 @@ describe('Krug pokriva expense + income, ne transfer', () => {
     expect(src).not.toMatch(/props\.type\s*===\s*['"]expense['"][\s\S]{0,120}KrugSelector/);
   });
 });
+
+describe('WS2a — Scan create surface parity with manual create', () => {
+  it('ScannedDataPreview importa i renderira KrugSelector iza triple-guard-a (show + non-transfer + onChange)', () => {
+    const src = read('src/components/add-expense/ScannedDataPreview.tsx');
+    expect(src).toMatch(/from\s+['"]@\/components\/krug\/KrugSelector['"]/);
+    // Guard mora eksplicitno isključiti transfer i zahtijevati eksplicitno onKrugChange
+    expect(src).toMatch(
+      /showKrugSelector\s*&&\s*scannedData\.transaction_type\s*!==\s*['"]transfer['"]\s*&&\s*onKrugChange/,
+    );
+  });
+
+  it('ScannedDataPreview props tipiziraju privacy kao personal | shared (bez private)', () => {
+    const src = read('src/components/add-expense/ScannedDataPreview.tsx');
+    expect(src).toMatch(/KrugSelectorPrivacy/);
+    // Ne smije se pojaviti bilo koji default ili literal 'private' za privacy u ovoj surface-i
+    expect(src).not.toMatch(/privacy['"]?\s*:\s*['"]private['"]/);
+  });
+
+  it('AddExpenseDialog prosljeđuje scan preview-u isti personal-only guard kao manual formi', () => {
+    const src = read('src/components/add-expense/AddExpenseDialog.tsx');
+    // Show flag = negacija business konteksta, kao i u manual putu
+    const matches = src.match(/showKrugSelector=\{!effectiveBusinessProfileId\}/g) ?? [];
+    // Jedan za ManualExpenseForm, jedan za ScannedDataPreview
+    expect(matches.length).toBeGreaterThanOrEqual(2);
+    // Scan accept payload šalje krug (write parity s manual)
+    expect(src).toMatch(/krug_id:\s*!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/);
+  });
+});
