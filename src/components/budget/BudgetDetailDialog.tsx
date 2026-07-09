@@ -44,11 +44,14 @@ export const BudgetDetailDialog = ({
       ? TrendingDown 
       : Minus;
 
-  const getProgressColor = (percentage: number, isOver: boolean, isWarning: boolean) => {
-    if (isOver) return 'bg-destructive';
-    if (isWarning) return 'bg-budget-warning';
-    return 'bg-primary';
-  };
+  const getProgressColor = () => 'bg-primary';
+  const alloc = computeFrameAllocation(
+    Number(budget.total_amount) || 0,
+    budget.categories.map(c => Number(c.limit_amount) || 0),
+  );
+  const totalPlanned = alloc.totalAllocated;
+  const totalSpent = budget.spent;
+  const totalDeviation = totalSpent - totalPlanned;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
