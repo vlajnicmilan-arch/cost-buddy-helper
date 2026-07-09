@@ -259,7 +259,7 @@ serve(async (req) => {
 
       if (alreadyPushedAt100) continue;
 
-      const titleVars = { name: budget.name };
+      const titleVars = { name: budget.name, percentage: percentage.toFixed(0) };
       const messageVars = {
         percentage: percentage.toFixed(0),
         spent: totalSpent.toFixed(2),
