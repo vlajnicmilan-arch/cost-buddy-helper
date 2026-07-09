@@ -2498,8 +2498,12 @@
       "message": "Version {{version}} ist bereit. Tippen Sie zum Herunterladen und Installieren."
     },
     "budget_burn_push": {
-      "title": "⚠️ Budget „{{name}}\" überschritten!",
-      "message": "Sie haben {{percentage}}% des Budgets ausgegeben ({{spent}} / {{limit}})."
+      "title": "{{percentage}}% des Rahmens „{{name}}“ verwendet",
+      "message": "Tatsächlich {{spent}} von {{limit}} Rahmen in dieser Periode."
+    },
+    "budget_pace_push": {
+      "title": "Ausgaben liegen vor dem Zeitplan",
+      "message": "„{{name}}“: {{spentPct}}% des Rahmens ausgegeben, {{elapsedPct}}% der Periode vergangen. Richtung prüfen."
     },
     "milestone_budget": {
       "warning": {
