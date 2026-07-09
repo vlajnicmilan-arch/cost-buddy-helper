@@ -2504,8 +2504,12 @@
       "message": "Verzija {{version}} je spremna. Dodirni za preuzimanje i instalaciju."
     },
     "budget_burn_push": {
-      "title": "⚠️ Budžet „{{name}}\" prekoračen!",
-      "message": "Potrošili ste {{percentage}}% budžeta ({{spent}} / {{limit}})."
+      "title": "Iskorišteno {{percentage}}% okvira „{{name}}“",
+      "message": "Stvarno {{spent}} od {{limit}} okvira ovog perioda."
+    },
+    "budget_pace_push": {
+      "title": "Trošenje je ispred tempa perioda",
+      "message": "„{{name}}“: potrošeno {{spentPct}}% okvira, proteklo {{elapsedPct}}% perioda. Provjeri smjer."
     },
     "milestone_budget": {
       "warning": {
