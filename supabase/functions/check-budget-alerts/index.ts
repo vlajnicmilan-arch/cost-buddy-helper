@@ -10,6 +10,25 @@ const corsHeaders = {
 
 const TITLE_KEY = "notifications.budget_burn_push.title";
 const MESSAGE_KEY = "notifications.budget_burn_push.message";
+const PACE_TITLE_KEY = "notifications.budget_pace_push.title";
+const PACE_MESSAGE_KEY = "notifications.budget_pace_push.message";
+
+/** Mirror of src/lib/budgetPaceSignal.ts (Deno context cannot import from src/). */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PACE_THRESHOLD_PP = 20;
+const PACE_MIN_ELAPSED_DAYS = 3;
+function computePaceGap(spent: number, total: number, startMs: number, endMs: number, nowMs: number) {
+  if (!(total > 0)) return null;
+  const totalMs = endMs - startMs;
+  if (!(totalMs > 0)) return null;
+  if (nowMs < startMs || nowMs > endMs) return null;
+  const elapsedMs = nowMs - startMs;
+  const elapsedDays = elapsedMs / DAY_MS;
+  const elapsedPct = (elapsedMs / totalMs) * 100;
+  const spentPct = (spent / total) * 100;
+  const gapPp = spentPct - elapsedPct;
+  return { elapsedDays, elapsedPct, spentPct, gapPp };
+}
 
 interface BudgetAlert {
   budget_id: string;
