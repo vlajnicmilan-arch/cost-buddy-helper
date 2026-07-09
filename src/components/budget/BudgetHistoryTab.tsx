@@ -380,7 +380,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     }}
                     formatter={(val: number, name: string) => [
                       formatAmount(val),
-                      name === 'spent' ? t('budget.spent', 'Potrošeno') : t('budget.limit', 'Limit')
+                      name === 'spent' ? t('budget.spent', 'Stvarno') : t('budget.limit', 'Okvir')
                     ]}
                   />
                   <Bar 
