@@ -33,10 +33,11 @@ async function fetchMissing(ids: string[]): Promise<void> {
           display_name: p.display_name || '',
         });
       });
-      // Mark unresolved IDs to avoid re-querying on every render.
-      missing.forEach((id) => {
-        if (!cache.has(id)) cache.set(id, { user_id: id, display_name: '' });
-      });
+      // Namjerno NE upisujemo sentinel za neriješene ID-jeve. Prije je hook
+      // cache-ao `{ display_name: '' }` za sve što RLS filtrira, pa bi kasniji
+      // fix na policyju (ili novo članstvo unutar iste sesije) ostao nevidljiv
+      // do reloada. `lastKeyRef` u hooku već sprječava burst refetch za isti
+      // skup ID-jeva; `inflight` sprječava paralelne duplikate.
     } catch (err) {
       console.warn('[useUserProfiles] fetch failed', err);
     } finally {
