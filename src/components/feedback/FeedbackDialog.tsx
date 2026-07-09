@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { sanitizeDiagnostics } from '@/lib/diagnosticsSanitizer';
 
 type FeedbackType = 'bug' | 'idea' | 'question';
 
