@@ -83,8 +83,9 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
       const nowIso = new Date().toISOString();
 
       if (isLocalMode) {
-        // Local mode: keep legacy behaviour (no anchor model on IndexedDB)
-        await updateCustomPaymentSource(sourceId, { balance: newBalance });
+        // Local mode: keep legacy behaviour (no anchor model on IndexedDB).
+        // Balance je namjerno izuzet iz cloud tipa; ovdje ide kroz `as any`.
+        await updateCustomPaymentSource(sourceId, { balance: newBalance } as any);
         if (difference !== 0) {
           await saveLocalExpense({
             amount: Math.abs(difference),
