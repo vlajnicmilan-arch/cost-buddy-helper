@@ -1680,7 +1680,8 @@
     "showOnDashboard": "Prikaži na dashboardu",
     "hiddenFromDashboard": "Sakriveno s dashboarda",
     "shownOnDashboard": "Prikazano na dashboardu",
-    "hiddenBadge": "Sakriveno"
+    "hiddenBadge": "Sakriveno",
+    "correctBalance": "Korigiraj saldo"
   },
   "incomeSources": {
     "title": "Izvori",

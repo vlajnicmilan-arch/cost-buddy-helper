@@ -1676,7 +1676,8 @@
     "showOnDashboard": "Show on dashboard",
     "hiddenFromDashboard": "Hidden from dashboard",
     "shownOnDashboard": "Shown on dashboard",
-    "hiddenBadge": "Hidden"
+    "hiddenBadge": "Hidden",
+    "correctBalance": "Correct balance"
   },
   "incomeSources": {
     "title": "Sources",

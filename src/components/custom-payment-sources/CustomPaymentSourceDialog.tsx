@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { CustomPaymentSource, PaymentSourceCard, DEFAULT_PAYMENT_ICONS, DEFAULT_PAYMENT_COLORS } from '@/types/customPaymentSource';
-import { Plus, X, CreditCard, ScanLine, Briefcase, User } from 'lucide-react';
+import { Plus, X, CreditCard, ScanLine, Briefcase, User, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CardScannerDialog } from '@/components/onboarding/CardScannerDialog';
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContext';
@@ -44,6 +44,7 @@ interface CustomPaymentSourceDialogProps {
   onDeleteCard?: (cardId: string) => Promise<void>;
   onUpdateCard?: (cardId: string, updates: Partial<Pick<PaymentSourceCard, 'card_name' | 'last_four_digits' | 'card_type'>>) => Promise<void>;
   initialData?: Partial<PaymentSourceData>;
+  onCorrectBalance?: () => void;
 }
 
 export const CustomPaymentSourceDialog = ({
@@ -55,6 +56,7 @@ export const CustomPaymentSourceDialog = ({
   onDeleteCard,
   onUpdateCard,
   initialData,
+  onCorrectBalance,
 }: CustomPaymentSourceDialogProps) => {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('💳');
@@ -281,9 +283,23 @@ export const CustomPaymentSourceDialog = ({
               )}
             </div>
             {!!source && (
-              <p className="text-xs text-muted-foreground">
-                {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs text-muted-foreground flex-1">
+                  {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
+                </p>
+                {onCorrectBalance && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onCorrectBalance}
+                    className="shrink-0"
+                  >
+                    <Wrench className="w-3.5 h-3.5 mr-1" />
+                    {t('paymentSources.correctBalance', 'Korigiraj saldo')}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
