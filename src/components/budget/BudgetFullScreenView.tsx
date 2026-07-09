@@ -331,28 +331,32 @@ export const BudgetFullScreenView = ({
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-muted-foreground">{t('budget.overallProgress')}</span>
                         <div className="flex items-center gap-2">
-                          {(budget.isOverBudget || budget.isWarning) && (
-                            <AlertTriangle className={cn(
-                              "w-5 h-5",
-                              budget.isOverBudget ? "text-destructive" : "text-warning"
-                            )} />
-                          )}
-                          <span className={cn(
-                            "text-lg font-bold",
-                            budget.isOverBudget && "text-destructive",
-                            budget.isWarning && !budget.isOverBudget && "text-warning"
-                          )}>
+                          <span className="text-lg font-bold text-foreground">
                             {budget.percentage.toFixed(1)}%
                           </span>
                         </div>
                       </div>
                       <div className="h-4 bg-muted rounded-full overflow-hidden mb-4">
                         <motion.div 
-                          className={cn("h-full rounded-full", getProgressColor(budget.percentage, budget.isOverBudget, budget.isWarning))}
+                          className={cn("h-full rounded-full", getProgressColor())}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
                           transition={{ duration: 0.5 }}
                         />
+                      </div>
+                      {/* Neusmjereno / Preko okvira — neutralno */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                        {alloc.isOverFrame ? (
+                          <>
+                            <span>{t('budget.overFrame', 'Preko okvira')}</span>
+                            <span className="font-mono">{formatAmount(alloc.overFrame)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{t('budget.unallocated', 'Neusmjereno')}</span>
+                            <span className="font-mono">{formatAmount(alloc.unallocated)}</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <div>
