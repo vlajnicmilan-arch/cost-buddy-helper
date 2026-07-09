@@ -124,12 +124,20 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
       const spent = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
 
       // Category breakdown
-      const categoryMap = new Map<string, { icon: string; spent: number; limit: number }>();
-      
+      const categoryMap = new Map<string, { icon: string; name: string; spent: number; limit: number }>();
+
+      const resolveCat = (catId: string, fallbackIcon?: string) => {
+        const sys = CATEGORIES.find(c => c.id === catId);
+        if (sys) return { name: sys.name, icon: sys.icon };
+        return { name: catId, icon: fallbackIcon || '📂' };
+      };
+
       // Initialize from budget categories
       budget.categories.forEach(cat => {
+        const info = resolveCat(cat.category, cat.icon);
         categoryMap.set(cat.category, {
-          icon: cat.icon || '📂',
+          icon: info.icon,
+          name: info.name,
           spent: 0,
           limit: cat.limit_amount,
         });
@@ -141,18 +149,20 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           if (e.category === cat.category) return true;
           return false;
         });
-        
-        const catKey = matchedCat?.category || 'Ostalo';
+
+        const catKey = matchedCat?.category || 'other';
         const existing = categoryMap.get(catKey);
         if (existing) {
           existing.spent += e.amount;
         } else {
-          categoryMap.set(catKey, { icon: '📂', spent: e.amount, limit: 0 });
+          const info = resolveCat(catKey);
+          categoryMap.set(catKey, { icon: info.icon, name: info.name, spent: e.amount, limit: 0 });
         }
       });
 
       const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, data]) => ({
         category,
+        name: data.name,
         icon: data.icon,
         spent: data.spent,
         limit: data.limit,
