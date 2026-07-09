@@ -283,9 +283,23 @@ export const CustomPaymentSourceDialog = ({
               )}
             </div>
             {!!source && (
-              <p className="text-xs text-muted-foreground">
-                {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs text-muted-foreground flex-1">
+                  {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
+                </p>
+                {onCorrectBalance && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onCorrectBalance}
+                    className="shrink-0"
+                  >
+                    <Wrench className="w-3.5 h-3.5 mr-1" />
+                    {t('paymentSources.correctBalance', 'Korigiraj saldo')}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
