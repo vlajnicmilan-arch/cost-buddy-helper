@@ -72,6 +72,16 @@ interface ScannedDataPreviewProps {
    * kao da edit nije zabilježen (i scan-C1 ostaje moguć).
    */
   onDateOrTimeEdited?: () => void;
+  /**
+   * WS2a — Krug entry parity. Scan preview pruža isti Krug izbor kao manual
+   * form. Selector se renderira samo kad je `showKrugSelector` true i tip
+   * transakcije nije `transfer`. Business kontekst gasi selector kroz
+   * `showKrugSelector={false}` na roditelju (AddExpenseDialog).
+   */
+  showKrugSelector?: boolean;
+  krugId?: string | null;
+  krugPrivacy?: KrugSelectorPrivacy;
+  onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy }) => void;
 }
 
 export const ScannedDataPreview = ({
