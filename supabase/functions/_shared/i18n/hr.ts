@@ -176,4 +176,16 @@ export default {
     "Pozivnica za dijeljeni račun",
   "notifications.invitation_sent.payment_source.message":
     "{{inviterName}} vas poziva da se pridružite računu „{{targetName}}\"",
+  "notifications.krug.member_added.title": "Dodan si u Krug",
+  "notifications.krug.member_added.message": "Postao si član novog Kruga.",
+  "notifications.krug.expense_proposed.title": "Novi prijedlog u Krugu",
+  "notifications.krug.expense_proposed.message": "Trošak čeka tvoje odobrenje.",
+  "notifications.krug.expense_confirmed.title": "Tvoj prijedlog je potvrđen",
+  "notifications.krug.expense_confirmed.message": "Član Kruga je potvrdio tvoj prijedlog.",
+  "notifications.krug.expense_rejected.title": "Tvoj prijedlog je odbijen",
+  "notifications.krug.expense_rejected.message": "Član Kruga je odbio tvoj prijedlog.",
+  "notifications.krug.deletion_requested.title": "Pokrenuto brisanje Kruga",
+  "notifications.krug.deletion_requested.message": "Vlasnik je zatražio brisanje Kruga.",
+  "notifications.krug.deleted.title": "Krug je obrisan",
+  "notifications.krug.deleted.message": "Krug u kojem si bio član je trajno uklonjen.",
 } as const;

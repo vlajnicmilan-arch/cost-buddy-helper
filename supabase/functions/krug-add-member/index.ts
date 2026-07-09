@@ -112,6 +112,22 @@ serve(async (req) => {
       return json({ error: "insert_failed", detail: insErr.message }, 200);
     }
 
+    // Fire-and-forget notification fan-out. Failure here MUST NOT roll back
+    // the membership insert — logged and swallowed.
+    try {
+      await admin.functions.invoke("notify-krug-event", {
+        body: {
+          event_type: "krug_member_added",
+          krug_id: krugId,
+          actor_id: user.id,
+          dedup_ref: `krug_member_added:${krugId}:${invitedUserId}`,
+          recipient_override: [invitedUserId],
+        },
+      });
+    } catch (e) {
+      console.error("[KRUG-ADD-MEMBER] notify dispatch failed", e);
+    }
+
     return json({ ok: true, user_id: invitedUserId, role }, 200);
   } catch (e) {
     console.error("[KRUG-ADD-MEMBER] unexpected", e);

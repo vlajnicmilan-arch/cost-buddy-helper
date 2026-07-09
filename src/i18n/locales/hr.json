@@ -2436,6 +2436,32 @@
         }
       }
     },
+    "krug": {
+      "member_added": {
+        "title": "Dodan si u Krug",
+        "message": "Postao si član novog Kruga."
+      },
+      "expense_proposed": {
+        "title": "Novi prijedlog u Krugu",
+        "message": "Trošak čeka tvoje odobrenje."
+      },
+      "expense_confirmed": {
+        "title": "Tvoj prijedlog je potvrđen",
+        "message": "Član Kruga je potvrdio tvoj prijedlog."
+      },
+      "expense_rejected": {
+        "title": "Tvoj prijedlog je odbijen",
+        "message": "Član Kruga je odbio tvoj prijedlog."
+      },
+      "deletion_requested": {
+        "title": "Pokrenuto brisanje Kruga",
+        "message": "Vlasnik je zatražio brisanje Kruga."
+      },
+      "deleted": {
+        "title": "Krug je obrisan",
+        "message": "Krug u kojem si bio član je trajno uklonjen."
+      }
+    },
     "payment_source_transaction": {
       "title": "Transakcija na računu „{{source}}\"",
       "message": {

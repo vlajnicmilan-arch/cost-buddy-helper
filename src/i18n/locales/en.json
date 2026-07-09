@@ -2430,6 +2430,32 @@
         }
       }
     },
+    "krug": {
+      "member_added": {
+        "title": "You've been added to a Krug",
+        "message": "You are now a member of a new Krug."
+      },
+      "expense_proposed": {
+        "title": "New Krug proposal",
+        "message": "A transaction is awaiting your approval."
+      },
+      "expense_confirmed": {
+        "title": "Your proposal was confirmed",
+        "message": "A Krug member confirmed your proposal."
+      },
+      "expense_rejected": {
+        "title": "Your proposal was rejected",
+        "message": "A Krug member rejected your proposal."
+      },
+      "deletion_requested": {
+        "title": "Krug deletion started",
+        "message": "The owner requested Krug deletion."
+      },
+      "deleted": {
+        "title": "Krug was deleted",
+        "message": "A Krug you were part of has been permanently removed."
+      }
+    },
     "payment_source_transaction": {
       "title": "Transaction on account „{{source}}\"",
       "message": {

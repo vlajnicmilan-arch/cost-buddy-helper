@@ -166,6 +166,21 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         fallback_route: '/install',
         highlight: null,
       };
+    // Krug Notifications MVP — svih 6 tipova vodi na /krug listu.
+    // Per-krug highlight namjerno izostavljen za MVP: /krug list još nema
+    // stabilan HighlightTarget marker po id-u, a dubinski link na obrisan
+    // Krug ionako mora spustiti korisnika na listu.
+    case 'krug_member_added':
+    case 'krug_expense_proposed':
+    case 'krug_expense_confirmed':
+    case 'krug_expense_rejected':
+    case 'krug_deletion_requested':
+    case 'krug_deleted':
+      return {
+        route: '/krug',
+        fallback_route: '/krug',
+        highlight: null,
+      };
     default:
       return { route: null, fallback_route: null, highlight: null };
   }

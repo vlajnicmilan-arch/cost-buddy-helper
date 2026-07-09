@@ -2256,6 +2256,7 @@ export type Database = {
           initiated_at: string
           initiated_by: string
           krug_id: string
+          member_snapshot: string[] | null
           reason: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -2265,6 +2266,7 @@ export type Database = {
           initiated_at?: string
           initiated_by: string
           krug_id: string
+          member_snapshot?: string[] | null
           reason?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -2274,6 +2276,7 @@ export type Database = {
           initiated_at?: string
           initiated_by?: string
           krug_id?: string
+          member_snapshot?: string[] | null
           reason?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -2694,6 +2697,7 @@ export type Database = {
           family_override_push: boolean
           family_reactions_push: boolean
           id: string
+          krug_enabled: boolean
           participant_digest_enabled: boolean
           participant_digest_hour: number
           pending_enabled: boolean
@@ -2718,6 +2722,7 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          krug_enabled?: boolean
           participant_digest_enabled?: boolean
           participant_digest_hour?: number
           pending_enabled?: boolean
@@ -2742,6 +2747,7 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          krug_enabled?: boolean
           participant_digest_enabled?: boolean
           participant_digest_hour?: number
           pending_enabled?: boolean
@@ -5499,6 +5505,18 @@ export type Database = {
       }
       krug_cancel_deletion: { Args: { p_krug_id: string }; Returns: Json }
       krug_cleanup_act_dedup: { Args: never; Returns: Json }
+      krug_emit_notification: {
+        Args: {
+          p_actor_id: string
+          p_dedup_ref?: string
+          p_deletion_request_id?: string
+          p_event_type: string
+          p_expense_id?: string
+          p_krug_id: string
+          p_recipient_override?: string[]
+        }
+        Returns: undefined
+      }
       krug_expire_predlozena: { Args: never; Returns: Json }
       krug_govern_to_personal: {
         Args: { p_client_request_id: string; p_expense_id: string }
@@ -5515,6 +5533,14 @@ export type Database = {
       krug_is_owner: {
         Args: { _krug: string; _user: string }
         Returns: boolean
+      }
+      krug_notify_all_members: {
+        Args: { p_krug_id: string }
+        Returns: string[]
+      }
+      krug_notify_full_members: {
+        Args: { p_krug_id: string }
+        Returns: string[]
       }
       krug_purge_deleted: {
         Args: { p_older_than_days?: number }
