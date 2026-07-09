@@ -259,9 +259,9 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
         className="p-4 rounded-xl bg-card border border-border space-y-3"
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{t('budget.spent', 'Potrošeno')}</span>
+          <span className="text-sm text-muted-foreground">{t('budget.spent', 'Stvarno')}</span>
           <span className="text-sm text-muted-foreground">
-            {currentPeriod.percentage.toFixed(0)}% {t('budget.ofBudget', 'budžeta')}
+            {currentPeriod.percentage.toFixed(0)}% {t('budget.ofFrame', 'okvira')}
           </span>
         </div>
         
@@ -270,33 +270,26 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
           <p className="text-sm text-muted-foreground">/ {formatAmount(currentPeriod.limit)}</p>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar — Smjer v1: neutralno (bg-module), bez alarm palete. */}
         <div className="h-2.5 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className={cn(
-              "h-full rounded-full",
-              currentPeriod.percentage > 100 ? "bg-destructive" :
-              currentPeriod.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
-            )}
+            className="h-full rounded-full bg-module"
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(currentPeriod.percentage, 100)}%` }}
             transition={{ duration: 0.4 }}
           />
         </div>
 
-        {/* Comparison with previous */}
+        {/* Comparison with previous — informativno, bez destructive tona */}
         {previousPeriod && (
           <div className="pt-2 border-t border-border/50 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">vs {previousPeriod.label}:</span>
+              <span className="text-muted-foreground">{t('budget.vsPrevPeriod', 'u odnosu na prošli period')} ({previousPeriod.label}):</span>
               <span className="font-medium text-muted-foreground">
                 {formatAmount(previousPeriod.spent)}
               </span>
             </div>
-            <Badge
-              variant={spentChange > 5 ? 'destructive' : spentChange < -5 ? 'default' : 'secondary'}
-              className="gap-1 text-xs"
-            >
+            <Badge variant="secondary" className="gap-1 text-xs">
               {spentChange > 0 ? (
                 <TrendingUp className="w-3 h-3" />
               ) : spentChange < 0 ? (
