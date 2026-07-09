@@ -47,9 +47,17 @@ describe('notify-krug-event actor exclusion is event-aware', () => {
     );
   });
 
-  it('has no unconditional recipients.delete(actor_id) call', () => {
-    // Regex tolerates whitespace/comments but forbids a bare statement.
-    const bare = /^\s*recipients\.delete\(actor_id\);\s*$/m;
-    expect(SRC).not.toMatch(bare);
+  it('does not have an unconditional actor_id delete outside the event-type guard', () => {
+    // Count total delete calls vs guarded ones — they must match, meaning
+    // every delete is inside the `event_type !== "krug_deleted"` branch.
+    const total = (SRC.match(/recipients\.delete\(actor_id\)/g) ?? []).length;
+    const guarded = (
+      SRC.match(
+        /if\s*\(\s*event_type\s*!==\s*"krug_deleted"\s*\)\s*\{\s*recipients\.delete\(actor_id\);\s*\}/g,
+      ) ?? []
+    ).length;
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBe(guarded);
   });
+
 });
