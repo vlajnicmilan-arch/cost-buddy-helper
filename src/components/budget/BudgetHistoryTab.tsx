@@ -322,15 +322,12 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{cat.icon}</span>
-                      <span className="text-sm font-medium">{cat.category}</span>
+                      <span className="text-sm font-medium">{cat.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
                       {prevCat && Math.abs(catChange) > 5 && (
-                        <span className={cn(
-                          "text-xs font-medium",
-                          catChange > 0 ? "text-destructive" : "text-income"
-                        )}>
+                        <span className="text-xs font-medium text-muted-foreground">
                           {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
                         </span>
                       )}
@@ -339,11 +336,7 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                   {cat.limit > 0 && (
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          cat.percentage > 100 ? "bg-destructive" :
-                          cat.percentage >= 80 ? "bg-budget-warning" : "bg-primary"
-                        )}
+                        className="h-full rounded-full transition-all bg-module"
                         style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                       />
                     </div>
