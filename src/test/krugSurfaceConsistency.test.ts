@@ -36,6 +36,16 @@ describe('Krug UI: private is not a user-facing option (Semantics Lock v1)', () 
     const editor = read('src/components/EditTransactionDialog.tsx');
     expect(editor).toMatch(/legacyPrivate/);
   });
+
+  it('WS1b: legacy private prikazuje personal kao aktivan i dopušta migraciju klikom', () => {
+    const panel = read('src/components/krug/KrugTransactionPanel.tsx');
+    // Aktivnost NE smije više biti gated iza !isLegacyPrivate — legacy zapis
+    // mora vizualno prikazati `personal` kao aktivan izbor.
+    expect(panel).not.toMatch(/active\s*=\s*!isLegacyPrivate\s*&&/);
+    // Mora postojati izuzeće koje dopušta klik na aktivan `personal` gumb
+    // isključivo za legacy `private` (migracijski put).
+    expect(panel).toMatch(/isMigrationTarget\s*=\s*isLegacyPrivate\s*&&\s*opt\.key\s*===\s*['"]personal['"]/);
+  });
 });
 
 describe('Krug entry surface guards', () => {
