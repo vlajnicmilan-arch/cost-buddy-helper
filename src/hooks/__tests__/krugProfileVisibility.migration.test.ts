@@ -16,7 +16,7 @@ import { resolve } from 'node:path';
 
 const MIGRATION = resolve(
   __dirname,
-  '../../supabase/migrations/20260709201107_e164e7f2-4705-4cc9-b86f-4d67d20bc0cf.sql',
+  '../../../supabase/migrations/20260709201107_e164e7f2-4705-4cc9-b86f-4d67d20bc0cf.sql',
 );
 const SRC = readFileSync(MIGRATION, 'utf8');
 
