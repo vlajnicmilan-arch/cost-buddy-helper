@@ -2348,7 +2348,13 @@
     "viewerNote": "Ihre Transaktionen erfordern die Genehmigung des Plan-Eigentümers",
     "checkDirectionCta": "Richtung prüfen",
     "history": "Verlauf",
-    "transactions": "Transaktionen"
+    "transactions": "Transaktionen",
+    "ofFrame": "des Rahmens",
+    "limit": "Rahmen",
+    "noHistory": "Keine historischen Daten",
+    "categoryComparison": "Vergleich nach Richtungen",
+    "spendingOverTime": "Verlauf über die Zeit",
+    "vsPrevPeriod": "vs. Vorperiode"
   },
   "projectStatus": {
     "draft": "Entwurf",
