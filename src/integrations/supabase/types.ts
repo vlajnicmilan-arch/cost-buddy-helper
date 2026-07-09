@@ -5535,6 +5535,10 @@ export type Database = {
         }
         Returns: Json
       }
+      krug_shares_krug_with: {
+        Args: { _target: string; _viewer: string }
+        Returns: boolean
+      }
       krug_vote_deletion: {
         Args: { p_approve: boolean; p_krug_id: string }
         Returns: Json
