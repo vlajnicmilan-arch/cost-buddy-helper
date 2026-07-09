@@ -997,6 +997,12 @@ export const useExpenseCRUD = ({
             // pa redovi idu kao `bank_only`. Kasniji bank sync može upgrade-ati
             // u `confirmed` ako match-a po amount/date/payment_source.
             bank_match_status: 'bank_only',
+            // WS5 — Krug scope note: CSV/PDF import rows intentionally do NOT carry
+            // krug_id / krug_privacy / krug_shared_status. Adding Krug support here is
+            // not a simple "add two fields" change; it requires resolving the target Krug,
+            // privacy level, author attribution, and batch semantics for bank-statement
+            // rows, plus alignment with the `bank_only` match status. Kept out of scope
+            // deliberately.
           }));
 
         // Upsert with ignoreDuplicates: rows with a fingerprint that already
