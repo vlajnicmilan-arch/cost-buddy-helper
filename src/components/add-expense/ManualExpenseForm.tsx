@@ -397,9 +397,9 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               Vidljivost pojedinog chipa se poštuje kroz show* propove;
               underlying handleri i guardovi ostaju netaknuti. */}
           {(
+            (props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange) ||
             (projectsModuleEnabled && props.projects.length > 0) ||
-            (props.type === 'expense' && props.budgets.length > 0) ||
-            (props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange)
+            (props.type === 'expense' && props.budgets.length > 0)
           ) && (
             <AttachmentBar
               showProject={projectsModuleEnabled && props.projects.length > 0}
