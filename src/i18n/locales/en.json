@@ -5057,7 +5057,8 @@
     "notFoundBody": "It may have been deleted or you no longer have access. Go back to the Krug list.",
     "transaction": {
       "title": "Krug",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "legacyPrivateHint": "This record was originally marked \"Hidden from Krug\". In the new version it's shown as \"Mine\". Pick an option to migrate it."
     },
     "privacy": {
       "personal": "Mine",
