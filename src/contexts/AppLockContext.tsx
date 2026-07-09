@@ -39,16 +39,8 @@ export const useAppLock = () => {
   return ctx;
 };
 
-// Hash PIN for storage
-const hashPin = (pin: string): string => {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return 'pin_' + Math.abs(hash).toString(36);
-};
+// Legacy hash re-exported from pinCrypto for one-shot migration only.
+// New PIN writes always use v2 (PBKDF2-SHA256, 210k iterations, random salt).
 
 export const AppLockProvider = ({ children }: { children: ReactNode }) => {
   const [isLocked, setIsLocked] = useState(false);
