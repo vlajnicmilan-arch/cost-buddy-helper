@@ -19,6 +19,7 @@ import { TransactionItem } from '@/components/TransactionItem';
 import { useExpenses } from '@/hooks/useExpenses';
 import { BudgetHistoryTab } from './BudgetHistoryTab';
 import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
+import { getDeviationVisual } from '@/lib/deviationVisual';
 import { 
   X,
   Edit,
@@ -32,7 +33,8 @@ import {
   Check,
   Receipt,
   Loader2,
-  History
+  History,
+  ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -444,8 +446,13 @@ export const BudgetFullScreenView = ({
                                   <p className="font-mono">
                                     {(() => {
                                       const dev = cat.spent - cat.limit_amount;
-                                      const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
-                                      return `${sign}${formatAmount(Math.abs(dev))}`;
+                                      const v = getDeviationVisual(dev);
+                                      return (
+                                        <span className={cn("inline-flex items-center gap-0.5", v.className)}>
+                                          {v.showUpArrow && <ArrowUp className="w-3.5 h-3.5" />}
+                                          <span>{v.sign}{formatAmount(Math.abs(dev))}</span>
+                                        </span>
+                                      );
                                     })()}
                                   </p>
                                 </div>
@@ -470,8 +477,13 @@ export const BudgetFullScreenView = ({
                                   {(() => {
                                     const planned = budget.categories.reduce((s, c) => s + (Number(c.limit_amount) || 0), 0);
                                     const dev = budget.spent - planned;
-                                    const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
-                                    return `${sign}${formatAmount(Math.abs(dev))}`;
+                                    const v = getDeviationVisual(dev);
+                                    return (
+                                      <span className={cn("inline-flex items-center gap-0.5", v.className)}>
+                                        {v.showUpArrow && <ArrowUp className="w-3.5 h-3.5" />}
+                                        <span>{v.sign}{formatAmount(Math.abs(dev))}</span>
+                                      </span>
+                                    );
                                   })()}
                                 </p>
                               </div>

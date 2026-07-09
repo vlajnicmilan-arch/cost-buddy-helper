@@ -9,6 +9,7 @@ import { useBudgetMembers } from '@/hooks/useBudgetMembers';
 import { BudgetMembersTab } from './BudgetMembersTab';
 import { getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
+import { getDeviationVisual } from '@/lib/deviationVisual';
 import { cn } from '@/lib/utils';
 import { 
   Edit,
@@ -16,6 +17,7 @@ import {
   TrendingDown,
   Minus,
   BarChart3,
+  ArrowUp,
   Users
 } from 'lucide-react';
 
@@ -237,8 +239,13 @@ export const BudgetDetailDialog = ({
                           <p className="font-mono">
                             {(() => {
                               const dev = cat.spent - cat.limit_amount;
-                              const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
-                              return `${sign}${formatAmount(Math.abs(dev))}`;
+                              const v = getDeviationVisual(dev);
+                              return (
+                                <span className={cn("inline-flex items-center gap-0.5", v.className)}>
+                                  {v.showUpArrow && <ArrowUp className="w-3 h-3" />}
+                                  <span>{v.sign}{formatAmount(Math.abs(dev))}</span>
+                                </span>
+                              );
                             })()}
                           </p>
                         </div>
@@ -262,8 +269,13 @@ export const BudgetDetailDialog = ({
                         <p className="text-muted-foreground">{t('budget.deviation', 'Odstupanje')}</p>
                         <p className="font-mono font-semibold">
                           {(() => {
-                            const sign = totalDeviation > 0 ? '+' : totalDeviation < 0 ? '−' : '±';
-                            return `${sign}${formatAmount(Math.abs(totalDeviation))}`;
+                            const v = getDeviationVisual(totalDeviation);
+                            return (
+                              <span className={cn("inline-flex items-center gap-0.5", v.className)}>
+                                {v.showUpArrow && <ArrowUp className="w-3 h-3" />}
+                                <span>{v.sign}{formatAmount(Math.abs(totalDeviation))}</span>
+                              </span>
+                            );
                           })()}
                         </p>
                       </div>

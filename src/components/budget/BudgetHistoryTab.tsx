@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { BudgetWithStats } from '@/types/budget';
 import { Expense } from '@/types/expense';
 import { CATEGORIES } from '@/types/expense';
+import { getDeviationVisual } from '@/lib/deviationVisual';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -289,16 +290,21 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                 {formatAmount(previousPeriod.spent)}
               </span>
             </div>
-            <Badge variant="secondary" className="gap-1 text-xs">
-              {spentChange > 0 ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : spentChange < 0 ? (
-                <TrendingDown className="w-3 h-3" />
-              ) : (
-                <Minus className="w-3 h-3" />
-              )}
-              {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
-            </Badge>
+            {(() => {
+              const v = getDeviationVisual(spentChange);
+              return (
+                <Badge variant="secondary" className={cn("gap-1 text-xs bg-transparent", v.className)}>
+                  {spentChange > 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : spentChange < 0 ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                  {spentChange > 0 ? '+' : ''}{spentChange.toFixed(0)}%
+                </Badge>
+              );
+            })()}
           </div>
         )}
       </motion.div>
@@ -326,11 +332,14 @@ export const BudgetHistoryTab = ({ budget }: BudgetHistoryTabProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono font-medium">{formatAmount(cat.spent)}</span>
-                      {prevCat && Math.abs(catChange) > 5 && (
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
-                        </span>
-                      )}
+                      {prevCat && Math.abs(catChange) > 5 && (() => {
+                        const v = getDeviationVisual(catChange);
+                        return (
+                          <span className={cn("text-xs font-medium", v.className)}>
+                            {catChange > 0 ? '↑' : '↓'}{Math.abs(catChange).toFixed(0)}%
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                   {cat.limit > 0 && (
