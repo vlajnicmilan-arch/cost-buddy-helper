@@ -504,6 +504,15 @@ export const ScannedDataPreview = ({
           </div>
         )}
 
+        {/* WS2a — Krug entry parity: personal-only, ne za transfer, ne u business */}
+        {showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange && (
+          <KrugSelector
+            krugId={krugId}
+            privacy={krugPrivacy}
+            onChange={onKrugChange}
+          />
+        )}
+
         {/* Project / Budget selectors */}
         <div className="space-y-2">
           <span className="text-muted-foreground text-sm flex items-center gap-1">
