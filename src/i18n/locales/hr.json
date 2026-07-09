@@ -5088,7 +5088,28 @@
       "A3": "Vrati na osobno",
       "A4": "Povuci prijedlog",
       "A5": "Predloži ponovo",
-      "A7": "Prebaci na osobno"
+      "A7": "Prebaci na osobno",
+      "success": {
+        "A1": "Trošak je potvrđen.",
+        "A2": "Trošak je odbijen.",
+        "A4": "Prijedlog je povučen.",
+        "A5": "Prijedlog je vraćen na odlučivanje.",
+        "noop": "Već je u tom stanju.",
+        "generic": "Spremljeno."
+      },
+      "error": {
+        "unauthenticated": "Prijava je istekla. Prijavi se ponovo.",
+        "invalid_act": "Nepoznata akcija.",
+        "missing_client_request_id": "Interna greška: nedostaje ID zahtjeva.",
+        "not_found": "Trošak više ne postoji.",
+        "not_in_shared_flow": "Trošak nije u zajedničkom toku Kruga.",
+        "author_cannot_govern": "Autor troška ne može sam odlučivati o njemu.",
+        "not_full_member": "Nemaš pravo odluke u ovom Krugu.",
+        "not_author": "Samo autor troška može ovo napraviti.",
+        "wrong_state": "Trošak više nije u stanju koje dozvoljava ovu akciju. Osvježi popis.",
+        "unknown": "Nepoznata greška. Pokušaj ponovo.",
+        "network": "Trenutno nije moguće odraditi akciju. Provjeri vezu i pokušaj ponovo."
+      }
     },
     "member": {
       "you": "ti",

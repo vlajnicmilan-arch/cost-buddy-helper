@@ -5079,7 +5079,28 @@
       "A3": "Auf persönlich zurücksetzen",
       "A4": "Vorschlag zurückziehen",
       "A5": "Erneut vorschlagen",
-      "A7": "Auf persönlich umschalten"
+      "A7": "Auf persönlich umschalten",
+      "success": {
+        "A1": "Ausgabe bestätigt.",
+        "A2": "Ausgabe abgelehnt.",
+        "A4": "Vorschlag zurückgezogen.",
+        "A5": "Vorschlag zur Entscheidung zurückgestellt.",
+        "noop": "Bereits in diesem Zustand.",
+        "generic": "Gespeichert."
+      },
+      "error": {
+        "unauthenticated": "Sitzung abgelaufen. Bitte erneut anmelden.",
+        "invalid_act": "Unbekannte Aktion.",
+        "missing_client_request_id": "Interner Fehler: Anfrage-ID fehlt.",
+        "not_found": "Diese Ausgabe existiert nicht mehr.",
+        "not_in_shared_flow": "Diese Ausgabe ist nicht im geteilten Krug-Fluss.",
+        "author_cannot_govern": "Der Autor einer Ausgabe kann nicht selbst darüber entscheiden.",
+        "not_full_member": "Du hast in diesem Krug kein Entscheidungsrecht.",
+        "not_author": "Nur der Autor dieser Ausgabe kann das tun.",
+        "wrong_state": "Diese Ausgabe ist nicht mehr in einem Zustand, der diese Aktion erlaubt. Liste aktualisieren.",
+        "unknown": "Unbekannter Fehler. Bitte erneut versuchen.",
+        "network": "Aktion aktuell nicht möglich. Verbindung prüfen und erneut versuchen."
+      }
     },
     "member": {
       "you": "du",
