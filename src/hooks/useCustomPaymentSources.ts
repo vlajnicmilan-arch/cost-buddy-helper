@@ -364,7 +364,15 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     }
   };
 
-  const updateCustomPaymentSource = async (id: string, updates: Partial<Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at'>>) => {
+  // NOTE: `balance` je namjerno izuzet iz dopuštenog Partial tipa. Saldo se
+  // mijenja isključivo kroz "Korekcija salda" (set_source_anchor RPC). Sirov
+  // UPDATE balance kolone prije Faze B tiho je pregazio korisničku korekciju
+  // pri sljedećem recomputeu. DB guard trigger `_cps_balance_guard_before`
+  // sada auto-anchor-ira takav write, ali klijent svejedno ne smije slati.
+  const updateCustomPaymentSource = async (
+    id: string,
+    updates: Partial<Omit<CustomPaymentSource, 'id' | 'user_id' | 'created_at' | 'balance'>>
+  ) => {
     if (isLocalMode) {
       const updated = customPaymentSources.map(src =>
         src.id === id ? { ...src, ...updates, updated_at: new Date().toISOString() } : src
@@ -377,9 +385,12 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
 
     try {
       const { cards, ...sourceData } = updates;
+      // Defensive: strip balance if it sneaked in via `as any` at call site.
+      const safeData = { ...sourceData } as Record<string, unknown>;
+      delete safeData.balance;
       const { error } = await supabase
         .from('custom_payment_sources' as any)
-        .update(sourceData)
+        .update(safeData)
         .eq('id', id);
 
       if (error) throw error;

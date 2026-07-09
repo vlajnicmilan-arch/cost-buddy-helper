@@ -27,7 +27,8 @@ interface PaymentSourceData {
   name: string;
   icon: string;
   color: string;
-  balance: number;
+  // Optional: u edit modu se namjerno NE šalje (mijenja se preko "Korekcija salda").
+  balance?: number;
   currency?: string;
   description?: string;
   business_profile_id?: string | null;
@@ -119,15 +120,25 @@ export const CustomPaymentSourceDialog = ({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ 
-        name: name.trim(), 
-        icon, 
-        color, 
-        balance: parseLocaleAmount(balance).value || 0,
+      const isEdit = !!source;
+      // U edit modu balance se NIKAD ne šalje kroz updateCustomPaymentSource —
+      // saldo se mijenja isključivo kroz "Korekcija salda" (set_source_anchor RPC).
+      // Sirov write balance-a pregazi sidro i sljedeći recompute vrati staru
+      // vrijednost. Vidi guard trigger `_cps_balance_guard_before`.
+      const payload: PaymentSourceData = {
+        name: name.trim(),
+        icon,
+        color,
+        balance: isEdit ? (source!.balance || 0) : (parseLocaleAmount(balance).value || 0),
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined,
         business_profile_id: businessProfileId,
-      });
+      };
+      if (isEdit) {
+        // Ukloni balance da payload prosljeđen `updateCustomPaymentSource` ne dira kolonu.
+        delete (payload as Partial<PaymentSourceData>).balance;
+      }
+      await onSave(payload);
 
       // Handle cards for existing sources
       if (source && onAddCard && onDeleteCard) {
@@ -248,6 +259,8 @@ export const CustomPaymentSourceDialog = ({
                 placeholder="0,00"
                 className="font-mono flex-1"
                 allowNegative
+                disabled={!!source}
+                readOnly={!!source}
               />
               {multiCurrencyEnabled && (
                 <Select value={sourceCurrency} onValueChange={(v) => setSourceCurrency(v as CurrencyCode)}>
@@ -267,6 +280,11 @@ export const CustomPaymentSourceDialog = ({
                 </Select>
               )}
             </div>
+            {!!source && (
+              <p className="text-xs text-muted-foreground">
+                {t('paymentSources.balanceEditHint', 'Saldo se mijenja isključivo preko "Korekcija salda" — sirovi upis bi pregazio sidro.')}
+              </p>
+            )}
           </div>
 
           {/* Description */}

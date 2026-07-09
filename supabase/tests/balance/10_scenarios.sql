@@ -1658,6 +1658,246 @@ BEGIN
 END $$;
 RELEASE SAVEPOINT s_p24;
 
+-- ============================================================
+-- G — Faza B guard trigger: auto-anchor za sirov UPDATE balance-a
+-- (`_cps_balance_guard_before` + `_cps_balance_guard_after`).
+-- ============================================================
+
+-- G1 — vanjski UPDATE balance → sidro postavljeno na now/NEW.balance +
+--      audit correction red postoji + naknadni recompute NE mijenja saldo.
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_g1;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+-- Baseline: postavi sidro (staro) + jedan post-anchor income koji bi u
+-- recompute-u dao 500 + 100 = 600. Petrov obrazac.
+SELECT pg_temp.set_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00', 500);
+SELECT pg_temp.mk_expense('income', 100,
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-05 00:00:00+00');
+SELECT pg_temp.assert_eq('G1 baseline (anchor 500 + income 100)', 600,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- Simuliraj vanjski raw UPDATE balance na 840 (Petrov iznos).
+-- Bez markera `app.balance_writer='engine'` → guard mora auto-anchor-irati.
+UPDATE public.custom_payment_sources
+   SET balance = 840
+ WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+
+-- Stored = 840 (audit red doprinos = 0 jer je correction).
+SELECT pg_temp.assert_eq('G1 stored after raw UPDATE = new balance', 840,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- Sidro pomaknuto na NEW.balance.
+DO $$
+DECLARE v_anch numeric;
+BEGIN
+  SELECT correction_anchor_balance INTO v_anch
+    FROM public.custom_payment_sources
+    WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+  IF v_anch <> 840 THEN
+    RAISE EXCEPTION 'FAIL G1 anchor_balance — expected=840, actual=%', v_anch;
+  END IF;
+  RAISE NOTICE 'PASS G1 anchor_balance pomaknut na NEW.balance (840)';
+END $$;
+
+-- Audit correction red postoji s razlikom 840-600=240 (income).
+DO $$
+DECLARE v_cnt int; v_amt numeric; v_type text;
+BEGIN
+  SELECT count(*), max(amount), max(type)
+    INTO v_cnt, v_amt, v_type
+    FROM public.expenses
+   WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+     AND expense_nature = 'correction'
+     AND note LIKE 'auto_balance_correction:%';
+  IF v_cnt <> 1 THEN
+    RAISE EXCEPTION 'FAIL G1 audit row count — expected=1, actual=%', v_cnt;
+  END IF;
+  IF v_amt <> 240 THEN
+    RAISE EXCEPTION 'FAIL G1 audit row amount — expected=240, actual=%', v_amt;
+  END IF;
+  IF v_type <> 'income' THEN
+    RAISE EXCEPTION 'FAIL G1 audit row type — expected=income, actual=%', v_type;
+  END IF;
+  RAISE NOTICE 'PASS G1 audit correction row (income 240)';
+END $$;
+
+-- Naknadni recompute NE mijenja saldo — anchor+post-anchor (correction excl.) = 840.
+SELECT public.recompute_custom_source_balance(
+  (SELECT val FROM _bfix WHERE key='src_a'));
+SELECT pg_temp.assert_eq('G1 post-recompute balance stabilan', 840,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_g1;
+
+
+-- G2 — engine recompute write ne pomiče sidro. Idempotentnost provjere.
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_g2;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+SELECT pg_temp.set_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00', 200);
+SELECT pg_temp.mk_expense('expense', 50,
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-03 00:00:00+00');
+SELECT pg_temp.assert_eq('G2 baseline 200-50=150', 150,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- Ponovi eksplicitni recompute (engine writer) — sidro ostaje '2026-06-01', bal=150.
+SELECT public.recompute_custom_source_balance(
+  (SELECT val FROM _bfix WHERE key='src_a'));
+DO $$
+DECLARE v_date timestamptz;
+BEGIN
+  SELECT correction_anchor_date INTO v_date
+    FROM public.custom_payment_sources
+    WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+  IF v_date <> '2026-06-01 09:00:00+00'::timestamptz THEN
+    RAISE EXCEPTION 'FAIL G2 engine write pomaknuo sidro — expected=2026-06-01, actual=%', v_date;
+  END IF;
+  RAISE NOTICE 'PASS G2 engine recompute ne dira sidro';
+END $$;
+
+-- Nema novog audit reda (engine marker sprječava AFTER guard INSERT).
+DO $$
+DECLARE v_cnt int;
+BEGIN
+  SELECT count(*) INTO v_cnt
+    FROM public.expenses
+   WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+     AND expense_nature = 'correction'
+     AND note LIKE 'auto_balance_correction:%';
+  IF v_cnt <> 0 THEN
+    RAISE EXCEPTION 'FAIL G2 auto audit red se pojavio kod engine write-a — count=%', v_cnt;
+  END IF;
+  RAISE NOTICE 'PASS G2 engine write ne generira audit red';
+END $$;
+RELEASE SAVEPOINT s_g2;
+
+
+-- G3 — set_source_anchor RPC regresija (P-scenario, ekvivalent A4).
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_g3;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+SELECT pg_temp.mk_expense('expense', 100,
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-05 00:00:00+00');
+SET LOCAL "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
+SELECT public.set_source_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00'::timestamptz,
+  500::numeric,
+  jsonb_build_object('amount', 30, 'description', 'Korekcija salda — G3')
+);
+-- Stored = anchor(500) + post-anchor(-100) = 400. Audit correction (30, C1) je
+-- excluded iz post-anchor sume.
+SELECT pg_temp.assert_eq('G3 RPC stored = anchor + post-anchor sum', 400,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- RPC audit red je expense_nature='correction' s opisom iz payloada.
+DO $$
+DECLARE v_cnt int; v_desc text;
+BEGIN
+  SELECT count(*), max(description) INTO v_cnt, v_desc
+    FROM public.expenses
+   WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+     AND expense_nature = 'correction'
+     AND description LIKE 'Korekcija salda%';
+  IF v_cnt <> 1 THEN
+    RAISE EXCEPTION 'FAIL G3 RPC correction red count=%', v_cnt;
+  END IF;
+  RAISE NOTICE 'PASS G3 RPC audit correction (% ) OK', v_desc;
+END $$;
+
+-- Auto-korekcija (guard) NIJE se pokrenula — RPC ide kroz engine marker.
+DO $$
+DECLARE v_cnt int;
+BEGIN
+  SELECT count(*) INTO v_cnt
+    FROM public.expenses
+   WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+     AND note LIKE 'auto_balance_correction:%';
+  IF v_cnt <> 0 THEN
+    RAISE EXCEPTION 'FAIL G3 guard fired protiv RPC-a — count=%', v_cnt;
+  END IF;
+  RAISE NOTICE 'PASS G3 guard NE reagira na set_source_anchor';
+END $$;
+RELEASE SAVEPOINT s_g3;
+
+
+-- G4 — delta=0 (UPDATE balance = OLD.balance) → guard skip, nema sidra ni reda.
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_g4;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+-- Ostavi bez sidra. balance=0.
+UPDATE public.custom_payment_sources
+   SET balance = 0
+ WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+DO $$
+DECLARE v_date timestamptz; v_cnt int;
+BEGIN
+  SELECT correction_anchor_date INTO v_date
+    FROM public.custom_payment_sources
+    WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+  IF v_date IS NOT NULL THEN
+    RAISE EXCEPTION 'FAIL G4 delta=0 pomaknuo sidro na %', v_date;
+  END IF;
+  SELECT count(*) INTO v_cnt FROM public.expenses
+   WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+     AND note LIKE 'auto_balance_correction:%';
+  IF v_cnt <> 0 THEN
+    RAISE EXCEPTION 'FAIL G4 delta=0 stvorio audit red — count=%', v_cnt;
+  END IF;
+  RAISE NOTICE 'PASS G4 delta=0 → guard skip (bez sidra, bez reda)';
+END $$;
+RELEASE SAVEPOINT s_g4;
+
+
+-- G5 — simulacija Petrovog obrasca: raw UPDATE (legacy korekcija) pa
+--      soft-delete jednog reda. Saldo mora OSTATI na korigiranoj vrijednosti,
+--      minus/plus doprinos obrisanog reda (ako je bio prije novog sidra) ILI
+--      minus doprinos ako je bio poslije. Ovdje: obriši red PRIJE novog sidra
+--      → sidro ga ionako ne broji → saldo ostaje na 840.
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_g5;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('hybrid');
+SELECT pg_temp.set_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-05-10 09:00:00+00', 169.10);
+-- Nekoliko starih redova PRIJE Petrove korekcije.
+DO $$
+DECLARE v_e uuid;
+BEGIN
+  v_e := pg_temp.mk_expense('income', 1,
+    (SELECT val FROM _bfix WHERE key='src_a'),
+    '2026-07-07 21:33:32+00', '2026-07-07 21:33:55+00', 'C2');
+  PERFORM pg_temp.mk_expense('expense', 7.70,
+    (SELECT val FROM _bfix WHERE key='src_a'),
+    '2026-07-06 00:00:00+00');
+END $$;
+
+-- Legacy raw korekcija: klijent postavi 840. Guard mora auto-anchor-irati.
+UPDATE public.custom_payment_sources
+   SET balance = 840
+ WHERE id = (SELECT val FROM _bfix WHERE key='src_a');
+SELECT pg_temp.assert_eq('G5 nakon legacy korekcije = 840', 840,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+
+-- Soft-delete +1 income reda koji je sad PRIJE novog sidra → recompute
+-- (koji radi trigger) ne vidi ga → saldo ostaje 840.
+UPDATE public.expenses
+   SET deleted_at = now()
+ WHERE payment_source = 'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text
+   AND type = 'income'
+   AND amount = 1
+   AND expense_nature IS DISTINCT FROM 'correction';
+SELECT pg_temp.assert_eq('G5 soft-delete post-legacy NE pregazi korigiran saldo', 840,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_g5;
+
+
 -- Always roll back the harness transaction.
 ROLLBACK;
 
