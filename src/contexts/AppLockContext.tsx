@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, createContext, useContext, ReactNode 
 import { SecureStorage, type StorageResult } from '@/lib/secureStorage';
 import { Capacitor } from '@capacitor/core';
 import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
+import { hashPinV2, verifyPinV2, isV2Hash, legacyHashPin } from '@/lib/pinCrypto';
 
 const LOCK_PIN_KEY = 'app_lock_pin';
 const LOCK_ENABLED_KEY = 'app_lock_enabled';
