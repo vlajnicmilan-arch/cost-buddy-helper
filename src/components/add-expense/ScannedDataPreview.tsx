@@ -505,63 +505,24 @@ export const ScannedDataPreview = ({
           </div>
         )}
 
-        {/* WS2a — Krug entry parity: personal-only, ne za transfer, ne u business */}
-        {showKrugSelector && scannedData.transaction_type !== 'transfer' && onKrugChange && (
-          <KrugSelector
-            krugId={krugId}
-            privacy={krugPrivacy}
-            onChange={onKrugChange}
-          />
-        )}
+        {/* Attachment bar: Projekt / Budžet / Krug — parity s ManualExpenseForm.
+            Scan surface zadržava mutual-exclusion između projekta i budžeta. */}
+        <AttachmentBar
+          showProject={(projects?.length ?? 0) > 0}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onSelectedProjectIdChange={onSelectedProjectIdChange}
+          showBudget={(budgets?.length ?? 0) > 0}
+          budgets={budgets}
+          selectedBudgetId={selectedBudgetId}
+          onSelectedBudgetIdChange={onSelectedBudgetIdChange}
+          showKrug={!!showKrugSelector && scannedData.transaction_type !== 'transfer' && !!onKrugChange}
+          krugId={krugId}
+          krugPrivacy={krugPrivacy}
+          onKrugChange={onKrugChange}
+          mutuallyExclusiveProjectBudget
+        />
 
-        {/* Project / Budget selectors */}
-        <div className="space-y-2">
-          <span className="text-muted-foreground text-sm flex items-center gap-1">
-            <FolderKanban className="w-3 h-3" />
-            {t('transactions.project', 'Projekt')}:
-          </span>
-          <Select
-            value={selectedProjectId || 'none'}
-            onValueChange={(value) => {
-              onSelectedProjectIdChange(value === 'none' ? null : value);
-              if (value !== 'none') onSelectedBudgetIdChange(null);
-            }}
-          >
-            <SelectTrigger className="w-full rounded-lg">
-              <SelectValue placeholder={t('transactions.noProject', 'Bez projekta')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t('transactions.noProject', 'Bez projekta')}</SelectItem>
-              {projects?.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <span className="text-muted-foreground text-sm flex items-center gap-1">
-            <PiggyBank className="w-3 h-3" />
-            {t('transactions.budget', 'Budžet')}:
-          </span>
-          <Select
-            value={selectedBudgetId || 'none'}
-            onValueChange={(value) => {
-              onSelectedBudgetIdChange(value === 'none' ? null : value);
-              if (value !== 'none') onSelectedProjectIdChange(null);
-            }}
-          >
-            <SelectTrigger className="w-full rounded-lg">
-              <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t('transactions.noBudget', 'Bez budžeta')}</SelectItem>
-              {budgets?.map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
         {(selectedProjectId || selectedBudgetId) && (
           <div className="space-y-2">
