@@ -420,29 +420,64 @@ export const BudgetFullScreenView = ({
                                   <span className="font-medium">{cat.category === '__budget_manual_assigned__' ? t('budget.manualAssigned') : cat.category}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {(cat.isOverBudget || cat.isWarning) && (
-                                    <AlertTriangle className={cn(
-                                      "w-4 h-4",
-                                      cat.isOverBudget ? "text-destructive" : "text-warning"
-                                    )} />
-                                  )}
                                   <span className="font-medium">{cat.percentage.toFixed(0)}%</span>
                                 </div>
                               </div>
                               <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
                                 <div 
-                                  className={cn("h-full rounded-full", getProgressColor(cat.percentage, cat.isOverBudget, cat.isWarning))}
+                                  className={cn("h-full rounded-full bg-primary")}
                                   style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                                 />
                               </div>
-                              <div className="flex justify-between text-sm text-muted-foreground">
-                                <span>{formatAmount(cat.spent)} / {formatAmount(cat.limit_amount)}</span>
-                                <span className={cat.remaining < 0 ? "text-destructive" : ""}>
-                                  {cat.remaining < 0 ? '-' : ''}{formatAmount(Math.abs(cat.remaining))} {t('budget.left')}
-                                </span>
+                              {/* Planirano / Stvarno / Odstupanje — neutralno */}
+                              <div className="grid grid-cols-3 gap-2 text-sm">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">{t('budget.planned', 'Planirano')}</p>
+                                  <p className="font-mono">{formatAmount(cat.limit_amount)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">{t('budget.actualLabel', 'Stvarno')}</p>
+                                  <p className="font-mono">{formatAmount(cat.spent)}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-muted-foreground">{t('budget.deviation', 'Odstupanje')}</p>
+                                  <p className="font-mono">
+                                    {(() => {
+                                      const dev = cat.spent - cat.limit_amount;
+                                      const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
+                                      return `${sign}${formatAmount(Math.abs(dev))}`;
+                                    })()}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           ))}
+
+                          {/* Ukupni red */}
+                          <div className="p-4 rounded-xl border border-border/50 bg-muted/40">
+                            <div className="grid grid-cols-3 gap-2 text-sm">
+                              <div>
+                                <p className="text-xs text-muted-foreground">{t('budget.totalRow', 'Ukupno')} · {t('budget.planned', 'Planirano')}</p>
+                                <p className="font-mono font-semibold">{formatAmount(budget.categories.reduce((s, c) => s + (Number(c.limit_amount) || 0), 0))}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">{t('budget.actualLabel', 'Stvarno')}</p>
+                                <p className="font-mono font-semibold">{formatAmount(budget.spent)}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground">{t('budget.deviation', 'Odstupanje')}</p>
+                                <p className="font-mono font-semibold">
+                                  {(() => {
+                                    const planned = budget.categories.reduce((s, c) => s + (Number(c.limit_amount) || 0), 0);
+                                    const dev = budget.spent - planned;
+                                    const sign = dev > 0 ? '+' : dev < 0 ? '−' : '±';
+                                    return `${sign}${formatAmount(Math.abs(dev))}`;
+                                  })()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                         </div>
                       </div>
                     )}
