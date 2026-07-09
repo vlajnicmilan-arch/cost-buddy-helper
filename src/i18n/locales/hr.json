@@ -29,9 +29,13 @@
         "message": "Kasni {{daysOverdue}} dana — {{amount}} €"
       },
       "budgetBurn": {
-        "title": "Budžet {{budgetName}} pri kraju",
-        "message": "Iskorišteno {{spentPct}}%",
-        "messageOver": "Premašen budžet ({{spentPct}}%)"
+        "title": "Iskorišteno {{spentPct}}% okvira „{{budgetName}}“",
+        "message": "Iskorišteno {{spentPct}}% okvira",
+        "messageOver": "Iskorišteno {{spentPct}}% okvira"
+      },
+      "budgetPace": {
+        "title": "Trošenje je ispred tempa perioda",
+        "message": "Potrošeno {{spentPct}}% okvira, proteklo {{elapsedPct}}% perioda. Želiš li provjeriti ili prilagoditi smjer?"
       },
       "cashflowRisk": {
         "title": "Mogući manjak gotovine",
