@@ -301,11 +301,18 @@ export const useExpenseCRUD = ({
           // Krug WS1 — Semantics Lock v1: krug_id primarno; ako je privacy='shared',
           // pripadajući status započinje kao 'predlozena' (paritet s krug_set_privacy RPC).
           // CHECK constraint-ovi na tablici zahtijevaju da su shared/status polja koherentna.
-          krug_id: (normalizedExpense as any).krug_id ?? null,
-          krug_privacy: (normalizedExpense as any).krug_id
-            ? ((normalizedExpense as any).krug_privacy ?? 'personal')
-            : null,
+          // WS1e — transfer isključenje na write boundaryju: transferi ne mogu nositi Krug
+          // kontekst, bez obzira što je UI selector skriven (moglo bi zaostati iz prethodnog
+          // type-a). Autoritativno nuliramo krug_id/krug_privacy/krug_shared_status.
+          krug_id: normalizedExpense.type === 'transfer' ? null : ((normalizedExpense as any).krug_id ?? null),
+          krug_privacy:
+            normalizedExpense.type === 'transfer'
+              ? null
+              : (normalizedExpense as any).krug_id
+                ? ((normalizedExpense as any).krug_privacy ?? 'personal')
+                : null,
           krug_shared_status:
+            normalizedExpense.type !== 'transfer' &&
             (normalizedExpense as any).krug_id &&
             (normalizedExpense as any).krug_privacy === 'shared'
               ? 'predlozena'
@@ -540,10 +547,15 @@ export const useExpenseCRUD = ({
         // Krug WS1 — derive coherent (krug_id, krug_privacy, krug_shared_status).
         // Semantics Lock v1: krug_id primarno; caller (EditTransactionDialog) proslijedi
         // krug_privacy koji uključuje legacy 'private' preservation.
-        const nextKrugId = (expense as any).krug_id ?? null;
-        const nextKrugPrivacy = nextKrugId
-          ? ((expense as any).krug_privacy ?? 'personal')
-          : null;
+        // WS1e — transfer isključenje na write boundaryju: transferi ne mogu nositi Krug
+        // kontekst, čak i ako je zapis prethodno bio expense/income s postavljenim Krug-om.
+        const isTransfer = expense.type === 'transfer';
+        const nextKrugId = isTransfer ? null : ((expense as any).krug_id ?? null);
+        const nextKrugPrivacy = isTransfer
+          ? null
+          : nextKrugId
+            ? ((expense as any).krug_privacy ?? 'personal')
+            : null;
         // Ako je prije bio shared i ostaje shared, zadrži postojeći status (potvrdjena/nepotvrdjena/predlozena).
         // Ako novi ulazak u shared → 'predlozena' (paritet s krug_set_privacy RPC).
         // Sve ostalo → null (CHECK: nonshared_status_null).
@@ -551,7 +563,7 @@ export const useExpenseCRUD = ({
         const prevKrugPrivacy = (oldExpense as any)?.krug_privacy ?? null;
         const prevKrugStatus = (oldExpense as any)?.krug_shared_status ?? null;
         let nextKrugStatus: 'predlozena' | 'potvrdjena' | 'nepotvrdjena' | null = null;
-        if (nextKrugId && nextKrugPrivacy === 'shared') {
+        if (!isTransfer && nextKrugId && nextKrugPrivacy === 'shared') {
           nextKrugStatus =
             prevKrugId === nextKrugId && prevKrugPrivacy === 'shared' && prevKrugStatus
               ? prevKrugStatus
