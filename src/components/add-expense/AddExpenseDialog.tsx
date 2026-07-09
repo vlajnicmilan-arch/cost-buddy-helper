@@ -1207,6 +1207,10 @@ export const AddExpenseDialog = ({
                 onAccept={acceptScannedData}
                 onReject={rejectScannedData}
                 onDateOrTimeEdited={() => { userEditedDateOrTimeRef.current = true; }}
+                showKrugSelector={!effectiveBusinessProfileId}
+                krugId={krugId}
+                krugPrivacy={krugPrivacy}
+                onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
               />
             </div>
           )}
