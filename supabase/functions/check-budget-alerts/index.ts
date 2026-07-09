@@ -10,6 +10,25 @@ const corsHeaders = {
 
 const TITLE_KEY = "notifications.budget_burn_push.title";
 const MESSAGE_KEY = "notifications.budget_burn_push.message";
+const PACE_TITLE_KEY = "notifications.budget_pace_push.title";
+const PACE_MESSAGE_KEY = "notifications.budget_pace_push.message";
+
+/** Mirror of src/lib/budgetPaceSignal.ts (Deno context cannot import from src/). */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PACE_THRESHOLD_PP = 20;
+const PACE_MIN_ELAPSED_DAYS = 3;
+function computePaceGap(spent: number, total: number, startMs: number, endMs: number, nowMs: number) {
+  if (!(total > 0)) return null;
+  const totalMs = endMs - startMs;
+  if (!(totalMs > 0)) return null;
+  if (nowMs < startMs || nowMs > endMs) return null;
+  const elapsedMs = nowMs - startMs;
+  const elapsedDays = elapsedMs / DAY_MS;
+  const elapsedPct = (elapsedMs / totalMs) * 100;
+  const spentPct = (spent / total) * 100;
+  const gapPp = spentPct - elapsedPct;
+  return { elapsedDays, elapsedPct, spentPct, gapPp };
+}
 
 interface BudgetAlert {
   budget_id: string;
@@ -137,9 +156,83 @@ serve(async (req) => {
 
       const percentage = (totalSpent / totalLimit) * 100;
 
-      // In-app notifications (bell) are owned by useIssueReconciler / detectBudgetBurn
-      // to avoid duplicate entries for the same budget. This function only sends
-      // a push notification, and only for the critical threshold (100%).
+      // ── PACE SIGNAL (v1) ──────────────────────────────────────────────────
+      // Independent of absolute 85/100% burn thresholds. Fires when spending is
+      // ahead of the linear period pace by ≥20pp, but only from day 3 onwards
+      // and only once per crossing (dedup: existing type='budget_pace' notification
+      // in this period).
+      const pace = computePaceGap(
+        totalSpent,
+        totalLimit,
+        startDate.getTime(),
+        endDate.getTime(),
+        now.getTime(),
+      );
+      if (
+        pace &&
+        pace.elapsedDays >= PACE_MIN_ELAPSED_DAYS &&
+        pace.gapPp >= PACE_THRESHOLD_PP
+      ) {
+        // Dedup within period
+        const { data: existingPace } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("type", "budget_pace")
+          .gte("created_at", startDate.toISOString())
+          .filter("data->>budget_id", "eq", budget.id)
+          .limit(1);
+        if (!existingPace || existingPace.length === 0) {
+          const paceTitleVars = { name: budget.name };
+          const paceMessageVars = {
+            name: budget.name,
+            spentPct: pace.spentPct.toFixed(0),
+            elapsedPct: pace.elapsedPct.toFixed(0),
+          };
+          // In-app bell entry (dedup ledger + user-visible notification).
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            type: "budget_pace",
+            title: translate("hr", PACE_TITLE_KEY, paceTitleVars),
+            message: translate("hr", PACE_MESSAGE_KEY, paceMessageVars),
+            data: {
+              budget_id: budget.id,
+              budget_name: budget.name,
+              spent_pct: Math.round(pace.spentPct),
+              elapsed_pct: Math.round(pace.elapsedPct),
+              gap_pp: Math.round(pace.gapPp),
+              type: "budget_pace",
+              category: "budgets",
+              route: `/budgets?id=${budget.id}`,
+              fallback_route: "/budgets",
+              highlight: { type: "budget", id: budget.id },
+              i18n_title_key: PACE_TITLE_KEY,
+              i18n_body_key: PACE_MESSAGE_KEY,
+              title_vars: paceTitleVars,
+              message_vars: paceMessageVars,
+            },
+          });
+          // Push
+          await sendPushNotification({
+            user_id: userId,
+            title: translate("hr", PACE_TITLE_KEY, paceTitleVars),
+            body: translate("hr", PACE_MESSAGE_KEY, paceMessageVars),
+            data: {
+              budget_id: budget.id,
+              type: "budget_pace",
+              category: "budgets",
+              i18n_title_key: PACE_TITLE_KEY,
+              i18n_body_key: PACE_MESSAGE_KEY,
+              title_vars: paceTitleVars,
+              message_vars: paceMessageVars,
+            },
+            source: "check-budget-alerts",
+          });
+        }
+      }
+
+      // ── ABSOLUTE 100% BURN (push only; in-app owned by reconciler) ────────
+      // Neutral copy — see notifications.budget_burn_push (updated to smjer language).
       if (percentage < 100) continue;
 
 
@@ -166,7 +259,7 @@ serve(async (req) => {
 
       if (alreadyPushedAt100) continue;
 
-      const titleVars = { name: budget.name };
+      const titleVars = { name: budget.name, percentage: percentage.toFixed(0) };
       const messageVars = {
         percentage: percentage.toFixed(0),
         spent: totalSpent.toFixed(2),

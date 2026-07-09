@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  AlertTriangle, 
   TrendingUp, 
   TrendingDown, 
   Minus,
@@ -56,34 +55,13 @@ export const BudgetCard = ({
       ? TrendingDown 
       : Minus;
 
-  const getProgressColor = () => {
-    if (budget.isOverBudget) return 'bg-destructive';
-    if (budget.isWarning) return 'bg-budget-warning';
-    return 'bg-module';
-  };
+  // Smjer v1: neutralna vizualizacija — bez crvene/žute alarm palete.
+  // Progress bar uvijek u boji plana; status badge samo iznosi postotak
+  // ili "Preko okvira" (neutralno), bez destructive tona.
+  const getProgressColor = () => 'bg-module';
 
-  const getBudgetStatus = () => {
-    if (budget.isOverBudget) return 'overBudget';
-    if (budget.isWarning) return 'warning';
-    return 'active';
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'warning': return 'outline';
-      case 'overBudget': return 'destructive';
-      default: return 'outline';
-    }
-  };
-
-  const budgetStatus = getBudgetStatus();
-
-  const getBorderColor = () => {
-    if (budget.isOverBudget) return 'hsl(var(--destructive))';
-    if (budget.isWarning) return 'hsl(var(--warning))';
-    return budgetColor;
-  };
+  const budgetStatus = budget.isOverBudget ? 'overBudget' : 'active';
+  const getBorderColor = () => budgetColor;
 
   const getCategoryDisplay = (categoryId: string) => {
     const catInfo = CATEGORIES.find(c => c.id === categoryId);
@@ -135,8 +113,10 @@ export const BudgetCard = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-semibold text-base sm:text-lg truncate text-[hsl(258_90%_66%)]">{budget.name}</h3>
-                <Badge variant={getStatusBadgeVariant(budgetStatus)} className="text-xs shrink-0">
-                  {t(`budget.status.${budgetStatus}`)}
+                <Badge variant={budgetStatus === 'overBudget' ? 'outline' : 'default'} className="text-xs shrink-0">
+                  {budgetStatus === 'overBudget'
+                    ? t('budget.status.overBudget', 'Preko okvira')
+                    : t('budget.nearLimit', { percent: budget.percentage.toFixed(0), defaultValue: 'Iskorišteno {{percent}}% okvira' })}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -159,17 +139,8 @@ export const BudgetCard = ({
             </div>
           </div>
 
-          {/* Status indicators */}
+          {/* Status indicators — neutralno (bez alarm palete) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {(budget.isOverBudget || budget.isWarning) && (
-              <div className={cn(
-                "p-1.5 rounded-md",
-                budget.isOverBudget ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
-              )}>
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-            )}
-
             {budget.trend && budget.trend !== 'stable' && (
               <div className={cn(
                 "p-1.5 rounded-md",
@@ -185,15 +156,12 @@ export const BudgetCard = ({
         {/* Progress section */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{t('budget.spent', 'Potrošeno')}</span>
-            <span className={cn(
-              "font-mono font-semibold",
-              budget.isOverBudget ? "text-destructive" : "text-foreground"
-            )}>
+            <span className="text-muted-foreground">{t('budget.spent', 'Stvarno')}</span>
+            <span className="font-mono font-semibold text-foreground">
               {formatAmount(budget.total_amount - budget.remaining)} / {formatAmount(budget.total_amount)}
             </span>
           </div>
-          
+
           <div className="h-2.5 bg-muted rounded-full overflow-hidden">
             <motion.div
               className={cn("h-full rounded-full", getProgressColor())}
@@ -204,20 +172,14 @@ export const BudgetCard = ({
           </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{budget.percentage.toFixed(0)}% {t('budget.used', 'iskorišteno')}</span>
-            <span className={cn(
-              "font-medium",
-              budget.isOverBudget ? "text-destructive" : "text-primary"
-            )}>
-              {formatAmount(budget.remaining)} {t('budget.remaining', 'preostalo')}
+            <span>{budget.percentage.toFixed(0)}% {t('budget.used', 'iskorišteno okvira')}</span>
+            <span className="font-medium">
+              {budget.remaining < 0
+                ? `${t('budget.overFrame', 'Preko okvira')}: ${formatAmount(Math.abs(budget.remaining))}`
+                : `${formatAmount(budget.remaining)} ${t('budget.remaining', 'preostalo od okvira')}`}
             </span>
           </div>
 
-          {budget.isWarning && !budget.isOverBudget && (
-            <p className="text-xs text-budget-warning font-medium mt-1">
-              {t('budget.nearLimit', { percent: budget.percentage.toFixed(0) })}
-            </p>
-          )}
 
           {/* Show original categories */}
           {uniqueOriginalCategories.length > 0 && (

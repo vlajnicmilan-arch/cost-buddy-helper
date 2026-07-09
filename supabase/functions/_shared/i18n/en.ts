@@ -105,9 +105,13 @@ export default {
   "notifications.app_update.message":
     "Version {{version}} is ready. Tap to download and install it.",
   "notifications.budget_burn_push.title":
-    "⚠️ Budget „{{name}}\" exceeded!",
+    "{{percentage}}% of frame „{{name}}“ used",
   "notifications.budget_burn_push.message":
-    "You've spent {{percentage}}% of your budget ({{spent}} / {{limit}}).",
+    "Actual {{spent}} of {{limit}} frame this period.",
+  "notifications.budget_pace_push.title":
+    "Spending is ahead of the period pace",
+  "notifications.budget_pace_push.message":
+    "„{{name}}“: {{spentPct}}% of frame spent, {{elapsedPct}}% of period elapsed. Check the direction.",
   "notifications.milestone_budget.warning.title":
     "🟡 Phase „{{name}}\" is at {{percentage}}% of budget",
   "notifications.milestone_budget.warning.message":
