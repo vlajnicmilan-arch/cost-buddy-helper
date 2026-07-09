@@ -1725,7 +1725,7 @@ BEGIN
 END $$;
 
 -- Naknadni recompute NE mijenja saldo — anchor+post-anchor (correction excl.) = 840.
-PERFORM public.recompute_custom_source_balance(
+SELECT public.recompute_custom_source_balance(
   (SELECT val FROM _bfix WHERE key='src_a'));
 SELECT pg_temp.assert_eq('G1 post-recompute balance stabilan', 840,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
@@ -1746,7 +1746,7 @@ SELECT pg_temp.assert_eq('G2 baseline 200-50=150', 150,
   pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
 
 -- Ponovi eksplicitni recompute (engine writer) — sidro ostaje '2026-06-01', bal=150.
-PERFORM public.recompute_custom_source_balance(
+SELECT public.recompute_custom_source_balance(
   (SELECT val FROM _bfix WHERE key='src_a'));
 DO $$
 DECLARE v_date timestamptz;
