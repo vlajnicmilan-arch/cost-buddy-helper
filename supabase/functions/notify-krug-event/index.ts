@@ -26,9 +26,13 @@
 //     `is_push_category_enabled(user_id, 'krug')`. The push side also runs the
 //     same check as a defense-in-depth pass.
 //
-// verify_jwt = false: called only from trusted server-side sources
-// (edge fn `krug-add-member`, RPC-backed `net.http_post`). Uses service role
-// key internally and RLS is bypassed for reads/writes it performs.
+// verify_jwt = false at the platform edge, but the function enforces a
+// stronger internal auth guard: the incoming `Authorization: Bearer <token>`
+// MUST equal SUPABASE_SERVICE_ROLE_KEY (constant-time compare). Only trusted
+// server-side callers hold that key — the DB (`net.http_post` reads it from
+// vault) and the `krug-add-member` edge fn (admin client forwards it via
+// functions.invoke). Any other caller is rejected 401 before any work runs.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -74,12 +78,38 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Constant-time string compare to avoid timing side-channels on the shared
+// secret used for internal auth.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // ---- Internal-auth guard ----
+  // notify-krug-event is a privileged writer (service_role client, push
+  // dispatch, recipient_override). It must not be publicly callable. All
+  // legitimate callers (RPC via net.http_post using the vault-stored service
+  // role key, `krug-add-member` edge fn via functions.invoke with the admin
+  // client) present the service_role key as their Bearer token. Anything else
+  // is rejected 401 before any work is done.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const presented = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : "";
+  if (!SERVICE_KEY || !presented || !timingSafeEqual(presented, SERVICE_KEY)) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
 
   let payload: Payload;
   try {
@@ -125,12 +155,20 @@ Deno.serve(async (req) => {
     for (const r of members ?? []) if (isUuid(r.user_id)) recipients.add(r.user_id);
   }
 
-  // Actor is excluded for events where the actor is the source of the event;
-  // for confirmed/rejected the recipient IS the author, but caller (RPC)
-  // already scopes recipient_override to [author], so this exclusion is a
-  // no-op in that path. For member_added the subject is the recipient, not
-  // the actor — same, no-op. Keep the rule blanket for safety.
-  recipients.delete(actor_id);
+  // Actor exclusion is event-aware, not blanket.
+  // - member_added: subject is a fresh recipient; actor exclusion is a no-op.
+  // - expense_proposed: authored by actor, so actor must not receive.
+  // - expense_confirmed / expense_rejected: caller already scopes
+  //   recipient_override to [author]; exclusion would still be a safe no-op,
+  //   but we apply it to defend the resolver path.
+  // - deletion_requested: initiator should NOT be notified back.
+  // - deleted: fan-out MUST go to every snapshot member, including the
+  //   initiator. Do NOT drop actor here — the canonical plan requires the
+  //   initiator to receive the terminal "deleted" event.
+  if (event_type !== "krug_deleted") {
+    recipients.delete(actor_id);
+  }
+
 
   if (recipients.size === 0) {
     return json({ ok: true, delivered: 0, reason: "no_recipients" });
