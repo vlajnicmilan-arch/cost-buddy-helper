@@ -18,6 +18,8 @@ export type KrugMembershipRow = Database['public']['Tables']['krug_membership'][
 export type KrugMembershipRole = Database['public']['Enums']['krug_membership_role'];
 export type KrugPreset = Database['public']['Enums']['krug_preset'];
 export type KrugLifecycleState = Database['public']['Enums']['krug_lifecycle_state'];
+// WS3 verified: only `active` (DB default) and `deleted` (deletion RPCs) are
+// actually written; the other four enum variants are currently reserved.
 
 const STALE = 5 * 60 * 1000;
 
