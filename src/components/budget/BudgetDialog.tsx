@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { showError } from '@/hooks/useStatusFeedback';
+import { computeFrameAllocation } from '@/lib/budgetPaceSignal';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface BudgetDialogProps {
   budget?: BudgetWithStats | null;
