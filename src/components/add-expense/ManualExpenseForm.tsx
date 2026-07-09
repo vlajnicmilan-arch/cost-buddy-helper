@@ -20,7 +20,7 @@ import { QuickAddCategoryInline } from './QuickAddCategoryInline';
 import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
-import { KrugSelector } from '@/components/krug/KrugSelector';
+import { AttachmentBar } from './AttachmentBar';
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -393,87 +393,30 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             />
           )}
 
-          {/* Project Assignment */}
-          {/* Project Assignment — Faza 1 modularnog UI-a: gated by Projects modul */}
-          {projectsModuleEnabled && props.projects.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <FolderKanban className="w-4 h-4" />
-                {t('transactions.assignToProject')}
-              </Label>
-              <Select 
-                value={props.selectedProjectId || 'none'} 
-                onValueChange={(v) => props.onSelectedProjectIdChange(v === 'none' ? null : v)}
-              >
-                <SelectTrigger className="h-12 rounded-xl bg-background">
-                  <SelectValue placeholder={t('transactions.noProject')} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">{t('transactions.noProject')}</span>
-                  </SelectItem>
-                  {props.projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: (project.color || '#3b82f6') + '20', color: project.color || '#3b82f6' }}
-                        >
-                          {project.icon || '📁'}
-                        </span>
-                        <span>{project.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Budget Assignment */}
-          {props.type === 'expense' && props.budgets.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <PiggyBank className="w-4 h-4" />
-                {t('transactions.assignToBudget', 'Pridruži budžetu')}
-              </Label>
-              <Select 
-                value={props.selectedBudgetId || 'none'} 
-                onValueChange={(v) => props.onSelectedBudgetIdChange(v === 'none' ? null : v)}
-              >
-                <SelectTrigger className="h-12 rounded-xl bg-background">
-                  <SelectValue placeholder={t('transactions.noBudget', 'Bez budžeta')} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">{t('transactions.noBudget', 'Bez budžeta')}</span>
-                  </SelectItem>
-                  {props.budgets.filter(b => b.is_active).map((budget) => (
-                    <SelectItem key={budget.id} value={budget.id}>
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-5 h-5 rounded flex items-center justify-center text-xs"
-                          style={{ backgroundColor: (budget.color || '#3b82f6') + '20', color: budget.color || '#3b82f6' }}
-                        >
-                          {budget.icon || '💰'}
-                        </span>
-                        <span>{budget.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Krug — WS1. Personal-only kontekst; roditelj postavlja showKrugSelector=false u business modu. */}
-          {props.showKrugSelector && props.type !== 'transfer' && props.onKrugChange && (
-            <KrugSelector
+          {/* Attachment bar: Projekt / Budžet / Krug — kompaktni chipovi.
+              Vidljivost pojedinog chipa se poštuje kroz show* propove;
+              underlying handleri i guardovi ostaju netaknuti. */}
+          {(
+            (props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange) ||
+            (projectsModuleEnabled && props.projects.length > 0) ||
+            (props.type === 'expense' && props.budgets.length > 0)
+          ) && (
+            <AttachmentBar
+              showProject={projectsModuleEnabled && props.projects.length > 0}
+              projects={props.projects}
+              selectedProjectId={props.selectedProjectId}
+              onSelectedProjectIdChange={props.onSelectedProjectIdChange}
+              showBudget={props.type === 'expense' && props.budgets.length > 0}
+              budgets={props.budgets}
+              selectedBudgetId={props.selectedBudgetId}
+              onSelectedBudgetIdChange={props.onSelectedBudgetIdChange}
+              showKrug={!!props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange}
               krugId={props.krugId ?? null}
-              privacy={props.krugPrivacy ?? 'personal'}
-              onChange={props.onKrugChange}
+              krugPrivacy={props.krugPrivacy ?? 'personal'}
+              onKrugChange={props.onKrugChange}
             />
           )}
+
 
 
           {/* Expense Nature */}
