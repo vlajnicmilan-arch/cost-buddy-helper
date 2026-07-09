@@ -1024,6 +1024,12 @@ export const AddExpenseDialog = ({
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
+        // WS2b — Krug parity za installment create granu. Isti guard kao u manual/scan
+        // putu: personal-only, transfer je već isključen (this branch = non-transfer),
+        // `private` nije izbor. Krug se veže na inicijalni expense zapis; plan rata
+        // ostaje bez vlastite Krug semantike (nema novog modela).
+        krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
+        krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
       };
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
       resetForm();

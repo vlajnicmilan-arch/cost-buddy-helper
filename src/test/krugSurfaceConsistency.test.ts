@@ -108,3 +108,30 @@ describe('WS2a — Scan create surface parity with manual create', () => {
     expect(src).toMatch(/krug_id:\s*!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/);
   });
 });
+
+describe('WS2b — Installment create path parity with manual create', () => {
+  it('AddExpenseDialog installment grana veže krug_id i krug_privacy istim guard-om kao manual/scan put', () => {
+    const src = read('src/components/add-expense/AddExpenseDialog.tsx');
+    // Occurrences moraju postojati barem 3 puta: manual newExpense, scan accept, installment grana.
+    const krugIdWrites = src.match(/krug_id:\s*!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/g) ?? [];
+    expect(krugIdWrites.length).toBeGreaterThanOrEqual(3);
+    const krugPrivacyWrites = src.match(/krug_privacy:\s*!effectiveBusinessProfileId\s*&&\s*krugId\s*\?\s*krugPrivacy\s*:\s*null/g) ?? [];
+    expect(krugPrivacyWrites.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('Installment grana ostaje unutar non-transfer guard-a (transfer se ne installmentira)', () => {
+    const src = read('src/components/add-expense/AddExpenseDialog.tsx');
+    // Ulaz u installment granu je gated iza `isInstallment && type !== 'transfer'`.
+    expect(src).toMatch(/isInstallment\s*&&\s*type\s*!==\s*['"]transfer['"]/);
+  });
+
+  it('Installment plan payload ne uvodi novu Krug semantiku (nema krug_id na createInstallmentPlan args)', () => {
+    const src = read('src/components/add-expense/AddExpenseDialog.tsx');
+    const call = src.match(/createInstallmentPlan\(\{[\s\S]*?\}\);/);
+    expect(call, 'createInstallmentPlan call not found').toBeTruthy();
+    // Krug ne živi na planu — samo na inicijalnom expense zapisu. Minimalni model.
+    expect(call![0]).not.toMatch(/krug_id/);
+    expect(call![0]).not.toMatch(/krug_privacy/);
+  });
+});
+
