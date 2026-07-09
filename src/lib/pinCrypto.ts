@@ -44,17 +44,23 @@ async function pbkdf2(
   iterations: number,
 ): Promise<Uint8Array> {
   const crypto = getCrypto();
-  const pinBytes = new TextEncoder().encode(pin);
+  // Defensive normalization: some runtimes (vitest+jsdom vs Node webcrypto)
+  // reject typed arrays / ArrayBuffers from a different realm. Rebuild both
+  // the pin bytes and the salt as fresh Uint8Array instances in the current
+  // realm to guarantee the webcrypto `isBufferSource` check passes.
+  const pinRaw = new TextEncoder().encode(pin);
+  const pinBytes = Uint8Array.from(pinRaw);
+  const saltBytes = Uint8Array.from(salt as unknown as ArrayLike<number>);
+
   const key = await crypto.subtle.importKey(
     'raw',
-    pinBytes.buffer.slice(pinBytes.byteOffset, pinBytes.byteOffset + pinBytes.byteLength) as ArrayBuffer,
+    pinBytes as unknown as BufferSource,
     { name: 'PBKDF2' },
     false,
     ['deriveBits'],
   );
-  const saltBuf = salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer;
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: saltBuf, iterations, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: saltBytes as unknown as BufferSource, iterations, hash: 'SHA-256' } as unknown as Pbkdf2Params,
     key,
     HASH_BYTES * 8,
   );
