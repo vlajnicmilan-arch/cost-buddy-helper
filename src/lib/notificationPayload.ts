@@ -122,6 +122,7 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
       };
     case 'budget_alert':
     case 'budget_burn':
+    case 'budget_pace':
       return {
         route: budgetId ? `/budgets?id=${budgetId}` : '/budgets',
         fallback_route: '/budgets',
