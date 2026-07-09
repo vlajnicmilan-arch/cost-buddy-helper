@@ -56,34 +56,13 @@ export const BudgetCard = ({
       ? TrendingDown 
       : Minus;
 
-  const getProgressColor = () => {
-    if (budget.isOverBudget) return 'bg-destructive';
-    if (budget.isWarning) return 'bg-budget-warning';
-    return 'bg-module';
-  };
+  // Smjer v1: neutralna vizualizacija — bez crvene/žute alarm palete.
+  // Progress bar uvijek u boji plana; status badge samo iznosi postotak
+  // ili "Preko okvira" (neutralno), bez destructive tona.
+  const getProgressColor = () => 'bg-module';
 
-  const getBudgetStatus = () => {
-    if (budget.isOverBudget) return 'overBudget';
-    if (budget.isWarning) return 'warning';
-    return 'active';
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'warning': return 'outline';
-      case 'overBudget': return 'destructive';
-      default: return 'outline';
-    }
-  };
-
-  const budgetStatus = getBudgetStatus();
-
-  const getBorderColor = () => {
-    if (budget.isOverBudget) return 'hsl(var(--destructive))';
-    if (budget.isWarning) return 'hsl(var(--warning))';
-    return budgetColor;
-  };
+  const budgetStatus = budget.isOverBudget ? 'overBudget' : 'active';
+  const getBorderColor = () => budgetColor;
 
   const getCategoryDisplay = (categoryId: string) => {
     const catInfo = CATEGORIES.find(c => c.id === categoryId);
