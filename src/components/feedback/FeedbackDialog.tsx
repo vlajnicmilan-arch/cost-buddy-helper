@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { sanitizeDiagnostics } from '@/lib/diagnosticsSanitizer';
 
 type FeedbackType = 'bug' | 'idea' | 'question';
 
@@ -24,13 +25,14 @@ interface FeedbackDialogProps {
 // Lightweight in-memory ring buffer of recent console messages
 type LogEntry = { level: string; message: string; t: number };
 const consoleBuffer: LogEntry[] = [];
-const MAX_LOGS = 25;
+const MAX_LOGS = 15;
 let consolePatched = false;
 
 function patchConsole() {
   if (consolePatched || typeof window === 'undefined') return;
   consolePatched = true;
-  (['log', 'info', 'warn', 'error'] as const).forEach((level) => {
+  // Only capture warn + error. log/info commonly carry PII payloads and are skipped.
+  (['warn', 'error'] as const).forEach((level) => {
     const orig = (console as any)[level];
     (console as any)[level] = (...args: any[]) => {
       try {
@@ -62,14 +64,14 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
   const [rating, setRating] = useState<number | null>(null);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const diagnostics = useMemo(() => {
     if (typeof window === 'undefined') return null;
-    return {
+    const raw = {
       route: location.pathname + (location.search || ''),
       app_version: (import.meta as any).env?.VITE_APP_VERSION || 'web',
       language: i18n.language || 'hr',
@@ -78,6 +80,7 @@ export const FeedbackDialog = ({ open, onOpenChange, defaultType = 'idea' }: Fee
       user_agent: navigator.userAgent.slice(0, 500),
       console_tail: consoleBuffer.slice(-15),
     };
+    return sanitizeDiagnostics(raw);
   }, [location.pathname, location.search, i18n.language, open]);
 
   useEffect(() => {
