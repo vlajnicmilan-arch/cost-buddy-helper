@@ -191,6 +191,12 @@ export const useRecurringTransactions = () => {
           }
 
           // entrySource='recurring' forsira bank_match_status='manual'
+          // WS5 — Krug scope note: recurring auto-generated expenses intentionally do
+          // not carry Krug context. The recurring_transactions model has no krug_id/
+          // krug_privacy fields, and the generated expense below omits them. Adding
+          // Krug support to recurring requires model extension, UI for Krug selection
+          // when creating a recurring rule, and defined semantics for generated-row
+          // author/privacy/status. Kept out of scope deliberately.
           await addExpense({
             amount: recurring.amount,
             description: recurring.description,
