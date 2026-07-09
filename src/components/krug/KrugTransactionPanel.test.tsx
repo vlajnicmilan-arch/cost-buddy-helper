@@ -9,12 +9,19 @@
  *   3. klik zove `useKrugSetPrivacy().mutate` s `{ expenseId, newPrivacy: 'personal' }`,
  *   4. nema trećeg privacy izbora ("Skriveno" / private) u panelu.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // vi.hoisted — dostupno prije vi.mock factory-a, ali svježe po test datoteci.
 const hoisted = vi.hoisted(() => ({
   setPrivacyMutate: vi.fn(),
+  retractMutate: vi.fn(),
+  expenseRow: {
+    krug_id: 'k1',
+    krug_privacy: 'private' as 'private' | 'personal' | 'shared',
+    krug_shared_status: null as null | 'predlozena' | 'potvrdjena' | 'nepotvrdjena',
+    deleted_at: null as string | null,
+  },
 }));
 
 // --- Mocks ---------------------------------------------------------------
