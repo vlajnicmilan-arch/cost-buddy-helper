@@ -10,9 +10,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const SRC = readFileSync(
-  resolve(__dirname, '../index.ts'),
+  resolve(__dirname, '../../../supabase/functions/notify-krug-event/index.ts'),
   'utf8',
 );
+
 
 describe('notify-krug-event internal auth guard', () => {
   it('rejects requests whose Bearer token does not match SUPABASE_SERVICE_ROLE_KEY', () => {
