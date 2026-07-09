@@ -114,8 +114,10 @@ export const BudgetCard = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-semibold text-base sm:text-lg truncate text-[hsl(258_90%_66%)]">{budget.name}</h3>
-                <Badge variant={getStatusBadgeVariant(budgetStatus)} className="text-xs shrink-0">
-                  {t(`budget.status.${budgetStatus}`)}
+                <Badge variant={budgetStatus === 'overBudget' ? 'outline' : 'default'} className="text-xs shrink-0">
+                  {budgetStatus === 'overBudget'
+                    ? t('budget.status.overBudget', 'Preko okvira')
+                    : t('budget.nearLimit', { percent: budget.percentage.toFixed(0), defaultValue: 'Iskorišteno {{percent}}% okvira' })}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
