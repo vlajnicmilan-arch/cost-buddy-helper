@@ -1676,7 +1676,8 @@
     "showOnDashboard": "Im Dashboard anzeigen",
     "hiddenFromDashboard": "Vom Dashboard ausgeblendet",
     "shownOnDashboard": "Im Dashboard angezeigt",
-    "hiddenBadge": "Ausgeblendet"
+    "hiddenBadge": "Ausgeblendet",
+    "correctBalance": "Saldo korrigieren"
   },
   "incomeSources": {
     "title": "Quellen",
