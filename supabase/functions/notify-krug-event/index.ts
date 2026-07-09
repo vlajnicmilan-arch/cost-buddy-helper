@@ -26,9 +26,13 @@
 //     `is_push_category_enabled(user_id, 'krug')`. The push side also runs the
 //     same check as a defense-in-depth pass.
 //
-// verify_jwt = false: called only from trusted server-side sources
-// (edge fn `krug-add-member`, RPC-backed `net.http_post`). Uses service role
-// key internally and RLS is bypassed for reads/writes it performs.
+// verify_jwt = false at the platform edge, but the function enforces a
+// stronger internal auth guard: the incoming `Authorization: Bearer <token>`
+// MUST equal SUPABASE_SERVICE_ROLE_KEY (constant-time compare). Only trusted
+// server-side callers hold that key — the DB (`net.http_post` reads it from
+// vault) and the `krug-add-member` edge fn (admin client forwards it via
+// functions.invoke). Any other caller is rejected 401 before any work runs.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
