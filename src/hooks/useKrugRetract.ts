@@ -43,6 +43,9 @@ export function useKrugRetract() {
       if (OK.has(res.outcome)) {
         showSuccess();
         qc.invalidateQueries({ queryKey: ['expenses'] });
+        // Parity s useKrugApplyAct: red mora nestati iz approval queue
+        // odmah nakon A3 retracta (predlozena → personal).
+        qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses'] });
       } else {
         showError(res.outcome);
       }
