@@ -10,6 +10,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
 import type { Database } from '@/integrations/supabase/types';
 
 export type KrugRow = Database['public']['Tables']['krug']['Row'];
@@ -30,6 +31,7 @@ export function useMyKrugs() {
     queryKey: ['krug', 'my', user?.id ?? null],
     enabled: !!user,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugRow[]> => {
       const { data, error } = await supabase
         .from('krug')
@@ -55,6 +57,7 @@ export function useKrug(krugId: string | null | undefined) {
     queryKey: ['krug', 'detail', krugId, user?.id ?? null],
     enabled: !!user && !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugWithRoles | null> => {
       if (!krugId) return null;
       const [krugRes, ownerRes, memRes] = await Promise.all([
@@ -99,6 +102,7 @@ export function useKrugMembers(krugId: string | null | undefined) {
     queryKey: ['krug', 'members', krugId],
     enabled: !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugMemberView[]> => {
       if (!krugId) return [];
       const [ownerRes, memRes] = await Promise.all([

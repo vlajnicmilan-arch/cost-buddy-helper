@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { isOkOutcome, type DeletionOutcome } from '@/lib/krugDeletionDecisions';
+import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
 
 const STALE = 30 * 1000;
 
@@ -44,6 +45,7 @@ export function useKrugDeletionRequest(krugId: string | null | undefined) {
     queryKey: ['krug', 'deletion', krugId],
     enabled: !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugDeletionState> => {
       if (!krugId) return { request: null, votes: [] };
       const [reqRes, voteRes] = await Promise.all([
@@ -112,7 +114,12 @@ export function useKrugRequestDeletion() {
       invalidate(vars.krugId);
       report(res);
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any, vars) => {
+      // Resync deletion panel: server state may have advanced (vote counted,
+      // request cancelled or approved by another member) before this call errored.
+      invalidate(vars.krugId);
+      showError(err?.message);
+    },
   });
 }
 
@@ -132,7 +139,10 @@ export function useKrugVoteDeletion() {
       invalidate(vars.krugId);
       report(res);
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any, vars) => {
+      invalidate(vars.krugId);
+      showError(err?.message);
+    },
   });
 }
 
@@ -151,6 +161,9 @@ export function useKrugCancelDeletion() {
       invalidate(vars.krugId);
       report(res);
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any, vars) => {
+      invalidate(vars.krugId);
+      showError(err?.message);
+    },
   });
 }

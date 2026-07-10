@@ -41,6 +41,9 @@ export function useKrugGovernToPersonal() {
       if (OK.has(res.outcome)) {
         showSuccess();
         qc.invalidateQueries({ queryKey: ['expenses'] });
+        // Parity s useKrugApplyAct: A7 miče red iz approval queue-a
+        // (potvrdjena/nepotvrdjena → personal), pa queue mora znati odmah.
+        qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses'] });
       } else {
         showError(res.outcome);
       }

@@ -9,6 +9,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
 import { Expense } from '@/types/expense';
 
 const STALE = 60 * 1000;
@@ -19,6 +20,7 @@ export function useKrugPendingExpenses(krugId: string | null | undefined) {
     queryKey: ['krug', 'pending-expenses', krugId],
     enabled: !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<Expense[]> => {
       if (!krugId) return [];
       const { data, error } = await supabase

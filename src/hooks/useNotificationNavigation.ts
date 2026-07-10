@@ -16,6 +16,7 @@
  */
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
@@ -40,6 +41,7 @@ function extractProjectId(route: string | null): string | null {
 
 export function useNotificationNavigation() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { t } = useTranslation();
 
   const navigateFromPayload = useCallback(
@@ -72,10 +74,18 @@ export function useNotificationNavigation() {
         return true;
       }
 
+      // Krug notifikacije (svih 6 krug_* tipova) vode na `/krug`. Realtime
+      // kanal može biti stale iz backgrounda ili push cold-starta, pa prije
+      // navigacije invalidiramo Krug namespace da lista/detail/queue/deletion
+      // dočekaju korisnika s aktualnim stanjem umjesto prethodnog cache-a.
+      if (target.startsWith('/krug')) {
+        qc.invalidateQueries({ queryKey: ['krug'] });
+      }
+
       navigate(target);
       return true;
     },
-    [navigate],
+    [navigate, qc],
   );
 
   const navigateFromNotification = useCallback(
