@@ -1309,7 +1309,11 @@
     },
     "merchantPlaceholder": "z.B. Edeka, Telekom, Netflix...",
     "assignToProject": "Projekt zuweisen",
-    "noProject": "Kein Projekt"
+    "noProject": "Kein Projekt",
+    "attachment": {
+      "smjer": "Richtung",
+      "assignToSmjer": "Richtung zuweisen"
+    }
   },
   "dashboard": {
     "balance": "Kontostand",

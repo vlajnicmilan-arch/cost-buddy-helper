@@ -1309,7 +1309,11 @@
     },
     "merchantPlaceholder": "e.g. Walmart, AT&T, Netflix...",
     "assignToProject": "Assign to project",
-    "noProject": "No project"
+    "noProject": "No project",
+    "attachment": {
+      "smjer": "Direction",
+      "assignToSmjer": "Assign direction"
+    }
   },
   "dashboard": {
     "balance": "Balance",

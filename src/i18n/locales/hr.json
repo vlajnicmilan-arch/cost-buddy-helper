@@ -1313,6 +1313,10 @@
     "merchantPlaceholder": "npr. Konzum, A1, Netflix...",
     "assignToProject": "Pridruži projektu",
     "noProject": "Bez projekta",
+    "attachment": {
+      "smjer": "Smjer",
+      "assignToSmjer": "Pridruži smjeru"
+    },
     "amountHint": "Za decimale koristi točku ili zarez (npr. 150,50)"
   },
   "dashboard": {
