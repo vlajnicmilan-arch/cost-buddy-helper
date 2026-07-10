@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { isOkOutcome, type DeletionOutcome } from '@/lib/krugDeletionDecisions';
+import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
 
 const STALE = 30 * 1000;
 
