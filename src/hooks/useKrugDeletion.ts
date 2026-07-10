@@ -161,6 +161,9 @@ export function useKrugCancelDeletion() {
       invalidate(vars.krugId);
       report(res);
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any, vars) => {
+      invalidate(vars.krugId);
+      showError(err?.message);
+    },
   });
 }
