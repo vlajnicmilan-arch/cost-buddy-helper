@@ -69,7 +69,7 @@ describe('ScannedDataPreview — parity s ManualExpenseForm attachment barom', (
     );
   });
 
-  it('Scan surface zadržava mutual-exclusion projekt/budžet (scan-specific)', () => {
+  it('Scan surface zadržava mutual-exclusion projekt/smjer (scan-specific)', () => {
     expect(src).toMatch(/mutuallyExclusiveProjectBudget/);
   });
 });
