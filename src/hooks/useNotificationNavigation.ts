@@ -41,6 +41,7 @@ function extractProjectId(route: string | null): string | null {
 
 export function useNotificationNavigation() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { t } = useTranslation();
 
   const navigateFromPayload = useCallback(
