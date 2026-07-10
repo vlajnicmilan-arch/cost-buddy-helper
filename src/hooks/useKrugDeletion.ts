@@ -45,6 +45,7 @@ export function useKrugDeletionRequest(krugId: string | null | undefined) {
     queryKey: ['krug', 'deletion', krugId],
     enabled: !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugDeletionState> => {
       if (!krugId) return { request: null, votes: [] };
       const [reqRes, voteRes] = await Promise.all([
