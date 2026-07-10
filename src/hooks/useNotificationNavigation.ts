@@ -74,10 +74,18 @@ export function useNotificationNavigation() {
         return true;
       }
 
+      // Krug notifikacije (svih 6 krug_* tipova) vode na `/krug`. Realtime
+      // kanal može biti stale iz backgrounda ili push cold-starta, pa prije
+      // navigacije invalidiramo Krug namespace da lista/detail/queue/deletion
+      // dočekaju korisnika s aktualnim stanjem umjesto prethodnog cache-a.
+      if (target.startsWith('/krug')) {
+        qc.invalidateQueries({ queryKey: ['krug'] });
+      }
+
       navigate(target);
       return true;
     },
-    [navigate],
+    [navigate, qc],
   );
 
   const navigateFromNotification = useCallback(
