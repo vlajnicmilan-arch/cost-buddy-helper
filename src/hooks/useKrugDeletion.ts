@@ -114,7 +114,12 @@ export function useKrugRequestDeletion() {
       invalidate(vars.krugId);
       report(res);
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any, vars) => {
+      // Resync deletion panel: server state may have advanced (vote counted,
+      // request cancelled or approved by another member) before this call errored.
+      invalidate(vars.krugId);
+      showError(err?.message);
+    },
   });
 }
 
