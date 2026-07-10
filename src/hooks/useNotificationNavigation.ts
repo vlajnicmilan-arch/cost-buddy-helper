@@ -16,6 +16,7 @@
  */
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
