@@ -57,6 +57,7 @@ export function useKrug(krugId: string | null | undefined) {
     queryKey: ['krug', 'detail', krugId, user?.id ?? null],
     enabled: !!user && !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugWithRoles | null> => {
       if (!krugId) return null;
       const [krugRes, ownerRes, memRes] = await Promise.all([
