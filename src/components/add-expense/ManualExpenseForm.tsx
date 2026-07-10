@@ -393,7 +393,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             />
           )}
 
-          {/* Attachment bar: Projekt / Budžet / Krug — kompaktni chipovi.
+          {/* Attachment bar: Projekt / Smjer / Krug — kompaktni chipovi.
               Vidljivost pojedinog chipa se poštuje kroz show* propove;
               underlying handleri i guardovi ostaju netaknuti. */}
           {(

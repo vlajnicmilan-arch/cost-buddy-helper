@@ -1,5 +1,5 @@
 /**
- * AttachmentBar — kompaktan red od 3 chip-a: Projekt, Budžet, Krug.
+ * AttachmentBar — kompaktan red od 3 chip-a: Projekt, Smjer, Krug.
  *
  * UI-only preustroj: mijenja SAMO način odabira pripadnosti u add/scan formama.
  * Underlying write-logika, guardovi i vidljivost su netaknuti — pojedini chip
@@ -7,8 +7,13 @@
  * propova (npr. `projects` array, `showKrug`, itd.). Krug chip nikada se ne
  * prikazuje za `transfer` (roditelj šalje `showKrug=false`).
  *
+ * Boje chipova prate module aplikacije: projekt = plava, smjer = ljubičasta,
+ * krug = narančasta. Popup služi isključivo za izbor; brisanje odabira ostaje
+ * na aktivnom chipu preko `×`.
+ *
  * Interakcija: klik na chip otvara mali Popover s odabirom. Odabir se odmah
- * propagira roditelju, popover se zatvara. Trenutni odabir vidljiv je iz
+ * propagira roditelju, popover se zatvara (osim kod Krug-a gdje ostaje otvoren
+ * za odabir privatnosti, jednako kao prije). Trenutni odabir vidljiv je iz
  * naljepnice chipa; klik na × briše odabir bez otvaranja popovera.
  */
 import { useState } from 'react';
@@ -35,7 +40,7 @@ interface AttachmentBarProps {
   selectedProjectId?: string | null;
   onSelectedProjectIdChange?: (id: string | null) => void;
 
-  // Budžet
+  // Smjer (underlying budget_id)
   showBudget?: boolean;
   budgets?: Option[];
   selectedBudgetId?: string | null;
@@ -49,24 +54,50 @@ interface AttachmentBarProps {
   /** Legacy `krug_privacy='private'` — mapira se u UI kao personal, s hintom. */
   legacyPrivate?: boolean;
 
-  /** Ako je true, project i budget su međusobno isključivi (scan surface). */
+  /** Ako je true, project i smjer su međusobno isključivi (scan surface). */
   mutuallyExclusiveProjectBudget?: boolean;
 }
 
 type ChipTone = 'project' | 'budget' | 'krug';
 
-const toneStyles: Record<ChipTone, { active: string; icon: string }> = {
+const toneStyles: Record<
+  ChipTone,
+  {
+    idle: string;
+    active: string;
+    icon: string;
+    iconIdle: string;
+    clearHover: string;
+    selectedBg: string;
+    selectedText: string;
+  }
+> = {
   project: {
-    active: 'bg-primary/10 text-primary border-primary/30',
-    icon: 'text-primary',
+    idle: 'bg-background/60 text-muted-foreground border-border border-dashed hover:text-[hsl(217_91%_60%)] hover:border-[hsl(217_91%_60%)]/30',
+    active: 'bg-[hsl(217_91%_60%)]/10 text-[hsl(217_91%_60%)] border-[hsl(217_91%_60%)]/30',
+    icon: 'text-[hsl(217_91%_60%)]',
+    iconIdle: 'text-[hsl(217_91%_60%)]/60',
+    clearHover: 'hover:bg-[hsl(217_91%_60%)]/20',
+    selectedBg: 'bg-[hsl(217_91%_60%)]/5',
+    selectedText: 'text-[hsl(217_91%_60%)]',
   },
   budget: {
-    active: 'bg-primary/10 text-primary border-primary/30',
-    icon: 'text-primary',
+    idle: 'bg-background/60 text-muted-foreground border-border border-dashed hover:text-[hsl(258_90%_66%)] hover:border-[hsl(258_90%_66%)]/30',
+    active: 'bg-[hsl(258_90%_66%)]/10 text-[hsl(258_90%_66%)] border-[hsl(258_90%_66%)]/30',
+    icon: 'text-[hsl(258_90%_66%)]',
+    iconIdle: 'text-[hsl(258_90%_66%)]/60',
+    clearHover: 'hover:bg-[hsl(258_90%_66%)]/20',
+    selectedBg: 'bg-[hsl(258_90%_66%)]/5',
+    selectedText: 'text-[hsl(258_90%_66%)]',
   },
   krug: {
-    active: 'bg-primary/10 text-primary border-primary/30',
-    icon: 'text-primary',
+    idle: 'bg-background/60 text-muted-foreground border-border border-dashed hover:text-[hsl(25_95%_53%)] hover:border-[hsl(25_95%_53%)]/30',
+    active: 'bg-[hsl(25_95%_53%)]/10 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30',
+    icon: 'text-[hsl(25_95%_53%)]',
+    iconIdle: 'text-[hsl(25_95%_53%)]/60',
+    clearHover: 'hover:bg-[hsl(25_95%_53%)]/20',
+    selectedBg: 'bg-[hsl(25_95%_53%)]/5',
+    selectedText: 'text-[hsl(25_95%_53%)]',
   },
 };
 
@@ -82,7 +113,17 @@ interface ChipProps {
   testId?: string;
 }
 
-const Chip = ({ tone, icon, emptyLabel, selectedLabel, onClear, open, onOpenChange, children, testId }: ChipProps) => {
+const Chip = ({
+  tone,
+  icon,
+  emptyLabel,
+  selectedLabel,
+  onClear,
+  open,
+  onOpenChange,
+  children,
+  testId,
+}: ChipProps) => {
   const isSelected = !!selectedLabel;
   const styles = toneStyles[tone];
   return (
@@ -95,12 +136,10 @@ const Chip = ({ tone, icon, emptyLabel, selectedLabel, onClear, open, onOpenChan
             className={cn(
               'w-full h-9 px-2.5 rounded-full border text-xs font-medium',
               'flex items-center gap-1.5 transition-all',
-              isSelected
-                ? styles.active
-                : 'bg-background/60 text-muted-foreground border-border hover:text-foreground hover:border-foreground/30 border-dashed'
+              isSelected ? styles.active : styles.idle
             )}
           >
-            <span className={cn('shrink-0', isSelected ? styles.icon : 'text-muted-foreground/70')}>
+            <span className={cn('shrink-0', isSelected ? styles.icon : styles.iconIdle)}>
               {icon}
             </span>
             <span className="truncate flex-1 text-left">
@@ -123,7 +162,7 @@ const Chip = ({ tone, icon, emptyLabel, selectedLabel, onClear, open, onOpenChan
                     onClear();
                   }
                 }}
-                className="shrink-0 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                className={cn('shrink-0 rounded-full p-0.5 transition-colors', styles.clearHover)}
               >
                 <X className="w-3 h-3" />
               </span>
@@ -144,16 +183,25 @@ const Chip = ({ tone, icon, emptyLabel, selectedLabel, onClear, open, onOpenChan
 };
 
 interface PanelListProps {
+  tone: ChipTone;
   title: string;
-  emptyOption: string;
   options: Option[];
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  onSelect: (id: string) => void;
   fallbackIcon: string;
   onClose: () => void;
 }
 
-const PanelList = ({ title, emptyOption, options, selectedId, onSelect, fallbackIcon, onClose }: PanelListProps) => {
+const PanelList = ({
+  tone,
+  title,
+  options,
+  selectedId,
+  onSelect,
+  fallbackIcon,
+  onClose,
+}: PanelListProps) => {
+  const styles = toneStyles[tone];
   return (
     <div className="flex flex-col max-h-[320px]">
       <div className="px-3 py-2 border-b border-border/50">
@@ -162,21 +210,6 @@ const PanelList = ({ title, emptyOption, options, selectedId, onSelect, fallback
         </div>
       </div>
       <div className="overflow-y-auto py-1">
-        <button
-          type="button"
-          onClick={() => { onSelect(null); onClose(); }}
-          className={cn(
-            'w-full px-3 py-2 flex items-center gap-2.5 text-sm transition-colors',
-            'hover:bg-muted/60',
-            selectedId === null && 'text-primary font-medium'
-          )}
-        >
-          <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-            <X className="w-3 h-3" />
-          </span>
-          <span className="flex-1 text-left truncate">{emptyOption}</span>
-          {selectedId === null && <Check className="w-4 h-4 text-primary shrink-0" />}
-        </button>
         {options.map((opt) => {
           const isSelected = selectedId === opt.id;
           const color = opt.color || 'hsl(var(--primary))';
@@ -184,11 +217,14 @@ const PanelList = ({ title, emptyOption, options, selectedId, onSelect, fallback
             <button
               key={opt.id}
               type="button"
-              onClick={() => { onSelect(opt.id); onClose(); }}
+              onClick={() => {
+                onSelect(opt.id);
+                onClose();
+              }}
               className={cn(
                 'w-full px-3 py-2 flex items-center gap-2.5 text-sm transition-colors',
                 'hover:bg-muted/60',
-                isSelected && 'bg-primary/5 text-primary font-medium'
+                isSelected && cn(styles.selectedBg, styles.selectedText, 'font-medium')
               )}
             >
               <span
@@ -198,7 +234,7 @@ const PanelList = ({ title, emptyOption, options, selectedId, onSelect, fallback
                 {opt.icon || fallbackIcon}
               </span>
               <span className="flex-1 text-left truncate">{opt.name}</span>
-              {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+              {isSelected && <Check className={cn('w-4 h-4 shrink-0', styles.selectedText)} />}
             </button>
           );
         })}
@@ -226,6 +262,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
   const selectedKrug = krugs.find((k) => k.id === props.krugId) ?? null;
 
   const close = () => setOpenChip(null);
+  const krugStyles = toneStyles.krug;
 
   return (
     <div className="flex items-stretch gap-1.5">
@@ -241,13 +278,13 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
           onOpenChange={(o) => setOpenChip(o ? 'project' : null)}
         >
           <PanelList
+            tone="project"
             title={t('transactions.assignToProject', 'Pridruži projektu')}
-            emptyOption={t('transactions.noProject', 'Bez projekta')}
             options={projects}
             selectedId={props.selectedProjectId ?? null}
             onSelect={(id) => {
               props.onSelectedProjectIdChange?.(id);
-              if (id && props.mutuallyExclusiveProjectBudget) {
+              if (props.mutuallyExclusiveProjectBudget) {
                 props.onSelectedBudgetIdChange?.(null);
               }
             }}
@@ -262,20 +299,20 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
           tone="budget"
           testId="attachment-chip-budget"
           icon={<PiggyBank className="w-3.5 h-3.5" />}
-          emptyLabel={t('transactions.budget', 'Budžet')}
+          emptyLabel={t('transactions.attachment.smjer', 'Smjer')}
           selectedLabel={selectedBudget?.name}
           onClear={() => props.onSelectedBudgetIdChange?.(null)}
           open={openChip === 'budget'}
           onOpenChange={(o) => setOpenChip(o ? 'budget' : null)}
         >
           <PanelList
-            title={t('transactions.assignToBudget', 'Pridruži budžetu')}
-            emptyOption={t('transactions.noBudget', 'Bez budžeta')}
+            tone="budget"
+            title={t('transactions.attachment.assignToSmjer', 'Pridruži smjeru')}
             options={budgets}
             selectedId={props.selectedBudgetId ?? null}
             onSelect={(id) => {
               props.onSelectedBudgetIdChange?.(id);
-              if (id && props.mutuallyExclusiveProjectBudget) {
+              if (props.mutuallyExclusiveProjectBudget) {
                 props.onSelectedProjectIdChange?.(null);
               }
             }}
@@ -311,25 +348,6 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
               </div>
             </div>
             <div className="overflow-y-auto py-1">
-              <button
-                type="button"
-                onClick={() => {
-                  props.onKrugChange?.({ krugId: null, privacy: 'personal' });
-                  close();
-                }}
-                className={cn(
-                  'w-full px-3 py-2 flex items-center gap-2.5 text-sm transition-colors hover:bg-muted/60',
-                  !props.krugId && 'text-primary font-medium'
-                )}
-              >
-                <span className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                  <X className="w-3 h-3" />
-                </span>
-                <span className="flex-1 text-left truncate">
-                  {t('krug.selector.none', 'Bez Kruga')}
-                </span>
-                {!props.krugId && <Check className="w-4 h-4 text-primary shrink-0" />}
-              </button>
               {krugs.map((k) => {
                 const isSelected = props.krugId === k.id;
                 return (
@@ -344,14 +362,19 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     }}
                     className={cn(
                       'w-full px-3 py-2 flex items-center gap-2.5 text-sm transition-colors hover:bg-muted/60',
-                      isSelected && 'bg-primary/5 text-primary font-medium'
+                      isSelected && cn(krugStyles.selectedBg, krugStyles.selectedText, 'font-medium')
                     )}
                   >
-                    <span className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <span
+                      className={cn(
+                        'w-6 h-6 rounded-md flex items-center justify-center shrink-0',
+                        isSelected ? 'bg-[hsl(25_95%_53%)]/10 text-[hsl(25_95%_53%)]' : 'bg-muted text-muted-foreground'
+                      )}
+                    >
                       <Users className="w-3.5 h-3.5" />
                     </span>
                     <span className="flex-1 text-left truncate">{k.name}</span>
-                    {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                    {isSelected && <Check className={cn('w-4 h-4 shrink-0', krugStyles.selectedText)} />}
                   </button>
                 );
               })}
@@ -368,7 +391,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',
                       (props.krugPrivacy ?? 'personal') === 'personal'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        ? 'bg-[hsl(25_95%_53%)] text-white shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
@@ -383,7 +406,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',
                       props.krugPrivacy === 'shared'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        ? 'bg-[hsl(25_95%_53%)] text-white shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
