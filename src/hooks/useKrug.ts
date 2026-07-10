@@ -31,6 +31,7 @@ export function useMyKrugs() {
     queryKey: ['krug', 'my', user?.id ?? null],
     enabled: !!user,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugRow[]> => {
       const { data, error } = await supabase
         .from('krug')
