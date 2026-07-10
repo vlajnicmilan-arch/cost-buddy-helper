@@ -102,6 +102,7 @@ export function useKrugMembers(krugId: string | null | undefined) {
     queryKey: ['krug', 'members', krugId],
     enabled: !!krugId,
     staleTime: STALE,
+    ...KRUG_SYNC_QUERY_OPTIONS,
     queryFn: async (): Promise<KrugMemberView[]> => {
       if (!krugId) return [];
       const [ownerRes, memRes] = await Promise.all([
