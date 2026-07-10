@@ -58,6 +58,25 @@ export const useNotifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Resume/reconnect resync — realtime kanal može propustiti INSERT/UPDATE
+  // dok je tab u backgroundu ili je uređaj bio bez mreže. Blagi refetch na
+  // povratku vidljivosti / online eventu obnavlja zvono i badge bez spam-a
+  // (jedan poziv po eventu, bez petlje jer fetchNotifications ne mijenja
+  // dependency lanac koji bi ovaj efekt ponovno vezao).
+  useEffect(() => {
+    if (!user) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchNotifications();
+    };
+    const onOnline = () => fetchNotifications();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [user, fetchNotifications]);
+
   // Subscribe to realtime notifications
   useEffect(() => {
     if (!user) return;
