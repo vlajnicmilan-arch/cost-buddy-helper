@@ -505,8 +505,8 @@ export const ScannedDataPreview = ({
           </div>
         )}
 
-        {/* Attachment bar: Projekt / Budžet / Krug — parity s ManualExpenseForm.
-            Scan surface zadržava mutual-exclusion između projekta i budžeta. */}
+        {/* Attachment bar: Projekt / Smjer / Krug — parity s ManualExpenseForm.
+            Scan surface zadržava mutual-exclusion između projekta i smjera. */}
         <AttachmentBar
           showProject={(projects?.length ?? 0) > 0}
           projects={projects}
