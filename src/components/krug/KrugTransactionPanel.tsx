@@ -293,7 +293,16 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
                   size="sm"
                   variant={active ? 'default' : 'outline'}
                   disabled={disabled}
-                  onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
+                  onClick={() =>
+                    setPrivacy.mutate(
+                      { expenseId, newPrivacy: opt.key },
+                      {
+                        onSuccess: (res) => {
+                          if (res && SET_PRIVACY_OK.has(res.outcome)) onReassignSuccess?.();
+                        },
+                      },
+                    )
+                  }
                   className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-medium">
