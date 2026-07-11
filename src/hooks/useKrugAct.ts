@@ -101,10 +101,13 @@ function errorMessageForThrown(err: any): string {
 
 function invalidateApprovalSurfaces(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['expenses'] });
-  // Krug approval queue (`useKrugPendingExpenses`) koristi zaseban namespace.
-  // Prefix match hvata sve krugId-jeve — jeftinije i sigurnije od preciznog kljuca.
+  // Krug approval queue (`useKrugPendingExpenses`) i decided-history
+  // (`useKrugDecidedExpenses`) koriste zasebne namespaceove. Prefix match hvata
+  // sve krugId-jeve — jeftinije i sigurnije od preciznog ključa.
   qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses'] });
+  qc.invalidateQueries({ queryKey: ['krug', 'decided-expenses'] });
 }
+
 
 function reportOutcome(
   qc: ReturnType<typeof useQueryClient>,

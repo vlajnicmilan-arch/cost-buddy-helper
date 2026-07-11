@@ -5048,6 +5048,15 @@
         "reject": "Odbij"
       }
     },
+    "decided": {
+      "title": "Odlučeno",
+      "empty": "Još nema odlučenih prijedloga.",
+      "status": {
+        "confirmed": "Potvrđeno",
+        "rejected": "Odbijeno"
+      }
+    },
+
     "sharedSource": {
       "attach": {
         "placeholder": "Poveži izvor plaćanja…",

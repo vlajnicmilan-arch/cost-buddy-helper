@@ -5039,6 +5039,14 @@
         "reject": "Ablehnen"
       }
     },
+    "decided": {
+      "title": "Entschieden",
+      "empty": "Noch keine entschiedenen Vorschläge.",
+      "status": {
+        "confirmed": "Bestätigt",
+        "rejected": "Abgelehnt"
+      }
+    },
     "sharedSource": {
       "attach": {
         "placeholder": "Zahlungsquelle verknüpfen…",
