@@ -1,4 +1,7 @@
 {
+  "common": {
+    "financesOverview": "Wallet - overview"
+  },
   "aiInsights": {
     "title": "AI insights"
   },

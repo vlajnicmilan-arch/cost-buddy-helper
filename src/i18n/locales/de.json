@@ -1,4 +1,7 @@
 {
+  "common": {
+    "financesOverview": "Brieftasche - Übersicht"
+  },
   "aiInsights": {
     "title": "KI-Einblicke"
   },
