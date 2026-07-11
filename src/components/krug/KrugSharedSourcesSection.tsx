@@ -55,15 +55,17 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
   } = useKrugSharedPaymentSources(krugId);
   const { customPaymentSources } = useCustomPaymentSources();
 
-  // Owner-owned sources koji još nisu attachani; format `custom:UUID`.
+  // Attachable sources = own custom sources not yet linked.
+  // Vidljivo samo full memberima (owner ili punopravni); RLS bi ionako odbio insert.
   const linkedIds = useMemo(() => new Set(linked.map((l) => l.payment_source_id)), [linked]);
   const attachable = useMemo(() => {
-    if (!isOwner || !user) return [];
+    if (!isFullMember || !user) return [];
     return (customPaymentSources ?? [])
       .filter((s: any) => s.user_id === user.id)
       .map((s: any) => ({ id: `custom:${s.id}`, name: s.name as string, currency: s.currency as string | undefined }))
       .filter((s) => !linkedIds.has(s.id));
-  }, [customPaymentSources, isOwner, linkedIds, user]);
+  }, [customPaymentSources, isFullMember, linkedIds, user]);
+
 
   // Lookup preferira server-side display resolver (radi i za non-owner članove
   // koji nemaju SELECT na custom_payment_sources), a padne na lokalnu listu
