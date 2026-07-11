@@ -116,12 +116,43 @@ describe('Krug Notifications MVP migration', () => {
     expect(fn).toMatch(/krug_emit_notification\(\s*'krug_deletion_requested'/);
   });
 
-  it('krug_purge_deleted emits krug_deleted per purged krug via snapshot', () => {
-    const fn = extractFunctionBody(SRC, 'krug_purge_deleted');
-    expect(fn).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
-    // Loop-based (not a bulk DELETE ... RETURNING) so snapshots can be read
-    // before the row disappears.
-    expect(fn).toMatch(/FOR\s+\w+\s+IN/i);
-    expect(fn).toMatch(/member_snapshot/);
+  it('krug_purge_deleted NO LONGER emits user-facing krug_deleted (moved to soft-delete moment)', () => {
+    const files = readdirSync(MIGRATIONS_DIR)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
+    let lastDef: string | null = null;
+    for (const f of files) {
+      const src = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+      if (/CREATE OR REPLACE FUNCTION public\.krug_purge_deleted\b/.test(src)) {
+        lastDef = extractFunctionBody(src, 'krug_purge_deleted');
+      }
+    }
+    expect(lastDef, 'krug_purge_deleted definition not found').not.toBeNull();
+    expect(lastDef!).not.toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+  });
+
+  it('krug_deleted is emitted at soft-delete moment (solo + final-approve branches)', () => {
+    const files = readdirSync(MIGRATIONS_DIR)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
+    let lastRequest: string | null = null;
+    let lastVote: string | null = null;
+    for (const f of files) {
+      const src = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+      if (/CREATE OR REPLACE FUNCTION public\.krug_request_deletion\b/.test(src)) {
+        lastRequest = extractFunctionBody(src, 'krug_request_deletion');
+      }
+      if (/CREATE OR REPLACE FUNCTION public\.krug_vote_deletion\b/.test(src)) {
+        lastVote = extractFunctionBody(src, 'krug_vote_deletion');
+      }
+    }
+    expect(lastRequest, 'krug_request_deletion not found').not.toBeNull();
+    expect(lastVote, 'krug_vote_deletion not found').not.toBeNull();
+    // Solo branch emits krug_deleted with stable dedup key.
+    expect(lastRequest!).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+    expect(lastRequest!).toMatch(/'krug_deleted:'\s*\|\|\s*p_krug_id/);
+    // Final approve branch emits krug_deleted with stable dedup key.
+    expect(lastVote!).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+    expect(lastVote!).toMatch(/'krug_deleted:'\s*\|\|\s*p_krug_id/);
   });
 });
