@@ -5104,6 +5104,8 @@
     "transaction": {
       "title": "Krug",
       "loading": "Loading…",
+      "badge": "Krug",
+      "belongsToKrug": "Belongs to Krug",
       "legacyPrivateHint": "This record was originally \"Hidden from Krug\". It's shown as \"Mine\". Click \"Mine\" to migrate or pick \"For Krug\"."
     },
     "privacy": {

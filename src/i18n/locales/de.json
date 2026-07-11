@@ -5104,6 +5104,8 @@
     "transaction": {
       "title": "Krug",
       "loading": "Lädt…",
+      "badge": "Krug",
+      "belongsToKrug": "Gehört zum Krug",
       "legacyPrivateHint": "Dieser Eintrag war ursprünglich „Vor dem Krug verborgen\". Wird als „Meins\" angezeigt. Klicke „Meins\" zur Migration oder wähle „Für den Krug\"."
     },
     "privacy": {
