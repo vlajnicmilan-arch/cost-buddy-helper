@@ -37,6 +37,11 @@ interface TransactionDetailDialogProps {
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
   contentClassName?: string;
+  /**
+   * Read-only surface (npr. Krug "Odlučeno"): skriva mutirajuće Krug akcije
+   * (privacy switcher + A-akti). Pregled ostaje pun.
+   */
+  readOnlyKrug?: boolean;
 }
 
 export const TransactionDetailDialog = ({
@@ -45,8 +50,10 @@ export const TransactionDetailDialog = ({
   onOpenChange,
   onEdit,
   onDelete,
-  contentClassName
+  contentClassName,
+  readOnlyKrug = false,
 }: TransactionDetailDialogProps) => {
+
   
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
@@ -408,9 +415,10 @@ export const TransactionDetailDialog = ({
 
 
           {/* Krug — transakcijska razina (privacy + A1-A7); renderira se samo ako je krug_id postavljen */}
-          {expense.type !== 'transfer' && (
+          {expense.type !== 'transfer' && !readOnlyKrug && (
             <KrugTransactionPanel expenseId={expense.id} expenseAuthorId={expense.user_id} />
           )}
+
 
           {/* Payment Source — for transfer: show From → To, otherwise single source */}
           {expense.type === 'transfer' ? (
