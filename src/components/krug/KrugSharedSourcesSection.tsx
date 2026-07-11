@@ -179,7 +179,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
                     <div className="text-[10px] text-muted-foreground">{currency}</div>
                   )}
                 </div>
-                {isOwner && (
+                {(isOwner || (user && s.linked_by === user.id)) && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -195,6 +195,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
                     )}
                   </Button>
                 )}
+
               </div>
             );
           })}
