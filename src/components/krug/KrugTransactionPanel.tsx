@@ -41,7 +41,23 @@ import { cn } from '@/lib/utils';
 interface Props {
   expenseId: string;
   expenseAuthorId: string;
+  /**
+   * Uski callback: pozvan SAMO nakon uspješne reassignment akcije
+   * (setPrivacy / A3 retract / A7 govern-to-personal). Voting akti
+   * (A1/A2/A4/A5) namjerno ne trigeriraju ovo — surface u kojem se
+   * odlučuje o prijedlogu mora ostati otvoren.
+   */
+  onReassignSuccess?: () => void;
 }
+
+const SET_PRIVACY_OK = new Set([
+  'ok_set_personal',
+  'ok_set_private',
+  'ok_proposed_shared',
+  'noop_already_in_target_state',
+]);
+const RETRACT_OK = new Set(['ok_retracted', 'noop_already_in_target_state']);
+const GOVERN_OK = new Set(['ok_governed_to_personal', 'noop_already_in_target_state']);
 
 interface KrugExpenseRow {
   krug_id: string | null;
