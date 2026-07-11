@@ -92,19 +92,24 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  // Dedicated shared secret for the DB → HTTP path. Kept in sync between
+  // vault (`krug_notify_internal_key`) and the edge function env
+  // (`KRUG_NOTIFY_INTERNAL_KEY`). Introduced because relying on
+  // SUPABASE_SERVICE_ROLE_KEY drifted from the vault-stored value after a
+  // platform key rotation, causing 401 on every RPC-triggered emit.
+  const INTERNAL_KEY = Deno.env.get("KRUG_NOTIFY_INTERNAL_KEY") ?? "";
 
   // ---- Internal-auth guard ----
-  // notify-krug-event is a privileged writer (service_role client, push
-  // dispatch, recipient_override). It must not be publicly callable. All
-  // legitimate callers (RPC via net.http_post using the vault-stored service
-  // role key, `krug-add-member` edge fn via functions.invoke with the admin
-  // client) present the service_role key as their Bearer token. Anything else
-  // is rejected 401 before any work is done.
+  // Accepts EITHER the dedicated internal key (DB via net.http_post) OR the
+  // current service role key (edge-to-edge via functions.invoke, e.g.
+  // `krug-add-member`). Constant-time compare against both.
   const authHeader = req.headers.get("Authorization") ?? "";
   const presented = authHeader.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length)
     : "";
-  if (!SERVICE_KEY || !presented || !timingSafeEqual(presented, SERVICE_KEY)) {
+  const okService = !!SERVICE_KEY && !!presented && timingSafeEqual(presented, SERVICE_KEY);
+  const okInternal = !!INTERNAL_KEY && !!presented && timingSafeEqual(presented, INTERNAL_KEY);
+  if (!okService && !okInternal) {
     return json({ error: "unauthorized" }, 401);
   }
 
