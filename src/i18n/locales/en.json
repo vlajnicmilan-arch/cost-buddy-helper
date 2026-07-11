@@ -2445,11 +2445,13 @@
       },
       "expense_confirmed": {
         "title": "Your proposal was confirmed",
-        "message": "A Krug member confirmed your proposal."
+        "message": "A Krug member confirmed your proposal.",
+        "toast": "Your Krug proposal was confirmed."
       },
       "expense_rejected": {
         "title": "Your proposal was rejected",
-        "message": "A Krug member rejected your proposal."
+        "message": "A Krug member rejected your proposal.",
+        "toast": "Your Krug proposal was rejected."
       },
       "deletion_requested": {
         "title": "Krug deletion started",

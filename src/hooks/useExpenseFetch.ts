@@ -4,7 +4,9 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 
-import { showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import i18n from '@/i18n';
+import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
@@ -327,13 +329,25 @@ export const useExpenseFetch = () => {
           table: 'expenses',
         },
         (payload) => {
-          if (!inScope(payload.new as Record<string, unknown>)) {
+          const prevRow = payload.old as Record<string, unknown> | undefined;
+          const nextRow = payload.new as Record<string, unknown>;
+          // Author outcome signal — jedini user-facing kanal dok server-side
+          // notifikacije (notify-krug-event) ne dostavljaju krug_expense_*
+          // eventove. Detekcija se veže isključivo na stvarnu tranziciju
+          // predlozena → potvrdjena / nepotvrdjena za vlastiti prijedlog.
+          const outcome = detectAuthorOutcome(prevRow ?? null, nextRow, user.id);
+          if (outcome === 'confirmed') {
+            showSuccess(i18n.t('notifications.krug.expense_confirmed.toast'));
+          } else if (outcome === 'rejected') {
+            showError(i18n.t('notifications.krug.expense_rejected.toast'));
+          }
+          if (!inScope(nextRow)) {
             // Row may have moved out of scope — drop it from local state.
-            const id = (payload.new as { id?: string })?.id;
+            const id = (nextRow as { id?: string })?.id;
             if (id) setExpenses(prev => prev.filter(e => e.id !== id));
             return;
           }
-          const updated = parseExpense(payload.new as Record<string, unknown>);
+          const updated = parseExpense(nextRow);
           setExpenses(prev => prev.map(e => e.id === updated.id ? updated : e));
         }
       )

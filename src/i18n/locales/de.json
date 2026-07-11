@@ -2445,11 +2445,13 @@
       },
       "expense_confirmed": {
         "title": "Dein Vorschlag wurde bestätigt",
-        "message": "Ein Krug-Mitglied hat deinen Vorschlag bestätigt."
+        "message": "Ein Krug-Mitglied hat deinen Vorschlag bestätigt.",
+        "toast": "Krug-Vorschlag wurde bestätigt."
       },
       "expense_rejected": {
         "title": "Dein Vorschlag wurde abgelehnt",
-        "message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt."
+        "message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt.",
+        "toast": "Krug-Vorschlag wurde abgelehnt."
       },
       "deletion_requested": {
         "title": "Krug-Löschung gestartet",
