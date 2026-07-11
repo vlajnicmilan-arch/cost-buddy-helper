@@ -862,7 +862,8 @@ export const AddExpenseDialog = ({
     setLocationName(null);
     setLocationCoords(null);
     setKrugId(null);
-    setKrugPrivacy('personal');
+    setKrugPrivacy(null);
+
   };
 
   const executeAdd = async (
