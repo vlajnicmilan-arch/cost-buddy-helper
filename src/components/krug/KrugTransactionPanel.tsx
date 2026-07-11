@@ -41,7 +41,23 @@ import { cn } from '@/lib/utils';
 interface Props {
   expenseId: string;
   expenseAuthorId: string;
+  /**
+   * Uski callback: pozvan SAMO nakon uspješne reassignment akcije
+   * (setPrivacy / A3 retract / A7 govern-to-personal). Voting akti
+   * (A1/A2/A4/A5) namjerno ne trigeriraju ovo — surface u kojem se
+   * odlučuje o prijedlogu mora ostati otvoren.
+   */
+  onReassignSuccess?: () => void;
 }
+
+const SET_PRIVACY_OK = new Set([
+  'ok_set_personal',
+  'ok_set_private',
+  'ok_proposed_shared',
+  'noop_already_in_target_state',
+]);
+const RETRACT_OK = new Set(['ok_retracted', 'noop_already_in_target_state']);
+const GOVERN_OK = new Set(['ok_governed_to_personal', 'noop_already_in_target_state']);
 
 interface KrugExpenseRow {
   krug_id: string | null;
@@ -52,7 +68,7 @@ interface KrugExpenseRow {
 
 const PLACEHOLDER_REQUEST_ID = '00000000-0000-0000-0000-000000000000';
 
-export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
+export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuccess }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -277,7 +293,16 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
                   size="sm"
                   variant={active ? 'default' : 'outline'}
                   disabled={disabled}
-                  onClick={() => setPrivacy.mutate({ expenseId, newPrivacy: opt.key })}
+                  onClick={() =>
+                    setPrivacy.mutate(
+                      { expenseId, newPrivacy: opt.key },
+                      {
+                        onSuccess: (res) => {
+                          if (res && SET_PRIVACY_OK.has(res.outcome)) onReassignSuccess?.();
+                        },
+                      },
+                    )
+                  }
                   className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-medium">
@@ -358,7 +383,16 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => retract.mutate({ expenseId })}
+              onClick={() =>
+                retract.mutate(
+                  { expenseId },
+                  {
+                    onSuccess: (res) => {
+                      if (res && RETRACT_OK.has(res.outcome)) onReassignSuccess?.();
+                    },
+                  },
+                )
+              }
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -370,7 +404,16 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => govern.mutate({ expenseId })}
+              onClick={() =>
+                govern.mutate(
+                  { expenseId },
+                  {
+                    onSuccess: (res) => {
+                      if (res && GOVERN_OK.has(res.outcome)) onReassignSuccess?.();
+                    },
+                  },
+                )
+              }
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />

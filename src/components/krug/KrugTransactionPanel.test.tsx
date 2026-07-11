@@ -117,10 +117,10 @@ describe('KrugTransactionPanel — legacy `private` runtime display', () => {
     fireEvent.click(mojeBtn);
 
     expect(hoisted.setPrivacyMutate).toHaveBeenCalledTimes(1);
-    expect(hoisted.setPrivacyMutate).toHaveBeenCalledWith({
-      expenseId: 'e1',
-      newPrivacy: 'personal',
-    });
+    expect(hoisted.setPrivacyMutate).toHaveBeenCalledWith(
+      { expenseId: 'e1', newPrivacy: 'personal' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
   });
 
   it('ne nudi treći privacy izbor (nema "Skriveno"/private gumba)', () => {
@@ -170,7 +170,10 @@ describe('KrugTransactionPanel — A3 retract runtime (WS4)', () => {
     fireEvent.click(btn);
 
     expect(hoisted.retractMutate).toHaveBeenCalledTimes(1);
-    expect(hoisted.retractMutate).toHaveBeenCalledWith({ expenseId: 'e1' });
+    expect(hoisted.retractMutate).toHaveBeenCalledWith(
+      { expenseId: 'e1' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
   });
 
   it('A3 se NE nudi kad korisnik nije autor (guard očuvan)', () => {
