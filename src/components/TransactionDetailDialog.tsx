@@ -416,7 +416,14 @@ export const TransactionDetailDialog = ({
 
           {/* Krug — transakcijska razina (privacy + A1-A7); renderira se samo ako je krug_id postavljen */}
           {expense.type !== 'transfer' && !readOnlyKrug && (
-            <KrugTransactionPanel expenseId={expense.id} expenseAuthorId={expense.user_id} />
+            <KrugTransactionPanel
+              expenseId={expense.id}
+              expenseAuthorId={expense.user_id}
+              // Uski auto-close: samo reassignment akcije (setPrivacy / A3 / A7)
+              // zatvaraju dijalog i to isključivo na success outcome iz mutation
+              // hooka. Voting akti (A1/A2/A4/A5) ostaju bez close-a.
+              onReassignSuccess={() => onOpenChange(false)}
+            />
           )}
 
 
