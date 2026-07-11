@@ -2,10 +2,10 @@
  * Recent Transactions — Krug indikator na retku transakcije.
  *
  * Zaključava:
- *  - `TransactionItem` renderira badge SAMO kad `expense.krug_id` postoji.
- *  - Badge nosi `data-testid="tx-krug-indicator"` i koristi Users ikonu +
- *    primary tint (usklađeno s Krug modulom).
- *  - Bez novog klik-flowa (read-only wrapper unutar Tooltip-a).
+ *  - `TransactionItem` renderira indikator SAMO kad `expense.krug_id` postoji.
+ *  - Indikator koristi `KrugBrandIcon` (isti logo modula, prilagođena veličina).
+ *  - Nema tooltipa i nema onClick — čisti read-only.
+ *  - `data-testid="tx-krug-indicator"` je stabilan.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -18,22 +18,20 @@ describe('TransactionItem — Krug indikator', () => {
     expect(src).toMatch(/\{expense\.krug_id\s*&&\s*\(/);
   });
 
-  it('badge ima stable testid i primary tint', () => {
-    expect(src).toMatch(
-      /data-testid="tx-krug-indicator"[\s\S]{0,200}bg-primary\/15\s+text-primary/,
-    );
+  it('koristi KrugBrandIcon (isti logo modula)', () => {
+    expect(src).toMatch(/import\s*\{\s*KrugBrandIcon\s*\}\s*from\s*'@\/components\/krug\/KrugBrandIcon'/);
+    expect(src).toMatch(/data-testid="tx-krug-indicator"[\s\S]{0,200}<KrugBrandIcon\s/);
   });
 
-  it('koristi Users ikonu (usklađeno s Krug modulom)', () => {
-    expect(src).toMatch(/import[^;]*\bUsers\b[^;]*from 'lucide-react'/);
-    expect(src).toMatch(/data-testid="tx-krug-indicator"[\s\S]{0,300}<Users\s/);
+  it('nema tooltipa oko indikatora i nema onClick', () => {
+    const match = src.match(/\{expense\.krug_id\s*&&\s*\(([\s\S]*?)\)\}/);
+    expect(match).toBeTruthy();
+    const block = match?.[1] ?? '';
+    expect(block).not.toMatch(/Tooltip/);
+    expect(block).not.toMatch(/onClick/);
   });
 
-  it('badge je unutar Tooltip-a, bez novih akcija (read-only)', () => {
-    expect(src).toMatch(
-      /\{expense\.krug_id\s*&&\s*\([\s\S]{0,400}<Tooltip>[\s\S]{0,600}belongsToKrug/,
-    );
-    // Nema onClick na indikatoru
-    expect(src).not.toMatch(/data-testid="tx-krug-indicator"[^>]*onClick/);
+  it('stabilan testid je prisutan', () => {
+    expect(src).toMatch(/data-testid="tx-krug-indicator"/);
   });
 });
