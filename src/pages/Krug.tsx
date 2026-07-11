@@ -2,11 +2,15 @@
  * Krug — top-level stranica koja zauzima slot u dashboard navigaciji.
  *
  * V1 skeleton: listanje mojih Krugova + detalj (članovi + shared izvori).
- * Kreiranje novog Kruga zahtijeva preset wizard koji NIJE u Wave 1.5 skoupu
- * (vodi se kroz Foundation preset matrix); CTA postoji ali otvara
- * "uskoro" placeholder dijalog umjesto da ovdje uvodi novu odluku.
+ *
+ * P0 Hotfix B (follow-up): page-level broadcast subscribe na `krug_deleted`
+ * per-user topic. `useMyKrugs` broadcast pretplata živi samo dok je list
+ * grana mountana; kad je korisnik u detail viewu, samo `KrugDetailScreen`
+ * je renderiran i pretplata nestaje. Ovdje se pretplata drži na razini
+ * stranice pa se `selectedKrugId` resetira odmah kad owner soft-delete-a
+ * otvoreni Krug, bez oslanjanja na focus/reconnect/refresh.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,11 +18,38 @@ import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { KrugListScreen } from '@/components/krug/KrugListScreen';
 import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Krug() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
 
+  // Page-level broadcast — hvata `krug_deleted` iz DB trigera
+  // `krug_broadcast_soft_delete` bez obzira je li user u list ili detail
+  // grani. Detail grana unmount-a `useMyKrugs` (i njegov broadcast handler),
+  // pa bez ove pretplate obrisani Krug ostaje otvoren u detail viewu drugog
+  // korisnika dok ne izađe ručno.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`krug-page-deletions-${user.id}`)
+      .on('broadcast', { event: 'krug_deleted' }, (msg) => {
+        const krugId = (msg?.payload as { krug_id?: string } | undefined)?.krug_id;
+        if (!krugId) return;
+        qc.invalidateQueries({ queryKey: ['krug', 'my'] });
+        qc.invalidateQueries({ queryKey: ['krug', 'detail', krugId] });
+        qc.invalidateQueries({ queryKey: ['krug', 'members', krugId] });
+        setSelectedKrugId((current) => (current === krugId ? null : current));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, qc]);
 
   return (
     <div className="min-h-screen bg-background pb-20">

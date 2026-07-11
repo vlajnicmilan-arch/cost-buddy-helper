@@ -68,6 +68,17 @@ describe('Krug Realtime + Invalidation Patch', () => {
       expect(src).toMatch(/AFTER UPDATE OF deleted_at ON public\.krug/);
     });
 
+    it('Krug page ima page-level broadcast koji resetira selectedKrugId (P0 Hotfix B follow-up)', () => {
+      const src = read('src/pages/Krug.tsx');
+      // Page-level kanal (drukčiji topic da se ne pomiješa s useMyKrugs)
+      expect(src).toMatch(/\.channel\(`krug-page-deletions-\$\{user\.id\}`\)/);
+      expect(src).toMatch(/'broadcast'[^)]*event:\s*['"]krug_deleted['"]/);
+      // Mora resetirati selectedKrugId kad payload odgovara otvorenom Krugu
+      expect(src).toMatch(/setSelectedKrugId\(\s*\(current\)\s*=>\s*\(?\s*current\s*===\s*krugId\s*\?\s*null\s*:\s*current\s*\)?\s*\)/);
+      // Cleanup
+      expect(src).toMatch(/removeChannel/);
+    });
+
     it('useKrugMembers prati `krug_membership` po krug_id', () => {
       const src = read('src/hooks/useKrug.ts');
       expect(src).toMatch(/\.channel\(`krug-members-\$\{krugId\}`\)/);
