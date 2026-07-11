@@ -139,13 +139,15 @@ export function KrugDecidedSection({ krugId }: Props) {
         expense={selected}
         open={dialogOpen}
         onOpenChange={closeDetail}
+        readOnlyKrug
         onEdit={() => {
-          /* akcije žive u dialogu — ovaj surface je read-only trag */
+          /* read-only trag — akcije žive u approval queue-u */
         }}
         onDelete={() => {
           closeDetail(false);
         }}
       />
+
     </section>
   );
 }
