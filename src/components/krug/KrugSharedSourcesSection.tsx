@@ -42,6 +42,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
   const { user } = useAuth();
   const {
     data: linked = [],
+    displayById,
     linkPaymentSource,
     unlinkPaymentSource,
     isLinking,
@@ -59,8 +60,10 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
       .filter((s) => !linkedIds.has(s.id));
   }, [customPaymentSources, isOwner, linkedIds, user]);
 
-  // Lookup za prikaz imena na linked listi.
-  const nameById = useMemo(() => {
+  // Lookup preferira server-side display resolver (radi i za non-owner članove
+  // koji nemaju SELECT na custom_payment_sources), a padne na lokalnu listu
+  // vlastitih izvora tek ako RPC još nije stigao.
+  const localNameById = useMemo(() => {
     const map = new Map<string, { name: string; currency?: string }>();
     for (const s of customPaymentSources ?? []) {
       map.set(`custom:${(s as any).id}`, { name: (s as any).name, currency: (s as any).currency });
@@ -70,8 +73,10 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
 
   const resolveLabel = (paymentSourceId: string): { label: string; currency?: string } => {
     if (paymentSourceId.startsWith('custom:')) {
-      const meta = nameById.get(paymentSourceId);
-      if (meta?.name) return { label: meta.name, currency: meta.currency };
+      const server = displayById.get(paymentSourceId);
+      if (server?.name) return { label: server.name, currency: server.currency ?? undefined };
+      const local = localNameById.get(paymentSourceId);
+      if (local?.name) return { label: local.name, currency: local.currency };
       const tail = paymentSourceId.slice(7, 13);
       return { label: `${t('krug.sharedSource.unknown', 'Izvor')} · ${tail}` };
     }
@@ -81,6 +86,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
     if (translated && translated !== slugKey) return { label: translated };
     return { label: paymentSourceId };
   };
+
 
   const handleAttach = async (id: string) => {
     if (!id) return;
