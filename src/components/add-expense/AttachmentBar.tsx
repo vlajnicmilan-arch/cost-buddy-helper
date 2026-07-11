@@ -49,10 +49,15 @@ interface AttachmentBarProps {
   // Krug
   showKrug?: boolean;
   krugId?: string | null;
-  krugPrivacy?: KrugPrivacy;
-  onKrugChange?: (next: { krugId: string | null; privacy: KrugPrivacy }) => void;
+  /**
+   * Tri-state: `null` = korisnik još nije eksplicitno odabrao privacy.
+   * Odabir Kruga NE postavlja default; korisnik mora kliknuti "Moje" ili "Za Krug".
+   */
+  krugPrivacy?: KrugPrivacy | null;
+  onKrugChange?: (next: { krugId: string | null; privacy: KrugPrivacy | null }) => void;
   /** Legacy `krug_privacy='private'` — mapira se u UI kao personal, s hintom. */
   legacyPrivate?: boolean;
+
 
   /** Ako je true, project i smjer su međusobno isključivi (scan surface). */
   mutuallyExclusiveProjectBudget?: boolean;
