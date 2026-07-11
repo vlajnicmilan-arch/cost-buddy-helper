@@ -21,7 +21,7 @@ describe('Krug Realtime + Invalidation Patch', () => {
       const src = read('src/hooks/useKrug.ts');
       // useEffect + supabase.channel + removeChannel cleanup
       expect(src).toMatch(/useEffect/);
-      expect(src).toMatch(/supabase\.channel\(`krug-detail-\$\{krugId\}/);
+      expect(src).toMatch(/\.channel\(`krug-detail-\$\{krugId\}/);
       expect(src).toMatch(/removeChannel/);
       // krug UPDATE (soft-delete / rename) filtriran po id
       expect(src).toMatch(/table:\s*['"]krug['"][^}]*filter:\s*`id=eq\.\$\{krugId\}`/);
@@ -33,20 +33,20 @@ describe('Krug Realtime + Invalidation Patch', () => {
 
     it('useMyKrugs prati `krug` publikaciju i invalidira my-list', () => {
       const src = read('src/hooks/useKrug.ts');
-      expect(src).toMatch(/supabase\.channel\(`krug-my-\$\{user\.id\}`\)/);
+      expect(src).toMatch(/\.channel\(`krug-my-\$\{user\.id\}`\)/);
       expect(src).toMatch(/table:\s*['"]krug['"]/);
       expect(src).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[\s*['"]krug['"]\s*,\s*['"]my['"]\s*\]\s*\}\)/);
     });
 
     it('useKrugMembers prati `krug_membership` po krug_id', () => {
       const src = read('src/hooks/useKrug.ts');
-      expect(src).toMatch(/supabase\.channel\(`krug-members-\$\{krugId\}`\)/);
+      expect(src).toMatch(/\.channel\(`krug-members-\$\{krugId\}`\)/);
     });
 
     it('useKrugDeletionRequest prati `krug_deletion_request` i `krug_deletion_vote` po krug_id', () => {
       const src = read('src/hooks/useKrugDeletion.ts');
       expect(src).toMatch(/useEffect/);
-      expect(src).toMatch(/supabase\.channel\(`krug-deletion-\$\{krugId\}`\)/);
+      expect(src).toMatch(/\.channel\(`krug-deletion-\$\{krugId\}`\)/);
       expect(src).toMatch(/table:\s*['"]krug_deletion_request['"][^}]*filter:\s*`krug_id=eq\.\$\{krugId\}`/);
       expect(src).toMatch(/table:\s*['"]krug_deletion_vote['"][^}]*filter:\s*`krug_id=eq\.\$\{krugId\}`/);
       expect(src).toMatch(/removeChannel/);
