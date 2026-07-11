@@ -289,6 +289,22 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {expense.krug_id && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    data-testid="tx-krug-indicator"
+                    className="inline-flex items-center justify-center w-4 h-4 rounded bg-primary/15 text-primary shrink-0"
+                    aria-label={t('krug.transaction.badge', 'Krug')}
+                  >
+                    <Users className="w-2.5 h-2.5" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('krug.transaction.belongsToKrug', 'Pripada Krugu')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {expense.receipt_url && (
               <Tooltip>
                 <TooltipTrigger asChild>
