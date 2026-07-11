@@ -612,6 +612,14 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
+    // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
+    if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
+      showError(
+        t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')
+      );
+      return;
+    }
+
       if (effectiveBusinessProfileId) {
         const fallbackMerchant = scannedData.issuer_name?.trim() || scannedData.description?.trim();
         if (!scannedData.merchant?.trim() && fallbackMerchant) {
