@@ -225,6 +225,9 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             <p className="font-medium text-foreground truncate text-sm leading-tight">
               {expense.merchant_name || expense.description}
             </p>
+            {expense.krug_id && (
+              <KrugBrandIcon size={14} className="shrink-0" data-testid="tx-krug-indicator" />
+            )}
             {expense.expense_nature && (expense.project_id || expense.budget_id) && (
               <Tooltip>
                 <TooltipTrigger asChild>
