@@ -5383,6 +5383,14 @@ export type Database = {
         }[]
       }
       get_founding_member_count: { Args: never; Returns: number }
+      get_krug_shared_source_display: {
+        Args: { _krug_id: string }
+        Returns: {
+          currency: string
+          name: string
+          payment_source_id: string
+        }[]
+      }
       get_my_incoming_payouts: {
         Args: { p_payout_ids: string[] }
         Returns: {
