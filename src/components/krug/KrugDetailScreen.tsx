@@ -57,6 +57,8 @@ export function KrugDetailScreen({ krugId }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
+  const isFullMember = isOwner || detail?.myMembership?.role === 'punopravni';
+
   const punopravniCount = useMemo(
     () => members.filter((m) => m.kind === 'owner' || m.kind === 'punopravni').length,
     [members],
@@ -292,7 +294,7 @@ export function KrugDetailScreen({ krugId }: Props) {
         </Card>
       </section>
 
-      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} />
+      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
 
 
 

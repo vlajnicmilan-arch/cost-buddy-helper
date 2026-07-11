@@ -34,10 +34,15 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 interface Props {
   krugId: string;
+  /** Owner kruga — ima pun administratorski pristup shared-source layeru. */
   isOwner: boolean;
+  /** Punopravni član (uključivo owner) — smije dijeliti svoj vlastiti izvor
+   *  i ukloniti linkove koje je sam postavio. Ordinary članovi ne smiju ništa. */
+  isFullMember: boolean;
 }
 
-export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
+export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Props) {
+
   const { t } = useTranslation();
   const { user } = useAuth();
   const {
@@ -50,15 +55,17 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
   } = useKrugSharedPaymentSources(krugId);
   const { customPaymentSources } = useCustomPaymentSources();
 
-  // Owner-owned sources koji još nisu attachani; format `custom:UUID`.
+  // Attachable sources = own custom sources not yet linked.
+  // Vidljivo samo full memberima (owner ili punopravni); RLS bi ionako odbio insert.
   const linkedIds = useMemo(() => new Set(linked.map((l) => l.payment_source_id)), [linked]);
   const attachable = useMemo(() => {
-    if (!isOwner || !user) return [];
+    if (!isFullMember || !user) return [];
     return (customPaymentSources ?? [])
       .filter((s: any) => s.user_id === user.id)
       .map((s: any) => ({ id: `custom:${s.id}`, name: s.name as string, currency: s.currency as string | undefined }))
       .filter((s) => !linkedIds.has(s.id));
-  }, [customPaymentSources, isOwner, linkedIds, user]);
+  }, [customPaymentSources, isFullMember, linkedIds, user]);
+
 
   // Lookup preferira server-side display resolver (radi i za non-owner članove
   // koji nemaju SELECT na custom_payment_sources), a padne na lokalnu listu
@@ -126,7 +133,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
         <span className="text-xs text-muted-foreground">({linked.length})</span>
       </h3>
 
-      {isOwner && (
+      {isFullMember && (
         <div className="flex items-center gap-2">
           <Select
             value=""
@@ -155,6 +162,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
         </div>
       )}
 
+
       {linked.length === 0 ? (
         <Card className="p-4 text-xs text-muted-foreground">
           {t('krug.noSharedSources', 'Nema povezanih izvora plaćanja.')}
@@ -171,7 +179,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
                     <div className="text-[10px] text-muted-foreground">{currency}</div>
                   )}
                 </div>
-                {isOwner && (
+                {(isOwner || (user && s.linked_by === user.id)) && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -187,6 +195,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
                     )}
                   </Button>
                 )}
+
               </div>
             );
           })}
