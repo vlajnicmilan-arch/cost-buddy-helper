@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const SRC = readFileSync(
-  resolve(__dirname, '../index.ts'),
+  resolve(__dirname, '../../supabase/functions/notify-krug-event/index.ts'),
   'utf8',
 );
 
