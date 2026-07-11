@@ -183,7 +183,14 @@ Deno.serve(async (req) => {
   const titleKey = `notifications.krug.${event_type_shortKey(event_type)}.title`;
   const bodyKey = `notifications.krug.${event_type_shortKey(event_type)}.message`;
   const highlightRoute = `/krug`; // MVP: land on krug list; deleted route ok
-  const route = event_type === "krug_deleted" ? "/krug" : `/krug`;
+  // deletion_requested vodi u konkretni Krug (`/krug?id=<uuid>`) da recipient
+  // vidi točan Krug čije je brisanje inicirano, umjesto generičke liste.
+  // Ostali eventi ostaju na `/krug` (MVP surface). `krug_deleted` NE smije
+  // ciljati id — Krug je već obrisan.
+  const route =
+    event_type === "krug_deletion_requested" && isUuid(krug_id)
+      ? `/krug?id=${krug_id}`
+      : "/krug";
 
   const dataCore: Record<string, unknown> = {
     krug_id,

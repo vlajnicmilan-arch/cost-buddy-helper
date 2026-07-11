@@ -12,6 +12,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
@@ -27,6 +28,20 @@ export default function Krug() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep-link ulaz iz obavijesti (`/krug?id=<uuid>`). Kad payload ima id,
+  // otvaramo detail direktno i čistimo query param da back-navigacija na
+  // listu ne re-triggera otvaranje.
+  useEffect(() => {
+    const idParam = searchParams.get('id');
+    if (idParam && idParam !== selectedKrugId) {
+      setSelectedKrugId(idParam);
+      const next = new URLSearchParams(searchParams);
+      next.delete('id');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, selectedKrugId, setSearchParams]);
 
   // Page-level broadcast — hvata `krug_deleted` iz DB trigera
   // `krug_broadcast_soft_delete` bez obzira je li user u list ili detail
