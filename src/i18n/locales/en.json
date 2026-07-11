@@ -5020,8 +5020,11 @@
       "shared": "For Krug",
       "hintPersonal": "Stays visible only to you. Not sent to Krug for approval.",
       "hintShared": "Sent to other Krug members for approval. Krug records a shared trace of spending — it does not settle debts.",
-      "legacyPrivateHint": "This expense was originally marked as “Hidden from Krug”. In the new version it appears as “Mine”. Changing the choice will replace the original label."
+      "legacyPrivateHint": "This expense was originally marked as “Hidden from Krug”. In the new version it appears as “Mine”. Changing the choice will replace the original label.",
+      "pickPrivacy": "pick type",
+      "pickPrivacyHint": "Pick Mine or For Krug before saving."
     },
+
     "queue": {
       "title": "Awaiting decision",
       "subtitle": "Your approval for shared expenses proposed by Krug members.",

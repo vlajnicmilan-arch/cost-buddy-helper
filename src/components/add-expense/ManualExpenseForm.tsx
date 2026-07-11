@@ -129,8 +129,9 @@ interface ManualExpenseFormProps {
   multiGalleryInputRef: React.RefObject<HTMLInputElement>;
   // Krug WS1 — samo personal kontekst (roditelj hida u business modu).
   krugId?: string | null;
-  krugPrivacy?: 'personal' | 'shared';
-  onKrugChange?: (next: { krugId: string | null; privacy: 'personal' | 'shared' }) => void;
+  krugPrivacy?: 'personal' | 'shared' | null;
+  onKrugChange?: (next: { krugId: string | null; privacy: 'personal' | 'shared' | null }) => void;
+
   showKrugSelector?: boolean;
   // Submit
   onSubmit: (e: React.FormEvent) => void;
@@ -412,8 +413,9 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               onSelectedBudgetIdChange={props.onSelectedBudgetIdChange}
               showKrug={!!props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange}
               krugId={props.krugId ?? null}
-              krugPrivacy={props.krugPrivacy ?? 'personal'}
+              krugPrivacy={props.krugPrivacy ?? null}
               onKrugChange={props.onKrugChange}
+
             />
           )}
 

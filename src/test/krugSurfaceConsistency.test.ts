@@ -66,10 +66,11 @@ describe('Krug entry surface guards', () => {
     expect(src).toMatch(/!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/);
   });
 
-  it('KrugSelector state u AddExpenseDialog je personal | shared (bez private)', () => {
+  it('KrugSelector state u AddExpenseDialog je tri-state personal | shared | null (bez skrivenog defaulta)', () => {
     const src = read('src/components/add-expense/AddExpenseDialog.tsx');
-    expect(src).toMatch(/useState<'personal'\s*\|\s*'shared'>/);
+    expect(src).toMatch(/useState<'personal'\s*\|\s*'shared'\s*\|\s*null>/);
   });
+
 });
 
 describe('Krug pokriva expense + income, ne transfer', () => {

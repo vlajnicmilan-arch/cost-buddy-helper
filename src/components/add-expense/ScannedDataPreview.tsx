@@ -81,8 +81,9 @@ interface ScannedDataPreviewProps {
    */
   showKrugSelector?: boolean;
   krugId?: string | null;
-  krugPrivacy?: KrugSelectorPrivacy;
-  onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy }) => void;
+  krugPrivacy?: KrugSelectorPrivacy | null;
+  onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy | null }) => void;
+
 }
 
 export const ScannedDataPreview = ({
@@ -110,7 +111,8 @@ export const ScannedDataPreview = ({
   onDateOrTimeEdited,
   showKrugSelector = false,
   krugId = null,
-  krugPrivacy = 'personal',
+  krugPrivacy = null,
+
   onKrugChange,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();

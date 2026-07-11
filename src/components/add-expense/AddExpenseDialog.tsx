@@ -157,8 +157,11 @@ export const AddExpenseDialog = ({
   const [installmentCount, setInstallmentCount] = useState(12);
   const [firstPaymentDate, setFirstPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   // Krug WS1 — Semantics Lock v1: samo personal + shared, personal-only kontekst.
+  // Privacy je tri-state: `null` = korisnik još nije eksplicitno odabrao.
+  // Bez skrivenog defaulta — submit blokira dok korisnik ne potvrdi izbor.
   const [krugId, setKrugId] = useState<string | null>(null);
-  const [krugPrivacy, setKrugPrivacy] = useState<'personal' | 'shared'>('personal');
+  const [krugPrivacy, setKrugPrivacy] = useState<'personal' | 'shared' | null>(null);
+
   
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [duplicateOf, setDuplicateOf] = useState<Expense | null>(null);
@@ -609,6 +612,14 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving) return;
+    // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
+    if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
+      showError(
+        t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')
+      );
+      return;
+    }
+
       if (effectiveBusinessProfileId) {
         const fallbackMerchant = scannedData.issuer_name?.trim() || scannedData.description?.trim();
         if (!scannedData.merchant?.trim() && fallbackMerchant) {
@@ -859,7 +870,8 @@ export const AddExpenseDialog = ({
     setLocationName(null);
     setLocationCoords(null);
     setKrugId(null);
-    setKrugPrivacy('personal');
+    setKrugPrivacy(null);
+
   };
 
   const executeAdd = async (
@@ -935,11 +947,22 @@ export const AddExpenseDialog = ({
     e.preventDefault();
     if (!amount) return;
 
+    // Krug attach — bez skrivenog defaulta. Ako je Krug odabran, korisnik
+    // MORA eksplicitno odabrati Moje / Za Krug. Submit se ne smije tiho
+    // pretpostaviti privacy vrijednost.
+    if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
+      showError(
+        t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')
+      );
+      return;
+    }
+
     // Validate advance + collaborator combo
     if (selectedProjectId && isAdvance && !collaboratorId) {
       showError(t('projects.advances.errors.noCollaborator', 'Odaberi suradnika kojem se isplaćuje avans.'));
       return;
     }
+
     // Surplus warning: linked advances exceed invoice amount
     if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
       const parsedAmt = validateAmountInput(amount).value || 0;
