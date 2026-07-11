@@ -54,7 +54,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm sm:text-base font-semibold">{t('common.finances', 'Novčanik - pregled')}</p>
+                <p className="text-sm sm:text-base font-semibold">{t('common.financesOverview', 'Novčanik - pregled')}</p>
                 <p className="text-xs text-muted-foreground">
                   {visibleSources.length} {visibleSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')}&nbsp;
                 </p>

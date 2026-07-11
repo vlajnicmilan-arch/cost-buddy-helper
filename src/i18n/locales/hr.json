@@ -1,4 +1,7 @@
 {
+  "common": {
+    "financesOverview": "Novčanik - pregled"
+  },
   "aiInsights": {
     "title": "AI uvidi"
   },
