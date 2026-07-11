@@ -5114,6 +5114,8 @@
     "transaction": {
       "title": "Krug",
       "loading": "Učitavam…",
+      "badge": "Krug",
+      "belongsToKrug": "Pripada Krugu",
       "legacyPrivateHint": "Ovaj je zapis izvorno bio „Skriveno od Kruga\". Prikazuje se kao „Moje\". Klikni „Moje\" za migraciju ili odaberi „Za Krug\"."
     },
     "privacy": {
