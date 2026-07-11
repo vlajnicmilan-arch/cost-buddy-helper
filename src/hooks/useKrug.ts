@@ -165,6 +165,17 @@ export function useKrug(krugId: string | null | undefined) {
           qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses', krugId] });
         },
       )
+      // Approval Live Visibility — svaki insert/update/delete `expenses` reda vezanog
+      // uz ovaj Krug mora odmah osvježiti approval queue (predlozena/potvrdjena/negirana).
+      // Bez ovoga korisnik s pravom odlučivanja ne vidi novi `predlozena` prijedlog
+      // dok ne izađe iz app i ponovno uđe (staleTime 60s + no realtime signal).
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses', filter: `krug_id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses', krugId] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
