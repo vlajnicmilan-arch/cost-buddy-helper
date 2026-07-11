@@ -111,7 +111,8 @@ export const ScannedDataPreview = ({
   onDateOrTimeEdited,
   showKrugSelector = false,
   krugId = null,
-  krugPrivacy = 'personal',
+  krugPrivacy = null,
+
   onKrugChange,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
