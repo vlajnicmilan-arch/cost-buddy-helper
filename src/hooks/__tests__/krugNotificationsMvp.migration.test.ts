@@ -28,12 +28,28 @@ function loadMigrationWith(marker: string): string {
 }
 
 function extractFunctionBody(src: string, name: string): string {
+  // Match any dollar-quote tag ($$ or $function$ etc.) to survive Postgres
+  // introspection round-tripping between migrations.
   const re = new RegExp(
-    `CREATE OR REPLACE FUNCTION public\\.${name}\\b[\\s\\S]*?AS \\$\\$[\\s\\S]*?\\n\\$\\$;`,
+    `CREATE OR REPLACE FUNCTION public\\.${name}\\b[\\s\\S]*?AS \\$([a-zA-Z_]*)\\$[\\s\\S]*?\\n\\$\\1\\$;`,
   );
   const m = src.match(re);
   if (!m) throw new Error(`Function body not found: ${name}`);
   return m[0];
+}
+
+function extractFromLatestDefiningMigration(name: string): string {
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  const marker = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\b`);
+  let latestSrc: string | null = null;
+  for (const f of files) {
+    const src = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+    if (marker.test(src)) latestSrc = src;
+  }
+  if (!latestSrc) throw new Error(`No migration defines: ${name}`);
+  return extractFunctionBody(latestSrc, name);
 }
 
 describe('Krug Notifications MVP migration', () => {
