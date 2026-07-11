@@ -46,6 +46,28 @@ describe('Krug Realtime + Invalidation Patch', () => {
       expect(src).toMatch(/table:\s*['"]krug_membership['"][^}]*filter:\s*`user_id=eq\.\$\{user\.id\}`/);
     });
 
+    it('useMyKrugs sluša per-user broadcast `krug_deleted` topic (P0 Hotfix B)', () => {
+      const src = read('src/hooks/useKrug.ts');
+      // Novi kanal koji hvata broadcast iz DB trigera krug_broadcast_soft_delete
+      expect(src).toMatch(/\.channel\(`krug-user-deletions-\$\{user\.id\}`\)/);
+      expect(src).toMatch(/'broadcast'[^)]*event:\s*['"]krug_deleted['"]/);
+    });
+
+    it('DB trigger emitira `krug_deleted` broadcast na per-user topic (P0 Hotfix B)', () => {
+      const { readdirSync } = require('fs');
+      const migrations = readdirSync(resolve(__dirname, '..', '..', 'supabase/migrations'));
+      const hits = migrations
+        .filter((f: string) => f.endsWith('.sql'))
+        .map((f: string) => read(`supabase/migrations/${f}`))
+        .filter((s: string) => s.includes('krug_broadcast_soft_delete'));
+      expect(hits.length, 'no migration installs krug_broadcast_soft_delete').toBeGreaterThan(0);
+      const src = hits.join('\n');
+      expect(src).toMatch(/realtime\.send\(/);
+      expect(src).toMatch(/'krug_deleted'/);
+      expect(src).toMatch(/krug:user:/);
+      expect(src).toMatch(/AFTER UPDATE OF deleted_at ON public\.krug/);
+    });
+
     it('useKrugMembers prati `krug_membership` po krug_id', () => {
       const src = read('src/hooks/useKrug.ts');
       expect(src).toMatch(/\.channel\(`krug-members-\$\{krugId\}`\)/);
