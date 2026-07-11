@@ -34,10 +34,15 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 interface Props {
   krugId: string;
+  /** Owner kruga — ima pun administratorski pristup shared-source layeru. */
   isOwner: boolean;
+  /** Punopravni član (uključivo owner) — smije dijeliti svoj vlastiti izvor
+   *  i ukloniti linkove koje je sam postavio. Ordinary članovi ne smiju ništa. */
+  isFullMember: boolean;
 }
 
-export function KrugSharedSourcesSection({ krugId, isOwner }: Props) {
+export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Props) {
+
   const { t } = useTranslation();
   const { user } = useAuth();
   const {
