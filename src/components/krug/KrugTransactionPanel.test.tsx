@@ -170,7 +170,10 @@ describe('KrugTransactionPanel — A3 retract runtime (WS4)', () => {
     fireEvent.click(btn);
 
     expect(hoisted.retractMutate).toHaveBeenCalledTimes(1);
-    expect(hoisted.retractMutate).toHaveBeenCalledWith({ expenseId: 'e1' });
+    expect(hoisted.retractMutate).toHaveBeenCalledWith(
+      { expenseId: 'e1' },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
   });
 
   it('A3 se NE nudi kad korisnik nije autor (guard očuvan)', () => {
