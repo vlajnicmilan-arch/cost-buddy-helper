@@ -46,12 +46,32 @@ describe('Krug Realtime + Invalidation Patch', () => {
       expect(src).toMatch(/table:\s*['"]krug_membership['"][^}]*filter:\s*`user_id=eq\.\$\{user\.id\}`/);
     });
 
-    it('useMyKrugs sluša per-user broadcast `krug_deleted` topic (P0 Hotfix B)', () => {
+    it('useMyKrugs NEMA broadcast slušač za krug_deleted (jedini recipient je Krug.tsx)', () => {
       const src = read('src/hooks/useKrug.ts');
-      // Novi kanal koji hvata broadcast iz DB trigera krug_broadcast_soft_delete
-      expect(src).toMatch(/\.channel\(`krug-user-deletions-\$\{user\.id\}`\)/);
-      expect(src).toMatch(/'broadcast'[^)]*event:\s*['"]krug_deleted['"]/);
+      // Ne smije postojati broadcast pretplata (na bilo kojem topicu) unutar useKrug.ts
+      expect(src).not.toMatch(/'broadcast'\s*,\s*\{\s*event:\s*['"]krug_deleted['"]/);
+      // Ne smije se pojaviti stari mrtvi kanal
+      expect(src).not.toMatch(/krug-user-deletions-/);
     });
+
+    it('Broadcast slušač za krug_deleted postoji ISKLJUČIVO u src/pages/Krug.tsx', () => {
+      const { readdirSync, statSync } = require('fs');
+      const roots = ['src/hooks', 'src/components', 'src/pages'];
+      const hits: string[] = [];
+      const walk = (dir: string) => {
+        for (const entry of readdirSync(resolve(__dirname, '..', '..', dir))) {
+          const rel = `${dir}/${entry}`;
+          const abs = resolve(__dirname, '..', '..', rel);
+          if (statSync(abs).isDirectory()) { walk(rel); continue; }
+          if (!/\.(ts|tsx)$/.test(entry)) continue;
+          const src = read(rel);
+          if (/event:\s*['"]krug_deleted['"]/.test(src)) hits.push(rel);
+        }
+      };
+      roots.forEach(walk);
+      expect(hits).toEqual(['src/pages/Krug.tsx']);
+    });
+
 
     it('DB trigger emitira `krug_deleted` broadcast na per-user topic (P0 Hotfix B)', () => {
       const { readdirSync } = require('fs');
