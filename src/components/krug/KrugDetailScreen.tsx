@@ -34,9 +34,11 @@ import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
 import { KrugApprovalQueue } from './KrugApprovalQueue';
+import { KrugDecidedSection } from './KrugDecidedSection';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
+
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 
@@ -173,6 +175,11 @@ export function KrugDetailScreen({ krugId }: Props) {
           isOwner || detail.myMembership?.role === 'punopravni'
         }
       />
+
+      <KrugDecidedSection krugId={krugId} />
+
+
+
 
 
 
