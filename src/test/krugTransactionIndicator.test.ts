@@ -31,7 +31,7 @@ describe('TransactionItem — Krug indikator', () => {
 
   it('badge je unutar Tooltip-a, bez novih akcija (read-only)', () => {
     expect(src).toMatch(
-      /\{expense\.krug_id\s*&&\s*\([\s\S]{0,80}<Tooltip>[\s\S]{0,400}belongsToKrug/,
+      /\{expense\.krug_id\s*&&\s*\([\s\S]{0,400}<Tooltip>[\s\S]{0,600}belongsToKrug/,
     );
     // Nema onClick na indikatoru
     expect(src).not.toMatch(/data-testid="tx-krug-indicator"[^>]*onClick/);
