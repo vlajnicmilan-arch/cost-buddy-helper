@@ -6,8 +6,18 @@
  *
  * Owner se NE prikazuje kao membership role — vodi se kroz `krug_ownership`.
  * Membership role enum ima samo `punopravni | obicni`.
+ *
+ * Realtime + Invalidation Patch:
+ * - useMyKrugs prati `krug` publikaciju (INSERT/UPDATE/DELETE) — bez filtera,
+ *   invalidira listu na svakom eventu. Volumen krug promjena je nizak.
+ * - useKrug prati `krug` filtriran po `id=eq.<krugId>` i `krug_membership`
+ *   filtriran po `krug_id=eq.<krugId>` — invalidira detail (myMembership),
+ *   members listu i pending-expenses (isFullMember gate).
+ * - useKrugMembers prati `krug_membership` po `krug_id` — invalidira members
+ *   i detail; pending-expenses ide preko useKrug jer je vezan uz isFullMember.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
@@ -27,7 +37,9 @@ const STALE = 5 * 60 * 1000;
 /** Krugovi u kojima sam owner ili član (`punopravni`/`obicni`). RLS filtrira po `krug_is_member`. */
 export function useMyKrugs() {
   const { user } = useAuth();
-  return useQuery({
+  const qc = useQueryClient();
+
+  const query = useQuery({
     queryKey: ['krug', 'my', user?.id ?? null],
     enabled: !!user,
     staleTime: STALE,
@@ -42,6 +54,28 @@ export function useMyKrugs() {
       return data ?? [];
     },
   });
+
+  // Realtime: bilo koja promjena na `krug` (soft-delete, rename, novi Krug)
+  // invalidira my-list. Volume je nizak, filter po member-shipu bi tražio
+  // dodatni JOIN kojeg realtime ne podržava — jeftinije je uvijek revalidirati.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`krug-my-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'my'] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, qc]);
+
+  return query;
 }
 
 export interface KrugWithRoles {
@@ -53,7 +87,9 @@ export interface KrugWithRoles {
 /** Pojedinačni krug + ownership row + moj membership row (ako postoji). */
 export function useKrug(krugId: string | null | undefined) {
   const { user } = useAuth();
-  return useQuery({
+  const qc = useQueryClient();
+
+  const query = useQuery({
     queryKey: ['krug', 'detail', krugId, user?.id ?? null],
     enabled: !!user && !!krugId,
     staleTime: STALE,
@@ -81,6 +117,42 @@ export function useKrug(krugId: string | null | undefined) {
       };
     },
   });
+
+  // Realtime — otvoreni Krug mora reagirati na:
+  //   - promjenu lifecycle_state / deleted_at (owner + drugi članovi vide brisanje)
+  //   - promjenu role u krug_membership (upgrade/downgrade odmah propagira
+  //     na `myMembership`, a time i na `isFullMember` u KrugApprovalQueue/Panel)
+  //   - insert/delete membership row-a (netko dodan/uklonjen bez re-entera)
+  // Kad se membership promijeni, i pending-expenses read model se mora
+  // osvježiti — RLS na expenses ovisi o full-member statusu.
+  useEffect(() => {
+    if (!user || !krugId) return;
+    const channel = supabase
+      .channel(`krug-detail-${krugId}-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug', filter: `id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'detail', krugId] });
+          qc.invalidateQueries({ queryKey: ['krug', 'my'] });
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug_membership', filter: `krug_id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'detail', krugId] });
+          qc.invalidateQueries({ queryKey: ['krug', 'members', krugId] });
+          qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses', krugId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, krugId, qc]);
+
+  return query;
 }
 
 export interface KrugMemberView {
@@ -98,7 +170,9 @@ export interface KrugMemberView {
  * upisuje `punopravni`), spaja se u jedan red s `kind='owner'` ali zadržava `membership_id`.
  */
 export function useKrugMembers(krugId: string | null | undefined) {
-  return useQuery({
+  const qc = useQueryClient();
+
+  const query = useQuery({
     queryKey: ['krug', 'members', krugId],
     enabled: !!krugId,
     staleTime: STALE,
@@ -146,4 +220,27 @@ export function useKrugMembers(krugId: string | null | undefined) {
       return out;
     },
   });
+
+  // Realtime: promjena membership row-a mora refleksno osvježiti listu
+  // članova bez re-entera. Detail se invalidira zbog `myMembership` u useKrug
+  // koji drugi surface-i čitaju iz istog cache-a.
+  useEffect(() => {
+    if (!krugId) return;
+    const channel = supabase
+      .channel(`krug-members-${krugId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug_membership', filter: `krug_id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'members', krugId] });
+          qc.invalidateQueries({ queryKey: ['krug', 'detail', krugId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [krugId, qc]);
+
+  return query;
 }

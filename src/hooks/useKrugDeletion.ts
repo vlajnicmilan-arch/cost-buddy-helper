@@ -9,6 +9,7 @@
  * - Više punopravnih → jednoglasna suglasnost; jedan "ne" zatvara zahtjev
  * - Soft-delete: krug.deleted_at + lifecycle_state='deleted'; 30d grace
  */
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +42,9 @@ export interface KrugDeletionState {
 }
 
 export function useKrugDeletionRequest(krugId: string | null | undefined) {
-  return useQuery({
+  const qc = useQueryClient();
+
+  const query = useQuery({
     queryKey: ['krug', 'deletion', krugId],
     enabled: !!krugId,
     staleTime: STALE,
@@ -68,6 +71,36 @@ export function useKrugDeletionRequest(krugId: string | null | undefined) {
       };
     },
   });
+
+  // Realtime — otvoreni Krug mora reagirati na deletion request/vote bez
+  // izlaska i ponovnog ulaska. Pokriva scenarije E17 (drugi član ne vidi
+  // request) i E18 (owner ne vidi da je Krug obrisan) ako je krug UPDATE
+  // pokriven kroz useKrug realtime (lifecycle_state → deleted).
+  useEffect(() => {
+    if (!krugId) return;
+    const channel = supabase
+      .channel(`krug-deletion-${krugId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug_deletion_request', filter: `krug_id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'deletion', krugId] });
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug_deletion_vote', filter: `krug_id=eq.${krugId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'deletion', krugId] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [krugId, qc]);
+
+  return query;
 }
 
 interface ActOutcome {
