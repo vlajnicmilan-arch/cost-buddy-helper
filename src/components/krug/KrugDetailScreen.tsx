@@ -294,7 +294,7 @@ export function KrugDetailScreen({ krugId }: Props) {
         </Card>
       </section>
 
-      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} />
+      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
 
 
 
