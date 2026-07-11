@@ -383,7 +383,16 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => retract.mutate({ expenseId })}
+              onClick={() =>
+                retract.mutate(
+                  { expenseId },
+                  {
+                    onSuccess: (res) => {
+                      if (res && RETRACT_OK.has(res.outcome)) onReassignSuccess?.();
+                    },
+                  },
+                )
+              }
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
