@@ -338,11 +338,13 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
               ? `${selectedKrug.name}${
                   props.krugPrivacy === 'shared'
                     ? ` · ${t('krug.selector.shared', 'Za Krug')}`
-                    : ''
+                    : props.krugPrivacy === 'personal'
+                      ? ` · ${t('krug.selector.personal', 'Moje')}`
+                      : ` · ${t('krug.selector.pickPrivacy', 'odaberi tip')}`
                 }`
               : null
           }
-          onClear={() => props.onKrugChange?.({ krugId: null, privacy: 'personal' })}
+          onClear={() => props.onKrugChange?.({ krugId: null, privacy: null })}
           open={openChip === 'krug'}
           onOpenChange={(o) => setOpenChip(o ? 'krug' : null)}
         >
@@ -360,9 +362,13 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     key={k.id}
                     type="button"
                     onClick={() => {
+                      // Promjena Kruga (ili prvi odabir) resetira privacy na `null` —
+                      // korisnik mora eksplicitno kliknuti Moje / Za Krug. Bez skrivenog defaulta.
+                      const nextPrivacy =
+                        props.krugId === k.id ? (props.krugPrivacy ?? null) : null;
                       props.onKrugChange?.({
                         krugId: k.id,
-                        privacy: props.krugPrivacy ?? 'personal',
+                        privacy: nextPrivacy,
                       });
                     }}
                     className={cn(
@@ -387,15 +393,32 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
 
             {props.krugId && (
               <div className="border-t border-border/50 p-2.5 space-y-2 bg-muted/20">
-                <div className="flex gap-1 p-0.5 bg-background rounded-lg border border-border/50">
+                {props.krugPrivacy == null && (
+                  <p
+                    data-testid="krug-privacy-required-hint"
+                    className="text-[10.5px] font-medium text-[hsl(25_95%_53%)] leading-snug"
+                  >
+                    {t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')}
+                  </p>
+                )}
+                <div
+                  className={cn(
+                    'flex gap-1 p-0.5 bg-background rounded-lg border',
+                    props.krugPrivacy == null
+                      ? 'border-[hsl(25_95%_53%)]/60 ring-1 ring-[hsl(25_95%_53%)]/30'
+                      : 'border-border/50'
+                  )}
+                >
                   <button
                     type="button"
-                    onClick={() =>
-                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'personal' })
-                    }
+                    data-testid="krug-privacy-personal"
+                    onClick={() => {
+                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'personal' });
+                      close();
+                    }}
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',
-                      (props.krugPrivacy ?? 'personal') === 'personal'
+                      props.krugPrivacy === 'personal'
                         ? 'bg-[hsl(25_95%_53%)] text-white shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
@@ -405,9 +428,11 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'shared' })
-                    }
+                    data-testid="krug-privacy-shared"
+                    onClick={() => {
+                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'shared' });
+                      close();
+                    }}
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',
                       props.krugPrivacy === 'shared'
@@ -419,17 +444,19 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     {t('krug.selector.shared', 'Za Krug')}
                   </button>
                 </div>
-                <p className="text-[10.5px] text-muted-foreground leading-snug">
-                  {props.krugPrivacy === 'shared'
-                    ? t(
-                        'krug.selector.hintShared',
-                        'Šalje se ostalim članovima Kruga na potvrdu. Krug bilježi zajednički trag potrošnje — ne obračunava dugove.'
-                      )
-                    : t(
-                        'krug.selector.hintPersonal',
-                        'Ostaje vidljivo samo tebi. Ne ide na potvrdu Krugu.'
-                      )}
-                </p>
+                {props.krugPrivacy != null && (
+                  <p className="text-[10.5px] text-muted-foreground leading-snug">
+                    {props.krugPrivacy === 'shared'
+                      ? t(
+                          'krug.selector.hintShared',
+                          'Šalje se ostalim članovima Kruga na potvrdu. Krug bilježi zajednički trag potrošnje — ne obračunava dugove.'
+                        )
+                      : t(
+                          'krug.selector.hintPersonal',
+                          'Ostaje vidljivo samo tebi. Ne ide na potvrdu Krugu.'
+                        )}
+                  </p>
+                )}
                 {props.legacyPrivate && props.krugPrivacy === 'personal' && (
                   <p className="text-[10.5px] text-amber-600 dark:text-amber-400 leading-snug">
                     {t(
@@ -443,6 +470,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
           </div>
         </Chip>
       )}
+
     </div>
   );
 };
