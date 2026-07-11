@@ -5039,6 +5039,14 @@
         "reject": "Reject"
       }
     },
+    "decided": {
+      "title": "Decided",
+      "empty": "No decided proposals yet.",
+      "status": {
+        "confirmed": "Approved",
+        "rejected": "Rejected"
+      }
+    },
     "sharedSource": {
       "attach": {
         "placeholder": "Link a payment source…",
