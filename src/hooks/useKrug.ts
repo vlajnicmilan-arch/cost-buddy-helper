@@ -83,8 +83,28 @@ export function useMyKrugs() {
         },
       )
       .subscribe();
+
+    // P0 Hotfix B — per-user broadcast za soft-delete Kruga.
+    // Kad owner obriše Krug, `krug_is_member` za ne-ownera postane false pa
+    // `postgres_changes` UPDATE event NE prolazi RLS filter na Realtime sloju
+    // i klijent ga nikad ne dobije. Server-side trigger emitira `krug_deleted`
+    // broadcast na topic `krug:user:<user_id>`; ovdje ga hvatamo i invalidamo
+    // my-list + detail cache tog Kruga da UI odmah reagira.
+    const deletionChannel = supabase
+      .channel(`krug-user-deletions-${user.id}`)
+      .on('broadcast', { event: 'krug_deleted' }, (msg) => {
+        const krugId = (msg?.payload as { krug_id?: string } | undefined)?.krug_id;
+        qc.invalidateQueries({ queryKey: ['krug', 'my'] });
+        if (krugId) {
+          qc.invalidateQueries({ queryKey: ['krug', 'detail', krugId] });
+          qc.invalidateQueries({ queryKey: ['krug', 'members', krugId] });
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(deletionChannel);
     };
   }, [user, qc]);
 
