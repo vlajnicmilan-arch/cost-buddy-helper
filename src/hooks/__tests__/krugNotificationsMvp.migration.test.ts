@@ -28,12 +28,28 @@ function loadMigrationWith(marker: string): string {
 }
 
 function extractFunctionBody(src: string, name: string): string {
+  // Match any dollar-quote tag ($$ or $function$ etc.) to survive Postgres
+  // introspection round-tripping between migrations.
   const re = new RegExp(
-    `CREATE OR REPLACE FUNCTION public\\.${name}\\b[\\s\\S]*?AS \\$\\$[\\s\\S]*?\\n\\$\\$;`,
+    `CREATE OR REPLACE FUNCTION public\\.${name}\\b[\\s\\S]*?AS \\$([a-zA-Z_]*)\\$[\\s\\S]*?\\n\\$\\1\\$;`,
   );
   const m = src.match(re);
   if (!m) throw new Error(`Function body not found: ${name}`);
   return m[0];
+}
+
+function extractFromLatestDefiningMigration(name: string): string {
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  const marker = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\b`);
+  let latestSrc: string | null = null;
+  for (const f of files) {
+    const src = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+    if (marker.test(src)) latestSrc = src;
+  }
+  if (!latestSrc) throw new Error(`No migration defines: ${name}`);
+  return extractFunctionBody(latestSrc, name);
 }
 
 describe('Krug Notifications MVP migration', () => {
@@ -116,12 +132,17 @@ describe('Krug Notifications MVP migration', () => {
     expect(fn).toMatch(/krug_emit_notification\(\s*'krug_deletion_requested'/);
   });
 
-  it('krug_purge_deleted emits krug_deleted per purged krug via snapshot', () => {
-    const fn = extractFunctionBody(SRC, 'krug_purge_deleted');
-    expect(fn).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
-    // Loop-based (not a bulk DELETE ... RETURNING) so snapshots can be read
-    // before the row disappears.
-    expect(fn).toMatch(/FOR\s+\w+\s+IN/i);
-    expect(fn).toMatch(/member_snapshot/);
+  it('krug_purge_deleted NO LONGER emits user-facing krug_deleted (moved to soft-delete moment)', () => {
+    const fn = extractFromLatestDefiningMigration('krug_purge_deleted');
+    expect(fn).not.toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+  });
+
+  it('krug_deleted is emitted at soft-delete moment (solo + final-approve branches)', () => {
+    const req = extractFromLatestDefiningMigration('krug_request_deletion');
+    const vote = extractFromLatestDefiningMigration('krug_vote_deletion');
+    expect(req).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+    expect(req).toMatch(/'krug_deleted:'\s*\|\|\s*p_krug_id/);
+    expect(vote).toMatch(/krug_emit_notification\(\s*'krug_deleted'/);
+    expect(vote).toMatch(/'krug_deleted:'\s*\|\|\s*p_krug_id/);
   });
 });
