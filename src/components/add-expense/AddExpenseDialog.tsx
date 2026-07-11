@@ -939,11 +939,22 @@ export const AddExpenseDialog = ({
     e.preventDefault();
     if (!amount) return;
 
+    // Krug attach — bez skrivenog defaulta. Ako je Krug odabran, korisnik
+    // MORA eksplicitno odabrati Moje / Za Krug. Submit se ne smije tiho
+    // pretpostaviti privacy vrijednost.
+    if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
+      showError(
+        t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')
+      );
+      return;
+    }
+
     // Validate advance + collaborator combo
     if (selectedProjectId && isAdvance && !collaboratorId) {
       showError(t('projects.advances.errors.noCollaborator', 'Odaberi suradnika kojem se isplaćuje avans.'));
       return;
     }
+
     // Surplus warning: linked advances exceed invoice amount
     if (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) {
       const parsedAmt = validateAmountInput(amount).value || 0;
