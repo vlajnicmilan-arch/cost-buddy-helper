@@ -413,8 +413,9 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
               onSelectedBudgetIdChange={props.onSelectedBudgetIdChange}
               showKrug={!!props.showKrugSelector && props.type !== 'transfer' && !!props.onKrugChange}
               krugId={props.krugId ?? null}
-              krugPrivacy={props.krugPrivacy ?? 'personal'}
+              krugPrivacy={props.krugPrivacy ?? null}
               onKrugChange={props.onKrugChange}
+
             />
           )}
 
