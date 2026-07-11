@@ -58,6 +58,12 @@ export function useMyKrugs() {
   // Realtime: bilo koja promjena na `krug` (soft-delete, rename, novi Krug)
   // invalidira my-list. Volume je nizak, filter po member-shipu bi tražio
   // dodatni JOIN kojeg realtime ne podržava — jeftinije je uvijek revalidirati.
+  //
+  // Dopuna (Val A follow-up): membership promjene NE mijenjaju red u `krug`,
+  // pa ulazak (novi član) i izlazak (uklonjeni član) iz Kruga ne bi
+  // propagirali u listu bez zasebne pretplate. Filtriramo po
+  // `user_id=eq.<me>` da hvatamo isključivo membership događaje koji
+  // utječu na *moju* listu.
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -65,6 +71,13 @@ export function useMyKrugs() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'krug' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['krug', 'my'] });
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'krug_membership', filter: `user_id=eq.${user.id}` },
         () => {
           qc.invalidateQueries({ queryKey: ['krug', 'my'] });
         },
