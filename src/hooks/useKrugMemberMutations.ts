@@ -83,7 +83,17 @@ export function useKrugChangeMemberRole() {
       if (error) throw error;
     },
     onSuccess: (_v, vars) => {
+      // Members lista — direktan prikaz uloge.
       qc.invalidateQueries({ queryKey: ['krug', 'members', vars.krugId] });
+      // Detail nosi `myMembership` koji KrugTransactionPanel/ApprovalQueue
+      // čitaju za `isFullMember`. Bez ove invalidacije upgrade se ne
+      // propagira (downgrade se čini vidljivim jer server RLS makne redove
+      // iz pending queue-a na sljedeći refetch, ali upgrade nema nikakav
+      // signal na klijentu koji čita detail cache).
+      qc.invalidateQueries({ queryKey: ['krug', 'detail', vars.krugId] });
+      // Pending-expenses ovisi o RLS + `isFullMember` gate-u — mora se
+      // ponovno pročitati kad se korisnikova uloga promijeni.
+      qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses', vars.krugId] });
     },
   });
 }
