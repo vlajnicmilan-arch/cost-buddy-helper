@@ -38,6 +38,14 @@ describe('Krug Realtime + Invalidation Patch', () => {
       expect(src).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[\s*['"]krug['"]\s*,\s*['"]my['"]\s*\]\s*\}\)/);
     });
 
+    it('useMyKrugs dodatno prati `krug_membership` filtriran po user_id (membership-driven ulaz/izlaz iz liste)', () => {
+      const src = read('src/hooks/useKrug.ts');
+      // Isti kanal `krug-my-<user.id>` mora imati i drugu .on() pretplatu
+      // na krug_membership, filtriranu po user_id=eq.<me>, jer membership
+      // promjena ne mijenja red u `krug` i inače ne bi propagirala u listu.
+      expect(src).toMatch(/table:\s*['"]krug_membership['"][^}]*filter:\s*`user_id=eq\.\$\{user\.id\}`/);
+    });
+
     it('useKrugMembers prati `krug_membership` po krug_id', () => {
       const src = read('src/hooks/useKrug.ts');
       expect(src).toMatch(/\.channel\(`krug-members-\$\{krugId\}`\)/);
