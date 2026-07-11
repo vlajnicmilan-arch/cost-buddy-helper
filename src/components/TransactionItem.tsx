@@ -227,7 +227,9 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
               {expense.merchant_name || expense.description}
             </p>
             {expense.krug_id && (
-              <KrugBrandIcon size={14} className="shrink-0" data-testid="tx-krug-indicator" />
+              <span data-testid="tx-krug-indicator" className="shrink-0 inline-flex">
+                <KrugBrandIcon size={14} />
+              </span>
             )}
             {expense.expense_nature && (expense.project_id || expense.budget_id) && (
               <Tooltip>
