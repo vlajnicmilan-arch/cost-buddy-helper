@@ -133,7 +133,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
         <span className="text-xs text-muted-foreground">({linked.length})</span>
       </h3>
 
-      {isOwner && (
+      {isFullMember && (
         <div className="flex items-center gap-2">
           <Select
             value=""
@@ -161,6 +161,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
           {isLinking && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground shrink-0" />}
         </div>
       )}
+
 
       {linked.length === 0 ? (
         <Card className="p-4 text-xs text-muted-foreground">
