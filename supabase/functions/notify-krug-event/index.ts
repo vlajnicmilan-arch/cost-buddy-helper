@@ -209,25 +209,57 @@ Deno.serve(async (req) => {
 
   let delivered = 0;
   const errors: string[] = [];
+  const skipped: Array<{ user_id: string; reason: string; detail?: string }> = [];
+
+  console.log(
+    `[notify-krug-event] event=${event_type} krug=${krug_id} actor=${actor_id} ` +
+      `recipients=${recipients.size} dedup=${dedup_ref}`,
+  );
 
   for (const userId of recipients) {
     try {
       // Preference gate — silence both in-app + push when krug is disabled.
-      const { data: allowed } = await admin.rpc("is_push_category_enabled", {
-        _user_id: userId,
-        _category: "krug",
-      });
-      if (allowed === false) continue;
+      const { data: allowed, error: prefErr } = await admin.rpc(
+        "is_push_category_enabled",
+        { _user_id: userId, _category: "krug" },
+      );
+      if (prefErr) {
+        console.error(
+          `[notify-krug-event] pref_rpc_error user=${userId}: ${prefErr.message}`,
+        );
+        skipped.push({ user_id: userId, reason: "pref_rpc_error", detail: prefErr.message });
+        errors.push(`pref_rpc:${prefErr.message}`);
+        continue;
+      }
+      if (allowed === false) {
+        console.log(`[notify-krug-event] skip user=${userId} reason=pref_disabled`);
+        skipped.push({ user_id: userId, reason: "pref_disabled" });
+        continue;
+      }
 
       // Dedup: skip if a notification with the same dedup_ref already exists.
-      const { data: existing } = await admin
+      const { data: existing, error: dedupErr } = await admin
         .from("notifications")
         .select("id")
         .eq("user_id", userId)
         .eq("type", event_type)
         .contains("data", { dedup_ref })
         .limit(1);
-      if (existing && existing.length > 0) continue;
+      if (dedupErr) {
+        console.error(
+          `[notify-krug-event] dedup_query_error user=${userId}: ${dedupErr.message}`,
+        );
+        skipped.push({ user_id: userId, reason: "dedup_query_error", detail: dedupErr.message });
+        errors.push(`dedup:${dedupErr.message}`);
+        continue;
+      }
+      if (existing && existing.length > 0) {
+        console.log(
+          `[notify-krug-event] skip user=${userId} reason=dedup_hit existing=${existing[0].id}`,
+        );
+        skipped.push({ user_id: userId, reason: "dedup_hit", detail: existing[0].id });
+        continue;
+      }
 
       const { error: insErr } = await admin.from("notifications").insert({
         user_id: userId,
@@ -237,9 +269,15 @@ Deno.serve(async (req) => {
         data: dataCore,
       });
       if (insErr) {
+        console.error(
+          `[notify-krug-event] insert_error user=${userId}: ${insErr.message}`,
+        );
+        skipped.push({ user_id: userId, reason: "insert_error", detail: insErr.message });
         errors.push(`insert:${insErr.message}`);
         continue;
       }
+
+      console.log(`[notify-krug-event] inserted user=${userId} type=${event_type}`);
 
       // Push (best effort; send-push runs its own preference check).
       try {
@@ -253,16 +291,32 @@ Deno.serve(async (req) => {
           },
         });
       } catch (e) {
+        console.error(`[notify-krug-event] push_error user=${userId}: ${(e as Error).message}`);
         errors.push(`push:${(e as Error).message}`);
       }
       delivered += 1;
     } catch (e) {
+      console.error(
+        `[notify-krug-event] unexpected user=${userId}: ${(e as Error).message}`,
+      );
+      skipped.push({ user_id: userId, reason: "unexpected", detail: (e as Error).message });
       errors.push(`unexpected:${(e as Error).message}`);
     }
   }
 
-  return json({ ok: true, delivered, errors: errors.length ? errors : undefined });
+  console.log(
+    `[notify-krug-event] done delivered=${delivered} skipped=${skipped.length} errors=${errors.length}`,
+  );
+
+  return json({
+    ok: true,
+    delivered,
+    recipients_total: recipients.size,
+    skipped: skipped.length ? skipped : undefined,
+    errors: errors.length ? errors : undefined,
+  });
 });
+
 
 function event_type_shortKey(t: EventType): string {
   switch (t) {
