@@ -4,7 +4,9 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 
-import { showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import i18n from '@/i18n';
+import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
 import { tr } from '@/lib/errorMessages';
 import { getLocalExpenses, initLocalDB } from '@/lib/storage/indexedDB';
 import { withAuthRetry } from '@/lib/supabaseRetry';
