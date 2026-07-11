@@ -68,7 +68,7 @@ interface KrugExpenseRow {
 
 const PLACEHOLDER_REQUEST_ID = '00000000-0000-0000-0000-000000000000';
 
-export function KrugTransactionPanel({ expenseId, expenseAuthorId }: Props) {
+export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuccess }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
 
