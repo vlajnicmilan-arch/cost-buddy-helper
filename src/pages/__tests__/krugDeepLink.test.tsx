@@ -1,0 +1,66 @@
+/**
+ * Val B follow-up B: `krug_deletion_requested` navigation.
+ *
+ * Bell/push je do sada vodio na `/krug` (lista) umjesto na Krug čije je
+ * brisanje inicirano. Edge fn `notify-krug-event` sada za taj event
+ * zapisuje `route: '/krug?id=<krug_id>'`, a Krug page taj query param
+ * mora čitati i otvoriti detail direktno.
+ *
+ * Ovaj test čuva client-side ugovor: kad je `?id=<uuid>` prisutan pri
+ * mountu, `KrugDetailScreen` se rendera bez klika.
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Krug from '@/pages/Krug';
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u1' } }),
+}));
+
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    channel: () => ({
+      on: () => ({ subscribe: () => ({}) }),
+    }),
+    removeChannel: vi.fn(),
+  },
+}));
+
+vi.mock('@/components/PageHeader', () => ({ PageHeader: () => null }));
+vi.mock('@/components/BottomNav', () => ({ BottomNav: () => null }));
+vi.mock('@/components/krug/KrugListScreen', () => ({
+  KrugListScreen: () => <div data-testid="krug-list" />,
+}));
+vi.mock('@/components/krug/KrugDetailScreen', () => ({
+  KrugDetailScreen: ({ krugId }: { krugId: string }) => (
+    <div data-testid="krug-detail">{krugId}</div>
+  ),
+}));
+
+function renderAt(path: string) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[path]}>
+        <Krug />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('Krug deep-link', () => {
+  it('opens detail directly when ?id=<uuid> is present', async () => {
+    const id = '5932d439-61a6-4fd8-a80e-6448d9a32328';
+    renderAt(`/krug?id=${id}`);
+    await waitFor(() => {
+      expect(screen.getByTestId('krug-detail')).toHaveTextContent(id);
+    });
+  });
+
+  it('shows list when no id param', () => {
+    renderAt('/krug');
+    expect(screen.getByTestId('krug-list')).toBeInTheDocument();
+  });
+});
