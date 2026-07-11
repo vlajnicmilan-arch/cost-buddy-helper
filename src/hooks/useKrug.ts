@@ -87,8 +87,8 @@ export function useMyKrugs() {
     // Napomena: broadcast slušač za `krug_deleted` NAMJERNO ne postoji ovdje.
     // Page-level slušač u `src/pages/Krug.tsx` (kanal `krug:user:<uid>`) je
     // jedini broadcast recipient — dva slušača na istom topicu su nepotrebna
-    // duplikacija. Prijašnji `krug-user-deletions-<uid>` slušač je i prije
-    // bio mrtav zbog istog topic mismatcha koji je popravljen u Krug.tsx.
+    // duplikacija. Prijašnji slušač na starom topicu bio je mrtav zbog istog
+    // topic mismatcha koji je popravljen u Krug.tsx.
     return () => {
       supabase.removeChannel(channel);
     };
