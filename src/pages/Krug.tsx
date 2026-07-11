@@ -35,8 +35,12 @@ export default function Krug() {
   // korisnika dok ne izađe ručno.
   useEffect(() => {
     if (!user) return;
+    // Topic MORA doslovno odgovarati onome kojim DB trigger
+    // `krug_broadcast_soft_delete` zove `realtime.send(..., 'krug:user:<uid>')`.
+    // Ranije ime `krug-page-deletions-<uid>` bilo je mismatch pa owner nikad
+    // nije primao `krug_deleted` i detail view mu je ostajao otvoren.
     const channel = supabase
-      .channel(`krug-page-deletions-${user.id}`)
+      .channel(`krug:user:${user.id}`)
       .on('broadcast', { event: 'krug_deleted' }, (msg) => {
         const krugId = (msg?.payload as { krug_id?: string } | undefined)?.krug_id;
         if (!krugId) return;
