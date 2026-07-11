@@ -37,6 +37,11 @@ interface TransactionDetailDialogProps {
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
   contentClassName?: string;
+  /**
+   * Read-only surface (npr. Krug "Odlučeno"): skriva mutirajuće Krug akcije
+   * (privacy switcher + A-akti). Pregled ostaje pun.
+   */
+  readOnlyKrug?: boolean;
 }
 
 export const TransactionDetailDialog = ({
@@ -45,8 +50,10 @@ export const TransactionDetailDialog = ({
   onOpenChange,
   onEdit,
   onDelete,
-  contentClassName
+  contentClassName,
+  readOnlyKrug = false,
 }: TransactionDetailDialogProps) => {
+
   
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
