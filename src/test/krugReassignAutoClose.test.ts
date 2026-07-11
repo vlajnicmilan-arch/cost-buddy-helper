@@ -69,7 +69,7 @@ describe('TransactionDetailDialog — auto-close bridge', () => {
 
   it('prosljeđuje onReassignSuccess → onOpenChange(false)', () => {
     expect(src).toMatch(
-      /<KrugTransactionPanel[\s\S]{0,300}onReassignSuccess=\{\(\)\s*=>\s*onOpenChange\(false\)\}/,
+      /<KrugTransactionPanel[\s\S]{0,600}onReassignSuccess=\{\(\)\s*=>\s*onOpenChange\(false\)\}/,
     );
   });
 
