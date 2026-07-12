@@ -105,6 +105,17 @@ echo "=== 7/7 READY ==="
 echo "harness mode:  $MODE"
 echo "supabase url:  $STRESS_SUPABASE_URL"
 echo "token pool:    $STRESS/reports/tokens.json"
-echo "next phase:    layer2-concurrency (not implemented in Faza 1)"
+if [[ "$LAYER" -eq 2 ]]; then
+  echo "next phase:    layer2-concurrency (running now)"
+else
+  echo "next phase:    layer2-concurrency (skipped — pass --layer=2 to run)"
+fi
 echo ""
 echo "READY"
+
+if [[ "$LAYER" -eq 2 ]]; then
+  echo ""
+  echo "=== Layer 2 (concurrency) ==="
+  cd "$ROOT"
+  bash "$STRESS/invariants/run-all.sh"
+fi
