@@ -204,10 +204,19 @@ DROP FUNCTION IF EXISTS public.is_project_manager(uuid, uuid);
 -- kao migracija). Clean replay ima role kao project_role enum, pa CHECK s 'worker'
 -- puca (22P02: invalid input value for enum project_role: "worker") jer 'worker'
 -- ne postoji u enumu. Konvertiraj u text idempotentno da se replay poravna s prodom.
+--
+-- ALTER COLUMN TYPE pucao je i drugi put: cross-table policy na
+-- project_contract_amendments referencira project_members.role. Postgres blokira
+-- ALTER TYPE dok policy ovisi o koloni. Dropamo ovisne policyje prije ALTER-a i
+-- rekreiramo ih u text-safe obliku poslije. Nema 'manager' grane jer je uloga
+-- uklonjena u koracima 1-2.
 DO $$
 BEGIN
   IF (SELECT data_type FROM information_schema.columns
        WHERE table_schema='public' AND table_name='project_members' AND column_name='role') <> 'text' THEN
+    -- Drop cross-table dependent policies referencing project_members.role
+    EXECUTE 'DROP POLICY IF EXISTS "Project owners and managers can insert contract amendments" ON public.project_contract_amendments';
+
     ALTER TABLE public.project_members ALTER COLUMN role DROP DEFAULT;
     ALTER TABLE public.project_members ALTER COLUMN role TYPE text USING role::text;
     ALTER TABLE public.project_members ALTER COLUMN role SET DEFAULT 'member';
@@ -220,6 +229,17 @@ BEGIN
     ALTER TABLE public.project_invitations ALTER COLUMN role SET DEFAULT 'member';
   END IF;
 END $$;
+
+-- 4c) Rekreacija dropanih ovisnih policyja u text-safe obliku (owner-only, jer
+-- 'manager' uloga vise ne postoji). Idempotentno: prvo drop, pa create.
+DROP POLICY IF EXISTS "Project owners and managers can insert contract amendments" ON public.project_contract_amendments;
+DROP POLICY IF EXISTS "Project owners can insert contract amendments" ON public.project_contract_amendments;
+CREATE POLICY "Project owners can insert contract amendments"
+  ON public.project_contract_amendments FOR INSERT TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    AND public.is_project_owner(project_id, auth.uid())
+  );
 
 -- 5) CHECK constraints
 ALTER TABLE public.project_members
