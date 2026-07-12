@@ -41,13 +41,13 @@ jobs:
           bun --version
           bash --version | head -1
 
-      # `run-all.sh` sources stress/.env before it can talk to the DB, so we
-      # must materialize it BEFORE calling run-all. We start Supabase once
-      # here to read the freshly generated anon / service_role keys; run-all
-      # will call `supabase start` again (idempotent) and then own the
-      # lifecycle including teardown.
-      - name: Start Supabase (to read local keys)
-        run: supabase start
+      # `supabase start` applies the app migration chain on a fresh local DB.
+      # pg_cron/pg_net therefore must be bootstrapped before that first replay,
+      # not later inside run-all.sh. This helper starts with local migration
+      # replay temporarily disabled, installs the extensions, restores config,
+      # then applies the full migration chain normally.
+      - name: Start Supabase with cron extension bootstrap
+        run: bash stress/bin/bootstrap-local-db.sh start
 
       - name: Write stress/.env from `supabase status`
         run: |

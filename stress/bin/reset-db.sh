@@ -9,5 +9,5 @@ if ! command -v supabase >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "reset-db: using supabase CLI"
-supabase db reset --local
+echo "reset-db: using supabase CLI with cron extension bootstrap"
+bash "$(cd "$(dirname "$0")" && pwd)/bootstrap-local-db.sh" reset
