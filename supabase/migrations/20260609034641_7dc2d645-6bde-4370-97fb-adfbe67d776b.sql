@@ -200,6 +200,27 @@ CREATE POLICY "Users can delete their own expenses"
 -- 4) Drop is_project_manager
 DROP FUNCTION IF EXISTS public.is_project_manager(uuid, uuid);
 
+-- 4b) History gap fix: prod ima role kao text (out-of-band konverzija nikad zapisana
+-- kao migracija). Clean replay ima role kao project_role enum, pa CHECK s 'worker'
+-- puca (22P02: invalid input value for enum project_role: "worker") jer 'worker'
+-- ne postoji u enumu. Konvertiraj u text idempotentno da se replay poravna s prodom.
+DO $$
+BEGIN
+  IF (SELECT data_type FROM information_schema.columns
+       WHERE table_schema='public' AND table_name='project_members' AND column_name='role') <> 'text' THEN
+    ALTER TABLE public.project_members ALTER COLUMN role DROP DEFAULT;
+    ALTER TABLE public.project_members ALTER COLUMN role TYPE text USING role::text;
+    ALTER TABLE public.project_members ALTER COLUMN role SET DEFAULT 'member';
+  END IF;
+
+  IF (SELECT data_type FROM information_schema.columns
+       WHERE table_schema='public' AND table_name='project_invitations' AND column_name='role') <> 'text' THEN
+    ALTER TABLE public.project_invitations ALTER COLUMN role DROP DEFAULT;
+    ALTER TABLE public.project_invitations ALTER COLUMN role TYPE text USING role::text;
+    ALTER TABLE public.project_invitations ALTER COLUMN role SET DEFAULT 'member';
+  END IF;
+END $$;
+
 -- 5) CHECK constraints
 ALTER TABLE public.project_members
   DROP CONSTRAINT IF EXISTS project_members_role_check;
