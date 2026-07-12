@@ -246,6 +246,38 @@ if grep -REil 'CREATE[[:space:]]+EXTENSION[^;]*\bpg_(cron|net)\b' "$MIGRATIONS_D
   exit 1
 fi
 
+log "PHASE 4b neutralize DROP FUNCTION is_project_manager in historical 034641 (harness-only)"
+# Migration 20260609034641 does DROP FUNCTION IF EXISTS
+# public.is_project_manager(uuid,uuid) but two policies on public.expenses
+# ("Users can update their own expenses", "Users can delete their own expenses")
+# still reference it, so clean replay fails with SQLSTATE 2BP01. The forward
+# migration 20260712*_expenses_drop_is_project_manager.sql drops those
+# policies (recreates them with is_project_owner) and then drops the function.
+# Here we only neutralize the premature DROP in 034641 so replay reaches the
+# new migration. HARNESS-ONLY: production `supabase db push` untouched.
+F034641=$(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '20260609034641_*.sql' | head -1)
+if [[ -n "$F034641" && -f "$F034641" ]]; then
+  python3 - "$F034641" <<'PY2'
+import re, sys
+p = sys.argv[1]
+src = open(p).read()
+pat = re.compile(
+    r'(?im)^([ \t]*)DROP[ \t]+FUNCTION[ \t]+IF[ \t]+EXISTS[ \t]+public\.is_project_manager\s*\([^)]*\)\s*;',
+)
+new = pat.sub(
+    r"\1SELECT 1; -- stress-harness: DROP FUNCTION public.is_project_manager moved to forward migration",
+    src,
+)
+if new != src:
+    open(p, 'w').write(new)
+    print("neutralized DROP FUNCTION is_project_manager in", p)
+else:
+    print("WARN: no match for DROP FUNCTION is_project_manager in", p)
+PY2
+else
+  echo "[bootstrap] WARN: could not locate 20260609034641_*.sql in harness copy" >&2
+fi
+
 log "PHASE 5 supabase migration up --include-all (against neutralized harness copy)"
 supabase migration up --include-all
 verify_extensions "$DB_URL_VAL" "after-migration-up"
