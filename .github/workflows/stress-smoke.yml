@@ -1,0 +1,81 @@
+name: stress-smoke
+
+# Faza 1 only. Manual trigger from GitHub UI.
+# Runs exclusively: bash stress/bin/run-all.sh --smoke
+# No cron, no schedule, no --full, no Faze 2/3/4/5.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: stress-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: stress harness — smoke (Faza 1)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ubuntu-latest already has Docker + docker compose preinstalled.
+      # We only need Supabase CLI and Bun on top.
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Sanity — required tools present
+        run: |
+          set -euo pipefail
+          docker --version
+          supabase --version
+          bun --version
+          bash --version | head -1
+
+      # `run-all.sh` sources stress/.env before it can talk to the DB, so we
+      # must materialize it BEFORE calling run-all. We start Supabase once
+      # here to read the freshly generated anon / service_role keys; run-all
+      # will call `supabase start` again (idempotent) and then own the
+      # lifecycle including teardown.
+      - name: Start Supabase (to read local keys)
+        run: supabase start
+
+      - name: Write stress/.env from `supabase status`
+        run: |
+          set -euo pipefail
+          eval "$(supabase status --output env)"
+          : "${API_URL:?supabase status did not expose API_URL}"
+          : "${ANON_KEY:?supabase status did not expose ANON_KEY}"
+          : "${SERVICE_ROLE_KEY:?supabase status did not expose SERVICE_ROLE_KEY}"
+          : "${DB_URL:?supabase status did not expose DB_URL}"
+          cat > stress/.env <<EOF
+          STRESS_SUPABASE_URL=${API_URL}
+          STRESS_SUPABASE_DB_URL=${DB_URL}
+          STRESS_SUPABASE_ANON_KEY=${ANON_KEY}
+          STRESS_SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+          STRESS_AUTH_MODE=login
+          STRESS_SEED_PASSWORD=stress-test-pw-local-only
+          STRESS_SEED_MODE=smoke
+          EOF
+          echo "stress/.env written ($(wc -l < stress/.env) lines)"
+
+      - name: Run smoke harness
+        run: bash stress/bin/run-all.sh --smoke
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-reports
+          path: stress/reports/
+          if-no-files-found: warn
+          retention-days: 7
