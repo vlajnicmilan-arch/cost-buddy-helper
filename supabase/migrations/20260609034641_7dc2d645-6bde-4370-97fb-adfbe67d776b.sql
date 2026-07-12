@@ -83,6 +83,10 @@ CREATE POLICY "Owner can delete work entries"
 DROP POLICY IF EXISTS "Project managers can create milestones" ON public.project_milestones;
 DROP POLICY IF EXISTS "Project managers can update milestones" ON public.project_milestones;
 DROP POLICY IF EXISTS "Project managers can delete milestones" ON public.project_milestones;
+-- Legacy short-named variants (from 20260125120000, historical dependency of is_project_manager)
+DROP POLICY IF EXISTS "Managers can create milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Managers can update milestones" ON public.project_milestones;
+DROP POLICY IF EXISTS "Managers can delete milestones" ON public.project_milestones;
 CREATE POLICY "Project owners can create milestones"
   ON public.project_milestones FOR INSERT TO authenticated
   WITH CHECK (public.is_project_owner(project_id, auth.uid()));
