@@ -102,6 +102,10 @@ CREATE POLICY "Project owners can delete milestones"
 DROP POLICY IF EXISTS "Project managers can insert funding" ON public.project_funding;
 DROP POLICY IF EXISTS "Project managers can update funding" ON public.project_funding;
 DROP POLICY IF EXISTS "Project managers can delete funding" ON public.project_funding;
+-- Legacy short-named variants (from 20260125120000, historical dependency of is_project_manager)
+DROP POLICY IF EXISTS "Managers can manage funding" ON public.project_funding;
+DROP POLICY IF EXISTS "Managers can update funding" ON public.project_funding;
+DROP POLICY IF EXISTS "Managers can delete funding" ON public.project_funding;
 CREATE POLICY "Project owners can insert funding"
   ON public.project_funding FOR INSERT TO authenticated
   WITH CHECK (public.is_project_owner(project_id, auth.uid()));
