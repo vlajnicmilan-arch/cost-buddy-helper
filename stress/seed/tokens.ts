@@ -1,18 +1,19 @@
 /**
  * Optional auth mode (STRESS_AUTH_MODE=mint). Mints JWTs locally using
- * GOTRUE_JWT_SECRET from `supabase status --output env`.
+ * GOTRUE_JWT_SECRET read from the process environment.
  *
- * FAIL-FAST: no hardcoded fallback secret. If the secret is not exported
- * into the environment BEFORE this runs, the script exits with a clear
- * message pointing at `supabase status --output env`.
+ * IMPORTANT: this script does NOT invoke `supabase status --output env`
+ * itself. The caller is responsible for exporting GOTRUE_JWT_SECRET
+ * before running. Typical local flow:
  *
- * When to prefer over login mode:
- *   - Very large user pools where login latency dominates seed time
- *   - CI runs where the login endpoint is throttled
+ *   eval "$(supabase status --output env | grep GOTRUE_JWT_SECRET)"
+ *   export GOTRUE_JWT_SECRET
+ *   STRESS_AUTH_MODE=mint bash stress/bin/run-all.sh --smoke
  *
- * When NOT to use:
- *   - If your local Supabase version has diverged from the documented
- *     secret export mechanism. Use login mode instead.
+ * FAIL-FAST: no hardcoded fallback. Missing/short secret → exit 1.
+ *
+ * When NOT to use: if the local Supabase secret export mechanism has
+ * drifted from the above. Use login mode (default) instead.
  */
 import { createHmac } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
