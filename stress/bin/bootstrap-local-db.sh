@@ -278,9 +278,28 @@ else
   echo "[bootstrap] WARN: could not locate 20260609034641_*.sql in harness copy" >&2
 fi
 
-log "PHASE 5 supabase migration up --include-all (against neutralized harness copy)"
-supabase migration up --include-all
+log "PHASE 5 supabase migration up --include-all --debug (against neutralized harness copy)"
+# --debug surfaces the underlying PG error (SQLSTATE + full message) instead of the
+# generic 'Failed to execute statement' one-liner. Do NOT neutralize the failing
+# statement here — we want the real error visible in CI logs.
+set +e
+supabase migration up --include-all --debug 2>&1 | tee /tmp/phase5-migration-up.log
+MIG_EC=${PIPESTATUS[0]}
+set -e
+log "PHASE 5 exit code: MIG_EC=${MIG_EC}"
+if [ "${MIG_EC}" -ne 0 ]; then
+  log "PHASE 5 FAILED — dumping last 200 lines of debug output for diagnosis:"
+  tail -n 200 /tmp/phase5-migration-up.log || true
+  # Also try to query the DB for the offending constraint state so we can tell
+  # duplicate-object vs check-violation vs other. Best-effort, do not fail here.
+  log "PHASE 5 diag — project_members.role distinct values + existing check constraints:"
+  psql "$DB_URL_VAL" -c "SELECT role, COUNT(*) FROM public.project_members GROUP BY role ORDER BY role;" || true
+  psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_members'::regclass AND contype = 'c';" || true
+  psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_invitations'::regclass AND contype = 'c';" || true
+  exit "${MIG_EC}"
+fi
 verify_extensions "$DB_URL_VAL" "after-migration-up"
+
 
 log "PHASE 6 restore original supabase/migrations"
 restore_migrations
