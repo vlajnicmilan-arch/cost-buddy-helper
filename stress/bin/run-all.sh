@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Stress harness orchestrator — Faza 1.
+# Stress harness orchestrator — Faza 1 + Faza 2 (Layer 2 concurrency).
 #
 # Usage:
 #   bash stress/bin/run-all.sh --smoke        # small seed, quick validation
-#   bash stress/bin/run-all.sh --full         # FAZA 2 stub — not implemented
+#   bash stress/bin/run-all.sh --layer=2      # smoke pipeline + Layer 2 concurrency
+#   bash stress/bin/run-all.sh --full         # FAZA >=3 stub — not implemented
 #   bash stress/bin/run-all.sh --keep-stack   # don't tear down on exit
 #
-# Faza 1 does NOT run any concurrency/k6/UI tests — it only proves the
-# skeleton stands up end-to-end and prints READY.
+# Faza 1 = skeleton (guard/start/reset/pause-cron/seed/tokens).
+# Faza 2 = same pipeline, then stress/invariants/run-all.sh (6 concurrency
+#          scenarios + SQL invariant sweep). Latency is report-only.
 #
 # HARD REQUIREMENT: Supabase CLI must be installed. This orchestrator
 # refuses to run without it. The docker-compose.stress.yml file is a
@@ -17,19 +19,20 @@
 set -euo pipefail
 
 MODE="smoke"
+LAYER=0
 KEEP_STACK=0
 for arg in "$@"; do
   case "$arg" in
     --smoke) MODE="smoke" ;;
     --full)  MODE="full" ;;
+    --layer=2) LAYER=2; MODE="smoke" ;;
     --keep-stack) KEEP_STACK=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 
 if [[ "$MODE" == "full" ]]; then
-  echo "run-all: --full is a Faza 2 stub. Faza 1 supports --smoke only." >&2
-  echo "run-all: seed/seed.ts full branch is not runtime-verified; refusing to run." >&2
+  echo "run-all: --full is a stub for Faza >=3. Supported: --smoke, --layer=2." >&2
   exit 2
 fi
 
