@@ -1,4 +1,6 @@
--- Restore cron.job.active from stress_cron_snapshot. Idempotent.
+-- Restore cron.job.active from snapshot via the harness SECURITY DEFINER
+-- helper. See stress/bin/pause-cron.sql for the rationale.
+
 \set ON_ERROR_STOP on
 
 DO $$
@@ -8,19 +10,15 @@ BEGIN
     RETURN;
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables
-                 WHERE table_schema = 'public' AND table_name = 'stress_cron_snapshot') THEN
-    RAISE NOTICE 'No snapshot table — nothing to resume';
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'stress_resume_cron'
+  ) THEN
+    RAISE NOTICE 'stress_resume_cron() helper missing — nothing to resume';
     RETURN;
   END IF;
 
-  UPDATE cron.job j
-     SET active = s.original_active
-    FROM public.stress_cron_snapshot s
-   WHERE j.jobid = s.jobid;
-
-  RAISE NOTICE 'Resumed % cron jobs from snapshot',
-    (SELECT count(*) FROM public.stress_cron_snapshot);
-
-  DROP TABLE public.stress_cron_snapshot;
+  PERFORM public.stress_resume_cron();
+  RAISE NOTICE 'Resumed cron jobs via stress_resume_cron()';
 END$$;
