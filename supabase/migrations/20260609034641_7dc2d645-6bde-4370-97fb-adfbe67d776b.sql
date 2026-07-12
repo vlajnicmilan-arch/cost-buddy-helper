@@ -129,6 +129,11 @@ DROP POLICY IF EXISTS "Project managers can view invitations" ON public.project_
 DROP POLICY IF EXISTS "Project managers can create invitations" ON public.project_invitations;
 DROP POLICY IF EXISTS "Project managers can update invitations" ON public.project_invitations;
 DROP POLICY IF EXISTS "Project managers can delete invitations" ON public.project_invitations;
+-- Legacy short-named variants (historical, dependency of is_project_manager)
+DROP POLICY IF EXISTS "Managers can view invitations" ON public.project_invitations;
+DROP POLICY IF EXISTS "Managers can create invitations" ON public.project_invitations;
+DROP POLICY IF EXISTS "Managers can update invitations" ON public.project_invitations;
+DROP POLICY IF EXISTS "Managers can delete invitations" ON public.project_invitations;
 CREATE POLICY "Project owners can view invitations"
   ON public.project_invitations FOR SELECT TO authenticated
   USING (public.is_project_owner(project_id, auth.uid()));
@@ -153,6 +158,10 @@ DROP POLICY IF EXISTS "Project managers can delete members" ON public.project_me
 DROP POLICY IF EXISTS "Project managers can add non-managers; owner adds managers" ON public.project_members;
 DROP POLICY IF EXISTS "Project managers can remove non-managers; owner removes manager" ON public.project_members;
 DROP POLICY IF EXISTS "Project managers can update non-managers; owner manages manager" ON public.project_members;
+-- Legacy short-named variants (historical, dependency of is_project_manager)
+DROP POLICY IF EXISTS "Managers can add members" ON public.project_members;
+DROP POLICY IF EXISTS "Managers can update member roles" ON public.project_members;
+DROP POLICY IF EXISTS "Managers can remove members" ON public.project_members;
 
 CREATE POLICY "Project owners can insert members"
   ON public.project_members FOR INSERT TO authenticated
