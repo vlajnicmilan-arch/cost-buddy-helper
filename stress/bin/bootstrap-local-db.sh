@@ -219,6 +219,8 @@ bootstrap_extensions "$DB_URL_VAL"
 
 verify_extensions "$DB_URL_VAL" "after-bootstrap"
 
+install_cron_helpers "$DB_URL_VAL"
+
 restore_config
 
 log "PHASE 4 neutralize CREATE EXTENSION pg_cron/pg_net in a HARNESS-ONLY temp copy of supabase/migrations"
