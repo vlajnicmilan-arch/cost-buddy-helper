@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Start or reset the local Supabase DB with pg_cron/pg_net installed before
 # the application migration chain is replayed.
+#
+# Instrumented with explicit PHASE markers so the CI log unambiguously shows
+# whether:
+#   A. `supabase start` still replays migrations before bootstrap (order bug)
+#   B. bootstrap succeeds but `supabase migration up` re-fails on
+#      `CREATE EXTENSION IF NOT EXISTS pg_cron` (privilege mechanics)
 set -euo pipefail
 
 MODE="${1:-}"
@@ -13,6 +19,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONFIG="$ROOT/supabase/config.toml"
 CONFIG_BACKUP="$(mktemp)"
 RESTORED=0
+
+log() { printf '\n[bootstrap] %s\n' "$*"; }
 
 cp "$CONFIG" "$CONFIG_BACKUP"
 
@@ -57,24 +65,87 @@ text = disable_section(text, 'db.seed')
 
 path.write_text(text)
 PY
+  log "config.toml after disable (db.* sections):"
+  awk '/^\[db(\.|])/{p=1} p{print; if(/^$/)p=0}' "$CONFIG" | sed 's/^/    /'
+}
+
+resolve_db_url() {
+  eval "$(supabase status --output env)"
+  : "${DB_URL:?supabase status did not expose DB_URL}"
+  echo "$DB_URL"
 }
 
 bootstrap_extensions() {
-  eval "$(supabase status --output env)"
-  : "${DB_URL:?supabase status did not expose DB_URL}"
-  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/stress/bin/bootstrap-cron-extensions.sql"
+  local url="$1"
+  psql "$url" -v ON_ERROR_STOP=1 -f "$ROOT/stress/bin/bootstrap-cron-extensions.sql"
 }
 
+verify_extensions() {
+  local url="$1"
+  local label="$2"
+  log "PHASE verify ($label) — context + extension state"
+  psql "$url" -v ON_ERROR_STOP=1 -X -A -F' | ' <<'SQL'
+SELECT 'db=' || current_database()
+    || ' user=' || current_user
+    || ' search_path=' || current_setting('search_path') AS context;
+SELECT extname, extnamespace::regnamespace AS schema, extversion
+FROM pg_extension
+WHERE extname IN ('pg_cron','pg_net')
+ORDER BY extname;
+SELECT 'count_required=' || COUNT(*) AS check
+FROM pg_extension
+WHERE extname IN ('pg_cron','pg_net');
+SQL
+  # Hard gate: refuse to proceed if either extension is missing.
+  local count
+  count=$(psql "$url" -X -A -t -c "SELECT COUNT(*) FROM pg_extension WHERE extname IN ('pg_cron','pg_net');")
+  if [[ "${count//[[:space:]]/}" != "2" ]]; then
+    echo "[bootstrap] FATAL: expected pg_cron + pg_net present, got count=$count" >&2
+    exit 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+log "PHASE 1 disable_local_replay"
 disable_local_replay
 
+log "PHASE 2 supabase ${MODE}  (migrations should be disabled at this point)"
 if [[ "$MODE" == "start" ]]; then
   supabase start
 else
   supabase db reset --local --no-seed
 fi
 
-bootstrap_extensions
+DB_URL_VAL="$(resolve_db_url)"
+log "resolved DB_URL host suffix: ...${DB_URL_VAL: -40}"
+
+# If disable_local_replay actually worked, pg_cron must NOT exist yet.
+# If it DOES exist here, that means supabase start ignored our config toggle
+# and already ran the migration chain (which itself would have failed on
+# pg_read_file). Either way, this snapshot proves the ordering.
+log "PHASE 2b post-start snapshot (pre-bootstrap)"
+psql "$DB_URL_VAL" -v ON_ERROR_STOP=1 -X -A -F' | ' <<'SQL'
+SELECT 'pre_bootstrap_extensions' AS marker,
+       COALESCE(string_agg(extname, ','), '<none>') AS present
+FROM pg_extension
+WHERE extname IN ('pg_cron','pg_net');
+SELECT 'pre_bootstrap_migrations_applied' AS marker,
+       COUNT(*)::text AS n
+FROM supabase_migrations.schema_migrations;
+SQL
+
+log "PHASE 3 bootstrap_extensions"
+bootstrap_extensions "$DB_URL_VAL"
+
+verify_extensions "$DB_URL_VAL" "after-bootstrap"
+
 restore_config
 trap - EXIT INT TERM
 
+log "PHASE 5 supabase migration up --include-all"
+# Rerun verification AFTER migration up so we can distinguish:
+#   - Failure DURING migration up on CREATE EXTENSION  => truth B
+#   - Success here                                     => truth A was the story
 supabase migration up --include-all
+verify_extensions "$DB_URL_VAL" "after-migration-up"
+log "PHASE 6 done"
