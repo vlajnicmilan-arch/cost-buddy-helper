@@ -1,0 +1,31 @@
+# NOTE: Primary path for Faza 1 is `supabase start` (Supabase CLI) — it
+# provides GoTrue, PostgREST, Storage out of the box. This compose file
+# is a FALLBACK for CI environments without the Supabase CLI, and is
+# intentionally minimal.
+#
+# Realtime is NOT included — see stress/README.md § "Realtime svjesno
+# isključen".
+#
+# Port 55433 (not 5432 or 54322) to avoid collision with a running
+# `supabase start` on the same host.
+version: "3.8"
+services:
+  stress-postgres:
+    image: postgres:16
+    profiles: ["stress"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "55433:5432"
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_cron
+      -c cron.database_name=postgres
+      -c max_connections=500
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30

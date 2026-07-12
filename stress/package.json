@@ -1,0 +1,20 @@
+{
+  "name": "stress-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-only stress & concurrency harness. Phase 1 skeleton.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "seed": "bun run seed/seed.ts",
+    "auth:login": "bun run seed/loginSeedUsers.ts",
+    "auth:mint": "bun run seed/tokens.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.5.0"
+  }
+}

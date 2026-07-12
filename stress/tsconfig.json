@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "types": ["node"],
+    "lib": ["ES2022"]
+  },
+  "include": ["seed/**/*.ts", "layer2-concurrency/**/*.ts"],
+  "exclude": ["node_modules", "reports"]
+}
