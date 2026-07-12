@@ -73,6 +73,31 @@ echo "=== 2/7 supabase start ==="
 supabase start 2>&1 | tail -20
 
 echo ""
+echo "=== 2b/7 preinstall cron/net extensions (bootstrap shim) ==="
+# Root cause: migration 20260604210824 (and siblings 20260320/20260327/20260513)
+# call CREATE EXTENSION pg_cron. On this local Supabase stack the role that
+# `supabase db reset --local` uses to execute migrations cannot load the
+# pg_cron control file via pg_read_file (needs pg_read_server_files /
+# superuser). We pre-install pg_cron + pg_net once here as the postgres
+# superuser (via the direct DB URL from `supabase status`) so every
+# `CREATE EXTENSION IF NOT EXISTS pg_cron` in the chain becomes a true no-op
+# and never re-triggers pg_read_file.
+#
+# History-safe: we do NOT rewrite any historical migration. Named cron jobs
+# (`krug-expire-predlozena`, `krug-cleanup-act-dedup`) remain scheduled by
+# their original migration exactly as in production.
+#
+# Production is unaffected: extensions already exist there, and this shim
+# only runs under the stress harness against a localhost URL guarded by
+# guard-env.sh. `supabase db reset --local` preserves the `extensions`
+# schema and its installed extensions, so the pre-install survives reset.
+psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pg_net  WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+SQL
+
+echo ""
 echo "=== 3/7 reset-db ==="
 bash "$STRESS/bin/reset-db.sh"
 
