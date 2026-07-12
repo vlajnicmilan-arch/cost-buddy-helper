@@ -97,6 +97,33 @@ bootstrap_extensions() {
   psql "$url" -v ON_ERROR_STOP=1 -f "$ROOT/stress/bin/bootstrap-cron-extensions.sql"
 }
 
+# Derive a supabase_admin URL from a `postgres` URL. In local Supabase all
+# internal roles share the same password, so only the user component changes.
+admin_url_from() {
+  local url="$1"
+  python3 - "$url" <<'PY'
+import sys
+from urllib.parse import urlparse, urlunparse
+u = urlparse(sys.argv[1])
+pw = u.password or "postgres"
+host = u.hostname or "127.0.0.1"
+port = f":{u.port}" if u.port else ""
+netloc = f"supabase_admin:{pw}@{host}{port}"
+print(urlunparse((u.scheme, netloc, u.path, u.params, u.query, u.fragment)))
+PY
+}
+
+# Install SECURITY DEFINER helpers that let the `postgres` role pause/resume
+# pg_cron jobs without touching cron.job grants. Must run as a superuser
+# because cron.job is owned by supabase_admin in local Supabase.
+install_cron_helpers() {
+  local url="$1"
+  local admin_url
+  admin_url="$(admin_url_from "$url")"
+  log "PHASE 3b install SECURITY DEFINER cron pause/resume helpers as supabase_admin"
+  psql "$admin_url" -v ON_ERROR_STOP=1 -f "$ROOT/stress/bin/bootstrap-cron-helpers.sql"
+}
+
 verify_extensions() {
   local url="$1"
   local label="$2"
