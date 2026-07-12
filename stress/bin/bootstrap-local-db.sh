@@ -110,21 +110,41 @@ log "PHASE 1 disable_local_replay"
 disable_local_replay
 
 log "PHASE 2 supabase ${MODE}  (migrations should be disabled at this point)"
+# IMPORTANT: do NOT let this kill the script. We must always reach PHASE 2b
+# so we can prove A (start replayed migrations) vs B (privilege problem later).
+set +e
 if [[ "$MODE" == "start" ]]; then
   supabase start
+  START_EC=$?
 else
   supabase db reset --local --no-seed
+  START_EC=$?
 fi
+set -e
+log "PHASE 2 exit code: START_EC=${START_EC}"
 
-DB_URL_VAL="$(resolve_db_url)"
+# Try to resolve DB_URL, but don't die if supabase status fails — fall back
+# to the well-known local default so PHASE 2b diagnostics still run.
+set +e
+DB_URL_VAL="$(resolve_db_url 2>/dev/null)"
+RESOLVE_EC=$?
+set -e
+if [[ $RESOLVE_EC -ne 0 || -z "${DB_URL_VAL:-}" ]]; then
+  DB_URL_VAL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+  log "resolve_db_url failed (ec=${RESOLVE_EC}); falling back to default local DB_URL"
+fi
 log "resolved DB_URL host suffix: ...${DB_URL_VAL: -40}"
 
-# If disable_local_replay actually worked, pg_cron must NOT exist yet.
-# If it DOES exist here, that means supabase start ignored our config toggle
-# and already ran the migration chain (which itself would have failed on
-# pg_read_file). Either way, this snapshot proves the ordering.
-log "PHASE 2b post-start snapshot (pre-bootstrap)"
-psql "$DB_URL_VAL" -v ON_ERROR_STOP=1 -X -A -F' | ' <<'SQL'
+# PHASE 2b MUST run even if PHASE 2 failed. This is the whole point of the
+# diagnostic pass: we need proof of whether supabase start already replayed
+# the migration chain (truth A) or not (truth B).
+log "PHASE 2b post-start snapshot (pre-bootstrap) — runs regardless of START_EC"
+set +e
+psql "$DB_URL_VAL" -X -A -F' | ' <<'SQL'
+SELECT 'context' AS marker,
+       'db=' || current_database()
+    || ' user=' || current_user
+    || ' search_path=' || current_setting('search_path') AS value;
 SELECT 'pre_bootstrap_extensions' AS marker,
        COALESCE(string_agg(extname, ','), '<none>') AS present
 FROM pg_extension
@@ -133,6 +153,22 @@ SELECT 'pre_bootstrap_migrations_applied' AS marker,
        COUNT(*)::text AS n
 FROM supabase_migrations.schema_migrations;
 SQL
+SNAP_EC=$?
+set -e
+log "PHASE 2b snapshot exit code: SNAP_EC=${SNAP_EC}"
+
+# Now interpret. If PHASE 2 failed, stop here with a clear verdict; do not
+# proceed to bootstrap because the stack is in an inconsistent state and
+# further steps would only muddy the log.
+if [[ $START_EC -ne 0 ]]; then
+  log "VERDICT: PHASE 2 failed (START_EC=${START_EC})."
+  log "  → If pre_bootstrap_migrations_applied > 0 OR pg_cron/pg_net already present:"
+  log "    supabase start replayed migrations BEFORE our bootstrap = TRUTH A (order bug)."
+  log "  → If snapshot itself failed (SNAP_EC != 0) and DB is not reachable:"
+  log "    supabase start never brought DB up; investigate CLI-level failure."
+  exit "$START_EC"
+fi
+
 
 log "PHASE 3 bootstrap_extensions"
 bootstrap_extensions "$DB_URL_VAL"
