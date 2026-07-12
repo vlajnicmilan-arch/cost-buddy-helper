@@ -290,14 +290,50 @@ log "PHASE 5 exit code: MIG_EC=${MIG_EC}"
 if [ "${MIG_EC}" -ne 0 ]; then
   log "PHASE 5 FAILED — dumping last 200 lines of debug output for diagnosis:"
   tail -n 200 /tmp/phase5-migration-up.log || true
-  # Also try to query the DB for the offending constraint state so we can tell
-  # duplicate-object vs check-violation vs other. Best-effort, do not fail here.
+
+  # ---- Diagnostics B: actual column type of `role` on both tables ----
+  log "PHASE 5 diag B — data_type + udt_name of project_members.role and project_invitations.role:"
+  psql "$DB_URL_VAL" -c "SELECT table_name, column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('project_members','project_invitations') AND column_name='role' ORDER BY table_name;" || true
+
+  log "PHASE 5 diag B — \\d+ project_members (columns + constraints):"
+  psql "$DB_URL_VAL" -c "\\d+ public.project_members" || true
+  log "PHASE 5 diag B — \\d+ project_invitations (columns + constraints):"
+  psql "$DB_URL_VAL" -c "\\d+ public.project_invitations" || true
+
+  # ---- Diagnostics C: enum values for candidate enum types ----
+  log "PHASE 5 diag C — enum values of app_role / project_role (if any):"
+  psql "$DB_URL_VAL" -c "SELECT n.nspname AS schema, t.typname AS enum_type, e.enumlabel, e.enumsortorder FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid JOIN pg_namespace n ON n.oid=t.typnamespace WHERE t.typname IN ('app_role','project_role') ORDER BY t.typname, e.enumsortorder;" || true
+
+  # Row counts + distinct role values (kept from prior diag)
   log "PHASE 5 diag — project_members.role distinct values + existing check constraints:"
-  psql "$DB_URL_VAL" -c "SELECT role, COUNT(*) FROM public.project_members GROUP BY role ORDER BY role;" || true
+  psql "$DB_URL_VAL" -c "SELECT role::text AS role, COUNT(*) FROM public.project_members GROUP BY role::text ORDER BY 1;" || true
+  psql "$DB_URL_VAL" -c "SELECT role::text AS role, COUNT(*) FROM public.project_invitations GROUP BY role::text ORDER BY 1;" || true
   psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_members'::regclass AND contype = 'c';" || true
   psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_invitations'::regclass AND contype = 'c';" || true
+
+  # ---- Diagnostics A: replay the failing migration directly through psql to get the REAL PG error + SQLSTATE ----
+  # supabase-cli wraps errors in effect/sql/SqlError and drops SQLSTATE. psql with
+  # VERBOSITY=verbose exposes the native ERROR line, SQLSTATE, DETAIL, HINT, and LINE.
+  # The DB is exactly in the pre-034641 state (CLI rolled back the failing tx),
+  # so replaying the same file reproduces the same failure with full context.
+  FAILED_MIG="$(ls -1 "${HARNESS_MIGRATIONS_DIR:-supabase/migrations}"/20260609034641_*.sql 2>/dev/null | head -n1 || true)"
+  if [ -z "${FAILED_MIG}" ]; then
+    FAILED_MIG="$(ls -1 supabase/migrations/20260609034641_*.sql 2>/dev/null | head -n1 || true)"
+  fi
+  if [ -n "${FAILED_MIG}" ]; then
+    log "PHASE 5 diag A — direct psql replay of ${FAILED_MIG} with verbose errors:"
+    PGOPTIONS='--client-min-messages=warning' \
+      psql "$DB_URL_VAL" \
+        -v ON_ERROR_STOP=1 \
+        --set=VERBOSITY=verbose \
+        -f "${FAILED_MIG}" 2>&1 | tail -n 60 || true
+  else
+    log "PHASE 5 diag A — could not locate 034641 migration file for direct replay"
+  fi
+
   exit "${MIG_EC}"
 fi
+
 verify_extensions "$DB_URL_VAL" "after-migration-up"
 
 
