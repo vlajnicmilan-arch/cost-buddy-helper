@@ -1,12 +1,12 @@
 /**
  * Faza 1 seed. Uses service-role key against local Supabase.
  *
- * Volumes:
- *   smoke: 5 users, 2 krugova, 2 projekta, 50 expenses
- *   full:  200 users, 20 krugova, 30 projekata, 15k expenses
- *
- * Full volume is IMPLEMENTED but not runtime-verified in Faza 1.
- * Layer 2 (Faza 2) will validate it at scale.
+ * ACTUAL volumes produced today:
+ *   smoke: 5 auth users, 2 projects (first 2 users), 2 expenses, 0 krugova.
+ *          Minimal-but-honest - enough to validate seed -> login pipe.
+ *   full:  STUB. Only auth users are created; no domain rows.
+ *          Full-volume domain seed (200/20/30/15k) is a Faza 2 deliverable.
+ *          run-all.sh --full refuses to run in Faza 1.
  */
 import { createClient } from "@supabase/supabase-js";
 import { writeFileSync, mkdirSync } from "node:fs";
