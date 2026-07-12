@@ -25,7 +25,7 @@ restore_config() {
 }
 trap restore_config EXIT INT TERM
 
-disable_local_migration_replay() {
+disable_local_replay() {
   python3 - "$CONFIG" <<'PY'
 from pathlib import Path
 import re
@@ -34,22 +34,26 @@ import sys
 path = Path(sys.argv[1])
 text = path.read_text()
 
-section = re.search(r'(?ms)^\[db\.migrations\]\n(?P<body>.*?)(?=^\[[^\n]+\]|\Z)', text)
-if section:
-    body = section.group('body')
-    if re.search(r'(?m)^enabled\s*=', body):
-        body = re.sub(r'(?m)^enabled\s*=.*$', 'enabled = false', body, count=1)
-    else:
-        body = 'enabled = false\n' + body
-    text = text[:section.start('body')] + body + text[section.end('body'):]
-else:
+def disable_section(text: str, section_name: str) -> str:
+    section = re.search(rf'(?ms)^\[{re.escape(section_name)}\]\n(?P<body>.*?)(?=^\[[^\n]+\]|\Z)', text)
+    if section:
+        body = section.group('body')
+        if re.search(r'(?m)^enabled\s*=', body):
+            body = re.sub(r'(?m)^enabled\s*=.*$', 'enabled = false', body, count=1)
+        else:
+            body = 'enabled = false\n' + body
+        return text[:section.start('body')] + body + text[section.end('body'):]
+
     db_section = re.search(r'(?m)^\[db\]\n', text)
     if not db_section:
         raise SystemExit('supabase/config.toml is missing [db] section')
     next_section = re.search(r'(?m)^\[[^\n]+\]\n', text[db_section.end():])
     insert_at = db_section.end() + next_section.start() if next_section else len(text)
-    block = '\n[db.migrations]\nenabled = false\n'
-    text = text[:insert_at].rstrip() + '\n' + block + text[insert_at:]
+    block = f'\n[{section_name}]\nenabled = false\n'
+    return text[:insert_at].rstrip() + '\n' + block + text[insert_at:]
+
+text = disable_section(text, 'db.migrations')
+text = disable_section(text, 'db.seed')
 
 path.write_text(text)
 PY
@@ -61,7 +65,7 @@ bootstrap_extensions() {
   psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/stress/bin/bootstrap-cron-extensions.sql"
 }
 
-disable_local_migration_replay
+disable_local_replay
 
 if [[ "$MODE" == "start" ]]; then
   supabase start
