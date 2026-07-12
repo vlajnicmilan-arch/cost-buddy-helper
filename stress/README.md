@@ -27,6 +27,26 @@ Faze 2 (concurrency), 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
 bash stress/bin/run-all.sh --smoke
 ```
 
+## Pokretanje iz GitHub UI-ja (bez lokalnog setupa)
+
+Ako nemaš Docker / Supabase CLI / bash lokalno, isti smoke run može se
+pokrenuti kao GitHub Actions workflow:
+
+1. GitHub repo → **Actions** → workflow **`stress-smoke`**
+2. **Run workflow** (grana po izboru) → **Run**
+
+Workflow radi točno ovo i ništa više:
+
+- instalira Supabase CLI + Bun na `ubuntu-latest` (Docker već postoji)
+- pokrene `supabase start`, pročita anon/service_role/DB URL iz
+  `supabase status --output env` i upiše ih u `stress/.env`
+- pokrene `bash stress/bin/run-all.sh --smoke`
+- uploada `stress/reports/` kao artefakt
+
+Nema `schedule`, nema `--full`, nema Faza 2/3/4/5. Trigger je isključivo
+`workflow_dispatch`.
+
+
 Flow:
 
 1. `guard-env.sh` — tvrdo pada ako URL nije `localhost` / `127.0.0.1`
