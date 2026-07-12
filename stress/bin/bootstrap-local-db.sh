@@ -18,20 +18,37 @@ esac
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONFIG="$ROOT/supabase/config.toml"
 CONFIG_BACKUP="$(mktemp)"
-RESTORED=0
+MIGRATIONS_DIR="$ROOT/supabase/migrations"
+MIGRATIONS_BACKUP="$ROOT/supabase/migrations.stress-original"
+CONFIG_RESTORED=0
+MIGRATIONS_RESTORED=1  # flips to 0 only after we swap them
 
 log() { printf '\n[bootstrap] %s\n' "$*"; }
 
 cp "$CONFIG" "$CONFIG_BACKUP"
 
 restore_config() {
-  if [[ "$RESTORED" -eq 0 ]]; then
+  if [[ "$CONFIG_RESTORED" -eq 0 ]]; then
     cp "$CONFIG_BACKUP" "$CONFIG"
-    RESTORED=1
+    CONFIG_RESTORED=1
   fi
   rm -f "$CONFIG_BACKUP"
 }
-trap restore_config EXIT INT TERM
+
+restore_migrations() {
+  if [[ "$MIGRATIONS_RESTORED" -eq 0 && -d "$MIGRATIONS_BACKUP" ]]; then
+    rm -rf "$MIGRATIONS_DIR"
+    mv "$MIGRATIONS_BACKUP" "$MIGRATIONS_DIR"
+    MIGRATIONS_RESTORED=1
+    log "restored original supabase/migrations from backup"
+  fi
+}
+
+cleanup_all() {
+  restore_config
+  restore_migrations
+}
+trap cleanup_all EXIT INT TERM
 
 disable_local_replay() {
   python3 - "$CONFIG" <<'PY'
