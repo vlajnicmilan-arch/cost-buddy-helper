@@ -121,6 +121,31 @@ BEGIN
 END
 $bootstrap_policies$;
 
+-- Bootstrap helper: is_budget_owner(budget_id, user_id)
+-- Missing from historical chain (defined out-of-band on production before
+-- migration tracking). Later migrations (20260125181801, 20260326165245,
+-- 20260601182733) reference it in RLS policies and function bodies, so
+-- greenfield replays crash with:
+--   ERROR: function is_budget_owner(uuid, uuid) does not exist
+-- Definition mirrors production semantics: SECURITY DEFINER, STABLE,
+-- returns true when the given user owns the given budget_plan.
+CREATE OR REPLACE FUNCTION public.is_budget_owner(_budget_id uuid, _user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $is_budget_owner$
+  SELECT EXISTS (
+    SELECT 1 FROM public.budget_plans bp
+    WHERE bp.id = _budget_id
+      AND bp.user_id = _user_id
+  );
+$is_budget_owner$;
+
+REVOKE ALL ON FUNCTION public.is_budget_owner(uuid, uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_budget_owner(uuid, uuid) TO authenticated, service_role;
+
 -- Original migration body: add total_amount and project_id columns.
 ALTER TABLE public.budget_plans 
 ADD COLUMN IF NOT EXISTS total_amount numeric NOT NULL DEFAULT 0;
