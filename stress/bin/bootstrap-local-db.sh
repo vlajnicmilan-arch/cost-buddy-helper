@@ -18,20 +18,37 @@ esac
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONFIG="$ROOT/supabase/config.toml"
 CONFIG_BACKUP="$(mktemp)"
-RESTORED=0
+MIGRATIONS_DIR="$ROOT/supabase/migrations"
+MIGRATIONS_BACKUP="$ROOT/supabase/migrations.stress-original"
+CONFIG_RESTORED=0
+MIGRATIONS_RESTORED=1  # flips to 0 only after we swap them
 
 log() { printf '\n[bootstrap] %s\n' "$*"; }
 
 cp "$CONFIG" "$CONFIG_BACKUP"
 
 restore_config() {
-  if [[ "$RESTORED" -eq 0 ]]; then
+  if [[ "$CONFIG_RESTORED" -eq 0 ]]; then
     cp "$CONFIG_BACKUP" "$CONFIG"
-    RESTORED=1
+    CONFIG_RESTORED=1
   fi
   rm -f "$CONFIG_BACKUP"
 }
-trap restore_config EXIT INT TERM
+
+restore_migrations() {
+  if [[ "$MIGRATIONS_RESTORED" -eq 0 && -d "$MIGRATIONS_BACKUP" ]]; then
+    rm -rf "$MIGRATIONS_DIR"
+    mv "$MIGRATIONS_BACKUP" "$MIGRATIONS_DIR"
+    MIGRATIONS_RESTORED=1
+    log "restored original supabase/migrations from backup"
+  fi
+}
+
+cleanup_all() {
+  restore_config
+  restore_migrations
+}
+trap cleanup_all EXIT INT TERM
 
 disable_local_replay() {
   python3 - "$CONFIG" <<'PY'
@@ -176,12 +193,65 @@ bootstrap_extensions "$DB_URL_VAL"
 verify_extensions "$DB_URL_VAL" "after-bootstrap"
 
 restore_config
-trap - EXIT INT TERM
 
-log "PHASE 5 supabase migration up --include-all"
-# Rerun verification AFTER migration up so we can distinguish:
-#   - Failure DURING migration up on CREATE EXTENSION  => truth B
-#   - Success here                                     => truth A was the story
+log "PHASE 4 neutralize CREATE EXTENSION pg_cron/pg_net in a HARNESS-ONLY temp copy of supabase/migrations"
+# Root-cause TRUTH B: historical `CREATE EXTENSION IF NOT EXISTS pg_cron`
+# statements fail during local replay by privilege mechanics, even though
+# the extension is already present after PHASE 3. We MUST NOT edit files
+# in supabase/migrations/ in the repo — production replay must remain
+# identical. Instead: back up the real dir, replace it with a neutralized
+# copy for the duration of `supabase migration up`, and restore on exit
+# (trap cleanup_all).
+if [[ ! -d "$MIGRATIONS_BACKUP" ]]; then
+  mv "$MIGRATIONS_DIR" "$MIGRATIONS_BACKUP"
+  cp -R "$MIGRATIONS_BACKUP" "$MIGRATIONS_DIR"
+  MIGRATIONS_RESTORED=0
+  log "swapped supabase/migrations -> harness-only copy (original saved as supabase/migrations.stress-original)"
+else
+  log "WARN: migrations backup already exists; refusing to overwrite" >&2
+  exit 1
+fi
+
+# Neutralize only pg_cron / pg_net CREATE EXTENSION statements. Everything
+# else — including cron job scheduling, Wave 1.5 job names, DO $$ wrappers
+# — is preserved. Extensions themselves are already installed by PHASE 3.
+NEUTRALIZED_COUNT=0
+while IFS= read -r -d '' f; do
+  if grep -Eqi 'CREATE[[:space:]]+EXTENSION[^;]*\bpg_(cron|net)\b' "$f"; then
+    # Replace matching CREATE EXTENSION line(s) with a no-op SELECT.
+    # Handles: `CREATE EXTENSION IF NOT EXISTS pg_cron;`,
+    #          `CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;`,
+    #          `    CREATE EXTENSION pg_cron;` (inside DO $$ ... END $$).
+    python3 - "$f" <<'PY'
+import re, sys
+p = sys.argv[1]
+src = open(p).read()
+pat = re.compile(
+    r'(?im)^([ \t]*)CREATE[ \t]+EXTENSION\b[^;]*\bpg_(?:cron|net)\b[^;]*;',
+)
+new = pat.sub(r"\1SELECT 1; -- stress-harness: pg_cron/pg_net neutralized (installed via bootstrap)", src)
+if new != src:
+    open(p, 'w').write(new)
+PY
+    NEUTRALIZED_COUNT=$((NEUTRALIZED_COUNT + 1))
+    log "neutralized: $(basename "$f")"
+  fi
+done < <(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' -print0)
+log "PHASE 4 neutralized ${NEUTRALIZED_COUNT} migration file(s)"
+
+# Sanity: no CREATE EXTENSION pg_cron/pg_net should remain in the harness copy.
+if grep -REil 'CREATE[[:space:]]+EXTENSION[^;]*\bpg_(cron|net)\b' "$MIGRATIONS_DIR" >/dev/null; then
+  log "FATAL: neutralization left residual CREATE EXTENSION pg_cron/pg_net statements" >&2
+  grep -REn 'CREATE[[:space:]]+EXTENSION[^;]*\bpg_(cron|net)\b' "$MIGRATIONS_DIR" >&2 || true
+  exit 1
+fi
+
+log "PHASE 5 supabase migration up --include-all (against neutralized harness copy)"
 supabase migration up --include-all
 verify_extensions "$DB_URL_VAL" "after-migration-up"
-log "PHASE 6 done"
+
+log "PHASE 6 restore original supabase/migrations"
+restore_migrations
+trap - EXIT INT TERM
+
+log "PHASE 7 done"
