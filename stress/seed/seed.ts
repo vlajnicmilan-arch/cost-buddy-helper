@@ -22,9 +22,11 @@ const MODE = (process.env.STRESS_SEED_MODE ?? "smoke") as "smoke" | "full";
 
 assertLocal(URL);
 
+// Honest volume: what the code below actually inserts.
+// full == users only (domain rows are Faza 2).
 const VOLUME = MODE === "full"
-  ? { users: 200, krugovi: 20, projekti: 30, expenses: 15_000 }
-  : { users: 5,   krugovi: 2,  projekti: 2,  expenses: 50 };
+  ? { users: 200, krugovi: 0, projekti: 0, expenses: 0 }
+  : { users: 5,   krugovi: 0, projekti: 2, expenses: 2 };
 
 const admin = createClient(URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },

@@ -1,13 +1,14 @@
-# NOTE: Primary path for Faza 1 is `supabase start` (Supabase CLI) — it
-# provides GoTrue, PostgREST, Storage out of the box. This compose file
-# is a FALLBACK for CI environments without the Supabase CLI, and is
-# intentionally minimal.
+# AUXILIARY ARTIFACT — NOT USED BY run-all.sh.
 #
-# Realtime is NOT included — see stress/README.md § "Realtime svjesno
-# isključen".
+# Faza 1 zahtijeva puni lokalni Supabase stack (Postgres + GoTrue +
+# PostgREST) preko `supabase start`. Ovaj compose diže SAMO Postgres i
+# NIJE valjan fallback — bez GoTrue-a auth pool ne može raditi.
 #
-# Port 55433 (not 5432 or 54322) to avoid collision with a running
-# `supabase start` on the same host.
+# Zadržan je kao pomoćni artefakt za budući DB-only mikro-benchmark ili
+# eksperimente van glavnog harnessa. Ako ga koristiš izvan tog konteksta,
+# svjestan si da ne validiraš produkcijski oblik stacka.
+#
+# Port 55433 kako se ne bi sudarao s `supabase start` (54322).
 version: "3.8"
 services:
   stress-postgres:

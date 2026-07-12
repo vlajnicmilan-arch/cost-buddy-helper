@@ -6,18 +6,20 @@ NIJE gate (samo report).
 
 ## Status
 
-**Faza 1 (ova faza) — skeleton + env guard + local compose + seed + auth pool.**
-Fase 2 (concurrency), 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
+**Faza 1 (ova faza) — skeleton + env guard + seed + auth pool.**
+Faze 2 (concurrency), 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
 
 ## Preduvjeti (host stroj, ne Lovable sandbox)
 
-- Docker + docker-compose
-- Supabase CLI ≥ 1.180 (`supabase --version`)
+- Docker
+- **Supabase CLI ≥ 1.180 (`supabase --version`) — TVRDI ZAHTJEV.**
+  `run-all.sh --smoke` odmah pada ako CLI nije na PATH-u. Ne postoji
+  smisleni fallback jer nam za auth pool treba GoTrue + PostgREST.
 - Node/Bun (za TS seed skripte)
-- Min. resursi: 8 GB RAM, 4 core (za puni v1 volumen)
+- Min. resursi: 8 GB RAM, 4 core (za budući puni v1 volumen)
 
-**Napomena**: Lovable sandbox nema Docker. `run-all.sh --smoke` mora se
-izvršiti lokalno na developer/CI stroju.
+**Napomena**: Lovable sandbox nema Docker ni Supabase CLI. `run-all.sh
+--smoke` mora se izvršiti lokalno na developer/CI stroju.
 
 ## Jedna naredba
 
@@ -29,9 +31,9 @@ Flow:
 
 1. `guard-env.sh` — tvrdo pada ako URL nije `localhost` / `127.0.0.1`
 2. `supabase start` — digne lokalni stack (Postgres + GoTrue + PostgREST)
-3. `reset-db.sh` — `supabase db reset` + primijeni sve migracije
+3. `reset-db.sh` — `supabase db reset --local` (CLI-only)
 4. `pause-cron.sql` — snapshot + `UPDATE cron.job SET active = false`
-5. `seed/seed.ts` — smoke seed (5 usera, 2 kruga, 2 projekta, 50 expenses)
+5. `seed/seed.ts` — smoke seed (vidi "Seed volumen" niže)
 6. `seed/loginSeedUsers.ts` ili `seed/tokens.ts` — auth pool → `stress/reports/tokens.json`
 7. Ispis `READY`
 
@@ -46,11 +48,18 @@ Cleanup (uvijek, i na `trap ERR`):
 
 - `login` (**default, robusnije**) — pravi `POST /auth/v1/token?grant_type=password`
   protiv lokalnog GoTrue-a. Sporije, ali imun na drift secreta.
-- `mint` — čita `GOTRUE_JWT_SECRET` iz `supabase status --output env` i mint-a
-  JWT lokalno. Brže, ali **fail-fast** ako secret nije dostupan.
+- `mint` — mint-a JWT lokalno pomoću `GOTRUE_JWT_SECRET` iz environmenta.
+  **Skripta sama NE poziva `supabase status --output env`.** Ti moraš
+  exportati secret prije poziva, npr.:
 
-**Nikakve hardcodeane tajne.** Ako `mint` ne može pouzdano doći do secreta,
-skripta pada s eksplicitnom porukom kamo pogledati.
+  ```bash
+  eval "$(supabase status --output env | grep GOTRUE_JWT_SECRET)"
+  export GOTRUE_JWT_SECRET
+  STRESS_AUTH_MODE=mint bash stress/bin/run-all.sh --smoke
+  ```
+
+  Ako `GOTRUE_JWT_SECRET` nije postavljen (ili je prekratak), `tokens.ts`
+  pada s eksplicitnom porukom. Nema hardcodeanih fallbacka.
 
 ## Cron kontrola
 
@@ -66,19 +75,20 @@ WHERE active` prije mjerenja — mora biti 0.
 
 ## Realtime — svjesno isključen
 
-`docker-compose.stress.yml` **ne pokreće realtime servis**. Realtime pod 500 VU
-može blokirati WAL i zamutiti mjerenje concurrency invarijanti. Ako se u v2
-pokaže da treba, uvest ćemo poseban stress profil s realtime-om.
+Za Fazu 1 se ne testira realtime. `docker-compose.stress.yml` je
+prisutan kao **budući pomoćni artefakt**, ne kao aktivni fallback za
+`run-all.sh`. Vidi napomenu niže.
 
-## Seed volumen
+## Seed volumen (ISTINITO, ono što kod stvarno radi)
 
-**Puni v1 volumen** (Faza 2+): 200 users, 20 krugova, 30 projekata, 15k expenses.
+- `--smoke`: **5 auth usera, 2 projekta (prva 2 usera), 2 expensa, 0 krugova.**
+  Minimalno-ali-pošteno — dovoljno da se validira flow seed → login end-to-end.
+- `--full`: **Faza 2 stub.** `run-all.sh --full` odmah pada. `seed/seed.ts`
+  full grana kreira samo auth usere, bez domain redova. Puni domain seed
+  (200 usera / 20 krugova / 30 projekata / 15k expenses) je posao Faze 2.
 
-**Smoke volumen** (`--smoke` flag u Fazi 1): 5 users, 2 kruga, 2 projekta,
-50 expenses. Dovoljno da se validira flow end-to-end bez čekanja 10+ min na seed.
-
-Puni volumen se pokreće `bash stress/bin/run-all.sh --full` — u Fazi 1 to je
-implementirano ali **nije runtime-verificirano**.
+Ako ti trebaju krugovi ili veći volumen za concurrency testove — to nije
+Faza 1.
 
 ## Guard: fail-closed na non-local URL
 
@@ -86,6 +96,14 @@ implementirano ali **nije runtime-verificirano**.
 
 - Prihvaća samo `http://localhost:*` ili `http://127.0.0.1:*`
 - Sve ostalo → `exit 1` s porukom `REFUSING TO RUN AGAINST NON-LOCAL URL`
+
+## `docker-compose.stress.yml` — pomoćni artefakt
+
+Postoji, ali **`run-all.sh` ga ne koristi**. Diže samo `postgres:16` —
+bez GoTrue-a i PostgREST-a nije dovoljan za auth pool niti za realan
+prikaz produkcijskog stacka. Držimo ga za buduće eksperimente
+(npr. izolirani DB-only mikro-benchmark ili budući realtime profil).
+**Nije validan fallback za Fazu 1.**
 
 ## Što NIJE u Fazi 1
 
@@ -95,12 +113,14 @@ implementirano ali **nije runtime-verificirano**.
 - Report generator
 - CI workflow
 - Performance gate (v2 odluka, ne v1)
+- Puni domain seed (krugovi, veći broj projekata/expensa)
+- `--full` runtime put
 
 ## Reprodukcija
 
 ```bash
 cd stress
 cp env.example .env
-# uredi .env po potrebi
+# uredi .env po potrebi (i pobrini se da Supabase CLI postoji)
 bash bin/run-all.sh --smoke
 ```

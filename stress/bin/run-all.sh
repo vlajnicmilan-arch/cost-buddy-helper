@@ -3,11 +3,16 @@
 #
 # Usage:
 #   bash stress/bin/run-all.sh --smoke        # small seed, quick validation
-#   bash stress/bin/run-all.sh --full         # full v1 seed (200/20/30/15k)
+#   bash stress/bin/run-all.sh --full         # FAZA 2 stub — not implemented
 #   bash stress/bin/run-all.sh --keep-stack   # don't tear down on exit
 #
 # Faza 1 does NOT run any concurrency/k6/UI tests — it only proves the
 # skeleton stands up end-to-end and prints READY.
+#
+# HARD REQUIREMENT: Supabase CLI must be installed. This orchestrator
+# refuses to run without it. The docker-compose.stress.yml file is a
+# future artifact (see stress/README.md) and does NOT satisfy this
+# requirement — GoTrue + PostgREST are needed for the auth pool step.
 
 set -euo pipefail
 
@@ -22,6 +27,20 @@ for arg in "$@"; do
   esac
 done
 
+if [[ "$MODE" == "full" ]]; then
+  echo "run-all: --full is a Faza 2 stub. Faza 1 supports --smoke only." >&2
+  echo "run-all: seed/seed.ts full branch is not runtime-verified; refusing to run." >&2
+  exit 2
+fi
+
+if ! command -v supabase >/dev/null 2>&1; then
+  echo "run-all: Supabase CLI not found on PATH." >&2
+  echo "run-all: Faza 1 REQUIRES the full local Supabase stack (Postgres + GoTrue + PostgREST)." >&2
+  echo "run-all: install it — https://supabase.com/docs/guides/local-development — then retry." >&2
+  echo "run-all: docker-compose.stress.yml is NOT a valid fallback (Postgres-only, no auth)." >&2
+  exit 1
+fi
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 STRESS="$ROOT/stress"
 export STRESS_ENV_FILE="$STRESS/.env"
@@ -35,7 +54,7 @@ cleanup() {
     psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=0 \
       -f "$STRESS/bin/resume-cron.sql" 2>&1 | sed 's/^/  /' || true
   fi
-  if [[ "$KEEP_STACK" -eq 0 ]] && command -v supabase >/dev/null 2>&1; then
+  if [[ "$KEEP_STACK" -eq 0 ]]; then
     supabase stop --no-backup 2>&1 | sed 's/^/  /' || true
   fi
   exit "$ec"
@@ -51,12 +70,7 @@ set -a; source "$STRESS_ENV_FILE"; set +a
 
 echo ""
 echo "=== 2/7 supabase start ==="
-if command -v supabase >/dev/null 2>&1; then
-  supabase start 2>&1 | tail -20
-else
-  echo "supabase CLI not found — assuming compose fallback is already up"
-  echo "(start it with: docker-compose -f $STRESS/docker-compose.stress.yml --profile stress up -d)"
-fi
+supabase start 2>&1 | tail -20
 
 echo ""
 echo "=== 3/7 reset-db ==="
