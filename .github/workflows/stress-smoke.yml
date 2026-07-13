@@ -55,8 +55,8 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install k6 (layer1 only)
-        if: ${{ github.event.inputs.layer == 'layer1' }}
+      - name: Install k6 (layer1 + layer3)
+        if: ${{ github.event.inputs.layer == 'layer1' || github.event.inputs.layer == 'layer3' }}
         run: |
           set -euo pipefail
           sudo gpg -k
