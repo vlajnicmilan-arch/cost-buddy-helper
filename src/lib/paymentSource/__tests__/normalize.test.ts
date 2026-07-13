@@ -99,3 +99,51 @@ describe('isCanonicalShape', () => {
     expect(isCanonicalShape('')).toBe(false);
   });
 });
+
+describe('normalizePaymentSourceWithDbFallback', () => {
+  it('sretni put: built-in slug — nula DB poziva', async () => {
+    const db = vi.fn(async () => true);
+    expect(await normalizePaymentSourceWithDbFallback('cash', ctx, db)).toBe('cash');
+    expect(db).not.toHaveBeenCalled();
+  });
+
+  it('sretni put: custom:UUID u known setu — nula DB poziva', async () => {
+    const db = vi.fn(async () => true);
+    expect(await normalizePaymentSourceWithDbFallback(`custom:${KNOWN}`, ctx, db)).toBe(`custom:${KNOWN}`);
+    expect(await normalizePaymentSourceWithDbFallback(KNOWN, ctx, db)).toBe(`custom:${KNOWN}`);
+    expect(db).not.toHaveBeenCalled();
+  });
+
+  it('unknown_uuid + DB pogodak → canonical custom:UUID', async () => {
+    const db = vi.fn(async (uuid: string) => {
+      expect(uuid).toBe(UNKNOWN);
+      return true;
+    });
+    expect(await normalizePaymentSourceWithDbFallback(`custom:${UNKNOWN}`, ctx, db)).toBe(`custom:${UNKNOWN}`);
+    expect(db).toHaveBeenCalledTimes(1);
+  });
+
+  it('unknown_uuid + DB pogodak za raw UUID (bez custom: prefiksa) → canonical', async () => {
+    const db = vi.fn(async () => true);
+    expect(await normalizePaymentSourceWithDbFallback(UNKNOWN, ctx, db)).toBe(`custom:${UNKNOWN}`);
+    expect(db).toHaveBeenCalledWith(UNKNOWN);
+  });
+
+  it('unknown_uuid + DB promašaj → re-throw unknown_uuid (reason nepromijenjen)', async () => {
+    const db = vi.fn(async () => false);
+    await expect(normalizePaymentSourceWithDbFallback(`custom:${UNKNOWN}`, ctx, db))
+      .rejects.toBeInstanceOf(PaymentSourceNormalizeError);
+    try {
+      await normalizePaymentSourceWithDbFallback(`custom:${UNKNOWN}`, ctx, db);
+    } catch (e) {
+      expect((e as PaymentSourceNormalizeError).reason).toBe('unknown_uuid');
+    }
+  });
+
+  it('non-uuid greške (empty/malformed) NE zovu DB fallback — re-throw direktno', async () => {
+    const db = vi.fn(async () => true);
+    await expect(normalizePaymentSourceWithDbFallback('', ctx, db)).rejects.toMatchObject({ reason: 'empty' });
+    await expect(normalizePaymentSourceWithDbFallback('Erste', ctx, db)).rejects.toMatchObject({ reason: 'malformed' });
+    expect(db).not.toHaveBeenCalled();
+  });
+});
