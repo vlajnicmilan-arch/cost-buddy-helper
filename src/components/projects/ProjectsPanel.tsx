@@ -313,7 +313,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
             </Button>
           )}
           {canCreate && (
-            <Button onClick={handleOpenBlankDialog} size="sm" variant="module">
+            <Button data-testid="project-create" onClick={handleOpenBlankDialog} size="sm" variant="module">
               <Plus className="w-4 h-4 mr-2" />
               {t('projects.add')}
             </Button>

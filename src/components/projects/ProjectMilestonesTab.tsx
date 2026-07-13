@@ -299,7 +299,7 @@ export const ProjectMilestonesTab = ({
               <FileSignature className="w-4 h-4" />
               {t('projects.vtr.addButton', 'Dodaj VTR')}
             </Button>
-            <Button onClick={() => { if (!guard()) return; openDialog(); }} size="sm" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
+            <Button data-testid="milestone-add" onClick={() => { if (!guard()) return; openDialog(); }} size="sm" disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
               <Plus className="w-4 h-4 mr-2" />
               {t('projects.addMilestone')}
             </Button>
@@ -347,6 +347,7 @@ export const ProjectMilestonesTab = ({
             return (
               <div 
                 key={milestone.id}
+                data-testid="milestone-row"
                 data-highlight-id={`milestone:${milestone.id}`}
                 className={cn(
                   "p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow",
@@ -519,7 +520,7 @@ export const ProjectMilestonesTab = ({
 
             <div className="space-y-2">
               <Label>{dialogMode === 'vtr' ? t('projects.vtr.nameLabel', 'Naziv VTR-a') : t('projects.milestoneName')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
+              <Input data-testid="milestone-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
             </div>
 
             <div className="space-y-2">
@@ -766,7 +767,7 @@ export const ProjectMilestonesTab = ({
               <Button variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button className="flex-1" onClick={handleSave} disabled={saving || !name.trim()}>
+              <Button data-testid="milestone-save" className="flex-1" onClick={handleSave} disabled={saving || !name.trim()}>
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
               </Button>

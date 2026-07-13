@@ -150,5 +150,5 @@ cp env.example .env
 bash bin/run-all.sh --smoke
 ```
 
-<!-- sync-nudge: 2026-07-13T15:50:00Z -->
+<!-- sync-nudge: 2026-07-13T16:29:52Z -->
 

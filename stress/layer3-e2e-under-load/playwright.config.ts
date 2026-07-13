@@ -15,7 +15,7 @@ const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4173';
 export default defineConfig({
   testDir: './flows',
   timeout: 120_000,          // higher: system under k6 load
-  expect: { timeout: 15_000 },
+  expect: { timeout: 60_000 },  // CI kutija pod k6 olujom — prvi render može zaostati; sud istine je u SQL sudcima
   fullyParallel: false,      // serialise: shared local DB + shared k6 pressure
   workers: 1,
   retries: 0,                // truth verdict, no retry masking
