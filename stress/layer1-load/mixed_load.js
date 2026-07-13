@@ -16,11 +16,18 @@ import { Counter, Trend } from 'k6/metrics';
 import { SharedArray } from 'k6/data';
 
 // Init-time file reads (k6 restriction).
+// tokens.json is REQUIRED (auth pool). layer1-sources.json is OPTIONAL —
+// exists when seed produced pre-computed sources (layer1 mode); missing when
+// harness runs against another mode (e.g. layer3 background load). In the
+// missing case setup() fetches one source per user via REST at runtime.
 const tokensFile = JSON.parse(open('../reports/tokens.json'));
-const sourcesFile = JSON.parse(open('../reports/layer1-sources.json'));
+let sourcesFile = null;
+try { sourcesFile = JSON.parse(open('../reports/layer1-sources.json')); } catch (_) { sourcesFile = null; }
 
-// Build user_id -> {access_token, source_id} map.
+// Build user_id -> {access_token, source_id} pool from the pre-seeded file
+// when available. When absent, `pool` stays empty and setup() below fills it.
 const pool = new SharedArray('pool', function () {
+  if (!sourcesFile) return [];
   const bySource = new Map();
   for (const s of sourcesFile.sources) bySource.set(s.user_id, s.source_id);
   const out = [];
@@ -29,7 +36,6 @@ const pool = new SharedArray('pool', function () {
     if (!src) continue; // user without layer1 source — skip
     out.push({ user_id: t.user_id, token: t.access_token, source_id: src });
   }
-  if (out.length === 0) throw new Error('layer1: empty auth+source pool');
   return out;
 });
 
