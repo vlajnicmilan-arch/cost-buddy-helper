@@ -33,3 +33,4 @@
 20260708181325_*.sql   # WS3a-1: enqueue_worker_payout_notifications piše i18n ključeve + title_vars/message_vars umjesto HR teksta (klijent/push prevodi u trenutku prikaza)
 20260709055017_*.sql   # Faza B: _cps_balance_guard_before/after — auto-anchor za sirov UPDATE balance-a + engine marker u recompute/set_source_anchor
 
+20260713100009_*.sql   # Lost-update fix: recompute_custom_source_balance FOR UPDATE + trigger deterministic lock order (ORDER BY x)
