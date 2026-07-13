@@ -21,7 +21,7 @@ DO $$
 DECLARE
   v_mode text;
 BEGIN
-  SELECT COALESCE((SELECT value FROM public.app_settings WHERE key = 'anchor_engine_mode'), 'day_cut')
+  SELECT COALESCE((SELECT value #>> '{}' FROM public.app_settings WHERE key = 'anchor_engine_mode'), 'day_cut')
     INTO v_mode;
   RAISE NOTICE 'layer1 sweep: anchor_engine_mode = %', v_mode;
 END $$;
@@ -35,7 +35,7 @@ DECLARE
   v_bad int := 0;
   r record;
 BEGIN
-  SELECT COALESCE((SELECT value FROM public.app_settings WHERE key = 'anchor_engine_mode'), 'day_cut')
+  SELECT COALESCE((SELECT value #>> '{}' FROM public.app_settings WHERE key = 'anchor_engine_mode'), 'day_cut')
     INTO v_mode;
 
   FOR r IN
