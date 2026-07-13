@@ -33,3 +33,5 @@ Bez ovog guarda sloj 3 se odbija pokrenuti.
 - `0` — sve zeleno (invariante PASS, Playwright PASS, k6 clean)
 - `1` — invariant fail = **CRVENA ZONA** (istina prekršena)
 - `2` — samo Playwright ili k6 threshold breach uz čiste invariante = **CI hardware ceiling**
+
+<!-- sync-nudge: 2026-07-13T19:45:21Z -->
