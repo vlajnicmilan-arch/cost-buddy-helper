@@ -579,10 +579,25 @@ if [[ "$LAYER" -eq 3 ]]; then
   set -e
   echo "  playwright exit code: $PW_EC"
 
-  # Reap k6 background (may already have exited on its own after 30s window).
-  wait "$K6_PID" 2>/dev/null || true
+  # Reap k6 background — wait for GRACEFUL end (do NOT kill). k6 profile=small
+  # is ~75s total; handleSummary must fire to write k6-summary.json which
+  # L1-A/B/C sudci require. If PW finishes faster than k6, we block here.
+  wait "$K6_PID" 2>/dev/null
   K6_EC_L3=$?
   echo "  k6 background exit code: $K6_EC_L3 (0=clean, 99=threshold, other=error)"
+
+  # Grace window: handleSummary writes to disk after k6's own exit — poll up
+  # to 15s for the file to appear so the sweep never races the write.
+  for _i in $(seq 1 15); do
+    [[ -f "$STRESS/reports/k6-summary.json" ]] && break
+    sleep 1
+  done
+  if [[ -f "$STRESS/reports/k6-summary.json" ]]; then
+    echo "  k6 summary written: $STRESS/reports/k6-summary.json"
+  else
+    echo "  WARN: k6-summary.json missing after wait — tail of k6 log:"
+    tail -n 40 "$K6_LOG" 2>/dev/null | sed 's/^/    /'
+  fi
 
   # Stop preview.
   kill "$PREVIEW_PID" 2>/dev/null || true
