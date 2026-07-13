@@ -390,6 +390,8 @@ if [[ "$LAYER" -eq 1 ]]; then
     set -e
     echo "  layer1.sql exit code: $INV_LAYER1_EC"
   fi
+  SWEEP_DONE=1  # dedup: layer 1 inline sweep izvršen — cleanup trap ga ne ponavlja
+
 
   # -----------------------------------------------------------------------
   # Final verdict — razdvojeno: (a) istina, (b) brzina.
