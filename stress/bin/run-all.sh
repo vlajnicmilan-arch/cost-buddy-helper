@@ -166,8 +166,11 @@ run_invariant_sweep() {
     ' "$summary" 2>/dev/null)"
   fi
   if ! [[ "$insert_ok" =~ ^[0-9]+$ ]]; then
-    echo "  L1-A/B/C: SKIPPED (no k6 summary — likely pre-storm/vacuous sweep)"
-    INV_LAYER1_EC=0
+    # SKIP grana: samo za stvarne pre-storm abortuse. Sudac koji nije sudio
+    # NE upisuje presudu — INV_LAYER1_EC=-1 (sentinel), verdict blok ispisuje
+    # "SKIPPED (pre-storm)" umjesto lažnog "PASS".
+    echo "  L1-A/B/C: SKIPPED (no k6 summary — pre-storm/vacuous sweep)"
+    INV_LAYER1_EC=-1
   else
     echo "  insert_ok from k6 summary: $insert_ok"
     set +e
@@ -548,6 +551,11 @@ if [[ "$LAYER" -eq 3 ]]; then
   echo ""
   echo "--- layer3 [5/7] start k6 small background load ---"
   K6_LOG="$STRESS/reports/layer3-k6-bg.log"
+  # k6 summary → sweep vezan. mixed_load.js ima custom handleSummary koji
+  # piše stress/reports/k6-summary.json (j.counters.expense_insert_ok). Layer 3
+  # k6 bg JE oluja (small mixed_load) — sudci L1-A/B/C sude nad njom, ne SKIPaju.
+  # NE koristimo --summary-export (pisao bi k6 default schema preko custom).
+  rm -f "$STRESS/reports/k6-summary.json"
   set +e
   STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
   STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
@@ -555,7 +563,7 @@ if [[ "$LAYER" -eq 3 ]]; then
     k6 run "$STRESS/layer1-load/mixed_load.js" > "$K6_LOG" 2>&1 &
   K6_PID=$!
   set -e
-  echo "  k6 background running (pid=$K6_PID, profile=small, ~30VU/30s)"
+  echo "  k6 background running (pid=$K6_PID, profile=small, ~30VU/30s, summary→reports/k6-summary.json)"
 
   # -----------------------------------------------------------------------
   # 5) RUN Playwright specs against the loaded system.
@@ -592,17 +600,29 @@ if [[ "$LAYER" -eq 3 ]]; then
 
   # -----------------------------------------------------------------------
   # Final verdict — same 0/1/2 contract as layer 1.
+  # Sudac koji nije sudio ne upisuje presudu:
+  #   INV_LAYER1_EC == -1  → SKIPPED (pre-storm)
+  #   INV_LAYER1_EC ==  0  → PASS
+  #   INV_LAYER1_EC >   0  → FAIL
   # -----------------------------------------------------------------------
+  verdict_label() {
+    local ec="$1"
+    if   [[ "$ec" -eq 0 ]]; then echo "PASS"
+    elif [[ "$ec" -lt 0 ]]; then echo "SKIPPED (pre-storm)"
+    else echo "FAIL"
+    fi
+  }
+
   echo ""
   echo "=== Layer 3 verdict ==="
   echo "  (a) istina — invariants:"
-  echo "        krug I1-I7  : $([[ $INV_KRUG_EC   -eq 0 ]] && echo PASS || echo FAIL)"
-  echo "        L1-A/B/C    : $([[ $INV_LAYER1_EC -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "        krug I1-I7  : $(verdict_label "$INV_KRUG_EC")"
+  echo "        L1-A/B/C    : $(verdict_label "$INV_LAYER1_EC")"
   echo "  (b) brzina — Playwright + k6 background:"
   echo "        playwright  : $([[ $PW_EC -eq 0 ]] && echo PASS || echo FAIL)"
   echo "        k6 bg       : $([[ $K6_EC_L3 -eq 0 ]] && echo clean || echo "breach/exit=$K6_EC_L3")"
 
-  if (( INV_KRUG_EC != 0 || INV_LAYER1_EC != 0 )); then
+  if (( INV_KRUG_EC > 0 || INV_LAYER1_EC > 0 )); then
     printf '::error title=LAYER3 INVARIANT FAIL::truth violated (krug_ec=%s layer1_ec=%s pw_ec=%s k6_ec=%s) — CRVENA ZONA\n' \
       "$INV_KRUG_EC" "$INV_LAYER1_EC" "$PW_EC" "$K6_EC_L3"
     echo "Layer 3: INVARIANT FAIL (crvena zona)"
@@ -610,9 +630,9 @@ if [[ "$LAYER" -eq 3 ]]; then
   fi
 
   if (( PW_EC != 0 || K6_EC_L3 != 0 )); then
-    printf '::warning title=LAYER3 threshold breach::invariants PASS, pw_ec=%s k6_ec=%s — CI hardware ceiling\n' \
+    printf '::warning title=LAYER3 threshold breach::invariants PASS/SKIPPED, pw_ec=%s k6_ec=%s — CI hardware ceiling\n' \
       "$PW_EC" "$K6_EC_L3"
-    echo "Layer 3: invariants PASS, Playwright/k6 breach — CI granica hardvera (exit 2)"
+    echo "Layer 3: invariants PASS/SKIPPED, Playwright/k6 breach — CI granica hardvera (exit 2)"
     exit 2
   fi
 
