@@ -73,17 +73,24 @@ emit_failure_annotations() {
 
   # Best-effort "root cause" line: first FAIL/ERROR/exception hit; fall back
   # to the last non-empty line of the log.
+  # NOTE: ignore known cosmetic red-herrings from `supabase stop` internals
+  # (e.g. 'supabase_migrations.schema_migrations does not exist') — these are
+  # emitted by the CLI's shutdown hook and MUST NOT hijack the STRESS FAIL
+  # title from the real cause (invariant violation or k6 threshold breach).
   local fail_line
-  fail_line="$(grep -E -m1 -i \
-    -e '^FAIL' \
-    -e ' FAIL ' \
-    -e 'ERROR:' \
-    -e 'error:' \
-    -e 'exception' \
-    -e 'permission denied' \
-    -e 'could not find' \
-    -e 'violated' \
-    "$log" || true)"
+  fail_line="$(grep -E -v \
+      -e 'supabase_migrations\.schema_migrations' \
+      "$log" \
+    | grep -E -m1 -i \
+      -e '^FAIL' \
+      -e ' FAIL ' \
+      -e 'ERROR:' \
+      -e 'error:' \
+      -e 'exception' \
+      -e 'permission denied' \
+      -e 'could not find' \
+      -e 'violated' \
+      || true)"
   if [[ -z "$fail_line" ]]; then
     fail_line="$(grep -v '^[[:space:]]*$' "$log" | tail -n 1 || true)"
   fi
