@@ -61,7 +61,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <p className={`text-base sm:text-xl font-bold ${totalBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+              <p data-testid="summary-balance" className={`text-base sm:text-xl font-bold ${totalBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatAmount(totalBalance)}
               </p>
               <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
