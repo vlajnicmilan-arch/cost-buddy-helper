@@ -614,6 +614,14 @@ if [[ "$LAYER" -eq 3 ]]; then
     tail -n 40 "$K6_LOG" 2>/dev/null | sed 's/^/    /'
   fi
 
+  # ALWAYS surface k6 exception context on non-zero exit — even when the
+  # summary was written. Layer 3 previously masked a `GoError` inside
+  # mixed_load.js because the tail block only fired when summary was missing.
+  if [[ "$K6_EC_L3" -ne 0 && "$K6_EC_L3" -ne 99 ]]; then
+    echo "  WARN: k6 background exited non-zero ($K6_EC_L3) — last 40 lines of k6 log:"
+    tail -n 40 "$K6_LOG" 2>/dev/null | sed 's/^/    /'
+  fi
+
   # Stop preview.
   kill "$PREVIEW_PID" 2>/dev/null || true
   wait "$PREVIEW_PID" 2>/dev/null || true
