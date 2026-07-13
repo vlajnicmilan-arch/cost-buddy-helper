@@ -567,7 +567,7 @@ export const useExpenseCRUD = ({
         // Foundation Plan Val 1: normalize before update.
         let canonicalPaymentSource: string;
         try {
-          canonicalPaymentSource = normalizePs(expense.payment_source, 'cash', 'updateExpense.update');
+          canonicalPaymentSource = await normalizePs(expense.payment_source, 'cash', 'updateExpense.update');
         } catch {
           showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
           return;
