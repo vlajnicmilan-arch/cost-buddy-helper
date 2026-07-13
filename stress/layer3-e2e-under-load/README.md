@@ -41,3 +41,5 @@ Bez ovog guarda sloj 3 se odbija pokrenuti.
 <!-- sync-nudge: 2026-07-13T20:40:36Z -->
 <!-- sync-nudge-2: 2026-07-13T20:50:10Z -->
 <!-- sync-nudge-3: 2026-07-13T21:02:34Z -->
+
+<!-- sync-nudge-4: 2026-07-13T21:20:00Z — diag DB probe + subscription probe + user_id/marker annotations -->
