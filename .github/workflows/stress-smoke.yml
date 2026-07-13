@@ -121,6 +121,8 @@ jobs:
             bash stress/bin/run-all.sh --layer=2
           elif [[ "$layer" == "layer1" ]]; then
             bash stress/bin/run-all.sh --layer=1
+          elif [[ "$layer" == "layer3" ]]; then
+            bash stress/bin/run-all.sh --layer=3
           else
             bash stress/bin/run-all.sh --smoke
           fi
