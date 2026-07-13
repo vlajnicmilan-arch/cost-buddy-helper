@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { resetUserByKey } from '../helpers/db';
 import { storageStatePath } from '../helpers/auth';
+import { registerOnFailureDiagnostics } from '../helpers/onFailureDiag';
+
+registerOnFailureDiagnostics();
 
 /**
  * Scenario 2 — Project create + milestone add pod k6 loadom.
