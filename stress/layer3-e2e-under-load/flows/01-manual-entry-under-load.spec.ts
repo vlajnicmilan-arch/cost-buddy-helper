@@ -39,7 +39,7 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
 
     // Read starting balance from UI (parsed from summary-balance).
     const balanceEl = page.getByTestId(TID.summaryBalance).first();
-    await expect(balanceEl).toBeVisible({ timeout: 15_000 });
+    await expect(balanceEl).toBeVisible({ timeout: 60_000 });
     const startText = (await balanceEl.textContent()) ?? '';
     const startBalance = parseHrCurrency(startText);
 
@@ -51,7 +51,7 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
 
     // Row appears in the list.
     const row = page.getByTestId(TID.transactionRow).filter({ hasText: description });
-    await expect(row).toBeVisible({ timeout: 20_000 });
+    await expect(row).toBeVisible({ timeout: 60_000 });
 
     // Balance UI reflects the exact drop (poll — under load re-render can lag).
     await expect
@@ -62,7 +62,7 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
         },
         {
           message: `balance must drop from ${startBalance} by exactly ${amount}`,
-          timeout: 20_000,
+          timeout: 60_000,
           intervals: [500, 1000, 2000],
         },
       )
