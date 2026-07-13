@@ -212,14 +212,60 @@ if [[ "$LAYER" -eq 1 ]]; then
   PROFILE="$PROFILE_EFF" \
     k6 run "$STRESS/layer1-load/mixed_load.js"
 
+  # -----------------------------------------------------------------------
+  # k6 visibility: emit ::notice annotations with headline numbers so every
+  # run surfaces them via check-runs API without needing artifact download.
+  # -----------------------------------------------------------------------
+  SUMMARY_FILE="$STRESS/reports/k6-summary.json"
+  if [[ -f "$SUMMARY_FILE" ]]; then
+    bun -e '
+      const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+      const d = j.http_req_duration || {};
+      const e = j.endpoints || {};
+      const c = j.counters || {};
+      const fmt = (v) => v ? `p50=${(v.med??0).toFixed(0)}ms p95=${(v.p95??0).toFixed(0)}ms p99=${(v.p99??0).toFixed(0)}ms max=${(v.max??0).toFixed(0)}ms` : "n/a";
+      const pct = ((j.http_req_failed_rate || 0) * 100).toFixed(2);
+      console.log(`::notice title=k6 layer1 headline (${j.profile})::VU=${j.vus_max} dur=${j.duration} err_rate=${pct}%25 insert_ok=${c.expense_insert_ok} insert_err=${c.expense_insert_err} list_ok=${c.list_ok} balance_ok=${c.balance_ok}`);
+      console.log(`::notice title=k6 layer1 http_req_duration::${fmt(d)}`);
+      console.log(`::notice title=k6 layer1 endpoint insert::${fmt(e.insert)}`);
+      console.log(`::notice title=k6 layer1 endpoint list::${fmt(e.list)}`);
+      console.log(`::notice title=k6 layer1 endpoint balance::${fmt(e.balance)}`);
+    ' "$SUMMARY_FILE" || echo "::warning title=k6 layer1::visibility emit failed (non-fatal)"
+  else
+    echo "::warning title=k6 layer1::summary file missing at $SUMMARY_FILE"
+  fi
+
   echo ""
   echo "=== Layer 1 invariant sweep (krug.sql + layer1.sql) ==="
   # krug.sql is harmless PASS on untouched layer2 fixtures — kept in chain per mandate.
   psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
 
-  INSERT_OK=0
-  if [[ -f "$STRESS/reports/k6-summary.json" ]]; then
-    INSERT_OK="$(bun -e 'const j=JSON.parse(require("fs").readFileSync("stress/reports/k6-summary.json","utf8"));console.log(j.counters.expense_insert_ok||0)')"
+  # -----------------------------------------------------------------------
+  # Robust INSERT_OK extraction. NO silent fallback to 0 (per mandate):
+  # if the counter can't be read (missing file, bun error, non-numeric,
+  # negative), hard-fail with an ::error annotation BEFORE psql runs so
+  # L1-C loudly reports the harness gap instead of a silent syntax error.
+  # -----------------------------------------------------------------------
+  INSERT_OK=""
+  BUN_EC=99
+  if [[ -f "$SUMMARY_FILE" ]]; then
+    INSERT_OK="$(bun -e '
+      try {
+        const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+        const n = j && j.counters && j.counters.expense_insert_ok;
+        if (typeof n !== "number" || !Number.isFinite(n) || n < 0) process.exit(2);
+        process.stdout.write(String(Math.trunc(n)));
+      } catch (e) {
+        process.stderr.write(String(e && e.message || e));
+        process.exit(3);
+      }
+    ' "$SUMMARY_FILE" 2>/dev/null)"
+    BUN_EC=$?
+  fi
+  if ! [[ "$INSERT_OK" =~ ^[0-9]+$ ]]; then
+    printf '::error title=L1-C harness::insert counter unreadable (bun_ec=%s file=%s value=%q) — L1-C cannot execute\n' \
+      "$BUN_EC" "$SUMMARY_FILE" "$INSERT_OK"
+    exit 1
   fi
   echo "  layer1 insert_ok from k6 summary: $INSERT_OK"
   psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
