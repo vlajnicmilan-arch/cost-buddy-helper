@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resetUserByKey } from '../helpers/db';
-import { storageStatePath } from '../helpers/auth';
+import { signInFresh } from '../helpers/auth';
 import { registerOnFailureDiagnostics } from '../helpers/onFailureDiag';
 
 registerOnFailureDiagnostics();
@@ -8,14 +8,14 @@ registerOnFailureDiagnostics();
 /**
  * Scenario 2 — Project create + milestone add pod k6 loadom.
  *
+ * PER-TEST session via signInFresh + addInitScript (no shared storageState).
+ * See spec 01 header for the refresh-token-rotation rationale.
+ *
  * NAPOMENA (za sud): Prvotni prijedlog je bio "Krug approve tok", ali Krug
- * UI trenutno NEMA stabilnih data-testid selektora (grep potvrđen). Umjesto
- * dodavanja testid-ova u pola Krug ekrana (šire nego minimalno dopušteno
- * mandatom), pokriveni je project-writeputni tok — druga kritična write
- * ruta, već ima kompletan `tid` katalog u src/. Kad Krug UI dobije testide,
- * ovaj scenarij se može zamijeniti pravim Krug approve tokom.
+ * UI trenutno NEMA stabilnih data-testid selektora. Umjesto dodavanja
+ * testid-ova u pola Krug ekrana, pokriveni je project write tok — druga
+ * kritična write ruta, već ima kompletan `tid` katalog u src/.
  */
-test.use({ storageState: storageStatePath('primary') });
 
 const TID = {
   bottomNavProjects: 'nav-projects',
@@ -29,8 +29,9 @@ const TID = {
 } as const;
 
 test.describe('Layer 3 / Scenario 2 — project + milestone under k6 load', () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
     await resetUserByKey('primary');
+    await signInFresh(page, 'primary');
   });
 
   test('create project → add milestone → milestone row visible', async ({ page }) => {

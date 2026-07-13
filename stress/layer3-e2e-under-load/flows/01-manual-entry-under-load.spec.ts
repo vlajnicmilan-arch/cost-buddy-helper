@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resetUserByKey } from '../helpers/db';
-import { storageStatePath } from '../helpers/auth';
+import { signInFresh } from '../helpers/auth';
 import { registerOnFailureDiagnostics } from '../helpers/onFailureDiag';
 
 registerOnFailureDiagnostics();
@@ -8,15 +8,16 @@ registerOnFailureDiagnostics();
 /**
  * Scenario 1 — Ručni unos troška DOK k6 (30VU small) tuče backend.
  *
+ * PER-TEST session (no shared storageState): avoids refresh-token rotation
+ * collisions where the global-setup fail-fast walk consumes the rotation
+ * and the persisted state becomes "already used" from GoTrue's POV.
+ *
  * Assertion po mandatu:
  *   1. Transaction row s opisom mora biti vidljiv u listi.
  *   2. Saldo (data-testid="summary-balance") mora pasti TOČNO za iznos
  *      unešenog troška (start_balance - amount = end_balance).
- *      Ovo je "sadržajan" assertion, ne samo prisutnost reda.
  */
-test.use({ storageState: storageStatePath('primary') });
 
-// Testids mirror src/components; kept inline to avoid depending on e2e/ helpers.
 const TID = {
   addExpenseFab: 'add-expense-fab',
   manualExpenseAmount: 'manual-expense-amount',
@@ -27,8 +28,12 @@ const TID = {
 } as const;
 
 test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
     await resetUserByKey('primary');
+    // addInitScript MUST land before first navigation — signInFresh registers
+    // it now; the goto('/') inside the test runs after and boots the app with
+    // the session already in localStorage.
+    await signInFresh(page, 'primary');
   });
 
   test('add expense → row visible → balance drops by exact amount', async ({ page }) => {
