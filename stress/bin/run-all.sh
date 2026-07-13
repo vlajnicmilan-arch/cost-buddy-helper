@@ -220,15 +220,37 @@ if [[ "$LAYER" -eq 1 ]]; then
   PROFILE_EFF="${PROFILE:-small}"
   echo "  profile: $PROFILE_EFF"
   cd "$ROOT"
-  # k6 needs Supabase env exposed to script.
+  # -----------------------------------------------------------------------
+  # SUD MORA SUDITI. k6 exits with 99 on threshold breach (e.g. `http_req_failed`
+  # crossed). Under set -e that would abort the script BEFORE the invariant
+  # sweep runs — so the STRESS FAIL annotation would carry only the k6
+  # threshold noise, and L1-A/B/C + krug I1-I7 would never render a verdict.
+  #
+  # Contract from this point on:
+  #   1. Capture k6 exit code without aborting.
+  #   2. Emit ::notice headline numbers UNCONDITIONALLY (they matter most
+  #      exactly when k6 breached, to quantify the CI hardware ceiling).
+  #   3. Run invariant sweep UNCONDITIONALLY (krug I1-I7 + L1-A/B/C).
+  #   4. Compute final exit:
+  #        - any invariant failure  → exit 1  (CRVENA ZONA: truth violated)
+  #        - only k6 threshold      → exit 2  (CI hardware ceiling; still
+  #          non-zero so the run is red, but distinguishable from invariant
+  #          fail in logs/annotations)
+  #        - both clean             → exit 0
+  # -----------------------------------------------------------------------
+  set +e
   STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
   STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
   PROFILE="$PROFILE_EFF" \
     k6 run "$STRESS/layer1-load/mixed_load.js"
+  K6_EC=$?
+  set -e
+  echo "  k6 exit code: $K6_EC (0=clean, 99=threshold breach, other=hard error)"
 
   # -----------------------------------------------------------------------
   # k6 visibility: emit ::notice annotations with headline numbers so every
   # run surfaces them via check-runs API without needing artifact download.
+  # Runs even when k6 breached — those runs need the numbers MOST.
   # -----------------------------------------------------------------------
   SUMMARY_FILE="$STRESS/reports/k6-summary.json"
   if [[ -f "$SUMMARY_FILE" ]]; then
@@ -250,15 +272,24 @@ if [[ "$LAYER" -eq 1 ]]; then
   fi
 
   echo ""
-  echo "=== Layer 1 invariant sweep (krug.sql + layer1.sql) ==="
+  echo "=== Layer 1 invariant sweep (krug.sql + layer1.sql) — UNCONDITIONAL ==="
+  # Sudci sude bez obzira na k6 rezultat. Set +e so a single invariant fail
+  # doesn't skip the other; capture per-file exit codes for the final verdict.
+  INV_KRUG_EC=0
+  INV_LAYER1_EC=0
+
   # krug.sql is harmless PASS on untouched layer2 fixtures — kept in chain per mandate.
+  set +e
   psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
+  INV_KRUG_EC=$?
+  set -e
+  echo "  krug.sql exit code: $INV_KRUG_EC"
 
   # -----------------------------------------------------------------------
   # Robust INSERT_OK extraction. NO silent fallback to 0 (per mandate):
   # if the counter can't be read (missing file, bun error, non-numeric,
-  # negative), hard-fail with an ::error annotation BEFORE psql runs so
-  # L1-C loudly reports the harness gap instead of a silent syntax error.
+  # negative), mark L1-C as failed via INV_LAYER1_EC — do NOT abort the
+  # verdict pipeline (krug result must still be reported).
   # -----------------------------------------------------------------------
   INSERT_OK=""
   BUN_EC=99
@@ -279,14 +310,43 @@ if [[ "$LAYER" -eq 1 ]]; then
   if ! [[ "$INSERT_OK" =~ ^[0-9]+$ ]]; then
     printf '::error title=L1-C harness::insert counter unreadable (bun_ec=%s file=%s value=%q) — L1-C cannot execute\n' \
       "$BUN_EC" "$SUMMARY_FILE" "$INSERT_OK"
+    INV_LAYER1_EC=1
+  else
+    echo "  layer1 insert_ok from k6 summary: $INSERT_OK"
+    set +e
+    psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+      -v layer1_insert_ok="$INSERT_OK" \
+      -f "$STRESS/invariants/layer1.sql"
+    INV_LAYER1_EC=$?
+    set -e
+    echo "  layer1.sql exit code: $INV_LAYER1_EC"
+  fi
+
+  # -----------------------------------------------------------------------
+  # Final verdict — razdvojeno: (a) istina, (b) brzina.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "=== Layer 1 verdict ==="
+  echo "  (a) istina — invariants:"
+  echo "        krug I1-I7  : $([[ $INV_KRUG_EC   -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "        L1-A/B/C    : $([[ $INV_LAYER1_EC -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "  (b) brzina — k6 thresholds:"
+  echo "        k6 exit code: $K6_EC $([[ $K6_EC -eq 0 ]] && echo '(clean)' || echo '(breach — CI hardware ceiling, 2 vCPU)')"
+
+  if (( INV_KRUG_EC != 0 || INV_LAYER1_EC != 0 )); then
+    printf '::error title=LAYER1 INVARIANT FAIL::truth violated (krug_ec=%s layer1_ec=%s k6_ec=%s) — CRVENA ZONA\n' \
+      "$INV_KRUG_EC" "$INV_LAYER1_EC" "$K6_EC"
+    echo "Layer 1: INVARIANT FAIL (crvena zona)"
     exit 1
   fi
-  echo "  layer1 insert_ok from k6 summary: $INSERT_OK"
-  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
-    -v layer1_insert_ok="$INSERT_OK" \
-    -f "$STRESS/invariants/layer1.sql"
 
-  echo ""
-  echo "Layer 1: OK"
+  if (( K6_EC != 0 )); then
+    printf '::warning title=LAYER1 k6 threshold breach::invariants PASS, k6 breached (ec=%s) — CI hardware ceiling under profile=%s\n' \
+      "$K6_EC" "$PROFILE_EFF"
+    echo "Layer 1: invariants PASS, k6 breached — CI granica hardvera (exit 2)"
+    exit 2
+  fi
+
+  echo "Layer 1: OK (invariants PASS, k6 clean)"
 fi
 
