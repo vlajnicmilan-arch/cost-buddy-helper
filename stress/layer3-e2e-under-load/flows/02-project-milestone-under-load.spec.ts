@@ -45,7 +45,7 @@ test.describe('Layer 3 / Scenario 2 — project + milestone under k6 load', () =
     await page.getByTestId(TID.projectSaveButton).click();
 
     // Land inside project detail — milestone-add is only mounted there.
-    await expect(page.getByTestId(TID.milestoneAddButton).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId(TID.milestoneAddButton).first()).toBeVisible({ timeout: 60_000 }); // aligned to config expect.timeout
 
     await page.getByTestId(TID.milestoneAddButton).first().click();
     await page.getByTestId(TID.milestoneNameInput).fill(milestoneName);
