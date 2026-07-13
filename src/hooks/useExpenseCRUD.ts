@@ -260,7 +260,7 @@ export const useExpenseCRUD = ({
         // (built-in slug or `custom:UUID`) before insert. Throws if unknown UUID.
         let canonicalPaymentSource: string;
         try {
-          canonicalPaymentSource = normalizePs(normalizedExpense.payment_source, 'cash', 'addExpense.insert');
+          canonicalPaymentSource = await normalizePs(normalizedExpense.payment_source, 'cash', 'addExpense.insert');
         } catch {
           showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
           throw new Error('payment_source normalize failed');
