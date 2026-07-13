@@ -39,7 +39,7 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
 
     // Read starting balance from UI (parsed from summary-balance).
     const balanceEl = page.getByTestId(TID.summaryBalance).first();
-    await expect(balanceEl).toBeVisible({ timeout: 60_000 });
+    await expect(balanceEl).toBeVisible({ timeout: 60_000 }); // config expect.timeout wins; kept explicit for clarity
     const startText = (await balanceEl.textContent()) ?? '';
     const startBalance = parseHrCurrency(startText);
 
