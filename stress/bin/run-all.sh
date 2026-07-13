@@ -198,6 +198,11 @@ cleanup() {
     psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=0 \
       -f "$STRESS/bin/resume-cron.sql" 2>&1 | sed 's/^/  /' || true
   fi
+  # Remove the transient supabase/functions/.env stub we wrote for the run
+  # (see step "2/7 supabase start"). Untouched if we never wrote it.
+  if [[ "${STRESS_EDGE_ENV_WROTE:-0}" -eq 1 && -n "${STRESS_EDGE_ENV:-}" ]]; then
+    rm -f "$STRESS_EDGE_ENV" 2>/dev/null || true
+  fi
   if [[ "$KEEP_STACK" -eq 0 ]]; then
     # `supabase stop` sometimes emits a cosmetic
     # 'relation "supabase_migrations.schema_migrations" does not exist' from
@@ -228,6 +233,24 @@ export STRESS_SEED_MODE="$MODE"
 
 echo ""
 echo "=== 2/7 supabase start ==="
+# Local edge runtime reads `supabase/functions/.env`. `check-subscription`
+# throws early if STRIPE_SECRET_KEY is unset — even for admin-assigned Pro
+# users where Stripe is never actually called. Seed a dummy value so the
+# admin/lifetime branches (used by layer3 test users via user_subscriptions
+# upsert) can return before touching Stripe. File is written only if absent
+# and removed on exit so it never lingers in a developer checkout.
+STRESS_EDGE_ENV="$ROOT/supabase/functions/.env"
+STRESS_EDGE_ENV_WROTE=0
+if [[ ! -f "$STRESS_EDGE_ENV" ]]; then
+  mkdir -p "$(dirname "$STRESS_EDGE_ENV")"
+  cat > "$STRESS_EDGE_ENV" <<'EOF_STRESS_EDGE_ENV'
+# WRITTEN BY stress/bin/run-all.sh — auto-removed on exit.
+# Dummy Stripe key: check-subscription requires STRIPE_SECRET_KEY to be set,
+# but never actually calls Stripe for admin-assigned Pro users.
+STRIPE_SECRET_KEY=sk_test_layer3_stub_not_real
+EOF_STRESS_EDGE_ENV
+  STRESS_EDGE_ENV_WROTE=1  # picked up by cleanup() trap on EXIT
+fi
 supabase start 2>&1 | tail -20
 
 echo ""

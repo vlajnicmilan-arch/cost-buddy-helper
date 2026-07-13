@@ -58,16 +58,28 @@ export async function signInFresh(page: Page, key: L3UserKey): Promise<GoTrueSes
   const session = await passwordGrant(page.request, email);
   const storageKey = storageKeyForLocal();
   const storageConfig = { mode: 'cloud', lastSync: new Date().toISOString() };
+  // Consent verbatim mirror of src/lib/consentManager.ts (CONSENT_KEY='cookie_consent_v2',
+  // CONSENT_VERSION=1). Rejecting analytics+marketing = "necessary only" = same as user
+  // clicking "Odbij sve". This dismisses CookieConsentBanner before it can overlay the
+  // submit button (banner has a 1000s delay + intercepts pointer events on click).
+  const consent = {
+    necessary: true,
+    analytics: false,
+    marketing: false,
+    decidedAt: new Date().toISOString(),
+    version: 1,
+  };
   await page.addInitScript(
-    ({ storageKey, session, storageConfig }) => {
+    ({ storageKey, session, storageConfig, consent }) => {
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(session));
         window.localStorage.setItem('finmate-storage-config', JSON.stringify(storageConfig));
         window.localStorage.setItem('onboarding_completed', 'true');
         window.localStorage.setItem('projects_module_enabled', 'true');
+        window.localStorage.setItem('cookie_consent_v2', JSON.stringify(consent));
       } catch { /* incognito/blocked storage — surfaced by the app */ }
     },
-    { storageKey, session, storageConfig },
+    { storageKey, session, storageConfig, consent },
   );
   return session;
 }
@@ -84,16 +96,18 @@ export async function signInAndPersist(page: Page, key: L3UserKey): Promise<void
     const session = await passwordGrant(req, email);
     const storageKey = storageKeyForLocal();
     const storageConfig = { mode: 'cloud', lastSync: new Date().toISOString() };
+    const consent = { necessary: true, analytics: false, marketing: false, decidedAt: new Date().toISOString(), version: 1 };
     await page.addInitScript(
-      ({ storageKey, session, storageConfig }) => {
+      ({ storageKey, session, storageConfig, consent }) => {
         try {
           window.localStorage.setItem(storageKey, JSON.stringify(session));
           window.localStorage.setItem('finmate-storage-config', JSON.stringify(storageConfig));
           window.localStorage.setItem('onboarding_completed', 'true');
           window.localStorage.setItem('projects_module_enabled', 'true');
+          window.localStorage.setItem('cookie_consent_v2', JSON.stringify(consent));
         } catch { /* noop */ }
       },
-      { storageKey, session, storageConfig },
+      { storageKey, session, storageConfig, consent },
     );
   } finally {
     await req.dispose();

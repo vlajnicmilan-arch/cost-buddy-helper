@@ -100,6 +100,20 @@ async function seedLayer3Fixture(userId: string): Promise<void> {
     project_type: 'general',
     total_budget: 0,
   });
+
+  // Grant Pro tier via the SAME table+shape the admin console/webhook writes.
+  // check-subscription edge fn returns this verbatim (source: 'admin') and
+  // useFeatureAccess unlocks `projects` accordingly. Gate stays live in prod;
+  // test user gets a legitimate Pro assignment (10y expiry ≈ never).
+  await a.from('user_subscriptions').upsert(
+    {
+      user_id: userId,
+      tier: 'pro',
+      assigned_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    { onConflict: 'user_id' },
+  );
 }
 
 export async function resetUserByKey(key: L3UserKey): Promise<string> {
