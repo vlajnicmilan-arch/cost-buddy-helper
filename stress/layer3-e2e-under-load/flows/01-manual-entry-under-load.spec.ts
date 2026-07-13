@@ -28,16 +28,18 @@ const TID = {
 } as const;
 
 test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
-  test.beforeEach(async ({ page }) => {
-    await resetUserByKey('primary');
+  test.beforeEach(async ({ page }, testInfo) => {
+    const userId = await resetUserByKey('primary');
+    testInfo.annotations.push({ type: 'l3-user-id', description: userId });
     // addInitScript MUST land before first navigation — signInFresh registers
     // it now; the goto('/') inside the test runs after and boots the app with
     // the session already in localStorage.
     await signInFresh(page, 'primary');
   });
 
-  test('add expense → row visible → balance drops by exact amount', async ({ page }) => {
+  test('add expense → row visible → balance drops by exact amount', async ({ page }, testInfo) => {
     const description = `L3-manual-${Date.now()}`;
+    testInfo.annotations.push({ type: 'l3-marker', description });
     const amount = 12.34;
 
     await page.goto('/');

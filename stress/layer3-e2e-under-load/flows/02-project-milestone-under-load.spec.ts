@@ -29,14 +29,16 @@ const TID = {
 } as const;
 
 test.describe('Layer 3 / Scenario 2 — project + milestone under k6 load', () => {
-  test.beforeEach(async ({ page }) => {
-    await resetUserByKey('primary');
+  test.beforeEach(async ({ page }, testInfo) => {
+    const userId = await resetUserByKey('primary');
+    testInfo.annotations.push({ type: 'l3-user-id', description: userId });
     await signInFresh(page, 'primary');
   });
 
-  test('create project → add milestone → milestone row visible', async ({ page }) => {
+  test('create project → add milestone → milestone row visible', async ({ page }, testInfo) => {
     const projectName = `L3-proj-${Date.now()}`;
     const milestoneName = `L3-ms-${Date.now()}`;
+    testInfo.annotations.push({ type: 'l3-marker', description: projectName });
 
     await page.goto('/');
     await page.getByTestId(TID.bottomNavProjects).first().click();
