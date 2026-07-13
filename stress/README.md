@@ -1,4 +1,4 @@
-# Stress & Concurrency Harness — v1 (Faza 1: skeleton only)
+# Stress & Concurrency Harness — v1
 
 Ovo je **test-infrastruktura**, ne feature. Cilj: dokazati da brojke ostaju
 istinite pod navalom. Primarni FAIL je narušena invarijanta; latencija u v1
@@ -6,8 +6,9 @@ NIJE gate (samo report).
 
 ## Status
 
-**Faza 1 (ova faza) — skeleton + env guard + seed + auth pool.**
-Faze 2 (concurrency), 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
+**Faza 1 — skeleton + env guard + seed + auth pool.**
+**Faza 2 — Layer 2 concurrency testovi (dostupni lokalno i iz GitHub UI-a).**
+Faze 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
 
 ## Preduvjeti (host stroj, ne Lovable sandbox)
 
