@@ -22,6 +22,7 @@ const PUBLIC_ROUTES: ReadonlyArray<string> = [
   "/onboarding",
   "/privacy-policy",
   "/terms-of-service",
+  "/refund-policy",
   "/impressum",
   "/help",
   "/unsubscribe",

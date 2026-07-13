@@ -608,6 +608,9 @@ const Help = () => {
           <Link to="/terms-of-service" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
             {t('common.termsOfService', 'Uvjeti korištenja')}
           </Link>
+          <Link to="/refund-policy" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+            {t('common.refundPolicy', 'Politika povrata')}
+          </Link>
           <Link to="/impressum" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
             Impressum
           </Link>
