@@ -45,7 +45,7 @@ export const PaymentSourceSelector = ({
           onSelectedCardIdChange(null);
         }}
       >
-        <SelectTrigger className="h-12 rounded-xl bg-background">
+        <SelectTrigger data-testid="manual-expense-payment-source" className="h-12 rounded-xl bg-background">
           <SelectValue placeholder={t('transactions.selectPaymentMethod')}>
             {(() => {
               const rawId = paymentSource?.startsWith('custom:') ? paymentSource.slice(7) : paymentSource;
