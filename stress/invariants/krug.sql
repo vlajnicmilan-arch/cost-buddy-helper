@@ -116,34 +116,60 @@ END $$;
 
 -- =============================================================================
 -- I5. Balance drift on Layer 2 custom_payment_sources.
---     For every source created by Layer 2 (name prefix), stored balance must
---     equal the ledger-scan preview. This is our narrow authoritative reuse of
---     the balance engine — the full regression suite remains authoritative for
---     the engine itself.
+--     Both engine branches must reconcile:
+--       * Anchored sources (correction_anchor_date IS NOT NULL): stored balance
+--         must equal recompute_custom_source_balance_preview() — this exercises
+--         the anchor+cutoff path. Preview returns NULL for unanchored sources
+--         by design (guard: v_anchor_date IS NULL → RETURN NULL), so anchored
+--         is the only meaningful preview target.
+--       * Unanchored sources: stored balance is maintained by the delta trigger
+--         path (recompute_custom_source_balance's non-anchor branch). Assert it
+--         equals a direct SUM over expenses using the same CASE the engine uses
+--         (income +, expense -, transfer -/+ on income_source_id, exclude
+--         soft-deleted and expense_nature='correction', no anchor cutoff).
 -- =============================================================================
 DO $$
 DECLARE
   r record;
   v_preview numeric;
+  v_sum numeric;
   v_mode text;
 BEGIN
-  -- Mirror engine: recompute_custom_source_balance reads mode from app_settings
-  -- with 'day_cut' fallback. Preview MUST be called with the same mode or the
-  -- invariant would compare two different worlds.
   v_mode := COALESCE(
     (SELECT value #>> '{}' FROM public.app_settings WHERE key = 'anchor_engine_mode'),
     'day_cut'
   );
   FOR r IN
-    SELECT id, name, balance
+    SELECT id, name, balance, correction_anchor_date
       FROM public.custom_payment_sources
      WHERE name LIKE 'layer2-%'
   LOOP
-    v_preview := public.recompute_custom_source_balance_preview(r.id, v_mode);
-    IF v_preview IS DISTINCT FROM r.balance THEN
-      RAISE EXCEPTION
-        'INVARIANT I5 (balance drift) violated: source % (%): stored=% preview=% mode=%',
-        r.name, r.id, r.balance, v_preview, v_mode;
+    IF r.correction_anchor_date IS NOT NULL THEN
+      v_preview := public.recompute_custom_source_balance_preview(r.id, v_mode);
+      IF v_preview IS DISTINCT FROM r.balance THEN
+        RAISE EXCEPTION
+          'INVARIANT I5 (anchored drift) violated: source % (%): stored=% preview=% mode=%',
+          r.name, r.id, r.balance, v_preview, v_mode;
+      END IF;
+    ELSE
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN e.type = 'income'   THEN  e.amount
+          WHEN e.type = 'expense'  THEN -e.amount
+          WHEN e.type = 'transfer' AND e.payment_source = 'custom:' || r.id::text THEN -e.amount
+          WHEN e.type = 'transfer' AND e.income_source_id = r.id THEN  e.amount
+          ELSE 0
+        END
+      ), 0) INTO v_sum
+      FROM public.expenses e
+      WHERE e.deleted_at IS NULL
+        AND COALESCE(e.expense_nature, 'regular') <> 'correction'
+        AND (e.payment_source = 'custom:' || r.id::text OR e.income_source_id = r.id);
+      IF v_sum IS DISTINCT FROM r.balance THEN
+        RAISE EXCEPTION
+          'INVARIANT I5 (unanchored drift) violated: source % (%): stored=% sum=%',
+          r.name, r.id, r.balance, v_sum;
+      END IF;
     END IF;
   END LOOP;
   RAISE NOTICE 'PASS I5 balance drift (touched sources, mode=%)', v_mode;
