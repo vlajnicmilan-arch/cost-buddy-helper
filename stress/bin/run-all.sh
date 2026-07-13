@@ -124,10 +124,73 @@ emit_failure_annotations() {
   rm -f "$tmp"
 }
 
+# --------------------------------------------------------------------------
+# UNCONDITIONAL INVARIANT SWEEP — SUD MORA SUDITI.
+# Armed after DB bootstrap (step 4/7). Called explicitly by layer blocks on
+# the happy path AND by the cleanup trap on any abort thereafter. Guarded by
+# SWEEP_DONE so the sweep runs exactly once. INV_KRUG_EC / INV_LAYER1_EC
+# hold the results (-1 = not run, 0 = pass, non-zero = fail).
+# --------------------------------------------------------------------------
+SWEEP_ARMED=0
+SWEEP_DONE=0
+SWEEP_STEP="pre-bootstrap"
+INV_KRUG_EC=-1
+INV_LAYER1_EC=-1
+
+run_invariant_sweep() {
+  local marker="${1:-normal}"
+  [[ $SWEEP_DONE -eq 1 ]] && return 0
+  [[ $SWEEP_ARMED -eq 0 ]] && return 0
+  [[ -z "${STRESS_SUPABASE_DB_URL:-}" ]] && return 0
+  SWEEP_DONE=1
+
+  echo ""
+  echo "=== invariant sweep ($marker) ==="
+
+  set +e
+  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
+  INV_KRUG_EC=$?
+  set -e
+  echo "  krug.sql exit code: $INV_KRUG_EC"
+
+  local summary="$STRESS/reports/k6-summary.json"
+  local insert_ok=""
+  if [[ -f "$summary" ]]; then
+    insert_ok="$(bun -e '
+      try {
+        const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+        const n = j && j.counters && j.counters.expense_insert_ok;
+        if (typeof n !== "number" || !Number.isFinite(n) || n < 0) process.exit(2);
+        process.stdout.write(String(Math.trunc(n)));
+      } catch (e) { process.exit(3); }
+    ' "$summary" 2>/dev/null)"
+  fi
+  if ! [[ "$insert_ok" =~ ^[0-9]+$ ]]; then
+    echo "  L1-A/B/C: SKIPPED (no k6 summary — likely pre-storm/vacuous sweep)"
+    INV_LAYER1_EC=0
+  else
+    echo "  insert_ok from k6 summary: $insert_ok"
+    set +e
+    psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+      -v layer1_insert_ok="$insert_ok" \
+      -f "$STRESS/invariants/layer1.sql"
+    INV_LAYER1_EC=$?
+    set -e
+    echo "  layer1.sql exit code: $INV_LAYER1_EC"
+  fi
+}
+
 cleanup() {
   local ec=$?
   echo ""
   echo "=== cleanup ==="
+
+  # SUD MORA SUDITI. If a layer aborted before its own sweep call, run it
+  # here so krug I1-I7 + L1-A/B/C ALWAYS render a verdict once the DB is up.
+  if [[ $SWEEP_ARMED -eq 1 && $SWEEP_DONE -eq 0 ]]; then
+    run_invariant_sweep "after early abort at step ${SWEEP_STEP} (pre-storm, vacuous)" || true
+  fi
+
   if [[ -n "${STRESS_SUPABASE_DB_URL:-}" ]]; then
     psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=0 \
       -f "$STRESS/bin/resume-cron.sql" 2>&1 | sed 's/^/  /' || true
@@ -171,6 +234,9 @@ bash "$STRESS/bin/reset-db.sh"
 echo ""
 echo "=== 4/7 pause-cron ==="
 psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/bin/pause-cron.sql"
+# DB is bootstrapped — arm the unconditional invariant sweep.
+SWEEP_ARMED=1
+SWEEP_STEP="post-bootstrap (pre-layer)"
 
 echo ""
 echo "=== 5/7 seed ($MODE) ==="
@@ -377,8 +443,9 @@ if [[ "$LAYER" -eq 3 ]]; then
   #    Vite reads VITE_* at build time and bakes them into the bundle.
   #    We force local values here — production .env values are IGNORED.
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [1/7] vite build"
   echo ""
-  echo "--- layer3 [1/6] Vite build with local env vars ---"
+  echo "--- layer3 [1/7] Vite build with local env vars ---"
   echo "  VITE_SUPABASE_URL=$STRESS_SUPABASE_URL"
   echo "  VITE_SUPABASE_PROJECT_ID=(derived from local url)"
   rm -rf dist
@@ -388,11 +455,42 @@ if [[ "$LAYER" -eq 3 ]]; then
     bun run build 2>&1 | tail -20
 
   # -----------------------------------------------------------------------
-  # 2) PROD-ISOLATION GUARD. Grep bundle for prod project ref and any
-  #    remote *.supabase.co host. Match = LOUD ABORT.
+  # 1b) SANITIZE runtime manifests copied from public/ into dist/.
+  #     version.json is a real runtime channel (OTA update checker reads it
+  #     and may call the URL it declares). For layer 3 we rewrite every URL
+  #     in the file to the local stack — file MUST exist (app fetches it),
+  #     but its contents must not point anywhere outside 127.0.0.1:54321.
+  #     Guard remains a full dist/ grep, unrestricted (opcija 1 odbijena).
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [2/7] sanitize dist/version.json"
   echo ""
-  echo "--- layer3 [2/6] prod-isolation guard on dist/ ---"
+  echo "--- layer3 [2/7] sanitize dist/ runtime manifests ---"
+  if [[ -f dist/version.json ]]; then
+    node -e '
+      const fs = require("fs");
+      const p = "dist/version.json";
+      const j = JSON.parse(fs.readFileSync(p, "utf8"));
+      const local = "http://127.0.0.1:54321";
+      const rewrite = (v) => typeof v === "string" && /^https?:\/\//i.test(v)
+        ? local + "/layer3-stub/" + v.split("/").pop()
+        : v;
+      for (const k of Object.keys(j)) j[k] = rewrite(j[k]);
+      j.version = "layer3-test";
+      fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+      console.log("  sanitized:", JSON.stringify(j));
+    '
+  else
+    echo "  (no dist/version.json — nothing to sanitize)"
+  fi
+
+  # -----------------------------------------------------------------------
+  # 2) PROD-ISOLATION GUARD. Grep bundle for prod project ref and any
+  #    remote *.supabase.co host. Match = LOUD ABORT. FULL dist/ grep,
+  #    intentionally unrestricted per mandat.
+  # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [3/7] prod-isolation guard"
+  echo ""
+  echo "--- layer3 [3/7] prod-isolation guard on dist/ ---"
   PROD_REF="fzalxjretvtvokiotvkf"
   set +e
   PROD_HITS="$(grep -rEo "${PROD_REF}\.supabase\.co" dist/ 2>/dev/null | sort -u)"
@@ -421,8 +519,9 @@ if [[ "$LAYER" -eq 3 ]]; then
   # -----------------------------------------------------------------------
   # 3) START Vite preview in background.
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [4/7] vite preview startup"
   echo ""
-  echo "--- layer3 [3/6] start Vite preview on :4173 ---"
+  echo "--- layer3 [4/7] start Vite preview on :4173 ---"
   PREVIEW_LOG="$STRESS/reports/layer3-preview.log"
   bunx vite preview --port 4173 --strictPort > "$PREVIEW_LOG" 2>&1 &
   PREVIEW_PID=$!
@@ -443,8 +542,9 @@ if [[ "$LAYER" -eq 3 ]]; then
   # -----------------------------------------------------------------------
   # 4) START k6 small (30 VU) in background against local stack.
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [5/7] k6 background start"
   echo ""
-  echo "--- layer3 [4/6] start k6 small background load ---"
+  echo "--- layer3 [5/7] start k6 small background load ---"
   K6_LOG="$STRESS/reports/layer3-k6-bg.log"
   set +e
   STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
@@ -458,8 +558,9 @@ if [[ "$LAYER" -eq 3 ]]; then
   # -----------------------------------------------------------------------
   # 5) RUN Playwright specs against the loaded system.
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [6/7] playwright specs"
   echo ""
-  echo "--- layer3 [5/6] Playwright specs ---"
+  echo "--- layer3 [6/7] Playwright specs ---"
   set +e
   E2E_BASE_URL="http://127.0.0.1:4173" \
   E2E_NO_SERVER="1" \
@@ -479,45 +580,13 @@ if [[ "$LAYER" -eq 3 ]]; then
 
   # -----------------------------------------------------------------------
   # 6) UNCONDITIONAL invariant sweep — krug I1-I7 + L1-A/B/C.
-  #    Same contract as layer 1: sudci sude bez obzira na Playwright/k6.
+  #    Delegated to run_invariant_sweep so the cleanup trap can also invoke
+  #    it if we abort earlier. Called explicitly here on the happy path.
   # -----------------------------------------------------------------------
+  SWEEP_STEP="layer3 [7/7] invariant sweep"
   echo ""
-  echo "--- layer3 [6/6] invariant sweep (UNCONDITIONAL) ---"
-  INV_KRUG_EC=0
-  INV_LAYER1_EC=0
-
-  set +e
-  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
-  INV_KRUG_EC=$?
-  set -e
-  echo "  krug.sql exit code: $INV_KRUG_EC"
-
-  # L1-C needs INSERT_OK from the k6 background summary (if produced).
-  SUMMARY_FILE="$STRESS/reports/k6-summary.json"
-  INSERT_OK=""
-  if [[ -f "$SUMMARY_FILE" ]]; then
-    INSERT_OK="$(bun -e '
-      try {
-        const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-        const n = j && j.counters && j.counters.expense_insert_ok;
-        if (typeof n !== "number" || !Number.isFinite(n) || n < 0) process.exit(2);
-        process.stdout.write(String(Math.trunc(n)));
-      } catch (e) { process.exit(3); }
-    ' "$SUMMARY_FILE" 2>/dev/null)"
-  fi
-  if ! [[ "$INSERT_OK" =~ ^[0-9]+$ ]]; then
-    printf '::warning title=L3 L1-C harness::insert counter unreadable — L1-C skipped for layer 3\n'
-    echo "  L1-C: SKIPPED (no k6 summary — background may not have flushed)"
-  else
-    echo "  layer3 insert_ok from k6 bg summary: $INSERT_OK"
-    set +e
-    psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
-      -v layer1_insert_ok="$INSERT_OK" \
-      -f "$STRESS/invariants/layer1.sql"
-    INV_LAYER1_EC=$?
-    set -e
-    echo "  layer1.sql exit code: $INV_LAYER1_EC"
-  fi
+  echo "--- layer3 [7/7] invariant sweep (UNCONDITIONAL) ---"
+  run_invariant_sweep "layer3 post-storm"
 
   # -----------------------------------------------------------------------
   # Final verdict — same 0/1/2 contract as layer 1.
