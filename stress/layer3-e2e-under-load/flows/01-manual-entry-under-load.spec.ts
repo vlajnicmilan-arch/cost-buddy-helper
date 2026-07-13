@@ -22,6 +22,7 @@ const TID = {
   addExpenseFab: 'add-expense-fab',
   manualExpenseAmount: 'manual-expense-amount',
   manualExpenseDescription: 'manual-expense-description',
+  manualExpensePaymentSource: 'manual-expense-payment-source',
   manualExpenseSubmit: 'manual-expense-submit',
   transactionRow: 'transaction-row',
   summaryBalance: 'summary-balance',
@@ -54,6 +55,14 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
     await page.getByTestId(TID.addExpenseFab).first().click();
     await page.getByTestId(TID.manualExpenseAmount).fill(String(amount));
     await page.getByTestId(TID.manualExpenseDescription).fill(description);
+
+    // Explicitly pick the seeded L3 Test Wallet (balance=1000). Default is
+    // `cash` which is NOT reflected in summary-balance (wallet aggregate),
+    // so the "start − amount = end" invariant would silently no-op on cash.
+    // Radix SelectItem renders role="option"; open the trigger then click by name.
+    await page.getByTestId(TID.manualExpensePaymentSource).click();
+    await page.getByRole('option', { name: /L3 Test Wallet/ }).first().click();
+
     await page.getByTestId(TID.manualExpenseSubmit).click();
 
     // "Nedavno" section is a Collapsible that defaults to CLOSED on /home

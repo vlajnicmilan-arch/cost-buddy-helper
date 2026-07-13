@@ -21,6 +21,21 @@ import { env } from './env';
  * `l3-user-id` and `l3-marker`. Tests set them at the top of the body.
  */
 export function registerOnFailureDiagnostics(): void {
+  // Capture console errors + pageerrors per-test into a stash on the page,
+  // so afterEach can dump them. Cheap; only added once per beforeEach.
+  test.beforeEach(async ({ page }) => {
+    const stash: string[] = [];
+    (page as unknown as { __l3ConsoleErrors?: string[] }).__l3ConsoleErrors = stash;
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        stash.push(`[${msg.type()}] ${msg.text().slice(0, 300)}`);
+      }
+    });
+    page.on('pageerror', (err) => {
+      stash.push(`[pageerror] ${err.message.slice(0, 300)}`);
+    });
+  });
+
   test.afterEach(async ({ page }, testInfo: TestInfo) => {
     if (testInfo.status === testInfo.expectedStatus) return;
     try {
@@ -86,6 +101,17 @@ export function registerOnFailureDiagnostics(): void {
       // eslint-disable-next-line no-console
       console.log(`::error title=L3 PW FAIL body [${testInfo.title}]::${trimmed.slice(0, 900)}`);
 
+      // Console errors + pageerrors captured during the test.
+      const consoleStash = (page as unknown as { __l3ConsoleErrors?: string[] }).__l3ConsoleErrors ?? [];
+      console.log(`::error title=L3 PW FAIL console [${testInfo.title}]::${JSON.stringify(consoleStash.slice(-20))}`);
+
+      // Toast / status feedback surface (sonner uses [data-sonner-toast]; StatusFeedback uses [role=status]).
+      const toastText = await page
+        .locator('[data-sonner-toast], [role="status"], [role="alert"]')
+        .allInnerTexts()
+        .catch(() => [] as string[]);
+      console.log(`::error title=L3 PW FAIL toast [${testInfo.title}]::${JSON.stringify(toastText).slice(0, 500)}`);
+
       // ---- Authoritative DB & subscription probes ----
       const userId = testInfo.annotations.find((a) => a.type === 'l3-user-id')?.description;
       const marker = testInfo.annotations.find((a) => a.type === 'l3-marker')?.description;
@@ -124,6 +150,23 @@ export function registerOnFailureDiagnostics(): void {
         } catch (e) {
           console.log(`::warning title=L3 DB user_subscriptions threw::${(e as Error).message}`);
         }
+
+        // S2 authoritative probe: list ALL projects for the user (not filtered by marker).
+        // Distinguishes "test filled name wrong" vs "insert failed" vs "created but not detail-navigated".
+        try {
+          const { data: projs, error: pErr } = await a
+            .from('projects')
+            .select('id, name, status, project_type, created_at, deleted_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          console.log(
+            `::error title=L3 DB projects probe [${testInfo.title}]::user_id=${userId} err=${pErr?.message ?? 'null'} rows=${projs?.length ?? 0} data=${JSON.stringify(projs ?? []).slice(0, 800)}`,
+          );
+        } catch (e) {
+          console.log(`::warning title=L3 DB projects probe threw::${(e as Error).message}`);
+        }
+
 
         // Mint a fresh access token for the user via GoTrue admin generate_link, then
         // call check-subscription with it — mirrors exactly what SubscriptionContext does.
