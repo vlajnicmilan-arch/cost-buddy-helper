@@ -101,6 +101,17 @@ export function registerOnFailureDiagnostics(): void {
       // eslint-disable-next-line no-console
       console.log(`::error title=L3 PW FAIL body [${testInfo.title}]::${trimmed.slice(0, 900)}`);
 
+      // Console errors + pageerrors captured during the test.
+      const consoleStash = (page as unknown as { __l3ConsoleErrors?: string[] }).__l3ConsoleErrors ?? [];
+      console.log(`::error title=L3 PW FAIL console [${testInfo.title}]::${JSON.stringify(consoleStash.slice(-20))}`);
+
+      // Toast / status feedback surface (sonner uses [data-sonner-toast]; StatusFeedback uses [role=status]).
+      const toastText = await page
+        .locator('[data-sonner-toast], [role="status"], [role="alert"]')
+        .allInnerTexts()
+        .catch(() => [] as string[]);
+      console.log(`::error title=L3 PW FAIL toast [${testInfo.title}]::${JSON.stringify(toastText).slice(0, 500)}`);
+
       // ---- Authoritative DB & subscription probes ----
       const userId = testInfo.annotations.find((a) => a.type === 'l3-user-id')?.description;
       const marker = testInfo.annotations.find((a) => a.type === 'l3-marker')?.description;
