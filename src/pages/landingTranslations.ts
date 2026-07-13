@@ -89,6 +89,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         product: 'Proizvod',
         legal: 'Pravno',
         privacy: 'Pravila privatnosti',
+        refund: 'Politika povrata',
+        terms: 'Uvjeti korištenja',
         account: 'Račun',
         rights: 'Sva prava pridržana.',
       },
