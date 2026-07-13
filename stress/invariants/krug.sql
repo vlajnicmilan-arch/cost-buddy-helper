@@ -172,15 +172,24 @@ DO $$
 DECLARE
   v_active int;
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') THEN
-    SELECT count(*) INTO v_active FROM cron.job WHERE active = true;
-    IF v_active > 0 THEN
-      RAISE EXCEPTION 'INVARIANT I7 (cron paused) violated: % active job(s)', v_active;
-    END IF;
-    RAISE NOTICE 'PASS I7 cron paused';
-  ELSE
+  IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') THEN
     RAISE NOTICE 'SKIP I7 (no pg_cron)';
+    RETURN;
   END IF;
+  -- Route through the SECURITY DEFINER helper — `postgres` has no direct
+  -- SELECT on cron.job in local Supabase. A bare `SELECT ... FROM cron.job`
+  -- here raises permission denied and would mask the actual invariant.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace ns ON ns.oid = p.pronamespace
+    WHERE ns.nspname='public' AND p.proname='stress_active_cron_count'
+  ) THEN
+    RAISE EXCEPTION 'INVARIANT I7: stress_active_cron_count() helper missing — bootstrap-cron-helpers.sql must run first';
+  END IF;
+  SELECT public.stress_active_cron_count() INTO v_active;
+  IF v_active > 0 THEN
+    RAISE EXCEPTION 'INVARIANT I7 (cron paused) violated: % active job(s)', v_active;
+  END IF;
+  RAISE NOTICE 'PASS I7 cron paused';
 END $$;
 
 COMMIT;
