@@ -61,34 +61,7 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find user by email via SECURITY DEFINER RPC (avoids 50-row listUsers pagination bug)
-    console.log("[SEND-MEMBER-INVITATION] Looking up user by email via RPC...");
-    const { data: invitedUserId, error: lookupError } = await adminClient
-      .rpc("find_user_by_email", { p_email: invitedEmail.toLowerCase() });
-    if (lookupError) {
-      console.error("[SEND-MEMBER-INVITATION] find_user_by_email error:", lookupError);
-    }
-    let invitedUser: { id: string; email: string } | null = null;
-    if (invitedUserId) {
-      const { data: userRow } = await adminClient.auth.admin.getUserById(invitedUserId);
-      if (userRow?.user) {
-        invitedUser = { id: userRow.user.id, email: userRow.user.email || invitedEmail };
-      }
-    }
-
-    const isNewUser = !invitedUser;
-
-    // For project worker invitations we allow inviting users that don't exist yet —
-    // we'll create an email-only invitation row (invited_user_id = NULL) and send the
-    // invite link via email. For other types, keep the previous behavior.
-    if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
-      return new Response(
-        JSON.stringify({ error: "user_not_found" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Determine tables based on type
+    // Resolve target table for this invitation type up front (needed for ownership check).
     let memberTable: string;
     let idColumn: string;
     let invitationTable: string;
@@ -116,8 +89,9 @@ serve(async (req) => {
       );
     }
 
-    // SECURITY: Verify caller owns the target resource before bypassing RLS with adminClient.
-    // Owner = target.user_id (matches RLS model across projects, budget_plans, custom_payment_sources).
+    // SECURITY: Verify caller owns the target resource BEFORE any adminClient side effects
+    // (user lookup, invitation insert, notification, email). Owner = target.user_id, matching
+    // the RLS model across projects, budget_plans, and custom_payment_sources.
     const { data: ownershipRow, error: ownershipError } = await adminClient
       .from(targetTable)
       .select("user_id")
@@ -144,6 +118,33 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "forbidden", message: "Only the owner of this resource may invite members." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Find user by email via SECURITY DEFINER RPC (avoids 50-row listUsers pagination bug)
+    console.log("[SEND-MEMBER-INVITATION] Looking up user by email via RPC...");
+    const { data: invitedUserId, error: lookupError } = await adminClient
+      .rpc("find_user_by_email", { p_email: invitedEmail.toLowerCase() });
+    if (lookupError) {
+      console.error("[SEND-MEMBER-INVITATION] find_user_by_email error:", lookupError);
+    }
+    let invitedUser: { id: string; email: string } | null = null;
+    if (invitedUserId) {
+      const { data: userRow } = await adminClient.auth.admin.getUserById(invitedUserId);
+      if (userRow?.user) {
+        invitedUser = { id: userRow.user.id, email: userRow.user.email || invitedEmail };
+      }
+    }
+
+    const isNewUser = !invitedUser;
+
+    // For project worker invitations we allow inviting users that don't exist yet —
+    // we'll create an email-only invitation row (invited_user_id = NULL) and send the
+    // invite link via email. For other types, keep the previous behavior.
+    if (!invitedUser && !(type === "project" && (workerId || sendEmail))) {
+      return new Response(
+        JSON.stringify({ error: "user_not_found" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
