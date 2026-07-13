@@ -2,7 +2,8 @@ name: stress-smoke
 
 # Manual trigger from GitHub UI.
 # Supports Faza 1 (`--smoke`), Faza 2 Layer 2 concurrency (`--layer=2`),
-# and Faza 2 Layer 1 load (`--layer=1`, k6 mixed_load).
+# Faza 2 Layer 1 load (`--layer=1`, k6 mixed_load), and
+# Faza 2 Layer 3 E2E-under-load (`--layer=3`, Playwright + k6 small background).
 # No cron, no schedule, no --full, no Faze 3/4/5.
 
 on:
@@ -17,6 +18,7 @@ on:
           - smoke
           - layer1
           - layer2
+          - layer3
       profile:
         description: 'Layer 1 profile (ignored for smoke/layer2)'
         required: false
