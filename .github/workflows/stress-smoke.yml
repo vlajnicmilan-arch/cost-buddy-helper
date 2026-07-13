@@ -79,38 +79,12 @@ jobs:
 
       - name: Run stress harness
         run: |
-          set -o pipefail
           layer="${{ github.event.inputs.layer || 'smoke' }}"
           if [[ "$layer" == "layer2" ]]; then
-            bash stress/bin/run-all.sh --layer=2 2>&1 | tee /tmp/stress-output.log
+            bash stress/bin/run-all.sh --layer=2
           else
-            bash stress/bin/run-all.sh --smoke 2>&1 | tee /tmp/stress-output.log
+            bash stress/bin/run-all.sh --smoke
           fi
-
-      - name: Surface failure into run summary
-        if: failure()
-        run: |
-          if [[ ! -f /tmp/stress-output.log ]]; then
-            echo "No stress-output.log captured." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          {
-            echo "### stress harness — last 60 lines"
-            echo ''
-            echo '```'
-            tail -n 60 /tmp/stress-output.log
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "::error::$(tail -n 5 /tmp/stress-output.log | tr '\n' ' | ')"
-
-      - name: Upload stress output log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stress-output-log
-          path: /tmp/stress-output.log
-          if-no-files-found: warn
-          retention-days: 7
 
       - name: Upload reports
         if: always()
@@ -120,4 +94,5 @@ jobs:
           path: stress/reports/
           if-no-files-found: warn
           retention-days: 7
+
 

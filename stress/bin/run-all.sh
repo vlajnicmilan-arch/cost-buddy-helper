@@ -49,6 +49,71 @@ STRESS="$ROOT/stress"
 export STRESS_ENV_FILE="$STRESS/.env"
 export STRESS_SEED_MODE="$MODE"
 
+# --------------------------------------------------------------------------
+# Self-reporting on failure (no workflow edit needed).
+# 1) Tee full stdout+stderr into stress/reports/stress-output.log so the
+#    existing `stress-reports` artifact carries the log for humans.
+# 2) On non-zero exit, emit GitHub Actions workflow-commands on stdout so
+#    the failing tail is visible on the run page as annotations.
+# GitHub caps annotations per step at 10; we grouped context lines using
+# URL-encoded newlines (%0A) so a single ::error:: can carry multiple lines.
+# tee never masks the real exit code because we use `exec > >(tee ...)` —
+# the original process's exit status propagates unchanged.
+# --------------------------------------------------------------------------
+mkdir -p "$STRESS/reports"
+STRESS_OUTPUT_LOG="$STRESS/reports/stress-output.log"
+: > "$STRESS_OUTPUT_LOG"
+exec > >(tee -a "$STRESS_OUTPUT_LOG") 2>&1
+
+emit_failure_annotations() {
+  local log="$STRESS_OUTPUT_LOG"
+  [[ -s "$log" ]] || return 0
+
+  # Best-effort "root cause" line: first FAIL/ERROR/exception hit; fall back
+  # to the last non-empty line of the log.
+  local fail_line
+  fail_line="$(grep -E -m1 -i \
+    -e '^FAIL' \
+    -e ' FAIL ' \
+    -e 'ERROR:' \
+    -e 'error:' \
+    -e 'exception' \
+    -e 'permission denied' \
+    -e 'could not find' \
+    -e 'violated' \
+    "$log" || true)"
+  if [[ -z "$fail_line" ]]; then
+    fail_line="$(grep -v '^[[:space:]]*$' "$log" | tail -n 1 || true)"
+  fi
+  # Strip control chars and trim to keep the annotation title readable.
+  fail_line="$(printf '%s' "$fail_line" | tr -d '\r' | cut -c1-300)"
+  printf '::error title=STRESS FAIL::%s\n' "${fail_line:-<no log lines captured>}"
+
+  # Emit last ~12 lines of context, grouped 3 per annotation (=> 4 annotations,
+  # well under GitHub's 10-per-step cap alongside the title above).
+  local tmp
+  tmp="$(mktemp)"
+  tail -n 12 "$log" | tr -d '\r' > "$tmp"
+  local group=""
+  local n=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ -z "$group" ]]; then
+      group="$line"
+    else
+      group="${group}%0A${line}"
+    fi
+    n=$((n+1))
+    if (( n % 3 == 0 )); then
+      printf '::error::%s\n' "$group"
+      group=""
+    fi
+  done < "$tmp"
+  if [[ -n "$group" ]]; then
+    printf '::error::%s\n' "$group"
+  fi
+  rm -f "$tmp"
+}
+
 cleanup() {
   local ec=$?
   echo ""
@@ -60,9 +125,13 @@ cleanup() {
   if [[ "$KEEP_STACK" -eq 0 ]]; then
     supabase stop --no-backup 2>&1 | sed 's/^/  /' || true
   fi
+  if (( ec != 0 )); then
+    emit_failure_annotations || true
+  fi
   exit "$ec"
 }
 trap cleanup EXIT INT TERM
+
 
 echo "=== 1/7 guard-env ==="
 bash "$STRESS/bin/guard-env.sh"
