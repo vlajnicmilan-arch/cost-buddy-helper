@@ -96,8 +96,8 @@ se pauziraju** odmah nakon `db reset`, prije seeda:
   (auto-kreira ako ne postoji), zatim postavlja `cron.job.active = false` za sve.
 - `resume-cron.sql` čita snapshot i vraća original `active` vrijednosti.
 
-Sloj-2 testovi (Faza 2) će eksplicitno provjeriti `SELECT count(*) FROM cron.job
-WHERE active` prije mjerenja — mora biti 0.
+Sloj-2 testovi (Faza 2) provjeravaju `stress_active_cron_count()` prije
+mjerenja — mora vratiti 0.
 
 ## Realtime — svjesno isključen
 
