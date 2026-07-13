@@ -149,3 +149,6 @@ cp env.example .env
 # uredi .env po potrebi (i pobrini se da Supabase CLI postoji)
 bash bin/run-all.sh --smoke
 ```
+
+<!-- sync-nudge: 2026-07-13T15:50:00Z -->
+
