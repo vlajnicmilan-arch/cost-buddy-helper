@@ -194,8 +194,11 @@ SELECT 'pre_bootstrap_extensions' AS marker,
 FROM pg_extension
 WHERE extname IN ('pg_cron','pg_net');
 SELECT 'pre_bootstrap_migrations_applied' AS marker,
-       COUNT(*)::text AS n
-FROM supabase_migrations.schema_migrations;
+       CASE
+         WHEN to_regclass('supabase_migrations.schema_migrations') IS NULL
+           THEN '<absent>'
+         ELSE (SELECT COUNT(*)::text FROM supabase_migrations.schema_migrations)
+       END AS n;
 SQL
 SNAP_EC=$?
 set -e

@@ -35,6 +35,19 @@ const admin = createClient(URL, SERVICE_KEY, {
 async function main() {
   console.log(`seed: mode=${MODE} volume=${JSON.stringify(VOLUME)}`);
 
+  // Parity with production: anchor_engine_mode='hybrid'. Engine and harness
+  // both read this dynamically (no hardcoding); we seed it so local runs
+  // exercise the same branch as prod. Fallback in engine/harness remains
+  // 'day_cut' if the row is somehow absent.
+  {
+    const { error } = await admin
+      .from("app_settings")
+      .upsert({ key: "anchor_engine_mode", value: "hybrid" }, { onConflict: "key" });
+    if (error) throw new Error(`upsert anchor_engine_mode: ${error.message}`);
+    console.log("seed: app_settings.anchor_engine_mode = 'hybrid'");
+  }
+
+
   const users: { id: string; email: string }[] = [];
   for (let i = 0; i < VOLUME.users; i++) {
     const email = `stress-${i.toString().padStart(4, "0")}@local.test`;
