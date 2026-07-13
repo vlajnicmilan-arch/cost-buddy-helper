@@ -125,21 +125,30 @@ DO $$
 DECLARE
   r record;
   v_preview numeric;
+  v_mode text;
 BEGIN
+  -- Mirror engine: recompute_custom_source_balance reads mode from app_settings
+  -- with 'day_cut' fallback. Preview MUST be called with the same mode or the
+  -- invariant would compare two different worlds.
+  v_mode := COALESCE(
+    (SELECT value #>> '{}' FROM public.app_settings WHERE key = 'anchor_engine_mode'),
+    'day_cut'
+  );
   FOR r IN
     SELECT id, name, balance
       FROM public.custom_payment_sources
      WHERE name LIKE 'layer2-%'
   LOOP
-    v_preview := public.recompute_custom_source_balance_preview(r.id);
+    v_preview := public.recompute_custom_source_balance_preview(r.id, v_mode);
     IF v_preview IS DISTINCT FROM r.balance THEN
       RAISE EXCEPTION
-        'INVARIANT I5 (balance drift) violated: source % (%): stored=% preview=%',
-        r.name, r.id, r.balance, v_preview;
+        'INVARIANT I5 (balance drift) violated: source % (%): stored=% preview=% mode=%',
+        r.name, r.id, r.balance, v_preview, v_mode;
     END IF;
   END LOOP;
-  RAISE NOTICE 'PASS I5 balance drift (touched sources)';
+  RAISE NOTICE 'PASS I5 balance drift (touched sources, mode=%)', v_mode;
 END $$;
+
 
 -- =============================================================================
 -- I6. Payout ↔ expense soft-delete coherence.

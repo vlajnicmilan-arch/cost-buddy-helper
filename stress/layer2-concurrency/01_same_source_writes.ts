@@ -76,13 +76,28 @@ async function main() {
     assertEq(stored, -N, "stored balance");
 
     // Invariant 2: engine vs. ledger reconciliation.
+    // Mirror engine: recompute_custom_source_balance reads mode from
+    // app_settings.anchor_engine_mode with 'day_cut' fallback. Preview MUST be
+    // called with the same mode — hardcoding would fail in an env where the
+    // setting is absent (engine → 'day_cut', invariant → 'hybrid' = false FAIL).
+    const { data: modeRow } = await a
+      .from("app_settings")
+      .select("value")
+      .eq("key", "anchor_engine_mode")
+      .maybeSingle();
+    const rawMode = (modeRow as any)?.value;
+    const mode =
+      typeof rawMode === "string"
+        ? rawMode
+        : (rawMode ?? "day_cut");
     const { data: preview, error: pErr } = await a.rpc(
       "recompute_custom_source_balance_preview" as any,
-      { p_source_id: sourceId },
+      { p_source_id: sourceId, p_mode: mode },
     );
     if (pErr) throw pErr;
     const previewNum = Number((preview as any) ?? NaN);
-    assertEq(previewNum, stored, "balance drift (engine vs preview)");
+    assertEq(previewNum, stored, `balance drift (engine vs preview, mode=${mode})`);
+
   });
 
   if (!res.ok) process.exit(1);
