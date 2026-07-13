@@ -47,6 +47,13 @@ test.describe('Layer 3 / Scenario 2 — project + milestone under k6 load', () =
     await page.getByTestId(TID.projectNameInput).fill(projectName);
     await page.getByTestId(TID.projectSaveButton).click();
 
+    // ProjectDialog.handleSubmit closes the dialog but does NOT auto-navigate
+    // to project detail (verified in src/components/projects/ProjectDialog.tsx:220).
+    // Mirror what a real user does: click the newly created project card to
+    // open detail. ProjectCard renders <h3>{project.name}</h3>, so match by
+    // heading role scoped to the fresh project name.
+    await page.getByRole('heading', { name: projectName }).first().click();
+
     // Land inside project detail — milestone-add is only mounted there.
     await expect(page.getByTestId(TID.milestoneAddButton).first()).toBeVisible({ timeout: 60_000 }); // aligned to config expect.timeout
 
