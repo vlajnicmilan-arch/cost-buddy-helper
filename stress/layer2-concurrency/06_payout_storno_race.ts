@@ -55,6 +55,7 @@ async function main() {
         user_id: u0.user_id,
         first_name: "Layer2",
         last_name: "Worker",
+        position: "Worker",
         hourly_rate: 10,
       })
       .select("id").single();
