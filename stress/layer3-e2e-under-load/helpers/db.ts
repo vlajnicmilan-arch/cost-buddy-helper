@@ -44,7 +44,17 @@ export async function ensureUser(email: string): Promise<string> {
   const { error: upsertErr } = await a
     .from('profiles')
     .upsert(
-      { user_id: userId, is_e2e_user: true, onboarding_completed: true },
+      // guided_home_exited_at: without this, useGuidedMode keeps the compact
+      // GuidedEntryView mounted (status='zero_data'/'guided') and the standard
+      // home layout — which owns `summary-balance` — never renders. Setting it
+      // to now() skips the wizard exactly as if the user had crossed the 3-event
+      // threshold via the RPC.
+      {
+        user_id: userId,
+        is_e2e_user: true,
+        onboarding_completed: true,
+        guided_home_exited_at: new Date().toISOString(),
+      },
       { onConflict: 'user_id' },
     );
   if (upsertErr) throw upsertErr;
