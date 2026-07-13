@@ -234,6 +234,9 @@ bash "$STRESS/bin/reset-db.sh"
 echo ""
 echo "=== 4/7 pause-cron ==="
 psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/bin/pause-cron.sql"
+# DB is bootstrapped — arm the unconditional invariant sweep.
+SWEEP_ARMED=1
+SWEEP_STEP="post-bootstrap (pre-layer)"
 
 echo ""
 echo "=== 5/7 seed ($MODE) ==="
