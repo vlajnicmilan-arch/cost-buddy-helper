@@ -22,6 +22,7 @@ const TID = {
   addExpenseFab: 'add-expense-fab',
   manualExpenseAmount: 'manual-expense-amount',
   manualExpenseDescription: 'manual-expense-description',
+  manualExpensePaymentSource: 'manual-expense-payment-source',
   manualExpenseSubmit: 'manual-expense-submit',
   transactionRow: 'transaction-row',
   summaryBalance: 'summary-balance',
