@@ -62,12 +62,16 @@ async function main() {
           .eq("krug_id", krugId).eq("payment_source_id", sourceRef),
       ]);
 
-      // Any INSERT failure must be either 23505 (dup) or RLS 42501; DELETE always OK (noop allowed).
+      // user0 is krug creator AND source owner — RLS must always grant.
+      // Only documented duplicate race (23505) is a valid INSERT failure;
+      // 42501 here would be a permission regression, not a race outcome.
       if (ins.status === "fulfilled") {
         const err = (ins.value as any).error;
-        if (err && !["23505", "42501"].includes(err.code)) {
+        if (err && err.code !== "23505") {
           throw new Error(`iter ${i}: unexpected INSERT error code=${err.code} msg=${err.message}`);
         }
+      } else {
+        throw new Error(`iter ${i}: INSERT promise rejected: ${(ins as any).reason}`);
       }
       if (del.status === "rejected") throw new Error(`iter ${i}: DELETE rejected: ${del.reason}`);
 

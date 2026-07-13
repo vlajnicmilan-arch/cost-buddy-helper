@@ -90,8 +90,14 @@ END $$;
 
 -- =============================================================================
 -- I4. Dedup audit chain integrity.
---     Every layer2 dedup row must reference an existing expense in the same
---     Layer 2 fixture namespace (no orphaned governance audit).
+--     No krug_act_dedup row may reference a non-existent expense. The prior
+--     LEFT JOIN + `e.description LIKE 'layer2-%'` filter was structurally
+--     broken: when the join misses, `e.*` is NULL so the LIKE predicate
+--     always fails and orphans became invisible. Since expenses are only
+--     soft-deleted (deleted_at set, row retained), ANY dangling expense_id
+--     in dedup is a real integrity break — scope-widening the sweep to the
+--     whole table is strictly safer than the (previously vacuous) namespace
+--     filter.
 -- =============================================================================
 DO $$
 DECLARE
@@ -100,8 +106,7 @@ BEGIN
   SELECT count(*) INTO v_orphan
     FROM public.krug_act_dedup d
     LEFT JOIN public.expenses e ON e.id = d.expense_id
-   WHERE d.client_request_id ~ '^[0-9a-f-]{36}$'
-     AND (e.description LIKE 'layer2-%' OR e.note LIKE 'layer2-%')
+   WHERE d.expense_id IS NOT NULL
      AND e.id IS NULL;
   IF v_orphan > 0 THEN
     RAISE EXCEPTION 'INVARIANT I4 (dedup orphans) violated: % orphaned dedup rows', v_orphan;
@@ -167,15 +172,24 @@ DO $$
 DECLARE
   v_active int;
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') THEN
-    SELECT count(*) INTO v_active FROM cron.job WHERE active = true;
-    IF v_active > 0 THEN
-      RAISE EXCEPTION 'INVARIANT I7 (cron paused) violated: % active job(s)', v_active;
-    END IF;
-    RAISE NOTICE 'PASS I7 cron paused';
-  ELSE
+  IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') THEN
     RAISE NOTICE 'SKIP I7 (no pg_cron)';
+    RETURN;
   END IF;
+  -- Route through the SECURITY DEFINER helper — `postgres` has no direct
+  -- SELECT on cron.job in local Supabase. A bare `SELECT ... FROM cron.job`
+  -- here raises permission denied and would mask the actual invariant.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace ns ON ns.oid = p.pronamespace
+    WHERE ns.nspname='public' AND p.proname='stress_active_cron_count'
+  ) THEN
+    RAISE EXCEPTION 'INVARIANT I7: stress_active_cron_count() helper missing — bootstrap-cron-helpers.sql must run first';
+  END IF;
+  SELECT public.stress_active_cron_count() INTO v_active;
+  IF v_active > 0 THEN
+    RAISE EXCEPTION 'INVARIANT I7 (cron paused) violated: % active job(s)', v_active;
+  END IF;
+  RAISE NOTICE 'PASS I7 cron paused';
 END $$;
 
 COMMIT;

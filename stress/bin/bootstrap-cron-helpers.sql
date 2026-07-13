@@ -84,8 +84,28 @@ BEGIN
 END;
 $$;
 
+-- Read-only helper: count currently active cron jobs. Same rationale as
+-- pause/resume — `postgres` has no SELECT right on cron.job in local
+-- Supabase, so preflight / invariant sweeps MUST go through this definer
+-- helper instead of `SELECT ... FROM cron.job` directly.
+CREATE OR REPLACE FUNCTION public.stress_active_cron_count()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, cron
+AS $$
+DECLARE
+  n INTEGER;
+BEGIN
+  SELECT count(*) INTO n FROM cron.job WHERE active = true;
+  RETURN n;
+END;
+$$;
+
 -- Lock down: revoke public, grant EXECUTE only to the role the harness uses.
-REVOKE ALL ON FUNCTION public.stress_pause_cron()  FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.stress_resume_cron() FROM PUBLIC;
-GRANT  EXECUTE ON FUNCTION public.stress_pause_cron()  TO postgres;
-GRANT  EXECUTE ON FUNCTION public.stress_resume_cron() TO postgres;
+REVOKE ALL ON FUNCTION public.stress_pause_cron()        FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.stress_resume_cron()       FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.stress_active_cron_count() FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION public.stress_pause_cron()        TO postgres;
+GRANT  EXECUTE ON FUNCTION public.stress_resume_cron()       TO postgres;
+GRANT  EXECUTE ON FUNCTION public.stress_active_cron_count() TO postgres;

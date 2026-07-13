@@ -22,6 +22,8 @@ STRESS="$ROOT/stress"
 : "${STRESS_SUPABASE_DB_URL:?missing}"
 
 echo "--- Layer 2 preflight: cron pause check ---"
+# Must go through the SECURITY DEFINER helper — `postgres` has no direct
+# SELECT on cron.job in local Supabase (same rationale as pause-cron.sql).
 psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc "
 DO \$\$
 DECLARE n int;
@@ -30,7 +32,13 @@ BEGIN
     RAISE NOTICE 'no pg_cron — skip';
     RETURN;
   END IF;
-  SELECT count(*) INTO n FROM cron.job WHERE active = true;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace ns ON ns.oid = p.pronamespace
+    WHERE ns.nspname='public' AND p.proname='stress_active_cron_count'
+  ) THEN
+    RAISE EXCEPTION 'preflight: stress_active_cron_count() helper missing — bootstrap-cron-helpers.sql must run first';
+  END IF;
+  SELECT public.stress_active_cron_count() INTO n;
   IF n > 0 THEN RAISE EXCEPTION 'preflight: % active cron jobs (must be 0)', n; END IF;
 END\$\$;
 "

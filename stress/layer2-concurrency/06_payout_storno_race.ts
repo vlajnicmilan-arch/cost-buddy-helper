@@ -93,17 +93,22 @@ async function main() {
       client.rpc("void_worker_payout" as any, { p_payout_id: payoutId, p_reason: `${NS}-r2` }),
     ]);
 
-    // Invariant 1: exactly one success.
+    // Invariant 1: exactly one success. A rejected Promise here is transport
+    // or client-runtime failure, NOT a business-level refusal — it must fail
+    // the scenario, otherwise a broken RPC path masquerades as "expected
+    // second-call refusal" and the race is falsely green.
     let successCount = 0;
     let refusedCount = 0;
-    for (const r of [v1, v2]) {
-      if (r.status === "rejected") { refusedCount++; continue; }
+    for (const [idx, r] of [v1, v2].entries()) {
+      if (r.status === "rejected") {
+        throw new Error(`void call #${idx} promise rejected (transport/runtime): ${r.reason}`);
+      }
       const err = (r.value as any).error;
       if (err) {
-        refusedCount++;
         if (!/not found or already voided/i.test(err.message ?? "")) {
           throw new Error(`unexpected void error: ${err.message}`);
         }
+        refusedCount++;
       } else {
         successCount++;
       }
