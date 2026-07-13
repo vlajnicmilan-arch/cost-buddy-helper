@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense, Category, PaymentSource, ReceiptItem, TransactionType } from '@/types/expense';
 import { useAuth } from './useAuth';
