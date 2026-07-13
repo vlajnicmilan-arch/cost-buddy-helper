@@ -166,8 +166,9 @@ export function handleSummary(data) {
   const eps = summary.endpoints;
   const rank = Object.entries(eps).filter(([, v]) => v).sort((a, b) => b[1].p95 - a[1].p95);
   lines.push(`  TOP by p95: ${rank.map(([k, v]) => `${k}(${v.p95.toFixed(0)}ms)`).join(', ')}`);
+  const outPath = __ENV.SUMMARY_OUT || 'stress/reports/k6-summary.json';
   return {
     'stdout': lines.join('\n') + '\n',
-    'stress/reports/k6-summary.json': JSON.stringify(summary, null, 2),
+    [outPath]: JSON.stringify(summary, null, 2),
   };
 }
