@@ -18,15 +18,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const URL = mustEnv("STRESS_SUPABASE_URL");
 const SERVICE_KEY = mustEnv("STRESS_SUPABASE_SERVICE_ROLE_KEY");
 const PASSWORD = process.env.STRESS_SEED_PASSWORD ?? "stress-test-pw-local-only";
-const MODE = (process.env.STRESS_SEED_MODE ?? "smoke") as "smoke" | "full";
+const MODE = (process.env.STRESS_SEED_MODE ?? "smoke") as "smoke" | "full" | "layer1";
 
 assertLocal(URL);
 
 // Honest volume: what the code below actually inserts.
 // full == users only (domain rows are Faza 2).
+// layer1 == 50 users, each with exactly one custom_payment_source
+//          (25 anchored, 25 unanchored). k6 load hits both engine branches.
 const VOLUME = MODE === "full"
   ? { users: 200, krugovi: 0, projekti: 0, expenses: 0 }
-  : { users: 5,   krugovi: 0, projekti: 2, expenses: 2 };
+  : MODE === "layer1"
+    ? { users: 50, krugovi: 0, projekti: 0, expenses: 0 }
+    : { users: 5,   krugovi: 0, projekti: 2, expenses: 2 };
+
 
 const admin = createClient(URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -90,9 +95,39 @@ async function main() {
       });
       if (ee) throw new Error(`insert expense: ${ee.message}`);
     }
+  } else if (MODE === "layer1") {
+    // One custom_payment_source per user, prefixed 'layer1-src-'.
+    // First half anchored (correction_anchor_date = now()-1d, balance=0),
+    // second half unanchored — k6 load hits both engine branches under
+    // concurrent INSERT expense (FOR UPDATE on anchored path is the crown jewel).
+    const anchorTs = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const sources: { user_id: string; source_id: string; anchored: boolean }[] = [];
+    for (let i = 0; i < users.length; i++) {
+      const u = users[i];
+      const anchored = i < Math.floor(users.length / 2);
+      const row: Record<string, unknown> = {
+        user_id: u.id,
+        name: `layer1-src-${i.toString().padStart(4, "0")}`,
+      };
+      if (anchored) {
+        row.correction_anchor_date = anchorTs;
+        row.correction_anchor_balance = 0;
+        row.balance = 0;
+      }
+      const { data, error } = await admin
+        .from("custom_payment_sources")
+        .insert(row).select("id").single();
+      if (error) throw new Error(`insert custom_payment_sources ${u.email}: ${error.message}`);
+      sources.push({ user_id: u.id, source_id: data!.id as string, anchored });
+    }
+    console.log(`seed(layer1): created ${sources.length} sources (${sources.filter(s => s.anchored).length} anchored / ${sources.filter(s => !s.anchored).length} unanchored)`);
+    const outDirL1 = join(__dirname, "..", "reports");
+    mkdirSync(outDirL1, { recursive: true });
+    writeFileSync(join(outDirL1, "layer1-sources.json"), JSON.stringify({ sources }, null, 2));
   } else {
     console.log("seed: full-volume domain seed is Faza 2 (stubbed here)");
   }
+
 
   // Persist user roster for the auth pool step
   const outDir = join(__dirname, "..", "reports");
