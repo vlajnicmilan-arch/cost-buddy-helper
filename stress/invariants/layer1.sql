@@ -105,12 +105,19 @@ END $$;
 -- =============================================================================
 -- L1-C. Row-count parity: expenses(layer1-%) == k6 insert_ok counter.
 --       :layer1_insert_ok is passed via `psql -v layer1_insert_ok=<n>`.
+--       psql :var substitution does NOT reach inside DO $$...$$ blocks, so
+--       we stash it into a GUC on the SQL layer (where substitution works)
+--       and read it back with current_setting() inside the DO block. If the
+--       GUC is unset, current_setting() throws — loud fail preserved.
 -- =============================================================================
+SELECT set_config('layer1.insert_ok', :'layer1_insert_ok', false);
+
 DO $$
 DECLARE
   v_stored int;
-  v_reported int := :layer1_insert_ok;
+  v_reported int := current_setting('layer1.insert_ok')::int;
 BEGIN
+
   SELECT count(*) INTO v_stored
     FROM public.expenses
    WHERE deleted_at IS NULL
