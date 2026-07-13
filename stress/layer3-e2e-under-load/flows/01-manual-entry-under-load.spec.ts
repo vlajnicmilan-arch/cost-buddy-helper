@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { resetUserByKey } from '../helpers/db';
 import { storageStatePath } from '../helpers/auth';
+import { registerOnFailureDiagnostics } from '../helpers/onFailureDiag';
+
+registerOnFailureDiagnostics();
 
 /**
  * Scenario 1 — Ručni unos troška DOK k6 (30VU small) tuče backend.
