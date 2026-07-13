@@ -27,7 +27,7 @@ for arg in "$@"; do
     --full)  MODE="full" ;;
     --layer=1) LAYER=1; MODE="layer1" ;;
     --layer=2) LAYER=2; MODE="smoke" ;;
-    --layer=3) LAYER=3; MODE="smoke" ;;
+    --layer=3) LAYER=3; MODE="layer1" ;;  # layer1 seed provisions custom_payment_sources for every token-pool user → k6 mixed_load.setup() has non-empty pool (no REST-fallback empty-source exception).
     --keep-stack) KEEP_STACK=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
