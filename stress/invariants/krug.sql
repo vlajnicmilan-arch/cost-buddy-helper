@@ -90,8 +90,14 @@ END $$;
 
 -- =============================================================================
 -- I4. Dedup audit chain integrity.
---     Every layer2 dedup row must reference an existing expense in the same
---     Layer 2 fixture namespace (no orphaned governance audit).
+--     No krug_act_dedup row may reference a non-existent expense. The prior
+--     LEFT JOIN + `e.description LIKE 'layer2-%'` filter was structurally
+--     broken: when the join misses, `e.*` is NULL so the LIKE predicate
+--     always fails and orphans became invisible. Since expenses are only
+--     soft-deleted (deleted_at set, row retained), ANY dangling expense_id
+--     in dedup is a real integrity break — scope-widening the sweep to the
+--     whole table is strictly safer than the (previously vacuous) namespace
+--     filter.
 -- =============================================================================
 DO $$
 DECLARE
@@ -100,8 +106,7 @@ BEGIN
   SELECT count(*) INTO v_orphan
     FROM public.krug_act_dedup d
     LEFT JOIN public.expenses e ON e.id = d.expense_id
-   WHERE d.client_request_id ~ '^[0-9a-f-]{36}$'
-     AND (e.description LIKE 'layer2-%' OR e.note LIKE 'layer2-%')
+   WHERE d.expense_id IS NOT NULL
      AND e.id IS NULL;
   IF v_orphan > 0 THEN
     RAISE EXCEPTION 'INVARIANT I4 (dedup orphans) violated: % orphaned dedup rows', v_orphan;
