@@ -199,7 +199,7 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         t2: { name: 'Marko K.', role: 'Familienvater', text: 'Wir teilen ein Familienbudget und jeder kann sehen, wohin das Geld fließt. Ein Gamechanger für unseren Haushalt.' },
         t3: { name: 'Ivan P.', role: 'Kleinunternehmer', text: 'Projektverfolgung und Kostenkontrolle sind unglaublich nützlich. Ich sehe endlich, wohin das Geld bei jedem Projekt geht.' },
       },
-      footer: { desc: 'Ihr Finanzkontrollzentrum für private und geschäftliche Finanzen.', product: 'Produkt', legal: 'Rechtliches', privacy: 'Datenschutz', account: 'Konto', rights: 'Alle Rechte vorbehalten.' },
+      footer: { desc: 'Ihr Finanzkontrollzentrum für private und geschäftliche Finanzen.', product: 'Produkt', legal: 'Rechtliches', privacy: 'Datenschutz', refund: 'Rückerstattung', terms: 'Nutzungsbedingungen', account: 'Konto', rights: 'Alle Rechte vorbehalten.' },
       apk: { title: 'V&M Balance herunterladen', subtitle: 'Ein Freund empfiehlt Ihnen die App zur Finanzverfolgung. Herunterladen, installieren und loslegen!', download: 'APK für Android herunterladen', instructions: 'Installation:', step1: 'APK-Datei herunterladen', step2: 'Datei auf dem Smartphone öffnen', step3: 'Installation aus unbekannten Quellen erlauben', step4: 'Installieren und App öffnen', referralLabel: 'Ihr Empfehlungscode:', referralHint: 'Geben Sie diesen Code bei der Registrierung ein', webOption: 'Oder im Web registrieren:' },
     },
   },
