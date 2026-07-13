@@ -63,8 +63,39 @@ export async function wipeUserData(userId: string): Promise<void> {
   await a.from('custom_payment_sources').delete().eq('user_id', userId);
 }
 
+/**
+ * Seed a minimal fixture so the layer3 UI has:
+ *  - at least one custom_payment_source → `summary-balance` (visible aggregate)
+ *    renders on the compact home layout.
+ *  - at least one project → AppStateContext backfill flips
+ *    `projects_module_enabled` to true, so `nav-projects` renders in BottomNav.
+ * Both scenarios were previously failing at the setup phase because a
+ * freshly-reset user has neither, and the compact home hides balance/nav
+ * when the underlying signal is empty.
+ */
+async function seedLayer3Fixture(userId: string): Promise<void> {
+  const a = admin();
+  await a.from('custom_payment_sources').insert({
+    user_id: userId,
+    name: 'L3 Test Wallet',
+    balance: 1000,
+    color: '#14b8a6',
+    icon: 'wallet',
+    currency: 'EUR',
+  });
+  await a.from('projects').insert({
+    user_id: userId,
+    name: 'L3 Seed Project',
+    status: 'active',
+    project_type: 'general',
+    total_budget: 0,
+  });
+}
+
 export async function resetUserByKey(key: L3UserKey): Promise<string> {
   const id = await ensureUser(L3_USERS[key]);
   await wipeUserData(id);
+  await seedLayer3Fixture(id);
   return id;
 }
+
