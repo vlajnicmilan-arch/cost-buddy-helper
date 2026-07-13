@@ -22,6 +22,7 @@ import { createOwnerLoanIfCrossMode, syncOwnerLoanForExpense, deleteOwnerLoanFor
 import { invokeNotifyFunction } from '@/lib/notifyHelper';
 import {
   normalizePaymentSource,
+  normalizePaymentSourceWithDbFallback,
   tryNormalizePaymentSource,
   PaymentSourceNormalizeError,
   type NormalizeContext,
