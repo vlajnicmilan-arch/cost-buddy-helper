@@ -1,12 +1,13 @@
 // Runtime test for send-member-invitation ownership enforcement.
 // - Scenario (a): owner invites to own project -> 200 success, invitation row created.
 // - Scenario (b): non-owner invites to someone else's project -> 403, zero rows inserted.
+import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+const ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
 const FN_URL = `${SUPABASE_URL}/functions/v1/send-member-invitation`;
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
