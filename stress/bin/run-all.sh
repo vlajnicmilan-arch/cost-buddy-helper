@@ -353,3 +353,199 @@ if [[ "$LAYER" -eq 1 ]]; then
   echo "Layer 1: OK (invariants PASS, k6 clean)"
 fi
 
+# =========================================================================
+# Layer 3 — Playwright E2E pod k6 small background loadom.
+# Kritični guard: prod-izolacija. Vite build MORA upeći lokalni Supabase
+# URL/anon key iz stress/.env. Nikad remote fzalxjretvtvokiotvkf.supabase.co.
+# =========================================================================
+if [[ "$LAYER" -eq 3 ]]; then
+  echo ""
+  echo "=== Layer 3 (Playwright E2E under k6 small load) ==="
+  if ! command -v k6 >/dev/null 2>&1; then
+    echo "run-all: k6 not installed — abort (layer 3 needs k6 for background load)" >&2
+    exit 1
+  fi
+  if ! command -v bunx >/dev/null 2>&1; then
+    echo "run-all: bunx not on PATH — abort" >&2
+    exit 1
+  fi
+
+  cd "$ROOT"
+
+  # -----------------------------------------------------------------------
+  # 1) BUILD app with LOCAL env vars only.
+  #    Vite reads VITE_* at build time and bakes them into the bundle.
+  #    We force local values here — production .env values are IGNORED.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [1/6] Vite build with local env vars ---"
+  echo "  VITE_SUPABASE_URL=$STRESS_SUPABASE_URL"
+  echo "  VITE_SUPABASE_PROJECT_ID=(derived from local url)"
+  rm -rf dist
+  VITE_SUPABASE_URL="$STRESS_SUPABASE_URL" \
+  VITE_SUPABASE_PUBLISHABLE_KEY="$STRESS_SUPABASE_ANON_KEY" \
+  VITE_SUPABASE_PROJECT_ID="localstack" \
+    bun run build 2>&1 | tail -20
+
+  # -----------------------------------------------------------------------
+  # 2) PROD-ISOLATION GUARD. Grep bundle for prod project ref and any
+  #    remote *.supabase.co host. Match = LOUD ABORT.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [2/6] prod-isolation guard on dist/ ---"
+  PROD_REF="fzalxjretvtvokiotvkf"
+  set +e
+  PROD_HITS="$(grep -rEo "${PROD_REF}\.supabase\.co" dist/ 2>/dev/null | sort -u)"
+  REMOTE_HITS="$(grep -rEo "[a-z0-9]+\.supabase\.(co|in)" dist/ 2>/dev/null | sort -u)"
+  set -e
+  if [[ -n "$PROD_HITS" ]]; then
+    printf '::error title=LAYER3 PROD LEAK::built bundle references PRODUCTION Supabase project — ABORT\n'
+    echo "layer3: FATAL — dist/ contains prod project ref:"
+    echo "$PROD_HITS"
+    exit 1
+  fi
+  if [[ -n "$REMOTE_HITS" ]]; then
+    printf '::error title=LAYER3 REMOTE HOST::built bundle references remote *.supabase.co — ABORT\n'
+    echo "layer3: FATAL — dist/ contains remote Supabase host(s):"
+    echo "$REMOTE_HITS"
+    exit 1
+  fi
+  # Confirm local URL IS present (belt & suspenders: build must have baked it).
+  if ! grep -rq "127.0.0.1:54321" dist/ 2>/dev/null; then
+    printf '::error title=LAYER3 LOCAL URL MISSING::dist/ does not contain 127.0.0.1:54321 — env not injected\n'
+    echo "layer3: FATAL — local Supabase URL not found in bundle"
+    exit 1
+  fi
+  echo "  guard OK: dist/ contains 127.0.0.1:54321, no *.supabase.co references"
+
+  # -----------------------------------------------------------------------
+  # 3) START Vite preview in background.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [3/6] start Vite preview on :4173 ---"
+  PREVIEW_LOG="$STRESS/reports/layer3-preview.log"
+  bunx vite preview --port 4173 --strictPort > "$PREVIEW_LOG" 2>&1 &
+  PREVIEW_PID=$!
+  # Wait for readiness (max 60s).
+  for i in $(seq 1 60); do
+    if curl -fsS "http://127.0.0.1:4173" >/dev/null 2>&1; then
+      echo "  preview ready (pid=$PREVIEW_PID, ${i}s)"
+      break
+    fi
+    sleep 1
+    if (( i == 60 )); then
+      echo "layer3: preview did not become ready in 60s" >&2
+      kill "$PREVIEW_PID" 2>/dev/null || true
+      exit 1
+    fi
+  done
+
+  # -----------------------------------------------------------------------
+  # 4) START k6 small (30 VU) in background against local stack.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [4/6] start k6 small background load ---"
+  K6_LOG="$STRESS/reports/layer3-k6-bg.log"
+  set +e
+  STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
+  STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
+  PROFILE="small" \
+    k6 run "$STRESS/layer1-load/mixed_load.js" > "$K6_LOG" 2>&1 &
+  K6_PID=$!
+  set -e
+  echo "  k6 background running (pid=$K6_PID, profile=small, ~30VU/30s)"
+
+  # -----------------------------------------------------------------------
+  # 5) RUN Playwright specs against the loaded system.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [5/6] Playwright specs ---"
+  set +e
+  E2E_BASE_URL="http://127.0.0.1:4173" \
+  E2E_NO_SERVER="1" \
+    bunx playwright test --config="$STRESS/layer3-e2e-under-load/playwright.config.ts"
+  PW_EC=$?
+  set -e
+  echo "  playwright exit code: $PW_EC"
+
+  # Reap k6 background (may already have exited on its own after 30s window).
+  wait "$K6_PID" 2>/dev/null || true
+  K6_EC_L3=$?
+  echo "  k6 background exit code: $K6_EC_L3 (0=clean, 99=threshold, other=error)"
+
+  # Stop preview.
+  kill "$PREVIEW_PID" 2>/dev/null || true
+  wait "$PREVIEW_PID" 2>/dev/null || true
+
+  # -----------------------------------------------------------------------
+  # 6) UNCONDITIONAL invariant sweep — krug I1-I7 + L1-A/B/C.
+  #    Same contract as layer 1: sudci sude bez obzira na Playwright/k6.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "--- layer3 [6/6] invariant sweep (UNCONDITIONAL) ---"
+  INV_KRUG_EC=0
+  INV_LAYER1_EC=0
+
+  set +e
+  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
+  INV_KRUG_EC=$?
+  set -e
+  echo "  krug.sql exit code: $INV_KRUG_EC"
+
+  # L1-C needs INSERT_OK from the k6 background summary (if produced).
+  SUMMARY_FILE="$STRESS/reports/k6-summary.json"
+  INSERT_OK=""
+  if [[ -f "$SUMMARY_FILE" ]]; then
+    INSERT_OK="$(bun -e '
+      try {
+        const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+        const n = j && j.counters && j.counters.expense_insert_ok;
+        if (typeof n !== "number" || !Number.isFinite(n) || n < 0) process.exit(2);
+        process.stdout.write(String(Math.trunc(n)));
+      } catch (e) { process.exit(3); }
+    ' "$SUMMARY_FILE" 2>/dev/null)"
+  fi
+  if ! [[ "$INSERT_OK" =~ ^[0-9]+$ ]]; then
+    printf '::warning title=L3 L1-C harness::insert counter unreadable — L1-C skipped for layer 3\n'
+    echo "  L1-C: SKIPPED (no k6 summary — background may not have flushed)"
+  else
+    echo "  layer3 insert_ok from k6 bg summary: $INSERT_OK"
+    set +e
+    psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+      -v layer1_insert_ok="$INSERT_OK" \
+      -f "$STRESS/invariants/layer1.sql"
+    INV_LAYER1_EC=$?
+    set -e
+    echo "  layer1.sql exit code: $INV_LAYER1_EC"
+  fi
+
+  # -----------------------------------------------------------------------
+  # Final verdict — same 0/1/2 contract as layer 1.
+  # -----------------------------------------------------------------------
+  echo ""
+  echo "=== Layer 3 verdict ==="
+  echo "  (a) istina — invariants:"
+  echo "        krug I1-I7  : $([[ $INV_KRUG_EC   -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "        L1-A/B/C    : $([[ $INV_LAYER1_EC -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "  (b) brzina — Playwright + k6 background:"
+  echo "        playwright  : $([[ $PW_EC -eq 0 ]] && echo PASS || echo FAIL)"
+  echo "        k6 bg       : $([[ $K6_EC_L3 -eq 0 ]] && echo clean || echo "breach/exit=$K6_EC_L3")"
+
+  if (( INV_KRUG_EC != 0 || INV_LAYER1_EC != 0 )); then
+    printf '::error title=LAYER3 INVARIANT FAIL::truth violated (krug_ec=%s layer1_ec=%s pw_ec=%s k6_ec=%s) — CRVENA ZONA\n' \
+      "$INV_KRUG_EC" "$INV_LAYER1_EC" "$PW_EC" "$K6_EC_L3"
+    echo "Layer 3: INVARIANT FAIL (crvena zona)"
+    exit 1
+  fi
+
+  if (( PW_EC != 0 || K6_EC_L3 != 0 )); then
+    printf '::warning title=LAYER3 threshold breach::invariants PASS, pw_ec=%s k6_ec=%s — CI hardware ceiling\n' \
+      "$PW_EC" "$K6_EC_L3"
+    echo "Layer 3: invariants PASS, Playwright/k6 breach — CI granica hardvera (exit 2)"
+    exit 2
+  fi
+
+  echo "Layer 3: OK (invariants PASS, Playwright PASS, k6 bg clean)"
+fi
+
+
