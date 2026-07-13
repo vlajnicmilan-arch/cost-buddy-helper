@@ -2,7 +2,8 @@ name: stress-smoke
 
 # Manual trigger from GitHub UI.
 # Supports Faza 1 (`--smoke`), Faza 2 Layer 2 concurrency (`--layer=2`),
-# and Faza 2 Layer 1 load (`--layer=1`, k6 mixed_load).
+# Faza 2 Layer 1 load (`--layer=1`, k6 mixed_load), and
+# Faza 2 Layer 3 E2E-under-load (`--layer=3`, Playwright + k6 small background).
 # No cron, no schedule, no --full, no Faze 3/4/5.
 
 on:
@@ -17,6 +18,7 @@ on:
           - smoke
           - layer1
           - layer2
+          - layer3
       profile:
         description: 'Layer 1 profile (ignored for smoke/layer2)'
         required: false
@@ -53,8 +55,8 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install k6 (layer1 only)
-        if: ${{ github.event.inputs.layer == 'layer1' }}
+      - name: Install k6 (layer1 + layer3)
+        if: ${{ github.event.inputs.layer == 'layer1' || github.event.inputs.layer == 'layer3' }}
         run: |
           set -euo pipefail
           sudo gpg -k
@@ -65,6 +67,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y k6
           k6 version
+
+      - name: Install app deps (layer3 needs bun install for vite build + playwright)
+        if: ${{ github.event.inputs.layer == 'layer3' }}
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers (layer3 only)
+        if: ${{ github.event.inputs.layer == 'layer3' }}
+        run: bunx playwright install --with-deps chromium
+
 
       - name: Sanity — required tools present
         run: |
@@ -110,6 +121,8 @@ jobs:
             bash stress/bin/run-all.sh --layer=2
           elif [[ "$layer" == "layer1" ]]; then
             bash stress/bin/run-all.sh --layer=1
+          elif [[ "$layer" == "layer3" ]]; then
+            bash stress/bin/run-all.sh --layer=3
           else
             bash stress/bin/run-all.sh --smoke
           fi

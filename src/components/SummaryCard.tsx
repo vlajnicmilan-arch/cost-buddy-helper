@@ -37,12 +37,14 @@ export const SummaryCard = React.memo(({ title, amount, variant, icon, isActive,
           {icon}
         </div>
       </div>
-      <p className={cn(
-        "text-lg sm:text-2xl font-mono font-bold",
-        variant === 'balance' && "text-foreground",
-        variant === 'income' && "text-income",
-        variant === 'expense' && "text-expense",
-      )}>
+      <p
+        data-testid={`summary-${variant}`}
+        className={cn(
+          "text-lg sm:text-2xl font-mono font-bold",
+          variant === 'balance' && "text-foreground",
+          variant === 'income' && "text-income",
+          variant === 'expense' && "text-expense",
+        )}>
         {variant === 'expense' ? '-' : ''}{formatAmount(Math.abs(amount))}
       </p>
     </motion.div>
