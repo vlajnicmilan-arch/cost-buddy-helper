@@ -705,14 +705,14 @@ export const useExpenseCRUD = ({
 
         // Foundation Plan Val 1: normalize each row before bulk update. Failed
         // normalizations are skipped (not silently 'cash'-faked) and logged.
-        const normalizedRows = expensesToUpdate.map((expense) => {
+        const normalizedRows = await Promise.all(expensesToUpdate.map(async (expense) => {
           try {
-            const canonical = normalizePs(expense.payment_source, 'cash', 'bulkUpdateExpenses.update');
+            const canonical = await normalizePs(expense.payment_source, 'cash', 'bulkUpdateExpenses.update');
             return { expense, canonical };
           } catch {
             return { expense, canonical: null as string | null };
           }
-        });
+        }));
         const skipped = normalizedRows.filter(r => r.canonical == null);
         if (skipped.length > 0) {
           showError(t('feedback.unknownPaymentSource', 'Nepoznat izvor plaćanja. Osvježi i pokušaj ponovno.'));
