@@ -1,11 +1,20 @@
 name: stress-smoke
 
-# Faza 1 only. Manual trigger from GitHub UI.
-# Runs exclusively: bash stress/bin/run-all.sh --smoke
-# No cron, no schedule, no --full, no Faze 2/3/4/5.
+# Manual trigger from GitHub UI.
+# Supports Faza 1 (`--smoke`) and Faza 2 Layer 2 concurrency (`--layer=2`).
+# No cron, no schedule, no --full, no Faze 3/4/5.
 
 on:
   workflow_dispatch:
+    inputs:
+      layer:
+        description: 'Stress harness layer to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - layer2
 
 concurrency:
   group: stress-smoke
