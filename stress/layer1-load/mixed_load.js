@@ -83,9 +83,6 @@ const cBalOk = new Counter('balance_ok');
 
 const CATEGORIES = ['food', 'transport', 'utilities', 'entertainment', 'other'];
 
-function pick() {
-  return pool[Math.floor(Math.random() * pool.length)];
-}
 function headers(token) {
   return {
     apikey: ANON,
@@ -95,8 +92,35 @@ function headers(token) {
   };
 }
 
-export default function () {
-  const u = pick();
+// setup() runs once before scenarios and returns data to default()/teardown().
+// If the pre-computed pool (SharedArray) is empty (no layer1-sources.json),
+// fetch one custom_payment_source per token-holder via REST. Result is
+// passed as `data.pool` to the VU body. Layer 1 profile is unaffected —
+// when the file exists, pool is already populated and we return it as-is.
+export function setup() {
+  if (pool.length > 0) return { pool: [...pool] };
+  const built = [];
+  for (const t of tokensFile.pool) {
+    const res = http.get(
+      `${SUPA_URL}/rest/v1/custom_payment_sources?select=id&user_id=eq.${t.user_id}&limit=1`,
+      { headers: { apikey: ANON, Authorization: `Bearer ${t.access_token}` } },
+    );
+    if (res.status !== 200) continue;
+    let body;
+    try { body = JSON.parse(res.body); } catch (_) { continue; }
+    if (Array.isArray(body) && body[0] && body[0].id) {
+      built.push({ user_id: t.user_id, token: t.access_token, source_id: body[0].id });
+    }
+  }
+  if (built.length === 0) {
+    throw new Error('layer1: no sources available (pre-computed file missing AND REST fallback found none)');
+  }
+  return { pool: built };
+}
+
+export default function (data) {
+  const p = data.pool;
+  const u = p[Math.floor(Math.random() * p.length)];
   const r = Math.random();
   const today = new Date().toISOString().slice(0, 10);
 
