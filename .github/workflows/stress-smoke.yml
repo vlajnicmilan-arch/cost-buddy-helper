@@ -68,6 +68,15 @@ jobs:
           sudo apt-get install -y k6
           k6 version
 
+      - name: Install app deps (layer3 needs bun install for vite build + playwright)
+        if: ${{ github.event.inputs.layer == 'layer3' }}
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers (layer3 only)
+        if: ${{ github.event.inputs.layer == 'layer3' }}
+        run: bunx playwright install --with-deps chromium
+
+
       - name: Sanity — required tools present
         run: |
           set -euo pipefail
