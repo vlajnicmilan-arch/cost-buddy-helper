@@ -56,7 +56,17 @@ test.describe('Layer 3 / Scenario 1 — manual entry under k6 load', () => {
     await page.getByTestId(TID.manualExpenseDescription).fill(description);
     await page.getByTestId(TID.manualExpenseSubmit).click();
 
-    // Row appears in the list.
+    // "Nedavno" section is a Collapsible that defaults to CLOSED on /home
+    // (Index.tsx: useState(false)). CollapsibleContent doesn't render children
+    // when closed → transaction-row testid is not in the DOM until opened.
+    // Open it so the freshly added row is visible to the assertion.
+    const recentToggle = page.getByRole('button', { name: /Nedavno|Recent|Kürzlich/i }).first();
+    await recentToggle.click();
+
+    // Row appears in the list. Filter by expense-id via the data-expense-id
+    // attribute would be ideal, but we don't have it here — match on the
+    // description substring. `hasText` reads textContent (not visible pixels),
+    // so CSS `truncate` on the title does NOT affect the match.
     const row = page.getByTestId(TID.transactionRow).filter({ hasText: description });
     await expect(row).toBeVisible({ timeout: 60_000 });
 
