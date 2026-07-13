@@ -35,6 +35,12 @@ export async function signInAndPersist(page: Page, key: L3UserKey): Promise<void
     ({ storageKey, session, storageConfig }) => {
       window.localStorage.setItem(storageKey, JSON.stringify(session));
       window.localStorage.setItem('finmate-storage-config', JSON.stringify(storageConfig));
+      // Mirror the profile flags AppStateContext hydrates from the server so the
+      // very first render already knows onboarding is done and the projects
+      // module is on — otherwise the guarded routes flash `/onboarding` and the
+      // BottomNav renders without `nav-projects`.
+      window.localStorage.setItem('onboarding_completed', 'true');
+      window.localStorage.setItem('projects_module_enabled', 'true');
     },
     { storageKey, session, storageConfig },
   );
