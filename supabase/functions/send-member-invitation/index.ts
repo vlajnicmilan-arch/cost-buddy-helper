@@ -116,6 +116,37 @@ serve(async (req) => {
       );
     }
 
+    // SECURITY: Verify caller owns the target resource before bypassing RLS with adminClient.
+    // Owner = target.user_id (matches RLS model across projects, budget_plans, custom_payment_sources).
+    const { data: ownershipRow, error: ownershipError } = await adminClient
+      .from(targetTable)
+      .select("user_id")
+      .eq("id", targetId)
+      .maybeSingle();
+
+    if (ownershipError) {
+      console.error("[SEND-MEMBER-INVITATION] Ownership lookup error:", ownershipError);
+      return new Response(
+        JSON.stringify({ error: "ownership_check_failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!ownershipRow) {
+      return new Response(
+        JSON.stringify({ error: "target_not_found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if ((ownershipRow as { user_id: string }).user_id !== user.id) {
+      console.warn(
+        `[SEND-MEMBER-INVITATION] Forbidden: user ${user.id} tried to invite to ${type} ${targetId} owned by ${(ownershipRow as { user_id: string }).user_id}`
+      );
+      return new Response(
+        JSON.stringify({ error: "forbidden", message: "Only the owner of this resource may invite members." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Block invitations to closed/archived projects
     if (type === "project") {
       const { data: projectRow, error: projectErr } = await adminClient
