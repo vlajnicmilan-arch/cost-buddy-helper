@@ -30,21 +30,26 @@ bash stress/bin/run-all.sh --smoke
 
 ## Pokretanje iz GitHub UI-ja (bez lokalnog setupa)
 
-Ako nemaš Docker / Supabase CLI / bash lokalno, isti smoke run može se
+Ako nemaš Docker / Supabase CLI / bash lokalno, stress run može se
 pokrenuti kao GitHub Actions workflow:
 
 1. GitHub repo → **Actions** → workflow **`stress-smoke`**
-2. **Run workflow** (grana po izboru) → **Run**
+2. **Run workflow** (grana po izboru) → odaberi **layer**:
+   - `smoke` (default) — Faza 1
+   - `layer2` — Faza 2 Layer 2 concurrency
+3. **Run**
 
 Workflow radi točno ovo i ništa više:
 
 - instalira Supabase CLI + Bun na `ubuntu-latest` (Docker već postoji)
 - pokrene `supabase start`, pročita anon/service_role/DB URL iz
   `supabase status --output env` i upiše ih u `stress/.env`
-- pokrene `bash stress/bin/run-all.sh --smoke`
+- pokrene odabrani layer:
+  - `smoke` → `bash stress/bin/run-all.sh --smoke`
+  - `layer2` → `bash stress/bin/run-all.sh --layer=2`
 - uploada `stress/reports/` kao artefakt
 
-Nema `schedule`, nema `--full`, nema Faza 2/3/4/5. Trigger je isključivo
+Nema `schedule`, nema `--full`, nema Faza 3/4/5. Trigger je isključivo
 `workflow_dispatch`.
 
 
