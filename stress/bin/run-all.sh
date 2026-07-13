@@ -556,14 +556,24 @@ if [[ "$LAYER" -eq 3 ]]; then
   # k6 bg JE oluja (small mixed_load) — sudci L1-A/B/C sude nad njom, ne SKIPaju.
   # NE koristimo --summary-export (pisao bi k6 default schema preko custom).
   rm -f "$STRESS/reports/k6-summary.json"
+  # handleSummary writes a relative path ('stress/reports/k6-summary.json')
+  # — force CWD=ROOT for the k6 child so the path resolves against the repo
+  # root even when the wrapper is invoked from elsewhere (e.g. GH Actions
+  # step with a different working dir). We also pass SUMMARY_OUT as an
+  # absolute override so the k6 script can prefer it when set.
   set +e
-  STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
-  STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
-  PROFILE="small" \
-    k6 run "$STRESS/layer1-load/mixed_load.js" > "$K6_LOG" 2>&1 &
+  (
+    cd "$ROOT" && \
+    STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
+    STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
+    PROFILE="small" \
+    SUMMARY_OUT="$STRESS/reports/k6-summary.json" \
+      k6 run "$STRESS/layer1-load/mixed_load.js" > "$K6_LOG" 2>&1
+  ) &
   K6_PID=$!
   set -e
-  echo "  k6 background running (pid=$K6_PID, profile=small, ~30VU/30s, summary→reports/k6-summary.json)"
+  echo "  k6 background running (pid=$K6_PID, profile=small, ~30VU/30s, summary→$STRESS/reports/k6-summary.json)"
+
 
   # -----------------------------------------------------------------------
   # 5) RUN Playwright specs against the loaded system.
