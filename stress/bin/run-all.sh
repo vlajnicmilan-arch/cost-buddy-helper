@@ -124,10 +124,73 @@ emit_failure_annotations() {
   rm -f "$tmp"
 }
 
+# --------------------------------------------------------------------------
+# UNCONDITIONAL INVARIANT SWEEP — SUD MORA SUDITI.
+# Armed after DB bootstrap (step 4/7). Called explicitly by layer blocks on
+# the happy path AND by the cleanup trap on any abort thereafter. Guarded by
+# SWEEP_DONE so the sweep runs exactly once. INV_KRUG_EC / INV_LAYER1_EC
+# hold the results (-1 = not run, 0 = pass, non-zero = fail).
+# --------------------------------------------------------------------------
+SWEEP_ARMED=0
+SWEEP_DONE=0
+SWEEP_STEP="pre-bootstrap"
+INV_KRUG_EC=-1
+INV_LAYER1_EC=-1
+
+run_invariant_sweep() {
+  local marker="${1:-normal}"
+  [[ $SWEEP_DONE -eq 1 ]] && return 0
+  [[ $SWEEP_ARMED -eq 0 ]] && return 0
+  [[ -z "${STRESS_SUPABASE_DB_URL:-}" ]] && return 0
+  SWEEP_DONE=1
+
+  echo ""
+  echo "=== invariant sweep ($marker) ==="
+
+  set +e
+  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
+  INV_KRUG_EC=$?
+  set -e
+  echo "  krug.sql exit code: $INV_KRUG_EC"
+
+  local summary="$STRESS/reports/k6-summary.json"
+  local insert_ok=""
+  if [[ -f "$summary" ]]; then
+    insert_ok="$(bun -e '
+      try {
+        const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+        const n = j && j.counters && j.counters.expense_insert_ok;
+        if (typeof n !== "number" || !Number.isFinite(n) || n < 0) process.exit(2);
+        process.stdout.write(String(Math.trunc(n)));
+      } catch (e) { process.exit(3); }
+    ' "$summary" 2>/dev/null)"
+  fi
+  if ! [[ "$insert_ok" =~ ^[0-9]+$ ]]; then
+    echo "  L1-A/B/C: SKIPPED (no k6 summary — likely pre-storm/vacuous sweep)"
+    INV_LAYER1_EC=0
+  else
+    echo "  insert_ok from k6 summary: $insert_ok"
+    set +e
+    psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+      -v layer1_insert_ok="$insert_ok" \
+      -f "$STRESS/invariants/layer1.sql"
+    INV_LAYER1_EC=$?
+    set -e
+    echo "  layer1.sql exit code: $INV_LAYER1_EC"
+  fi
+}
+
 cleanup() {
   local ec=$?
   echo ""
   echo "=== cleanup ==="
+
+  # SUD MORA SUDITI. If a layer aborted before its own sweep call, run it
+  # here so krug I1-I7 + L1-A/B/C ALWAYS render a verdict once the DB is up.
+  if [[ $SWEEP_ARMED -eq 1 && $SWEEP_DONE -eq 0 ]]; then
+    run_invariant_sweep "after early abort at step ${SWEEP_STEP} (pre-storm, vacuous)" || true
+  fi
+
   if [[ -n "${STRESS_SUPABASE_DB_URL:-}" ]]; then
     psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=0 \
       -f "$STRESS/bin/resume-cron.sql" 2>&1 | sed 's/^/  /' || true
