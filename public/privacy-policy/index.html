@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Politika privatnosti — V&amp;M Balance</title>
+<meta name="description" content="Politika privatnosti V&amp;M Balance u skladu s GDPR-om: voditelj obrade, sub-procesori, rokovi čuvanja, prava korisnika.">
+<link rel="canonical" href="https://vmbalance.com/privacy-policy">
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 32px 20px 64px; color: #0f172a; line-height: 1.6; background: #fff; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.2rem; margin: 32px 0 10px; }
+  h3 { font-size: 1rem; margin: 18px 0 6px; }
+  p, li { font-size: 0.95rem; color: #334155; }
+  ul { padding-left: 20px; }
+  a { color: #0d9488; }
+  .meta { color: #64748b; font-size: 0.85rem; margin-bottom: 24px; }
+  .box { background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+  th { background: #f1f5f9; }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 0.85rem; color: #64748b; }
+</style>
+</head>
+<body>
+<h1>Politika privatnosti</h1>
+<p class="meta">Verzija 2.0 — Zadnja izmjena: 29. travnja 2026.</p>
+<p>Ova politika opisuje obradu osobnih podataka u skladu s Općom uredbom o zaštiti podataka (EU 2016/679 — GDPR) i hrvatskim Zakonom o provedbi Opće uredbe o zaštiti podataka (NN 42/2018).</p>
+
+<h2>1. Voditelj obrade podataka</h2>
+<p>Voditelj obrade osobnih podataka u smislu članka 4. stavka 7. GDPR-a je:</p>
+<div class="box">
+  <p><strong>V&amp;M Balance</strong><br>
+  Web: vmbalance.com<br>
+  Email za pitanja o privatnosti: <a href="mailto:privacy@vmbalance.com">privacy@vmbalance.com</a><br>
+  Email za GDPR zahtjeve: <a href="mailto:gdpr@vmbalance.com">gdpr@vmbalance.com</a></p>
+</div>
+
+<h2>2. Kategorije podataka koje obrađujemo</h2>
+<h3>2.1 Podaci o računu</h3>
+<ul>
+  <li>Email adresa</li>
+  <li>Hashirana lozinka (bcrypt, ne pohranjujemo plaintext)</li>
+  <li>Ime ili nadimak (opcionalno)</li>
+  <li>Avatar (opcionalno)</li>
+  <li>Jezik sučelja (HR/EN/DE)</li>
+  <li>Vrijeme posljednje prijave i IP adresa (sigurnosni log, 90 dana)</li>
+</ul>
+<h3>2.2 Financijski i poslovni podaci</h3>
+<ul>
+  <li>Transakcije (iznos, datum, kategorija, opis, način plaćanja)</li>
+  <li>Računi/fakture (slike i ekstrahirani podaci)</li>
+  <li>Budžeti, projekti, ponavljajuće transakcije, podsjetnici</li>
+  <li>Podaci o poslovanju (OIB tvrtke, naziv) — samo Business plan</li>
+  <li>Evidencija radnog vremena i radnika — samo Business plan</li>
+</ul>
+<h3>2.3 Tehnički i dijagnostički podaci</h3>
+<ul>
+  <li>Tip uređaja, OS verzija, browser</li>
+  <li>Push notification token (samo ako date dozvolu)</li>
+  <li>Stack trace grešaka (Sentry — bez osobnih podataka)</li>
+  <li>Verzija aplikacije</li>
+</ul>
+<h3>2.4 Podaci o naplati (samo plaćeni planovi)</h3>
+<ul>
+  <li>Stripe customer ID, status pretplate, datum isteka</li>
+  <li>Podaci o kartici <strong>obrađuje isključivo Stripe</strong> — mi ih nikad ne vidimo niti pohranjujemo</li>
+</ul>
+
+<h2>3. Pravne osnove obrade (čl. 6. GDPR)</h2>
+<ul>
+  <li><strong>Izvršenje ugovora (čl. 6/1/b)</strong> — kreiranje računa, pružanje usluge, obrada plaćanja</li>
+  <li><strong>Legitimni interes (čl. 6/1/f)</strong> — sigurnosni logovi, sprečavanje zlouporabe, dijagnostika grešaka</li>
+  <li><strong>Privola (čl. 6/1/a)</strong> — push notifikacije, AI asistent, opcionalna sinkronizacija u cloud</li>
+  <li><strong>Zakonska obveza (čl. 6/1/c)</strong> — čuvanje računovodstvene dokumentacije po Zakonu o računovodstvu</li>
+</ul>
+
+<h2>4. Sub-procesori (treće strane)</h2>
+<p>U svrhu pružanja usluge koristimo sljedeće provjerene sub-procesore. Sa svima je sklopljen ugovor o obradi podataka (DPA — Data Processing Agreement) i odgovarajuće mjere zaštite za prijenos podataka.</p>
+
+<h3>Supabase (preko Lovable Cloud) — EU (Frankfurt, Njemačka)</h3>
+<p><strong>Svrha:</strong> Baza podataka, autentikacija, pohrana datoteka, pozadinske funkcije<br>
+<strong>Podaci:</strong> Svi vaši podaci o računu i transakcijama, slike računa<br>
+<strong>DPA:</strong> <a href="https://supabase.com/legal/dpa">supabase.com/legal/dpa</a> · GDPR &amp; SOC 2 Type II compliant</p>
+
+<h3>Lovable AI Gateway (Google Gemini) — EU/SAD</h3>
+<p><strong>Svrha:</strong> Financijski AI asistent, OCR računa, prepoznavanje kategorija<br>
+<strong>Podaci:</strong> Tekst vaših pitanja asistentu, slike računa koje skenirate, opis transakcija. <strong>Podaci se NE koriste za treniranje modela.</strong><br>
+<strong>Pravna osnova prijenosa u SAD:</strong> EU-US Data Privacy Framework + Standardne ugovorne klauzule (SCC)</p>
+
+<h3>Stripe Payments Europe Ltd. — Irska (EU) / SAD</h3>
+<p><strong>Svrha:</strong> Obrada plaćanja pretplata (Pro/Business plan)<br>
+<strong>Podaci:</strong> Email, ime, podaci o kartici (obrađuje isključivo Stripe — mi ne vidimo broj kartice)<br>
+<strong>DPA:</strong> <a href="https://stripe.com/legal/dpa">stripe.com/legal/dpa</a> · PCI DSS Level 1 · DPF certified</p>
+
+<h3>Firebase Cloud Messaging (Google LLC) — Globalno (SAD)</h3>
+<p><strong>Svrha:</strong> Slanje push notifikacija (samo ako date dozvolu)<br>
+<strong>Podaci:</strong> Device token, sadržaj notifikacije<br>
+<strong>DPA:</strong> <a href="https://firebase.google.com/terms/data-processing-terms">firebase.google.com/terms/data-processing-terms</a> · DPF certified</p>
+
+<h3>Sentry (Functional Software, Inc.) — EU (Frankfurt)</h3>
+<p><strong>Svrha:</strong> Praćenje grešaka i stabilnosti aplikacije<br>
+<strong>Podaci:</strong> Stack trace, verzija aplikacije, anonimizirani korisnik ID. <strong>Filtriramo financijske podatke prije slanja.</strong><br>
+<strong>DPA:</strong> <a href="https://sentry.io/legal/dpa/">sentry.io/legal/dpa</a></p>
+
+<h3>Firecrawl (Mendable, Inc.) — SAD</h3>
+<p><strong>Svrha:</strong> Dohvaćanje sadržaja s URL-ova koje sami unesete (npr. analiza ponuda)<br>
+<strong>Podaci:</strong> Samo URL koji unesete — bez vaših osobnih podataka<br>
+<strong>Pravna osnova prijenosa:</strong> Standardne ugovorne klauzule (SCC)</p>
+
+<h3>Sudreg (Ministarstvo pravosuđa RH) — Hrvatska</h3>
+<p><strong>Svrha:</strong> Provjera podataka o tvrtkama (samo Business plan)<br>
+<strong>Podaci:</strong> Naziv firme ili OIB koji vi sami pretražujete (javni registar)</p>
+
+<p><em>Ažurirana lista sub-procesora dostupna je na zahtjev putem <a href="mailto:privacy@vmbalance.com">privacy@vmbalance.com</a>.</em></p>
+
+<h2>5. Rokovi čuvanja podataka (retention)</h2>
+<table>
+  <thead><tr><th>Kategorija podataka</th><th>Rok čuvanja</th></tr></thead>
+  <tbody>
+    <tr><td>Aktivan korisnički račun i transakcije</td><td>Dok je račun aktivan</td></tr>
+    <tr><td>Nakon brisanja računa — backupi</td><td>30 dana, zatim trajno brisanje</td></tr>
+    <tr><td>Neaktivan besplatan račun (bez prijave)</td><td>24 mjeseca, zatim email upozorenje + brisanje</td></tr>
+    <tr><td>Sigurnosni logovi prijava</td><td>90 dana</td></tr>
+    <tr><td>Dijagnostički logovi (Sentry, app logs)</td><td>7–30 dana</td></tr>
+    <tr><td>Push notification logovi</td><td>30 dana</td></tr>
+    <tr><td>AI chat poruke</td><td>90 dana</td></tr>
+    <tr><td>Računovodstveni podaci (Business plan, fakture)</td><td>11 godina (Zakon o računovodstvu RH)</td></tr>
+    <tr><td>Podaci o naplati (Stripe)</td><td>10 godina (porezni zakoni)</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Vaša prava prema GDPR-u</h2>
+<p>Kao ispitanik imate sljedeća prava koja možete ostvariti slanjem zahtjeva na <a href="mailto:gdpr@vmbalance.com">gdpr@vmbalance.com</a>. Na zahtjev odgovaramo <strong>u roku od 30 dana</strong> (može se produžiti za 60 dana u kompleksnim slučajevima — bit ćete obaviješteni).</p>
+<ul>
+  <li><strong>Pravo na pristup (čl. 15)</strong> — Dobiti kopiju svih podataka koje obrađujemo o vama.</li>
+  <li><strong>Pravo na ispravak (čl. 16)</strong> — Ispraviti netočne ili dopuniti nepotpune podatke.</li>
+  <li><strong>Pravo na brisanje / "pravo na zaborav" (čl. 17)</strong> — Tražiti brisanje vaših podataka.</li>
+  <li><strong>Pravo na ograničenje obrade (čl. 18)</strong> — Privremeno zaustaviti obradu.</li>
+  <li><strong>Pravo na prenosivost (čl. 20)</strong> — Izvesti podatke u strojno čitljivom formatu.</li>
+  <li><strong>Pravo na prigovor (čl. 21)</strong> — Prigovoriti obradi temeljenoj na legitimnom interesu.</li>
+  <li><strong>Pravo na povlačenje privole (čl. 7)</strong> — U bilo kojem trenutku povući privolu.</li>
+  <li><strong>Pravo na pritužbu nadzornom tijelu (čl. 77)</strong> — Agenciji za zaštitu osobnih podataka (AZOP), Selska cesta 136, Zagreb, <a href="https://azop.hr">azop.hr</a>.</li>
+</ul>
+
+<h2>7. Sigurnosne mjere (čl. 32 GDPR)</h2>
+<ul>
+  <li>TLS 1.3 enkripcija u prijenosu (HTTPS)</li>
+  <li>AES-256 enkripcija u pohrani (na razini baze)</li>
+  <li>Hashirane lozinke (bcrypt)</li>
+  <li>Row-Level Security (RLS) — strogo izolirani podaci po korisniku</li>
+  <li>Provjera lozinki protiv baze procurjelih lozinki (HIBP)</li>
+  <li>PIN kod / biometrija za pristup aplikaciji (opcionalno)</li>
+  <li>Redoviti sigurnosni audit i automatsko skeniranje</li>
+  <li>Obavijest o povredi podataka u roku od 72 sata (čl. 33)</li>
+</ul>
+
+<h2>8. Lokalna pohrana i kolačići</h2>
+<p>Aplikacija koristi <strong>localStorage</strong> i <strong>IndexedDB</strong> isključivo za pohranu vaših postavki, sesije i opcionalno lokalnih podataka. Ne koristimo marketinške kolačiće, niti pratimo vaše ponašanje izvan aplikacije.</p>
+<p>Slike računa koje skenirate u aplikaciji <strong>po defaultu se pohranjuju lokalno</strong> na vašem uređaju i nikad ne napuštaju uređaj, osim ako sami eksplicitno ne migrirate u cloud.</p>
+
+<h2>9. Zaštita djece</h2>
+<p>Aplikacija nije namijenjena osobama mlađim od 16 godina (čl. 8 GDPR). Ne prikupljamo namjerno podatke od maloljetnih osoba.</p>
+
+<h2>10. Automatizirano odlučivanje i AI</h2>
+<p>Koristimo AI za prepoznavanje kategorija transakcija i OCR računa, ali to su <strong>isključivo prijedlozi koje vi potvrđujete</strong>. Ne donosimo automatizirane odluke s pravnim posljedicama za vas (čl. 22 GDPR).</p>
+
+<h2>11. Izmjene politike privatnosti</h2>
+<p>O značajnim izmjenama bit ćete obaviješteni emailom i obavijesti u aplikaciji najmanje 30 dana prije stupanja na snagu.</p>
+
+<h2>12. Kontakt</h2>
+<div class="box">
+  <p><strong>V&amp;M Balance</strong><br>
+  Privatnost: <a href="mailto:privacy@vmbalance.com">privacy@vmbalance.com</a><br>
+  GDPR zahtjevi: <a href="mailto:gdpr@vmbalance.com">gdpr@vmbalance.com</a><br>
+  Sigurnost: <a href="mailto:security@vmbalance.com">security@vmbalance.com</a><br>
+  Web: <a href="https://vmbalance.com">vmbalance.com</a></p>
+</div>
+
+<footer>
+  © 2026 V&amp;M Balance · <a href="https://vmbalance.com">vmbalance.com</a>
+</footer>
+</body>
+</html>

@@ -191,10 +191,11 @@ const FooterSection = ({ language, t }: { language: LandingLanguage; t: (key: st
         <div>
           <h4 className="mb-3 font-semibold text-foreground">{t('landing.footer.legal')}</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><button type="button" onClick={() => goTo('/privacy-policy')} className="hover:text-foreground">{t('landing.footer.privacy')}</button></li>
-            <li><button type="button" onClick={() => goTo('/refund-policy')} className="hover:text-foreground">{t('landing.footer.refund')}</button></li>
+            <li><a href="/privacy-policy" className="hover:text-foreground">{t('landing.footer.privacy')}</a></li>
+            <li><a href="/refund-policy" className="hover:text-foreground">{t('landing.footer.refund')}</a></li>
+            <li><a href="/terms-of-service" className="hover:text-foreground">{t('landing.footer.terms')}</a></li>
             {language === 'de' && (
-              <li><button type="button" onClick={() => goTo('/impressum')} className="hover:text-foreground">Impressum</button></li>
+              <li><a href="/impressum" className="hover:text-foreground">Impressum</a></li>
             )}
           </ul>
         </div>
