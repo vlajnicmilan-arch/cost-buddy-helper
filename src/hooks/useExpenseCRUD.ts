@@ -71,9 +71,21 @@ export const useExpenseCRUD = ({
   // Single chokepoint za payment_source normalizaciju (Foundation Plan, Val 1).
   // Svaki .from('expenses').(insert|update|upsert) write u ovom hooku MORA
   // koristiti `normalizePs` neposredno prije writea.
-  const normalizeCtx = useMemo<NormalizeContext>(() => ({
-    knownCustomSourceIds: knownCustomSourceIds ?? new Set<string>(),
-  }), [knownCustomSourceIds]);
+  //
+  // Milanov mandat (opcija 3): sretni put je sync (bit-identičan starom
+  // ponašanju, nula dodatnih poziva). Ako sync grana baci `unknown_uuid`
+  // (in-memory Set nije hidriran / stale cache / multi-instance race), jednom
+  // pod user JWT-om provjeri postojanje u `custom_payment_sources` — RLS
+  // presuđuje vlasništvo. Verificirani UUID-ovi se pamte lokalno (ref set)
+  // pa se lookup ne ponavlja za isti izvor u istoj sesiji hooka.
+  const verifiedUuidsRef = useRef<Set<string>>(new Set());
+  const normalizeCtx = useMemo<NormalizeContext>(() => {
+    const base = knownCustomSourceIds ?? new Set<string>();
+    // Merge base + verified (ne mutiramo base — Set je immutable po ugovoru).
+    const merged = new Set<string>(base);
+    verifiedUuidsRef.current.forEach((u) => merged.add(u));
+    return { knownCustomSourceIds: merged };
+  }, [knownCustomSourceIds]);
 
   /**
    * Normalize for writers. Vraća canonical (built-in slug ili `custom:UUID`).
@@ -81,14 +93,33 @@ export const useExpenseCRUD = ({
    * mora abort-ati save. NE silent-fall-back-amo na 'cash' jer bi to
    * zatrlo izvor s krivim balansom.
    */
-  const normalizePs = useCallback((
+  const normalizePs = useCallback(async (
     value: string | null | undefined,
     fallback: 'cash' | 'other',
     site: string,
-  ): string => {
+  ): Promise<string> => {
     const raw = (value == null || String(value).trim() === '') ? fallback : value;
     try {
-      return normalizePaymentSource(raw, normalizeCtx);
+      return await normalizePaymentSourceWithDbFallback(
+        raw,
+        normalizeCtx,
+        async (uuid) => {
+          // Server-truth fallback: RLS pod user JWT-om jedini je authority.
+          // Cache pogodak → memoriziraj u verifiedUuidsRef da sljedeći poziv
+          // pogodi sync granu bez dodatnog upita.
+          const { data, error } = await supabase
+            .from('custom_payment_sources' as any)
+            .select('id')
+            .eq('id', uuid)
+            .maybeSingle();
+          if (error) return false;
+          if (data) {
+            verifiedUuidsRef.current.add(uuid);
+            return true;
+          }
+          return false;
+        },
+      );
     } catch (e) {
       const reason = e instanceof PaymentSourceNormalizeError ? e.reason : 'unknown';
       console.error('[ExpenseCRUD] payment_source normalize failed', { site, raw, reason });
