@@ -48,14 +48,25 @@ test.describe('Layer 3 / Scenario 2 — project + milestone under k6 load', () =
     await page.getByTestId(TID.projectSaveButton).click();
 
     // ProjectDialog.handleSubmit closes the dialog but does NOT auto-navigate
-    // to project detail (verified in src/components/projects/ProjectDialog.tsx:220).
-    // Mirror what a real user does: click the newly created project card to
-    // open detail. ProjectCard renders <h3>{project.name}</h3>, so match by
-    // heading role scoped to the fresh project name.
+    // to project detail. Realan korisnički put:
+    //   1) klik na karticu (ProjectCard je clickable — otvara ProjectFullScreenView)
+    //   2) unutar detalja defaultno je "Pregled" tab s ProjectQuickStartCards;
+    //      klik na "Dodaj prvu fazu" CTA (onAddMilestone → setActiveTab('phases'))
+    //      switcha na Faze tab gdje milestone-add živi.
     await page.getByRole('heading', { name: projectName }).first().click();
 
-    // Land inside project detail — milestone-add is only mounted there.
-    await expect(page.getByTestId(TID.milestoneAddButton).first()).toBeVisible({ timeout: 60_000 }); // aligned to config expect.timeout
+    // Quickstart CTA — clickableProps renderira div role="button" s aria-label = title.
+    // Fallback na Faze tab trigger ako CTA nije vidljiv (edge: karta već ima faze).
+    const quickStartCta = page.getByRole('button', { name: /Dodaj prvu fazu/i }).first();
+    const phasesTab = page.getByRole('tab', { name: /Faze|Milestones|Phasen/i }).first();
+    if (await quickStartCta.isVisible({ timeout: 15_000 }).catch(() => false)) {
+      await quickStartCta.click();
+    } else {
+      await phasesTab.click();
+    }
+
+    // Land na Faze tabu — milestone-add je mounted samo ovdje.
+    await expect(page.getByTestId(TID.milestoneAddButton).first()).toBeVisible({ timeout: 60_000 });
 
     await page.getByTestId(TID.milestoneAddButton).first().click();
     await page.getByTestId(TID.milestoneNameInput).fill(milestoneName);
