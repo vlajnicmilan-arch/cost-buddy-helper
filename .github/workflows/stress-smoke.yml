@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   smoke:
-    name: stress harness — smoke (Faza 1)
+    name: stress harness — ${{ github.event.inputs.layer || 'smoke' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
