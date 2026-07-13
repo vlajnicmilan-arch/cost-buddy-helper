@@ -132,7 +132,14 @@ cleanup() {
       -f "$STRESS/bin/resume-cron.sql" 2>&1 | sed 's/^/  /' || true
   fi
   if [[ "$KEEP_STACK" -eq 0 ]]; then
-    supabase stop --no-backup 2>&1 | sed 's/^/  /' || true
+    # `supabase stop` sometimes emits a cosmetic
+    # 'relation "supabase_migrations.schema_migrations" does not exist' from
+    # its shutdown hook. That message is harmless (containers stop cleanly),
+    # but it gets picked up by the STRESS FAIL annotator as a red-herring
+    # root cause. Filter it out at source. Real errors still pass through.
+    supabase stop --no-backup 2>&1 \
+      | grep -E -v 'supabase_migrations\.schema_migrations' \
+      | sed 's/^/  /' || true
   fi
   if (( ec != 0 )); then
     emit_failure_annotations || true
