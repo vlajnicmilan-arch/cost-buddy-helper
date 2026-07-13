@@ -21,6 +21,21 @@ import { env } from './env';
  * `l3-user-id` and `l3-marker`. Tests set them at the top of the body.
  */
 export function registerOnFailureDiagnostics(): void {
+  // Capture console errors + pageerrors per-test into a stash on the page,
+  // so afterEach can dump them. Cheap; only added once per beforeEach.
+  test.beforeEach(async ({ page }) => {
+    const stash: string[] = [];
+    (page as unknown as { __l3ConsoleErrors?: string[] }).__l3ConsoleErrors = stash;
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        stash.push(`[${msg.type()}] ${msg.text().slice(0, 300)}`);
+      }
+    });
+    page.on('pageerror', (err) => {
+      stash.push(`[pageerror] ${err.message.slice(0, 300)}`);
+    });
+  });
+
   test.afterEach(async ({ page }, testInfo: TestInfo) => {
     if (testInfo.status === testInfo.expectedStatus) return;
     try {
