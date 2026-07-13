@@ -131,15 +131,14 @@ prikaz produkcijskog stacka. Držimo ga za buduće eksperimente
 (npr. izolirani DB-only mikro-benchmark ili budući realtime profil).
 **Nije validan fallback za Fazu 1.**
 
-## Što NIJE u Fazi 1
+## Što NIJE u Fazi 1 / Layer 2
 
-- Sloj 2 (concurrency testovi)
 - Sloj 1 (k6)
 - Sloj 3 (Playwright smoke)
 - Report generator
-- CI workflow
+- CI workflow proširenje
 - Performance gate (v2 odluka, ne v1)
-- Puni domain seed (krugovi, veći broj projekata/expensa)
+- Puni domain seed (200 usera / 20 krugova / 30 projekata / 15k expenses)
 - `--full` runtime put
 
 ## Reprodukcija
