@@ -25,6 +25,7 @@ for arg in "$@"; do
   case "$arg" in
     --smoke) MODE="smoke" ;;
     --full)  MODE="full" ;;
+    --layer=1) LAYER=1; MODE="layer1" ;;
     --layer=2) LAYER=2; MODE="smoke" ;;
     --keep-stack) KEEP_STACK=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
@@ -32,9 +33,10 @@ for arg in "$@"; do
 done
 
 if [[ "$MODE" == "full" ]]; then
-  echo "run-all: --full is a stub for Faza >=3. Supported: --smoke, --layer=2." >&2
+  echo "run-all: --full is a stub for Faza >=3. Supported: --smoke, --layer=1, --layer=2." >&2
   exit 2
 fi
+
 
 if ! command -v supabase >/dev/null 2>&1; then
   echo "run-all: Supabase CLI not found on PATH." >&2
@@ -139,6 +141,9 @@ bash "$STRESS/bin/guard-env.sh"
 # Load env for the rest of the run
 # shellcheck disable=SC1090
 set -a; source "$STRESS_ENV_FILE"; set +a
+# Re-assert MODE after sourcing (.env pins STRESS_SEED_MODE=smoke; layer=1 needs 'layer1').
+export STRESS_SEED_MODE="$MODE"
+
 
 echo ""
 echo "=== 2/7 supabase start ==="
@@ -174,10 +179,12 @@ echo "=== 7/7 READY ==="
 echo "harness mode:  $MODE"
 echo "supabase url:  $STRESS_SUPABASE_URL"
 echo "token pool:    $STRESS/reports/tokens.json"
-if [[ "$LAYER" -eq 2 ]]; then
+if [[ "$LAYER" -eq 1 ]]; then
+  echo "next phase:    layer1-load (running now, PROFILE=${PROFILE:-small})"
+elif [[ "$LAYER" -eq 2 ]]; then
   echo "next phase:    layer2-concurrency (running now)"
 else
-  echo "next phase:    layer2-concurrency (skipped — pass --layer=2 to run)"
+  echo "next phase:    layerX (skipped — pass --layer=1 or --layer=2)"
 fi
 echo ""
 echo "READY"
@@ -188,3 +195,38 @@ if [[ "$LAYER" -eq 2 ]]; then
   cd "$ROOT"
   bash "$STRESS/invariants/run-all.sh"
 fi
+
+if [[ "$LAYER" -eq 1 ]]; then
+  echo ""
+  echo "=== Layer 1 (k6 mixed load) ==="
+  if ! command -v k6 >/dev/null 2>&1; then
+    echo "run-all: k6 not installed — abort" >&2
+    exit 1
+  fi
+  PROFILE_EFF="${PROFILE:-small}"
+  echo "  profile: $PROFILE_EFF"
+  cd "$ROOT"
+  # k6 needs Supabase env exposed to script.
+  STRESS_SUPABASE_URL="$STRESS_SUPABASE_URL" \
+  STRESS_SUPABASE_ANON_KEY="$STRESS_SUPABASE_ANON_KEY" \
+  PROFILE="$PROFILE_EFF" \
+    k6 run "$STRESS/layer1-load/mixed_load.js"
+
+  echo ""
+  echo "=== Layer 1 invariant sweep (krug.sql + layer1.sql) ==="
+  # krug.sql is harmless PASS on untouched layer2 fixtures — kept in chain per mandate.
+  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$STRESS/invariants/krug.sql"
+
+  INSERT_OK=0
+  if [[ -f "$STRESS/reports/k6-summary.json" ]]; then
+    INSERT_OK="$(bun -e 'const j=JSON.parse(require("fs").readFileSync("stress/reports/k6-summary.json","utf8"));console.log(j.counters.expense_insert_ok||0)')"
+  fi
+  echo "  layer1 insert_ok from k6 summary: $INSERT_OK"
+  psql "$STRESS_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
+    -v layer1_insert_ok="$INSERT_OK" \
+    -f "$STRESS/invariants/layer1.sql"
+
+  echo ""
+  echo "Layer 1: OK"
+fi
+
