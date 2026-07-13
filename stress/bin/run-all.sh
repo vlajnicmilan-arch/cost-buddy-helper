@@ -198,8 +198,10 @@ if [[ "$LAYER" -eq 1 ]]; then
   echo "next phase:    layer1-load (running now, PROFILE=${PROFILE:-small})"
 elif [[ "$LAYER" -eq 2 ]]; then
   echo "next phase:    layer2-concurrency (running now)"
+elif [[ "$LAYER" -eq 3 ]]; then
+  echo "next phase:    layer3-e2e-under-load (running now)"
 else
-  echo "next phase:    layerX (skipped — pass --layer=1 or --layer=2)"
+  echo "next phase:    layerX (skipped — pass --layer=1, --layer=2 or --layer=3)"
 fi
 echo ""
 echo "READY"
