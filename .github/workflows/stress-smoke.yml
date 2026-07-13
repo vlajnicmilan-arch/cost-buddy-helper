@@ -1,11 +1,20 @@
 name: stress-smoke
 
-# Faza 1 only. Manual trigger from GitHub UI.
-# Runs exclusively: bash stress/bin/run-all.sh --smoke
-# No cron, no schedule, no --full, no Faze 2/3/4/5.
+# Manual trigger from GitHub UI.
+# Supports Faza 1 (`--smoke`) and Faza 2 Layer 2 concurrency (`--layer=2`).
+# No cron, no schedule, no --full, no Faze 3/4/5.
 
 on:
   workflow_dispatch:
+    inputs:
+      layer:
+        description: 'Stress harness layer to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - layer2
 
 concurrency:
   group: stress-smoke
@@ -13,7 +22,7 @@ concurrency:
 
 jobs:
   smoke:
-    name: stress harness — smoke (Faza 1)
+    name: stress harness — ${{ github.event.inputs.layer || 'smoke' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -68,8 +77,14 @@ jobs:
           EOF
           echo "stress/.env written ($(wc -l < stress/.env) lines)"
 
-      - name: Run smoke harness
-        run: bash stress/bin/run-all.sh --smoke
+      - name: Run stress harness
+        run: |
+          layer="${{ github.event.inputs.layer || 'smoke' }}"
+          if [[ "$layer" == "layer2" ]]; then
+            bash stress/bin/run-all.sh --layer=2
+          else
+            bash stress/bin/run-all.sh --smoke
+          fi
 
       - name: Upload reports
         if: always()

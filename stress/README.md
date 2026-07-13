@@ -1,4 +1,4 @@
-# Stress & Concurrency Harness — v1 (Faza 1: skeleton only)
+# Stress & Concurrency Harness — v1
 
 Ovo je **test-infrastruktura**, ne feature. Cilj: dokazati da brojke ostaju
 istinite pod navalom. Primarni FAIL je narušena invarijanta; latencija u v1
@@ -6,8 +6,9 @@ NIJE gate (samo report).
 
 ## Status
 
-**Faza 1 (ova faza) — skeleton + env guard + seed + auth pool.**
-Faze 2 (concurrency), 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
+**Faza 1 — skeleton + env guard + seed + auth pool.**
+**Faza 2 — Layer 2 concurrency testovi (dostupni lokalno i iz GitHub UI-a).**
+Faze 3 (k6), 4 (Playwright), 5 (report/CI) — svjesno stub.
 
 ## Preduvjeti (host stroj, ne Lovable sandbox)
 
@@ -29,21 +30,26 @@ bash stress/bin/run-all.sh --smoke
 
 ## Pokretanje iz GitHub UI-ja (bez lokalnog setupa)
 
-Ako nemaš Docker / Supabase CLI / bash lokalno, isti smoke run može se
+Ako nemaš Docker / Supabase CLI / bash lokalno, stress run može se
 pokrenuti kao GitHub Actions workflow:
 
 1. GitHub repo → **Actions** → workflow **`stress-smoke`**
-2. **Run workflow** (grana po izboru) → **Run**
+2. **Run workflow** (grana po izboru) → odaberi **layer**:
+   - `smoke` (default) — Faza 1
+   - `layer2` — Faza 2 Layer 2 concurrency
+3. **Run**
 
 Workflow radi točno ovo i ništa više:
 
 - instalira Supabase CLI + Bun na `ubuntu-latest` (Docker već postoji)
 - pokrene `supabase start`, pročita anon/service_role/DB URL iz
   `supabase status --output env` i upiše ih u `stress/.env`
-- pokrene `bash stress/bin/run-all.sh --smoke`
+- pokrene odabrani layer:
+  - `smoke` → `bash stress/bin/run-all.sh --smoke`
+  - `layer2` → `bash stress/bin/run-all.sh --layer=2`
 - uploada `stress/reports/` kao artefakt
 
-Nema `schedule`, nema `--full`, nema Faza 2/3/4/5. Trigger je isključivo
+Nema `schedule`, nema `--full`, nema Faza 3/4/5. Trigger je isključivo
 `workflow_dispatch`.
 
 
@@ -90,8 +96,8 @@ se pauziraju** odmah nakon `db reset`, prije seeda:
   (auto-kreira ako ne postoji), zatim postavlja `cron.job.active = false` za sve.
 - `resume-cron.sql` čita snapshot i vraća original `active` vrijednosti.
 
-Sloj-2 testovi (Faza 2) će eksplicitno provjeriti `SELECT count(*) FROM cron.job
-WHERE active` prije mjerenja — mora biti 0.
+Sloj-2 testovi (Faza 2) provjeravaju `stress_active_cron_count()` prije
+mjerenja — mora vratiti 0.
 
 ## Realtime — svjesno isključen
 
@@ -125,15 +131,14 @@ prikaz produkcijskog stacka. Držimo ga za buduće eksperimente
 (npr. izolirani DB-only mikro-benchmark ili budući realtime profil).
 **Nije validan fallback za Fazu 1.**
 
-## Što NIJE u Fazi 1
+## Što NIJE u Fazi 1 / Layer 2
 
-- Sloj 2 (concurrency testovi)
 - Sloj 1 (k6)
 - Sloj 3 (Playwright smoke)
 - Report generator
-- CI workflow
+- CI workflow proširenje
 - Performance gate (v2 odluka, ne v1)
-- Puni domain seed (krugovi, veći broj projekata/expensa)
+- Puni domain seed (200 usera / 20 krugova / 30 projekata / 15k expenses)
 - `--full` runtime put
 
 ## Reprodukcija
