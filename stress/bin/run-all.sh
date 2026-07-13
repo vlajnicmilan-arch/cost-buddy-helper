@@ -27,13 +27,14 @@ for arg in "$@"; do
     --full)  MODE="full" ;;
     --layer=1) LAYER=1; MODE="layer1" ;;
     --layer=2) LAYER=2; MODE="smoke" ;;
+    --layer=3) LAYER=3; MODE="smoke" ;;
     --keep-stack) KEEP_STACK=1 ;;
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 
 if [[ "$MODE" == "full" ]]; then
-  echo "run-all: --full is a stub for Faza >=3. Supported: --smoke, --layer=1, --layer=2." >&2
+  echo "run-all: --full is a stub for Faza >=3. Supported: --smoke, --layer=1, --layer=2, --layer=3." >&2
   exit 2
 fi
 
