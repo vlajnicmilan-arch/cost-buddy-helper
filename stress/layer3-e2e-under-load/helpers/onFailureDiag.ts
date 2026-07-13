@@ -151,6 +151,23 @@ export function registerOnFailureDiagnostics(): void {
           console.log(`::warning title=L3 DB user_subscriptions threw::${(e as Error).message}`);
         }
 
+        // S2 authoritative probe: list ALL projects for the user (not filtered by marker).
+        // Distinguishes "test filled name wrong" vs "insert failed" vs "created but not detail-navigated".
+        try {
+          const { data: projs, error: pErr } = await a
+            .from('projects')
+            .select('id, name, status, project_type, created_at, deleted_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          console.log(
+            `::error title=L3 DB projects probe [${testInfo.title}]::user_id=${userId} err=${pErr?.message ?? 'null'} rows=${projs?.length ?? 0} data=${JSON.stringify(projs ?? []).slice(0, 800)}`,
+          );
+        } catch (e) {
+          console.log(`::warning title=L3 DB projects probe threw::${(e as Error).message}`);
+        }
+
+
         // Mint a fresh access token for the user via GoTrue admin generate_link, then
         // call check-subscription with it — mirrors exactly what SubscriptionContext does.
         try {
