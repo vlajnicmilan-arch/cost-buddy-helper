@@ -592,8 +592,13 @@ if [[ "$LAYER" -eq 3 ]]; then
   # Reap k6 background — wait for GRACEFUL end (do NOT kill). k6 profile=small
   # is ~75s total; handleSummary must fire to write k6-summary.json which
   # L1-A/B/C sudci require. If PW finishes faster than k6, we block here.
+  # NOTE: `wait $K6_PID` propagates k6's exit code; under `set -e` a k6 breach
+  # (99) or hard error would abort BEFORE the summary grace loop runs. Guard
+  # with set +e/-e so we always reach the grace window + sweep.
+  set +e
   wait "$K6_PID" 2>/dev/null
   K6_EC_L3=$?
+  set -e
   echo "  k6 background exit code: $K6_EC_L3 (0=clean, 99=threshold, other=error)"
 
   # Grace window: handleSummary writes to disk after k6's own exit — poll up

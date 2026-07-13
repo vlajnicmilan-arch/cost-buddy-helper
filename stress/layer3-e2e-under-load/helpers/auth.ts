@@ -27,10 +27,15 @@ export async function signInAndPersist(page: Page, key: L3UserKey): Promise<void
   await page.goto('/');
   const projectRef = new URL(env.supabaseUrl).host.split('.')[0]; // 127 for local
   const storageKey = `sb-${projectRef}-auth-token`;
+  // Also seed `finmate-storage-config` — RootRoute/getAppEntryRoute otherwise
+  // sends a logged-in user to `/setup` (storageMode null), so `/home` never
+  // mounts and neither `summary-balance` nor `nav-projects` renders.
+  const storageConfig = { mode: 'cloud', lastSync: new Date().toISOString() };
   await page.evaluate(
-    ({ storageKey, session }) => {
+    ({ storageKey, session, storageConfig }) => {
       window.localStorage.setItem(storageKey, JSON.stringify(session));
+      window.localStorage.setItem('finmate-storage-config', JSON.stringify(storageConfig));
     },
-    { storageKey, session },
+    { storageKey, session, storageConfig },
   );
 }
