@@ -60,6 +60,7 @@ export const BottomNav = () => {
           return (
             <button
               key={item.path}
+              data-testid={`nav-${item.path.replace(/^\//, '') === 'home' ? 'home' : item.path.replace(/^\//, '')}`}
               onClick={() => { lightTap(); navigate(item.path); }}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative"
             >

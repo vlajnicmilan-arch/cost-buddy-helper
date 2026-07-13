@@ -264,6 +264,7 @@ export const ProjectDialog = ({
               <Label htmlFor="name">{t('projects.name')}</Label>
               <Input
                 id="name"
+                data-testid="project-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('projects.namePlaceholder')}
@@ -553,7 +554,7 @@ export const ProjectDialog = ({
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" className="flex-1" disabled={saving || !name.trim()}>
+              <Button data-testid="project-save" type="submit" className="flex-1" disabled={saving || !name.trim()}>
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {project ? t('common.save') : t('common.create')}
               </Button>
