@@ -164,3 +164,45 @@ export function tryNormalizePaymentSource(
     return null;
   }
 }
+
+/**
+ * Server-truth fallback varijanta (Milanov mandat, opcija 3).
+ *
+ * Sretni put je bit-identičan sync `normalizePaymentSource` (built-in slug ili
+ * `custom:UUID` prisutan u `ctx.knownCustomSourceIds` → sync return, NULA
+ * dodatnih poziva). Fallback grana se aktivira ISKLJUČIVO kad sync grana
+ * baci `unknown_uuid` — tada se pod user JWT-om upita baza (RLS presuđuje
+ * vidljivost/vlasništvo). DB pogodak → vraća canonical `custom:UUID`; miss
+ * → re-throw originalnog `PaymentSourceNormalizeError` (reason nepromijenjen).
+ *
+ * Motivacija: `knownCustomSourceIds` je in-memory React state; race između
+ * fetcha i write-a (multi-instance hookovi, cache hydration, cross-device
+ * stale cache) može ostaviti Set prazan iako je izvor u bazi. Server-truth
+ * lookup eliminira tu ovisnost bez fake-fallbacka na 'cash'.
+ *
+ * `dbHasUuid` mora vratiti true SAMO ako je red vidljiv pod trenutnim JWT-om
+ * (nikad service role) — RLS check je jedini valjan authority.
+ */
+export async function normalizePaymentSourceWithDbFallback(
+  input: string | null | undefined,
+  ctx: NormalizeContext,
+  dbHasUuid: (uuid: string) => Promise<boolean>,
+): Promise<CanonicalPaymentSource> {
+  try {
+    return normalizePaymentSource(input, ctx);
+  } catch (e) {
+    if (!(e instanceof PaymentSourceNormalizeError) || e.reason !== 'unknown_uuid') {
+      throw e;
+    }
+    // Ekstrahiraj UUID iz `custom:UUID` ili raw UUID varijante (isti regex
+    // set kao sync grana — ovamo dolazi samo šejp-valjani input).
+    const trimmed = String(input).trim();
+    const uuid = trimmed.toLowerCase().startsWith('custom:')
+      ? trimmed.slice('custom:'.length).toLowerCase()
+      : trimmed.toLowerCase();
+    if (!UUID_RE.test(uuid)) throw e;
+    const ok = await dbHasUuid(uuid);
+    if (!ok) throw e;
+    return `custom:${uuid}`;
+  }
+}
