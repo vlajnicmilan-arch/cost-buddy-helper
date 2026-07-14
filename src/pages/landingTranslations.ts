@@ -13,11 +13,11 @@ const translations: Record<LandingLanguage, TranslationTree> = {
       de: 'Deutsch',
     },
     alt: {
-      logo: 'V&M Balance logo',
+      logo: 'Centar logo',
       hero: 'Pametni telefon, kalkulator i novčanice na stolu',
       cards: 'Kartice za plaćanje',
-      dashboard: 'V&M Balance nadzorna ploča',
-      budget: 'V&M Balance budžeti',
+      dashboard: 'Centar nadzorna ploča',
+      budget: 'Centar budžeti',
     },
     landing: {
       nav: {
@@ -95,7 +95,7 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         rights: 'Sva prava pridržana.',
       },
       apk: {
-        title: 'Preuzmi V&M Balance',
+        title: 'Preuzmi Centar',
         subtitle: 'Tvoj prijatelj ti preporučuje aplikaciju za praćenje financija. Preuzmi, instaliraj i započni!',
         download: 'Preuzmi APK za Android',
         instructions: 'Kako instalirati:',
@@ -111,7 +111,7 @@ const translations: Record<LandingLanguage, TranslationTree> = {
   },
   en: {
     language: { label: 'Language', hr: 'Hrvatski', en: 'English', de: 'Deutsch' },
-    alt: { logo: 'V&M Balance logo', hero: 'Smartphone, calculator and banknotes on a desk', cards: 'Payment cards', dashboard: 'V&M Balance dashboard', budget: 'V&M Balance budgets' },
+    alt: { logo: 'Centar logo', hero: 'Smartphone, calculator and banknotes on a desk', cards: 'Payment cards', dashboard: 'Centar dashboard', budget: 'Centar budgets' },
     landing: {
       nav: { features: 'Features', pricing: 'Pricing', testimonials: 'Reviews', login: 'Log In', getStarted: 'Get Started' },
       hero: { badge: 'Your Financial Control Center', title: 'Take Control of Your', titleHighlight: 'Financial Life', subtitle: 'Track expenses in real-time, control projects, generate reports for your accountant — all in one app.', cta: 'Start Free', installApp: 'Install App', free: 'Free to start', secure: 'Bank-level security', multilingual: 'Multilingual' },
@@ -153,12 +153,12 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         t3: { name: 'Ivan P.', role: 'Small Business Owner', text: 'Project tracking and expense control are incredibly useful. I finally see where money goes on every project.' },
       },
       footer: { desc: 'Your financial control center for personal and business finances.', product: 'Product', legal: 'Legal', privacy: 'Privacy Policy', refund: 'Refund Policy', terms: 'Terms of Service', account: 'Account', rights: 'All rights reserved.' },
-      apk: { title: 'Download V&M Balance', subtitle: 'A friend recommends this finance tracking app. Download, install, and start!', download: 'Download APK for Android', instructions: 'How to install:', step1: 'Download the APK file', step2: 'Open the file on your phone', step3: 'Allow installation from unknown sources', step4: 'Install and open the app', referralLabel: 'Your referral code:', referralHint: 'Enter this code during registration', webOption: 'Or register on the web:' },
+      apk: { title: 'Download Centar', subtitle: 'A friend recommends this finance tracking app. Download, install, and start!', download: 'Download APK for Android', instructions: 'How to install:', step1: 'Download the APK file', step2: 'Open the file on your phone', step3: 'Allow installation from unknown sources', step4: 'Install and open the app', referralLabel: 'Your referral code:', referralHint: 'Enter this code during registration', webOption: 'Or register on the web:' },
     },
   },
   de: {
     language: { label: 'Sprache', hr: 'Hrvatski', en: 'English', de: 'Deutsch' },
-    alt: { logo: 'V&M Balance Logo', hero: 'Smartphone, Taschenrechner und Banknoten auf einem Tisch', cards: 'Zahlungskarten', dashboard: 'V&M Balance Dashboard', budget: 'V&M Balance Budgets' },
+    alt: { logo: 'Centar Logo', hero: 'Smartphone, Taschenrechner und Banknoten auf einem Tisch', cards: 'Zahlungskarten', dashboard: 'Centar Dashboard', budget: 'Centar Budgets' },
     landing: {
       nav: { features: 'Funktionen', pricing: 'Preise', testimonials: 'Bewertungen', login: 'Anmelden', getStarted: 'Loslegen' },
       hero: { badge: 'Ihr Finanzkontrollzentrum', title: 'Übernehmen Sie die Kontrolle über', titleHighlight: 'Ihr Finanzleben', subtitle: 'Verfolgen Sie Ausgaben in Echtzeit, kontrollieren Sie Projekte, erstellen Sie Berichte für Ihren Buchhalter — alles in einer App.', cta: 'Kostenlos starten', installApp: 'App installieren', free: 'Kostenlos starten', secure: 'Banksicherheit', multilingual: 'Mehrsprachig' },
@@ -200,7 +200,7 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         t3: { name: 'Ivan P.', role: 'Kleinunternehmer', text: 'Projektverfolgung und Kostenkontrolle sind unglaublich nützlich. Ich sehe endlich, wohin das Geld bei jedem Projekt geht.' },
       },
       footer: { desc: 'Ihr Finanzkontrollzentrum für private und geschäftliche Finanzen.', product: 'Produkt', legal: 'Rechtliches', privacy: 'Datenschutz', refund: 'Rückerstattung', terms: 'Nutzungsbedingungen', account: 'Konto', rights: 'Alle Rechte vorbehalten.' },
-      apk: { title: 'V&M Balance herunterladen', subtitle: 'Ein Freund empfiehlt Ihnen die App zur Finanzverfolgung. Herunterladen, installieren und loslegen!', download: 'APK für Android herunterladen', instructions: 'Installation:', step1: 'APK-Datei herunterladen', step2: 'Datei auf dem Smartphone öffnen', step3: 'Installation aus unbekannten Quellen erlauben', step4: 'Installieren und App öffnen', referralLabel: 'Ihr Empfehlungscode:', referralHint: 'Geben Sie diesen Code bei der Registrierung ein', webOption: 'Oder im Web registrieren:' },
+      apk: { title: 'Centar herunterladen', subtitle: 'Ein Freund empfiehlt Ihnen die App zur Finanzverfolgung. Herunterladen, installieren und loslegen!', download: 'APK für Android herunterladen', instructions: 'Installation:', step1: 'APK-Datei herunterladen', step2: 'Datei auf dem Smartphone öffnen', step3: 'Installation aus unbekannten Quellen erlauben', step4: 'Installieren und App öffnen', referralLabel: 'Ihr Empfehlungscode:', referralHint: 'Geben Sie diesen Code bei der Registrierung ein', webOption: 'Oder im Web registrieren:' },
     },
   },
 };

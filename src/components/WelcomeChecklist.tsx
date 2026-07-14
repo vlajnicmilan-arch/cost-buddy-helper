@@ -184,7 +184,7 @@ export const WelcomeChecklist = ({
           <h3 className="text-sm font-semibold">
             {allDone
               ? t('checklist.allDone', 'Sve je spremno! 🎉')
-              : t('checklist.title', 'Počnite s V&M Balance')}
+              : t('checklist.title', 'Počnite s Centar')}
           </h3>
           <span className="ml-auto text-xs text-muted-foreground mr-6">
             {completedCount}/{steps.length}

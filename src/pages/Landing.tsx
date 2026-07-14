@@ -66,11 +66,11 @@ const LandingNav = ({ language, setLanguage, t }: { language: LandingLanguage; s
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <a href="/" className="flex min-h-11 items-center gap-2" aria-label="V&M Balance">
+        <a href="/" className="flex min-h-11 items-center gap-2" aria-label="Centar">
           <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-xl">
             <img src={logo} alt={t('alt.logo')} className="h-full w-full scale-[1.8] object-cover" width="36" height="36" decoding="async" />
           </span>
-          <span className="text-xl font-bold text-foreground">V&M Balance</span>
+          <span className="text-xl font-bold text-foreground">Centar</span>
         </a>
         <div className="hidden items-center gap-8 md:flex">
           <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">{t('landing.nav.features')}</a>
@@ -176,7 +176,7 @@ const FooterSection = ({ language, t }: { language: LandingLanguage; t: (key: st
             <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg">
               <img src={logo} alt={t('alt.logo')} className="h-full w-full scale-[1.8] object-cover" loading="lazy" decoding="async" />
             </div>
-            <span className="font-bold text-foreground">V&M Balance</span>
+            <span className="font-bold text-foreground">Centar</span>
           </div>
           <p className="text-sm text-muted-foreground">{t('landing.footer.desc')}</p>
         </div>
@@ -208,7 +208,7 @@ const FooterSection = ({ language, t }: { language: LandingLanguage; t: (key: st
         </div>
       </div>
       <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} V&M Balance. {t('landing.footer.rights')}
+        © {new Date().getFullYear()} Centar. {t('landing.footer.rights')}
       </div>
     </div>
   </footer>

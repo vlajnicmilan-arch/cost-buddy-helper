@@ -60,7 +60,7 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
     <header className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-          <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
+          <img src={logo} alt="Centar" className="w-full h-full scale-[1.8] object-cover" />
         </div>
         <div>
           <div className="flex items-center gap-2">

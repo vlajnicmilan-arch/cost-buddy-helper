@@ -171,7 +171,7 @@ if (!isFastLanding) idle(() => {
 // Boot diagnostics — these always log so we can see them in `chrome://inspect`
 // when the APK is connected. Helps confirm which bundle/route is active.
 try {
-  console.log('[Boot] V&M Balance starting', {
+  console.log('[Boot] Centar starting', {
     href: window.location.href,
     pathname: window.location.pathname,
     isCapacitor: !!(window as any).Capacitor?.isNativePlatform?.(),

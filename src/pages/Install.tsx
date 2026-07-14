@@ -133,7 +133,7 @@ function getInstallSteps(platform: Platform, browser: Browser): Step[] {
     }
     return [
       { text: 'Klikni izbornik ⋮ u adresnoj traci' },
-      { text: 'Odaberi "Install V&M Balance..."' },
+      { text: 'Odaberi "Install Centar..."' },
       { text: 'Aplikacija će se pojaviti u Launchpadu' },
     ];
   }
@@ -270,7 +270,7 @@ const Install = () => {
           </div>
           <h1 className="text-2xl font-bold mb-2">Aplikacija je instalirana!</h1>
           <p className="text-muted-foreground mb-6">
-            V&M Balance je uspješno instaliran na tvoj uređaj. Možeš ga pronaći na početnom ekranu.
+            Centar je uspješno instaliran na tvoj uređaj. Možeš ga pronaći na početnom ekranu.
           </p>
           <Button onClick={() => navigate('/home')} className="rounded-xl">
             Otvori aplikaciju
@@ -288,8 +288,8 @@ const Install = () => {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">
-          <img src={logo} alt="V&M Balance" className="w-8 h-8 object-contain" />
-          <span className="font-semibold">V&M Balance</span>
+          <img src={logo} alt="Centar" className="w-8 h-8 object-contain" />
+          <span className="font-semibold">Centar</span>
           <span className="text-xs text-muted-foreground">v{APP_VERSION}</span>
         </div>
         <div className="w-10" />
@@ -300,9 +300,9 @@ const Install = () => {
           {/* App Header */}
           <div className="text-center">
             <div className="w-24 h-24 mx-auto mb-4">
-              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain rounded-2xl shadow-lg" />
+              <img src={logo} alt="Centar" className="w-full h-full object-contain rounded-2xl shadow-lg" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Instaliraj V&M Balance</h1>
+            <h1 className="text-2xl font-bold mb-2">Instaliraj Centar</h1>
             <p className="text-muted-foreground text-sm">
               Besplatna aplikacija za praćenje troškova
             </p>
@@ -441,7 +441,7 @@ const Install = () => {
 
           {/* Version */}
           <div className="text-center text-xs text-muted-foreground pt-2 border-t">
-            <p>V&M Balance v{APP_VERSION} • PWA</p>
+            <p>Centar v{APP_VERSION} • PWA</p>
           </div>
         </motion.div>
       </div>

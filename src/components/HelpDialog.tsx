@@ -142,7 +142,7 @@ const HelpDialog = () => {
         <ScrollArea className="h-[65vh] pr-4">
           <div className="space-y-6">
             <p className="text-muted-foreground">
-              {t('help.intro', 'V&M Balance je aplikacija za praćenje osobnih financija. Evo kako ju koristiti:')}
+              {t('help.intro', 'Centar je aplikacija za praćenje osobnih financija. Evo kako ju koristiti:')}
             </p>
             
             {sections.map((section, index) => (

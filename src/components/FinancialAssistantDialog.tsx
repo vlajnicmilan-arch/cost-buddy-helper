@@ -680,7 +680,7 @@ async function exportToPDF(headers: string[], rows: string[][]) {
   applyBrandFont(doc);
   doc.setFont('Inter');
   doc.setFontSize(14);
-  doc.text('V&M Balance - Izvoz podataka', 14, 15);
+  doc.text('Centar - Izvoz podataka', 14, 15);
   doc.setFontSize(9);
   doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
 
@@ -703,7 +703,7 @@ async function exportResponseAsPDF(content: string) {
   applyBrandFont(doc);
   doc.setFont('Inter');
   doc.setFontSize(14);
-  doc.text('V&M Balance - AI Odgovor', 14, 15);
+  doc.text('Centar - AI Odgovor', 14, 15);
   doc.setFontSize(9);
   doc.text(`Datum: ${new Date().toLocaleDateString('hr-HR')}`, 14, 22);
 
@@ -725,7 +725,7 @@ async function exportResponseAsPDF(content: string) {
 
 async function printTable(headers: string[], rows: string[][]) {
   const html = `
-    <html><head><title>V&M Balance - Ispis</title>
+    <html><head><title>Centar - Ispis</title>
     <style>
       body { font-family: Arial, sans-serif; padding: 20px; }
       h2 { margin-bottom: 4px; }
@@ -735,7 +735,7 @@ async function printTable(headers: string[], rows: string[][]) {
       td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
       tr:nth-child(even) { background: #f5f7fa; }
     </style></head><body>
-    <h2>V&M Balance - Izvoz podataka</h2>
+    <h2>Centar - Izvoz podataka</h2>
     <div class="date">Datum: ${new Date().toLocaleDateString('hr-HR')}</div>
     <table>
       <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
