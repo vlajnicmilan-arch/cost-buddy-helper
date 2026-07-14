@@ -10,6 +10,7 @@ export interface ProjectContractAmendment {
   note: string | null;
   linked_revision_id: string | null;
   linked_milestone_id: string | null;
+  source_decision_id: string | null;
   created_at: string;
 }
 
