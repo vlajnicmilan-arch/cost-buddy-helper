@@ -38,6 +38,23 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const overflowSubtitle = (key: string): string => {
+    switch (key) {
+      case 'funding':
+        return t('projects.tabs.subtitles.funding', 'Izvori i alokacije');
+      case 'transactions':
+        return t('projects.tabs.subtitles.transactions', 'Troškovi i prihodi');
+      case 'worklog':
+        return t('projects.tabs.subtitles.worklog', 'Sati i napredak');
+      case 'documents':
+        return t('projects.tabs.subtitles.documents', 'Računi i datoteke');
+      case 'activity':
+        return t('projects.tabs.subtitles.activity', 'Povijest promjena');
+      default:
+        return '';
+    }
+  };
+
   const activeIsOverflow = overflow.some((tab) => tab.key === value);
   const slotCount = primary.length + (overflow.length > 0 ? 1 : 0);
 
