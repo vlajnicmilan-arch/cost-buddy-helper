@@ -79,6 +79,7 @@ export function useProjectDecisions(projectId: string | null) {
           actor_role: s.actor_role,
           action: s.action,
           message: s.message,
+          price: s.price != null ? Number(s.price) : null,
           created_at: s.created_at,
         });
         byDecision.set(s.decision_id, arr);
