@@ -63,7 +63,7 @@ export function ProjectDecisionsTab({
 
   const selectedDecision = decisions.find(d => d.id === selected) ?? null;
 
-  const handleCreate = async (input: { title: string; initial_description: string }) => {
+  const handleCreate = async (input: { title: string; initial_description: string; price?: number | null }) => {
     const res = await createDecision(input);
     if (res.ok) showSuccess(t('projects.decisions.created', 'Prijedlog poslan'));
     return res;
