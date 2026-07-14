@@ -627,19 +627,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             <DataSection
               isLocalMode={isLocalMode}
               onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
-              autoUpdate={autoUpdate}
-              onAutoUpdateChange={handleAutoUpdateChange}
-              onCheckForUpdates={handleCheckForUpdates}
-              isCheckingUpdate={isCheckingUpdate}
               currencyCode={currency.code}
               onCurrencyChange={(code) => setCurrency(code)}
+              onExportZip={handleExportZip}
+              isExportingZip={isExportingZip}
+              onShowImportDialog={() => setShowImportDialog(true)}
+            />
+
+            <Separator />
+
+            <AdvancedSection
+              onCheckForUpdates={handleCheckForUpdates}
+              isCheckingUpdate={isCheckingUpdate}
               multiCurrencyEnabled={multiCurrencyEnabled}
               onMultiCurrencyChange={setMultiCurrencyEnabled}
               onExport={handleExport}
               isExporting={isExporting}
-              onExportZip={handleExportZip}
-              isExportingZip={isExportingZip}
-              onShowImportDialog={() => setShowImportDialog(true)}
               isAdmin={isAdminUser}
             />
 
@@ -680,6 +683,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
               onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
             />
+
           </div>
           </ScrollArea>
         </DialogContent>
