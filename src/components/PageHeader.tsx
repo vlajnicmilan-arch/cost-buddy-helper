@@ -59,8 +59,8 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
   return (
     <header className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-          <img src={logo} alt="Centar" className="w-full h-full scale-[1.8] object-cover" />
+        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+          <img src={logo} alt="Centar" className="w-full h-full object-contain" width={48} height={48} />
         </div>
         <div>
           <div className="flex items-center gap-2">
