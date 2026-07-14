@@ -231,18 +231,20 @@ export const NotificationsSection = ({
                 onCheckedChange={setWeekendEnabled}
               />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-xs h-8 px-3"
-              onClick={sendDailySummaryTest}
-              disabled={sendingTest || !user}
-            >
-              <Send className="w-3.5 h-3.5 mr-2" />
-              {sendingTest
-                ? t('settings.dailySummaryTestSending', 'Šaljem…')
-                : t('settings.dailySummaryTestButton', 'Pošalji testnu obavijest')}
-            </Button>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-xs h-8 px-3"
+                onClick={sendDailySummaryTest}
+                disabled={sendingTest || !user}
+              >
+                <Send className="w-3.5 h-3.5 mr-2" />
+                {sendingTest
+                  ? t('settings.dailySummaryTestSending', 'Šaljem…')
+                  : t('settings.dailySummaryTestButton', 'Pošalji testnu obavijest')}
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -287,18 +289,20 @@ export const NotificationsSection = ({
                   ))}
                 </select>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-xs h-8 px-3"
-                onClick={sendDigestTest}
-                disabled={sendingDigestTest || !user}
-              >
-                <FolderKanban className="w-3.5 h-3.5 mr-2" />
-                {sendingDigestTest
-                  ? t('settings.digestTestSending', 'Šaljem sažetak…')
-                  : t('settings.digestTestButton', 'Pošalji testni sažetak projekta')}
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs h-8 px-3"
+                  onClick={sendDigestTest}
+                  disabled={sendingDigestTest || !user}
+                >
+                  <FolderKanban className="w-3.5 h-3.5 mr-2" />
+                  {sendingDigestTest
+                    ? t('settings.digestTestSending', 'Šaljem sažetak…')
+                    : t('settings.digestTestButton', 'Pošalji testni sažetak projekta')}
+                </Button>
+              )}
             </>
           )}
         </div>
