@@ -123,7 +123,7 @@ const Paywall: React.FC = () => {
         className="text-center mb-6"
       >
         <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg shadow-primary/10">
-          <img src={logo} alt="V&M Balance" className="w-full h-full scale-[1.8] object-cover" />
+          <img src={logo} alt="Centar" className="w-full h-full scale-[1.8] object-cover" />
         </div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">
           {t('paywall.trialExpiredTitle')}

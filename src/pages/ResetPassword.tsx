@@ -126,9 +126,9 @@ const ResetPassword = () => {
           {/* Logo */}
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+              <img src={logo} alt="Centar" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
+            <h1 className="text-3xl font-bold text-foreground">Centar</h1>
           </div>
 
           <div className="glass-card rounded-2xl p-8 space-y-6 text-center">
@@ -164,9 +164,9 @@ const ResetPassword = () => {
           {/* Logo */}
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+              <img src={logo} alt="Centar" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
+            <h1 className="text-3xl font-bold text-foreground">Centar</h1>
           </div>
 
           <div className="glass-card rounded-2xl p-8 space-y-6 text-center">
@@ -200,9 +200,9 @@ const ResetPassword = () => {
         {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-            <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+            <img src={logo} alt="Centar" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">V&M Balance</h1>
+          <h1 className="text-3xl font-bold text-foreground">Centar</h1>
           <p className="text-muted-foreground mt-2">
             {t('auth.reset.enterNewPassword')}
           </p>

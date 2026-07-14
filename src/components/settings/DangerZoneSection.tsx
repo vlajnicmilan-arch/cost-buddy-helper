@@ -163,7 +163,7 @@ export const DangerZoneSection = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">{t('settings.shareApp', 'Podijeli aplikaciju')}</p>
-              <p className="text-xs text-muted-foreground">{t('settings.shareAppDesc', 'Pozovi prijatelje na V&M Balance')}</p>
+              <p className="text-xs text-muted-foreground">{t('settings.shareAppDesc', 'Pozovi prijatelje na Centar')}</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -174,7 +174,7 @@ export const DangerZoneSection = ({
 
       {/* App Info */}
       <div className="text-center text-xs text-muted-foreground space-y-1">
-        <p>V&M Balance</p>
+        <p>Centar</p>
         <p>{t('settings.version', 'Verzija')} {APP_VERSION}</p>
       </div>
     </>

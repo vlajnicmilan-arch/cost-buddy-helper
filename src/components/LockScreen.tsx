@@ -78,7 +78,7 @@ export const LockScreen = () => {
       >
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <img src={logo} alt="V&M Balance" className="w-16 h-16 mx-auto mb-3 object-contain" />
+          <img src={logo} alt="Centar" className="w-16 h-16 mx-auto mb-3 object-contain" />
           <div className="flex items-center justify-center gap-2 mb-2">
             <Lock className="w-4 h-4 text-muted-foreground" />
             <h1 className="text-lg font-semibold text-foreground">

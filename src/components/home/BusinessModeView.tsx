@@ -157,7 +157,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
-              {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'V&M Balance'}
+              {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'Centar'}
             </h1>
             <p className="text-xs sm:text-sm text-primary/80 font-medium truncate">
               {businessProfile?.company_name || 'Tvrtka'}

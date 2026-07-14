@@ -574,7 +574,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Footer */}
         <footer className="mt-8 py-4 text-center border-t border-border/30">
-          <p className="text-xs text-muted-foreground">V&M Balance v{APP_VERSION}</p>
+          <p className="text-xs text-muted-foreground">Centar v{APP_VERSION}</p>
         </footer>
       </div>
 

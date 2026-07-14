@@ -75,7 +75,7 @@ const Unsubscribe = () => {
             <MailX className="w-12 h-12 text-primary mx-auto" />
             <h1 className="text-xl font-bold text-foreground">Odjava s email obavijesti</h1>
             <p className="text-muted-foreground">
-              Klikom na gumb ispod više nećete primati email obavijesti iz V&M Balance aplikacije.
+              Klikom na gumb ispod više nećete primati email obavijesti iz Centar aplikacije.
             </p>
             <Button onClick={handleUnsubscribe} className="w-full">
               Potvrdi odjavu
@@ -95,7 +95,7 @@ const Unsubscribe = () => {
             <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
             <h1 className="text-xl font-bold text-foreground">Uspješno odjavljen/a!</h1>
             <p className="text-muted-foreground">
-              Više nećete primati email obavijesti iz V&M Balance.
+              Više nećete primati email obavijesti iz Centar.
             </p>
           </>
         )}

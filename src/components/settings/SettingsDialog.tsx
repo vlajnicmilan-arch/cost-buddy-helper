@@ -465,10 +465,10 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const handleShareApp = async () => {
     if (!user) return;
     try {
-      const text = t('settings.shareAppText', 'Isprobaj V&M Balance - aplikaciju za praćenje financija!');
+      const text = t('settings.shareAppText', 'Isprobaj Centar - aplikaciju za praćenje financija!');
       const url = `https://vmbalance.com?ref=${user.id}`;
       if (navigator.share) {
-        await navigator.share({ title: 'V&M Balance', text, url });
+        await navigator.share({ title: 'Centar', text, url });
       } else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
         showSuccess(t('common.copied', 'Link kopiran!'));
@@ -848,7 +848,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                   {isImporting ? (
                     <><Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" /><p className="font-medium">{t('settings.importing', 'Uvozim podatke...')}</p></>
                   ) : (
-                    <><Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" /><p className="font-medium mb-2">{t('settings.selectFile', 'Odaberi JSON datoteku')}</p><p className="text-sm text-muted-foreground">{t('settings.fileHint', 'Datoteka mora biti prethodno izvezena iz V&M Balance')}</p></>
+                    <><Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" /><p className="font-medium mb-2">{t('settings.selectFile', 'Odaberi JSON datoteku')}</p><p className="text-sm text-muted-foreground">{t('settings.fileHint', 'Datoteka mora biti prethodno izvezena iz Centar')}</p></>
                   )}
                 </div>
                 {importError && (

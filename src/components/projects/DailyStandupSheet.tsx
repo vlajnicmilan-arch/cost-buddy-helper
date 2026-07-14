@@ -399,11 +399,11 @@ export const DailyStandupSheet = ({
 
                     <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
                       <p className="font-semibold text-xs uppercase tracking-wide text-primary">
-                        {t('projects.standup.permissionAndroid', 'Android (Chrome / V&M Balance app)')}
+                        {t('projects.standup.permissionAndroid', 'Android (Chrome / Centar app)')}
                       </p>
                       <ol className="list-decimal pl-4 space-y-1 text-xs">
                         <li>{t('projects.standup.permAndroid1', 'Otvori Postavke telefona → Aplikacije.')}</li>
-                        <li>{t('projects.standup.permAndroid2', 'Pronađi "V&M Balance" (ili "Chrome" ako koristiš preglednik).')}</li>
+                        <li>{t('projects.standup.permAndroid2', 'Pronađi "Centar" (ili "Chrome" ako koristiš preglednik).')}</li>
                         <li>{t('projects.standup.permAndroid3', 'Otvori Dozvole → Mikrofon → odaberi "Dopusti".')}</li>
                         <li>{t('projects.standup.permAndroid4', 'Vrati se u aplikaciju i klikni Snimaj ponovno.')}</li>
                       </ol>

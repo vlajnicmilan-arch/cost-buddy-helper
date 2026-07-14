@@ -358,11 +358,11 @@ const Help = () => {
   // SEO meta
   useEffect(() => {
     const prevTitle = document.title;
-    const title = `${t('faq.metaTitle', 'Pomoć i česta pitanja (FAQ)')} • V&M Balance`;
+    const title = `${t('faq.metaTitle', 'Pomoć i česta pitanja (FAQ)')} • Centar`;
     document.title = title.length > 60 ? title.slice(0, 60) : title;
 
     const metaDesc = document.querySelector('meta[name="description"]');
-    const desc = t('faq.metaDescription', 'Odgovori na česta pitanja o V&M Balance: skeniranje računa, dijeljenje budžeta, izvoz podataka, otkazivanje pretplate, GDPR brisanje računa.');
+    const desc = t('faq.metaDescription', 'Odgovori na česta pitanja o Centar: skeniranje računa, dijeljenje budžeta, izvoz podataka, otkazivanje pretplate, GDPR brisanje računa.');
     const prevDesc = metaDesc?.getAttribute('content') || '';
     if (metaDesc) metaDesc.setAttribute('content', desc.slice(0, 160));
 

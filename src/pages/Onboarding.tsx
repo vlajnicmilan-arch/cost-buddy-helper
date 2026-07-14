@@ -188,8 +188,8 @@ const Onboarding = () => {
       {/* Header */}
       <header className="p-4 flex items-center justify-between safe-area-top">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="V&M Balance" className="w-10 h-10 object-contain" />
-          <span className="font-semibold text-lg">V&M Balance</span>
+          <img src={logo} alt="Centar" className="w-10 h-10 object-contain" />
+          <span className="font-semibold text-lg">Centar</span>
         </div>
       </header>
 

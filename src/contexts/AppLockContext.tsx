@@ -189,7 +189,7 @@ export const AppLockProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (Capacitor.isNativePlatform()) {
         await BiometricAuth.authenticate({
-          reason: 'Otključajte V&M Balance',
+          reason: 'Otključajte Centar',
           allowDeviceCredential: true,
         });
         setIsLocked(false);

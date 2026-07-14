@@ -167,9 +167,9 @@ const StorageSetup = () => {
 
           <div className="mb-6 text-center">
             <div className="mx-auto mb-3 w-16 h-16">
-              <img src={logo} alt="V&M Balance" className="w-full h-full object-contain" />
+              <img src={logo} alt="Centar" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">V&M Balance</h1>
+            <h1 className="text-2xl font-bold text-foreground">Centar</h1>
             <p className="text-muted-foreground mt-1 text-sm">
               {isChangingMode
                 ? t('storage.changeMode', 'Promijeni način pohrane podataka')
