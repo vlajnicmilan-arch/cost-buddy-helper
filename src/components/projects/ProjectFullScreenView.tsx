@@ -503,6 +503,9 @@ export const ProjectFullScreenView = ({
                   ];
 
                   const overflow: MobileTabDef[] = [
+                    ...(canSeeDecisions
+                      ? [{ key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale } as MobileTabDef]
+                      : []),
                     ...(canSeeTab('funding')
                       ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
                       : []),
