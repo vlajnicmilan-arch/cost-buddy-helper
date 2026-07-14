@@ -20,7 +20,22 @@ export interface DecisionStep {
   actor_role: DecisionActorRole;
   action: DecisionAction;
   message?: string | null;
+  /** Faza 2 — cijena ponuđena u koraku (null ako korak ne mijenja cijenu). */
+  price?: number | null;
   created_at?: string;
+}
+
+/**
+ * Faza 2 — "zadnja ponuđena cijena": najviši step_no s ne-null cijenom.
+ * accept/reject NIKAD ne nose cijenu (blokira DB trigger); ova funkcija
+ * pretpostavlja istu invariantu i za UI ekvivalentnost.
+ */
+export function resolveEffectiveDecisionPrice(steps: DecisionStep[]): number | null {
+  const sorted = [...steps].sort((a, b) => b.step_no - a.step_no);
+  for (const s of sorted) {
+    if (s.price != null && s.price !== 0) return Number(s.price);
+  }
+  return null;
 }
 
 export interface DecisionCore {
