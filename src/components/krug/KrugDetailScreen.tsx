@@ -253,8 +253,8 @@ export function KrugDetailScreen({ krugId }: Props) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
-                    variant={m.kind === 'punopravni' || m.kind === 'owner' ? 'default' : 'secondary'}
-                    className="text-[10px]"
+                    variant="outline"
+                    className="text-[10px] border-module text-module bg-transparent font-medium"
                   >
                     {t(
                       `krug.role.${m.kind === 'owner' ? 'punopravni' : m.kind}`,
