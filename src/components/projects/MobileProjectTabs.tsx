@@ -50,6 +50,8 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
         return t('projects.tabs.subtitles.documents', 'Računi i datoteke');
       case 'activity':
         return t('projects.tabs.subtitles.activity', 'Povijest promjena');
+      case 'decisions':
+        return t('projects.tabs.subtitles.decisions', 'Prijedlozi i odobrenja');
       default:
         return '';
     }
