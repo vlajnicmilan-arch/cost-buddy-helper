@@ -16,7 +16,7 @@
  * Naming convention: `can<Action>` returns boolean.
  */
 
-export type ProjectRoleKey = 'owner' | 'member' | 'worker' | 'viewer';
+export type ProjectRoleKey = 'owner' | 'member' | 'worker' | 'viewer' | 'investor';
 
 export interface ProjectRoleContext {
   /** Effective role. NULL when user is not on the project. */
