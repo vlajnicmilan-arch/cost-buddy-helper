@@ -73,7 +73,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn('w-4 h-4 text-module transition-opacity', selected ? 'opacity-100' : 'opacity-50')} />
               <span className="leading-tight truncate max-w-full">{tab.label}</span>
               {tab.badge && (
                 <span className="absolute top-0.5 right-1">{tab.badge}</span>
@@ -97,7 +97,7 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreHorizontal className={cn('w-4 h-4 text-module transition-opacity', activeIsOverflow ? 'opacity-100' : 'opacity-50')} />
                 <span className="leading-tight">
                   {t('projects.tabs.more', 'Više')}
                 </span>
