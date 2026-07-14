@@ -118,7 +118,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
   useEffect(() => {
     if (open) {
-      setAutoUpdate(getAutoUpdatePreference());
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
       setIsDark(document.documentElement.classList.contains('dark'));
@@ -201,15 +200,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setEditingName(false);
   };
 
-  const handleAutoUpdateChange = (enabled: boolean) => {
-    setAutoUpdate(enabled);
-    setAutoUpdatePreference(enabled);
-    if (enabled) {
-      showSuccess(t('settings.autoUpdateEnabled', t('toasts.autoUpdateOn')));
-    } else {
-      toast.info(t('settings.autoUpdateDisabled', t('toasts.autoUpdateOff')));
-    }
-  };
+
 
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
