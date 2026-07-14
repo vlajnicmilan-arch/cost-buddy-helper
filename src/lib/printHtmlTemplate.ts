@@ -117,9 +117,9 @@ ${watermark}
 <div class="vmb-header">
   <div class="vmb-logo">
     ${getReportLogoDataUrl()
-      ? `<img class="vmb-logo-img" src="${getReportLogoDataUrl()}" alt="V&amp;M Balance" />`
-      : `<div class="vmb-logo-mark">V&amp;M</div>`}
-    <div class="vmb-logo-word">V&amp;M Balance</div>
+      ? `<img class="vmb-logo-img" src="${getReportLogoDataUrl()}" alt="Centar" />`
+      : `<div class="vmb-logo-mark">C</div>`}
+    <div class="vmb-logo-word">Centar</div>
   </div>
   ${eyebrow ? `<div class="vmb-eyebrow">${escapeHtml(eyebrow)}</div>` : ''}
   <h1 class="vmb-title">${escapeHtml(input.title)}</h1>
@@ -131,7 +131,7 @@ ${input.bodyHtml}
 </div>
 <div class="vmb-footer">
   ${intendedFor || '<span></span>'}
-  <span>V&amp;M Balance</span>
+  <span>Centar</span>
 </div>
 </body></html>`;
 };

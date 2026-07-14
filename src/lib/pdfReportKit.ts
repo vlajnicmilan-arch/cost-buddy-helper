@@ -115,13 +115,13 @@ const drawLogo = (doc: JsPDFType, x: number, y: number, h: number): number => {
       console.warn('[pdfReportKit] addImage failed, using fallback', e);
     }
   }
-  // Fallback: teal rounded square with "V&M"
+  // Fallback: teal rounded square with "C"
   doc.setFillColor(BRAND_TEAL[0], BRAND_TEAL[1], BRAND_TEAL[2]);
   doc.roundedRect(x, y, h, h, 1.5, 1.5, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('Inter', 'bold');
   doc.setFontSize(7);
-  doc.text('V&M', x + h / 2, y + h / 2 + 1.2, { align: 'center' });
+  doc.text('C', x + h / 2, y + h / 2 + 1.2, { align: 'center' });
   return h + 3;
 };
 

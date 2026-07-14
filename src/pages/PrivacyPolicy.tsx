@@ -35,7 +35,7 @@ const PrivacyPolicy = () => {
               Voditelj obrade osobnih podataka u smislu članka 4. stavka 7. GDPR-a je:
             </p>
             <div className="p-4 bg-muted rounded-lg">
-              <p className="font-medium">V&M Balance</p>
+              <p className="font-medium">Centar</p>
               <p className="text-muted-foreground">Web: vmbalance.com</p>
               <p className="text-muted-foreground">Email za pitanja o privatnosti: <a href="mailto:privacy@vmbalance.com" className="text-primary hover:underline">privacy@vmbalance.com</a></p>
               <p className="text-muted-foreground">Email za GDPR zahtjeve: <a href="mailto:gdpr@vmbalance.com" className="text-primary hover:underline">gdpr@vmbalance.com</a></p>
@@ -356,7 +356,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">12. Kontakt</h2>
             <div className="p-4 bg-muted rounded-lg space-y-2">
-              <p className="font-medium">V&M Balance</p>
+              <p className="font-medium">Centar</p>
               <p className="text-sm text-muted-foreground">📧 Privatnost: <a href="mailto:privacy@vmbalance.com" className="text-primary hover:underline">privacy@vmbalance.com</a></p>
               <p className="text-sm text-muted-foreground">📧 GDPR zahtjevi: <a href="mailto:gdpr@vmbalance.com" className="text-primary hover:underline">gdpr@vmbalance.com</a></p>
               <p className="text-sm text-muted-foreground">📧 Sigurnost: <a href="mailto:security@vmbalance.com" className="text-primary hover:underline">security@vmbalance.com</a></p>
@@ -367,7 +367,7 @@ const PrivacyPolicy = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2026 V&M Balance. Sva prava pridržana.</p>
+          <p>© 2026 Centar. Sva prava pridržana.</p>
           <p className="mt-1 text-xs">Verzija dokumenta: 2.0 · 29.04.2026.</p>
         </div>
       </div>
