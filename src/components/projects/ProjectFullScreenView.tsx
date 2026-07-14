@@ -19,7 +19,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  FolderOpen, Share2, Activity, BookOpen, Flag, RotateCcw
+  FolderOpen, Share2, Activity, BookOpen, Flag, RotateCcw, Scale
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
