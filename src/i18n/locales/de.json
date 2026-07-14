@@ -1037,11 +1037,12 @@
     "importedCount": "{{count}} Transaktionen importiert",
     "andItems": "und {{count}} Artikel",
     "updates": "Aktualisierungen",
-    "autoUpdate": "Auto-Update",
-    "autoUpdateDesc": "Updates automatisch anwenden",
-    "autoUpdateEnabled": "Auto-Update aktiviert",
-    "autoUpdateDisabled": "Auto-Update deaktiviert",
     "checkForUpdates": "Nach Updates suchen",
+    "advanced": {
+      "title": "Erweitert",
+      "desc": "Technische Optionen und Werkzeuge"
+    },
+
     "help": "Hilfe",
     "userGuide": "Benutzerhandbuch",
     "userGuideDesc": "Lernen Sie die App zu benutzen",
