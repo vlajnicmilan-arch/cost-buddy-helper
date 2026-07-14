@@ -591,7 +591,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                       <div className="grid grid-cols-2 gap-3 py-4">
                         {(() => {
                           const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                          const shareText = t('settings.shareText', 'Preuzmi CostBuddy aplikaciju za jednostavno praćenje troškova!');
+                          const shareText = t('settings.shareText', 'Preuzmi Centar aplikaciju za jednostavno praćenje troškova!');
                           return (
                             <>
                               <button onClick={() => { window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`; setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -602,7 +602,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                                 <div className="w-12 h-12 rounded-full bg-[#7360F2]/10 flex items-center justify-center"><MessageCircle className="w-6 h-6 text-[#7360F2]" /></div>
                                 <span className="text-sm font-medium">Viber</span>
                               </button>
-                              <button onClick={() => { window.open(`mailto:?subject=${encodeURIComponent('CostBuddy')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                              <button onClick={() => { window.open(`mailto:?subject=${encodeURIComponent('Centar')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"><Mail className="w-6 h-6 text-primary" /></div>
                                 <span className="text-sm font-medium">Email</span>
                               </button>
