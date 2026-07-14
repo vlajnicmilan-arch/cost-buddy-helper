@@ -946,12 +946,22 @@
         "title": "Titel",
         "titlePlaceholder": "Kurzer Titel der Entscheidung",
         "description": "Beschreibung des Vorschlags",
-        "descriptionPlaceholder": "Beschreiben Sie den Vorschlag im Detail..."
+        "descriptionPlaceholder": "Beschreiben Sie den Vorschlag im Detail...",
+        "price": "Preis (€) — optional",
+        "pricePlaceholder": "z. B. 2400 oder −5000 zur Reduktion",
+        "pricePlaceholderReply": "Preis (€) — optional; negativ = Reduktion",
+        "priceHint": "Bei Annahme wird automatisch ein Vertragsnachtrag erstellt. Negativ reduziert den Vertrag. Null ist nicht zulässig."
       },
       "newDialog": {
         "title": "Neuer Entscheidungsvorschlag",
         "submit": "Vorschlag senden"
-      }
+      },
+      "priceInvalid": "Ungültiger Preisbetrag",
+      "priceNonZero": "Preis darf nicht Null sein — leer lassen oder Betrag eingeben",
+      "acceptingPrice": "Sie akzeptieren: {{signed}} — ein Vertragsnachtrag wird erstellt.",
+      "acceptingNoPrice": "Annahme ohne finanzielle Auswirkung (kein Preis).",
+      "lastOfferedHint": "Zuletzt geboten: {{signed}}. Leer lassen zum Beibehalten.",
+      "contractResult": "Vertrag geändert um {{signed}} — Nachtrag erstellt."
     }
   },
   "estimates": {

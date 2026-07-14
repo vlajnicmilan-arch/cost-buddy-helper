@@ -3,6 +3,7 @@ import {
   getLegalActions,
   nextStatusAfter,
   decisionPhaseKey,
+  resolveEffectiveDecisionPrice,
   type DecisionCore,
   type DecisionStep,
   type NextStepContext,
@@ -24,8 +25,17 @@ const ctx = (currentUserId: string): NextStepContext => ({
   currentUserId, ownerUserId: OWNER, investorUserId: INVESTOR,
 });
 
-const step = (n: number, actor: string, action: DecisionStep['action']): DecisionStep => ({
-  step_no: n, actor_user_id: actor, actor_role: actor === OWNER ? 'owner' : 'investor', action,
+const step = (
+  n: number,
+  actor: string,
+  action: DecisionStep['action'],
+  price: number | null = null,
+): DecisionStep => ({
+  step_no: n,
+  actor_user_id: actor,
+  actor_role: actor === OWNER ? 'owner' : 'investor',
+  action,
+  price,
 });
 
 describe('projectDecisionStateMachine', () => {
@@ -116,6 +126,50 @@ describe('projectDecisionStateMachine', () => {
     });
     it('rejected status → rejected', () => {
       expect(decisionPhaseKey(baseDecision({ current_status: 'rejected' }), [])).toBe('rejected');
+    });
+  });
+
+  describe('resolveEffectiveDecisionPrice (Faza 2)', () => {
+    it('vraća null kad nijedan korak nema cijenu', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose'),
+        step(2, INVESTOR, 'counter'),
+      ])).toBeNull();
+    });
+
+    it('vraća cijenu iz jedinog koraka koji ju ima', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose', 2400),
+      ])).toBe(2400);
+    });
+
+    it('vraća cijenu ZADNJEG koraka (najviši step_no) koji ju ima', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose', 2400),
+        step(2, INVESTOR, 'counter', 2000),
+        step(3, OWNER, 'correction', 2200),
+      ])).toBe(2200);
+    });
+
+    it('preskače accept/reject korake bez cijene i vraća zadnju ponuđenu', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose', 2400),
+        step(2, INVESTOR, 'counter', 2000),
+        step(3, OWNER, 'correction'),          // ne mijenja cijenu → koristi counter
+        step(4, INVESTOR, 'accept'),           // nikad ne nosi cijenu
+      ])).toBe(2000);
+    });
+
+    it('podržava negativan iznos (smanjenje ugovora)', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose', -5000),
+      ])).toBe(-5000);
+    });
+
+    it('nula se tretira kao "nema cijene"', () => {
+      expect(resolveEffectiveDecisionPrice([
+        step(1, OWNER, 'propose', 0 as unknown as number),
+      ])).toBeNull();
     });
   });
 });

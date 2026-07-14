@@ -27,19 +27,32 @@ export const ContractAmendmentsBadge = ({ projectId }: Props) => {
     return () => window.removeEventListener('contract-amendment-added', handler as EventListener);
   }, [projectId, refetch]);
 
-  if (amendments.length === 0 || total <= 0) return null;
+  if (amendments.length === 0) return null;
+
+  const fromDecisions = amendments.filter((a) => a.source_decision_id).length;
+  const tooltipLines = [
+    t('projects.contractAmendment.tooltip', 'Aneksi ugovora s klijentom'),
+    ...(fromDecisions > 0
+      ? [t('projects.contractAmendment.fromDecisions', '{{n}} iz Odluka', { n: fromDecisions })]
+      : []),
+  ].join(' · ');
 
   return (
     <div
       className={cn(
         'mt-1 flex items-center justify-center gap-1 text-[10px] font-medium',
-        'text-warning'
+        total < 0 ? 'text-destructive' : 'text-warning',
       )}
-      title={t('projects.contractAmendment.tooltip', 'Aneksi ugovora s klijentom')}
+      title={tooltipLines}
     >
       <FileSignature className="w-3 h-3" />
       <span>
-        +{formatAmount(total)} ({amendments.length})
+        {total >= 0 ? '+' : '−'}{formatAmount(Math.abs(total))} ({amendments.length})
+        {fromDecisions > 0 && (
+          <span className="ml-1 opacity-70">
+            · {t('projects.contractAmendment.fromDecisionsShort', 'iz Odluka: {{n}}', { n: fromDecisions })}
+          </span>
+        )}
       </span>
     </div>
   );

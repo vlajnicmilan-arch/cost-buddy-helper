@@ -20,6 +20,8 @@ export interface ProjectDecision {
   current_status: DecisionStatus;
   closed_reason: DecisionClosedReason;
   closed_at: string | null;
+  /** Faza 2 — set kad after-trigger stvori aneks (null inače). */
+  contract_amendment_id: string | null;
   created_at: string;
   updated_at: string;
   steps: DecisionStep[];
@@ -33,6 +35,7 @@ interface RawStepRow {
   actor_role: DecisionActorRole;
   action: DecisionAction;
   message: string | null;
+  price: number | string | null;
   created_at: string;
 }
 
@@ -76,6 +79,7 @@ export function useProjectDecisions(projectId: string | null) {
           actor_role: s.actor_role,
           action: s.action,
           message: s.message,
+          price: s.price != null ? Number(s.price) : null,
           created_at: s.created_at,
         });
         byDecision.set(s.decision_id, arr);
@@ -113,6 +117,8 @@ export function useProjectDecisions(projectId: string | null) {
   const createDecision = useCallback(async (input: {
     title: string;
     initial_description: string;
+    /** Faza 2 — opcionalna cijena za prvi propose korak. Ne-null vrijednost ne smije biti 0. */
+    price?: number | null;
   }): Promise<{ ok: boolean; id?: string }> => {
     if (!projectId || !user) return { ok: false };
     try {
@@ -123,6 +129,7 @@ export function useProjectDecisions(projectId: string | null) {
           created_by: user.id,
           title: input.title.trim(),
           initial_description: input.initial_description.trim(),
+          initial_price: input.price ?? null,
         } as never)
         .select('id')
         .single();
@@ -130,16 +137,16 @@ export function useProjectDecisions(projectId: string | null) {
 
       const decisionId = (data as { id: string }).id;
 
-      // Odmah upiši prvi korak = propose (step_no postavlja trigger)
       const { error: stepErr } = await supabase
         .from('project_decision_steps' as never)
         .insert({
           decision_id: decisionId,
           actor_user_id: user.id,
-          actor_role: 'owner', // trigger prisili točnu vrijednost
+          actor_role: 'owner',
           action: 'propose',
           message: input.initial_description.trim(),
-          step_no: 1, // trigger override-a
+          price: input.price ?? null,
+          step_no: 1,
         } as never);
       if (stepErr) throw stepErr;
 
@@ -156,18 +163,22 @@ export function useProjectDecisions(projectId: string | null) {
     decisionId: string;
     action: DecisionAction;
     message?: string;
+    /** Faza 2 — cijena samo za propose/counter/correction; accept/reject moraju biti null. */
+    price?: number | null;
   }): Promise<{ ok: boolean; error?: string }> => {
     if (!user) return { ok: false };
     try {
+      const carriesPrice = input.action === 'counter' || input.action === 'correction' || input.action === 'propose';
       const { error } = await supabase
         .from('project_decision_steps' as never)
         .insert({
           decision_id: input.decisionId,
           actor_user_id: user.id,
-          actor_role: 'owner', // trigger prisili
+          actor_role: 'owner',
           action: input.action,
           message: input.message?.trim() || null,
-          step_no: 999, // trigger override-a
+          price: carriesPrice ? (input.price ?? null) : null,
+          step_no: 999,
         } as never);
       if (error) throw error;
       await fetchAll();
