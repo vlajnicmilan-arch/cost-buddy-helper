@@ -192,6 +192,15 @@ export const ProjectFullScreenView = ({
       hasWorkers: (workers?.length ?? 0) > 0,
     });
 
+  // Modul "Odluke" (Faza 1) — vidljiv SAMO vlasniku ILI investitoru.
+  // Ostale uloge (member/viewer/worker) tab uopće ne dobivaju.
+  const investorMember = members.find((m) => m.role === 'investor');
+  const investorUserId = investorMember?.user_id ?? null;
+  const canSeeDecisions = !isWorkerOnly && (isOwner || currentUserRole === 'investor');
+  const memberNameMap = new Map<string, string>(
+    members.map((m) => [m.user_id, m.display_name || ''])
+  );
+
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
