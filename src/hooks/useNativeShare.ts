@@ -34,7 +34,7 @@ export const useNativeShare = () => {
 
   const shareTransaction = useCallback(async (description: string, amount: string, date: string) => {
     return share({
-      title: 'V&M Balance',
+      title: 'Centar',
       text: `${description} • ${amount} • ${date}`,
       dialogTitle: 'Podijeli transakciju',
     });
@@ -43,7 +43,7 @@ export const useNativeShare = () => {
   const shareInviteLink = useCallback(async (link: string, groupName: string) => {
     return share({
       title: `Pozivnica za ${groupName}`,
-      text: `Pridruži se grupi "${groupName}" na V&M Balance!`,
+      text: `Pridruži se grupi "${groupName}" na Centar!`,
       url: link,
       dialogTitle: 'Podijeli pozivnicu',
     });
@@ -51,8 +51,8 @@ export const useNativeShare = () => {
 
   const shareApp = useCallback(async (userId: string) => {
     return share({
-      title: 'V&M Balance',
-      text: 'Isprobaj V&M Balance - aplikaciju za praćenje financija!',
+      title: 'Centar',
+      text: 'Isprobaj Centar - aplikaciju za praćenje financija!',
       url: `https://vmbalance.com?ref=${userId}`,
       dialogTitle: 'Podijeli aplikaciju',
     });
