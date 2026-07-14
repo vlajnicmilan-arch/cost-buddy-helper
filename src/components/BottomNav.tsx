@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, Target, Wallet, Circle } from 'lucide-react';
 import { KrugBrandIcon } from '@/components/krug/KrugBrandIcon';
+import { CentarBrandIcon } from '@/components/CentarBrandIcon';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useAppState } from '@/contexts/AppStateContext';
