@@ -788,6 +788,18 @@ export const ProjectFullScreenView = ({
                   <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
 
+                {canSeeDecisions && (
+                <TabsContent value="decisions" className="m-0">
+                  <ProjectDecisionsTab
+                    projectId={project.id}
+                    projectOwnerId={project.user_id}
+                    investorUserId={investorUserId}
+                    isDecisionParty={canSeeDecisions}
+                    memberNameMap={memberNameMap}
+                  />
+                </TabsContent>
+                )}
+
                 {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">
                   <ProjectWorkLogTab
