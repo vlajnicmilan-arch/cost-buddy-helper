@@ -16,11 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { motion } from 'framer-motion';
-import { 
-  getAutoUpdatePreference, 
-  setAutoUpdatePreference,
-  checkForUpdates 
-} from '@/components/PWAUpdatePrompt';
+import { checkForUpdates } from '@/components/PWAUpdatePrompt';
+
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency, CurrencyCode } from '@/contexts/CurrencyContext';
@@ -44,8 +41,10 @@ import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
+import { AdvancedSection } from './AdvancedSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
+
 
 import { HelpDialogContent } from './HelpDialogContent';
 import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
@@ -76,9 +75,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   }, []);
 
   const [showBugReport, setShowBugReport] = useState(false);
-  const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
+
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
