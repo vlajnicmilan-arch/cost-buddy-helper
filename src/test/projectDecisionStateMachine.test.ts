@@ -3,6 +3,7 @@ import {
   getLegalActions,
   nextStatusAfter,
   decisionPhaseKey,
+  resolveEffectiveDecisionPrice,
   type DecisionCore,
   type DecisionStep,
   type NextStepContext,
