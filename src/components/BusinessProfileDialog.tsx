@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { LegalDocumentsSection } from './business/LegalDocumentsSection';
 
 interface BusinessProfile {
   id?: string;
