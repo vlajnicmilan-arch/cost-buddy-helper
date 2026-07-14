@@ -1,4 +1,4 @@
-// Centralni PDF branding helper za sve V&M Balance izvještaje.
+// Centralni PDF branding helper za sve Centar izvještaje.
 // - Embed-a Inter font (Regular + Bold) → puna UTF-8 podrška (č, ć, ž, đ, š, Σ, €)
 //   i rješava jsPDF Helvetica-Bold bug s razmacima među slovima.
 // - Definira brand boje (teal HSL 172 66% 40%) i jedinstveni tableTheme za autoTable.

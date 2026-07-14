@@ -1,5 +1,5 @@
 // Shared logo asset loader for PDF + HTML reports.
-// Loads the V&M Balance logo (PNG) once, converts to data URL, caches it.
+// Loads the Centar logo (PNG) once, converts to data URL, caches it.
 import logoUrl from '@/assets/vm-balance-logo.png';
 
 let cached: string | null = null;

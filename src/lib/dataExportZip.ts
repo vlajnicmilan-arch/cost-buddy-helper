@@ -170,7 +170,7 @@ export async function exportAllUserDataAsZip(
   zip.file(
     'README.txt',
     [
-      'V&M Balance — Data Export',
+      'Centar — Data Export',
       '==========================',
       '',
       `Exported at: ${manifest.exportedAt}`,
