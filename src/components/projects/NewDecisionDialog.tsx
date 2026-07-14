@@ -6,25 +6,41 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { parseMoneySigned } from '@/lib/money';
+import { showError } from '@/hooks/useStatusFeedback';
 
 interface NewDecisionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (input: { title: string; initial_description: string }) => Promise<{ ok: boolean }>;
+  onSubmit: (input: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }>;
 }
 
 export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionDialogProps) {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [priceRaw, setPriceRaw] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const reset = () => { setTitle(''); setDescription(''); setSubmitting(false); };
+  const reset = () => { setTitle(''); setDescription(''); setPriceRaw(''); setSubmitting(false); };
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) return;
+    let price: number | null = null;
+    if (priceRaw.trim() !== '') {
+      const parsed = parseMoneySigned(priceRaw);
+      if (!parsed.valid) {
+        showError(t('projects.decisions.priceInvalid', 'Neispravan iznos cijene'));
+        return;
+      }
+      if (parsed.value === 0) {
+        showError(t('projects.decisions.priceNonZero', 'Cijena ne smije biti nula — ostavi prazno ili unesi iznos'));
+        return;
+      }
+      price = parsed.value;
+    }
     setSubmitting(true);
-    const res = await onSubmit({ title, initial_description: description });
+    const res = await onSubmit({ title, initial_description: description, price });
     setSubmitting(false);
     if (res.ok) {
       reset();
@@ -60,6 +76,21 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
               placeholder={t('projects.decisions.field.descriptionPlaceholder', 'Detaljno opišite prijedlog...') as string}
               rows={6}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="decision-price">
+              {t('projects.decisions.field.price', 'Cijena (€) — opcionalno')}
+            </Label>
+            <Input
+              id="decision-price"
+              inputMode="decimal"
+              value={priceRaw}
+              onChange={(e) => setPriceRaw(e.target.value)}
+              placeholder={t('projects.decisions.field.pricePlaceholder', 'npr. 2400 ili −5000 za smanjenje') as string}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('projects.decisions.field.priceHint', 'Ako prihvaćeno, automatski se stvara aneks ugovora. Negativan iznos umanjuje ugovor. Nula nije dozvoljena.')}
+            </p>
           </div>
         </div>
         <DialogFooter>
