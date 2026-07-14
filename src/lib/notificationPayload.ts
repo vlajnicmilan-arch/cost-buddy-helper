@@ -168,6 +168,14 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         fallback_route: '/install',
         highlight: null,
       };
+    case 'decision_step':
+      return {
+        route: projectId ? `/projects?id=${projectId}` : '/projects',
+        fallback_route: '/projects',
+        highlight: decisionId
+          ? { type: 'decision', id: decisionId, tab: 'decisions' }
+          : null,
+      };
     // Krug Notifications MVP — svih 6 tipova vodi na /krug listu.
     // Per-krug highlight namjerno izostavljen za MVP: /krug list još nema
     // stabilan HighlightTarget marker po id-u, a dubinski link na obrisan
