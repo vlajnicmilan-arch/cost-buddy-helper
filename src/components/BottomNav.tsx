@@ -68,18 +68,17 @@ export const BottomNav = () => {
               {isActive && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className={cn('absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full', accent.bg)}
+                  className={cn('absolute -top-px left-1/2 -ml-4 w-8 h-0.5 rounded-full', accent.bg)}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
               {item.path === '/krug' ? (
                 <KrugBrandIcon size={20} className="transition-opacity" />
+              ) : item.path === '/home' ? (
+                <CentarBrandIcon size={20} />
               ) : (
                 <Icon
-                  className={cn(
-                    'w-5 h-5 transition-colors',
-                    isActive ? accent.text : 'text-muted-foreground',
-                  )}
+                  className={cn('w-5 h-5', accent.text)}
                 />
               )}
 
