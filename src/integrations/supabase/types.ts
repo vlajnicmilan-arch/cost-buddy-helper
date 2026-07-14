@@ -3278,6 +3278,7 @@ export type Database = {
           linked_revision_id: string | null
           note: string | null
           project_id: string
+          source_decision_id: string | null
           user_id: string
         }
         Insert: {
@@ -3288,6 +3289,7 @@ export type Database = {
           linked_revision_id?: string | null
           note?: string | null
           project_id: string
+          source_decision_id?: string | null
           user_id: string
         }
         Update: {
@@ -3298,6 +3300,7 @@ export type Database = {
           linked_revision_id?: string | null
           note?: string | null
           project_id?: string
+          source_decision_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -3322,6 +3325,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "project_contract_amendments_source_decision_id_fkey"
+            columns: ["source_decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       project_decision_steps: {
@@ -3333,6 +3343,7 @@ export type Database = {
           decision_id: string
           id: string
           message: string | null
+          price: number | null
           step_no: number
         }
         Insert: {
@@ -3343,6 +3354,7 @@ export type Database = {
           decision_id: string
           id?: string
           message?: string | null
+          price?: number | null
           step_no: number
         }
         Update: {
@@ -3353,6 +3365,7 @@ export type Database = {
           decision_id?: string
           id?: string
           message?: string | null
+          price?: number | null
           step_no?: number
         }
         Relationships: [
@@ -3369,6 +3382,7 @@ export type Database = {
         Row: {
           closed_at: string | null
           closed_reason: string | null
+          contract_amendment_id: string | null
           created_at: string
           created_by: string
           current_status: string
@@ -3382,6 +3396,7 @@ export type Database = {
         Insert: {
           closed_at?: string | null
           closed_reason?: string | null
+          contract_amendment_id?: string | null
           created_at?: string
           created_by: string
           current_status?: string
@@ -3395,6 +3410,7 @@ export type Database = {
         Update: {
           closed_at?: string | null
           closed_reason?: string | null
+          contract_amendment_id?: string | null
           created_at?: string
           created_by?: string
           current_status?: string
@@ -3406,6 +3422,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_decisions_contract_amendment_id_fkey"
+            columns: ["contract_amendment_id"]
+            isOneToOne: false
+            referencedRelation: "project_contract_amendments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_decisions_project_id_fkey"
             columns: ["project_id"]
