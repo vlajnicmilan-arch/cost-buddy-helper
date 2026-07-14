@@ -91,7 +91,7 @@ const TermsOfService = () => {
             <h2 className="text-xl font-semibold mb-3">{t('tos.s8.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">{t('tos.s8.p1')}</p>
             <div className="mt-3 p-4 bg-muted rounded-lg">
-              <p className="font-medium">V&M Balance</p>
+              <p className="font-medium">Centar</p>
               <p className="text-muted-foreground">Email: legal@vmbalance.app</p>
             </div>
           </section>
@@ -112,7 +112,7 @@ const TermsOfService = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2026 V&M Balance. {t('tos.allRightsReserved')}</p>
+          <p>© 2026 Centar. {t('tos.allRightsReserved')}</p>
         </div>
       </div>
     </div>
