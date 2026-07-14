@@ -25,8 +25,17 @@ const ctx = (currentUserId: string): NextStepContext => ({
   currentUserId, ownerUserId: OWNER, investorUserId: INVESTOR,
 });
 
-const step = (n: number, actor: string, action: DecisionStep['action']): DecisionStep => ({
-  step_no: n, actor_user_id: actor, actor_role: actor === OWNER ? 'owner' : 'investor', action,
+const step = (
+  n: number,
+  actor: string,
+  action: DecisionStep['action'],
+  price: number | null = null,
+): DecisionStep => ({
+  step_no: n,
+  actor_user_id: actor,
+  actor_role: actor === OWNER ? 'owner' : 'investor',
+  action,
+  price,
 });
 
 describe('projectDecisionStateMachine', () => {
