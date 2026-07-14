@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Zap, Shield, Smartphone, ArrowRight, Check, Globe, Menu, X, Download } from 'lucide-react';
 import logo from '@/assets/logo.webp';
 import { getInitialLandingLanguage, getLandingTranslation, landingLanguages, type LandingLanguage } from './landingTranslations';
+import { useLatestApkUrl } from '@/hooks/useLatestApkUrl';
 
 const LandingBelowFold = lazy(() => import('./LandingBelowFold').then((module) => ({ default: module.LandingBelowFold })));
 
@@ -13,7 +14,7 @@ const goToSignup = () => {
   window.location.href = '/auth?mode=signup';
 };
 
-const getApkUrl = () => {
+const getFallbackApkUrl = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
   return `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
@@ -214,7 +215,9 @@ const FooterSection = ({ language, t }: { language: LandingLanguage; t: (key: st
   </footer>
 );
 
-const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key: string) => string }) => (
+const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key: string) => string }) => {
+  const apkUrl = useLatestApkUrl(getFallbackApkUrl());
+  return (
   <section className="relative overflow-hidden px-4 pb-16 pt-28">
     <div className="mx-auto max-w-lg text-center">
       <div className="mx-auto mb-6 h-20 w-20 overflow-hidden rounded-3xl shadow-lg shadow-primary/25">
@@ -223,7 +226,7 @@ const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key
       <h1 className="mb-4 text-3xl font-extrabold leading-tight text-foreground sm:text-4xl">{t('landing.apk.title')}</h1>
       <p className="mb-8 text-lg text-muted-foreground">{t('landing.apk.subtitle')}</p>
       <div className="space-y-4">
-        <button type="button" onClick={() => window.open(getApkUrl(), '_blank', 'noopener,noreferrer')} className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-accent px-8 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30">
+        <button type="button" onClick={() => window.open(apkUrl, '_blank', 'noopener,noreferrer')} className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-accent px-8 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30">
           <Download className="h-6 w-6" />
           {t('landing.apk.download')}
         </button>
@@ -250,7 +253,8 @@ const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key
       </div>
     </div>
   </section>
-);
+  );
+};
 
 const useDeferredBelowFold = () => {
   const [showBelowFold, setShowBelowFold] = useState(false);
