@@ -253,7 +253,8 @@ const APKDownloadSection = ({ referralCode, t }: { referralCode: string; t: (key
       </div>
     </div>
   </section>
-);
+  );
+};
 
 const useDeferredBelowFold = () => {
   const [showBelowFold, setShowBelowFold] = useState(false);
