@@ -20,6 +20,8 @@ export interface ProjectDecision {
   current_status: DecisionStatus;
   closed_reason: DecisionClosedReason;
   closed_at: string | null;
+  /** Faza 2 — set kad after-trigger stvori aneks (null inače). */
+  contract_amendment_id: string | null;
   created_at: string;
   updated_at: string;
   steps: DecisionStep[];
@@ -33,6 +35,7 @@ interface RawStepRow {
   actor_role: DecisionActorRole;
   action: DecisionAction;
   message: string | null;
+  price: number | string | null;
   created_at: string;
 }
 
