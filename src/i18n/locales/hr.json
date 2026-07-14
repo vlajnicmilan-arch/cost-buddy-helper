@@ -48,7 +48,7 @@
   },
   "paywall": {
     "trialExpiredTitle": "Probni period od 30 dana je istekao",
-    "chooseToContinue": "Odaberi plan da nastaviš koristiti V&M Balance",
+    "chooseToContinue": "Odaberi plan da nastaviš koristiti Centar",
     "interval": {
       "monthly": "Mjesečno",
       "yearly": "Godišnje",
@@ -1048,7 +1048,7 @@
     "importTitle": "Uvezi backup",
     "importing": "Uvozim podatke...",
     "selectFile": "Odaberi JSON datoteku",
-    "fileHint": "Datoteka mora biti prethodno izvezena iz V&M Balance",
+    "fileHint": "Datoteka mora biti prethodno izvezena iz Centar",
     "importComplete": "Uvoz završen!",
     "importedCount": "Uvezeno {{count}} transakcija",
     "andItems": "i {{count}} artikala",
@@ -1101,7 +1101,7 @@
     "deletionScheduled": "Račun će biti trajno obrisan {{date}}. Prijavite se prije tog datuma za otkazivanje.",
     "deletionAlreadyScheduled": "Brisanje je već zakazano za {{date}}",
     "receiptCacheCleared_count": "Obrisano {{count}} slika računa",
-    "shareAppText": "Isprobaj V&M Balance - aplikaciju za praćenje financija!",
+    "shareAppText": "Isprobaj Centar - aplikaciju za praćenje financija!",
     "selectLanguagePlaceholder": "Jezik",
     "resetData": "Kreni ispočetka",
     "resetDataDesc": "Briše sve transakcije, projekte i budžete. Novčanici ostaju sa svojim stanjima.",
@@ -1569,7 +1569,7 @@
     "nativeOAuth": {
       "title": "Vraćamo vas u aplikaciju",
       "description": "Ako se aplikacija ne otvori automatski, dodirnite gumb ispod.",
-      "openApp": "Otvori V&M Balance",
+      "openApp": "Otvori Centar",
       "help": "Nakon povratka prijava će se dovršiti u aplikaciji."
     },
     "sentTo": "Poslali smo verifikacijski link na:",
@@ -1785,7 +1785,7 @@
     "importedTransactions": "Uvezeno {{count}} transakcija",
     "importedItems": "i {{count}} artikala",
     "selectJsonFile": "Odaberi JSON datoteku",
-    "fileMustBeExported": "Datoteka mora biti prethodno izvezena iz V&M Balance",
+    "fileMustBeExported": "Datoteka mora biti prethodno izvezena iz Centar",
     "importing": "Uvozim podatke...",
     "invalidFileFormat": "Nevažeći format datoteke",
     "notLoggedIn": "Nisi prijavljen",
@@ -2528,7 +2528,7 @@
     },
     "activation_nudge": {
       "day1": {
-        "title": "Dobrodošao u V&M Balance 👋",
+        "title": "Dobrodošao u Centar 👋",
         "message": "Kreni s prvim projektom — renoviranje, klijent ili osobni cilj."
       },
       "day3": {
@@ -2536,7 +2536,7 @@
         "message": "Projekti ti pomažu pratiti budžet i troškove na jednom mjestu."
       },
       "day7": {
-        "title": "Iskusi punu snagu V&M Balance 🚀",
+        "title": "Iskusi punu snagu Centar 🚀",
         "message": "Otvori prvi projekt u 30s i drži troškove pod kontrolom."
       }
     },
@@ -2690,7 +2690,7 @@
     "step": "Korak {{current}} od {{total}}",
     "steps": {
       "welcome": {
-        "title": "Dobrodošli u V&M Balance! 👋",
+        "title": "Dobrodošli u Centar! 👋",
         "description": "Ovaj kratki vodič će vam pokazati ključne funkcionalnosti aplikacije. Krenimo!"
       },
       "summaryCards": {
@@ -3073,7 +3073,7 @@
   },
   "help": {
     "title": "Upute za korištenje",
-    "intro": "V&M Balance je aplikacija za praćenje osobnih financija. Evo kako je koristiti:",
+    "intro": "Centar je aplikacija za praćenje osobnih financija. Evo kako je koristiti:",
     "addTransactions": "Dodavanje transakcija",
     "addTransactionsStep1": "Kliknite gumb \"+\" u gornjem desnom kutu",
     "addTransactionsStep2": "Odaberite vrstu: Prihod, Trošak ili Prijenos",
@@ -3177,7 +3177,7 @@
     "current": "Aktivno",
     "localTitle": "Lokalno na uređaju",
     "localDescription": "Podaci ostaju samo na ovom uređaju. Brzo i privatno.",
-    "cloudTitle": "V&M Balance Cloud",
+    "cloudTitle": "Centar Cloud",
     "cloudDescription": "Sinkroniziraj podatke između uređaja. Potrebna je registracija.",
     "googleDriveTitle": "Google Drive",
     "googleDriveDescription": "Spremi podatke na svoj Google Drive račun. Uskoro dostupno.",
@@ -3302,9 +3302,9 @@
   },
   "install": {
     "installed": "Aplikacija je instalirana!",
-    "installedDesc": "V&M Balance je uspješno instaliran na tvoj uređaj. Možeš ga pronaći na početnom ekranu.",
+    "installedDesc": "Centar je uspješno instaliran na tvoj uređaj. Možeš ga pronaći na početnom ekranu.",
     "openApp": "Otvori aplikaciju",
-    "installTitle": "Instaliraj V&M Balance",
+    "installTitle": "Instaliraj Centar",
     "appDesc": "Aplikacija za praćenje troškova i upravljanje osobnim financijama",
     "installNow": "Instaliraj sada",
     "installTab": "Instalacija",
@@ -3325,11 +3325,11 @@
     "orOpenMenu": "Ili otvori izbornik ⋮ → \"Instaliraj...\"",
     "appearsInStart": "Aplikacija će se pojaviti u Start meniju",
     "safariAddToDock": "U Safari: File → Add to Dock",
-    "chromeInstall": "U Chrome: ⋮ → \"Install V&M Balance...\"",
+    "chromeInstall": "U Chrome: ⋮ → \"Install Centar...\"",
     "appearsInLaunchpad": "Aplikacija će se pojaviti u Launchpadu",
     "webAccess": "Web pristup",
     "useInBrowser": "Koristi direktno u pregledniku",
-    "webAccessDesc": "Možeš koristiti V&M Balance direktno u pregledniku bez instalacije. Spremi ovu adresu u bookmarke za brži pristup:",
+    "webAccessDesc": "Možeš koristiti Centar direktno u pregledniku bez instalacije. Spremi ovu adresu u bookmarke za brži pristup:",
     "open": "Otvori",
     "worksOffline": "Radi offline",
     "fasterLoading": "Brže učitavanje",
@@ -3337,7 +3337,7 @@
     "version": "verzija",
     "pwaDesc": "PWA (Progressive Web App) - radi na svim uređajima",
     "helpTitle": "Upute za korištenje",
-    "helpDesc": "Sve što trebaš znati o V&M Balance aplikaciji",
+    "helpDesc": "Sve što trebaš znati o Centar aplikaciji",
     "tipTitle": "💡 Savjet",
     "tipContent": "Za najbolje iskustvo, redovito unosite transakcije i kategorizirajte ih. Tako ćete imati jasniji uvid u svoje financije.",
     "helpAddTransactions": "Dodavanje transakcija",
@@ -3595,7 +3595,7 @@
     "functionSource": "Izvor funkcija"
   },
   "checklist": {
-    "title": "Počnite s V&M Balance",
+    "title": "Počnite s Centar",
     "allDone": "Sve je spremno! 🎉",
     "addPaymentSource": "Dodaj izvor plaćanja",
     "addPaymentSourceDesc": "Bankovni račun, gotovina ili kartica",
@@ -3804,7 +3804,7 @@
     "allRightsReserved": "Sva prava pridržana.",
     "s1": {
       "title": "1. Uvod",
-      "p1": "V&M Balance (\"aplikacija\", \"mi\", \"naš\") je aplikacija za upravljanje osobnim i poslovnim financijama. Korištenjem aplikacije pristajete na ove uvjete korištenja. Ako se ne slažete s uvjetima, molimo vas da prestanete koristiti aplikaciju."
+      "p1": "Centar (\"aplikacija\", \"mi\", \"naš\") je aplikacija za upravljanje osobnim i poslovnim financijama. Korištenjem aplikacije pristajete na ove uvjete korištenja. Ako se ne slažete s uvjetima, molimo vas da prestanete koristiti aplikaciju."
     },
     "s2": {
       "title": "2. Korištenje usluge",
@@ -3833,7 +3833,7 @@
     },
     "s5": {
       "title": "5. Ograničenje odgovornosti",
-      "p1": "Aplikacija se pruža \"takva kakva jest\" (as is). Ne jamčimo neprekidan rad ili potpunu točnost podataka. V&M Balance nije financijski savjetnik i ne daje investicijske ili porezne savjete.",
+      "p1": "Aplikacija se pruža \"takva kakva jest\" (as is). Ne jamčimo neprekidan rad ili potpunu točnost podataka. Centar nije financijski savjetnik i ne daje investicijske ili porezne savjete.",
       "p2": "Ne odgovaramo za financijske odluke donesene na temelju podataka prikazanih u aplikaciji, niti za gubitak podataka uzrokovan okolnostima izvan naše kontrole."
     },
     "s6": {
@@ -3860,7 +3860,7 @@
     },
     "s9": {
       "title": "9. Namjena usluge i ograničenja",
-      "p1": "V&M Balance je alat za interno upravljanje projektima i osobnim/poslovnim financijama. Aplikacija ne izdaje fakture, ne obrađuje PDV i ne predstavlja sustav za vođenje službenih evidencija.",
+      "p1": "Centar je alat za interno upravljanje projektima i osobnim/poslovnim financijama. Aplikacija ne izdaje fakture, ne obrađuje PDV i ne predstavlja sustav za vođenje službenih evidencija.",
       "l1": "Podaci uneseni u aplikaciju (evidencija rada, suradnici, troškovi) NISU službena evidencija u smislu Zakona o radu (NN 93/14 i izmjene), Zakona o računovodstvu ni Zakona o porezu na dohodak/dobit.",
       "l2": "Izvozi (PDF/Excel) iz aplikacije su interni izvještaji i ne mogu se koristiti pred Poreznom upravom, Inspektoratom rada ili sudom kao primarni dokaz.",
       "l3": "Korisnik je dužan voditi službene evidencije u za to ovlaštenim sustavima (kadrovska evidencija, knjigovodstveni programi, e-Porezna).",
@@ -3877,7 +3877,7 @@
     "recording": "Snimanje...",
     "notSupported": "Glasovni unos nije podržan na ovom uređaju",
     "permissionTitle": "Mikrofon je blokiran",
-    "permissionBody": "Sustav javlja da pristup mikrofonu nije dopušten.\n\nNa Androidu provjerite: Postavke → Aplikacije → V&M Balance → Dozvole → Mikrofon → uključeno.\n\nU pregledniku: kliknite ikonu lokota pored adrese i dopustite mikrofon za ovu stranicu.",
+    "permissionBody": "Sustav javlja da pristup mikrofonu nije dopušten.\n\nNa Androidu provjerite: Postavke → Aplikacije → Centar → Dozvole → Mikrofon → uključeno.\n\nU pregledniku: kliknite ikonu lokota pored adrese i dopustite mikrofon za ovu stranicu.",
     "serviceTitle": "Diktiranje trenutno nije dostupno",
     "serviceBody": "Servis za prepoznavanje govora se ne može pokrenuti — to nije problem s vašim mikrofonom.\n\nMogući uzroci:\n• nema internetske veze (servis radi online)\n• Google servis za govor privremeno ne odgovara\n• verzija WebView-a u aplikaciji ne podržava ovu metodu\n\nPokušajte za par sekundi ponovno. Ako i dalje ne radi, otvorite aplikaciju u Chrome pregledniku.",
     "unsupportedTitle": "Glasovni unos nije dostupan",
@@ -4552,7 +4552,7 @@
     "statusWaiting": "Čeka",
     "deadlineLabel": "Rok",
     "photoLog": "Foto dnevnik napretka",
-    "readonlyFooter": "Pregled samo za čitanje. Powered by V&M Balance."
+    "readonlyFooter": "Pregled samo za čitanje. Powered by Centar."
   },
   "admin": {
     "hardDelete": {
@@ -4838,7 +4838,7 @@
     "step1": {
       "greeting": "Pozdrav!",
       "greetingNamed": "Pozdrav, {{name}}!",
-      "intro": "V&M Balance pomaže ti da u 15 sekundi postaviš osnovni budžet — odabereš najvažnije mjesečne troškove i prihode i odmah dobiješ jasan pregled.",
+      "intro": "Centar pomaže ti da u 15 sekundi postaviš osnovni budžet — odabereš najvažnije mjesečne troškove i prihode i odmah dobiješ jasan pregled.",
       "nameLabel": "Tvoje ime",
       "namePlaceholder": "npr. Marko"
     },
