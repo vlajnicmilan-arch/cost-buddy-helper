@@ -45,6 +45,7 @@ import { ProjectReportsDialog } from './ProjectReportsDialog';
 import { ProjectTeamTab } from './ProjectTeamTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
+import { ProjectDecisionsTab } from './ProjectDecisionsTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectDocuments } from '@/hooks/useProjectDocuments';
@@ -587,6 +588,12 @@ export const ProjectFullScreenView = ({
                               <Activity className="w-3.5 h-3.5" />
                               {t('projects.activity.tab', 'Aktivnost')}
                             </TabsTrigger>
+                            {canSeeDecisions && (
+                              <TabsTrigger value="decisions" className={triggerCls}>
+                                <Scale className="w-3.5 h-3.5" />
+                                {t('projects.decisions.tab', 'Odluke')}
+                              </TabsTrigger>
+                            )}
                           </TabsList>
                         </div>
                       </div>
