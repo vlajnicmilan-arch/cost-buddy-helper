@@ -136,12 +136,13 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                 </SheetTitle>
               </SheetHeader>
               <div
-                className="mt-2 flex flex-col gap-1 overflow-y-auto px-6"
+                className="mt-2 flex flex-col gap-2 overflow-y-auto px-6"
                 style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}
               >
                 {overflow.map((tab) => {
                   const Icon = tab.icon;
                   const selected = value === tab.key;
+                  const subtitle = overflowSubtitle(tab.key);
                   return (
                     <button
                       key={tab.key}
@@ -150,16 +151,40 @@ export function MobileProjectTabs({ value, onValueChange, primary, overflow }: M
                       aria-selected={selected}
                       onClick={() => handleSelect(tab.key)}
                       className={cn(
-                        'flex items-center gap-3 min-h-[48px] px-3 py-2 rounded-lg text-sm font-medium text-left transition-colors',
+                        'flex items-center gap-3 min-h-[64px] px-3 py-3 rounded-xl border border-border/50 bg-card text-left transition active:scale-[0.98]',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         selected
-                          ? 'bg-module/10 text-module'
-                          : 'text-foreground hover:bg-muted'
+                          ? 'bg-module/10 border-module/40'
+                          : 'hover:bg-muted/60'
                       )}
                     >
-                      <Icon className={cn('w-4 h-4 shrink-0', !selected && 'text-module-muted opacity-70')} />
-                      <span className="flex-1 truncate">{tab.label}</span>
-                      {tab.badge && <span className="shrink-0">{tab.badge}</span>}
+                      <div
+                        className={cn(
+                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-module/15',
+                          selected && 'bg-module/25'
+                        )}
+                      >
+                        <Icon className="w-5 h-5 text-module" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={cn(
+                            'block text-sm font-medium',
+                            selected ? 'text-module' : 'text-foreground'
+                          )}
+                        >
+                          {tab.label}
+                        </span>
+                        {subtitle && (
+                          <span className="block text-xs text-muted-foreground mt-0.5">
+                            {subtitle}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {tab.badge && <span>{tab.badge}</span>}
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     </button>
                   );
                 })}
