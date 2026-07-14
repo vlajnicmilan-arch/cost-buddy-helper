@@ -670,11 +670,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
             <Separator />
 
-            <LegalDocumentsSection
-              defaultEmail={user?.email || ''}
-            />
 
-            <Separator />
 
             <DangerZoneSection
               onShowResetConfirm={() => setShowResetConfirm(true)}
