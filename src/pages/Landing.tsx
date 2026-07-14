@@ -17,7 +17,7 @@ const goToSignup = () => {
 const getFallbackApkUrl = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
-  return `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
+  return `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=centar.apk&v=${cacheBust}`;
 };
 
 const LanguageSelector = ({ language, setLanguage, t }: { language: LandingLanguage; setLanguage: (language: LandingLanguage) => void; t: (key: string) => string }) => {

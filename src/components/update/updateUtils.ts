@@ -124,7 +124,7 @@ export const buildDefaultApkUrl = (cacheBust: string): string | null => {
   const supabaseUrl = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
     ?.VITE_SUPABASE_URL;
   if (!supabaseUrl) return null;
-  return `${supabaseUrl}${DEFAULT_APK_PATH}?download=vm-balance.apk&v=${cacheBust}`;
+  return `${supabaseUrl}${DEFAULT_APK_PATH}?download=centar.apk&v=${cacheBust}`;
 };
 
 export const fetchVersionManifestFromOrigin = async (

@@ -81,12 +81,12 @@ jobs:
         run: |
           mkdir -p dist-apk
           cp android/app/build/outputs/apk/release/app-release.apk \
-             dist-apk/vmbalance-${{ steps.ver.outputs.version }}.apk
+             dist-apk/centar-${{ steps.ver.outputs.version }}.apk
 
       - name: Upload APK artifact (GitHub fallback)
         uses: actions/upload-artifact@v4
         with:
-          name: vmbalance-release-apk
+          name: centar-release-apk
           path: dist-apk/*.apk
           retention-days: 30
 
@@ -95,7 +95,7 @@ jobs:
           APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
+          APK_PATH="dist-apk/centar-${VERSION}.apk"
           FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/upload-apk-release"
 
           echo "Step 1/2: requesting signed upload URL for v${VERSION}"
@@ -136,9 +136,9 @@ jobs:
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          APK_PATH="dist-apk/vmbalance-${VERSION}.apk"
+          APK_PATH="dist-apk/centar-${VERSION}.apk"
           SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
-          PUBLIC_URL="https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/vmbalance-${VERSION}.apk"
+          PUBLIC_URL="https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/centar-${VERSION}.apk"
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "apk_url=$PUBLIC_URL" >> $GITHUB_OUTPUT
 

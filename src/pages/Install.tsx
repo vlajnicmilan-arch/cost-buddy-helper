@@ -28,7 +28,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 // Cache-busting fallback (koristi se dok manifest ne odgovori). Manifest URL
 // (rezolviran preko useLatestApkUrl) ima prioritet i uvijek vodi na latest release.
 const cacheBust = Math.floor(Date.now() / (5 * 60 * 1000));
-const fallbackApkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=vm-balance.apk&v=${cacheBust}`;
+const fallbackApkUrl = `${supabaseUrl}/storage/v1/object/public/public-assets/vm-balance.apk?download=centar.apk&v=${cacheBust}`;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
