@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, RotateCcw, ImageOff, Shield, Share2, ChevronRight } from 'lucide-react';
+import { Trash2, RotateCcw, ImageOff, Shield, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { APP_VERSION } from '@/lib/version';
