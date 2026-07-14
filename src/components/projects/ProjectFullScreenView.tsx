@@ -19,7 +19,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
   Wallet, Target, Users, FileText, TrendingUp, X,
   Calendar, AlertTriangle, GanttChart, BarChart3, ClipboardList, Handshake, ChevronRight, History, Clock,
-  FolderOpen, Share2, Activity, BookOpen, Flag, RotateCcw
+  FolderOpen, Share2, Activity, BookOpen, Flag, RotateCcw, Scale
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -45,6 +45,7 @@ import { ProjectReportsDialog } from './ProjectReportsDialog';
 import { ProjectTeamTab } from './ProjectTeamTab';
 import { ProjectDocumentsTab } from './ProjectDocumentsTab';
 import { ProjectActivityTab } from './ProjectActivityTab';
+import { ProjectDecisionsTab } from './ProjectDecisionsTab';
 import { ProjectWorkLogTab } from './ProjectWorkLogTab';
 import { useProjectWorkers } from '@/hooks/useProjectWorkers';
 import { useProjectDocuments } from '@/hooks/useProjectDocuments';
@@ -191,6 +192,15 @@ export const ProjectFullScreenView = ({
       canSeeCollaborators,
       hasWorkers: (workers?.length ?? 0) > 0,
     });
+
+  // Modul "Odluke" (Faza 1) — vidljiv SAMO vlasniku ILI investitoru.
+  // Ostale uloge (member/viewer/worker) tab uopće ne dobivaju.
+  const investorMember = members.find((m) => m.role === 'investor');
+  const investorUserId = investorMember?.user_id ?? null;
+  const canSeeDecisions = !isWorkerOnly && (isOwner || currentUserRole === 'investor');
+  const memberNameMap = new Map<string, string>(
+    members.map((m) => [m.user_id, m.display_name || ''])
+  );
 
   // Reset tab when project changes or closes
   useEffect(() => {
@@ -494,6 +504,9 @@ export const ProjectFullScreenView = ({
                   ];
 
                   const overflow: MobileTabDef[] = [
+                    ...(canSeeDecisions
+                      ? [{ key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale } as MobileTabDef]
+                      : []),
                     ...(canSeeTab('funding')
                       ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
                       : []),
@@ -575,6 +588,12 @@ export const ProjectFullScreenView = ({
                               <Activity className="w-3.5 h-3.5" />
                               {t('projects.activity.tab', 'Aktivnost')}
                             </TabsTrigger>
+                            {canSeeDecisions && (
+                              <TabsTrigger value="decisions" className={triggerCls}>
+                                <Scale className="w-3.5 h-3.5" />
+                                {t('projects.decisions.tab', 'Odluke')}
+                              </TabsTrigger>
+                            )}
                           </TabsList>
                         </div>
                       </div>
@@ -768,6 +787,18 @@ export const ProjectFullScreenView = ({
                 <TabsContent value="activity" className="m-0">
                   <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
+
+                {canSeeDecisions && (
+                <TabsContent value="decisions" className="m-0">
+                  <ProjectDecisionsTab
+                    projectId={project.id}
+                    projectOwnerId={project.user_id}
+                    investorUserId={investorUserId}
+                    isDecisionParty={canSeeDecisions}
+                    memberNameMap={memberNameMap}
+                  />
+                </TabsContent>
+                )}
 
                 {canSeeTab('worklog') && (
                 <TabsContent value="worklog" className="m-0">

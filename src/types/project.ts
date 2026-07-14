@@ -8,7 +8,7 @@ import type { ProjectType } from '@/lib/projectTypes';
  * For runtime contexts that need to express "owner OR member/viewer/worker",
  * use `ProjectRoleKey` below.
  */
-export type ProjectRole = 'member' | 'viewer' | 'worker';
+export type ProjectRole = 'member' | 'viewer' | 'worker' | 'investor';
 
 /**
  * Runtime-extended role key. Used by hooks/components that present the
@@ -157,5 +157,6 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneStatus, string> = {
 export const PROJECT_ROLE_LABELS: Record<ProjectRole, string> = {
   member: 'Član',
   viewer: 'Promatrač',
-  worker: 'Radnik'
+  worker: 'Radnik',
+  investor: 'Investitor'
 };

@@ -20,7 +20,8 @@ export type HighlightType =
   | 'payment_source'
   | 'pending_transaction'
   | 'app_update'
-  | 'note';
+  | 'note'
+  | 'decision';
 
 export interface NormalizedHighlight {
   type: HighlightType;
@@ -64,6 +65,7 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
   const paymentSourceId = pickStr(d.payment_source_id, d.paymentSourceId);
   const reminderId = pickStr(d.reminder_id, d.reminderId);
   const noteId = pickStr(d.note_id, d.noteId);
+  const decisionId = pickStr(d.decision_id, d.decisionId);
 
   switch (type) {
     case 'project_transaction':
@@ -165,6 +167,14 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         route: '/install',
         fallback_route: '/install',
         highlight: null,
+      };
+    case 'decision_step':
+      return {
+        route: projectId ? `/projects?id=${projectId}` : '/projects',
+        fallback_route: '/projects',
+        highlight: decisionId
+          ? { type: 'decision', id: decisionId, tab: 'decisions' }
+          : null,
       };
     // Krug Notifications MVP — svih 6 tipova vodi na /krug listu.
     // Per-krug highlight namjerno izostavljen za MVP: /krug list još nema

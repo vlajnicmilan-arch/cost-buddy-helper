@@ -3324,6 +3324,97 @@ export type Database = {
           },
         ]
       }
+      project_decision_steps: {
+        Row: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          created_at: string
+          decision_id: string
+          id: string
+          message: string | null
+          step_no: number
+        }
+        Insert: {
+          action: string
+          actor_role: string
+          actor_user_id: string
+          created_at?: string
+          decision_id: string
+          id?: string
+          message?: string | null
+          step_no: number
+        }
+        Update: {
+          action?: string
+          actor_role?: string
+          actor_user_id?: string
+          created_at?: string
+          decision_id?: string
+          id?: string
+          message?: string | null
+          step_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_decision_steps_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_decisions: {
+        Row: {
+          closed_at: string | null
+          closed_reason: string | null
+          created_at: string
+          created_by: string
+          current_status: string
+          id: string
+          initial_description: string
+          initial_price: number | null
+          project_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          created_at?: string
+          created_by: string
+          current_status?: string
+          id?: string
+          initial_description: string
+          initial_price?: number | null
+          project_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          created_at?: string
+          created_by?: string
+          current_status?: string
+          id?: string
+          initial_description?: string
+          initial_price?: number | null
+          project_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_decisions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_documents: {
         Row: {
           ai_analysis: Json | null
@@ -5479,6 +5570,10 @@ export type Database = {
       }
       is_payment_source_owner: {
         Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_decision_party: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       is_project_member: {

@@ -422,6 +422,7 @@ export const ProjectMembersTab = ({
                   <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
                   <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                   <SelectItem value="worker">{t(`projectRoles.worker`, PROJECT_ROLE_LABELS.worker)}</SelectItem>
+                  <SelectItem value="investor">{t(`projectRoles.investor`, PROJECT_ROLE_LABELS.investor)}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSendInvite} disabled={sendingInvite || isReadOnly} aria-disabled={sendingInvite || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined}>
@@ -449,6 +450,7 @@ export const ProjectMembersTab = ({
                   <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
                   <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                   <SelectItem value="worker">{t(`projectRoles.worker`, PROJECT_ROLE_LABELS.worker)}</SelectItem>
+                  <SelectItem value="investor">{t(`projectRoles.investor`, PROJECT_ROLE_LABELS.investor)}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -521,6 +523,7 @@ export const ProjectMembersTab = ({
                     <SelectItem value="member">{t(`projectRoles.member`, PROJECT_ROLE_LABELS.member)}</SelectItem>
                     <SelectItem value="viewer">{t(`projectRoles.viewer`, PROJECT_ROLE_LABELS.viewer)}</SelectItem>
                     <SelectItem value="worker">{t(`projectRoles.worker`, PROJECT_ROLE_LABELS.worker)}</SelectItem>
+                    <SelectItem value="investor">{t(`projectRoles.investor`, PROJECT_ROLE_LABELS.investor)}</SelectItem>
                   </SelectContent>
                 </Select>
 
