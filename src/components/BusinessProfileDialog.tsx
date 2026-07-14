@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { LegalDocumentsSection } from './business/LegalDocumentsSection';
 
 interface BusinessProfile {
   id?: string;
@@ -507,9 +508,23 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
             <Input value={profile.court_registry} onChange={e => updateField('court_registry', e.target.value)} placeholder={t('placeholders.courtRegistry')} />
           </div>
         </div>
+
+        <Separator />
+
+        {/* Legal documents (GDPR) — moved from Settings */}
+        <div className="space-y-3">
+          <LegalDocumentsSection
+            key={profile.id || 'new'}
+            defaultCompanyName={profile.company_name}
+            defaultCompanyOib={profile.oib}
+            defaultCompanyAddress={[profile.address, [profile.postal_code, profile.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
+            defaultEmail={profile.email}
+          />
+        </div>
       </div>
     </ScrollArea>
   );
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
