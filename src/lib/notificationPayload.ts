@@ -20,7 +20,8 @@ export type HighlightType =
   | 'payment_source'
   | 'pending_transaction'
   | 'app_update'
-  | 'note';
+  | 'note'
+  | 'decision';
 
 export interface NormalizedHighlight {
   type: HighlightType;
