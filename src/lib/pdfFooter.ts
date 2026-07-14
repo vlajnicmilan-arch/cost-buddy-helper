@@ -14,7 +14,7 @@ export const addNotOfficialFooter = (doc: JsPDFType): void => {
       const pageWidth = doc.internal.pageSize.getWidth();
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
-      const line1 = 'Generirano iz V&M Balance - alat za interno upravljanje projektima.';
+      const line1 = 'Generirano iz Centar - alat za interno upravljanje projektima.';
       const line2 = 'Nije sluzbena evidencija u smislu Zakona o radu / Zakona o racunovodstvu / Zakona o porezu.';
       doc.text(line1, pageWidth / 2, pageHeight - 8, { align: 'center' });
       doc.text(line2, pageWidth / 2, pageHeight - 5, { align: 'center' });

@@ -1,4 +1,4 @@
-// Unified header/footer/watermark helpers for all V&M Balance PDF reports.
+// Unified header/footer/watermark helpers for all Centar PDF reports.
 // Pair with `pdfBranding.ts` (font + table theme) and `reportDesign.ts` (tokens).
 //
 // Visual language: Variant B — teal-tinted header card with logo + eyebrow
@@ -61,7 +61,7 @@ export const drawReportHeader = (doc: JsPDFType, input: DrawHeaderInput): number
   doc.setTextColor(deep[0], deep[1], deep[2]);
   doc.setFont('Inter', 'bold');
   doc.setFontSize(12);
-  doc.text('V&M Balance', logoX + wordmarkOffsetX, logoY + 7.5);
+  doc.text('Centar', logoX + wordmarkOffsetX, logoY + 7.5);
 
   // Eyebrow line: OWNER · DATE
   const owner = (input.brand.owner || '').trim();

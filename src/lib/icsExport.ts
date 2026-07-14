@@ -34,7 +34,7 @@ export function generateICS(events: ReminderEvent[]): string {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//V&M Balance//Reminders//HR',
+    'PRODID:-//Centar//Reminders//HR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
   ];
