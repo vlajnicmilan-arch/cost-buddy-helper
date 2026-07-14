@@ -225,6 +225,7 @@ const Install = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showOther, setShowOther] = useState(false);
+  const apkUrl = useLatestApkUrl(fallbackApkUrl);
 
   const platform = detectPlatform();
   const browser = detectBrowser();
