@@ -1,6 +1,6 @@
 // Shared logo asset loader for PDF + HTML reports.
 // Loads the Centar logo (PNG) once, converts to data URL, caches it.
-import logoUrl from '@/assets/vm-balance-logo.png';
+import logoUrl from '@/assets/centar-logo.png';
 
 let cached: string | null = null;
 let pending: Promise<string | null> | null = null;
