@@ -25,6 +25,7 @@ interface NotificationsSectionProps {
   classicDashboard: boolean;
   onClassicDashboardChange: (v: boolean) => void;
   isLocalMode: boolean;
+  isAdmin?: boolean;
 }
 
 export const NotificationsSection = ({
@@ -34,6 +35,7 @@ export const NotificationsSection = ({
   simpleModeEnabled, onSimpleModeChange,
   classicDashboard, onClassicDashboardChange,
   isLocalMode,
+  isAdmin,
 }: NotificationsSectionProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();

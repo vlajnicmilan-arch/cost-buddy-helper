@@ -31,6 +31,8 @@ interface DataSectionProps {
   onExportZip: (mode?: ExportMode) => void;
   isExportingZip: boolean;
   onShowImportDialog: () => void;
+  // Admin
+  isAdmin?: boolean;
 }
 
 export const DataSection = ({
@@ -38,7 +40,8 @@ export const DataSection = ({
   autoUpdate, onAutoUpdateChange, onCheckForUpdates, isCheckingUpdate,
   currencyCode, onCurrencyChange,
   multiCurrencyEnabled, onMultiCurrencyChange,
-  onExport, isExporting, onExportZip, isExportingZip, onShowImportDialog
+  onExport, isExporting, onExportZip, isExportingZip, onShowImportDialog,
+  isAdmin,
 }: DataSectionProps) => {
   const { t } = useTranslation();
 
@@ -100,7 +103,7 @@ export const DataSection = ({
           {isCheckingUpdate ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {t('settings.checkForUpdates', 'Provjeri ažuriranja')}
         </Button>
-        <RuntimeDiagnostics />
+        {isAdmin && <RuntimeDiagnostics />}
       </div>
 
       <Separator />
