@@ -462,24 +462,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
   };
 
-  const handleShareApp = async () => {
-    if (!user) return;
-    try {
-      const text = t('settings.shareAppText', 'Isprobaj Centar - aplikaciju za praćenje financija!');
-      const url = `https://vmbalance.com?ref=${user.id}`;
-      if (navigator.share) {
-        await navigator.share({ title: 'Centar', text, url });
-      } else {
-        await navigator.clipboard.writeText(`${text}\n${url}`);
-        showSuccess(t('common.copied', 'Link kopiran!'));
-      }
-    } catch (e: any) {
-      if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
-        console.error('Share error:', e);
-      }
-    }
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -674,6 +656,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onExportZip={handleExportZip}
               isExportingZip={isExportingZip}
               onShowImportDialog={() => setShowImportDialog(true)}
+              isAdmin={isAdminUser}
             />
 
             <Separator />
@@ -694,6 +677,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               classicDashboard={!dashboardV2Enabled}
               onClassicDashboardChange={(v) => setDashboardV2Enabled(!v)}
               isLocalMode={isLocalMode}
+              isAdmin={isAdminUser}
             />
 
             <Separator />
@@ -721,7 +705,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               user={user}
               onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
               onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
-              onShareApp={handleShareApp}
             />
           </div>
           </ScrollArea>

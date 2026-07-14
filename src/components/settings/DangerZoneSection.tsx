@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, RotateCcw, ImageOff, Shield, Share2, ChevronRight } from 'lucide-react';
+import { Trash2, RotateCcw, ImageOff, Shield, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { APP_VERSION } from '@/lib/version';
@@ -12,12 +12,11 @@ interface DangerZoneSectionProps {
   user: { id: string } | null;
   onNavigateToPrivacy: () => void;
   onNavigateToTrash?: () => void;
-  onShareApp: () => void;
 }
 
 export const DangerZoneSection = ({
   onShowResetConfirm, onShowDeleteConfirm,
-  user, onNavigateToPrivacy, onNavigateToTrash, onShareApp
+  user, onNavigateToPrivacy, onNavigateToTrash
 }: DangerZoneSectionProps) => {
   const { t } = useTranslation();
 
@@ -148,27 +147,6 @@ export const DangerZoneSection = ({
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
-
-      <Separator />
-
-      {/* Share App */}
-      {user && (
-        <div className="space-y-2">
-          <button
-            onClick={onShareApp}
-            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-          >
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Share2 className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{t('settings.shareApp', 'Podijeli aplikaciju')}</p>
-              <p className="text-xs text-muted-foreground">{t('settings.shareAppDesc', 'Pozovi prijatelje na Centar')}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        </div>
-      )}
 
       <Separator />
 
