@@ -486,9 +486,39 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
             <Separator />
 
+            <ModulesSection
+              onShowBusinessProfile={() => setShowBusinessProfile(true)}
+              isLocalMode={isLocalMode}
+            />
+
+            <Separator />
+
+            <NotificationsSection
+              soundEnabled={soundEnabled}
+              onSoundToggle={handleSoundToggle}
+              pushEnabled={pushEnabled}
+              onPushToggle={handlePushToggle}
+              isLocalMode={isLocalMode}
+              isAdmin={isAdminUser}
+            />
+
+            <Separator />
+
             <SecuritySection
               appLock={appLock}
               onShowSetPin={() => setShowSetPin(true)}
+            />
+
+            <Separator />
+
+            <DataSection
+              isLocalMode={isLocalMode}
+              onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
+              currencyCode={currency.code}
+              onCurrencyChange={(code) => setCurrency(code)}
+              onExportZip={handleExportZip}
+              isExportingZip={isExportingZip}
+              onShowImportDialog={() => setShowImportDialog(true)}
             />
 
             <Separator />
@@ -498,7 +528,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('settings.help', 'Pomoć')}
               </h3>
-              
+
               <button
                 onClick={() => { setOpen(false); setShowHelpDialog(true); }}
                 className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
@@ -624,15 +654,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
             <Separator />
 
-            <DataSection
-              isLocalMode={isLocalMode}
-              onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
-              currencyCode={currency.code}
-              onCurrencyChange={(code) => setCurrency(code)}
-              onExportZip={handleExportZip}
-              isExportingZip={isExportingZip}
-              onShowImportDialog={() => setShowImportDialog(true)}
-            />
+            <MyFeedbackSection />
 
             <Separator />
 
@@ -647,30 +669,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             />
 
             <Separator />
-
-            <MyFeedbackSection />
-
-            <Separator />
-
-            <NotificationsSection
-              soundEnabled={soundEnabled}
-              onSoundToggle={handleSoundToggle}
-              pushEnabled={pushEnabled}
-              onPushToggle={handlePushToggle}
-              isLocalMode={isLocalMode}
-              isAdmin={isAdminUser}
-            />
-
-            <Separator />
-
-            <ModulesSection
-              onShowBusinessProfile={() => setShowBusinessProfile(true)}
-              isLocalMode={isLocalMode}
-            />
-
-            <Separator />
-
-
 
             <DangerZoneSection
               onShowResetConfirm={() => setShowResetConfirm(true)}
