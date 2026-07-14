@@ -78,8 +78,8 @@ export function ProjectDecisionsTab({
         investorUserId={investorUserId}
         memberNameMap={memberNameMap}
         onBack={() => setSelected(null)}
-        onAction={async (action, message) => {
-          const res = await addStep({ decisionId: selectedDecision.id, action, message });
+        onAction={async (action, message, price) => {
+          const res = await addStep({ decisionId: selectedDecision.id, action, message, price });
           if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
           return res;
         }}
