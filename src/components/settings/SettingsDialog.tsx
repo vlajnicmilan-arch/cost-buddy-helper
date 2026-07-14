@@ -43,7 +43,7 @@ import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
 import { AdvancedSection } from './AdvancedSection';
 import { DangerZoneSection } from './DangerZoneSection';
-import { LegalDocumentsSection } from './LegalDocumentsSection';
+
 
 
 import { HelpDialogContent } from './HelpDialogContent';
