@@ -237,24 +237,51 @@ function DecisionDetail({
   investorUserId: string | null;
   memberNameMap: Map<string, string>;
   onBack: () => void;
-  onAction: (action: DecisionAction, message?: string) => Promise<{ ok: boolean }>;
+  onAction: (
+    action: DecisionAction,
+    message?: string,
+    price?: number | null,
+  ) => Promise<{ ok: boolean }>;
 }) {
   const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
   const [replyMsg, setReplyMsg] = useState('');
+  const [replyPriceRaw, setReplyPriceRaw] = useState('');
   const [sending, setSending] = useState<DecisionAction | null>(null);
 
   const legal = getLegalActions(decision, decision.steps, { currentUserId, ownerUserId, investorUserId });
   const phase = decisionPhaseKey(decision, decision.steps);
+  const effectivePrice = resolveEffectiveDecisionPrice(decision.steps);
+
+  const parseOptionalPrice = (): { ok: boolean; value: number | null } => {
+    if (replyPriceRaw.trim() === '') return { ok: true, value: null };
+    const parsed = parseMoneySigned(replyPriceRaw);
+    if (!parsed.valid) {
+      showError(t('projects.decisions.priceInvalid', 'Neispravan iznos cijene'));
+      return { ok: false, value: null };
+    }
+    if (parsed.value === 0) {
+      showError(t('projects.decisions.priceNonZero', 'Cijena ne smije biti nula — ostavi prazno ili unesi iznos'));
+      return { ok: false, value: null };
+    }
+    return { ok: true, value: parsed.value };
+  };
 
   const doAction = async (action: DecisionAction) => {
     if ((action === 'counter' || action === 'correction') && !replyMsg.trim()) {
       showError(t('projects.decisions.messageRequired', 'Poruka je obavezna kod protuprijedloga i korekcije'));
       return;
     }
+    let price: number | null = null;
+    if (action === 'counter' || action === 'correction') {
+      const p = parseOptionalPrice();
+      if (!p.ok) return;
+      price = p.value;
+    }
     setSending(action);
-    const res = await onAction(action, replyMsg);
+    const res = await onAction(action, replyMsg, price);
     setSending(null);
-    if (res.ok) setReplyMsg('');
+    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); }
   };
 
   const nameOf = (uid: string) => memberNameMap.get(uid) || (uid === ownerUserId ? t('projects.owner', 'Vlasnik') : t('projectRoles.investor', 'Investitor'));
@@ -267,6 +294,11 @@ function DecisionDetail({
       case 'accept': return t('projects.decisions.action.accept', 'Prihvaćeno');
       case 'reject': return t('projects.decisions.action.reject', 'Odbijeno');
     }
+  };
+
+  const formatSignedAmount = (amount: number) => {
+    const sign = amount < 0 ? '−' : '+';
+    return `${sign}${formatAmount(Math.abs(amount))}`;
   };
 
   return (
@@ -283,6 +315,18 @@ function DecisionDetail({
         <p className="text-sm whitespace-pre-wrap">{decision.initial_description}</p>
       </div>
 
+      {/* Ishod odluke — samo za odobrene s cijenom */}
+      {decision.current_status === 'approved' && decision.contract_amendment_id && effectivePrice != null && (
+        <div className="p-3 rounded-lg border border-income/30 bg-income/5 flex items-center gap-2 text-sm">
+          <FileSignature className="w-4 h-4 text-income shrink-0" />
+          <span>
+            {t('projects.decisions.contractResult', 'Ugovoreno {{signed}} — izmjena ugovora stvorena.', {
+              signed: formatSignedAmount(effectivePrice),
+            })}
+          </span>
+        </div>
+      )}
+
       {/* Timeline */}
       <div className="space-y-3">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-module-muted">
@@ -298,6 +342,19 @@ function DecisionDetail({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">{nameOf(s.actor_user_id)}</span>
                 <Badge variant="outline" className="text-[10px]">{actionLabel(s.action)}</Badge>
+                {s.price != null && s.price !== 0 && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'text-[10px] font-semibold',
+                      s.price < 0
+                        ? 'bg-destructive/10 text-destructive border-destructive/30'
+                        : 'bg-income/10 text-income border-income/30',
+                    )}
+                  >
+                    {formatSignedAmount(Number(s.price))}
+                  </Badge>
+                )}
                 <span className="text-[11px] text-muted-foreground">{dtFmt(s.created_at)}</span>
               </div>
               {s.message && (
@@ -324,13 +381,38 @@ function DecisionDetail({
             </div>
           )}
 
+          {legal.canAccept && (
+            <div className="text-sm text-muted-foreground">
+              {effectivePrice != null
+                ? t('projects.decisions.acceptingPrice', 'Prihvaćaš: {{signed}} — automatski se stvara izmjena ugovora.', {
+                    signed: formatSignedAmount(effectivePrice),
+                  })
+                : t('projects.decisions.acceptingNoPrice', 'Prihvaćaš bez financijskog učinka (nema cijene).')}
+            </div>
+          )}
+
           {(legal.canCounter || legal.canCorrect) && (
-            <Textarea
-              value={replyMsg}
-              onChange={(e) => setReplyMsg(e.target.value)}
-              placeholder={t('projects.decisions.replyPlaceholder', 'Poruka za drugu stranu (obavezno kod protuprijedloga/korekcije)...') as string}
-              rows={4}
-            />
+            <>
+              <Textarea
+                value={replyMsg}
+                onChange={(e) => setReplyMsg(e.target.value)}
+                placeholder={t('projects.decisions.replyPlaceholder', 'Poruka za drugu stranu (obavezno kod protuprijedloga/korekcije)...') as string}
+                rows={4}
+              />
+              <Input
+                inputMode="decimal"
+                value={replyPriceRaw}
+                onChange={(e) => setReplyPriceRaw(e.target.value)}
+                placeholder={t('projects.decisions.field.pricePlaceholderReply', 'Cijena (€) — opcionalno; negativno = smanjenje') as string}
+              />
+              {effectivePrice != null && (
+                <p className="text-[11px] text-muted-foreground">
+                  {t('projects.decisions.lastOfferedHint', 'Zadnja ponuđena: {{signed}}. Ostavi prazno da zadržiš.', {
+                    signed: formatSignedAmount(effectivePrice),
+                  })}
+                </p>
+              )}
+            </>
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -397,7 +479,7 @@ function StepDot({ action }: { action: DecisionAction }) {
   return <div className={cn('w-3 h-3 rounded-full mt-1.5', cls)} />;
 }
 
-function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initial_description: string }) => Promise<{ ok: boolean }> }) {
+function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }> }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
