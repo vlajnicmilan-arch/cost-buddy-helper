@@ -258,18 +258,11 @@ export const isUpdateForced = (
   return isRemoteVersionNewer(currentVersion, minSupportedVersion);
 };
 
-export const getAutoUpdatePreference = (): boolean => {
-  try {
-    return localStorage.getItem(AUTO_UPDATE_KEY) === 'true';
-  } catch {
-    return false;
-  }
+// Faza 3: auto-update uvijek ON, opt-out uklonjen. Funkcije zadržane radi
+// kompatibilnosti — getter vraća true, setter je no-op.
+export const getAutoUpdatePreference = (): boolean => true;
+
+export const setAutoUpdatePreference = (_enabled: boolean): void => {
+  // no-op — auto-update je uvijek uključen (Faza 3).
 };
 
-export const setAutoUpdatePreference = (enabled: boolean): void => {
-  try {
-    localStorage.setItem(AUTO_UPDATE_KEY, enabled ? 'true' : 'false');
-  } catch {
-    // Ignore localStorage errors
-  }
-};

@@ -1037,11 +1037,12 @@
     "importedCount": "Imported {{count}} transactions",
     "andItems": "and {{count}} items",
     "updates": "Updates",
-    "autoUpdate": "Auto update",
-    "autoUpdateDesc": "Automatically apply new updates",
-    "autoUpdateEnabled": "Auto update enabled",
-    "autoUpdateDisabled": "Auto update disabled",
     "checkForUpdates": "Check for updates",
+    "advanced": {
+      "title": "Advanced",
+      "desc": "Technical options and tools"
+    },
+
     "help": "Help",
     "userGuide": "User guide",
     "userGuideDesc": "Learn how to use the app",

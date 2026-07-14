@@ -16,11 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { motion } from 'framer-motion';
-import { 
-  getAutoUpdatePreference, 
-  setAutoUpdatePreference,
-  checkForUpdates 
-} from '@/components/PWAUpdatePrompt';
+import { checkForUpdates } from '@/components/PWAUpdatePrompt';
+
 import { useStorage } from '@/contexts/StorageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency, CurrencyCode } from '@/contexts/CurrencyContext';
@@ -44,8 +41,10 @@ import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
+import { AdvancedSection } from './AdvancedSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
+
 
 import { HelpDialogContent } from './HelpDialogContent';
 import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
@@ -76,9 +75,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   }, []);
 
   const [showBugReport, setShowBugReport] = useState(false);
-  const [autoUpdate, setAutoUpdate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
+
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isDark, setIsDark] = useState(false);
   
@@ -119,7 +118,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
   useEffect(() => {
     if (open) {
-      setAutoUpdate(getAutoUpdatePreference());
       setSoundEnabled(getNotificationSoundEnabled());
       setPushEnabled(getPushNotificationsEnabled());
       setIsDark(document.documentElement.classList.contains('dark'));
@@ -202,15 +200,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     setEditingName(false);
   };
 
-  const handleAutoUpdateChange = (enabled: boolean) => {
-    setAutoUpdate(enabled);
-    setAutoUpdatePreference(enabled);
-    if (enabled) {
-      showSuccess(t('settings.autoUpdateEnabled', t('toasts.autoUpdateOn')));
-    } else {
-      toast.info(t('settings.autoUpdateDisabled', t('toasts.autoUpdateOff')));
-    }
-  };
+
 
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
@@ -637,19 +627,22 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             <DataSection
               isLocalMode={isLocalMode}
               onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
-              autoUpdate={autoUpdate}
-              onAutoUpdateChange={handleAutoUpdateChange}
-              onCheckForUpdates={handleCheckForUpdates}
-              isCheckingUpdate={isCheckingUpdate}
               currencyCode={currency.code}
               onCurrencyChange={(code) => setCurrency(code)}
+              onExportZip={handleExportZip}
+              isExportingZip={isExportingZip}
+              onShowImportDialog={() => setShowImportDialog(true)}
+            />
+
+            <Separator />
+
+            <AdvancedSection
+              onCheckForUpdates={handleCheckForUpdates}
+              isCheckingUpdate={isCheckingUpdate}
               multiCurrencyEnabled={multiCurrencyEnabled}
               onMultiCurrencyChange={setMultiCurrencyEnabled}
               onExport={handleExport}
               isExporting={isExporting}
-              onExportZip={handleExportZip}
-              isExportingZip={isExportingZip}
-              onShowImportDialog={() => setShowImportDialog(true)}
               isAdmin={isAdminUser}
             />
 
@@ -690,6 +683,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
               onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
             />
+
           </div>
           </ScrollArea>
         </DialogContent>

@@ -99,17 +99,20 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   });
   const [appStateReady, setAppStateReady] = useState(false);
 
-  // Jednokratni cleanup uklonjenih legacy ključeva (Faza 2 revizije postavki):
+  // Jednokratni cleanup uklonjenih legacy ključeva (Faza 2 & 3 revizije postavki):
   //  - `simple_mode_enabled` (Jednostavni način — potpuno maknuto)
   //  - `dashboard_v2_enabled` (Klasični prikaz početne — V2 je jedini put)
+  //  - `pwa-auto-update` (Faza 3: auto-update je uvijek ON)
   useEffect(() => {
     try {
       localStorage.removeItem('simple_mode_enabled');
       localStorage.removeItem('dashboard_v2_enabled');
+      localStorage.removeItem('pwa-auto-update');
     } catch {
       /* noop */
     }
   }, []);
+
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
   // (acceptance code calls the setters directly). On cold start we never
