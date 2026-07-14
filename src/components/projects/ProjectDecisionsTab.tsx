@@ -4,22 +4,26 @@ import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
-  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive,
+  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjectDecisions, type ProjectDecision } from '@/hooks/useProjectDecisions';
 import { NewDecisionDialog } from './NewDecisionDialog';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import {
   getLegalActions,
   decisionPhaseKey,
+  resolveEffectiveDecisionPrice,
   type DecisionAction,
   type DecisionStep,
 } from '@/lib/projectDecisionStateMachine';
+import { parseMoneySigned } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 interface Props {
