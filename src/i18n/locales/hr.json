@@ -1045,11 +1045,12 @@
     "importedCount": "Uvezeno {{count}} transakcija",
     "andItems": "i {{count}} artikala",
     "updates": "Ažuriranja",
-    "autoUpdate": "Automatsko ažuriranje",
-    "autoUpdateDesc": "Automatski primijeni nova ažuriranja",
-    "autoUpdateEnabled": "Automatsko ažuriranje uključeno",
-    "autoUpdateDisabled": "Automatsko ažuriranje isključeno",
     "checkForUpdates": "Provjeri ažuriranja",
+    "advanced": {
+      "title": "Napredno",
+      "desc": "Tehničke opcije i alati"
+    },
+
     "help": "Pomoć",
     "userGuide": "Upute za korištenje",
     "userGuideDesc": "Naučite koristiti aplikaciju",
