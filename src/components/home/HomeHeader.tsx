@@ -24,7 +24,6 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 interface HomeHeaderProps {
   displayName: string;
   isLocalMode: boolean;
-  simpleModeEnabled: boolean;
   expenses: Expense[];
   reportsExpenses: Expense[];
   allExpenses: Expense[];
@@ -45,7 +44,6 @@ interface HomeHeaderProps {
 export const HomeHeader = ({
   displayName,
   isLocalMode,
-  simpleModeEnabled,
   expenses,
   reportsExpenses,
   allExpenses,
@@ -86,7 +84,6 @@ export const HomeHeader = ({
       const theme = localStorage.getItem('theme');
       const storageConfig = localStorage.getItem('finmate-storage-config');
       const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-      const simpleMode = localStorage.getItem('simple_mode_enabled');
       const krugMode = localStorage.getItem('krug_mode_enabled');
       const businessMode = localStorage.getItem('business_mode_enabled');
       const businessFeature = localStorage.getItem('business_feature_enabled');
@@ -95,7 +92,6 @@ export const HomeHeader = ({
       if (theme) localStorage.setItem('theme', theme);
       if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
       if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-      if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
       if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
       if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
       if (businessFeature) localStorage.setItem('business_feature_enabled', businessFeature);
@@ -206,12 +202,10 @@ export const HomeHeader = ({
 
       {/* Bottom row: Action buttons — equal width grid */}
       <div
-        className={`grid ${simpleModeEnabled ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}
+        className="grid grid-cols-3 gap-2"
         data-tutorial="add-buttons"
       >
-        {!simpleModeEnabled && (
-          <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
-        )}
+        <ReportsDialog expenses={reportsExpenses} triggerClassName="w-full h-11 justify-center" />
         <ScanTriggerButton
           businessProfileId={activeBusinessProfileId}
           triggerLabel={t('common.scan', 'Skeniraj')}

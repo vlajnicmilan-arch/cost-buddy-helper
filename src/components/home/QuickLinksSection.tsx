@@ -6,10 +6,9 @@ import { FolderKanban, Target, Grid3X3, FileSpreadsheet } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { SavingsGoalsSection } from '@/components/savings';
-import { Expense, Category } from '@/types/expense';
+import { Expense } from '@/types/expense';
 
 interface QuickLinksSectionProps {
-  simpleModeEnabled: boolean;
   isLocalMode: boolean;
   expensesByCategory: Record<string, number>;
   totalExpenses: number;
@@ -19,7 +18,6 @@ interface QuickLinksSectionProps {
 }
 
 export const QuickLinksSection = React.memo(({
-  simpleModeEnabled,
   isLocalMode,
   expensesByCategory,
   totalExpenses,
@@ -29,8 +27,6 @@ export const QuickLinksSection = React.memo(({
 }: QuickLinksSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  if (simpleModeEnabled) return null;
 
   return (
     <div className="lg:col-span-1 space-y-6">
