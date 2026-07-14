@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const objectPath = `releases/vmbalance-${version}.apk`;
+    const objectPath = `releases/centar-${version}.apk`;
 
     // Best-effort cleanup pa createSignedUploadUrl (upsert nije podržan na ovoj API ruti)
     await supabase.storage.from("public-assets").remove([objectPath]).catch(() => {});
