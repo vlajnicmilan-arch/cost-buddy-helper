@@ -396,13 +396,12 @@ function StepDot({ action }: { action: DecisionAction }) {
 function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initial_description: string }) => Promise<{ ok: boolean }> }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const NewDialog = require('./NewDecisionDialog').NewDecisionDialog;
   return (
     <>
       <Button size="sm" onClick={() => setOpen(true)} className="gap-1">
         <Plus className="w-4 h-4" /> {t('projects.decisions.new', 'Novi prijedlog')}
       </Button>
-      <NewDialog open={open} onOpenChange={setOpen} onSubmit={onSubmit} />
+      <NewDecisionDialog open={open} onOpenChange={setOpen} onSubmit={onSubmit} />
     </>
   );
 }
