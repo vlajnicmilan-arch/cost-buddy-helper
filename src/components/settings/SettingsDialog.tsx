@@ -46,7 +46,7 @@ import { ModulesSection } from './ModulesSection';
 import { DataSection } from './DataSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { LegalDocumentsSection } from './LegalDocumentsSection';
-import { UsageProfileSection } from './UsageProfileSection';
+
 import { HelpDialogContent } from './HelpDialogContent';
 import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
 import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
@@ -112,8 +112,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const { 
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
-    simpleModeEnabled, setSimpleModeEnabled,
-    dashboardV2Enabled, setDashboardV2Enabled,
     emitFinancialReset,
   } = useAppState();
   const isLocalMode = storageMode === 'local';
@@ -412,13 +410,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         await clearLocalData();
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const simpleMode = localStorage.getItem('simple_mode_enabled');
         const krugMode = localStorage.getItem('krug_mode_enabled');
         const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
         if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         showSuccess(t('settings.accountDeleted', 'Račun uspješno obrisan'));
@@ -442,13 +438,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         await supabase.auth.signOut();
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const simpleMode = localStorage.getItem('simple_mode_enabled');
         const krugMode = localStorage.getItem('krug_mode_enabled');
         const businessMode = localStorage.getItem('business_mode_enabled');
         localStorage.clear();
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
         if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         window.location.href = '/';
@@ -670,12 +664,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onSoundToggle={handleSoundToggle}
               pushEnabled={pushEnabled}
               onPushToggle={handlePushToggle}
-              aiAssistantEnabled={aiAssistantEnabled}
-              onAiAssistantChange={setAiAssistantEnabled}
-              simpleModeEnabled={simpleModeEnabled}
-              onSimpleModeChange={setSimpleModeEnabled}
-              classicDashboard={!dashboardV2Enabled}
-              onClassicDashboardChange={(v) => setDashboardV2Enabled(!v)}
               isLocalMode={isLocalMode}
               isAdmin={isAdminUser}
             />
@@ -686,10 +674,6 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               onShowBusinessProfile={() => setShowBusinessProfile(true)}
               isLocalMode={isLocalMode}
             />
-
-            <Separator />
-
-            <UsageProfileSection />
 
             <Separator />
 

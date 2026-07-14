@@ -7,12 +7,9 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { WalletViewModeChips } from '@/components/wallet/WalletViewModeChips';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
 import { SummarySection } from '@/components/home/SummarySection';
-import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { TransactionListSection } from '@/components/home/TransactionListSection';
 import { SharedDialogs } from '@/components/home/SharedDialogs';
 import { FinancialAssistantDialog } from '@/components/FinancialAssistantDialog';
-import { CashflowForecast } from '@/components/CashflowForecast';
-import { SavingsGoalsSection } from '@/components/savings';
 import { WelcomeChecklist } from '@/components/WelcomeChecklist';
 
 import { TrialBanner } from '@/components/TrialBanner';
@@ -27,9 +24,8 @@ import { useDashboardScrollDepth } from '@/hooks/useDashboardScrollDepth';
 import { BottomNav } from '@/components/BottomNav';
 import { ActiveProjectsStrip } from '@/components/home/ActiveProjectsStrip';
 import { ProjectWithOwnership } from '@/types/project';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { Smartphone, ArrowRight, ChevronDown } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '@/lib/version';
@@ -48,7 +44,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 interface PersonalModeViewProps {
   displayName: string | null;
   isLocalMode: boolean;
-  simpleModeEnabled: boolean;
   aiAssistantEnabled: boolean;
   // Expenses
   expenses: Expense[];
@@ -145,12 +140,11 @@ interface PersonalModeViewProps {
 export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { projectsModuleEnabled, activeBusinessProfileId, dashboardV2Enabled } = useAppState();
+  const { projectsModuleEnabled, activeBusinessProfileId } = useAppState();
   // Faza 1 modularnog UI-a: izvor istine je `projectsModuleEnabled` (zamijenio
   // legacy `usageProfile === 'finance_only'` check). Strip/CTA-i nestaju kad
   // korisnik isključi modul iz Settings → Moduli.
   const projectsHidden = !projectsModuleEnabled;
-  const v2 = dashboardV2Enabled;
   const { hiddenIds } = useHiddenPaymentSources();
   const { registerHandlers, openScan } = useReceiptScan();
   const { totalReceivable, totalPayable } = useBusinessDebts();
@@ -227,8 +221,8 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
     }
   }, [props.allExpenses.length, props.isLocalMode, isBusinessChip]);
 
-  // Telemetry: scroll depth on dashboard (V2 only — measures the new layout)
-  useDashboardScrollDepth(v2);
+  // Telemetry: scroll depth on dashboard.
+  useDashboardScrollDepth(true);
 
   // Register this page's add/dup handlers so the global scan dialog
   // dispatches saves to the right place when the user is on Home.
@@ -318,7 +312,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
 
         {/* Financial Assistant Dialog */}
-        {!props.isLocalMode && props.aiAssistantEnabled && !props.simpleModeEnabled && (
+        {!props.isLocalMode && props.aiAssistantEnabled && (
           <FinancialAssistantDialog
             expenses={props.expenses}
             totalIncome={props.totalIncome}
@@ -338,7 +332,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         <HomeHeader
           displayName={props.displayName}
           isLocalMode={props.isLocalMode}
-          simpleModeEnabled={props.simpleModeEnabled}
           expenses={props.expenses}
           reportsExpenses={props.allExpenses}
           allExpenses={props.allExpenses}
@@ -363,10 +356,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Trial Banner */}
         <TrialBanner />
-
-
-
-
 
         {/* Local Mode Banner */}
         {props.isLocalMode && (
@@ -399,16 +388,12 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
         )}
 
-
-
-
-        {/* V2: Active Projects = HERO (above sources). V1: classic order. */}
-        {v2 && !projectsHidden && (
+        {/* Active Projects = HERO (above sources). */}
+        {!projectsHidden && (
           <TrackSection name="projects_hero">
             <ActiveProjectsStrip
               projects={props.projects}
               isLocalMode={props.isLocalMode}
-              simpleModeEnabled={props.simpleModeEnabled}
               isBusinessMode={props.isBusinessMode}
               loading={props.expensesLoading}
             />
@@ -423,20 +408,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           />
         </TrackSection>
 
-        {/* V1: Active Projects below sources */}
-        {!v2 && !projectsHidden && (
-          <TrackSection name="projects_strip">
-            <ActiveProjectsStrip
-              projects={props.projects}
-              isLocalMode={props.isLocalMode}
-              simpleModeEnabled={props.simpleModeEnabled}
-              isBusinessMode={props.isBusinessMode}
-              loading={props.expensesLoading}
-            />
-          </TrackSection>
-        )}
-
-        {/* Summary Cards — compact in V2 (only month income+expense) */}
+        {/* Summary Cards — compact (only month income+expense) */}
         <TrackSection name="summary">
           <SummarySection
             balance={accountBalance}
@@ -449,7 +421,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             allTransfers={props.allTransfers}
             recurringCount={props.activeRecurringCount}
             isLocalMode={props.isLocalMode}
-            simpleModeEnabled={props.simpleModeEnabled}
             prevMonthIncome={props.prevMonthIncome ?? 0}
             prevMonthExpenses={props.prevMonthExpenses ?? 0}
             curMonthIncome={props.curMonthIncome ?? 0}
@@ -458,13 +429,13 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
             onExpenseClick={() => props.onExpenseDialogChange(true)}
             onTransferClick={() => props.onTransferDialogChange(true)}
             onRecurringClick={props.onRecurringPanelOpen}
-            compact={v2}
+            compact={true}
           />
         </TrackSection>
 
 
         {/* Active Issues — event-driven, persistent, deterministic detectors */}
-        {!props.isLocalMode && !props.simpleModeEnabled && (
+        {!props.isLocalMode && (
           <TrackSection name="active_issues">
             <ActiveIssuesSection
               enabled={true}
@@ -501,31 +472,9 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
 
-        {/* Cashflow Forecast — V1 only (moved to Wallet tab in V2) */}
-        {!v2 && (
-        <Collapsible className="group mb-3">
-          <div className="glass-card rounded-2xl animate-fade-in p-4">
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
-                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  {t('dashboard.cashflow.title')}
-                </h3>
-                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-3">
-                <CashflowForecast />
-              </div>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
-        )}
-
         {/* Main Content Grid */}
-        <div className={v2 ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
-          <TrackSection name="transactions" className={v2 ? "" : "lg:col-span-2"}>
+        <div className="grid grid-cols-1 gap-6">
+          <TrackSection name="transactions">
             <TransactionListSection
               transactionsOpen={props.transactionsOpen}
               onTransactionsOpenChange={props.onTransactionsOpenChange}
@@ -555,19 +504,6 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
               dataTutorial="transactions"
             />
           </TrackSection>
-
-          {/* QuickLinks — V1 only (BottomNav covers this in V2) */}
-          {!v2 && (
-          <QuickLinksSection
-            simpleModeEnabled={props.simpleModeEnabled}
-            isLocalMode={props.isLocalMode}
-            expensesByCategory={props.expensesByCategory}
-            totalExpenses={props.totalExpenses}
-            expenses={props.expenses}
-            onUpdateExpense={props.onUpdateExpense}
-            onDeleteExpense={props.onDeleteExpense}
-          />
-          )}
         </div>
 
 
@@ -616,7 +552,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
       />
 
 
-      {props.aiAssistantEnabled && !props.simpleModeEnabled && (
+      {props.aiAssistantEnabled && (
         <div data-tutorial="ai-assistant">
           <AIInsightBubble
             expenses={props.expenses}

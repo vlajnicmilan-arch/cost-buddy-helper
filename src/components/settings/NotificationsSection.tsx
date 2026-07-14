@@ -2,14 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Volume2, Bell, Bot, Sparkles, Users, Building2, Lock, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone, Sunrise, Send } from 'lucide-react';
+import { Volume2, Bell, Users, Info, ChevronDown, MessageSquare, ArrowLeftRight, Clock, FolderKanban, PiggyBank, CalendarClock, BadgePercent, Megaphone, Sunrise, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useNotificationPreferences, type PushCategory } from '@/hooks/useNotificationPreferences';
-import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useState } from 'react';
 
@@ -18,12 +17,6 @@ interface NotificationsSectionProps {
   onSoundToggle: (v: boolean) => void;
   pushEnabled: boolean;
   onPushToggle: (v: boolean) => void;
-  aiAssistantEnabled: boolean;
-  onAiAssistantChange: (v: boolean) => void;
-  simpleModeEnabled: boolean;
-  onSimpleModeChange: (v: boolean) => void;
-  classicDashboard: boolean;
-  onClassicDashboardChange: (v: boolean) => void;
   isLocalMode: boolean;
   isAdmin?: boolean;
 }
@@ -31,15 +24,11 @@ interface NotificationsSectionProps {
 export const NotificationsSection = ({
   soundEnabled, onSoundToggle,
   pushEnabled, onPushToggle,
-  aiAssistantEnabled, onAiAssistantChange,
-  simpleModeEnabled, onSimpleModeChange,
-  classicDashboard, onClassicDashboardChange,
   isLocalMode,
   isAdmin,
 }: NotificationsSectionProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
-  const navigate = useNavigate();
   const isNative = Capacitor.isNativePlatform();
   const { prefs, setCategory, setWeekendEnabled, setFlag, setDigestHour } = useNotificationPreferences();
   const { user } = useAuth();
@@ -307,94 +296,6 @@ export const NotificationsSection = ({
           )}
         </div>
       )}
-
-
-
-
-
-
-      {!isLocalMode && (
-        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <Label htmlFor="ai-assistant" className="text-sm font-medium cursor-pointer">
-                {t('settings.aiAssistant', 'AI Asistent')}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {t('settings.aiAssistantDesc', 'Prikaži AI savjete i asistenta')}
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="ai-assistant"
-            checked={aiAssistantEnabled}
-            onCheckedChange={(checked) => {
-              onAiAssistantChange(checked);
-              showSuccess(checked 
-                ? t('settings.aiEnabled', 'AI asistent uključen') 
-                : t('settings.aiDisabled', 'AI asistent isključen')
-              );
-            }}
-          />
-        </div>
-      )}
-
-      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <Label htmlFor="simple-mode" className="text-sm font-medium cursor-pointer">
-              {t('settings.simpleMode', 'Jednostavni način')}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {t('settings.simpleModeDesc', 'Samo novčanik, transakcije i neto vrijednost')}
-            </p>
-          </div>
-        </div>
-        <Switch
-          id="simple-mode"
-          checked={simpleModeEnabled}
-          onCheckedChange={(checked) => {
-            onSimpleModeChange(checked);
-            showSuccess(checked 
-              ? t('settings.simpleModeEnabled', 'Jednostavni način uključen') 
-              : t('settings.simpleModeDisabled', 'Puni način vraćen')
-            );
-          }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <Label htmlFor="classic-dashboard" className="text-sm font-medium cursor-pointer">
-              {t('settings.classicDashboard', 'Klasični prikaz početne')}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {t('settings.classicDashboardDesc', 'Vrati stari raspored s Cashflow, Ciljevima i prečacima na ploči')}
-            </p>
-          </div>
-        </div>
-        <Switch
-          id="classic-dashboard"
-          checked={classicDashboard}
-          onCheckedChange={(checked) => {
-            onClassicDashboardChange(checked);
-            showSuccess(checked
-              ? t('settings.classicDashboardEnabled', 'Klasični prikaz uključen')
-              : t('settings.classicDashboardDisabled', 'Novi fokusirani prikaz vraćen'));
-          }}
-        />
-      </div>
-
     </div>
   );
 };

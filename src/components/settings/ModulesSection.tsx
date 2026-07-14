@@ -20,6 +20,7 @@ import {
   Sparkles,
   Check,
   ShieldCheck,
+  Bot,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -73,6 +74,8 @@ export const ModulesSection = ({
     setProjectsModuleEnabled,
     businessFeatureEnabled,
     setBusinessFeatureEnabled,
+    aiAssistantEnabled,
+    setAiAssistantEnabled,
   } = useAppState();
   const moduleStates = useModuleStates();
   const { getGrant } = useMyActiveModuleGrants();
@@ -276,6 +279,39 @@ export const ModulesSection = ({
         </div>
 
         <div className="space-y-2">{cards.map(renderCard)}</div>
+
+        {/* AI Asistent — nije modul u pravom smislu (nema tier gate), ali logički
+            pripada uz ostale toggle-e "što želim vidjeti u aplikaciji". Premješteno
+            iz "Obavijesti" u Faza 2 revizije postavki. */}
+        {!isLocalMode && (
+          <div className="flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-xl">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <Label htmlFor="module-ai" className="text-sm font-medium cursor-pointer">
+                  {t('settings.aiAssistant', 'AI Asistent')}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.aiAssistantDesc', 'Prikaži AI savjete i asistenta')}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="module-ai"
+              checked={aiAssistantEnabled}
+              onCheckedChange={(checked) => {
+                setAiAssistantEnabled(checked);
+                showSuccess(
+                  checked
+                    ? t('settings.aiEnabled', 'AI asistent uključen')
+                    : t('settings.aiDisabled', 'AI asistent isključen')
+                );
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <AlertDialog

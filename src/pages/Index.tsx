@@ -35,7 +35,7 @@ const Index = () => {
   const { storageMode } = useStorage();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
-  const { displayName, aiAssistantEnabled, simpleModeEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
+  const { displayName, aiAssistantEnabled, activeBusinessProfileId, setActiveBusinessProfileId, businessFeatureEnabled, businessModeEnabled, setBusinessModeEnabled } = useAppState();
   const { totalReceivable, totalPayable } = useBusinessDebts();
   // Sync wallet view-mode chips ↔ activeBusinessProfileId so dashboard metrics
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
@@ -554,7 +554,6 @@ const Index = () => {
     <PersonalModeView
       {...sharedDialogProps}
       displayName={displayName}
-      simpleModeEnabled={simpleModeEnabled}
       aiAssistantEnabled={aiAssistantEnabled}
       onAddExpense={addExpenseWithRecurringCheck}
       bulkUpdateExpenses={bulkUpdateExpenses}

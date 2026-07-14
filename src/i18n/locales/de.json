@@ -964,14 +964,6 @@
     "aiAssistantDesc": "KI-Tipps und Assistent anzeigen",
     "aiEnabled": "KI-Assistent aktiviert",
     "aiDisabled": "KI-Assistent deaktiviert",
-    "simpleMode": "Einfacher Modus",
-    "simpleModeDesc": "Nur Geldbörse, Transaktionen und Nettovermögen",
-    "simpleModeEnabled": "Einfacher Modus aktiviert",
-    "classicDashboard": "Klassische Startseite",
-    "classicDashboardDesc": "Altes Layout mit Cashflow, Zielen und Verknüpfungen auf der Startseite wiederherstellen",
-    "classicDashboardEnabled": "Klassische Startseite aktiviert",
-    "classicDashboardDisabled": "Neue fokussierte Startseite wiederhergestellt",
-    "simpleModeDisabled": "Voller Modus wiederhergestellt",
     "security": "Sicherheit",
     "familyMode": "Familienmodus",
     "familyModeDesc": "Familiengruppen und geteilte Konten",
@@ -1114,22 +1106,7 @@
     "multiCurrencyDisabled": "Mehrwährungsmodus deaktiviert",
     "contactSupport": "Support kontaktieren",
     "contactSupportDesc": "Antwort innerhalb von 24h • support@vmbalance.com",
-    "usageProfile": {
-      "title": "Nutzungsprofil",
-      "subtitle": "Was du in der App verfolgen möchtest. Jederzeit änderbar.",
-      "financeOnly": "Nur Finanzen",
-      "financeOnlyDesc": "Blendet den Tab Projekte aus der Navigation aus.",
-      "financeProjects": "Finanzen + Projekte",
-      "financeProjectsDesc": "Alle App-Funktionen.",
-      "enabled": "Projektmodul aktiviert",
-      "disabled": "Projektmodul ausgeblendet",
-      "confirmTitle": "Projektmodul ausblenden?",
-      "confirmDesc": "Der Tab Projekte und alle projektbezogenen Vorschläge werden aus der Navigation ausgeblendet. Deine bestehenden Projekte und Daten bleiben erhalten und sind verfügbar, wenn du diese Option wieder aktivierst.",
-      "confirmHide": "Projekte ausblenden",
-      "enableTitle": "Projektmodul aktivieren",
-      "continueFree": "Mit Kostenlos fortfahren",
-      "enableModule": "Modul aktivieren"
-    }
+    "_removed_usageProfile": {}
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -4189,7 +4166,7 @@
       "addTransaction": "Wie füge ich eine Transaktion hinzu?",
       "paymentSources": "Was sind Zahlungsquellen und wie erstelle ich sie?",
       "categories": "Wie funktioniert die Kategorisierung?",
-      "simpleMode": "Kann ich erweiterte Funktionen ausblenden?",
+      
       "scanReceipt": "Wie scanne ich einen Beleg?",
       "businessReceiptVat": "Kann ich Belege im Geschäftsmodus scannen?",
       "receiptStorage": "Wo werden Belegfotos gespeichert?",
@@ -4224,7 +4201,7 @@
       "addTransaction": "Tippen Sie auf \"+\" oben rechts auf der Startseite. Wählen Sie den Typ (Einnahme, Ausgabe oder Transfer), geben Sie Betrag, Beschreibung, Kategorie und Datum ein. Bei Ausgaben können Sie ein Belegfoto anhängen, das automatisch analysiert wird.",
       "paymentSources": "Zahlungsquellen sind Ihre realen Konten (Bankkonto, Bargeld, Revolut, Kreditkarte…). Erstellen Sie sie im Bereich \"Zahlungsquellen\" auf der Startseite. Der Saldo jeder Quelle aktualisiert sich automatisch mit jeder Transaktion.",
       "categories": "Die App enthält 96 vorgefertigte Ausgabenkategorien und 32 Einnahmekategorien. Sie können auch eigene mit individuellem Symbol und Farbe erstellen. Der KI-Assistent schlägt automatisch Kategorien anhand der Beschreibung vor.",
-      "simpleMode": "Ja. Aktivieren Sie in den Einstellungen \"Einfacher Modus\" — dies blendet Projekte, Budgets, Raten und den Geschäftsmodus aus und lässt nur die einfache Einnahmen-/Ausgabenverfolgung übrig.",
+      
       "scanReceipt": "Tippen Sie beim Hinzufügen einer Ausgabe auf das Kamerasymbol. In der mobilen App öffnet sich die Kamera; im Browser können Sie ein Foto aus der Galerie hochladen. Die KI erkennt Betrag, Geschäft und Datum und füllt die Felder automatisch aus.",
       "businessReceiptVat": "Ja. Die KI erkennt den Gesamtbetrag, Aussteller, Datum und Belegpositionen. Hinweis: Die MwSt wird nicht automatisch nach Sätzen aufgeteilt — wenn du eine Aufschlüsselung von Vor-/Umsatzsteuer brauchst, gib sie manuell bei der Transaktion ein.",
       "receiptStorage": "Standardmäßig lokal auf Ihrem Gerät. In den Einstellungen können Sie die Cloud-Synchronisation aktivieren — Belege werden dann sicher in der Cloud gespeichert und sind geräteübergreifend verfügbar.",

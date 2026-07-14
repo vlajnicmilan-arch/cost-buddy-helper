@@ -222,7 +222,6 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               allTransfers={props.allTransfers}
               recurringCount={props.activeRecurringCount}
               isLocalMode={props.isLocalMode}
-              simpleModeEnabled={false}
               prevMonthIncome={props.prevMonthIncome ?? 0}
               prevMonthExpenses={props.prevMonthExpenses ?? 0}
               curMonthIncome={props.curMonthIncome ?? 0}
@@ -279,7 +278,6 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             {/* Quick Links */}
             <div className="mt-6 space-y-4">
               <QuickLinksSection
-                simpleModeEnabled={false}
                 isLocalMode={false}
                 expensesByCategory={props.expensesByCategory}
                 totalExpenses={props.totalExpenses}

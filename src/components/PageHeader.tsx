@@ -37,7 +37,6 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
         const theme = localStorage.getItem('theme');
         const storageConfig = localStorage.getItem('finmate-storage-config');
         const aiAssistant = localStorage.getItem('ai_assistant_enabled');
-        const simpleMode = localStorage.getItem('simple_mode_enabled');
         const krugMode = localStorage.getItem('krug_mode_enabled');
         const businessMode = localStorage.getItem('business_mode_enabled');
         const businessFeature = localStorage.getItem('business_feature_enabled');
@@ -46,7 +45,6 @@ export const PageHeader = ({ title, subtitle, onDataImported }: PageHeaderProps)
         if (theme) localStorage.setItem('theme', theme);
         if (storageConfig) localStorage.setItem('finmate-storage-config', storageConfig);
         if (aiAssistant) localStorage.setItem('ai_assistant_enabled', aiAssistant);
-        if (simpleMode) localStorage.setItem('simple_mode_enabled', simpleMode);
         if (krugMode) localStorage.setItem('krug_mode_enabled', krugMode);
         if (businessMode) localStorage.setItem('business_mode_enabled', businessMode);
         if (businessFeature) localStorage.setItem('business_feature_enabled', businessFeature);

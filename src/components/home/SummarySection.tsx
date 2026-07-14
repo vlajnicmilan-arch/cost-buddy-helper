@@ -18,7 +18,6 @@ interface SummarySectionProps {
   allTransfers: Expense[];
   recurringCount: number;
   isLocalMode: boolean;
-  simpleModeEnabled: boolean;
   prevMonthIncome: number;
   prevMonthExpenses: number;
   curMonthIncome: number;
@@ -43,7 +42,6 @@ export const SummarySection = React.memo(({
   allTransfers,
   recurringCount,
   isLocalMode,
-  simpleModeEnabled,
   prevMonthIncome,
   prevMonthExpenses,
   curMonthIncome,
@@ -228,7 +226,7 @@ export const SummarySection = React.memo(({
       </motion.div>
 
       {/* Recurring Transactions Card */}
-      {!isLocalMode && !simpleModeEnabled && (
+      {!isLocalMode && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

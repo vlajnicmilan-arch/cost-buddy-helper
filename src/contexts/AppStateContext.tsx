@@ -18,8 +18,6 @@ interface AppStateContextValue {
   setDisplayName: (name: string) => void;
   aiAssistantEnabled: boolean;
   setAiAssistantEnabled: (enabled: boolean) => void;
-  simpleModeEnabled: boolean;
-  setSimpleModeEnabled: (enabled: boolean) => void;
   krugModeEnabled: boolean;
   setKrugModeEnabled: (enabled: boolean) => void;
   // Master switch (controlled from Settings) — does the user want business features at all?
@@ -42,10 +40,6 @@ interface AppStateContextValue {
   // useFeatureAccess('projects').
   projectsModuleEnabled: boolean;
   setProjectsModuleEnabled: (enabled: boolean) => void;
-  // Dashboard V2 layout (refocused: hero=projects-or-balance, no cashflow/savings/quicklinks
-  // on home). Default ON; opt-out via Settings → "Klasični prikaz".
-  dashboardV2Enabled: boolean;
-  setDashboardV2Enabled: (enabled: boolean) => void;
   appStateReady: boolean;
   onAvatarEvent: (handler: AvatarEventHandler) => () => void;
   emitAvatarEvent: (mood: AvatarMood, message?: string) => void;
@@ -63,9 +57,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   );
   const [aiAssistantEnabled, setAiAssistantEnabledState] = useState<boolean>(
     () => localStorage.getItem('ai_assistant_enabled') !== 'false'
-  );
-  const [simpleModeEnabled, setSimpleModeEnabledState] = useState<boolean>(
-    () => localStorage.getItem('simple_mode_enabled') === 'true'
   );
   // Krug modul — default ON za sve. User može isključiti u Settings → Moduli.
   const [krugModeEnabled, setKrugModeEnabledState] = useState<boolean>(
@@ -106,11 +97,19 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     const usage = localStorage.getItem('usage_profile');
     return usage !== 'finance_only';
   });
-  // Dashboard V2 default ON; only OFF if user explicitly opts out.
-  const [dashboardV2Enabled, setDashboardV2EnabledState] = useState<boolean>(
-    () => localStorage.getItem('dashboard_v2_enabled') !== 'false'
-  );
   const [appStateReady, setAppStateReady] = useState(false);
+
+  // Jednokratni cleanup uklonjenih legacy ključeva (Faza 2 revizije postavki):
+  //  - `simple_mode_enabled` (Jednostavni način — potpuno maknuto)
+  //  - `dashboard_v2_enabled` (Klasični prikaz početne — V2 je jedini put)
+  useEffect(() => {
+    try {
+      localStorage.removeItem('simple_mode_enabled');
+      localStorage.removeItem('dashboard_v2_enabled');
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
   // (acceptance code calls the setters directly). On cold start we never
@@ -271,11 +270,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('ai_assistant_enabled', enabled.toString());
   }, []);
 
-  const setSimpleModeEnabled = useCallback((enabled: boolean) => {
-    setSimpleModeEnabledState(enabled);
-    localStorage.setItem('simple_mode_enabled', enabled.toString());
-  }, []);
-
   const setKrugModeEnabled = useCallback((enabled: boolean) => {
     setKrugModeEnabledState(enabled);
     localStorage.setItem('krug_mode_enabled', enabled.toString());
@@ -326,11 +320,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const setDashboardV2Enabled = useCallback((enabled: boolean) => {
-    setDashboardV2EnabledState(enabled);
-    localStorage.setItem('dashboard_v2_enabled', enabled.toString());
-  }, []);
-
   const setProjectsModuleEnabled = useCallback((enabled: boolean) => {
     setProjectsModuleEnabledState(enabled);
     localStorage.setItem('projects_module_enabled', enabled.toString());
@@ -368,8 +357,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setDisplayName,
     aiAssistantEnabled,
     setAiAssistantEnabled,
-    simpleModeEnabled,
-    setSimpleModeEnabled,
     krugModeEnabled,
     setKrugModeEnabled,
     businessFeatureEnabled,
@@ -384,8 +371,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     setUsageProfile,
     projectsModuleEnabled,
     setProjectsModuleEnabled,
-    dashboardV2Enabled,
-    setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent,
     emitAvatarEvent,
@@ -396,7 +381,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   }), [
     displayName, setDisplayName,
     aiAssistantEnabled, setAiAssistantEnabled,
-    simpleModeEnabled, setSimpleModeEnabled,
     krugModeEnabled, setKrugModeEnabled,
     businessFeatureEnabled, setBusinessFeatureEnabled,
     businessModeEnabled, setBusinessModeEnabled,
@@ -404,7 +388,6 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     onboardingCompleted, setOnboardingCompleted,
     usageProfile, setUsageProfile,
     projectsModuleEnabled, setProjectsModuleEnabled,
-    dashboardV2Enabled, setDashboardV2Enabled,
     appStateReady,
     onAvatarEvent, emitAvatarEvent,
     onFinancialReset, emitFinancialReset,

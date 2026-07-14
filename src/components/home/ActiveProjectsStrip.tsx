@@ -32,7 +32,6 @@ const STATUS_TONE_CLASS: Record<StatusLineTone, string> = {
 interface ActiveProjectsStripProps {
   projects: ProjectWithOwnership[];
   isLocalMode: boolean;
-  simpleModeEnabled: boolean;
   isBusinessMode: boolean;
   loading?: boolean;
 }
@@ -74,7 +73,6 @@ const HEALTH_TEXT_CLASS: Record<HealthLevel, string> = {
 export const ActiveProjectsStrip = React.memo(({
   projects,
   isLocalMode,
-  simpleModeEnabled,
   isBusinessMode,
   loading,
 }: ActiveProjectsStripProps) => {
@@ -125,7 +123,7 @@ export const ActiveProjectsStrip = React.memo(({
   // skida strip kad modul nije aktivan, ali ako se komponenta ikad mounta s
   // drugog mjesta, ovaj guard je striktan izvor istine.
   if (!projectsModuleEnabled) return null;
-  if (simpleModeEnabled || isLocalMode || isBusinessMode) return null;
+  if (isLocalMode || isBusinessMode) return null;
   // Workers/members without 'projects' feature access still see their shared projects.
   const hasProjectsFeature = hasAccess('projects');
   const hasMembership = projects.some(p => !p.isOwner);

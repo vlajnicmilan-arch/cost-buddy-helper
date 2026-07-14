@@ -968,14 +968,6 @@
     "aiAssistantDesc": "Prikaži AI savjete i asistenta",
     "aiEnabled": "AI asistent uključen",
     "aiDisabled": "AI asistent isključen",
-    "simpleMode": "Jednostavni način",
-    "simpleModeDesc": "Samo novčanik, transakcije i neto vrijednost",
-    "simpleModeEnabled": "Jednostavni način uključen",
-    "classicDashboard": "Klasični prikaz početne",
-    "classicDashboardDesc": "Vrati stari raspored s Cashflow, Ciljevima i prečacima na ploči",
-    "classicDashboardEnabled": "Klasični prikaz uključen",
-    "classicDashboardDisabled": "Novi fokusirani prikaz vraćen",
-    "simpleModeDisabled": "Puni način vraćen",
     "security": "Sigurnost",
     "familyMode": "Obiteljski način",
     "familyModeDesc": "Obiteljske grupe i dijeljeni računi",
@@ -1118,22 +1110,7 @@
     "version": "Verzija",
     "contactSupport": "Kontakt podrška",
     "contactSupportDesc": "Odgovor unutar 24h • support@vmbalance.com",
-    "usageProfile": {
-      "title": "Profil korištenja",
-      "subtitle": "Što želiš pratiti u aplikaciji. Možeš mijenjati u bilo kojem trenutku.",
-      "financeOnly": "Samo financije",
-      "financeOnlyDesc": "Sakriva tab Projekti iz navigacije.",
-      "financeProjects": "Financije + projekti",
-      "financeProjectsDesc": "Pune značajke aplikacije.",
-      "enabled": "Projektni modul uključen",
-      "disabled": "Projektni modul sakriven",
-      "confirmTitle": "Sakriti projektni modul?",
-      "confirmDesc": "Tab Projekti i sve preporuke vezane za projekte bit će skrivene iz navigacije. Tvoji postojeći projekti i podaci ostaju spremljeni i bit će dostupni ako ponovno uključiš ovu opciju.",
-      "confirmHide": "Sakrij projekte",
-      "enableTitle": "Uključi projektni modul",
-      "continueFree": "Nastavi s besplatnim",
-      "enableModule": "Uključi modul"
-    }
+    "_removed_usageProfile": {}
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
@@ -4195,7 +4172,7 @@
       "addTransaction": "Kako dodati transakciju?",
       "paymentSources": "Što su izvori plaćanja i kako ih kreirati?",
       "categories": "Kako radi kategorizacija?",
-      "simpleMode": "Mogu li sakriti napredne značajke?",
+      
       "scanReceipt": "Kako skenirati račun?",
       "businessReceiptVat": "Mogu li skenirati račune u poslovnom načinu?",
       "receiptStorage": "Gdje se čuvaju fotografije računa?",
@@ -4230,7 +4207,7 @@
       "addTransaction": "Kliknite gumb \"+\" u gornjem desnom kutu početne stranice. Odaberite vrstu (Prihod, Rashod ili Transfer), unesite iznos, opis, kategoriju i datum. Za rashode možete priložiti fotografiju računa koja će biti automatski analizirana.",
       "paymentSources": "Izvori plaćanja predstavljaju vaše stvarne račune (bankovni račun, gotovina, Revolut, kreditna kartica…). Kreirajte ih u sekciji \"Izvori plaćanja\" na početnoj stranici. Saldo svakog izvora se automatski ažurira sa svakom transakcijom.",
       "categories": "Aplikacija dolazi s 96 ugrađenih kategorija rashoda i 32 prihoda. Možete kreirati i vlastite kategorije s prilagođenom ikonom i bojom. AI asistent automatski predlaže kategoriju na temelju opisa transakcije.",
-      "simpleMode": "Da. U Postavkama uključite \"Jednostavni način rada\" — to skriva projekte, budžete, rate i poslovni način, ostavljajući samo praćenje prihoda i rashoda.",
+      
       "scanReceipt": "Pri dodavanju rashoda kliknite ikonu kamere. Na mobilnoj aplikaciji otvara se kamera; u browseru možete učitati fotografiju iz galerije. AI prepoznaje iznos, trgovinu i datum te automatski popunjava polja.",
       "businessReceiptVat": "Da. AI prepoznaje ukupan iznos, izdavatelja, datum i stavke računa. Napomena: PDV se ne razdvaja automatski po stopama — ako trebaš razlomak ulaznog/izlaznog PDV-a, unesi ga ručno na transakciji.",
       "receiptStorage": "Po defaultu lokalno na vašem uređaju. U Postavkama možete uključiti cloud sinkronizaciju — tada se računi sigurno čuvaju u oblaku i dostupni su sa svih uređaja.",
