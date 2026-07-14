@@ -946,12 +946,22 @@
         "title": "Title",
         "titlePlaceholder": "Short decision title",
         "description": "Proposal description",
-        "descriptionPlaceholder": "Describe the proposal in detail..."
+        "descriptionPlaceholder": "Describe the proposal in detail...",
+        "price": "Price (€) — optional",
+        "pricePlaceholder": "e.g. 2400 or −5000 to reduce",
+        "pricePlaceholderReply": "Price (€) — optional; negative = reduction",
+        "priceHint": "If accepted, a contract amendment is created automatically. Negative reduces the contract. Zero is not allowed."
       },
       "newDialog": {
         "title": "New decision proposal",
         "submit": "Send proposal"
-      }
+      },
+      "priceInvalid": "Invalid price amount",
+      "priceNonZero": "Price cannot be zero — leave empty or enter an amount",
+      "acceptingPrice": "Accepting: {{signed}} — a contract amendment will be created.",
+      "acceptingNoPrice": "Accepting with no financial effect (no price set).",
+      "lastOfferedHint": "Last offered: {{signed}}. Leave empty to keep.",
+      "contractResult": "Contract changed by {{signed}} — amendment created."
     }
   },
   "estimates": {
