@@ -48,7 +48,7 @@
   },
   "paywall": {
     "trialExpiredTitle": "Your 30-day trial ended",
-    "chooseToContinue": "Pick a plan to keep using V&M Balance",
+    "chooseToContinue": "Pick a plan to keep using Centar",
     "interval": {
       "monthly": "Monthly",
       "yearly": "Yearly",
@@ -1040,7 +1040,7 @@
     "importTitle": "Import backup",
     "importing": "Importing data...",
     "selectFile": "Select JSON file",
-    "fileHint": "File must be previously exported from V&M Balance",
+    "fileHint": "File must be previously exported from Centar",
     "importComplete": "Import complete!",
     "importedCount": "Imported {{count}} transactions",
     "andItems": "and {{count}} items",
@@ -1093,7 +1093,7 @@
     "deletionScheduled": "Your account will be permanently deleted on {{date}}. Sign in before that date to cancel.",
     "deletionAlreadyScheduled": "Deletion is already scheduled for {{date}}",
     "receiptCacheCleared_count": "Deleted {{count}} receipt images",
-    "shareAppText": "Try V&M Balance — an app for tracking your finances!",
+    "shareAppText": "Try Centar — an app for tracking your finances!",
     "selectLanguagePlaceholder": "Language",
     "resetData": "Start Over",
     "resetDataDesc": "Deletes all transactions, projects and budgets. Wallets remain with their balances.",
@@ -1565,7 +1565,7 @@
     "nativeOAuth": {
       "title": "Returning you to the app",
       "description": "If the app does not open automatically, tap the button below.",
-      "openApp": "Open V&M Balance",
+      "openApp": "Open Centar",
       "help": "After returning, sign-in will finish inside the app."
     },
     "sentTo": "We sent a verification link to:",
@@ -1780,7 +1780,7 @@
     "importedTransactions": "Imported {{count}} transactions",
     "importedItems": "and {{count}} items",
     "selectJsonFile": "Select JSON file",
-    "fileMustBeExported": "File must be previously exported from V&M Balance",
+    "fileMustBeExported": "File must be previously exported from Centar",
     "importing": "Importing data...",
     "invalidFileFormat": "Invalid file format",
     "notLoggedIn": "Not logged in",
@@ -2522,7 +2522,7 @@
     },
     "activation_nudge": {
       "day1": {
-        "title": "Welcome to V&M Balance 👋",
+        "title": "Welcome to Centar 👋",
         "message": "Start with your first project — renovation, client or personal goal."
       },
       "day3": {
@@ -2530,7 +2530,7 @@
         "message": "Projects help you track budget and expenses in one place."
       },
       "day7": {
-        "title": "Unlock the full power of V&M Balance 🚀",
+        "title": "Unlock the full power of Centar 🚀",
         "message": "Create your first project in 30s and stay on top of expenses."
       }
     },
@@ -2684,7 +2684,7 @@
     "step": "Step {{current}} of {{total}}",
     "steps": {
       "welcome": {
-        "title": "Welcome to V&M Balance! 👋",
+        "title": "Welcome to Centar! 👋",
         "description": "This short guide will show you the key features of the app. Let's get started!"
       },
       "summaryCards": {
@@ -2711,7 +2711,7 @@
   },
   "help": {
     "title": "User Guide",
-    "intro": "V&M Balance is an app for tracking personal finances. Here's how to use it:",
+    "intro": "Centar is an app for tracking personal finances. Here's how to use it:",
     "addTransactions": "Adding transactions",
     "addTransactionsStep1": "Click the '+' button in the top right corner",
     "addTransactionsStep2": "Choose type: Income, Expense or Transfer",
@@ -2815,7 +2815,7 @@
     "current": "Current",
     "localTitle": "Local on device",
     "localDescription": "Your data stays only on this device. Fast and private.",
-    "cloudTitle": "V&M Balance Cloud",
+    "cloudTitle": "Centar Cloud",
     "cloudDescription": "Sync your data across devices. Registration is required.",
     "googleDriveTitle": "Google Drive",
     "googleDriveDescription": "Store data in your own Google Drive account. Coming soon.",
@@ -3296,9 +3296,9 @@
   },
   "install": {
     "installed": "App is installed!",
-    "installedDesc": "V&M Balance has been successfully installed on your device. You can find it on your home screen.",
+    "installedDesc": "Centar has been successfully installed on your device. You can find it on your home screen.",
     "openApp": "Open app",
-    "installTitle": "Install V&M Balance",
+    "installTitle": "Install Centar",
     "appDesc": "App for expense tracking and personal finance management",
     "installNow": "Install now",
     "installTab": "Installation",
@@ -3319,11 +3319,11 @@
     "orOpenMenu": "Or open menu ⋮ → \"Install...\"",
     "appearsInStart": "App will appear in Start menu",
     "safariAddToDock": "In Safari: File → Add to Dock",
-    "chromeInstall": "In Chrome: ⋮ → \"Install V&M Balance...\"",
+    "chromeInstall": "In Chrome: ⋮ → \"Install Centar...\"",
     "appearsInLaunchpad": "App will appear in Launchpad",
     "webAccess": "Web access",
     "useInBrowser": "Use directly in browser",
-    "webAccessDesc": "You can use V&M Balance directly in the browser without installation. Save this address to bookmarks for quick access:",
+    "webAccessDesc": "You can use Centar directly in the browser without installation. Save this address to bookmarks for quick access:",
     "open": "Open",
     "worksOffline": "Works offline",
     "fasterLoading": "Faster loading",
@@ -3331,7 +3331,7 @@
     "version": "version",
     "pwaDesc": "PWA (Progressive Web App) - works on all devices",
     "helpTitle": "Usage guide",
-    "helpDesc": "Everything you need to know about V&M Balance",
+    "helpDesc": "Everything you need to know about Centar",
     "tipTitle": "💡 Tip",
     "tipContent": "For the best experience, regularly enter transactions and categorize them. This way you'll have a clearer view of your finances.",
     "helpAddTransactions": "Adding transactions",
@@ -3589,7 +3589,7 @@
     "functionSource": "Function source"
   },
   "checklist": {
-    "title": "Get started with V&M Balance",
+    "title": "Get started with Centar",
     "allDone": "All set! 🎉",
     "addPaymentSource": "Add a payment source",
     "addPaymentSourceDesc": "Bank account, cash or card",
@@ -3798,7 +3798,7 @@
     "allRightsReserved": "All rights reserved.",
     "s1": {
       "title": "1. Introduction",
-      "p1": "V&M Balance (\"app\", \"we\", \"our\") is a personal and business finance management application. By using the app, you agree to these Terms of Service. If you do not agree, please stop using the application."
+      "p1": "Centar (\"app\", \"we\", \"our\") is a personal and business finance management application. By using the app, you agree to these Terms of Service. If you do not agree, please stop using the application."
     },
     "s2": {
       "title": "2. Use of Service",
@@ -3827,7 +3827,7 @@
     },
     "s5": {
       "title": "5. Limitation of Liability",
-      "p1": "The app is provided \"as is\". We do not guarantee uninterrupted operation or complete data accuracy. V&M Balance is not a financial advisor and does not provide investment or tax advice.",
+      "p1": "The app is provided \"as is\". We do not guarantee uninterrupted operation or complete data accuracy. Centar is not a financial advisor and does not provide investment or tax advice.",
       "p2": "We are not liable for financial decisions made based on data displayed in the app, nor for data loss caused by circumstances beyond our control."
     },
     "s6": {
@@ -3854,7 +3854,7 @@
     },
     "s9": {
       "title": "9. Service purpose and limitations",
-      "p1": "V&M Balance is a tool for internal project management and personal/business finance tracking. The application does not issue invoices, does not process VAT, and does not constitute a system for keeping official records.",
+      "p1": "Centar is a tool for internal project management and personal/business finance tracking. The application does not issue invoices, does not process VAT, and does not constitute a system for keeping official records.",
       "l1": "Data entered into the application (work logs, collaborators, expenses) is NOT an official record under labour law, accounting law, or income/profit tax law.",
       "l2": "Exports (PDF/Excel) from the application are internal reports and cannot be used before tax authorities, labour inspectorates, or courts as primary evidence.",
       "l3": "The user is responsible for keeping official records in authorised systems (HR records, accounting software, e-tax portals).",
@@ -3871,7 +3871,7 @@
     "recording": "Recording...",
     "notSupported": "Voice input is not supported on this device",
     "permissionTitle": "Microphone is blocked",
-    "permissionBody": "The system reports that microphone access is not allowed.\n\nOn Android, check: Settings → Apps → V&M Balance → Permissions → Microphone → enabled.\n\nIn a browser: click the lock icon next to the address bar and allow the microphone for this site.",
+    "permissionBody": "The system reports that microphone access is not allowed.\n\nOn Android, check: Settings → Apps → Centar → Permissions → Microphone → enabled.\n\nIn a browser: click the lock icon next to the address bar and allow the microphone for this site.",
     "serviceTitle": "Dictation is currently unavailable",
     "serviceBody": "The speech recognition service couldn't start — this isn't a problem with your microphone.\n\nPossible causes:\n• no internet connection (the service runs online)\n• Google's speech service is temporarily unresponsive\n• the WebView version in this app doesn't support this method\n\nPlease try again in a few seconds. If it still doesn't work, open the app in Chrome browser.",
     "unsupportedTitle": "Voice input not available",
@@ -4546,7 +4546,7 @@
     "statusWaiting": "Waiting",
     "deadlineLabel": "Deadline",
     "photoLog": "Photo progress log",
-    "readonlyFooter": "Read-only view. Powered by V&M Balance."
+    "readonlyFooter": "Read-only view. Powered by Centar."
   },
   "admin": {
     "hardDelete": {
@@ -4829,7 +4829,7 @@
     "step1": {
       "greeting": "Hello!",
       "greetingNamed": "Hello, {{name}}!",
-      "intro": "V&M Balance helps you set up a basic budget in 15 seconds — pick your main monthly expenses and incomes and get an instant overview.",
+      "intro": "Centar helps you set up a basic budget in 15 seconds — pick your main monthly expenses and incomes and get an instant overview.",
       "nameLabel": "Your name",
       "namePlaceholder": "e.g. Mark"
     },

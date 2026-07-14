@@ -48,7 +48,7 @@
   },
   "paywall": {
     "trialExpiredTitle": "Deine 30-tägige Testphase ist abgelaufen",
-    "chooseToContinue": "Wähle einen Plan, um V&M Balance weiter zu nutzen",
+    "chooseToContinue": "Wähle einen Plan, um Centar weiter zu nutzen",
     "interval": {
       "monthly": "Monatlich",
       "yearly": "Jährlich",
@@ -1040,7 +1040,7 @@
     "importTitle": "Backup importieren",
     "importing": "Daten werden importiert...",
     "selectFile": "JSON-Datei auswählen",
-    "fileHint": "Datei muss zuvor aus V&M Balance exportiert worden sein",
+    "fileHint": "Datei muss zuvor aus Centar exportiert worden sein",
     "importComplete": "Import abgeschlossen!",
     "importedCount": "{{count}} Transaktionen importiert",
     "andItems": "und {{count}} Artikel",
@@ -1093,7 +1093,7 @@
     "deletionScheduled": "Ihr Konto wird am {{date}} endgültig gelöscht. Melden Sie sich vorher an, um dies abzubrechen.",
     "deletionAlreadyScheduled": "Löschung ist bereits für {{date}} geplant",
     "receiptCacheCleared_count": "{{count}} Belegbilder gelöscht",
-    "shareAppText": "Probiere V&M Balance — eine App zur Verwaltung deiner Finanzen!",
+    "shareAppText": "Probiere Centar — eine App zur Verwaltung deiner Finanzen!",
     "selectLanguagePlaceholder": "Sprache",
     "resetData": "Neu anfangen",
     "resetDataDesc": "Löscht alle Transaktionen, Projekte und Budgets. Geldbörsen bleiben mit ihren Salden erhalten.",
@@ -1565,7 +1565,7 @@
     "nativeOAuth": {
       "title": "Zurück zur App",
       "description": "Wenn sich die App nicht automatisch öffnet, tippen Sie auf den Button unten.",
-      "openApp": "V&M Balance öffnen",
+      "openApp": "Centar öffnen",
       "help": "Nach der Rückkehr wird die Anmeldung in der App abgeschlossen."
     },
     "sentTo": "Wir haben einen Bestätigungslink gesendet an:",
@@ -1780,7 +1780,7 @@
     "importedTransactions": "{{count}} Transaktionen importiert",
     "importedItems": "und {{count}} Artikel",
     "selectJsonFile": "JSON-Datei auswählen",
-    "fileMustBeExported": "Datei muss zuvor aus V&M Balance exportiert worden sein",
+    "fileMustBeExported": "Datei muss zuvor aus Centar exportiert worden sein",
     "importing": "Daten werden importiert...",
     "invalidFileFormat": "Ungültiges Dateiformat",
     "notLoggedIn": "Nicht angemeldet",
@@ -2522,7 +2522,7 @@
     },
     "activation_nudge": {
       "day1": {
-        "title": "Willkommen bei V&M Balance 👋",
+        "title": "Willkommen bei Centar 👋",
         "message": "Starte mit deinem ersten Projekt — Renovierung, Kunde oder persönliches Ziel."
       },
       "day3": {
@@ -2530,7 +2530,7 @@
         "message": "Projekte helfen dir, Budget und Ausgaben an einem Ort zu verfolgen."
       },
       "day7": {
-        "title": "Entdecke die volle Power von V&M Balance 🚀",
+        "title": "Entdecke die volle Power von Centar 🚀",
         "message": "Erstelle dein erstes Projekt in 30s und behalte Ausgaben im Griff."
       }
     },
@@ -2684,7 +2684,7 @@
     "step": "Schritt {{current}} von {{total}}",
     "steps": {
       "welcome": {
-        "title": "Willkommen bei V&M Balance! 👋",
+        "title": "Willkommen bei Centar! 👋",
         "description": "Diese kurze Anleitung zeigt Ihnen die wichtigsten Funktionen der App. Los geht's!"
       },
       "summaryCards": {
@@ -3067,7 +3067,7 @@
   },
   "help": {
     "title": "Benutzerhandbuch",
-    "intro": "V&M Balance ist eine App zur Verfolgung persönlicher Finanzen. So verwenden Sie sie:",
+    "intro": "Centar ist eine App zur Verfolgung persönlicher Finanzen. So verwenden Sie sie:",
     "addTransactions": "Transaktionen hinzufügen",
     "addTransactionsStep1": "Klicken Sie auf die \"+\" Schaltfläche oben rechts",
     "addTransactionsStep2": "Wählen Sie den Typ: Einnahme, Ausgabe oder Überweisung",
@@ -3171,7 +3171,7 @@
     "current": "Aktiv",
     "localTitle": "Lokal auf dem Gerät",
     "localDescription": "Ihre Daten bleiben nur auf diesem Gerät. Schnell und privat.",
-    "cloudTitle": "V&M Balance Cloud",
+    "cloudTitle": "Centar Cloud",
     "cloudDescription": "Synchronisieren Sie Ihre Daten zwischen Geräten. Registrierung erforderlich.",
     "googleDriveTitle": "Google Drive",
     "googleDriveDescription": "Speichern Sie Daten in Ihrem eigenen Google-Drive-Konto. Demnächst verfügbar.",
@@ -3296,9 +3296,9 @@
   },
   "install": {
     "installed": "App ist installiert!",
-    "installedDesc": "V&M Balance wurde erfolgreich auf Ihrem Gerät installiert. Sie finden es auf Ihrem Startbildschirm.",
+    "installedDesc": "Centar wurde erfolgreich auf Ihrem Gerät installiert. Sie finden es auf Ihrem Startbildschirm.",
     "openApp": "App öffnen",
-    "installTitle": "V&M Balance installieren",
+    "installTitle": "Centar installieren",
     "appDesc": "App zur Ausgabenverfolgung und persönlichen Finanzverwaltung",
     "installNow": "Jetzt installieren",
     "installTab": "Installation",
@@ -3319,11 +3319,11 @@
     "orOpenMenu": "Oder Menü ⋮ → \"Installieren...\"",
     "appearsInStart": "App erscheint im Startmenü",
     "safariAddToDock": "In Safari: Ablage → Zum Dock hinzufügen",
-    "chromeInstall": "In Chrome: ⋮ → \"V&M Balance installieren...\"",
+    "chromeInstall": "In Chrome: ⋮ → \"Centar installieren...\"",
     "appearsInLaunchpad": "App erscheint im Launchpad",
     "webAccess": "Web-Zugang",
     "useInBrowser": "Direkt im Browser verwenden",
-    "webAccessDesc": "Sie können V&M Balance direkt im Browser ohne Installation verwenden. Speichern Sie diese Adresse in Lesezeichen für schnellen Zugriff:",
+    "webAccessDesc": "Sie können Centar direkt im Browser ohne Installation verwenden. Speichern Sie diese Adresse in Lesezeichen für schnellen Zugriff:",
     "open": "Öffnen",
     "worksOffline": "Funktioniert offline",
     "fasterLoading": "Schnelleres Laden",
@@ -3331,7 +3331,7 @@
     "version": "Version",
     "pwaDesc": "PWA (Progressive Web App) - funktioniert auf allen Geräten",
     "helpTitle": "Bedienungsanleitung",
-    "helpDesc": "Alles, was Sie über V&M Balance wissen müssen",
+    "helpDesc": "Alles, was Sie über Centar wissen müssen",
     "tipTitle": "💡 Tipp",
     "tipContent": "Für die beste Erfahrung, geben Sie regelmäßig Transaktionen ein und kategorisieren Sie sie. So haben Sie einen klareren Einblick in Ihre Finanzen.",
     "helpAddTransactions": "Transaktionen hinzufügen",
@@ -3589,7 +3589,7 @@
     "functionSource": "Funktionsquelle"
   },
   "checklist": {
-    "title": "Erste Schritte mit V&M Balance",
+    "title": "Erste Schritte mit Centar",
     "allDone": "Alles bereit! 🎉",
     "addPaymentSource": "Zahlungsquelle hinzufügen",
     "addPaymentSourceDesc": "Bankkonto, Bargeld oder Karte",
@@ -3798,7 +3798,7 @@
     "allRightsReserved": "Alle Rechte vorbehalten.",
     "s1": {
       "title": "1. Einleitung",
-      "p1": "V&M Balance (\"App\", \"wir\", \"unser\") ist eine Anwendung zur Verwaltung persönlicher und geschäftlicher Finanzen. Durch die Nutzung der App stimmen Sie diesen Nutzungsbedingungen zu. Wenn Sie nicht einverstanden sind, stellen Sie bitte die Nutzung der Anwendung ein."
+      "p1": "Centar (\"App\", \"wir\", \"unser\") ist eine Anwendung zur Verwaltung persönlicher und geschäftlicher Finanzen. Durch die Nutzung der App stimmen Sie diesen Nutzungsbedingungen zu. Wenn Sie nicht einverstanden sind, stellen Sie bitte die Nutzung der Anwendung ein."
     },
     "s2": {
       "title": "2. Nutzung des Dienstes",
@@ -3827,7 +3827,7 @@
     },
     "s5": {
       "title": "5. Haftungsbeschränkung",
-      "p1": "Die App wird \"wie besehen\" bereitgestellt. Wir garantieren keinen unterbrechungsfreien Betrieb oder vollständige Datengenauigkeit. V&M Balance ist kein Finanzberater und gibt keine Anlage- oder Steuerberatung.",
+      "p1": "Die App wird \"wie besehen\" bereitgestellt. Wir garantieren keinen unterbrechungsfreien Betrieb oder vollständige Datengenauigkeit. Centar ist kein Finanzberater und gibt keine Anlage- oder Steuerberatung.",
       "p2": "Wir haften nicht für finanzielle Entscheidungen, die auf Grundlage der in der App angezeigten Daten getroffen werden, noch für Datenverluste durch Umstände außerhalb unserer Kontrolle."
     },
     "s6": {
@@ -3854,7 +3854,7 @@
     },
     "s9": {
       "title": "9. Zweck der Dienstleistung und Einschränkungen",
-      "p1": "V&M Balance ist ein Werkzeug zur internen Projektverwaltung und für persönliche/geschäftliche Finanzen. Die Anwendung stellt keine Rechnungen aus, verarbeitet keine MwSt. und ist kein System zur Führung offizieller Aufzeichnungen.",
+      "p1": "Centar ist ein Werkzeug zur internen Projektverwaltung und für persönliche/geschäftliche Finanzen. Die Anwendung stellt keine Rechnungen aus, verarbeitet keine MwSt. und ist kein System zur Führung offizieller Aufzeichnungen.",
       "l1": "Die in die Anwendung eingegebenen Daten (Arbeitsnachweise, Mitarbeiter, Kosten) sind KEINE offiziellen Aufzeichnungen im Sinne des Arbeitsrechts, des Buchhaltungsrechts oder des Einkommen-/Körperschaftsteuerrechts.",
       "l2": "Exporte (PDF/Excel) aus der Anwendung sind interne Berichte und können nicht als Hauptbeweis vor Finanzbehörden, Arbeitsinspektionen oder Gerichten verwendet werden.",
       "l3": "Der Nutzer ist verpflichtet, offizielle Aufzeichnungen in dafür zugelassenen Systemen zu führen.",
@@ -3871,7 +3871,7 @@
     "recording": "Aufnahme...",
     "notSupported": "Spracheingabe wird auf diesem Gerät nicht unterstützt",
     "permissionTitle": "Mikrofon ist blockiert",
-    "permissionBody": "Das System meldet, dass der Mikrofonzugriff nicht erlaubt ist.\n\nUnter Android prüfen: Einstellungen → Apps → V&M Balance → Berechtigungen → Mikrofon → aktiviert.\n\nIm Browser: Klicken Sie auf das Schloss-Symbol neben der Adresse und erlauben Sie das Mikrofon für diese Seite.",
+    "permissionBody": "Das System meldet, dass der Mikrofonzugriff nicht erlaubt ist.\n\nUnter Android prüfen: Einstellungen → Apps → Centar → Berechtigungen → Mikrofon → aktiviert.\n\nIm Browser: Klicken Sie auf das Schloss-Symbol neben der Adresse und erlauben Sie das Mikrofon für diese Seite.",
     "serviceTitle": "Diktieren derzeit nicht verfügbar",
     "serviceBody": "Der Spracherkennungsdienst konnte nicht gestartet werden — das ist kein Problem mit Ihrem Mikrofon.\n\nMögliche Ursachen:\n• keine Internetverbindung (der Dienst läuft online)\n• Googles Sprachdienst antwortet vorübergehend nicht\n• die WebView-Version in dieser App unterstützt diese Methode nicht\n\nVersuchen Sie es in ein paar Sekunden erneut. Falls es weiterhin nicht funktioniert, öffnen Sie die App im Chrome-Browser.",
     "unsupportedTitle": "Spracheingabe nicht verfügbar",
@@ -4546,7 +4546,7 @@
     "statusWaiting": "Wartet",
     "deadlineLabel": "Frist",
     "photoLog": "Foto-Fortschrittsprotokoll",
-    "readonlyFooter": "Schreibgeschützte Ansicht. Powered by V&M Balance."
+    "readonlyFooter": "Schreibgeschützte Ansicht. Powered by Centar."
   },
   "admin": {
     "hardDelete": {
@@ -4829,7 +4829,7 @@
     "step1": {
       "greeting": "Hallo!",
       "greetingNamed": "Hallo, {{name}}!",
-      "intro": "V&M Balance hilft dir, in 15 Sekunden ein Basisbudget einzurichten — wähle deine wichtigsten monatlichen Ausgaben und Einnahmen und erhalte sofort einen klaren Überblick.",
+      "intro": "Centar hilft dir, in 15 Sekunden ein Basisbudget einzurichten — wähle deine wichtigsten monatlichen Ausgaben und Einnahmen und erhalte sofort einen klaren Überblick.",
       "nameLabel": "Dein Name",
       "namePlaceholder": "z. B. Markus"
     },
