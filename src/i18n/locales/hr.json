@@ -950,12 +950,22 @@
         "title": "Naslov",
         "titlePlaceholder": "Kratki naslov odluke",
         "description": "Opis prijedloga",
-        "descriptionPlaceholder": "Detaljno opišite prijedlog..."
+        "descriptionPlaceholder": "Detaljno opišite prijedlog...",
+        "price": "Cijena (€) — opcionalno",
+        "pricePlaceholder": "npr. 2400 ili −5000 za smanjenje",
+        "pricePlaceholderReply": "Cijena (€) — opcionalno; negativno = smanjenje",
+        "priceHint": "Ako prihvaćeno, automatski se stvara aneks ugovora. Negativan iznos umanjuje ugovor. Nula nije dozvoljena."
       },
       "newDialog": {
         "title": "Novi prijedlog odluke",
         "submit": "Pošalji prijedlog"
-      }
+      },
+      "priceInvalid": "Neispravan iznos cijene",
+      "priceNonZero": "Cijena ne smije biti nula — ostavi prazno ili unesi iznos",
+      "acceptingPrice": "Prihvaćaš: {{signed}} — automatski se stvara izmjena ugovora.",
+      "acceptingNoPrice": "Prihvaćaš bez financijskog učinka (nema cijene).",
+      "lastOfferedHint": "Zadnja ponuđena: {{signed}}. Ostavi prazno da zadržiš.",
+      "contractResult": "Ugovoreno {{signed}} — izmjena ugovora stvorena."
     }
   },
   "estimates": {
