@@ -65,6 +65,7 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
   const paymentSourceId = pickStr(d.payment_source_id, d.paymentSourceId);
   const reminderId = pickStr(d.reminder_id, d.reminderId);
   const noteId = pickStr(d.note_id, d.noteId);
+  const decisionId = pickStr(d.decision_id, d.decisionId);
 
   switch (type) {
     case 'project_transaction':
