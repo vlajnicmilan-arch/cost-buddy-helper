@@ -27,7 +27,7 @@ export const ContractAmendmentsBadge = ({ projectId }: Props) => {
     return () => window.removeEventListener('contract-amendment-added', handler as EventListener);
   }, [projectId, refetch]);
 
-  if (amendments.length === 0 || total === 0) return null;
+  if (amendments.length === 0) return null;
 
   const fromDecisions = amendments.filter((a) => a.source_decision_id).length;
   const tooltipLines = [
