@@ -109,8 +109,8 @@ export const HomeHeader = ({
       {/* Top row: Logo, title, and navigation icons */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={logo} alt="Centar" className="w-full h-full object-contain" width={56} height={56} fetchPriority="high" />
+          <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden flex-shrink-0">
+            <img src={logo} alt="Centar" className="w-full h-full object-contain" width={72} height={72} fetchPriority="high" />
           </div>
           <div className="min-w-0">
             <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
