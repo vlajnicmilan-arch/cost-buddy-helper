@@ -564,7 +564,7 @@ export const ProjectFullScreenView = ({
                     <>
                       <MobileProjectTabs
                         value={resolvedActiveTab}
-                        onValueChange={setActiveTab}
+                        onValueChange={handleTabChange}
                         primary={primary}
                         overflow={overflow}
                       />
