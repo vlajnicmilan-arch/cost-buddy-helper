@@ -1169,45 +1169,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dpa_requests: {
-        Row: {
-          company_address: string | null
-          company_name: string
-          company_oib: string | null
-          contact_email: string | null
-          document_type: string
-          download_count: number
-          generated_at: string
-          id: string
-          language: string
-          user_id: string
-        }
-        Insert: {
-          company_address?: string | null
-          company_name: string
-          company_oib?: string | null
-          contact_email?: string | null
-          document_type?: string
-          download_count?: number
-          generated_at?: string
-          id?: string
-          language?: string
-          user_id: string
-        }
-        Update: {
-          company_address?: string | null
-          company_name?: string
-          company_oib?: string | null
-          contact_email?: string | null
-          document_type?: string
-          download_count?: number
-          generated_at?: string
-          id?: string
-          language?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       email_send_log: {
         Row: {
           created_at: string
