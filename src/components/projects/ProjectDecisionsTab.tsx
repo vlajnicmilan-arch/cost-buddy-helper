@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
+import { useDecisionScan } from '@/contexts/DecisionScanContext';
 import { NewDecisionDialog } from './NewDecisionDialog';
 import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
 import { DecisionStepAttachments } from './DecisionStepAttachments';
