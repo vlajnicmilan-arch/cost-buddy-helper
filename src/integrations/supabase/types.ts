@@ -3337,6 +3337,63 @@ export type Database = {
           },
         ]
       }
+      project_decision_admin_requests: {
+        Row: {
+          created_at: string
+          decision_id: string
+          id: string
+          project_id: string
+          reason: string | null
+          requested_by: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_id: string
+          id?: string
+          project_id: string
+          reason?: string | null
+          requested_by: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string
+          id?: string
+          project_id?: string
+          reason?: string | null
+          requested_by?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_decision_admin_requests_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_decision_admin_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_decision_attachments: {
         Row: {
           created_at: string
@@ -3434,6 +3491,10 @@ export type Database = {
       }
       project_decisions: {
         Row: {
+          annul_compensation_amendment_id: string | null
+          annul_request_id: string | null
+          annulled_at: string | null
+          annulled_by: string | null
           closed_at: string | null
           closed_reason: string | null
           contract_amendment_id: string | null
@@ -3450,6 +3511,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          annul_compensation_amendment_id?: string | null
+          annul_request_id?: string | null
+          annulled_at?: string | null
+          annulled_by?: string | null
           closed_at?: string | null
           closed_reason?: string | null
           contract_amendment_id?: string | null
@@ -3466,6 +3531,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          annul_compensation_amendment_id?: string | null
+          annul_request_id?: string | null
+          annulled_at?: string | null
+          annulled_by?: string | null
           closed_at?: string | null
           closed_reason?: string | null
           contract_amendment_id?: string | null
@@ -5843,6 +5912,14 @@ export type Database = {
         Returns: undefined
       }
       refund_core_scan_quota: { Args: never; Returns: undefined }
+      request_decision_admin: {
+        Args: { _decision_id: string; _reason?: string; _type: string }
+        Returns: string
+      }
+      resolve_decision_admin_request: {
+        Args: { _decision: string; _request_id: string }
+        Returns: Json
+      }
       resolve_event_at_merge: {
         Args: {
           existing_confidence: string
@@ -5924,6 +6001,10 @@ export type Database = {
       void_worker_payout_batch: {
         Args: { p_batch_id: string; p_reason?: string }
         Returns: Json
+      }
+      withdraw_decision_admin_request: {
+        Args: { _request_id: string }
+        Returns: undefined
       }
     }
     Enums: {

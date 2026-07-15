@@ -936,8 +936,33 @@
         "awaiting": "Čeka odgovor",
         "finalRound": "Konačna — prihvati ili odbij",
         "hasOneCorrection": "Imaš još 1 korekciju",
-        "overdue": "Rok istekao"
+        "overdue": "Rok istekao",
+        "annulled": "Poništena"
       },
+      "admin": {
+        "proposeAnnul": "Predloži poništenje",
+        "proposeDelete": "Predloži brisanje",
+        "confirmAnnul": "Potvrdi poništenje",
+        "confirmDelete": "Potvrdi brisanje",
+        "decline": "Odbij",
+        "withdraw": "Povuci zahtjev",
+        "sendRequest": "Pošalji zahtjev",
+        "confirmAnnulTitle": "Predloži poništenje odluke?",
+        "confirmAnnulDesc": "Odluka ostaje u arhivu s oznakom „Poništena\". Ako je bila odobrena s izmjenom ugovora, novac se vraća u Ugovoreno preko kompenzacijskog aneksa. Zahtjev se izvršava tek kad ga druga strana potvrdi.",
+        "confirmDeleteTitle": "Predloži brisanje odluke?",
+        "confirmDeleteDesc": "Odluka i svi njeni koraci i prilozi bit će trajno obrisani. Ako je postojala izmjena ugovora, ona se uklanja i Ugovoreno se vraća. Zahtjev se izvršava tek kad ga druga strana potvrdi.",
+        "pendingAnnul": "Čeka potvrdu: poništenje",
+        "pendingDelete": "Čeka potvrdu: brisanje",
+        "pendingAnnulBanner": "Predloženo poništenje odluke — čeka odgovor druge strane.",
+        "pendingDeleteBanner": "Predloženo brisanje odluke — čeka odgovor druge strane.",
+        "requestedBy": "Predlagatelj: {{name}} · {{when}}",
+        "requestSent": "Zahtjev poslan drugoj strani",
+        "withdrawn": "Zahtjev povučen",
+        "annulledOk": "Odluka poništena",
+        "deletedOk": "Odluka obrisana",
+        "declinedOk": "Zahtjev odbijen",
+        "annulledInfo": "Odluka je poništena obostranom potvrdom.",
+        "annulledMeta": "{{by}} · {{when}}"
       "action": {
         "propose": "Prijedlog",
         "counter": "Protuprijedlog",
@@ -991,6 +1016,7 @@
         "timeline": "Slijed koraka",
         "attachments": "Prilozi",
         "attachmentsAvailableInApp": "Neki prilozi dostupni su u aplikaciji.",
+        "annulNote": "Napomena: ova je odluka poništena obostranom potvrdom.",
         "footerDisclaimer": "Generirano iz aplikacije Centar · {{date}} · ID: {{id}}"
       }
     }
