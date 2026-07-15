@@ -107,6 +107,7 @@ export function ProjectDecisionsTab({
       setSelected(null);
     },
     BACK_PRIORITY.DETAIL,
+    'DETAIL:decision',
   );
 
   if (!isDecisionParty) {

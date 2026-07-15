@@ -56,8 +56,8 @@ export const BudgetFullScreenView = ({
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
-  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
-  useBackNavigationTab(activeTab, 'overview', (prev) => setActiveTab(prev), open);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN, 'FULLSCREEN:budget');
+  useBackNavigationTab(activeTab, 'overview', (prev) => setActiveTab(prev), open, 'TAB:budget');
   const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
   const { 
     pendingTransactions, 
