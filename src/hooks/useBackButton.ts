@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useBackButtonContext } from '@/contexts/BackButtonContext';
 
 /**
@@ -21,12 +21,12 @@ export function useBackButton(isOpen: boolean, onClose: () => void, priority = 0
   const idRef = useRef<string>(`back-${++idCounter}`);
 
   // Register/update whenever isOpen, onClose or priority changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     register(idRef.current, isOpen, onClose, priority, label);
   }, [isOpen, onClose, priority, label, register]);
 
   // Cleanup on unmount
-  useEffect(() => {
+  useLayoutEffect(() => {
     const id = idRef.current;
     return () => unregister(id);
   }, [unregister]);
