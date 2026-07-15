@@ -16,6 +16,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
@@ -92,6 +94,20 @@ export function ProjectDecisionsTab({
     setSelected(m[1]);
     try { logDiagnostic('decision_capture_reopen_consumed', { key: note.key }); } catch {}
   }, []);
+
+  // DETAIL back-layer: kad je selektiran detalj odluke, hardware back vraća
+  // korisnika na listu (setSelected(null)) umjesto da zatvara cijeli projekt.
+  // decisionCaptureReopen.clear se čuva iz onBack toka (kamera saga netaknuta).
+  useBackButton(
+    !!selected,
+    () => {
+      if (selected) {
+        try { decisionCaptureReopen.clear(`reply-${selected}`); } catch { /* ignore */ }
+      }
+      setSelected(null);
+    },
+    BACK_PRIORITY.DETAIL,
+  );
 
   if (!isDecisionParty) {
     return (

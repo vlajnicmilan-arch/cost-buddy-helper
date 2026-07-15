@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
-import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { useBackNavigationTab } from '@/hooks/useBackNavigationTab';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -55,7 +56,8 @@ export const BudgetFullScreenView = ({
   const { formatAmount } = useCurrency();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
-  useBackButton(open, onClose);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
+  useBackNavigationTab(activeTab, 'overview', (prev) => setActiveTab(prev), open);
   const { members, invitations, loading: membersLoading, isOwner, refetch: refetchMembers } = useBudgetMembers(budget?.id || null);
   const { 
     pendingTransactions, 
@@ -137,27 +139,9 @@ export const BudgetFullScreenView = ({
     }
   }, [open, budget?.id]);
 
-  // Handle back navigation
-  useEffect(() => {
-    if (!open) return;
+  // Back handling — kanonski useBackButton (open, onClose) na vrhu + tab-back.
+  // Ad-hoc pushState/popstate blok UKLONJEN (double-push izvor bugova).
 
-    const handlePopState = (e: PopStateEvent) => {
-      // Ignore synthetic popstate from Android native activity return.
-      if (isNativeFlowActive()) {
-        window.history.pushState({ budgetView: true }, '');
-        return;
-      }
-      e.preventDefault();
-      onClose();
-    };
-
-    window.history.pushState({ budgetView: true }, '');
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [open, onClose]);
 
   if (!budget) return null;
 

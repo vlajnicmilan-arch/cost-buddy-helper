@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useBackNavigationTab } from '@/hooks/useBackNavigationTab';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -105,7 +107,7 @@ export const ProjectFullScreenView = ({
     // Perzistiraj tab za survive remounta (kamera roundtrip na Androidu).
     try { projectViewState.setTab(next); } catch { /* ignore */ }
   };
-  useBackButton(open, onClose);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
