@@ -13,8 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { useProjectDecisions, type ProjectDecision } from '@/hooks/useProjectDecisions';
+import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
 import { NewDecisionDialog } from './NewDecisionDialog';
+import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
+import { DecisionStepAttachments } from './DecisionStepAttachments';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import {
   getLegalActions,
