@@ -223,16 +223,20 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      logDiagnostic({
-        event: 'dbg_pfsv_tab_reset',
-        details: { branch: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
-      });
+      try {
+        logDiagnostic({
+          event: 'pfsv_tab_reset',
+          details: { reason: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+        });
+      } catch { /* ignore */ }
       setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
     } else if (isWorkerOnly) {
-      logDiagnostic({
-        event: 'dbg_pfsv_tab_reset',
-        details: { branch: 'workerOnly', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
-      });
+      try {
+        logDiagnostic({
+          event: 'pfsv_tab_reset',
+          details: { reason: 'worker_only', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+        });
+      } catch { /* ignore */ }
       setActiveTab('worklog');
     }
   }, [open, project?.id, isWorkerOnly]);
