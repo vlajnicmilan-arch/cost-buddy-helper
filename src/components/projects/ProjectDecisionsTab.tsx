@@ -46,6 +46,13 @@ const dtFmt = (iso: string | undefined) => iso
   ? format(new Date(iso), 'd. MMM yyyy · HH:mm', { locale: hr })
   : '';
 
+const localeFor = (lng: string) => {
+  const base = (lng || 'hr').toLowerCase().split(/[-_]/)[0];
+  if (base === 'en') return enUS;
+  if (base === 'de') return deLocale;
+  return hr;
+};
+
 export function ProjectDecisionsTab({
   projectId, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
 }: Props) {
