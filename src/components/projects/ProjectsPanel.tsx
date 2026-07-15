@@ -36,6 +36,10 @@ interface ProjectsPanelProps {
   canCreate?: boolean;
 }
 
+// Module-level brojač instanci — dokaz remounta ProjectsPanel-a u telemetriji
+// (Android WebView može odbaciti stablo pri native activity roundtripu).
+let __projectsPanelInstanceSeq = 0;
+
 export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsPanelProps) => {
   const { t } = useTranslation();
   const location = useLocation();
