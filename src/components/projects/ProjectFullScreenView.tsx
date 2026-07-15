@@ -228,6 +228,14 @@ export const ProjectFullScreenView = ({
     if (!open) return;
 
     const handlePopState = (e: PopStateEvent) => {
+      // Ignore synthetic popstate emitted by Android when a native activity
+      // (camera, file picker, share sheet, …) returns focus to the WebView.
+      // Otherwise it would close the project view mid-flight and destroy any
+      // draft (e.g. a decision being composed) — see AddExpenseDialog pattern.
+      if (isNativeFlowActive()) {
+        window.history.pushState({ projectView: true }, '');
+        return;
+      }
       e.preventDefault();
       onClose();
     };
