@@ -10,6 +10,7 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
 import { peekPendingHighlight } from '@/lib/pendingHighlight';
+import { projectViewState } from '@/lib/projectViewState';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,10 @@ interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
   canCreate?: boolean;
 }
+
+// Module-level brojač instanci — dokaz remounta ProjectsPanel-a u telemetriji
+// (Android WebView može odbaciti stablo pri native activity roundtripu).
+let __projectsPanelInstanceSeq = 0;
 
 export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsPanelProps) => {
   const { t } = useTranslation();
@@ -79,6 +84,45 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setEditingProject(null);
     setDialogOpen(true);
   };
+
+  // Mount/unmount telemetry — sluzi za dokaz da li se panel remounta pri
+  // povratku iz native kamere. Ako se instance seq mijenja izmedju
+  // decision_scan_begin i decision_scan_complete → potvrda remounta.
+  useEffect(() => {
+    const instance = ++__projectsPanelInstanceSeq;
+    try { logDiagnostic({ event: 'projects_panel_mounted', details: { instance } }); } catch { /* ignore */ }
+    return () => {
+      try { logDiagnostic({ event: 'projects_panel_unmounted', details: { instance } }); } catch { /* ignore */ }
+    };
+  }, []);
+
+  // Restore projektnog pogleda iz sessionStorage nakon remounta (kamera
+  // roundtrip na Androidu). URL state / pending highlight IMAJU PREDNOST —
+  // ako oni diktiraju drugi projekt (ili novi projekt), restore preskačemo.
+  useEffect(() => {
+    if (loading) return;
+    if (projects.length === 0) return;
+    if (detailDialogOpen) return;
+
+    const state = location.state as
+      | { openProjectId?: string; openNewProject?: boolean }
+      | null;
+    if (state?.openProjectId || state?.openNewProject) return;
+    const pending = peekPendingHighlight();
+    if (pending?.route?.startsWith('/projects')) return;
+
+    const persisted = projectViewState.get();
+    if (!persisted) return;
+    const proj = projects.find(p => p.id === persisted.projectId);
+    if (!proj) {
+      // Projekt više ne postoji (obrisan, drugi user) — očisti pointer.
+      projectViewState.clear();
+      return;
+    }
+    setSelectedProject(proj as ProjectWithOwnership);
+    setDetailDialogOpen(true, 'persisted_restore');
+    if (persisted.tab) setPendingInitialTab(persisted.tab);
+  }, [loading, projects.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle navigation from notification click or dashboard quick-actions.
   // Two paths:
@@ -138,6 +182,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         setDetailDialogOpen(true, 'urlState_effect');
         if (resolvedExpenseId) setPendingExpenseId(resolvedExpenseId);
         if (resolvedTab) setPendingInitialTab(resolvedTab);
+        // Perzistiraj pointer za survive remounta (kamera roundtrip).
+        projectViewState.set(project.id, resolvedTab ?? projectViewState.get()?.tab ?? null);
         // Clear the state so it doesn't re-trigger
         if (state) window.history.replaceState({}, '');
       } else if (loading || projects.length === 0) {
@@ -261,6 +307,10 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
     setDetailDialogOpen(true, 'handleProjectClick');
+    // Perzistiraj otvoreni projekt (tab ostaje kakav je bio ako je isti projekt).
+    const prev = projectViewState.get();
+    const keepTab = prev && prev.projectId === project.id ? prev.tab : null;
+    projectViewState.set(project.id, keepTab);
   };
 
   const handleCloseFullScreen = () => {
@@ -268,6 +318,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setSelectedProject(null);
     setPendingExpenseId(null);
     setPendingInitialTab(null);
+    // Eksplicitni user close — očisti pointer (inače bi restore reotvorio).
+    projectViewState.clear();
     refetch();
     fetchAllStats();
     if (returnToRef.current) {

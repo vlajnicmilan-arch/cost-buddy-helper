@@ -62,6 +62,7 @@ import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { projectViewState } from '@/lib/projectViewState';
 import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
 import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
 
@@ -101,6 +102,8 @@ export const ProjectFullScreenView = ({
       logDiagnostic({ event: 'pfsv_tab_changed', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
     } catch { /* ignore */ }
     setActiveTab(next);
+    // Perzistiraj tab za survive remounta (kamera roundtrip na Androidu).
+    try { projectViewState.setTab(next); } catch { /* ignore */ }
   };
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
@@ -275,6 +278,29 @@ export const ProjectFullScreenView = ({
       lastProjectIdRef.current = currentId;
     }
   }, [open, project?.id, isWorkerOnly]);
+
+  // Restore taba iz projectViewState pri open-u istog projekta (npr. nakon
+  // remounta uslijed kamera roundtripa na Androidu). initialTab prop ima
+  // najviši prioritet — ako je zadan, restore preskačemo.
+  useEffect(() => {
+    if (!open || !project?.id) return;
+    if (initialTab) return;
+    if (isWorkerOnly) return;
+    const persisted = projectViewState.get();
+    if (!persisted || persisted.projectId !== project.id) return;
+    if (!persisted.tab) return;
+    if (persisted.tab === activeTab) return;
+    try {
+      logDiagnostic({
+        event: 'pfsv_tab_restored',
+        details: { tab: persisted.tab, prevTab: activeTab, projectId: project.id },
+      });
+    } catch { /* ignore */ }
+    setActiveTab(persisted.tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, project?.id]);
+
+
 
   // Resolve legacy tab keys to the unified tabs (pure helper — covered by tests)
   const aliasResolution = resolveLegacyTabAlias(activeTab);
