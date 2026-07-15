@@ -357,6 +357,7 @@ const App = () => (
                             <Sonner />
                             <BrowserRouter>
                               <BackButtonProvider>
+                                <ExitConfirmDialog />
                                 <ScrollToTop />
                                 <DeepLinkInit />
                                 <PushAutoRegister />
