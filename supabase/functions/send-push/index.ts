@@ -19,7 +19,27 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const FCM_SERVICE_ACCOUNT = Deno.env.get("FCM_SERVICE_ACCOUNT");
+
+// Accept only requests carrying a known bearer:
+//   - service role key (edge-function callers via sendPushNotification helper)
+//   - anon key (SQL triggers via net.http_post)
+//   - a JWT-shaped token (three base64url segments) — user tokens forwarded by clients
+// Everything else (empty body scans, unauthenticated bots) is rejected before we touch req.json().
+function isAuthorized(req: Request): boolean {
+  const h = req.headers.get("Authorization") ?? req.headers.get("authorization");
+  if (!h || !h.startsWith("Bearer ")) return false;
+  const token = h.slice(7).trim();
+  if (!token) return false;
+  if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
+  if (SUPABASE_ANON_KEY && token === SUPABASE_ANON_KEY) return true;
+  // Loose JWT shape check — signature is not verified here (matches how other
+  // Lovable-managed functions treat forwarded user tokens with verify_jwt=false).
+  const parts = token.split(".");
+  if (parts.length === 3 && parts.every((p) => p.length > 0)) return true;
+  return false;
+}
 
 // ---------- OAuth2 helpers (RS256 JWT -> access_token) ----------
 function pemToArrayBuffer(pem: string): ArrayBuffer {
