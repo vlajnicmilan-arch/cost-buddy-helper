@@ -965,7 +965,17 @@
       "acceptingPrice": "Prihvaćaš: {{signed}} — automatski se stvara izmjena ugovora.",
       "acceptingNoPrice": "Prihvaćaš bez financijskog učinka (nema cijene).",
       "lastOfferedHint": "Zadnja ponuđena: {{signed}}. Ostavi prazno da zadržiš.",
-      "contractResult": "Ugovoreno {{signed}} — izmjena ugovora stvorena."
+      "contractResult": "Ugovoreno {{signed}} — izmjena ugovora stvorena.",
+      "attach": {
+        "label": "Prilozi",
+        "camera": "Kamera",
+        "gallery": "Galerija",
+        "file": "Dokument",
+        "tooMany": "Najviše {{n}} priloga po koraku",
+        "docTooLarge": "Dokument prevelik (max {{mb}} MB)",
+        "unsupported": "Nepodržan tip datoteke",
+        "urlFailed": "Neki prilozi trenutno nisu dostupni."
+      }
     }
   },
   "estimates": {
