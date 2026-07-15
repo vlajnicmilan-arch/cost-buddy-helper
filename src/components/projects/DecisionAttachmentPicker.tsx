@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Paperclip, X, FileText, ImageIcon, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
+import { useDecisionScan } from '@/contexts/DecisionScanContext';
 import { showError } from '@/hooks/useStatusFeedback';
 import {
   MAX_ATTACHMENTS_PER_STEP,
@@ -16,6 +17,13 @@ interface Props {
   value: File[];
   onChange: (next: File[]) => void;
   disabled?: boolean;
+  /**
+   * Jedinstveni ključ forme koja hosta picker (npr. 'new-decision' ili
+   * 'reply-<decisionId>'). Kad je zadan, kamera se pokreće preko
+   * DecisionScanContext + GlobalDecisionCaptureHost umjesto direktno,
+   * čime se izbjegava gubitak drafta pri Android kamera roundtripu.
+   */
+  captureKey?: string;
 }
 
 const dataUrlToFile = (dataUrl: string, fileName: string): File => {
@@ -40,9 +48,10 @@ const humanSize = (bytes: number): string => {
  * Slike se komprimiraju tek pri uploadu (u useProjectDecisions), ovdje je preview
  * iz object URL-a nad izvornim Fileom.
  */
-export function DecisionAttachmentPicker({ value, onChange, disabled }: Props) {
+export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey }: Props) {
   const { t } = useTranslation();
   const { takePhoto, isNative, cameraInputRef } = useNativeCamera();
+  const { beginCapture, consumePendingCapture, pendingCapture } = useDecisionScan();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
