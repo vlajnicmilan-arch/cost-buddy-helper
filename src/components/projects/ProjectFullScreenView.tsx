@@ -220,24 +220,59 @@ export const ProjectFullScreenView = ({
     members.map((m) => [m.user_id, m.display_name || ''])
   );
 
-  // Reset tab when project changes or closes
+  // Reset tab SAMO na stvarnu promjenu projekta (drugi id) — ne na svaki
+  // open flicker. Time reopen istog projekta (npr. urlState_effect re-run
+  // nakon kamera roundtripa) čuva trenutni tab (npr. 'decisions').
+  const lastProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const currentId = project?.id ?? null;
+    const changedProject = currentId !== lastProjectIdRef.current;
+
     if (!open) {
+      // Zapamti da smo "zatvoreni" — sljedeći open s istim id se NE tretira
+      // kao promjena projekta.
+      if (changedProject) {
+        try {
+          logDiagnostic({
+            event: 'pfsv_tab_reset',
+            details: { reason: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: currentId },
+          });
+        } catch { /* ignore */ }
+        setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
+        lastProjectIdRef.current = currentId;
+      }
+      return;
+    }
+
+    if (isWorkerOnly) {
+      // Worker-only uvijek ide na worklog; log samo pri stvarnoj promjeni.
+      if (changedProject || activeTab !== 'worklog') {
+        try {
+          logDiagnostic({
+            event: 'pfsv_tab_reset',
+            details: { reason: 'worker_only', open, isWorkerOnly, prevTab: activeTab, projectId: currentId },
+          });
+        } catch { /* ignore */ }
+        setActiveTab('worklog');
+      }
+      lastProjectIdRef.current = currentId;
+      return;
+    }
+
+    if (changedProject) {
+      // Stvarni prelazak na drugi projekt — reset na overview (osim ako
+      // initialTab prop diktira drugačije; taj slučaj pokriva zasebni effect
+      // na `[initialTab]`).
       try {
         logDiagnostic({
           event: 'pfsv_tab_reset',
-          details: { reason: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+          details: { reason: 'project_changed', open, isWorkerOnly, prevTab: activeTab, projectId: currentId, prevProjectId: lastProjectIdRef.current },
         });
       } catch { /* ignore */ }
-      setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
-    } else if (isWorkerOnly) {
-      try {
-        logDiagnostic({
-          event: 'pfsv_tab_reset',
-          details: { reason: 'worker_only', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
-        });
-      } catch { /* ignore */ }
-      setActiveTab('worklog');
+      // Ne diramo activeTab ako je initialTab postavljen — initialTab effect
+      // već rukuje tim slučajem. Inače reset na overview.
+      if (!initialTab) setActiveTab('overview');
+      lastProjectIdRef.current = currentId;
     }
   }, [open, project?.id, isWorkerOnly]);
 
