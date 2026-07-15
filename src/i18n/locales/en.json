@@ -931,7 +931,8 @@
         "closed": "Closed without agreement",
         "awaiting": "Awaiting response",
         "finalRound": "Final — accept or reject",
-        "hasOneCorrection": "You have 1 correction left"
+        "hasOneCorrection": "You have 1 correction left",
+        "overdue": "Overdue"
       },
       "action": {
         "propose": "Proposal",
@@ -971,7 +972,8 @@
         "docTooLarge": "Document too large (max {{mb}} MB)",
         "unsupported": "Unsupported file type",
         "urlFailed": "Some attachments are currently unavailable."
-      }
+      },
+      "awaitingFor": "Awaiting response for {{time}}"
     }
   },
   "estimates": {

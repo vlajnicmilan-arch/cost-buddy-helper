@@ -935,7 +935,8 @@
         "closed": "Zatvorena bez dogovora",
         "awaiting": "Čeka odgovor",
         "finalRound": "Konačna — prihvati ili odbij",
-        "hasOneCorrection": "Imaš još 1 korekciju"
+        "hasOneCorrection": "Imaš još 1 korekciju",
+        "overdue": "Rok istekao"
       },
       "action": {
         "propose": "Prijedlog",
@@ -975,7 +976,8 @@
         "docTooLarge": "Dokument prevelik (max {{mb}} MB)",
         "unsupported": "Nepodržan tip datoteke",
         "urlFailed": "Neki prilozi trenutno nisu dostupni."
-      }
+      },
+      "awaitingFor": "Čeka odgovor {{time}}"
     }
   },
   "estimates": {

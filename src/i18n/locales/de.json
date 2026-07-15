@@ -931,7 +931,8 @@
         "closed": "Ohne Einigung geschlossen",
         "awaiting": "Wartet auf Antwort",
         "finalRound": "Endgültig — annehmen oder ablehnen",
-        "hasOneCorrection": "Sie haben noch 1 Korrektur übrig"
+        "hasOneCorrection": "Sie haben noch 1 Korrektur übrig",
+        "overdue": "Frist abgelaufen"
       },
       "action": {
         "propose": "Vorschlag",
@@ -971,7 +972,8 @@
         "docTooLarge": "Dokument zu groß (max. {{mb}} MB)",
         "unsupported": "Nicht unterstützter Dateityp",
         "urlFailed": "Einige Anhänge sind derzeit nicht verfügbar."
-      }
+      },
+      "awaitingFor": "Wartet auf Antwort seit {{time}}"
     }
   },
   "estimates": {
