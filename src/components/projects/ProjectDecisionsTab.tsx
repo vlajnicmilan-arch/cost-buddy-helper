@@ -362,8 +362,24 @@ function DecisionDetail({
       </div>
 
       <div className="p-4 rounded-lg border bg-card">
-        <h3 className="font-semibold text-base mb-1">{decision.title}</h3>
-        <p className="text-xs text-muted-foreground mb-3">{dtFmt(decision.created_at)} · {nameOf(decision.created_by)}</p>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-base">{decision.title}</h3>
+          {decision.overdue && decision.current_status === 'awaiting_response' && (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px] shrink-0">
+              {t('projects.decisions.status.overdue', 'Rok istekao')}
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-1">{dtFmt(decision.created_at)} · {nameOf(decision.created_by)}</p>
+        {decision.current_status === 'awaiting_response' && (
+          <p className="text-xs text-muted-foreground mb-3">
+            {t('projects.decisions.awaitingFor', 'Čeka odgovor {{time}}', {
+              time: formatDistanceToNowStrict(new Date(decision.updated_at), {
+                locale: i18nLocale(),
+              }),
+            })}
+          </p>
+        )}
         <p className="text-sm whitespace-pre-wrap">{decision.initial_description}</p>
       </div>
 
