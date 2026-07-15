@@ -188,4 +188,10 @@ export default {
   "notifications.krug.deletion_requested.message": "Der Eigentümer hat die Löschung des Krug angefordert.",
   "notifications.krug.deleted.title": "Krug wurde gelöscht",
   "notifications.krug.deleted.message": "Ein Krug, in dem du Mitglied warst, wurde endgültig entfernt.",
+  "notifications.decisions.first_reminder.title": "Entscheidung wartet auf deine Antwort",
+  "notifications.decisions.first_reminder.body": "„{{title}}\" wartet seit 12 Stunden auf deine Antwort.",
+  "notifications.decisions.overdue.title": "Antwortfrist ist abgelaufen",
+  "notifications.decisions.overdue.body": "Entscheidung „{{title}}\" — die 24‑Stunden‑Frist ist abgelaufen.",
+  "notifications.decisions.daily.title": "Entscheidung wartet weiterhin auf eine Antwort",
+  "notifications.decisions.daily.body": "„{{title}}\" — bitte antworte.",
 } as const;
