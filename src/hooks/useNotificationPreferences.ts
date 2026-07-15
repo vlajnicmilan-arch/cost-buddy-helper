@@ -97,6 +97,7 @@ export const useNotificationPreferences = () => {
           participant_digest_enabled: data.participant_digest_enabled ?? true,
           participant_digest_hour: data.participant_digest_hour ?? 19,
           krug_enabled: (data as any).krug_enabled ?? true,
+          decisions_enabled: (data as any).decisions_enabled ?? true,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
