@@ -896,9 +896,6 @@ function DecisionDetail({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-        );
-      })()}
-    </div>
   );
 }
 
