@@ -62,6 +62,9 @@ export interface DecisionPdfData {
   initialDescription: string;
   effectivePrice: number | null;
   hasContractAmendment: boolean;
+  /** Faza 6 — odluka je poništena obostranom potvrdom. */
+  annulled: boolean;
+  annulledAt: string | null;
   steps: DecisionPdfStep[];
   language: 'hr' | 'en' | 'de';
   generatedAt: string;
