@@ -43,6 +43,7 @@
     "success": "Uspješno",
     "yes": "Da",
     "no": "Ne",
+    "exitApp": { "title": "Izaći iz aplikacije?" },
     "back": "Natrag",
     "next": "Dalje",
     "previousMonth": "Prethodni mjesec",
