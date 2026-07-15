@@ -115,12 +115,14 @@ export const ProjectFullScreenView = ({
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
 
-  // dbg: log every open change
+  // Log every open change
   useEffect(() => {
-    logDiagnostic({
-      event: 'dbg_pfsv_open_change',
-      details: { open, projectId: project?.id ?? null, nativeFlowActive: isNativeFlowActive() },
-    });
+    try {
+      logDiagnostic({
+        event: 'pfsv_open_changed',
+        details: { open, projectId: project?.id ?? null, nativeFlowActive: isNativeFlowActive() },
+      });
+    } catch { /* ignore */ }
   }, [open, project?.id]);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
