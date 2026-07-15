@@ -4,7 +4,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import { hr, enUS, de as deLocale } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
-  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature,
+  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature, FileDown, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
