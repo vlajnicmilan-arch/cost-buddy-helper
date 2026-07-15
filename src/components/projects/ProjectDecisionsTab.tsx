@@ -339,37 +339,43 @@ function DecisionDetail({
         <h4 className="text-xs font-semibold uppercase tracking-wide text-module-muted">
           {t('projects.decisions.timeline', 'Slijed koraka')}
         </h4>
-        {decision.steps.map((s: DecisionStep) => (
-          <div key={s.step_no} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <StepDot action={s.action} />
-              <div className="flex-1 w-px bg-border mt-1" />
-            </div>
-            <div className="flex-1 pb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm">{nameOf(s.actor_user_id)}</span>
-                <Badge variant="outline" className="text-[10px]">{actionLabel(s.action)}</Badge>
-                {s.price != null && s.price !== 0 && (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'text-[10px] font-semibold',
-                      s.price < 0
-                        ? 'bg-destructive/10 text-destructive border-destructive/30'
-                        : 'bg-income/10 text-income border-income/30',
-                    )}
-                  >
-                    {formatSignedAmount(Number(s.price))}
-                  </Badge>
-                )}
-                <span className="text-[11px] text-muted-foreground">{dtFmt(s.created_at)}</span>
+        {decision.steps.map((s) => {
+          const stepAttachments = decision.attachments.filter((a) => a.step_id === s.id);
+          return (
+            <div key={s.step_no} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <StepDot action={s.action} />
+                <div className="flex-1 w-px bg-border mt-1" />
               </div>
-              {s.message && (
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{s.message}</p>
-              )}
+              <div className="flex-1 pb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">{nameOf(s.actor_user_id)}</span>
+                  <Badge variant="outline" className="text-[10px]">{actionLabel(s.action)}</Badge>
+                  {s.price != null && s.price !== 0 && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[10px] font-semibold',
+                        s.price < 0
+                          ? 'bg-destructive/10 text-destructive border-destructive/30'
+                          : 'bg-income/10 text-income border-income/30',
+                      )}
+                    >
+                      {formatSignedAmount(Number(s.price))}
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">{dtFmt(s.created_at)}</span>
+                </div>
+                {s.message && (
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{s.message}</p>
+                )}
+                {stepAttachments.length > 0 && (
+                  <DecisionStepAttachments attachments={stepAttachments} getUrl={getAttachmentUrl} />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Akcije */}
