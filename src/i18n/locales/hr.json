@@ -963,6 +963,7 @@
         "declinedOk": "Zahtjev odbijen",
         "annulledInfo": "Odluka je poništena obostranom potvrdom.",
         "annulledMeta": "{{by}} · {{when}}"
+      },
       "action": {
         "propose": "Prijedlog",
         "counter": "Protuprijedlog",
