@@ -218,6 +218,7 @@ function DecisionCard({
   const Icon = badge.icon;
 
   const yourTurn = legal.canAccept || legal.canReject || legal.canCounter || legal.canCorrect;
+  const isOverdue = !!decision.overdue && decision.current_status === 'awaiting_response';
 
   return (
     <button
@@ -226,6 +227,7 @@ function DecisionCard({
       className={cn(
         'w-full text-left p-3 rounded-lg border bg-card transition hover:bg-muted/40 active:scale-[0.99]',
         yourTurn && 'ring-1 ring-module/40',
+        isOverdue && 'ring-1 ring-destructive/40',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -235,6 +237,11 @@ function DecisionCard({
             {yourTurn && (
               <Badge variant="outline" className="bg-module/10 text-module border-module/30 text-[10px]">
                 {t('projects.decisions.yourTurn', 'Na tebi')}
+              </Badge>
+            )}
+            {isOverdue && (
+              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px]">
+                {t('projects.decisions.status.overdue', 'Rok istekao')}
               </Badge>
             )}
           </div>
