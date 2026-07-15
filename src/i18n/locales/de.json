@@ -407,6 +407,12 @@
       "created": "VTR hinzugefügt",
       "deleteWarning": "Beim Löschen dieser VTR wird der Vertragswert um {{amount}} reduziert. Fortfahren?"
     },
+    "decisionSource": {
+      "fromDecisionBadge": "Aus Entscheidung erstellt",
+      "fromAnnulledBadge": "Aus annullierter Entscheidung",
+      "investorLabel": "An Investor",
+      "investorHint": "Informativ — Investorenbetrag aus der Entscheidung. Fließt nicht in Kostenbudget, Marge oder Cashflow ein."
+    },
     "editMilestone": "Meilenstein bearbeiten",
     "milestoneName": "Meilensteinname",
     "milestoneNamePlaceholder": "z.B. Phase 1",
