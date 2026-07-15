@@ -3,6 +3,7 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "projects.decisions.admin.annulledMeta": "Placeholder-only pattern",
     "attention.ai": "Acronym",
     "paywall.interval.lifetime": "Product plan term",
     "paywall.yearlyBadge": "Numeric badge",
