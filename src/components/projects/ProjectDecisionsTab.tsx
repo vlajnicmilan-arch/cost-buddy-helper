@@ -742,9 +742,7 @@ function DecisionDetail({
               <div className="p-3 rounded-lg border border-warning/40 bg-warning/5 space-y-2">
                 <div className="flex items-center gap-2 text-warning text-sm font-medium">
                   <AlertTriangle className="w-4 h-4" />
-                  {pending.type === 'annul'
-                    ? t('projects.decisions.admin.pendingAnnulBanner', 'Predloženo poništenje odluke — čeka odgovor druge strane.')
-                    : t('projects.decisions.admin.pendingDeleteBanner', 'Predloženo brisanje odluke — čeka odgovor druge strane.')}
+                  {t('projects.decisions.admin.pendingAnnulBanner', 'Predloženo poništenje odluke — čeka odgovor druge strane.')}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t('projects.decisions.admin.requestedBy', 'Predlagatelj: {{name}} · {{when}}', {
