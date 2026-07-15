@@ -30,15 +30,15 @@ export const InviteEmail = ({
 }: InviteEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Pozvani ste na V&M Balance</Preview>
+    <Preview>Pozvani ste na Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Pozvani ste!</Heading>
         <Text style={text}>
           Pozvani ste da se pridružite na{' '}
           <Link href={siteUrl} style={link}>
-            <strong>V&M Balance</strong>
+            <strong>Centar</strong>
           </Link>
           . Kliknite gumb ispod kako biste prihvatili poziv i kreirali svoj račun.
         </Text>

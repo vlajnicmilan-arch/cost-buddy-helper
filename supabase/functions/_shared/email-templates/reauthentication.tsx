@@ -22,10 +22,10 @@ const LOGO_URL = getLogoUrl()
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Vaš verifikacijski kod za V&M Balance</Preview>
+    <Preview>Vaš verifikacijski kod za Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Verifikacijski kod</Heading>
         <Text style={text}>Koristite kod ispod za potvrdu vašeg identiteta:</Text>
         <Text style={codeStyle}>{token}</Text>

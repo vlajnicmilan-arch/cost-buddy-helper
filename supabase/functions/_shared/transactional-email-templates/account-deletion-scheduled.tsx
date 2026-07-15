@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 interface Props {
   scheduledDate?: string
@@ -16,13 +16,13 @@ interface Props {
 const AccountDeletionScheduledEmail = ({ scheduledDate, graceDays = 30 }: Props) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Zaprimili smo zahtjev za brisanje vašeg V&M Balance računa</Preview>
+    <Preview>Zaprimili smo zahtjev za brisanje vašeg Centar računa</Preview>
     <Body style={main}>
       <Container style={container}>
         <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logo} />
         <Heading style={h1}>Zahtjev za brisanje računa zaprimljen</Heading>
         <Text style={text}>
-          Zaprimili smo vaš zahtjev za trajno brisanje V&M Balance računa i svih povezanih podataka.
+          Zaprimili smo vaš zahtjev za trajno brisanje Centar računa i svih povezanih podataka.
         </Text>
         <Text style={highlight}>
           🗓️ Račun će biti trajno obrisan: <strong>{scheduledDate || 'kroz 30 dana'}</strong>

@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 interface ProjectWorkerInvitationProps {
   inviterName?: string

@@ -27,13 +27,13 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Vaš link za prijavu na V&M Balance</Preview>
+    <Preview>Vaš link za prijavu na Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Link za prijavu</Heading>
         <Text style={text}>
-          Kliknite gumb ispod za prijavu na V&M Balance. Ovaj link uskoro istječe.
+          Kliknite gumb ispod za prijavu na Centar. Ovaj link uskoro istječe.
         </Text>
         <Button style={button} href={confirmationUrl}>
           Prijavi se

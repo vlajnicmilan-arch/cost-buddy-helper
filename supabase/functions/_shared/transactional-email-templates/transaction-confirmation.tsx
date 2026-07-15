@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 interface TransactionConfirmationProps {
   description?: string
@@ -24,7 +24,7 @@ const TransactionConfirmationEmail = ({ description, amount, category, date }: T
         <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logo} />
         <Heading style={h1}>Transakcija zabilježena ✓</Heading>
         <Text style={text}>
-          Nova transakcija je uspješno dodana u vaš V&M Balance račun:
+          Nova transakcija je uspješno dodana u vaš Centar račun:
         </Text>
         <Text style={highlight}>
           {description || 'Transakcija'} — {amount || '0 €'}
