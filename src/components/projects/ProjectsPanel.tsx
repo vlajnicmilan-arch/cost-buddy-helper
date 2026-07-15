@@ -236,11 +236,15 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
 
   const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
-    setDetailDialogOpen(true);
+    setDetailDialogOpen(true, 'handleProjectClick');
   };
 
   const handleCloseFullScreen = () => {
-    setDetailDialogOpen(false);
+    try {
+      const stack = new Error().stack?.split('\n').slice(1, 4).join(' | ');
+      logDiagnostic({ event: 'dbg_panel_close_fullscreen', details: { stack } });
+    } catch { /* ignore */ }
+    setDetailDialogOpen(false, 'handleCloseFullScreen');
     setSelectedProject(null);
     setPendingExpenseId(null);
     setPendingInitialTab(null);
