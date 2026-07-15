@@ -524,7 +524,14 @@ function StepDot({ action }: { action: DecisionAction }) {
 
 function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }> }) {
   const { t } = useTranslation();
+  const { pendingCapture } = useDecisionScan();
   const [open, setOpen] = useState(false);
+  // Belt-and-braces: ako je Android popstate zatvorio dijalog dok je kamera
+  // roundtripala, a fotka je stigla u context za 'new-decision' ključ —
+  // ponovno otvori dijalog. Draft se rehidrira iz DecisionScanContexta.
+  useEffect(() => {
+    if (pendingCapture?.key === 'new-decision' && !open) setOpen(true);
+  }, [pendingCapture, open]);
   return (
     <>
       <Button size="sm" onClick={() => setOpen(true)} className="gap-1">
@@ -534,3 +541,4 @@ function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initia
     </>
   );
 }
+
