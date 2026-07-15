@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   projectId: string;
+  projectName: string;
   projectOwnerId: string;
   /** UUID investitora projekta (može biti null). */
   investorUserId: string | null;
@@ -54,7 +55,7 @@ const localeFor = (lng: string) => {
 };
 
 export function ProjectDecisionsTab({
-  projectId, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
+  projectId, projectName, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
