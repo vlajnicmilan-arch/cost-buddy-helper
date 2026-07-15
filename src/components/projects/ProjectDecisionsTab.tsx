@@ -415,10 +415,24 @@ function DecisionDetail({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
           <ArrowLeft className="w-4 h-4" /> {t('common.back', 'Natrag')}
         </Button>
+        {isClosed && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="gap-1"
+          >
+            {exportingPdf
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <FileDown className="w-4 h-4" />}
+            {t('projects.decisions.pdf.exportPdf', 'Izvezi PDF')}
+          </Button>
+        )}
       </div>
 
       <div className="p-4 rounded-lg border bg-card">
