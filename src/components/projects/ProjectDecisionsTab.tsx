@@ -50,8 +50,20 @@ export function ProjectDecisionsTab({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { decisions, loading, createDecision, addStep, getAttachmentUrl } = useProjectDecisions(projectId);
+  const { pendingCapture } = useDecisionScan();
   const [selected, setSelected] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+
+  // Belt-and-braces reopener: ako je Android popstate zatvorio detalj
+  // odluke tijekom kamera roundtripa, ali fotka je stigla u context —
+  // vrati korisnika na isti detalj kako bi picker mogao pokupiti sliku.
+  useEffect(() => {
+    if (!pendingCapture) return;
+    const m = /^reply-(.+)$/.exec(pendingCapture.key);
+    if (!m) return;
+    const decisionId = m[1];
+    if (selected !== decisionId) setSelected(decisionId);
+  }, [pendingCapture, selected]);
 
   if (!isDecisionParty) {
     return (
@@ -65,6 +77,7 @@ export function ProjectDecisionsTab({
   const closed = useMemo(() => decisions.filter(d => d.current_status !== 'awaiting_response'), [decisions]);
 
   const selectedDecision = decisions.find(d => d.id === selected) ?? null;
+
 
   const handleCreate = async (input: { title: string; initial_description: string; price?: number | null; attachments?: File[] }) => {
     const res = await createDecision(input);
