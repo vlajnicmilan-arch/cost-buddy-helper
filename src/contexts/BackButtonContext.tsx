@@ -47,16 +47,28 @@ type BackHandler = {
   onClose: () => void;
   priority: number;
   openedAt: number;
+  label?: string;
 };
 
 type BackButtonContextType = {
-  register: (id: string, isOpen: boolean, onClose: () => void, priority?: number) => void;
+  register: (id: string, isOpen: boolean, onClose: () => void, priority?: number, label?: string) => void;
   unregister: (id: string) => void;
   /** Trenutni broj registriranih otvorenih handlera (dijagnostika). */
   getStackDepth: () => number;
 };
 
 const BackButtonContext = createContext<BackButtonContextType | null>(null);
+const ROOT_HANDLER_ID = 'back-root';
+
+const handlerLayer = (h: BackHandler) => ({
+  id: h.id,
+  priority: h.priority,
+  ...(h.label ? { label: h.label } : {}),
+});
+
+const sortOpenHandlers = (handlers: Iterable<BackHandler>) => Array.from(handlers)
+  .filter(h => h.isOpen)
+  .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
 
 /**
  * Detekcija Android/native shell-a. Isti pattern koji koristi useDeepLinks.
@@ -90,6 +102,30 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   const lastForegroundAtRef = useRef<number>(0);
   const VISIBILITY_GRACE_MS = 2500;
 
+  const getOpenHandlers = useCallback(() => sortOpenHandlers(handlersRef.current.values()), []);
+
+  const getOpenLayers = useCallback(() => getOpenHandlers().map(handlerLayer), [getOpenHandlers]);
+
+  const consumeRootBack = useCallback(() => {
+    const currentPath = locationRef.current;
+
+    if (!isRootAppRoute(currentPath)) {
+      navigate('/home', { replace: false });
+      return;
+    }
+
+    if (isNativePlatform()) {
+      try {
+        logDiagnostic({ event: 'backctx_minimize', details: { route: currentPath } });
+      } catch { /* ignore */ }
+      tryMinimizeApp();
+      window.history.pushState(null, '');
+      return;
+    }
+
+    window.history.pushState(null, '');
+  }, [navigate]);
+
   const location = useLocation();
   useEffect(() => {
     locationRef.current = location.pathname;
@@ -98,13 +134,87 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     }
   }, [location.pathname]);
 
-  const register = useCallback((id: string, isOpen: boolean, onClose: () => void, priority = 0) => {
+  useEffect(() => {
+    const shouldRegisterRoot = !isPublicRoute(location.pathname);
+    const existing = handlersRef.current.get(ROOT_HANDLER_ID);
+
+    if (!shouldRegisterRoot) {
+      if (existing?.isOpen) {
+        try {
+          logDiagnostic({
+            event: 'backctx_unregister',
+            details: {
+              action: `${ROOT_HANDLER_ID}:ROOT`,
+              id: ROOT_HANDLER_ID,
+              priority: BACK_PRIORITY.ROOT,
+              label: 'ROOT',
+              reason: 'public_route',
+            },
+          });
+        } catch { /* ignore */ }
+      }
+      handlersRef.current.delete(ROOT_HANDLER_ID);
+      return;
+    }
+
+    handlersRef.current.set(ROOT_HANDLER_ID, {
+      id: ROOT_HANDLER_ID,
+      isOpen: true,
+      onClose: consumeRootBack,
+      priority: BACK_PRIORITY.ROOT,
+      openedAt: 0,
+      label: 'ROOT',
+    });
+
+    if (!existing?.isOpen) {
+      try {
+        logDiagnostic({
+          event: 'backctx_register',
+          details: {
+            action: `${ROOT_HANDLER_ID}:ROOT`,
+            id: ROOT_HANDLER_ID,
+            priority: BACK_PRIORITY.ROOT,
+            label: 'ROOT',
+          },
+        });
+      } catch { /* ignore */ }
+    }
+  }, [consumeRootBack, location.pathname]);
+
+  const register = useCallback((id: string, isOpen: boolean, onClose: () => void, priority = 0, label?: string) => {
     const existing = handlersRef.current.get(id);
     const wasOpen = existing?.isOpen ?? false;
+    const nextLabel = label ?? existing?.label;
 
     // Nikad ne guraj history entry na public rutama — zarobilo bi korisnika.
     if (isOpen && !wasOpen && !isPublicRoute(locationRef.current)) {
       window.history.pushState({ backButtonId: id }, '');
+      try {
+        logDiagnostic({
+          event: 'backctx_register',
+          details: {
+            action: `${id}:${nextLabel ?? ''}`,
+            id,
+            priority,
+            ...(nextLabel ? { label: nextLabel } : {}),
+          },
+        });
+      } catch { /* ignore */ }
+    }
+
+    if (!isOpen && wasOpen) {
+      try {
+        logDiagnostic({
+          event: 'backctx_unregister',
+          details: {
+            action: `${id}:${nextLabel ?? ''}`,
+            id,
+            priority,
+            ...(nextLabel ? { label: nextLabel } : {}),
+            reason: 'closed',
+          },
+        });
+      } catch { /* ignore */ }
     }
 
     handlersRef.current.set(id, {
@@ -113,10 +223,26 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       onClose,
       priority,
       openedAt: isOpen && !wasOpen ? Date.now() : (existing?.openedAt ?? 0),
+      label: nextLabel,
     });
   }, []);
 
   const unregister = useCallback((id: string) => {
+    const existing = handlersRef.current.get(id);
+    if (existing?.isOpen) {
+      try {
+        logDiagnostic({
+          event: 'backctx_unregister',
+          details: {
+            action: `${id}:${existing.label ?? ''}`,
+            id,
+            priority: existing.priority,
+            ...(existing.label ? { label: existing.label } : {}),
+            reason: 'unmount',
+          },
+        });
+      } catch { /* ignore */ }
+    }
     handlersRef.current.delete(id);
   }, []);
 
@@ -137,9 +263,8 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const openHandlers = Array.from(handlersRef.current.values())
-      .filter(h => h.isOpen)
-      .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
+    const openHandlers = getOpenHandlers();
+    const layers = openHandlers.map(handlerLayer);
 
     const stackDepthBefore = openHandlers.length;
     const sinceForeground = Date.now() - lastForegroundAtRef.current;
@@ -153,6 +278,8 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
           sinceForegroundMs: lastForegroundAtRef.current > 0 ? sinceForeground : -1,
           topHandlerId: openHandlers[0]?.id ?? null,
           topHandlerPriority: openHandlers[0]?.priority ?? null,
+          topHandlerLabel: openHandlers[0]?.label ?? null,
+          layers,
           route: currentPath,
         },
       });
@@ -171,32 +298,40 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       try {
         logDiagnostic({
           event: 'backctx_handler_consumed',
-          details: { id: handler.id, priority: handler.priority, stackDepthBefore },
+          details: {
+            action: `${handler.id}:${handler.label ?? ''}`,
+            id: handler.id,
+            priority: handler.priority,
+            ...(handler.label ? { label: handler.label } : {}),
+            stackDepthBefore,
+            layersBefore: layers,
+          },
         });
       } catch { /* ignore */ }
       handler.onClose();
+      window.setTimeout(() => {
+        try {
+          const layersAfter = getOpenLayers();
+          logDiagnostic({
+            event: 'backctx_stack_after',
+            details: {
+              action: `${handler.id}:${handler.label ?? ''}`,
+              consumedHandlerId: handler.id,
+              consumedHandlerPriority: handler.priority,
+              consumedHandlerLabel: handler.label ?? null,
+              stackDepthBefore,
+              stackDepthAfter: layersAfter.length,
+              layers: layersAfter,
+            },
+          });
+        } catch { /* ignore */ }
+      }, 0);
       return;
     }
 
     // Nema handlera — page-level back.
-    if (!isRootAppRoute(currentPath)) {
-      navigate('/home', { replace: false });
-      return;
-    }
-
-    // Root app ruta bez handlera → Android minimize, web re-push.
-    if (isNativePlatform()) {
-      try {
-        logDiagnostic({ event: 'backctx_minimize', details: { route: currentPath } });
-      } catch { /* ignore */ }
-      tryMinimizeApp();
-      // Sigurnosno vratimo guard entry ako minimize ne uspije, da back
-      // ne pobjegne iz web-view scope-a.
-      window.history.pushState(null, '');
-      return;
-    }
-    window.history.pushState(null, '');
-  }, [navigate]);
+    consumeRootBack();
+  }, [consumeRootBack, getOpenHandlers, getOpenLayers]);
 
   useEffect(() => {
     window.addEventListener('popstate', handlePopState);
