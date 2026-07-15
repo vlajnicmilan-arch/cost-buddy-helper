@@ -122,7 +122,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       if (project) {
         if (fromState) returnToRef.current = fromState;
         setSelectedProject(project as ProjectWithOwnership);
-        setDetailDialogOpen(true);
+        setDetailDialogOpen(true, 'urlState_effect');
         if (resolvedExpenseId) setPendingExpenseId(resolvedExpenseId);
         if (resolvedTab) setPendingInitialTab(resolvedTab);
         // Clear the state so it doesn't re-trigger
