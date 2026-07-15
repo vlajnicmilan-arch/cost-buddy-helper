@@ -425,6 +425,11 @@ function DecisionDetail({
                   })}
                 </p>
               )}
+              <DecisionAttachmentPicker
+                value={replyAttachments}
+                onChange={setReplyAttachments}
+                disabled={!!sending}
+              />
             </>
           )}
 
