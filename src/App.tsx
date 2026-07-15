@@ -12,6 +12,8 @@ import { ReceiptScanProvider } from "@/contexts/ReceiptScanContext";
 import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptScanHost";
 import { PdfImportProvider } from "@/contexts/PdfImportContext";
 import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
+import { DecisionScanProvider } from "@/contexts/DecisionScanContext";
+import { GlobalDecisionCaptureHost } from "@/components/projects/GlobalDecisionCaptureHost";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
@@ -349,23 +351,26 @@ const App = () => (
                     <TutorialProvider>
                       <ReceiptScanProvider>
                         <PdfImportProvider>
-                          <NativeInit />
-                          <Toaster />
-                          <Sonner />
-                          <BrowserRouter>
-                            <BackButtonProvider>
-                              <ScrollToTop />
-                              <DeepLinkInit />
-                              <PushAutoRegister />
-                              <DiagnosticRouteTracker />
-                              <BusinessModeGuard />
-                              <RouteAwareGlobalOverlays />
-                              <GlobalReceiptScanHost />
-                              <GlobalPDFImportHost />
-                              <CrispChat />
-                              <AppRoutes />
-                            </BackButtonProvider>
-                          </BrowserRouter>
+                          <DecisionScanProvider>
+                            <NativeInit />
+                            <Toaster />
+                            <Sonner />
+                            <BrowserRouter>
+                              <BackButtonProvider>
+                                <ScrollToTop />
+                                <DeepLinkInit />
+                                <PushAutoRegister />
+                                <DiagnosticRouteTracker />
+                                <BusinessModeGuard />
+                                <RouteAwareGlobalOverlays />
+                                <GlobalReceiptScanHost />
+                                <GlobalPDFImportHost />
+                                <GlobalDecisionCaptureHost />
+                                <CrispChat />
+                                <AppRoutes />
+                              </BackButtonProvider>
+                            </BrowserRouter>
+                          </DecisionScanProvider>
                         </PdfImportProvider>
                       </ReceiptScanProvider>
                     </TutorialProvider>
