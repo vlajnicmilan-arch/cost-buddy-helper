@@ -47,6 +47,7 @@ const DEFAULT_PREFS: NotificationPreferences = {
   participant_digest_enabled: true,
   participant_digest_hour: 19,
   krug_enabled: true,
+  decisions_enabled: true,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -60,6 +61,7 @@ const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
   broadcast: 'broadcast_enabled',
   daily_summary: 'daily_summary_enabled',
   krug: 'krug_enabled',
+  decisions: 'decisions_enabled',
 };
 
 export const useNotificationPreferences = () => {
