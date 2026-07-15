@@ -28,6 +28,7 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -53,7 +54,11 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailDialogOpen, _setDetailDialogOpenRaw] = useState(false);
+  const setDetailDialogOpen = useCallback((value: boolean, source: string = 'unknown') => {
+    logDiagnostic({ event: 'dbg_panel_detail_open_set', details: { value, source } });
+    _setDetailDialogOpenRaw(value);
+  }, []);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -117,7 +122,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       if (project) {
         if (fromState) returnToRef.current = fromState;
         setSelectedProject(project as ProjectWithOwnership);
-        setDetailDialogOpen(true);
+        setDetailDialogOpen(true, 'urlState_effect');
         if (resolvedExpenseId) setPendingExpenseId(resolvedExpenseId);
         if (resolvedTab) setPendingInitialTab(resolvedTab);
         // Clear the state so it doesn't re-trigger
@@ -231,11 +236,15 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
 
   const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
-    setDetailDialogOpen(true);
+    setDetailDialogOpen(true, 'handleProjectClick');
   };
 
   const handleCloseFullScreen = () => {
-    setDetailDialogOpen(false);
+    try {
+      const stack = new Error().stack?.split('\n').slice(1, 4).join(' | ');
+      logDiagnostic({ event: 'dbg_panel_close_fullscreen', details: { stack } });
+    } catch { /* ignore */ }
+    setDetailDialogOpen(false, 'handleCloseFullScreen');
     setSelectedProject(null);
     setPendingExpenseId(null);
     setPendingInitialTab(null);

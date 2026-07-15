@@ -15,6 +15,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
@@ -95,6 +96,10 @@ export const ProjectFullScreenView = ({
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+  const handleTabChange = (next: string) => {
+    logDiagnostic({ event: 'dbg_pfsv_tab_change', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
+    setActiveTab(next);
+  };
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
@@ -107,6 +112,14 @@ export const ProjectFullScreenView = ({
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
+
+  // dbg: log every open change
+  useEffect(() => {
+    logDiagnostic({
+      event: 'dbg_pfsv_open_change',
+      details: { open, projectId: project?.id ?? null, nativeFlowActive: isNativeFlowActive() },
+    });
+  }, [open, project?.id]);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
     project?.id || null, 
@@ -206,8 +219,16 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
+      logDiagnostic({
+        event: 'dbg_pfsv_tab_reset',
+        details: { branch: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+      });
       setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
     } else if (isWorkerOnly) {
+      logDiagnostic({
+        event: 'dbg_pfsv_tab_reset',
+        details: { branch: 'workerOnly', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+      });
       setActiveTab('worklog');
     }
   }, [open, project?.id, isWorkerOnly]);
@@ -229,15 +250,18 @@ export const ProjectFullScreenView = ({
     if (!open) return;
 
     const handlePopState = (e: PopStateEvent) => {
+      const guarded = isNativeFlowActive();
+      logDiagnostic({ event: 'dbg_pfsv_popstate', details: { guarded, projectId: project?.id ?? null } });
       // Ignore synthetic popstate emitted by Android when a native activity
       // (camera, file picker, share sheet, …) returns focus to the WebView.
       // Otherwise it would close the project view mid-flight and destroy any
       // draft (e.g. a decision being composed) — see AddExpenseDialog pattern.
-      if (isNativeFlowActive()) {
+      if (guarded) {
         window.history.pushState({ projectView: true }, '');
         return;
       }
       e.preventDefault();
+      logDiagnostic({ event: 'dbg_pfsv_close_via_popstate', details: { projectId: project?.id ?? null } });
       onClose();
     };
 
@@ -490,7 +514,7 @@ export const ProjectFullScreenView = ({
               {/* Wave 2: unified single tab strip.
                   Mobile: fixed 4+1 (Overview, Budget, Phases, Team) + "More" sheet for overflow.
                   Desktop (sm+): full horizontal TabsList. */}
-              <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
+              <Tabs value={resolvedActiveTab} onValueChange={handleTabChange}>
                 {!isWorkerOnly && (() => {
                   const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
 
@@ -540,7 +564,7 @@ export const ProjectFullScreenView = ({
                     <>
                       <MobileProjectTabs
                         value={resolvedActiveTab}
-                        onValueChange={setActiveTab}
+                        onValueChange={handleTabChange}
                         primary={primary}
                         overflow={overflow}
                       />

@@ -2,6 +2,7 @@ import { createContext, useContext, useRef, useCallback, useEffect, ReactNode } 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { isPublicRoute, isRootAppRoute } from '@/lib/publicRoutes';
 import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 /**
  * Global Back Button Manager
@@ -96,7 +97,19 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
 
     const sinceForeground = Date.now() - lastForegroundAtRef.current;
-    if (isNativeFlowActive() || (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS)) {
+    const guarded = isNativeFlowActive();
+    try {
+      logDiagnostic({
+        event: 'dbg_backctx_popstate',
+        details: {
+          guarded,
+          handlersCount: openHandlers.length,
+          sinceForegroundMs: lastForegroundAtRef.current > 0 ? sinceForeground : -1,
+          topHandlerId: openHandlers[0]?.id ?? null,
+        },
+      });
+    } catch { /* ignore */ }
+    if (guarded || (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS)) {
       window.history.pushState(null, '');
       return;
     }
