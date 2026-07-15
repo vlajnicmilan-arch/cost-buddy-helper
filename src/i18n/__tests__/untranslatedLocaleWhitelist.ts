@@ -101,6 +101,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.delete.votePanel.progress": "Placeholder-only counter",
   },
   de: {
+    "projects.decisions.admin.annulledMeta": "Placeholder-only pattern",
     "paywall.interval.lifetime": "Product plan term",
     "paywall.yearlyBadge": "Numeric badge",
     "paywall.lifetimeBadge": "Numeric badge",
