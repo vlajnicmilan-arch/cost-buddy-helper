@@ -5,7 +5,7 @@ import { hr, enUS, de as deLocale } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
   MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature, FileDown, Loader2,
-  Ban, Trash2, RotateCcw, AlertTriangle,
+  Ban, RotateCcw, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ import {
   type DecisionAction,
   type DecisionStep,
 } from '@/lib/projectDecisionStateMachine';
-import { getAdminActions, type DecisionAdminType } from '@/lib/decisionAdminRequests';
+import { getAdminActions, canWithdrawProposal, type DecisionAdminType } from '@/lib/decisionAdminRequests';
 import { parseMoneySigned } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +70,7 @@ export function ProjectDecisionsTab({
   const {
     decisions, loading, createDecision, addStep, getAttachmentUrl,
     requestDecisionAdmin, withdrawDecisionAdminRequest, resolveDecisionAdminRequest,
+    withdrawDecisionProposal,
   } = useProjectDecisions(projectId);
   const { pendingCapture } = useDecisionScan();
   const [selected, setSelected] = useState<string | null>(null);
@@ -162,14 +163,19 @@ export function ProjectDecisionsTab({
         onResolveAdmin={async (requestId, decision) => {
           const res = await resolveDecisionAdminRequest(requestId, decision);
           if (res.ok) {
-            if (res.action === 'deleted') {
-              showSuccess(t('projects.decisions.admin.deletedOk', 'Odluka obrisana'));
-              setSelected(null);
-            } else if (res.action === 'annulled') {
+            if (res.action === 'annulled') {
               showSuccess(t('projects.decisions.admin.annulledOk', 'Odluka poništena'));
             } else if (res.action === 'declined') {
               showSuccess(t('projects.decisions.admin.declinedOk', 'Zahtjev odbijen'));
             }
+          }
+          return res;
+        }}
+        onWithdrawProposal={async () => {
+          const res = await withdrawDecisionProposal(selectedDecision.id);
+          if (res.ok) {
+            showSuccess(t('projects.decisions.withdrawProposal.done', 'Prijedlog povučen'));
+            setSelected(null);
           }
           return res;
         }}
@@ -344,7 +350,7 @@ function DecisionCard({
 function DecisionDetail({
   decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap,
   onBack, onAction, getAttachmentUrl,
-  onRequestAdmin, onWithdrawAdmin, onResolveAdmin,
+  onRequestAdmin, onWithdrawAdmin, onResolveAdmin, onWithdrawProposal,
 }: {
   decision: ProjectDecision;
   projectName: string;
@@ -364,6 +370,7 @@ function DecisionDetail({
   onWithdrawAdmin: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
   onResolveAdmin: (requestId: string, decision: 'confirm' | 'decline') =>
     Promise<{ ok: boolean; action?: string; error?: string }>;
+  onWithdrawProposal: () => Promise<{ ok: boolean; error?: string }>;
 }) {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -375,10 +382,17 @@ function DecisionDetail({
   const [replyAttachments, setReplyAttachments] = useState<File[]>(initialDraft.attachments ?? []);
   const [sending, setSending] = useState<DecisionAction | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [adminBusy, setAdminBusy] = useState<'request' | 'withdraw' | 'resolve' | null>(null);
-  const [confirmType, setConfirmType] = useState<DecisionAdminType | null>(null);
+  const [adminBusy, setAdminBusy] = useState<'request' | 'withdraw' | 'resolve' | 'withdrawProposal' | null>(null);
+  const [confirmAnnul, setConfirmAnnul] = useState(false);
+  const [confirmWithdrawProposal, setConfirmWithdrawProposal] = useState(false);
 
   const isClosed = decision.current_status !== 'awaiting_response';
+  const canWithdrawOwnProposal = canWithdrawProposal({
+    currentUserId,
+    decisionCreatedBy: decision.created_by,
+    decisionStatus: decision.current_status,
+    stepsCount: decision.steps.length,
+  });
 
   const handleExportPdf = async () => {
     if (exportingPdf) return;
@@ -728,9 +742,7 @@ function DecisionDetail({
               <div className="p-3 rounded-lg border border-warning/40 bg-warning/5 space-y-2">
                 <div className="flex items-center gap-2 text-warning text-sm font-medium">
                   <AlertTriangle className="w-4 h-4" />
-                  {pending.type === 'annul'
-                    ? t('projects.decisions.admin.pendingAnnulBanner', 'Predloženo poništenje odluke — čeka odgovor druge strane.')
-                    : t('projects.decisions.admin.pendingDeleteBanner', 'Predloženo brisanje odluke — čeka odgovor druge strane.')}
+                  {t('projects.decisions.admin.pendingAnnulBanner', 'Predloženo poništenje odluke — čeka odgovor druge strane.')}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t('projects.decisions.admin.requestedBy', 'Predlagatelj: {{name}} · {{when}}', {
@@ -752,9 +764,7 @@ function DecisionDetail({
                         className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        {pending.type === 'annul'
-                          ? t('projects.decisions.admin.confirmAnnul', 'Potvrdi poništenje')
-                          : t('projects.decisions.admin.confirmDelete', 'Potvrdi brisanje')}
+                        {t('projects.decisions.admin.confirmAnnul', 'Potvrdi poništenje')}
                       </Button>
                       <Button
                         size="sm"
@@ -792,60 +802,39 @@ function DecisionDetail({
               </div>
             )}
 
-            {!pending && (adminActions.canRequestAnnul || adminActions.canRequestDelete) && (
+            {!pending && adminActions.canRequestAnnul && (
               <div className="flex flex-wrap gap-2 pt-1">
-                {adminActions.canRequestAnnul && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirmType('annul')}
-                    disabled={adminBusy !== null}
-                    className="gap-1"
-                  >
-                    <Ban className="w-4 h-4" />
-                    {t('projects.decisions.admin.proposeAnnul', 'Predloži poništenje')}
-                  </Button>
-                )}
-                {adminActions.canRequestDelete && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setConfirmType('delete')}
-                    disabled={adminBusy !== null}
-                    className="gap-1 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {t('projects.decisions.admin.proposeDelete', 'Predloži brisanje')}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmAnnul(true)}
+                  disabled={adminBusy !== null}
+                  className="gap-1"
+                >
+                  <Ban className="w-4 h-4" />
+                  {t('projects.decisions.admin.proposeAnnul', 'Predloži poništenje')}
+                </Button>
               </div>
             )}
 
-            <AlertDialog open={confirmType !== null} onOpenChange={(o) => { if (!o) setConfirmType(null); }}>
+            <AlertDialog open={confirmAnnul} onOpenChange={(o) => { if (!o) setConfirmAnnul(false); }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>
-                    {confirmType === 'annul'
-                      ? t('projects.decisions.admin.confirmAnnulTitle', 'Predloži poništenje odluke?')
-                      : t('projects.decisions.admin.confirmDeleteTitle', 'Predloži brisanje odluke?')}
+                    {t('projects.decisions.admin.confirmAnnulTitle', 'Predloži poništenje odluke?')}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    {confirmType === 'annul'
-                      ? t('projects.decisions.admin.confirmAnnulDesc',
-                          'Odluka ostaje u arhivu s oznakom "Poništena". Ako je bila odobrena s izmjenom ugovora, novac se vraća u Ugovoreno preko kompenzacijskog aneksa. Zahtjev se izvršava tek kad ga druga strana potvrdi.')
-                      : t('projects.decisions.admin.confirmDeleteDesc',
-                          'Odluka i svi njeni koraci i prilozi bit će trajno obrisani. Ako je postojala izmjena ugovora, ona se uklanja i Ugovoreno se vraća. Zahtjev se izvršava tek kad ga druga strana potvrdi.')}
+                    {t('projects.decisions.admin.confirmAnnulDesc',
+                      'Odluka ostaje u arhivu s oznakom „Poništena". Ako je bila odobrena s izmjenom ugovora, novac se vraća u Ugovoreno preko kompenzacijskog aneksa. Zahtjev se izvršava tek kad ga druga strana potvrdi.')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
-                      const type = confirmType;
-                      setConfirmType(null);
-                      if (!type) return;
+                      setConfirmAnnul(false);
                       setAdminBusy('request');
-                      await onRequestAdmin(type);
+                      await onRequestAdmin('annul');
                       setAdminBusy(null);
                     }}
                   >
@@ -857,6 +846,58 @@ function DecisionDetail({
           </div>
         );
       })()}
+
+      {/* Faza 6 REV — povlačenje prijedloga (samo autor, samo dok nema odgovora) */}
+      {canWithdrawOwnProposal && (
+        <div className="p-3 rounded-lg border border-muted bg-muted/20 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {t(
+              'projects.decisions.withdrawProposal.hint',
+              'Druga strana još nije odgovorila. Možeš povući prijedlog — trajno će nestati (odluka, korak i prilozi).',
+            )}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setConfirmWithdrawProposal(true)}
+            disabled={adminBusy !== null}
+            className="gap-1 text-destructive hover:text-destructive"
+          >
+            <RotateCcw className="w-4 h-4" />
+            {t('projects.decisions.withdrawProposal.action', 'Povuci prijedlog')}
+          </Button>
+        </div>
+      )}
+
+      <AlertDialog open={confirmWithdrawProposal} onOpenChange={(o) => { if (!o) setConfirmWithdrawProposal(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('projects.decisions.withdrawProposal.title', 'Povući prijedlog?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'projects.decisions.withdrawProposal.desc',
+                'Prijedlog i svi njegovi prilozi bit će trajno uklonjeni. Druga strana će dobiti obavijest da je prijedlog povučen. Ova akcija se ne može poništiti.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setConfirmWithdrawProposal(false);
+                setAdminBusy('withdrawProposal');
+                await onWithdrawProposal();
+                setAdminBusy(null);
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {t('projects.decisions.withdrawProposal.confirm', 'Povuci prijedlog')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

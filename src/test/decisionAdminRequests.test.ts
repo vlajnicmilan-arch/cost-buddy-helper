@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   canResolveRequest,
   canWithdrawRequest,
+  canWithdrawProposal,
   computeContractDelta,
   getAdminActions,
   isDecisionParty,
@@ -42,7 +43,7 @@ describe('getAdminActions', () => {
       decisionStatus: 'awaiting_response', isAnnulled: false, pendingRequest: null,
     });
     expect(a).toEqual({
-      canRequestAnnul: false, canRequestDelete: false,
+      canRequestAnnul: false,
       canResolvePending: false, canWithdrawPending: false,
     });
   });
@@ -53,26 +54,23 @@ describe('getAdminActions', () => {
       decisionStatus: 'approved', isAnnulled: false, pendingRequest: null,
     });
     expect(a.canRequestAnnul).toBe(false);
-    expect(a.canRequestDelete).toBe(false);
     expect(a.canResolvePending).toBe(false);
   });
 
-  it('allows both requests on a closed decision without pending', () => {
+  it('allows annul on a closed decision without pending', () => {
     const a = getAdminActions({
       currentUserId: INV, ownerUserId: OWNER, investorUserId: INV,
       decisionStatus: 'approved', isAnnulled: false, pendingRequest: null,
     });
     expect(a.canRequestAnnul).toBe(true);
-    expect(a.canRequestDelete).toBe(true);
   });
 
-  it('blocks annul once already annulled but still allows delete', () => {
+  it('blocks annul once already annulled', () => {
     const a = getAdminActions({
       currentUserId: INV, ownerUserId: OWNER, investorUserId: INV,
       decisionStatus: 'approved', isAnnulled: true, pendingRequest: null,
     });
     expect(a.canRequestAnnul).toBe(false);
-    expect(a.canRequestDelete).toBe(true);
   });
 
   it('with a pending request: requester can withdraw, cannot resolve', () => {
@@ -84,7 +82,6 @@ describe('getAdminActions', () => {
     expect(a.canWithdrawPending).toBe(true);
     expect(a.canResolvePending).toBe(false);
     expect(a.canRequestAnnul).toBe(false);
-    expect(a.canRequestDelete).toBe(false);
   });
 
   it('with a pending request: other party can resolve, cannot withdraw', () => {
@@ -96,7 +93,6 @@ describe('getAdminActions', () => {
     expect(a.canResolvePending).toBe(true);
     expect(a.canWithdrawPending).toBe(false);
     expect(a.canRequestAnnul).toBe(false);
-    expect(a.canRequestDelete).toBe(false);
   });
 });
 
@@ -104,16 +100,13 @@ describe('canResolveRequest / canWithdrawRequest', () => {
   it('requester cannot resolve their own request', () => {
     expect(canResolveRequest(baseReq({ requested_by: OWNER }), OWNER)).toBe(false);
   });
-
   it('other party can resolve pending', () => {
     expect(canResolveRequest(baseReq({ requested_by: OWNER }), INV)).toBe(true);
   });
-
   it('nobody can resolve non-pending', () => {
     expect(canResolveRequest(baseReq({ status: 'confirmed' }), INV)).toBe(false);
     expect(canResolveRequest(baseReq({ status: 'withdrawn' }), INV)).toBe(false);
   });
-
   it('only requester can withdraw pending', () => {
     expect(canWithdrawRequest(baseReq({ requested_by: OWNER }), OWNER)).toBe(true);
     expect(canWithdrawRequest(baseReq({ requested_by: OWNER }), INV)).toBe(false);
@@ -123,18 +116,57 @@ describe('canResolveRequest / canWithdrawRequest', () => {
 
 describe('computeContractDelta', () => {
   it('returns 0 when there was no amendment', () => {
-    expect(computeContractDelta('annul', null)).toBe(0);
-    expect(computeContractDelta('delete', undefined)).toBe(0);
-    expect(computeContractDelta('annul', 0)).toBe(0);
+    expect(computeContractDelta(null)).toBe(0);
+    expect(computeContractDelta(undefined)).toBe(0);
+    expect(computeContractDelta(0)).toBe(0);
   });
-
-  it('reverses positive amendments for both types', () => {
-    expect(computeContractDelta('annul', 5000)).toBe(-5000);
-    expect(computeContractDelta('delete', 5000)).toBe(-5000);
+  it('reverses positive amendments', () => {
+    expect(computeContractDelta(5000)).toBe(-5000);
   });
-
   it('reverses negative amendments (reductions become +)', () => {
-    expect(computeContractDelta('annul', -800)).toBe(800);
-    expect(computeContractDelta('delete', -800)).toBe(800);
+    expect(computeContractDelta(-800)).toBe(800);
+  });
+});
+
+describe('canWithdrawProposal', () => {
+  it('allows author to withdraw when active and only initial step exists', () => {
+    expect(canWithdrawProposal({
+      currentUserId: OWNER, decisionCreatedBy: OWNER,
+      decisionStatus: 'awaiting_response', stepsCount: 1,
+    })).toBe(true);
+  });
+
+  it('blocks non-authors even if steps_count=1', () => {
+    expect(canWithdrawProposal({
+      currentUserId: INV, decisionCreatedBy: OWNER,
+      decisionStatus: 'awaiting_response', stepsCount: 1,
+    })).toBe(false);
+  });
+
+  it('blocks once other party has responded (steps_count > 1)', () => {
+    expect(canWithdrawProposal({
+      currentUserId: OWNER, decisionCreatedBy: OWNER,
+      decisionStatus: 'awaiting_response', stepsCount: 2,
+    })).toBe(false);
+    expect(canWithdrawProposal({
+      currentUserId: OWNER, decisionCreatedBy: OWNER,
+      decisionStatus: 'awaiting_response', stepsCount: 4,
+    })).toBe(false);
+  });
+
+  it('blocks when decision no longer active', () => {
+    for (const status of ['approved', 'rejected', 'closed'] as const) {
+      expect(canWithdrawProposal({
+        currentUserId: OWNER, decisionCreatedBy: OWNER,
+        decisionStatus: status, stepsCount: 1,
+      })).toBe(false);
+    }
+  });
+
+  it('blocks when no user id', () => {
+    expect(canWithdrawProposal({
+      currentUserId: '', decisionCreatedBy: OWNER,
+      decisionStatus: 'awaiting_response', stepsCount: 1,
+    })).toBe(false);
   });
 });

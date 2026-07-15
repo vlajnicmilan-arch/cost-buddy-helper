@@ -531,27 +531,6 @@ export function useProjectDecisions(projectId: string | null) {
       decision: 'confirm' | 'decline',
     ): Promise<{ ok: boolean; action?: string; error?: string }> => {
       if (!user) return { ok: false, error: 'unauthenticated' };
-      // Za confirm+delete: pre-lookup priloga da ih obrišemo iz storagea nakon RPC-a.
-      let storagePathsToRemove: string[] = [];
-      if (decision === 'confirm') {
-        try {
-          const { data: reqRow } = await (supabase as any)
-            .from('project_decision_admin_requests')
-            .select('type, decision_id')
-            .eq('id', requestId)
-            .maybeSingle();
-          if (reqRow && (reqRow as any).type === 'delete') {
-            const { data: atts } = await supabase
-              .from('project_decision_attachments' as never)
-              .select('storage_path')
-              .eq('decision_id', (reqRow as any).decision_id);
-            storagePathsToRemove = ((atts as any[]) ?? []).map((a) => a.storage_path);
-          }
-        } catch (e) {
-          console.warn('[useProjectDecisions] pre-lookup for delete failed', e);
-        }
-      }
-
       const { data, error } = await (supabase as any).rpc('resolve_decision_admin_request', {
         _request_id: requestId,
         _decision: decision,
@@ -561,18 +540,51 @@ export function useProjectDecisions(projectId: string | null) {
         showError(error.message || 'resolve_failed');
         return { ok: false, error: error.message };
       }
+      await fetchAll();
+      return { ok: true, action: (data as any)?.action };
+    },
+    [user, fetchAll],
+  );
 
-      // Best-effort storage cleanup nakon uspješnog DB brisanja.
+  // ─────────────────────────────────────────────────────────────
+  // Faza 6 REV — povlačenje vlastitog prijedloga dok nema odgovora
+  // ─────────────────────────────────────────────────────────────
+  const withdrawDecisionProposal = useCallback(
+    async (decisionId: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!user) return { ok: false, error: 'unauthenticated' };
+
+      // Pre-lookup attachment storage paths za best-effort brisanje datoteka
+      // NAKON uspješne RPC (RPC obriše samo DB retke).
+      let storagePathsToRemove: string[] = [];
+      try {
+        const { data: atts } = await supabase
+          .from('project_decision_attachments' as never)
+          .select('storage_path')
+          .eq('decision_id', decisionId);
+        storagePathsToRemove = ((atts as any[]) ?? []).map((a) => a.storage_path);
+      } catch (e) {
+        console.warn('[useProjectDecisions] pre-lookup for withdraw failed', e);
+      }
+
+      const { error } = await (supabase as any).rpc('withdraw_decision_proposal', {
+        _decision_id: decisionId,
+      });
+      if (error) {
+        console.error('[useProjectDecisions] withdrawDecisionProposal', error);
+        showError(error.message || 'withdraw_failed');
+        return { ok: false, error: error.message };
+      }
+
       if (storagePathsToRemove.length > 0) {
         try {
           await supabase.storage.from(BUCKET).remove(storagePathsToRemove);
         } catch (e) {
-          console.warn('[useProjectDecisions] storage cleanup failed (best-effort)', e);
+          console.warn('[useProjectDecisions] withdraw storage cleanup failed (best-effort)', e);
         }
       }
 
       await fetchAll();
-      return { ok: true, action: (data as any)?.action };
+      return { ok: true };
     },
     [user, fetchAll],
   );
@@ -587,5 +599,6 @@ export function useProjectDecisions(projectId: string | null) {
     requestDecisionAdmin,
     withdrawDecisionAdminRequest,
     resolveDecisionAdminRequest,
+    withdrawDecisionProposal,
   };
 }
