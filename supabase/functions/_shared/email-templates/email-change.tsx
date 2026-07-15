@@ -32,13 +32,13 @@ export const EmailChangeEmail = ({
 }: EmailChangeEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Potvrdite promjenu email adrese za V&M Balance</Preview>
+    <Preview>Potvrdite promjenu email adrese za Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Promjena email adrese</Heading>
         <Text style={text}>
-          Zatražili ste promjenu email adrese za V&M Balance sa{' '}
+          Zatražili ste promjenu email adrese za Centar sa{' '}
           <Link href={`mailto:${email}`} style={link}>
             {email}
           </Link>{' '}

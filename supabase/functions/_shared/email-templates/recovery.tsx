@@ -27,13 +27,13 @@ export const RecoveryEmail = ({
 }: RecoveryEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Resetirajte svoju lozinku za V&M Balance</Preview>
+    <Preview>Resetirajte svoju lozinku za Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Resetiranje lozinke</Heading>
         <Text style={text}>
-          Primili smo zahtjev za resetiranje vaše lozinke za V&M Balance.
+          Primili smo zahtjev za resetiranje vaše lozinke za Centar.
           Kliknite gumb ispod kako biste odabrali novu lozinku.
         </Text>
         <Button style={button} href={confirmationUrl}>

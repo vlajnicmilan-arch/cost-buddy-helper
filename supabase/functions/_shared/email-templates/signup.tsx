@@ -32,15 +32,15 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Potvrdite svoju email adresu za V&M Balance</Preview>
+    <Preview>Potvrdite svoju email adresu za Centar</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="V&M Balance" width="48" height="48" style={logo} />
+        <Img src={LOGO_URL} alt="Centar" width="48" height="48" style={logo} />
         <Heading style={h1}>Dobro došli! 👋</Heading>
         <Text style={text}>
           Hvala što ste se registrirali na{' '}
           <Link href={siteUrl} style={link}>
-            <strong>V&M Balance</strong>
+            <strong>Centar</strong>
           </Link>
           !
         </Text>

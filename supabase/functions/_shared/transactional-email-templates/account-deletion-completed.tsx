@@ -6,25 +6,25 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 const AccountDeletionCompletedEmail = () => (
   <Html lang="hr" dir="ltr">
     <Head />
-    <Preview>Vaš V&M Balance račun je trajno obrisan</Preview>
+    <Preview>Vaš Centar račun je trajno obrisan</Preview>
     <Body style={main}>
       <Container style={container}>
         <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logo} />
         <Heading style={h1}>Račun je trajno obrisan</Heading>
         <Text style={text}>
-          Potvrđujemo da je vaš V&M Balance račun i svi povezani podaci <strong>trajno obrisani</strong>
+          Potvrđujemo da je vaš Centar račun i svi povezani podaci <strong>trajno obrisani</strong>
           u skladu s vašim zahtjevom i pravom na zaborav (GDPR čl. 17).
         </Text>
         <Text style={highlight}>
           🗑️ Obrisano: transakcije, projekti, proračuni, računi, dokumenti, postavke, povijest prijava.
         </Text>
         <Text style={text}>
-          Ako ste imali aktivnu pretplatu, automatski je otkazana. Hvala vam što ste koristili V&M Balance.
+          Ako ste imali aktivnu pretplatu, automatski je otkazana. Hvala vam što ste koristili Centar.
         </Text>
         <Text style={text}>
           Uvijek ste dobrodošli natrag — možete kreirati novi račun u bilo kojem trenutku.

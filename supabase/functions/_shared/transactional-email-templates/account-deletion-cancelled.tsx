@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 const AccountDeletionCancelledEmail = () => (
   <Html lang="hr" dir="ltr">
@@ -17,7 +17,7 @@ const AccountDeletionCancelledEmail = () => (
         <Img src={LOGO_URL} alt={SITE_NAME} width="48" height="48" style={logo} />
         <Heading style={h1}>Dobrodošli natrag! 👋</Heading>
         <Text style={text}>
-          Brisanje vašeg V&M Balance računa je <strong>uspješno otkazano</strong>.
+          Brisanje vašeg Centar računa je <strong>uspješno otkazano</strong>.
         </Text>
         <Text style={highlight}>
           ✅ Svi vaši podaci, transakcije, projekti i postavke ostaju netaknuti.

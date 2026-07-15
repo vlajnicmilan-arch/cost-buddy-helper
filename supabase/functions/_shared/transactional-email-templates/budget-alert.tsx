@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 import { getLogoUrl } from '../brandAssets.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 const LOGO_URL = getLogoUrl()
 interface BudgetAlertProps {
   budgetName?: string
@@ -34,7 +34,7 @@ const BudgetAlertEmail = ({ budgetName, spentPercent, spentAmount, totalAmount }
           Preporučujemo pregled troškova i prilagodbu plana kako biste ostali unutar budžeta.
         </Text>
         <Button style={button} href="https://vmbalance.com/app">
-          Otvori V&M Balance
+          Otvori Centar
         </Button>
         <Text style={footer}>— Tim {SITE_NAME}</Text>
       </Container>

@@ -5,7 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'V&M Balance'
+const SITE_NAME = 'Centar'
 
 type Lang = 'hr' | 'en' | 'de'
 
