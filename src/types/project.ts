@@ -91,6 +91,25 @@ export interface ProjectMilestone {
   is_contingency?: boolean;
   /** True = ovo je VTR (Više traženih radova) — posebna vrsta faze koja automatski generira aneks ugovora. */
   is_vtr?: boolean;
+  /**
+   * Faza 7 — ako je faza automatski nastala iz odobrene odluke, ovdje je id te odluke.
+   * ON DELETE SET NULL na razini baze.
+   */
+  source_decision_id?: string | null;
+  /**
+   * Faza 7 — snapshot "Prema investitoru" iznosa (konačna cijena odluke) u trenutku
+   * odobrenja. ČISTO INFORMATIVNO — ne ulazi ni u jedan zbroj (budžet, marža, cashflow).
+   */
+  investor_price?: number | null;
+  /**
+   * Faza 7 — snapshot metapodataka izvorne odluke (join). Koristi se za badge
+   * "Iz poništene odluke" (annulled_at) i navigaciju na detalj odluke.
+   */
+  source_decision?: {
+    id: string;
+    title: string | null;
+    annulled_at: string | null;
+  } | null;
   created_at?: string;
   updated_at?: string;
   // Computed
