@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useBackButton } from './useBackButton';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import {
   createTabHistory,
@@ -27,31 +27,40 @@ export function useBackNavigationTab(
   defaultTab: string,
   onGoBack: (prev: string) => void,
   enabled: boolean = true,
+  label = 'TAB',
 ) {
   const historyRef = useRef<TabHistory>(createTabHistory(defaultTab, activeTab));
   const suppressRef = useRef(false);
+  const [, forceRevision] = useState(0);
+
+  const bumpRevision = () => forceRevision(v => v + 1);
 
   // Sinkroniziraj default tab ako se promijeni (npr. worker-only mode).
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (historyRef.current.defaultTab !== defaultTab) {
       historyRef.current = resetTabHistory(
         { ...historyRef.current, defaultTab },
         activeTab,
       );
+      bumpRevision();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultTab]);
 
   // Bilježi prijelaze uzrokovane VANJSKIM promjenama activeTab (klik na tab).
   // Programatski pop iz našeg goBack-a preskačemo preko suppressRef-a.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (suppressRef.current) {
       suppressRef.current = false;
-      historyRef.current = { ...historyRef.current, current: activeTab };
+      if (historyRef.current.current !== activeTab) {
+        historyRef.current = { ...historyRef.current, current: activeTab };
+        bumpRevision();
+      }
       return;
     }
     if (historyRef.current.current === activeTab) return;
     historyRef.current = pushTab(historyRef.current, activeTab);
+    bumpRevision();
   }, [activeTab]);
 
   const canPop = enabled && canPopTab(historyRef.current);
@@ -65,5 +74,6 @@ export function useBackNavigationTab(
       onGoBack(target);
     },
     BACK_PRIORITY.TAB,
+    label,
   );
 }

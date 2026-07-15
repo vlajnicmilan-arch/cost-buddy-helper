@@ -107,7 +107,7 @@ export const ProjectFullScreenView = ({
     // Perzistiraj tab za survive remounta (kamera roundtrip na Androidu).
     try { projectViewState.setTab(next); } catch { /* ignore */ }
   };
-  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN, 'FULLSCREEN:project');
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -327,6 +327,7 @@ export const ProjectFullScreenView = ({
     isWorkerOnly ? 'worklog' : 'overview',
     (prev) => handleTabChange(prev),
     open,
+    'TAB:project',
   );
 
   if (!project) return null;

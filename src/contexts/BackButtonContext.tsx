@@ -252,7 +252,7 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     return n;
   }, []);
 
-  const handlePopState = useCallback(() => {
+  const handlePopState = useCallback((event?: PopStateEvent) => {
     const currentPath = locationRef.current;
 
     // Public rute → potpuno prepusti browseru.
@@ -262,6 +262,12 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
+
+    // BackButtonContext mora dobiti prvi pokušaj konzumacije backa. React
+    // Router je također na window.popstate; ako njegov listener obradi event
+    // prvi, route se promijeni i fullscreen/detail komponente se unmountaju,
+    // pa unregister očisti stack prije nego što ga ovdje pročitamo.
+    event?.stopImmediatePropagation?.();
 
     const openHandlers = getOpenHandlers();
     const layers = openHandlers.map(handlerLayer);
@@ -334,9 +340,9 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   }, [consumeRootBack, getOpenHandlers, getOpenLayers]);
 
   useEffect(() => {
-    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handlePopState, { capture: true });
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('popstate', handlePopState, { capture: true });
     };
   }, [handlePopState]);
 
