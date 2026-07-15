@@ -38,6 +38,7 @@
     "success": "Erfolgreich",
     "yes": "Ja",
     "no": "Nein",
+    "exitApp": { "title": "App beenden?" },
     "back": "Zurück",
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",

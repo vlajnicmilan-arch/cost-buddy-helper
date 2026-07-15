@@ -82,16 +82,10 @@ const isNativePlatform = (): boolean => {
   }
 };
 
-const tryMinimizeApp = () => {
-  // Best-effort — nikad ne bacamo iznimke iz popstate handlera.
-  import('@capacitor/app')
-    .then((mod) => {
-      const app: any = (mod as any).App;
-      if (app && typeof app.minimizeApp === 'function') {
-        app.minimizeApp().catch?.(() => { /* ignore */ });
-      }
-    })
-    .catch(() => { /* ignore */ });
+const requestExitConfirm = () => {
+  try {
+    window.dispatchEvent(new CustomEvent('vmb:request-exit-confirm'));
+  } catch { /* ignore */ }
 };
 
 export function BackButtonProvider({ children }: { children: ReactNode }) {
@@ -116,9 +110,9 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
 
     if (isNativePlatform()) {
       try {
-        logDiagnostic({ event: 'backctx_minimize', details: { route: currentPath } });
+        logDiagnostic({ event: 'backctx_exit_confirm', details: { route: currentPath } });
       } catch { /* ignore */ }
-      tryMinimizeApp();
+      requestExitConfirm();
       window.history.pushState(null, '');
       return;
     }

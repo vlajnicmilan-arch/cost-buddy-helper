@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { StorageProvider, useStorage } from "@/contexts/StorageContext";
 import { BackButtonProvider } from "@/contexts/BackButtonContext";
+import { ExitConfirmDialog } from "@/components/ExitConfirmDialog";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { AppStateProvider, useAppState } from "@/contexts/AppStateContext";
@@ -357,6 +358,7 @@ const App = () => (
                             <Sonner />
                             <BrowserRouter>
                               <BackButtonProvider>
+                                <ExitConfirmDialog />
                                 <ScrollToTop />
                                 <DeepLinkInit />
                                 <PushAutoRegister />
