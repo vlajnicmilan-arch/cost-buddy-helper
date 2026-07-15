@@ -64,39 +64,12 @@ const parseReceiptResponseBody = async (body: unknown) => {
 // Kompresija slike za mobilne uređaje - zadržava dovoljno detalja za OCR.
 // 800px je bilo preagresivno za sitan tekst na računima i moglo je uzrokovati
 // odgovor "Nije moguće pročitati račun" iako je slika valjana.
-const compressImage = async (base64: string, maxWidth = 1600, quality = 0.9): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(base64);
-        return;
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressed);
-    };
-    img.onerror = () => {
-      console.error('Failed to load image for compression');
-      resolve(base64);
-    };
-    img.src = base64;
-  });
-};
+// Faza 3 Modul Odluke: izdvojeno u src/lib/imageCompress.ts (RECEIPT_COMPRESS
+// zadržava isti maxWidth=1600, quality=0.9 → ponašanje scannera nepromijenjeno).
+import { compressImageDataUrl, RECEIPT_COMPRESS } from '@/lib/imageCompress';
+
+const compressImage = (base64: string): Promise<string> =>
+  compressImageDataUrl(base64, RECEIPT_COMPRESS);
 
 export const useReceiptScanner = () => {
   const { t } = useTranslation();
