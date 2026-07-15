@@ -1012,6 +1012,7 @@
         "timeline": "Verlauf",
         "attachments": "Anhänge",
         "attachmentsAvailableInApp": "Einige Anhänge sind in der App verfügbar.",
+        "annulNote": "Hinweis: Diese Entscheidung wurde durch beidseitige Bestätigung aufgehoben.",
         "footerDisclaimer": "Erstellt aus der Centar-App · {{date}} · ID: {{id}}"
       }
     }
