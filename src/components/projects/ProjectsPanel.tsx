@@ -182,6 +182,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         setDetailDialogOpen(true, 'urlState_effect');
         if (resolvedExpenseId) setPendingExpenseId(resolvedExpenseId);
         if (resolvedTab) setPendingInitialTab(resolvedTab);
+        // Perzistiraj pointer za survive remounta (kamera roundtrip).
+        projectViewState.set(project.id, resolvedTab ?? projectViewState.get()?.tab ?? null);
         // Clear the state so it doesn't re-trigger
         if (state) window.history.replaceState({}, '');
       } else if (loading || projects.length === 0) {
