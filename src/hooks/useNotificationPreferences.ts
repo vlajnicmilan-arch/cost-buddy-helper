@@ -12,7 +12,8 @@ export type PushCategory =
   | 'trial'
   | 'broadcast'
   | 'daily_summary'
-  | 'krug';
+  | 'krug'
+  | 'decisions';
 
 export interface NotificationPreferences {
   chat_enabled: boolean;
