@@ -973,7 +973,22 @@
         "unsupported": "Nicht unterstützter Dateityp",
         "urlFailed": "Einige Anhänge sind derzeit nicht verfügbar."
       },
-      "awaitingFor": "Wartet auf Antwort seit {{time}}"
+      "awaitingFor": "Wartet auf Antwort seit {{time}}",
+      "pdf": {
+        "title": "Entscheidung",
+        "exportPdf": "PDF exportieren",
+        "exported": "PDF exportiert",
+        "exportFailed": "PDF-Export fehlgeschlagen",
+        "createdAt": "Eröffnet",
+        "closedAt": "Geschlossen",
+        "initialDescription": "Vorschlag",
+        "finalPrice": "Endpreis",
+        "amendmentNote": "Vertragsänderung: {{signed}}",
+        "timeline": "Verlauf",
+        "attachments": "Anhänge",
+        "attachmentsAvailableInApp": "Einige Anhänge sind in der App verfügbar.",
+        "footerDisclaimer": "Erstellt aus der Centar-App · {{date}} · ID: {{id}}"
+      }
     }
   },
   "estimates": {
