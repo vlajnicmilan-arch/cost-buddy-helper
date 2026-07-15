@@ -147,6 +147,8 @@ export function buildDecisionPdfData(input: BuildDecisionPdfDataInput): Decision
     initialDescription: decision.initial_description ?? '',
     effectivePrice: resolveEffectiveDecisionPrice(decision.steps),
     hasContractAmendment: !!decision.contract_amendment_id,
+    annulled: !!decision.annulled_at,
+    annulledAt: decision.annulled_at ?? null,
     steps,
     language,
     generatedAt: now.toISOString(),
