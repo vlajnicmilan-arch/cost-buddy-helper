@@ -3082,6 +3082,8 @@
     "privacyPolicyLink": "Politiku privatnosti",
     "settingsPrivacyTitle": "Politika privatnosti",
     "settingsPrivacyDesc": "GDPR prava i obrada podataka",
+    "settingsTermsTitle": "Uvjeti korištenja",
+    "settingsTermsDesc": "Pravila i uvjeti korištenja aplikacije",
     "cat": {
       "necessary": "Nužni",
       "necessaryDesc": "Potrebni za rad aplikacije: prijava, sigurnost, jezik, PIN. Ne mogu se isključiti.",

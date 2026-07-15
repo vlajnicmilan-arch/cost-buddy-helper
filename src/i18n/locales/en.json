@@ -3208,6 +3208,8 @@
     "privacyPolicyLink": "Privacy Policy",
     "settingsPrivacyTitle": "Privacy Policy",
     "settingsPrivacyDesc": "GDPR rights and data processing",
+    "settingsTermsTitle": "Terms of Service",
+    "settingsTermsDesc": "App terms and conditions",
     "cat": {
       "necessary": "Necessary",
       "necessaryDesc": "Required for the app to work: login, security, language, PIN. Cannot be disabled.",

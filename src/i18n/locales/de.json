@@ -3076,6 +3076,8 @@
     "privacyPolicyLink": "Datenschutzrichtlinie",
     "settingsPrivacyTitle": "Datenschutzrichtlinie",
     "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung",
+    "settingsTermsTitle": "Nutzungsbedingungen",
+    "settingsTermsDesc": "Allgemeine Geschäftsbedingungen der App",
     "cat": {
       "necessary": "Notwendig",
       "necessaryDesc": "Erforderlich für die App: Anmeldung, Sicherheit, Sprache, PIN. Kann nicht deaktiviert werden.",
