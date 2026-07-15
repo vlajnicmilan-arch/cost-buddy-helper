@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 /**
  * Global capture host + draft store za MODUL "ODLUKE".
