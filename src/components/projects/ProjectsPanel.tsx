@@ -56,7 +56,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const [selectedProject, setSelectedProject] = useState<ProjectWithOwnership | null>(null);
   const [detailDialogOpen, _setDetailDialogOpenRaw] = useState(false);
   const setDetailDialogOpen = useCallback((value: boolean, source: string = 'unknown') => {
-    logDiagnostic({ event: 'dbg_panel_detail_open_set', details: { value, source } });
+    try {
+      logDiagnostic({
+        event: value ? 'pfsv_open_requested' : 'pfsv_close_requested',
+        details: { source },
+      });
+    } catch { /* ignore */ }
     _setDetailDialogOpenRaw(value);
   }, []);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
