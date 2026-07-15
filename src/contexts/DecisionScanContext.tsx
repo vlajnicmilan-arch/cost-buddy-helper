@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { decisionCaptureReopen } from '@/lib/decisionCaptureReopen';
 
 /**
  * Global capture host + draft store za MODUL "ODLUKE".
@@ -97,6 +98,7 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
     setPendingCapture(null);
     setPhase('capturing');
     setNativeFlowActive(true);
+    decisionCaptureReopen.set(key);
     try { logDiagnostic('decision_scan_begin', { key }); } catch {}
   }, []);
 
@@ -111,11 +113,13 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const cancelCapture = useCallback(() => {
+    const key = captureOwnerKeyRef.current;
     setPhase('idle');
     setPendingCapture(null);
     captureOwnerKeyRef.current = null;
     setNativeFlowActive(false);
-    try { logDiagnostic('decision_scan_cancel', {}); } catch {}
+    if (key) decisionCaptureReopen.clear(key);
+    try { logDiagnostic('decision_scan_cancel', { key }); } catch {}
   }, []);
 
   const consumePendingCapture = useCallback((key: string): string | null => {
@@ -157,6 +161,7 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
   const clearDraft = useCallback((key: string) => {
     draftsRef.current.delete(key);
     clearTextFromStorage(key);
+    decisionCaptureReopen.clear(key);
     forceTick((n) => n + 1);
   }, []);
 

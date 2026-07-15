@@ -19,6 +19,8 @@ import { NewDecisionDialog } from './NewDecisionDialog';
 import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
 import { DecisionStepAttachments } from './DecisionStepAttachments';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { decisionCaptureReopen } from '@/lib/decisionCaptureReopen';
 import {
   getLegalActions,
   decisionPhaseKey,
@@ -65,6 +67,15 @@ export function ProjectDecisionsTab({
     if (selected !== decisionId) setSelected(decisionId);
   }, [pendingCapture, selected]);
 
+  useEffect(() => {
+    const note = decisionCaptureReopen.consumeMatching(/^reply-.+$/);
+    if (!note) return;
+    const m = /^reply-(.+)$/.exec(note.key);
+    if (!m) return;
+    setSelected(m[1]);
+    try { logDiagnostic('decision_capture_reopen_consumed', { key: note.key }); } catch {}
+  }, []);
+
   if (!isDecisionParty) {
     return (
       <div className="p-6 text-center text-muted-foreground">
@@ -94,7 +105,10 @@ export function ProjectDecisionsTab({
         investorUserId={investorUserId}
         memberNameMap={memberNameMap}
         getAttachmentUrl={getAttachmentUrl}
-        onBack={() => setSelected(null)}
+        onBack={() => {
+          decisionCaptureReopen.clear(`reply-${selectedDecision.id}`);
+          setSelected(null);
+        }}
         onAction={async (action, message, price, attachments) => {
           const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
           if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
@@ -532,6 +546,12 @@ function NewDecisionButton({ onSubmit }: { onSubmit: (i: { title: string; initia
   useEffect(() => {
     if (pendingCapture?.key === 'new-decision' && !open) setOpen(true);
   }, [pendingCapture, open]);
+  useEffect(() => {
+    const note = decisionCaptureReopen.consumeFor('new-decision');
+    if (!note) return;
+    setOpen(true);
+    try { logDiagnostic('decision_capture_reopen_consumed', { key: note.key }); } catch {}
+  }, []);
   return (
     <>
       <Button size="sm" onClick={() => setOpen(true)} className="gap-1">
