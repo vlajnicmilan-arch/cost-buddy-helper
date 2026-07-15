@@ -575,8 +575,13 @@ export const ProjectFullScreenView = ({
                 {!isWorkerOnly && (() => {
                   const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
 
-                  // Mobile fixed primary order: Overview, Budget, Phases, Team.
+                  // Mobile fixed primary order: Overview, Budget, Phases, (Decisions | Team).
+                  // Ako korisnik vidi Odluke → Odluke ide u 4. slot, Tim seli u "Više" (na vrh).
+                  // Inače → Tim ostaje u 4. slotu (staro ponašanje).
                   // Invisible primaries are skipped (slot omitted) — positions of visible ones never change.
+                  const teamTab: MobileTabDef = { key: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users };
+                  const decisionsTab: MobileTabDef = { key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale };
+
                   const primary: MobileTabDef[] = [
                     { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
                     { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
@@ -590,13 +595,11 @@ export const ProjectFullScreenView = ({
                           ) : undefined,
                         } as MobileTabDef]
                       : []),
-                    { key: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users },
+                    canSeeDecisions ? decisionsTab : teamTab,
                   ];
 
                   const overflow: MobileTabDef[] = [
-                    ...(canSeeDecisions
-                      ? [{ key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale } as MobileTabDef]
-                      : []),
+                    ...(canSeeDecisions ? [teamTab] : []),
                     ...(canSeeTab('funding')
                       ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
                       : []),
@@ -616,6 +619,7 @@ export const ProjectFullScreenView = ({
                     { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
                     { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
                   ];
+
 
                   return (
                     <>
