@@ -961,7 +961,17 @@
       "acceptingPrice": "Sie akzeptieren: {{signed}} — ein Vertragsnachtrag wird erstellt.",
       "acceptingNoPrice": "Annahme ohne finanzielle Auswirkung (kein Preis).",
       "lastOfferedHint": "Zuletzt geboten: {{signed}}. Leer lassen zum Beibehalten.",
-      "contractResult": "Vertrag geändert um {{signed}} — Nachtrag erstellt."
+      "contractResult": "Vertrag geändert um {{signed}} — Nachtrag erstellt.",
+      "attach": {
+        "label": "Anhänge",
+        "camera": "Kamera",
+        "gallery": "Galerie",
+        "file": "Dokument",
+        "tooMany": "Maximal {{n}} Anhänge pro Schritt",
+        "docTooLarge": "Dokument zu groß (max. {{mb}} MB)",
+        "unsupported": "Nicht unterstützter Dateityp",
+        "urlFailed": "Einige Anhänge sind derzeit nicht verfügbar."
+      }
     }
   },
   "estimates": {

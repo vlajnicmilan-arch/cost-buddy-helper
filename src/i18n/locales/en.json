@@ -961,7 +961,17 @@
       "acceptingPrice": "Accepting: {{signed}} — a contract amendment will be created.",
       "acceptingNoPrice": "Accepting with no financial effect (no price set).",
       "lastOfferedHint": "Last offered: {{signed}}. Leave empty to keep.",
-      "contractResult": "Contract changed by {{signed}} — amendment created."
+      "contractResult": "Contract changed by {{signed}} — amendment created.",
+      "attach": {
+        "label": "Attachments",
+        "camera": "Camera",
+        "gallery": "Gallery",
+        "file": "Document",
+        "tooMany": "Maximum {{n}} attachments per step",
+        "docTooLarge": "Document too large (max {{mb}} MB)",
+        "unsupported": "Unsupported file type",
+        "urlFailed": "Some attachments are currently unavailable."
+      }
     }
   },
   "estimates": {

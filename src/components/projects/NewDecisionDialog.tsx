@@ -8,11 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { parseMoneySigned } from '@/lib/money';
 import { showError } from '@/hooks/useStatusFeedback';
+import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
 
 interface NewDecisionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (input: { title: string; initial_description: string; price?: number | null }) => Promise<{ ok: boolean }>;
+  onSubmit: (input: {
+    title: string;
+    initial_description: string;
+    price?: number | null;
+    attachments?: File[];
+  }) => Promise<{ ok: boolean }>;
 }
 
 export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionDialogProps) {
@@ -20,9 +26,12 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceRaw, setPriceRaw] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const reset = () => { setTitle(''); setDescription(''); setPriceRaw(''); setSubmitting(false); };
+  const reset = () => {
+    setTitle(''); setDescription(''); setPriceRaw(''); setAttachments([]); setSubmitting(false);
+  };
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) return;
@@ -40,7 +49,7 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
       price = parsed.value;
     }
     setSubmitting(true);
-    const res = await onSubmit({ title, initial_description: description, price });
+    const res = await onSubmit({ title, initial_description: description, price, attachments });
     setSubmitting(false);
     if (res.ok) {
       reset();
@@ -52,7 +61,7 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('projects.decisions.newDialog.title', 'Novi prijedlog odluke')}</DialogTitle>
         </DialogHeader>
@@ -92,6 +101,7 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
               {t('projects.decisions.field.priceHint', 'Ako prihvaćeno, automatski se stvara aneks ugovora. Negativan iznos umanjuje ugovor. Nula nije dozvoljena.')}
             </p>
           </div>
+          <DecisionAttachmentPicker value={attachments} onChange={setAttachments} disabled={submitting} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>

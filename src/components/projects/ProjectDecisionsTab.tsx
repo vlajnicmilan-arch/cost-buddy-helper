@@ -13,8 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { useProjectDecisions, type ProjectDecision } from '@/hooks/useProjectDecisions';
+import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
 import { NewDecisionDialog } from './NewDecisionDialog';
+import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
+import { DecisionStepAttachments } from './DecisionStepAttachments';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import {
   getLegalActions,
@@ -46,7 +48,7 @@ export function ProjectDecisionsTab({
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { decisions, loading, createDecision, addStep } = useProjectDecisions(projectId);
+  const { decisions, loading, createDecision, addStep, getAttachmentUrl } = useProjectDecisions(projectId);
   const [selected, setSelected] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
@@ -63,7 +65,7 @@ export function ProjectDecisionsTab({
 
   const selectedDecision = decisions.find(d => d.id === selected) ?? null;
 
-  const handleCreate = async (input: { title: string; initial_description: string; price?: number | null }) => {
+  const handleCreate = async (input: { title: string; initial_description: string; price?: number | null; attachments?: File[] }) => {
     const res = await createDecision(input);
     if (res.ok) showSuccess(t('projects.decisions.created', 'Prijedlog poslan'));
     return res;
@@ -77,9 +79,10 @@ export function ProjectDecisionsTab({
         ownerUserId={projectOwnerId}
         investorUserId={investorUserId}
         memberNameMap={memberNameMap}
+        getAttachmentUrl={getAttachmentUrl}
         onBack={() => setSelected(null)}
-        onAction={async (action, message, price) => {
-          const res = await addStep({ decisionId: selectedDecision.id, action, message, price });
+        onAction={async (action, message, price, attachments) => {
+          const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
           if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
           return res;
         }}
@@ -229,24 +232,27 @@ function DecisionCard({
 // Detalj odluke
 // ─────────────────────────────────────────────────────────────
 function DecisionDetail({
-  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction,
+  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
 }: {
   decision: ProjectDecision;
   currentUserId: string;
   ownerUserId: string;
   investorUserId: string | null;
   memberNameMap: Map<string, string>;
+  getAttachmentUrl: (att: DecisionAttachment) => Promise<string | null>;
   onBack: () => void;
   onAction: (
     action: DecisionAction,
     message?: string,
     price?: number | null,
+    attachments?: File[],
   ) => Promise<{ ok: boolean }>;
 }) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [replyMsg, setReplyMsg] = useState('');
   const [replyPriceRaw, setReplyPriceRaw] = useState('');
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState<DecisionAction | null>(null);
 
   const legal = getLegalActions(decision, decision.steps, { currentUserId, ownerUserId, investorUserId });
@@ -278,10 +284,11 @@ function DecisionDetail({
       if (!p.ok) return;
       price = p.value;
     }
+    const carriesAttachments = action === 'propose' || action === 'counter' || action === 'correction';
     setSending(action);
-    const res = await onAction(action, replyMsg, price);
+    const res = await onAction(action, replyMsg, price, carriesAttachments ? replyAttachments : undefined);
     setSending(null);
-    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); }
+    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); setReplyAttachments([]); }
   };
 
   const nameOf = (uid: string) => memberNameMap.get(uid) || (uid === ownerUserId ? t('projects.owner', 'Vlasnik') : t('projectRoles.investor', 'Investitor'));
@@ -332,37 +339,43 @@ function DecisionDetail({
         <h4 className="text-xs font-semibold uppercase tracking-wide text-module-muted">
           {t('projects.decisions.timeline', 'Slijed koraka')}
         </h4>
-        {decision.steps.map((s: DecisionStep) => (
-          <div key={s.step_no} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <StepDot action={s.action} />
-              <div className="flex-1 w-px bg-border mt-1" />
-            </div>
-            <div className="flex-1 pb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm">{nameOf(s.actor_user_id)}</span>
-                <Badge variant="outline" className="text-[10px]">{actionLabel(s.action)}</Badge>
-                {s.price != null && s.price !== 0 && (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'text-[10px] font-semibold',
-                      s.price < 0
-                        ? 'bg-destructive/10 text-destructive border-destructive/30'
-                        : 'bg-income/10 text-income border-income/30',
-                    )}
-                  >
-                    {formatSignedAmount(Number(s.price))}
-                  </Badge>
-                )}
-                <span className="text-[11px] text-muted-foreground">{dtFmt(s.created_at)}</span>
+        {decision.steps.map((s) => {
+          const stepAttachments = decision.attachments.filter((a) => a.step_id === s.id);
+          return (
+            <div key={s.step_no} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <StepDot action={s.action} />
+                <div className="flex-1 w-px bg-border mt-1" />
               </div>
-              {s.message && (
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{s.message}</p>
-              )}
+              <div className="flex-1 pb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">{nameOf(s.actor_user_id)}</span>
+                  <Badge variant="outline" className="text-[10px]">{actionLabel(s.action)}</Badge>
+                  {s.price != null && s.price !== 0 && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[10px] font-semibold',
+                        s.price < 0
+                          ? 'bg-destructive/10 text-destructive border-destructive/30'
+                          : 'bg-income/10 text-income border-income/30',
+                      )}
+                    >
+                      {formatSignedAmount(Number(s.price))}
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">{dtFmt(s.created_at)}</span>
+                </div>
+                {s.message && (
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{s.message}</p>
+                )}
+                {stepAttachments.length > 0 && (
+                  <DecisionStepAttachments attachments={stepAttachments} getUrl={getAttachmentUrl} />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Akcije */}
@@ -412,6 +425,11 @@ function DecisionDetail({
                   })}
                 </p>
               )}
+              <DecisionAttachmentPicker
+                value={replyAttachments}
+                onChange={setReplyAttachments}
+                disabled={!!sending}
+              />
             </>
           )}
 
