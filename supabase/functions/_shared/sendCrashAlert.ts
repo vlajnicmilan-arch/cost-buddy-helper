@@ -92,7 +92,7 @@ export async function enqueueCrashAlertEmail(
       status: 'pending',
     })
 
-    const unsubscribeToken = await getOrCreateUnsubscribeToken(admin, recipient)
+    const unsubscribeToken: string | undefined = undefined
 
     const { error: enqueueError } = await admin.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
