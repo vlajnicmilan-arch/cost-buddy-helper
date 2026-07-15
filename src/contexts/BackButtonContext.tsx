@@ -5,46 +5,88 @@ import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 /**
- * Global Back Button Manager
+ * Global Back Button Manager — jedinstveni LIFO stack za sve slojeve UI-a.
  *
- * Handles the Android/browser back button centrally:
- * 1. If on a public route (/auth, /setup, /install, /, …) → DO NOTHING.
- *    The back button must behave normally so the user can leave / navigate
- *    back through the natural history stack. Intercepting back here was
- *    the cause of the "have to press back twice and screen stays frozen"
- *    bug on the Android APK.
- * 2. If any dialog/overlay is registered as open → closes the most
- *    recently opened one (LIFO).
- * 3. If on an authenticated app sub-page → navigates to /home.
- * 4. If already on a root app page → re-push state to prevent the WebView
- *    from leaving the app accidentally.
+ * Semantika (svaki back = TOČNO jedan logički korak):
+ *   1. Public rute (/auth, /setup, /install, /, …) → NE presreći ništa.
+ *   2. Kamera / native guard aktivan → apsorbiraj popstate (re-push).
+ *   3. Otvoren handler s najvećim prioritetom → zovi njegov onClose (LIFO uz
+ *      priority tiebreak). Ovdje spadaju: overlay, dijalog, sheet, inline
+ *      detail, fullscreen view, tab-back — sve u ISTOM stacku.
+ *   4. Nema handlera i nije root app ruta → navigate('/home') (jedan korak).
+ *   5. Nema handlera i JE root ruta:
+ *        - Native (Android) → App.minimizeApp() (Android standard).
+ *        - Web/PWA → re-push guard state (spriječi accidental exit).
+ *
+ * Handler pravila:
+ *   - Jedini gurač history entryja je OVAJ context. Nijedna komponenta ne
+ *     smije imati vlastiti pushState/popstate — sve ide kroz useBackButton.
+ *   - isNativeFlowActive + VISIBILITY_GRACE_MS guard pokriva SVE handlere;
+ *     dok je aktivan, nijedan handler se ne izvršava (kamera saga netaknuta).
  */
+
+/** Prioriteti (viši = zatvara se prvi). */
+export const BACK_PRIORITY = {
+  /** Sistemski overlay / kritični guard (rezervirano). */
+  OVERLAY: 1000,
+  /** Modalni dijalog, sheet, drawer, alert-dialog, picker. */
+  DIALOG: 800,
+  /** Inline detail ekran unutar tab-a (npr. DecisionDetail). */
+  DETAIL: 600,
+  /** Fullscreen view (ProjectFullScreenView, BudgetFullScreenView, …). */
+  FULLSCREEN: 400,
+  /** Tab-back unutar fullscreen view-a. */
+  TAB: 200,
+  /** Root/legacy — najniži prioritet. */
+  ROOT: 0,
+} as const;
 
 type BackHandler = {
   id: string;
   isOpen: boolean;
   onClose: () => void;
   priority: number;
-  openedAt: number; // timestamp when opened, for LIFO ordering
+  openedAt: number;
 };
 
 type BackButtonContextType = {
   register: (id: string, isOpen: boolean, onClose: () => void, priority?: number) => void;
   unregister: (id: string) => void;
+  /** Trenutni broj registriranih otvorenih handlera (dijagnostika). */
+  getStackDepth: () => number;
 };
 
 const BackButtonContext = createContext<BackButtonContextType | null>(null);
+
+/**
+ * Detekcija Android/native shell-a. Isti pattern koji koristi useDeepLinks.
+ * Web/PWA fallback ostavlja postojeće ponašanje (re-push).
+ */
+const isNativePlatform = (): boolean => {
+  try {
+    return !!(window as any).Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+};
+
+const tryMinimizeApp = () => {
+  // Best-effort — nikad ne bacamo iznimke iz popstate handlera.
+  import('@capacitor/app')
+    .then((mod) => {
+      const app: any = (mod as any).App;
+      if (app && typeof app.minimizeApp === 'function') {
+        app.minimizeApp().catch?.(() => { /* ignore */ });
+      }
+    })
+    .catch(() => { /* ignore */ });
+};
 
 export function BackButtonProvider({ children }: { children: ReactNode }) {
   const handlersRef = useRef<Map<string, BackHandler>>(new Map());
   const navigate = useNavigate();
   const locationRef = useRef<string>('/');
   const initialStatePushedRef = useRef(false);
-  // Tracks the moment the WebView returned to the foreground. When a native
-  // activity (camera, file picker, share sheet, …) finishes, Android often
-  // emits a popstate as it restores focus to the WebView. We must NOT treat
-  // that as a user "back" press, otherwise we'd navigate away and unmount
-  // dialogs that are mid-flight (e.g. AddExpenseDialog while scanning).
   const lastForegroundAtRef = useRef<number>(0);
   const VISIBILITY_GRACE_MS = 2500;
 
@@ -60,7 +102,7 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     const existing = handlersRef.current.get(id);
     const wasOpen = existing?.isOpen ?? false;
 
-    // Never push synthetic history entries on public routes — it traps the user.
+    // Nikad ne guraj history entry na public rutama — zarobilo bi korisnika.
     if (isOpen && !wasOpen && !isPublicRoute(locationRef.current)) {
       window.history.pushState({ backButtonId: id }, '');
     }
@@ -78,12 +120,16 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     handlersRef.current.delete(id);
   }, []);
 
+  const getStackDepth = useCallback(() => {
+    let n = 0;
+    handlersRef.current.forEach((h) => { if (h.isOpen) n++; });
+    return n;
+  }, []);
+
   const handlePopState = useCallback(() => {
     const currentPath = locationRef.current;
 
-    // PUBLIC ROUTES: do not intercept anything. Let the WebView/browser handle
-    // the back navigation naturally. This is critical for the auth/setup flow
-    // on Android, where intercepting was leaving the user on a frozen screen.
+    // Public rute → potpuno prepusti browseru.
     if (isPublicRoute(currentPath)) {
       if (import.meta.env.DEV) {
         console.log('[BackButton] popstate on public route — ignored:', currentPath);
@@ -91,11 +137,11 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Collect all currently open handlers
     const openHandlers = Array.from(handlersRef.current.values())
       .filter(h => h.isOpen)
       .sort((a, b) => b.priority - a.priority || b.openedAt - a.openedAt);
 
+    const stackDepthBefore = openHandlers.length;
     const sinceForeground = Date.now() - lastForegroundAtRef.current;
     const guarded = isNativeFlowActive();
     try {
@@ -103,12 +149,15 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
         event: 'backctx_popstate',
         details: {
           guarded,
-          handlers: openHandlers.length,
+          stackDepthBefore,
           sinceForegroundMs: lastForegroundAtRef.current > 0 ? sinceForeground : -1,
           topHandlerId: openHandlers[0]?.id ?? null,
+          topHandlerPriority: openHandlers[0]?.priority ?? null,
+          route: currentPath,
         },
       });
     } catch { /* ignore */ }
+
     if (guarded || (lastForegroundAtRef.current > 0 && sinceForeground < VISIBILITY_GRACE_MS)) {
       window.history.pushState(null, '');
       return;
@@ -116,22 +165,36 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
 
     if (openHandlers.length > 0) {
       const handler = openHandlers[0];
-      // Important: do NOT eagerly mark the handler as closed here.
-      // Some dialogs intentionally ignore back/close while a native flow is in
-      // progress (camera, file picker, saving, etc.). If we flip isOpen=false
-      // before the dialog actually closes, a follow-up popstate can slip
-      // through and navigate away to /home.
+      // Ne mijenjamo isOpen ovdje — dijalozi koji intencionalno ignoriraju back
+      // (native flow) ne smiju biti flagirani kao zatvoreni prije nego što se
+      // zaista zatvore. Consumer je odgovoran za state.
+      try {
+        logDiagnostic({
+          event: 'backctx_handler_consumed',
+          details: { id: handler.id, priority: handler.priority, stackDepthBefore },
+        });
+      } catch { /* ignore */ }
       handler.onClose();
       return;
     }
 
-    // No dialogs open — handle page-level back navigation in app area
+    // Nema handlera — page-level back.
     if (!isRootAppRoute(currentPath)) {
       navigate('/home', { replace: false });
       return;
     }
 
-    // Already on a root app route — re-push state so the WebView doesn't exit
+    // Root app ruta bez handlera → Android minimize, web re-push.
+    if (isNativePlatform()) {
+      try {
+        logDiagnostic({ event: 'backctx_minimize', details: { route: currentPath } });
+      } catch { /* ignore */ }
+      tryMinimizeApp();
+      // Sigurnosno vratimo guard entry ako minimize ne uspije, da back
+      // ne pobjegne iz web-view scope-a.
+      window.history.pushState(null, '');
+      return;
+    }
     window.history.pushState(null, '');
   }, [navigate]);
 
@@ -142,8 +205,6 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     };
   }, [handlePopState]);
 
-  // Track foreground/background transitions so popstate fired on activity
-  // return (camera, file picker, share sheet, …) can be ignored briefly.
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -154,8 +215,6 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
-  // Push the initial guard state ONLY once we're inside the authenticated app,
-  // never on public routes (otherwise back from /auth or /setup gets trapped).
   useEffect(() => {
     if (
       !initialStatePushedRef.current &&
@@ -168,7 +227,7 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
   }, [location.pathname]);
 
   return (
-    <BackButtonContext.Provider value={{ register, unregister }}>
+    <BackButtonContext.Provider value={{ register, unregister, getStackDepth }}>
       {children}
     </BackButtonContext.Provider>
   );
