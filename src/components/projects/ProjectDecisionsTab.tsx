@@ -163,14 +163,19 @@ export function ProjectDecisionsTab({
         onResolveAdmin={async (requestId, decision) => {
           const res = await resolveDecisionAdminRequest(requestId, decision);
           if (res.ok) {
-            if (res.action === 'deleted') {
-              showSuccess(t('projects.decisions.admin.deletedOk', 'Odluka obrisana'));
-              setSelected(null);
-            } else if (res.action === 'annulled') {
+            if (res.action === 'annulled') {
               showSuccess(t('projects.decisions.admin.annulledOk', 'Odluka poništena'));
             } else if (res.action === 'declined') {
               showSuccess(t('projects.decisions.admin.declinedOk', 'Zahtjev odbijen'));
             }
+          }
+          return res;
+        }}
+        onWithdrawProposal={async () => {
+          const res = await withdrawDecisionProposal(selectedDecision.id);
+          if (res.ok) {
+            showSuccess(t('projects.decisions.withdrawProposal.done', 'Prijedlog povučen'));
+            setSelected(null);
           }
           return res;
         }}
