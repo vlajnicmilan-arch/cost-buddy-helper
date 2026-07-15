@@ -102,6 +102,8 @@ export const ProjectFullScreenView = ({
       logDiagnostic({ event: 'pfsv_tab_changed', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
     } catch { /* ignore */ }
     setActiveTab(next);
+    // Perzistiraj tab za survive remounta (kamera roundtrip na Androidu).
+    try { projectViewState.setTab(next); } catch { /* ignore */ }
   };
   useBackButton(open, onClose);
   const [reportsOpen, setReportsOpen] = useState(false);
