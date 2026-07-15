@@ -764,9 +764,7 @@ function DecisionDetail({
                         className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        {pending.type === 'annul'
-                          ? t('projects.decisions.admin.confirmAnnul', 'Potvrdi poništenje')
-                          : t('projects.decisions.admin.confirmDelete', 'Potvrdi brisanje')}
+                        {t('projects.decisions.admin.confirmAnnul', 'Potvrdi poništenje')}
                       </Button>
                       <Button
                         size="sm"
