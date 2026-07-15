@@ -169,6 +169,23 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Method allowlist — everything except POST is rejected before body/auth work.
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "method_not_allowed" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST, OPTIONS" } }
+    );
+  }
+
+  // Authorization check BEFORE parsing the body. This stops empty-body bot
+  // scans from crashing req.json() (Sentry issue 2c4aa300be7a4748…).
+  if (!isAuthorized(req)) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const startedAt = Date.now();
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -179,8 +196,24 @@ Deno.serve(async (req) => {
   let source: string | null = null;
   let request_id: string | null = null;
 
+  // Safe JSON parse — empty/malformed body returns 400, never an unhandled throw.
+  let parsed: any;
   try {
-    const parsed = await req.json();
+    parsed = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "invalid_json" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return new Response(
+      JSON.stringify({ error: "invalid_json" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
     user_id = parsed.user_id ?? null;
     title = parsed.title ?? null;
     body = parsed.body ?? null;
