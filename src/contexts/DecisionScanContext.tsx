@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 /**
  * Global capture host + draft store za MODUL "ODLUKE".
@@ -85,10 +86,17 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
   // Bump on any draft change so consumers rehydrate correctly on remount.
   const [, forceTick] = useState(0);
 
+  // Safety: pri svježem mountu (npr. WebView reload) osiguraj da guard
+  // nije zaostao iz prethodnog života stranice.
+  useEffect(() => {
+    setNativeFlowActive(false);
+  }, []);
+
   const beginCapture = useCallback((key: string) => {
     captureOwnerKeyRef.current = key;
     setPendingCapture(null);
     setPhase('capturing');
+    setNativeFlowActive(true);
     try { logDiagnostic('decision_scan_begin', { key }); } catch {}
   }, []);
 
@@ -96,6 +104,9 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
     const key = captureOwnerKeyRef.current;
     if (key) setPendingCapture({ key, dataUrl });
     setPhase('idle');
+    // Guard OSTAJE aktivan dok forma ne konzumira pendingCapture — inače
+    // Android popstate koji stigne kasno (>500ms) može zatvoriti dijalog
+    // prije nego preuzme fotku.
     try { logDiagnostic('decision_scan_complete', { key, bytes: dataUrl?.length ?? 0 }); } catch {}
   }, []);
 
@@ -103,6 +114,7 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
     setPhase('idle');
     setPendingCapture(null);
     captureOwnerKeyRef.current = null;
+    setNativeFlowActive(false);
     try { logDiagnostic('decision_scan_cancel', {}); } catch {}
   }, []);
 
@@ -111,8 +123,10 @@ export const DecisionScanProvider = ({ children }: { children: ReactNode }) => {
     const url = pendingCapture.dataUrl;
     setPendingCapture(null);
     captureOwnerKeyRef.current = null;
+    setNativeFlowActive(false);
     return url;
   }, [pendingCapture]);
+
 
   const ensureEntry = (key: string): DraftEntry => {
     let entry = draftsRef.current.get(key);

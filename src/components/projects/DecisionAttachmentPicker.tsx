@@ -101,16 +101,15 @@ export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey
   const handleCamera = async () => {
     if (!canAdd) return;
     // Preferirani put (Android/native): pokreni kameru izvan route tree-a.
+    // beginCapture() sinkrono postavlja nativeFlowActive guard;
+    // consumePendingCapture()/cancelCapture() ga skidaju tek kad forma
+    // preuzme fotku ili kada korisnik odustane. Time kasni Android popstate
+    // ne može zatvoriti dijalog dok fotka nije primljena.
     if (captureKey) {
-      // Postavi native-flow guard SINKRONO — popstate koji Android emitira pri
-      // otvaranju kamera Activity-ja može stići prije nego DecisionCaptureRunner
-      // stigne postaviti guard u svom useEffect-u. Bez ovoga bi ProjectFullScreenView
-      // popstate handler zatvorio Odluke i uništio draft.
-      setNativeFlowActive(true);
       beginCapture(captureKey);
       return;
     }
-    // Fallback (nema captureKey — legacy): direktan poziv.
+    // Fallback (nema captureKey — legacy web put bez global hosta):
     setNativeFlowActive(true);
     try {
       const dataUrl = await takePhoto();
@@ -121,6 +120,7 @@ export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey
       setTimeout(() => setNativeFlowActive(false), 500);
     }
   };
+
 
   // Preuzmi rezultat kamere iz DecisionScanContext kad je namijenjen ovoj formi.
   useEffect(() => {
