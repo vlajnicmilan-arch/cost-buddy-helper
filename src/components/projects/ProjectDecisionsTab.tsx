@@ -108,6 +108,7 @@ export function ProjectDecisionsTab({
     return (
       <DecisionDetail
         decision={selectedDecision}
+        projectName={projectName}
         currentUserId={user?.id ?? ''}
         ownerUserId={projectOwnerId}
         investorUserId={investorUserId}
