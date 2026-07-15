@@ -302,6 +302,56 @@ function DecisionDetail({
   const [replyPriceRaw, setReplyPriceRaw] = useState(initialDraft.text.replyPriceRaw ?? '');
   const [replyAttachments, setReplyAttachments] = useState<File[]>(initialDraft.attachments ?? []);
   const [sending, setSending] = useState<DecisionAction | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const isClosed = decision.current_status !== 'awaiting_response';
+
+  const handleExportPdf = async () => {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const [{ buildDecisionPdfData, generateDecisionPdf }] = await Promise.all([
+        import('@/lib/decisionPdfExport'),
+      ]);
+      const lang = (i18n.language || 'hr').toLowerCase().split(/[-_]/)[0];
+      const language: 'hr' | 'en' | 'de' = lang === 'en' ? 'en' : lang === 'de' ? 'de' : 'hr';
+      const ownerName = memberNameMap.get(ownerUserId) || (t('projects.owner', 'Vlasnik') as string);
+      const investorName = (investorUserId && memberNameMap.get(investorUserId))
+        || (t('projectRoles.investor', 'Investitor') as string);
+      const data = buildDecisionPdfData({
+        decision,
+        projectName,
+        ownerName,
+        investorName,
+        language,
+        labels: {
+          outcome: {
+            approved: t('projects.decisions.status.approved', 'Odobreno') as string,
+            rejected: t('projects.decisions.status.rejected', 'Odbijeno') as string,
+            closed: t('projects.decisions.status.closed', 'Zatvorena bez dogovora') as string,
+          },
+          action: {
+            propose: t('projects.decisions.action.propose', 'Prijedlog') as string,
+            counter: t('projects.decisions.action.counter', 'Protuprijedlog') as string,
+            correction: t('projects.decisions.action.correction', 'Korekcija') as string,
+            accept: t('projects.decisions.action.accept', 'Prihvaćeno') as string,
+            reject: t('projects.decisions.action.reject', 'Odbijeno') as string,
+          },
+        },
+      });
+      const ok = await generateDecisionPdf({
+        data,
+        mode: 'save',
+        getAttachmentUrl,
+      });
+      if (ok) showSuccess(t('projects.decisions.pdf.exported', 'PDF izvezen'));
+    } catch (e) {
+      console.error('[DecisionDetail] PDF export failed', e);
+      showError(t('projects.decisions.pdf.exportFailed', 'Izvoz PDF-a nije uspio'));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   // Perzistiraj draft odgovora (preživljava remount uzrokovan kamera roundtripom).
   useEffect(() => { saveTextDraft(draftKey, { message: replyMsg, replyPriceRaw }); }, [replyMsg, replyPriceRaw, saveTextDraft, draftKey]);
