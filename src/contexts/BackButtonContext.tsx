@@ -110,9 +110,9 @@ export function BackButtonProvider({ children }: { children: ReactNode }) {
 
     if (isNativePlatform()) {
       try {
-        logDiagnostic({ event: 'backctx_minimize', details: { route: currentPath } });
+        logDiagnostic({ event: 'backctx_exit_confirm', details: { route: currentPath } });
       } catch { /* ignore */ }
-      tryMinimizeApp();
+      requestExitConfirm();
       window.history.pushState(null, '');
       return;
     }
