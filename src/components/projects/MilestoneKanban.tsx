@@ -115,6 +115,32 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                           {m.description && (
                             <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
                           )}
+                          {(() => {
+                            const src = getMilestoneDecisionBadge(m);
+                            if (src.kind === 'none') return null;
+                            const isAnnulled = src.kind === 'from_annulled_decision';
+                            return (
+                              <div className="mt-1 flex items-center gap-1 flex-wrap">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'h-4 px-1 text-[9px] gap-0.5',
+                                    isAnnulled ? 'border-muted-foreground/40 text-muted-foreground' : 'border-primary/40 text-primary'
+                                  )}
+                                >
+                                  {isAnnulled ? <Ban className="w-2.5 h-2.5" /> : <Gavel className="w-2.5 h-2.5" />}
+                                  {isAnnulled
+                                    ? t('projects.decisionSource.fromAnnulledBadge', 'Iz poništene odluke')
+                                    : t('projects.decisionSource.fromDecisionBadge', 'Nastala iz odluke')}
+                                </Badge>
+                                {src.investorPrice != null && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {t('projects.decisionSource.investorLabel', 'Prema investitoru')}: +{formatAmount(src.investorPrice)}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
