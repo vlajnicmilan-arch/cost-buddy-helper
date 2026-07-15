@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { SavingsGoalsSection } from '@/components/savings';
 import { CashflowForecast } from '@/components/CashflowForecast';
@@ -71,12 +72,12 @@ const Wallet = () => {
     [allExpenses]
   );
 
-  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false));
+  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false), BACK_PRIORITY.DIALOG);
 
   useBackButton(paymentSourceDialogOpen, () => {
     if (paymentSourcePdfProcessing) return;
     setPaymentSourceDialogOpen(false);
-  });
+  }, BACK_PRIORITY.DIALOG);
 
   // Wrap importFromCSV so wallet list (balances, transactions) refetches after a successful import.
   const importFromCSVWithRefetch = useCallback(async (

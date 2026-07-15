@@ -25,6 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -113,15 +114,16 @@ const Index = () => {
   const [visibleCount, setVisibleCount] = useState(50);
 
   // Back button support for all dialogs
-  useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false));
-  useBackButton(expenseDialogOpen, () => setExpenseDialogOpen(false));
-  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false));
-  useBackButton(detailDialogOpen, () => setDetailDialogOpen(false));
-  useBackButton(editDialogOpen, () => setEditDialogOpen(false));
-  useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false));
-  useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false));
-  useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false));
-  useBackButton(recurringMatchDialogOpen, () => setRecurringMatchDialogOpen(false));
+  useBackButton(incomeDialogOpen, () => setIncomeDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(expenseDialogOpen, () => setExpenseDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(transferDialogOpen, () => setTransferDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(detailDialogOpen, () => setDetailDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(editDialogOpen, () => setEditDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(paymentSourceDialogOpen, () => setPaymentSourceDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(assistantDialogOpen, () => setAssistantDialogOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(recurringPanelOpen, () => setRecurringPanelOpen(false), BACK_PRIORITY.DIALOG);
+  useBackButton(recurringMatchDialogOpen, () => setRecurringMatchDialogOpen(false), BACK_PRIORITY.DIALOG);
+
 
   const { recurringTransactions, processDueTransactions, updateRecurring, refetch: refetchRecurring } = useRecurringTransactions();
   const { findMatches } = useRecurringMatcher();

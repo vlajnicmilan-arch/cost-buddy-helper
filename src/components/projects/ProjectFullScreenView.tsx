@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useBackNavigationTab } from '@/hooks/useBackNavigationTab';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -105,7 +107,7 @@ export const ProjectFullScreenView = ({
     // Perzistiraj tab za survive remounta (kamera roundtrip na Androidu).
     try { projectViewState.setTab(next); } catch { /* ignore */ }
   };
-  useBackButton(open, onClose);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [budgetHistoryOpen, setBudgetHistoryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -314,34 +316,18 @@ export const ProjectFullScreenView = ({
   }, [activeTab]);
 
 
-  // Handle browser back button
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePopState = (e: PopStateEvent) => {
-      const guarded = isNativeFlowActive();
-      try {
-        logDiagnostic({ event: 'pfsv_popstate', details: { guarded, projectId: project?.id ?? null } });
-      } catch { /* ignore */ }
-      // Ignore synthetic popstate emitted by Android when a native activity
-      // (camera, file picker, share sheet, …) returns focus to the WebView.
-      // Otherwise it would close the project view mid-flight and destroy any
-      // draft (e.g. a decision being composed) — see AddExpenseDialog pattern.
-      if (guarded) {
-        window.history.pushState({ projectView: true }, '');
-        return;
-      }
-      e.preventDefault();
-      onClose();
-    };
-
-    window.history.pushState({ projectView: true }, '');
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [open, onClose]);
+  // Back handling: JEDAN kanonski useBackButton (open, onClose) na vrhu
+  // komponente + tab-back preko useBackNavigationTab (TAB prioritet, niži od
+  // dijaloga/detalja). Vlastiti pushState/popstate BLOK JE UKLONJEN — bio je
+  // izvor duple registracije (dva handlera za isti popstate). Native guard
+  // (isNativeFlowActive + VISIBILITY_GRACE_MS) živi u BackButtonContextu i
+  // pokriva sve slojeve.
+  useBackNavigationTab(
+    activeTab,
+    isWorkerOnly ? 'worklog' : 'overview',
+    (prev) => handleTabChange(prev),
+    open,
+  );
 
   if (!project) return null;
 

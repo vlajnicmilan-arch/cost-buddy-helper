@@ -1,4 +1,5 @@
 import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { Button } from '@/components/ui/button';
 import { X, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +14,7 @@ interface PaymentSourcesFullScreenViewProps {
 
 export const PaymentSourcesFullScreenView = ({ open, onClose }: PaymentSourcesFullScreenViewProps) => {
   const { t } = useTranslation();
-  useBackButton(open, onClose);
+  useBackButton(open, onClose, BACK_PRIORITY.FULLSCREEN);
 
   return (
     <AnimatePresence>

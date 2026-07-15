@@ -8,6 +8,7 @@ import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { ProjectEstimatesPanel } from '@/components/projects/ProjectEstimatesPanel';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useTranslation } from 'react-i18next';
 
 type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates';
@@ -20,7 +21,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   const { t } = useTranslation();
   const [view, setView] = useState<SubView>('menu');
 
-  useBackButton(view !== 'menu', () => setView('menu'));
+  useBackButton(view !== 'menu', () => setView('menu'), BACK_PRIORITY.DETAIL);
 
   const backButton = (
     <button onClick={() => setView('menu')} className="text-xs text-primary mb-3 flex items-center gap-1">{t('business.more.back', '← Natrag')}</button>
