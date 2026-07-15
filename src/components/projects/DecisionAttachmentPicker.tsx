@@ -99,11 +99,28 @@ export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey
 
   const handleCamera = async () => {
     if (!canAdd) return;
+    // Preferirani put (Android/native): pokreni kameru izvan route tree-a.
+    if (captureKey) {
+      beginCapture(captureKey);
+      return;
+    }
+    // Fallback (nema captureKey — legacy): direktan poziv.
     const dataUrl = await takePhoto();
     if (!dataUrl) return;
     const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
     addFiles([file]);
   };
+
+  // Preuzmi rezultat kamere iz DecisionScanContext kad je namijenjen ovoj formi.
+  useEffect(() => {
+    if (!captureKey) return;
+    if (!pendingCapture || pendingCapture.key !== captureKey) return;
+    const dataUrl = consumePendingCapture(captureKey);
+    if (!dataUrl) return;
+    const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
+    addFiles([file]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCapture, captureKey]);
 
   const handleGallery = () => {
     if (!canAdd) return;
