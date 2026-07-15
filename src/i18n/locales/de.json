@@ -1154,22 +1154,6 @@
     }
   },
   "settings": {
-    "legal": {
-      "title": "Rechtsdokumente (DSGVO)",
-      "intro": "Generieren Sie einen Auftragsverarbeitungsvertrag (AVV/DPA) und einen Datenschutzhinweis für Ihre Mitarbeiter/Auftragnehmer. Mit Ihren Firmendaten vorausgefüllt.",
-      "companyName": "Firmenname",
-      "companyRequired": "Firmenname eingeben",
-      "oib": "USt-IdNr.",
-      "email": "E-Mail",
-      "address": "Geschäftsadresse",
-      "dpaButton": "AVV / DPA",
-      "dpaDesc": "Für Ihre Unterlagen als Verantwortlicher",
-      "pnButton": "Datenschutzhinweis",
-      "pnDesc": "Für Ihre Mitarbeiter und Auftragnehmer",
-      "generated": "Dokument generiert",
-      "generateError": "Fehler beim Generieren des Dokuments",
-      "note": "Dokumente sind ein Ausgangspunkt. Bei spezifischen rechtlichen Fragen ziehen Sie einen Anwalt zu Rate."
-    },
     "title": "Einstellungen",
     "language": "Sprache",
     "theme": "Design",
@@ -3092,6 +3076,8 @@
     "privacyPolicyLink": "Datenschutzrichtlinie",
     "settingsPrivacyTitle": "Datenschutzrichtlinie",
     "settingsPrivacyDesc": "DSGVO-Rechte und Datenverarbeitung",
+    "settingsTermsTitle": "Nutzungsbedingungen",
+    "settingsTermsDesc": "Allgemeine Geschäftsbedingungen der App",
     "cat": {
       "necessary": "Notwendig",
       "necessaryDesc": "Erforderlich für die App: Anmeldung, Sicherheit, Sprache, PIN. Kann nicht deaktiviert werden.",

@@ -1154,22 +1154,6 @@
     }
   },
   "settings": {
-    "legal": {
-      "title": "Legal documents (GDPR)",
-      "intro": "Generate a Data Processing Agreement (DPA) and a Privacy Notice for your workers/collaborators. Pre-filled with your company details.",
-      "companyName": "Company name",
-      "companyRequired": "Enter company name",
-      "oib": "Tax ID",
-      "email": "Email",
-      "address": "Registered address",
-      "dpaButton": "DPA Agreement",
-      "dpaDesc": "For your records as Data Controller",
-      "pnButton": "Privacy Notice",
-      "pnDesc": "For your workers and collaborators",
-      "generated": "Document generated",
-      "generateError": "Error generating document",
-      "note": "Documents are a starting point. For specific legal situations consult a lawyer."
-    },
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
@@ -3224,6 +3208,8 @@
     "privacyPolicyLink": "Privacy Policy",
     "settingsPrivacyTitle": "Privacy Policy",
     "settingsPrivacyDesc": "GDPR rights and data processing",
+    "settingsTermsTitle": "Terms of Service",
+    "settingsTermsDesc": "App terms and conditions",
     "cat": {
       "necessary": "Necessary",
       "necessaryDesc": "Required for the app to work: login, security, language, PIN. Cannot be disabled.",

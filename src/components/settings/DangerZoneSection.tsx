@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, RotateCcw, Shield, ChevronRight } from 'lucide-react';
+import { Trash2, RotateCcw, Shield, ChevronRight, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { APP_VERSION } from '@/lib/version';
 
@@ -10,12 +10,13 @@ interface DangerZoneSectionProps {
   onShowDeleteConfirm: () => void;
   user: { id: string } | null;
   onNavigateToPrivacy: () => void;
+  onNavigateToTerms: () => void;
   onNavigateToTrash?: () => void;
 }
 
 export const DangerZoneSection = ({
   onShowResetConfirm, onShowDeleteConfirm,
-  user, onNavigateToPrivacy, onNavigateToTrash
+  user, onNavigateToPrivacy, onNavigateToTerms, onNavigateToTrash
 }: DangerZoneSectionProps) => {
   const { t } = useTranslation();
 
@@ -109,6 +110,20 @@ export const DangerZoneSection = ({
           <div className="flex-1">
             <p className="text-sm font-medium">{t('gdpr.settingsPrivacyTitle', 'Politika privatnosti')}</p>
             <p className="text-xs text-muted-foreground">{t('gdpr.settingsPrivacyDesc', 'GDPR prava i obrada podataka')}</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+
+        <button
+          onClick={onNavigateToTerms}
+          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
+        >
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <FileText className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">{t('gdpr.settingsTermsTitle', 'Uvjeti korištenja')}</p>
+            <p className="text-xs text-muted-foreground">{t('gdpr.settingsTermsDesc', 'Pravila i uvjeti korištenja aplikacije')}</p>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>

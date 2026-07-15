@@ -20,7 +20,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "projects.earnedValue.title": "Project management term",
     "budget.trend": "Same word in EN",
     "invoices.widget.overdueDays": "Compact unit label",
-    "settings.legal.email": "Same word in EN",
+    
     "settings.modules.business.title": "Same word in EN",
     "settings.modules.overrideBadge.source": "Admin terminology",
     "settings.adminPanel": "Admin terminology",
@@ -118,7 +118,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "projects.decisions.attach.file": "Same word in DE (Dokument)",
     "estimates.pdf.date": "Same word in DE",
     "invoices.widget.overdueDays": "Compact unit label",
-    "settings.legal.email": "Same word in DE",
+    
     "settings.profile": "Same word in DE",
     "settings.modules.business.title": "Same word in DE",
     "settings.modules.overrideBadge.source": "Admin terminology",
