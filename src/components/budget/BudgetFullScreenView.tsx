@@ -141,6 +141,11 @@ export const BudgetFullScreenView = ({
     if (!open) return;
 
     const handlePopState = (e: PopStateEvent) => {
+      // Ignore synthetic popstate from Android native activity return.
+      if (isNativeFlowActive()) {
+        window.history.pushState({ budgetView: true }, '');
+        return;
+      }
       e.preventDefault();
       onClose();
     };
