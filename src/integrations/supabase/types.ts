@@ -3334,6 +3334,57 @@ export type Database = {
           },
         ]
       }
+      project_decision_attachments: {
+        Row: {
+          created_at: string
+          decision_id: string
+          file_name: string
+          id: string
+          mime_type: string
+          size_bytes: number
+          step_id: string | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          decision_id: string
+          file_name: string
+          id?: string
+          mime_type: string
+          size_bytes: number
+          step_id?: string | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string
+          file_name?: string
+          id?: string
+          mime_type?: string
+          size_bytes?: number
+          step_id?: string | null
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_decision_attachments_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_decision_attachments_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "project_decision_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_decision_steps: {
         Row: {
           action: string
