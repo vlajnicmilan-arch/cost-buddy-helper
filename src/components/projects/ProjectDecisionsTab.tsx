@@ -70,6 +70,7 @@ export function ProjectDecisionsTab({
   const {
     decisions, loading, createDecision, addStep, getAttachmentUrl,
     requestDecisionAdmin, withdrawDecisionAdminRequest, resolveDecisionAdminRequest,
+    withdrawDecisionProposal,
   } = useProjectDecisions(projectId);
   const { pendingCapture } = useDecisionScan();
   const [selected, setSelected] = useState<string | null>(null);
