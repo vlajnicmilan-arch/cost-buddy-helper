@@ -10,6 +10,7 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectDialog } from './ProjectDialog';
 import { ProjectFullScreenView } from './ProjectFullScreenView';
 import { peekPendingHighlight } from '@/lib/pendingHighlight';
+import { projectViewState } from '@/lib/projectViewState';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
