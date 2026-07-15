@@ -33,31 +33,9 @@ export interface CrashAlertPayload {
   adminUrl?: string
 }
 
-async function getOrCreateUnsubscribeToken(
-  admin: any,
-  recipient: string,
-): Promise<string> {
-  const normalized = recipient.toLowerCase()
-  const { data: existing } = await admin
-    .from('email_unsubscribe_tokens')
-    .select('token')
-    .eq('email', normalized)
-    .maybeSingle()
-  if (existing?.token) return existing.token
+// Unsubscribe intentionally omitted — crash-alert is transactional (operational
+// notification to admins). Kept: idempotency, suppression checks upstream.
 
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  const token = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
-  await admin
-    .from('email_unsubscribe_tokens')
-    .upsert({ token, email: normalized }, { onConflict: 'email', ignoreDuplicates: true })
-  const { data: stored } = await admin
-    .from('email_unsubscribe_tokens')
-    .select('token')
-    .eq('email', normalized)
-    .maybeSingle()
-  return stored?.token ?? token
-}
 
 /**
  * Dohvati sve admin email-ove (preko user_roles + auth.users).
@@ -114,8 +92,6 @@ export async function enqueueCrashAlertEmail(
       status: 'pending',
     })
 
-    const unsubscribeToken = await getOrCreateUnsubscribeToken(admin, recipient)
-
     const { error: enqueueError } = await admin.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
       payload: {
@@ -129,7 +105,6 @@ export async function enqueueCrashAlertEmail(
         purpose: 'transactional',
         label: 'crash-alert',
         idempotency_key: idempotencyKey,
-        unsubscribe_token: unsubscribeToken,
         queued_at: new Date().toISOString(),
       },
     })
