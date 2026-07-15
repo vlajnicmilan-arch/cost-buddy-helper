@@ -977,7 +977,22 @@
         "unsupported": "Nepodržan tip datoteke",
         "urlFailed": "Neki prilozi trenutno nisu dostupni."
       },
-      "awaitingFor": "Čeka odgovor {{time}}"
+      "awaitingFor": "Čeka odgovor {{time}}",
+      "pdf": {
+        "title": "Odluka",
+        "exportPdf": "Izvezi PDF",
+        "exported": "PDF izvezen",
+        "exportFailed": "Izvoz PDF-a nije uspio",
+        "createdAt": "Otvoreno",
+        "closedAt": "Zatvoreno",
+        "initialDescription": "Prijedlog",
+        "finalPrice": "Konačna cijena",
+        "amendmentNote": "Izmjena ugovora: {{signed}}",
+        "timeline": "Slijed koraka",
+        "attachments": "Prilozi",
+        "attachmentsAvailableInApp": "Neki prilozi dostupni su u aplikaciji.",
+        "footerDisclaimer": "Generirano iz aplikacije Centar · {{date}} · ID: {{id}}"
+      }
     }
   },
   "estimates": {
