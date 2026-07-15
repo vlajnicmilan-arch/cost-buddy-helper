@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -141,6 +142,11 @@ export const BudgetFullScreenView = ({
     if (!open) return;
 
     const handlePopState = (e: PopStateEvent) => {
+      // Ignore synthetic popstate from Android native activity return.
+      if (isNativeFlowActive()) {
+        window.history.pushState({ budgetView: true }, '');
+        return;
+      }
       e.preventDefault();
       onClose();
     };

@@ -12,6 +12,7 @@ import {
   validateDecisionAttachment,
 } from '@/lib/decisionAttachments';
 import { cn } from '@/lib/utils';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 interface Props {
   value: File[];
@@ -101,14 +102,24 @@ export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey
     if (!canAdd) return;
     // Preferirani put (Android/native): pokreni kameru izvan route tree-a.
     if (captureKey) {
+      // Postavi native-flow guard SINKRONO — popstate koji Android emitira pri
+      // otvaranju kamera Activity-ja može stići prije nego DecisionCaptureRunner
+      // stigne postaviti guard u svom useEffect-u. Bez ovoga bi ProjectFullScreenView
+      // popstate handler zatvorio Odluke i uništio draft.
+      setNativeFlowActive(true);
       beginCapture(captureKey);
       return;
     }
     // Fallback (nema captureKey — legacy): direktan poziv.
-    const dataUrl = await takePhoto();
-    if (!dataUrl) return;
-    const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
-    addFiles([file]);
+    setNativeFlowActive(true);
+    try {
+      const dataUrl = await takePhoto();
+      if (!dataUrl) return;
+      const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
+      addFiles([file]);
+    } finally {
+      setTimeout(() => setNativeFlowActive(false), 500);
+    }
   };
 
   // Preuzmi rezultat kamere iz DecisionScanContext kad je namijenjen ovoj formi.
