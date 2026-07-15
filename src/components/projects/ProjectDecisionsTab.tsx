@@ -382,7 +382,7 @@ function DecisionDetail({
           <p className="text-xs text-muted-foreground mb-3">
             {t('projects.decisions.awaitingFor', 'Čeka odgovor {{time}}', {
               time: formatDistanceToNowStrict(new Date(decision.updated_at), {
-                locale: localeFor(t('__lang', { lng: undefined, defaultValue: '' }) || (typeof navigator !== 'undefined' ? navigator.language : 'hr')),
+                locale: localeFor(i18n.language),
               }),
             })}
           </p>
