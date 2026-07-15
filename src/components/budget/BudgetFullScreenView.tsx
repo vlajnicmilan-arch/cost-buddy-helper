@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBackButton } from '@/hooks/useBackButton';
+import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/contexts/CurrencyContext';
