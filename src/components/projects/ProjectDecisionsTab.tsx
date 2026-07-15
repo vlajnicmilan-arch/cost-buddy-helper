@@ -344,7 +344,7 @@ function DecisionCard({
 function DecisionDetail({
   decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap,
   onBack, onAction, getAttachmentUrl,
-  onRequestAdmin, onWithdrawAdmin, onResolveAdmin,
+  onRequestAdmin, onWithdrawAdmin, onResolveAdmin, onWithdrawProposal,
 }: {
   decision: ProjectDecision;
   projectName: string;
@@ -364,6 +364,7 @@ function DecisionDetail({
   onWithdrawAdmin: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
   onResolveAdmin: (requestId: string, decision: 'confirm' | 'decline') =>
     Promise<{ ok: boolean; action?: string; error?: string }>;
+  onWithdrawProposal: () => Promise<{ ok: boolean; error?: string }>;
 }) {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
