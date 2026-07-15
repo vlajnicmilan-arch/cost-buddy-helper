@@ -62,6 +62,7 @@ import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { projectViewState } from '@/lib/projectViewState';
 import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
 import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
 
