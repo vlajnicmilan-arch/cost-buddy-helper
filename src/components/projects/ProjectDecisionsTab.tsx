@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
+import { useDecisionScan } from '@/contexts/DecisionScanContext';
 import { NewDecisionDialog } from './NewDecisionDialog';
 import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
 import { DecisionStepAttachments } from './DecisionStepAttachments';
@@ -250,10 +251,17 @@ function DecisionDetail({
 }) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const [replyMsg, setReplyMsg] = useState('');
-  const [replyPriceRaw, setReplyPriceRaw] = useState('');
-  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const { getDraft, saveTextDraft, saveAttachments, clearDraft } = useDecisionScan();
+  const draftKey = `reply-${decision.id}`;
+  const initialDraft = getDraft(draftKey);
+  const [replyMsg, setReplyMsg] = useState(initialDraft.text.message ?? '');
+  const [replyPriceRaw, setReplyPriceRaw] = useState(initialDraft.text.replyPriceRaw ?? '');
+  const [replyAttachments, setReplyAttachments] = useState<File[]>(initialDraft.attachments ?? []);
   const [sending, setSending] = useState<DecisionAction | null>(null);
+
+  // Perzistiraj draft odgovora (preživljava remount uzrokovan kamera roundtripom).
+  useEffect(() => { saveTextDraft(draftKey, { message: replyMsg, replyPriceRaw }); }, [replyMsg, replyPriceRaw, saveTextDraft, draftKey]);
+  useEffect(() => { saveAttachments(draftKey, replyAttachments); }, [replyAttachments, saveAttachments, draftKey]);
 
   const legal = getLegalActions(decision, decision.steps, { currentUserId, ownerUserId, investorUserId });
   const phase = decisionPhaseKey(decision, decision.steps);
@@ -288,7 +296,10 @@ function DecisionDetail({
     setSending(action);
     const res = await onAction(action, replyMsg, price, carriesAttachments ? replyAttachments : undefined);
     setSending(null);
-    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); setReplyAttachments([]); }
+    if (res.ok) {
+      setReplyMsg(''); setReplyPriceRaw(''); setReplyAttachments([]);
+      clearDraft(draftKey);
+    }
   };
 
   const nameOf = (uid: string) => memberNameMap.get(uid) || (uid === ownerUserId ? t('projects.owner', 'Vlasnik') : t('projectRoles.investor', 'Investitor'));
@@ -429,6 +440,7 @@ function DecisionDetail({
                 value={replyAttachments}
                 onChange={setReplyAttachments}
                 disabled={!!sending}
+                captureKey={draftKey}
               />
             </>
           )}

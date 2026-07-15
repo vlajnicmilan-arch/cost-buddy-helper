@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Paperclip, X, FileText, ImageIcon, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
+import { useDecisionScan } from '@/contexts/DecisionScanContext';
 import { showError } from '@/hooks/useStatusFeedback';
 import {
   MAX_ATTACHMENTS_PER_STEP,
@@ -16,6 +17,13 @@ interface Props {
   value: File[];
   onChange: (next: File[]) => void;
   disabled?: boolean;
+  /**
+   * Jedinstveni ključ forme koja hosta picker (npr. 'new-decision' ili
+   * 'reply-<decisionId>'). Kad je zadan, kamera se pokreće preko
+   * DecisionScanContext + GlobalDecisionCaptureHost umjesto direktno,
+   * čime se izbjegava gubitak drafta pri Android kamera roundtripu.
+   */
+  captureKey?: string;
 }
 
 const dataUrlToFile = (dataUrl: string, fileName: string): File => {
@@ -40,9 +48,10 @@ const humanSize = (bytes: number): string => {
  * Slike se komprimiraju tek pri uploadu (u useProjectDecisions), ovdje je preview
  * iz object URL-a nad izvornim Fileom.
  */
-export function DecisionAttachmentPicker({ value, onChange, disabled }: Props) {
+export function DecisionAttachmentPicker({ value, onChange, disabled, captureKey }: Props) {
   const { t } = useTranslation();
   const { takePhoto, isNative, cameraInputRef } = useNativeCamera();
+  const { beginCapture, consumePendingCapture, pendingCapture } = useDecisionScan();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
@@ -90,11 +99,28 @@ export function DecisionAttachmentPicker({ value, onChange, disabled }: Props) {
 
   const handleCamera = async () => {
     if (!canAdd) return;
+    // Preferirani put (Android/native): pokreni kameru izvan route tree-a.
+    if (captureKey) {
+      beginCapture(captureKey);
+      return;
+    }
+    // Fallback (nema captureKey — legacy): direktan poziv.
     const dataUrl = await takePhoto();
     if (!dataUrl) return;
     const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
     addFiles([file]);
   };
+
+  // Preuzmi rezultat kamere iz DecisionScanContext kad je namijenjen ovoj formi.
+  useEffect(() => {
+    if (!captureKey) return;
+    if (!pendingCapture || pendingCapture.key !== captureKey) return;
+    const dataUrl = consumePendingCapture(captureKey);
+    if (!dataUrl) return;
+    const file = dataUrlToFile(dataUrl, `photo_${Date.now()}.jpg`);
+    addFiles([file]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCapture, captureKey]);
 
   const handleGallery = () => {
     if (!canAdd) return;
