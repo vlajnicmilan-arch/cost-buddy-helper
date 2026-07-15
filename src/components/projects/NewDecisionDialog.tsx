@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { parseMoneySigned } from '@/lib/money';
 import { showError } from '@/hooks/useStatusFeedback';
 import { DecisionAttachmentPicker } from './DecisionAttachmentPicker';
+import { useDecisionScan } from '@/contexts/DecisionScanContext';
 
 interface NewDecisionDialogProps {
   open: boolean;
@@ -21,16 +22,40 @@ interface NewDecisionDialogProps {
   }) => Promise<{ ok: boolean }>;
 }
 
+const DRAFT_KEY = 'new-decision';
+
 export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionDialogProps) {
   const { t } = useTranslation();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priceRaw, setPriceRaw] = useState('');
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const { getDraft, saveTextDraft, saveAttachments, clearDraft } = useDecisionScan();
+
+  // Rehidracija drafta (preživljava remount uzrokovan Android kamera roundtripom).
+  const initial = getDraft(DRAFT_KEY);
+  const [title, setTitle] = useState(initial.text.title ?? '');
+  const [description, setDescription] = useState(initial.text.description ?? '');
+  const [priceRaw, setPriceRaw] = useState(initial.text.priceRaw ?? '');
+  const [attachments, setAttachments] = useState<File[]>(initial.attachments ?? []);
   const [submitting, setSubmitting] = useState(false);
+
+  // Kad se dijalog otvara, ponovo pročitaj draft iz contexta (za slučaj da je
+  // međuvremenu ažuriran, npr. iz capture flow-a).
+  useEffect(() => {
+    if (!open) return;
+    const d = getDraft(DRAFT_KEY);
+    setTitle(d.text.title ?? '');
+    setDescription(d.text.description ?? '');
+    setPriceRaw(d.text.priceRaw ?? '');
+    setAttachments(d.attachments ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Perzistiraj tekst na promjenu.
+  useEffect(() => { saveTextDraft(DRAFT_KEY, { title, description, priceRaw }); }, [title, description, priceRaw, saveTextDraft]);
+  // Perzistiraj File priloge (u memoriji contexta).
+  useEffect(() => { saveAttachments(DRAFT_KEY, attachments); }, [attachments, saveAttachments]);
 
   const reset = () => {
     setTitle(''); setDescription(''); setPriceRaw(''); setAttachments([]); setSubmitting(false);
+    clearDraft(DRAFT_KEY);
   };
 
   const handleSubmit = async () => {
@@ -101,7 +126,12 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
               {t('projects.decisions.field.priceHint', 'Ako prihvaćeno, automatski se stvara aneks ugovora. Negativan iznos umanjuje ugovor. Nula nije dozvoljena.')}
             </p>
           </div>
-          <DecisionAttachmentPicker value={attachments} onChange={setAttachments} disabled={submitting} />
+          <DecisionAttachmentPicker
+            value={attachments}
+            onChange={setAttachments}
+            disabled={submitting}
+            captureKey={DRAFT_KEY}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
