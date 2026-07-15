@@ -959,6 +959,7 @@
         "declinedOk": "Request declined",
         "annulledInfo": "This decision was annulled by mutual confirmation.",
         "annulledMeta": "{{by}} · {{when}}"
+      },
       "action": {
         "propose": "Proposal",
         "counter": "Counter",
