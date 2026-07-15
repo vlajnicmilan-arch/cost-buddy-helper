@@ -215,8 +215,16 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
+      logDiagnostic({
+        event: 'dbg_pfsv_tab_reset',
+        details: { branch: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+      });
       setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
     } else if (isWorkerOnly) {
+      logDiagnostic({
+        event: 'dbg_pfsv_tab_reset',
+        details: { branch: 'workerOnly', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+      });
       setActiveTab('worklog');
     }
   }, [open, project?.id, isWorkerOnly]);
