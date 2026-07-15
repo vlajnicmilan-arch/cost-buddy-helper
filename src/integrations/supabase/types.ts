@@ -1145,6 +1145,30 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_withdrawal_log: {
+        Row: {
+          created_by: string
+          decision_id: string
+          id: string
+          project_id: string
+          withdrawn_at: string
+        }
+        Insert: {
+          created_by: string
+          decision_id: string
+          id?: string
+          project_id: string
+          withdrawn_at?: string
+        }
+        Update: {
+          created_by?: string
+          decision_id?: string
+          id?: string
+          project_id?: string
+          withdrawn_at?: string
+        }
+        Relationships: []
+      }
       dpa_requests: {
         Row: {
           company_address: string | null
@@ -6005,6 +6029,10 @@ export type Database = {
       withdraw_decision_admin_request: {
         Args: { _request_id: string }
         Returns: undefined
+      }
+      withdraw_decision_proposal: {
+        Args: { _decision_id: string }
+        Returns: Json
       }
     }
     Enums: {
