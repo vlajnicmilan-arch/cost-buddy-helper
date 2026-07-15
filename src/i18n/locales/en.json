@@ -411,6 +411,12 @@
       "created": "VTR added",
       "deleteWarning": "Deleting this VTR will reduce the contracted value by {{amount}}. Continue?"
     },
+    "decisionSource": {
+      "fromDecisionBadge": "Created from decision",
+      "fromAnnulledBadge": "From an annulled decision",
+      "investorLabel": "To investor",
+      "investorHint": "Informational — investor-facing amount from the decision. Does not affect cost budget, margin or cashflow."
+    },
     "editMilestone": "Edit Milestone",
     "milestoneName": "Milestone Name",
     "milestoneNamePlaceholder": "e.g. Phase 1",

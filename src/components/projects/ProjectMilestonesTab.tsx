@@ -16,7 +16,8 @@ import { useProjectMilestones } from '@/hooks/useProjectMilestones';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, FileSignature } from 'lucide-react';
+import { Plus, Pencil, Trash2, CalendarIcon, GripVertical, Loader2, Target, Link2, Bell, AlertTriangle, List, Columns3, ListChecks, Shield, FileSignature, Gavel, Ban } from 'lucide-react';
+import { getMilestoneDecisionBadge } from '@/lib/milestoneDecisionSource';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
@@ -400,6 +401,36 @@ export const ProjectMilestonesTab = ({
                     {milestone.description && (
                       <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
                     )}
+
+                    {(() => {
+                      const src = getMilestoneDecisionBadge(milestone);
+                      if (src.kind === 'none') return null;
+                      const isAnnulled = src.kind === 'from_annulled_decision';
+                      return (
+                        <div className="mb-2 flex items-center gap-2 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'text-[10px] gap-1',
+                              isAnnulled ? 'border-muted-foreground/50 text-muted-foreground' : 'border-primary/50 text-primary'
+                            )}
+                          >
+                            {isAnnulled ? <Ban className="w-3 h-3" /> : <Gavel className="w-3 h-3" />}
+                            {isAnnulled
+                              ? t('projects.decisionSource.fromAnnulledBadge', 'Iz poništene odluke')
+                              : t('projects.decisionSource.fromDecisionBadge', 'Nastala iz odluke')}
+                          </Badge>
+                          {src.investorPrice != null && (
+                            <span
+                              className="text-xs font-medium text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5"
+                              title={t('projects.decisionSource.investorHint', 'Informativno — iznos prema investitoru iz odluke. Ne ulazi u budžet troška ni maržu.')}
+                            >
+                              {t('projects.decisionSource.investorLabel', 'Prema investitoru')}: +{formatAmount(src.investorPrice)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {milestone.budget > 0 && (
                       <div className="mb-2">

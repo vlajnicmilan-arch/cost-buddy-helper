@@ -25,7 +25,7 @@ export const useProjectMilestones = (projectId: string | null) => {
     try {
       const { data, error } = await supabase
         .from('project_milestones')
-        .select('*')
+        .select('*, source_decision:project_decisions!source_decision_id(id, title, annulled_at)')
         .eq('project_id', projectId)
         .order('sort_order', { ascending: true });
 
@@ -60,6 +60,9 @@ export const useProjectMilestones = (projectId: string | null) => {
         reminder_days_before: m.reminder_days_before ?? 3,
         is_contingency: !!m.is_contingency,
         is_vtr: !!m.is_vtr,
+        source_decision_id: m.source_decision_id ?? null,
+        investor_price: m.investor_price != null ? Number(m.investor_price) : null,
+        source_decision: m.source_decision ?? null,
       })));
     } catch (error) {
       console.error('Error fetching milestones:', error);

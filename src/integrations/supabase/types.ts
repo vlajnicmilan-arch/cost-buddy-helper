@@ -4050,12 +4050,14 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          investor_price: number | null
           is_contingency: boolean
           is_vtr: boolean
           name: string
           project_id: string
           reminder_days_before: number | null
           sort_order: number
+          source_decision_id: string | null
           start_date: string | null
           status: string
           updated_at: string
@@ -4073,12 +4075,14 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          investor_price?: number | null
           is_contingency?: boolean
           is_vtr?: boolean
           name: string
           project_id: string
           reminder_days_before?: number | null
           sort_order?: number
+          source_decision_id?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -4096,12 +4100,14 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          investor_price?: number | null
           is_contingency?: boolean
           is_vtr?: boolean
           name?: string
           project_id?: string
           reminder_days_before?: number | null
           sort_order?: number
+          source_decision_id?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -4119,6 +4125,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_source_decision_id_fkey"
+            columns: ["source_decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
             referencedColumns: ["id"]
           },
         ]
