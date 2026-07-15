@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
         const alertId = insertedRows?.id;
 
         // ---- PUSH ----
-        const title = `🔴 V&M Balance: ${t.count} grešaka u ${WINDOW_MIN} min`;
+        const title = `🔴 Centar: ${t.count} grešaka u ${WINDOW_MIN} min`;
         const pushBody = `${t.users} korisnika · ${t.route ?? "?"} · ${t.sample_message}`;
 
         let pushed = 0;

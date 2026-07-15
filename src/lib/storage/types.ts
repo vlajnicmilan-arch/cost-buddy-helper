@@ -34,7 +34,7 @@ export const STORAGE_OPTIONS = [
   },
   {
     id: 'cloud' as StorageMode,
-    name: 'V&M Balance Cloud',
+    name: 'Centar Cloud',
     icon: '☁️',
     description: 'Sinkroniziraj između uređaja. Potrebna registracija.',
     available: true

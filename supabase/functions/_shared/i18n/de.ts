@@ -89,7 +89,7 @@ export default {
   "notifications.fallback.project":
     "Projekt",
   "notifications.activation_nudge.day1.title":
-    "Willkommen bei V&M Balance 👋",
+    "Willkommen bei Centar 👋",
   "notifications.activation_nudge.day1.message":
     "Starte mit deinem ersten Projekt — Renovierung, Kunde oder persönliches Ziel.",
   "notifications.activation_nudge.day3.title":
@@ -97,7 +97,7 @@ export default {
   "notifications.activation_nudge.day3.message":
     "Projekte helfen dir, Budget und Ausgaben an einem Ort zu verfolgen.",
   "notifications.activation_nudge.day7.title":
-    "Entdecke die volle Power von V&M Balance 🚀",
+    "Entdecke die volle Power von Centar 🚀",
   "notifications.activation_nudge.day7.message":
     "Erstelle dein erstes Projekt in 30s und behalte Ausgaben im Griff.",
   "notifications.app_update.title":
