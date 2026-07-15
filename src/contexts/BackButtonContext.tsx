@@ -2,6 +2,7 @@ import { createContext, useContext, useRef, useCallback, useEffect, ReactNode } 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { isPublicRoute, isRootAppRoute } from '@/lib/publicRoutes';
 import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
 
 /**
  * Global Back Button Manager
