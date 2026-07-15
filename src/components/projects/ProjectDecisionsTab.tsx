@@ -440,6 +440,7 @@ function DecisionDetail({
                 value={replyAttachments}
                 onChange={setReplyAttachments}
                 disabled={!!sending}
+                captureKey={draftKey}
               />
             </>
           )}
