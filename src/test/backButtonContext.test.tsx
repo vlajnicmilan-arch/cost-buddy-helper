@@ -6,7 +6,9 @@ import { BackButtonProvider, BACK_PRIORITY } from '@/contexts/BackButtonContext'
 import { useBackButton } from '@/hooks/useBackButton';
 import { useBackNavigationTab } from '@/hooks/useBackNavigationTab';
 
-const logDiagnosticMock = vi.fn();
+const { logDiagnosticMock } = vi.hoisted(() => ({
+  logDiagnosticMock: vi.fn(),
+}));
 
 vi.mock('@/lib/diagnosticLogger', () => ({
   logDiagnostic: logDiagnosticMock,
