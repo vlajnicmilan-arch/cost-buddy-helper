@@ -48,7 +48,7 @@ export function ProjectDecisionsTab({
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { decisions, loading, createDecision, addStep } = useProjectDecisions(projectId);
+  const { decisions, loading, createDecision, addStep, getAttachmentUrl } = useProjectDecisions(projectId);
   const [selected, setSelected] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
@@ -65,7 +65,7 @@ export function ProjectDecisionsTab({
 
   const selectedDecision = decisions.find(d => d.id === selected) ?? null;
 
-  const handleCreate = async (input: { title: string; initial_description: string; price?: number | null }) => {
+  const handleCreate = async (input: { title: string; initial_description: string; price?: number | null; attachments?: File[] }) => {
     const res = await createDecision(input);
     if (res.ok) showSuccess(t('projects.decisions.created', 'Prijedlog poslan'));
     return res;
@@ -79,9 +79,10 @@ export function ProjectDecisionsTab({
         ownerUserId={projectOwnerId}
         investorUserId={investorUserId}
         memberNameMap={memberNameMap}
+        getAttachmentUrl={getAttachmentUrl}
         onBack={() => setSelected(null)}
-        onAction={async (action, message, price) => {
-          const res = await addStep({ decisionId: selectedDecision.id, action, message, price });
+        onAction={async (action, message, price, attachments) => {
+          const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
           if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
           return res;
         }}
@@ -231,24 +232,27 @@ function DecisionCard({
 // Detalj odluke
 // ─────────────────────────────────────────────────────────────
 function DecisionDetail({
-  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction,
+  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
 }: {
   decision: ProjectDecision;
   currentUserId: string;
   ownerUserId: string;
   investorUserId: string | null;
   memberNameMap: Map<string, string>;
+  getAttachmentUrl: (att: DecisionAttachment) => Promise<string | null>;
   onBack: () => void;
   onAction: (
     action: DecisionAction,
     message?: string,
     price?: number | null,
+    attachments?: File[],
   ) => Promise<{ ok: boolean }>;
 }) {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [replyMsg, setReplyMsg] = useState('');
   const [replyPriceRaw, setReplyPriceRaw] = useState('');
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [sending, setSending] = useState<DecisionAction | null>(null);
 
   const legal = getLegalActions(decision, decision.steps, { currentUserId, ownerUserId, investorUserId });
