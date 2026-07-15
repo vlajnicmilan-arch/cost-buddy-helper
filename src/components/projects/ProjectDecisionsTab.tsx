@@ -276,9 +276,10 @@ function DecisionCard({
 // Detalj odluke
 // ─────────────────────────────────────────────────────────────
 function DecisionDetail({
-  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
+  decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
 }: {
   decision: ProjectDecision;
+  projectName: string;
   currentUserId: string;
   ownerUserId: string;
   investorUserId: string | null;
