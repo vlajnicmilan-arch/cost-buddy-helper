@@ -43,6 +43,10 @@ export interface ProjectDecision {
   closed_at: string | null;
   /** Faza 2 — set kad after-trigger stvori aneks (null inače). */
   contract_amendment_id: string | null;
+  /** Faza 4 — istekao rok za odgovor (24h bez novog koraka). */
+  overdue: boolean;
+  /** Faza 4 — vrijeme zadnjeg poslanog podsjetnika (za dedup dnevnih). */
+  last_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
   steps: DecisionStepView[];

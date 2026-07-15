@@ -12,7 +12,8 @@ export type PushCategory =
   | 'trial'
   | 'broadcast'
   | 'daily_summary'
-  | 'krug';
+  | 'krug'
+  | 'decisions';
 
 export interface NotificationPreferences {
   chat_enabled: boolean;
@@ -28,7 +29,9 @@ export interface NotificationPreferences {
   participant_digest_enabled: boolean;
   participant_digest_hour: number;
   krug_enabled: boolean;
+  decisions_enabled: boolean;
 }
+
 
 const DEFAULT_PREFS: NotificationPreferences = {
   chat_enabled: true,
@@ -44,6 +47,7 @@ const DEFAULT_PREFS: NotificationPreferences = {
   participant_digest_enabled: true,
   participant_digest_hour: 19,
   krug_enabled: true,
+  decisions_enabled: true,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -57,6 +61,7 @@ const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
   broadcast: 'broadcast_enabled',
   daily_summary: 'daily_summary_enabled',
   krug: 'krug_enabled',
+  decisions: 'decisions_enabled',
 };
 
 export const useNotificationPreferences = () => {
@@ -92,6 +97,7 @@ export const useNotificationPreferences = () => {
           participant_digest_enabled: data.participant_digest_enabled ?? true,
           participant_digest_hour: data.participant_digest_hour ?? 19,
           krug_enabled: (data as any).krug_enabled ?? true,
+          decisions_enabled: (data as any).decisions_enabled ?? true,
         });
       } else {
         setPrefs(DEFAULT_PREFS);

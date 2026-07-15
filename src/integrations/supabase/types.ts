@@ -2694,6 +2694,7 @@ export type Database = {
           daily_summary_state: Json
           daily_summary_unopened_streak: number
           daily_summary_weekend_enabled: boolean
+          decisions_enabled: boolean
           family_override_push: boolean
           family_reactions_push: boolean
           id: string
@@ -2719,6 +2720,7 @@ export type Database = {
           daily_summary_state?: Json
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
+          decisions_enabled?: boolean
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
@@ -2744,6 +2746,7 @@ export type Database = {
           daily_summary_state?: Json
           daily_summary_unopened_streak?: number
           daily_summary_weekend_enabled?: boolean
+          decisions_enabled?: boolean
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
@@ -3440,6 +3443,8 @@ export type Database = {
           id: string
           initial_description: string
           initial_price: number | null
+          last_reminder_sent_at: string | null
+          overdue: boolean
           project_id: string
           title: string
           updated_at: string
@@ -3454,6 +3459,8 @@ export type Database = {
           id?: string
           initial_description: string
           initial_price?: number | null
+          last_reminder_sent_at?: string | null
+          overdue?: boolean
           project_id: string
           title: string
           updated_at?: string
@@ -3468,6 +3475,8 @@ export type Database = {
           id?: string
           initial_description?: string
           initial_price?: number | null
+          last_reminder_sent_at?: string | null
+          overdue?: boolean
           project_id?: string
           title?: string
           updated_at?: string

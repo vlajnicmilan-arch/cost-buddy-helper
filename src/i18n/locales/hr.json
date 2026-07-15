@@ -935,7 +935,8 @@
         "closed": "Zatvorena bez dogovora",
         "awaiting": "Čeka odgovor",
         "finalRound": "Konačna — prihvati ili odbij",
-        "hasOneCorrection": "Imaš još 1 korekciju"
+        "hasOneCorrection": "Imaš još 1 korekciju",
+        "overdue": "Rok istekao"
       },
       "action": {
         "propose": "Prijedlog",
@@ -975,7 +976,8 @@
         "docTooLarge": "Dokument prevelik (max {{mb}} MB)",
         "unsupported": "Nepodržan tip datoteke",
         "urlFailed": "Neki prilozi trenutno nisu dostupni."
-      }
+      },
+      "awaitingFor": "Čeka odgovor {{time}}"
     }
   },
   "estimates": {
@@ -2665,6 +2667,20 @@
       "payment_source": {
         "title": "Pozivnica za dijeljeni račun",
         "message": "{{inviterName}} vas poziva da se pridružite računu „{{targetName}}\""
+      }
+    },
+    "decisions": {
+      "first_reminder": {
+        "title": "Odluka čeka tvoj odgovor",
+        "body": "„{{title}}\" čeka tvoj odgovor već 12 sati."
+      },
+      "overdue": {
+        "title": "Rok za odgovor je istekao",
+        "body": "Odluka „{{title}}\" — rok za odgovor je istekao (24 h)."
+      },
+      "daily": {
+        "title": "Odluka i dalje čeka odgovor",
+        "body": "„{{title}}\" — molimo tvoj odgovor."
       }
     }
   },

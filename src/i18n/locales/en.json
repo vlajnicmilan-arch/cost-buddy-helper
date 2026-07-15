@@ -931,7 +931,8 @@
         "closed": "Closed without agreement",
         "awaiting": "Awaiting response",
         "finalRound": "Final — accept or reject",
-        "hasOneCorrection": "You have 1 correction left"
+        "hasOneCorrection": "You have 1 correction left",
+        "overdue": "Overdue"
       },
       "action": {
         "propose": "Proposal",
@@ -971,7 +972,8 @@
         "docTooLarge": "Document too large (max {{mb}} MB)",
         "unsupported": "Unsupported file type",
         "urlFailed": "Some attachments are currently unavailable."
-      }
+      },
+      "awaitingFor": "Awaiting response for {{time}}"
     }
   },
   "estimates": {
@@ -2659,6 +2661,20 @@
       "payment_source": {
         "title": "Shared account invitation",
         "message": "{{inviterName}} invites you to join account „{{targetName}}\""
+      }
+    },
+    "decisions": {
+      "first_reminder": {
+        "title": "Decision awaits your response",
+        "body": "\"{{title}}\" has been awaiting your response for 12 hours."
+      },
+      "overdue": {
+        "title": "Response deadline has passed",
+        "body": "Decision \"{{title}}\" — the 24-hour response deadline has passed."
+      },
+      "daily": {
+        "title": "Decision is still awaiting a response",
+        "body": "\"{{title}}\" — please respond."
       }
     }
   },

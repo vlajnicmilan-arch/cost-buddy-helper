@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
-import { hr } from 'date-fns/locale';
+import { format, formatDistanceToNowStrict } from 'date-fns';
+import { hr, enUS, de as deLocale } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
   MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature,
@@ -45,6 +45,13 @@ interface Props {
 const dtFmt = (iso: string | undefined) => iso
   ? format(new Date(iso), 'd. MMM yyyy · HH:mm', { locale: hr })
   : '';
+
+const localeFor = (lng: string) => {
+  const base = (lng || 'hr').toLowerCase().split(/[-_]/)[0];
+  if (base === 'en') return enUS;
+  if (base === 'de') return deLocale;
+  return hr;
+};
 
 export function ProjectDecisionsTab({
   projectId, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
@@ -218,6 +225,7 @@ function DecisionCard({
   const Icon = badge.icon;
 
   const yourTurn = legal.canAccept || legal.canReject || legal.canCounter || legal.canCorrect;
+  const isOverdue = !!decision.overdue && decision.current_status === 'awaiting_response';
 
   return (
     <button
@@ -226,6 +234,7 @@ function DecisionCard({
       className={cn(
         'w-full text-left p-3 rounded-lg border bg-card transition hover:bg-muted/40 active:scale-[0.99]',
         yourTurn && 'ring-1 ring-module/40',
+        isOverdue && 'ring-1 ring-destructive/40',
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -235,6 +244,11 @@ function DecisionCard({
             {yourTurn && (
               <Badge variant="outline" className="bg-module/10 text-module border-module/30 text-[10px]">
                 {t('projects.decisions.yourTurn', 'Na tebi')}
+              </Badge>
+            )}
+            {isOverdue && (
+              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px]">
+                {t('projects.decisions.status.overdue', 'Rok istekao')}
               </Badge>
             )}
           </div>
@@ -276,7 +290,7 @@ function DecisionDetail({
     attachments?: File[],
   ) => Promise<{ ok: boolean }>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
   const { getDraft, saveTextDraft, saveAttachments, clearDraft } = useDecisionScan();
   const draftKey = `reply-${decision.id}`;
@@ -355,8 +369,24 @@ function DecisionDetail({
       </div>
 
       <div className="p-4 rounded-lg border bg-card">
-        <h3 className="font-semibold text-base mb-1">{decision.title}</h3>
-        <p className="text-xs text-muted-foreground mb-3">{dtFmt(decision.created_at)} · {nameOf(decision.created_by)}</p>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-base">{decision.title}</h3>
+          {decision.overdue && decision.current_status === 'awaiting_response' && (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px] shrink-0">
+              {t('projects.decisions.status.overdue', 'Rok istekao')}
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-1">{dtFmt(decision.created_at)} · {nameOf(decision.created_by)}</p>
+        {decision.current_status === 'awaiting_response' && (
+          <p className="text-xs text-muted-foreground mb-3">
+            {t('projects.decisions.awaitingFor', 'Čeka odgovor {{time}}', {
+              time: formatDistanceToNowStrict(new Date(decision.updated_at), {
+                locale: localeFor(i18n.language),
+              }),
+            })}
+          </p>
+        )}
         <p className="text-sm whitespace-pre-wrap">{decision.initial_description}</p>
       </div>
 

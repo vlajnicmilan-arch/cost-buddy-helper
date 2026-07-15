@@ -188,4 +188,10 @@ export default {
   "notifications.krug.deletion_requested.message": "The owner requested Krug deletion.",
   "notifications.krug.deleted.title": "Krug was deleted",
   "notifications.krug.deleted.message": "A Krug you were part of has been permanently removed.",
+  "notifications.decisions.first_reminder.title": "Decision awaits your response",
+  "notifications.decisions.first_reminder.body": "\"{{title}}\" has been awaiting your response for 12 hours.",
+  "notifications.decisions.overdue.title": "Response deadline has passed",
+  "notifications.decisions.overdue.body": "Decision \"{{title}}\" — the 24-hour response deadline has passed.",
+  "notifications.decisions.daily.title": "Decision is still awaiting a response",
+  "notifications.decisions.daily.body": "\"{{title}}\" — please respond.",
 } as const;
