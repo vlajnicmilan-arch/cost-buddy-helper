@@ -514,7 +514,7 @@ export const ProjectFullScreenView = ({
               {/* Wave 2: unified single tab strip.
                   Mobile: fixed 4+1 (Overview, Budget, Phases, Team) + "More" sheet for overflow.
                   Desktop (sm+): full horizontal TabsList. */}
-              <Tabs value={resolvedActiveTab} onValueChange={setActiveTab}>
+              <Tabs value={resolvedActiveTab} onValueChange={handleTabChange}>
                 {!isWorkerOnly && (() => {
                   const triggerCls = 'gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=inactive]:text-muted-foreground border border-transparent data-[state=active]:border-border';
 
