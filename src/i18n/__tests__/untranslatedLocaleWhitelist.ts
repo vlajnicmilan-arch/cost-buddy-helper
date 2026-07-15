@@ -112,6 +112,8 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "projects.standup.project": "Same word in DE",
     "projects.earnedValue.title": "Project management term",
     "projects.menu.groupProject": "Same word in DE",
+    "projects.decisions.attach.camera": "Same word in DE (Kamera)",
+    "projects.decisions.attach.file": "Same word in DE (Dokument)",
     "estimates.pdf.date": "Same word in DE",
     "invoices.widget.overdueDays": "Compact unit label",
     "settings.legal.email": "Same word in DE",
