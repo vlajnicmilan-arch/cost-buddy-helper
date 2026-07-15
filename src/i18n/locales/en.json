@@ -1012,6 +1012,7 @@
         "timeline": "Timeline",
         "attachments": "Attachments",
         "attachmentsAvailableInApp": "Some attachments are available in the app.",
+        "annulNote": "Note: this decision was annulled by mutual confirmation.",
         "footerDisclaimer": "Generated from Centar app · {{date}} · ID: {{id}}"
       }
     }
