@@ -34,6 +34,9 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
+  void getRevisionCount; void getRecentTrend; // typescript hush (referenced below)
+  const _decisionBadge = getMilestoneDecisionBadge;
+  void _decisionBadge;
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, m: ProjectMilestone) => {
     if (!isManager) return;
