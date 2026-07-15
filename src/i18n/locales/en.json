@@ -973,7 +973,22 @@
         "unsupported": "Unsupported file type",
         "urlFailed": "Some attachments are currently unavailable."
       },
-      "awaitingFor": "Awaiting response for {{time}}"
+      "awaitingFor": "Awaiting response for {{time}}",
+      "pdf": {
+        "title": "Decision",
+        "exportPdf": "Export PDF",
+        "exported": "PDF exported",
+        "exportFailed": "PDF export failed",
+        "createdAt": "Opened",
+        "closedAt": "Closed",
+        "initialDescription": "Proposal",
+        "finalPrice": "Final price",
+        "amendmentNote": "Contract amendment: {{signed}}",
+        "timeline": "Timeline",
+        "attachments": "Attachments",
+        "attachmentsAvailableInApp": "Some attachments are available in the app.",
+        "footerDisclaimer": "Generated from Centar app · {{date}} · ID: {{id}}"
+      }
     }
   },
   "estimates": {
