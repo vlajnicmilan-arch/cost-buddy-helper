@@ -29,6 +29,11 @@ const makeDecision = (over: Partial<ProjectDecision> = {}): ProjectDecision => (
   last_reminder_sent_at: null,
   created_at: '2026-07-10T08:00:00Z',
   updated_at: '2026-07-15T10:00:00Z',
+  annulled_at: null,
+  annulled_by: null,
+  annul_request_id: null,
+  annul_compensation_amendment_id: null,
+  pendingAdminRequest: null,
   steps: [
     {
       step_no: 2,

@@ -62,6 +62,9 @@ export interface DecisionPdfData {
   initialDescription: string;
   effectivePrice: number | null;
   hasContractAmendment: boolean;
+  /** Faza 6 — odluka je poništena obostranom potvrdom. */
+  annulled: boolean;
+  annulledAt: string | null;
   steps: DecisionPdfStep[];
   language: 'hr' | 'en' | 'de';
   generatedAt: string;
@@ -144,6 +147,8 @@ export function buildDecisionPdfData(input: BuildDecisionPdfDataInput): Decision
     initialDescription: decision.initial_description ?? '',
     effectivePrice: resolveEffectiveDecisionPrice(decision.steps),
     hasContractAmendment: !!decision.contract_amendment_id,
+    annulled: !!decision.annulled_at,
+    annulledAt: decision.annulled_at ?? null,
     steps,
     language,
     generatedAt: now.toISOString(),
@@ -298,6 +303,21 @@ export async function generateDecisionPdf(opts: GenerateDecisionPdfOptions): Pro
   doc.setTextColor(outcomeColor[0], outcomeColor[1], outcomeColor[2]);
   doc.text(data.outcomeLabel, leftX, y);
   y += 6;
+
+  // Faza 6 — napomena o poništenju (ako je odluka poništena)
+  if (data.annulled) {
+    doc.setFont('Inter', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(BRAND_MUTED[0], BRAND_MUTED[1], BRAND_MUTED[2]);
+    const noteLines = doc.splitTextToSize(
+      t('projects.decisions.pdf.annulNote', {
+        defaultValue: 'Napomena: ova je odluka poništena obostranom potvrdom.',
+      }) as string,
+      contentWidth,
+    );
+    doc.text(noteLines, leftX, y);
+    y += noteLines.length * 5 + 1;
+  }
 
   // Meta: projekt, datum zatvaranja, strane
   doc.setFont('Inter', 'normal');

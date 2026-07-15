@@ -5,12 +5,17 @@ import { hr, enUS, de as deLocale } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
   MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature, FileDown, Loader2,
+  Ban, Trash2, RotateCcw, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useProjectDecisions, type ProjectDecision, type DecisionAttachment } from '@/hooks/useProjectDecisions';
@@ -28,6 +33,7 @@ import {
   type DecisionAction,
   type DecisionStep,
 } from '@/lib/projectDecisionStateMachine';
+import { getAdminActions, type DecisionAdminType } from '@/lib/decisionAdminRequests';
 import { parseMoneySigned } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +65,10 @@ export function ProjectDecisionsTab({
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { decisions, loading, createDecision, addStep, getAttachmentUrl } = useProjectDecisions(projectId);
+  const {
+    decisions, loading, createDecision, addStep, getAttachmentUrl,
+    requestDecisionAdmin, withdrawDecisionAdminRequest, resolveDecisionAdminRequest,
+  } = useProjectDecisions(projectId);
   const { pendingCapture } = useDecisionScan();
   const [selected, setSelected] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -121,6 +130,30 @@ export function ProjectDecisionsTab({
         onAction={async (action, message, price, attachments) => {
           const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
           if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
+          return res;
+        }}
+        onRequestAdmin={async (type) => {
+          const res = await requestDecisionAdmin(selectedDecision.id, type);
+          if (res.ok) showSuccess(t('projects.decisions.admin.requestSent', 'Zahtjev poslan drugoj strani'));
+          return res;
+        }}
+        onWithdrawAdmin={async (requestId) => {
+          const res = await withdrawDecisionAdminRequest(requestId);
+          if (res.ok) showSuccess(t('projects.decisions.admin.withdrawn', 'Zahtjev povučen'));
+          return res;
+        }}
+        onResolveAdmin={async (requestId, decision) => {
+          const res = await resolveDecisionAdminRequest(requestId, decision);
+          if (res.ok) {
+            if (res.action === 'deleted') {
+              showSuccess(t('projects.decisions.admin.deletedOk', 'Odluka obrisana'));
+              setSelected(null);
+            } else if (res.action === 'annulled') {
+              showSuccess(t('projects.decisions.admin.annulledOk', 'Odluka poništena'));
+            } else if (res.action === 'declined') {
+              showSuccess(t('projects.decisions.admin.declinedOk', 'Zahtjev odbijen'));
+            }
+          }
           return res;
         }}
       />
@@ -242,7 +275,9 @@ function DecisionCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="font-medium truncate">{decision.title}</span>
+            <span className={cn('font-medium truncate', decision.annulled_at && 'line-through text-muted-foreground')}>
+              {decision.title}
+            </span>
             {yourTurn && (
               <Badge variant="outline" className="bg-module/10 text-module border-module/30 text-[10px]">
                 {t('projects.decisions.yourTurn', 'Na tebi')}
@@ -251,6 +286,20 @@ function DecisionCard({
             {isOverdue && (
               <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px]">
                 {t('projects.decisions.status.overdue', 'Rok istekao')}
+              </Badge>
+            )}
+            {decision.annulled_at && (
+              <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[10px] gap-1">
+                <Ban className="w-3 h-3" />
+                {t('projects.decisions.status.annulled', 'Poništena')}
+              </Badge>
+            )}
+            {decision.pendingAdminRequest && (
+              <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-[10px] gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {decision.pendingAdminRequest.type === 'annul'
+                  ? t('projects.decisions.admin.pendingAnnul', 'Čeka potvrdu: poništenje')
+                  : t('projects.decisions.admin.pendingDelete', 'Čeka potvrdu: brisanje')}
               </Badge>
             )}
           </div>
@@ -276,7 +325,9 @@ function DecisionCard({
 // Detalj odluke
 // ─────────────────────────────────────────────────────────────
 function DecisionDetail({
-  decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
+  decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap,
+  onBack, onAction, getAttachmentUrl,
+  onRequestAdmin, onWithdrawAdmin, onResolveAdmin,
 }: {
   decision: ProjectDecision;
   projectName: string;
@@ -292,6 +343,10 @@ function DecisionDetail({
     price?: number | null,
     attachments?: File[],
   ) => Promise<{ ok: boolean }>;
+  onRequestAdmin: (type: DecisionAdminType) => Promise<{ ok: boolean; error?: string }>;
+  onWithdrawAdmin: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
+  onResolveAdmin: (requestId: string, decision: 'confirm' | 'decline') =>
+    Promise<{ ok: boolean; action?: string; error?: string }>;
 }) {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -303,6 +358,8 @@ function DecisionDetail({
   const [replyAttachments, setReplyAttachments] = useState<File[]>(initialDraft.attachments ?? []);
   const [sending, setSending] = useState<DecisionAction | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [adminBusy, setAdminBusy] = useState<'request' | 'withdraw' | 'resolve' | null>(null);
+  const [confirmType, setConfirmType] = useState<DecisionAdminType | null>(null);
 
   const isClosed = decision.current_status !== 'awaiting_response';
 
@@ -618,6 +675,171 @@ function DecisionDetail({
           {t('projects.decisions.closedInfo', 'Odluka je zatvorena. Otvori novi prijedlog za daljnji razgovor.')}
         </div>
       )}
+
+      {/* Faza 6 — Two-party consent: poništenje / brisanje */}
+      {isClosed && (() => {
+        const adminActions = getAdminActions({
+          currentUserId,
+          ownerUserId,
+          investorUserId,
+          decisionStatus: decision.current_status,
+          isAnnulled: !!decision.annulled_at,
+          pendingRequest: decision.pendingAdminRequest,
+        });
+        const pending = decision.pendingAdminRequest;
+
+        return (
+          <div className="space-y-3">
+            {decision.annulled_at && (
+              <div className="p-3 rounded-lg border border-muted bg-muted/30 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Ban className="w-4 h-4" />
+                  <span className="font-medium">
+                    {t('projects.decisions.admin.annulledInfo', 'Odluka je poništena obostranom potvrdom.')}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('projects.decisions.admin.annulledMeta', '{{by}} · {{when}}', {
+                    by: nameOf(decision.annulled_by || ''),
+                    when: dtFmt(decision.annulled_at),
+                  })}
+                </p>
+              </div>
+            )}
+
+            {pending && (
+              <div className="p-3 rounded-lg border border-warning/40 bg-warning/5 space-y-2">
+                <div className="flex items-center gap-2 text-warning text-sm font-medium">
+                  <AlertTriangle className="w-4 h-4" />
+                  {pending.type === 'annul'
+                    ? t('projects.decisions.admin.pendingAnnulBanner', 'Predloženo poništenje odluke — čeka odgovor druge strane.')
+                    : t('projects.decisions.admin.pendingDeleteBanner', 'Predloženo brisanje odluke — čeka odgovor druge strane.')}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t('projects.decisions.admin.requestedBy', 'Predlagatelj: {{name}} · {{when}}', {
+                    name: nameOf(pending.requested_by),
+                    when: dtFmt(pending.created_at),
+                  })}
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {adminActions.canResolvePending && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          setAdminBusy('resolve');
+                          await onResolveAdmin(pending.id, 'confirm');
+                          setAdminBusy(null);
+                        }}
+                        disabled={adminBusy !== null}
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        {pending.type === 'annul'
+                          ? t('projects.decisions.admin.confirmAnnul', 'Potvrdi poništenje')
+                          : t('projects.decisions.admin.confirmDelete', 'Potvrdi brisanje')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          setAdminBusy('resolve');
+                          await onResolveAdmin(pending.id, 'decline');
+                          setAdminBusy(null);
+                        }}
+                        disabled={adminBusy !== null}
+                        className="gap-1"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        {t('projects.decisions.admin.decline', 'Odbij')}
+                      </Button>
+                    </>
+                  )}
+                  {adminActions.canWithdrawPending && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        setAdminBusy('withdraw');
+                        await onWithdrawAdmin(pending.id);
+                        setAdminBusy(null);
+                      }}
+                      disabled={adminBusy !== null}
+                      className="gap-1"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {t('projects.decisions.admin.withdraw', 'Povuci zahtjev')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!pending && (adminActions.canRequestAnnul || adminActions.canRequestDelete) && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {adminActions.canRequestAnnul && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmType('annul')}
+                    disabled={adminBusy !== null}
+                    className="gap-1"
+                  >
+                    <Ban className="w-4 h-4" />
+                    {t('projects.decisions.admin.proposeAnnul', 'Predloži poništenje')}
+                  </Button>
+                )}
+                {adminActions.canRequestDelete && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmType('delete')}
+                    disabled={adminBusy !== null}
+                    className="gap-1 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {t('projects.decisions.admin.proposeDelete', 'Predloži brisanje')}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <AlertDialog open={confirmType !== null} onOpenChange={(o) => { if (!o) setConfirmType(null); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {confirmType === 'annul'
+                      ? t('projects.decisions.admin.confirmAnnulTitle', 'Predloži poništenje odluke?')
+                      : t('projects.decisions.admin.confirmDeleteTitle', 'Predloži brisanje odluke?')}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {confirmType === 'annul'
+                      ? t('projects.decisions.admin.confirmAnnulDesc',
+                          'Odluka ostaje u arhivu s oznakom "Poništena". Ako je bila odobrena s izmjenom ugovora, novac se vraća u Ugovoreno preko kompenzacijskog aneksa. Zahtjev se izvršava tek kad ga druga strana potvrdi.')
+                      : t('projects.decisions.admin.confirmDeleteDesc',
+                          'Odluka i svi njeni koraci i prilozi bit će trajno obrisani. Ako je postojala izmjena ugovora, ona se uklanja i Ugovoreno se vraća. Zahtjev se izvršava tek kad ga druga strana potvrdi.')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('common.cancel', 'Odustani')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      const type = confirmType;
+                      setConfirmType(null);
+                      if (!type) return;
+                      setAdminBusy('request');
+                      await onRequestAdmin(type);
+                      setAdminBusy(null);
+                    }}
+                  >
+                    {t('projects.decisions.admin.sendRequest', 'Pošalji zahtjev')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        );
+      })()}
     </div>
   );
 }

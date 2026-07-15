@@ -14,6 +14,7 @@ import type {
   DecisionStatus,
   DecisionStep,
 } from '@/lib/projectDecisionStateMachine';
+import type { DecisionAdminRequest, DecisionAdminType } from '@/lib/decisionAdminRequests';
 
 const BUCKET = 'project-documents';
 
@@ -47,11 +48,18 @@ export interface ProjectDecision {
   overdue: boolean;
   /** Faza 4 — vrijeme zadnjeg poslanog podsjetnika (za dedup dnevnih). */
   last_reminder_sent_at: string | null;
+  /** Faza 6 — kad je odluka poništena (annul) obostranom potvrdom. */
+  annulled_at: string | null;
+  annulled_by: string | null;
+  annul_request_id: string | null;
+  annul_compensation_amendment_id: string | null;
   created_at: string;
   updated_at: string;
   steps: DecisionStepView[];
   /** Faza 3 — prilozi grupirani po odluci; vezanje na korake preko step_id. */
   attachments: DecisionAttachment[];
+  /** Faza 6 — jedini aktivni (pending) admin zahtjev, ako postoji. */
+  pendingAdminRequest: DecisionAdminRequest | null;
 }
 
 interface RawStepRow {
@@ -204,7 +212,7 @@ export function useProjectDecisions(projectId: string | null) {
 
       const ids = rows.map((d) => d.id);
 
-      const [stepsRes, attRes] = await Promise.all([
+      const [stepsRes, attRes, reqRes] = await Promise.all([
         supabase
           .from('project_decision_steps' as never)
           .select('*')
@@ -215,9 +223,15 @@ export function useProjectDecisions(projectId: string | null) {
           .select('*')
           .in('decision_id', ids)
           .order('created_at', { ascending: true }),
+        supabase
+          .from('project_decision_admin_requests' as never)
+          .select('*')
+          .in('decision_id', ids)
+          .eq('status', 'pending'),
       ]);
       if (stepsRes.error) throw stepsRes.error;
       if (attRes.error) throw attRes.error;
+      if (reqRes.error) throw reqRes.error;
 
       const byDecisionSteps = new Map<string, DecisionStepView[]>();
       ((stepsRes.data ?? []) as unknown as RawStepRow[]).forEach((s) => {
@@ -242,10 +256,17 @@ export function useProjectDecisions(projectId: string | null) {
         byDecisionAtts.set(a.decision_id, arr);
       });
 
+      const pendingByDecision = new Map<string, DecisionAdminRequest>();
+      ((reqRes.data ?? []) as unknown as DecisionAdminRequest[]).forEach((r) => {
+        // uniq_pdar_pending_per_decision garantira max 1 pending
+        pendingByDecision.set(r.decision_id, r);
+      });
+
       setDecisions(rows.map((d) => ({
         ...d,
         steps: byDecisionSteps.get(d.id) ?? [],
         attachments: byDecisionAtts.get(d.id) ?? [],
+        pendingAdminRequest: pendingByDecision.get(d.id) ?? null,
       })));
     } catch (e) {
       console.error('[useProjectDecisions] fetch error', e);
@@ -274,6 +295,11 @@ export function useProjectDecisions(projectId: string | null) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'project_decision_attachments' },
+        () => { fetchAll(); },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'project_decision_admin_requests', filter: `project_id=eq.${projectId}` },
         () => { fetchAll(); },
       )
       .subscribe();
@@ -458,5 +484,108 @@ export function useProjectDecisions(projectId: string | null) {
     }
   }, []);
 
-  return { decisions, loading, refetch: fetchAll, createDecision, addStep, getAttachmentUrl };
+  // ─────────────────────────────────────────────────────────────
+  // Faza 6 — admin zahtjevi (poništenje/brisanje, two-party consent)
+  // ─────────────────────────────────────────────────────────────
+
+  const requestDecisionAdmin = useCallback(
+    async (decisionId: string, type: DecisionAdminType, reason?: string | null):
+      Promise<{ ok: boolean; requestId?: string; error?: string }> => {
+      if (!user) return { ok: false, error: 'unauthenticated' };
+      const { data, error } = await (supabase as any).rpc('request_decision_admin', {
+        _decision_id: decisionId,
+        _type: type,
+        _reason: reason ?? null,
+      });
+      if (error) {
+        console.error('[useProjectDecisions] requestDecisionAdmin', error);
+        showError(error.message || 'request_failed');
+        return { ok: false, error: error.message };
+      }
+      await fetchAll();
+      return { ok: true, requestId: data as string };
+    },
+    [user, fetchAll],
+  );
+
+  const withdrawDecisionAdminRequest = useCallback(
+    async (requestId: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!user) return { ok: false, error: 'unauthenticated' };
+      const { error } = await (supabase as any).rpc('withdraw_decision_admin_request', {
+        _request_id: requestId,
+      });
+      if (error) {
+        console.error('[useProjectDecisions] withdrawDecisionAdminRequest', error);
+        showError(error.message || 'withdraw_failed');
+        return { ok: false, error: error.message };
+      }
+      await fetchAll();
+      return { ok: true };
+    },
+    [user, fetchAll],
+  );
+
+  const resolveDecisionAdminRequest = useCallback(
+    async (
+      requestId: string,
+      decision: 'confirm' | 'decline',
+    ): Promise<{ ok: boolean; action?: string; error?: string }> => {
+      if (!user) return { ok: false, error: 'unauthenticated' };
+      // Za confirm+delete: pre-lookup priloga da ih obrišemo iz storagea nakon RPC-a.
+      let storagePathsToRemove: string[] = [];
+      if (decision === 'confirm') {
+        try {
+          const { data: reqRow } = await (supabase as any)
+            .from('project_decision_admin_requests')
+            .select('type, decision_id')
+            .eq('id', requestId)
+            .maybeSingle();
+          if (reqRow && (reqRow as any).type === 'delete') {
+            const { data: atts } = await supabase
+              .from('project_decision_attachments' as never)
+              .select('storage_path')
+              .eq('decision_id', (reqRow as any).decision_id);
+            storagePathsToRemove = ((atts as any[]) ?? []).map((a) => a.storage_path);
+          }
+        } catch (e) {
+          console.warn('[useProjectDecisions] pre-lookup for delete failed', e);
+        }
+      }
+
+      const { data, error } = await (supabase as any).rpc('resolve_decision_admin_request', {
+        _request_id: requestId,
+        _decision: decision,
+      });
+      if (error) {
+        console.error('[useProjectDecisions] resolveDecisionAdminRequest', error);
+        showError(error.message || 'resolve_failed');
+        return { ok: false, error: error.message };
+      }
+
+      // Best-effort storage cleanup nakon uspješnog DB brisanja.
+      if (storagePathsToRemove.length > 0) {
+        try {
+          await supabase.storage.from(BUCKET).remove(storagePathsToRemove);
+        } catch (e) {
+          console.warn('[useProjectDecisions] storage cleanup failed (best-effort)', e);
+        }
+      }
+
+      await fetchAll();
+      return { ok: true, action: (data as any)?.action };
+    },
+    [user, fetchAll],
+  );
+
+  return {
+    decisions,
+    loading,
+    refetch: fetchAll,
+    createDecision,
+    addStep,
+    getAttachmentUrl,
+    requestDecisionAdmin,
+    withdrawDecisionAdminRequest,
+    resolveDecisionAdminRequest,
+  };
 }
