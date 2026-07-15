@@ -17,7 +17,7 @@ const PUBLIC_TABLES_SNAPSHOT = [
   "budget_categories","budget_invitations","budget_members","budget_plans","bug_reports",
   "business_debts","business_premises","business_profiles","cash_registers","chat_messages",
   "clients","core_scan_usage","custom_categories","custom_payment_sources",
-  "dashboard_hidden_sources","dashboard_telemetry","dpa_requests","email_send_log",
+  "dashboard_hidden_sources","dashboard_telemetry","email_send_log",
   "email_send_state","email_unsubscribe_tokens","expenses","feedback_submissions",
   "funnel_events","health_summaries","imported_statements","income_source_invitations",
   "income_source_members","income_sources","installment_plans","installments",

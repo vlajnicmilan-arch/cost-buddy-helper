@@ -153,7 +153,7 @@ export const PURGE_BY_USER_ID: readonly string[] = [
   "feedback_submissions",
   "bug_reports",
   "support_tickets",
-  "dpa_requests",
+  // dpa_requests: table dropped (generators removed)
 
   // subscription
   "user_subscriptions",

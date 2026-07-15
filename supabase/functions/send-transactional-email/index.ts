@@ -117,44 +117,22 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-  // 2. Check suppression list (fail-closed: if we can't verify, don't send)
-  const { data: suppressed, error: suppressionError } = await supabase
+  // 2. Suppression list is NOT enforced here — all templates in this function
+  // are transactional (posljedica korisnikove radnje: potvrde, računi, brisanje
+  // računa, sigurnosne obavijesti). EU pravilo: odjava se odnosi samo na
+  // marketing. Log a note for forensics if the address is on the list.
+  const { data: suppressed } = await supabase
     .from('suppressed_emails')
     .select('id')
     .eq('email', effectiveRecipient.toLowerCase())
     .maybeSingle()
 
-  if (suppressionError) {
-    console.error('Suppression check failed — refusing to send', {
-      error: suppressionError,
-      effectiveRecipient,
-    })
-    return new Response(
-      JSON.stringify({ error: 'Failed to verify suppression status' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
-  }
-
   if (suppressed) {
-    // Log the suppressed attempt
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: templateName,
-      recipient_email: effectiveRecipient,
-      status: 'suppressed',
+    console.log('Transactional email to suppressed address (sending anyway)', {
+      effectiveRecipient,
+      templateName,
+      messageId,
     })
-
-    console.log('Email suppressed', { effectiveRecipient, templateName })
-    return new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
   }
 
   // 3. Render React Email template to HTML and plain text
