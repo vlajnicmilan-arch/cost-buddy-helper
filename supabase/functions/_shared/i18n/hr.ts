@@ -188,4 +188,10 @@ export default {
   "notifications.krug.deletion_requested.message": "Vlasnik je zatražio brisanje Kruga.",
   "notifications.krug.deleted.title": "Krug je obrisan",
   "notifications.krug.deleted.message": "Krug u kojem si bio član je trajno uklonjen.",
+  "notifications.decisions.first_reminder.title": "Odluka čeka tvoj odgovor",
+  "notifications.decisions.first_reminder.body": "„{{title}}\" čeka tvoj odgovor već 12 sati.",
+  "notifications.decisions.overdue.title": "Rok za odgovor je istekao",
+  "notifications.decisions.overdue.body": "Odluka „{{title}}\" — rok za odgovor je istekao (24 h).",
+  "notifications.decisions.daily.title": "Odluka i dalje čeka odgovor",
+  "notifications.decisions.daily.body": "„{{title}}\" — molimo tvoj odgovor.",
 } as const;
