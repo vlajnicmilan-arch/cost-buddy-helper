@@ -97,7 +97,9 @@ export const ProjectFullScreenView = ({
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   const handleTabChange = (next: string) => {
-    logDiagnostic({ event: 'dbg_pfsv_tab_change', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
+    try {
+      logDiagnostic({ event: 'pfsv_tab_changed', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
+    } catch { /* ignore */ }
     setActiveTab(next);
   };
   useBackButton(open, onClose);
