@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { LegalDocumentsSection } from './business/LegalDocumentsSection';
+
 
 interface BusinessProfile {
   id?: string;
@@ -509,18 +509,6 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           </div>
         </div>
 
-        <Separator />
-
-        {/* Legal documents (GDPR) — moved from Settings */}
-        <div className="space-y-3">
-          <LegalDocumentsSection
-            key={profile.id || 'new'}
-            defaultCompanyName={profile.company_name}
-            defaultCompanyOib={profile.oib}
-            defaultCompanyAddress={[profile.address, [profile.postal_code, profile.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
-            defaultEmail={profile.email}
-          />
-        </div>
       </div>
     </ScrollArea>
   );
