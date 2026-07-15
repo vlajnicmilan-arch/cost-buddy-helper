@@ -2662,6 +2662,20 @@
         "title": "Einladung zum geteilten Konto",
         "message": "{{inviterName}} lädt Sie ein, dem Konto „{{targetName}}\" beizutreten"
       }
+    },
+    "decisions": {
+      "first_reminder": {
+        "title": "Entscheidung wartet auf deine Antwort",
+        "body": "„{{title}}\" wartet seit 12 Stunden auf deine Antwort."
+      },
+      "overdue": {
+        "title": "Antwortfrist ist abgelaufen",
+        "body": "Entscheidung „{{title}}\" — die 24‑Stunden‑Frist ist abgelaufen."
+      },
+      "daily": {
+        "title": "Entscheidung wartet weiterhin auf eine Antwort",
+        "body": "„{{title}}\" — bitte antworte."
+      }
     }
   },
   "installments": {
