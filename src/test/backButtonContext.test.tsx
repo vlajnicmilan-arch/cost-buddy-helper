@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
@@ -87,7 +87,9 @@ describe('BackButtonContext layered registration', () => {
       ]));
     });
 
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
 
     await waitFor(() => {
       const popstateCall = logDiagnosticMock.mock.calls.find(([arg]) => (
@@ -107,6 +109,22 @@ describe('BackButtonContext layered registration', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('state')).toHaveTextContent('fullscreen:decisions:list');
+    });
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('state')).toHaveTextContent('fullscreen:overview:list');
+    });
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('state')).toHaveTextContent('closed:overview:list');
     });
   });
 });

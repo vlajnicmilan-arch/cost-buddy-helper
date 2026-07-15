@@ -33,10 +33,10 @@ export const BACK_PRIORITY = {
   DIALOG: 800,
   /** Inline detail ekran unutar tab-a (npr. DecisionDetail). */
   DETAIL: 600,
+  /** Tab-back unutar fullscreen view-a — iznad FULLSCREEN da se tab vrati prije zatvaranja view-a. */
+  TAB: 500,
   /** Fullscreen view (ProjectFullScreenView, BudgetFullScreenView, …). */
   FULLSCREEN: 400,
-  /** Tab-back unutar fullscreen view-a. */
-  TAB: 200,
   /** Root/legacy — najniži prioritet. */
   ROOT: 0,
 } as const;

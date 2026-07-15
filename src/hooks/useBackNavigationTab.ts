@@ -14,9 +14,9 @@ import {
  * Registrira "back po tabovima" unutar fullscreen view-a.
  *
  *  - Prati stack posjećenih tabova u ref-u (preživljava re-render).
- *  - Registrira useBackButton s TAB prioritetom (niži od dijaloga/detalja),
- *    tako da back najprije zatvori sve overlay/dijalog/detail slojeve, pa
- *    tek onda mijenja tab.
+ *  - Registrira useBackButton s TAB prioritetom (niži od dijaloga/detalja,
+ *    viši od fullscreen view-a), tako da back najprije zatvori overlay/detail
+ *    slojeve, zatim mijenja tab, pa tek onda zatvara fullscreen.
  *  - Kad je stack prazan i tab je već default, back se ne konzumira — pada
  *    na sljedeći sloj (obično FULLSCREEN handler koji zatvara view).
  *  - onGoBack se poziva s ciljanim tabom; consumer mora ISKORISTITI normalni
