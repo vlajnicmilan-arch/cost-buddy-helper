@@ -279,6 +279,29 @@ export const ProjectFullScreenView = ({
     }
   }, [open, project?.id, isWorkerOnly]);
 
+  // Restore taba iz projectViewState pri open-u istog projekta (npr. nakon
+  // remounta uslijed kamera roundtripa na Androidu). initialTab prop ima
+  // najviši prioritet — ako je zadan, restore preskačemo.
+  useEffect(() => {
+    if (!open || !project?.id) return;
+    if (initialTab) return;
+    if (isWorkerOnly) return;
+    const persisted = projectViewState.get();
+    if (!persisted || persisted.projectId !== project.id) return;
+    if (!persisted.tab) return;
+    if (persisted.tab === activeTab) return;
+    try {
+      logDiagnostic({
+        event: 'pfsv_tab_restored',
+        details: { tab: persisted.tab, prevTab: activeTab, projectId: project.id },
+      });
+    } catch { /* ignore */ }
+    setActiveTab(persisted.tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, project?.id]);
+
+
+
   // Resolve legacy tab keys to the unified tabs (pure helper — covered by tests)
   const aliasResolution = resolveLegacyTabAlias(activeTab);
   const resolvedActiveTab = aliasResolution.tab;
