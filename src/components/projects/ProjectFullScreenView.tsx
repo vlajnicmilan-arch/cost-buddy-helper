@@ -97,7 +97,9 @@ export const ProjectFullScreenView = ({
   const { formatAmount } = useCurrency();
   const [activeTab, setActiveTab] = useState(initialTab || 'overview');
   const handleTabChange = (next: string) => {
-    logDiagnostic({ event: 'dbg_pfsv_tab_change', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
+    try {
+      logDiagnostic({ event: 'pfsv_tab_changed', details: { from: activeTab, to: next, projectId: project?.id ?? null } });
+    } catch { /* ignore */ }
     setActiveTab(next);
   };
   useBackButton(open, onClose);
@@ -113,12 +115,14 @@ export const ProjectFullScreenView = ({
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
 
-  // dbg: log every open change
+  // Log every open change
   useEffect(() => {
-    logDiagnostic({
-      event: 'dbg_pfsv_open_change',
-      details: { open, projectId: project?.id ?? null, nativeFlowActive: isNativeFlowActive() },
-    });
+    try {
+      logDiagnostic({
+        event: 'pfsv_open_changed',
+        details: { open, projectId: project?.id ?? null, nativeFlowActive: isNativeFlowActive() },
+      });
+    } catch { /* ignore */ }
   }, [open, project?.id]);
 
   const { stats, expenses, loading: statsLoading, refetch: refetchStats } = useProjectStats(
@@ -219,16 +223,20 @@ export const ProjectFullScreenView = ({
   // Reset tab when project changes or closes
   useEffect(() => {
     if (!open) {
-      logDiagnostic({
-        event: 'dbg_pfsv_tab_reset',
-        details: { branch: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
-      });
+      try {
+        logDiagnostic({
+          event: 'pfsv_tab_reset',
+          details: { reason: 'closed', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+        });
+      } catch { /* ignore */ }
       setActiveTab(isWorkerOnly ? 'worklog' : 'overview');
     } else if (isWorkerOnly) {
-      logDiagnostic({
-        event: 'dbg_pfsv_tab_reset',
-        details: { branch: 'workerOnly', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
-      });
+      try {
+        logDiagnostic({
+          event: 'pfsv_tab_reset',
+          details: { reason: 'worker_only', open, isWorkerOnly, prevTab: activeTab, projectId: project?.id ?? null },
+        });
+      } catch { /* ignore */ }
       setActiveTab('worklog');
     }
   }, [open, project?.id, isWorkerOnly]);
@@ -251,7 +259,9 @@ export const ProjectFullScreenView = ({
 
     const handlePopState = (e: PopStateEvent) => {
       const guarded = isNativeFlowActive();
-      logDiagnostic({ event: 'dbg_pfsv_popstate', details: { guarded, projectId: project?.id ?? null } });
+      try {
+        logDiagnostic({ event: 'pfsv_popstate', details: { guarded, projectId: project?.id ?? null } });
+      } catch { /* ignore */ }
       // Ignore synthetic popstate emitted by Android when a native activity
       // (camera, file picker, share sheet, …) returns focus to the WebView.
       // Otherwise it would close the project view mid-flight and destroy any
@@ -261,7 +271,6 @@ export const ProjectFullScreenView = ({
         return;
       }
       e.preventDefault();
-      logDiagnostic({ event: 'dbg_pfsv_close_via_popstate', details: { projectId: project?.id ?? null } });
       onClose();
     };
 
