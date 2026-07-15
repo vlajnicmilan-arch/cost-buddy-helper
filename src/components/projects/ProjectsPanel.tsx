@@ -122,9 +122,17 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
       return;
     }
 
-    if (resolvedProjectId && projects.length > 0) {
+    if (resolvedProjectId) {
       const project = projects.find(p => p.id === resolvedProjectId);
       if (project) {
+        // Ako je već otvoren točno taj projekt — ne diraj state (izbjegava
+        // close/reopen flicker koji je brisao aktivni tab tijekom refetcha).
+        const isSameAlreadyOpen =
+          detailDialogOpen && selectedProject?.id === resolvedProjectId;
+        if (isSameAlreadyOpen) {
+          if (state) window.history.replaceState({}, '');
+          return;
+        }
         if (fromState) returnToRef.current = fromState;
         setSelectedProject(project as ProjectWithOwnership);
         setDetailDialogOpen(true, 'urlState_effect');
@@ -132,7 +140,18 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
         if (resolvedTab) setPendingInitialTab(resolvedTab);
         // Clear the state so it doesn't re-trigger
         if (state) window.history.replaceState({}, '');
+      } else if (loading || projects.length === 0) {
+        // Query još fetcha — nemoj ništa dirati; sljedeći run će naći projekt.
+        try {
+          logDiagnostic({
+            event: 'urlState_skip_fetching',
+            details: { resolvedProjectId, loading, projectsCount: projects.length },
+          });
+        } catch { /* ignore */ }
+        return;
       }
+      // Ako je query settled a projekt DEFINITIVNO ne postoji — ne radimo
+      // ništa ovdje (nema URL-driven close-a); postojeći UI ostaje kakav je.
     }
   }, [location.state, projects]);
 
