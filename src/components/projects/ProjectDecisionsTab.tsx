@@ -284,10 +284,11 @@ function DecisionDetail({
       if (!p.ok) return;
       price = p.value;
     }
+    const carriesAttachments = action === 'propose' || action === 'counter' || action === 'correction';
     setSending(action);
-    const res = await onAction(action, replyMsg, price);
+    const res = await onAction(action, replyMsg, price, carriesAttachments ? replyAttachments : undefined);
     setSending(null);
-    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); }
+    if (res.ok) { setReplyMsg(''); setReplyPriceRaw(''); setReplyAttachments([]); }
   };
 
   const nameOf = (uid: string) => memberNameMap.get(uid) || (uid === ownerUserId ? t('projects.owner', 'Vlasnik') : t('projectRoles.investor', 'Investitor'));
