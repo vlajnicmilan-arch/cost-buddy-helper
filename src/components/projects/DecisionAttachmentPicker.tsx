@@ -12,6 +12,7 @@ import {
   validateDecisionAttachment,
 } from '@/lib/decisionAttachments';
 import { cn } from '@/lib/utils';
+import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 interface Props {
   value: File[];
