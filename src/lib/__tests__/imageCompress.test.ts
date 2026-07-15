@@ -27,14 +27,27 @@ describe('imageCompress defaults', () => {
   });
 });
 
-describe('imageCompress runtime fallbacks (no canvas in jsdom)', () => {
-  it('returns input unchanged when canvas API is unavailable', async () => {
+describe('imageCompress runtime fallbacks', () => {
+  it('falls back to original when the browser Image loader errors', async () => {
     const original = 'data:image/png;base64,AAAA';
-    // jsdom Image ne renderira → onerror path vraća input
-    const out = await compressImageDataUrl(original, { maxWidth: 100, quality: 0.5 });
-    expect(typeof out).toBe('string');
-    // fallback vraća isti string ili barem string (nikad throws)
-    expect(out === original || out.startsWith('data:')).toBe(true);
+    // Stub Image so onerror fires deterministically (jsdom never fires load/error
+    // za nevažeći base64; ovo simulira taj fallback path bez ovisnosti o okolini).
+    const RealImage = globalThis.Image;
+    class StubImg {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) {
+        setTimeout(() => this.onerror?.(), 0);
+      }
+    }
+    // @ts-expect-error test stub
+    globalThis.Image = StubImg;
+    try {
+      const out = await compressImageDataUrl(original, { maxWidth: 100, quality: 0.5 });
+      expect(out).toBe(original);
+    } finally {
+      globalThis.Image = RealImage;
+    }
   });
 
   it('compressImageFile returns non-image files unchanged', async () => {
