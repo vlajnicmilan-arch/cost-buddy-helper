@@ -304,6 +304,21 @@ export async function generateDecisionPdf(opts: GenerateDecisionPdfOptions): Pro
   doc.text(data.outcomeLabel, leftX, y);
   y += 6;
 
+  // Faza 6 — napomena o poništenju (ako je odluka poništena)
+  if (data.annulled) {
+    doc.setFont('Inter', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(BRAND_MUTED[0], BRAND_MUTED[1], BRAND_MUTED[2]);
+    const noteLines = doc.splitTextToSize(
+      t('projects.decisions.pdf.annulNote', {
+        defaultValue: 'Napomena: ova je odluka poništena obostranom potvrdom.',
+      }) as string,
+      contentWidth,
+    );
+    doc.text(noteLines, leftX, y);
+    y += noteLines.length * 5 + 1;
+  }
+
   // Meta: projekt, datum zatvaranja, strane
   doc.setFont('Inter', 'normal');
   doc.setFontSize(9.5);
