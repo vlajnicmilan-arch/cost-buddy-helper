@@ -411,6 +411,12 @@
       "created": "VTR dodan",
       "deleteWarning": "Brisanjem VTR-a smanjit će se ugovorena vrijednost za {{amount}}. Nastaviti?"
     },
+    "decisionSource": {
+      "fromDecisionBadge": "Nastala iz odluke",
+      "fromAnnulledBadge": "Iz poništene odluke",
+      "investorLabel": "Prema investitoru",
+      "investorHint": "Informativno — iznos prema investitoru iz odluke. Ne ulazi u budžet troška, maržu ni cashflow."
+    },
     "editMilestone": "Uredi fazu",
     "milestoneName": "Naziv faze",
     "milestoneNamePlaceholder": "npr. Prva faza",
