@@ -959,6 +959,7 @@
         "declinedOk": "Antrag abgelehnt",
         "annulledInfo": "Diese Entscheidung wurde durch beidseitige Bestätigung aufgehoben.",
         "annulledMeta": "{{by}} · {{when}}"
+      },
       "action": {
         "propose": "Vorschlag",
         "counter": "Gegenvorschlag",
