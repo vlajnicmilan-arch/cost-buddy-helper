@@ -215,12 +215,11 @@ export function useProjectDecisions(projectId: string | null) {
       if (stepsRes.error) throw stepsRes.error;
       if (attRes.error) throw attRes.error;
 
-      const byDecisionSteps = new Map<string, DecisionStep[]>();
-      // Za mapping u UI slojevima trebamo i step.id (nije bio u prethodnoj shemi).
-      const stepIdByDecisionStepNo = new Map<string, Map<number, string>>();
+      const byDecisionSteps = new Map<string, DecisionStepView[]>();
       ((stepsRes.data ?? []) as unknown as RawStepRow[]).forEach((s) => {
         const arr = byDecisionSteps.get(s.decision_id) ?? [];
         arr.push({
+          id: s.id,
           step_no: s.step_no,
           actor_user_id: s.actor_user_id,
           actor_role: s.actor_role,
@@ -230,9 +229,6 @@ export function useProjectDecisions(projectId: string | null) {
           created_at: s.created_at,
         });
         byDecisionSteps.set(s.decision_id, arr);
-        const inner = stepIdByDecisionStepNo.get(s.decision_id) ?? new Map();
-        inner.set(s.step_no, s.id);
-        stepIdByDecisionStepNo.set(s.decision_id, inner);
       });
 
       const byDecisionAtts = new Map<string, DecisionAttachment[]>();
