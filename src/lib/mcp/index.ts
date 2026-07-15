@@ -25,10 +25,10 @@ const projectRef =
 
 export default defineMcp({
   name: "vm-balance-mcp",
-  title: "V&M Balance MCP",
+  title: "Centar MCP",
   version: "0.2.0",
   instructions:
-    "Tools for V&M Balance, a personal & small-business finance app. Domains: (1) Transactions — list_recent_expenses, get_wallet_balances, create_expense. (2) Budgets — list_budgets, get_budget_details, create_budget, add_budget_category. (3) Projects — list_projects, get_project_details, list_project_milestones, create_project, list_project_work_entries. (4) Krug (shared/family circles) — list_krugs, get_krug_summary, list_krug_expenses. All tools run as the signed-in user via Supabase RLS.",
+    "Tools for Centar, a personal & small-business finance app. Domains: (1) Transactions — list_recent_expenses, get_wallet_balances, create_expense. (2) Budgets — list_budgets, get_budget_details, create_budget, add_budget_category. (3) Projects — list_projects, get_project_details, list_project_milestones, create_project, list_project_work_entries. (4) Krug (shared/family circles) — list_krugs, get_krug_summary, list_krug_expenses. All tools run as the signed-in user via Supabase RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",

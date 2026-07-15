@@ -17,7 +17,7 @@ export default defineTool({
   name: "list_recent_expenses",
   title: "List recent transactions",
   description:
-    "List the signed-in user's most recent transactions (expenses, income, transfers) from V&M Balance, newest first.",
+    "List the signed-in user's most recent transactions (expenses, income, transfers) from Centar, newest first.",
   inputSchema: {
     limit: z
       .number()

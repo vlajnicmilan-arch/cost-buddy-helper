@@ -13,13 +13,13 @@
     "server": {
       "name": "vm-balance-mcp",
       "version": "0.2.0",
-      "title": "V&M Balance MCP"
+      "title": "Centar MCP"
     },
     "tools": [
       {
         "name": "list_recent_expenses",
         "title": "List recent transactions",
-        "description": "List the signed-in user's most recent transactions (expenses, income, transfers) from V&M Balance, newest first.",
+        "description": "List the signed-in user's most recent transactions (expenses, income, transfers) from Centar, newest first.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -60,7 +60,7 @@
       {
         "name": "create_expense",
         "title": "Create expense",
-        "description": "Insert a new expense (troška) for the signed-in user in V&M Balance. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
+        "description": "Insert a new expense (troška) for the signed-in user in Centar. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,

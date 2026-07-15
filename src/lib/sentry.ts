@@ -189,7 +189,7 @@ export const captureSentryException = (
 
 export const triggerSentryTestError = (): void => {
   // Used by Admin "Test Sentry" button.
-  throw new Error('Sentry test from V&M Balance admin panel');
+  throw new Error('Sentry test from Centar admin panel');
 };
 
 export const getSentryDashboardUrl = (): string => SENTRY_ORG_URL;

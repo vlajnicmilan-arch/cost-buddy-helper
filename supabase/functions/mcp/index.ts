@@ -22,7 +22,7 @@ function supabaseForUser(ctx) {
 var list_recent_expenses_default = defineTool({
   name: "list_recent_expenses",
   title: "List recent transactions",
-  description: "List the signed-in user's most recent transactions (expenses, income, transfers) from V&M Balance, newest first.",
+  description: "List the signed-in user's most recent transactions (expenses, income, transfers) from Centar, newest first.",
   inputSchema: {
     limit: z.number().int().describe("How many rows to return (1-50). Defaults to 20.")
   },
@@ -116,7 +116,7 @@ function supabaseForUser3(ctx) {
 var create_expense_default = defineTool3({
   name: "create_expense",
   title: "Create expense",
-  description: "Insert a new expense (tro\u0161ka) for the signed-in user in V&M Balance. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
+  description: "Insert a new expense (tro\u0161ka) for the signed-in user in Centar. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
   inputSchema: {
     amount: z2.number().positive().describe("Positive amount (e.g. 12.50)"),
     currency: z2.string().describe("ISO 4217 currency code, e.g. 'EUR'. Defaults to 'EUR'."),
@@ -627,9 +627,9 @@ var list_krug_expenses_default = defineTool15({
 var projectRef = "fzalxjretvtvokiotvkf";
 var mcp_default = defineMcp({
   name: "vm-balance-mcp",
-  title: "V&M Balance MCP",
+  title: "Centar MCP",
   version: "0.2.0",
-  instructions: "Tools for V&M Balance, a personal & small-business finance app. Domains: (1) Transactions \u2014 list_recent_expenses, get_wallet_balances, create_expense. (2) Budgets \u2014 list_budgets, get_budget_details, create_budget, add_budget_category. (3) Projects \u2014 list_projects, get_project_details, list_project_milestones, create_project, list_project_work_entries. (4) Krug (shared/family circles) \u2014 list_krugs, get_krug_summary, list_krug_expenses. All tools run as the signed-in user via Supabase RLS.",
+  instructions: "Tools for Centar, a personal & small-business finance app. Domains: (1) Transactions \u2014 list_recent_expenses, get_wallet_balances, create_expense. (2) Budgets \u2014 list_budgets, get_budget_details, create_budget, add_budget_category. (3) Projects \u2014 list_projects, get_project_details, list_project_milestones, create_project, list_project_work_entries. (4) Krug (shared/family circles) \u2014 list_krugs, get_krug_summary, list_krug_expenses. All tools run as the signed-in user via Supabase RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"

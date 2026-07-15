@@ -1263,7 +1263,7 @@ TRENUTNI NAČIN RADA: 👤 OSOBNI
 - NE pretražuj poslovne podatke bez eksplicitnog odobrenja.
 - Koristi osobnu terminologiju: kućni budžet, osobna potrošnja, štednja, plaća.`;
 
-    const systemPrompt = `Ti si financijski AI stručnjak u aplikaciji V&M Balance.
+    const systemPrompt = `Ti si financijski AI stručnjak u aplikaciji Centar.
 
 ${crossModeInstructions}
 ${memoriesSection}

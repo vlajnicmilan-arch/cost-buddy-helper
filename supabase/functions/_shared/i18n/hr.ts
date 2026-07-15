@@ -89,7 +89,7 @@ export default {
   "notifications.fallback.project":
     "projekt",
   "notifications.activation_nudge.day1.title":
-    "Dobrodošao u V&M Balance 👋",
+    "Dobrodošao u Centar 👋",
   "notifications.activation_nudge.day1.message":
     "Kreni s prvim projektom — renoviranje, klijent ili osobni cilj.",
   "notifications.activation_nudge.day3.title":
@@ -97,7 +97,7 @@ export default {
   "notifications.activation_nudge.day3.message":
     "Projekti ti pomažu pratiti budžet i troškove na jednom mjestu.",
   "notifications.activation_nudge.day7.title":
-    "Iskusi punu snagu V&M Balance 🚀",
+    "Iskusi punu snagu Centra 🚀",
   "notifications.activation_nudge.day7.message":
     "Otvori prvi projekt u 30s i drži troškove pod kontrolom.",
   "notifications.app_update.title":

@@ -17,7 +17,7 @@ export default defineTool({
   name: "create_expense",
   title: "Create expense",
   description:
-    "Insert a new expense (troška) for the signed-in user in V&M Balance. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
+    "Insert a new expense (troška) for the signed-in user in Centar. Amount is a positive number in the given currency. Date is ISO (YYYY-MM-DD). Category is a free-form string.",
   inputSchema: {
     amount: z.number().positive().describe("Positive amount (e.g. 12.50)"),
     currency: z
