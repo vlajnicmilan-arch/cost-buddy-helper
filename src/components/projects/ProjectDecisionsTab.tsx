@@ -4,7 +4,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import { hr, enUS, de as deLocale } from 'date-fns/locale';
 import {
   ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock,
-  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature,
+  MessageSquare, Send, ArrowLeft, Plus, ScrollText, Archive, FileSignature, FileDown, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   projectId: string;
+  projectName: string;
   projectOwnerId: string;
   /** UUID investitora projekta (može biti null). */
   investorUserId: string | null;
@@ -54,7 +55,7 @@ const localeFor = (lng: string) => {
 };
 
 export function ProjectDecisionsTab({
-  projectId, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
+  projectId, projectName, projectOwnerId, investorUserId, isDecisionParty, memberNameMap,
 }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -107,6 +108,7 @@ export function ProjectDecisionsTab({
     return (
       <DecisionDetail
         decision={selectedDecision}
+        projectName={projectName}
         currentUserId={user?.id ?? ''}
         ownerUserId={projectOwnerId}
         investorUserId={investorUserId}
@@ -274,9 +276,10 @@ function DecisionCard({
 // Detalj odluke
 // ─────────────────────────────────────────────────────────────
 function DecisionDetail({
-  decision, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
+  decision, projectName, currentUserId, ownerUserId, investorUserId, memberNameMap, onBack, onAction, getAttachmentUrl,
 }: {
   decision: ProjectDecision;
+  projectName: string;
   currentUserId: string;
   ownerUserId: string;
   investorUserId: string | null;
@@ -299,6 +302,56 @@ function DecisionDetail({
   const [replyPriceRaw, setReplyPriceRaw] = useState(initialDraft.text.replyPriceRaw ?? '');
   const [replyAttachments, setReplyAttachments] = useState<File[]>(initialDraft.attachments ?? []);
   const [sending, setSending] = useState<DecisionAction | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const isClosed = decision.current_status !== 'awaiting_response';
+
+  const handleExportPdf = async () => {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const [{ buildDecisionPdfData, generateDecisionPdf }] = await Promise.all([
+        import('@/lib/decisionPdfExport'),
+      ]);
+      const lang = (i18n.language || 'hr').toLowerCase().split(/[-_]/)[0];
+      const language: 'hr' | 'en' | 'de' = lang === 'en' ? 'en' : lang === 'de' ? 'de' : 'hr';
+      const ownerName = memberNameMap.get(ownerUserId) || (t('projects.owner', 'Vlasnik') as string);
+      const investorName = (investorUserId && memberNameMap.get(investorUserId))
+        || (t('projectRoles.investor', 'Investitor') as string);
+      const data = buildDecisionPdfData({
+        decision,
+        projectName,
+        ownerName,
+        investorName,
+        language,
+        labels: {
+          outcome: {
+            approved: t('projects.decisions.status.approved', 'Odobreno') as string,
+            rejected: t('projects.decisions.status.rejected', 'Odbijeno') as string,
+            closed: t('projects.decisions.status.closed', 'Zatvorena bez dogovora') as string,
+          },
+          action: {
+            propose: t('projects.decisions.action.propose', 'Prijedlog') as string,
+            counter: t('projects.decisions.action.counter', 'Protuprijedlog') as string,
+            correction: t('projects.decisions.action.correction', 'Korekcija') as string,
+            accept: t('projects.decisions.action.accept', 'Prihvaćeno') as string,
+            reject: t('projects.decisions.action.reject', 'Odbijeno') as string,
+          },
+        },
+      });
+      const ok = await generateDecisionPdf({
+        data,
+        mode: 'save',
+        getAttachmentUrl,
+      });
+      if (ok) showSuccess(t('projects.decisions.pdf.exported', 'PDF izvezen'));
+    } catch (e) {
+      console.error('[DecisionDetail] PDF export failed', e);
+      showError(t('projects.decisions.pdf.exportFailed', 'Izvoz PDF-a nije uspio'));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   // Perzistiraj draft odgovora (preživljava remount uzrokovan kamera roundtripom).
   useEffect(() => { saveTextDraft(draftKey, { message: replyMsg, replyPriceRaw }); }, [replyMsg, replyPriceRaw, saveTextDraft, draftKey]);
@@ -362,10 +415,24 @@ function DecisionDetail({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
           <ArrowLeft className="w-4 h-4" /> {t('common.back', 'Natrag')}
         </Button>
+        {isClosed && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="gap-1"
+          >
+            {exportingPdf
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <FileDown className="w-4 h-4" />}
+            {t('projects.decisions.pdf.exportPdf', 'Izvezi PDF')}
+          </Button>
+        )}
       </div>
 
       <div className="p-4 rounded-lg border bg-card">

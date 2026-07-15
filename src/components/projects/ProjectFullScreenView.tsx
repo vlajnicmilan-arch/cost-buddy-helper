@@ -895,6 +895,7 @@ export const ProjectFullScreenView = ({
                 <TabsContent value="decisions" className="m-0">
                   <ProjectDecisionsTab
                     projectId={project.id}
+                    projectName={project.name}
                     projectOwnerId={project.user_id}
                     investorUserId={investorUserId}
                     isDecisionParty={canSeeDecisions}
