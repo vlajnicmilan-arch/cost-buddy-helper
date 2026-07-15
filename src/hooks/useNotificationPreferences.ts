@@ -29,7 +29,7 @@ export interface NotificationPreferences {
   participant_digest_enabled: boolean;
   participant_digest_hour: number;
   krug_enabled: boolean;
-}
+  decisions_enabled: boolean;
 
 const DEFAULT_PREFS: NotificationPreferences = {
   chat_enabled: true,
