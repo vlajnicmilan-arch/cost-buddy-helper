@@ -245,10 +245,6 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   };
 
   const handleCloseFullScreen = () => {
-    try {
-      const stack = new Error().stack?.split('\n').slice(1, 4).join(' | ');
-      logDiagnostic({ event: 'dbg_panel_close_fullscreen', details: { stack } });
-    } catch { /* ignore */ }
     setDetailDialogOpen(false, 'handleCloseFullScreen');
     setSelectedProject(null);
     setPendingExpenseId(null);
