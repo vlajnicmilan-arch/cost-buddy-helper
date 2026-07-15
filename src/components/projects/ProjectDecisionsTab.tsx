@@ -290,7 +290,7 @@ function DecisionDetail({
     attachments?: File[],
   ) => Promise<{ ok: boolean }>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
   const { getDraft, saveTextDraft, saveAttachments, clearDraft } = useDecisionScan();
   const draftKey = `reply-${decision.id}`;
