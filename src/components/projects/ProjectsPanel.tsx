@@ -307,6 +307,10 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const handleProjectClick = (project: ProjectWithOwnership) => {
     setSelectedProject(project);
     setDetailDialogOpen(true, 'handleProjectClick');
+    // Perzistiraj otvoreni projekt (tab ostaje kakav je bio ako je isti projekt).
+    const prev = projectViewState.get();
+    const keepTab = prev && prev.projectId === project.id ? prev.tab : null;
+    projectViewState.set(project.id, keepTab);
   };
 
   const handleCloseFullScreen = () => {
@@ -314,6 +318,8 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     setSelectedProject(null);
     setPendingExpenseId(null);
     setPendingInitialTab(null);
+    // Eksplicitni user close — očisti pointer (inače bi restore reotvorio).
+    projectViewState.clear();
     refetch();
     fetchAllStats();
     if (returnToRef.current) {
