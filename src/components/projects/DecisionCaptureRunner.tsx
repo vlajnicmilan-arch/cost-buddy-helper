@@ -4,12 +4,16 @@ import { Loader2 } from 'lucide-react';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { useDecisionScan } from '@/contexts/DecisionScanContext';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
-import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 
 /**
  * Mirror obrazac ScanCaptureRunnera (receipt scanner) prilagođen modulu
  * "Odluke". Otvara nativnu kameru IZVAN route tree-a; rezultat vraća u
  * DecisionScanContext preko completeCapture/cancelCapture. Ne rendera formu.
+ *
+ * VAŽNO: nativeFlowActive guard NIJE odgovornost runnera. Postavlja ga
+ * beginCapture, a skida ga consumePendingCapture / cancelCapture u
+ * DecisionScanContextu. Time guard ostaje aktivan sve dok forma ne
+ * pokupi fotku, pa kasni Android popstate ne može zatvoriti dijalog.
  */
 export const DecisionCaptureRunner = () => {
   const { t } = useTranslation();
@@ -22,7 +26,6 @@ export const DecisionCaptureRunner = () => {
     launchedRef.current = true;
 
     let cancelled = false;
-    setNativeFlowActive(true);
     try { logDiagnostic('decision_capture_runner_launch', { is_native: isNative }); } catch {}
 
     (async () => {
@@ -43,13 +46,12 @@ export const DecisionCaptureRunner = () => {
           });
         } catch {}
         if (!cancelled) cancelCapture();
-      } finally {
-        setTimeout(() => setNativeFlowActive(false), 500);
       }
     })();
 
     return () => { cancelled = true; };
   }, [takePhoto, completeCapture, cancelCapture, isNative]);
+
 
   return (
     <>
