@@ -29,6 +29,8 @@ export interface DecisionAttachment {
   created_at: string;
 }
 
+export type DecisionStepView = DecisionStep & { id: string };
+
 export interface ProjectDecision {
   id: string;
   project_id: string;
@@ -43,7 +45,7 @@ export interface ProjectDecision {
   contract_amendment_id: string | null;
   created_at: string;
   updated_at: string;
-  steps: DecisionStep[];
+  steps: DecisionStepView[];
   /** Faza 3 — prilozi grupirani po odluci; vezanje na korake preko step_id. */
   attachments: DecisionAttachment[];
 }
