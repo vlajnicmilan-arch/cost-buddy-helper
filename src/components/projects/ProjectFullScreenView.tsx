@@ -14,6 +14,7 @@ import { useProjectMemberPermissions } from '@/hooks/useProjectMemberPermissions
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { isNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import {
