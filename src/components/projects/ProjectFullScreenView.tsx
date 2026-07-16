@@ -460,7 +460,7 @@ export const ProjectFullScreenView = ({
                 </Button>
                 )}
 
-                {!isWorkerOnly && (
+                {!isWorkerOnly && !isInvestorViewer && (
                   <ProjectHeaderMenu
                     isManager={isManager}
                     isReadOnly={isReadOnly}
