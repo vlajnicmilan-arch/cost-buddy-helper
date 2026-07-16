@@ -26,18 +26,26 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /**
  * Mapiranje Lovable modela → direktni Google Gemini modeli.
- * Modeli koji NE POSTOJE na direktnom API-ju (npr. `google/gemini-3-flash-preview`)
- * nisu ovdje — automatski padaju na gateway put i ne mijenjaju se.
+ *
+ * PINNING (2026-07-16, Milanov zahtjev):
+ * Google-ov novi API ključ vraća 404 "no longer available to new users" za
+ * sve 2.x modele (gemini-2.5-flash / -lite / -pro, gemini-2.0-flash* itd.).
+ * Radi samo generacija 3.x. Aliasi `*-latest` trenutno resolvraju na:
+ *    gemini-flash-latest       → gemini-3.5-flash
+ *    gemini-flash-lite-latest  → gemini-3.1-flash-lite
+ *    gemini-pro-latest         → gemini-3.1-pro-preview
+ * Google `-latest` mijenja bez najave (može tiho promijeniti parsing iznosa
+ * s računa), pa NE koristimo aliase u produkciji — pinamo konkretnu verziju
+ * i mijenjamo je svjesno kroz code review.
+ *
+ * Modeli koji NE POSTOJE na direktnom API-ju (npr. `google/gemini-3-flash-preview`
+ * koji koristi financial-assistant) namjerno nisu ovdje — automatski padaju
+ * na Lovable gateway put i ne mijenjaju se.
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
-  // NAPOMENA: `gemini-2.5-flash` više nije dostupan novim Google API ključevima
-  // (404 NOT_FOUND), pa mapiramo na `gemini-flash-latest` — Google alias koji
-  // uvijek pokazuje na najnoviji stabilni Flash model.
-  'google/gemini-2.5-flash': 'gemini-flash-latest',
-  'google/gemini-2.5-flash-lite': 'gemini-flash-lite-latest',
-  'google/gemini-2.5-pro': 'gemini-2.5-pro',
-  'google/gemini-2.0-flash': 'gemini-2.0-flash',
-  'google/gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
+  'google/gemini-2.5-flash': 'gemini-3.5-flash',
+  'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',
+  'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',
 };
 
 // -----------------------------------------------------------------------------
@@ -136,7 +144,16 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
 
   if (!upstream.ok) {
     const errText = await upstream.text();
-    console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
+    // Poseban trag za "model no longer available" — inače se vidi samo kroz
+    // "ne radi sken" u UI-u. Bilo bi glupo opet gubiti vrijeme na to.
+    if (upstream.status === 404 && /no longer available/i.test(errText)) {
+      console.error(
+        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${model}" (mapiran iz "${body.model}"). ` +
+        `Ažuriraj DIRECT_MODEL_MAP u supabase/functions/_shared/geminiClient.ts.`,
+      );
+    } else {
+      console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
+    }
     // Prosljeđujemo status kod (429, 400, 500...) da pozivatelji njihova postojeća
     // rukovanja (429/402) i dalje rade. 402 ne postoji na Googlu.
     return new Response(
