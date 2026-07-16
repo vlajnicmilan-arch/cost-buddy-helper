@@ -3,6 +3,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ebFetch } from "../_shared/enableBankingJwt.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 interface Body {
   bank_account_id: string;
