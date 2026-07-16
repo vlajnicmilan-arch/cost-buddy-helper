@@ -703,24 +703,30 @@ export const ProjectFullScreenView = ({
                                 )}
                               </TabsTrigger>
                             )}
-                            <TabsTrigger value="team" className={triggerCls}>
-                              <Users className="w-3.5 h-3.5" />
-                              {t('projects.projectTeam', 'Tim projekta')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="team" className={triggerCls}>
+                                <Users className="w-3.5 h-3.5" />
+                                {t('projects.projectTeam', 'Tim projekta')}
+                              </TabsTrigger>
+                            )}
                             {canSeeTab('worklog') && (
                               <TabsTrigger value="worklog" className={triggerCls}>
                                 <BookOpen className="w-3.5 h-3.5" />
                                 {t('workLog.tab', 'Dnevnik rada')}
                               </TabsTrigger>
                             )}
-                            <TabsTrigger value="documents" className={triggerCls}>
-                              <FolderOpen className="w-3.5 h-3.5" />
-                              {labels.documentsLabel}
-                            </TabsTrigger>
-                            <TabsTrigger value="activity" className={triggerCls}>
-                              <Activity className="w-3.5 h-3.5" />
-                              {t('projects.activity.tab', 'Aktivnost')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="documents" className={triggerCls}>
+                                <FolderOpen className="w-3.5 h-3.5" />
+                                {labels.documentsLabel}
+                              </TabsTrigger>
+                            )}
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="activity" className={triggerCls}>
+                                <Activity className="w-3.5 h-3.5" />
+                                {t('projects.activity.tab', 'Aktivnost')}
+                              </TabsTrigger>
+                            )}
                             {canSeeDecisions && (
                               <TabsTrigger value="decisions" className={triggerCls}>
                                 <Scale className="w-3.5 h-3.5" />
