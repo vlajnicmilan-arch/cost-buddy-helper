@@ -673,10 +673,12 @@ export const ProjectFullScreenView = ({
                               <TrendingUp className="w-3.5 h-3.5" />
                               {t('projects.overview', 'Pregled')}
                             </TabsTrigger>
-                            <TabsTrigger value="budget" className={triggerCls}>
-                              <Wallet className="w-3.5 h-3.5" />
-                              {t('projects.budgetTab.label', 'Budžet')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="budget" className={triggerCls}>
+                                <Wallet className="w-3.5 h-3.5" />
+                                {t('projects.budgetTab.label', 'Budžet')}
+                              </TabsTrigger>
+                            )}
                             {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                               <TabsTrigger value="phases" className={triggerCls}>
                                 <Target className="w-3.5 h-3.5" />
