@@ -857,52 +857,63 @@ export const ProjectFullScreenView = ({
 
                 {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                 <TabsContent value="phases" className="m-0 space-y-3">
-                  {canSeeTab('timeline') && (
-                    <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
-                      <button
-                        type="button"
-                        onClick={() => setPhasesView('list')}
-                        className={cn(
-                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                          phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
-                        )}
-                      >
-                        {t('projects.kanban.list', 'Lista')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPhasesView('timeline')}
-                        className={cn(
-                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                          phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
-                        )}
-                      >
-                        <GanttChart className="w-3 h-3" />
-                        {t('projects.timeline', 'Timeline')}
-                      </button>
-                    </div>
-                  )}
-                  {phasesView === 'timeline' && canSeeTab('timeline') ? (
-                    <ProjectTimelineTab
-                      projectId={project.id}
-                      milestones={milestones}
-                      projectStartDate={project.start_date}
-                      projectEndDate={project.end_date}
-                      loading={milestonesLoading}
-                    />
+                  {isInvestorViewer ? (
+                    // Investor view — SAMO javna polja faze (naziv/opis/status/datumi/
+                    // investor_price). BEZ milestone.budget, milestone.spent i toggle
+                    // "Lista/Timeline" (Timeline pokazuje interni Gantt s trajanjima).
+                    <InvestorPhasesView milestones={milestones} loading={milestonesLoading} />
                   ) : (
-                    <ProjectMilestonesTab
-                      projectId={project.id}
-                      milestones={milestones}
-                      isManager={isManager}
-                      loading={milestonesLoading}
-                      onRefetch={refetchMilestones}
-                      isReadOnly={isReadOnly}
-                    />
+                    <>
+                      {canSeeTab('timeline') && (
+                        <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
+                          <button
+                            type="button"
+                            onClick={() => setPhasesView('list')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                              phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
+                            )}
+                          >
+                            {t('projects.kanban.list', 'Lista')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPhasesView('timeline')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                              phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
+                            )}
+                          >
+                            <GanttChart className="w-3 h-3" />
+                            {t('projects.timeline', 'Timeline')}
+                          </button>
+                        </div>
+                      )}
+                      {phasesView === 'timeline' && canSeeTab('timeline') ? (
+                        <ProjectTimelineTab
+                          projectId={project.id}
+                          milestones={milestones}
+                          projectStartDate={project.start_date}
+                          projectEndDate={project.end_date}
+                          loading={milestonesLoading}
+                        />
+                      ) : (
+                        <ProjectMilestonesTab
+                          projectId={project.id}
+                          milestones={milestones}
+                          isManager={isManager}
+                          loading={milestonesLoading}
+                          onRefetch={refetchMilestones}
+                          isReadOnly={isReadOnly}
+                        />
+                      )}
+                    </>
                   )}
                 </TabsContent>
                 )}
 
+                {/* Tim/Documents/Aktivnost — sakriveno investitoru (interni podaci izvođača). */}
+                {!isInvestorViewer && (
                 <TabsContent value="team" className="m-0">
                   <ProjectTeamTab
                     projectId={project.id}
@@ -921,10 +932,14 @@ export const ProjectFullScreenView = ({
                     isReadOnly={isReadOnly}
                   />
                 </TabsContent>
+                )}
 
+                {!isInvestorViewer && (
                 <TabsContent value="documents" className="m-0">
                   <ProjectDocumentsTab projectId={project.id} isReadOnly={isReadOnly} />
                 </TabsContent>
+                )}
+
 
                 <TabsContent value="activity" className="m-0">
                   <ProjectActivityTab projectId={project.id} />
