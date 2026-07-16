@@ -48,6 +48,10 @@ const RefundPolicy = () => {
                 Početkom korištenja pretplate pristajete na trenutno pružanje digitalne usluge;
                 time se zakonsko pravo na odustajanje ostvaruje kroz gore opisane uvjete povrata.
               </p>
+              <p className="text-xs">
+                Uslugu Centar pruža <strong>Tactura j.d.o.o.</strong> Naplata i povrati provode se preko
+                Paddle.com Market Ltd. (merchant of record).
+              </p>
             </div>
           </section>
 
