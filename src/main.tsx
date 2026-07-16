@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import Landing from "./pages/Landing";
+import Landing from "./pages/CentarLanding";
 
 // Defer Sentry init + boot diagnostics until the browser is idle. These are
 // observability tools — they MUST NOT block first paint or LCP. They run
