@@ -16,6 +16,8 @@
 // -----------------------------------------------------------------------------
 // Config
 // -----------------------------------------------------------------------------
+declare const Deno: { env: { get(k: string): string | undefined } };
+
 
 const USE_DIRECT = (Deno.env.get('USE_DIRECT_GEMINI') ?? 'true').toLowerCase() === 'true';
 const GOOGLE_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
@@ -29,24 +31,38 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
  *
  * PINNING (2026-07-16, Milanov zahtjev):
  * Google-ov novi API ključ vraća 404 "no longer available to new users" za
- * sve 2.x modele (gemini-2.5-flash / -lite / -pro, gemini-2.0-flash* itd.).
- * Radi samo generacija 3.x. Aliasi `*-latest` trenutno resolvraju na:
- *    gemini-flash-latest       → gemini-3.5-flash
- *    gemini-flash-lite-latest  → gemini-3.1-flash-lite
- *    gemini-pro-latest         → gemini-3.1-pro-preview
- * Google `-latest` mijenja bez najave (može tiho promijeniti parsing iznosa
- * s računa), pa NE koristimo aliase u produkciji — pinamo konkretnu verziju
- * i mijenjamo je svjesno kroz code review.
+ * sve 2.x modele. Radi samo generacija 3.x. Aliase `*-latest` NE koristimo
+ * jer Google ih tiho mijenja — pinamo konkretnu verziju i mijenjamo je
+ * svjesno kroz code review.
  *
- * `gemini-3-flash-preview` je Milan 16.7. odobrio za direktni put (provjereno
- * curl-om na Google API — 200 OK). Koristi ga financial-assistant (streaming).
+ * PREVIEW modeli (⚠️): Google smije povući/promijeniti preview model BEZ najave.
+ * Za svaki PREVIEW ispod obvezno drži unos u `FALLBACK_MODEL_MAP` na stabilnu
+ * alternativu. Pratiti Gemini changelog — čim izađe stable verzija (npr.
+ * gemini-3.5-pro, gemini-3-flash bez `-preview`), zamijeni odmah.
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
-  'google/gemini-2.5-flash': 'gemini-3.5-flash',
-  'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',
-  'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',
-  // Milan odobrio 16.7.2026 — jedini model koji financial-assistant koristi.
-  'google/gemini-3-flash-preview': 'gemini-3-flash-preview',
+  'google/gemini-2.5-flash': 'gemini-3.5-flash',            // stable
+  'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',  // stable
+  'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',        // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
+  // Milan odobrio 16.7.2026 — jedini model koji financial-assistant koristi (streaming).
+  'google/gemini-3-flash-preview': 'gemini-3-flash-preview', // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
+};
+
+/**
+ * Automatski fallback ako Google vrati 404 / "model not available" za primarni
+ * (obično PREVIEW) model. Aktivira se SAMO na nedostupnost modela — ne na 429
+ * rate-limit, 400 bad request ni 5xx. Retry se izvede maksimalno JEDANPUT po
+ * pozivu (nema petlje: fallback model ne smije imati vlastiti fallback).
+ *
+ * Izbor: `gemini-3.5-flash` je najstabilniji općenamjenski model dostupan na
+ * ovom ključu (curl 200). `-pro-preview` fallback je downgrade na `-3.5-flash`
+ * (a ne `flash-lite`) jer PDF parse trebala razumjeti kompleksnu strukturu.
+ * `-3-flash-preview` (chat asistent) ide na isti `-3.5-flash` — dovoljno brz
+ * za tool-calling i ima streaming.
+ */
+const FALLBACK_MODEL_MAP: Record<string, string> = {
+  'gemini-3.1-pro-preview': 'gemini-3.5-flash',
+  'gemini-3-flash-preview': 'gemini-3.5-flash',
 };
 
 // -----------------------------------------------------------------------------
@@ -65,11 +81,17 @@ export interface OpenAIChatBody {
 }
 
 /**
+ * Odlučuje treba li retry s fallback modelom. Odvojena čista funkcija radi
+ * testabilnosti (vidi geminiClient.fallback.test.ts).
+ */
+export function shouldFallbackOnError(status: number, errText: string): boolean {
+  if (status !== 404) return false;
+  return /no longer available|not found|model_not_found|not supported/i.test(errText);
+}
+
+/**
  * Zove Gemini (direktno ili preko Lovable gateway-a) s OpenAI-kompatibilnim
  * body-jem i vraća `Response` u OpenAI formatu.
- *
- * Pozivi koji koriste model bez direktne mape (npr. `gemini-3-flash-preview`)
- * uvijek idu na gateway, bez obzira na flag.
  */
 export async function callGemini(body: OpenAIChatBody, opts?: { timeoutMs?: number }): Promise<Response> {
   const directModel = DIRECT_MODEL_MAP[body.model];
@@ -123,40 +145,51 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
   const geminiBody = openAIToGemini(body);
   const isStream = body.stream === true;
   const endpoint = isStream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-  const url = `${GOOGLE_BASE}/${model}:${endpoint}`;
 
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
+  const doFetch = async (mdl: string): Promise<Response> => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(`${GOOGLE_BASE}/${mdl}:${endpoint}`, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': GOOGLE_KEY!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(t);
+    }
+  };
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': GOOGLE_KEY!,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(geminiBody),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(t);
+  let upstream = await doFetch(model);
+  let effectiveModel = model;
+
+  // Automatski fallback SAMO kad je primarni model odbijen (404/not available).
+  // Ne aktiviraj na 429, 400, 5xx. Retry se izvede najviše jednom.
+  if (!upstream.ok) {
+    const errText = await upstream.clone().text();
+    const fb = FALLBACK_MODEL_MAP[model];
+    if (fb && shouldFallbackOnError(upstream.status, errText)) {
+      console.error(
+        `[geminiClient] FALLBACK_USED: primarni "${model}" odbijen (${upstream.status}), korišten "${fb}". ` +
+        `Mapiran iz "${body.model}". Ažuriraj DIRECT_MODEL_MAP.`,
+      );
+      logModelFallback(model, fb, body.model);
+      upstream = await doFetch(fb);
+      effectiveModel = fb;
+    }
   }
 
   if (!upstream.ok) {
     const errText = await upstream.text();
-    // Poseban trag za "model no longer available" — inače se vidi samo kroz
-    // "ne radi sken" u UI-u. Bilo bi glupo opet gubiti vrijeme na to.
     if (upstream.status === 404 && /no longer available/i.test(errText)) {
       console.error(
-        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${model}" (mapiran iz "${body.model}"). ` +
+        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${effectiveModel}" (mapiran iz "${body.model}"). ` +
         `Ažuriraj DIRECT_MODEL_MAP u supabase/functions/_shared/geminiClient.ts.`,
       );
     } else {
       console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
     }
-    // Prosljeđujemo status kod (429, 400, 500...) da pozivatelji njihova postojeća
-    // rukovanja (429/402) i dalje rade. 402 ne postoji na Googlu.
     return new Response(
       JSON.stringify({ error: `Google Gemini API error ${upstream.status}`, detail: errText.slice(0, 1000) }),
       { status: upstream.status, headers: { 'Content-Type': 'application/json' } },
@@ -177,6 +210,36 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+/**
+ * Fire-and-forget zapis fallback događaja u `app_diagnostics_logs`.
+ * Ne smije ni u kojem slučaju baciti — koristi service role za direct insert.
+ */
+function logModelFallback(primary: string, fallback: string, requestedModel: string): void {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    void fetch(`${url}/rest/v1/app_diagnostics_logs`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify([{
+        event: 'ai_model_fallback',
+        severity: 'warning',
+        session_id: `edge-${Date.now()}`,
+        details: { primary, fallback, requested_model: requestedModel },
+      }]),
+    }).catch(() => { /* ignore */ });
+  } catch {
+    /* ignore */
+  }
+}
+
 
 // -----------------------------------------------------------------------------
 // OpenAI → Gemini prijevod
