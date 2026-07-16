@@ -14,6 +14,14 @@
 export interface ProjectTabVisibilityInput {
   tabKey: string;
   isWorkerOnly: boolean;
+  /**
+   * True kad je trenutni korisnik investor (i nije owner). Investor je "stranka
+   * u ugovoru", NE partner u poslovanju — smije vidjeti samo Pregled, Faze i
+   * Odluke. Sve što otkriva internu ekonomiku izvođača (budžet, potrošeno,
+   * marža, transakcije, radnici, financiranje, dokumenti, aktivnost) je
+   * strogo skriveno bez obzira na ostale flagove.
+   */
+  isInvestorViewer?: boolean;
   isManager: boolean;
   /** From `useProjectMemberPermissions().isTabVisible(tabKey)`. */
   isTabVisible: (tabKey: string) => boolean;
@@ -22,13 +30,16 @@ export interface ProjectTabVisibilityInput {
   hasWorkers: boolean;
 }
 
+const INVESTOR_ALLOWED_TABS = new Set(['overview', 'phases', 'milestones', 'timeline', 'decisions']);
+
 export function resolveProjectTabVisibility(input: ProjectTabVisibilityInput): boolean {
   const {
-    tabKey, isWorkerOnly, isManager, isTabVisible,
+    tabKey, isWorkerOnly, isInvestorViewer, isManager, isTabVisible,
     canSeeWorkers, canSeeCollaborators, hasWorkers,
   } = input;
 
   if (isWorkerOnly) return tabKey === 'worklog';
+  if (isInvestorViewer) return INVESTOR_ALLOWED_TABS.has(tabKey);
   if (tabKey === 'workers' && !canSeeWorkers) return false;
   if (tabKey === 'collaborators' && !canSeeCollaborators) return false;
   if (tabKey === 'documents') return true;
