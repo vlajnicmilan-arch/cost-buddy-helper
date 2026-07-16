@@ -233,6 +233,8 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/landing-legacy" element={<LegacyLanding />} />
+          <Route path="/centar" element={<Navigate to="/" replace />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
