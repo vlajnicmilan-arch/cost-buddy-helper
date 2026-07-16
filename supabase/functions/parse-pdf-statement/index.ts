@@ -397,7 +397,6 @@ METAPODACI:
           }
         ],
         tool_choice: { type: 'function', function: { name: 'extract_transactions' } }
-      })
     });
 
     if (!aiResponse.ok) {
