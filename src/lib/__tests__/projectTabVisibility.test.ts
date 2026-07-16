@@ -3,6 +3,7 @@ import { resolveProjectTabVisibility } from '../projectTabVisibility';
 
 const base = {
   isWorkerOnly: false,
+  isInvestorViewer: false,
   isManager: false,
   isTabVisible: () => false,
   canSeeWorkers: true,
@@ -15,6 +16,38 @@ describe('resolveProjectTabVisibility', () => {
     expect(resolveProjectTabVisibility({ ...base, tabKey: 'worklog', isWorkerOnly: true })).toBe(true);
     expect(resolveProjectTabVisibility({ ...base, tabKey: 'overview', isWorkerOnly: true })).toBe(false);
     expect(resolveProjectTabVisibility({ ...base, tabKey: 'documents', isWorkerOnly: true })).toBe(false);
+  });
+
+  it('investor viewer sees ONLY overview, phases and decisions', () => {
+    const inv = { ...base, isInvestorViewer: true, isManager: true };
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'overview' })).toBe(true);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'phases' })).toBe(true);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'milestones' })).toBe(true);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'timeline' })).toBe(true);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'decisions' })).toBe(true);
+    // Internal — MUST be hidden
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'budget' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'transactions' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'funding' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'workers' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'collaborators' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'worklog' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'team' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'documents' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'activity' })).toBe(false);
+  });
+
+  it('investor gate wins over isManager and isTabVisible grants', () => {
+    // Even if some caller passes elevated flags, investor still cannot escape.
+    const inv = {
+      ...base,
+      isInvestorViewer: true,
+      isManager: true,
+      isTabVisible: () => true,
+    };
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'budget' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'transactions' })).toBe(false);
+    expect(resolveProjectTabVisibility({ ...inv, tabKey: 'funding' })).toBe(false);
   });
 
   it('hides workers tab when canSeeWorkers is false', () => {

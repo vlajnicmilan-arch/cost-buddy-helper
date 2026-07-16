@@ -67,6 +67,7 @@ import { LocalStorage } from '@/hooks/useLocalStorage';
 import { projectViewState } from '@/lib/projectViewState';
 import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
 import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
+import { InvestorPhasesView } from './InvestorPhasesView';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -182,6 +183,11 @@ export const ProjectFullScreenView = ({
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwner = !!project && !!user && project.user_id === user.id;
+  // Investor je "stranka u ugovoru", NE partner u poslovanju. Prisilna minimalna
+  // vidljivost: Pregled (bez interne ekonomike), Faze (bez budget/spent) i Odluke.
+  // Server-side RLS trenutno NE razdvaja investor rolu — vidi izvještaj (opseg
+  // popravka `is_project_member` + policy filtri). Do tada UI je jedini gate.
+  const isInvestorViewer = currentUserRole === 'investor' && !isOwner;
   const accessLevel = useProjectAccessLevel(
     project ? { user_id: project.user_id, isParticipant: !isOwner } : null
   );
@@ -199,16 +205,18 @@ export const ProjectFullScreenView = ({
     project?.business_profile_id === activeBusinessProfileId ||
     (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
   );
-  const canSeeWorkers = hasAccess('workforce') && !isWorkerOnly;
-  const canSeeCollaborators = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
-  // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view
-  const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
+  const canSeeWorkers = hasAccess('workforce') && !isWorkerOnly && !isInvestorViewer;
+  const canSeeCollaborators = isBusinessView && hasAccess('collaborators') && !isWorkerOnly && !isInvestorViewer;
+  // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view.
+  // Investor NIKAD ne dobiva P&L / EarnedValue / Forecast — otkrivaju maržu i interni trošak.
+  const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly && !isInvestorViewer;
 
   // Determine if current user can see a tab — delegated to pure helper (1:1 with prior inline logic).
   const canSeeTab = (tabKey: string) =>
     resolveProjectTabVisibility({
       tabKey,
       isWorkerOnly,
+      isInvestorViewer,
       isManager,
       isTabVisible,
       canSeeWorkers,
@@ -280,6 +288,16 @@ export const ProjectFullScreenView = ({
       lastProjectIdRef.current = currentId;
     }
   }, [open, project?.id, isWorkerOnly]);
+
+  // Investor viewer clamp — ako je aktivni tab van dozvoljenog skupa
+  // (overview/phases/decisions), prisilno vrati na overview. Sprječava da
+  // initialTab prop (npr. iz notifikacije) otvori Budget ili Transakcije
+  // investitoru.
+  useEffect(() => {
+    if (!isInvestorViewer) return;
+    const allowed = new Set(['overview', 'phases', 'milestones', 'timeline', 'decisions']);
+    if (!allowed.has(activeTab)) setActiveTab('overview');
+  }, [isInvestorViewer, activeTab]);
 
   // Restore taba iz projectViewState pri open-u istog projekta (npr. nakon
   // remounta uslijed kamera roundtripa na Androidu). initialTab prop ima
@@ -429,7 +447,7 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
 
-                {!isWorkerOnly && (
+                {!isWorkerOnly && !isInvestorViewer && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -442,7 +460,7 @@ export const ProjectFullScreenView = ({
                 </Button>
                 )}
 
-                {!isWorkerOnly && (
+                {!isWorkerOnly && !isInvestorViewer && (
                   <ProjectHeaderMenu
                     isManager={isManager}
                     isReadOnly={isReadOnly}
@@ -563,8 +581,9 @@ export const ProjectFullScreenView = ({
                   Overview hijerarhija (#4) dolazi u NEXT WAVE. */}
 
 
-              {/* Forecast section — shown whenever funding is visible and a budget exists. */}
-              {canSeeTab('funding') && budget > 0 && (
+              {/* Forecast section — shown whenever funding is visible and a budget exists.
+                  Investor NIKAD ne dobiva Forecast (otkriva projekciju finalnog troška). */}
+              {!isInvestorViewer && canSeeTab('funding') && budget > 0 && (
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
@@ -582,43 +601,61 @@ export const ProjectFullScreenView = ({
                   const teamTab: MobileTabDef = { key: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users };
                   const decisionsTab: MobileTabDef = { key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale };
 
-                  const primary: MobileTabDef[] = [
-                    { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
-                    { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
-                    ...(canSeeTab('milestones') || canSeeTab('timeline')
-                      ? [{
-                          key: 'phases',
-                          label: labels.milestonesLabel,
-                          icon: Target,
-                          badge: milestones.length > 0 ? (
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
-                          ) : undefined,
-                        } as MobileTabDef]
-                      : []),
-                    canSeeDecisions ? decisionsTab : teamTab,
-                  ];
+                  // Investor: samo Pregled, Faze, Odluke — bez overflow "Više" izbornika.
+                  const primary: MobileTabDef[] = isInvestorViewer
+                    ? [
+                        { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
+                        ...(canSeeTab('milestones') || canSeeTab('timeline')
+                          ? [{
+                              key: 'phases',
+                              label: labels.milestonesLabel,
+                              icon: Target,
+                              badge: milestones.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        decisionsTab,
+                      ]
+                    : [
+                        { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
+                        { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
+                        ...(canSeeTab('milestones') || canSeeTab('timeline')
+                          ? [{
+                              key: 'phases',
+                              label: labels.milestonesLabel,
+                              icon: Target,
+                              badge: milestones.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        canSeeDecisions ? decisionsTab : teamTab,
+                      ];
 
-                  const overflow: MobileTabDef[] = [
-                    ...(canSeeDecisions ? [teamTab] : []),
-                    ...(canSeeTab('funding')
-                      ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
-                      : []),
-                    ...(canSeeTab('transactions')
-                      ? [{
-                          key: 'transactions',
-                          label: t('projects.transactions', 'Transakcije'),
-                          icon: FileText,
-                          badge: expenses.length > 0 ? (
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
-                          ) : undefined,
-                        } as MobileTabDef]
-                      : []),
-                    ...(canSeeTab('worklog')
-                      ? [{ key: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen } as MobileTabDef]
-                      : []),
-                    { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
-                    { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
-                  ];
+                  const overflow: MobileTabDef[] = isInvestorViewer
+                    ? []
+                    : [
+                        ...(canSeeDecisions ? [teamTab] : []),
+                        ...(canSeeTab('funding')
+                          ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
+                          : []),
+                        ...(canSeeTab('transactions')
+                          ? [{
+                              key: 'transactions',
+                              label: t('projects.transactions', 'Transakcije'),
+                              icon: FileText,
+                              badge: expenses.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        ...(canSeeTab('worklog')
+                          ? [{ key: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen } as MobileTabDef]
+                          : []),
+                        { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
+                        { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
+                      ];
 
 
                   return (
@@ -636,10 +673,12 @@ export const ProjectFullScreenView = ({
                               <TrendingUp className="w-3.5 h-3.5" />
                               {t('projects.overview', 'Pregled')}
                             </TabsTrigger>
-                            <TabsTrigger value="budget" className={triggerCls}>
-                              <Wallet className="w-3.5 h-3.5" />
-                              {t('projects.budgetTab.label', 'Budžet')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="budget" className={triggerCls}>
+                                <Wallet className="w-3.5 h-3.5" />
+                                {t('projects.budgetTab.label', 'Budžet')}
+                              </TabsTrigger>
+                            )}
                             {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                               <TabsTrigger value="phases" className={triggerCls}>
                                 <Target className="w-3.5 h-3.5" />
@@ -664,24 +703,30 @@ export const ProjectFullScreenView = ({
                                 )}
                               </TabsTrigger>
                             )}
-                            <TabsTrigger value="team" className={triggerCls}>
-                              <Users className="w-3.5 h-3.5" />
-                              {t('projects.projectTeam', 'Tim projekta')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="team" className={triggerCls}>
+                                <Users className="w-3.5 h-3.5" />
+                                {t('projects.projectTeam', 'Tim projekta')}
+                              </TabsTrigger>
+                            )}
                             {canSeeTab('worklog') && (
                               <TabsTrigger value="worklog" className={triggerCls}>
                                 <BookOpen className="w-3.5 h-3.5" />
                                 {t('workLog.tab', 'Dnevnik rada')}
                               </TabsTrigger>
                             )}
-                            <TabsTrigger value="documents" className={triggerCls}>
-                              <FolderOpen className="w-3.5 h-3.5" />
-                              {labels.documentsLabel}
-                            </TabsTrigger>
-                            <TabsTrigger value="activity" className={triggerCls}>
-                              <Activity className="w-3.5 h-3.5" />
-                              {t('projects.activity.tab', 'Aktivnost')}
-                            </TabsTrigger>
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="documents" className={triggerCls}>
+                                <FolderOpen className="w-3.5 h-3.5" />
+                                {labels.documentsLabel}
+                              </TabsTrigger>
+                            )}
+                            {!isInvestorViewer && (
+                              <TabsTrigger value="activity" className={triggerCls}>
+                                <Activity className="w-3.5 h-3.5" />
+                                {t('projects.activity.tab', 'Aktivnost')}
+                              </TabsTrigger>
+                            )}
                             {canSeeDecisions && (
                               <TabsTrigger value="decisions" className={triggerCls}>
                                 <Scale className="w-3.5 h-3.5" />
@@ -698,8 +743,9 @@ export const ProjectFullScreenView = ({
 
 
                 <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka */}
-                  {!quickStartDismissed && (() => {
+                  {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka.
+                      Investor nema veze s internim setupom projekta → sakriveno. */}
+                  {!isInvestorViewer && !quickStartDismissed && (() => {
                     const hasMilestones = milestones.length > 0;
                     const hasTransactions = expenses.length > 0;
                     const hasBudget = budget > 0;
@@ -724,13 +770,13 @@ export const ProjectFullScreenView = ({
 
                   {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
 
-                  {/* 1. P&L Card — primary financial KPI (business view) */}
+                  {/* 1. P&L Card — primary financial KPI (business view). NIKAD investoru. */}
                   {canAccessBusinessTabs && (
                     <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
                   )}
 
-                  {/* 2. Earned Value Card — margin, EAC, contract-based health */}
-                  {isBusinessView && (
+                  {/* 2. Earned Value Card — margin, EAC, contract-based health. NIKAD investoru. */}
+                  {isBusinessView && !isInvestorViewer && (
                     <ProjectEarnedValueCard
                       project={project}
                       spent={stats.totalSpent}
@@ -786,7 +832,8 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
-                {/* Budget tab — extracted KPI panel; available in both Lite and Full mode */}
+                {/* Budget tab — STRICT: skriveno za investitora (marža, potrošeno, alarmi, povijest budžeta). */}
+                {!isInvestorViewer && (
                 <TabsContent value="budget" className="m-0">
                   <ProjectBudgetTab
                     project={project}
@@ -805,56 +852,68 @@ export const ProjectFullScreenView = ({
                     onRequestEdit={onRequestEdit ? () => onRequestEdit(project) : undefined}
                   />
                 </TabsContent>
+                )}
 
 
                 {(canSeeTab('milestones') || canSeeTab('timeline')) && (
                 <TabsContent value="phases" className="m-0 space-y-3">
-                  {canSeeTab('timeline') && (
-                    <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
-                      <button
-                        type="button"
-                        onClick={() => setPhasesView('list')}
-                        className={cn(
-                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                          phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
-                        )}
-                      >
-                        {t('projects.kanban.list', 'Lista')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPhasesView('timeline')}
-                        className={cn(
-                          'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
-                          phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
-                        )}
-                      >
-                        <GanttChart className="w-3 h-3" />
-                        {t('projects.timeline', 'Timeline')}
-                      </button>
-                    </div>
-                  )}
-                  {phasesView === 'timeline' && canSeeTab('timeline') ? (
-                    <ProjectTimelineTab
-                      projectId={project.id}
-                      milestones={milestones}
-                      projectStartDate={project.start_date}
-                      projectEndDate={project.end_date}
-                      loading={milestonesLoading}
-                    />
+                  {isInvestorViewer ? (
+                    // Investor view — SAMO javna polja faze (naziv/opis/status/datumi/
+                    // investor_price). BEZ milestone.budget, milestone.spent i toggle
+                    // "Lista/Timeline" (Timeline pokazuje interni Gantt s trajanjima).
+                    <InvestorPhasesView milestones={milestones} loading={milestonesLoading} />
                   ) : (
-                    <ProjectMilestonesTab
-                      projectId={project.id}
-                      milestones={milestones}
-                      isManager={isManager}
-                      loading={milestonesLoading}
-                      onRefetch={refetchMilestones}
-                      isReadOnly={isReadOnly}
-                    />
+                    <>
+                      {canSeeTab('timeline') && (
+                        <div className="inline-flex p-1 bg-muted/40 rounded-lg border border-border/30">
+                          <button
+                            type="button"
+                            onClick={() => setPhasesView('list')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                              phasesView === 'list' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
+                            )}
+                          >
+                            {t('projects.kanban.list', 'Lista')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPhasesView('timeline')}
+                            className={cn(
+                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all inline-flex items-center gap-1',
+                              phasesView === 'timeline' ? 'bg-background shadow-sm text-module' : 'text-muted-foreground'
+                            )}
+                          >
+                            <GanttChart className="w-3 h-3" />
+                            {t('projects.timeline', 'Timeline')}
+                          </button>
+                        </div>
+                      )}
+                      {phasesView === 'timeline' && canSeeTab('timeline') ? (
+                        <ProjectTimelineTab
+                          projectId={project.id}
+                          milestones={milestones}
+                          projectStartDate={project.start_date}
+                          projectEndDate={project.end_date}
+                          loading={milestonesLoading}
+                        />
+                      ) : (
+                        <ProjectMilestonesTab
+                          projectId={project.id}
+                          milestones={milestones}
+                          isManager={isManager}
+                          loading={milestonesLoading}
+                          onRefetch={refetchMilestones}
+                          isReadOnly={isReadOnly}
+                        />
+                      )}
+                    </>
                   )}
                 </TabsContent>
                 )}
 
+                {/* Tim/Documents/Aktivnost — sakriveno investitoru (interni podaci izvođača). */}
+                {!isInvestorViewer && (
                 <TabsContent value="team" className="m-0">
                   <ProjectTeamTab
                     projectId={project.id}
@@ -873,14 +932,20 @@ export const ProjectFullScreenView = ({
                     isReadOnly={isReadOnly}
                   />
                 </TabsContent>
+                )}
 
+                {!isInvestorViewer && (
                 <TabsContent value="documents" className="m-0">
                   <ProjectDocumentsTab projectId={project.id} isReadOnly={isReadOnly} />
                 </TabsContent>
+                )}
 
+
+                {!isInvestorViewer && (
                 <TabsContent value="activity" className="m-0">
                   <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
+                )}
 
                 {canSeeDecisions && (
                 <TabsContent value="decisions" className="m-0">
