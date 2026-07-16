@@ -5280,6 +5280,57 @@ export type Database = {
           },
         ]
       }
+      user_entitlements: {
+        Row: {
+          billing_cycle: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          module: string
+          period_end: string | null
+          period_start: string
+          provider: string | null
+          provider_price_id: string | null
+          provider_sub_id: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          module: string
+          period_end?: string | null
+          period_start?: string
+          provider?: string | null
+          provider_price_id?: string | null
+          provider_sub_id?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          module?: string
+          period_end?: string | null
+          period_start?: string
+          provider?: string | null
+          provider_price_id?: string | null
+          provider_sub_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_login_logs: {
         Row: {
           device_info: Json | null
@@ -5385,6 +5436,39 @@ export type Database = {
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          provider: string
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider: string
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider?: string
+          received_at?: string
         }
         Relationships: []
       }
@@ -5679,6 +5763,10 @@ export type Database = {
         Returns: boolean
       }
       has_any_paid_plan: { Args: { _user_id: string }; Returns: boolean }
+      has_entitlement: {
+        Args: { _module: string; _user_id: string }
+        Returns: boolean
+      }
       has_full_payment_source_access: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
