@@ -3,6 +3,7 @@
 // (gemini-2.5-flash-lite) to produce a short paragraph in the requested
 // language (hr/en/de). Result is stored in `health_summaries`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
