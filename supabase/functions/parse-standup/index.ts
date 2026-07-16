@@ -60,16 +60,9 @@ Vrati STRIKTNO JSON (bez markdowna, bez dodatnog teksta) s ovim poljima:
 }
 Ako podatak nije naveden, koristi null ili praznu listu.`;
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: prompt }],
-      }),
+    const aiRes = await callGemini({
+      model: 'google/gemini-2.5-flash',
+      messages: [{ role: 'user', content: prompt }],
     });
 
     if (!aiRes.ok) {
