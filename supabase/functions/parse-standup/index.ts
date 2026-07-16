@@ -1,4 +1,5 @@
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 interface ParseRequest {
   text: string;
