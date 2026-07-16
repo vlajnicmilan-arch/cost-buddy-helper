@@ -142,19 +142,12 @@ Deno.serve(async (req) => {
 
     const systemPrompt = `Ti si stručnjak za nadzor aplikacija. Odgovaraj isključivo na ${langLabel} jeziku. Daj kratak (3-6 rečenica) tehničko-poslovni sažetak stanja aplikacije u zadnja 24 sata na temelju proslijeđenih metrika. Naglasi probleme (greške, sporne rute, neažurirane verzije), ali budi sažet i konkretan. Ne izmišljaj brojeve.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `METRIKE (JSON):\n${JSON.stringify(metrics, null, 2)}` },
-        ],
-      }),
+    const aiResp = await callGemini({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `METRIKE (JSON):\n${JSON.stringify(metrics, null, 2)}` },
+      ],
     });
 
     if (!aiResp.ok) {
