@@ -23,6 +23,28 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
+    // Serve static landing at /centar (and /centar/) before Vite's SPA fallback
+    // rewrites the HTML. Only affects dev/preview — production hosting is
+    // file-first and doesn't need this.
+    {
+      name: "serve-static-centar",
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === "/centar" || req.url === "/centar/") {
+            req.url = "/centar/index.html";
+          }
+          next();
+        });
+      },
+      configurePreviewServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === "/centar" || req.url === "/centar/") {
+            req.url = "/centar/index.html";
+          }
+          next();
+        });
+      },
+    },
     react(),
     mcpPlugin(),
     mode === "development" && componentTagger(),
