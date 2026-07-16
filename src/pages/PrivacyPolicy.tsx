@@ -35,7 +35,7 @@ const PrivacyPolicy = () => {
               Voditelj obrade osobnih podataka u smislu članka 4. stavka 7. GDPR-a je:
             </p>
             <div className="p-4 bg-muted rounded-lg">
-              <p className="font-medium">Centar</p>
+              <p className="font-medium">Tactura j.d.o.o. (pružatelj usluge Centar)</p>
               <p className="text-muted-foreground">Web: vmbalance.com</p>
               <p className="text-muted-foreground">Email za pitanja o privatnosti: <a href="mailto:privacy@vmbalance.com" className="text-primary hover:underline">privacy@vmbalance.com</a></p>
               <p className="text-muted-foreground">Email za GDPR zahtjeve: <a href="mailto:gdpr@vmbalance.com" className="text-primary hover:underline">gdpr@vmbalance.com</a></p>
@@ -356,7 +356,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">12. Kontakt</h2>
             <div className="p-4 bg-muted rounded-lg space-y-2">
-              <p className="font-medium">Centar</p>
+              <p className="font-medium">Tactura j.d.o.o. (pružatelj usluge Centar)</p>
               <p className="text-sm text-muted-foreground">📧 Privatnost: <a href="mailto:privacy@vmbalance.com" className="text-primary hover:underline">privacy@vmbalance.com</a></p>
               <p className="text-sm text-muted-foreground">📧 GDPR zahtjevi: <a href="mailto:gdpr@vmbalance.com" className="text-primary hover:underline">gdpr@vmbalance.com</a></p>
               <p className="text-sm text-muted-foreground">📧 Sigurnost: <a href="mailto:security@vmbalance.com" className="text-primary hover:underline">security@vmbalance.com</a></p>
