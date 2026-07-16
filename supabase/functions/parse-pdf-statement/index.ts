@@ -195,13 +195,7 @@ serve(async (req) => {
     // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
     const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const aiResponse = await callGemini({
         model: modelId,
         messages: [
           {
