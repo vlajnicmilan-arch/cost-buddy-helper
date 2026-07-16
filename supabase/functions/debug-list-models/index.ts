@@ -1,12 +1,15 @@
 Deno.serve(async () => {
   const key = Deno.env.get("GOOGLE_GEMINI_API_KEY")!;
   const targets = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash-001",
-    "gemini-2.0-flash-lite-001",
     "gemini-3-flash-preview",
+    "gemini-3-pro-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-pro-latest",
   ];
   const out: any[] = [];
   for (const m of targets) {
@@ -22,7 +25,9 @@ Deno.serve(async () => {
       },
     );
     const t = await r.text();
-    out.push({ model: m, status: r.status, snippet: t.slice(0, 200) });
+    let resolved: string | undefined;
+    try { resolved = JSON.parse(t).modelVersion; } catch {}
+    out.push({ model: m, status: r.status, resolved, snippet: t.slice(0, 120) });
   }
   return new Response(JSON.stringify(out, null, 2), {
     headers: { "Content-Type": "application/json" },
