@@ -144,7 +144,16 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
 
   if (!upstream.ok) {
     const errText = await upstream.text();
-    console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
+    // Poseban trag za "model no longer available" — inače se vidi samo kroz
+    // "ne radi sken" u UI-u. Bilo bi glupo opet gubiti vrijeme na to.
+    if (upstream.status === 404 && /no longer available/i.test(errText)) {
+      console.error(
+        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${model}" (mapiran iz "${body.model}"). ` +
+        `Ažuriraj DIRECT_MODEL_MAP u supabase/functions/_shared/geminiClient.ts.`,
+      );
+    } else {
+      console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
+    }
     // Prosljeđujemo status kod (429, 400, 500...) da pozivatelji njihova postojeća
     // rukovanja (429/402) i dalje rade. 402 ne postoji na Googlu.
     return new Response(
