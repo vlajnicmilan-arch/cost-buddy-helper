@@ -633,27 +633,29 @@ export const ProjectFullScreenView = ({
                         canSeeDecisions ? decisionsTab : teamTab,
                       ];
 
-                  const overflow: MobileTabDef[] = [
-                    ...(canSeeDecisions ? [teamTab] : []),
-                    ...(canSeeTab('funding')
-                      ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
-                      : []),
-                    ...(canSeeTab('transactions')
-                      ? [{
-                          key: 'transactions',
-                          label: t('projects.transactions', 'Transakcije'),
-                          icon: FileText,
-                          badge: expenses.length > 0 ? (
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
-                          ) : undefined,
-                        } as MobileTabDef]
-                      : []),
-                    ...(canSeeTab('worklog')
-                      ? [{ key: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen } as MobileTabDef]
-                      : []),
-                    { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
-                    { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
-                  ];
+                  const overflow: MobileTabDef[] = isInvestorViewer
+                    ? []
+                    : [
+                        ...(canSeeDecisions ? [teamTab] : []),
+                        ...(canSeeTab('funding')
+                          ? [{ key: 'funding', label: t('projects.funding', 'Financiranje'), icon: Handshake } as MobileTabDef]
+                          : []),
+                        ...(canSeeTab('transactions')
+                          ? [{
+                              key: 'transactions',
+                              label: t('projects.transactions', 'Transakcije'),
+                              icon: FileText,
+                              badge: expenses.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{expenses.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        ...(canSeeTab('worklog')
+                          ? [{ key: 'worklog', label: t('workLog.tab', 'Dnevnik rada'), icon: BookOpen } as MobileTabDef]
+                          : []),
+                        { key: 'documents', label: labels.documentsLabel, icon: FolderOpen },
+                        { key: 'activity', label: t('projects.activity.tab', 'Aktivnost'), icon: Activity },
+                      ];
 
 
                   return (
