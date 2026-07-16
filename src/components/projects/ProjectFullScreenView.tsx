@@ -447,7 +447,7 @@ export const ProjectFullScreenView = ({
                   )}
                 </div>
 
-                {!isWorkerOnly && (
+                {!isWorkerOnly && !isInvestorViewer && (
                 <Button
                   variant="outline"
                   size="sm"
