@@ -67,6 +67,7 @@ import { LocalStorage } from '@/hooks/useLocalStorage';
 import { projectViewState } from '@/lib/projectViewState';
 import { resolveProjectTabVisibility } from '@/lib/projectTabVisibility';
 import { resolveLegacyTabAlias } from '@/lib/projectTabAliases';
+import { InvestorPhasesView } from './InvestorPhasesView';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
