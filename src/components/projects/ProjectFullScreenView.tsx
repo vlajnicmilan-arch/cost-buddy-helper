@@ -743,8 +743,9 @@ export const ProjectFullScreenView = ({
 
 
                 <TabsContent value="overview" className="m-0 space-y-4">
-                  {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka */}
-                  {!quickStartDismissed && (() => {
+                  {/* Quick Start cards — prikazuju se dok god ima nedovršenih koraka.
+                      Investor nema veze s internim setupom projekta → sakriveno. */}
+                  {!isInvestorViewer && !quickStartDismissed && (() => {
                     const hasMilestones = milestones.length > 0;
                     const hasTransactions = expenses.length > 0;
                     const hasBudget = budget > 0;
@@ -769,13 +770,13 @@ export const ProjectFullScreenView = ({
 
                   {/* #4 Overview hierarchy — KPIs first, progress next, meta last */}
 
-                  {/* 1. P&L Card — primary financial KPI (business view) */}
+                  {/* 1. P&L Card — primary financial KPI (business view). NIKAD investoru. */}
                   {canAccessBusinessTabs && (
                     <ProjectProfitLossCard projectId={project.id} projectName={project.name} />
                   )}
 
-                  {/* 2. Earned Value Card — margin, EAC, contract-based health */}
-                  {isBusinessView && (
+                  {/* 2. Earned Value Card — margin, EAC, contract-based health. NIKAD investoru. */}
+                  {isBusinessView && !isInvestorViewer && (
                     <ProjectEarnedValueCard
                       project={project}
                       spent={stats.totalSpent}
