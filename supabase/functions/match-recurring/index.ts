@@ -69,20 +69,13 @@ VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema matcheva, vrati: []
 Primjer: [{"transaction_index": 1, "recurring_index": 2, "confidence": "high"}]`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: "Ti si precizan analitičar financijskih transakcija. Odgovaraš isključivo JSON arrayem. NIKADA ne haluciniraj — koristi SAMO podatke koji su ti dani. Ako iznosi nisu identični, to NIJE match. Bolje je vratiti prazan array nego dati krivi match." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0,
-      }),
+    const response = await callGemini({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        { role: "system", content: "Ti si precizan analitičar financijskih transakcija. Odgovaraš isključivo JSON arrayem. NIKADA ne haluciniraj — koristi SAMO podatke koji su ti dani. Ako iznosi nisu identični, to NIJE match. Bolje je vratiti prazan array nego dati krivi match." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0,
     });
 
     if (!response.ok) {
