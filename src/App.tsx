@@ -70,7 +70,9 @@ const Paywall = lazy(() => import("./pages/Paywall"));
 const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
-const Landing = lazy(() => import("./pages/Landing"));
+const Landing = lazy(() => import("./pages/CentarLanding"));
+// Stari V&M landing zadržan kao rezerva, dostupan na /landing-legacy.
+const LegacyLanding = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
