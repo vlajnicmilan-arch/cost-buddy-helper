@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centar — vođenje projekata: dogovori, izmjene i troškovi na jednom mjestu</title>
+<meta name="description" content="Zajednički zapisnik za izvođača i investitora: svaka izmjena zapisana, potvrđena s obje strane i s vremenskim tragom. 30 dana besplatno.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0D12;
+    --surface:#12171F;
+    --surface-2:#161C26;
+    --line:#232B36;
+    --text:#E6EAF0;
+    --muted:#8A94A6;
+    --accent:#3B82F6;
+    --amber:#F59E0B;
+    --green:#34D399;
+    --display:"IBM Plex Sans Condensed",system-ui,sans-serif;
+    --body:"IBM Plex Sans",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --pad:clamp(20px,5vw,32px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink);color:var(--text);
+    font-family:var(--body);font-size:17px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+  section{padding:clamp(64px,10vw,112px) 0;border-top:1px solid var(--line)}
+  section:first-of-type{border-top:0}
+
+  h1,h2,h3{font-family:var(--display);line-height:1.08;letter-spacing:-0.015em;font-weight:700}
+  h1{font-size:clamp(38px,8.5vw,68px)}
+  h2{font-size:clamp(28px,5.5vw,44px)}
+  h3{font-size:clamp(19px,2.6vw,23px);font-weight:600;letter-spacing:0}
+  p{margin-bottom:1em}
+  p:last-child{margin-bottom:0}
+  strong{font-weight:600;color:#fff}
+
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:block;
+  }
+  .lede{font-size:clamp(18px,2.3vw,21px);color:#C3CBD8;max-width:60ch}
+  .muted{color:var(--muted)}
+
+  /* ---------- HERO / SIGNATURE ---------- */
+  .hero{padding-top:clamp(48px,9vw,88px);padding-bottom:clamp(56px,8vw,96px)}
+  .brand{
+    font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.02em;
+    display:flex;align-items:center;gap:10px;margin-bottom:clamp(44px,7vw,72px);
+  }
+  .brand-dot{width:11px;height:11px;border-radius:3px;background:var(--accent);display:block}
+  .hero h1{margin-bottom:22px}
+  .hero h1 .split{color:var(--muted)}
+  .hero .lede{margin-bottom:36px}
+
+  /* memory cards */
+  .memories{display:grid;gap:12px;margin:0 0 6px}
+  @media(min-width:720px){.memories{grid-template-columns:1fr 1fr;gap:18px}}
+  .memo{
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:18px 18px 16px;position:relative;
+  }
+  .memo-who{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:10px;display:block;
+  }
+  .memo-text{font-size:16px;line-height:1.5;color:#D5DCE7}
+  .memo-text em{color:#fff;font-style:normal;font-weight:600}
+  @media(min-width:720px){
+    .memo-a{transform:rotate(-.5deg)}
+    .memo-b{transform:rotate(.5deg)}
+  }
+
+  .versus{
+    text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+    color:var(--muted);padding:16px 0 14px;position:relative;
+  }
+  .versus::before,.versus::after{
+    content:"";position:absolute;top:50%;width:calc(50% - 34px);height:1px;background:var(--line);
+  }
+  .versus::before{left:0}
+  .versus::after{right:0}
+
+  /* the record */
+  .record{
+    background:var(--surface-2);border:1px solid var(--accent);border-radius:10px;
+    overflow:hidden;box-shadow:0 0 0 4px rgba(59,130,246,.08);
+  }
+  .record-head{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(59,130,246,.07);
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  }
+  .record-head .id{color:var(--accent)}
+  .record-head .state{color:var(--green)}
+  .record-body{padding:6px 16px 14px}
+  .rline{
+    display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;
+    padding:11px 0;border-bottom:1px dashed var(--line);
+  }
+  .rline:last-child{border-bottom:0}
+  .rline .ts{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+  .rline .ev{font-size:15px;line-height:1.45}
+  .rline .ev b{font-weight:600;color:#fff}
+  .rline .price{font-family:var(--mono);color:var(--accent)}
+  .record-foot{
+    padding:11px 16px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+  }
+  .hero-note{margin-top:20px;font-size:15px;color:var(--muted);max-width:56ch}
+
+  /* ---------- CTA ---------- */
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+  .btn{
+    display:inline-block;padding:14px 22px;border-radius:8px;text-decoration:none;
+    font-weight:600;font-size:16px;border:1px solid transparent;transition:.15s;
+  }
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#2f74e6}
+  .btn-ghost{border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+  .cta-sub{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  /* ---------- SIDES ---------- */
+  .sides{display:grid;gap:14px;margin-top:30px}
+  @media(min-width:720px){.sides{grid-template-columns:1fr 1fr;gap:18px}}
+  .side{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px}
+  .side h3{margin-bottom:10px}
+  .side p{font-size:16px;color:#C3CBD8}
+  .verdict{
+    margin-top:26px;font-family:var(--display);font-size:clamp(19px,2.6vw,24px);
+    font-weight:600;color:#fff;letter-spacing:-.01em;
+  }
+
+  /* ---------- STEPS ---------- */
+  .steps{margin-top:34px;counter-reset:s}
+  .step{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;
+    padding:20px 0;border-bottom:1px solid var(--line);
+  }
+  .step:last-child{border-bottom:0}
+  .step-n{
+    counter-increment:s;font-family:var(--mono);font-size:12px;color:var(--accent);
+    padding-top:3px;min-width:26px;
+  }
+  .step-n::before{content:counter(s,decimal-leading-zero)}
+  .step h3{margin-bottom:5px}
+  .step p{font-size:16px;color:#C3CBD8}
+
+  .callout{
+    margin-top:34px;border-left:2px solid var(--accent);padding:4px 0 4px 20px;
+    font-family:var(--display);font-size:clamp(18px,2.4vw,22px);font-weight:600;
+    color:#fff;letter-spacing:-.01em;line-height:1.35;
+  }
+
+  /* ---------- TABLE ---------- */
+  .balance{margin-top:32px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .brow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+  .brow:last-child{border-bottom:0}
+  .brow-head{background:var(--surface-2)}
+  .bcell{padding:15px 16px;font-size:15px;line-height:1.45;color:#C3CBD8}
+  .bcell + .bcell{border-left:1px solid var(--line)}
+  .brow-head .bcell{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;
+  }
+  .btag{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    display:block;margin-bottom:6px;
+  }
+  .btag-yes{color:var(--green)}
+  .btag-no{color:var(--amber)}
+  .balance-note{margin-top:20px;font-size:16px;color:#C3CBD8}
+
+  /* ---------- LISTS ---------- */
+  .cols{display:grid;gap:26px;margin-top:30px}
+  @media(min-width:720px){.cols{grid-template-columns:1fr 1fr;gap:32px}}
+  .lst{list-style:none;margin-top:12px}
+  .lst li{
+    padding:9px 0 9px 20px;position:relative;font-size:16px;color:#C3CBD8;
+    border-bottom:1px dashed var(--line);
+  }
+  .lst li:last-child{border-bottom:0}
+  .lst li::before{
+    content:"";position:absolute;left:0;top:18px;width:7px;height:1px;background:var(--accent);
+  }
+  .fence{
+    margin-top:28px;background:var(--surface);border:1px solid var(--line);
+    border-left:2px solid var(--amber);border-radius:0 10px 10px 0;padding:18px 20px;
+    font-size:16px;color:#C3CBD8;
+  }
+
+  /* ---------- MODULES ---------- */
+  .mods{display:grid;gap:12px;margin-top:30px}
+  @media(min-width:640px){.mods{grid-template-columns:1fr 1fr}}
+  .mod{
+    --m:var(--accent);
+    position:relative;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;
+    transition:border-color .2s;
+  }
+  .mod::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--m);z-index:2;
+  }
+  .mod::after{
+    content:"";position:absolute;top:-40px;right:-40px;width:130px;height:130px;
+    border-radius:50%;background:var(--m);opacity:.10;filter:blur(28px);pointer-events:none;
+  }
+  .mod:hover{border-color:var(--m)}
+  .mod > summary{
+    padding:24px 46px 22px 22px;cursor:pointer;list-style:none;position:relative;
+  }
+  .mod > summary::-webkit-details-marker{display:none}
+  .mod > summary::after{
+    content:"";position:absolute;right:22px;top:34px;width:9px;height:9px;
+    border-right:1.5px solid var(--m);border-bottom:1.5px solid var(--m);
+    transform:rotate(45deg);transition:transform .2s;
+  }
+  .mod[open] > summary::after{transform:rotate(-135deg);top:37px}
+  .mod > summary:focus-visible{outline:2px solid var(--m);outline-offset:-3px}
+  .mod-name{
+    font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.01em;
+    margin-bottom:6px;color:var(--m);position:relative;
+  }
+  .mod p{font-size:15px;color:#C3CBD8;position:relative}
+  .mod-tag{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);display:block;margin-top:14px;position:relative;
+  }
+  .mod-more{padding:0 22px 22px;position:relative}
+  .mod-more ul{list-style:none;border-top:1px solid var(--line);padding-top:6px}
+  .mod-more li{
+    padding:10px 0 10px 18px;position:relative;font-size:15px;line-height:1.5;
+    color:#C3CBD8;border-bottom:1px dashed var(--line);
+  }
+  .mod-more li:last-child{border-bottom:0}
+  .mod-more li::before{
+    content:"";position:absolute;left:0;top:19px;width:7px;height:1px;background:var(--m);
+  }
+  .m-smjer{--m:#A78BFA}
+  .m-krug{--m:#F97316}
+  .m-proj{--m:#3B82F6}
+  .m-biz{--m:#5B6676}
+  .m-biz .mod-name{opacity:.75}
+  .mods-hint{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);margin-top:18px;display:block;
+  }
+
+  /* ---------- SHOTS ---------- */
+  .shots{display:grid;gap:16px;margin-top:30px}
+  @media(min-width:640px){.shots{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:960px){.shots{grid-template-columns:repeat(4,1fr)}}
+  .shot{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .shot-ph{
+    aspect-ratio:9/16;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(45deg,#141A23,#141A23 10px,#171E28 10px,#171E28 20px);
+    font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:12px;
+  }
+  .shot-cap{padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.4}
+
+  /* ---------- STORY ---------- */
+  .story p{max-width:62ch;color:#C3CBD8}
+  .sig{
+    margin-top:22px;font-family:var(--mono);font-size:12px;color:var(--muted);
+    letter-spacing:.06em;
+  }
+
+  /* ---------- PRICING ---------- */
+  .price-table{margin-top:30px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .prow{display:grid;grid-template-columns:1fr auto auto;gap:10px;border-bottom:1px solid var(--line);align-items:center}
+  .prow:last-child{border-bottom:0}
+  .prow-head{background:var(--surface-2)}
+  .pcell{padding:15px 14px;font-size:15px}
+  .pcell.num{font-family:var(--mono);text-align:right;white-space:nowrap;min-width:88px}
+  .prow-head .pcell{
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  }
+  .pname{font-weight:600;color:#fff}
+  .pdesc{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:2px}
+  .prow-best{background:rgba(59,130,246,.06)}
+  .prow-best .pcell.num{color:var(--accent);font-weight:500}
+  .yearly-note{margin-top:18px;font-size:16px;color:#C3CBD8}
+  .founding{
+    margin-top:22px;border:1px solid var(--accent);border-radius:10px;padding:20px;
+    background:rgba(59,130,246,.06);
+  }
+  .founding .eyebrow{color:var(--accent);margin-bottom:10px}
+  .founding p{font-size:16px;color:#C3CBD8}
+
+  /* ---------- FAQ ---------- */
+  .faq{margin-top:30px;border-top:1px solid var(--line)}
+  details{border-bottom:1px solid var(--line)}
+  summary{
+    padding:18px 30px 18px 0;cursor:pointer;list-style:none;position:relative;
+    font-weight:600;font-size:16px;color:#fff;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::after{
+    content:"+";position:absolute;right:4px;top:17px;color:var(--muted);
+    font-family:var(--mono);font-size:18px;
+  }
+  details[open] summary::after{content:"–"}
+  summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  details p{padding:0 0 18px;font-size:16px;color:#C3CBD8;max-width:64ch}
+
+  /* ---------- FOOT ---------- */
+  .final{text-align:left}
+  footer{border-top:1px solid var(--line);padding:36px 0 48px}
+  .foot-in{
+    display:flex;flex-wrap:wrap;gap:14px 26px;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:12px;color:var(--muted);
+  }
+  footer a{color:var(--muted);text-decoration:none;margin-right:18px}
+  footer a:hover{color:var(--text)}
+
+  /* ---------- MOTION ---------- */
+  .rise{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .rise.in{opacity:1;transform:none}
+  .memo-a{transition-delay:.05s}
+  .memo-b{transition-delay:.15s}
+  .record{transition-delay:.35s}
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .rise{opacity:1;transform:none;transition:none}
+    .memo-a,.memo-b{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="brand"><span class="brand-dot"></span>Centar</div>
+
+    <h1 class="rise">Jedan projekt.<br><span class="split">Dva odvojena sjećanja.</span></h1>
+    <p class="lede rise">Radovi se dogovaraju usmeno, mijenjaju u hodu i plaćaju na kraju — a jedini zapis su dvije glave koje pamte različito. Centar daje projektu ono što mu je oduvijek falilo: <strong>zajednički zapisnik koji obje strane vide isto.</strong></p>
+
+    <div class="memories">
+      <div class="memo memo-a rise">
+        <span class="memo-who">Izvođač pamti</span>
+        <p class="memo-text">„Utičnicu u dnevnom smo dogovorili na licu mjesta. <em>Rekao sam 66 €</em>, klimnuo je glavom. Odradio sam je isti dan."</p>
+      </div>
+      <div class="memo memo-b rise">
+        <span class="memo-who">Investitor pamti</span>
+        <p class="memo-text">„Spomenuo je nekakvu utičnicu dok smo hodali kroz stan. <em>Cijenu nije rekao.</em> Da jest, pitao bih koliko."</p>
+      </div>
+    </div>
+
+    <div class="versus rise">ISTI DOGOVOR</div>
+
+    <div class="record rise">
+      <div class="record-head">
+        <span class="id">Odluka #0042</span>
+        <span class="state">● Odobreno</span>
+      </div>
+      <div class="record-body">
+        <div class="rline">
+          <span class="ts">14.03. 09:12</span>
+          <span class="ev"><b>Izvođač:</b> prijedlog — dodatna utičnica u dnevnom <span class="price">+66,00 €</span></span>
+        </div>
+        <div class="rline">
+          <span class="ts">14.03. 09:12</span>
+          <span class="ev muted">Prilog: fotografija s gradilišta</span>
+        </div>
+        <div class="rline">
+          <span class="ts">14.03. 11:47</span>
+          <span class="ev"><b>Investitor:</b> prihvaćeno — 66,00 €</span>
+        </div>
+        <div class="rline">
+          <span class="ts">14.03. 11:47</span>
+          <span class="ev muted">Ugovoreno: 10.500,00 € → <span class="price">10.566,00 €</span></span>
+        </div>
+      </div>
+      <div class="record-foot">Zapisnik zaključan · potvrdile obje strane · PDF poslan objema</div>
+    </div>
+
+    <p class="hero-note rise">Ista minuta. Ista rečenica. Samo — zapisana.</p>
+
+    <div class="cta-row rise">
+      <a class="btn btn-primary" href="#racun">Otvori račun — 30 dana besplatno</a>
+      <a class="btn btn-ghost" href="#preuzmi">Preuzmi za Android</a>
+    </div>
+    <p class="cta-sub rise">Bez kartice. Bez obveze. Za izvođače i investitore.</p>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Problem</span>
+    <h2 class="rise">Projekti ne propadaju zbog loših ljudi.<br>Propadaju zato što ništa nije zapisano.</h2>
+    <p class="lede rise" style="margin-top:22px">Nijedna adaptacija ne ide točno po projektu. Uvijek dođe desetak izmjena kojih nema u ugovoru: druge pločice, dvije utičnice više, zid pomaknut za pola metra. Dogovore se usmeno — u prašini, između dva telefona, dok obojica žure.</p>
+    <p class="lede rise"><strong>Mjesecima kasnije obje strane pamte pošteno. I različito.</strong></p>
+
+    <div class="sides">
+      <div class="side rise">
+        <h3>Izvođač gubi</h3>
+        <p>Naplatu odrađenog posla. Tjedne na dokazivanju. Mirne noći pred primopredaju. Ponekad i klijenta koji bi ga preporučio.</p>
+      </div>
+      <div class="side rise">
+        <h3>Investitor gubi</h3>
+        <p>Kontrolu nad iznosom koji raste bez najave. Priliku da kaže „ne" prije nego što je posao izveden. Povjerenje u čovjeka kojeg je pustio u svoj dom.</p>
+      </div>
+    </div>
+
+    <p class="verdict rise">Isti uzrok. Dvije žrtve. Nula zlih namjera.</p>
+  </div>
+</section>
+
+<!-- ODLUKE -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Rješenje · Odluke</span>
+    <h2 class="rise">Svaka izmjena prolazi kroz isti postupak. Za oboje.</h2>
+    <p class="lede rise" style="margin-top:20px">Umjesto usmenog dogovora — kratak, jasan postupak koji traje minutu.</p>
+
+    <div class="steps">
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Prijedlog</h3>
+        <p>Izvođač opiše izmjenu, upiše cijenu, priloži fotografiju s gradilišta.</p>
+      </div></div>
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Odgovor</h3>
+        <p>Investitor prihvaća, odbija ili nudi svoju cijenu. Izvođač može jednom korigirati. Pregovor je zapisan, ne prepričan.</p>
+      </div></div>
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Potvrda</h3>
+        <p>Ako odluka sadrži cijenu, ugovorena vrijednost se nakon prihvaćanja sama <strong>uveća ili umanji</strong> za točno taj iznos. Izmjena može posao i pojeftiniti — ako se od nečega odustane, ugovor pada.</p>
+      </div></div>
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Nova faza</h3>
+        <p>Ako je izmjena dodatni posao s cijenom u plusu, Centar iz nje sam stvara novu fazu projekta — s upisanim iznosom prema investitoru.</p>
+      </div></div>
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Rok</h3>
+        <p>Investitor ima 24 sata i automatski podsjetnik. <strong>Bez njegove potvrde nema promjene ugovora ni nove faze</strong> — istek roka nije pristanak. Podsjetnik postoji da se ne zaboravi, ne da se izvrši pritisak.</p>
+      </div></div>
+      <div class="step rise"><span class="step-n"></span><div>
+        <h3>Zapisnik</h3>
+        <p>Na kraju: PDF s cijelim slijedom — tko, kada, što, po koliko. Objema stranama, na mail.</p>
+      </div></div>
+    </div>
+
+    <p class="lede rise" style="margin-top:30px">A ako se poslije dogovorite drugačije — <strong>poništenje, ali samo uz potvrdu obje strane.</strong> Novac se vrati, trag ostaje. Nijedna strana ne može sama izbrisati ono što se dogodilo.</p>
+
+    <div class="balance">
+      <div class="brow brow-head">
+        <div class="bcell">Izvođač</div>
+        <div class="bcell">Investitor</div>
+      </div>
+      <div class="brow">
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Dokaz da je izmjena dogovorena — i po kojoj cijeni.</div>
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Pravo da vidi cijenu <strong>prije</strong> nego posao nastane.</div>
+      </div>
+      <div class="brow">
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Naplatu bez dokazivanja i prepirke.</div>
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Popis svega na što je pristao, s datumima.</div>
+      </div>
+      <div class="brow">
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Rok — posao ne stoji na čekanju.</div>
+        <div class="bcell"><span class="btag btag-yes">Dobiva</span>Vrijeme za odluku, bez pritiska na licu mjesta.</div>
+      </div>
+      <div class="brow">
+        <div class="bcell"><span class="btag btag-no">Ne može</span>Naplatiti ono što nije potvrđeno.</div>
+        <div class="bcell"><span class="btag btag-no">Ne može</span>Poreći ono što je potvrdio.</div>
+      </div>
+      <div class="brow">
+        <div class="bcell"><span class="btag btag-no">Ne može</span>Sam poništiti ni obrisati dogovor.</div>
+        <div class="bcell"><span class="btag btag-no">Ne može</span>Sam poništiti ni obrisati dogovor.</div>
+      </div>
+    </div>
+    <p class="balance-note rise">Uloge nisu iste — jedan predlaže, drugi odlučuje. Ali zaštita je ista: <strong>nitko ne može sam promijeniti, poništiti ni izbrisati ono što su obje strane potvrdile.</strong></p>
+
+    <p class="callout rise">Ovo nije alat jedne strane protiv druge. To je zajednički zapisnik — i vrijedi točno zato što štiti oboje.</p>
+  </div>
+</section>
+
+<!-- PROJEKTI -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Projekti</span>
+    <h2 class="rise">Dok traje posao, obje strane vide iste dogovorene iznose i isti napredak.</h2>
+    <p class="lede rise" style="margin-top:20px">Centar vodi projekt od prvog dana: ugovorenu vrijednost, stvarni trošak, faze, ljude i sate.</p>
+
+    <div class="cols">
+      <div class="rise">
+        <h3>Izvođaču daje</h3>
+        <ul class="lst">
+          <li>Prognozu po trenutnom tempu — predviđeni finalni trošak i marža, dok se još stigne reagirati</li>
+          <li>Troškove s lica mjesta — uslikaj račun, iznos i trgovac se upisuju sami</li>
+          <li>Sate i ljude — tko je bio, koliko dugo, koliko to stvarno košta</li>
+        </ul>
+      </div>
+      <div class="rise">
+        <h3>Investitoru daje</h3>
+        <ul class="lst">
+          <li>Napredak po fazama — što je gotovo, što je u tijeku</li>
+          <li>Ugovorenu vrijednost koja se mijenja samo kroz ono što je potvrdio</li>
+          <li>Kraj bez iznenađenja — svaki iznos vidio je kad je nastao</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="fence rise"><strong>Ono što investitor ne vidi:</strong> tvoju maržu, nabavne cijene, satnice radnika ni bilo koji drugi interni podatak. Zajednički je zapisnik dogovora — ne tvoja knjiga.</p>
+
+    <p class="verdict rise">Marža se ne računa na kraju. Do kraja je i za jedne i za druge kasno.</p>
+  </div>
+</section>
+
+<!-- MODULI -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Moduli</span>
+    <h2 class="rise">Posao i kuća, na istom mjestu — ali odvojeno.</h2>
+    <div class="mods">
+      <details class="mod m-smjer rise">
+        <summary>
+          <div class="mod-name">Smjer</div>
+          <p>Osobne financije. Gdje odlazi novac, koliko ostaje, računi koji se sami prepoznaju iz izvoda banke.</p>
+          <span class="mod-tag">za tebe</span>
+        </summary>
+        <div class="mod-more">
+          <ul>
+            <li>Uslikaj račun — iznos, trgovac i datum upisuju se sami</li>
+            <li>Uvezi PDF izvod iz banke — transakcije uđu same, duplikati se prepoznaju</li>
+            <li>Krediti i ponavljajući troškovi prepoznaju se iz tvoje povijesti</li>
+            <li>Mjesečni pregled po kategorijama — gdje odlazi novac i koliko ostaje</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="mod m-krug rise">
+        <summary>
+          <div class="mod-name">Krug</div>
+          <p>Zajednički troškovi s partnerom ili cimerom. Tko je koliko dao, tko koliko duguje — bez svađe.</p>
+          <span class="mod-tag">za dvoje i više</span>
+        </summary>
+        <div class="mod-more">
+          <ul>
+            <li>Tri odnosa: partner, su-roditelj, cimer — svaki sa svojim pravilima</li>
+            <li>Podjela po dogovorenom omjeru ili po stvarnim primanjima</li>
+            <li>Poravnanje — tko koliko duguje, izračunato, ne procijenjeno</li>
+            <li>U podjelu ulaze samo zajednički troškovi; nitko ne ulazi ni izlazi bez pristanka</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="mod m-proj rise">
+        <summary>
+          <div class="mod-name">Projekti</div>
+          <p>Vođenje radova od prvog dana: ugovoreno, troškovi, faze, ljudi. Uključuje Odluke.</p>
+          <span class="mod-tag">za gradilište</span>
+        </summary>
+        <div class="mod-more">
+          <ul>
+            <li>Ugovoreno, potrošeno, naplaćeno i marža — na jednom ekranu</li>
+            <li>Prognoza po trenutnom tempu — predviđeni finalni trošak, dok se još stigne reagirati</li>
+            <li>Faze s napretkom i rokovima; tim i sati — tko je bio i koliko to košta</li>
+            <li>Odluke: svaka izmjena zapisana, potvrđena s obje strane, s PDF zapisnikom</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="mod m-biz rise">
+        <summary>
+          <div class="mod-name">Biznis</div>
+          <p>Poslovni sloj iznad svega ostalog — za obrte i tvrtke.</p>
+          <span class="mod-tag">u pripremi</span>
+        </summary>
+        <div class="mod-more">
+          <ul>
+            <li>Još nema cijenu jer još nije gotov.</li>
+            <li>Kad bude, javit ćemo — bez tihog uključivanja i naplate.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+    <span class="mods-hint rise">↑ dodirni modul za više</span>
+  </div>
+</section>
+
+<!-- SCREENSHOTS -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Kako izgleda</span>
+    <h2 class="rise">Iz aplikacije, ne iz mašte.</h2>
+    <div class="shots">
+      <div class="shot rise"><div class="shot-ph">screenshot 1<br>odluka u tijeku</div><div class="shot-cap">Prijedlog poslan. Investitor ima 24 h.</div></div>
+      <div class="shot rise"><div class="shot-ph">screenshot 2<br>prognoza projekta</div><div class="shot-cap">Predviđena marža 24,1 % — dok se još stigne reagirati.</div></div>
+      <div class="shot rise"><div class="shot-ph">screenshot 3<br>skeniranje računa</div><div class="shot-cap">Uslikaj. Iznos, trgovac i datum upisuju se sami.</div></div>
+      <div class="shot rise"><div class="shot-ph">screenshot 4<br>PDF odluke</div><div class="shot-cap">Zapisnik koji dobivaju obje strane.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIČA -->
+<section class="story">
+  <div class="wrap">
+    <span class="eyebrow rise">Priča</span>
+    <h2 class="rise">Centar nije nastao iz prezentacije.<br>Nastao je na gradilištu.</h2>
+    <div class="rise" style="margin-top:24px">
+      <p>Iza Centra stoji izvođač s trinaest godina u adaptacijama i renovacijama. Ključ u ruke, od rušenja do primopredaje.</p>
+      <p>Napravio sam ga jer mi je trebao. Godinama sam vodio projekte po bilježnicama i porukama i plaćao izmjene iz svog džepa — ne zato što je itko bio nepošten, nego zato što nitko nije imao ništa u ruci. Pamćenje protiv pamćenja.</p>
+      <p>Vidio sam i drugu stranu: investitora koji na kraju dobije račun veći nego što je očekivao i nema načina provjeriti kako se do toga došlo. Njegova je ljutnja jednako opravdana kao i moja.</p>
+      <p><strong>Zato Centar nije napravljen da netko pobijedi. Napravljen je da se ne mora prepirati.</strong></p>
+      <p class="sig">— izvođač, 13 godina na gradilištu</p>
+    </div>
+  </div>
+</section>
+
+<!-- CJENIK -->
+<section id="racun">
+  <div class="wrap">
+    <span class="eyebrow rise">Cjenik</span>
+    <h2 class="rise">Cijene su ovdje. Bez „kontaktirajte nas".</h2>
+
+    <div class="price-table">
+      <div class="prow prow-head">
+        <div class="pcell">Modul</div>
+        <div class="pcell num">Mjesečno</div>
+        <div class="pcell num">Godišnje</div>
+      </div>
+      <div class="prow">
+        <div class="pcell"><span class="pname">Smjer</span><span class="pdesc">Osobne financije</span></div>
+        <div class="pcell num">5,99 €</div>
+        <div class="pcell num">59,90 €</div>
+      </div>
+      <div class="prow">
+        <div class="pcell"><span class="pname">Krug</span><span class="pdesc">Zajednički troškovi</span></div>
+        <div class="pcell num">9,99 €</div>
+        <div class="pcell num">99,90 €</div>
+      </div>
+      <div class="prow">
+        <div class="pcell"><span class="pname">Projekti</span><span class="pdesc">Vođenje radova + Odluke</span></div>
+        <div class="pcell num">21,99 €</div>
+        <div class="pcell num">219,90 €</div>
+      </div>
+      <div class="prow prow-best">
+        <div class="pcell"><span class="pname">Komplet</span><span class="pdesc">Sve troje</span></div>
+        <div class="pcell num">25,99 €</div>
+        <div class="pcell num">259,90 €</div>
+      </div>
+    </div>
+    <p class="yearly-note rise"><strong>Godišnje = platiš deset mjeseci, dobiješ dvanaest.</strong></p>
+
+    <div class="founding rise">
+      <span class="eyebrow">Founding — prvih 100</span>
+      <p>Prvih 100 godišnjih pretplata dobiva <strong>zaključan popust.</strong> Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket.</p>
+    </div>
+
+    <div class="cta-row rise">
+      <a class="btn btn-primary" href="#">Otvori račun — 30 dana besplatno</a>
+      <a class="btn btn-ghost" href="#preuzmi">Preuzmi za Android</a>
+    </div>
+    <p class="cta-sub rise">30 dana besplatno, bez kartice. Otkažeš kad hoćeš — pretplata vrijedi do kraja plaćenog razdoblja.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow rise">Česta pitanja</span>
+    <h2 class="rise">Ono što svi pitaju.</h2>
+    <div class="faq rise">
+      <details>
+        <summary>Mora li investitor imati aplikaciju?</summary>
+        <p>Da — pozoveš ga, otvori račun besplatno i <strong>ne plaća ništa.</strong> Bez obje strane nema potvrde, a bez potvrde nema ni zapisnika. Upravo zato Odluke i vrijede.</p>
+      </details>
+      <details>
+        <summary>Zašto bi investitor uopće pristao na ovo?</summary>
+        <p>Jer njemu ide u korist jednako kao izvođaču: vidi svaku cijenu prije nego što posao nastane, ništa se ne događa bez njegove potvrde, i na kraju ima popis svega na što je pristao. Većini investitora je to prvi put da uopće imaju kontrolu nad izmjenama.</p>
+      </details>
+      <details>
+        <summary>Vrijedi li PDF odluke pravno?</summary>
+        <p>To nije ugovor i ne zamjenjuje ga. Ali je uredan, vremenski označen zapis koji su obje strane potvrdile u aplikaciji — neusporedivo više od poruke i sjećanja.</p>
+      </details>
+      <details>
+        <summary>Što ako investitor ne odgovori u 24 sata?</summary>
+        <p>Ništa se ne mijenja. Odluka ostaje na čekanju, obje strane dobiju podsjetnik i oznaku da je rok istekao. <strong>Šutnja nije pristanak</strong> — bez potvrde nema izmjene ugovora ni nove faze.</p>
+      </details>
+      <details>
+        <summary>Može li itko naknadno promijeniti ili obrisati odluku?</summary>
+        <p>Ne sam. Poništenje traži potvrdu obje strane, a i tada trag ostaje zapisan. To pravilo vrijedi jednako za izvođača i za investitora.</p>
+      </details>
+      <details>
+        <summary>Radi li na iPhoneu?</summary>
+        <p>Za sada Android. Aplikacija radi i u pregledniku, na svakom uređaju.</p>
+      </details>
+      <details>
+        <summary>Što s mojim podacima?</summary>
+        <p>Tvoji su. Izvezeš ih kad hoćeš, obrišeš račun kad hoćeš.</p>
+      </details>
+      <details>
+        <summary>Mogu li koristiti samo Projekte, bez ostatka?</summary>
+        <p>Možeš. Svaki modul stoji sam.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="final" id="preuzmi">
+  <div class="wrap">
+    <h2 class="rise">Izmjena dolazi. Na svakom projektu, svaki tjedan.</h2>
+    <p class="lede rise" style="margin-top:18px">Pitanje je samo hoće li za pola godine obje strane gledati u isti zapis — ili u dva različita sjećanja.</p>
+    <p class="verdict rise" style="margin-top:30px">Odluke su razlog zbog kojeg ćeš otvoriti Centar danas.<br>Projekti, Smjer i Krug razlog su zbog kojeg ćeš ga koristiti svaki dan.</p>
+    <div class="cta-row rise">
+      <a class="btn btn-primary" href="#">Otvori račun — 30 dana besplatno</a>
+      <a class="btn btn-ghost" href="#">Preuzmi za Android</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <a href="/privacy-policy">Privatnost</a>
+      <a href="/terms-of-service">Uvjeti</a>
+      <a href="/refund-policy">Povrat</a>
+    </div>
+    <div>Centar · Tactura j.d.o.o.</div>
+  </div>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.rise').forEach((el) => io.observe(el));
+</script>
+
+</body>
+</html>
