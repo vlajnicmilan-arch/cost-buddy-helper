@@ -74,20 +74,13 @@ VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema pozajmica, vrati: []
 Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable", "confidence": "high"}]`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: "Ti si analitičar bankovnih transakcija. Odgovaraj isključivo JSON arrayem." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.1,
-      }),
+    const response = await callGemini({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        { role: "system", content: "Ti si analitičar bankovnih transakcija. Odgovaraj isključivo JSON arrayem." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.1,
     });
 
     if (!response.ok) {
