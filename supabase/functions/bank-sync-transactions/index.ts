@@ -193,17 +193,13 @@ Deno.serve(async (req) => {
       if (/^[\d\s\-\/]+$/.test(description.trim())) return null;
       const prompt = `You are a transaction categorizer. Given a bank transaction description, return the single most appropriate category.\n\nAvailable categories: ${allCategories.join(", ")}\n\nRules:\n- Supermarkets (Konzum, Lidl, Kaufland, Spar, Plodine, Interspar, Tommy, Studenac, Billa, dm) → groceries\n- Restaurants, cafes, bakeries, fast food, bars → food\n- Gas stations, parking, tolls, public transit → transport\n- Pharmacy, doctor, hospital → health\n- Electricity, water, gas, internet, phone → utilities\n- Netflix, Spotify, YouTube, HBO → subscriptions\n- Rent, mortgage → rent\n- ATM withdrawal, cash → other\n- Bank fees → bills\n- If unsure → other\n\nReturn ONLY the category name, nothing else.`;
       try {
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
-            messages: [
-              { role: "system", content: prompt },
-              { role: "user", content: `Description: ${description}` },
-            ],
-            max_tokens: 20,
-          }),
+        const resp = await callGemini({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: prompt },
+            { role: "user", content: `Description: ${description}` },
+          ],
+          max_tokens: 20,
         });
         if (!resp.ok) {
           if (resp.status === 429 || resp.status === 402) return null;
