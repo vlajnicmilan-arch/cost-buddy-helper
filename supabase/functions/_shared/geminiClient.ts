@@ -16,6 +16,8 @@
 // -----------------------------------------------------------------------------
 // Config
 // -----------------------------------------------------------------------------
+declare const Deno: { env: { get(k: string): string | undefined } };
+
 
 const USE_DIRECT = (Deno.env.get('USE_DIRECT_GEMINI') ?? 'true').toLowerCase() === 'true';
 const GOOGLE_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
