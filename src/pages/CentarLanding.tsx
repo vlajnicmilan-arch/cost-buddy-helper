@@ -26,8 +26,31 @@ export default function CentarLanding() {
     // 1. Boja pozadine cijelog viewporta = boja landinga, da nema bijelog
     //    bljeska iznad/ispod wrappera prije nego CSS izračuna visinu.
     document.body.classList.add("centar-landing-body");
+
+    // 2. IBM Plex fontovi (kao u originalnom /centar/index.html <head>).
+    //    Ubacuju se u document.head samo dok je landing mountiran, da ne
+    //    kontaminiraju /app rute.
+    const fontLinks: HTMLLinkElement[] = [];
+    const addLink = (attrs: Record<string, string>) => {
+      const l = document.createElement("link");
+      Object.entries(attrs).forEach(([k, v]) => l.setAttribute(k, v));
+      document.head.appendChild(l);
+      fontLinks.push(l);
+    };
+    addLink({ rel: "preconnect", href: "https://fonts.googleapis.com" });
+    addLink({
+      rel: "preconnect",
+      href: "https://fonts.gstatic.com",
+      crossorigin: "",
+    });
+    addLink({
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+    });
+
     return () => {
       document.body.classList.remove("centar-landing-body");
+      fontLinks.forEach((l) => l.remove());
     };
   }, []);
 
