@@ -40,21 +40,15 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this image of a payment card and identify the card network/type. 
+    const response = await callGemini({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Analyze this image of a payment card and identify the card network/type. 
 
 Look for:
 - Card network logos (Visa, Mastercard, American Express, Maestro, Diners Club, Discover, Revolut, N26)
@@ -66,19 +60,18 @@ IMPORTANT: Only look at the FRONT of the card. Do not analyze any numbers or sen
 Respond with ONLY the card type name in a single word or two (e.g., "Visa", "Mastercard", "American Express", "Maestro", "Diners Club", "Discover", "Revolut", "N26", or "Unknown" if you cannot determine).
 
 Do not include any other text or explanation.`
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageBase64
-                }
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageBase64
               }
-            ]
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 50
-      })
+            }
+          ]
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 50
     });
 
     if (!response.ok) {
