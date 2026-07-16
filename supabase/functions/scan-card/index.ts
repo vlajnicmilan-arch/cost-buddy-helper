@@ -7,6 +7,7 @@ import {
   isInternalSkipQuota,
   corsHeaders,
 } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
