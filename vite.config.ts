@@ -28,16 +28,16 @@ export default defineConfig(({ mode }) => ({
     // file-first and doesn't need this.
     {
       name: "serve-static-centar",
-      configureServer(server) {
-        server.middlewares.use((req, _res, next) => {
+      configureServer(server: any) {
+        server.middlewares.use((req: any, _res: any, next: any) => {
           if (req.url === "/centar" || req.url === "/centar/") {
             req.url = "/centar/index.html";
           }
           next();
         });
       },
-      configurePreviewServer(server) {
-        server.middlewares.use((req, _res, next) => {
+      configurePreviewServer(server: any) {
+        server.middlewares.use((req: any, _res: any, next: any) => {
           if (req.url === "/centar" || req.url === "/centar/") {
             req.url = "/centar/index.html";
           }
