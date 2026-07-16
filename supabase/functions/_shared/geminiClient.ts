@@ -143,40 +143,51 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
   const geminiBody = openAIToGemini(body);
   const isStream = body.stream === true;
   const endpoint = isStream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-  const url = `${GOOGLE_BASE}/${model}:${endpoint}`;
 
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
+  const doFetch = async (mdl: string): Promise<Response> => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(`${GOOGLE_BASE}/${mdl}:${endpoint}`, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': GOOGLE_KEY!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(t);
+    }
+  };
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'x-goog-api-key': GOOGLE_KEY!,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(geminiBody),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(t);
+  let upstream = await doFetch(model);
+  let effectiveModel = model;
+
+  // Automatski fallback SAMO kad je primarni model odbijen (404/not available).
+  // Ne aktiviraj na 429, 400, 5xx. Retry se izvede najviše jednom.
+  if (!upstream.ok) {
+    const errText = await upstream.clone().text();
+    const fb = FALLBACK_MODEL_MAP[model];
+    if (fb && shouldFallbackOnError(upstream.status, errText)) {
+      console.error(
+        `[geminiClient] FALLBACK_USED: primarni "${model}" odbijen (${upstream.status}), korišten "${fb}". ` +
+        `Mapiran iz "${body.model}". Ažuriraj DIRECT_MODEL_MAP.`,
+      );
+      logModelFallback(model, fb, body.model);
+      upstream = await doFetch(fb);
+      effectiveModel = fb;
+    }
   }
 
   if (!upstream.ok) {
     const errText = await upstream.text();
-    // Poseban trag za "model no longer available" — inače se vidi samo kroz
-    // "ne radi sken" u UI-u. Bilo bi glupo opet gubiti vrijeme na to.
     if (upstream.status === 404 && /no longer available/i.test(errText)) {
       console.error(
-        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${model}" (mapiran iz "${body.model}"). ` +
+        `[geminiClient] MODEL_NOT_AVAILABLE: Google odbio model "${effectiveModel}" (mapiran iz "${body.model}"). ` +
         `Ažuriraj DIRECT_MODEL_MAP u supabase/functions/_shared/geminiClient.ts.`,
       );
     } else {
       console.error('[geminiClient] Google API error:', upstream.status, errText.slice(0, 500));
     }
-    // Prosljeđujemo status kod (429, 400, 500...) da pozivatelji njihova postojeća
-    // rukovanja (429/402) i dalje rade. 402 ne postoji na Googlu.
     return new Response(
       JSON.stringify({ error: `Google Gemini API error ${upstream.status}`, detail: errText.slice(0, 1000) }),
       { status: upstream.status, headers: { 'Content-Type': 'application/json' } },
@@ -197,6 +208,36 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+/**
+ * Fire-and-forget zapis fallback događaja u `app_diagnostics_logs`.
+ * Ne smije ni u kojem slučaju baciti — koristi service role za direct insert.
+ */
+function logModelFallback(primary: string, fallback: string, requestedModel: string): void {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    void fetch(`${url}/rest/v1/app_diagnostics_logs`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify([{
+        event: 'ai_model_fallback',
+        severity: 'warning',
+        session_id: `edge-${Date.now()}`,
+        details: { primary, fallback, requested_model: requestedModel },
+      }]),
+    }).catch(() => { /* ignore */ });
+  } catch {
+    /* ignore */
+  }
+}
+
 
 // -----------------------------------------------------------------------------
 // OpenAI → Gemini prijevod
