@@ -30,8 +30,11 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
  * nisu ovdje — automatski padaju na gateway put i ne mijenjaju se.
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
-  'google/gemini-2.5-flash': 'gemini-2.5-flash',
-  'google/gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',
+  // NAPOMENA: `gemini-2.5-flash` više nije dostupan novim Google API ključevima
+  // (404 NOT_FOUND), pa mapiramo na `gemini-flash-latest` — Google alias koji
+  // uvijek pokazuje na najnoviji stabilni Flash model.
+  'google/gemini-2.5-flash': 'gemini-flash-latest',
+  'google/gemini-2.5-flash-lite': 'gemini-flash-lite-latest',
   'google/gemini-2.5-pro': 'gemini-2.5-pro',
   'google/gemini-2.0-flash': 'gemini-2.0-flash',
   'google/gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
