@@ -289,6 +289,16 @@ export const ProjectFullScreenView = ({
     }
   }, [open, project?.id, isWorkerOnly]);
 
+  // Investor viewer clamp — ako je aktivni tab van dozvoljenog skupa
+  // (overview/phases/decisions), prisilno vrati na overview. Sprječava da
+  // initialTab prop (npr. iz notifikacije) otvori Budget ili Transakcije
+  // investitoru.
+  useEffect(() => {
+    if (!isInvestorViewer) return;
+    const allowed = new Set(['overview', 'phases', 'milestones', 'timeline', 'decisions']);
+    if (!allowed.has(activeTab)) setActiveTab('overview');
+  }, [isInvestorViewer, activeTab]);
+
   // Restore taba iz projectViewState pri open-u istog projekta (npr. nakon
   // remounta uslijed kamera roundtripa na Androidu). initialTab prop ima
   // najviši prioritet — ako je zadan, restore preskačemo.
