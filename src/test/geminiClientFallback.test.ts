@@ -49,6 +49,6 @@ describe('shouldFallbackOnError', () => {
     const { shouldFallbackOnError } = await import(
       '../../supabase/functions/_shared/geminiClient.ts'
     );
-    expect(shouldFallbackOnError(404, 'user not found')).toBe(false);
+    expect(shouldFallbackOnError(404, 'route does not exist')).toBe(false);
   });
 });
