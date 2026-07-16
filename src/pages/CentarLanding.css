@@ -300,3 +300,9 @@
 @media(prefers-reduced-motion:reduce){.centar-landing{scroll-behavior:auto}.centar-landing .rise{opacity:1;transform:none;transition:none}.centar-landing .memo-a, .centar-landing .memo-b{transform:none}
   }
 
+
+/* Body wrapper: kada je landing aktivan, cijeli viewport dobiva istu boju
+   pozadine kao landing (spriječava bijeli bljesak iznad/ispod .centar-landing
+   dok se stranica ne rasporedi). */
+body.centar-landing-body{background:#0A0D12;margin:0}
+.centar-landing{min-height:100dvh;display:block}
