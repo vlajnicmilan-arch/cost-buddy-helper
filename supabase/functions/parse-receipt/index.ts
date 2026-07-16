@@ -51,23 +51,8 @@ function prepareImagePart(imageBase64: string) {
   };
 }
 
-async function callAiGateway(apiKey: string, payload: Record<string, unknown>, timeoutMs = 45_000) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
+async function callAiGateway(_apiKey: string, payload: Record<string, unknown>, timeoutMs = 45_000) {
+  return await callGemini(payload as any, { timeoutMs });
 }
 
 serve(async (req) => {
