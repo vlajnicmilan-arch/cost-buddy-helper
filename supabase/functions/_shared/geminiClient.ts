@@ -38,14 +38,15 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
  * s računa), pa NE koristimo aliase u produkciji — pinamo konkretnu verziju
  * i mijenjamo je svjesno kroz code review.
  *
- * Modeli koji NE POSTOJE na direktnom API-ju (npr. `google/gemini-3-flash-preview`
- * koji koristi financial-assistant) namjerno nisu ovdje — automatski padaju
- * na Lovable gateway put i ne mijenjaju se.
+ * `gemini-3-flash-preview` je Milan 16.7. odobrio za direktni put (provjereno
+ * curl-om na Google API — 200 OK). Koristi ga financial-assistant (streaming).
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
   'google/gemini-2.5-flash': 'gemini-3.5-flash',
   'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',
   'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',
+  // Milan odobrio 16.7.2026 — jedini model koji financial-assistant koristi.
+  'google/gemini-3-flash-preview': 'gemini-3-flash-preview',
 };
 
 // -----------------------------------------------------------------------------

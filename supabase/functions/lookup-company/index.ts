@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,21 +112,15 @@ function buildCompanyData(data: any): any {
 }
 
 // AI fallback for entities not in court register
-async function extractWithAI(query: string, lovableApiKey: string): Promise<any> {
+async function extractWithAI(query: string, _lovableApiKey: string): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content: `Ti si AI asistent koji pomaže pronaći podatke o hrvatskim tvrtkama i obrtima.
+  const response = await callGemini({
+    model: "google/gemini-2.5-flash",
+    messages: [
+      {
+        role: "system",
+        content: `Ti si AI asistent koji pomaže pronaći podatke o hrvatskim tvrtkama i obrtima.
 
 KRITIČNA PRAVILA:
 1. Ako NISI 100% SIGURAN koji je točan naziv tvrtke za dani OIB - vrati found=false.
@@ -136,39 +131,38 @@ KRITIČNA PRAVILA:
 6. Ako korisnik traži po OIB-u i nisi siguran koja tvrtka ima taj OIB, OBAVEZNO vrati found=false.
 
 Korisnik traži prema: ${isOIB ? "OIB broju" : "nazivu tvrtke"}`,
-        },
-        { role: "user", content: `Pronađi podatke za: ${query.trim()}` },
-      ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "return_company_data",
-          description: "Return structured company data. Return found=false if not sure.",
-          parameters: {
-            type: "object",
-            properties: {
-              company_name: { type: "string" },
-              oib: { type: "string" },
-              address: { type: "string" },
-              city: { type: "string" },
-              postal_code: { type: "string" },
-              country: { type: "string" },
-              legal_form: { type: "string" },
-              mbs: { type: "string" },
-              court_registry: { type: "string" },
-              email: { type: "string" },
-              phone: { type: "string" },
-              website: { type: "string" },
-              found: { type: "boolean" },
-              source: { type: "string" },
-            },
-            required: ["found", "company_name", "source"],
-            additionalProperties: false,
+      },
+      { role: "user", content: `Pronađi podatke za: ${query.trim()}` },
+    ],
+    tools: [{
+      type: "function",
+      function: {
+        name: "return_company_data",
+        description: "Return structured company data. Return found=false if not sure.",
+        parameters: {
+          type: "object",
+          properties: {
+            company_name: { type: "string" },
+            oib: { type: "string" },
+            address: { type: "string" },
+            city: { type: "string" },
+            postal_code: { type: "string" },
+            country: { type: "string" },
+            legal_form: { type: "string" },
+            mbs: { type: "string" },
+            court_registry: { type: "string" },
+            email: { type: "string" },
+            phone: { type: "string" },
+            website: { type: "string" },
+            found: { type: "boolean" },
+            source: { type: "string" },
           },
+          required: ["found", "company_name", "source"],
+          additionalProperties: false,
         },
-      }],
-      tool_choice: { type: "function", function: { name: "return_company_data" } },
-    }),
+      },
+    }],
+    tool_choice: { type: "function", function: { name: "return_company_data" } },
   });
 
   if (!response.ok) {
