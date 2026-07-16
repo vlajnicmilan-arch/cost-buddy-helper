@@ -754,5 +754,44 @@
   document.querySelectorAll('.rise').forEach((el) => io.observe(el));
 </script>
 
+<script>
+  // APK download — koristi isti manifest kao aplikacija (public/version.json),
+  // fallback na Supabase Storage manifest, pa na signup ako ništa ne uspije.
+  (function () {
+    var FALLBACK = 'https://fzalxjretvtvokiotvkf.supabase.co/storage/v1/object/public/public-assets/releases/version.json';
+    var apkUrl = null;
+
+    function resolveApkUrl() {
+      return fetch('/version.json', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .catch(function () {
+          return fetch(FALLBACK, { cache: 'no-store' }).then(function (r) { return r.json(); });
+        })
+        .then(function (j) { return (j && j.apkUrl) ? j.apkUrl : null; });
+    }
+
+    resolveApkUrl().then(function (url) {
+      if (!url) return;
+      apkUrl = url;
+      document.querySelectorAll('a.js-apk').forEach(function (a) {
+        a.setAttribute('href', url);
+      });
+    }).catch(function () { /* fallback klik handler ispod */ });
+
+    document.querySelectorAll('a.js-apk').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (apkUrl) {
+          window.open(apkUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          resolveApkUrl().then(function (url) {
+            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+          });
+        }
+      });
+    });
+  })();
+</script>
+
 </body>
 </html>
