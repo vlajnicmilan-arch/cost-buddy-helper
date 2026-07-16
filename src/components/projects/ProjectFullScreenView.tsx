@@ -601,21 +601,37 @@ export const ProjectFullScreenView = ({
                   const teamTab: MobileTabDef = { key: 'team', label: t('projects.projectTeam', 'Tim projekta'), icon: Users };
                   const decisionsTab: MobileTabDef = { key: 'decisions', label: t('projects.decisions.tab', 'Odluke'), icon: Scale };
 
-                  const primary: MobileTabDef[] = [
-                    { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
-                    { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
-                    ...(canSeeTab('milestones') || canSeeTab('timeline')
-                      ? [{
-                          key: 'phases',
-                          label: labels.milestonesLabel,
-                          icon: Target,
-                          badge: milestones.length > 0 ? (
-                            <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
-                          ) : undefined,
-                        } as MobileTabDef]
-                      : []),
-                    canSeeDecisions ? decisionsTab : teamTab,
-                  ];
+                  // Investor: samo Pregled, Faze, Odluke — bez overflow "Više" izbornika.
+                  const primary: MobileTabDef[] = isInvestorViewer
+                    ? [
+                        { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
+                        ...(canSeeTab('milestones') || canSeeTab('timeline')
+                          ? [{
+                              key: 'phases',
+                              label: labels.milestonesLabel,
+                              icon: Target,
+                              badge: milestones.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        decisionsTab,
+                      ]
+                    : [
+                        { key: 'overview', label: t('projects.overview', 'Pregled'), icon: TrendingUp },
+                        { key: 'budget', label: t('projects.budgetTab.label', 'Budžet'), icon: Wallet },
+                        ...(canSeeTab('milestones') || canSeeTab('timeline')
+                          ? [{
+                              key: 'phases',
+                              label: labels.milestonesLabel,
+                              icon: Target,
+                              badge: milestones.length > 0 ? (
+                                <Badge variant="secondary" className="h-4 px-1 text-[10px] leading-none">{completedMilestones}/{milestones.length}</Badge>
+                              ) : undefined,
+                            } as MobileTabDef]
+                          : []),
+                        canSeeDecisions ? decisionsTab : teamTab,
+                      ];
 
                   const overflow: MobileTabDef[] = [
                     ...(canSeeDecisions ? [teamTab] : []),
