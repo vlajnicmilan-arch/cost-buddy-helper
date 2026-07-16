@@ -91,7 +91,7 @@ const TermsOfService = () => {
             <h2 className="text-xl font-semibold mb-3">{t('tos.s8.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">{t('tos.s8.p1')}</p>
             <div className="mt-3 p-4 bg-muted rounded-lg">
-              <p className="font-medium">Centar</p>
+              <p className="font-medium">Tactura j.d.o.o. (pružatelj usluge Centar)</p>
               <p className="text-muted-foreground">Email: legal@vmbalance.app</p>
             </div>
           </section>
