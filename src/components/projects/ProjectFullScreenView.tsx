@@ -832,7 +832,8 @@ export const ProjectFullScreenView = ({
                   )}
                 </TabsContent>
 
-                {/* Budget tab — extracted KPI panel; available in both Lite and Full mode */}
+                {/* Budget tab — STRICT: skriveno za investitora (marža, potrošeno, alarmi, povijest budžeta). */}
+                {!isInvestorViewer && (
                 <TabsContent value="budget" className="m-0">
                   <ProjectBudgetTab
                     project={project}
@@ -851,6 +852,7 @@ export const ProjectFullScreenView = ({
                     onRequestEdit={onRequestEdit ? () => onRequestEdit(project) : undefined}
                   />
                 </TabsContent>
+                )}
 
 
                 {(canSeeTab('milestones') || canSeeTab('timeline')) && (
