@@ -581,8 +581,9 @@ export const ProjectFullScreenView = ({
                   Overview hijerarhija (#4) dolazi u NEXT WAVE. */}
 
 
-              {/* Forecast section — shown whenever funding is visible and a budget exists. */}
-              {canSeeTab('funding') && budget > 0 && (
+              {/* Forecast section — shown whenever funding is visible and a budget exists.
+                  Investor NIKAD ne dobiva Forecast (otkriva projekciju finalnog troška). */}
+              {!isInvestorViewer && canSeeTab('funding') && budget > 0 && (
                 <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
               )}
 
