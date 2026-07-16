@@ -183,6 +183,11 @@ export const ProjectFullScreenView = ({
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwner = !!project && !!user && project.user_id === user.id;
+  // Investor je "stranka u ugovoru", NE partner u poslovanju. Prisilna minimalna
+  // vidljivost: Pregled (bez interne ekonomike), Faze (bez budget/spent) i Odluke.
+  // Server-side RLS trenutno NE razdvaja investor rolu — vidi izvještaj (opseg
+  // popravka `is_project_member` + policy filtri). Do tada UI je jedini gate.
+  const isInvestorViewer = currentUserRole === 'investor' && !isOwner;
   const accessLevel = useProjectAccessLevel(
     project ? { user_id: project.user_id, isParticipant: !isOwner } : null
   );
@@ -200,16 +205,18 @@ export const ProjectFullScreenView = ({
     project?.business_profile_id === activeBusinessProfileId ||
     (project?.member_context === 'business' && project?.member_business_profile_id === activeBusinessProfileId)
   );
-  const canSeeWorkers = hasAccess('workforce') && !isWorkerOnly;
-  const canSeeCollaborators = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
-  // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view
-  const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly;
+  const canSeeWorkers = hasAccess('workforce') && !isWorkerOnly && !isInvestorViewer;
+  const canSeeCollaborators = isBusinessView && hasAccess('collaborators') && !isWorkerOnly && !isInvestorViewer;
+  // Business-only UI bits (P&L card, budget history) — kept gated to Business tier in business view.
+  // Investor NIKAD ne dobiva P&L / EarnedValue / Forecast — otkrivaju maržu i interni trošak.
+  const canAccessBusinessTabs = isBusinessView && hasAccess('collaborators') && !isWorkerOnly && !isInvestorViewer;
 
   // Determine if current user can see a tab — delegated to pure helper (1:1 with prior inline logic).
   const canSeeTab = (tabKey: string) =>
     resolveProjectTabVisibility({
       tabKey,
       isWorkerOnly,
+      isInvestorViewer,
       isManager,
       isTabVisible,
       canSeeWorkers,
