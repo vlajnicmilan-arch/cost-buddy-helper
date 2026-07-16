@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -194,13 +195,7 @@ serve(async (req) => {
     // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
     const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const aiResponse = await callGemini({
         model: modelId,
         messages: [
           {
@@ -402,7 +397,6 @@ METAPODACI:
           }
         ],
         tool_choice: { type: 'function', function: { name: 'extract_transactions' } }
-      })
     });
 
     if (!aiResponse.ok) {

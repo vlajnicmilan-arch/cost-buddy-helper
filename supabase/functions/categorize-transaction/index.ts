@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -68,20 +69,13 @@ Rules:
 
 Return ONLY the category name, nothing else.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: prompt },
-          { role: "user", content: `Description: ${description || "N/A"}\nMerchant: ${merchant_name || "N/A"}${itemsContext}` },
-        ],
-        max_tokens: 20,
-      }),
+    const response = await callGemini({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        { role: "system", content: prompt },
+        { role: "user", content: `Description: ${description || "N/A"}\nMerchant: ${merchant_name || "N/A"}${itemsContext}` },
+      ],
+      max_tokens: 20,
     });
 
     if (!response.ok) {

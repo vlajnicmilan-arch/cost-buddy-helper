@@ -3,6 +3,7 @@
 // Auth: validates JWT in code (verify_jwt = false in config).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -425,40 +426,33 @@ Deno.serve(async (req) => {
 
     const userPrompt = `Generate ${top.length} insight card titles. For each input fact, output a one-sentence card title in ${langName} that summarizes the fact naturally.\n\nFacts (in Croatian, translate to ${langName}):\n${top.map((c, i) => `${i + 1}. [${c.type}] ${c.factsHr}`).join("\n")}`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "emit_insights",
-            description: "Emit insight card titles in order",
-            parameters: {
-              type: "object",
-              properties: {
-                titles: {
-                  type: "array",
-                  items: { type: "string" },
-                  minItems: top.length,
-                  maxItems: top.length,
-                },
+    const aiResp = await callGemini({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "emit_insights",
+          description: "Emit insight card titles in order",
+          parameters: {
+            type: "object",
+            properties: {
+              titles: {
+                type: "array",
+                items: { type: "string" },
+                minItems: top.length,
+                maxItems: top.length,
               },
-              required: ["titles"],
-              additionalProperties: false,
             },
+            required: ["titles"],
+            additionalProperties: false,
           },
-        }],
-        tool_choice: { type: "function", function: { name: "emit_insights" } },
-      }),
+        },
+      }],
+      tool_choice: { type: "function", function: { name: "emit_insights" } },
     });
 
     if (!aiResp.ok) {

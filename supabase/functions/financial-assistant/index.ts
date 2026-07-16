@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { captureEdgeError } from "../_shared/sentry.ts";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
+import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1452,14 +1453,7 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         aiBody.stream = true;
       }
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(aiBody),
-      });
+      const response = await callGemini(aiBody);
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -1579,17 +1573,10 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         });
       }
 
-      const finalResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: currentMessages,
-          stream: true,
-        }),
+      const finalResponse = await callGemini({
+        model: "google/gemini-3-flash-preview",
+        messages: currentMessages,
+        stream: true,
       });
 
       // Tee for saving
