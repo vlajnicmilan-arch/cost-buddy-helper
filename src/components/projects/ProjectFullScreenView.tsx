@@ -941,9 +941,11 @@ export const ProjectFullScreenView = ({
                 )}
 
 
+                {!isInvestorViewer && (
                 <TabsContent value="activity" className="m-0">
                   <ProjectActivityTab projectId={project.id} />
                 </TabsContent>
+                )}
 
                 {canSeeDecisions && (
                 <TabsContent value="decisions" className="m-0">
