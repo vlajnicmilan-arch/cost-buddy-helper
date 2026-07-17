@@ -56,7 +56,7 @@ const TermsOfService = () => {
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.free')}</p>
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.founding')}</p>
             <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.billing')}</p>
-            <p className="text-muted-foreground leading-relaxed mt-2 text-xs italic">{t('tos.s3.legacy')}</p>
+            
           </section>
 
           <section>
