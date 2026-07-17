@@ -3915,17 +3915,17 @@
       "yearly": "Jährlich = zehn Monate zahlen, zwölf bekommen.",
       "biznis": "Biznis ist ein separates Modul und noch nicht verfügbar; Preis und Bedingungen werden vor dem Start veröffentlicht.",
       "trial": "Testphase: Neue Nutzer erhalten 30 Tage kostenlose Nutzung ohne Karteneingabe. Wird in diesem Zeitraum kein Abonnement aktiviert, erfolgt keine Abbuchung.",
-      "founding": "Founding — erste 100: Die ersten 100 Jahresabonnements erhalten einen fest zugesicherten Rabatt. Egal wie stark Centar später im Preis steigt, dein Rabatt bleibt — solange dein Abo ohne Unterbrechung verlängert wird. Gilt auch, wenn du später auf ein größeres Paket wechselst.",
+      "founding": "Founding — erste 100: Die ersten 100 Jahresabonnements erhalten einen fest zugesicherten prozentualen Rabatt. Egal wie stark Centar später im Preis steigt, dein Rabatt bleibt — solange dein Abo ohne Unterbrechung verlängert wird. Gilt auch, wenn du später auf ein größeres Paket wechselst. Bei Unterbrechung des Abos verfällt der Rabatt; bei erneutem Abschluss gilt der dann aktuelle Preis.",
       "billing": "Abrechnung: Abonnements werden über Paddle.com Market Ltd. als Merchant of Record abgewickelt; Paddle stellt Rechnungen aus und führt Erstattungen durch. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich), bis sie gekündigt werden.",
-      "legacy": "Hinweis für Bestandskunden: Zuvor über Stripe abgeschlossene Abonnements bleiben zu ihren ursprünglichen Bedingungen gültig, bis sie gekündigt oder zu Paddle migriert werden. Neukunden schließen ausschließlich über Paddle ab."
+      "legacy": "Hinweis für Bestandskunden: Zuvor über Stripe abgeschlossene Abonnements bleiben zu ihren ursprünglichen Bedingungen gültig, bis der Nutzer sie kündigt. Neukunden schließen ausschließlich über Paddle ab."
     },
     "s4": {
       "title": "4. Kündigung und Erstattung",
-      "p1": "Sie können Ihr Abonnement jederzeit über die App-Einstellungen oder über Paddle kündigen. Nach der Kündigung:",
-      "l1": "Das Abonnement bleibt bis zum Ende des laufenden bezahlten Zeitraums gültig — ohne anteilige Rückerstattung (Proration).",
-      "l2": "Nach Ablauf des bezahlten Zeitraums wird der Zugriff auf die Module gesperrt; Ihre Daten bleiben gespeichert.",
-      "l3": "Sie können Ihre Daten jederzeit über die Backup-Funktion exportieren.",
-      "p2": "Für den ersten Kauf eines Abonnements gilt eine 14-tägige Geld-zurück-Garantie ohne Nachfragen. Die vollständigen Erstattungsbedingungen (einschließlich des Ablaufs über Paddle und Bedingungen für Verlängerungen) sind in der Erstattungsrichtlinie beschrieben."
+      "p1": "Sie können Ihr Abonnement jederzeit über die App-Einstellungen oder über Paddle kündigen. Nach Kündigung oder Wechsel auf ein kleineres Paket:",
+      "l1": "Das Abonnement (bzw. das größere Paket) bleibt bis zum Ende des laufenden bezahlten Zeitraums gültig — ohne anteilige Rückerstattung (keine Proration).",
+      "l2": "Ihre Daten bleiben gespeichert und Sie können sie jederzeit über die Backup-Funktion exportieren.",
+      "l3": "",
+      "p2": "Für den ersten Kauf eines Abonnements gilt eine 14-tägige Geld-zurück-Garantie ohne Nachfragen. Die vollständigen Erstattungsbedingungen (Ablauf über Paddle und Bedingungen für Verlängerungen) sind in der Erstattungsrichtlinie beschrieben."
     },
     "s5": {
       "title": "5. Haftungsbeschränkung",
