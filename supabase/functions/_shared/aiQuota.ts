@@ -17,20 +17,30 @@ export const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Tier = "free" | "pro" | "business";
+type Tier = "free" | "trial" | "pro" | "business";
 
-// Per-route daily limits. null = unlimited.
+// Per-route daily limits. Trial = ograničena istraga (ne pune Pro kvote).
+// Monthly kapica se primjenjuje samo na 'trial' — pro/business = neograničeno.
 const QUOTAS: Record<string, Record<Tier, number>> = {
-  "parse-receipt":         { free: 10, pro: 100, business: 500 },
-  "parse-pdf-statement":   { free: 3,  pro: 30,  business: 150 },
-  "financial-assistant":   { free: 5,  pro: 50,  business: 200 },
-  "generate-ai-insights":  { free: 2,  pro: 5,   business: 10 },
-  "scan-card":             { free: 5,  pro: 20,  business: 50 },
-  "analyze-document":      { free: 5,  pro: 30,  business: 100 },
-  "categorize-transaction":{ free: 30, pro: 200, business: 1000 },
-  "detect-loans":          { free: 5,  pro: 30,  business: 100 },
-  "match-recurring":       { free: 5,  pro: 30,  business: 100 },
-  "parse-standup":         { free: 5,  pro: 30,  business: 100 },
+  "parse-receipt":         { free: 10, trial: 15, pro: 100, business: 500 },
+  "parse-pdf-statement":   { free: 3,  trial: 5,  pro: 30,  business: 150 },
+  "financial-assistant":   { free: 5,  trial: 15, pro: 50,  business: 200 },
+  "generate-ai-insights":  { free: 2,  trial: 3,  pro: 5,   business: 10 },
+  "scan-card":             { free: 5,  trial: 10, pro: 20,  business: 50 },
+  "analyze-document":      { free: 5,  trial: 10, pro: 30,  business: 100 },
+  "categorize-transaction":{ free: 30, trial: 20, pro: 200, business: 1000 },
+  "detect-loans":          { free: 5,  trial: 10, pro: 30,  business: 100 },
+  "match-recurring":       { free: 5,  trial: 10, pro: 30,  business: 100 },
+  "parse-standup":         { free: 5,  trial: 10, pro: 30,  business: 100 },
+};
+
+// Mjesečni ukupni cap po korisniku (kroz sve rute). null = neograničeno.
+// Milan (17.07.2026): trial = 150 poziva / 30 dana ukupno.
+const MONTHLY_LIMITS: Record<Tier, number | null> = {
+  free: null,
+  trial: 150,
+  pro: null,
+  business: null,
 };
 
 export interface AuthResult {
@@ -70,44 +80,46 @@ export async function requireAuth(req: Request): Promise<AuthResult | Response> 
   return { userId: data.claims.sub as string, supabase, authHeader };
 }
 
+/**
+ * FAZA 5 — tier resolucija ide preko has_entitlement (jedini izvor istine).
+ *   business = biznis modul aktivan (Komplet/business_legacy/admin biznis)
+ *   pro      = smjer aktivan iz plaćenog/legacy/admin izvora
+ *   trial    = smjer aktivan iz source='trial'
+ *   free     = ništa aktivno
+ */
 async function resolveTier(supabase: SupabaseClient, userId: string): Promise<Tier> {
   try {
-    // 1) Admin-assigned / Stripe-synced tier in user_subscriptions (source of truth — mirrors check-subscription)
-    const { data: sub } = await supabase
-      .from("user_subscriptions")
-      .select("tier, expires_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (sub && sub.tier && sub.tier !== "free") {
-      const notExpired = !sub.expires_at || new Date(sub.expires_at) > new Date();
-      if (notExpired) {
-        const t = String(sub.tier).toLowerCase();
-        if (t.includes("business")) return "business";
-        if (t.includes("pro") || t.includes("premium") || t.includes("lifetime")) return "pro";
-      }
+    const [{ data: hasBiznis }, { data: hasSmjer }] = await Promise.all([
+      supabase.rpc("has_entitlement", { _user_id: userId, _module: "biznis" }),
+      supabase.rpc("has_entitlement", { _user_id: userId, _module: "smjer" }),
+    ]);
+
+    if (hasBiznis === true) return "business";
+    if (hasSmjer === true) {
+      // razlikuj trial od plaćenog: pogledaj source aktivnog smjer retka.
+      const { data: rows } = await supabase
+        .from("user_entitlements")
+        .select("source")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .in("module", ["smjer", "pro_legacy", "business_legacy"]);
+      const sources = (rows || []).map((r: any) => r.source);
+      const paidLike = sources.some((s: string) =>
+        s === "paddle" || s === "stripe_legacy" || s === "lifetime" || s === "admin_grant" || s === "migration"
+      );
+      return paidLike ? "pro" : "trial";
     }
-
-    // 2) Lifetime Pro one-time purchase
-    const { data: lifetime } = await supabase
-      .from("lifetime_purchases")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (lifetime) return "pro";
-
     return "free";
-  } catch {
+  } catch (e) {
+    console.warn("[aiQuota] resolveTier failed, defaulting free:", (e as Error).message);
     return "free";
   }
 }
 
 /**
- * Atomically increments the per-user daily counter for `route` and returns a
- * 429 Response if the tier's limit has been exceeded. Returns null on success.
- *
- * Uses SECURITY DEFINER RPC `increment_ai_usage`. Failures (e.g. transient DB
- * errors) fail-open so AI features keep working — the workspace budget cap is
- * the ultimate hard stop.
+ * Atomically increments per-user counters (daily per-route + monthly total) and
+ * returns a 429 Response if either the daily or the monthly cap was exceeded.
+ * Returns null on success. Failures fail-open.
  */
 export async function checkAiQuota(
   supabase: SupabaseClient,
@@ -115,31 +127,35 @@ export async function checkAiQuota(
   route: string,
 ): Promise<Response | null> {
   const limits = QUOTAS[route];
-  if (!limits) return null; // route not gated
+  if (!limits) return null;
 
   const tier = await resolveTier(supabase, userId);
-  const limit = limits[tier];
+  const dailyLimit = limits[tier];
+  const monthlyLimit = MONTHLY_LIMITS[tier];
 
-  // Use service-role client so RLS / SECURITY DEFINER works with the real auth.uid().
-  // We rely on auth.uid() inside the function — so reuse the user-scoped client.
-  const { data, error } = await supabase.rpc("increment_ai_usage", {
+  const { data, error } = await supabase.rpc("increment_ai_usage_v2", {
     p_route: route,
-    p_limit: limit,
+    p_daily_limit: dailyLimit,
+    p_monthly_limit: monthlyLimit,
   });
 
   if (error) {
-    console.warn("[aiQuota] increment failed, failing open:", error.message);
+    console.warn("[aiQuota] increment_v2 failed, failing open:", error.message);
     return null;
   }
 
   const row = Array.isArray(data) ? data[0] : data;
   if (row && row.allowed === false) {
+    const reason = row.daily_allowed === false ? "daily_ai_limit_reached" : "monthly_ai_limit_reached";
     return new Response(
       JSON.stringify({
-        error: "daily_ai_limit_reached",
+        error: reason,
         route,
-        limit,
         tier,
+        daily_limit: dailyLimit,
+        monthly_limit: monthlyLimit,
+        daily_count: row.daily_count,
+        monthly_count: row.monthly_count,
       }),
       {
         status: 429,
