@@ -9,10 +9,8 @@ export interface PurgePolicy {
   sourceTag: PurgeSourceTag;
   /** Allow deleting krugs that still have other members. Default false. */
   allowKrugDestruction?: boolean;
-  /** Allow deleting lifetime_purchases / paid records. Default false. */
+  /** Allow deleting paid records. Default false. */
   deletePaidRecords?: boolean;
-  /** Cancel active Stripe subscriptions for this email. Default true. */
-  cancelStripeSubscription?: boolean;
 }
 
 export interface PurgeInput {
@@ -38,7 +36,6 @@ export interface PurgeResult {
   /** Per-bucket file removal counts. */
   storagePurged: Record<string, number>;
   invitationsByEmail: Record<string, number>;
-  stripeSubscriptionCancelled: boolean;
   authDeleted: boolean;
   residualScan: ResidualScanReport;
   errors: Array<{ phase: string; target: string; message: string }>;

@@ -79,8 +79,8 @@ const PrivacyPolicy = () => {
               <div>
                 <h3 className="font-medium mb-2">2.4 Podaci o naplati (samo plaćeni planovi)</h3>
                 <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-                  <li>Stripe customer ID, status pretplate, datum isteka</li>
-                  <li>Podaci o kartici <strong>obrađuje isključivo Stripe</strong> — mi ih nikad ne vidimo niti pohranjujemo</li>
+                  <li>Paddle customer ID, status pretplate, datum isteka, adresa za PDV</li>
+                  <li>Podaci o kartici <strong>obrađuje isključivo Paddle</strong> kao trgovac na papiru (Merchant of Record) — mi ih nikad ne vidimo niti pohranjujemo</li>
                 </ul>
               </div>
             </div>
@@ -129,15 +129,15 @@ const PrivacyPolicy = () => {
                 <p className="text-sm text-muted-foreground"><strong>Pravna osnova prijenosa u SAD:</strong> EU-US Data Privacy Framework + Standardne ugovorne klauzule (SCC)</p>
               </div>
 
-              {/* Stripe */}
+              {/* Paddle */}
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
-                  <h3 className="font-semibold">Stripe Payments Europe Ltd.</h3>
-                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">Irska (EU) / SAD</span>
+                  <h3 className="font-semibold">Paddle.com Market Ltd.</h3>
+                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">UK / EU / SAD</span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2"><strong>Svrha:</strong> Obrada plaćanja pretplata (Pro/Business plan)</p>
-                <p className="text-sm text-muted-foreground mb-2"><strong>Podaci:</strong> Email, ime, podaci o kartici (obrađuje isključivo Stripe — mi ne vidimo broj kartice)</p>
-                <p className="text-sm text-muted-foreground"><strong>DPA:</strong> <a href="https://stripe.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">stripe.com/legal/dpa</a> · PCI DSS Level 1 · DPF certified</p>
+                <p className="text-sm text-muted-foreground mb-2"><strong>Svrha:</strong> Obrada plaćanja pretplata kao <strong>Merchant of Record</strong> (Paddle je trgovac koji izdaje račun i provodi povrate)</p>
+                <p className="text-sm text-muted-foreground mb-2"><strong>Podaci:</strong> Email, ime, adresa za PDV, podaci o kartici (obrađuje isključivo Paddle — mi ne vidimo broj kartice)</p>
+                <p className="text-sm text-muted-foreground"><strong>DPA:</strong> <a href="https://www.paddle.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">paddle.com/legal/dpa</a> · PCI DSS Level 1</p>
               </div>
 
               {/* Firebase FCM */}
@@ -234,7 +234,7 @@ const PrivacyPolicy = () => {
                     <td className="p-3">11 godina (Zakon o računovodstvu RH)</td>
                   </tr>
                   <tr className="border-t border-border">
-                    <td className="p-3">Podaci o naplati (Stripe)</td>
+                    <td className="p-3">Podaci o naplati (Paddle)</td>
                     <td className="p-3">10 godina (porezni zakoni)</td>
                   </tr>
                 </tbody>

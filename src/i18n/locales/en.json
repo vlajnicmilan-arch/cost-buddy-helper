@@ -262,7 +262,7 @@
       ]
     },
     "footer": {
-      "secure": "Secure payment via Stripe. Cancel anytime.",
+      "secure": "Secure payment via Paddle. Cancel anytime.",
       "signInOther": "Sign in with a different account",
       "securePaddle": "Secure payment via Paddle. Cancel anytime."
     },
@@ -3978,8 +3978,7 @@
       "trial": "Trial: new users get 30 days of free use with no card required. If no subscription is activated within that period, no charge is made.",
       "free": "Free tier (after trial ends without a subscription): access with a limit of 30 transactions per month, 1 wallet and 1 budget. Modules (Smjer, Krug, Projekti, Biznis) are not included in the Free tier. Data is not deleted: everything the user previously entered — including transactions, wallets, budgets and modules above the Free limits — remains visible in \"read and export\" mode. The user can view and export (backup) this data, but cannot create, edit or delete it until the relevant subscription is activated.",
       "founding": "Founding — first 100: The first 100 annual subscriptions receive a locked-in percentage discount. No matter how much Centar costs later, your discount stays — as long as your subscription renews without interruption. It also carries over if you later upgrade to a larger package. Interrupting the subscription cancels the discount; on re-subscription the then-current price applies.",
-      "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel.",
-      "legacy": "Note for existing users: subscriptions previously contracted via Stripe remain in force under their original terms until the user cancels them. New users contract exclusively via Paddle."
+      "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel."
     },
     "s4": {
       "title": "4. Cancellation & Refunds",
@@ -4401,7 +4400,7 @@
       "backup": "In cloud mode data is backed up automatically. In local mode, use \"Export all data\" from Settings for a manual JSON backup you can later import on another device.",
       "dataSecurity": "All data is encrypted in transit (HTTPS/TLS) and at rest. Access is restricted by RLS policies at the database level — only you (and explicitly invited members) can see your data. Hosted in the EU.",
       "plans": "Free (basic features with limits), Pro (unlimited transactions, projects and budgets) and Business (business mode, multiple company profiles, workers & timesheets, advanced reporting). Details in Settings → Subscription.",
-      "cancelSubscription": "Go to Settings → Subscription → \"Manage subscription\". This opens the Stripe Customer Portal where you can cancel or pause in two clicks. You stay on Pro until the end of the paid period, then drop to Free — your data stays intact.",
+      "cancelSubscription": "You can cancel your subscription at any time — instructions arrive with every invoice by email. You stay on Pro until the end of the paid period, then drop to Free — your data stays intact.",
       "refund": "Email us at support@vmbalance.com with a reason within 14 days of payment. We review every request individually under EU consumer law.",
       "changePlan": "From Settings → Subscription tap your desired plan. Upgrades are immediate with prorated billing; downgrades take effect at the end of the current billing period.",
       "gdprDelete": "Settings → Account → \"Delete account\". A 30-day grace period follows — you'll receive a confirmation email, and signing in within 30 days automatically cancels deletion. After the grace period everything is permanently deleted: all transactions, projects, budgets, documents, settings and auth account. The action is irreversible.",

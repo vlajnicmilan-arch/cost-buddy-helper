@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star, Crown, Sparkles } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star } from 'lucide-react';
 import cardsImage from '@/assets/cards-floating.webp';
 import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
 import mockupBudget from '@/assets/app-mockup-budget.webp';
@@ -35,33 +33,8 @@ const testimonials = [
 ];
 
 export const LandingBelowFold = ({ t, goToSignup }: LandingBelowFoldProps) => {
-  const [lifetime, setLifetime] = useState<{ remaining: number; sold: number; max: number } | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke('get-lifetime-availability');
-        if (alive && data && typeof data.remaining === 'number') {
-          setLifetime({
-            remaining: data.remaining,
-            sold: data.sold ?? 0,
-            max: data.max ?? data.total ?? 200,
-          });
-        }
-      } catch (err) {
-        console.warn('Lifetime availability fetch failed:', err);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
-
-  const lifetimeSoldOut = lifetime?.remaining === 0;
-  const remainingLabel = lifetime
-    ? t('landing.pricing.lifetime.remaining').replace('{n}', String(lifetime.remaining))
-    : '';
-
   return (
+
   <>
     <section className="py-20 px-4 overflow-hidden">
       <div className="max-w-6xl mx-auto">
@@ -136,78 +109,9 @@ export const LandingBelowFold = ({ t, goToSignup }: LandingBelowFoldProps) => {
           ))}
         </div>
 
-        {/* ====== Pro Lifetime — Founding Members banner ====== */}
-        <div className="mt-10">
-          <article className="relative overflow-hidden rounded-3xl border-2 border-amber-500/50 bg-gradient-to-br from-amber-50/80 via-card to-card dark:from-amber-950/30 dark:via-card dark:to-card p-8 md:p-10 shadow-2xl shadow-amber-500/10">
-            <div className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-gradient-to-br from-amber-400/30 to-amber-600/10 blur-3xl" aria-hidden="true" />
+        {/* Pro Lifetime / Founding Members widget removed with Stripe purge (Milan 28.8.2026).
+            New "Founding" is a locked-in discount for the first 100 yearly subscribers — see Terms §3. */}
 
-            <div className="relative grid md:grid-cols-[1fr_auto] gap-8 items-center">
-              <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold mb-4">
-                  <Sparkles className="w-3 h-3" />
-                  {t('landing.pricing.lifetime.badge')}
-                </span>
-
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-                    <Crown className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-foreground">{t('landing.pricing.lifetime.name')}</h3>
-                    <p className="text-sm text-muted-foreground">{t('landing.pricing.lifetime.tagline')}</p>
-                  </div>
-                </div>
-
-                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-4">
-                  💡 {t('landing.pricing.lifetime.discount')}
-                </p>
-
-                <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 mb-5">
-                  {[1, 2, 3, 4].map((i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                      <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                      {t(`landing.pricing.lifetime.f${i}`)}
-                    </li>
-                  ))}
-                </ul>
-
-                {lifetime && (
-                  <div className="max-w-md">
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <span className="font-semibold text-foreground">
-                        {lifetimeSoldOut ? t('landing.pricing.lifetime.soldOut') : remainingLabel}
-                      </span>
-                      <span className="text-muted-foreground">{lifetime.sold} / {lifetime.max}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-amber-500/15 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-700"
-                        style={{ width: `${Math.min(100, (lifetime.sold / lifetime.max) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="text-center md:text-right md:border-l md:border-amber-500/20 md:pl-8 shrink-0">
-                <div className="mb-4">
-                  <div className="text-5xl md:text-6xl font-extrabold text-foreground tracking-tight">
-                    {t('landing.pricing.lifetime.price')}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">{t('landing.pricing.lifetime.oneTime')}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={goToSignup}
-                  disabled={lifetimeSoldOut}
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none w-full md:w-auto"
-                >
-                  {lifetimeSoldOut ? t('landing.pricing.lifetime.soldOut') : t('landing.pricing.lifetime.cta')}
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
       </div>
     </section>
 

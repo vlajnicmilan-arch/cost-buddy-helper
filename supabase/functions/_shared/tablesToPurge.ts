@@ -193,8 +193,9 @@ export const STORAGE_BUCKETS: readonly string[] = [
 
 // ---------------------------------------------------------------------------
 // Conditionally purged — only with policy.deletePaidRecords
+// (currently empty — Stripe/lifetime tables were removed with the Paddle switch)
 // ---------------------------------------------------------------------------
-export const PAID_RECORDS_TABLES: readonly string[] = ["lifetime_purchases"];
+export const PAID_RECORDS_TABLES: readonly string[] = [];
 
 // ---------------------------------------------------------------------------
 // INTENTIONALLY KEPT — audit / financial trail. Not deleted.
@@ -202,8 +203,6 @@ export const PAID_RECORDS_TABLES: readonly string[] = ["lifetime_purchases"];
 export const INTENTIONALLY_KEPT: readonly { table: string; reason: string }[] = [
   { table: "account_deletion_log", reason: "GDPR audit (90 days); email is anonymized in-place" },
   { table: "admin_module_grants", reason: "Admin action audit (granted_by/revoked_by trail)" },
-  { table: "subscription_migration_log", reason: "Financial migration audit" },
-  { table: "lifetime_purchases", reason: "Financial record; purged only with policy.deletePaidRecords" },
 ];
 
 // ---------------------------------------------------------------------------

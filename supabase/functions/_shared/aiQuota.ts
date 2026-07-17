@@ -6,7 +6,7 @@
 //   2) checkAiQuota(...)     → atomically increments per-user/per-route daily counter
 //                              and returns a 429 Response if the tier limit was exceeded.
 //
-// Tier resolution: reads `subscribers` (Stripe-driven) and falls back to 'free'.
+// Tier resolution: reads `user_entitlements` via has_entitlement RPC.
 // Free / Pro / Business limits are defined per route below — tune without redeploy
 // by editing this file.
 
@@ -105,7 +105,7 @@ async function resolveTier(supabase: SupabaseClient, userId: string): Promise<Ti
         .in("module", ["smjer", "pro_legacy", "business_legacy"]);
       const sources = (rows || []).map((r: any) => r.source);
       const paidLike = sources.some((s: string) =>
-        s === "paddle" || s === "stripe_legacy" || s === "lifetime" || s === "admin_grant" || s === "migration"
+        s === "paddle" || s === "admin_grant" || s === "migration"
       );
       return paidLike ? "pro" : "trial";
     }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CreditCard } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionMigrationPanel } from '@/components/admin/SubscriptionMigrationPanel';
+
 import { ModuleAccessOverview, type DrilldownIntent } from './access/ModuleAccessOverview';
 import { RecentOverrideActivity } from './access/RecentOverrideActivity';
 import type { AppUser } from './types';
@@ -106,8 +106,7 @@ export const AccessTab = ({
       {/* 3. Nedavna override aktivnost */}
       <RecentOverrideActivity />
 
-      {/* Migracija pretplatnika (postojeća funkcionalnost, neutralan smještaj) */}
-      <SubscriptionMigrationPanel />
+      {/* SubscriptionMigrationPanel removed with Stripe purge (Milan 28.8.2026) */}
 
       <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
         {t(
