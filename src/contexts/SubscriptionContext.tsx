@@ -204,5 +204,4 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     </SubscriptionContext.Provider>
   );
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _unused_daysUntil = daysUntil; // kept for future use
+
