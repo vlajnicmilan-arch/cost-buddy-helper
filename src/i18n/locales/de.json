@@ -3907,20 +3907,25 @@
     },
     "s3": {
       "title": "3. Abonnements und Zahlungen",
-      "p1": "Die App bietet drei Stufen:",
-      "free": "Begrenzt auf 30 Transaktionen/Monat, 1 Wallet, 1 Budget",
-      "pro": "Unbegrenzte Transaktionen, erweiterte Funktionen, Prioritäts-Support",
-      "business": "Alles aus Pro + Geschäftsmodule, Rechnungsstellung, Inventar",
-      "p2": "Neue Benutzer erhalten eine 30-tägige kostenlose Testphase mit vollem Zugang zu allen Funktionen. Nach Ablauf der Testphase wird der Zugang auf die Free-Stufe beschränkt, es sei denn, Sie aktivieren ein Abonnement.",
-      "p3": "Zahlungen werden über Stripe abgewickelt. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich). Jahrespläne beinhalten 17% Rabatt."
+      "p1": "Centar wird pro Modul abgerechnet. Preise:",
+      "mSmjer": "persönliche Finanzen — 5,99 €/Mon oder 59,90 €/Jahr",
+      "mKrug": "gemeinsame Ausgaben — 9,99 €/Mon oder 99,90 €/Jahr",
+      "mProjekti": "Bauleitung + Entscheidungen — 21,99 €/Mon oder 219,90 €/Jahr",
+      "mKomplet": "Smjer + Krug + Projekti — 25,99 €/Mon oder 259,90 €/Jahr",
+      "yearly": "Jährlich = zehn Monate zahlen, zwölf bekommen.",
+      "biznis": "Biznis ist ein separates Modul und noch nicht verfügbar; Preis und Bedingungen werden vor dem Start veröffentlicht.",
+      "trial": "Testphase: Neue Nutzer erhalten 30 Tage kostenlose Nutzung ohne Karteneingabe. Wird in diesem Zeitraum kein Abonnement aktiviert, erfolgt keine Abbuchung.",
+      "founding": "Founding — erste 100: Die ersten 100 Jahresabonnements erhalten einen fest zugesicherten Rabatt. Egal wie stark Centar später im Preis steigt, dein Rabatt bleibt — solange dein Abo ohne Unterbrechung verlängert wird. Gilt auch, wenn du später auf ein größeres Paket wechselst.",
+      "billing": "Abrechnung: Abonnements werden über Paddle.com Market Ltd. als Merchant of Record abgewickelt; Paddle stellt Rechnungen aus und führt Erstattungen durch. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich), bis sie gekündigt werden.",
+      "legacy": "Hinweis für Bestandskunden: Zuvor über Stripe abgeschlossene Abonnements bleiben zu ihren ursprünglichen Bedingungen gültig, bis sie gekündigt oder zu Paddle migriert werden. Neukunden schließen ausschließlich über Paddle ab."
     },
     "s4": {
       "title": "4. Kündigung und Erstattung",
-      "p1": "Sie können Ihr Abonnement jederzeit über die App-Einstellungen kündigen. Nach der Kündigung:",
-      "l1": "Der Zugang zu Premium-Funktionen bleibt bis zum Ende des bezahlten Zeitraums bestehen",
-      "l2": "Ihre Daten bleiben gespeichert und auf der Free-Stufe zugänglich",
-      "l3": "Sie können alle Daten über die Backup-Funktion exportieren",
-      "p2": "Gemäß EU-Gesetzgebung haben Sie das Recht auf Erstattung innerhalb von 14 Tagen nach Beginn eines Abonnements, sofern Sie den Dienst nicht wesentlich genutzt haben. Kontaktieren Sie uns per E-Mail für Erstattungen."
+      "p1": "Sie können Ihr Abonnement jederzeit über die App-Einstellungen oder über Paddle kündigen. Nach der Kündigung:",
+      "l1": "Das Abonnement bleibt bis zum Ende des laufenden bezahlten Zeitraums gültig — ohne anteilige Rückerstattung (Proration).",
+      "l2": "Nach Ablauf des bezahlten Zeitraums wird der Zugriff auf die Module gesperrt; Ihre Daten bleiben gespeichert.",
+      "l3": "Sie können Ihre Daten jederzeit über die Backup-Funktion exportieren.",
+      "p2": "Für den ersten Kauf eines Abonnements gilt eine 14-tägige Geld-zurück-Garantie ohne Nachfragen. Die vollständigen Erstattungsbedingungen (einschließlich des Ablaufs über Paddle und Bedingungen für Verlängerungen) sind in der Erstattungsrichtlinie beschrieben."
     },
     "s5": {
       "title": "5. Haftungsbeschränkung",
