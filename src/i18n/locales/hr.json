@@ -3913,20 +3913,25 @@
     },
     "s3": {
       "title": "3. Pretplate i plaćanje",
-      "p1": "Aplikacija nudi tri razine korištenja:",
-      "free": "Ograničeno na 30 transakcija mjesečno, 1 novčanik, 1 budžet",
-      "pro": "Neograničene transakcije, napredne značajke, prioritetna podrška",
-      "business": "Sve iz Pro plana + poslovni moduli, fakturiranje, inventar",
-      "p2": "Novi korisnici dobivaju 30-dnevni besplatni probni period s pristupom svim značajkama. Nakon isteka probnog perioda, pristup se ograničava na Free razinu osim ako ne aktivirate pretplatu.",
-      "p3": "Plaćanje se obrađuje putem Stripe platforme. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje). Godišnji planovi uključuju 17% popusta."
+      "p1": "Centar se naplaćuje po modulima. Cijene su:",
+      "mSmjer": "osobne financije — 5,99 €/mj ili 59,90 €/god",
+      "mKrug": "zajednički troškovi — 9,99 €/mj ili 99,90 €/god",
+      "mProjekti": "vođenje radova + Odluke — 21,99 €/mj ili 219,90 €/god",
+      "mKomplet": "Smjer + Krug + Projekti — 25,99 €/mj ili 259,90 €/god",
+      "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
+      "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
+      "trial": "Probno razdoblje: novi korisnici dobivaju 30 dana besplatnog korištenja bez unosa kartice. Ako se u tom roku ne aktivira pretplata, naplata se ne pokreće.",
+      "founding": "Founding — prvih 100: Prvih 100 godišnjih pretplata dobiva zaključan popust. Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket.",
+      "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete.",
+      "legacy": "Napomena za postojeće korisnike: pretplate ugovorene ranije preko Stripe platforme ostaju na snazi pod uvjetima s kojima su sklopljene dok se ne otkažu ili ne prijeđu na Paddle. Novi korisnici sklapaju pretplatu isključivo preko Paddlea."
     },
     "s4": {
       "title": "4. Otkazivanje i povrat",
-      "p1": "Pretplatu možete otkazati u bilo kojem trenutku putem postavki aplikacije. Nakon otkazivanja:",
-      "l1": "Pristup premium značajkama traje do kraja plaćenog razdoblja",
-      "l2": "Vaši podaci ostaju sačuvani i dostupni na Free razini",
-      "l3": "Možete izvesti sve podatke putem funkcije sigurnosne kopije (backup)",
-      "p2": "U skladu s EU zakonodavstvom, imate pravo na povrat sredstava unutar 14 dana od početka pretplate, pod uvjetom da uslugu niste značajno koristili. Za povrat kontaktirajte nas putem emaila."
+      "p1": "Pretplatu možete otkazati u bilo kojem trenutku putem postavki aplikacije ili kroz Paddle. Nakon otkazivanja:",
+      "l1": "Pretplata vrijedi do kraja tekućeg plaćenog razdoblja — bez proračuna razlike (proration).",
+      "l2": "Nakon isteka plaćenog razdoblja pristup modulima se zaključava; vaši podaci ostaju sačuvani.",
+      "l3": "Podatke možete izvesti putem funkcije sigurnosne kopije (backup) u bilo kojem trenutku.",
+      "p2": "Za prvu kupnju bilo koje pretplate vrijedi povrat novca u roku od 14 dana bez pitanja. Detaljni uvjeti povrata (uključujući postupak preko Paddlea i uvjete za obnove) opisani su u Pravilima povrata novca."
     },
     "s5": {
       "title": "5. Ograničenje odgovornosti",

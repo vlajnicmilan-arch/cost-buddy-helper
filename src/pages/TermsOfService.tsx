@@ -45,12 +45,17 @@ const TermsOfService = () => {
             <h2 className="text-xl font-semibold mb-3">{t('tos.s3.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-3">{t('tos.s3.p1')}</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-              <li><strong>Free</strong> — {t('tos.s3.free')}</li>
-              <li><strong>Pro (4,99 €/mj)</strong> — {t('tos.s3.pro')}</li>
-              <li><strong>Business (9,99 €/mj)</strong> — {t('tos.s3.business')}</li>
+              <li><strong>Smjer</strong> — {t('tos.s3.mSmjer')}</li>
+              <li><strong>Krug</strong> — {t('tos.s3.mKrug')}</li>
+              <li><strong>Projekti</strong> — {t('tos.s3.mProjekti')}</li>
+              <li><strong>Komplet</strong> — {t('tos.s3.mKomplet')}</li>
             </ul>
-            <p className="text-muted-foreground leading-relaxed mt-3">{t('tos.s3.p2')}</p>
-            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.p3')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-3 font-medium text-foreground">{t('tos.s3.yearly')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.biznis')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.trial')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.founding')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-2">{t('tos.s3.billing')}</p>
+            <p className="text-muted-foreground leading-relaxed mt-2 text-xs italic">{t('tos.s3.legacy')}</p>
           </section>
 
           <section>
