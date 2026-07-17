@@ -70,11 +70,8 @@ async function fetchEntitlementsMode(): Promise<EntitlementsMode> {
   }
 }
 
-function daysUntil(iso: string | null): number {
-  if (!iso) return 0;
-  const diff = new Date(iso).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+
+
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session } = useAuth();
