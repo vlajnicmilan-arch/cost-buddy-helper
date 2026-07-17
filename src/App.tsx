@@ -249,7 +249,7 @@ const AppRoutes = () => {
   }
 
   // Phase 3: Trial expired paywall
-  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed) {
+  if (storageMode === "cloud" && !subLoading && trialExpired && !subscribed && !hasAnyEntitlement) {
     return (
       <Suspense fallback={<PageLoader />}>
         <Routes>
