@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
         sourceTag: "admin_hard_delete",
         allowKrugDestruction: true,
         deletePaidRecords: true,
-        cancelStripeSubscription: true,
+        
       },
     });
   } catch (e) {

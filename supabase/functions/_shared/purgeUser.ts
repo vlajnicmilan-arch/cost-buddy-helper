@@ -7,7 +7,7 @@
 //
 // See docs/HARD_DELETE.md for the foundation contract.
 
-import Stripe from "https://esm.sh/stripe@18.5.0";
+// Stripe integration removed — no active Stripe customers, Paddle is the payment provider.
 import {
   PURGE_BY_USER_ID,
   PURGE_BY_EMAIL,
@@ -28,7 +28,7 @@ const emptyResult = (): PurgeResult => ({
   tablesPurged: {},
   storagePurged: {},
   invitationsByEmail: {},
-  stripeSubscriptionCancelled: false,
+  
   authDeleted: false,
   residualScan: { byUserId: {}, byEmail: {}, dependent: {}, total: 0 },
   errors: [],
@@ -247,30 +247,8 @@ async function purgeStorage(admin: Admin, userId: string, result: PurgeResult): 
   }
 }
 
-// ---------------------------------------------------------------------------
-// PHASE 5 — Stripe
-// ---------------------------------------------------------------------------
+// PHASE 5 (Stripe cancellation) removed — Paddle self-service cancellation applies.
 
-async function cancelStripe(email: string | null): Promise<boolean> {
-  if (!email) return false;
-  const key = Deno.env.get("STRIPE_SECRET_KEY");
-  if (!key) return false;
-  try {
-    const stripe = new Stripe(key, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length === 0) return false;
-    const subs = await stripe.subscriptions.list({
-      customer: customers.data[0].id,
-      status: "active",
-      limit: 10,
-    });
-    for (const sub of subs.data) await stripe.subscriptions.cancel(sub.id);
-    return subs.data.length > 0;
-  } catch (e) {
-    console.error("[purgeUser] stripe cancel failed:", e);
-    return false;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // PHASE 7 — residual scan
@@ -376,10 +354,7 @@ export async function purgeUser(admin: Admin, input: PurgeInput): Promise<PurgeR
   await purgeByEmail(admin, userEmail, result);
   // ---- Phase 4 ----
   await purgeStorage(admin, userId, result);
-  // ---- Phase 5 ----
-  if (policy.cancelStripeSubscription !== false) {
-    result.stripeSubscriptionCancelled = await cancelStripe(userEmail);
-  }
+  // ---- Phase 5 (Stripe cancel) removed ----
   // ---- Phase 6 ----
   if (policy.deletePaidRecords) {
     for (const table of PAID_RECORDS_TABLES) {

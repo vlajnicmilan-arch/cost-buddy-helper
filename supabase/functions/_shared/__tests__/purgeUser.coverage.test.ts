@@ -23,7 +23,7 @@ const PUBLIC_TABLES_SNAPSHOT = [
   "income_source_members","income_sources","installment_plans","installments",
   "inventory_items","inventory_movements","invoice_items","invoice_reminders","invoices",
   "krug","krug_act_dedup","krug_deletion_request","krug_deletion_vote","krug_membership",
-  "krug_ownership","krug_shared_payment_source","lifetime_purchases",
+  "krug_ownership","krug_shared_payment_source",
   "milestone_budget_alerts","milestone_budget_revisions","milestone_checklist_items",
   "monitor_alerts_log","notification_preferences","notifications","participant_digest_state",
   "payment_source_cards","payment_source_invitations","payment_source_members",
@@ -34,7 +34,7 @@ const PUBLIC_TABLES_SNAPSHOT = [
   "project_share_links","project_templates","project_work_entries","project_work_logs",
   "project_workers","projects","push_delivery_logs","push_tokens","receipt_items",
   "recurring_transactions","referrals","reminders","savings_goals",
-  "subscription_migration_log","support_tickets","suppressed_emails","transaction_notes",
+  "support_tickets","suppressed_emails","transaction_notes",
   "travel_order_expenses","travel_orders","user_login_logs","user_memories","user_roles",
   "user_subscriptions",
 ];

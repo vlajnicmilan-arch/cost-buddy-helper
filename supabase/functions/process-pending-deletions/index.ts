@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           // never silently delete paid records. Admin can override later.
           allowKrugDestruction: false,
           deletePaidRecords: false,
-          cancelStripeSubscription: true,
+          
         },
       });
 

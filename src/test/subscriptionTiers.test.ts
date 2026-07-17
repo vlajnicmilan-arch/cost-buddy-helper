@@ -1,18 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { TIERS, TRIAL_DURATION_DAYS, isTrialExpired, getTrialDaysRemaining } from '@/lib/subscriptionTiers';
+import { TRIAL_DURATION_DAYS, isTrialExpired, getTrialDaysRemaining } from '@/lib/subscriptionTiers';
 
 describe('subscriptionTiers', () => {
-  it('exports defined tiers', () => {
-    expect(TIERS).toBeDefined();
-    expect(TIERS.pro).toBeDefined();
-    expect(TIERS.business).toBeDefined();
-  });
-
-  it('pro tier has monthly and yearly prices', () => {
-    expect(TIERS.pro.prices.monthly.amount).toBeGreaterThan(0);
-    expect(TIERS.pro.prices.yearly.amount).toBeGreaterThan(0);
-  });
-
   it('trial duration is positive', () => {
     expect(TRIAL_DURATION_DAYS).toBeGreaterThan(0);
   });
