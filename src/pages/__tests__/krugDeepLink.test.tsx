@@ -19,14 +19,28 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'u1' } }),
 }));
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    channel: () => ({
-      on: () => ({ subscribe: () => ({}) }),
-    }),
-    removeChannel: vi.fn(),
-  },
-}));
+vi.mock('@/integrations/supabase/client', () => {
+  // `useFeatureAccess` (rendered via Krug page) povlači `useMyActiveModuleGrants`,
+  // koji zove `supabase.from('admin_module_grants')...select().eq().is().or()`.
+  // Test se fokusira na routing, ali mock mora podržavati taj chain da hook ne
+  // baci unhandled TypeError u passive effectu (vitest exit 1 u CI-ju).
+  const queryChain: any = {
+    select: () => queryChain,
+    eq: () => queryChain,
+    is: () => queryChain,
+    or: () => Promise.resolve({ data: [], error: null }),
+    order: () => Promise.resolve({ data: [], error: null }),
+  };
+  return {
+    supabase: {
+      from: () => queryChain,
+      channel: () => ({
+        on: () => ({ subscribe: () => ({}) }),
+      }),
+      removeChannel: vi.fn(),
+    },
+  };
+});
 
 vi.mock('@/components/PageHeader', () => ({ PageHeader: () => null }));
 vi.mock('@/components/BottomNav', () => ({ BottomNav: () => null }));
