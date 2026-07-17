@@ -117,21 +117,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         free: { name: 'Free', price: '€0', f1: 'Up to 30 transactions/mo', f2: '1 payment source', f3: '1 budget', f4: 'AI receipt scanning' },
         pro: { name: 'Pro', price: '€7.99', f1: 'Everything in Free + unlimited', f2: 'Recurring + 8-week cashflow forecast', f3: 'Multi-currency + push notifications', f4: 'AI assistant, reports, sharing' },
         business: { name: 'Business', price: '€14.99', f1: 'Everything in Pro + multiple company profiles', f2: 'Workers & timesheets', f3: 'Team & multi-user access', f4: 'Advanced projects with collaborators' },
-        lifetime: {
-          badge: 'Founding Member · Limited to 200',
-          name: 'Pro Lifetime',
-          price: '€129',
-          oneTime: 'one-time',
-          tagline: 'Pay once — use forever',
-          discount: '−75% vs. yearly subscription',
-          f1: 'Everything in Pro — forever',
-          f2: 'No recurring monthly cost',
-          f3: 'All future Pro features included',
-          f4: 'Founding Member status & priority support',
-          remaining: '{n} of 200 spots left',
-          soldOut: 'Sold out',
-          cta: 'Become a Founding Member',
-        },
+        // lifetime block removed with Stripe purge (Milan 28.8.2026)
+
       },
       testimonials: {
         title: 'Loved by Users', subtitle: 'See what our users are saying',
@@ -164,21 +151,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         free: { name: 'Kostenlos', price: '€0', f1: 'Bis zu 30 Transaktionen/Mo', f2: '1 Zahlungsquelle', f3: '1 Budget', f4: 'KI-Belegscanning' },
         pro: { name: 'Pro', price: '€7,99', f1: 'Alles aus Kostenlos + unbegrenzt', f2: 'Wiederkehrend + 8-Wochen Cashflow', f3: 'Mehrere Währungen + Push-Benachrichtigungen', f4: 'KI-Assistent, Berichte, Teilen' },
         business: { name: 'Business', price: '€14,99', f1: 'Alles aus Pro + mehrere Firmenprofile', f2: 'Mitarbeiter & Zeiterfassung', f3: 'Team- & Mehrbenutzerzugang', f4: 'Erweiterte Projekte mit Mitarbeitern' },
-        lifetime: {
-          badge: 'Founding Member · Limitiert auf 200',
-          name: 'Pro Lifetime',
-          price: '€129',
-          oneTime: 'einmalig',
-          tagline: 'Einmal zahlen — für immer nutzen',
-          discount: '−75% gegenüber dem Jahresabo',
-          f1: 'Alles aus Pro — für immer',
-          f2: 'Keine monatlichen Kosten',
-          f3: 'Alle zukünftigen Pro-Funktionen inklusive',
-          f4: 'Founding-Member-Status & Prioritätssupport',
-          remaining: 'Noch {n} von 200 Plätzen',
-          soldOut: 'Ausverkauft',
-          cta: 'Founding Member werden',
-        },
+        // lifetime block removed with Stripe purge (Milan 28.8.2026)
+
       },
       testimonials: {
         title: 'Von Nutzern geliebt', subtitle: 'Sehen Sie, was unsere Nutzer sagen',
