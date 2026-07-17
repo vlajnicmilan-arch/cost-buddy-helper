@@ -183,7 +183,8 @@ const AppRoutes = () => {
   const location = useLocation();
   const { storageMode, isInitialized } = useStorage();
   const { onboardingCompleted, appStateReady } = useAppState();
-  const { trialExpired, subscribed, loading: subLoading } = useSubscription();
+  const { trialExpired, subscribed, loading: subLoading, entitlements } = useSubscription();
+  const hasAnyEntitlement = !!(entitlements.smjer?.active || entitlements.krug?.active || entitlements.projekti?.active || entitlements.biznis?.active);
   const { user, authReady } = useAuth();
   const stateReturn = (location.state as { from?: string } | null)?.from;
   const queryNext = new URLSearchParams(location.search).get("next");
