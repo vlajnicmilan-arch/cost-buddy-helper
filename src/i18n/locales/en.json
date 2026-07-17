@@ -38,7 +38,9 @@
     "success": "Success",
     "yes": "Yes",
     "no": "No",
-    "exitApp": { "title": "Exit the app?" },
+    "exitApp": {
+      "title": "Exit the app?"
+    },
     "back": "Back",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
@@ -167,8 +169,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Your 30-day trial ended",
-    "chooseToContinue": "Pick a plan to keep using Centar",
+    "trialExpiredTitle": "Choose your Centar plan",
+    "chooseToContinue": "Activate the modules you need",
     "interval": {
       "monthly": "Monthly",
       "yearly": "Yearly",
@@ -261,7 +263,66 @@
     },
     "footer": {
       "secure": "Secure payment via Stripe. Cancel anytime.",
-      "signInOther": "Sign in with a different account"
+      "signInOther": "Sign in with a different account",
+      "securePaddle": "Secure payment via Paddle. Cancel anytime."
+    },
+    "yearlyBadgeV2": "2 months free",
+    "yearlyExplain": "Pay for ten months, get twelve.",
+    "checkoutSuccess": "Thanks — your subscription is activating. It may take a few seconds.",
+    "notSignedIn": "Sign in required.",
+    "pricesError": "Failed to load prices. Please try again.",
+    "modules": {
+      "smjer": {
+        "name": "Smjer",
+        "tagline": "Personal finances, budgets & AI",
+        "cta": "Choose Smjer",
+        "features": [
+          "Unlimited transactions",
+          "Wallets & cards",
+          "AI scan & assistant",
+          "Cashflow forecast"
+        ]
+      },
+      "krug": {
+        "name": "Krug",
+        "tagline": "Shared finances & family",
+        "cta": "Choose Krug",
+        "features": [
+          "Shared budgets & wallets",
+          "Expense splitting",
+          "Roles & invites",
+          "Chat & push"
+        ]
+      },
+      "projekti": {
+        "name": "Projekti",
+        "tagline": "Construction & project ops",
+        "cta": "Choose Projekti",
+        "features": [
+          "Unlimited projects",
+          "Workers & timesheets",
+          "Phases, budget & P&L",
+          "Decisions & collaborators"
+        ]
+      },
+      "komplet": {
+        "name": "Komplet",
+        "tagline": "Smjer + Krug + Projekti",
+        "cta": "Choose Komplet",
+        "badge": "Best value",
+        "features": [
+          "Everything in Smjer",
+          "Everything in Krug",
+          "Everything in Projekti",
+          "Priority support"
+        ]
+      },
+      "biznis": {
+        "name": "Biznis",
+        "tagline": "Business tracking & team",
+        "comingSoon": "Coming soon",
+        "badge": "Soon"
+      }
     }
   },
   "disclaimer": {
