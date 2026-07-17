@@ -2805,6 +2805,36 @@ export type Database = {
         }
         Relationships: []
       }
+      paddle_price_map: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          environment: string
+          module: string
+          notes: string | null
+          price_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle: string
+          created_at?: string
+          environment?: string
+          module: string
+          notes?: string | null
+          price_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          environment?: string
+          module?: string
+          notes?: string | null
+          price_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       participant_digest_state: {
         Row: {
           last_event_at: string | null
