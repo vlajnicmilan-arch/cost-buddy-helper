@@ -43,7 +43,9 @@
     "success": "Uspješno",
     "yes": "Da",
     "no": "Ne",
-    "exitApp": { "title": "Izaći iz aplikacije?" },
+    "exitApp": {
+      "title": "Izaći iz aplikacije?"
+    },
     "back": "Natrag",
     "next": "Dalje",
     "previousMonth": "Prethodni mjesec",
@@ -167,8 +169,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Probni period od 30 dana je istekao",
-    "chooseToContinue": "Odaberi plan da nastaviš koristiti Centar",
+    "trialExpiredTitle": "Odaberi svoj Centar plan",
+    "chooseToContinue": "Aktiviraj module koje trebaš",
     "interval": {
       "monthly": "Mjesečno",
       "yearly": "Godišnje",
@@ -261,7 +263,66 @@
     },
     "footer": {
       "secure": "Sigurno plaćanje putem Stripe. Otkazivanje u bilo kojem trenutku.",
-      "signInOther": "Prijavite se s drugim računom"
+      "signInOther": "Prijavite se s drugim računom",
+      "securePaddle": "Sigurno plaćanje putem Paddle. Otkazivanje u bilo kojem trenutku."
+    },
+    "yearlyBadgeV2": "2 mj. gratis",
+    "yearlyExplain": "Platiš deset mjeseci, dobiješ dvanaest.",
+    "checkoutSuccess": "Hvala — pretplata se aktivira. Može potrajati koju sekundu.",
+    "notSignedIn": "Prijava potrebna za nastavak.",
+    "pricesError": "Greška pri učitavanju cijena. Pokušaj ponovno.",
+    "modules": {
+      "smjer": {
+        "name": "Smjer",
+        "tagline": "Osobne financije, budžeti i AI",
+        "cta": "Odaberi Smjer",
+        "features": [
+          "Neograničene transakcije",
+          "Novčanici i kartice",
+          "AI skeniranje i asistent",
+          "Cashflow prognoza"
+        ]
+      },
+      "krug": {
+        "name": "Krug",
+        "tagline": "Zajedničke financije i obitelj",
+        "cta": "Odaberi Krug",
+        "features": [
+          "Zajednički budžeti i novčanici",
+          "Podjela troškova",
+          "Uloge i pozivnice",
+          "Chat i push"
+        ]
+      },
+      "projekti": {
+        "name": "Projekti",
+        "tagline": "Građevina i vođenje projekata",
+        "cta": "Odaberi Projekte",
+        "features": [
+          "Neograničeni projekti",
+          "Radnici i satnice",
+          "Faze, budžet i P&L",
+          "Odluke i suradnici"
+        ]
+      },
+      "komplet": {
+        "name": "Komplet",
+        "tagline": "Smjer + Krug + Projekti",
+        "cta": "Odaberi Komplet",
+        "badge": "Najbolja vrijednost",
+        "features": [
+          "Sve iz Smjer plana",
+          "Sve iz Krug plana",
+          "Sve iz Projekti plana",
+          "Prioritetna podrška"
+        ]
+      },
+      "biznis": {
+        "name": "Biznis",
+        "tagline": "Poslovna praćenja i tim",
+        "comingSoon": "Uskoro dostupno",
+        "badge": "Uskoro"
+      }
     }
   },
   "disclaimer": {

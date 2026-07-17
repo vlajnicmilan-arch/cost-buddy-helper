@@ -3,6 +3,13 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "tos.s4.l3": "Intentionally empty spacer line",
+    "paywall.modules.smjer.name": "Module brand name",
+    "paywall.modules.krug.name": "Module brand name",
+    "paywall.modules.projekti.name": "Module brand name",
+    "paywall.modules.komplet.name": "Module brand name",
+    "paywall.modules.komplet.tagline": "Module composition (brand names)",
+    "paywall.modules.biznis.name": "Module brand name",
     "projects.decisions.admin.annulledMeta": "Placeholder-only pattern",
     "attention.ai": "Acronym",
     "paywall.interval.lifetime": "Product plan term",
@@ -101,6 +108,13 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.delete.votePanel.progress": "Placeholder-only counter",
   },
   de: {
+    "tos.s4.l3": "Absichtlich leere Trennzeile",
+    "paywall.modules.smjer.name": "Modul-Markenname",
+    "paywall.modules.krug.name": "Modul-Markenname",
+    "paywall.modules.projekti.name": "Modul-Markenname",
+    "paywall.modules.komplet.name": "Modul-Markenname",
+    "paywall.modules.komplet.tagline": "Modul-Zusammensetzung (Markennamen)",
+    "paywall.modules.biznis.name": "Modul-Markenname",
     "projects.decisions.admin.annulledMeta": "Placeholder-only pattern",
     "paywall.interval.lifetime": "Product plan term",
     "paywall.yearlyBadge": "Numeric badge",

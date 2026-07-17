@@ -38,7 +38,9 @@
     "success": "Erfolgreich",
     "yes": "Ja",
     "no": "Nein",
-    "exitApp": { "title": "App beenden?" },
+    "exitApp": {
+      "title": "App beenden?"
+    },
     "back": "Zurück",
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
@@ -167,8 +169,8 @@
     }
   },
   "paywall": {
-    "trialExpiredTitle": "Deine 30-tägige Testphase ist abgelaufen",
-    "chooseToContinue": "Wähle einen Plan, um Centar weiter zu nutzen",
+    "trialExpiredTitle": "Wähle deinen Centar-Plan",
+    "chooseToContinue": "Aktiviere die Module, die du brauchst",
     "interval": {
       "monthly": "Monatlich",
       "yearly": "Jährlich",
@@ -261,7 +263,66 @@
     },
     "footer": {
       "secure": "Sichere Zahlung via Stripe. Jederzeit kündbar.",
-      "signInOther": "Mit anderem Konto anmelden"
+      "signInOther": "Mit anderem Konto anmelden",
+      "securePaddle": "Sichere Zahlung via Paddle. Jederzeit kündbar."
+    },
+    "yearlyBadgeV2": "2 Monate gratis",
+    "yearlyExplain": "Zahle für zehn Monate, erhalte zwölf.",
+    "checkoutSuccess": "Danke — dein Abo wird aktiviert. Es kann einige Sekunden dauern.",
+    "notSignedIn": "Anmeldung erforderlich.",
+    "pricesError": "Preise konnten nicht geladen werden. Bitte erneut versuchen.",
+    "modules": {
+      "smjer": {
+        "name": "Smjer",
+        "tagline": "Private Finanzen, Budgets & KI",
+        "cta": "Smjer wählen",
+        "features": [
+          "Unbegrenzte Transaktionen",
+          "Wallets & Karten",
+          "KI-Scan & Assistent",
+          "Cashflow-Prognose"
+        ]
+      },
+      "krug": {
+        "name": "Krug",
+        "tagline": "Geteilte Finanzen & Familie",
+        "cta": "Krug wählen",
+        "features": [
+          "Geteilte Budgets & Wallets",
+          "Kosten teilen",
+          "Rollen & Einladungen",
+          "Chat & Push"
+        ]
+      },
+      "projekti": {
+        "name": "Projekti",
+        "tagline": "Bau & Projektmanagement",
+        "cta": "Projekti wählen",
+        "features": [
+          "Unbegrenzte Projekte",
+          "Mitarbeiter & Stunden",
+          "Phasen, Budget & P&L",
+          "Entscheidungen & Mitarbeit"
+        ]
+      },
+      "komplet": {
+        "name": "Komplet",
+        "tagline": "Smjer + Krug + Projekti",
+        "cta": "Komplet wählen",
+        "badge": "Bestes Preis-Leistungs-Verhältnis",
+        "features": [
+          "Alles aus Smjer",
+          "Alles aus Krug",
+          "Alles aus Projekti",
+          "Priorisierter Support"
+        ]
+      },
+      "biznis": {
+        "name": "Biznis",
+        "tagline": "Business-Tracking & Team",
+        "comingSoon": "Bald verfügbar",
+        "badge": "Bald"
+      }
     }
   },
   "disclaimer": {
