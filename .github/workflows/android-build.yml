@@ -98,16 +98,32 @@ jobs:
           APK_PATH="dist-apk/centar-${VERSION}.apk"
           FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/upload-apk-release"
 
-          echo "Step 1/2: requesting signed upload URL for v${VERSION}"
-          HTTP_CODE=$(curl -sS -o /tmp/sign_resp.json -w "%{http_code}" \
-            -X POST "$FN_URL" \
-            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
-            -H "x-apk-version: ${VERSION}")
-
-          echo "HTTP $HTTP_CODE"
-          cat /tmp/sign_resp.json || true
+          echo "Step 1/2: requesting signed upload URL for v${VERSION} (with retry)"
+          HTTP_CODE=000
+          for attempt in 1 2 3 4 5; do
+            HTTP_CODE=$(curl -sS -o /tmp/sign_resp.json -w "%{http_code}" \
+              -X POST "$FN_URL" \
+              -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+              -H "x-apk-version: ${VERSION}" || echo "000")
+            echo "Attempt $attempt: HTTP $HTTP_CODE"
+            cat /tmp/sign_resp.json || true
+            echo ""
+            if [ "$HTTP_CODE" = "200" ]; then
+              break
+            fi
+            # Retry on transient errors (5xx or network fail). Do NOT retry on 4xx (auth/config).
+            if [ "$HTTP_CODE" -lt 500 ] && [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "429" ]; then
+              echo "❌ Non-retryable status $HTTP_CODE"
+              exit 1
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              SLEEP=$((attempt * 10))
+              echo "Retrying in ${SLEEP}s..."
+              sleep $SLEEP
+            fi
+          done
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Failed to get signed URL"
+            echo "❌ Failed to get signed URL after 5 attempts"
             exit 1
           fi
 
@@ -117,16 +133,31 @@ jobs:
             exit 1
           fi
 
-          echo "Step 2/2: PUT APK directly to Storage"
-          UP_CODE=$(curl -sS -o /tmp/put_resp.txt -w "%{http_code}" \
-            -X PUT "$SIGNED_URL" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary "@${APK_PATH}")
-
-          echo "HTTP $UP_CODE"
-          cat /tmp/put_resp.txt || true
+          echo "Step 2/2: PUT APK directly to Storage (with retry)"
+          UP_CODE=000
+          for attempt in 1 2 3 4 5; do
+            UP_CODE=$(curl -sS -o /tmp/put_resp.txt -w "%{http_code}" \
+              -X PUT "$SIGNED_URL" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary "@${APK_PATH}" || echo "000")
+            echo "Attempt $attempt: HTTP $UP_CODE"
+            cat /tmp/put_resp.txt || true
+            echo ""
+            if [ "$UP_CODE" = "200" ] || [ "$UP_CODE" = "201" ]; then
+              break
+            fi
+            if [ "$UP_CODE" -lt 500 ] && [ "$UP_CODE" != "000" ] && [ "$UP_CODE" != "429" ]; then
+              echo "❌ Non-retryable status $UP_CODE"
+              exit 1
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              SLEEP=$((attempt * 10))
+              echo "Retrying in ${SLEEP}s..."
+              sleep $SLEEP
+            fi
+          done
           if [ "$UP_CODE" != "200" ] && [ "$UP_CODE" != "201" ]; then
-            echo "❌ APK PUT failed"
+            echo "❌ APK PUT failed after 5 attempts"
             exit 1
           fi
           echo "✅ APK uploaded via signed URL"
@@ -164,15 +195,29 @@ jobs:
           MIN_SUPPORTED=$(node -p "require('./public/version.json').minSupportedVersion || '0.0.0'")
           FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/publish-version-manifest"
           PAYLOAD=$(node -e "console.log(JSON.stringify({version:'${VERSION}',minSupportedVersion:'${MIN_SUPPORTED}',sha256:'${SHA256}',apkUrl:'${APK_URL}'}))")
-          HTTP_CODE=$(curl -sS -o /tmp/pub_resp.json -w "%{http_code}" \
-            -X POST "$FN_URL" \
-            -H "Content-Type: application/json" \
-            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
-            --data "$PAYLOAD")
-          echo "HTTP $HTTP_CODE"
-          cat /tmp/pub_resp.json || true
+          HTTP_CODE=000
+          for attempt in 1 2 3 4 5; do
+            HTTP_CODE=$(curl -sS -o /tmp/pub_resp.json -w "%{http_code}" \
+              -X POST "$FN_URL" \
+              -H "Content-Type: application/json" \
+              -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+              --data "$PAYLOAD" || echo "000")
+            echo "Attempt $attempt: HTTP $HTTP_CODE"
+            cat /tmp/pub_resp.json || true
+            echo ""
+            if [ "$HTTP_CODE" = "200" ]; then break; fi
+            if [ "$HTTP_CODE" -lt 500 ] && [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "429" ]; then
+              echo "❌ Non-retryable status $HTTP_CODE"
+              exit 1
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              SLEEP=$((attempt * 10))
+              echo "Retrying in ${SLEEP}s..."
+              sleep $SLEEP
+            fi
+          done
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Manifest publish failed"
+            echo "❌ Manifest publish failed after 5 attempts"
             exit 1
           fi
           echo "✅ Manifest published to Storage"
@@ -187,15 +232,29 @@ jobs:
           MIN_SUPPORTED=$(node -p "require('./public/version.json').minSupportedVersion || '0.0.0'")
           FN_URL="https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/notify-app-update"
           PAYLOAD=$(node -e "console.log(JSON.stringify({version:'${VERSION}',minSupportedVersion:'${MIN_SUPPORTED}',sha256:'${SHA256}',apkUrl:'${APK_URL}'}))")
-          HTTP_CODE=$(curl -sS -o /tmp/notify_resp.json -w "%{http_code}" \
-            -X POST "$FN_URL" \
-            -H "Content-Type: application/json" \
-            -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
-            --data "$PAYLOAD")
-          echo "HTTP $HTTP_CODE"
-          cat /tmp/notify_resp.json || true
+          HTTP_CODE=000
+          for attempt in 1 2 3 4 5; do
+            HTTP_CODE=$(curl -sS -o /tmp/notify_resp.json -w "%{http_code}" \
+              -X POST "$FN_URL" \
+              -H "Content-Type: application/json" \
+              -H "x-upload-token: ${APK_UPLOAD_TOKEN}" \
+              --data "$PAYLOAD" || echo "000")
+            echo "Attempt $attempt: HTTP $HTTP_CODE"
+            cat /tmp/notify_resp.json || true
+            echo ""
+            if [ "$HTTP_CODE" = "200" ]; then break; fi
+            if [ "$HTTP_CODE" -lt 500 ] && [ "$HTTP_CODE" != "000" ] && [ "$HTTP_CODE" != "429" ]; then
+              echo "❌ Non-retryable status $HTTP_CODE"
+              exit 1
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              SLEEP=$((attempt * 10))
+              echo "Retrying in ${SLEEP}s..."
+              sleep $SLEEP
+            fi
+          done
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Update notification failed"
+            echo "❌ Update notification failed after 5 attempts"
             exit 1
           fi
           echo "✅ Update notification dispatched"
