@@ -1,45 +1,76 @@
 /**
  * Paddle.js client wrapper.
- * - Environment is auto-detected from the client token prefix
- *   (`test_...` → sandbox, `live_...` → production).
- * - Optional `VITE_PADDLE_ENV` env var forces a specific environment.
- * - Uses @paddle/paddle-js (npm) so bundling + type safety is deterministic.
+ *
+ * The client token + environment are fetched from the `get-paddle-config`
+ * edge function (which reads the `PADDLE_CLIENT_TOKEN` runtime secret) so
+ * that no Paddle credentials have to live in a committed `.env`.
+ *
+ * Environment resolution order:
+ *   1. `PADDLE_ENV` runtime secret (`sandbox` | `production`) if set.
+ *   2. Token prefix (`test_...` → sandbox, otherwise production).
  */
 import { initializePaddle, type Paddle, type Environments } from '@paddle/paddle-js';
-
-let paddlePromise: Promise<Paddle | undefined> | null = null;
+import { supabase } from '@/integrations/supabase/client';
 
 export type PaddleEnv = Extract<Environments, 'sandbox' | 'production'>;
 
-export const getPaddleEnv = (): PaddleEnv => {
-  const forced = (import.meta.env.VITE_PADDLE_ENV as string | undefined)?.toLowerCase();
-  if (forced === 'sandbox' || forced === 'production') return forced;
-  const token = (import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined) || '';
-  if (token.startsWith('test_')) return 'sandbox';
-  return 'production';
+interface PaddleConfig {
+  token: string;
+  environment: PaddleEnv;
+  configured: boolean;
+}
+
+let configPromise: Promise<PaddleConfig> | null = null;
+let paddlePromise: Promise<Paddle | undefined> | null = null;
+
+const fetchConfig = (): Promise<PaddleConfig> => {
+  if (configPromise) return configPromise;
+  configPromise = (async () => {
+    const { data, error } = await supabase.functions.invoke('get-paddle-config');
+    if (error || !data) {
+      console.error('[paddleClient] get-paddle-config failed:', error);
+      return { token: '', environment: 'production', configured: false };
+    }
+    const env: PaddleEnv = (data as { environment?: string }).environment === 'sandbox'
+      ? 'sandbox'
+      : 'production';
+    return {
+      token: String((data as { token?: string }).token ?? ''),
+      environment: env,
+      configured: Boolean((data as { configured?: boolean }).configured),
+    };
+  })().catch((err) => {
+    console.error('[paddleClient] fetchConfig threw:', err);
+    configPromise = null;
+    return { token: '', environment: 'production', configured: false };
+  });
+  return configPromise;
 };
 
+export const getPaddleEnv = async (): Promise<PaddleEnv> =>
+  (await fetchConfig()).environment;
+
 /**
- * The environment string the paddle_price_map table uses.
- * (`sandbox` | `live`)
+ * Environment string used by the `paddle_price_map` table (`sandbox` | `live`).
  */
-export const getPriceMapEnv = (): 'sandbox' | 'live' =>
-  getPaddleEnv() === 'sandbox' ? 'sandbox' : 'live';
+export const getPriceMapEnv = async (): Promise<'sandbox' | 'live'> =>
+  (await getPaddleEnv()) === 'sandbox' ? 'sandbox' : 'live';
 
 export const getPaddle = (): Promise<Paddle | undefined> => {
   if (paddlePromise) return paddlePromise;
-  const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
-  if (!token) {
-    console.error(
-      '[paddleClient] VITE_PADDLE_CLIENT_TOKEN is not set. Checkout will not open.'
-    );
-    paddlePromise = Promise.resolve(undefined);
-    return paddlePromise;
-  }
-  paddlePromise = initializePaddle({
-    environment: getPaddleEnv(),
-    token,
-  }).catch((err) => {
+  paddlePromise = (async () => {
+    const cfg = await fetchConfig();
+    if (!cfg.configured || !cfg.token) {
+      console.error(
+        '[paddleClient] PADDLE_CLIENT_TOKEN is not configured. Checkout will not open.'
+      );
+      return undefined;
+    }
+    return initializePaddle({
+      environment: cfg.environment,
+      token: cfg.token,
+    });
+  })().catch((err) => {
     console.error('[paddleClient] initializePaddle failed:', err);
     paddlePromise = null;
     return undefined;

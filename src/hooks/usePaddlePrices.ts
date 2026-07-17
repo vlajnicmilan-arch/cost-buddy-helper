@@ -40,7 +40,8 @@ export const usePaddlePrices = (): ResolvedPrices => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const env = getPriceMapEnv();
+      const env = await getPriceMapEnv();
+      if (cancelled) return;
       const { data, error } = await supabase
         .from('paddle_price_map')
         .select('price_id, module, billing_cycle, environment, notes')
