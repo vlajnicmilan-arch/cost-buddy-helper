@@ -11,7 +11,8 @@ import { Plus, Repeat, Pencil, Trash2, Calendar, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,9 @@ interface RecurringTransactionsPanelProps {
 
 export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPanelProps) => {
   const { t } = useTranslation();
-  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('recurring_transactions');
+  const { guard } = useWriteGuard({ kind: 'module', feature: 'recurring_transactions' });
   const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring, toggleActive } = useRecurringTransactions();
   const { customPaymentSources } = useCustomPaymentSources();
   const { formatAmount } = useCurrency();
@@ -37,9 +40,6 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
   const [editItem, setEditItem] = useState<RecurringTransaction | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  if (!hasAccess('recurring_transactions')) {
-    return <UpgradePrompt feature={t('recurring.title', 'Ponavljajuće transakcije')} requiredTier={getRequiredTier('recurring_transactions')} />;
-  }
 
   const FREQ_LABELS: Record<string, string> = {
     daily: t('recurring.daily'),
@@ -95,13 +95,24 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
           <Repeat className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">{t('recurring.title')}</h2>
         </div>
-        <Button size="sm" className="rounded-xl gap-1.5" onClick={() => { setEditItem(null); setDialogOpen(true); }}>
+        <Button
+          size="sm"
+          className="rounded-xl gap-1.5"
+          disabled={isReadOnly}
+          onClick={() => guard(() => { setEditItem(null); setDialogOpen(true); })}
+        >
           <Plus className="w-4 h-4" /> {t('recurring.new')}
         </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {isReadOnly && (
+          <ReadOnlyBanner
+            title={t('recurring.readOnlyTitle', 'Ponavljajuće transakcije su u načinu samo za pregled')}
+            body={t('recurring.readOnlyBody', 'Postojeća pravila vidiš, ali za nova/izmjene aktiviraj Smjer.')}
+          />
+        )}
         {loading ? (
           <div className="py-20 flex items-center justify-center text-muted-foreground">
             {t('recurring.loading')}
@@ -113,10 +124,17 @@ export const RecurringTransactionsPanel = ({ onClose }: RecurringTransactionsPan
             <p className="text-sm text-muted-foreground/70">
               {t('recurring.noTransactionsHint')}
             </p>
-            <Button size="sm" variant="outline" className="rounded-xl mt-2" onClick={() => { setEditItem(null); setDialogOpen(true); }}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl mt-2"
+              disabled={isReadOnly}
+              onClick={() => guard(() => { setEditItem(null); setDialogOpen(true); })}
+            >
               <Plus className="w-4 h-4 mr-1" /> {t('recurring.addFirst')}
             </Button>
           </div>
+
         ) : (
           <>
             {/* Active */}
