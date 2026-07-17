@@ -262,7 +262,7 @@
       ]
     },
     "footer": {
-      "secure": "Sichere Zahlung via Stripe. Jederzeit kündbar.",
+      "secure": "Sichere Zahlung via Paddle. Jederzeit kündbar.",
       "signInOther": "Mit anderem Konto anmelden",
       "securePaddle": "Sichere Zahlung via Paddle. Jederzeit kündbar."
     },

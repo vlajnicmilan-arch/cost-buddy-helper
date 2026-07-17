@@ -262,7 +262,7 @@
       ]
     },
     "footer": {
-      "secure": "Secure payment via Stripe. Cancel anytime.",
+      "secure": "Secure payment via Paddle. Cancel anytime.",
       "signInOther": "Sign in with a different account",
       "securePaddle": "Secure payment via Paddle. Cancel anytime."
     },

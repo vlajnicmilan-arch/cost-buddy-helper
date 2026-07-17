@@ -262,7 +262,7 @@
       ]
     },
     "footer": {
-      "secure": "Sigurno plaćanje putem Stripe. Otkazivanje u bilo kojem trenutku.",
+      "secure": "Sigurno plaćanje putem Paddlea. Otkazivanje u bilo kojem trenutku.",
       "signInOther": "Prijavite se s drugim računom",
       "securePaddle": "Sigurno plaćanje putem Paddle. Otkazivanje u bilo kojem trenutku."
     },
