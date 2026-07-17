@@ -211,7 +211,7 @@ const FAQ: FaqCategory[] = [
         qKey: 'faq.q.cancelSubscription',
         aKey: 'faq.a.cancelSubscription',
         qFallback: 'Kako otkazati pretplatu?',
-        aFallback: 'Otvorite Postavke → Pretplata → "Upravljaj pretplatom". Otvara se Stripe Customer Portal gdje možete otkazati ili pauzirati pretplatu u dva klika. Ostajete Pro do kraja plaćenog perioda, nakon čega prelazite na Free plan — vaši podaci ostaju netaknuti.',
+        aFallback: 'Pretplatu možeš otkazati u bilo kojem trenutku — upute stižu uz svaki račun e-mailom. Ostajete Pro do kraja plaćenog perioda, nakon čega prelazite na Free plan — vaši podaci ostaju netaknuti.',
       },
       {
         slug: 'refund',
