@@ -28,7 +28,7 @@ interface SubscriptionState {
   trialDaysRemaining: number;
   trialExpired: boolean;
   subscriptionEnd: string | null;
-  source: 'stripe' | 'admin' | 'paddle' | 'lifetime' | null;
+  source: 'admin' | 'paddle' | null;
   entitlements: Record<EntitlementModule, ModuleEntitlement>;
   entitlementsMode: EntitlementsMode;
   checkSubscription: () => Promise<void>;

@@ -1,45 +1,21 @@
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useStorage } from '@/contexts/StorageContext';
-import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Crown, Zap, Building2, Loader2, ExternalLink } from 'lucide-react';
+import { Crown, Zap, Building2, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
-import { showError } from '@/hooks/useStatusFeedback';
 import { format } from 'date-fns';
 
 export const SubscriptionSection = () => {
   const { t } = useTranslation();
   const { tier, subscribed, trialActive, trialDaysRemaining, subscriptionEnd, source, loading } = useSubscription();
   const { storageMode } = useStorage();
-  const { session } = useAuth();
   const navigate = useNavigate();
-  const [portalLoading, setPortalLoading] = useState(false);
 
   if (storageMode !== 'cloud') return null;
 
-  const handleManageSubscription = async () => {
-    if (!session?.access_token) return;
-    setPortalLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (err) {
-      console.error('Portal error:', err);
-      showError(t('subscription.portalError', 'Greška pri otvaranju portala za upravljanje pretplatom'));
-    } finally {
-      setPortalLoading(false);
-    }
-  };
 
   const tierConfig = {
     free: { label: 'Free', icon: Crown, color: 'text-muted-foreground', bg: 'bg-muted/50' },
@@ -121,22 +97,9 @@ export const SubscriptionSection = () => {
                 {t('subscription.choosePlan', 'Odaberi plan')}
               </Button>
             )}
-            {subscribed && source === 'stripe' && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 rounded-lg gap-1.5"
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-              >
-                {portalLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <ExternalLink className="w-3.5 h-3.5" />
-                )}
-                {t('subscription.manage', 'Upravljaj pretplatom')}
-              </Button>
-            )}
+            {/* Manage-subscription button removed with Stripe purge.
+                Paddle self-service cancellation will be added when Milan validates the sandbox flow. */}
+
           </div>
         </div>
       </div>
