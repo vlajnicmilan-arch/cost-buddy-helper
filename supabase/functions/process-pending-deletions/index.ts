@@ -51,7 +51,6 @@ function buildAuditUpdate(result: PurgeResult): Record<string, unknown> {
   return {
     status,
     completed_at: new Date().toISOString(),
-    stripe_subscription_cancelled: result.stripeSubscriptionCancelled,
     user_email: null, // anonymize email in audit row
     error_message: result.errors.length > 0 ? JSON.stringify(result.errors).slice(0, 500) : null,
     tables_purged: {
