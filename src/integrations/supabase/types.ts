@@ -1594,6 +1594,30 @@ export type Database = {
         }
         Relationships: []
       }
+      free_tier_usage_monthly: {
+        Row: {
+          created_at: string
+          month_key: string
+          transactions_created: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          month_key: string
+          transactions_created?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          month_key?: string
+          transactions_created?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       funnel_events: {
         Row: {
           created_at: string
@@ -5759,6 +5783,14 @@ export type Database = {
         }[]
       }
       get_founding_member_count: { Args: never; Returns: number }
+      get_free_tier_usage_current_month: {
+        Args: { _user_id?: string }
+        Returns: {
+          month_key: string
+          transactions_created: number
+          transactions_limit: number
+        }[]
+      }
       get_krug_shared_source_display: {
         Args: { _krug_id: string }
         Returns: {
@@ -6002,6 +6034,7 @@ export type Database = {
         Args: { p_bank_id: string; p_manual_id: string }
         Returns: Json
       }
+      month_key_from_date: { Args: { _d: string }; Returns: string }
       move_to_dlq: {
         Args: {
           dlq_name: string

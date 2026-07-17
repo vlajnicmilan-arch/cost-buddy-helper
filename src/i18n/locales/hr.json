@@ -5464,5 +5464,16 @@
       "projectNotFound": "Projekt nije pronađen",
       "generic": "Greška pri slanju pozivnice"
     }
+  },
+  "access": {
+    "readOnlyTitle": "Modul je u načinu samo za pregled",
+    "readOnlyBody": "Podatke vidiš i možeš izvesti. Za dodavanje i uređivanje aktiviraj pretplatu.",
+    "cta": "Aktiviraj pretplatu",
+    "blocked": "Akcija nije dopuštena bez pretplate.",
+    "moduleBlocked": "Za ovu značajku potrebna je aktivna pretplata. Podatke vidiš i možeš izvesti.",
+    "freeTxLimitReached": "Iskoristio si {{used}}/{{limit}} besplatnih transakcija ovaj mjesec. Brisanje ne oslobađa limit.",
+    "freePaymentSourceLimit": "Free plan dopušta {{limit}} novčanik. Aktiviraj Smjer za više.",
+    "freeBudgetLimit": "Free plan dopušta {{limit}} budžet. Aktiviraj Smjer za više.",
+    "freeLimitServer": "Prekoračen je Free limit — potrebna je pretplata."
   }
 }

@@ -18,7 +18,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
 
 export const CustomCategoriesPanel = () => {
   const { customCategories, loading, addCustomCategory, updateCustomCategory, deleteCustomCategory } = useCustomCategories();
@@ -27,11 +28,10 @@ export const CustomCategoriesPanel = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CustomCategory | null>(null);
   const { t } = useTranslation();
-  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('custom_categories');
+  const { guard } = useWriteGuard({ kind: 'module', feature: 'custom_categories' });
 
-  if (!hasAccess('custom_categories')) {
-    return <UpgradePrompt feature={t('settings.customCategories', 'Prilagođene kategorije')} requiredTier={getRequiredTier('custom_categories')} />;
-  }
 
   const handleSave = async (data: { name: string; icon: string; color: string }) => {
     if (editingCategory) {
@@ -92,12 +92,20 @@ export const CustomCategoriesPanel = () => {
               <Tag className="h-5 w-5" />
               {t('categories.customCategories')}
             </CardTitle>
-            <Button size="sm" onClick={openNewDialog}>
+            <Button size="sm" disabled={isReadOnly} onClick={() => guard(openNewDialog)}>
               <Plus className="h-4 w-4 mr-1" />
               {t('common.new')}
             </Button>
           </div>
+          {isReadOnly && (
+            <ReadOnlyBanner
+              className="mt-3"
+              title={t('categories.readOnlyTitle', 'Prilagođene kategorije su samo za pregled')}
+              body={t('categories.readOnlyBody', 'Aktiviraj Smjer za dodavanje i uređivanje kategorija.')}
+            />
+          )}
         </CardHeader>
+
         <CardContent>
           {customCategories.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">

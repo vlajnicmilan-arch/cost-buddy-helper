@@ -11,20 +11,20 @@ import { Plus, Target, Trash2, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+import { useWriteGuard } from '@/hooks/useWriteGuard';
 
 export const SavingsGoalsSection = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('savings_goals');
+  const { guard } = useWriteGuard({ kind: 'module', feature: 'savings_goals' });
   const { goals, loading, addGoal, updateGoal, deleteGoal, addAmount } = useSavingsGoals();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addAmountGoal, setAddAmountGoal] = useState<SavingsGoal | null>(null);
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
 
-  if (!hasAccess('savings_goals')) {
-    return <UpgradePrompt feature={t('savings.title', 'Ciljevi štednje')} requiredTier={getRequiredTier('savings_goals')} compact />;
-  }
 
   if (loading) return null;
 
@@ -49,19 +49,40 @@ export const SavingsGoalsSection = () => {
           <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           <h3 className="text-base sm:text-lg font-semibold">{t('savingsGoals.title')}</h3>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => { setEditGoal(null); setDialogOpen(true); }} className="h-8 px-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isReadOnly}
+          onClick={() => guard(() => { setEditGoal(null); setDialogOpen(true); })}
+          className="h-8 px-2"
+        >
           <Plus className="w-4 h-4" />
         </Button>
       </div>
+      {isReadOnly && (
+        <ReadOnlyBanner
+          className="mb-3"
+          title={t('savingsGoals.readOnlyTitle', 'Ciljevi štednje su samo za pregled')}
+          body={t('savingsGoals.readOnlyBody', 'Aktiviraj Smjer za dodavanje i uređivanje ciljeva.')}
+        />
+      )}
+
 
       {goals.length === 0 ? (
         <div className="text-center py-6">
           <PiggyBank className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">{t('savingsGoals.noGoals')}</p>
-          <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)} className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isReadOnly}
+            onClick={() => guard(() => setDialogOpen(true))}
+            className="mt-3"
+          >
             <Plus className="w-3 h-3 mr-1" />
             {t('savingsGoals.addGoal')}
           </Button>
+
         </div>
       ) : (
         <div className="space-y-3">

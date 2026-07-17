@@ -5455,5 +5455,16 @@
       "projectNotFound": "Projekt nicht gefunden",
       "generic": "Einladung konnte nicht gesendet werden"
     }
+  },
+  "access": {
+    "readOnlyTitle": "Dieses Modul ist schreibgeschützt",
+    "readOnlyBody": "Du siehst deine Daten und kannst sie exportieren. Aktiviere ein Abo, um hinzuzufügen oder zu bearbeiten.",
+    "cta": "Abo aktivieren",
+    "blocked": "Ohne Abo nicht erlaubt.",
+    "moduleBlocked": "Für diese Funktion ist ein aktives Abo nötig. Daten kannst du weiterhin sehen und exportieren.",
+    "freeTxLimitReached": "Du hast {{used}}/{{limit}} Gratistransaktionen diesen Monat verbraucht. Löschen setzt das Limit nicht zurück.",
+    "freePaymentSourceLimit": "Free-Plan erlaubt {{limit}} Wallet. Aktiviere Smjer für mehr.",
+    "freeBudgetLimit": "Free-Plan erlaubt {{limit}} Budget. Aktiviere Smjer für mehr.",
+    "freeLimitServer": "Free-Limit überschritten — Abo erforderlich."
   }
 }

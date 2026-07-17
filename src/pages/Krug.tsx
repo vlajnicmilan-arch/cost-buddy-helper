@@ -22,13 +22,19 @@ import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+
 
 export default function Krug() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { hasAccess } = useFeatureAccess();
+  const isReadOnly = !hasAccess('krug');
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
 
   // Deep-link ulaz iz obavijesti (`/krug?id=<uuid>`). Kad payload ima id,
   // otvaramo detail direktno i čistimo query param da back-navigacija na
@@ -74,7 +80,14 @@ export default function Krug() {
     <div className="min-h-screen bg-background pb-20">
       <PageHeader title={t('krug.title', 'Krug')} />
       <main className="max-w-4xl mx-auto px-4 py-4 space-y-4">
+        {isReadOnly && (
+          <ReadOnlyBanner
+            title={t('krug.readOnlyTitle', 'Krug je u načinu samo za pregled')}
+            body={t('krug.readOnlyBody', 'Postojeće Krugove vidiš i možeš izvesti. Za pozivanje članova i uređivanje aktiviraj modul Krug.')}
+          />
+        )}
         {selectedKrugId ? (
+
           <>
             <Button
               variant="ghost"

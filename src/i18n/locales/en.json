@@ -5455,5 +5455,16 @@
       "projectNotFound": "Project not found",
       "generic": "Failed to send invitation"
     }
+  },
+  "access": {
+    "readOnlyTitle": "This module is read-only",
+    "readOnlyBody": "You can still view and export your data. Activate a subscription to add or edit.",
+    "cta": "Activate subscription",
+    "blocked": "Action not allowed without a subscription.",
+    "moduleBlocked": "This feature requires an active subscription. You can still view and export your data.",
+    "freeTxLimitReached": "You've used {{used}}/{{limit}} free transactions this month. Deleting does not free up the limit.",
+    "freePaymentSourceLimit": "Free plan allows {{limit}} wallet. Activate Smjer for more.",
+    "freeBudgetLimit": "Free plan allows {{limit}} budget. Activate Smjer for more.",
+    "freeLimitServer": "Free limit exceeded — a subscription is required."
   }
 }

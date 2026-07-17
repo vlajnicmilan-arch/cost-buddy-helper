@@ -10,7 +10,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,7 +21,8 @@ const Projects = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { refetch } = useExpenses();
-  const { hasAccess, getRequiredTier } = useFeatureAccess();
+  const { hasAccess } = useFeatureAccess();
+
 
   // Free users get access if they are a member of at least one project (invited as worker/member)
   const [hasMemberships, setHasMemberships] = useState<boolean | null>(null);
@@ -75,10 +77,27 @@ const Projects = () => {
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : canSeePanel ? (
-          <ProjectsPanel onRefreshExpenses={refetch} canCreate={canCreate} />
+          <>
+            {!canCreate && (
+              <ReadOnlyBanner
+                className="mb-3"
+                title={t('projects.access.readOnlyTitle', 'Projekti su u načinu samo za pregled')}
+                body={t('projects.access.readOnlyBody', 'Postojeće projekte vidiš i možeš izvesti. Za nove/izmjene aktiviraj modul Projekti.')}
+              />
+            )}
+            <ProjectsPanel onRefreshExpenses={refetch} canCreate={canCreate} />
+          </>
         ) : (
-          <UpgradePrompt feature={t('nav.projects', 'Projekti')} requiredTier={getRequiredTier('projects')} />
+          <>
+            <ReadOnlyBanner
+              className="mb-3"
+              title={t('projects.access.readOnlyTitle', 'Projekti su u načinu samo za pregled')}
+              body={t('projects.access.readOnlyBody', 'Postojeće projekte vidiš i možeš izvesti. Za nove/izmjene aktiviraj modul Projekti.')}
+            />
+            <ProjectsPanel onRefreshExpenses={refetch} canCreate={false} />
+          </>
         )}
+
       </motion.div>
       <BottomNav />
     </div>
