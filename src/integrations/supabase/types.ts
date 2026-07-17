@@ -5668,6 +5668,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      can_write_module: {
+        Args: { _module: string; _user: string }
+        Returns: boolean
+      }
       can_write_payment_source: {
         Args: { _source_id: string; _user_id: string }
         Returns: boolean
