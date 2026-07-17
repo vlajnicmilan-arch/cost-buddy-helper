@@ -61,21 +61,8 @@ const translations: Record<LandingLanguage, TranslationTree> = {
         free: { name: 'Besplatno', price: '€0', f1: 'Do 30 transakcija/mj', f2: '1 izvor plaćanja', f3: '1 budžet', f4: 'AI skeniranje računa' },
         pro: { name: 'Pro', price: '€7,99', f1: 'Sve iz Besplatnog + neograničeno', f2: 'Recurring + cashflow prognoza (8 tj.)', f3: 'Više valuta + push notifikacije', f4: 'AI asistent, izvještaji, dijeljenje' },
         business: { name: 'Poslovno', price: '€14,99', f1: 'Sve iz Pro + više profila tvrtki', f2: 'Radnici i satnice', f3: 'Timski i višekorisnički pristup', f4: 'Napredni projekti sa suradnicima' },
-        lifetime: {
-          badge: 'Founding Member · Limitirano na 200',
-          name: 'Pro Lifetime',
-          price: '€129',
-          oneTime: 'jednokratno',
-          tagline: 'Plati jednom — koristi zauvijek',
-          discount: '−75% u odnosu na godišnju pretplatu',
-          f1: 'Sve iz Pro plana — zauvijek',
-          f2: 'Bez ikakvih mjesečnih troškova',
-          f3: 'Sve buduće Pro značajke uključene',
-          f4: 'Founding Member status & prioritetna podrška',
-          remaining: 'Ostalo {n} od 200 mjesta',
-          soldOut: 'Rasprodano',
-          cta: 'Postani Founding Member',
-        },
+        // lifetime block removed with Stripe purge (Milan 28.8.2026)
+
       },
       testimonials: {
         title: 'Korisnici nas vole',
