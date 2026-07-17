@@ -3921,17 +3921,17 @@
       "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
       "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
       "trial": "Probno razdoblje: novi korisnici dobivaju 30 dana besplatnog korištenja bez unosa kartice. Ako se u tom roku ne aktivira pretplata, naplata se ne pokreće.",
-      "founding": "Founding — prvih 100: Prvih 100 godišnjih pretplata dobiva zaključan popust. Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket.",
+      "founding": "Founding — prvih 100: Prvih 100 godišnjih pretplata dobiva zaključan popust izražen u postotku. Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket. Prekid pretplate poništava popust; kod ponovnog uključivanja vrijedi cijena koja tada bude na snazi.",
       "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete.",
-      "legacy": "Napomena za postojeće korisnike: pretplate ugovorene ranije preko Stripe platforme ostaju na snazi pod uvjetima s kojima su sklopljene dok se ne otkažu ili ne prijeđu na Paddle. Novi korisnici sklapaju pretplatu isključivo preko Paddlea."
+      "legacy": "Napomena za postojeće korisnike: pretplate ugovorene ranije preko Stripe platforme ostaju na snazi pod uvjetima s kojima su sklopljene dok ih korisnik ne otkaže. Novi korisnici sklapaju pretplatu isključivo preko Paddlea."
     },
     "s4": {
       "title": "4. Otkazivanje i povrat",
-      "p1": "Pretplatu možete otkazati u bilo kojem trenutku putem postavki aplikacije ili kroz Paddle. Nakon otkazivanja:",
-      "l1": "Pretplata vrijedi do kraja tekućeg plaćenog razdoblja — bez proračuna razlike (proration).",
-      "l2": "Nakon isteka plaćenog razdoblja pristup modulima se zaključava; vaši podaci ostaju sačuvani.",
-      "l3": "Podatke možete izvesti putem funkcije sigurnosne kopije (backup) u bilo kojem trenutku.",
-      "p2": "Za prvu kupnju bilo koje pretplate vrijedi povrat novca u roku od 14 dana bez pitanja. Detaljni uvjeti povrata (uključujući postupak preko Paddlea i uvjete za obnove) opisani su u Pravilima povrata novca."
+      "p1": "Pretplatu možete otkazati u bilo kojem trenutku putem postavki aplikacije ili kroz Paddle. Nakon otkazivanja ili prelaska na manji paket:",
+      "l1": "Pretplata (ili veći paket) vrijedi do kraja tekućeg plaćenog razdoblja — bez povrata razlike (no proration).",
+      "l2": "Vaši podaci ostaju sačuvani i možete ih u bilo kojem trenutku izvesti putem funkcije sigurnosne kopije (backup).",
+      "l3": "",
+      "p2": "Za prvu kupnju bilo koje pretplate vrijedi povrat novca u roku od 14 dana bez pitanja. Detaljni uvjeti povrata (postupak preko Paddlea i uvjeti za obnove) opisani su u Pravilima povrata novca."
     },
     "s5": {
       "title": "5. Ograničenje odgovornosti",
