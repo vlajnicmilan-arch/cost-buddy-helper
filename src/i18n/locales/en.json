@@ -3907,20 +3907,25 @@
     },
     "s3": {
       "title": "3. Subscriptions & Payments",
-      "p1": "The app offers three tiers:",
-      "free": "Limited to 30 transactions/month, 1 wallet, 1 budget",
-      "pro": "Unlimited transactions, advanced features, priority support",
-      "business": "Everything in Pro + business modules, invoicing, inventory",
-      "p2": "New users receive a 30-day free trial with full access to all features. After the trial expires, access is limited to the Free tier unless you activate a subscription.",
-      "p3": "Payments are processed via Stripe. Subscriptions automatically renew at the end of each billing period (monthly or annually). Annual plans include a 17% discount."
+      "p1": "Centar is billed per module. Prices are:",
+      "mSmjer": "personal finance — €5.99/mo or €59.90/yr",
+      "mKrug": "shared expenses — €9.99/mo or €99.90/yr",
+      "mProjekti": "job management + Decisions — €21.99/mo or €219.90/yr",
+      "mKomplet": "Smjer + Krug + Projekti — €25.99/mo or €259.90/yr",
+      "yearly": "Annual = pay for ten months, get twelve.",
+      "biznis": "Biznis is a separate module and is not yet available; pricing and terms will be published before launch.",
+      "trial": "Trial: new users get 30 days of free use with no card required. If no subscription is activated within that period, no charge is made.",
+      "founding": "Founding — first 100: The first 100 annual subscriptions receive a locked-in discount. No matter how much Centar costs later, your discount stays — as long as your subscription renews without interruption. It also carries over if you later upgrade to a larger package.",
+      "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel.",
+      "legacy": "Note for existing users: subscriptions previously contracted via Stripe remain in force under their original terms until cancelled or migrated to Paddle. New users contract exclusively via Paddle."
     },
     "s4": {
       "title": "4. Cancellation & Refunds",
-      "p1": "You can cancel your subscription at any time through the app settings. After cancellation:",
-      "l1": "Access to premium features continues until the end of the paid period",
-      "l2": "Your data remains saved and accessible at the Free tier",
-      "l3": "You can export all data using the backup function",
-      "p2": "In accordance with EU legislation, you have the right to a refund within 14 days of starting a subscription, provided you have not significantly used the service. Contact us via email for refunds."
+      "p1": "You can cancel your subscription at any time through the app settings or via Paddle. After cancellation:",
+      "l1": "The subscription remains valid until the end of the current paid period — no proration.",
+      "l2": "After the paid period ends, access to modules is locked; your data remains saved.",
+      "l3": "You can export your data via the backup function at any time.",
+      "p2": "For the first purchase of any subscription, a 14-day no-questions money-back guarantee applies. Detailed refund terms (including the Paddle process and terms for renewals) are described in the Refund Policy."
     },
     "s5": {
       "title": "5. Limitation of Liability",
