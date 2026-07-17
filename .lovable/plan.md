@@ -1,134 +1,173 @@
+# Read-Only Politika — Plan (pre-launch, obećanje iz ToS §3)
 
-# Faza 5 — Aplikacija čita `user_entitlements`
+Cilj: uskladiti aplikaciju s onim što je već potpisano u Uvjetima korištenja. Bez aktivnog entitlementa i iznad Free limita korisnik **vidi svoje podatke i može ih izvesti**, ali ne može stvarati/uređivati/brisati. Ništa se ne briše, ništa se ne skriva.
 
-Cilj: `has_entitlement(user, module)` postaje jedini izvor istine za pristup, bez da itko izgubi pravo. Legacy `user_subscriptions` i `lifetime_purchases` ostaju živi kao fallback ulaz u `has_entitlement`, ne kao paralelni gate.
+Izvor istine: **`has_entitlement(user, module)`** iz Faze 5. Nema paralelnog sustava.
 
 ---
 
-## 1) Inventar gateova (danas → poslije)
-
-**Klijent — čita danas `SubscriptionContext` (`check-subscription` → Stripe/admin/lifetime → tier free/pro/business):**
+## 1) Inventar — mjesta koja danas SKRIVAJU umjesto da pokažu (moraju postati read-only)
 
 | Mjesto | Danas | Poslije |
 |---|---|---|
-| `SubscriptionContext.tsx` | `check-subscription` vraća tier | vraća + `entitlements: {smjer,krug,projekti,biznis}` iz `has_entitlement`; `tier` ostaje derived (za UI kompatibilnost) |
-| `useFeatureAccess.ts` | mapira feature→tier rank | mapira feature→**modul**, pita `entitlements[modul]` |
-| `useFreeLimits.ts` | limiti kad `tier==='free'` | limiti kad **nijedan modul nije aktivan** (nema smjer/krug/projekti/biznis) |
-| `useModuleStates.ts` | `tierUnlocked = hasAccess('krug'|'projects'|'business_module')` | isto, ali `hasAccess` interno ide na entitlements |
-| `useProjectAccessLevel.ts` | `hasAccess('projects')` | `entitlements.projekti` |
-| `BusinessModeGuard.tsx` | `subscribed||trialActive` | `entitlements.biznis` (source ≠ null ILI trial confirmed expired ostaje jednak) |
-| `Paywall.tsx` gate u `App.tsx` | trial expired && !subscribed | nema aktivnog entitlementa **na modulu koji korisnik pokušava koristiti** — za Fazu 5 zadržavamo: paywall samo kad korisnik nema **nijedan** aktivni modul (isto kao free) |
-| `TrialBanner`, `TrialFeatureChip`, `UpgradePrompt`, `SubscriptionSection`, `WelcomeChecklist`, `Admin.tsx` | čitaju `tier`/`trialActive` | čitaju iste polja iz konteksta (derived), bez izmjena logike |
-| `subscriptionTiers.ts` | konstante, `isTrialExpired(created_at)` | konstante ostaju za UI/Stripe legacy; `isTrialExpired` **više ne odlučuje o pristupu** — samo prikaz preostalih dana iz `entitlements.trial.period_end` |
+| `src/pages/Krug.tsx` (bez `krug` entitlementa) | `UpgradePrompt` umjesto sadržaja — korisnik NE VIDI vlastite Krug transakcije | Prikaz svih vlastitih Krug zapisa (read-only), izvoz radi, gornji banner "Krug je zaključan — možeš čitati i izvesti, za nove akcije aktiviraj Krug" + CTA |
+| `src/components/guards/BusinessModeGuard.tsx` | Auto-gasi `business_mode_enabled` u profilu nakon 2 ciklusa bez pristupa — biznis profil i projekti "nestanu" | NE gasiti flag. Ostaviti biznis mod aktivan, ali domenu prebaciti u read-only (banner + write guard). Podaci vidljivi. |
+| `src/pages/Projects.tsx` (bez `projekti`) | `UpgradePrompt` na cijeloj stranici | Lista projekata + drill-in u read-only (koristi postojeći `ProjectReadOnlyBanner` + `useProjectWriteGuard`, oba već postoje iz PR1) |
+| `src/components/custom-categories/CustomCategoriesPanel.tsx` | `UpgradePrompt` | Lista postojećih kategorija read-only + banner |
+| `src/components/installments/InstallmentsPanel.tsx` | `UpgradePrompt` | Lista rata read-only + banner |
+| `src/components/savings/SavingsGoalsSection.tsx` | `UpgradePrompt` | Lista ciljeva read-only + banner |
+| `src/components/recurring/RecurringTransactionsPanel.tsx` | `UpgradePrompt` | Lista pravila read-only + banner; automatsko generiranje NE stvara nove zapise dok je zaključano (server-side gate, v. §4) |
+| `FinancialAssistantDialog` (AI) | Blok kad nema `ai_assistant` | Ostaviti kako je — AI je feature, nije "korisnikov podatak". Kvota već postoji. |
 
-**Server:**
-
-| Mjesto | Danas | Poslije |
-|---|---|---|
-| `check-subscription` edge fn | Stripe→tier, admin, lifetime | ostaje, ali **dodatno** vraća entitlements iz `has_entitlement` za svaki modul + period_end + source |
-| `is_projects_subscriber(uid)` | `user_roles admin` ∪ `user_subscriptions pro/business` ∪ `lifetime_purchases` | zamijeniti tijelo s `has_entitlement(uid,'projekti')` (koji već pokriva legacy + admin_grant + paddle) |
-| `_shared/aiQuota.ts` (edge) | tier iz `user_subscriptions` + lifetime, string match | `has_entitlement(uid,'smjer')` → pro kvota; inače free |
-| RLS politike koje zovu `is_projects_subscriber` | rade preko helpera | ništa se ne mijenja jer helper ostaje isti potpis |
-| `trial-reminder`, `backup-weekly` | čitaju `user_subscriptions` | ostavljamo **izvan Faze 5** (cron, ne blokira launch) |
+Transakcije, novčanici, budžeti već su vidljivi ✅ i izvoz radi ✅ — samo dodati write guard (§2).
 
 ---
 
-## 2) Mapiranje funkcionalnost → modul (ZAHTIJEVA MILANOVU POTVRDU)
+## 2) Inventar PISANJA — što se blokira i kako
 
-Prijedlog:
+Centralna komponenta: **`useWriteGuard(module)`** hook (novi, mirror `useProjectWriteGuard` iz PR1). Vraća `{ canWrite, blockProps, guard(), guardedAction() }`. `canWrite = has_entitlement(module) || (module==='smjer' && withinFreeLimits(action))`.
 
-| Feature (useFeatureAccess) | Modul |
-|---|---|
-| `unlimited_transactions`, `unlimited_payment_sources`, `unlimited_budgets`, `csv_import`, `pdf_import`, `reports`, `ai_assistant`, `recurring_transactions`, `savings_goals`, `installments`, `custom_categories`, `sharing` | **smjer** |
-| `krug` | **krug** |
-| `projects`, `advanced_projects`, `workforce`, `collaborators`, `team_access` | **projekti** |
-| `business_module` | **biznis** |
+Mjesta koja moraju proći kroz guard:
 
-Napomene:
-- `sharing` (obitelj/family) → **smjer** (dio osobnih financija). Alternativa: uz `krug`. Milan bira.
-- `team_access`/`collaborators` su danas 'business' tier; mapiramo ih u **projekti** jer se koriste isključivo unutar projekta. Ako Milan želi da to bude ekskluziva Kompleta → mapirati u `biznis`.
-- Feature→modul mapa živi u **jednom** file-u (`src/lib/featureModuleMap.ts`) — ne rasipati.
+**Smjer (transakcije/novčanici/budžeti/kategorije):**
+- `AddExpenseDialog` (Save) — blok kad `!canAddTransaction` (Free limit) ILI kad korisnik pokušava editirati postojeću a nema `smjer`
+- `EditExpenseDialog`, swipe-to-delete na `TransactionList`, bulk delete, "Označi plaćeno"
+- Novčanici: `AddPaymentSourceDialog`, edit, delete, anchor set (`set_source_anchor` RPC)
+- Budžeti: `AddBudgetDialog`, edit, delete, invite member
+- Kategorije: `CustomCategoriesPanel` CRUD
+- Rate/Savings/Recurring/Reminders: sve CUD akcije
+- Import (CSV/PDF/bank sync): blok write koraka; parsing i preview smiju raditi
 
----
+**Krug:** approve, retract, add expense u Krug, dijeljenje source-a, deletion request/vote
 
-## 3) Trial
+**Projekti:** već pokriveno `useProjectWriteGuard` — proširi da `owner_readonly` uključuje "nema `projekti` entitlement" (danas već radi kroz `hasAccess('projects')`, samo osigurati da čita entitlements a ne stari tier)
 
-- Izvor: red u `user_entitlements` gdje `source='trial'`, po modulu, s `period_end`.
-- Kod: `SubscriptionContext` više ne računa `isTrialExpired(user.created_at)`; umjesto toga za svaki modul: `trialActive[modul] = entitlement.source==='trial' && period_end > now()`. `trialDaysRemaining` = max preostalih dana preko svih trial entitlementa (za `TrialBanner`).
-- Postojećih 33 trial redaka (11 usera × 3 modula, bez biznisa) je već upisano — pristup ostaje identičan.
-- Kad trial istekne u Fazi 5 → korisnik pada na **Free** (postojeći `useFreeLimits`). Read-only politika je zasebna faza (Milanov mandat).
-- Novi signupi: potreban je hook koji nakon `signup` inserta 3 trial retka (smjer/krug/projekti, +30 dana). To radi trigger `on_auth_user_created` — provjeriti postoji li; ako ne, dodati u Fazi 5.
+**Biznis:** switching biznis profila OK, sve CUD (računi, klijenti, invoices, business debts) — guard
 
----
+**Poruka:** svaki blokirani gumb pokazuje **StatusFeedback** s tekstom (i18n):
+- Free limit: "Dosegnut je besplatni limit (30/mj). Aktiviraj Smjer za neograničeno."
+- Read-only modul: "{Modul} je u načinu čitanja. Aktiviraj pretplatu za nove izmjene."
+- Uz **CTA gumb** koji vodi na `/paywall?module=<x>`.
 
-## 4) Sigurnost prijelaza
-
-**Odabir: dvostruko čitanje ~7 dana, s postavkom kill-switch.**
-
-Rezoning: rez preko noći bi bio čist, ali svaka rupa u mapiranju znači da netko izgubi pristup — a to je gore od privremene tolerancije. `has_entitlement` već pokriva legacy Stripe (`pro_legacy`/`business_legacy`) i admin_grant, pa je "dvostruko čitanje" tehnički samo: klijent traži `hasAccess`, koji vraća `true` ako **entitlement postoji ILI** legacy fallback vraća true. U praksi: `has_entitlement` je taj koji radi OR — pa se u aplikaciji ne duplicira ništa. Prijelaz je jednostruk sa server-side safety-netom.
-
-**Feature flag:** `VITE_ENTITLEMENTS_MODE` (`legacy` | `dual` | `entitlements`). Default `dual` u tjednu prijelaza; nakon 7 dana bez incidenta → `entitlements`. Rollback = flip flag na `legacy` bez deploya (postavlja se u `app_settings`, čita ga `SubscriptionContext`).
-
-**Test matrix prije publisha (staging/preview):**
-
-| Korisnik | Očekivano |
-|---|---|
-| vlajnic.milan (admin_grant, svi moduli) | pun pristup |
-| hr.akrobat (admin_grant) | pun pristup |
-| tactura.hr (paddle Komplet, 3 modula, biznis NEMA) | smjer+krug+projekti pun, biznis paywall |
-| bilo tko iz 11 trial usera | pristup na 3 modula do isteka triala |
-| istekli trial user (simulirati backdate period_end) | free limiti, paywall na Pro features |
-| vinka.plesko, vlajnic.petar (legacy `user_subscriptions.tier='business'`, expires_at NULL) | pun pristup preko legacy grane u `has_entitlement` |
-| tuđi worker/investitor na projektu | pristup preko project_members (RLS), ne dira entitlements |
-| brand new signup | trial insertan, 3 modula aktivna |
-
-Provjera se radi: (a) SQL — pozvati `has_entitlement` za svaki user × modul; (b) UI — login kao svaki od gornjih (preko admin impersonate ili test emailova) na preview URL; (c) grep test da nijedan `useFeatureAccess` poziv ne prolazi pored novog konteksta.
-
-**Rollback:** flip `VITE_ENTITLEMENTS_MODE=legacy` u `app_settings` (bez deploya). `is_projects_subscriber` promjena je jedina koja mijenja tijelo funkcije — držimo staru definiciju u komentaru migracije da se u 30s vrati.
+Nikad sivi gumb bez objašnjenja. `blockProps` postavlja `aria-disabled` + tooltip s razlogom; klik ipak prolazi da se pokaže feedback (dostupno ključem tipkovnice i za screen readere).
 
 ---
 
-## 5) Serverska strana
+## 3) Otpornost brojača 30 transakcija/mj na brisanje
 
-Faza 5 dira **samo**:
-1. `is_projects_subscriber` — tijelo delegira `has_entitlement(uid,'projekti')`. Ista signatura, iste RLS politike ostaju netaknute.
-2. `check-subscription` — dodaje `entitlements` u response.
-3. `_shared/aiQuota.ts` — čita `has_entitlement(uid,'smjer')` umjesto tiera.
+Trenutno `useFreeLimits` broji `expenses` u tekućem mjesecu → **rupa**: obriši 30 starih → dobiješ novih 30. Nedopustivo.
 
-Ostalo (`trial-reminder`, `backup-weekly`, `tablesToPurge`) → **Faza 6** (nije kritično za launch, cronovi ne blokiraju korisnika).
+**Odabir: server-side increment-only brojač u novoj tablici `free_tier_usage_monthly`.**
 
----
-
-## 6) Redoslijed i opseg
-
-```text
-Korak 1 · featureModuleMap.ts + tipovi                   S   (nova mapa, bez logike)
-Korak 2 · check-subscription vraća entitlements          M   (edge, 1 fn, aditivno)
-Korak 3 · SubscriptionContext izlaže entitlements+trial  M   (kontekst, backward-compat: tier ostaje)
-Korak 4 · useFeatureAccess prelazi na entitlements       M   (jedno mjesto)
-Korak 5 · useFreeLimits: "free" = 0 aktivnih modula      S
-Korak 6 · Paywall gate u App.tsx čita entitlements       S
-Korak 7 · is_projects_subscriber → has_entitlement       S   (migracija, jedan CREATE OR REPLACE)
-Korak 8 · aiQuota.ts → has_entitlement                   S
-Korak 9 · Trigger za trial na signup (ako ne postoji)    S
-Korak 10 · Test matrix (SQL + preview login)             M
-Korak 11 · Kill-switch (app_settings.entitlements_mode)  S
-Korak 12 · Publish s flagom 'dual', 7 dana monitor       -
+```
+free_tier_usage_monthly(user_id, month_key TEXT, transactions_created INT, updated_at)
+PRIMARY KEY (user_id, month_key)  -- npr. '2026-08'
 ```
 
-Legend: S ≈ pola sata, M ≈ 1–2h. Ukupno ~1 radni dan bez testiranja, +pola dana test matrix.
+- Trigger `AFTER INSERT ON expenses` (samo za `expense_nature IN ('income','expense')`, ne za korekcije/transfere): `INSERT ... ON CONFLICT (user_id, month_key) DO UPDATE SET transactions_created = transactions_created + 1`.
+- Trigger **ne dekrementira** na DELETE. Brisanje NE oslobađa mjesto.
+- Klijent čita `free_tier_usage_monthly.transactions_created` za tekući mjesec preko postojećeg TanStack query hooka; `canAddTransaction = has_entitlement('smjer') || counter < 30`.
+- RLS: `SELECT` samo za `auth.uid() = user_id`. Nema INSERT/UPDATE/DELETE iz klijenta (samo trigger, SECURITY DEFINER).
 
-**Ne diram u Fazi 5:**
-- Read-only politika za istekli trial (poseban proizvodni razgovor).
-- Migracija 4 legacy `user_subscriptions` retka u `user_entitlements` (nije potrebno — legacy grana u `has_entitlement` ih pokriva; može se raditi kasnije kao clean-up).
-- `trial-reminder`, `backup-weekly`, `tablesToPurge`.
+Zašto ne "count po created_at uključujući obrisane": trenutno nemamo soft-delete na `expenses` osim `deleted_at` (Trash) — pouzdaniji je eksplicitni brojač, ne ovisi o retenciji Trash-a i preživi hard delete iz Trash-a.
+
+Backfill za postojeće korisnike: jednokratna migracija koja popuni brojač iz `expenses.created_at` po mjesecu (uključi trenutno "žive"). Za obrisane iz prošlih mjeseci — nema potrebe, prošli mjeseci se ne provjeravaju.
+
+---
+
+## 4) Serverska zaštita (RLS/RPC)
+
+Bez ovoga UI je paravan. Fazno:
+
+**Faza A (MORA prije launcha):**
+1. **Brojač 30/mj** (§3) — trigger + tablica + RLS.
+2. **`INSERT ON expenses` guard**: BEFORE INSERT trigger `enforce_free_transaction_cap()`:
+   - Ako `has_entitlement(NEW.user_id, 'smjer')` → dopusti.
+   - Inače: pročitaj `free_tier_usage_monthly` za mjesec od `NEW.date` (fallback `now()`); ako ≥ 30 → `RAISE EXCEPTION 'free_limit_exceeded'`.
+3. **`INSERT ON custom_payment_sources` guard**: ako nema `smjer` i broj postojećih ≥ 1 → block.
+4. **`INSERT ON budget_plans` guard**: analogno, ≥ 1 → block.
+5. **RLS refit za module** (write only, čitanje ostaje širom otvoreno svom vlasniku):
+   - `krug`: policy `INSERT/UPDATE/DELETE` na `krug`, `krug_membership`, `krug_shared_payment_source`, `krug_deletion_request/vote` zahtijeva `has_entitlement(auth.uid(), 'krug')`. SELECT nedirnut.
+   - `projekti`: sve `projects/project_*` write policy uvjetuje `has_entitlement(auth.uid(), 'projekti')` (ali ostaviti `project_members` iznimke: participant može svoj work log — već je logika u `useProjectWriteGuard`, mirror u SQL preko `is_project_participant()`).
+   - `biznis`: `business_profiles/business_debts/invoices/clients/...` write zahtijeva `has_entitlement('biznis')`.
+   - Napredni `smjer`: `recurring_transactions`, `savings_goals`, `installments`, `custom_categories` write zahtijeva `has_entitlement('smjer')`.
+
+**Faza B (može poslije launcha, ali unutar 2 tj.):**
+- Recurring generator (edge cron) provjerava `has_entitlement('smjer')` prije inserta — inače preskoči i ostavi audit red.
+- Import edge funkcije (`parse-pdf-statement`, CSV commit) provjeravaju kapacitet prije write koraka.
+
+**Opseg Faze A:** ~1 dan SQL + ~pola dana testovi.
+
+---
+
+## 5) Kako se slaže s Fazom 5
+
+- `useWriteGuard` čita **isti `entitlements`** objekt iz `SubscriptionContext` koji je Faza 5 već izložila. Nema novog fetcha, nema novog cachea.
+- Kill-switch `entitlements_mode` (legacy/dual/entitlements) i dalje vrijedi — u `legacy` modu write guard koristi legacy tier gate (isto što danas radi `hasAccess`).
+- Trial: dok `source='trial'` red postoji i `period_end > now()`, `has_entitlement` vraća true → nema read-only. Kad istekne, korisnik automatski padne u read-only (bez logout-a, bez restart-a).
+- BusinessModeGuard: prestaje gasiti flag; umjesto toga poziva `useWriteGuard('biznis')` unutar biznis strana. Zapis u `business_profiles` ostaje. Ovo rješava "biznis nestane" bug.
+- `useFreeLimits` počinje čitati serverski brojač, ne lokalno prebrojavanje.
+
+---
+
+## 6) Test matrica
+
+Korisnik: Free (nema entitlementa), 200 starih transakcija (od čega 25 u tekućem mjesecu), 5 projekata (owner), 3 novčanika (napravljeni dok je imao trial), 2 budžeta, 4 krug zapisa.
+
+| Akcija | Očekivano |
+|---|---|
+| Otvori Home, Transakcije | Vidi svih 200, filtri rade, klik na detalj radi |
+| Izvoz CSV/PDF svih 200 | Radi ✅ |
+| Backup | Radi ✅ |
+| Add expense (25 ovaj mj.) | Dopušteno (25 < 30) |
+| Add expense (30. ovaj mj.) | Blok + StatusFeedback + CTA |
+| Obriši 5 iz ovog mjeseca pa pokušaj Add | Blok (brojač i dalje 30) |
+| Obriši iz prošlog mjeseca | Blok (delete zaključan — nema `smjer`) |
+| Edit stare transakcije | Blok |
+| Dodaj novi novčanik (ima 3) | Blok (ima ih ≥ 1, treba `smjer`) |
+| Dodaj budget (ima 2) | Blok |
+| Otvori Krug | Vidi 4 zapisa, banner + CTA |
+| Approve/retract u Krugu | Blok |
+| Otvori Projekti | Vidi 5 projekata, drill-in radi, tabovi read-only |
+| Edit milestone, add expense u projekt | Blok (owner_readonly banner) |
+| Izvoz projekta (PDF) | Radi ✅ |
+| Otvori Biznis mod | Otvara se, biznis profil postoji, projekti vidljivi |
+| Add invoice, add client | Blok |
+| Recurring pravilo koje ističe ovaj mjesec | NE generira novu transakciju (server), UI pokazuje "pauzirano" |
+| SQL: `INSERT INTO expenses` iz Postgres klijenta | RLS/trigger baca `free_limit_exceeded` ili `not_entitled` |
+
+Zeleno kad svaka linija prolazi ručno + jedan Playwright e2e "free-tier-read-only.spec.ts" koji obradi ključne rute.
+
+---
+
+## 7) Redoslijed i opseg
+
+```text
+Korak 1 · SQL: free_tier_usage_monthly + INSERT trigger + backfill      M
+Korak 2 · SQL: enforce_free_transaction_cap trigger + testovi           S
+Korak 3 · SQL: write policy refit za krug/projekti/biznis/napr.smjer    L  (najveći, ~4h + test)
+Korak 4 · useWriteGuard hook (klijent, mirror useProjectWriteGuard)     S
+Korak 5 · useFreeLimits čita serverski brojač                            S
+Korak 6 · Zamijeni UpgradePrompt read-only prikazima:                    M
+           Krug, CustomCategories, Installments, Savings, Recurring, Projects
+Korak 7 · BusinessModeGuard: prestaje gasiti flag, samo banner           S
+Korak 8 · Uvezi guard u sve pisajuće dijaloge/gumbe (grep + patch)       M
+Korak 9 · i18n stringovi (HR/EN/DE) za banere + toaste                   S
+Korak 10 · Playwright e2e: free-tier-read-only.spec.ts                   S
+Korak 11 · Ručna test matrica (§6) na preview URL                        M
+```
+
+Legenda: S ≈ 30 min, M ≈ 1–2h, L ≈ 3–5h. **Ukupno: ~2 radna dana implementacije + pola dana testiranja.**
+
+**Kritični put do launcha (28.8.):** Koraci 1–5 + 10 su neizostavni. Koraci 6–8 (UI read-only) također — inače ToS §3 i dalje laže. Korak 3 (RLS refit) je najrizičniji; ako klizi, možemo lansirati s Fazom A minimuma (samo `expenses`/`sources`/`budgets` triggeri) i modul-specifične RLS deploy-ati u tjednu nakon launcha — ali tada UI guard je jedina brava za krug/projekti/biznis write. **Milan bira: full A prije launcha ili degradirani opseg.**
 
 ---
 
 ## Otvorena pitanja za Milana prije koda
 
-1. Potvrdi feature→modul mapu (poglavlje 2), posebno `sharing` i `team_access/collaborators`.
-2. Dvostruko čitanje 7 dana + kill-switch — OK, ili tvrdi rez?
-3. Novi signup: koliko trial redaka i koji moduli (smjer/krug/projekti; biznis ne)?
+1. **Opseg Faze A za launch**: full (uključno §4.5 RLS refit svih modula) ili minimum (samo §4.1–4.4 + UI guard)?
+2. **Brisanje starih transakcija na Free**: zaključati (predlažem) ili dopustiti? Ako dopustiti — otvara se rizik da user briše da napravi mjesta u UI-u iako brojač ostaje; poruka bi trebala jasno reći "brisanje ne oslobađa limit".
+3. **Recurring bez `smjer`**: pauzirati generator (predlažem) ili pustiti da generira i onda odbije na trigger razini (bučno)?
+4. **Trial istek mid-mjesec**: brojač 30/mj kreće od 0 od idućeg mjeseca, tekući mjesec nastavlja koliko je već potrošeno — OK?
 
 Čekam odobrenje.
