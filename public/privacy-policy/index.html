@@ -64,8 +64,8 @@
 </ul>
 <h3>2.4 Podaci o naplati (samo plaćeni planovi)</h3>
 <ul>
-  <li>Stripe customer ID, status pretplate, datum isteka</li>
-  <li>Podaci o kartici <strong>obrađuje isključivo Stripe</strong> — mi ih nikad ne vidimo niti pohranjujemo</li>
+  <li>Paddle customer ID, status pretplate, datum isteka, adresa za PDV</li>
+  <li>Podaci o kartici <strong>obrađuje isključivo Paddle</strong> kao trgovac na papiru (Merchant of Record) — mi ih nikad ne vidimo niti pohranjujemo</li>
 </ul>
 
 <h2>3. Pravne osnove obrade (čl. 6. GDPR)</h2>
@@ -89,10 +89,10 @@
 <strong>Podaci:</strong> Tekst vaših pitanja asistentu, slike računa koje skenirate, opis transakcija. <strong>Podaci se NE koriste za treniranje modela.</strong><br>
 <strong>Pravna osnova prijenosa u SAD:</strong> EU-US Data Privacy Framework + Standardne ugovorne klauzule (SCC)</p>
 
-<h3>Stripe Payments Europe Ltd. — Irska (EU) / SAD</h3>
-<p><strong>Svrha:</strong> Obrada plaćanja pretplata (Pro/Business plan)<br>
-<strong>Podaci:</strong> Email, ime, podaci o kartici (obrađuje isključivo Stripe — mi ne vidimo broj kartice)<br>
-<strong>DPA:</strong> <a href="https://stripe.com/legal/dpa">stripe.com/legal/dpa</a> · PCI DSS Level 1 · DPF certified</p>
+<h3>Paddle.com Market Ltd. — UK / EU / SAD</h3>
+<p><strong>Svrha:</strong> Obrada plaćanja pretplata kao <strong>Merchant of Record</strong> (Paddle je trgovac koji izdaje račun i provodi povrate)<br>
+<strong>Podaci:</strong> Email, ime, adresa za PDV, podaci o kartici (obrađuje isključivo Paddle — mi ne vidimo broj kartice)<br>
+<strong>DPA:</strong> <a href="https://www.paddle.com/legal/dpa">paddle.com/legal/dpa</a> · PCI DSS Level 1</p>
 
 <h3>Firebase Cloud Messaging (Google LLC) — Globalno (SAD)</h3>
 <p><strong>Svrha:</strong> Slanje push notifikacija (samo ako date dozvolu)<br>
@@ -127,7 +127,7 @@
     <tr><td>Push notification logovi</td><td>30 dana</td></tr>
     <tr><td>AI chat poruke</td><td>90 dana</td></tr>
     <tr><td>Računovodstveni podaci (Business plan, fakture)</td><td>11 godina (Zakon o računovodstvu RH)</td></tr>
-    <tr><td>Podaci o naplati (Stripe)</td><td>10 godina (porezni zakoni)</td></tr>
+    <tr><td>Podaci o naplati (Paddle)</td><td>10 godina (porezni zakoni)</td></tr>
   </tbody>
 </table>
 
