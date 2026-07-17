@@ -3915,17 +3915,17 @@
       "yearly": "Annual = pay for ten months, get twelve.",
       "biznis": "Biznis is a separate module and is not yet available; pricing and terms will be published before launch.",
       "trial": "Trial: new users get 30 days of free use with no card required. If no subscription is activated within that period, no charge is made.",
-      "founding": "Founding — first 100: The first 100 annual subscriptions receive a locked-in discount. No matter how much Centar costs later, your discount stays — as long as your subscription renews without interruption. It also carries over if you later upgrade to a larger package.",
+      "founding": "Founding — first 100: The first 100 annual subscriptions receive a locked-in percentage discount. No matter how much Centar costs later, your discount stays — as long as your subscription renews without interruption. It also carries over if you later upgrade to a larger package. Interrupting the subscription cancels the discount; on re-subscription the then-current price applies.",
       "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel.",
-      "legacy": "Note for existing users: subscriptions previously contracted via Stripe remain in force under their original terms until cancelled or migrated to Paddle. New users contract exclusively via Paddle."
+      "legacy": "Note for existing users: subscriptions previously contracted via Stripe remain in force under their original terms until the user cancels them. New users contract exclusively via Paddle."
     },
     "s4": {
       "title": "4. Cancellation & Refunds",
-      "p1": "You can cancel your subscription at any time through the app settings or via Paddle. After cancellation:",
-      "l1": "The subscription remains valid until the end of the current paid period — no proration.",
-      "l2": "After the paid period ends, access to modules is locked; your data remains saved.",
-      "l3": "You can export your data via the backup function at any time.",
-      "p2": "For the first purchase of any subscription, a 14-day no-questions money-back guarantee applies. Detailed refund terms (including the Paddle process and terms for renewals) are described in the Refund Policy."
+      "p1": "You can cancel your subscription at any time through the app settings or via Paddle. After cancellation or downgrade to a smaller package:",
+      "l1": "The subscription (or larger package) remains valid until the end of the current paid period — no proration.",
+      "l2": "Your data remains saved and you can export it via the backup function at any time.",
+      "l3": "",
+      "p2": "For the first purchase of any subscription, a 14-day no-questions money-back guarantee applies. Detailed refund terms (Paddle process and terms for renewals) are described in the Refund Policy."
     },
     "s5": {
       "title": "5. Limitation of Liability",

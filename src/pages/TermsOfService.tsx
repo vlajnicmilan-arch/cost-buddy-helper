@@ -64,7 +64,6 @@ const TermsOfService = () => {
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
               <li>{t('tos.s4.l1')}</li>
               <li>{t('tos.s4.l2')}</li>
-              <li>{t('tos.s4.l3')}</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">{t('tos.s4.p2')}</p>
           </section>
