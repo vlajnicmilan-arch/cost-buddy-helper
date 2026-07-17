@@ -25,11 +25,11 @@ let paddlePromise: Promise<Paddle | undefined> | null = null;
 
 const fetchConfig = (): Promise<PaddleConfig> => {
   if (configPromise) return configPromise;
-  configPromise = (async () => {
+  configPromise = (async (): Promise<PaddleConfig> => {
     const { data, error } = await supabase.functions.invoke('get-paddle-config');
     if (error || !data) {
       console.error('[paddleClient] get-paddle-config failed:', error);
-      return { token: '', environment: 'production', configured: false };
+      return { token: '', environment: 'production' as PaddleEnv, configured: false };
     }
     const env: PaddleEnv = (data as { environment?: string }).environment === 'sandbox'
       ? 'sandbox'
@@ -39,10 +39,10 @@ const fetchConfig = (): Promise<PaddleConfig> => {
       environment: env,
       configured: Boolean((data as { configured?: boolean }).configured),
     };
-  })().catch((err) => {
+  })().catch((err): PaddleConfig => {
     console.error('[paddleClient] fetchConfig threw:', err);
     configPromise = null;
-    return { token: '', environment: 'production', configured: false };
+    return { token: '', environment: 'production' as PaddleEnv, configured: false };
   });
   return configPromise;
 };
