@@ -31,7 +31,7 @@ const fetchConfig = (): Promise<PaddleConfig> => {
       console.error('[paddleClient] get-paddle-config failed:', error);
       return { token: '', environment: 'production', configured: false };
     }
-    const env = (data as { environment?: string }).environment === 'sandbox'
+    const env: PaddleEnv = (data as { environment?: string }).environment === 'sandbox'
       ? 'sandbox'
       : 'production';
     return {
