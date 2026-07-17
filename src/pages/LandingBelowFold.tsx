@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star, Crown, Sparkles } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Wallet, PieChart, TrendingUp, Users, BarChart3, Receipt, Check, Star } from 'lucide-react';
 import cardsImage from '@/assets/cards-floating.webp';
 import mockupDashboard from '@/assets/app-mockup-dashboard.webp';
 import mockupBudget from '@/assets/app-mockup-budget.webp';
@@ -35,33 +33,8 @@ const testimonials = [
 ];
 
 export const LandingBelowFold = ({ t, goToSignup }: LandingBelowFoldProps) => {
-  const [lifetime, setLifetime] = useState<{ remaining: number; sold: number; max: number } | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke('get-lifetime-availability');
-        if (alive && data && typeof data.remaining === 'number') {
-          setLifetime({
-            remaining: data.remaining,
-            sold: data.sold ?? 0,
-            max: data.max ?? data.total ?? 200,
-          });
-        }
-      } catch (err) {
-        console.warn('Lifetime availability fetch failed:', err);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
-
-  const lifetimeSoldOut = lifetime?.remaining === 0;
-  const remainingLabel = lifetime
-    ? t('landing.pricing.lifetime.remaining').replace('{n}', String(lifetime.remaining))
-    : '';
-
   return (
+
   <>
     <section className="py-20 px-4 overflow-hidden">
       <div className="max-w-6xl mx-auto">
