@@ -234,7 +234,7 @@ const PrivacyPolicy = () => {
                     <td className="p-3">11 godina (Zakon o računovodstvu RH)</td>
                   </tr>
                   <tr className="border-t border-border">
-                    <td className="p-3">Podaci o naplati (Stripe)</td>
+                    <td className="p-3">Podaci o naplati (Paddle)</td>
                     <td className="p-3">10 godina (porezni zakoni)</td>
                   </tr>
                 </tbody>
