@@ -2456,42 +2456,6 @@ export type Database = {
           },
         ]
       }
-      lifetime_purchases: {
-        Row: {
-          amount_paid: number
-          created_at: string
-          currency: string
-          founding_member_number: number
-          id: string
-          purchased_at: string
-          stripe_customer_id: string | null
-          stripe_payment_intent_id: string
-          user_id: string
-        }
-        Insert: {
-          amount_paid: number
-          created_at?: string
-          currency?: string
-          founding_member_number: number
-          id?: string
-          purchased_at?: string
-          stripe_customer_id?: string | null
-          stripe_payment_intent_id: string
-          user_id: string
-        }
-        Update: {
-          amount_paid?: number
-          created_at?: string
-          currency?: string
-          founding_member_number?: number
-          id?: string
-          purchased_at?: string
-          stripe_customer_id?: string | null
-          stripe_payment_intent_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       milestone_budget_alerts: {
         Row: {
           id: string
@@ -5094,54 +5058,6 @@ export type Database = {
           },
         ]
       }
-      subscription_migration_log: {
-        Row: {
-          created_at: string
-          email_sent_at: string | null
-          error_message: string | null
-          id: string
-          migrated_at: string
-          new_amount_cents: number | null
-          new_price_id: string
-          old_amount_cents: number | null
-          old_price_id: string
-          status: string
-          stripe_customer_id: string | null
-          stripe_subscription_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          email_sent_at?: string | null
-          error_message?: string | null
-          id?: string
-          migrated_at?: string
-          new_amount_cents?: number | null
-          new_price_id: string
-          old_amount_cents?: number | null
-          old_price_id: string
-          status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          email_sent_at?: string | null
-          error_message?: string | null
-          id?: string
-          migrated_at?: string
-          new_amount_cents?: number | null
-          new_price_id?: string
-          old_amount_cents?: number | null
-          old_price_id?: string
-          status?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       support_tickets: {
         Row: {
           app_version: string | null
@@ -5482,8 +5398,6 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
@@ -5494,8 +5408,6 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
@@ -5506,8 +5418,6 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
@@ -5786,7 +5696,6 @@ export type Database = {
           views: number
         }[]
       }
-      get_founding_member_count: { Args: never; Returns: number }
       get_free_tier_usage_current_month: {
         Args: { _user_id?: string }
         Returns: {
@@ -5820,7 +5729,6 @@ export type Database = {
           status: string
         }[]
       }
-      get_next_founding_member_number: { Args: never; Returns: number }
       get_project_member_profiles: {
         Args: { _project_id: string }
         Returns: {
