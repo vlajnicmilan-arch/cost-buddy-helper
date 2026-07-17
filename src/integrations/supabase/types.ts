@@ -194,6 +194,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_monthly: {
+        Row: {
+          count: number
+          updated_at: string
+          usage_month: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          updated_at?: string
+          usage_month?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          updated_at?: string
+          usage_month?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_diagnostics_logs: {
         Row: {
           app_version: string | null
@@ -5814,6 +5835,22 @@ export type Database = {
           allowed: boolean
           current_count: number
           daily_limit: number
+        }[]
+      }
+      increment_ai_usage_v2: {
+        Args: {
+          p_daily_limit: number
+          p_monthly_limit?: number
+          p_route: string
+        }
+        Returns: {
+          allowed: boolean
+          daily_allowed: boolean
+          daily_count: number
+          daily_limit: number
+          monthly_allowed: boolean
+          monthly_count: number
+          monthly_limit: number
         }[]
       }
       is_budget_member: {
