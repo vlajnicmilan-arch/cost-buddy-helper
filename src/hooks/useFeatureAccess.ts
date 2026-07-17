@@ -1,6 +1,7 @@
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { SubscriptionTier } from '@/lib/subscriptionTiers';
 import { useMyActiveModuleGrants } from '@/hooks/useMyActiveModuleGrants';
+import { FEATURE_MODULE_MAP, EntitlementModule } from '@/lib/featureModuleMap';
 
 
 export type Feature =
@@ -24,7 +25,7 @@ export type Feature =
   | 'advanced_projects'
   | 'workforce';
 
-// Which tier is required for each feature
+// Legacy tier gate (koristi se u 'legacy' modu i u 'dual' modu kao fallback OR).
 const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
   unlimited_transactions: 'pro',
   unlimited_payment_sources: 'pro',
@@ -42,13 +43,11 @@ const FEATURE_TIERS: Record<Feature, SubscriptionTier> = {
   installments: 'pro',
   custom_categories: 'pro',
   workforce: 'pro',
-  // Business-tier features
   team_access: 'business',
   collaborators: 'business',
   advanced_projects: 'business',
 };
 
-// Free tier limits
 export const FREE_LIMITS = {
   transactions_per_month: 30,
   payment_sources: 1,
@@ -62,26 +61,35 @@ const TIER_RANK: Record<SubscriptionTier, number> = {
 };
 
 export function useFeatureAccess() {
-  const { tier, trialActive, subscribed } = useSubscription();
+  const { tier, trialActive, subscribed, entitlements, entitlementsMode } = useSubscription();
   const { hasActiveGrant } = useMyActiveModuleGrants();
 
-  // During trial, all features are unlocked
   const effectiveTier: SubscriptionTier = trialActive ? 'business' : tier;
 
-  const hasAccess = (feature: Feature): boolean => {
+  const hasEntitlement = (feature: Feature): boolean => {
+    const module: EntitlementModule = FEATURE_MODULE_MAP[feature];
+    return !!entitlements[module]?.active;
+  };
+
+  const hasTierAccess = (feature: Feature): boolean => {
     const requiredTier = FEATURE_TIERS[feature];
     if (TIER_RANK[effectiveTier] >= TIER_RANK[requiredTier]) return true;
-    // Admin module override — aditivno, ne dira billing.
-    // PR1: samo Projects ima server-side ekvivalent (is_projects_subscriber).
-    // Business override = klijent-only UI gate (preflight potvrdio 0 server-side billing gateova).
     if (feature === 'projects' && hasActiveGrant('projects')) return true;
     if (feature === 'business_module' && hasActiveGrant('business')) return true;
     return false;
   };
 
-  const getRequiredTier = (feature: Feature): SubscriptionTier => {
-    return FEATURE_TIERS[feature];
+  const hasAccess = (feature: Feature): boolean => {
+    // FAZA 5 kill-switch:
+    //   entitlements → jedini izvor entitlements
+    //   dual         → entitlement OR legacy tier (7-dnevni prijelaz)
+    //   legacy       → samo stari tier gate (rollback)
+    if (entitlementsMode === 'entitlements') return hasEntitlement(feature);
+    if (entitlementsMode === 'legacy') return hasTierAccess(feature);
+    return hasEntitlement(feature) || hasTierAccess(feature);
   };
+
+  const getRequiredTier = (feature: Feature): SubscriptionTier => FEATURE_TIERS[feature];
 
   const isFreeTier = effectiveTier === 'free';
   const isProTier = effectiveTier === 'pro' || effectiveTier === 'business';
@@ -97,4 +105,3 @@ export function useFeatureAccess() {
     trialActive,
   };
 }
-
