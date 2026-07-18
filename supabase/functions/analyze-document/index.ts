@@ -1,5 +1,6 @@
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 
 interface ProjectContextItem {
   id: string;
