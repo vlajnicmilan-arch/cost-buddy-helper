@@ -98,6 +98,10 @@ Vrati SAMO JSON, bez markdowna ili dodatnog teksta.`;
           ],
         },
       ],
+      // Forsira Google Gemini na čisti JSON (nema markdown fenceova, nema reasoning leaka).
+      response_format: { type: 'json_object' as const },
+      // Ugovori i ponude znaju imati puno stavki (items[]) — 8192 sprječava truncation.
+      max_tokens: 8192,
     });
 
     if (!aiRes.ok) {
