@@ -55,6 +55,84 @@ async function callAiGateway(_apiKey: string, payload: Record<string, unknown>, 
   return await callGemini(payload as any, { timeoutMs });
 }
 
+/**
+ * Pokušava spasiti truncated JSON — zatvara otvorene stringove, arrayeve, objekte.
+ * Vraća string koji se može predati JSON.parse-u, ili null ako je nespasiv.
+ * Konzervativno: NE popravlja loše-formirane vrijednosti (npr. "amount":  → ostaje pad).
+ */
+function attemptJsonSalvage(input: string): string | null {
+  if (!input || input[0] !== '{') return null;
+
+  // Odsijeci sve iza zadnje sigurne točke: kompletnog broja, stringa, true/false/null,
+  // ili zatvorene zagrade. Ovo drop-a "polu-napisani" ključ/vrijednost.
+  let s = input;
+
+  // 1) Pronađi zadnji sigurni terminator: `,` ili `}` ili `]` ili završni `"` stringa.
+  //    Skidamo repić do njega ako je repić očito nekompletan (npr. `"total_price":`).
+  const lastComma = s.lastIndexOf(',');
+  const lastCloseBrace = s.lastIndexOf('}');
+  const lastCloseBracket = s.lastIndexOf(']');
+  const safeCut = Math.max(lastComma, lastCloseBrace, lastCloseBracket);
+  if (safeCut > 0) s = s.slice(0, safeCut);
+
+  // 2) Prebroji otvorene { [ i " van escape-a, zatvori ih redom obratnim redoslijedom.
+  let inString = false;
+  let escaped = false;
+  const stack: Array<'{' | '['> = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === '\\') { escaped = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '{' || c === '[') stack.push(c as '{' | '[');
+    else if (c === '}' || c === ']') stack.pop();
+  }
+
+  let closer = '';
+  if (inString) closer += '"';
+  // Ako smo odrezali na zarezu, treba ga ukloniti prije zatvaranja.
+  if (s.endsWith(',')) s = s.slice(0, -1);
+  while (stack.length) {
+    const open = stack.pop();
+    closer += open === '{' ? '}' : ']';
+  }
+  return s + closer;
+}
+
+/**
+ * Fire-and-forget zapis parse fail-a u app_diagnostics_logs preko service_role.
+ * Ne smije baciti — bilo kakav failure se guta.
+ */
+async function logParseFailure(
+  supabase: any,
+  userId: string,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    await fetch(`${url}/rest/v1/app_diagnostics_logs`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify([{
+        event: 'parse_receipt_failed',
+        user_id: userId,
+        session_id: `edge-parse-receipt-${Date.now()}`,
+        details,
+      }]),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -463,7 +541,13 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         }
       ],
       temperature: 0.1,
-      max_tokens: 4000,
+      // Bumped 4000 → 8192: dugački Spar/Konzum računi s 15–25+ stavki + puno metapodataka
+      // često prelaze 4k tokena i budu odsječeni usred `items` polja (regresija 2026-08-25).
+      max_tokens: 8192,
+      // KRITIČNO: forsira Google Gemini da vrati čist JSON objekt (responseMimeType
+      // application/json u geminiClient.ts) — nema markdown ```json fenceova, nema
+      // chain-of-thought leaka prije objekta.
+      response_format: { type: 'json_object' as const },
     };
 
     // Use Flash for receipt OCR. Pro was too slow on native scans and caused 503 before the UI got a result.
@@ -501,26 +585,99 @@ Vrati SAMO JSON bez dodatnog teksta.`;
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';
-    
-    console.log('AI response:', content);
+    const finishReason = aiData.choices?.[0]?.finish_reason || null;
 
-    // Parse JSON from AI response
-    let receiptData;
+    console.log('AI response length:', content.length, 'finish_reason:', finishReason);
+
+    // Parse JSON from AI response — obrambeno protiv triju modova pada:
+    //   (a) čist JSON (očekivano uz response_format: json_object)
+    //   (b) ```json ... ``` fences (starije ponašanje ili fallback path)
+    //   (c) reasoning leak PRIJE JSON-a + eventualna truncation
+    let receiptData: any = null;
+    let parseMode: 'clean' | 'fenced' | 'braces' | 'salvage-truncated' | null = null;
+    let parseError: unknown = null;
+
+    const tryParse = (s: string): any => JSON.parse(s);
+
+    const stripFences = (s: string): string => {
+      return s.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+    };
+
+    // (a) direct
     try {
-      // Extract JSON from response (might be wrapped in markdown)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        receiptData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+      receiptData = tryParse(content.trim());
+      parseMode = 'clean';
+    } catch { /* try next */ }
+
+    // (b) skini ```json fences
+    if (!receiptData) {
+      try {
+        receiptData = tryParse(stripFences(content));
+        parseMode = 'fenced';
+      } catch { /* try next */ }
+    }
+
+    // (c) izvadi prvi { ... } blok
+    if (!receiptData) {
+      const stripped = stripFences(content);
+      const first = stripped.indexOf('{');
+      const last = stripped.lastIndexOf('}');
+      if (first >= 0 && last > first) {
+        const slice = stripped.slice(first, last + 1);
+        try {
+          receiptData = tryParse(slice);
+          parseMode = 'braces';
+        } catch (e) { parseError = e; }
       }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+    }
+
+    // (d) SALVAGE: JSON je truncated (finish_reason=length ili očito odsječen).
+    // Zatvori otvorene stringove/nizove/objekte i pokušaj parsirati parcijalni podatak.
+    if (!receiptData) {
+      const stripped = stripFences(content);
+      const first = stripped.indexOf('{');
+      if (first >= 0) {
+        const salvage = attemptJsonSalvage(stripped.slice(first));
+        if (salvage) {
+          try {
+            receiptData = tryParse(salvage);
+            parseMode = 'salvage-truncated';
+          } catch (e) { parseError = e; }
+        }
+      }
+    }
+
+    if (!receiptData) {
+      const cause = finishReason === 'length' ? 'truncated' :
+                    /\{/.test(content) ? 'schema-miss' : 'no-json';
+      console.error('Failed to parse AI response:', {
+        cause,
+        finishReason,
+        contentLength: content.length,
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        preview: content.slice(0, 200),
+        tail: content.slice(-200),
+      });
+      // Fire-and-forget telemetrija — da idući put ne moramo čitati edge logove ručno.
+      void logParseFailure(supabase, userId, {
+        cause,
+        finish_reason: finishReason,
+        content_length: content.length,
+        error_message: parseError instanceof Error ? parseError.message : String(parseError),
+        tail: content.slice(-200),
+      });
       if (!skipQuota) await refundCoreScanQuota(supabase);
+      const userMsg = cause === 'truncated'
+        ? 'Račun je predugačak za AI obradu. Pokušaj skenirati manje stavki odjednom.'
+        : 'AI odgovor nije bio ispravan JSON. Pokušaj ponovno.';
       return new Response(
-        JSON.stringify({ error: 'Nije moguće analizirati račun' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: userMsg, cause }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (parseMode !== 'clean') {
+      console.warn('parse-receipt: JSON parsed via fallback mode:', parseMode, 'finish_reason:', finishReason);
     }
 
     if (receiptData.error) {
