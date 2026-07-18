@@ -463,7 +463,13 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         }
       ],
       temperature: 0.1,
-      max_tokens: 4000,
+      // Bumped 4000 → 8192: dugački Spar/Konzum računi s 15–25+ stavki + puno metapodataka
+      // često prelaze 4k tokena i budu odsječeni usred `items` polja (regresija 2026-08-25).
+      max_tokens: 8192,
+      // KRITIČNO: forsira Google Gemini da vrati čist JSON objekt (responseMimeType
+      // application/json u geminiClient.ts) — nema markdown ```json fenceova, nema
+      // chain-of-thought leaka prije objekta.
+      response_format: { type: 'json_object' as const },
     };
 
     // Use Flash for receipt OCR. Pro was too slow on native scans and caused 503 before the UI got a result.
@@ -501,26 +507,99 @@ Vrati SAMO JSON bez dodatnog teksta.`;
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';
-    
-    console.log('AI response:', content);
+    const finishReason = aiData.choices?.[0]?.finish_reason || null;
 
-    // Parse JSON from AI response
-    let receiptData;
+    console.log('AI response length:', content.length, 'finish_reason:', finishReason);
+
+    // Parse JSON from AI response — obrambeno protiv triju modova pada:
+    //   (a) čist JSON (očekivano uz response_format: json_object)
+    //   (b) ```json ... ``` fences (starije ponašanje ili fallback path)
+    //   (c) reasoning leak PRIJE JSON-a + eventualna truncation
+    let receiptData: any = null;
+    let parseMode: 'clean' | 'fenced' | 'braces' | 'salvage-truncated' | null = null;
+    let parseError: unknown = null;
+
+    const tryParse = (s: string): any => JSON.parse(s);
+
+    const stripFences = (s: string): string => {
+      return s.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+    };
+
+    // (a) direct
     try {
-      // Extract JSON from response (might be wrapped in markdown)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        receiptData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+      receiptData = tryParse(content.trim());
+      parseMode = 'clean';
+    } catch { /* try next */ }
+
+    // (b) skini ```json fences
+    if (!receiptData) {
+      try {
+        receiptData = tryParse(stripFences(content));
+        parseMode = 'fenced';
+      } catch { /* try next */ }
+    }
+
+    // (c) izvadi prvi { ... } blok
+    if (!receiptData) {
+      const stripped = stripFences(content);
+      const first = stripped.indexOf('{');
+      const last = stripped.lastIndexOf('}');
+      if (first >= 0 && last > first) {
+        const slice = stripped.slice(first, last + 1);
+        try {
+          receiptData = tryParse(slice);
+          parseMode = 'braces';
+        } catch (e) { parseError = e; }
       }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+    }
+
+    // (d) SALVAGE: JSON je truncated (finish_reason=length ili očito odsječen).
+    // Zatvori otvorene stringove/nizove/objekte i pokušaj parsirati parcijalni podatak.
+    if (!receiptData) {
+      const stripped = stripFences(content);
+      const first = stripped.indexOf('{');
+      if (first >= 0) {
+        const salvage = attemptJsonSalvage(stripped.slice(first));
+        if (salvage) {
+          try {
+            receiptData = tryParse(salvage);
+            parseMode = 'salvage-truncated';
+          } catch (e) { parseError = e; }
+        }
+      }
+    }
+
+    if (!receiptData) {
+      const cause = finishReason === 'length' ? 'truncated' :
+                    /\{/.test(content) ? 'schema-miss' : 'no-json';
+      console.error('Failed to parse AI response:', {
+        cause,
+        finishReason,
+        contentLength: content.length,
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        preview: content.slice(0, 200),
+        tail: content.slice(-200),
+      });
+      // Fire-and-forget telemetrija — da idući put ne moramo čitati edge logove ručno.
+      void logParseFailure(supabase, userId, {
+        cause,
+        finish_reason: finishReason,
+        content_length: content.length,
+        error_message: parseError instanceof Error ? parseError.message : String(parseError),
+        tail: content.slice(-200),
+      });
       if (!skipQuota) await refundCoreScanQuota(supabase);
+      const userMsg = cause === 'truncated'
+        ? 'Račun je predugačak za AI obradu. Pokušaj skenirati manje stavki odjednom.'
+        : 'AI odgovor nije bio ispravan JSON. Pokušaj ponovno.';
       return new Response(
-        JSON.stringify({ error: 'Nije moguće analizirati račun' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: userMsg, cause }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    if (parseMode !== 'clean') {
+      console.warn('parse-receipt: JSON parsed via fallback mode:', parseMode, 'finish_reason:', finishReason);
     }
 
     if (receiptData.error) {
