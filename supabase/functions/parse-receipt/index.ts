@@ -55,6 +55,84 @@ async function callAiGateway(_apiKey: string, payload: Record<string, unknown>, 
   return await callGemini(payload as any, { timeoutMs });
 }
 
+/**
+ * Pokušava spasiti truncated JSON — zatvara otvorene stringove, arrayeve, objekte.
+ * Vraća string koji se može predati JSON.parse-u, ili null ako je nespasiv.
+ * Konzervativno: NE popravlja loše-formirane vrijednosti (npr. "amount":  → ostaje pad).
+ */
+function attemptJsonSalvage(input: string): string | null {
+  if (!input || input[0] !== '{') return null;
+
+  // Odsijeci sve iza zadnje sigurne točke: kompletnog broja, stringa, true/false/null,
+  // ili zatvorene zagrade. Ovo drop-a "polu-napisani" ključ/vrijednost.
+  let s = input;
+
+  // 1) Pronađi zadnji sigurni terminator: `,` ili `}` ili `]` ili završni `"` stringa.
+  //    Skidamo repić do njega ako je repić očito nekompletan (npr. `"total_price":`).
+  const lastComma = s.lastIndexOf(',');
+  const lastCloseBrace = s.lastIndexOf('}');
+  const lastCloseBracket = s.lastIndexOf(']');
+  const safeCut = Math.max(lastComma, lastCloseBrace, lastCloseBracket);
+  if (safeCut > 0) s = s.slice(0, safeCut);
+
+  // 2) Prebroji otvorene { [ i " van escape-a, zatvori ih redom obratnim redoslijedom.
+  let inString = false;
+  let escaped = false;
+  const stack: Array<'{' | '['> = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === '\\') { escaped = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '{' || c === '[') stack.push(c as '{' | '[');
+    else if (c === '}' || c === ']') stack.pop();
+  }
+
+  let closer = '';
+  if (inString) closer += '"';
+  // Ako smo odrezali na zarezu, treba ga ukloniti prije zatvaranja.
+  if (s.endsWith(',')) s = s.slice(0, -1);
+  while (stack.length) {
+    const open = stack.pop();
+    closer += open === '{' ? '}' : ']';
+  }
+  return s + closer;
+}
+
+/**
+ * Fire-and-forget zapis parse fail-a u app_diagnostics_logs preko service_role.
+ * Ne smije baciti — bilo kakav failure se guta.
+ */
+async function logParseFailure(
+  supabase: any,
+  userId: string,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    await fetch(`${url}/rest/v1/app_diagnostics_logs`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify([{
+        event: 'parse_receipt_failed',
+        user_id: userId,
+        session_id: `edge-parse-receipt-${Date.now()}`,
+        details,
+      }]),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
