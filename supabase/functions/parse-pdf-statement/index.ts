@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { attemptJsonSalvage, stripFences, robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -396,7 +397,10 @@ METAPODACI:
             }
           }
         ],
-        tool_choice: { type: 'function', function: { name: 'extract_transactions' } }
+        tool_choice: { type: 'function', function: { name: 'extract_transactions' } },
+        // Bankovni izvodi znaju imati 50-150+ transakcija; 8192 default nije dovoljan
+        // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
+        max_tokens: 16384,
     });
 
     if (!aiResponse.ok) {
@@ -440,25 +444,57 @@ METAPODACI:
     } = { transactions: [], total_income: 0, total_expenses: 0, detected_bank: null, account_iban: null };
     
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    const finishReason = aiData.choices?.[0]?.finish_reason || null;
+    let parseMode: string | null = null;
+    let parseError: unknown = null;
+
     if (toolCall?.function?.arguments) {
+      const rawArgs: string = toolCall.function.arguments;
+      // (a) clean parse
       try {
-        statementData = JSON.parse(toolCall.function.arguments);
-        console.log('Parsed tool call data:', statementData);
-      } catch (parseError) {
-        console.error('Failed to parse tool call arguments:', parseError);
+        statementData = JSON.parse(rawArgs);
+        parseMode = 'clean';
+      } catch (e) { parseError = e; }
+      // (b) salvage truncated tool-call arguments (finish_reason=length)
+      if (!parseMode) {
+        const salvaged = attemptJsonSalvage(rawArgs.trim());
+        if (salvaged) {
+          try {
+            statementData = JSON.parse(salvaged);
+            parseMode = 'salvage-truncated';
+            console.warn('parse-pdf-statement: tool-call arguments salvaged after truncation, finish_reason:', finishReason);
+          } catch (e) { parseError = e; }
+        }
+      }
+      if (!parseMode) {
+        console.error('Failed to parse tool call arguments:', parseError, 'finish_reason:', finishReason);
+        void logParseFailure('parse_pdf_failed', userId, {
+          cause: finishReason === 'length' ? 'truncated' : 'schema-miss',
+          finish_reason: finishReason,
+          content_length: rawArgs.length,
+          error_message: parseError instanceof Error ? parseError.message : String(parseError),
+          tail: rawArgs.slice(-200),
+        });
       }
     } else {
-      // Fallback: try to parse from content
+      // Fallback: parse from content (defensive against Gemini dropping tool_calls)
       const content = aiData.choices?.[0]?.message?.content || '';
-      console.log('No tool call found, trying content:', content);
-      
-      try {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          statementData = JSON.parse(jsonMatch[0]);
+      console.log('No tool call found, trying content, length:', content.length, 'finish_reason:', finishReason);
+      const parsed = robustParseJson<typeof statementData>(content, 'object');
+      if (parsed) {
+        statementData = parsed.value;
+        parseMode = parsed.mode;
+        if (parseMode !== 'clean') {
+          console.warn('parse-pdf-statement: content fallback parsed via', parseMode);
         }
-      } catch (parseError) {
-        console.error('Failed to parse content:', parseError);
+      } else {
+        console.error('Failed to parse content, finish_reason:', finishReason);
+        void logParseFailure('parse_pdf_failed', userId, {
+          cause: finishReason === 'length' ? 'truncated' : 'no-json',
+          finish_reason: finishReason,
+          content_length: content.length,
+          tail: content.slice(-200),
+        });
       }
     }
 

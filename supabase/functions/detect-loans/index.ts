@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 
 function getTransactionDirection(tx: { amount: number; type?: string }) {
   const amount = Number(tx.amount);
@@ -81,6 +82,11 @@ Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable
         { role: "user", content: prompt },
       ],
       temperature: 0.1,
+      // Forsira čisti JSON output — nema markdown fenceova, nema reasoning leaka.
+      // application/json prihvaća i array kao valjani root.
+      response_format: { type: "json_object" as const },
+      // Kod velikih batcheva (100+ transakcija) default limit zna odsjeći niz.
+      max_tokens: 8192,
     });
 
     if (!response.ok) {
@@ -91,9 +97,25 @@ Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "[]";
+    const finishReason = aiData.choices?.[0]?.finish_reason || null;
 
-    const jsonMatch = content.match(/\[[\s\S]*?\]/);
-    const loans = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    // Obrambeno parsanje s podrškom za truncation. Root je ARRAY.
+    const parsed = robustParseJson<any[]>(content, "array");
+    let loans: any[] = [];
+    if (parsed && Array.isArray(parsed.value)) {
+      loans = parsed.value;
+      if (parsed.mode !== "clean") {
+        console.warn("detect-loans: JSON parsed via fallback mode:", parsed.mode, "finish_reason:", finishReason);
+      }
+    } else {
+      console.error("detect-loans: failed to parse AI JSON", { finishReason, contentLength: content.length, tail: content.slice(-200) });
+      void logParseFailure("detect_loans_failed", auth.userId, {
+        cause: finishReason === "length" ? "truncated" : "no-json",
+        finish_reason: finishReason,
+        content_length: content.length,
+        tail: content.slice(-200),
+      });
+    }
 
     return new Response(JSON.stringify({ loans }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

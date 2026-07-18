@@ -1,5 +1,6 @@
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 
 interface ProjectContextItem {
   id: string;
@@ -97,6 +98,10 @@ Vrati SAMO JSON, bez markdowna ili dodatnog teksta.`;
           ],
         },
       ],
+      // Forsira Google Gemini na čisti JSON (nema markdown fenceova, nema reasoning leaka).
+      response_format: { type: 'json_object' as const },
+      // Ugovori i ponude znaju imati puno stavki (items[]) — 8192 sprječava truncation.
+      max_tokens: 8192,
     });
 
     if (!aiRes.ok) {
@@ -121,17 +126,25 @@ Vrati SAMO JSON, bez markdowna ili dodatnog teksta.`;
 
     const aiData = await aiRes.json();
     const content = aiData?.choices?.[0]?.message?.content || '{}';
+    const finishReason = aiData?.choices?.[0]?.finish_reason || null;
 
-    const cleaned = content
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
+    // Obrambeno parsanje: clean → fenced → braces → salvage-truncated.
+    const parsedResult = robustParseJson<any>(content, 'object');
     let parsed: any;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      parsed = { raw: cleaned, summary: 'AI nije vratio strukturirani JSON' };
+    if (parsedResult) {
+      parsed = parsedResult.value;
+      if (parsedResult.mode !== 'clean') {
+        console.warn('analyze-document: JSON parsed via fallback mode:', parsedResult.mode, 'finish_reason:', finishReason);
+      }
+    } else {
+      console.error('analyze-document: failed to parse AI JSON', { finishReason, contentLength: content.length, tail: content.slice(-200) });
+      void logParseFailure('analyze_document_failed', auth.userId, {
+        cause: finishReason === 'length' ? 'truncated' : 'no-json',
+        finish_reason: finishReason,
+        content_length: content.length,
+        tail: content.slice(-200),
+      });
+      parsed = { raw: content, summary: 'AI nije vratio strukturirani JSON' };
     }
 
     return new Response(JSON.stringify({ analysis: parsed }), {
