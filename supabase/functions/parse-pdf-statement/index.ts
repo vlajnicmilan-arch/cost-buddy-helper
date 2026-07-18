@@ -397,7 +397,10 @@ METAPODACI:
             }
           }
         ],
-        tool_choice: { type: 'function', function: { name: 'extract_transactions' } }
+        tool_choice: { type: 'function', function: { name: 'extract_transactions' } },
+        // Bankovni izvodi znaju imati 50-150+ transakcija; 8192 default nije dovoljan
+        // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
+        max_tokens: 16384,
     });
 
     if (!aiResponse.ok) {
