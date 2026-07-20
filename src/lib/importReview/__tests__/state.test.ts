@@ -5,6 +5,7 @@ import {
   isNewRowLocked,
   setAutoMerge,
   setNewRow,
+  setTransferDecision,
   summarize,
 } from '../state';
 import type { ImportReviewPayload } from '../types';
