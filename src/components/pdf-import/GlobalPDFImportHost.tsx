@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ChevronDown, ChevronUp, Link2, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +15,11 @@ import type { ParsedTransaction } from '@/lib/csvParsers';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { supabase } from '@/integrations/supabase/client';
+import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
+import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
+import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo } from '@/lib/importReview/types';
 import {
   computeFileHash,
   computeContentHash,
