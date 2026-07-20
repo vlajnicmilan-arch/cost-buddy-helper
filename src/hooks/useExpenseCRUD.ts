@@ -860,6 +860,7 @@ export const useExpenseCRUD = ({
               amount: tx.amount,
               description: tx.description,
               merchantName: tx.merchant_name,
+              balanceAfter: (tx as any).balance_after ?? null,
             });
           return { tx, fingerprint };
         }));
