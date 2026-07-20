@@ -8,6 +8,10 @@
  *     (race-guard). Second run finds 0 rows → counted as `skippedMerged`.
  *   - NEW branch:   bulk UPSERT with onConflict (user_id, bank_transaction_id)
  *     ignoreDuplicates = true. Second run: fingerprint already present → skipped.
+ *   - TRANSFER branch: same bulk UPSERT path as NEW, but writes
+ *     `type='transfer'`, `category='transfer'`, `income_source_id=<target>`.
+ *     DB trigger `trg_expenses_recompute_source_balance` handles both sides
+ *     of the wallet balance change — no second row is written.
  *
  * Merchant policy (Milan, KORAK 4 correction): manual/scanned merchant_name
  * always wins. `merchant_name = COALESCE(existing manual merchant, bank merchant)`.
@@ -15,6 +19,10 @@
  *
  * Amount / date / type / category / payment_source on MERGE branch are NEVER
  * touched — the manual row remains the source of truth for those.
+ *
+ * Rule upsert (transfers with rememberRule=true) runs BEFORE any expense
+ * insert so a retry after a mid-flight failure is safe: the rule is saved
+ * once and the same batchId reused for the retry.
  *
  * Rollback trail: every row (both inserted and merged) is tagged with the same
  * `import_batch_id`. Minimal ad-hoc rollback:
@@ -33,27 +41,16 @@ import type {
   ImportReviewDecisions,
   ImportReviewPayload,
   SerializedImportedTx,
+  TransferDecision,
 } from './types';
+import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
 
-/** Minimal supabase interface we depend on — makes the executor unit-testable. */
-export interface ExecutorSupabaseClient {
-  from(table: string): {
-    update(patch: Record<string, unknown>): {
-      eq(col: string, val: unknown): {
-        eq(col: string, val: unknown): {
-          is(col: string, val: null): {
-            select(cols?: string): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
-          };
-        };
-      };
-    };
-    upsert(
-      rows: Record<string, unknown>[],
-      opts: { onConflict: string; ignoreDuplicates: boolean },
-    ): {
-      select(cols?: string): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
-    };
-  };
+/**
+ * Minimal supabase interface — must satisfy both the expense update/upsert
+ * shapes AND the transfer-rules upsert shape (which uses no `ignoreDuplicates`).
+ */
+export interface ExecutorSupabaseClient extends TransferRulesSupabaseClient {
+  from(table: string): any;
 }
 
 export interface ExecutorInput {
@@ -71,6 +68,8 @@ export interface ExecutorResult {
   readonly batchId: string;
   readonly merged: number;
   readonly inserted: number;
+  readonly transfersCreated: number;
+  readonly rulesSaved: number;
   /** Rows the user explicitly did NOT approve (unchecked auto/new, unanswered questions). */
   readonly skippedByUser: number;
   /** Rows blocked because fingerprint already exists in DB (new-row locked). */
@@ -95,15 +94,26 @@ type InsertPlan = {
   readonly tx: SerializedImportedTx;
 };
 
+type TransferPlan = {
+  readonly rowIndex: number;
+  readonly tx: SerializedImportedTx;
+  readonly decision: TransferDecision;
+};
+
 interface PlannedWork {
   readonly merges: readonly MergePlan[];
   readonly inserts: readonly InsertPlan[];
+  readonly transfers: readonly TransferPlan[];
   readonly skippedByUser: number;
   readonly skippedFingerprint: number;
 }
 
 /**
  * Build the write plan from decisions. Pure — no I/O. Exposed for tests.
+ *
+ * Precedence: an enabled TransferDecision overrides the row's default
+ * classification path (auto/question/new). That's the same rule enforced in
+ * summarize() so the summary matches what actually gets written.
  */
 export function planExecution(
   payload: ImportReviewPayload,
@@ -114,12 +124,20 @@ export function planExecution(
 
   const merges: MergePlan[] = [];
   const inserts: InsertPlan[] = [];
+  const transfers: TransferPlan[] = [];
   let skippedByUser = 0;
   let skippedFingerprint = 0;
 
   for (const row of payload.rows) {
     const tx = txByIndex.get(row.index);
     if (!tx) continue;
+
+    // Transfer override wins.
+    const td = decisions.transfers[row.index];
+    if (td && td.enabled === true) {
+      transfers.push({ rowIndex: row.index, tx, decision: td });
+      continue;
+    }
 
     if (row.classification.kind === 'auto_merge') {
       const on = decisions.autoMerge[row.index] === true;
@@ -144,14 +162,19 @@ export function planExecution(
       continue;
     }
 
-    // kind === 'new'
-    if (row.classification.existsByFingerprint) { skippedFingerprint += 1; continue; }
-    const on = decisions.newRows[row.index] === true;
-    if (!on) { skippedByUser += 1; continue; }
-    inserts.push({ rowIndex: row.index, tx });
+    if (row.classification.kind === 'new') {
+      if (row.classification.existsByFingerprint) { skippedFingerprint += 1; continue; }
+      const on = decisions.newRows[row.index] === true;
+      if (!on) { skippedByUser += 1; continue; }
+      inserts.push({ rowIndex: row.index, tx });
+      continue;
+    }
+
+    // classification.kind === 'transfer' but user un-toggled → skipped.
+    skippedByUser += 1;
   }
 
-  return { merges, inserts, skippedByUser, skippedFingerprint };
+  return { merges, inserts, transfers, skippedByUser, skippedFingerprint };
 }
 
 export async function executeDecisions(input: ExecutorInput): Promise<ExecutorResult> {
@@ -160,6 +183,31 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const batchId = input.batchId ?? input.payload.batchId;
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
+
+  // --- STEP 0: upsert transfer rules that the user asked to remember. Runs
+  // BEFORE inserts so a mid-flight retry keeps the rule and skips the row.
+  let rulesSaved = 0;
+  const rulesToSave: UpsertRuleInput[] = [];
+  for (const t of plan.transfers) {
+    if (
+      t.decision.rememberRule &&
+      t.decision.merchantKey &&
+      t.decision.sourceWalletKey &&
+      t.decision.targetIncomeSourceId
+    ) {
+      rulesToSave.push({
+        userId: input.userId,
+        merchantKey: t.decision.merchantKey,
+        sourceWalletKey: t.decision.sourceWalletKey,
+        targetIncomeSourceId: t.decision.targetIncomeSourceId,
+      });
+    }
+  }
+  if (rulesToSave.length > 0) {
+    const rr = await upsertTransferRules(input.supabase, rulesToSave);
+    rulesSaved = rr.savedCount;
+    for (const e of rr.errors) errors.push(`rule:${e}`);
+  }
 
   let merged = 0;
   let skippedMerged = 0;
@@ -171,8 +219,6 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_match_status: 'confirmed',
       import_batch_id: batchId,
     };
-    // Merchant policy: manual/scanned wins. Only write bank merchant when
-    // the manual row had no merchant_name.
     if (m.writeMerchant && m.tx.merchantName) {
       patch.merchant_name = m.tx.merchantName;
     }
@@ -215,7 +261,6 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       import_batch_id: batchId,
       business_profile_id: input.activeBusinessProfileId,
       bank_transaction_id: tx.fingerprint,
-      // Import from a bank statement = confirmation the money moved.
       bank_match_status: 'bank_only',
     }));
     try {
@@ -234,10 +279,49 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     }
   }
 
+  // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
+  let transfersCreated = 0;
+  if (plan.transfers.length > 0) {
+    const rows = plan.transfers.map(({ tx, decision }) => ({
+      user_id: input.userId,
+      amount: tx.amount,
+      // Description kept; helpful audit trail (bank line survives).
+      description: tx.description,
+      category: 'transfer',
+      type: 'transfer',
+      date: tx.dateIso,
+      payment_source: tx.paymentSource,
+      income_source_id: decision.targetIncomeSourceId,
+      merchant_name: tx.merchantName,
+      ai_extracted: false,
+      import_batch_id: batchId,
+      business_profile_id: input.activeBusinessProfileId,
+      bank_transaction_id: tx.fingerprint,
+      bank_match_status: 'bank_only',
+    }));
+    try {
+      const res = await input.supabase
+        .from('expenses')
+        .upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })
+        .select('id');
+      if (res.error) {
+        errors.push(`transfer:${res.error.message}`);
+      } else {
+        transfersCreated = res.data?.length ?? 0;
+        // Duplicates on retry counted as skippedDuplicate.
+        skippedDuplicate += rows.length - transfersCreated;
+      }
+    } catch (e) {
+      errors.push(`transfer:${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   return {
     batchId,
     merged,
     inserted,
+    transfersCreated,
+    rulesSaved,
     skippedByUser: plan.skippedByUser,
     skippedFingerprint: plan.skippedFingerprint,
     skippedMerged,

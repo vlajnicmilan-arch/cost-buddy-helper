@@ -9,12 +9,14 @@ import type {
   ImportReviewPayload,
   ImportReviewRow,
   QuestionAnswer,
+  TransferDecision,
 } from './types';
 
 export function buildInitialDecisions(payload: ImportReviewPayload): ImportReviewDecisions {
   const autoMerge: Record<number, boolean> = {};
   const questions: Record<number, QuestionAnswer | null> = {};
   const newRows: Record<number, boolean> = {};
+  const transfers: Record<number, TransferDecision | null> = {};
 
   for (const row of payload.rows) {
     switch (row.classification.kind) {
@@ -30,10 +32,20 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
         // Default ON, ali OFF (i disabled) kad postoji fingerprint hit.
         newRows[row.index] = !row.classification.existsByFingerprint;
         break;
+      case 'transfer':
+        // Rule already matched → default ON, rememberRule=false (rule postoji).
+        transfers[row.index] = {
+          enabled: true,
+          targetIncomeSourceId: row.classification.targetIncomeSourceId,
+          rememberRule: false,
+          merchantKey: null,
+          sourceWalletKey: null,
+        };
+        break;
     }
   }
 
-  return { autoMerge, questions, newRows };
+  return { autoMerge, questions, newRows, transfers };
 }
 
 export function setAutoMerge(
@@ -60,6 +72,19 @@ export function answerQuestion(
   return { ...decisions, questions: { ...decisions.questions, [index]: answer } };
 }
 
+/**
+ * Set (or clear) a transfer decision for a row. When decision is non-null,
+ * executor writes a single `type='transfer'` row for it and skips the row's
+ * normal auto/question/new path. Passing null removes the override.
+ */
+export function setTransferDecision(
+  decisions: ImportReviewDecisions,
+  index: number,
+  decision: TransferDecision | null,
+): ImportReviewDecisions {
+  return { ...decisions, transfers: { ...decisions.transfers, [index]: decision } };
+}
+
 export interface GatingSummary {
   readonly totalQuestions: number;
   readonly answeredQuestions: number;
@@ -67,7 +92,20 @@ export interface GatingSummary {
   readonly canConfirm: boolean;
   readonly plannedMerges: number;
   readonly plannedNew: number;
+  readonly plannedTransfers: number;
   readonly plannedSkipped: number; // fingerprint-hit newRows + user-unchecked
+}
+
+/**
+ * Transfer decisions override the row's default path. This helper centralizes
+ * the check so executor + summarize + UI agree.
+ */
+export function isTransferActive(
+  decisions: ImportReviewDecisions,
+  index: number,
+): boolean {
+  const t = decisions.transfers[index];
+  return !!t && t.enabled === true;
 }
 
 export function summarize(
@@ -78,9 +116,22 @@ export function summarize(
   let answeredQuestions = 0;
   let plannedMerges = 0;
   let plannedNew = 0;
+  let plannedTransfers = 0;
   let plannedSkipped = 0;
 
   for (const row of payload.rows) {
+    // Transfer override wins for any row when enabled.
+    if (isTransferActive(decisions, row.index)) {
+      plannedTransfers += 1;
+      // If original classification was a 'question', still count it as answered
+      // — the transfer choice IS the answer.
+      if (row.classification.kind === 'question') {
+        totalQuestions += 1;
+        answeredQuestions += 1;
+      }
+      continue;
+    }
+
     switch (row.classification.kind) {
       case 'auto_merge': {
         if (decisions.autoMerge[row.index]) plannedMerges += 1;
@@ -99,13 +150,17 @@ export function summarize(
       }
       case 'new': {
         if (row.classification.existsByFingerprint) {
-          // Fingerprint hit → always skipped, checkbox is disabled OFF.
           plannedSkipped += 1;
         } else if (decisions.newRows[row.index]) {
           plannedNew += 1;
         } else {
           plannedSkipped += 1;
         }
+        break;
+      }
+      case 'transfer': {
+        // Rule-suggested but user disabled it (enabled === false) → skipped.
+        plannedSkipped += 1;
         break;
       }
     }
@@ -119,6 +174,7 @@ export function summarize(
     canConfirm: unansweredQuestions === 0,
     plannedMerges,
     plannedNew,
+    plannedTransfers,
     plannedSkipped,
   };
 }

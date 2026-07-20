@@ -20,7 +20,13 @@ export interface ManualCandidateInfo {
 export type ClassificationKind =
   | { readonly kind: 'auto_merge'; readonly manualId: string }
   | { readonly kind: 'question'; readonly reason: QuestionReason; readonly candidateIds: readonly string[] }
-  | { readonly kind: 'new'; readonly existsByFingerprint: boolean };
+  | { readonly kind: 'new'; readonly existsByFingerprint: boolean }
+  /**
+   * Rule engine matched this row against a learned transfer rule. Executor will
+   * insert as `type='transfer'` with income_source_id = targetIncomeSourceId.
+   * Balance updater/DB trigger handles both sides of the transfer.
+   */
+  | { readonly kind: 'transfer'; readonly targetIncomeSourceId: string; readonly ruleId: string | null };
 
 export interface ImportReviewRow {
   readonly index: number;
@@ -65,10 +71,28 @@ export interface ImportReviewPayload {
 
 export type QuestionAnswer = { choice: 'merge'; manualId: string } | { choice: 'new' };
 
+/**
+ * Per-row transfer decision — either rule-suggested (row.classification.kind
+ * === 'transfer') or user-flagged from a `new` row via "Označi kao prijenos".
+ * If present AND enabled, executor writes a single `type='transfer'` row with
+ * income_source_id = targetIncomeSourceId. rememberRule controls whether a new
+ * rule (or refresh of existing) is upserted BEFORE the insert.
+ */
+export interface TransferDecision {
+  readonly enabled: boolean;
+  readonly targetIncomeSourceId: string;
+  readonly rememberRule: boolean;
+  /** Merchant key normalized at time of decision (used for rule upsert). */
+  readonly merchantKey: string | null;
+  /** Source wallet key normalized at time of decision (used for rule upsert). */
+  readonly sourceWalletKey: string | null;
+}
+
 export interface ImportReviewDecisions {
   readonly autoMerge: Readonly<Record<number, boolean>>;
   readonly questions: Readonly<Record<number, QuestionAnswer | null>>;
   readonly newRows: Readonly<Record<number, boolean>>;
+  readonly transfers: Readonly<Record<number, TransferDecision | null>>;
 }
 
 export interface ImportReviewDraft {

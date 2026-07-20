@@ -33,6 +33,7 @@ const decisions = {
   autoMerge: { 0: true },
   questions: {},
   newRows: { 0: true },
+  transfers: {},
 };
 
 describe('importReview/draft', () => {
