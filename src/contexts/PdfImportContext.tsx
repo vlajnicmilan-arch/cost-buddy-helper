@@ -6,7 +6,7 @@ import type { ParsedTransaction } from '@/lib/csvParsers';
 import type { PDFParseResult } from '@/hooks/usePDFParser';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { showError } from '@/hooks/useStatusFeedback';
-import { IMPORT_FROZEN } from '@/lib/featureFlags';
+
 
 export type PdfImportPhase = 'idle' | 'starting' | 'processing' | 'preview' | 'duplicates' | 'importing';
 
