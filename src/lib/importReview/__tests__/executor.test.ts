@@ -176,9 +176,9 @@ describe('importReview/executor', () => {
       importedTransactions: [tx(0), tx(1)],
       rows: [
         { index: 0, date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'A',
-          classification: { kind: 'question', reason: 'merchant_mismatch', candidates: ['m-with-name'] } } as any,
+          classification: { kind: 'question', reason: 'merchant_mismatch', candidateIds: ['m-with-name'] } } as any,
         { index: 1, date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'B',
-          classification: { kind: 'question', reason: 'merchant_mismatch', candidates: ['m-no-name'] } } as any,
+          classification: { kind: 'question', reason: 'merchant_mismatch', candidateIds: ['m-no-name'] } } as any,
       ],
     });
     const d = baseDecisions({ questions: { 0: { choice: 'merge', manualId: 'm-with-name' }, 1: { choice: 'new' } } });
