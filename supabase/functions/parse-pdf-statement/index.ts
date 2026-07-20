@@ -1,12 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
-import { callGemini } from "../_shared/geminiClient.ts";
+import { callGemini, isGeminiTimeoutError } from "../_shared/geminiClient.ts";
 import { attemptJsonSalvage, stripFences, robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Paid Edge workers have a 400 s wall-clock ceiling, while an open HTTP request
+// idles out at 150 s. The async job keeps processing via waitUntil, so reserve
+// 100 s for startup, response parsing, validation and the database update.
+const PDF_AI_TIMEOUT_MS = 300_000;
+
+const getPdfParseErrorMessage = (error: unknown): string => {
+  if (isGeminiTimeoutError(error)) return error.message;
+  return error instanceof Error ? error.message : 'Unknown PDF parse job error';
 };
 
 serve(async (req) => {
@@ -145,7 +155,7 @@ serve(async (req) => {
 
           await admin.from('pdf_parse_jobs').update({ status: 'completed', result }).eq('id', job.id);
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown PDF parse job error';
+          const message = getPdfParseErrorMessage(error);
           console.error('PDF parse job failed:', message);
           await admin.from('pdf_parse_jobs').update({ status: 'failed', error: message }).eq('id', job.id);
         }
@@ -423,7 +433,7 @@ PENDING / NA ČEKANJU:
         // Bankovni izvodi znaju imati 50-150+ transakcija; 8192 default nije dovoljan
         // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
         max_tokens: 16384,
-    });
+    }, { timeoutMs: PDF_AI_TIMEOUT_MS });
 
     if (!aiResponse.ok) {
       if (!skipQuota) await refundCoreScanQuota(supabase);
@@ -674,9 +684,10 @@ PENDING / NA ČEKANJU:
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error processing PDF statement:', error);
+    const message = getPdfParseErrorMessage(error);
+    console.error('Error processing PDF statement:', message);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), 
+      JSON.stringify({ error: message }), 
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

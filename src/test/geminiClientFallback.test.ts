@@ -52,3 +52,16 @@ describe('shouldFallbackOnError', () => {
     expect(shouldFallbackOnError(404, 'route does not exist')).toBe(false);
   });
 });
+
+describe('GeminiTimeoutError', () => {
+  it('uses a stable, job-safe timeout message', async () => {
+    const { GeminiTimeoutError, isGeminiTimeoutError } = await import(
+      '../../supabase/functions/_shared/geminiClient.ts'
+    );
+    const error = new GeminiTimeoutError(300_000);
+
+    expect(error.message).toBe('ai_timeout_after_300s');
+    expect(isGeminiTimeoutError(error)).toBe(true);
+    expect(isGeminiTimeoutError(new Error('The signal has been aborted'))).toBe(false);
+  });
+});
