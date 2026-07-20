@@ -385,7 +385,17 @@ PENDING / NA ČEKANJU:
                         is_statement_total: {
                           type: 'boolean',
                           description: 'True if this row is a per-card summary total (e.g. "Specifikacija troškova - Diners (8881) 788,10 EUR") rather than an individual transaction. Default false.'
+                        },
+                        balance_after: {
+                          type: 'number',
+                          description: 'Account balance AFTER this transaction, as printed in the row (Revolut: last number in the line). Null for pending rows or when not visible.',
+                          nullable: true
+                        },
+                        is_pending: {
+                          type: 'boolean',
+                          description: 'True if the row is in a "Pending" / "Na čekanju" / "U obradi" section (no balance_after available). Default false.'
                         }
+
                       },
                       required: ['date', 'description', 'amount', 'type', 'category']
                     }
