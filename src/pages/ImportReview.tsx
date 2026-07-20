@@ -2,14 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { AlertTriangle, ArrowLeft, CheckCircle2, HelpCircle, Loader2, Plus, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, HelpCircle, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { IMPORT_FROZEN } from '@/lib/featureFlags';
+import { useAuth } from '@/hooks/useAuth';
+import { useAppState } from '@/contexts/AppStateContext';
+import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import {
@@ -27,6 +29,7 @@ import {
   setNewRow,
   summarize,
 } from '@/lib/importReview/state';
+import { executeDecisions, type ExecutorResult } from '@/lib/importReview/executor';
 import type {
   ImportReviewDecisions,
   ImportReviewPayload,
