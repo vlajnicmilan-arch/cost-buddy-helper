@@ -71,7 +71,7 @@ const noop = () => {};
 const PdfImportContext = createContext<PdfImportContextValue | null>(null);
 
 export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
-  const { t } = useTranslation();
+  
   const [phase, setPhase] = useState<PdfImportPhase>('idle');
   const [source, setSource] = useState<CustomPaymentSource | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
