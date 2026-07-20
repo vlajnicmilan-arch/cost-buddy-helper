@@ -252,7 +252,19 @@ ZBIRNI REDOVI (NE knjižiti kao običan expense):
 
 METAPODACI:
 - detected_bank, account_iban, holder_name iz zaglavlja izvoda.
-- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.`
+- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.
+
+SALDO NAKON TRANSAKCIJE (VAŽNO za Revolut i sve banke s "running balance"):
+- U Revolut retku zadnji broj u istoj liniji je "saldo nakon" (npr. "1.110,00€  5.892,74€" → amount=1110.00, balance_after=5892.74).
+- Ako izvod ima kolonu "Saldo" / "Balance" / "Stanje" / "Stanje nakon" → uzmi tu vrijednost.
+- balance_after je UVIJEK numerička vrijednost stanja računa NAKON te transakcije (može biti pozitivna ili negativna kod overdrafta).
+- Ako saldo nije prisutan (npr. transakcije "Na čekanju" / "Pending" nemaju saldo) → balance_after = null.
+- NE računaj saldo sam; samo ga PRENESI ako je vidljiv u retku.
+
+PENDING / NA ČEKANJU:
+- Ako je transakcija u sekciji "Na čekanju" / "Pending" / "U obradi" (Revolut ih odvaja u zasebnu sekciju) → is_pending = true, balance_after = null.
+- Sve settled/proknjižene transakcije → is_pending = false.`
+
           },
           {
             role: 'user',
@@ -373,7 +385,17 @@ METAPODACI:
                         is_statement_total: {
                           type: 'boolean',
                           description: 'True if this row is a per-card summary total (e.g. "Specifikacija troškova - Diners (8881) 788,10 EUR") rather than an individual transaction. Default false.'
+                        },
+                        balance_after: {
+                          type: 'number',
+                          description: 'Account balance AFTER this transaction, as printed in the row (Revolut: last number in the line). Null for pending rows or when not visible.',
+                          nullable: true
+                        },
+                        is_pending: {
+                          type: 'boolean',
+                          description: 'True if the row is in a "Pending" / "Na čekanju" / "U obradi" section (no balance_after available). Default false.'
                         }
+
                       },
                       required: ['date', 'description', 'amount', 'type', 'category']
                     }
@@ -546,6 +568,7 @@ METAPODACI:
     const transactions = rawTransactions.map((t: any) => {
       const normDate = normalizeDate(t.date);
       const normDueOverride = normalizeDate(t.due_date_override);
+      const balAfter = typeof t.balance_after === 'number' && Number.isFinite(t.balance_after) ? t.balance_after : null;
       return {
         ...t,
         // Fall back to due_date_override if primary date is unparseable.
@@ -558,6 +581,9 @@ METAPODACI:
         installment_base_description: sanitizeText(t.installment_base_description),
         due_date_override: normDueOverride,
         is_statement_total: t.is_statement_total === true,
+        balance_after: balAfter,
+        is_pending: t.is_pending === true,
+        balance_inconsistent: false,
       };
     }).filter((t: any) => {
       if (!t.date) {
@@ -575,6 +601,35 @@ METAPODACI:
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
 
+    // Chain-validation: for consecutive settled rows with balance_after,
+    // verify balance[i-1] ± amount[i] === balance[i]. Flag mismatches; do NOT drop.
+    const CHAIN_TOL = 0.02;
+    let chainChecked = 0;
+    let chainMismatched = 0;
+    let prevBal: number | null = null;
+    for (const t of transactions) {
+      if (t.is_pending || t.is_statement_total) continue;
+      if (typeof t.balance_after !== 'number') { prevBal = null; continue; }
+      if (prevBal !== null && typeof t.amount === 'number') {
+        const signed = t.type === 'income' ? t.amount : -t.amount;
+        const expected = prevBal + signed;
+        chainChecked += 1;
+        if (Math.abs(expected - t.balance_after) > CHAIN_TOL) {
+          t.balance_inconsistent = true;
+          chainMismatched += 1;
+        }
+      }
+      prevBal = t.balance_after;
+    }
+    if (chainMismatched > 0) {
+      console.warn(`pdf_balance_chain_mismatch: ${chainMismatched}/${chainChecked} rows off by >${CHAIN_TOL}`);
+      void logParseFailure('pdf_balance_chain_mismatch', userId, {
+        checked: chainChecked,
+        mismatched: chainMismatched,
+        bank: (statementData as any).detected_bank ?? null,
+      });
+    }
+
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
@@ -582,6 +637,7 @@ METAPODACI:
     // Exclude statement-total rows from income/expense sums to avoid double counting
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
 
     // Group transactions by card if multiple cards detected
     const cardGroups = new Map<string, number>();
