@@ -9,10 +9,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Paid Edge workers have a 400 s wall-clock ceiling, while an open HTTP request
-// idles out at 150 s. The async job keeps processing via waitUntil, so reserve
-// 100 s for startup, response parsing, validation and the database update.
-const PDF_AI_TIMEOUT_MS = 300_000;
+// Paid Edge workers have a 400 s wall-clock ceiling, but this async runner calls
+// the parser through a nested HTTP request whose idle ceiling is 150 s. Keep a
+// 10 s reserve for response parsing and the job status update.
+const PDF_AI_TIMEOUT_MS = 140_000;
 
 const getPdfParseErrorMessage = (error: unknown): string => {
   if (isGeminiTimeoutError(error)) return error.message;

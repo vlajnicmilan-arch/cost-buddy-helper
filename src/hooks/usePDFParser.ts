@@ -55,9 +55,9 @@ interface PDFParseJobRow {
 
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
 const POLL_REQUEST_TIMEOUT_MS = 12_000;
-// 160 polls: first 10 × 1 s, then 150 × 2 s = 310 s nominal wait.
-// This stays just above the server AI budget (300 s) without abandoning a live job.
-const PDF_PARSE_MAX_POLL_ATTEMPTS = 160;
+// 100 polls: first 10 × 1 s, then 90 × 2 s = 190 s nominal wait.
+// This stays above the server AI budget (140 s) plus response/job persistence.
+const PDF_PARSE_MAX_POLL_ATTEMPTS = 100;
 
 const isAbortLikeError = (error: unknown) => {
   if (error instanceof DOMException && error.name === 'AbortError') return true;

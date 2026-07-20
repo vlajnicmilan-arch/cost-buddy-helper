@@ -58,9 +58,9 @@ describe('GeminiTimeoutError', () => {
     const { GeminiTimeoutError, isGeminiTimeoutError } = await import(
       '../../supabase/functions/_shared/geminiClient.ts'
     );
-    const error = new GeminiTimeoutError(300_000);
+    const error = new GeminiTimeoutError(140_000);
 
-    expect(error.message).toBe('ai_timeout_after_300s');
+    expect(error.message).toBe('ai_timeout_after_140s');
     expect(isGeminiTimeoutError(error)).toBe(true);
     expect(isGeminiTimeoutError(new Error('The signal has been aborted'))).toBe(false);
   });
