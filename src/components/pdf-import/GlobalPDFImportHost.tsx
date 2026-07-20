@@ -687,6 +687,24 @@ export const GlobalPDFImportHost = () => {
 
   return (
     <>
+      {/* Korak 3b — resume banner. Ponuda "Nastavi pregled uvoza", ne auto-navigate. */}
+      {resumeVisible && (
+        <div className="fixed top-2 inset-x-2 z-[100] rounded-xl border border-primary/50 bg-primary/10 backdrop-blur px-3 py-2 shadow-lg flex items-center gap-2">
+          <Link2 className="w-4 h-4 text-primary shrink-0" />
+          <p className="flex-1 text-sm truncate">{t('importReview.resumeBanner')}</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8"
+            onClick={() => { clearReviewDraft(); clearReviewPayload(); setResumeVisible(false); }}
+          >
+            {t('common.dismiss')}
+          </Button>
+          <Button size="sm" className="h-8" onClick={() => { setResumeVisible(false); navigate('/import/review'); }}>
+            {t('importReview.resume')}
+          </Button>
+        </div>
+      )}
       <AnimatePresence>
         {isProcessing && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] bg-background/90 backdrop-blur-sm flex items-center justify-center p-6">
