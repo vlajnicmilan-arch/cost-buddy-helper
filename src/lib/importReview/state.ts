@@ -89,6 +89,8 @@ export interface GatingSummary {
   readonly totalQuestions: number;
   readonly answeredQuestions: number;
   readonly unansweredQuestions: number;
+  /** Transfer decisions that are enabled but have no target wallet picked. */
+  readonly unresolvedTransfers: number;
   readonly canConfirm: boolean;
   readonly plannedMerges: number;
   readonly plannedNew: number;
@@ -108,6 +110,15 @@ export function isTransferActive(
   return !!t && t.enabled === true;
 }
 
+/**
+ * A transfer decision is "resolved" only if the user picked a real destination
+ * wallet. Empty string is the sentinel for "not yet chosen" — enforced by both
+ * summarize() gating and the executor pre-flight check.
+ */
+export function isTransferResolved(d: TransferDecision | null | undefined): boolean {
+  return !!d && d.enabled === true && typeof d.targetIncomeSourceId === 'string' && d.targetIncomeSourceId.length > 0;
+}
+
 export function summarize(
   payload: ImportReviewPayload,
   decisions: ImportReviewDecisions,
@@ -118,11 +129,15 @@ export function summarize(
   let plannedNew = 0;
   let plannedTransfers = 0;
   let plannedSkipped = 0;
+  let unresolvedTransfers = 0;
 
   for (const row of payload.rows) {
     // Transfer override wins for any row when enabled.
     if (isTransferActive(decisions, row.index)) {
       plannedTransfers += 1;
+      if (!isTransferResolved(decisions.transfers[row.index])) {
+        unresolvedTransfers += 1;
+      }
       // If original classification was a 'question', still count it as answered
       // — the transfer choice IS the answer.
       if (row.classification.kind === 'question') {
@@ -171,7 +186,8 @@ export function summarize(
     totalQuestions,
     answeredQuestions,
     unansweredQuestions,
-    canConfirm: unansweredQuestions === 0,
+    unresolvedTransfers,
+    canConfirm: unansweredQuestions === 0 && unresolvedTransfers === 0,
     plannedMerges,
     plannedNew,
     plannedTransfers,

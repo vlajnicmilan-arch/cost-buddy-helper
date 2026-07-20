@@ -5502,6 +5502,7 @@
     "markAsTransfer": "Dies ist eine Überweisung",
     "transferTo": "Zu Wallet",
     "pickWallet": "Wallet auswählen",
+    "transferTargetRequired": "Bitte Ziel-Wallet auswählen, um fortzufahren",
     "rememberRule": "Für diesen Händler merken",
     "cancelRule": "Regel rückgängig",
     "cancelTransfer": "Keine Überweisung",

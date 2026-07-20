@@ -586,6 +586,15 @@ export const GlobalPDFImportHost = () => {
         if (auto) return { ...baseRow, classification: { kind: 'auto_merge' as const, manualId: auto } };
         const q = qByIdx.get(i);
         if (q) return { ...baseRow, classification: { kind: 'question' as const, reason: q.reason, candidateIds: q.candidateIds } };
+        // AI/pdfPostProcess flagged this row as a transfer but no rule matched
+        // → route into Transfers section with EMPTY target so the user MUST
+        // pick a destination wallet (no silent NULL insert, no default pick).
+        if (tx.type === 'transfer') {
+          return {
+            ...baseRow,
+            classification: { kind: 'transfer' as const, targetIncomeSourceId: '', ruleId: null },
+          };
+        }
         return {
           ...baseRow,
           classification: { kind: 'new' as const, existsByFingerprint: existingFpSet.has(fp) },

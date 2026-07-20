@@ -5,6 +5,7 @@ import {
   isNewRowLocked,
   setAutoMerge,
   setNewRow,
+  setTransferDecision,
   summarize,
 } from '../state';
 import type { ImportReviewPayload } from '../types';
@@ -80,5 +81,52 @@ describe('importReview/state', () => {
     const s = summarize(payload, d);
     expect(s.plannedNew).toBe(1);
     expect(s.plannedSkipped).toBe(2);
+  });
+
+  it('transfer decision with empty target blocks canConfirm (unresolvedTransfers>0)', () => {
+    let d = buildInitialDecisions(payload);
+    d = answerQuestion(d, 1, { choice: 'new' }); // clear questions
+    d = setTransferDecision(d, 2, {
+      enabled: true,
+      targetIncomeSourceId: '', // user clicked "Ovo je prijenos" but hasn't picked
+      rememberRule: false,
+      merchantKey: null,
+      sourceWalletKey: null,
+    });
+    const s = summarize(payload, d);
+    expect(s.plannedTransfers).toBe(1);
+    expect(s.unresolvedTransfers).toBe(1);
+    expect(s.canConfirm).toBe(false);
+  });
+
+  it('transfer decision with resolved target allows canConfirm', () => {
+    let d = buildInitialDecisions(payload);
+    d = answerQuestion(d, 1, { choice: 'new' });
+    d = setTransferDecision(d, 2, {
+      enabled: true,
+      targetIncomeSourceId: 'wallet-abc',
+      rememberRule: false,
+      merchantKey: null,
+      sourceWalletKey: null,
+    });
+    const s = summarize(payload, d);
+    expect(s.plannedTransfers).toBe(1);
+    expect(s.unresolvedTransfers).toBe(0);
+    expect(s.canConfirm).toBe(true);
+  });
+
+  it('auto-flagged transfer (kind=transfer with empty target) is unresolved by default', () => {
+    const p: ImportReviewPayload = {
+      ...payload,
+      rows: [
+        { index: 0, date: '2026-07-14', amount: 100, type: 'transfer', merchantName: 'Aircash',
+          classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null } } as any,
+      ],
+    };
+    const d = buildInitialDecisions(p);
+    const s = summarize(p, d);
+    expect(s.plannedTransfers).toBe(1);
+    expect(s.unresolvedTransfers).toBe(1);
+    expect(s.canConfirm).toBe(false);
   });
 });
