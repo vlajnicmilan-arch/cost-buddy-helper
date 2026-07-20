@@ -25,6 +25,10 @@ export interface ParsedPDFTransaction {
   due_date_override?: string | null;
   // True for summary rows like "Specifikacija troškova - Diners (8881) 788,10 EUR"
   is_statement_total?: boolean;
+  // Running balance ("saldo nakon") for the row — null on pending/no-balance banks.
+  balance_after?: number | null;
+  // True if row is in a "Pending / Na čekanju / U obradi" section.
+  is_pending?: boolean;
 }
 
 export interface PDFParseResult {
@@ -88,6 +92,8 @@ const toParseResult = (data: any): PDFParseResult => ({
         installment_base_description: tx.installment_base_description ?? null,
         due_date_override: tx.due_date_override ?? null,
         is_statement_total: tx.is_statement_total === true,
+        balance_after: typeof tx.balance_after === 'number' && Number.isFinite(tx.balance_after) ? tx.balance_after : null,
+        is_pending: tx.is_pending === true,
       };
     })
     .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),
@@ -378,6 +384,8 @@ export const usePDFParser = () => {
               installment_base_description: tx.installment_base_description ?? null,
               due_date_override: tx.due_date_override ?? null,
               is_statement_total: tx.is_statement_total === true,
+              balance_after: typeof tx.balance_after === 'number' && Number.isFinite(tx.balance_after) ? tx.balance_after : null,
+              is_pending: tx.is_pending === true,
             };
           })
           .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),

@@ -101,6 +101,15 @@ export interface FingerprintInput {
   amount: number;
   description?: string | null;
   merchantName?: string | null;
+  /**
+   * Optional running-balance ("saldo nakon") captured by the PDF parser.
+   * When present as a finite number, it disambiguates otherwise-identical
+   * rows on the same day (2× 100€ Aircash → different balance_after).
+   * When null/undefined (pending rows, older imports, banks without a
+   * running balance), the fingerprint is computed WITHOUT this segment —
+   * this preserves backward compatibility with the 289 existing anchors.
+   */
+  balanceAfter?: number | null;
 }
 
 /**
@@ -118,6 +127,12 @@ export async function computeImportFingerprint(input: FingerprintInput): Promise
     toAmountKey(input.amount),
     text,
   ];
+  // Append balance segment ONLY when a finite number is provided. Absence
+  // (null/undefined/NaN) MUST produce a hash identical to the pre-balance
+  // formula so existing 289 anchors remain valid.
+  if (typeof input.balanceAfter === 'number' && Number.isFinite(input.balanceAfter)) {
+    parts.push(`bal:${input.balanceAfter.toFixed(2)}`);
+  }
   const hash = await sha256Hex(parts.join('|'));
   return `${PREFIX}:${hash}`;
 }

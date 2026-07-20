@@ -84,4 +84,42 @@ describe('computeImportFingerprint', () => {
     const manualAgain = await computeImportFingerprint({ ...base, description: 'KONZUM' });
     expect(manual).toBe(manualAgain);
   });
+
+  // ─── Step C: balance_after in fingerprint ────────────────────────────────
+
+
+  it('backward-compat: same input WITHOUT balance produces the pre-balance hash', async () => {
+    // Hardcoded regression: this hash was computed by the pre-balance formula
+    // for the exact input below. If the formula for balance-less inputs ever
+    // shifts, this assertion fails and 289 stored anchors would be invalidated.
+    const fp = await computeImportFingerprint({
+      userId: user,
+      paymentSource: 'custom:abc',
+      date: new Date('2026-05-19'),
+      type: 'expense',
+      amount: 12.5,
+      description: 'KONZUM ZAGREB',
+    });
+    expect(fp).toBe('imp:8143cfdb426aba6d118e23a7787722ae0a3bf5634278c4aaad0470a86dd9d109');
+  });
+
+  it('two identical inputs with different balance_after produce DIFFERENT hashes', async () => {
+    const a = await computeImportFingerprint({
+      ...base, merchantName: 'AIRCASH', balanceAfter: 3627.22,
+    });
+    const b = await computeImportFingerprint({
+      ...base, merchantName: 'AIRCASH', balanceAfter: 3527.22,
+    });
+    expect(a).not.toBe(b);
+  });
+
+  it('balanceAfter null/undefined/NaN yields identical hash to the no-balance formula', async () => {
+    const bare = await computeImportFingerprint({ ...base, description: 'KONZUM' });
+    const withNull = await computeImportFingerprint({ ...base, description: 'KONZUM', balanceAfter: null });
+    const withUndef = await computeImportFingerprint({ ...base, description: 'KONZUM', balanceAfter: undefined });
+    const withNaN = await computeImportFingerprint({ ...base, description: 'KONZUM', balanceAfter: Number.NaN });
+    expect(withNull).toBe(bare);
+    expect(withUndef).toBe(bare);
+    expect(withNaN).toBe(bare);
+  });
 });

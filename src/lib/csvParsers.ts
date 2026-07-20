@@ -26,6 +26,14 @@ export interface ParsedTransaction {
   installment_current?: number | null;
   installment_total?: number | null;
   installment_base_description?: string | null;
+  /**
+   * Running balance ("saldo nakon") if the source provides one. Included in
+   * `computeImportFingerprint` when present to disambiguate identical-amount
+   * rows on the same day. Absent → fingerprint stays backward-compatible.
+   */
+  balance_after?: number | null;
+  /** Pending / "Na čekanju" rows — filtered out before import. */
+  is_pending?: boolean;
 }
 
 // Detect if transaction is an internal transfer between own accounts

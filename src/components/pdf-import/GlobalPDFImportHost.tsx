@@ -109,6 +109,10 @@ export const GlobalPDFImportHost = () => {
       // kao expense — to bi duplo brojalo pojedinačne rate. Korisniku ga
       // prikazujemo zasebno (info: knjiži ručno kao transfer žiro→Diners).
       .filter(tx => tx.is_statement_total !== true)
+      // Pending / "Na čekanju" rows are excluded from import (per Milan's
+      // decision: pending doesn't get anchored — it re-appears once settled
+      // with a stable running-balance).
+      .filter(tx => tx.is_pending !== true)
       .map(tx => ({
         // Za rate koristi due_date_override (mjesec naplate) kako bi mjesečni
         // izvještaj sjeo na pravi mjesec. Original date čuvamo u opisu nije
@@ -125,6 +129,8 @@ export const GlobalPDFImportHost = () => {
         installment_current: tx.installment_current ?? null,
         installment_total: tx.installment_total ?? null,
         installment_base_description: tx.installment_base_description ?? null,
+        balance_after: tx.balance_after ?? null,
+        is_pending: false,
       }));
   }, [pdfImport.result, pdfImport.source]);
 
