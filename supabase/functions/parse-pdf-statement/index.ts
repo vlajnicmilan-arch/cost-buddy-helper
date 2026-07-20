@@ -252,7 +252,19 @@ ZBIRNI REDOVI (NE knjižiti kao običan expense):
 
 METAPODACI:
 - detected_bank, account_iban, holder_name iz zaglavlja izvoda.
-- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.`
+- statement_due_date: ako je kartični izvod s datumom dospijeća ("Platiti do: DD.MM.YYYY"), vrati YYYY-MM-DD.
+
+SALDO NAKON TRANSAKCIJE (VAŽNO za Revolut i sve banke s "running balance"):
+- U Revolut retku zadnji broj u istoj liniji je "saldo nakon" (npr. "1.110,00€  5.892,74€" → amount=1110.00, balance_after=5892.74).
+- Ako izvod ima kolonu "Saldo" / "Balance" / "Stanje" / "Stanje nakon" → uzmi tu vrijednost.
+- balance_after je UVIJEK numerička vrijednost stanja računa NAKON te transakcije (može biti pozitivna ili negativna kod overdrafta).
+- Ako saldo nije prisutan (npr. transakcije "Na čekanju" / "Pending" nemaju saldo) → balance_after = null.
+- NE računaj saldo sam; samo ga PRENESI ako je vidljiv u retku.
+
+PENDING / NA ČEKANJU:
+- Ako je transakcija u sekciji "Na čekanju" / "Pending" / "U obradi" (Revolut ih odvaja u zasebnu sekciju) → is_pending = true, balance_after = null.
+- Sve settled/proknjižene transakcije → is_pending = false.`
+
           },
           {
             role: 'user',
