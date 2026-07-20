@@ -276,7 +276,7 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   };
 
   const handleImport = async () => {
-    if (CSV_IMPORT_ENABLED) {
+    if (!CSV_IMPORT_ENABLED) {
       showError(t('import.frozen'));
       return;
     }
