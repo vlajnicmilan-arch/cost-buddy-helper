@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ChevronDown, ChevronUp, Link2, Loader2, Upload, X as XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +15,11 @@ import type { ParsedTransaction } from '@/lib/csvParsers';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { supabase } from '@/integrations/supabase/client';
+import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
+import { computeImportFingerprint } from '@/lib/importFingerprint';
+import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
+import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo } from '@/lib/importReview/types';
 import {
   computeFileHash,
   computeContentHash,
@@ -53,10 +59,12 @@ const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
 
 export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { formatAmount } = useCurrency();
   const pdfImport = usePdfImport();
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
+  const [resumeVisible, setResumeVisible] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [fuzzyDecisions, setFuzzyDecisions] = useState<Map<number, RowDecision>>(new Map());
@@ -375,7 +383,195 @@ export const GlobalPDFImportHost = () => {
     });
   }, [user?.id, pdfImport.source, pdfImport.result]);
 
+  // Korak 3b — detect a resumable import review on mount / focus / visibility.
+  useEffect(() => {
+    const check = () => setResumeVisible(hasResumableReview());
+    check();
+    const onFocus = () => check();
+    const onVis = () => { if (document.visibilityState === 'visible') check(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+
+  /**
+   * Korak 3b — review flow entry point.
+   *
+   * Replaces direct write path with: fetch manual candidates + fingerprint
+   * hits → classifyImport → sessionStorage payload → navigate /import/review.
+   *
+   * IMPORT_FROZEN policy: even after review confirmation, ZERO writes happen
+   * (executor is Korak 4). The old auto-merge/dedup path
+   * (`legacyHandleImport` below + `duplicates` phase modal) stays in the
+   * source for Korak 4 wiring but is NOT reachable from the UI anymore.
+   */
   const handleImport = async () => {
+    if (!pdfImport.source || !pdfImport.result || !user?.id) return;
+    const transactions = toParsedTransactions();
+    const sourceId = pdfImport.source.id;
+    const paymentSourceValue = `custom:${sourceId}`;
+    const jobId = pdfImport.jobId ?? `local-${Date.now()}`;
+    try { logDiagnostic('global_pdf_import_review_open_clicked', { source_id: sourceId, count: transactions.length }); } catch {}
+
+    try {
+      pdfImport._setImporting(true);
+
+      // Compute fingerprints for imported rows (uses Korak 2 balance_after).
+      const fingerprints = await Promise.all(transactions.map(tx =>
+        computeImportFingerprint({
+          userId: user.id,
+          paymentSource: paymentSourceValue,
+          date: tx.date,
+          type: tx.type,
+          amount: tx.amount,
+          description: tx.description,
+          merchantName: tx.merchant_name,
+          balanceAfter: tx.balance_after ?? null,
+        })
+      ));
+
+      // SELECT (a) fingerprint hits — rows already anchored in expenses.
+      const existingFpSet = new Set<string>();
+      if (fingerprints.length > 0) {
+        try {
+          const { data } = await supabase
+            .from('expenses')
+            .select('bank_transaction_id')
+            .eq('user_id', user.id)
+            .in('bank_transaction_id', fingerprints);
+          for (const r of (data ?? []) as Array<{ bank_transaction_id: string | null }>) {
+            if (r.bank_transaction_id) existingFpSet.add(r.bank_transaction_id);
+          }
+        } catch (e) {
+          try { logDiagnostic('import_review_fp_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+        }
+      }
+
+      // SELECT (b) manual candidates on this source (no bank_transaction_id).
+      const dates = transactions.map(tx => tx.date.getTime());
+      const minMs = dates.length ? Math.min(...dates) - 24 * 60 * 60 * 1000 : Date.now();
+      const maxMs = dates.length ? Math.max(...dates) + 24 * 60 * 60 * 1000 : Date.now();
+      const isoFrom = new Date(minMs).toISOString().slice(0, 10);
+      const isoTo = new Date(maxMs).toISOString().slice(0, 10);
+
+      let manualRows: Array<{ id: string; date: string; amount: number; type: string; merchant_name: string | null; description: string | null }> = [];
+      try {
+        const { data } = await supabase
+          .from('expenses')
+          .select('id,date,amount,type,merchant_name,description')
+          .eq('user_id', user.id)
+          .eq('payment_source', paymentSourceValue)
+          .is('bank_transaction_id', null)
+          .gte('date', isoFrom)
+          .lte('date', isoTo);
+        manualRows = (data ?? []) as typeof manualRows;
+      } catch (e) {
+        try { logDiagnostic('import_review_manual_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+
+      const manualCandidatesForClassifier: ClassifierManualCandidate[] = manualRows.map(m => ({
+        id: m.id,
+        paymentSource: paymentSourceValue,
+        type: m.type,
+        amount: Number(m.amount),
+        date: m.date,
+        merchantName: m.merchant_name,
+        description: m.description,
+      }));
+
+      const importedForClassifier: ClassifierImportedRow[] = transactions.map((tx, i) => ({
+        index: i,
+        paymentSource: paymentSourceValue,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.date,
+        merchantName: tx.merchant_name,
+        description: tx.description,
+      }));
+
+      const classified = classifyImport({
+        imported: importedForClassifier,
+        manualCandidates: manualCandidatesForClassifier,
+      });
+
+      // Merge classifier output → review rows.
+      const autoByIdx = new Map<number, string>();
+      classified.autoMerge.forEach(p => autoByIdx.set(p.importedIndex, p.manualId));
+      const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
+      classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
+
+      const reviewRows: ImportReviewRow[] = transactions.map((tx, i) => {
+        const fp = fingerprints[i];
+        const dateIso = new Date(tx.date).toISOString();
+        const baseRow = {
+          index: i,
+          date: dateIso,
+          amount: tx.amount,
+          type: tx.type,
+          merchantName: tx.merchant_name ?? null,
+          description: tx.description ?? null,
+          fingerprint: fp,
+        };
+        const auto = autoByIdx.get(i);
+        if (auto) return { ...baseRow, classification: { kind: 'auto_merge' as const, manualId: auto } };
+        const q = qByIdx.get(i);
+        if (q) return { ...baseRow, classification: { kind: 'question' as const, reason: q.reason, candidateIds: q.candidateIds } };
+        return {
+          ...baseRow,
+          classification: { kind: 'new' as const, existsByFingerprint: existingFpSet.has(fp) },
+        };
+      });
+
+      const manualCandidatesRecord: Record<string, ManualCandidateInfo> = {};
+      for (const m of manualRows) {
+        manualCandidatesRecord[m.id] = {
+          id: m.id,
+          date: m.date,
+          amount: Number(m.amount),
+          type: m.type,
+          merchantName: m.merchant_name,
+          description: m.description,
+        };
+      }
+
+      const payload: ImportReviewPayload = {
+        jobId,
+        sourceId,
+        sourceName: pdfImport.source.name,
+        createdAt: Date.now(),
+        rows: reviewRows,
+        manualCandidates: manualCandidatesRecord,
+      };
+
+      saveReviewPayload(payload);
+      // Reset PDF import phase so returning from review doesn't re-open the preview modal.
+      pdfImport._setIdle();
+      try {
+        logDiagnostic('import_review_navigated', {
+          job_id: jobId,
+          auto: classified.autoMerge.length,
+          questions: classified.questions.length,
+          new_rows: classified.newRows.length,
+          fp_hits: existingFpSet.size,
+        });
+      } catch { /* noop */ }
+      navigate('/import/review');
+    } catch (error) {
+      try { logDiagnostic('global_pdf_import_review_failed', { message: error instanceof Error ? error.message : String(error) }); } catch {}
+      showError(t('toasts.importError'));
+      pdfImport._setImporting(false);
+    }
+  };
+
+  // LEGACY: reachable only via Korak 4 executor. UI no longer calls this.
+  // Kept in-source so the auto-merge/dedup pipeline (`_runFindDuplicates` +
+  // `_runImport`) is not lost between now and Korak 4. See handleImport above.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const legacyHandleImport = async () => {
     if (!pdfImport.source || !pdfImport.result) return;
     const transactions = toParsedTransactions();
     try { logDiagnostic('global_pdf_import_clicked', { source_id: pdfImport.source.id, count: transactions.length }); } catch {}
@@ -442,6 +638,7 @@ export const GlobalPDFImportHost = () => {
     }
   };
 
+
   const handleImportDuplicates = async () => {
     if (!duplicateInfo) return;
 
@@ -505,6 +702,24 @@ export const GlobalPDFImportHost = () => {
 
   return (
     <>
+      {/* Korak 3b — resume banner. Ponuda "Nastavi pregled uvoza", ne auto-navigate. */}
+      {resumeVisible && (
+        <div className="fixed top-2 inset-x-2 z-[100] rounded-xl border border-primary/50 bg-primary/10 backdrop-blur px-3 py-2 shadow-lg flex items-center gap-2">
+          <Link2 className="w-4 h-4 text-primary shrink-0" />
+          <p className="flex-1 text-sm truncate">{t('importReview.resumeBanner')}</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8"
+            onClick={() => { clearReviewDraft(); clearReviewPayload(); setResumeVisible(false); }}
+          >
+            {t('common.dismiss')}
+          </Button>
+          <Button size="sm" className="h-8" onClick={() => { setResumeVisible(false); navigate('/import/review'); }}>
+            {t('importReview.resume')}
+          </Button>
+        </div>
+      )}
       <AnimatePresence>
         {isProcessing && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] bg-background/90 backdrop-blur-sm flex items-center justify-center p-6">

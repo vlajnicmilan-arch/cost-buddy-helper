@@ -5465,5 +5465,34 @@
     "freePaymentSourceLimit": "Free plan allows {{limit}} wallet. Activate Smjer for more.",
     "freeBudgetLimit": "Free plan allows {{limit}} budget. Activate Smjer for more.",
     "freeLimitServer": "Free limit exceeded — a subscription is required."
+  },
+  "importReview": {
+    "title": "Import review",
+    "resumeBanner": "Unfinished import review",
+    "resume": "Continue",
+    "frozenNotice": "Imports are temporarily frozen. Your decisions are saved; execution follows.",
+    "frozenSaved": "Decisions saved. Execution will run in the next step.",
+    "confirmed": "Import confirmed.",
+    "confirm": "Confirm import",
+    "confirmDisabled": "Answer {{count}} question(s)",
+    "answeredCounter": "{{answered}}/{{total}} answered",
+    "plannedSummary": "Merges: {{merges}} · New: {{news}} · Skipped: {{skipped}}",
+    "bank": "Bank",
+    "yours": "Your entry",
+    "mergeWith": "Merge with existing",
+    "keepAsNew": "Keep as new",
+    "sections": {
+      "auto": "Auto-merges",
+      "questions": "Questions",
+      "newRows": "New transactions"
+    },
+    "reasons": {
+      "merchant_mismatch": "Merchant differs",
+      "no_merchant": "No merchant on your entry",
+      "ambiguous": "Multiple candidates"
+    },
+    "badges": {
+      "fingerprintExists": "Already in app — will be skipped"
+    }
   }
 }

@@ -76,6 +76,7 @@ const LegacyLanding = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const ImportReview = lazy(() => import("./pages/ImportReview"));
 
 
 
@@ -334,6 +335,7 @@ const AppRoutes = () => {
       <Route path="/impressum" element={<Suspense fallback={<PageLoader />}><Impressum /></Suspense>} />
       <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
       <Route path="/trash" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Trash />)}</Suspense>} />
+      <Route path="/import/review" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<ImportReview />)}</Suspense>} />
       
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
