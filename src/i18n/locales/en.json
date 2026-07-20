@@ -5502,6 +5502,7 @@
     "markAsTransfer": "This is a transfer",
     "transferTo": "To wallet",
     "pickWallet": "Pick wallet",
+    "transferTargetRequired": "Pick a destination wallet to continue",
     "rememberRule": "Remember for this merchant",
     "cancelRule": "Undo rule",
     "cancelTransfer": "Not a transfer",
