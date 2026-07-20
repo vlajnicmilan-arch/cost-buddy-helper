@@ -383,6 +383,21 @@ export const GlobalPDFImportHost = () => {
     });
   }, [user?.id, pdfImport.source, pdfImport.result]);
 
+  // Korak 3b — detect a resumable import review on mount / focus / visibility.
+  useEffect(() => {
+    const check = () => setResumeVisible(hasResumableReview());
+    check();
+    const onFocus = () => check();
+    const onVis = () => { if (document.visibilityState === 'visible') check(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+
   /**
    * Korak 3b — review flow entry point.
    *
