@@ -5474,5 +5474,34 @@
     "freePaymentSourceLimit": "Free plan dopušta {{limit}} novčanik. Aktiviraj Smjer za više.",
     "freeBudgetLimit": "Free plan dopušta {{limit}} budžet. Aktiviraj Smjer za više.",
     "freeLimitServer": "Prekoračen je Free limit — potrebna je pretplata."
+  },
+  "importReview": {
+    "title": "Pregled uvoza",
+    "resumeBanner": "Nedovršen pregled uvoza",
+    "resume": "Nastavi",
+    "frozenNotice": "Uvoz je privremeno zamrznut. Odluke se spremaju, izvršenje slijedi.",
+    "frozenSaved": "Odluke spremljene. Izvršenje uvoza slijedi u sljedećem koraku.",
+    "confirmed": "Uvoz potvrđen.",
+    "confirm": "Potvrdi uvoz",
+    "confirmDisabled": "Odgovori na {{count}} pitanja",
+    "answeredCounter": "{{answered}}/{{total}} odgovoreno",
+    "plannedSummary": "Spajanja: {{merges}} · Nove: {{news}} · Preskočene: {{skipped}}",
+    "bank": "Banka",
+    "yours": "Tvoj unos",
+    "mergeWith": "Spoji s postojećim",
+    "keepAsNew": "Ostavi kao novu",
+    "sections": {
+      "auto": "Auto-spojevi",
+      "questions": "Pitanja",
+      "newRows": "Nove transakcije"
+    },
+    "reasons": {
+      "merchant_mismatch": "Trgovac se razlikuje",
+      "no_merchant": "Nema trgovca u tvom unosu",
+      "ambiguous": "Više mogućih kandidata"
+    },
+    "badges": {
+      "fingerprintExists": "Već u aplikaciji — bit će preskočeno"
+    }
   }
 }

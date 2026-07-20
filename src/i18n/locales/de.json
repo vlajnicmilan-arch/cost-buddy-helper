@@ -5465,5 +5465,34 @@
     "freePaymentSourceLimit": "Free-Plan erlaubt {{limit}} Wallet. Aktiviere Smjer für mehr.",
     "freeBudgetLimit": "Free-Plan erlaubt {{limit}} Budget. Aktiviere Smjer für mehr.",
     "freeLimitServer": "Free-Limit überschritten — Abo erforderlich."
+  },
+  "importReview": {
+    "title": "Import-Überprüfung",
+    "resumeBanner": "Unvollendete Import-Überprüfung",
+    "resume": "Fortsetzen",
+    "frozenNotice": "Importe sind vorübergehend eingefroren. Entscheidungen werden gespeichert; Ausführung folgt.",
+    "frozenSaved": "Entscheidungen gespeichert. Ausführung folgt im nächsten Schritt.",
+    "confirmed": "Import bestätigt.",
+    "confirm": "Import bestätigen",
+    "confirmDisabled": "{{count}} Frage(n) beantworten",
+    "answeredCounter": "{{answered}}/{{total}} beantwortet",
+    "plannedSummary": "Zusammenführungen: {{merges}} · Neu: {{news}} · Übersprungen: {{skipped}}",
+    "bank": "Bank",
+    "yours": "Dein Eintrag",
+    "mergeWith": "Mit vorhandenem zusammenführen",
+    "keepAsNew": "Als neu behalten",
+    "sections": {
+      "auto": "Auto-Zusammenführungen",
+      "questions": "Fragen",
+      "newRows": "Neue Transaktionen"
+    },
+    "reasons": {
+      "merchant_mismatch": "Händler unterscheidet sich",
+      "no_merchant": "Kein Händler in deinem Eintrag",
+      "ambiguous": "Mehrere Kandidaten"
+    },
+    "badges": {
+      "fingerprintExists": "Bereits in der App — wird übersprungen"
+    }
   }
 }
