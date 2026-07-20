@@ -146,18 +146,17 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const _runImport = useCallback(async (transactions: ParsedTransaction[], opts?: { forcedManualMerges?: ForcedManualMerge[]; onMeta?: (meta: ImportMeta) => void }) => {
-    if (IMPORT_FROZEN) {
-      showError(t('import.frozen'));
-      try { logDiagnostic('global_pdf_import_run_blocked_frozen', { count: transactions.length }); } catch {}
-      return;
-    }
+    // NOTE (Korak 4): live PDF/HTML uvoz sada teče kroz Import Review executor
+    // (src/lib/importReview/executor.ts). Ovaj legacy hook je zadržan za CSV
+    // dialog dok se i on ne prebaci — dotad ga čuva CSV_IMPORT_ENABLED=false
+    // flag u call-siteu.
     const handlers = handlersRef.current;
     if (!handlers) {
       try { logDiagnostic({ event: 'global_pdf_import_no_handler', severity: 'error', details: { count: transactions.length } }); } catch {}
       return;
     }
     await handlers.onImportCSV(transactions, opts);
-  }, [t]);
+  }, []);
 
   const _runFindDuplicates = useCallback((transactions: ParsedTransaction[]) => {
     return handlersRef.current?.findDuplicates?.(transactions) ?? null;
