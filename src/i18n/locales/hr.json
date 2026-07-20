@@ -5496,7 +5496,8 @@
     "sections": {
       "auto": "Auto-spojevi",
       "questions": "Pitanja",
-      "newRows": "Nove transakcije"
+      "newRows": "Nove transakcije",
+      "transfers": "Prijenosi"
     },
     "reasons": {
       "merchant_mismatch": "Trgovac se razlikuje",
@@ -5504,7 +5505,16 @@
       "ambiguous": "Više mogućih kandidata"
     },
     "badges": {
-      "fingerprintExists": "Već u aplikaciji — bit će preskočeno"
-    }
+      "fingerprintExists": "Već u aplikaciji — bit će preskočeno",
+      "fromRule": "Iz pravila"
+    },
+    "markAsTransfer": "Ovo je prijenos",
+    "transferTo": "Na novčanik",
+    "pickWallet": "Odaberi novčanik",
+    "rememberRule": "Zapamti za ovog trgovca",
+    "cancelRule": "Poništi pravilo",
+    "cancelTransfer": "Nije prijenos",
+    "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
+    "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}."
   }
 }

@@ -5487,7 +5487,8 @@
     "sections": {
       "auto": "Auto-merges",
       "questions": "Questions",
-      "newRows": "New transactions"
+      "newRows": "New transactions",
+      "transfers": "Transfers"
     },
     "reasons": {
       "merchant_mismatch": "Merchant differs",
@@ -5495,7 +5496,16 @@
       "ambiguous": "Multiple candidates"
     },
     "badges": {
-      "fingerprintExists": "Already in app — will be skipped"
-    }
+      "fingerprintExists": "Already in app — will be skipped",
+      "fromRule": "From rule"
+    },
+    "markAsTransfer": "This is a transfer",
+    "transferTo": "To wallet",
+    "pickWallet": "Pick wallet",
+    "rememberRule": "Remember for this merchant",
+    "cancelRule": "Undo rule",
+    "cancelTransfer": "Not a transfer",
+    "plannedSummaryV2": "{{merges}} merges · {{news}} new · {{transfers}} transfers · {{skipped}} skipped",
+    "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}."
   }
 }

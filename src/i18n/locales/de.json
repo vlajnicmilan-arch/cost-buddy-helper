@@ -5487,7 +5487,8 @@
     "sections": {
       "auto": "Auto-Zusammenführungen",
       "questions": "Fragen",
-      "newRows": "Neue Transaktionen"
+      "newRows": "Neue Transaktionen",
+      "transfers": "Überweisungen"
     },
     "reasons": {
       "merchant_mismatch": "Händler unterscheidet sich",
@@ -5495,7 +5496,16 @@
       "ambiguous": "Mehrere Kandidaten"
     },
     "badges": {
-      "fingerprintExists": "Bereits in der App — wird übersprungen"
-    }
+      "fingerprintExists": "Bereits in der App — wird übersprungen",
+      "fromRule": "Aus Regel"
+    },
+    "markAsTransfer": "Dies ist eine Überweisung",
+    "transferTo": "Zu Wallet",
+    "pickWallet": "Wallet auswählen",
+    "rememberRule": "Für diesen Händler merken",
+    "cancelRule": "Regel rückgängig",
+    "cancelTransfer": "Keine Überweisung",
+    "plannedSummaryV2": "{{merges}} Zusammenführungen · {{news}} neu · {{transfers}} Überweisungen · {{skipped}} übersprungen",
+    "confirmedSummaryV2": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen."
   }
 }
