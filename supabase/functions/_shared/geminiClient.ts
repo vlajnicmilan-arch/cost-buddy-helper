@@ -80,6 +80,27 @@ export interface OpenAIChatBody {
   response_format?: { type: string };
 }
 
+export class GeminiTimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`ai_timeout_after_${Math.round(timeoutMs / 1000)}s`);
+    this.name = 'GeminiTimeoutError';
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+export function isGeminiTimeoutError(error: unknown): error is GeminiTimeoutError {
+  return error instanceof GeminiTimeoutError || (
+    error instanceof Error && /^ai_timeout_after_\d+s$/.test(error.message)
+  );
+}
+
+function normalizeFetchError(error: unknown, controller: AbortController, timeoutMs: number): never {
+  if (controller.signal.aborted) throw new GeminiTimeoutError(timeoutMs);
+  throw error;
+}
+
 /**
  * Odlučuje treba li retry s fallback modelom. Odvojena čista funkcija radi
  * testabilnosti (vidi geminiClient.fallback.test.ts).
@@ -104,6 +125,9 @@ export async function callGemini(body: OpenAIChatBody, opts?: { timeoutMs?: numb
   try {
     return await callDirectGemini(body, directModel!, opts?.timeoutMs);
   } catch (e) {
+    // Timeout is not provider unavailability. Retrying the same request through
+    // the gateway doubles latency and turns a 60 s budget into the observed 120 s.
+    if (isGeminiTimeoutError(e)) throw e;
     console.error('[geminiClient] direct call failed, falling back to gateway:', e);
     return callViaGateway(body, opts?.timeoutMs);
   }
@@ -131,7 +155,7 @@ async function callViaGateway(body: OpenAIChatBody, timeoutMs = 60_000): Promise
       },
       body: JSON.stringify(body),
       signal: controller.signal,
-    });
+    }).catch((error) => normalizeFetchError(error, controller, timeoutMs));
   } finally {
     clearTimeout(t);
   }
@@ -155,7 +179,7 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
         headers: { 'x-goog-api-key': GOOGLE_KEY!, 'Content-Type': 'application/json' },
         body: JSON.stringify(geminiBody),
         signal: controller.signal,
-      });
+      }).catch((error) => normalizeFetchError(error, controller, timeoutMs));
     } finally {
       clearTimeout(t);
     }
