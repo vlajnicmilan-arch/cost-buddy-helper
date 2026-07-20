@@ -98,35 +98,72 @@ const ImportReview = () => {
     navigate('/app');
   }, [navigate]);
 
+  const { user } = useAuth();
+  const { activeBusinessProfileId } = useAppState();
+
   const handleConfirm = useCallback(async () => {
     if (!payload || !decisions || !summary?.canConfirm) return;
+    if (!user) {
+      toast.error(t('common.notAuthenticated'));
+      return;
+    }
     setConfirming(true);
+    // Save draft up-front so a mid-flight failure keeps decisions intact
+    // and the same batchId is reused on retry (idempotent).
+    saveDraft(payload.jobId, decisions);
+    let result: ExecutorResult | null = null;
     try {
-      // KORAK 4 HOOK: pass `decisions` to the executor.
-      // Currently IMPORT_FROZEN=true → decisions saved to draft; no writes.
-      if (IMPORT_FROZEN) {
-        saveDraft(payload.jobId, decisions);
-        try {
-          logDiagnostic('import_review_confirmed_while_frozen', {
-            job_id: payload.jobId,
-            planned_merges: summary.plannedMerges,
-            planned_new: summary.plannedNew,
-            planned_skipped: summary.plannedSkipped,
-          });
-        } catch { /* noop */ }
-        toast.info(t('importReview.frozenSaved'));
-        navigate('/app');
+      result = await executeDecisions({
+        supabase: supabase as unknown as Parameters<typeof executeDecisions>[0]['supabase'],
+        userId: user.id,
+        activeBusinessProfileId: activeBusinessProfileId ?? null,
+        payload,
+        decisions,
+      });
+      try {
+        logDiagnostic('import_executed', {
+          batch_id: result.batchId,
+          merged: result.merged,
+          inserted: result.inserted,
+          skipped_by_user: result.skippedByUser,
+          skipped_fingerprint: result.skippedFingerprint,
+          skipped_merged: result.skippedMerged,
+          skipped_duplicate: result.skippedDuplicate,
+          duration_ms: result.durationMs,
+          errors: result.errors.length,
+        });
+      } catch { /* noop */ }
+
+      if (result.errors.length > 0) {
+        toast.error(t('importReview.confirmedWithErrors', {
+          merged: result.merged,
+          inserted: result.inserted,
+          errors: result.errors.length,
+        }));
+        // Draft retained → user can "Nastavi pregled uvoza" and retry.
         return;
       }
-      // TODO Korak 4: executeDecisions(payload, decisions) here.
+
       clearDraft();
       clearPayload();
-      toast.success(t('importReview.confirmed'));
+      toast.success(t('importReview.confirmedSummary', {
+        merged: result.merged,
+        inserted: result.inserted,
+        skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
+      }));
       navigate('/app');
+    } catch (e) {
+      try {
+        logDiagnostic('import_execute_failed', {
+          job_id: payload.jobId,
+          message: e instanceof Error ? e.message : String(e),
+        });
+      } catch { /* noop */ }
+      toast.error(t('importReview.confirmFailed'));
     } finally {
       setConfirming(false);
     }
-  }, [payload, decisions, summary, navigate, t]);
+  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId]);
 
   const updateAuto = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setAutoMerge(prev, idx, value) : prev));
