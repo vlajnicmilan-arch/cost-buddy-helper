@@ -500,12 +500,56 @@ export const GlobalPDFImportHost = () => {
         manualCandidates: manualCandidatesForClassifier,
       });
 
-      // Merge classifier output → review rows.
-      const autoByIdx = new Map<number, string>();
-      classified.autoMerge.forEach(p => autoByIdx.set(p.importedIndex, p.manualId));
-      const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
-      classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
+      // --- Transfer rules pre-pass (KORAK 3 rule engine) --------------------
+      //
+      // Applied AFTER pdfPostProcess keyword safety-net (which runs upstream
+      // at parse time in usePDFParser) and AFTER classifyImport. For rows
+      // routed to 'new' or 'question' whose merchant+source matches a learned
+      // rule, we override the classification to `kind: 'transfer'`. Rows that
+      // already auto-merged are left alone — a real manual counterpart wins.
+      const transferRules = await loadTransferRules(supabase as any, user.id).catch(() => []);
+      const transferOverrides = new Map<number, { targetIncomeSourceId: string; ruleId: string }>();
+      if (transferRules.length > 0) {
+        for (const tx of transactions) {
+          if (tx.type !== 'expense') continue; // rule keyed on outgoing legs only
+          const m = matchTransferRule(
+            { merchantName: tx.merchant_name, paymentSource: paymentSourceValue },
+            transferRules,
+          );
+          if (m) {
+            const idx = transactions.indexOf(tx);
+            // Skip when classifier already auto-merged this row.
+            if (autoByIdx.has(idx)) continue;
+            transferOverrides.set(idx, {
+              targetIncomeSourceId: m.rule.targetIncomeSourceId,
+              ruleId: m.rule.id,
+            });
+          }
+        }
+      }
 
+      // --- Load user's wallets as transfer destinations ---------------------
+      let availableTargets: TransferTargetOption[] = [];
+      try {
+        const { data: srcRows } = await supabase
+          .from('custom_payment_sources')
+          .select('id,name,icon')
+          .eq('user_id', user.id)
+          .order('sort_order', { ascending: true });
+        availableTargets = ((srcRows ?? []) as Array<{ id: string; name: string; icon: string | null }>)
+          // Exclude the SOURCE wallet (can't transfer to yourself).
+          .filter(r => resolvePaymentSourceKey(`custom:${r.id}`) !== resolvePaymentSourceKey(paymentSourceValue))
+          .map(r => ({
+            id: r.id,
+            name: r.name,
+            key: resolvePaymentSourceKey(`custom:${r.id}`),
+            icon: r.icon,
+          }));
+      } catch (e) {
+        try { logDiagnostic('import_review_targets_lookup_failed', { message: e instanceof Error ? e.message : String(e) }); } catch {}
+      }
+
+      // Merge classifier output → review rows.
       const reviewRows: ImportReviewRow[] = transactions.map((tx, i) => {
         const fp = fingerprints[i];
         const dateIso = new Date(tx.date).toISOString();
@@ -518,6 +562,19 @@ export const GlobalPDFImportHost = () => {
           description: tx.description ?? null,
           fingerprint: fp,
         };
+        // Rule override wins over new/question (never over auto_merge — that's
+        // a real manual counterpart the user already made).
+        const override = transferOverrides.get(i);
+        if (override && !autoByIdx.has(i)) {
+          return {
+            ...baseRow,
+            classification: {
+              kind: 'transfer' as const,
+              targetIncomeSourceId: override.targetIncomeSourceId,
+              ruleId: override.ruleId,
+            },
+          };
+        }
         const auto = autoByIdx.get(i);
         if (auto) return { ...baseRow, classification: { kind: 'auto_merge' as const, manualId: auto } };
         const q = qByIdx.get(i);
@@ -562,6 +619,7 @@ export const GlobalPDFImportHost = () => {
         manualCandidates: manualCandidatesRecord,
         importedTransactions,
         batchId: (crypto as any)?.randomUUID?.() ?? `batch-${Date.now()}`,
+        availableTargets,
       };
 
       saveReviewPayload(payload);
