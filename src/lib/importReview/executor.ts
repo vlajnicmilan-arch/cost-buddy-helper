@@ -184,6 +184,29 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
 
+  // --- PRE-FLIGHT VALIDATION: no writes at all if any transfer decision is
+  // missing a target wallet. This is the executor-side gate that matches the
+  // UI's summarize() check — belt AND suspenders so a stale summary or a
+  // programmatic caller cannot leak an income_source_id=NULL transfer.
+  const badTransfers = plan.transfers.filter(
+    t => !t.decision.targetIncomeSourceId || t.decision.targetIncomeSourceId.length === 0,
+  );
+  if (badTransfers.length > 0) {
+    return {
+      batchId,
+      merged: 0,
+      inserted: 0,
+      transfersCreated: 0,
+      rulesSaved: 0,
+      skippedByUser: plan.skippedByUser,
+      skippedFingerprint: plan.skippedFingerprint,
+      skippedMerged: 0,
+      skippedDuplicate: 0,
+      durationMs: now() - start,
+      errors: badTransfers.map(t => `transfer:${t.rowIndex}:missing_target`),
+    };
+  }
+
   // --- STEP 0: upsert transfer rules that the user asked to remember. Runs
   // BEFORE inserts so a mid-flight retry keeps the rule and skips the row.
   let rulesSaved = 0;
