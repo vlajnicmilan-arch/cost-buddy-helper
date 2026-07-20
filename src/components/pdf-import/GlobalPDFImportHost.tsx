@@ -538,6 +538,19 @@ export const GlobalPDFImportHost = () => {
         };
       }
 
+      const importedTransactions = transactions.map((tx, i) => ({
+        index: i,
+        dateIso: new Date(tx.date).toISOString(),
+        amount: tx.amount,
+        type: tx.type,
+        category: tx.category,
+        description: tx.description,
+        merchantName: tx.merchant_name ?? null,
+        paymentSource: paymentSourceValue,
+        balanceAfter: tx.balance_after ?? null,
+        fingerprint: fingerprints[i],
+      }));
+
       const payload: ImportReviewPayload = {
         jobId,
         sourceId,
@@ -545,6 +558,8 @@ export const GlobalPDFImportHost = () => {
         createdAt: Date.now(),
         rows: reviewRows,
         manualCandidates: manualCandidatesRecord,
+        importedTransactions,
+        batchId: (crypto as any)?.randomUUID?.() ?? `batch-${Date.now()}`,
       };
 
       saveReviewPayload(payload);
