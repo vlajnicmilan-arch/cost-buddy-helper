@@ -568,6 +568,7 @@ PENDING / NA ČEKANJU:
     const transactions = rawTransactions.map((t: any) => {
       const normDate = normalizeDate(t.date);
       const normDueOverride = normalizeDate(t.due_date_override);
+      const balAfter = typeof t.balance_after === 'number' && Number.isFinite(t.balance_after) ? t.balance_after : null;
       return {
         ...t,
         // Fall back to due_date_override if primary date is unparseable.
@@ -580,6 +581,9 @@ PENDING / NA ČEKANJU:
         installment_base_description: sanitizeText(t.installment_base_description),
         due_date_override: normDueOverride,
         is_statement_total: t.is_statement_total === true,
+        balance_after: balAfter,
+        is_pending: t.is_pending === true,
+        balance_inconsistent: false,
       };
     }).filter((t: any) => {
       if (!t.date) {
@@ -597,6 +601,35 @@ PENDING / NA ČEKANJU:
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
 
+    // Chain-validation: for consecutive settled rows with balance_after,
+    // verify balance[i-1] ± amount[i] === balance[i]. Flag mismatches; do NOT drop.
+    const CHAIN_TOL = 0.02;
+    let chainChecked = 0;
+    let chainMismatched = 0;
+    let prevBal: number | null = null;
+    for (const t of transactions) {
+      if (t.is_pending || t.is_statement_total) continue;
+      if (typeof t.balance_after !== 'number') { prevBal = null; continue; }
+      if (prevBal !== null && typeof t.amount === 'number') {
+        const signed = t.type === 'income' ? t.amount : -t.amount;
+        const expected = prevBal + signed;
+        chainChecked += 1;
+        if (Math.abs(expected - t.balance_after) > CHAIN_TOL) {
+          t.balance_inconsistent = true;
+          chainMismatched += 1;
+        }
+      }
+      prevBal = t.balance_after;
+    }
+    if (chainMismatched > 0) {
+      console.warn(`pdf_balance_chain_mismatch: ${chainMismatched}/${chainChecked} rows off by >${CHAIN_TOL}`);
+      void logParseFailure('pdf_balance_chain_mismatch', userId, {
+        checked: chainChecked,
+        mismatched: chainMismatched,
+        bank: (statementData as any).detected_bank ?? null,
+      });
+    }
+
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
@@ -604,6 +637,7 @@ PENDING / NA ČEKANJU:
     // Exclude statement-total rows from income/expense sums to avoid double counting
     const totalIncome = statementData.total_income || transactions.filter((t: any) => t.type === 'income' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     const totalExpenses = statementData.total_expenses || transactions.filter((t: any) => t.type === 'expense' && !t.is_statement_total).reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
 
     // Group transactions by card if multiple cards detected
     const cardGroups = new Map<string, number>();
