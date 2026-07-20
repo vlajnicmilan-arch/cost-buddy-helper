@@ -33,6 +33,23 @@ export interface ImportReviewRow {
   readonly classification: ClassificationKind;
 }
 
+/**
+ * Full data required by the Korak 4 executor to INSERT a row into expenses.
+ * Kept serializable (no Date objects) so it survives sessionStorage.
+ */
+export interface SerializedImportedTx {
+  readonly index: number;
+  readonly dateIso: string;
+  readonly amount: number;
+  readonly type: string;
+  readonly category: string;
+  readonly description: string;
+  readonly merchantName: string | null;
+  readonly paymentSource: string; // canonical `custom:<uuid>` or 'cash'/'other'
+  readonly balanceAfter: number | null;
+  readonly fingerprint: string;
+}
+
 export interface ImportReviewPayload {
   readonly jobId: string;
   readonly sourceId: string;
@@ -40,6 +57,10 @@ export interface ImportReviewPayload {
   readonly createdAt: number;
   readonly rows: readonly ImportReviewRow[];
   readonly manualCandidates: Readonly<Record<string, ManualCandidateInfo>>;
+  /** Full imported transaction data keyed by row.index (Korak 4 executor input). */
+  readonly importedTransactions: readonly SerializedImportedTx[];
+  /** Stable batch id — persisted so idempotent retry reuses it. */
+  readonly batchId: string;
 }
 
 export type QuestionAnswer = { choice: 'merge'; manualId: string } | { choice: 'new' };
