@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { AlertTriangle, ArrowLeft, CheckCircle2, HelpCircle, Loader2, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRightLeft, CheckCircle2, HelpCircle, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -27,14 +28,17 @@ import {
   isNewRowLocked,
   setAutoMerge,
   setNewRow,
+  setTransferDecision,
   summarize,
 } from '@/lib/importReview/state';
 import { executeDecisions, type ExecutorResult } from '@/lib/importReview/executor';
+import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
 import type {
   ImportReviewDecisions,
   ImportReviewPayload,
   ImportReviewRow,
   QuestionAnswer,
+  TransferDecision,
 } from '@/lib/importReview/types';
 
 const SAVE_DEBOUNCE_MS = 300;
@@ -52,7 +56,6 @@ const ImportReview = () => {
   useEffect(() => {
     const p = loadPayload();
     if (!p) {
-      // No payload — redirect back to app.
       navigate('/app', { replace: true });
       return;
     }
@@ -79,22 +82,33 @@ const ImportReview = () => {
     return summarize(payload, decisions);
   }, [payload, decisions]);
 
+  /**
+   * Grouping honours transfer overrides — a row currently marked as transfer
+   * (either from a matched rule or from the user's "Ovo je prijenos" action)
+   * moves to the Prijenosi section, regardless of its underlying classifier
+   * kind. This keeps the UI in lock-step with what the executor will actually
+   * write.
+   */
   const grouped = useMemo(() => {
-    if (!payload) return { auto: [], questions: [], news: [] };
+    if (!payload || !decisions) {
+      return { auto: [] as ImportReviewRow[], questions: [] as ImportReviewRow[], news: [] as ImportReviewRow[], transfers: [] as ImportReviewRow[] };
+    }
     const auto: ImportReviewRow[] = [];
     const questions: ImportReviewRow[] = [];
     const news: ImportReviewRow[] = [];
+    const transfers: ImportReviewRow[] = [];
     for (const r of payload.rows) {
+      const td = decisions.transfers[r.index];
+      if (td && td.enabled) { transfers.push(r); continue; }
+      if (r.classification.kind === 'transfer') { transfers.push(r); continue; }
       if (r.classification.kind === 'auto_merge') auto.push(r);
       else if (r.classification.kind === 'question') questions.push(r);
       else news.push(r);
     }
-    return { auto, questions, news };
-  }, [payload]);
+    return { auto, questions, news, transfers };
+  }, [payload, decisions]);
 
   const handleCancel = useCallback(() => {
-    // Draft stays for the resume banner; only payload cleared if user truly cancels.
-    // Milan constraint: never lose decisions to a stray back-tap. Keep draft.
     navigate('/app');
   }, [navigate]);
 
@@ -108,8 +122,6 @@ const ImportReview = () => {
       return;
     }
     setConfirming(true);
-    // Save draft up-front so a mid-flight failure keeps decisions intact
-    // and the same batchId is reused on retry (idempotent).
     saveDraft(payload.jobId, decisions);
     let result: ExecutorResult | null = null;
     try {
@@ -125,6 +137,8 @@ const ImportReview = () => {
           batch_id: result.batchId,
           merged: result.merged,
           inserted: result.inserted,
+          transfers_created: result.transfersCreated,
+          rules_saved: result.rulesSaved,
           skipped_by_user: result.skippedByUser,
           skipped_fingerprint: result.skippedFingerprint,
           skipped_merged: result.skippedMerged,
@@ -140,15 +154,15 @@ const ImportReview = () => {
           inserted: result.inserted,
           errors: result.errors.length,
         }));
-        // Draft retained → user can "Nastavi pregled uvoza" and retry.
         return;
       }
 
       clearDraft();
       clearPayload();
-      toast.success(t('importReview.confirmedSummary', {
+      toast.success(t('importReview.confirmedSummaryV2', {
         merged: result.merged,
         inserted: result.inserted,
+        transfers: result.transfersCreated,
         skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
       }));
       navigate('/app');
@@ -174,6 +188,9 @@ const ImportReview = () => {
   const updateQuestion = useCallback((idx: number, answer: QuestionAnswer) => {
     setDecisions(prev => (prev ? answerQuestion(prev, idx, answer) : prev));
   }, []);
+  const updateTransfer = useCallback((idx: number, decision: TransferDecision | null) => {
+    setDecisions(prev => (prev ? setTransferDecision(prev, idx, decision) : prev));
+  }, []);
 
   if (!payload || !decisions || !summary) {
     return (
@@ -187,9 +204,139 @@ const ImportReview = () => {
     try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
   };
 
+  const targets = payload.availableTargets ?? [];
+
+  /**
+   * Given a row + user's picked target id, build the TransferDecision to
+   * persist. If the row already has a rule-based classification we don't
+   * offer "Zapamti" (rule already exists) — the checkbox is only shown for
+   * user-flagged transfers on new/question rows.
+   */
+  const buildDecision = (row: ImportReviewRow, targetId: string, remember: boolean): TransferDecision => {
+    const tx = payload.importedTransactions.find(t => t.index === row.index);
+    const key = buildTransferRuleKey({
+      merchantName: row.merchantName ?? null,
+      paymentSource: tx?.paymentSource ?? null,
+    });
+    return {
+      enabled: true,
+      targetIncomeSourceId: targetId,
+      rememberRule: remember,
+      merchantKey: key?.merchantKey ?? null,
+      sourceWalletKey: key?.sourceWalletKey ?? null,
+    };
+  };
+
+  /**
+   * Render the transfer control (picker + remember + clear). Used inside every
+   * section — a `new` row can be flipped to transfer, a rule-hit row can be
+   * removed with "Poništi pravilo".
+   */
+  const renderTransferControls = (row: ImportReviewRow) => {
+    const td = decisions.transfers[row.index] ?? null;
+    const isRuleHit = row.classification.kind === 'transfer';
+    const currentTargetId = td?.enabled
+      ? td.targetIncomeSourceId
+      : (isRuleHit ? row.classification.targetIncomeSourceId : '');
+    const showControls = !!td?.enabled || isRuleHit;
+
+    if (!showControls) {
+      // Compact CTA for new/question rows.
+      if (targets.length === 0) return null;
+      return (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="mt-2 h-9 rounded-lg"
+          onClick={() => {
+            const firstId = targets[0].id;
+            updateTransfer(row.index, buildDecision(row, firstId, false));
+          }}
+        >
+          <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
+          {t('importReview.markAsTransfer')}
+        </Button>
+      );
+    }
+
+    // Rule-hit rows without an explicit override → hydrate the decision so
+    // the picker binds to a real value.
+    const activeDecision = td?.enabled
+      ? td
+      : buildDecision(row, currentTargetId, false);
+
+    return (
+      <div className="mt-2 space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-2">
+        {isRuleHit && (
+          <Badge variant="secondary" className="text-[10px]">
+            <ArrowRightLeft className="w-3 h-3 mr-1" />
+            {t('importReview.badges.fromRule')}
+          </Badge>
+        )}
+        <div className="flex items-center gap-2">
+          <Label className="text-xs text-muted-foreground shrink-0">
+            {t('importReview.transferTo')}
+          </Label>
+          <Select
+            value={currentTargetId}
+            onValueChange={(v) => {
+              updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule));
+            }}
+          >
+            <SelectTrigger className="h-9 rounded-lg text-sm">
+              <SelectValue placeholder={t('importReview.pickWallet')} />
+            </SelectTrigger>
+            <SelectContent>
+              {targets.map(o => (
+                <SelectItem key={o.id} value={o.id}>
+                  {(o.icon ? `${o.icon} ` : '') + o.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* "Zapamti" checkbox — only offered on user-flagged transfers (rule
+            already exists for rule-hit rows). */}
+        {!isRuleHit && (
+          <label htmlFor={`ir-t-rem-${row.index}`} className="flex items-center gap-2 min-h-9 cursor-pointer">
+            <Checkbox
+              id={`ir-t-rem-${row.index}`}
+              checked={activeDecision.rememberRule}
+              onCheckedChange={(v) =>
+                updateTransfer(row.index, buildDecision(row, currentTargetId, v === true))
+              }
+            />
+            <span className="text-xs">{t('importReview.rememberRule')}</span>
+          </label>
+        )}
+
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-xs"
+          onClick={() => {
+            if (isRuleHit) {
+              // "Poništi pravilo" — mark decision disabled so executor + summary
+              // skip the row entirely. Rule row is NOT deleted here (would need
+              // an explicit "Obriši pravilo" affordance elsewhere).
+              updateTransfer(row.index, { ...activeDecision, enabled: false, rememberRule: false });
+            } else {
+              updateTransfer(row.index, null);
+            }
+          }}
+        >
+          <X className="w-3 h-3 mr-1" />
+          {isRuleHit ? t('importReview.cancelRule') : t('importReview.cancelTransfer')}
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-dvh flex flex-col bg-background">
-      {/* Sticky header */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/60">
         <div className="flex items-center gap-2 p-3">
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={handleCancel} aria-label={t('common.back')}>
@@ -204,7 +351,6 @@ const ImportReview = () => {
         </div>
       </header>
 
-      {/* Body */}
       <main className="flex-1 overflow-y-auto p-3 pb-32 space-y-6">
 
         {/* Auto-merge section */}
@@ -251,6 +397,39 @@ const ImportReview = () => {
                   </li>
                 );
               })}
+            </ul>
+          </section>
+        )}
+
+        {/* Transfers section */}
+        {grouped.transfers.length > 0 && (
+          <section aria-labelledby="ir-transfers">
+            <h2 id="ir-transfers" className="flex items-center gap-2 text-sm font-semibold mb-2">
+              <ArrowRightLeft className="w-4 h-4 text-primary" />
+              {t('importReview.sections.transfers')}
+              <span className="text-xs font-normal text-muted-foreground">({grouped.transfers.length})</span>
+            </h2>
+            <ul className="space-y-2">
+              {grouped.transfers.map((row) => (
+                <li key={row.index} className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+                  <div className="flex items-start gap-3 min-h-11">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
+                        <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
+                      </div>
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">{t('importReview.bank')}: </span>
+                        <span className="font-medium">{row.merchantName || '—'}</span>
+                      </p>
+                      {row.description && (
+                        <p className="text-xs text-muted-foreground truncate">{row.description}</p>
+                      )}
+                      {renderTransferControls(row)}
+                    </div>
+                  </div>
+                </li>
+              ))}
             </ul>
           </section>
         )}
@@ -314,6 +493,7 @@ const ImportReview = () => {
                         </Label>
                       </div>
                     </RadioGroup>
+                    {renderTransferControls(row)}
                   </li>
                 );
               })}
@@ -366,6 +546,7 @@ const ImportReview = () => {
                         )}
                       </div>
                     </label>
+                    {!locked && renderTransferControls(row)}
                   </li>
                 );
               })}
@@ -378,9 +559,10 @@ const ImportReview = () => {
       <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-border/60 bg-background/95 backdrop-blur p-3 safe-area-pb">
         <div className="max-w-lg mx-auto space-y-2">
           <p className="text-xs text-muted-foreground text-center">
-            {t('importReview.plannedSummary', {
+            {t('importReview.plannedSummaryV2', {
               merges: summary.plannedMerges,
               news: summary.plannedNew,
+              transfers: summary.plannedTransfers,
               skipped: summary.plannedSkipped,
             })}
           </p>

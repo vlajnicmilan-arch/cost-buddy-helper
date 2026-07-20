@@ -56,6 +56,19 @@ export interface SerializedImportedTx {
   readonly fingerprint: string;
 }
 
+/**
+ * Wallet the user can pick as the DESTINATION of a transfer classified from a
+ * bank row (goes into `expenses.income_source_id`). Excludes the source
+ * wallet itself — you can't transfer to the same wallet you're transferring
+ * from.
+ */
+export interface TransferTargetOption {
+  readonly id: string;               // raw UUID (matches income_source_id)
+  readonly name: string;
+  readonly key: string;              // canonical resolvePaymentSourceKey (e.g. `custom:<uuid>`)
+  readonly icon?: string | null;
+}
+
 export interface ImportReviewPayload {
   readonly jobId: string;
   readonly sourceId: string;
@@ -67,6 +80,8 @@ export interface ImportReviewPayload {
   readonly importedTransactions: readonly SerializedImportedTx[];
   /** Stable batch id — persisted so idempotent retry reuses it. */
   readonly batchId: string;
+  /** Wallets the user can pick as transfer destinations. */
+  readonly availableTargets: readonly TransferTargetOption[];
 }
 
 export type QuestionAnswer = { choice: 'merge'; manualId: string } | { choice: 'new' };
