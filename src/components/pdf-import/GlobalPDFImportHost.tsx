@@ -19,7 +19,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
-import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo } from '@/lib/importReview/types';
+import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
+import { loadTransferRules, matchTransferRule } from '@/lib/importReview/transferRules';
+import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import {
   computeFileHash,
   computeContentHash,
