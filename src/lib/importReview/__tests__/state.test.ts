@@ -13,7 +13,7 @@ const payload: ImportReviewPayload = {
   jobId: 'job-1',
   sourceId: 'src-1',
   sourceName: 'Revolut',
-  createdAt: 0, importedTransactions: [], batchId: "test-batch",
+  createdAt: 0, importedTransactions: [], batchId: "test-batch", availableTargets: [],
   manualCandidates: {
     'm1': { id: 'm1', date: '2026-07-14', amount: 100, type: 'expense', merchantName: 'Ale Hop' },
     'm2': { id: 'm2', date: '2026-07-14', amount: 100, type: 'expense', merchantName: 'Ale Hop 2' },

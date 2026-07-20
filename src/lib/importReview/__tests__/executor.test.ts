@@ -24,7 +24,7 @@ function payload(over: Partial<ImportReviewPayload> = {}): ImportReviewPayload {
     sourceId: 'src-1',
     sourceName: 'Revolut',
     createdAt: 0,
-    batchId: 'batch-1',
+    batchId: 'batch-1', availableTargets: [],
     manualCandidates: {
       'm-with-name': { id: 'm-with-name', date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'ScannedName' } as any,
       'm-no-name':   { id: 'm-no-name',   date: '2026-07-01', amount: 100, type: 'expense', merchantName: null } as any,
