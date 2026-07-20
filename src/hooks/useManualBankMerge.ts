@@ -24,7 +24,7 @@ export function useManualBankMerge() {
 
   const mergePair = useCallback(
     async (manualId: string, bankId: string): Promise<boolean> => {
-      if (IMPORT_FROZEN) {
+      if (MANUAL_MERGE_ENABLED) {
         showError(t('import.frozen'));
         return false;
       }

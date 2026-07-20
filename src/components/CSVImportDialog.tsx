@@ -20,7 +20,7 @@ import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { useAppState } from '@/contexts/AppStateContext';
 
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
-import { IMPORT_FROZEN } from '@/lib/featureFlags';
+import { CSV_IMPORT_ENABLED } from '@/lib/featureFlags';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAuth } from '@/hooks/useAuth';
@@ -276,7 +276,7 @@ export const CSVImportDialog = ({ onImport, onReplaceAutoGen, existingExpenses =
   };
 
   const handleImport = async () => {
-    if (IMPORT_FROZEN) {
+    if (CSV_IMPORT_ENABLED) {
       showError(t('import.frozen'));
       return;
     }
