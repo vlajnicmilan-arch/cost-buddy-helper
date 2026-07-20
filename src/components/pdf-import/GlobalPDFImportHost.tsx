@@ -639,6 +639,8 @@ export const GlobalPDFImportHost = () => {
           questions: classified.questions.length,
           new_rows: classified.newRows.length,
           fp_hits: existingFpSet.size,
+          transfer_rule_hits: transferOverrides.size,
+          targets_available: availableTargets.length,
         });
       } catch { /* noop */ }
       navigate('/import/review');
