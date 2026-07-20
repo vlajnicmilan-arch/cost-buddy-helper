@@ -500,6 +500,13 @@ export const GlobalPDFImportHost = () => {
         manualCandidates: manualCandidatesForClassifier,
       });
 
+      // Merge classifier output → lookup maps (used by rule pre-pass + row builder).
+      const autoByIdx = new Map<number, string>();
+      classified.autoMerge.forEach(p => autoByIdx.set(p.importedIndex, p.manualId));
+      const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
+      classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
+
+
       // --- Transfer rules pre-pass (KORAK 3 rule engine) --------------------
       //
       // Applied AFTER pdfPostProcess keyword safety-net (which runs upstream
