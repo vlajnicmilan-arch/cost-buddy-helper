@@ -81,7 +81,7 @@ function makeFakeClient(opts: {
 }
 
 const baseDecisions = (over: Partial<ImportReviewDecisions> = {}): ImportReviewDecisions => ({
-  autoMerge: {}, questions: {}, newRows: {}, ...over,
+  autoMerge: {}, questions: {}, newRows: {}, transfers: {}, ...over,
 });
 
 describe('importReview/executor', () => {
