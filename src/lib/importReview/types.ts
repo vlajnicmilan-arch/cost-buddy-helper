@@ -20,7 +20,13 @@ export interface ManualCandidateInfo {
 export type ClassificationKind =
   | { readonly kind: 'auto_merge'; readonly manualId: string }
   | { readonly kind: 'question'; readonly reason: QuestionReason; readonly candidateIds: readonly string[] }
-  | { readonly kind: 'new'; readonly existsByFingerprint: boolean };
+  | { readonly kind: 'new'; readonly existsByFingerprint: boolean }
+  /**
+   * Rule engine matched this row against a learned transfer rule. Executor will
+   * insert as `type='transfer'` with income_source_id = targetIncomeSourceId.
+   * Balance updater/DB trigger handles both sides of the transfer.
+   */
+  | { readonly kind: 'transfer'; readonly targetIncomeSourceId: string; readonly ruleId: string | null };
 
 export interface ImportReviewRow {
   readonly index: number;
