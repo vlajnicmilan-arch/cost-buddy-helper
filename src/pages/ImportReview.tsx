@@ -239,9 +239,12 @@ const ImportReview = () => {
       ? td.targetIncomeSourceId
       : (isRuleHit ? row.classification.targetIncomeSourceId : '');
     const showControls = !!td?.enabled || isRuleHit;
+    const missingTarget = showControls && !currentTargetId;
 
     if (!showControls) {
-      // Compact CTA for new/question rows.
+      // Compact CTA for new/question rows. Clicking creates an ENABLED
+      // decision with an EMPTY target — the user must then pick a wallet.
+      // No default selection: prevents "Keks was first in list" mis-book.
       if (targets.length === 0) return null;
       return (
         <Button
@@ -250,8 +253,7 @@ const ImportReview = () => {
           variant="outline"
           className="mt-2 h-9 rounded-lg"
           onClick={() => {
-            const firstId = targets[0].id;
-            updateTransfer(row.index, buildDecision(row, firstId, false));
+            updateTransfer(row.index, buildDecision(row, '', false));
           }}
         >
           <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -267,7 +269,10 @@ const ImportReview = () => {
       : buildDecision(row, currentTargetId, false);
 
     return (
-      <div className="mt-2 space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-2">
+      <div className={cn(
+        'mt-2 space-y-2 rounded-lg border p-2',
+        missingTarget ? 'border-destructive/60 bg-destructive/5' : 'border-primary/30 bg-primary/5',
+      )}>
         {isRuleHit && (
           <Badge variant="secondary" className="text-[10px]">
             <ArrowRightLeft className="w-3 h-3 mr-1" />
@@ -279,12 +284,12 @@ const ImportReview = () => {
             {t('importReview.transferTo')}
           </Label>
           <Select
-            value={currentTargetId}
+            value={currentTargetId || undefined}
             onValueChange={(v) => {
               updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule));
             }}
           >
-            <SelectTrigger className="h-9 rounded-lg text-sm">
+            <SelectTrigger className={cn('h-9 rounded-lg text-sm', missingTarget && 'border-destructive')}>
               <SelectValue placeholder={t('importReview.pickWallet')} />
             </SelectTrigger>
             <SelectContent>
@@ -296,6 +301,12 @@ const ImportReview = () => {
             </SelectContent>
           </Select>
         </div>
+        {missingTarget && (
+          <p className="text-[11px] text-destructive flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            {t('importReview.transferTargetRequired')}
+          </p>
+        )}
 
         {/* "Zapamti" checkbox — only offered on user-flagged transfers (rule
             already exists for rule-hit rows). */}
