@@ -206,12 +206,6 @@ const ImportReview = () => {
 
       {/* Body */}
       <main className="flex-1 overflow-y-auto p-3 pb-32 space-y-6">
-        {IMPORT_FROZEN && (
-          <div className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-200 flex gap-2">
-            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-            <p>{t('importReview.frozenNotice')}</p>
-          </div>
-        )}
 
         {/* Auto-merge section */}
         {grouped.auto.length > 0 && (
