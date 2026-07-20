@@ -76,6 +76,7 @@ const LegacyLanding = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const ImportReview = lazy(() => import("./pages/ImportReview"));
 
 
 
