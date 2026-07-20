@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { logFunnelEvent } from '@/lib/funnelTracking';
-import { IMPORT_FROZEN } from '@/lib/featureFlags';
+import { MANUAL_MERGE_ENABLED } from '@/lib/featureFlags';
 import {
   canMergeSelection,
   type MergeCandidateExpense,
