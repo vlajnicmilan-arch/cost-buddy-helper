@@ -1681,6 +1681,42 @@ export type Database = {
         }
         Relationships: []
       }
+      import_transfer_rules: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string | null
+          merchant_key: string
+          source_wallet_key: string
+          target_income_source_id: string
+          times_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          merchant_key: string
+          source_wallet_key: string
+          target_income_source_id: string
+          times_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          merchant_key?: string
+          source_wallet_key?: string
+          target_income_source_id?: string
+          times_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       imported_statements: {
         Row: {
           content_hash: string | null
