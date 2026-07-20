@@ -59,10 +59,12 @@ const readAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
 
 export const GlobalPDFImportHost = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { formatAmount } = useCurrency();
   const pdfImport = usePdfImport();
   const { user } = useAuth();
   const { startPDFParseJob, waitForPDFParseJob, fetchPDFParseJob, normalizeJobResult, parseHTML } = usePDFParser();
+  const [resumeVisible, setResumeVisible] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [fuzzyDecisions, setFuzzyDecisions] = useState<Map<number, RowDecision>>(new Map());
