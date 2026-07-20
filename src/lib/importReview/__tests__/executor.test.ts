@@ -189,4 +189,29 @@ describe('importReview/executor', () => {
     expect(calls.some(c => c.op === 'update')).toBe(true);
     expect(calls.some(c => c.op === 'upsert')).toBe(true);
   });
+
+  it('PRE-FLIGHT: transfer without target aborts entire batch (no writes)', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { type: 'transfer' }), tx(1)],
+      rows: [
+        { index: 0, date: '2026-07-01', amount: 100, type: 'transfer', merchantName: 'Aircash',
+          classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null } } as any,
+        { index: 1, date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'B',
+          classification: { kind: 'new', existsByFingerprint: false } } as any,
+      ],
+    });
+    const d = baseDecisions({
+      transfers: { 0: { enabled: true, targetIncomeSourceId: '', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+      newRows: { 1: true },
+    });
+    const { client, calls } = makeFakeClient();
+    const res = await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    expect(res.errors.length).toBeGreaterThan(0);
+    expect(res.errors[0]).toContain('missing_target');
+    expect(res.merged).toBe(0);
+    expect(res.inserted).toBe(0);
+    expect(res.transfersCreated).toBe(0);
+    // Absolutely no writes were issued.
+    expect(calls).toHaveLength(0);
+  });
 });
