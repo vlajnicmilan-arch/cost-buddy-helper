@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
@@ -24,6 +24,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+import { useMyKrugs } from '@/hooks/useKrug';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 
 export default function Krug() {
