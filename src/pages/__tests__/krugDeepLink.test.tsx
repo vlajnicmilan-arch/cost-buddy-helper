@@ -40,6 +40,7 @@ vi.mock('@/integrations/supabase/client', () => {
       removeChannel: vi.fn(),
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
     },
   };
