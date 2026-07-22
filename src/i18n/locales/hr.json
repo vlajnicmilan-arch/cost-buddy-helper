@@ -5518,5 +5518,14 @@
     "cancelTransfer": "Nije prijenos",
     "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
     "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}."
+  },
+  "correctionDelete": {
+    "title": "Brisanje zapisa o korekciji salda",
+    "description": "Ovo je zapis o sidru novčanika — trenutak kada ste postavili početni saldo. Brisanjem se sidro NE mijenja i saldo ostaje isti, ali gubite povijesni trag korekcije. Sigurno želite obrisati?",
+    "cancel": "Odustani",
+    "confirm": "Ipak obriši",
+    "bulkSkipped_one": "{{count}} korekcija preskočena — korekcije se brišu pojedinačno.",
+    "bulkSkipped_other": "{{count}} korekcija preskočeno — korekcije se brišu pojedinačno.",
+    "bulkSkipped_few": "{{count}} korekcije preskočene — korekcije se brišu pojedinačno."
   }
 }

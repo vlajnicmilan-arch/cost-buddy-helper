@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { isCorrectionInBulkError } from '@/lib/correctionDeleteGuard';
+
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -344,7 +346,17 @@ export const ProjectTransactionsTab = ({
       // - reverses balance for custom: payment sources
       // - cleans up linked owner-loan (cross-mode)
       // silent=true to keep the existing project-tab toast wording.
-      await deleteExpense(expenseToDelete, { silent: true });
+      try {
+        await deleteExpense(expenseToDelete, { silent: true });
+      } catch (e) {
+        if (isCorrectionInBulkError(e)) {
+          // Correction reds moraju proći dodatni confirm dijalog. Ponovi
+          // poziv non-silent — deleteExpense će otvoriti CorrectionDeleteConfirmHost.
+          await deleteExpense(expenseToDelete);
+        } else {
+          throw e;
+        }
+      }
       showSuccess(t('common.deleted'));
       onRefetch();
     } catch (error) {
@@ -356,6 +368,7 @@ export const ProjectTransactionsTab = ({
     }
 
   };
+
 
   const handleOpenEdit = (expense: ProjectExpense) => {
     if (!guard()) return;

@@ -5509,5 +5509,13 @@
     "cancelTransfer": "Not a transfer",
     "plannedSummaryV2": "{{merges}} merges · {{news}} new · {{transfers}} transfers · {{skipped}} skipped",
     "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}."
+  },
+  "correctionDelete": {
+    "title": "Delete balance correction record",
+    "description": "This is a record of your wallet anchor — the moment you set the opening balance. Deleting it does NOT change the anchor and your balance stays the same, but you lose the historical audit trail. Are you sure?",
+    "cancel": "Cancel",
+    "confirm": "Delete anyway",
+    "bulkSkipped_one": "{{count}} correction skipped — corrections are deleted one at a time.",
+    "bulkSkipped_other": "{{count}} corrections skipped — corrections are deleted one at a time."
   }
 }

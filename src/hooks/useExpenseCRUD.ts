@@ -27,6 +27,12 @@ import {
   type NormalizeContext,
 } from '@/lib/paymentSource/normalize';
 import { normalizeExpensePayload, type WriterIntent } from '@/lib/balance/writerIntent';
+import {
+  CORRECTION_NATURE,
+  CorrectionInBulkError,
+  confirmCorrectionDelete,
+} from '@/lib/correctionDeleteGuard';
+
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
@@ -753,6 +759,27 @@ export const useExpenseCRUD = ({
         const { data } = await supabase.from('expenses').select('*').eq('id', id).maybeSingle();
         if (data) expenseToDelete = data as unknown as Expense;
       }
+
+      // === Zaštita brisanja korekcije salda ===
+      // `expense_nature='correction'` je audit-zapis o sidru novčanika.
+      // Brisanje NE mijenja saldo (trigger izuzima correction redove), ali
+      // gubi se povijesni trag. Bulk operacije preskaču korekcije, pojedinačna
+      // brisanja moraju proći dodatni confirm.
+      const nature = (expenseToDelete as unknown as { expense_nature?: string | null } | undefined)?.expense_nature ?? null;
+      if (nature === CORRECTION_NATURE && expenseToDelete) {
+        if (options?.silent) {
+          throw new CorrectionInBulkError(id);
+        }
+        const accepted = await confirmCorrectionDelete({
+          expenseId: id,
+          description: expenseToDelete.description ?? null,
+          amount: expenseToDelete.amount ?? null,
+        });
+        if (!accepted) {
+          return; // korisnik odustao — ništa se ne mijenja
+        }
+      }
+
 
       // Delete local receipt image if it exists
       if (expenseToDelete?.receipt_url?.startsWith('local:')) {

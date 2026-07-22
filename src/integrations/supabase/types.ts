@@ -5622,6 +5622,10 @@ export type Database = {
         Args: { p_days?: number }
         Returns: number
       }
+      align_source_to_bank: {
+        Args: { p_as_of: string; p_bank_balance: number; p_source_id: string }
+        Returns: Json
+      }
       apply_balance_delta_if_unanchored: {
         Args: { p_delta: number; p_source_id: string }
         Returns: number
@@ -6079,6 +6083,10 @@ export type Database = {
         Returns: string
       }
       peek_core_scan_quota: { Args: never; Returns: Json }
+      preview_source_balance_after_batch: {
+        Args: { p_batch_id: string; p_source_id: string }
+        Returns: Json
+      }
       preview_worker_earnings: {
         Args: {
           p_period_end: string
