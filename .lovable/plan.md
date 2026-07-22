@@ -1,99 +1,118 @@
-# Korak 4 — executeDecisions(decisions)
+# Plan: Sidro / Reconciliation sloj
 
-Prvi korak koji stvarno piše u `expenses`. Cilj: idempotentno, atomično-po-retku, s jasnim izvještajem i tragom za rollback.
+## Ključno otkriće (mijenja plan bitno)
 
-## 1. Ulaz
-`ImportDecisions` iz review ekrana + `ImportReviewPayload` (rows + fingerprinti + manualCandidates).
-Filtriranje prije izvršenja:
-- Preskoči redove s `classification.kind === 'new' && existsByFingerprint` (FP-hit — već u bazi).
-- Preskoči `newRows[index] === false` i `autoMerge[index] === false`.
-- Za `question` uzmi `questions[index]` (merge → manualId; new → insert; null → BLOKIRAJ izvršenje, gate iz 3b to već sprječava).
-- Pending rows: filtrirani još u Koraku 3b (`GlobalPDFImportHost` prije `classifyImport`) — potvrđeno, executor ih ne vidi.
+**Sidro-model VEĆ POSTOJI u bazi.** Većina Milanovih odluka je već implementirana na razini SQL-a; nedostaje **UI za usklađivanje s bankinim saldom** i sitni polish. Dokazi:
 
-## 2. Izvršenje po kanti
+- `custom_payment_sources.correction_anchor_date` + `correction_anchor_balance` (kolone već postoje — provjereno kroz `information_schema`).
+- RPC `set_source_anchor(source_id, anchor_ts, anchor_balance, correction jsonb)` — apsolutna vrijednost, nije delta.
+- Trigger `recompute_custom_source_balance()` (linije 1–92 žive definicije): `balance = anchor + SUM(post-anchor efekata)`, isključuje `expense_nature='correction'` i `deleted_at`. Podržava `day_cut` (produkcija) i `hybrid` mod preko `app_settings.anchor_engine_mode`.
+- TS mirror: `src/lib/balance/anchorBalance.ts:70-105` (identična semantika, pokriveno regresijskim testovima).
+- Guard: direktan UPDATE na `balance` blokiran mimo `app.balance_writer='engine'` markera.
 
-Jedan `import_batch_id = crypto.randomUUID()` za cijeli run.
+---
 
-**MERGE** (auto-spoji + question→merge):
-- `UPDATE expenses SET bank_transaction_id=<fp>, bank_match_status='confirmed', import_batch_id=<batch>, merchant_name=COALESCE(<bank_merchant>, merchant_name) WHERE id=<manualId> AND user_id=<uid> AND bank_transaction_id IS NULL`
-- **AMOUNT SE NE DIRA.** Ni `date`, ni `type`, ni `category`, ni `payment_source`.
-- Race-guard `.is('bank_transaction_id', null)` — ako je 0 redaka pogođeno, tretiraj kao "već spojeno" (skipped_merged, ne error).
+## Odgovori s dokazom (A–F)
 
-**NEW** (question→new + newRows):
-- Batch `upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true }).select('id')` — isti pattern kao postojeći `importFromCSV` cloud path.
-- `bank_transaction_id = fingerprint`, `bank_match_status = 'imported'`, `import_batch_id = batch`.
-- Broj vraćenih redaka = stvarno insertano; razlika prema poslanom = skipped_duplicate (UNIQUE brava).
+### A. Kako je "Korekcija salda" modelirana?
 
-Izvršava se sekvencijalno: MERGE prvi (per-row), zatim NEW (bulk upsert). Nema DB transakcije preko network granice — oslanjamo se na idempotenciju (točka 3).
+**Poseban expense red**, ne poseban tip:
+- `expense_nature = 'correction'` (kolona na `expenses`).
+- `payment_source = 'custom:<uuid>'`, `date = event_at = anchor_ts`, `time_confidence='C1'`, opis "Korekcija salda".
+- Stvara se **isključivo kroz RPC `set_source_anchor`** (`p_correction` jsonb parametar), vidi živu definiciju linije 136–164.
 
-## 3. Atomičnost / prekid mreže — **odgovor**
+**Apsolutna vrijednost sidra**: korisnik unosi "saldo JE X" — to je `p_anchor_balance`. Correction red je samo audit trag (iznos = razlika u trenutku snimanja), ali **ne utječe na izračun salda** jer ga `recompute` izostavlja (linije 49, 73 žive definicije). Sidro je jedina istina; correction red je vidljiv u povijesti da korisnik zna "tu sam napravio korekciju".
 
-Nema prave transakcije (edge → PostgREST je per-request). Umjesto toga: **idempotentnost je ugovor**.
+### B. Sukob s trigger-om? **Nema ga.**
 
-- Ista `decisions` + isti PDF → isti fingerprinti → ponovni upsert preskače sve što je već upisano (UNIQUE `(user_id, bank_transaction_id)`).
-- Merge race-guard `bank_transaction_id IS NULL` znači: red koji je već spojen u prvom pokušaju drugi put vraća 0 pogođenih → tretira se kao skipped_merged, ne greška.
-- Draft (sessionStorage) ostaje živ dok korisnik ne dobije "success" izvještaj. Ako executor pukne na pola:
-  - Prikaži djelomični izvještaj (X uspješno, Y neuspješno + error) + gumb "Pokušaj ponovno".
-  - Ponovno pokretanje s istim `decisions` je sigurno — završava samo ono što je preostalo.
-- **Isti `import_batch_id` kroz retryje** (spremi u draft nakon prvog pokušaja) → cijeli logički uvoz ima jedan trag u bazi.
+Milanov postulat "trigger sumira sve" **nije istinit u trenutnoj bazi.** Recompute već poštuje sidro:
+```
+WHERE expense_nature <> 'correction'
+  AND date > anchor_date   (day_cut)
+  ILI
+  AND event_at > anchor_ts (hybrid, C1/C2)
+```
 
-## 4. Izvještaj korisniku
+**Jedini stvarni gap:** ako novčanik nema sidro (`correction_anchor_date IS NULL`), recompute vraća NULL i saldo se održava starim delta modelom (`useBalanceUpdater.ts`, `writerIntent.ts`). To znači da postoje dvije klase novčanika: **sidrom-vođeni** (nova istina) i **delta-vođeni** (legacy).
 
-Nakon završetka: `StatusFeedback` toast + kratki summary dialog:
-- ✅ Spojeno: `merged` (X ručnih unosa označeno kao provjereno bankom)
-- ➕ Novo: `inserted`
-- ⏭️ Preskočeno (već postoji): `skipped_duplicate + skipped_merged`
-- Trajanje: `Xs`
-- `import_batch_id` (za support)
+**Preporuka (Opcija 1, najmanje invazivno, već 90% gotovo):**
+1. **Ne mijenjati recompute** — semantika je točna.
+2. **Auto-seed sidra** pri stvaranju novog novčanika: `anchor_ts = created_at`, `anchor_balance = initial_balance ?? 0`. Migracija: jednokratni backfill za sve postojeće novčanike bez sidra (`anchor_ts = updated_at`, `anchor_balance = balance` — snimamo trenutno stanje kao istinu).
+3. Nakon toga **svi** novčanici su sidrom-vođeni, delta grana se može ukloniti u sljedećem PR-u.
 
-Koristimo postojeći `ImportMeta` pattern (`onMeta` callback u `_runImport`) — proširiti s `skipped_merged` i `durationMs`.
+Odbacujem Opciju 2 (rebalans delte pri svakom uvozu) — komplicira uvoz povijesnih redova, teško testirati, gubi audit trag.
 
-## 5. IMPORT_FROZEN — kirurško otključavanje — **odgovor**
+### C. Provjera neslaganja bankinog i aplikacijinog salda
 
-**Uklanjam globalni flag, uvodim per-path guardove** (čišće od jedne zastavice s iznimkama):
+**Trenutno stanje:** executor upisuje `balance_after` u expense red (`executor.ts:290, 328`), ali **nema post-import reconciliation koraka** koji uspoređuje bankin završni saldo s aplikacijinim izračunatim saldom nakon uvoza. To je **glavni novi UI koji treba napraviti**.
 
-- Obriši `IMPORT_FROZEN` konstantu i `_runImport` guard u `PdfImportContext`.
-- `ImportReview.tsx` "Potvrdi uvoz" — zove `executeDecisions` (novi path), briše frozen granu.
-- `CSVImportDialog.tsx:279` — zamijeni `IMPORT_FROZEN` provjeru s lokalnim `CSV_IMPORT_ENABLED = false` (isti UX, ali eksplicitno vezano samo za CSV).
-- `useManualBankMerge.ts:27` — isti pattern: `MANUAL_MERGE_ENABLED = false`.
-- Toast poruke za CSV/merge ostaju iste ("privremeno onemogućeno"), ali korisnik razumije da PDF/HTML rade.
+**Prijedlog toka (nakon `Potvrdi uvoz`):**
+1. Executor pročita `max(bank_row_seq)` red iz batch-a → `bank_final_balance = balance_after` tog reda.
+2. Novi RPC `preview_source_balance_after_batch(source_id, batch_id)` vraća aplikacijin izračunati saldo (koristi istu logiku kao `recompute_custom_source_balance`).
+3. Ako `|bank − app| > 0.01` → **Reconciliation dialog** s tri opcije:
+   - **Uskladi na bankin saldo** → poziva `set_source_anchor(source, bank_ts, bank_balance, {amount: bank − app, description: "Automatska korekcija nakon uvoza"})`. Novo sidro na trenutku zadnjeg bankinog reda.
+   - **Zadrži moj saldo** → nema akcije; snimi u `imported_statements.reconciliation_choice='kept_local'` (audit).
+   - **Pogledaj detalje** → tablica: bankini reci s `balance_after`, aplikacijini reci koji nedostaju/viška su, sortirano po timeline.
+4. Prag: **±0.01 €** (numeric(12,2) točnost). Prikaz razlike na 2 decimale.
 
-Kad CSV/merge dobiju svoj review flow (buduće korake), samo se flipa lokalna zastavica.
+### D. Retroaktivnost (postojeći Milanovi podaci)
 
-## 7. Rollback priča — **odgovor**
+**Ne mogu potvrditi bez ID-a korisnika u DB-u** (upit po emailu je pao — `profiles.email` ne postoji; treba upit preko `auth.users`). **Otvoreno pitanje za Milana:** trebam njegov user_id da provjerim jesu li "Revolut 106,43" i "Aircash 11,80" u bazi kao:
+- (a) `set_source_anchor` pozivi → sidro postoji, ništa za raditi;
+- (b) obični expense/income redovi s opisom "Korekcija" → nisu sidra, treba jednokratna migracija koja ih pretvara u sidra (uzme `date` kao anchor_ts, izračuna anchor_balance = ono što je saldo bio u tom trenutku).
 
-Puni "Undo import" gumb je van opsega Koraka 4 (velik: treba re-created state manualnih redaka prije mergea + soft-delete integracija + UI). **Minimalno u ovom koraku:**
+Neovisno o tome — **backfill migracija iz koraka B2** će sve postojeće novčanike (uključujući Milanove) sidrom snimiti na trenutne salde. Milanove korekcije od jučer time postaju referentna točka istine.
 
-- Svaki dirnut red ima `import_batch_id` → ručni SQL rollback je 2 upita:
-  - `UPDATE expenses SET bank_transaction_id=NULL, bank_match_status=NULL, import_batch_id=NULL WHERE import_batch_id=<X> AND bank_match_status='confirmed'` (un-merge)
-  - `DELETE FROM expenses WHERE import_batch_id=<X> AND bank_match_status='imported'` (novi redovi)
-- `import_batch_id` prikazan korisniku u summary dialogu → može ga poslati supportu.
-- U diagnostici (`import_executed` event) batch_id je uvijek prisutan.
+### E. Rubovi
 
-Puni Undo UI → zaseban korak nakon što potvrdimo da executor radi stabilno u produkciji.
+| Slučaj | Ponašanje |
+|---|---|
+| Više korekcija na istom novčaniku | Postoji **samo jedno polje** `correction_anchor_date` — nova korekcija prepisuje staru. **Zadnja pobjeđuje.** Stare correction expense redove ostaju kao povijest. |
+| Transakcija s datumom **prije** sidra unesena kasnije | Recompute je automatski isključuje (date/event_at cut). **Ne dira saldo**, vidljiva u povijesti. Preporuka: **suptilan indikator** ("prije zadnje korekcije — ne utječe na saldo") na retku u listi, bez blokiranja unosa. |
+| Brisanje sidra | **Nije modelirano.** Preporuka: eksplicitna akcija "Poništi sidro" → nulira anchor polja, pokreće delta recompute nad SVIM redovima novčanika. Rijetka akcija, iza potvrde s upozorenjem. |
+| Uvoz redova s datumom prije sidra | Trenutno: šutke ide u povijest, ne utječe na saldo. Preporuka: brojka u reconciliation dialogu ("N redova prije zadnje korekcije, ne utječu na saldo"). |
+| Draft/resume | Isti pattern kao ImportReview: `imported_statements.reconciliation_state jsonb` + banner "Nedovršeno usklađivanje". Beforeunload upozorenje ako je dialog otvoren. |
 
-## 6. Telemetrija
-`logDiagnostic('import_executed', { batch_id, source_id, merged, inserted, skipped_duplicate, skipped_merged, duration_ms, decisions_total })`. Uz postojeće `global_pdf_import_*` evente.
+### F. Opseg i redoslijed
 
-## 8. Testovi
-- **Unit** (`executeDecisions.test.ts`):
-  - MERGE ne dira `amount/date/type/category/payment_source`.
-  - MERGE race-guard: drugi poziv na isti red vraća skipped_merged, ne error.
-  - NEW koristi fingerprint iz decisions (ne izračunava ga ponovno).
-  - Idempotentnost: dvostruki poziv s istim `decisions` → drugi poziv 0 inserted, 0 merged, sve skipped.
-  - FP-hit new stavke se preskaču bez network poziva.
-- **Integracijski** (`importExecutorFlow.test.tsx`):
-  - Mock Supabase → simuliraj review payload s 2 merge + 3 new + 1 FP-hit → executor izvrši → provjeri poziv counts i `ImportMeta`.
-  - Simuliraj network fail nakon 1. merge → retry završi ostatak.
+**Fáza 1 — DB temelj (1 migracija):**
+- Auto-seed trigger na `custom_payment_sources INSERT`: `anchor_date=created_at`, `anchor_balance=initial_balance ?? 0`.
+- Jednokratni backfill: `UPDATE custom_payment_sources SET anchor_date=updated_at, anchor_balance=balance WHERE anchor_date IS NULL`.
+- Nova kolona `imported_statements.reconciliation_state jsonb NULL` za draft.
+- Nova kolona `imported_statements.reconciliation_choice text NULL` (`'anchored'|'kept_local'|'skipped'`).
 
-Cilj: `npx vitest run` → EXIT 0.
+**Fáza 2 — Backend helpers:**
+- Nova SQL funkcija `preview_source_balance_after_batch(source_id, batch_id) → jsonb` (bank_final_balance, app_final_balance, difference, rows_before_anchor_count).
+- Postojeći `set_source_anchor` — bez izmjena, koristi se as-is.
 
-## Redoslijed implementacije (kad Milan potvrdi)
-1. `src/lib/importReview/executor.ts` — čista funkcija (supabase client + decisions + payload → `ImportMeta`).
-2. Unit testovi executora (TDD).
-3. Wiring u `ImportReview.tsx` "Potvrdi uvoz".
-4. Uklanjanje `IMPORT_FROZEN` + per-path guardovi (CSV/merge).
-5. Integracijski test + ažuriranje `pdfImportContextFreeze.test.tsx`.
-6. Deploy verifikacija (nema edge changes — sve klijentski).
+**Fáza 3 — UI reconciliation (nakon executor.confirm):**
+- `ReconciliationDialog` komponenta s 3 gumba (Uskladi / Zadrži / Detalji).
+- Detalj view s tablicom bankinih vs aplikacijinih redova.
+- i18n hr/en/de.
+- Resume banner na dashboardu ako postoji `reconciliation_state` draft.
+- Beforeunload guard tijekom dialoga.
 
-Čekam OK.
+**Fáza 4 — Sitni polish:**
+- Indikator "prije sidra" na expense redu u listi.
+- "Poništi sidro" akcija u novčanik-detail postavkama (iza potvrde).
+
+**Fáza 5 — Testovi (kritično, ovo je novac):**
+- SQL harness (`supabase/tests/balance/`): auto-seed sidra, preview_source_balance_after_batch, reconciliation choice paths.
+- Vitest: `reconciliation.test.ts` — usporedba bank vs app, treshold 0.01, sve tri korisničke akcije, draft/resume.
+- E2E (Playwright): uvoz PDF → reconciliation dialog → "Uskladi" → provjera novog sidra i salda.
+- Regression test: transakcija s datumom prije sidra ne pomiče saldo.
+
+---
+
+## Otvoreno pitanje za Milana (blokira D)
+
+Milane, treba mi tvoj user_id (ili email) da provjerim jesu li jučerašnje korekcije (Revolut 106,43 / Aircash 11,80) upisane kao **prava sidra** (kroz `set_source_anchor`) ili kao **obični redovi** koji tek trebaju postati sidra. Ostatak plana ne ovisi o tome — backfill iz F/Fáza 1 pokriva oba slučaja.
+
+## Ne pipa se u ovom potezu
+
+- Trigger `recompute_custom_source_balance` — semantika je već točna.
+- `set_source_anchor` RPC — koristi se as-is.
+- Anchor mirror `anchorBalance.ts` — bez izmjena.
+- Model tipova expense (`type`, `expense_nature`) — bez izmjena.
+
+Čekam Milanov OK za implementaciju + odgovor na otvoreno pitanje (D).
