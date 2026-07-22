@@ -489,7 +489,7 @@ export const TransactionListDialog = ({
           }}
           batchId={selectedBatchId}
           allExpenses={expenses}
-          onDeleteBatch={handleDeleteBatch}
+          onUndone={handleDeleteBatch}
         />
       )}
     </>

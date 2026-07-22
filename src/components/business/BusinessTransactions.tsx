@@ -259,7 +259,7 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
           onOpenChange={setImportBatchDialogOpen}
           batchId={selectedBatchId}
           allExpenses={expenses}
-          onDeleteBatch={handleDeleteBatch}
+          onUndone={handleDeleteBatch}
         />
       )}
     </div>
