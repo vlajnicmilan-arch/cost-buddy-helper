@@ -5541,6 +5541,7 @@
     "keptToast": "Zadržan tvoj saldo.",
     "alignFailed": "Poravnavanje nije uspjelo.",
     "keepFailed": "Nije uspjelo spremiti odluku.",
+    "anchorNewerNote": "Tvoja korekcija ({{anchorDate}}) je novija od kraja izvoda ({{bankDate}}) — bankin broj je vjerojatno zastario. „Zadrži moj saldo“ je obično ispravan izbor.",
     "resumeBanner": {
       "title": "Uvoz čeka potvrdu salda",
       "subtitleSingle": "Novčanik: {{name}}. Odaberi Nastavi za dovršetak.",
@@ -5551,6 +5552,27 @@
       "discardConfirmDescription": "Zadržat ćemo tvoj trenutni saldo u aplikaciji za sve preostale novčanike. Saldo se neće mijenjati.",
       "discardConfirm": "Da, odbaci",
       "discardedToast": "Sve pending reconciliacije su odbačene."
+    }
+  },
+  "anchor": {
+    "sectionTitle": "Sidro salda",
+    "date": "Datum sidra",
+    "balance": "Saldo na sidru",
+    "noAnchor": "Sidro još nije postavljeno.",
+    "confirmHint": "Sidro je naslijeđeno. Potvrdi stvarno stanje da postane tvoja potvrđena istina.",
+    "confirmReal": "Potvrdi stvarno stanje",
+    "historyTitle": "Povijest poravnanja",
+    "showAll": "Prikaži sve ({{count}})",
+    "showLess": "Prikaži manje",
+    "beforeBadge": "Prije sidra",
+    "beforeTooltip": "Ova transakcija je prije sidra salda — ne utječe na trenutni saldo (uračunata je u sidro). Za precizne transakcije s vremenom (C1/C2) granica može biti do sata drugačija.",
+    "origin": {
+      "label": "Porijeklo",
+      "userConfirmed": "Ti si potvrdio",
+      "bankReconciliation": "Poravnato s bankom",
+      "migration": "Naslijeđeno pri migraciji",
+      "systemInitial": "Početno stanje",
+      "unknown": "Nepoznato"
     }
   }
 }
