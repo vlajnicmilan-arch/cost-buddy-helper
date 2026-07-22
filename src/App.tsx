@@ -14,6 +14,7 @@ import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptSca
 import { PdfImportProvider } from "@/contexts/PdfImportContext";
 import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 import { CorrectionDeleteConfirmHost } from "@/components/CorrectionDeleteConfirmHost";
+import { ReconciliationDialogHost } from "@/components/ReconciliationDialogHost";
 
 import { DecisionScanProvider } from "@/contexts/DecisionScanContext";
 import { GlobalDecisionCaptureHost } from "@/components/projects/GlobalDecisionCaptureHost";
@@ -382,6 +383,7 @@ const App = () => (
                                 <GlobalPDFImportHost />
                                 <GlobalDecisionCaptureHost />
                                 <CorrectionDeleteConfirmHost />
+                                <ReconciliationDialogHost />
 
                                 <CrispChat />
                                 <AppRoutes />
