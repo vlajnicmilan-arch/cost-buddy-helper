@@ -30,6 +30,7 @@ import {
   type ReconciliationQueueEntry,
 } from '@/lib/reconciliation/queue';
 import { alignToBank, keepMine, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
+import { toDayKey } from '@/lib/dayKey';
 
 export function ReconciliationDialogHost() {
   const { t, i18n } = useTranslation();
@@ -54,9 +55,12 @@ export function ReconciliationDialogHost() {
           .eq('id', active.summary.sourceId)
           .maybeSingle();
         if (cancelled) return;
-        const anchorDate: string | null = data?.correction_anchor_date ?? null;
-        if (anchorDate && active.asOfIso && anchorDate > active.asOfIso) {
-          setAnchorNewerThanBank({ anchorDate, bankDate: active.asOfIso });
+        const anchorRaw: string | Date | null = data?.correction_anchor_date ?? null;
+        // FIX regresije: uspoređujemo day-key (Date | string safe) umjesto sirovih vrijednosti.
+        const anchorKey = toDayKey(anchorRaw);
+        const bankKey = toDayKey(active.asOfIso);
+        if (anchorKey && bankKey && anchorKey > bankKey) {
+          setAnchorNewerThanBank({ anchorDate: anchorKey, bankDate: bankKey });
         } else {
           setAnchorNewerThanBank(null);
         }

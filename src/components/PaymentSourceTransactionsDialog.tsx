@@ -47,6 +47,7 @@ import i18n from '@/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { compareImportRowsDesc } from '@/lib/importRowSort';
+import { isOnOrBeforeDay } from '@/lib/dayKey';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -1161,8 +1162,13 @@ export const PaymentSourceTransactionsDialog = ({
                           const isSelected = selectedIds.has(expense.id);
                           const balanceAfter = runningBalances.get(expense.id);
                           // FAZA 4 t.1 — day-cut aproksimacija granice sidra (tooltip nosi napomenu o C1/C2).
-                          const anchorDay = ((paymentSource as any)?.correction_anchor_date ?? null) as string | null;
-                          const isBeforeAnchor = !!anchorDay && String(expense.date).slice(0, 10) <= anchorDay.slice(0, 10);
+                          // UZROK ranije regresije: `String(dateObj).slice(0,10)` vs anchor-string je miješao tipove
+                          // (Date vs string) → izračunato krivo, a u susjednim putevima .slice na Date bacio runtime.
+                          // Fix: toDayKey helper koji sigurno normalizira Date | string | number → "YYYY-MM-DD".
+                          const isBeforeAnchor = isOnOrBeforeDay(
+                            expense.date,
+                            (paymentSource as any)?.correction_anchor_date ?? null,
+                          );
 
                           const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
                           const showBatchStart = expense.import_batch_id && 
