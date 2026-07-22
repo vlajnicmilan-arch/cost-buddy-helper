@@ -11,7 +11,6 @@
  * fallback (default: navigate na `/home`).
  */
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 import { useFeatureAccess, type Feature } from '@/hooks/useFeatureAccess';
 
