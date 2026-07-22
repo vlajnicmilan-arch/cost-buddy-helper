@@ -1408,23 +1408,7 @@ export const PaymentSourceTransactionsDialog = ({
           onOpenChange={setImportBatchDialogOpen}
           batchId={selectedBatchId}
           allExpenses={expenses}
-          onDeleteBatch={async (ids) => {
-            const expMap = new Map(expenses.map(e => [e.id, e]));
-            const mergedIds = ids.filter(id => expMap.get(id)?.bank_match_status === 'confirmed');
-            const deleteIds = ids.filter(id => expMap.get(id)?.bank_match_status !== 'confirmed');
-            const { supabase } = await import('@/integrations/supabase/client');
-            await Promise.allSettled(mergedIds.map(async (id) => {
-              const { error } = await supabase.rpc('unmerge_import_row', { p_id: id });
-              if (error) throw error;
-            }));
-            if (deleteIds.length > 0) {
-              if (onBulkDelete) {
-                await onBulkDelete(deleteIds);
-              } else {
-                await Promise.all(deleteIds.map(id => onDelete(id)));
-              }
-            }
-            showSuccess(t('transactions.bulkDeleted', { count: deleteIds.length + mergedIds.length }));
+          onUndone={async () => {
             setImportBatchDialogOpen(false);
             setSelectedBatchId(null);
           }}
