@@ -1427,6 +1427,7 @@
     "expense": "Ausgabe",
     "income": "Einnahme",
     "transfer": "Überweisung",
+    "bankBalance": "Bank",
     "transferTitle": "Überweisung zwischen Konten",
     "transferFrom": "Vom Konto",
     "transferTo": "Zum Konto",
