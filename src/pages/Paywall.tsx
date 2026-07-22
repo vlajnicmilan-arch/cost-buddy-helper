@@ -34,7 +34,7 @@ const Paywall: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { subscribed, loading: subLoading, checkSubscription } = useSubscription();
+  const { subscribed, loading: subLoading, entitlements, checkSubscription } = useSubscription();
   const { prices, loading: pricesLoading, error: pricesError } = usePaddlePrices();
   const [params] = useSearchParams();
   const checkoutStatus = params.get('checkout');
@@ -42,16 +42,30 @@ const Paywall: React.FC = () => {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [loadingPlan, setLoadingPlan] = useState<PaywallPlan | null>(null);
 
+  const hasAnyEntitlement =
+    !!entitlements.smjer?.active ||
+    !!entitlements.krug?.active ||
+    !!entitlements.projekti?.active ||
+    !!entitlements.biznis?.active;
+
+  // Exit paywall whenever the user is already entitled — subscribed flag OR
+  // any active module. Prevents a paid user with a lingering trial row (which
+  // used to poison paddleActive server-side) from being trapped here.
   useEffect(() => {
-    if (!subLoading && subscribed) {
+    if (subLoading) return;
+    if (subscribed || hasAnyEntitlement) {
       navigate('/home', { replace: true });
     }
-  }, [subscribed, subLoading, navigate]);
+  }, [subscribed, hasAnyEntitlement, subLoading, navigate]);
 
   // Poll for entitlement activation after returning from Paddle checkout.
   useEffect(() => {
     if (checkoutStatus !== 'success') return;
     toast.success(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'));
+    // Immediate refetch, then short poll (webhook can trail the redirect
+    // by a few seconds). The exit effect above will navigate as soon as
+    // any entitlement flips active.
+    checkSubscription();
     let attempts = 0;
     const id = window.setInterval(() => {
       attempts += 1;
@@ -60,6 +74,7 @@ const Paywall: React.FC = () => {
     }, 3000);
     return () => window.clearInterval(id);
   }, [checkoutStatus, checkSubscription, t]);
+
 
   const locale = useMemo<'hr' | 'en' | 'de'>(() => {
     const lang = (i18n.language || 'hr').slice(0, 2).toLowerCase();

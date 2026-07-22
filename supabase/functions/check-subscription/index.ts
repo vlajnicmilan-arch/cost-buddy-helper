@@ -24,22 +24,40 @@ async function loadEntitlements(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Record<Module, ModuleStatus>> {
+  const nowIso = new Date().toISOString();
   const [{ data: rows }, ...checks] = await Promise.all([
     supabase
       .from('user_entitlements')
       .select('module, source, period_end, status')
       .eq('user_id', userId)
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .or(`period_end.is.null,period_end.gt.${nowIso}`),
     ...MODULES.map((m) =>
       supabase.rpc('has_entitlement', { _user_id: userId, _module: m }),
     ),
   ]);
 
+  // Priority: paddle > admin > legacy > trial. A paid user with a lingering
+  // trial row on the same module must be treated as PAID, otherwise
+  // paddleActive downstream reads the trial source and returns subscribed=false.
+  const sourceRank = (s: string | null | undefined): number => {
+    if (s === 'paddle') return 4;
+    if (s === 'admin') return 3;
+    if (s === 'pro_legacy' || s === 'business_legacy') return 2;
+    if (s === 'trial') return 1;
+    return 0;
+  };
+  const pickBest = (mod: string) => {
+    const candidates = (rows || []).filter((r: any) => r.module === mod);
+    if (candidates.length === 0) return null;
+    return candidates.sort((a: any, b: any) => sourceRank(b.source) - sourceRank(a.source))[0];
+  };
+
   const result = {} as Record<Module, ModuleStatus>;
   MODULES.forEach((m, i) => {
     const activeRes = checks[i] as { data: unknown };
     const active = !!activeRes?.data;
-    const direct = (rows || []).find((r: any) => r.module === m);
+    const direct = pickBest(m);
     const legacy = (rows || []).find((r: any) =>
       (m !== 'biznis' && r.module === 'pro_legacy') || r.module === 'business_legacy'
     );
