@@ -10,6 +10,9 @@ import { getNavVisibility, type AppModule } from '@/lib/moduleVisibility';
 import { useHaptics } from '@/hooks/useHaptics';
 import { MODULE_NAV_CLASSES, type ModuleKey } from '@/lib/moduleColors';
 import { cn } from '@/lib/utils';
+import { useFeatureAccess, type Feature } from '@/hooks/useFeatureAccess';
+import { useModuleGate } from '@/hooks/useModuleGate';
+import type { UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 
 type NavItem = {
   path: string;
