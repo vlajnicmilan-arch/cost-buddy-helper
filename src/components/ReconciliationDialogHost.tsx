@@ -177,6 +177,18 @@ export function ReconciliationDialogHost() {
               </span>
             </div>
           </div>
+
+          {anchorNewerThanBank && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground/80 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <span>
+                {t('reconciliation.anchorNewerNote', {
+                  anchorDate: new Date(anchorNewerThanBank.anchorDate).toLocaleDateString(i18n.language),
+                  bankDate: new Date(anchorNewerThanBank.bankDate).toLocaleDateString(i18n.language),
+                })}
+              </span>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
