@@ -215,6 +215,59 @@ export type Database = {
         }
         Relationships: []
       }
+      anchor_audit: {
+        Row: {
+          actor: string | null
+          anchor_source: Database["public"]["Enums"]["anchor_source_type"]
+          created_at: string
+          id: string
+          new_anchor_balance: number
+          new_anchor_date: string
+          old_anchor_balance: number | null
+          old_anchor_date: string | null
+          old_balance: number | null
+          reason: string
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          actor?: string | null
+          anchor_source: Database["public"]["Enums"]["anchor_source_type"]
+          created_at?: string
+          id?: string
+          new_anchor_balance: number
+          new_anchor_date: string
+          old_anchor_balance?: number | null
+          old_anchor_date?: string | null
+          old_balance?: number | null
+          reason: string
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          actor?: string | null
+          anchor_source?: Database["public"]["Enums"]["anchor_source_type"]
+          created_at?: string
+          id?: string
+          new_anchor_balance?: number
+          new_anchor_date?: string
+          old_anchor_balance?: number | null
+          old_anchor_date?: string | null
+          old_balance?: number | null
+          reason?: string
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anchor_audit_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_diagnostics_logs: {
         Row: {
           app_version: string | null
@@ -1055,6 +1108,9 @@ export type Database = {
       }
       custom_payment_sources: {
         Row: {
+          anchor_source:
+            | Database["public"]["Enums"]["anchor_source_type"]
+            | null
           balance: number
           business_profile_id: string | null
           color: string
@@ -1071,6 +1127,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          anchor_source?:
+            | Database["public"]["Enums"]["anchor_source_type"]
+            | null
           balance?: number
           business_profile_id?: string | null
           color?: string
@@ -1087,6 +1146,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          anchor_source?:
+            | Database["public"]["Enums"]["anchor_source_type"]
+            | null
           balance?: number
           business_profile_id?: string | null
           color?: string
@@ -1735,6 +1797,10 @@ export type Database = {
           imported_at: string
           mime_type: string | null
           payment_source_id: string | null
+          reconciliation_meta: Json | null
+          reconciliation_state:
+            | Database["public"]["Enums"]["reconciliation_state_type"]
+            | null
           transactions_count: number | null
           user_id: string
         }
@@ -1749,6 +1815,10 @@ export type Database = {
           imported_at?: string
           mime_type?: string | null
           payment_source_id?: string | null
+          reconciliation_meta?: Json | null
+          reconciliation_state?:
+            | Database["public"]["Enums"]["reconciliation_state_type"]
+            | null
           transactions_count?: number | null
           user_id: string
         }
@@ -1763,6 +1833,10 @@ export type Database = {
           imported_at?: string
           mime_type?: string | null
           payment_source_id?: string | null
+          reconciliation_meta?: Json | null
+          reconciliation_state?:
+            | Database["public"]["Enums"]["reconciliation_state_type"]
+            | null
           transactions_count?: number | null
           user_id?: string
         }
@@ -6163,6 +6237,11 @@ export type Database = {
         | "support"
         | "other"
       admin_revoke_actor: "admin" | "system"
+      anchor_source_type:
+        | "user_confirmed"
+        | "migration"
+        | "bank_reconciliation"
+        | "system_initial"
       app_role: "admin" | "user"
       expense_work_type:
         | "material"
@@ -6198,6 +6277,11 @@ export type Database = {
       milestone_status: "pending" | "in_progress" | "completed" | "overdue"
       project_role: "manager" | "member" | "viewer"
       project_status: "draft" | "active" | "paused" | "completed" | "cancelled"
+      reconciliation_state_type:
+        | "pending"
+        | "aligned"
+        | "user_override"
+        | "skipped"
       subscription_tier: "free" | "pro" | "business"
       transaction_status: "pending" | "approved" | "rejected"
     }
@@ -6337,6 +6421,12 @@ export const Constants = {
         "other",
       ],
       admin_revoke_actor: ["admin", "system"],
+      anchor_source_type: [
+        "user_confirmed",
+        "migration",
+        "bank_reconciliation",
+        "system_initial",
+      ],
       app_role: ["admin", "user"],
       expense_work_type: [
         "material",
@@ -6380,6 +6470,12 @@ export const Constants = {
       milestone_status: ["pending", "in_progress", "completed", "overdue"],
       project_role: ["manager", "member", "viewer"],
       project_status: ["draft", "active", "paused", "completed", "cancelled"],
+      reconciliation_state_type: [
+        "pending",
+        "aligned",
+        "user_override",
+        "skipped",
+      ],
       subscription_tier: ["free", "pro", "business"],
       transaction_status: ["pending", "approved", "rejected"],
     },
