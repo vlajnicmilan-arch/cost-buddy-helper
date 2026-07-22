@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { isCorrectionInBulkError } from '@/lib/correctionDeleteGuard';
+
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
