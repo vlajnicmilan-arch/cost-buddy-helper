@@ -5531,6 +5531,7 @@
     "keptToast": "Kept your balance.",
     "alignFailed": "Alignment failed.",
     "keepFailed": "Could not save decision.",
+    "anchorNewerNote": "Your correction ({{anchorDate}}) is newer than the end of the statement ({{bankDate}}) — the bank figure is likely outdated. \"Keep my balance\" is usually the correct choice.",
     "resumeBanner": {
       "title": "Import awaiting balance confirmation",
       "subtitleSingle": "Wallet: {{name}}. Click Resume to finish.",
@@ -5541,6 +5542,27 @@
       "discardConfirmDescription": "We will keep your current app balance for all remaining wallets. The balance will not change.",
       "discardConfirm": "Yes, discard",
       "discardedToast": "All pending reconciliations discarded."
+    }
+  },
+  "anchor": {
+    "sectionTitle": "Balance anchor",
+    "date": "Anchor date",
+    "balance": "Anchor balance",
+    "noAnchor": "No anchor set yet.",
+    "confirmHint": "This anchor is inherited. Confirm the real balance to make it your verified truth.",
+    "confirmReal": "Confirm real balance",
+    "historyTitle": "Reconciliation history",
+    "showAll": "Show all ({{count}})",
+    "showLess": "Show less",
+    "beforeBadge": "Before anchor",
+    "beforeTooltip": "This transaction is before the balance anchor — it does not affect the current balance (it's already baked into the anchor). For precise-time transactions (C1/C2) the cutoff may differ by up to an hour.",
+    "origin": {
+      "label": "Origin",
+      "userConfirmed": "You confirmed it",
+      "bankReconciliation": "Aligned with bank",
+      "migration": "Inherited on migration",
+      "systemInitial": "Initial balance",
+      "unknown": "Unknown"
     }
   }
 }

@@ -5531,6 +5531,7 @@
     "keptToast": "Dein Saldo wurde beibehalten.",
     "alignFailed": "Abgleich fehlgeschlagen.",
     "keepFailed": "Entscheidung konnte nicht gespeichert werden.",
+    "anchorNewerNote": "Deine Korrektur ({{anchorDate}}) ist neuer als das Ende des Kontoauszugs ({{bankDate}}) — der Bankwert ist wahrscheinlich veraltet. „Meinen Saldo behalten“ ist meist die richtige Wahl.",
     "resumeBanner": {
       "title": "Import wartet auf Saldo-Bestätigung",
       "subtitleSingle": "Wallet: {{name}}. Klicke Fortsetzen zum Abschluss.",
@@ -5541,6 +5542,27 @@
       "discardConfirmDescription": "Wir behalten deinen aktuellen App-Saldo für alle verbleibenden Wallets. Der Saldo ändert sich nicht.",
       "discardConfirm": "Ja, verwerfen",
       "discardedToast": "Alle ausstehenden Abgleiche verworfen."
+    }
+  },
+  "anchor": {
+    "sectionTitle": "Saldo-Anker",
+    "date": "Ankerdatum",
+    "balance": "Anker-Saldo",
+    "noAnchor": "Noch kein Anker gesetzt.",
+    "confirmHint": "Dieser Anker ist geerbt. Bestätige den tatsächlichen Saldo, um ihn zu deiner verifizierten Wahrheit zu machen.",
+    "confirmReal": "Tatsächlichen Saldo bestätigen",
+    "historyTitle": "Abgleich-Verlauf",
+    "showAll": "Alle anzeigen ({{count}})",
+    "showLess": "Weniger anzeigen",
+    "beforeBadge": "Vor Anker",
+    "beforeTooltip": "Diese Transaktion liegt vor dem Saldo-Anker — sie beeinflusst den aktuellen Saldo nicht (bereits im Anker enthalten). Für präzise Zeitstempel (C1/C2) kann die Grenze bis zu einer Stunde abweichen.",
+    "origin": {
+      "label": "Herkunft",
+      "userConfirmed": "Von dir bestätigt",
+      "bankReconciliation": "Mit Bank abgeglichen",
+      "migration": "Bei Migration übernommen",
+      "systemInitial": "Anfangssaldo",
+      "unknown": "Unbekannt"
     }
   }
 }

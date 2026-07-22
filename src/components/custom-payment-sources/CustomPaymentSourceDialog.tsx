@@ -16,6 +16,7 @@ import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContex
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { QuickBusinessProfileDialog } from '@/components/business/QuickBusinessProfileDialog';
+import { AnchorInfoSection } from './AnchorInfoSection';
 interface CardInput {
   id?: string;
   card_name: string;
@@ -297,6 +298,11 @@ export const CustomPaymentSourceDialog = ({
               </div>
             )}
           </div>
+
+          {/* FAZA 4 t.2 + t.4 — Sidro salda + povijest poravnanja (samo za postojeći izvor) */}
+          {source && (
+            <AnchorInfoSection sourceId={source.id} onCorrectBalance={onCorrectBalance} />
+          )}
 
           {/* Description */}
           <div className="space-y-2">

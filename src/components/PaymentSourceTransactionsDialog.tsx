@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle, Printer, Download, Code2, Clock, CheckCircle2, Landmark } from 'lucide-react';
+import { Pencil, Trash2, TrendingUp, TrendingDown, ArrowLeftRight, CreditCard, CheckSquare, Search, X as XIcon, Calendar, ChevronRight, FileText, Upload, Loader2, AlertTriangle, Printer, Download, Code2, Clock, CheckCircle2, Landmark, Anchor } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1160,6 +1160,9 @@ export const PaymentSourceTransactionsDialog = ({
                           const cardInfo = getCardInfo(expense);
                           const isSelected = selectedIds.has(expense.id);
                           const balanceAfter = runningBalances.get(expense.id);
+                          // FAZA 4 t.1 — day-cut aproksimacija granice sidra (tooltip nosi napomenu o C1/C2).
+                          const anchorDay = ((paymentSource as any)?.correction_anchor_date ?? null) as string | null;
+                          const isBeforeAnchor = !!anchorDay && String(expense.date).slice(0, 10) <= anchorDay.slice(0, 10);
 
                           const prevExpense = index > 0 ? filteredSourceExpenses[index - 1] : null;
                           const showBatchStart = expense.import_batch_id && 
@@ -1306,6 +1309,19 @@ export const PaymentSourceTransactionsDialog = ({
                                     <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
                                       {format(expense.date, 'd. MMM', { locale: hr })}
                                     </span>
+                                    {isBeforeAnchor && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-muted text-muted-foreground/80 text-[10px] shrink-0">
+                                            <Anchor className="w-2.5 h-2.5" />
+                                            {t('anchor.beforeBadge')}
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[240px]">
+                                          <p className="text-xs">{t('anchor.beforeTooltip')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
                                   </div>
 
                                   <div className="flex flex-col items-end gap-0.5 shrink-0">
