@@ -13,27 +13,29 @@
 
 export interface ParsedSignature {
   ts: number;
-  h1: string;
+  h1: string[];
 }
 
 export function parsePaddleSignature(header: string | null | undefined): ParsedSignature | null {
   if (!header) return null;
   const parts = header.split(";").map((p) => p.trim()).filter(Boolean);
   let ts: number | null = null;
-  let h1: string | null = null;
+  const h1: string[] = [];
   for (const p of parts) {
     const eq = p.indexOf("=");
     if (eq < 0) continue;
-    const k = p.slice(0, eq).trim();
+    const k = p.slice(0, eq).trim().toLowerCase();
     const v = p.slice(eq + 1).trim();
     if (k === "ts") {
-      const n = Number.parseInt(v, 10);
-      if (Number.isFinite(n)) ts = n;
+      if (!/^\d+$/.test(v)) return null;
+      const n = Number(v);
+      if (!Number.isSafeInteger(n)) return null;
+      ts = n;
     } else if (k === "h1") {
-      h1 = v.toLowerCase();
+      if (v) h1.push(v.toLowerCase());
     }
   }
-  if (ts === null || !h1) return null;
+  if (ts === null || h1.length === 0) return null;
   return { ts, h1 };
 }
 
@@ -87,7 +89,8 @@ export async function verifyPaddleSignature(
   secret: string | undefined,
   opts: VerifyOptions = {},
 ): Promise<VerifyResult> {
-  if (!secret) return { ok: false, reason: "no_secret" };
+  const normalizedSecret = secret?.trim();
+  if (!normalizedSecret) return { ok: false, reason: "no_secret" };
   if (!headerValue) return { ok: false, reason: "missing_header" };
   const parsed = parsePaddleSignature(headerValue);
   if (!parsed) return { ok: false, reason: "bad_format" };
@@ -96,6 +99,8 @@ export async function verifyPaddleSignature(
   const now = opts.nowSeconds ?? Math.floor(Date.now() / 1000);
   if (Math.abs(now - parsed.ts) > tolerance) return { ok: false, reason: "stale" };
 
-  const expected = await computePaddleHmac(secret, parsed.ts, rawBody);
-  return timingSafeEqualHex(expected, parsed.h1) ? { ok: true } : { ok: false, reason: "bad_signature" };
+  const expected = await computePaddleHmac(normalizedSecret, parsed.ts, rawBody);
+  return parsed.h1.some((signature) => timingSafeEqualHex(expected, signature))
+    ? { ok: true }
+    : { ok: false, reason: "bad_signature" };
 }
