@@ -47,6 +47,7 @@ import i18n from '@/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { compareImportRowsDesc } from '@/lib/importRowSort';
+import { isOnOrBeforeDay } from '@/lib/dayKey';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
