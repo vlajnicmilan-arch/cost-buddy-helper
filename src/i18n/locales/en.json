@@ -5517,5 +5517,19 @@
     "confirm": "Delete anyway",
     "bulkSkipped_one": "{{count}} correction skipped — corrections are deleted one at a time.",
     "bulkSkipped_other": "{{count}} corrections skipped — corrections are deleted one at a time."
+  },
+  "reconciliation": {
+    "title": "Bank and app disagree",
+    "description": "The difference between the app and the bank is {{delta}}. You decide what is true.",
+    "appBalance": "App",
+    "bankBalance": "Bank",
+    "difference": "Difference",
+    "alignToBank": "Align with bank",
+    "keepMine": "Keep my balance",
+    "reviewTransactions": "Review transactions",
+    "alignedToast": "Aligned with bank — new balance {{balance}}.",
+    "keptToast": "Kept your balance.",
+    "alignFailed": "Alignment failed.",
+    "keepFailed": "Could not save decision."
   }
 }

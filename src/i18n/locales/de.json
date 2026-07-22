@@ -5517,5 +5517,19 @@
     "confirm": "Trotzdem löschen",
     "bulkSkipped_one": "{{count}} Korrektur übersprungen — Korrekturen werden einzeln gelöscht.",
     "bulkSkipped_other": "{{count}} Korrekturen übersprungen — Korrekturen werden einzeln gelöscht."
+  },
+  "reconciliation": {
+    "title": "Bank und App stimmen nicht überein",
+    "description": "Die Differenz zwischen App und Bank beträgt {{delta}}. Du entscheidest, was stimmt.",
+    "appBalance": "App",
+    "bankBalance": "Bank",
+    "difference": "Differenz",
+    "alignToBank": "Mit Bank abgleichen",
+    "keepMine": "Meinen Saldo behalten",
+    "reviewTransactions": "Transaktionen prüfen",
+    "alignedToast": "Mit Bank abgeglichen — neuer Saldo {{balance}}.",
+    "keptToast": "Dein Saldo wurde beibehalten.",
+    "alignFailed": "Abgleich fehlgeschlagen.",
+    "keepFailed": "Entscheidung konnte nicht gespeichert werden."
   }
 }
