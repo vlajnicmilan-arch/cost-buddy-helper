@@ -8,14 +8,15 @@ import {
 const REF = new Date("2026-07-22T12:00:00Z");
 
 function row(partial: Partial<UndoBatchRow>): UndoBatchRow {
-  return {
-    id: partial.id ?? crypto.randomUUID(),
-    type: partial.type ?? "expense",
-    amount: partial.amount ?? 0,
-    bank_match_status: partial.bank_match_status ?? "bank_only",
-    created_at: partial.created_at ?? "2026-07-22T09:00:00Z",
-    date: partial.date ?? new Date("2026-07-22T00:00:00Z"),
+  const base: UndoBatchRow = {
+    id: crypto.randomUUID(),
+    type: "expense",
+    amount: 0,
+    bank_match_status: "bank_only",
+    created_at: "2026-07-22T09:00:00Z",
+    date: new Date("2026-07-22T00:00:00Z"),
   };
+  return { ...base, ...partial };
 }
 
 describe("computeBreakdown", () => {
