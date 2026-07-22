@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { isCorrectionInBulkError, emitBulkCorrectionsSkipped } from '@/lib/correctionDeleteGuard';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { CustomPaymentSourcesPanel } from '@/components/custom-payment-sources/CustomPaymentSourcesPanel';
