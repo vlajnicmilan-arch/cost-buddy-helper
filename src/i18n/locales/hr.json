@@ -5527,5 +5527,19 @@
     "bulkSkipped_one": "{{count}} korekcija preskočena — korekcije se brišu pojedinačno.",
     "bulkSkipped_other": "{{count}} korekcija preskočeno — korekcije se brišu pojedinačno.",
     "bulkSkipped_few": "{{count}} korekcije preskočene — korekcije se brišu pojedinačno."
+  },
+  "reconciliation": {
+    "title": "Bank i aplikacija se ne slažu",
+    "description": "Razlika između aplikacije i banke iznosi {{delta}}. Ti odlučuješ što je istina.",
+    "appBalance": "Aplikacija",
+    "bankBalance": "Banka",
+    "difference": "Razlika",
+    "alignToBank": "Poravnaj s bankom",
+    "keepMine": "Zadrži moj saldo",
+    "reviewTransactions": "Pregledaj transakcije",
+    "alignedToast": "Poravnato s bankom — novi saldo {{balance}}.",
+    "keptToast": "Zadržan tvoj saldo.",
+    "alignFailed": "Poravnavanje nije uspjelo.",
+    "keepFailed": "Nije uspjelo spremiti odluku."
   }
 }
