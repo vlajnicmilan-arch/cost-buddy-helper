@@ -599,3 +599,48 @@ const ImportReview = () => {
 };
 
 export default ImportReview;
+
+/**
+ * Lookup imported_statements.id za dati batch i pushaj queue entries za sve
+ * sourceove kojima treba reconciliation. Ime i ikona pull-ana iz payload
+ * (primarni source) i availableTargets (transfer targeti).
+ */
+async function enqueueReconciliationForBatch(
+  summaries: readonly ReconciliationSummaryEntry[],
+  batchId: string,
+  payload: ImportReviewPayload,
+): Promise<void> {
+  const needing = summaries.filter(s => s.needsReconciliation);
+  if (needing.length === 0) return;
+
+  let statementId: string | null = null;
+  try {
+    const { data } = await supabase
+      .from('imported_statements')
+      .select('id')
+      .eq('import_batch_id', batchId)
+      .maybeSingle();
+    statementId = (data as any)?.id ?? null;
+  } catch { /* noop — banner iz TUR 2 se neće znati vratiti, ali dijalog radi */ }
+
+  const asOfIso = new Date().toISOString();
+  const nameFor = (sourceId: string): { name: string; icon?: string | null } => {
+    if (sourceId === payload.sourceId) return { name: payload.sourceName };
+    const t = payload.availableTargets.find(x => x.id === sourceId);
+    return { name: t?.name ?? sourceId.slice(0, 8), icon: t?.icon ?? null };
+  };
+
+  const entries: ReconciliationQueueEntry[] = needing.map(summary => {
+    const nm = nameFor(summary.sourceId);
+    return {
+      summary,
+      sourceName: nm.name,
+      sourceIcon: nm.icon,
+      batchId,
+      asOfIso,
+      importedStatementId: statementId,
+    };
+  });
+
+  enqueueReconciliation(entries);
+}
