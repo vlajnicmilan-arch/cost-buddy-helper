@@ -11,6 +11,7 @@ import { getCategoryInfo, CATEGORIES } from '@/types/expense';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { PageHeader } from '@/components/PageHeader';
+import { ReconciliationResumeBanner } from '@/components/ReconciliationResumeBanner';
 import { BottomNav } from '@/components/BottomNav';
 import { Input } from '@/components/ui/input';
 import { 
