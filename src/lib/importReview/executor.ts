@@ -48,9 +48,16 @@ import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleI
 /**
  * Minimal supabase interface — must satisfy both the expense update/upsert
  * shapes AND the transfer-rules upsert shape (which uses no `ignoreDuplicates`).
+ *
+ * `rpc` is used for Faza 2 reconciliation preview
+ * (`preview_source_balance_after_batch`).
  */
 export interface ExecutorSupabaseClient extends TransferRulesSupabaseClient {
   from(table: string): any;
+  rpc?: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 export interface ExecutorInput {
@@ -62,6 +69,27 @@ export interface ExecutorInput {
   /** Optional override; defaults to payload.batchId (kept stable across retries). */
   readonly batchId?: string;
   readonly now?: () => number;
+}
+
+/**
+ * Per-source reconciliation summary, one entry per unique source_id the batch
+ * touched (payment_source custom UUID + transfer income_source_id). Populated
+ * AFTER commit via `preview_source_balance_after_batch` RPC (pravilo C: živi
+ * hybrid engine).
+ *
+ * `needsReconciliation = has_bank_row && |delta| > 0.01`.
+ * If the RPC fails or the source has no bank row (e.g. only manual merges
+ * touched it), `needsReconciliation` is false and the entry is informational.
+ */
+export interface ReconciliationSummaryEntry {
+  readonly sourceId: string;
+  readonly appBalance: number | null;
+  readonly bankBalance: number | null;
+  readonly delta: number | null;
+  readonly hasBankRow: boolean;
+  readonly needsReconciliation: boolean;
+  readonly engineMode: 'hybrid';
+  readonly error?: string;
 }
 
 export interface ExecutorResult {
@@ -80,7 +108,10 @@ export interface ExecutorResult {
   readonly skippedDuplicate: number;
   readonly durationMs: number;
   readonly errors: readonly string[];
+  /** Faza 2 — post-commit reconciliation snapshot per unique source_id. */
+  readonly reconciliationSummary: readonly ReconciliationSummaryEntry[];
 }
+
 
 type MergePlan = {
   readonly rowIndex: number;
@@ -204,7 +235,9 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       skippedDuplicate: 0,
       durationMs: now() - start,
       errors: badTransfers.map(t => `transfer:${t.rowIndex}:missing_target`),
+      reconciliationSummary: [],
     };
+
   }
 
   // --- STEP 0: upsert transfer rules that the user asked to remember. Runs
@@ -345,6 +378,17 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     }
   }
 
+  // --- FAZA 2: post-commit reconciliation snapshot per touched source_id.
+  // Uses live engine (hybrid) via preview_source_balance_after_batch RPC.
+  // Only inserts+transfers introduce fresh bank_row_seq/balance_after, so we
+  // enumerate source_ids from those two plans.
+  const touchedSourceIds = collectTouchedSourceIds(plan);
+  const reconciliationSummary = await buildReconciliationSummary(
+    input.supabase,
+    batchId,
+    touchedSourceIds,
+  );
+
   return {
     batchId,
     merged,
@@ -357,5 +401,92 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     skippedDuplicate,
     durationMs: now() - start,
     errors,
+    reconciliationSummary,
   };
 }
+
+// -----------------------------------------------------------------------------
+// FAZA 2 helpers
+// -----------------------------------------------------------------------------
+
+const CUSTOM_SOURCE_RE = /^custom:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/** Extract unique source UUIDs the batch touched (both sides of transfers). */
+export function collectTouchedSourceIds(plan: PlannedWork): readonly string[] {
+  const set = new Set<string>();
+  const add = (raw: string | null | undefined) => {
+    if (!raw) return;
+    const m = CUSTOM_SOURCE_RE.exec(raw);
+    if (m) set.add(m[1].toLowerCase());
+  };
+  for (const i of plan.inserts) add(i.tx.paymentSource);
+  for (const t of plan.transfers) {
+    add(t.tx.paymentSource);
+    if (t.decision.targetIncomeSourceId) set.add(t.decision.targetIncomeSourceId.toLowerCase());
+  }
+  return [...set];
+}
+
+const RECON_THRESHOLD = 0.01;
+
+async function buildReconciliationSummary(
+  supabase: ExecutorSupabaseClient,
+  batchId: string,
+  sourceIds: readonly string[],
+): Promise<readonly ReconciliationSummaryEntry[]> {
+  if (sourceIds.length === 0 || typeof supabase.rpc !== 'function') return [];
+  const out: ReconciliationSummaryEntry[] = [];
+  for (const sourceId of sourceIds) {
+    try {
+      const res = await supabase.rpc('preview_source_balance_after_batch', {
+        p_source_id: sourceId,
+        p_batch_id: batchId,
+      });
+      if (res.error) {
+        out.push({
+          sourceId,
+          appBalance: null,
+          bankBalance: null,
+          delta: null,
+          hasBankRow: false,
+          needsReconciliation: false,
+          engineMode: 'hybrid',
+          error: res.error.message,
+        });
+        continue;
+      }
+      const data = (res.data ?? {}) as {
+        app_balance?: number | null;
+        bank_balance?: number | null;
+        delta?: number | null;
+        has_bank_row?: boolean;
+      };
+      const app = data.app_balance ?? null;
+      const bank = data.bank_balance ?? null;
+      const delta = data.delta ?? null;
+      const hasBankRow = data.has_bank_row === true;
+      out.push({
+        sourceId,
+        appBalance: app,
+        bankBalance: bank,
+        delta,
+        hasBankRow,
+        needsReconciliation: hasBankRow && delta !== null && Math.abs(delta) > RECON_THRESHOLD,
+        engineMode: 'hybrid',
+      });
+    } catch (e) {
+      out.push({
+        sourceId,
+        appBalance: null,
+        bankBalance: null,
+        delta: null,
+        hasBankRow: false,
+        needsReconciliation: false,
+        engineMode: 'hybrid',
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+  return out;
+}
+
