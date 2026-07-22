@@ -5509,5 +5509,13 @@
     "cancelTransfer": "Keine Überweisung",
     "plannedSummaryV2": "{{merges}} Zusammenführungen · {{news}} neu · {{transfers}} Überweisungen · {{skipped}} übersprungen",
     "confirmedSummaryV2": "{{merged}} zusammengeführt, {{inserted}} hinzugefügt, {{transfers}} Überweisungen, {{skipped}} übersprungen."
+  },
+  "correctionDelete": {
+    "title": "Saldo-Korrektur-Eintrag löschen",
+    "description": "Dies ist ein Anker-Eintrag für Ihr Konto — der Zeitpunkt, an dem Sie den Anfangssaldo festgelegt haben. Das Löschen ändert den Anker NICHT und Ihr Saldo bleibt gleich, aber der historische Nachweis geht verloren. Trotzdem löschen?",
+    "cancel": "Abbrechen",
+    "confirm": "Trotzdem löschen",
+    "bulkSkipped_one": "{{count}} Korrektur übersprungen — Korrekturen werden einzeln gelöscht.",
+    "bulkSkipped_other": "{{count}} Korrekturen übersprungen — Korrekturen werden einzeln gelöscht."
   }
 }
