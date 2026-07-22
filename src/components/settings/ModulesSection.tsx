@@ -242,7 +242,7 @@ export const ModulesSection = ({
                 variant="ghost"
                 size="sm"
                 className="mt-2 h-7 px-2 text-xs text-primary"
-                onClick={() => navigate('/paywall')}
+                onClick={() => setUpgradeFor(cfg.module as UpgradeModule)}
               >
                 <Sparkles className="w-3 h-3 mr-1" />
                 {t('settings.modules.upgradeCta', 'Nadogradi')}
