@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Notification } from '@/types/notification';
 import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotificationSound';
 import { useAppBadge } from '@/hooks/useAppBadge';
+import { resolveNotificationText } from '@/lib/notificationI18n';
+import i18n from '@/i18n';
 
 /**
  * Returns true if the notification represents an auto-reconciled "issue"
