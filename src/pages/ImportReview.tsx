@@ -644,5 +644,26 @@ async function enqueueReconciliationForBatch(
     };
   });
 
+  // TUR 2: perzistiraj snapshot da banner može ponuditi "Nastavi" nakon
+  // zatvaranja dijaloga. Non-fatal ako write padne — queue u memoriji radi.
+  if (statementId) {
+    const snapshot: ReconciliationPendingSnapshot = {
+      batchId,
+      asOfIso,
+      entries: entries.map(e => ({
+        summary: e.summary,
+        sourceName: e.sourceName,
+        sourceIcon: e.sourceIcon ?? null,
+      })),
+    };
+    try {
+      await writePendingSnapshot(
+        supabase as unknown as ReconciliationSupabaseClient,
+        statementId,
+        snapshot,
+      );
+    } catch { /* noop */ }
+  }
+
   enqueueReconciliation(entries);
 }
