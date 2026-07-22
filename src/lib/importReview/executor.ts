@@ -131,7 +131,7 @@ type TransferPlan = {
   readonly decision: TransferDecision;
 };
 
-interface PlannedWork {
+export interface PlannedWork {
   readonly merges: readonly MergePlan[];
   readonly inserts: readonly InsertPlan[];
   readonly transfers: readonly TransferPlan[];
