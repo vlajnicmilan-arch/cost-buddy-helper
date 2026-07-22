@@ -131,8 +131,8 @@ export const ModulesSection = ({
   const onToggle = (module: AppModule, nextEnabled: boolean) => {
     const state = moduleStates[module];
     if (!state.tierUnlocked) {
-      showError(t('settings.modules.lockedToast', 'Dostupno uz nadogradnju'));
-      navigate('/paywall');
+      // UX: nikakva greška. Otvori prodajni dijalog s cijenom + CTA.
+      setUpgradeFor(module as UpgradeModule);
       return;
     }
 
