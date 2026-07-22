@@ -32,13 +32,40 @@ import {
 import { alignToBank, keepMine, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 
 export function ReconciliationDialogHost() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
   const navigate = useNavigate();
   const [active, setActive] = useState<ReconciliationQueueEntry | null>(null);
   const [busy, setBusy] = useState<'align' | 'keep' | null>(null);
+  const [anchorNewerThanBank, setAnchorNewerThanBank] = useState<{ anchorDate: string; bankDate: string } | null>(null);
 
   useEffect(() => subscribeReconciliation(setActive), []);
+
+  // FAZA 4 t.3 — ako je korekcijsko sidro NOVIJE od kraja izvoda (as_of),
+  // prikaži info red. Ne mijenja ponašanje gumba.
+  useEffect(() => {
+    let cancelled = false;
+    async function check() {
+      if (!active) { setAnchorNewerThanBank(null); return; }
+      try {
+        const { data } = await (supabase as any)
+          .from('custom_payment_sources')
+          .select('correction_anchor_date')
+          .eq('id', active.summary.sourceId)
+          .maybeSingle();
+        if (cancelled) return;
+        const anchorDate: string | null = data?.correction_anchor_date ?? null;
+        if (anchorDate && active.asOfIso && anchorDate > active.asOfIso) {
+          setAnchorNewerThanBank({ anchorDate, bankDate: active.asOfIso });
+        } else {
+          setAnchorNewerThanBank(null);
+        }
+      } catch { setAnchorNewerThanBank(null); }
+    }
+    check();
+    return () => { cancelled = true; };
+  }, [active]);
+
 
   const open = active !== null;
 
