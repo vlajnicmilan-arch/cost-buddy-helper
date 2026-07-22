@@ -388,7 +388,9 @@ const App = () => (
                                 <ImportBatchDialogHost />
 
                                 <CrispChat />
-                                <AppRoutes />
+                                <ModuleGateProvider>
+                                  <AppRoutes />
+                                </ModuleGateProvider>
                               </BackButtonProvider>
                             </BrowserRouter>
                           </DecisionScanProvider>
