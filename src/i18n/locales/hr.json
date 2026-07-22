@@ -5540,6 +5540,17 @@
     "alignedToast": "Poravnato s bankom — novi saldo {{balance}}.",
     "keptToast": "Zadržan tvoj saldo.",
     "alignFailed": "Poravnavanje nije uspjelo.",
-    "keepFailed": "Nije uspjelo spremiti odluku."
+    "keepFailed": "Nije uspjelo spremiti odluku.",
+    "resumeBanner": {
+      "title": "Uvoz čeka potvrdu salda",
+      "subtitleSingle": "Novčanik: {{name}}. Odaberi Nastavi za dovršetak.",
+      "subtitleMulti": "{{count}} novčanika čeka odluku. Nastavi za dovršetak.",
+      "resume": "Nastavi",
+      "discard": "Odbaci",
+      "discardConfirmTitle": "Odbaciti sve pending reconciliacije?",
+      "discardConfirmDescription": "Zadržat ćemo tvoj trenutni saldo u aplikaciji za sve preostale novčanike. Saldo se neće mijenjati.",
+      "discardConfirm": "Da, odbaci",
+      "discardedToast": "Sve pending reconciliacije su odbačene."
+    }
   }
 }

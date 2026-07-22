@@ -33,6 +33,8 @@ import {
 } from '@/lib/importReview/state';
 import { executeDecisions, type ExecutorResult, type ReconciliationSummaryEntry } from '@/lib/importReview/executor';
 import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reconciliation/queue';
+import { writePendingSnapshot, type ReconciliationPendingSnapshot } from '@/lib/reconciliation/resume';
+import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
 import type {
   ImportReviewDecisions,
@@ -641,6 +643,27 @@ async function enqueueReconciliationForBatch(
       importedStatementId: statementId,
     };
   });
+
+  // TUR 2: perzistiraj snapshot da banner može ponuditi "Nastavi" nakon
+  // zatvaranja dijaloga. Non-fatal ako write padne — queue u memoriji radi.
+  if (statementId) {
+    const snapshot: ReconciliationPendingSnapshot = {
+      batchId,
+      asOfIso,
+      entries: entries.map(e => ({
+        summary: e.summary,
+        sourceName: e.sourceName,
+        sourceIcon: e.sourceIcon ?? null,
+      })),
+    };
+    try {
+      await writePendingSnapshot(
+        supabase as unknown as ReconciliationSupabaseClient,
+        statementId,
+        snapshot,
+      );
+    } catch { /* noop */ }
+  }
 
   enqueueReconciliation(entries);
 }
