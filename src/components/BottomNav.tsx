@@ -10,6 +10,9 @@ import { getNavVisibility, type AppModule } from '@/lib/moduleVisibility';
 import { useHaptics } from '@/hooks/useHaptics';
 import { MODULE_NAV_CLASSES, type ModuleKey } from '@/lib/moduleColors';
 import { cn } from '@/lib/utils';
+import { useFeatureAccess, type Feature } from '@/hooks/useFeatureAccess';
+import { useModuleGate } from '@/hooks/useModuleGate';
+import type { UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 
 type NavItem = {
   path: string;
@@ -40,6 +43,8 @@ export const BottomNav = () => {
   const { activeBusinessProfileId } = useAppState();
   const modules = useModuleStates();
   const { lightTap } = useHaptics();
+  const { hasAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
 
   // Faza 1 modularnog UI-a: jedini izvor istine za nav stavke je
   // getNavVisibility(). Krug se dodatno sakriva u business kontekstu
@@ -50,6 +55,26 @@ export const BottomNav = () => {
     if (item.path === '/krug' && activeBusinessProfileId) return false;
     return true;
   });
+
+  // Modul feature key za gating — samo path-evi koji vode u zaključive module.
+  const GATE_BY_PATH: Record<string, { feature: Feature; module: UpgradeModule }> = {
+    '/krug': { feature: 'krug', module: 'krug' },
+    '/projects': { feature: 'projects', module: 'projects' },
+  };
+
+  const handleNavClick = (path: string) => {
+    lightTap();
+    const gate = GATE_BY_PATH[path];
+    if (gate && !hasAccess(gate.feature)) {
+      // Jedinstveni ulaz u zaključan modul — dijalog umjesto tvrde navigacije,
+      // "Ne sada" ostavlja korisnika na trenutnoj stranici bez tehničke greške.
+      requestModule(gate.module, {
+        onGranted: () => navigate(path),
+      });
+      return;
+    }
+    navigate(path);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/50 safe-area-bottom" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
@@ -62,7 +87,7 @@ export const BottomNav = () => {
             <button
               key={item.path}
               data-testid={`nav-${item.path.replace(/^\//, '') === 'home' ? 'home' : item.path.replace(/^\//, '')}`}
-              onClick={() => { lightTap(); navigate(item.path); }}
+              onClick={() => handleNavClick(item.path)}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative"
             >
               {isActive && (

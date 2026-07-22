@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Sparkles } from 'lucide-react';
 import { KrugBrandIcon } from './KrugBrandIcon';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { useMyKrugs } from '@/hooks/useKrug';
 import { clickableProps } from '@/lib/a11y';
 import { CreateKrugDialog } from './CreateKrugDialog';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   onSelect: (krugId: string) => void;
@@ -23,15 +25,27 @@ export function KrugListScreen({ onSelect }: Props) {
   const { t } = useTranslation();
   const { data: krugs = [], isLoading, isError, refetch } = useMyKrugs();
   const [createOpen, setCreateOpen] = useState(false);
+  const { hasAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
+  const canCreate = hasAccess('krug');
+
+  // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni
+  // gate. Za korisnike bez prava — otvori upgrade dijalog, NIKAD ne otvaraj
+  // CreateKrugDialog koji bi na submitu bacio sirovu RLS grešku.
+  const openCreateOrUpgrade = () => {
+    requestModule('krug', { onGranted: () => setCreateOpen(true) });
+  };
 
   return (
     <div className="space-y-3">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-module">{t('krug.title', 'Krug')}</h1>
         {krugs.length > 0 && (
-          <Button size="sm" variant="module" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t('krug.create.cta', 'Novi Krug')}
+          <Button size="sm" variant="module" onClick={openCreateOrUpgrade}>
+            {canCreate ? <Plus className="w-4 h-4 mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            {canCreate
+              ? t('krug.create.cta', 'Novi Krug')
+              : t('krug.unlockCta', 'Otključaj Krug')}
           </Button>
         )}
       </header>
@@ -66,9 +80,11 @@ export function KrugListScreen({ onSelect }: Props) {
               'Krug je tvoj zajednički kontekst s drugima. Pridruži se preko poziva ili otvori novi.',
             )}
           </p>
-          <Button variant="module" onClick={() => setCreateOpen(true)} className="mt-2">
-            <Plus className="w-4 h-4 mr-1" />
-            {t('krug.create.cta', 'Novi Krug')}
+          <Button variant="module" onClick={openCreateOrUpgrade} className="mt-2">
+            {canCreate ? <Plus className="w-4 h-4 mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            {canCreate
+              ? t('krug.create.cta', 'Novi Krug')
+              : t('krug.unlockCta', 'Otključaj Krug')}
           </Button>
         </Card>
       ) : (
