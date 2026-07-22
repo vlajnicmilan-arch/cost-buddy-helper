@@ -30,7 +30,8 @@ import { verifyPaddleSignature } from "../_shared/paddleSignature.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const PADDLE_WEBHOOK_SECRET = Deno.env.get("PADDLE_WEBHOOK_SECRET");
+const RAW_PADDLE_WEBHOOK_SECRET = Deno.env.get("PADDLE_WEBHOOK_SECRET");
+const PADDLE_WEBHOOK_SECRET = RAW_PADDLE_WEBHOOK_SECRET?.trim();
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -237,7 +238,23 @@ Deno.serve(async (req) => {
   const sigHeader = req.headers.get("Paddle-Signature") ?? req.headers.get("paddle-signature");
   const verified = await verifyPaddleSignature(rawBody, sigHeader, PADDLE_WEBHOOK_SECRET);
   if (!verified.ok) {
-    log("signature_rejected", { reason: verified.reason });
+    const parsedHeader = parsePaddleSignature(sigHeader);
+    log("signature_rejected", {
+      reason: verified.reason,
+      verification_step:
+        verified.reason === "no_secret" ? "secret_load"
+          : verified.reason === "missing_header" ? "header_read"
+          : verified.reason === "bad_format" ? "header_parse"
+          : verified.reason === "stale" ? "timestamp_tolerance"
+          : "hmac_compare",
+      secret_length: RAW_PADDLE_WEBHOOK_SECRET?.length ?? 0,
+      secret_has_edge_whitespace:
+        RAW_PADDLE_WEBHOOK_SECRET !== undefined &&
+        RAW_PADDLE_WEBHOOK_SECRET !== RAW_PADDLE_WEBHOOK_SECRET.trim(),
+      secret_starts_with_pdl: PADDLE_WEBHOOK_SECRET?.startsWith("pdl_") ?? false,
+      signature_header_present: sigHeader !== null,
+      signature_count: parsedHeader?.h1.length ?? 0,
+    });
     return json(401, { error: "invalid_signature" });
   }
 

@@ -15,11 +15,17 @@ async function makeHeader(body: string, ts: number, secret = SECRET) {
 
 describe("parsePaddleSignature", () => {
   it("parses ts + h1", () => {
-    expect(parsePaddleSignature("ts=1700000000;h1=abc")).toEqual({ ts: 1700000000, h1: "abc" });
+    expect(parsePaddleSignature("ts=1700000000;h1=abc")).toEqual({ ts: 1700000000, h1: ["abc"] });
   });
   it("tolerates whitespace and extra parts", () => {
     expect(parsePaddleSignature(" ts=1700000000 ; h1=DEAD ; junk=x "))
-      .toEqual({ ts: 1700000000, h1: "dead" });
+      .toEqual({ ts: 1700000000, h1: ["dead"] });
+  });
+  it("collects multiple h1 values used during secret rotation", () => {
+    expect(parsePaddleSignature("ts=1700000000;h1=AAAA;h1=bbbb")).toEqual({
+      ts: 1700000000,
+      h1: ["aaaa", "bbbb"],
+    });
   });
   it("returns null on garbage", () => {
     expect(parsePaddleSignature("")).toBeNull();
@@ -48,6 +54,20 @@ describe("verifyPaddleSignature", () => {
 
   it("accepts a valid signature within tolerance", async () => {
     const header = await makeHeader(body, now);
+    const res = await verifyPaddleSignature(body, header, SECRET, { nowSeconds: now });
+    expect(res.ok).toBe(true);
+  });
+
+  it("trims accidental edge whitespace from the webhook secret", async () => {
+    const header = await makeHeader(body, now);
+    const res = await verifyPaddleSignature(body, header, ` \n${SECRET}\r\n`, { nowSeconds: now });
+    expect(res.ok).toBe(true);
+  });
+
+  it("accepts any matching h1 when Paddle sends multiple signatures", async () => {
+    const valid = await makeHeader(body, now);
+    const validH1 = valid.split("h1=")[1];
+    const header = `ts=${now};h1=${"0".repeat(64)};h1=${validH1}`;
     const res = await verifyPaddleSignature(body, header, SECRET, { nowSeconds: now });
     expect(res.ok).toBe(true);
   });
