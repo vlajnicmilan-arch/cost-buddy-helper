@@ -320,20 +320,31 @@ const Index = () => {
     // i izgubili sve osim zadnje korekcije (lost-update race za isti payment_source).
     let ok = 0;
     let fail = 0;
+    const skippedCorrections: string[] = [];
     for (const id of ids) {
       try {
         await deleteExpense(id, { silent: true });
         ok++;
-      } catch {
-        fail++;
+      } catch (e) {
+        if (isCorrectionInBulkError(e)) {
+          skippedCorrections.push(id);
+        } else {
+          fail++;
+        }
       }
+    }
+    if (skippedCorrections.length > 0) {
+      emitBulkCorrectionsSkipped(skippedCorrections.length, skippedCorrections);
+      showError(t('correctionDelete.bulkSkipped', { count: skippedCorrections.length }));
     }
     refetch();
     refetchPaymentSources();
-    if (fail === 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
-    else if (ok === 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
-    else showError(t('transactions.bulkDeletePartial', { ok, fail }));
+    if (fail === 0 && ok > 0) showSuccess(t('transactions.bulkDeleted', { count: ok }));
+    else if (fail === 0 && ok === 0 && skippedCorrections.length === 0) return;
+    else if (ok === 0 && fail > 0) showError(t('transactions.bulkDeleteFailed', { count: fail }));
+    else if (fail > 0) showError(t('transactions.bulkDeletePartial', { ok, fail }));
   }, [deleteExpense, refetch, refetchPaymentSources, t]);
+
 
 
   // Clear selection when filters change
