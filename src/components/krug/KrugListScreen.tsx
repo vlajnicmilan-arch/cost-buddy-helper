@@ -80,9 +80,11 @@ export function KrugListScreen({ onSelect }: Props) {
               'Krug je tvoj zajednički kontekst s drugima. Pridruži se preko poziva ili otvori novi.',
             )}
           </p>
-          <Button variant="module" onClick={() => setCreateOpen(true)} className="mt-2">
-            <Plus className="w-4 h-4 mr-1" />
-            {t('krug.create.cta', 'Novi Krug')}
+          <Button variant="module" onClick={openCreateOrUpgrade} className="mt-2">
+            {canCreate ? <Plus className="w-4 h-4 mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            {canCreate
+              ? t('krug.create.cta', 'Novi Krug')
+              : t('krug.unlockCta', 'Otključaj Krug')}
           </Button>
         </Card>
       ) : (
