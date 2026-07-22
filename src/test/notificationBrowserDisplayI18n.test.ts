@@ -9,33 +9,27 @@ import { describe, it, expect } from 'vitest';
 import { resolveNotificationText } from '@/lib/notificationI18n';
 import '@/i18n';
 
-const tPassthrough = (key: string, opts?: Record<string, unknown>) => {
-  // minimalni mock — resolveNotificationText koristi realni i18n.exists
-  // pa fallbackira na key ako prijevod ne postoji.
-  if (opts && typeof opts === 'object') {
-    return Object.entries(opts).reduce(
-      (acc, [k, v]) => acc.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v)),
-      key,
-    );
-  }
-  return key;
-};
+import i18n from '@/i18n';
+
+const t = i18n.t.bind(i18n);
 
 describe('notification key resolution before browser display', () => {
   it('prevodi poznati i18n ključ (ne curi šifra u UI)', () => {
     const raw = 'notifications.milestone_deadline.overdue.title';
-    const out = resolveNotificationText(raw, { name: 'Bojanje' }, tPassthrough as any);
+    const out = resolveNotificationText(raw, { name: 'Bojanje' }, t as any);
     expect(out).not.toBe(raw);
     expect(out).toContain('Bojanje');
   });
 
   it('literal tekst prolazi netaknut (starije obavijesti)', () => {
-    const out = resolveNotificationText('⚠️ Faza „Bojanje" je istekla', {}, tPassthrough as any);
-    expect(out).toBe('⚠️ Faza „Bojanje" je istekla');
+    const literal = '⚠️ Faza „Bojanje" je istekla';
+    const out = resolveNotificationText(literal, {}, t as any);
+    expect(out).toBe(literal);
   });
 
   it('nepoznati ključ vraća raw (defenzivno, ne baca)', () => {
-    const out = resolveNotificationText('notifications.nepostojeci.kljuc', {}, tPassthrough as any);
-    expect(out).toBe('notifications.nepostojeci.kljuc');
+    const raw = 'notifications.nepostojeci.kljuc';
+    const out = resolveNotificationText(raw, {}, t as any);
+    expect(out).toBe(raw);
   });
 });
