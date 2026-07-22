@@ -32,10 +32,30 @@ export default function Krug() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { hasAccess } = useFeatureAccess();
-  const isReadOnly = !hasAccess('krug');
+  const { requestModule } = useModuleGate();
+  const hasKrugAccess = hasAccess('krug');
+  const isReadOnly = !hasKrugAccess;
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Direktan ulaz na /krug bez prava: ako korisnik nema NI tier NI članstvo
+  // u ijednom Krugu, otvori upgrade dijalog; "Ne sada" vraća na /home bez
+  // ikakve tehničke greške. Ako je član nekog Kruga — ostavi ReadOnly pregled.
+  const { data: krugs, isLoading: krugsLoading } = useMyKrugs();
+  const hasMemberships = (krugs?.length ?? 0) > 0;
+  const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
+  useEffect(() => {
+    if (hasKrugAccess) return;
+    if (krugsLoading) return;
+    if (hasMemberships) return;
+    if (gatePromptedRef.done) return;
+    gatePromptedRef.done = true;
+    requestModule('krug', {
+      onDismiss: () => navigate('/home', { replace: true }),
+    });
+  }, [hasKrugAccess, krugsLoading, hasMemberships, requestModule, navigate, gatePromptedRef]);
 
 
   // Deep-link ulaz iz obavijesti (`/krug?id=<uuid>`). Kad payload ima id,
