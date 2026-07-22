@@ -35,9 +35,12 @@ vi.mock('@/integrations/supabase/client', () => {
     supabase: {
       from: () => queryChain,
       channel: () => ({
-        on: () => ({ subscribe: () => ({}) }),
+        on: () => ({ on: () => ({ subscribe: () => ({}) }), subscribe: () => ({}) }),
       }),
       removeChannel: vi.fn(),
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      },
     },
   };
 });
