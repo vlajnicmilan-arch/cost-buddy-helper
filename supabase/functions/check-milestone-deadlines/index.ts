@@ -40,14 +40,23 @@ Deno.serve(async (req) => {
 
       if (today < reminderDate) continue;
 
-      // Check if notification already sent today for this milestone
-      const todayStr = today.toISOString().split("T")[0];
+      // Dedup pravila (Milan odobrio, sprječava dnevnu lavinu za istekle faze):
+      // - upcoming (pre-deadline): 1×/dan po (user, milestone)
+      // - overdue: 1× ODMAH pri isteku, potom NJEŽNI TJEDNI podsjetnik (1×/7 dana)
+      //   dok je faza istekla i neriješena — NIKAD dnevno zauvijek.
+      const daysUntilDueCheck = Math.ceil(
+        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const dedupSinceIso = daysUntilDueCheck < 0
+        ? new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString() // overdue: 7 dana
+        : today.toISOString(); // upcoming: današnji dan
+
       const { data: existing } = await supabase
         .from("notifications")
         .select("id")
         .eq("type", "milestone_deadline")
         .contains("data", { milestone_id: milestone.id })
-        .gte("created_at", todayStr)
+        .gte("created_at", dedupSinceIso)
         .limit(1);
 
       if (existing && existing.length > 0) continue;
