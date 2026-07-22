@@ -270,6 +270,11 @@ const Dashboard = () => {
       >
         <PageHeader title="Dashboard" />
 
+        <div className="mb-4 sm:mb-6">
+          <ReconciliationResumeBanner />
+        </div>
+
+
         {/* Global Search */}
         <div className="mb-4 sm:mb-6">
           <div className="relative">
