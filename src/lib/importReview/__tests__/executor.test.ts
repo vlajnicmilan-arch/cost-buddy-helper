@@ -13,6 +13,7 @@ function tx(i: number, over: Partial<SerializedImportedTx> = {}): SerializedImpo
     merchantName: 'BankMerchant',
     paymentSource: 'custom:src-1',
     balanceAfter: 500,
+    bankRowSeq: i,
     fingerprint: `fp-${i}`,
     ...over,
   };
