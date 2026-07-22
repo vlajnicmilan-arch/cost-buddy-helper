@@ -40,6 +40,7 @@ import StatusFeedback from "@/components/StatusFeedback";
 import { FeedbackFAB } from "@/components/feedback/FeedbackFAB";
 import { FileSavedDialog } from "@/components/FileSavedDialog";
 import { ModuleThemeProvider } from "@/components/ModuleThemeProvider";
+import { ModuleGateProvider } from "@/hooks/useModuleGate";
 import { GlobalScanQuotaDialog } from "@/components/scanner/GlobalScanQuotaDialog";
 import { HighlightTarget } from "@/components/HighlightTarget";
 import { AttributionSheetHost } from "@/components/attribution/AttributionSheetHost";
