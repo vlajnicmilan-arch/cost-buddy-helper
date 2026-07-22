@@ -299,6 +299,11 @@ export const CustomPaymentSourceDialog = ({
             )}
           </div>
 
+          {/* FAZA 4 t.2 + t.4 — Sidro salda + povijest poravnanja (samo za postojeći izvor) */}
+          {source && (
+            <AnchorInfoSection sourceId={source.id} onCorrectBalance={onCorrectBalance} />
+          )}
+
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('common.description')}</Label>
