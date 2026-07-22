@@ -27,6 +27,12 @@ import {
   type NormalizeContext,
 } from '@/lib/paymentSource/normalize';
 import { normalizeExpensePayload, type WriterIntent } from '@/lib/balance/writerIntent';
+import {
+  CORRECTION_NATURE,
+  CorrectionInBulkError,
+  confirmCorrectionDelete,
+} from '@/lib/correctionDeleteGuard';
+
 
 interface UseExpenseCRUDOptions {
   isLocalMode: boolean;
