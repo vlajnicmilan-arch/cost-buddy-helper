@@ -88,28 +88,11 @@ export function useModuleGate(): Ctx {
   const ctx = useContext(ModuleGateContext);
   if (!ctx) {
     // Fallback: tiho no-op umjesto crasha ako ProviderHost nije mountan
-    // (npr. u testovima). Ne otvara dijalog — samo poziva onGranted za
-    // module koje user ima, inače onDismiss.
-    const navigate = safeNavigate();
+    // (npr. u testovima). Nikad ne otvara dijalog i nikad ne baca grešku.
     return {
-      requestModule: (_m, opts) => {
-        opts?.onDismiss?.();
-        navigate?.('/home');
-      },
-      openUpgrade: (_m, opts) => {
-        opts?.onDismiss?.();
-      },
+      requestModule: (_m, opts) => opts?.onDismiss?.(),
+      openUpgrade: (_m, opts) => opts?.onDismiss?.(),
     };
   }
   return ctx;
-}
-
-/** Router hook je siguran samo unutar Router konteksta; fallback na null. */
-function safeNavigate() {
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useNavigate();
-  } catch {
-    return null;
-  }
 }
