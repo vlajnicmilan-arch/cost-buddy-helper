@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { usePaddlePrices, type PaywallPlan } from '@/hooks/usePaddlePrices';
-import { showError, showSuccess } from '@/lib/statusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 
 export type UpgradeModule = 'krug' | 'projects' | 'business';
 
