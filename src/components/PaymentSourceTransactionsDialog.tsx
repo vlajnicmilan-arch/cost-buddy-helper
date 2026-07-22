@@ -1309,6 +1309,19 @@ export const PaymentSourceTransactionsDialog = ({
                                     <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap">
                                       {format(expense.date, 'd. MMM', { locale: hr })}
                                     </span>
+                                    {isBeforeAnchor && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-muted text-muted-foreground/80 text-[10px] shrink-0">
+                                            <Anchor className="w-2.5 h-2.5" />
+                                            {t('anchor.beforeBadge')}
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[240px]">
+                                          <p className="text-xs">{t('anchor.beforeTooltip')}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
                                   </div>
 
                                   <div className="flex flex-col items-end gap-0.5 shrink-0">
