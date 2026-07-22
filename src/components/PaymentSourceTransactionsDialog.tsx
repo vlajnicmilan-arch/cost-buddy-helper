@@ -46,6 +46,7 @@ import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/Con
 import i18n from '@/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { compareImportRowsDesc } from '@/lib/importRowSort';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -264,14 +265,7 @@ export const PaymentSourceTransactionsDialog = ({
         return true;
       }
       return false;
-    }).sort((a, b) => {
-      // Primary sort: transaction date descending
-      const dateA = a.date.getTime();
-      const dateB = b.date.getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      // Secondary sort: created_at descending (for same-day transactions)
-      return (b.created_at ?? '') > (a.created_at ?? '') ? 1 : -1;
-    });
+    }).sort(compareImportRowsDesc as (a: Expense, b: Expense) => number);
   }, [expenses, paymentSource]);
 
   // Calculate running balance for each transaction (chronological order, newest first)
