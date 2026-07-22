@@ -5530,6 +5530,17 @@
     "alignedToast": "Aligned with bank — new balance {{balance}}.",
     "keptToast": "Kept your balance.",
     "alignFailed": "Alignment failed.",
-    "keepFailed": "Could not save decision."
+    "keepFailed": "Could not save decision.",
+    "resumeBanner": {
+      "title": "Import awaiting balance confirmation",
+      "subtitleSingle": "Wallet: {{name}}. Click Resume to finish.",
+      "subtitleMulti": "{{count}} wallets awaiting decision. Resume to finish.",
+      "resume": "Resume",
+      "discard": "Discard",
+      "discardConfirmTitle": "Discard all pending reconciliations?",
+      "discardConfirmDescription": "We will keep your current app balance for all remaining wallets. The balance will not change.",
+      "discardConfirm": "Yes, discard",
+      "discardedToast": "All pending reconciliations discarded."
+    }
   }
 }
