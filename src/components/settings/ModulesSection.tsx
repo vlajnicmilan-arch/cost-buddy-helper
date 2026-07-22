@@ -34,7 +34,8 @@ import {
   type AppModule,
   type SettingsCardState,
 } from '@/lib/moduleVisibility';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showSuccess } from '@/hooks/useStatusFeedback';
+import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 
 
 interface ModulesSectionProps {
@@ -80,6 +81,7 @@ export const ModulesSection = ({
   const moduleStates = useModuleStates();
   const { getGrant } = useMyActiveModuleGrants();
   const [showKrugDisableConfirm, setShowKrugDisableConfirm] = useState(false);
+  const [upgradeFor, setUpgradeFor] = useState<UpgradeModule | null>(null);
 
   if (isLocalMode) return null;
 
@@ -129,8 +131,8 @@ export const ModulesSection = ({
   const onToggle = (module: AppModule, nextEnabled: boolean) => {
     const state = moduleStates[module];
     if (!state.tierUnlocked) {
-      showError(t('settings.modules.lockedToast', 'Dostupno uz nadogradnju'));
-      navigate('/paywall');
+      // UX: nikakva greška. Otvori prodajni dijalog s cijenom + CTA.
+      setUpgradeFor(module as UpgradeModule);
       return;
     }
 
@@ -240,7 +242,7 @@ export const ModulesSection = ({
                 variant="ghost"
                 size="sm"
                 className="mt-2 h-7 px-2 text-xs text-primary"
-                onClick={() => navigate('/paywall')}
+                onClick={() => setUpgradeFor(cfg.module as UpgradeModule)}
               >
                 <Sparkles className="w-3 h-3 mr-1" />
                 {t('settings.modules.upgradeCta', 'Nadogradi')}
@@ -350,6 +352,12 @@ export const ModulesSection = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ModuleUpgradeDialog
+        open={upgradeFor !== null}
+        onOpenChange={(o) => { if (!o) setUpgradeFor(null); }}
+        module={upgradeFor ?? 'krug'}
+      />
     </>
   );
 };
