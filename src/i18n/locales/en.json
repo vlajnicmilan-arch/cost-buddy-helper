@@ -3467,7 +3467,8 @@
     "undoneAlreadyToast": "This import was already undone earlier.",
     "undoAnchorBannerTitle": "Balance alignment remains active",
     "undoAnchorBannerDesc": "To restore the previous anchor, open wallet settings → Balance anchor and run a new correction.",
-    "undoAnchorBannerAck": "Got it"
+    "undoAnchorBannerAck": "Got it",
+    "undoActionShort": "Undo import"
   },
   "install": {
     "installed": "App is installed!",
@@ -5548,6 +5549,7 @@
     "alignFailed": "Alignment failed.",
     "keepFailed": "Could not save decision.",
     "anchorNewerNote": "Your correction ({{anchorDate}}) is newer than the end of the statement ({{bankDate}}) — the bank figure is likely outdated. \"Keep my balance\" is usually the correct choice.",
+    "undoImportLink": "Something wrong? Undo the whole import",
     "resumeBanner": {
       "title": "Import awaiting balance confirmation",
       "subtitleSingle": "Wallet: {{name}}. Click Resume to finish.",
@@ -5557,7 +5559,8 @@
       "discardConfirmTitle": "Discard all pending reconciliations?",
       "discardConfirmDescription": "We will keep your current app balance for all remaining wallets. The balance will not change.",
       "discardConfirm": "Yes, discard",
-      "discardedToast": "All pending reconciliations discarded."
+      "discardedToast": "All pending reconciliations discarded.",
+      "undoImportLink": "Something wrong? Undo the whole import"
     }
   },
   "anchor": {

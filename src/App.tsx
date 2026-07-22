@@ -15,6 +15,7 @@ import { PdfImportProvider } from "@/contexts/PdfImportContext";
 import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
 import { CorrectionDeleteConfirmHost } from "@/components/CorrectionDeleteConfirmHost";
 import { ReconciliationDialogHost } from "@/components/ReconciliationDialogHost";
+import { ImportBatchDialogHost } from "@/components/ImportBatchDialogHost";
 
 import { DecisionScanProvider } from "@/contexts/DecisionScanContext";
 import { GlobalDecisionCaptureHost } from "@/components/projects/GlobalDecisionCaptureHost";
@@ -384,6 +385,7 @@ const App = () => (
                                 <GlobalDecisionCaptureHost />
                                 <CorrectionDeleteConfirmHost />
                                 <ReconciliationDialogHost />
+                                <ImportBatchDialogHost />
 
                                 <CrispChat />
                                 <AppRoutes />

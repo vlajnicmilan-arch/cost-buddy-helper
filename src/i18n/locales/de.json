@@ -3467,7 +3467,8 @@
     "undoneAlreadyToast": "Dieser Import wurde bereits früher rückgängig gemacht.",
     "undoAnchorBannerTitle": "Saldo-Abgleich bleibt aktiv",
     "undoAnchorBannerDesc": "Um den vorherigen Anker wiederherzustellen, öffne Wallet-Einstellungen → Saldo-Anker und führe eine neue Korrektur durch.",
-    "undoAnchorBannerAck": "Verstanden"
+    "undoAnchorBannerAck": "Verstanden",
+    "undoActionShort": "Import rückgängig"
   },
   "install": {
     "installed": "App ist installiert!",
@@ -5548,6 +5549,7 @@
     "alignFailed": "Abgleich fehlgeschlagen.",
     "keepFailed": "Entscheidung konnte nicht gespeichert werden.",
     "anchorNewerNote": "Deine Korrektur ({{anchorDate}}) ist neuer als das Ende des Kontoauszugs ({{bankDate}}) — der Bankwert ist wahrscheinlich veraltet. „Meinen Saldo behalten“ ist meist die richtige Wahl.",
+    "undoImportLink": "Etwas stimmt nicht? Kompletten Import rückgängig",
     "resumeBanner": {
       "title": "Import wartet auf Saldo-Bestätigung",
       "subtitleSingle": "Wallet: {{name}}. Klicke Fortsetzen zum Abschluss.",
@@ -5557,7 +5559,8 @@
       "discardConfirmTitle": "Alle ausstehenden Abgleiche verwerfen?",
       "discardConfirmDescription": "Wir behalten deinen aktuellen App-Saldo für alle verbleibenden Wallets. Der Saldo ändert sich nicht.",
       "discardConfirm": "Ja, verwerfen",
-      "discardedToast": "Alle ausstehenden Abgleiche verworfen."
+      "discardedToast": "Alle ausstehenden Abgleiche verworfen.",
+      "undoImportLink": "Etwas stimmt nicht? Kompletten Import rückgängig"
     }
   },
   "anchor": {

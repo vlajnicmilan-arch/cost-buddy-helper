@@ -37,6 +37,7 @@ import {
 import { enqueueReconciliation, subscribeReconciliation } from '@/lib/reconciliation/queue';
 import { keepMine, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { useAuth } from '@/hooks/useAuth';
+import { openImportBatch } from '@/lib/importUndo/host';
 
 export function ReconciliationResumeBanner() {
   const { t } = useTranslation();
@@ -152,6 +153,19 @@ export function ReconciliationResumeBanner() {
             {t('reconciliation.resumeBanner.resume')}
           </Button>
         </div>
+        {list.length === 1 && list[0]?.batchId && (
+          <button
+            type="button"
+            onClick={() => {
+              const bid = list[0].batchId;
+              openImportBatch(bid, () => { void refresh(); });
+            }}
+            disabled={busy}
+            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 sm:ml-2 disabled:opacity-50 self-start sm:self-center"
+          >
+            {t('reconciliation.resumeBanner.undoImportLink')}
+          </button>
+        )}
       </div>
 
       <AlertDialog open={confirmOpen} onOpenChange={(v) => !busy && setConfirmOpen(v)}>

@@ -3473,7 +3473,8 @@
     "undoneAlreadyToast": "Ovaj uvoz je već poništen ranije.",
     "undoAnchorBannerTitle": "Poravnanje salda ostaje aktivno",
     "undoAnchorBannerDesc": "Za vraćanje na prethodno sidro otvori postavke novčanika → Sidro salda i pokreni novu korekciju.",
-    "undoAnchorBannerAck": "Razumijem"
+    "undoAnchorBannerAck": "Razumijem",
+    "undoActionShort": "Poništi uvoz"
   },
   "install": {
     "installed": "Aplikacija je instalirana!",
@@ -5558,6 +5559,7 @@
     "alignFailed": "Poravnavanje nije uspjelo.",
     "keepFailed": "Nije uspjelo spremiti odluku.",
     "anchorNewerNote": "Tvoja korekcija ({{anchorDate}}) je novija od kraja izvoda ({{bankDate}}) — bankin broj je vjerojatno zastario. „Zadrži moj saldo“ je obično ispravan izbor.",
+    "undoImportLink": "Nešto ne valja? Poništi cijeli uvoz",
     "resumeBanner": {
       "title": "Uvoz čeka potvrdu salda",
       "subtitleSingle": "Novčanik: {{name}}. Odaberi Nastavi za dovršetak.",
@@ -5567,7 +5569,8 @@
       "discardConfirmTitle": "Odbaciti sve pending reconciliacije?",
       "discardConfirmDescription": "Zadržat ćemo tvoj trenutni saldo u aplikaciji za sve preostale novčanike. Saldo se neće mijenjati.",
       "discardConfirm": "Da, odbaci",
-      "discardedToast": "Sve pending reconciliacije su odbačene."
+      "discardedToast": "Sve pending reconciliacije su odbačene.",
+      "undoImportLink": "Nešto ne valja? Poništi cijeli uvoz"
     }
   },
   "anchor": {
