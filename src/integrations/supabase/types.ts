@@ -6187,6 +6187,7 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      undo_import_batch: { Args: { p_batch_id: string }; Returns: Json }
       unlock_work_entry: {
         Args: { p_entry_id: string; p_reason?: string }
         Returns: Json
