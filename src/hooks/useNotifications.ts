@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Notification } from '@/types/notification';
 import { useNotificationSound, showBrowserNotification } from '@/hooks/useNotificationSound';
 import { useAppBadge } from '@/hooks/useAppBadge';
+import { resolveNotificationText } from '@/lib/notificationI18n';
+import i18n from '@/i18n';
 
 /**
  * Returns true if the notification represents an auto-reconciled "issue"
@@ -101,7 +103,14 @@ export const useNotifications = () => {
           setUnreadCount(prev => prev + 1);
 
           playNotificationSound();
-          showBrowserNotification(newNotification.title, newNotification.message);
+          // Notifications spremaju i18n ključeve u title/message; klijent MORA
+          // prevesti prije prikaza inače sistemska notifikacija pokazuje šifru.
+          const nData = (newNotification.data ?? {}) as any;
+          const titleVars = (nData?.title_vars as Record<string, unknown>) ?? {};
+          const messageVars = (nData?.message_vars as Record<string, unknown>) ?? {};
+          const localizedTitle = resolveNotificationText(newNotification.title, titleVars, i18n.t.bind(i18n));
+          const localizedBody = resolveNotificationText(newNotification.message, messageVars, i18n.t.bind(i18n));
+          showBrowserNotification(localizedTitle, localizedBody);
         }
       )
       .on(
