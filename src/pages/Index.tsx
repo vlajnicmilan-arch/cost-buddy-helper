@@ -1,4 +1,6 @@
 import { useExpenses } from '@/hooks/useExpenses';
+import { isCorrectionInBulkError, emitBulkCorrectionsSkipped } from '@/lib/correctionDeleteGuard';
+
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { useRecurringMatcher, RecurringMatch } from '@/hooks/useRecurringMatcher';
 import { useAuth } from '@/hooks/useAuth';
