@@ -215,4 +215,43 @@ describe('importReview/executor', () => {
     // Absolutely no writes were issued.
     expect(calls).toHaveLength(0);
   });
+
+  it('INSERT writes balance_after + bank_row_seq from tx onto the row', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { balanceAfter: 4038.10, bankRowSeq: 0 }), tx(1, { balanceAfter: 3900.00, bankRowSeq: 1 })],
+      rows: [
+        { index: 0, date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'A', classification: { kind: 'new', existsByFingerprint: false } } as any,
+        { index: 1, date: '2026-07-01', amount: 100, type: 'expense', merchantName: 'B', classification: { kind: 'new', existsByFingerprint: false } } as any,
+      ],
+    });
+    const d = baseDecisions({ newRows: { 0: true, 1: true } });
+    const { client, calls } = makeFakeClient();
+    await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    const upsert = calls.find(c => c.op === 'upsert');
+    expect(upsert).toBeDefined();
+    expect(upsert.rows[0].balance_after).toBe(4038.10);
+    expect(upsert.rows[0].bank_row_seq).toBe(0);
+    expect(upsert.rows[1].balance_after).toBe(3900.00);
+    expect(upsert.rows[1].bank_row_seq).toBe(1);
+  });
+
+  it('TRANSFER writes balance_after + bank_row_seq (bank timeline preserved)', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { type: 'transfer', balanceAfter: 100, bankRowSeq: 3 })],
+      rows: [
+        { index: 0, date: '2026-07-01', amount: 100, type: 'transfer', merchantName: 'Aircash',
+          classification: { kind: 'transfer', targetIncomeSourceId: 'wallet-a', ruleId: null } } as any,
+      ],
+    });
+    const d = baseDecisions({
+      transfers: { 0: { enabled: true, targetIncomeSourceId: 'wallet-a', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+    });
+    const { client, calls } = makeFakeClient();
+    await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    const upsert = calls.find(c => c.op === 'upsert');
+    expect(upsert).toBeDefined();
+    expect(upsert.rows[0].balance_after).toBe(100);
+    expect(upsert.rows[0].bank_row_seq).toBe(3);
+    expect(upsert.rows[0].type).toBe('transfer');
+  });
 });
