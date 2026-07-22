@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Sparkles } from 'lucide-react';
 import { KrugBrandIcon } from './KrugBrandIcon';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { useMyKrugs } from '@/hooks/useKrug';
 import { clickableProps } from '@/lib/a11y';
 import { CreateKrugDialog } from './CreateKrugDialog';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   onSelect: (krugId: string) => void;
@@ -23,6 +25,16 @@ export function KrugListScreen({ onSelect }: Props) {
   const { t } = useTranslation();
   const { data: krugs = [], isLoading, isError, refetch } = useMyKrugs();
   const [createOpen, setCreateOpen] = useState(false);
+  const { hasAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
+  const canCreate = hasAccess('krug');
+
+  // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni
+  // gate. Za korisnike bez prava — otvori upgrade dijalog, NIKAD ne otvaraj
+  // CreateKrugDialog koji bi na submitu bacio sirovu RLS grešku.
+  const openCreateOrUpgrade = () => {
+    requestModule('krug', { onGranted: () => setCreateOpen(true) });
+  };
 
   return (
     <div className="space-y-3">
