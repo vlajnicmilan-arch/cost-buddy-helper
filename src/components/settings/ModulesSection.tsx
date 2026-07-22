@@ -352,6 +352,12 @@ export const ModulesSection = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ModuleUpgradeDialog
+        open={upgradeFor !== null}
+        onOpenChange={(o) => { if (!o) setUpgradeFor(null); }}
+        module={upgradeFor ?? 'krug'}
+      />
     </>
   );
 };
