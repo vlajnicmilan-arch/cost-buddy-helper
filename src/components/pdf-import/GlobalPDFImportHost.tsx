@@ -623,6 +623,9 @@ export const GlobalPDFImportHost = () => {
         merchantName: tx.merchant_name ?? null,
         paymentSource: paymentSourceValue,
         balanceAfter: tx.balance_after ?? null,
+        // Bank-statement row order (parser output index). Written onto
+        // expenses.bank_row_seq so same-day rows stay in bank order.
+        bankRowSeq: i,
         fingerprint: fingerprints[i],
       }));
 

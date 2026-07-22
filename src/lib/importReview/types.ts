@@ -53,6 +53,12 @@ export interface SerializedImportedTx {
   readonly merchantName: string | null;
   readonly paymentSource: string; // canonical `custom:<uuid>` or 'cash'/'other'
   readonly balanceAfter: number | null;
+  /**
+   * Zero-based position of this row inside its source bank statement (parser
+   * output order). Persisted onto `expenses.bank_row_seq` so the wallet list
+   * can preserve bank order for same-day rows.
+   */
+  readonly bankRowSeq: number | null;
   readonly fingerprint: string;
 }
 
