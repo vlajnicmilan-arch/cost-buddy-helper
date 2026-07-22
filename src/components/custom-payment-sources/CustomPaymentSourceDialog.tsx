@@ -16,6 +16,7 @@ import { useCurrency, CURRENCIES, CurrencyCode } from '@/contexts/CurrencyContex
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { QuickBusinessProfileDialog } from '@/components/business/QuickBusinessProfileDialog';
+import { AnchorInfoSection } from './AnchorInfoSection';
 interface CardInput {
   id?: string;
   card_name: string;
