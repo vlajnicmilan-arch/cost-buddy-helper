@@ -285,6 +285,10 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       business_profile_id: input.activeBusinessProfileId,
       bank_transaction_id: tx.fingerprint,
       bank_match_status: 'bank_only',
+      // Bank timeline anchors — enable stable same-day ordering and per-row
+      // "Banka: X €" chip in the wallet list.
+      balance_after: tx.balanceAfter,
+      bank_row_seq: tx.bankRowSeq,
     }));
     try {
       const res = await input.supabase
@@ -321,6 +325,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       business_profile_id: input.activeBusinessProfileId,
       bank_transaction_id: tx.fingerprint,
       bank_match_status: 'bank_only',
+      balance_after: tx.balanceAfter,
+      bank_row_seq: tx.bankRowSeq,
     }));
     try {
       const res = await input.supabase

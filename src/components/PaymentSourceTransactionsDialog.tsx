@@ -46,6 +46,7 @@ import { ConfidentialityPicker, useConfidentialityLevel } from '@/components/Con
 import i18n from '@/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { compareImportRowsDesc } from '@/lib/importRowSort';
 
 interface PaymentSourceTransactionsDialogProps {
   open: boolean;
@@ -264,14 +265,7 @@ export const PaymentSourceTransactionsDialog = ({
         return true;
       }
       return false;
-    }).sort((a, b) => {
-      // Primary sort: transaction date descending
-      const dateA = a.date.getTime();
-      const dateB = b.date.getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      // Secondary sort: created_at descending (for same-day transactions)
-      return (b.created_at ?? '') > (a.created_at ?? '') ? 1 : -1;
-    });
+    }).sort(compareImportRowsDesc as (a: Expense, b: Expense) => number);
   }, [expenses, paymentSource]);
 
   // Calculate running balance for each transaction (chronological order, newest first)
@@ -1314,16 +1308,23 @@ export const PaymentSourceTransactionsDialog = ({
                                     </span>
                                   </div>
 
-                                  {balanceAfter !== undefined && (
-                                    <span className={cn(
-                                      "text-[13px] font-mono font-bold leading-tight shrink-0 whitespace-nowrap text-right",
-                                      balanceAfter >= 0 
-                                        ? "text-primary" 
-                                        : "text-destructive"
-                                    )}>
-                                      <span className="text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
-                                    </span>
-                                  )}
+                                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                    {balanceAfter !== undefined && (
+                                      <span className={cn(
+                                        "text-[13px] font-mono font-bold leading-tight whitespace-nowrap text-right",
+                                        balanceAfter >= 0
+                                          ? "text-primary"
+                                          : "text-destructive"
+                                      )}>
+                                        <span className="text-[10px] font-semibold opacity-60 mr-0.5">S:</span>{formatAmount(balanceAfter)}
+                                      </span>
+                                    )}
+                                    {(expense as any).balance_after != null && (
+                                      <span className="text-[10px] font-mono text-muted-foreground/70 leading-tight whitespace-nowrap">
+                                        {t('transactions.bankBalance', 'Banka')}: {formatAmount(Number((expense as any).balance_after))}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </motion.div>
                             </div>

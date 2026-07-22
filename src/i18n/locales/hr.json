@@ -1431,6 +1431,7 @@
     "expense": "Trošak",
     "income": "Prihod",
     "transfer": "Prijenos",
+    "bankBalance": "Banka",
     "transferTitle": "Prijenos između računa",
     "transferFrom": "Iz računa",
     "transferTo": "U račun",

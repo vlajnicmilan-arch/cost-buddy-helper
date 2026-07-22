@@ -1427,6 +1427,7 @@
     "expense": "Expense",
     "income": "Income",
     "transfer": "Transfer",
+    "bankBalance": "Bank",
     "transferTitle": "Transfer between accounts",
     "transferFrom": "From account",
     "transferTo": "To account",
