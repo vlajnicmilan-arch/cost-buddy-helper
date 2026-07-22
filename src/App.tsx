@@ -381,6 +381,8 @@ const App = () => (
                                 <GlobalReceiptScanHost />
                                 <GlobalPDFImportHost />
                                 <GlobalDecisionCaptureHost />
+                                <CorrectionDeleteConfirmHost />
+
                                 <CrispChat />
                                 <AppRoutes />
                               </BackButtonProvider>
