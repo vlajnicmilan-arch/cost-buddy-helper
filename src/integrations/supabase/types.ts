@@ -5583,6 +5583,7 @@ export type Database = {
         Returns: string
       }
       _require_admin: { Args: never; Returns: undefined }
+      activate_module_trial: { Args: { _module: string }; Returns: Json }
       admin_get_activation_by_cohort: {
         Args: never
         Returns: {
