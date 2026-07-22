@@ -33,6 +33,8 @@ import {
 } from '@/lib/importReview/state';
 import { executeDecisions, type ExecutorResult, type ReconciliationSummaryEntry } from '@/lib/importReview/executor';
 import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reconciliation/queue';
+import { writePendingSnapshot, type ReconciliationPendingSnapshot } from '@/lib/reconciliation/resume';
+import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
 import type {
   ImportReviewDecisions,
