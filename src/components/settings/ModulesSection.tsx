@@ -34,7 +34,8 @@ import {
   type AppModule,
   type SettingsCardState,
 } from '@/lib/moduleVisibility';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showSuccess } from '@/hooks/useStatusFeedback';
+import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
 
 
 interface ModulesSectionProps {
