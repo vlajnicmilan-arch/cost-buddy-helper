@@ -81,6 +81,7 @@ export const ModulesSection = ({
   const moduleStates = useModuleStates();
   const { getGrant } = useMyActiveModuleGrants();
   const [showKrugDisableConfirm, setShowKrugDisableConfirm] = useState(false);
+  const [upgradeFor, setUpgradeFor] = useState<UpgradeModule | null>(null);
 
   if (isLocalMode) return null;
 
