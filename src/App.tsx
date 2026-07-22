@@ -13,6 +13,8 @@ import { ReceiptScanProvider } from "@/contexts/ReceiptScanContext";
 import { GlobalReceiptScanHost } from "@/components/add-expense/GlobalReceiptScanHost";
 import { PdfImportProvider } from "@/contexts/PdfImportContext";
 import { GlobalPDFImportHost } from "@/components/pdf-import/GlobalPDFImportHost";
+import { CorrectionDeleteConfirmHost } from "@/components/CorrectionDeleteConfirmHost";
+
 import { DecisionScanProvider } from "@/contexts/DecisionScanContext";
 import { GlobalDecisionCaptureHost } from "@/components/projects/GlobalDecisionCaptureHost";
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
