@@ -31,7 +31,8 @@ import {
   setTransferDecision,
   summarize,
 } from '@/lib/importReview/state';
-import { executeDecisions, type ExecutorResult } from '@/lib/importReview/executor';
+import { executeDecisions, type ExecutorResult, type ReconciliationSummaryEntry } from '@/lib/importReview/executor';
+import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reconciliation/queue';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
 import type {
   ImportReviewDecisions,
@@ -165,6 +166,10 @@ const ImportReview = () => {
         transfers: result.transfersCreated,
         skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
       }));
+
+      // FAZA 3 — enqueue ReconciliationDialog za sve sourceove s |delta|>0.01.
+      await enqueueReconciliationForBatch(result.reconciliationSummary, result.batchId, payload);
+
       navigate('/app');
     } catch (e) {
       try {
