@@ -36,6 +36,8 @@ import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reco
 import { writePendingSnapshot, type ReconciliationPendingSnapshot } from '@/lib/reconciliation/resume';
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
+import { openImportBatch } from '@/lib/importUndo/host';
+import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
 import type {
   ImportReviewDecisions,
   ImportReviewPayload,
@@ -162,12 +164,22 @@ const ImportReview = () => {
 
       clearDraft();
       clearPayload();
+      const batchId = result.batchId;
       toast.success(t('importReview.confirmedSummaryV2', {
         merged: result.merged,
         inserted: result.inserted,
         transfers: result.transfersCreated,
         skipped: result.skippedByUser + result.skippedFingerprint + result.skippedMerged + result.skippedDuplicate,
-      }));
+      }), {
+        duration: 10000,
+        action: batchId ? {
+          label: t('importBatch.undoActionShort'),
+          onClick: () => openImportBatch(batchId, () => {
+            // Ako je uvoz poništen, sve reconciliation stavke za taj batch više nemaju smisla.
+            clearReconciliationQueue();
+          }),
+        } : undefined,
+      });
 
       // FAZA 3 — enqueue ReconciliationDialog za sve sourceove s |delta|>0.01.
       await enqueueReconciliationForBatch(result.reconciliationSummary, result.batchId, payload);

@@ -31,6 +31,8 @@ import {
 } from '@/lib/reconciliation/queue';
 import { alignToBank, keepMine, type ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { toDayKey } from '@/lib/dayKey';
+import { openImportBatch } from '@/lib/importUndo/host';
+import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
 
 export function ReconciliationDialogHost() {
   const { t, i18n } = useTranslation();
@@ -193,6 +195,20 @@ export function ReconciliationDialogHost() {
               </span>
             </div>
           )}
+        </div>
+
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (!active?.batchId) return;
+              openImportBatch(active.batchId, () => clearReconciliationQueue());
+            }}
+            disabled={busy !== null || !active?.batchId}
+            className="w-full text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 py-1 disabled:opacity-50"
+          >
+            {t('reconciliation.undoImportLink')}
+          </button>
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
