@@ -22,6 +22,7 @@ import { FolderKanban, PiggyBank, Users, User, Check, X, Plus } from 'lucide-rea
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useMyKrugs } from '@/hooks/useKrug';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 export type KrugPrivacy = 'personal' | 'shared';
 
@@ -252,6 +253,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
   const { t } = useTranslation();
   const [openChip, setOpenChip] = useState<ChipTone | null>(null);
   const { data: krugs = [] } = useMyKrugs();
+  const { requestModule } = useModuleGate();
 
   const projects = props.projects ?? [];
   const budgets = (props.budgets ?? []).filter((b) => b.is_active !== false);
@@ -268,6 +270,7 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
 
   const close = () => setOpenChip(null);
   const krugStyles = toneStyles.krug;
+  const runKrugWrite = (action: () => void) => requestModule('krug', { onGranted: action });
 
   return (
     <div className="flex items-stretch gap-1.5">
@@ -344,9 +347,15 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                 }`
               : null
           }
-          onClear={() => props.onKrugChange?.({ krugId: null, privacy: null })}
+          onClear={() => runKrugWrite(() => props.onKrugChange?.({ krugId: null, privacy: null }))}
           open={openChip === 'krug'}
-          onOpenChange={(o) => setOpenChip(o ? 'krug' : null)}
+          onOpenChange={(o) => {
+            if (!o) {
+              setOpenChip(null);
+              return;
+            }
+            requestModule('krug', { onGranted: () => setOpenChip('krug') });
+          }}
         >
           <div className="flex flex-col max-h-[380px]">
             <div className="px-3 py-2 border-b border-border/50">
@@ -366,10 +375,10 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                       // korisnik mora eksplicitno kliknuti Moje / Za Krug. Bez skrivenog defaulta.
                       const nextPrivacy =
                         props.krugId === k.id ? (props.krugPrivacy ?? null) : null;
-                      props.onKrugChange?.({
+                      runKrugWrite(() => props.onKrugChange?.({
                         krugId: k.id,
                         privacy: nextPrivacy,
-                      });
+                      }));
                     }}
                     className={cn(
                       'w-full px-3 py-2 flex items-center gap-2.5 text-sm transition-colors hover:bg-muted/60',
@@ -413,8 +422,10 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     type="button"
                     data-testid="krug-privacy-personal"
                     onClick={() => {
-                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'personal' });
-                      close();
+                      runKrugWrite(() => {
+                        props.onKrugChange?.({ krugId: props.krugId!, privacy: 'personal' });
+                        close();
+                      });
                     }}
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',
@@ -430,8 +441,10 @@ export const AttachmentBar = (props: AttachmentBarProps) => {
                     type="button"
                     data-testid="krug-privacy-shared"
                     onClick={() => {
-                      props.onKrugChange?.({ krugId: props.krugId!, privacy: 'shared' });
-                      close();
+                      runKrugWrite(() => {
+                        props.onKrugChange?.({ krugId: props.krugId!, privacy: 'shared' });
+                        close();
+                      });
                     }}
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1',

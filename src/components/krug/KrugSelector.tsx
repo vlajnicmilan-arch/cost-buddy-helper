@@ -11,6 +11,7 @@
  * roditelj taj slučaj mapira u UI kao `personal` i preserva izvornu vrijednost
  * u bazi dok korisnik ne promijeni izbor.
  */
+import { useState } from 'react';
 import { Users, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -23,6 +24,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useMyKrugs } from '@/hooks/useKrug';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 export type KrugSelectorPrivacy = 'personal' | 'shared';
 
@@ -44,20 +46,26 @@ export const KrugSelector = ({
 }: KrugSelectorProps) => {
   const { t } = useTranslation();
   const { data: krugs = [], isLoading } = useMyKrugs();
+  const { requestModule } = useModuleGate();
+  const [open, setOpen] = useState(false);
 
   // Ne prikazujemo selector ako korisnik nema nijedan Krug — nema što ponuditi.
   if (!isLoading && krugs.length === 0) return null;
 
   const handleKrugChange = (value: string) => {
-    if (value === 'none') {
-      onChange({ krugId: null, privacy: 'personal' });
-    } else {
-      onChange({ krugId: value, privacy: privacy });
-    }
+    requestModule('krug', {
+      onGranted: () => {
+        if (value === 'none') {
+          onChange({ krugId: null, privacy: 'personal' });
+        } else {
+          onChange({ krugId: value, privacy: privacy });
+        }
+      },
+    });
   };
 
   const handlePrivacyChange = (next: KrugSelectorPrivacy) => {
-    onChange({ krugId, privacy: next });
+    requestModule('krug', { onGranted: () => onChange({ krugId, privacy: next }) });
   };
 
   return (
@@ -68,6 +76,14 @@ export const KrugSelector = ({
       </Label>
 
       <Select
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setOpen(false);
+            return;
+          }
+          requestModule('krug', { onGranted: () => setOpen(true) });
+        }}
         value={krugId ?? 'none'}
         onValueChange={handleKrugChange}
         disabled={disabled || isLoading}
