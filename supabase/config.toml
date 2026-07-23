@@ -12,8 +12,6 @@ project_id = "fzalxjretvtvokiotvkf"
   port = 54322
 
 [functions]
-  [functions.accept-invitation]
-    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.auto-reject-pending]
@@ -34,8 +32,6 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = true
   [functions.analyze-document]
     verify_jwt = true
-  [functions.eracuni-proxy]
-    verify_jwt = false
   [functions.lookup-company]
     verify_jwt = false
   [functions.notify-note-added]
@@ -58,9 +54,6 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = false
   [functions.trial-reminder]
     verify_jwt = false
-  # TEMPORARY AUDIT TOOL — delete this block after verdict
-  [functions.run-security-audit]
-    verify_jwt = true
   [functions.send-transactional-email]
     verify_jwt = true
   [functions.preview-transactional-email]
