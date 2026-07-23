@@ -21,6 +21,7 @@ export interface ActiveIssue {
   data: Record<string, unknown>;
   created_at: string;
   last_seen_at: string;
+  recurrence_count: number;
 }
 
 const SEVERITY_RANK: Record<IssueSeverity, number> = {
