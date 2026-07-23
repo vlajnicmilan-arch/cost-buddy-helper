@@ -490,6 +490,26 @@ async function spec06_aiAndExports(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
+  // Preflight: idempotentno pobrisati sve sec-* krug zaostatke iz prethodnih runova
+  // (ownership UNIQUE(krug_id) je rušio setup ako je prošli run pao mid-flight).
+  try {
+    const a = admin();
+    const { data: old } = await a.from('krug').select('id')
+      .in('created_by', [ctx.aId, ctx.bId]);
+    const ids = (old ?? []).map((k: any) => k.id);
+    if (ids.length) {
+      await a.from('krug_shared_payment_source').delete().in('krug_id', ids);
+      await a.from('krug_membership').delete().in('krug_id', ids);
+      await a.from('krug_ownership').delete().in('krug_id', ids);
+      await a.from('krug').delete().in('id', ids);
+    }
+    // Također počisti eventualne dangling ownership/membership retke bez krug parenta
+    await a.from('krug_membership').delete().in('user_id', [ctx.aId, ctx.bId]);
+    await a.from('krug_ownership').delete().in('user_id', [ctx.aId, ctx.bId]);
+  } catch (e) {
+    return [{ name: '07.preflight', status: 'FAIL', severity: 'MEDIUM', note: `preflight cleanup: ${(e as Error).message}` }];
+  }
+
   let krugId: string;
   try {
     krugId = await createKrug(ctx.aId, 'sec-krug');
