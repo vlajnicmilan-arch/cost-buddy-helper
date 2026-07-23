@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -6,32 +6,61 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Scale, Target } from 'lucide-react';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import type { ProjectMilestone } from '@/types/project';
+import { supabase } from '@/integrations/supabase/client';
 import { MILESTONE_STATUS_LABELS } from '@/types/project';
 
+interface InvestorPhaseRow {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  status: keyof typeof MILESTONE_STATUS_LABELS | string;
+  start_date: string | null;
+  due_date: string | null;
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+  sort_order: number | null;
+  investor_price: number | null;
+}
+
 interface Props {
-  milestones: ProjectMilestone[];
-  loading?: boolean;
+  projectId: string;
 }
 
 /**
  * Investor-only pregled faza projekta.
  *
  * NAMJERNO ne prikazuje: milestone.budget, milestone.spent, is_contingency
- * rezervu, ni bilo koji drugi INTERNI trošak izvođača. Prikazani su isključivo
- * podaci koji su dogovoreni prema investitoru:
- *   - naziv i opis
- *   - status
- *   - datumi (planirani i stvarni)
- *   - "Prema investitoru" iznos (investor_price) — snapshot iz odobrene odluke
+ * rezervu, ni bilo koji drugi INTERNI trošak izvođača.
+ *
+ * Sigurnosno: investitor nema RLS pristup `project_milestones` — koristi se
+ * definer RPC `get_investor_project_phases` koja vraća isključivo whitelistane
+ * kolone (bez `budget`).
  */
-export const InvestorPhasesView = ({ milestones, loading }: Props) => {
+export const InvestorPhasesView = ({ projectId }: Props) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const [rows, setRows] = useState<InvestorPhaseRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    supabase
+      .rpc('get_investor_project_phases' as never, { _project_id: projectId } as never)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setRows(((data as unknown) as InvestorPhaseRow[]) ?? []);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   const sorted = useMemo(
-    () => [...milestones].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-    [milestones],
+    () => [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    [rows],
   );
   const completed = sorted.filter((m) => m.status === 'completed').length;
 
@@ -63,8 +92,8 @@ export const InvestorPhasesView = ({ milestones, loading }: Props) => {
       </div>
 
       {sorted.map((m) => {
-        const statusKey = m.status;
-        const statusLabel = t(`milestoneStatus.${statusKey}`, MILESTONE_STATUS_LABELS[statusKey]);
+        const statusKey = m.status as keyof typeof MILESTONE_STATUS_LABELS;
+        const statusLabel = t(`milestoneStatus.${m.status}`, MILESTONE_STATUS_LABELS[statusKey] ?? String(m.status));
         return (
           <div key={m.id} className="p-4 rounded-lg border space-y-2">
             <div className="flex items-start justify-between gap-3">
@@ -99,13 +128,13 @@ export const InvestorPhasesView = ({ milestones, loading }: Props) => {
               </div>
             )}
 
-            {m.investor_price != null && m.investor_price > 0 && (
+            {m.investor_price != null && Number(m.investor_price) > 0 && (
               <div className="pt-2 border-t flex items-center justify-between text-sm">
                 <span className="inline-flex items-center gap-1 text-muted-foreground">
                   <Scale className="w-3.5 h-3.5" />
                   {t('projects.investor.priceLabel', 'Prema investitoru')}
                 </span>
-                <span className="font-medium">{formatAmount(m.investor_price)}</span>
+                <span className="font-medium">{formatAmount(Number(m.investor_price))}</span>
               </div>
             )}
           </div>
