@@ -574,7 +574,7 @@ function summarizeRedCandidates(all: { spec: string; results: Verdict[] }[]) {
     investor_worker_payouts: { desc: 'investor čita project_worker_payouts', ...find('03-investor-scope', '03.2') },
     investor_work_entries: { desc: 'investor čita project_work_entries', ...find('03-investor-scope', '03.3') },
     investor_project_documents: { desc: 'investor čita project_documents', ...find('03-investor-scope', '03.6') },
-    investor_milestone_total_budget: { desc: 'investor čita milestone.total_budget', ...find('03-investor-scope', '03.7') },
+    investor_milestone_budget: { desc: 'investor čita milestone.budget (real col; total_budget ne postoji)', ...find('03-investor-scope', '03.7') },
   };
 }
 
