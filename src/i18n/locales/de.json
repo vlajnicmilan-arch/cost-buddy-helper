@@ -2157,6 +2157,9 @@
       "scanCancelled": "Scan wurde abgebrochen. Bitte erneut versuchen.",
       "scanFailed": "Beleg konnte nicht gescannt werden"
     },
+    "ai": {
+      "capReached": "Die KI-Verarbeitung ist bis zum 1. des nächsten Monats vorübergehend pausiert. Wir entschuldigen uns für die Unannehmlichkeiten."
+    },
     "pdf": {
       "loginRequired": "Sie müssen angemeldet sein, um Auszüge zu analysieren",
       "rateLimit": "Zu viele Anfragen. Bitte in einer Minute erneut versuchen.",
