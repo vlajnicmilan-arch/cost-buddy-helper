@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
@@ -69,6 +70,8 @@ VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema matcheva, vrati: []
 Primjer: [{"transaction_index": 1, "recurring_index": 2, "confidence": "high"}]`;
 
+    const __cap = await checkAiCostCap(auth.supabase);
+    if (__cap) return __cap;
     const response = await callGemini({
       model: "google/gemini-2.5-flash-lite",
       messages: [
@@ -85,6 +88,7 @@ Primjer: [{"transaction_index": 1, "recurring_index": 2, "confidence": "high"}]`
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      recordAiCost(auth.supabase, "match-recurring").catch(() => {});
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Credits exhausted", matches: [] }), {
           status: 402,

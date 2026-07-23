@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
   requireAuth,
@@ -40,6 +41,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    const __cap = await checkAiCostCap(auth.supabase);
+    if (__cap) return __cap;
     const response = await callGemini({
       model: "google/gemini-2.5-flash",
       messages: [
@@ -82,6 +85,7 @@ Do not include any other text or explanation.`
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      recordAiCost(auth.supabase, "scan-card").catch(() => {});
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "Payment required. Please add credits to your account." }),

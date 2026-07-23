@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
@@ -75,6 +76,8 @@ VAŽNO: Odgovori ISKLJUČIVO s JSON arrayem. Bez dodatnog teksta.
 Ako nema pozajmica, vrati: []
 Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable", "confidence": "high"}]`;
 
+    const __cap = await checkAiCostCap(auth.supabase);
+    if (__cap) return __cap;
     const response = await callGemini({
       model: "google/gemini-2.5-flash-lite",
       messages: [
@@ -94,6 +97,7 @@ Primjer odgovora: [{"index": 1, "contact_name": "Milan Horvat", "type": "payable
       console.error("AI API error:", response.status, errText);
       throw new Error(`AI API error: ${response.status}`);
     }
+    recordAiCost(auth.supabase, "detect-loans").catch(() => {});
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "[]";

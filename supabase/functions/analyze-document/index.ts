@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 import { robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
@@ -87,6 +88,8 @@ Deno.serve(async (req) => {
 }${contextBlock}
 Vrati SAMO JSON, bez markdowna ili dodatnog teksta.`;
 
+    const __cap = await checkAiCostCap(auth.supabase);
+    if (__cap) return __cap;
     const aiRes = await callGemini({
       model: 'google/gemini-2.5-flash',
       messages: [
@@ -112,6 +115,7 @@ Vrati SAMO JSON, bez markdowna ili dodatnog teksta.`;
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      recordAiCost(auth.supabase, "analyze-document").catch(() => {});
       if (aiRes.status === 402) {
         return new Response(JSON.stringify({ error: 'Payment required, please add credits to your Lovable workspace.' }), {
           status: 402,
