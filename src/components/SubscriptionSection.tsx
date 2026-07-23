@@ -6,10 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Compass, Users, FolderKanban, Building2, Loader2, Zap, ShieldCheck } from 'lucide-react';
+import { Compass, Users, FolderKanban, Building2, Loader2, Zap, ShieldCheck, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr as hrLocale } from 'date-fns/locale';
+import { showError } from '@/hooks/useStatusFeedback';
 
 type Module = 'smjer' | 'krug' | 'projekti' | 'biznis';
 
@@ -19,6 +20,7 @@ interface EntitlementRow {
   status: string;
   period_end: string | null;
   billing_cycle: 'monthly' | 'yearly' | 'lifetime' | 'trial' | null;
+  metadata: Record<string, unknown> | null;
 }
 
 const MODULE_META: Record<Module, { icon: typeof Compass; nameKey: string; defaultName: string }> = {
@@ -36,6 +38,7 @@ export const SubscriptionSection = () => {
 
   const [rows, setRows] = useState<EntitlementRow[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +48,7 @@ export const SubscriptionSection = () => {
       const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from('user_entitlements')
-        .select('module, source, status, period_end, billing_cycle')
+        .select('module, source, status, period_end, billing_cycle, metadata')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .or(`period_end.is.null,period_end.gt.${nowIso}`);
@@ -54,11 +57,9 @@ export const SubscriptionSection = () => {
       if (error) {
         setRows([]);
       } else {
-        // Prikaz samo pravih modula (bez legacy pseudo-modula).
         const filtered = (data || []).filter((r: any) =>
           ['smjer', 'krug', 'projekti', 'biznis'].includes(r.module)
         );
-        // Ako je više redova za isti modul, prioritet paddle > admin_grant > migration > trial.
         const rank = (s: string) =>
           s === 'paddle' ? 4 : s === 'admin_grant' ? 3 : s === 'migration' ? 2 : 1;
         const byModule = new Map<Module, EntitlementRow>();
@@ -79,6 +80,27 @@ export const SubscriptionSection = () => {
 
   if (storageMode !== 'cloud') return null;
 
+  const hasPaddle = !!rows?.some((r) => r.source === 'paddle');
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('paddle-portal-url', {
+        method: 'POST',
+      });
+      const url = (data as { url?: string } | null)?.url;
+      if (error || !url) {
+        showError(t('subscription.portalError', 'Nije moguće otvoriti Paddle portal. Pokušajte kasnije ili nam pišite na support@vmbalance.com.'));
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      showError(t('subscription.portalError', 'Nije moguće otvoriti Paddle portal. Pokušajte kasnije ili nam pišite na support@vmbalance.com.'));
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   const sourceLabel = (r: EntitlementRow) => {
     switch (r.source) {
       case 'paddle':      return t('subscription.source.paddle', 'Pretplata');
@@ -98,6 +120,11 @@ export const SubscriptionSection = () => {
     }
   };
 
+  const scheduledCancelAt = (r: EntitlementRow): string | null => {
+    const m = r.metadata as { scheduled_cancel_at?: string } | null;
+    return m?.scheduled_cancel_at ?? null;
+  };
+
   return (
     <>
       <Separator />
@@ -107,7 +134,7 @@ export const SubscriptionSection = () => {
             {t('subscription.title', 'Pretplata')}
           </h3>
           <p className="text-xs text-muted-foreground">
-            {t('subscription.subtitle', 'Stanje po modulima. Otkazivanje i promjena paketa dolazi uskoro.')}
+            {t('subscription.subtitle', 'Stanje po modulima. Otkaz, promjena kartice i računi dostupni su preko Paddle portala.')}
           </p>
         </div>
 
@@ -139,6 +166,7 @@ export const SubscriptionSection = () => {
               const cycle = cycleLabel(r);
               const isTrial = r.source === 'trial';
               const isAdmin = r.source === 'admin_grant';
+              const cancelAt = scheduledCancelAt(r);
               return (
                 <div
                   key={m}
@@ -161,11 +189,18 @@ export const SubscriptionSection = () => {
                           {t('subscription.badge.admin', 'Admin')}
                         </Badge>
                       )}
+                      {cancelAt && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                          {t('subscription.badge.scheduledCancel', 'Otkazano')}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {sourceLabel(r)}
                       {cycle ? ` · ${cycle}` : ''}
-                      {r.period_end
+                      {cancelAt
+                        ? ` · ${t('subscription.activeUntil', 'aktivno do')} ${format(new Date(cancelAt), 'dd.MM.yyyy.', { locale: hrLocale })}`
+                        : r.period_end
                         ? ` · ${t('subscription.validUntil', 'vrijedi do')} ${format(new Date(r.period_end), 'dd.MM.yyyy.', { locale: hrLocale })}`
                         : ''}
                     </p>
@@ -173,10 +208,36 @@ export const SubscriptionSection = () => {
                 </div>
               );
             })}
+
+            {hasPaddle && (
+              <div className="pt-1 space-y-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg gap-1.5 w-full sm:w-auto"
+                  onClick={openPortal}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  )}
+                  {t('subscription.managePortal', 'Upravljaj pretplatom')}
+                </Button>
+                <p className="text-[11px] text-muted-foreground px-1">
+                  {t(
+                    'subscription.portalHint',
+                    'Otvara Paddle — otkaži, promijeni karticu ili preuzmi račune.'
+                  )}
+                </p>
+              </div>
+            )}
+
             <p className="text-[11px] text-muted-foreground px-1 pt-1">
               {t(
                 'subscription.cancelHint',
-                'Otkazivanje pretplate uskoro dostupno unutar aplikacije. Do tada nam pišite na support@vmbalance.com.'
+                'Za dodatna pitanja pišite nam na support@vmbalance.com.'
               )}
             </p>
           </div>
