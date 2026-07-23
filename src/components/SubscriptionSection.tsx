@@ -233,6 +233,19 @@ export const SubscriptionSection = () => {
               </div>
             )}
 
+            <div className="pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-lg gap-1.5 w-full sm:w-auto"
+                onClick={() => navigate('/paywall?shop=1')}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                {t('subscription.shopMore', 'Cjenik i nadogradnja')}
+              </Button>
+            </div>
+
+
             <p className="text-[11px] text-muted-foreground px-1 pt-1">
               {t(
                 'subscription.cancelHint',

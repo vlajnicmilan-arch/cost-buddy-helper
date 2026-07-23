@@ -197,6 +197,14 @@
     "checkoutSuccess": "Hvala — pretplata se aktivira. Može potrajati koju sekundu.",
     "notSignedIn": "Prijava potrebna za nastavak.",
     "pricesError": "Greška pri učitavanju cijena. Pokušaj ponovno.",
+    "activeBadge": "Aktivno",
+    "activeCta": "Aktivno",
+    "overlap": {
+      "title": "Već imaš aktivnu pretplatu",
+      "body": "Već imaš aktivnu pretplatu: {{modules}}. Komplet je ZASEBNA pretplata — nakon aktivacije Kompleta otkaži pojedinačnu kroz „Upravljaj pretplatom“ da ne plaćaš dvostruko.",
+      "continue": "Nastavi na Komplet",
+      "cancel": "Odustani"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
@@ -5570,6 +5578,7 @@
     "subtitle": "Stanje po modulima. Otkaz, promjena kartice i računi dostupni su preko Paddle portala.",
     "none": "Nemaš aktivnih pretplata.",
     "viewPricing": "Pogledaj cjenik",
+    "shopMore": "Cjenik i nadogradnja",
     "validUntil": "vrijedi do",
     "activeUntil": "aktivno do",
     "managePortal": "Upravljaj pretplatom",

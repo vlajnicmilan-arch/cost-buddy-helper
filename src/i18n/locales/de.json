@@ -197,6 +197,14 @@
     "checkoutSuccess": "Danke — dein Abo wird aktiviert. Es kann einige Sekunden dauern.",
     "notSignedIn": "Anmeldung erforderlich.",
     "pricesError": "Preise konnten nicht geladen werden. Bitte erneut versuchen.",
+    "activeBadge": "Aktiv",
+    "activeCta": "Aktiv",
+    "overlap": {
+      "title": "Du hast bereits ein aktives Abo",
+      "body": "Du hast bereits ein aktives Abo: {{modules}}. Komplet ist ein SEPARATES Abo — kündige nach der Aktivierung von Komplet das Einzelabo über „Abo verwalten“, damit du nicht doppelt zahlst.",
+      "continue": "Weiter zu Komplet",
+      "cancel": "Abbrechen"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
@@ -5560,6 +5568,7 @@
     "subtitle": "Status pro Modul. Kündigung, Kartenwechsel und Rechnungen sind über das Paddle-Portal verfügbar.",
     "none": "Keine aktiven Abonnements.",
     "viewPricing": "Preise ansehen",
+    "shopMore": "Preise & Upgrades",
     "validUntil": "gültig bis",
     "activeUntil": "aktiv bis",
     "managePortal": "Abonnement verwalten",
