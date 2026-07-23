@@ -368,7 +368,8 @@ async function executeTool(
   args: Record<string, any>,
   userId: string,
   supabase: any,
-  businessProfileId: string | null
+  businessProfileId: string | null,
+  ctx: { sessionId: string | null; pendingProposals: PendingProposal[] }
 ): Promise<string> {
   try {
     switch (toolName) {
