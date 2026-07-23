@@ -3,6 +3,12 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "subscription.badge.trial": "Same word in EN",
+    "subscription.badge.admin": "Admin terminology",
+    "subscription.module.smjer": "Module brand name",
+    "subscription.module.krug": "Module brand name",
+    "subscription.module.projekti": "Module brand name",
+    "subscription.module.biznis": "Module brand name",
     "paywall.free.name": "Plan name",
     "landing.pricing.pro.name": "Plan name",
     "landing.pricing.pro.price": "Price value",
@@ -104,6 +110,11 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.delete.votePanel.progress": "Placeholder-only counter",
   },
   de: {
+    "subscription.badge.admin": "Admin terminology",
+    "subscription.module.smjer": "Module brand name",
+    "subscription.module.krug": "Module brand name",
+    "subscription.module.projekti": "Module brand name",
+    "subscription.module.biznis": "Module brand name",
     "landing.pricing.pro.name": "Plan name",
     "landing.pricing.pro.price": "Price value",
     "landing.pricing.business.price": "Price value",

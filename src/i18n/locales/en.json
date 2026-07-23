@@ -5550,5 +5550,39 @@
       "errorAuth": "Session expired. Refresh the page.",
       "errorGeneric": "Activation failed. Please try again."
     }
+  },
+  "subscription": {
+    "title": "Subscription",
+    "subtitle": "Status by module. Cancel, change card and invoices are available via the Paddle portal.",
+    "none": "No active subscriptions.",
+    "viewPricing": "View pricing",
+    "validUntil": "valid until",
+    "activeUntil": "active until",
+    "managePortal": "Manage subscription",
+    "portalHint": "Opens Paddle — cancel, change card or download invoices.",
+    "portalError": "Unable to open the Paddle portal. Please try again later or email support@vmbalance.com.",
+    "cancelHint": "For further questions, email us at support@vmbalance.com.",
+    "source": {
+      "paddle": "Subscription",
+      "trial": "Trial",
+      "admin": "Admin granted",
+      "migration": "Legacy"
+    },
+    "cycle": {
+      "monthly": "monthly",
+      "yearly": "yearly",
+      "lifetime": "lifetime"
+    },
+    "badge": {
+      "trial": "Trial",
+      "admin": "Admin",
+      "scheduledCancel": "Canceled"
+    },
+    "module": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projekti",
+      "biznis": "Biznis"
+    }
   }
 }

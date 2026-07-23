@@ -5550,5 +5550,39 @@
       "errorAuth": "Sitzung abgelaufen. Bitte Seite neu laden.",
       "errorGeneric": "Aktivierung fehlgeschlagen. Bitte erneut versuchen."
     }
+  },
+  "subscription": {
+    "title": "Abonnement",
+    "subtitle": "Status pro Modul. Kündigung, Kartenwechsel und Rechnungen sind über das Paddle-Portal verfügbar.",
+    "none": "Keine aktiven Abonnements.",
+    "viewPricing": "Preise ansehen",
+    "validUntil": "gültig bis",
+    "activeUntil": "aktiv bis",
+    "managePortal": "Abonnement verwalten",
+    "portalHint": "Öffnet Paddle — kündigen, Karte ändern oder Rechnungen herunterladen.",
+    "portalError": "Paddle-Portal kann nicht geöffnet werden. Bitte später erneut versuchen oder support@vmbalance.com schreiben.",
+    "cancelHint": "Für weitere Fragen schreiben Sie uns an support@vmbalance.com.",
+    "source": {
+      "paddle": "Abonnement",
+      "trial": "Testphase",
+      "admin": "Admin zugewiesen",
+      "migration": "Übernommen"
+    },
+    "cycle": {
+      "monthly": "monatlich",
+      "yearly": "jährlich",
+      "lifetime": "unbefristet"
+    },
+    "badge": {
+      "trial": "Testphase",
+      "admin": "Admin",
+      "scheduledCancel": "Gekündigt"
+    },
+    "module": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projekti",
+      "biznis": "Biznis"
+    }
   }
 }
