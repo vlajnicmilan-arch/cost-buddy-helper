@@ -552,6 +552,8 @@ Vrati SAMO JSON bez dodatnog teksta.`;
     };
 
     // Use Flash for receipt OCR. Pro was too slow on native scans and caused 503 before the UI got a result.
+    const __cap = await checkAiCostCap(supabase);
+    if (__cap) { if (!skipQuota) await refundCoreScanQuota(supabase); return __cap; }
     let aiResponse = await callAiGateway(LOVABLE_API_KEY, aiPayload);
 
     if (aiResponse.status >= 500) {
