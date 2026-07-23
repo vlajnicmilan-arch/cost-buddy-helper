@@ -270,12 +270,12 @@ export const ModulesSection = ({
       <div className="space-y-3">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            {t('settings.modules.title', 'Moduli')}
+            {t('settings.modules.displayTitle', 'Prikaz u aplikaciji')}
           </h3>
           <p className="text-xs text-muted-foreground">
             {t(
-              'settings.modules.subtitle',
-              'Uključi samo ono što ti treba — sučelje ostaje čisto.'
+              'settings.modules.displaySubtitle',
+              'Sakrij module koje ne koristiš — sučelje ostaje čisto. Ne utječe na pretplatu.'
             )}
           </p>
         </div>
