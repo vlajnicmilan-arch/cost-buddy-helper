@@ -137,18 +137,24 @@ describe("centar lightbox state machine — history integrity", () => {
     expect(backCount(effects)).toBe(20);
   });
 
-  it("mješoviti scenarij X → mobile back → X — push==back, idle", () => {
+  it("mješoviti scenarij X → mobile back → X — history ostaje čista, idle", () => {
+    // Mobilni popstate KONZUMIRA marker (browser ga sam pop-a), pa taj
+    // ciklus ima push ali BEZ našeg back-a. Ipak, cijeli lanac završi u idle
+    // i history je bez leaka jer je svaki push u nekom trenutku pop-nut
+    // (bilo našim back-om, bilo browser-ovim).
     const { phases, effects } = runScript([
       "user_open",
       "user_close",
       "popstate", // naš back
       "user_open",
-      "popstate", // mobilni back gesta
+      "popstate", // mobilni back gesta (browser pop-a marker sam)
       "user_open",
       "user_close",
       "popstate",
     ]);
     expect(phases.at(-1)).toBe("idle");
-    expect(pushCount(effects)).toBe(backCount(effects));
+    expect(pushCount(effects)).toBe(3);
+    expect(backCount(effects)).toBe(2); // treći marker je konzumirao browser
   });
 });
+
