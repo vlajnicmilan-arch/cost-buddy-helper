@@ -5617,7 +5617,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          display_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _extract_custom_source_id: {
@@ -5877,6 +5891,22 @@ export type Database = {
           transactions_limit: number
         }[]
       }
+      get_investor_project_phases: {
+        Args: { _project_id: string }
+        Returns: {
+          actual_end_date: string
+          actual_start_date: string
+          description: string
+          due_date: string
+          id: string
+          investor_price: number
+          name: string
+          project_id: string
+          sort_order: number
+          start_date: string
+          status: string
+        }[]
+      }
       get_krug_shared_source_display: {
         Args: { _krug_id: string }
         Returns: {
@@ -5998,11 +6028,19 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_project_investor: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       is_project_owner: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_participant_active: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
