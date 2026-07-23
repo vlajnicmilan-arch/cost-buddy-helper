@@ -1476,6 +1476,8 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      recordAiCost(supabaseAuth, "financial-assistant").catch(() => {});
+
 
       if (isLastPossibleRound) {
         // For streaming responses, we need to tee the stream to capture content for DB save
