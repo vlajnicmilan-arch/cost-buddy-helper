@@ -1,18 +1,31 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import bodyHtml from "./CentarLanding.body.html?raw";
+import bodyHtmlHr from "./CentarLanding.body.html?raw";
+import bodyHtmlEn from "./CentarLanding.body.en.html?raw";
+import bodyHtmlDe from "./CentarLanding.body.de.html?raw";
 import "./CentarLanding.css";
 
 /**
- * CentarLanding — statički landing, s runtime nadogradnjama:
- *   1. Lightbox za screenshote (klik/tap na sliku → fullscreen overlay).
+ * CentarLanding — statički landing s runtime nadogradnjama:
+ *   1. Lightbox za screenshote (klik → fullscreen overlay + Esc/backdrop/back gesta).
  *   2. Prebacivanje svjetla/tamna tema (localStorage: centar-theme).
+ *   3. Jezik: HR | EN | DE (localStorage: centar-lang; postavlja <html lang>).
  *
- * Sadržaj markupa (body HTML) ostaje DOSLOVAN — svi tekstovi u
- * CentarLanding.body.html. Toolbar (tema + jezik) renderira React
- * iznad `dangerouslySetInnerHTML` sadržaja, pa ne kontaminira izvor.
+ * Body sadržaj (svaki jezik u zasebnoj .body.<lang>.html datoteci) ubacuje se
+ * u kontejner preko dangerouslySetInnerHTML — sve tri jezične verzije nose
+ * identičan set klasa, pa CSS i JS efekti rade neovisno o jeziku. Toolbar
+ * (tema + jezik) renderira React iznad body sadržaja.
  */
 type Theme = "dark" | "light";
+type Lang = "hr" | "en" | "de";
+
 const THEME_KEY = "centar-theme";
+const LANG_KEY = "centar-lang";
+
+const BODY_BY_LANG: Record<Lang, string> = {
+  hr: bodyHtmlHr,
+  en: bodyHtmlEn,
+  de: bodyHtmlDe,
+};
 
 function readInitialTheme(): Theme {
   try {
@@ -24,11 +37,22 @@ function readInitialTheme(): Theme {
   return "dark";
 }
 
+function readInitialLang(): Lang {
+  try {
+    const v = localStorage.getItem(LANG_KEY);
+    if (v === "hr" || v === "en" || v === "de") return v;
+  } catch {
+    /* noop */
+  }
+  return "hr";
+}
+
 export default function CentarLanding() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<Theme>(readInitialTheme);
+  const [lang, setLang] = useState<Lang>(readInitialLang);
 
-  // Persist + apply theme to <body> too (background flash prevention).
+  // Persist + apply theme to <body> too (spriječava bijeli/tamni bljesak).
   useEffect(() => {
     try {
       localStorage.setItem(THEME_KEY, theme);
@@ -40,6 +64,21 @@ export default function CentarLanding() {
       document.body.removeAttribute("data-centar-theme");
     };
   }, [theme]);
+
+  // Persist + apply <html lang="..."> tijekom mounta landinga.
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch {
+      /* noop */
+    }
+    const prev = document.documentElement.getAttribute("lang");
+    document.documentElement.setAttribute("lang", lang);
+    return () => {
+      // Vrati na prethodni jezik pri unmountu (izlazak s landinga).
+      if (prev) document.documentElement.setAttribute("lang", prev);
+    };
+  }, [lang]);
 
   const toggleTheme = useCallback(() => {
     setTheme((t) => (t === "dark" ? "light" : "dark"));
@@ -72,7 +111,8 @@ export default function CentarLanding() {
     };
   }, []);
 
-  // Rise animation + APK resolver (body-scoped).
+  // Rise animacija + APK resolver — re-attach kad se promijeni jezik
+  // (jer se body innerHTML zamijeni pa su .rise/.js-apk elementi novi).
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
@@ -139,10 +179,10 @@ export default function CentarLanding() {
       io.disconnect();
       clickHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
     };
-  }, []);
+  }, [lang]);
 
   // Lightbox — event delegation na kontejneru; support Esc, klik na backdrop,
-  // browser back gesta (pushState + popstate).
+  // browser back gesta (pushState + popstate). Jezik ne utječe (radi delegacije).
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
@@ -173,7 +213,7 @@ export default function CentarLanding() {
       if (e.key === "Escape") closeOverlay();
     };
 
-    const onPop = (e: PopStateEvent) => {
+    const onPop = () => {
       if (overlay) {
         pushedState = false;
         closeOverlay(true);
@@ -218,7 +258,6 @@ export default function CentarLanding() {
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", onKey);
 
-      // pushState pattern — mobilna back gesta zatvara lightbox umjesto navigacije.
       try {
         history.pushState({ [HISTORY_TAG]: true }, "");
         pushedState = true;
@@ -250,33 +289,91 @@ export default function CentarLanding() {
     };
   }, []);
 
+  const langLabel: Record<Lang, string> = { hr: "HR", en: "EN", de: "DE" };
+  const themeLabel: Record<Theme, string> = {
+    dark:
+      lang === "hr"
+        ? "Prebaci na svijetlu temu"
+        : lang === "en"
+        ? "Switch to light theme"
+        : "Zum hellen Theme wechseln",
+    light:
+      lang === "hr"
+        ? "Prebaci na tamnu temu"
+        : lang === "en"
+        ? "Switch to dark theme"
+        : "Zum dunklen Theme wechseln",
+  };
+
   return (
-    <div
-      ref={containerRef}
-      className="centar-landing"
-      data-theme={theme}
-    >
-      <div className="centar-toolbar" role="toolbar" aria-label="Landing controls">
+    <div ref={containerRef} className="centar-landing" data-theme={theme}>
+      <div
+        className="centar-toolbar"
+        role="toolbar"
+        aria-label="Landing controls"
+      >
+        <div
+          className="centar-toolbar-lang"
+          role="group"
+          aria-label="Language"
+        >
+          {(["hr", "en", "de"] as const).map((code, i) => (
+            <span key={code} style={{ display: "inline-flex" }}>
+              {i > 0 && <span className="sep" aria-hidden="true">·</span>}
+              <button
+                type="button"
+                onClick={() => setLang(code)}
+                aria-pressed={lang === code}
+                aria-label={langLabel[code]}
+              >
+                {langLabel[code]}
+              </button>
+            </span>
+          ))}
+        </div>
         <button
           type="button"
           className="centar-toolbar-btn"
           onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Prebaci na svijetlu temu" : "Prebaci na tamnu temu"}
-          title={theme === "dark" ? "Svijetla tema" : "Tamna tema"}
+          aria-label={themeLabel[theme]}
+          title={themeLabel[theme]}
         >
           {theme === "dark" ? (
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           )}
         </button>
       </div>
-      <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      <div
+        key={lang}
+        dangerouslySetInnerHTML={{ __html: BODY_BY_LANG[lang] }}
+      />
     </div>
   );
 }
