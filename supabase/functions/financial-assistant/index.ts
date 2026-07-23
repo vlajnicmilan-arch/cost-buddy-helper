@@ -21,6 +21,56 @@ function fmtEUR(n: number): string {
   return `${Number(n).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
+// Wrap an SSE ReadableStream so pending proposal markers are streamed as
+// additional `data:` chunks just before `data: [DONE]`. If no proposals,
+// returns the stream unchanged.
+function wrapStreamWithProposals(
+  input: ReadableStream<Uint8Array>,
+  proposals: PendingProposal[],
+): ReadableStream<Uint8Array> {
+  if (proposals.length === 0) return input;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let injected = false;
+  const markerText = proposals.map(encodeProposalMarker).join("");
+  const markerSse = `data: ${JSON.stringify({ choices: [{ delta: { content: `\n\n${markerText}` } }] })}\n\n`;
+
+  const transform = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const doneIdx = buffer.indexOf("data: [DONE]");
+      if (doneIdx !== -1 && !injected) {
+        const before = buffer.slice(0, doneIdx);
+        const after = buffer.slice(doneIdx);
+        controller.enqueue(encoder.encode(before + markerSse + after));
+        buffer = "";
+        injected = true;
+      } else {
+        // flush what we have so far (keep small tail for [DONE] detection)
+        const safeIdx = Math.max(0, buffer.length - 32);
+        if (safeIdx > 0) {
+          controller.enqueue(encoder.encode(buffer.slice(0, safeIdx)));
+          buffer = buffer.slice(safeIdx);
+        }
+      }
+    },
+    flush(controller) {
+      if (!injected && buffer.length > 0) {
+        // No [DONE] seen — append markers then flush
+        controller.enqueue(encoder.encode(buffer + markerSse + "data: [DONE]\n\n"));
+      } else if (buffer.length > 0) {
+        controller.enqueue(encoder.encode(buffer));
+      } else if (!injected) {
+        controller.enqueue(encoder.encode(markerSse + "data: [DONE]\n\n"));
+      }
+    },
+  });
+
+  return input.pipeThrough(transform);
+}
+
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
