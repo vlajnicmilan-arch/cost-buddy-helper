@@ -344,7 +344,7 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
 async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('set_source_anchor', {
         p_source_id: sourceAId, p_anchor_ts: new Date().toISOString(),
@@ -355,7 +355,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('align_source_to_bank', {
         p_source_id: sourceAId, p_bank_balance: 1000, p_as_of: new Date().toISOString(),
@@ -365,7 +365,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('preview_source_balance_after_batch', {
         p_source_id: sourceAId, p_batch_id: '00000000-0000-0000-0000-000000000000',
@@ -376,7 +376,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const projectAId = await createProject(ctx.aClient, ctx.aId);
+    const projectAId = await createProject(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('soft_delete_record', { p_table: 'projects', p_id: projectAId });
       const { data: after } = await admin().from('projects').select('deleted_at').eq('id', projectAId).single();
@@ -398,8 +398,8 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
-  const memberRowId = await addProjectMember(ctx.aClient, projectId, ctx.bId, 'member');
+  const projectId = await createProject(ctx.aId);
+  const memberRowId = await addProjectMember(projectId, ctx.bId, 'member');
   try {
     let r: any = await ctx.bClient.from('projects').select('id').eq('id', projectId);
     results.push(verdict('05.1 prije uklanjanja B vidi projekt',
@@ -439,7 +439,7 @@ async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec06_aiAndExports(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  await createExpense(ctx.aClient, ctx.aId, { amount: 777, description: 'a-private' });
+  await createExpense(ctx.aId, { amount: 777, description: 'a-private' });
   try {
     // financial-assistant bez JWT — očekujemo 401/403 (ne troši Gemini)
     let r = await edgeFn('financial-assistant', { message: 'x', sessionId: 'x' }, null);
