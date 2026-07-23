@@ -433,14 +433,16 @@ function geminiToOpenAIResponse(data: any): any {
   for (const p of parts) {
     if (typeof p?.text === 'string') text += p.text;
     if (p?.functionCall) {
-      toolCalls.push({
+      const call: any = {
         id: `call_${toolCalls.length}_${Date.now()}`,
         type: 'function',
         function: {
           name: p.functionCall.name,
           arguments: JSON.stringify(p.functionCall.args ?? {}),
         },
-      });
+      };
+      if (p.thoughtSignature) call._thought_signature = p.thoughtSignature;
+      toolCalls.push(call);
     }
   }
 
