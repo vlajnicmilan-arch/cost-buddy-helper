@@ -24,6 +24,9 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useTranslation } from 'react-i18next';
 import { applyBrandFont, brandTableTheme, BRAND_TEAL, BRAND_TEAL_LIGHT, brandAutoTable } from '@/lib/pdfBranding';
+import { parseProposalMarkers } from '@/lib/aiProposal';
+import { AiProposalCard } from '@/components/AiProposalCard';
+
 
 interface BudgetInfo {
   name: string;
