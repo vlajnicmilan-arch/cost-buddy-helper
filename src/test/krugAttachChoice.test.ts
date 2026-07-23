@@ -52,7 +52,9 @@ describe('AttachmentBar — Krug tri-state (personal | shared | null)', () => {
   });
 
   it('Clear briše i krug i privacy (oboje null)', () => {
-    expect(src).toMatch(/onClear=\{\(\)\s*=>\s*props\.onKrugChange\?\.\(\{\s*krugId:\s*null,\s*privacy:\s*null\s*\}\)/);
+    expect(src).toMatch(
+      /onClear=\{\(\)\s*=>\s*runKrugWrite\(\(\)\s*=>\s*props\.onKrugChange\?\.\(\{\s*krugId:\s*null,\s*privacy:\s*null\s*\}\)\)\}/,
+    );
   });
 });
 
