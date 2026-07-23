@@ -1,0 +1,50 @@
+name: Security Audit (adversarial)
+
+# Adversarial RLS/edge/RPC test paket. Ne dira žive korisničke redove —
+# koristi sintetičke security+a@ / security+b@ usere s teardownom + baseline
+# parity provjerom. Koristi iste secrete kao stress e2e workflow.
+#
+# POKRETANJE:
+#   GitHub → Actions → "Security Audit (adversarial)" → Run workflow
+#
+# Rezultat: artefakt "security-audit-report" (Playwright report + counts).
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile
+      - name: Install Playwright (no browsers needed, but keep runner intact)
+        run: bunx playwright install-deps || true
+      - name: Run adversarial security suite
+        run: bun run test:security
+      - name: Upload artefakt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: |
+            e2e/security/.artifacts
+            test-results
+            playwright-report
+          retention-days: 30
+          if-no-files-found: ignore
