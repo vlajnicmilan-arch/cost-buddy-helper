@@ -420,10 +420,8 @@ async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
     results.push(verdict('05.3 nakon uklanjanja B NE može INSERT expense', r.error !== null,
       { severity: 'CRITICAL', surface: 'expenses', role: 'ex-member' }));
 
-    await ctx.aClient.from('expenses').insert({
-      user_id: ctx.aId, project_id: projectId, amount: 5, type: 'expense',
-      date: new Date().toISOString().slice(0, 10), description: 'after-remove',
-    });
+    await createExpense(ctx.aId, { project_id: projectId, amount: 5, description: 'after-remove' });
+
     r = await ctx.bClient.from('expenses').select('id').eq('project_id', projectId);
     results.push(verdict('05.4 nakon uklanjanja B NE vidi expense retke projekta',
       !r.error && (r.data ?? []).length === 0,
