@@ -788,9 +788,12 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
           <>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <Suspense fallback={<div className="text-sm text-muted-foreground">...</div>}>
-                <ReactMarkdown>{message.content}</ReactMarkdown>
+                <ReactMarkdown>{displayContent}</ReactMarkdown>
               </Suspense>
             </div>
+            {proposals.map((p) => (
+              <AiProposalCard key={p.proposal_id} proposal={p} />
+            ))}
             {tableData ? (
               <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
                 <Button
@@ -821,13 +824,13 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
                   Ispis
                 </Button>
               </div>
-            ) : message.content.length > 100 && (
+            ) : displayContent.length > 100 && (
               <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs gap-1"
-                  onClick={() => exportResponseAsPDF(message.content)}
+                  onClick={() => exportResponseAsPDF(displayContent)}
                 >
                   <FileText className="w-3 h-3" />
                   Izvezi PDF
@@ -840,3 +843,4 @@ const MessageBubble = ({ message }: { message: ChatMessage }) => {
     </div>
   );
 };
+
