@@ -3,6 +3,12 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "paywall.free.name": "Plan name",
+    "landing.pricing.pro.name": "Plan name",
+    "landing.pricing.pro.price": "Price value",
+    "moduleUpgrade.krug.title": "Module brand name",
+    "moduleUpgrade.projekti.title": "Module brand name",
+    "moduleUpgrade.biznis.title": "Module brand name",
     "tos.s4.l3": "Intentionally empty spacer line",
     "paywall.modules.smjer.name": "Module brand name",
     "paywall.modules.krug.name": "Module brand name",
@@ -98,6 +104,12 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.delete.votePanel.progress": "Placeholder-only counter",
   },
   de: {
+    "landing.pricing.pro.name": "Plan name",
+    "landing.pricing.pro.price": "Price value",
+    "landing.pricing.business.price": "Price value",
+    "moduleUpgrade.krug.title": "Module brand name",
+    "moduleUpgrade.projekti.title": "Module brand name",
+    "moduleUpgrade.biznis.title": "Module brand name",
     "tos.s4.l3": "Absichtlich leere Trennzeile",
     "paywall.modules.smjer.name": "Modul-Markenname",
     "paywall.modules.krug.name": "Modul-Markenname",
