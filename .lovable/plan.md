@@ -1,81 +1,58 @@
 
-# Plan: "Poništi ovaj uvoz" (undo cijele serije)
+## Dijagnoza (bez izmjena)
 
-Cilj: jedan gumb koji sigurno poništi cijeli `import_batch_id` — bank_only redovi obrišu, `confirmed` odspoje (korisnikov red ostane netaknut), transferi ponište s obje strane, salda vrati postojeći trigger, `imported_statements` očisti. Nadograđujemo POSTOJEĆI `ImportBatchDialog` — ne gradimo paralelni tok.
+### 1. Secrets — oba postavljena
+- `GOOGLE_GEMINI_API_KEY` ✅ postavljen
+- `LOVABLE_API_KEY` ✅ postavljen (managed)
 
-## 1. Procjena postojećeg toka (što radi danas)
+Znači: **nije problem u secretima**, i nije problem u fallbacku na gateway.
 
-`ImportBatchDialog` (otvara se iz `PaymentSourceTransactionsDialog`, `TransactionListDialog`, `BusinessTransactions`) danas:
-- Prikazuje listu batcha, summary (income/expense), `mergedCount` badge.
-- `onDeleteBatch(ids)` handler u call-siteu: RPC `unmerge_import_row` za `confirmed`, `onDelete`/`onBulkDelete` za ostale. Client-side `Promise.allSettled` — **nije atomsko**.
-- Confirm dijalog razlikuje merged vs delete count.
+### 2. Stvarna greška iz logova `financial-assistant`
 
-### Što mu fali do punog "Poništi uvoz"
-a) **Framing**: naslov je "Obriši uvoz" — treba "Poništi ovaj uvoz" + jaka potvrda koja PRIJE klika pokaže: `X novih → briše se`, `Y spojenih → odspaja se (tvoji originali ostaju)`, `Z prijenosa → poništava se obje strane`, ukupan bruto iznos, "salda će se automatski uskladiti".
-b) **Transferi**: trenutno se briše samo iz batcha; parna strana (drugi novčanik) je zaseban expense s **istim** `import_batch_id` (executor upisuje oba retka s istim batchem — provjeriti u `executor.ts`; ako nije tako, treba dohvat parne strane po `transfer_group_id`/paru i brisati oba). Salda: postojeći DB trigger na `expenses` recomputes preko engine-a → OK ako se obje strane obrišu.
-c) **`imported_statements` cleanup**: batch ima 1 red u `imported_statements` s `reconciliation_state ∈ (aligned, user_override, pending)`. Nakon undo:
-   - Preporuka: **soft-mark** `reconciliation_state='undone'`, `reconciliation_meta.undone_at`, ne brisati red (fingerprint dedup nas štiti od dvostrukog uvoza — treba **osloboditi** fingerprint da korisnik može ponovno uvesti isti PDF; opcija: obrisati red iz `imported_statements` u istoj transakciji).
-   - **Sidro pitanje** (dizajnersko, tražimo Milanovu odluku): ako je `align_source_to_bank` napravio `bank_reconciliation` sidro tijekom ovog batcha:
-     - **Opcija A (default preporuka)**: sidro OSTAJE, banner nakon undo: "Poravnanje salda ostaje aktivno. Ako želiš, vrati na prethodno sidro." + gumb "Vrati prethodno sidro" koji čita `anchor_audit` predzadnji red za taj source.
-     - **Opcija B**: automatski revert sidra iz `anchor_audit` unutar iste RPC transakcije (rizik: pregazi ručne korekcije napravljene NAKON align).
-     - **Opcija C**: samo upozorenje, nikakva akcija.
-d) **Telemetrija**: `funnel_events` event `import_undone` (batch_id, source_id, deleted_count, unmerged_count, transfers_count, had_bank_anchor, age_hours).
+Greška NIJE runtime crash pri bootu — funkcija se uredno diže (`booted 29ms`, `Listening on http://localhost:9999/`). Pada tek na **drugom turnu** razgovora, nakon što model prvi put pozove tool `create_savings_goal`:
 
-## 2. Ulazne točke
+```
+Google API error: 400
+"Function call is missing a thought_signature in functionCall parts.
+ This is required for tools to work correctly...
+ function call `default_api:create_savings_goal`, position 8/10.
+ https://ai.google.dev/gemini-api/docs/thought-signatures"
+status: INVALID_ARGUMENT
+```
 
-- **Batch badge u listi** (postoji): ostaje, otvara isti dijalog.
-- **Summary ekran nakon uvoza** (`ImportReview` post-confirm): **DODATI** "Uvezeno X · [Poništi ovaj uvoz]" 5-10s toast + trajni link u Reconciliation dijalogu ("Nešto ne valja? Poništi uvoz"). Trenutno korisnik mora ići u listu novčanika i tražiti badge.
-- **Reconciliation resume banner**: ako pending, dodati sekundarni link "Poništi cijeli uvoz umjesto poravnanja".
+Uzrok: koristimo **preview model** `gemini-3-flash-preview` koji od nedavno zahtijeva **`thoughtSignature`** polje u svakom `functionCall` partu kad ga vratimo natrag u `contents` (na sljedećem turnu, nakon tool execution). Naš `openAIToGemini()` u `geminiClient.ts` (redak 301–306) gradi `functionCall` part samo s `{ name, args }` — bez `thoughtSignature`.
 
-## 3. Sigurnost i atomicnost
+Rezultat:
+- 1. turn: user pita → model vraća `functionCall` (radi OK, mi ga prevedemo u OpenAI `tool_calls` i vratimo tekst korisniku uz proposal karticu).
+- 2. turn (ili nastavak istog turna kad se `assistant.tool_calls` vrati u povijesti + `tool` odgovor): šaljemo natrag `{ role: 'model', parts: [{ functionCall: { name, args } }] }` — Google odbija s 400 jer nedostaje `thoughtSignature`.
 
-- **Nova RPC `undo_import_batch(p_batch_id uuid)`** — SECURITY DEFINER, u jednoj transakciji:
-  1. Validacija: batch postoji, svi redovi pripadaju `auth.uid()` (owner-only, kroz `custom_payment_sources.user_id`); shared/Krug source → provjera je li uvoz radio pozivatelj.
-  2. Dohvat svih `expenses` s `import_batch_id = p_batch_id` (i deleted_at IS NULL — soft-deleted preskačemo).
-  3. Za svaki `confirmed`: pozvati postojeću `unmerge_import_row` logiku (inline ili funkcija).
-  4. Za ostale (`bank_only` + transfer parovi): hard DELETE (ne soft — undo ≠ trash).
-  5. `imported_statements`: DELETE red za taj batch (oslobađa fingerprint za ponovni uvoz).
-  6. `funnel_events` insert `import_undone`.
-  7. Return: `{ deleted, unmerged, transfers, freed_fingerprint }`.
-- **Idempotencija**: ako se pozove dvaput → drugi poziv vidi 0 redova → vrati summary `{ already_undone: true }`, ne baca error. Retry-safe.
-- **Particijalni fail (mreža)**: cijela RPC je jedna transakcija — ili sve ili ništa. Client samo prikazuje result count.
-- **Grants**: `GRANT EXECUTE ON FUNCTION undo_import_batch TO authenticated;`
-- **RLS**: nije potreban dodatni sloj — RPC sam validira ownership.
+Bijeli ekran + `lineno:0` u browseru: SSE stream se ubije čim gateway helper vrati 400, klijent (`useFinancialAssistant.ts`) baci exception u `reader.read()` petlji → React state ostaje polupotrošen. To je posljedica, ne korijen.
 
-## 4. Rubni slučajevi
+### 3. Sekundarni šum (ne uzrokuje pad, ali smeta)
+- `[aiCostCap] get_ai_monthly_spend failed: column reference "month_key" is ambiguous` — RPC `get_ai_monthly_spend` ima dvosmislenu referencu na `month_key` (vjerojatno između lokalne varijable i kolone `ai_cost_monthly.month_key`). Ne blokira poziv (cap se preskoči), ali svaki poziv troši log.
 
-- **Ručno uređivan `confirmed` red** (korisnik promijenio merchant/kategoriju nakon spajanja): `unmerge_import_row` po dizajnu ostavlja korisnikov red netaknut i briše bank pandan → izmjene ostaju. **Potvrditi** pregledom `unmerge_import_row` definicije prije faze 2.
-- **Red obrisan u međuvremenu** (soft-delete → trash): preskačemo (WHERE deleted_at IS NULL), broj u summaryju smanjen; toast: "N redova je već obrisano ranije".
-- **Batch star X dana**: nema tvrdog limita. **Warning u confirm dijalogu ako > 7 dana**: "Uvoz je star N dana. Sve transakcije nastale poslije ostaju."
-- **Bank_reconciliation sidro između**: pokriveno točkom 1c — Opcija A default.
-- **Batch čiji je jedan red uključen u budget/project s aktivnostima**: undo briše expense → budget/project usage se recompute-a triggerom. Bez posebne akcije.
-- **Nejednake veličine batcha na dva source-a (transfer između dva novčanika, undo pokrenut s jedne strane)**: RPC dohvaća PO `import_batch_id` (isti za obje strane executora) → obje strane se čiste u istoj transakciji. **Potvrditi u `executor.ts` da transfer par dijeli batch_id.**
+## Prijedlog popravka (za odobrenje)
 
-## 5. Opseg i redoslijed (3 tura)
+**Root cause fix, bez patcheva:**
 
-**Tur 1 — DB (bez UI izmjena)**
-- Migracija: RPC `undo_import_batch` + GRANT.
-- Manualni test na testnom batchu; provjera da salda dolaze nazad (hybrid engine preview delta 0.00).
-- Dokaz: COUNT prije/poslije za `expenses`, `imported_statements`, `custom_payment_sources` (nepromijenjen), `anchor_audit` (nepromijenjen ako nema Opcije B).
+1. `supabase/functions/_shared/geminiClient.ts`
+   - `openAIToGemini()`: kad gradimo `assistant`-turn iz OpenAI `tool_calls`, propagiraj `thoughtSignature` ako smo ga zabilježili u prethodnom odgovoru.
+   - `geminiToOpenAIResponse()`: ekstrahiraj `part.thoughtSignature` iz Gemini odgovora i sačuvaj ga na OpenAI `tool_call` objektu (npr. `_thought_signature` custom polje).
+   - Kad korisnik pošalje sljedeći turn, `financial-assistant` već šalje kompletnu povijest — signature putuje kroz `messages` prirodno.
 
-**Tur 2 — UI nadogradnja postojećeg `ImportBatchDialog`**
-- Novi naslov + jaka potvrda s brojevima (novi/spojeni/prijenosi/iznos).
-- Warning za sidro (Opcija A) i za batch > 7 dana.
-- Zamjena client `Promise.allSettled` handlera → jedan RPC poziv.
-- i18n hr/en/de.
-- Vitest za RPC odgovor mapping + confirm dijalog logiku.
+2. `financial-assistant/index.ts`
+   - Prošire tipiziran zapis `tool_calls` u chat_messages tablicu tako da `_thought_signature` preživi round-trip kroz DB (spremiti u `content` JSON metadata ili dodati `metadata` jsonb kolonu).
 
-**Tur 3 — Ulazne točke i telemetrija**
-- Post-import toast s "Poništi" u `ImportReview`.
-- Sekundarni link u Reconciliation dijalogu.
-- `funnel_events` upis + dashboard read.
+3. Zasebno (može u istom PR-u): popraviti `get_ai_monthly_spend` RPC — kvalificirati `month_key` s tablicom (`ac.month_key`) ili preimenovati lokalnu varijablu.
 
-**Procjena**: Tur 1 mali (RPC ~80 SQL linija + test), Tur 2 srednji (UI + i18n), Tur 3 mali. Ukupno ~3 iteracije.
+4. Regression test: dodati u `src/test/geminiClientFallback.test.ts` (ili novi `geminiToolCallRoundtrip.test.ts`) — assert da signature preživi `geminiToOpenAIResponse → openAIToGemini` round-trip.
 
-## Otvorena pitanja za Milana
+**Ne diramo:**
+- USE_DIRECT_GEMINI (ostaje `true`).
+- Model pinning (`gemini-3-flash-preview` je Milanov odabir; alternativa bi bila privremeno degradirati na `gemini-3.5-flash` iz `FALLBACK_MODEL_MAP` dok Google ne pomakne signature zahtjev — reci ako želiš i tu opciju).
 
-1. **Sidro nakon undo** — Opcija A (ostaje + banner "vrati prethodno"), B (auto-revert iz audit), ili C (samo upozorenje)? **Preporuka: A.**
-2. **`imported_statements` red**: DELETE (oslobodi fingerprint, dozvoli ponovni uvoz istog PDF-a) vs soft-mark `undone` (blokira reimport)? **Preporuka: DELETE.**
-3. **Warning za stare batcheve**: prag 7 dana OK ili drugačije?
+### Odluka koju trebam od tebe
 
-Čekam OK prije Tura 1.
+**A)** Puni popravak (thought_signature round-trip) — točno prati Google specifikaciju, ostajemo na preview modelu.
+**B)** Brzi bypass — privremeno preusmjeriti `google/gemini-3-flash-preview` → `gemini-3.5-flash` (stabilan, nema signature zahtjeva). Bez izmjene alata, ali gubimo brzinu preview modela.
+**C)** Oboje: A) sada + B) kao hitni safety-net u istom deployu.
