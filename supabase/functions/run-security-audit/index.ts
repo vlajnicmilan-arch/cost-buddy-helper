@@ -105,36 +105,74 @@ async function edgeFn(name: string, body: unknown, token: string | null): Promis
   return { status: res.status, text };
 }
 
-// -------- Fixtures ----------
-async function createProject(client: SupabaseClient, ownerId: string): Promise<string> {
-  const { data, error } = await client.from('projects')
+// -------- Fixtures (ALL setup via service-role admin — bypasses RLS on purpose) ----------
+// Adversarial assertions still use anon+JWT clients (ctx.aClient/bClient). Setup ≠ test.
+async function createProject(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('projects')
     .insert({ user_id: ownerId, name: `sec-proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, status: 'active' })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createProject: ${error.message}`);
   return data.id;
 }
-async function createExpense(client: SupabaseClient, ownerId: string, overrides: Record<string, unknown> = {}): Promise<string> {
-  const { data, error } = await client.from('expenses').insert({
-    user_id: ownerId, amount: 42, description: 'sec-fixture', type: 'expense',
+async function createExpense(ownerId: string, overrides: Record<string, unknown> = {}): Promise<string> {
+  const { data, error } = await admin().from('expenses').insert({
+    user_id: ownerId, amount: 42, description: 'sec-fixture', category: 'sec', type: 'expense',
     date: new Date().toISOString().slice(0, 10), ...overrides,
   }).select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createExpense: ${error.message}`);
   return data.id;
 }
-async function createCustomSource(client: SupabaseClient, ownerId: string): Promise<string> {
-  const { data, error } = await client.from('custom_payment_sources')
-    .insert({ user_id: ownerId, name: 'sec-source', type: 'wallet', currency: 'EUR' })
+async function createCustomSource(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('custom_payment_sources')
+    // NOTE: table has no `type` column; icon+color are NOT NULL.
+    .insert({ user_id: ownerId, name: 'sec-source', icon: 'wallet', color: '#000000', currency: 'EUR' })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createCustomSource: ${error.message}`);
   return data.id;
 }
-async function addProjectMember(client: SupabaseClient, projectId: string, userId: string, role: string): Promise<string> {
-  const { data, error } = await client.from('project_members')
+async function createMilestone(projectId: string, budget = 100): Promise<string> {
+  // NOTE: real column is `budget` (NOT `total_budget`). No user_id column.
+  const { data, error } = await admin().from('project_milestones')
+    .insert({ project_id: projectId, name: `ms-${Math.random().toString(36).slice(2, 6)}`, budget })
+    .select('id').single();
+  if (error) throw new Error(`createMilestone: ${error.message}`);
+  return data.id;
+}
+async function createIncomeSource(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('income_sources')
+    .insert({ user_id: ownerId, name: 'sec-inc' })
+    .select('id').single();
+  if (error) throw new Error(`createIncomeSource: ${error.message}`);
+  return data.id;
+}
+async function createFunding(projectId: string, incomeSourceId: string, amount = 10000): Promise<string> {
+  const { data, error } = await admin().from('project_funding')
+    .insert({ project_id: projectId, income_source_id: incomeSourceId, allocated_amount: amount })
+    .select('id').single();
+  if (error) throw new Error(`createFunding: ${error.message}`);
+  return data.id;
+}
+async function addProjectMember(projectId: string, userId: string, role: string): Promise<string> {
+  const { data, error } = await admin().from('project_members')
     .insert({ project_id: projectId, user_id: userId, role })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`addProjectMember(${role}): ${error.message}`);
   return data.id;
 }
+async function createKrug(ownerId: string, name = 'sec-krug'): Promise<string> {
+  // Real schema: krug has no owner_id — ownership lives in krug_ownership; membership in krug_membership.
+  const { data, error } = await admin().from('krug')
+    .insert({ name, preset: 'projekt', lifecycle_state: 'active', created_by: ownerId })
+    .select('id').single();
+  if (error) throw new Error(`createKrug: ${error.message}`);
+  const krugId = data.id;
+  const own = await admin().from('krug_ownership').insert({ krug_id: krugId, user_id: ownerId });
+  if (own.error) throw new Error(`krug_ownership: ${own.error.message}`);
+  const mem = await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ownerId, role: 'punopravni' });
+  if (mem.error) throw new Error(`krug_membership(owner): ${mem.error.message}`);
+  return krugId;
+}
+
 
 // -------- Spec runners ----------
 type Ctx = {
