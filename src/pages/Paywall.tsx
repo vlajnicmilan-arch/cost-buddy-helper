@@ -59,6 +59,7 @@ const Paywall: React.FC = () => {
   const checkoutStatus = params.get('checkout');
   const planParam = params.get('plan');
   const shopParam = params.get('shop') === '1';
+  const discountCode = params.get('code')?.trim() || null;
 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [loadingPlan, setLoadingPlan] = useState<PaywallPlan | null>(null);
