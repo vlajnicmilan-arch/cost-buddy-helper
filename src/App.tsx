@@ -78,6 +78,7 @@ const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/CentarLanding"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
+const PaywallAuthRedirect = lazy(() => import("./pages/PaywallAuthRedirect"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ImportReview = lazy(() => import("./pages/ImportReview"));
 
@@ -282,6 +283,7 @@ const AppRoutes = () => {
           <Route path="/" element={<RootRoute storageMode={storageMode} user={user} ready={allReady} />} />
           <Route path="/app" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/paywall" element={<PaywallAuthRedirect />} />
           <Route path="/native-oauth/callback" element={<NativeOAuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/setup" element={<StorageSetup />} />
