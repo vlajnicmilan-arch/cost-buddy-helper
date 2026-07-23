@@ -484,6 +484,9 @@ const Auth = () => {
           </button>
         )}
         
+        {/* Founding / campaign banner — visible whenever user landed with ?code= (persisted in sessionStorage) */}
+        <CampaignBanner />
+
         {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
