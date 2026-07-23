@@ -11,7 +11,7 @@ export interface AiProposal {
   new_value?: unknown;
 }
 
-const MARKER_RE = /\[\[AI_PROPOSAL\]\](\{[\s\S]*?\})\[\[\/AI_PROPOSAL\]\]/g;
+const MARKER_RE = /\[\[AI_PROPOSAL\]\]([\s\S]*?)\[\[\/AI_PROPOSAL\]\]/g;
 
 export function parseProposalMarkers(content: string): {
   clean: string;
