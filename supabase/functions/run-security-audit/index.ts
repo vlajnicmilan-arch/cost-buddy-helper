@@ -105,36 +105,74 @@ async function edgeFn(name: string, body: unknown, token: string | null): Promis
   return { status: res.status, text };
 }
 
-// -------- Fixtures ----------
-async function createProject(client: SupabaseClient, ownerId: string): Promise<string> {
-  const { data, error } = await client.from('projects')
+// -------- Fixtures (ALL setup via service-role admin — bypasses RLS on purpose) ----------
+// Adversarial assertions still use anon+JWT clients (ctx.aClient/bClient). Setup ≠ test.
+async function createProject(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('projects')
     .insert({ user_id: ownerId, name: `sec-proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, status: 'active' })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createProject: ${error.message}`);
   return data.id;
 }
-async function createExpense(client: SupabaseClient, ownerId: string, overrides: Record<string, unknown> = {}): Promise<string> {
-  const { data, error } = await client.from('expenses').insert({
-    user_id: ownerId, amount: 42, description: 'sec-fixture', type: 'expense',
+async function createExpense(ownerId: string, overrides: Record<string, unknown> = {}): Promise<string> {
+  const { data, error } = await admin().from('expenses').insert({
+    user_id: ownerId, amount: 42, description: 'sec-fixture', category: 'sec', type: 'expense',
     date: new Date().toISOString().slice(0, 10), ...overrides,
   }).select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createExpense: ${error.message}`);
   return data.id;
 }
-async function createCustomSource(client: SupabaseClient, ownerId: string): Promise<string> {
-  const { data, error } = await client.from('custom_payment_sources')
-    .insert({ user_id: ownerId, name: 'sec-source', type: 'wallet', currency: 'EUR' })
+async function createCustomSource(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('custom_payment_sources')
+    // NOTE: table has no `type` column; icon+color are NOT NULL.
+    .insert({ user_id: ownerId, name: 'sec-source', icon: 'wallet', color: '#000000', currency: 'EUR' })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`createCustomSource: ${error.message}`);
   return data.id;
 }
-async function addProjectMember(client: SupabaseClient, projectId: string, userId: string, role: string): Promise<string> {
-  const { data, error } = await client.from('project_members')
+async function createMilestone(projectId: string, budget = 100): Promise<string> {
+  // NOTE: real column is `budget` (NOT `total_budget`). No user_id column.
+  const { data, error } = await admin().from('project_milestones')
+    .insert({ project_id: projectId, name: `ms-${Math.random().toString(36).slice(2, 6)}`, budget })
+    .select('id').single();
+  if (error) throw new Error(`createMilestone: ${error.message}`);
+  return data.id;
+}
+async function createIncomeSource(ownerId: string): Promise<string> {
+  const { data, error } = await admin().from('income_sources')
+    .insert({ user_id: ownerId, name: 'sec-inc' })
+    .select('id').single();
+  if (error) throw new Error(`createIncomeSource: ${error.message}`);
+  return data.id;
+}
+async function createFunding(projectId: string, incomeSourceId: string, amount = 10000): Promise<string> {
+  const { data, error } = await admin().from('project_funding')
+    .insert({ project_id: projectId, income_source_id: incomeSourceId, allocated_amount: amount })
+    .select('id').single();
+  if (error) throw new Error(`createFunding: ${error.message}`);
+  return data.id;
+}
+async function addProjectMember(projectId: string, userId: string, role: string): Promise<string> {
+  const { data, error } = await admin().from('project_members')
     .insert({ project_id: projectId, user_id: userId, role })
     .select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(`addProjectMember(${role}): ${error.message}`);
   return data.id;
 }
+async function createKrug(ownerId: string, name = 'sec-krug'): Promise<string> {
+  // Real schema: krug has no owner_id — ownership lives in krug_ownership; membership in krug_membership.
+  const { data, error } = await admin().from('krug')
+    .insert({ name, preset: 'projekt', lifecycle_state: 'active', created_by: ownerId })
+    .select('id').single();
+  if (error) throw new Error(`createKrug: ${error.message}`);
+  const krugId = data.id;
+  const own = await admin().from('krug_ownership').insert({ krug_id: krugId, user_id: ownerId });
+  if (own.error) throw new Error(`krug_ownership: ${own.error.message}`);
+  const mem = await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ownerId, role: 'punopravni' });
+  if (mem.error) throw new Error(`krug_membership(owner): ${mem.error.message}`);
+  return krugId;
+}
+
 
 // -------- Spec runners ----------
 type Ctx = {
@@ -145,9 +183,9 @@ type Ctx = {
 
 async function spec01_crossUserReads(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectAId = await createProject(ctx.aClient, ctx.aId);
-  const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
-  const expenseAId = await createExpense(ctx.aClient, ctx.aId, { project_id: projectAId, payment_source: `custom:${sourceAId}` });
+  const projectAId = await createProject(ctx.aId);
+  const sourceAId = await createCustomSource(ctx.aId);
+  const expenseAId = await createExpense(ctx.aId, { project_id: projectAId, payment_source: `custom:${sourceAId}` });
   try {
     let r;
     r = await ctx.bClient.from('projects').select('id').eq('id', projectAId);
@@ -182,38 +220,43 @@ async function spec01_crossUserReads(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
+  const projectId = await createProject(ctx.aId);
+  const incomeSourceAId = await createIncomeSource(ctx.aId);
   try {
     for (const role of ['worker', 'investor'] as const) {
       await admin().from('project_members').delete().eq('project_id', projectId);
-      await addProjectMember(ctx.aClient, projectId, ctx.bId, role);
+      await addProjectMember(projectId, ctx.bId, role);
 
+      // NOTE: project_milestones has no user_id column; real budget column is `budget`.
       let r: any = await ctx.bClient.from('project_milestones')
-        .insert({ project_id: projectId, user_id: ctx.bId, name: 'evil', total_budget: 999 });
+        .insert({ project_id: projectId, name: 'evil', budget: 999 });
       results.push(verdict(`02.${role}.1 ${role} ne INSERT milestone`, r.error !== null,
         { severity: 'CRITICAL', surface: 'project_milestones', role, failNote: 'insert prošao — mora biti odbijen' }));
 
-      const { data: m } = await ctx.aClient.from('project_milestones')
-        .insert({ project_id: projectId, user_id: ctx.aId, name: 'ok', total_budget: 100 })
-        .select('id').single();
-      r = await ctx.bClient.from('project_milestones').update({ total_budget: 999 }).eq('id', m!.id).select('id');
-      results.push(verdict(`02.${role}.2 ${role} ne UPDATE milestone budget`, r.error !== null || (r.data ?? []).length === 0,
-        { severity: 'CRITICAL', surface: 'project_milestones.total_budget', role }));
-      await admin().from('project_milestones').delete().eq('id', m!.id);
+      const mId = await createMilestone(projectId, 100);
+      r = await ctx.bClient.from('project_milestones').update({ budget: 999 }).eq('id', mId).select('id');
+      const { data: mChk } = await admin().from('project_milestones').select('budget').eq('id', mId).single();
+      const budgetTampered = mChk?.budget != null && Number(mChk.budget) !== 100;
+      results.push(verdict(`02.${role}.2 ${role} ne UPDATE milestone budget`,
+        (r.error !== null || (r.data ?? []).length === 0) && !budgetTampered,
+        { severity: 'CRITICAL', surface: 'project_milestones.budget', role,
+          failNote: budgetTampered ? `budget promijenjen na ${mChk?.budget}` : undefined }));
+      await admin().from('project_milestones').delete().eq('id', mId);
 
+      // project_funding real cols: project_id, income_source_id, allocated_amount
       r = await ctx.bClient.from('project_funding')
-        .insert({ project_id: projectId, user_id: ctx.bId, amount: 5000, source: 'x' });
+        .insert({ project_id: projectId, income_source_id: incomeSourceAId, allocated_amount: 5000 });
       results.push(verdict(`02.${role}.3 ${role} ne INSERT funding`, r.error !== null,
         { severity: 'CRITICAL', surface: 'project_funding', role }));
 
-      const { data: e } = await ctx.aClient.from('expenses').insert({
-        user_id: ctx.aId, project_id: projectId, amount: 10, type: 'expense',
-        date: new Date().toISOString().slice(0, 10), description: 'own',
-      }).select('id').single();
-      r = await ctx.bClient.from('expenses').delete().eq('id', e!.id).select('id');
-      results.push(verdict(`02.${role}.4 ${role} ne DELETE tuđi expense`, r.error !== null || (r.data ?? []).length === 0,
+      const eId = await createExpense(ctx.aId, { project_id: projectId, amount: 10, description: 'own' });
+      r = await ctx.bClient.from('expenses').delete().eq('id', eId).select('id');
+      const { data: eChk } = await admin().from('expenses').select('id, deleted_at').eq('id', eId).maybeSingle();
+      const wasDeleted = !eChk || eChk?.deleted_at != null;
+      results.push(verdict(`02.${role}.4 ${role} ne DELETE tuđi expense`,
+        (r.error !== null || (r.data ?? []).length === 0) && !wasDeleted,
         { severity: 'CRITICAL', surface: 'expenses', role }));
-      await admin().from('expenses').delete().eq('id', e!.id);
+      await admin().from('expenses').delete().eq('id', eId);
     }
   } finally {
     const a = admin();
@@ -221,6 +264,7 @@ async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
     await a.from('project_milestones').delete().eq('project_id', projectId);
     await a.from('project_funding').delete().eq('project_id', projectId);
     await a.from('expenses').delete().eq('project_id', projectId);
+    await a.from('income_sources').delete().eq('id', incomeSourceAId);
     await a.from('projects').delete().eq('id', projectId);
   }
   return results;
@@ -228,19 +272,12 @@ async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
-  await addProjectMember(ctx.aClient, projectId, ctx.bId, 'investor');
-  const { data: m } = await ctx.aClient.from('project_milestones')
-    .insert({ project_id: projectId, user_id: ctx.aId, name: 'M1', total_budget: 1234 })
-    .select('id').single();
-  const milestoneId = m!.id;
-  await ctx.aClient.from('expenses').insert({
-    user_id: ctx.aId, project_id: projectId, amount: 500, type: 'expense',
-    date: new Date().toISOString().slice(0, 10), description: 'interno',
-  });
-  await ctx.aClient.from('project_funding').insert({
-    project_id: projectId, user_id: ctx.aId, amount: 10000, source: 'investor-a',
-  });
+  const projectId = await createProject(ctx.aId);
+  await addProjectMember(projectId, ctx.bId, 'investor');
+  const milestoneId = await createMilestone(projectId, 1234);
+  await createExpense(ctx.aId, { project_id: projectId, amount: 500, description: 'interno' });
+  const incomeSourceAId = await createIncomeSource(ctx.aId);
+  await createFunding(projectId, incomeSourceAId, 10000);
   try {
     let r: any;
     r = await ctx.bClient.from('expenses').select('id, amount, description').eq('project_id', projectId);
@@ -259,12 +296,12 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_work_entries', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_workers').select('id, user_id').eq('project_id', projectId);
+    r = await ctx.bClient.from('project_workers').select('id').eq('project_id', projectId);
     results.push(verdict('03.4 investor NE čita workere',
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_workers', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_funding').select('id, amount').eq('project_id', projectId);
+    r = await ctx.bClient.from('project_funding').select('id, allocated_amount').eq('project_id', projectId);
     results.push(verdict('03.5 investor NE čita project_funding',
       !r.error && (r.data ?? []).length === 0,
       { severity: 'CRITICAL', surface: 'project_funding', role: 'investor',
@@ -275,13 +312,14 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_documents', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_milestones').select('id, total_budget').eq('id', milestoneId);
+    // Real column is `budget` (not `total_budget`). Same privacy premise.
+    r = await ctx.bClient.from('project_milestones').select('id, budget').eq('id', milestoneId);
     const rows = (r.data ?? []);
-    const budgetLeak = rows.length > 0 && rows[0].total_budget != null;
-    results.push(verdict('03.7 investor NE čita milestone.total_budget',
+    const budgetLeak = rows.length > 0 && rows[0].budget != null;
+    results.push(verdict('03.7 investor NE čita milestone.budget',
       !r.error && !budgetLeak,
-      { severity: 'CRITICAL', surface: 'project_milestones.total_budget', role: 'investor',
-        failNote: budgetLeak ? `total_budget=${rows[0].total_budget} izložen investoru` : undefined }));
+      { severity: 'CRITICAL', surface: 'project_milestones.budget', role: 'investor',
+        failNote: budgetLeak ? `budget=${rows[0].budget} izložen investoru` : undefined }));
 
     r = await ctx.bClient.from('projects').select('id, name').eq('id', projectId);
     results.push(verdict('03.8 investor SMIJE vidjeti projekt (po dizajnu)',
@@ -296,15 +334,17 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
     await a.from('project_members').delete().eq('project_id', projectId);
     await a.from('project_worker_payouts').delete().eq('project_id', projectId);
     await a.from('project_work_entries').delete().eq('project_id', projectId);
+    await a.from('income_sources').delete().eq('id', incomeSourceAId);
     await a.from('projects').delete().eq('id', projectId);
   }
   return results;
 }
 
+
 async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('set_source_anchor', {
         p_source_id: sourceAId, p_anchor_ts: new Date().toISOString(),
@@ -315,7 +355,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('align_source_to_bank', {
         p_source_id: sourceAId, p_bank_balance: 1000, p_as_of: new Date().toISOString(),
@@ -325,7 +365,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
+    const sourceAId = await createCustomSource(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('preview_source_balance_after_batch', {
         p_source_id: sourceAId, p_batch_id: '00000000-0000-0000-0000-000000000000',
@@ -336,7 +376,7 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
     } finally { await admin().from('custom_payment_sources').delete().eq('id', sourceAId); }
   }
   {
-    const projectAId = await createProject(ctx.aClient, ctx.aId);
+    const projectAId = await createProject(ctx.aId);
     try {
       const r = await ctx.bClient.rpc('soft_delete_record', { p_table: 'projects', p_id: projectAId });
       const { data: after } = await admin().from('projects').select('deleted_at').eq('id', projectAId).single();
@@ -358,8 +398,8 @@ async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
-  const memberRowId = await addProjectMember(ctx.aClient, projectId, ctx.bId, 'member');
+  const projectId = await createProject(ctx.aId);
+  const memberRowId = await addProjectMember(projectId, ctx.bId, 'member');
   try {
     let r: any = await ctx.bClient.from('projects').select('id').eq('id', projectId);
     results.push(verdict('05.1 prije uklanjanja B vidi projekt',
@@ -380,10 +420,8 @@ async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
     results.push(verdict('05.3 nakon uklanjanja B NE može INSERT expense', r.error !== null,
       { severity: 'CRITICAL', surface: 'expenses', role: 'ex-member' }));
 
-    await ctx.aClient.from('expenses').insert({
-      user_id: ctx.aId, project_id: projectId, amount: 5, type: 'expense',
-      date: new Date().toISOString().slice(0, 10), description: 'after-remove',
-    });
+    await createExpense(ctx.aId, { project_id: projectId, amount: 5, description: 'after-remove' });
+
     r = await ctx.bClient.from('expenses').select('id').eq('project_id', projectId);
     results.push(verdict('05.4 nakon uklanjanja B NE vidi expense retke projekta',
       !r.error && (r.data ?? []).length === 0,
@@ -399,7 +437,7 @@ async function spec05_removedMember(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec06_aiAndExports(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  await createExpense(ctx.aClient, ctx.aId, { amount: 777, description: 'a-private' });
+  await createExpense(ctx.aId, { amount: 777, description: 'a-private' });
   try {
     // financial-assistant bez JWT — očekujemo 401/403 (ne troši Gemini)
     let r = await edgeFn('financial-assistant', { message: 'x', sessionId: 'x' }, null);
@@ -446,11 +484,16 @@ async function spec06_aiAndExports(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const { data: k, error: kerr } = await ctx.aClient
-    .from('krug').insert({ name: 'sec-krug', owner_id: ctx.aId }).select('id').single();
-  if (kerr) return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug insert: ${kerr.message}` }];
-  const krugId = k!.id;
-  await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ctx.bId, role: 'obicni' });
+  let krugId: string;
+  try {
+    krugId = await createKrug(ctx.aId, 'sec-krug');
+  } catch (e) {
+    return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug setup: ${(e as Error).message}` }];
+  }
+  const memIns = await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ctx.bId, role: 'obicni' });
+  if (memIns.error) {
+    return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug_membership(B): ${memIns.error.message}` }];
+  }
   try {
     let r: any = await ctx.bClient.from('krug').select('id').eq('id', krugId);
     results.push(verdict('07.1 obicni vidi krug (dozvoljeno)',
@@ -459,14 +502,18 @@ async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
 
     r = await ctx.bClient.from('krug_membership').update({ role: 'punopravni' })
       .eq('krug_id', krugId).eq('user_id', ctx.bId).select('id');
+    const { data: bChk } = await admin().from('krug_membership').select('role').eq('krug_id', krugId).eq('user_id', ctx.bId).single();
     results.push(verdict('07.2 obicni NE promovira sebe u punopravnog',
-      r.error !== null || (r.data ?? []).length === 0,
-      { severity: 'CRITICAL', surface: 'krug_membership.role', role: 'obicni' }));
+      (r.error !== null || (r.data ?? []).length === 0) && bChk?.role === 'obicni',
+      { severity: 'CRITICAL', surface: 'krug_membership.role', role: 'obicni',
+        failNote: bChk?.role !== 'obicni' ? `role promijenjen u ${bChk?.role}` : undefined }));
 
     r = await ctx.bClient.from('krug_membership').delete()
       .eq('krug_id', krugId).eq('user_id', ctx.aId).select('id');
+    const { count: ownerStillThere } = await admin().from('krug_membership').select('*', { count: 'exact', head: true })
+      .eq('krug_id', krugId).eq('user_id', ctx.aId);
     results.push(verdict('07.3 obicni NE briše ownera',
-      r.error !== null || (r.data ?? []).length === 0,
+      (r.error !== null || (r.data ?? []).length === 0) && (ownerStillThere ?? 0) > 0,
       { severity: 'CRITICAL', surface: 'krug_membership', role: 'obicni' }));
 
     r = await ctx.bClient.from('krug_shared_payment_source').insert({
@@ -480,13 +527,16 @@ async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
     const { data: chk } = await admin().from('krug').select('name').eq('id', krugId).single();
     results.push(verdict('07.5 obicni NE mijenja krug meta',
       (r.error !== null || (r.data ?? []).length === 0) && chk?.name === 'sec-krug',
-      { severity: 'CRITICAL', surface: 'krug.name', role: 'obicni' }));
+      { severity: 'CRITICAL', surface: 'krug.name', role: 'obicni',
+        failNote: chk?.name !== 'sec-krug' ? `naziv promijenjen u ${chk?.name}` : undefined }));
   } finally {
     const a = admin();
     await a.from('krug_shared_payment_source').delete().eq('krug_id', krugId);
     await a.from('krug_membership').delete().eq('krug_id', krugId);
+    await a.from('krug_ownership').delete().eq('krug_id', krugId);
     await a.from('krug').delete().eq('id', krugId);
   }
+
   return results;
 }
 
@@ -524,7 +574,7 @@ function summarizeRedCandidates(all: { spec: string; results: Verdict[] }[]) {
     investor_worker_payouts: { desc: 'investor čita project_worker_payouts', ...find('03-investor-scope', '03.2') },
     investor_work_entries: { desc: 'investor čita project_work_entries', ...find('03-investor-scope', '03.3') },
     investor_project_documents: { desc: 'investor čita project_documents', ...find('03-investor-scope', '03.6') },
-    investor_milestone_total_budget: { desc: 'investor čita milestone.total_budget', ...find('03-investor-scope', '03.7') },
+    investor_milestone_budget: { desc: 'investor čita milestone.budget (real col; total_budget ne postoji)', ...find('03-investor-scope', '03.7') },
   };
 }
 
@@ -613,7 +663,8 @@ Deno.serve(async (req) => {
         'project_work_entries', 'project_workers', 'project_members', 'project_documents',
         'project_milestones', 'project_funding', 'project_worker_payouts',
         'project_collaborators', 'projects', 'user_entitlements',
-        'krug_membership', 'krug_shared_payment_source', 'krug',
+        'krug_membership', 'krug_ownership', 'krug_shared_payment_source',
+        'income_sources',
         'notifications', 'chat_messages', 'app_diagnostics_logs',
         'user_login_logs', 'feedback_submissions', 'reminders', 'savings_goals',
       ];
@@ -621,8 +672,10 @@ Deno.serve(async (req) => {
         for (const t of cleanupTables) {
           try { await a.from(t).delete().eq('user_id', uid); } catch { /* best effort */ }
         }
-        try { await a.from('krug').delete().eq('owner_id', uid); } catch { /* noop */ }
+        // krug real schema: no owner_id — clean via created_by
+        try { await a.from('krug').delete().eq('created_by', uid); } catch { /* noop */ }
       }
+
       after = await snapshot();
     } catch (e) {
       fatal = (fatal ? fatal + ' | ' : '') + 'teardown: ' + (e as Error).message;
