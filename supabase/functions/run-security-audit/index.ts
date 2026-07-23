@@ -26,6 +26,9 @@ const LIVE_TABLES = [
   'projects', 'expenses', 'custom_payment_sources', 'user_entitlements',
   'krug', 'krug_membership', 'project_members', 'project_milestones',
   'project_worker_payouts', 'imported_statements',
+  'krug_ownership', 'krug_shared_payment_source', 'project_funding',
+  'project_documents', 'project_work_entries', 'project_workers',
+  'income_sources', 'chat_messages', 'free_tier_usage_monthly', 'core_scan_usage',
 ];
 
 type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
@@ -89,6 +92,76 @@ async function snapshot(): Promise<Record<string, number>> {
   return out;
 }
 
+type UsageCleanupEvidence = {
+  free_tier_usage_monthly: { month_key: string; transactions_created: number }[];
+  core_scan_usage: { count: number }[];
+};
+
+async function clearSyntheticUsage(userIds: string[]): Promise<UsageCleanupEvidence> {
+  if (userIds.length === 0) {
+    return { free_tier_usage_monthly: [], core_scan_usage: [] };
+  }
+  const a = admin();
+  const [freeUsage, coreUsage] = await Promise.all([
+    a.from('free_tier_usage_monthly')
+      .select('month_key, transactions_created')
+      .in('user_id', userIds),
+    a.from('core_scan_usage')
+      .select('count')
+      .in('user_id', userIds),
+  ]);
+  if (freeUsage.error) throw new Error(`read free_tier_usage_monthly: ${freeUsage.error.message}`);
+  if (coreUsage.error) throw new Error(`read core_scan_usage: ${coreUsage.error.message}`);
+
+  const [freeDelete, coreDelete] = await Promise.all([
+    a.from('free_tier_usage_monthly').delete().in('user_id', userIds),
+    a.from('core_scan_usage').delete().in('user_id', userIds),
+  ]);
+  if (freeDelete.error) throw new Error(`delete free_tier_usage_monthly: ${freeDelete.error.message}`);
+  if (coreDelete.error) throw new Error(`delete core_scan_usage: ${coreDelete.error.message}`);
+
+  return {
+    free_tier_usage_monthly: (freeUsage.data ?? []).map((row) => ({
+      month_key: String(row.month_key),
+      transactions_created: Number(row.transactions_created),
+    })),
+    core_scan_usage: (coreUsage.data ?? []).map((row) => ({ count: Number(row.count) })),
+  };
+}
+
+async function purgeSyntheticKrugs(userIds: string[]): Promise<void> {
+  if (userIds.length === 0) return;
+  const a = admin();
+  const [ownership, membership] = await Promise.all([
+    a.from('krug_ownership').select('krug_id').in('user_id', userIds),
+    a.from('krug_membership').select('krug_id').in('user_id', userIds),
+  ]);
+  if (ownership.error) throw new Error(`read krug_ownership: ${ownership.error.message}`);
+  if (membership.error) throw new Error(`read krug_membership: ${membership.error.message}`);
+
+  const krugIds = [...new Set([
+    ...(ownership.data ?? []).map((row) => String(row.krug_id)),
+    ...(membership.data ?? []).map((row) => String(row.krug_id)),
+  ])];
+
+  if (krugIds.length > 0) {
+    const sharedDelete = await a.from('krug_shared_payment_source').delete().in('krug_id', krugIds);
+    if (sharedDelete.error) throw new Error(`delete krug_shared_payment_source: ${sharedDelete.error.message}`);
+    const membershipDelete = await a.from('krug_membership').delete().in('krug_id', krugIds);
+    if (membershipDelete.error) throw new Error(`delete krug_membership by krug: ${membershipDelete.error.message}`);
+    const ownershipDelete = await a.from('krug_ownership').delete().in('krug_id', krugIds);
+    if (ownershipDelete.error) throw new Error(`delete krug_ownership by krug: ${ownershipDelete.error.message}`);
+    const krugDelete = await a.from('krug').delete().in('id', krugIds);
+    if (krugDelete.error) throw new Error(`delete krug: ${krugDelete.error.message}`);
+  }
+
+  // Remove any remaining dangling rows for the synthetic users.
+  const danglingMembership = await a.from('krug_membership').delete().in('user_id', userIds);
+  if (danglingMembership.error) throw new Error(`delete dangling krug_membership: ${danglingMembership.error.message}`);
+  const danglingOwnership = await a.from('krug_ownership').delete().in('user_id', userIds);
+  if (danglingOwnership.error) throw new Error(`delete dangling krug_ownership: ${danglingOwnership.error.message}`);
+}
+
 // Test helper: creates a Verdict from an assertion
 function verdict(name: string, ok: boolean, opts: { severity?: Severity; surface?: string; role?: string; failNote?: string; passNote?: string } = {}): Verdict {
   if (ok) return { name, status: 'PASS', note: opts.passNote };
@@ -117,7 +190,9 @@ async function createProject(ownerId: string): Promise<string> {
 async function createExpense(ownerId: string, overrides: Record<string, unknown> = {}): Promise<string> {
   const { data, error } = await admin().from('expenses').insert({
     user_id: ownerId, amount: 42, description: 'sec-fixture', category: 'sec', type: 'expense',
-    date: new Date().toISOString().slice(0, 10), ...overrides,
+    // Fixture setup is not the free-tier test. `extraordinary` makes both server-side
+    // free-limit triggers skip this direct service-role insert.
+    expense_nature: 'extraordinary', date: new Date().toISOString().slice(0, 10), ...overrides,
   }).select('id').single();
   if (error) throw new Error(`createExpense: ${error.message}`);
   return data.id;
@@ -165,12 +240,9 @@ async function createKrug(ownerId: string, name = 'sec-krug'): Promise<string> {
     .insert({ name, preset: 'projekt', lifecycle_state: 'active', created_by: ownerId })
     .select('id').single();
   if (error) throw new Error(`createKrug: ${error.message}`);
-  const krugId = data.id;
-  const own = await admin().from('krug_ownership').insert({ krug_id: krugId, user_id: ownerId });
-  if (own.error) throw new Error(`krug_ownership: ${own.error.message}`);
-  const mem = await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ownerId, role: 'punopravni' });
-  if (mem.error) throw new Error(`krug_membership(owner): ${mem.error.message}`);
-  return krugId;
+  // DB bootstrap trigger creates ownership + owner membership. Re-inserting them here
+  // conflicts with UNIQUE(krug_id) and is not part of fixture setup.
+  return data.id;
 }
 
 
@@ -493,19 +565,8 @@ async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
   // Preflight: idempotentno pobrisati sve sec-* krug zaostatke iz prethodnih runova
   // (ownership UNIQUE(krug_id) je rušio setup ako je prošli run pao mid-flight).
   try {
-    const a = admin();
-    const { data: old } = await a.from('krug').select('id')
-      .in('created_by', [ctx.aId, ctx.bId]);
-    const ids = (old ?? []).map((k: any) => k.id);
-    if (ids.length) {
-      await a.from('krug_shared_payment_source').delete().in('krug_id', ids);
-      await a.from('krug_membership').delete().in('krug_id', ids);
-      await a.from('krug_ownership').delete().in('krug_id', ids);
-      await a.from('krug').delete().in('id', ids);
-    }
-    // Također počisti eventualne dangling ownership/membership retke bez krug parenta
-    await a.from('krug_membership').delete().in('user_id', [ctx.aId, ctx.bId]);
-    await a.from('krug_ownership').delete().in('user_id', [ctx.aId, ctx.bId]);
+    // Strong criterion: ownership/membership is authoritative; created_by is not.
+    await purgeSyntheticKrugs([ctx.aId, ctx.bId]);
   } catch (e) {
     return [{ name: '07.preflight', status: 'FAIL', severity: 'MEDIUM', note: `preflight cleanup: ${(e as Error).message}` }];
   }
@@ -640,11 +701,19 @@ Deno.serve(async (req) => {
   let baseline: Record<string, number> = {};
   let after: Record<string, number> = {};
   let fatal: string | null = null;
+  let usageCleanupEvidence: UsageCleanupEvidence = {
+    free_tier_usage_monthly: [],
+    core_scan_usage: [],
+  };
 
   try {
     // Ensure users
     const aId = await ensureSecUser(SEC_A_EMAIL, password);
     const bId = await ensureSecUser(SEC_B_EMAIL, password);
+    // Previous runs intentionally do not decrement free usage when expenses are deleted.
+    // Clear only synthetic-user counters before assertions so denial reasons remain valid.
+    usageCleanupEvidence = await clearSyntheticUsage([aId, bId]);
+    await purgeSyntheticKrugs([aId, bId]);
     baseline = await snapshot();
 
     const A = await signIn(SEC_A_EMAIL, password);
@@ -694,13 +763,13 @@ Deno.serve(async (req) => {
         'notifications', 'chat_messages', 'app_diagnostics_logs',
         'user_login_logs', 'feedback_submissions', 'reminders', 'savings_goals',
       ];
+      await purgeSyntheticKrugs(cleanupIds);
       for (const uid of cleanupIds) {
         for (const t of cleanupTables) {
           try { await a.from(t).delete().eq('user_id', uid); } catch { /* best effort */ }
         }
-        // krug real schema: no owner_id — clean via created_by
-        try { await a.from('krug').delete().eq('created_by', uid); } catch { /* noop */ }
       }
+      await clearSyntheticUsage(cleanupIds);
 
       after = await snapshot();
     } catch (e) {
@@ -733,6 +802,14 @@ Deno.serve(async (req) => {
     part,
     parts_available: [1, 2, 3],
     fatal,
+    harness_observations: {
+      fixture_setup: 'direct service-role table inserts; no app create RPCs',
+      free_limit_server_side: {
+        confirmed: usageCleanupEvidence.free_tier_usage_monthly.some((row) => row.transactions_created >= 30),
+        note: 'Deleting expenses does not decrement the monthly creation counter; stale synthetic counters were removed before and after the run.',
+        counters_before_cleanup: usageCleanupEvidence,
+      },
+    },
     baseline_parity: { ok: parityOk, tables: parity },
     totals,
     red_candidates: summarizeRedCandidates(allResults),
