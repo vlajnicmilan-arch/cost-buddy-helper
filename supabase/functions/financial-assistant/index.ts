@@ -1137,12 +1137,13 @@ async function executeTool(
         const memories = args.memories || [];
         if (memories.length === 0) return JSON.stringify({ message: "Nema memorija za spremanje." });
 
-        // Check current count - max 50 per user per mode
+        // Check current count - max 50 per user per mode. Silent oldest-deletion is
+        // FORBIDDEN — return memory_full so the model can ask the user which to remove.
         let countQuery = supabase
           .from("user_memories")
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId);
-        
+
         if (businessProfileId) {
           countQuery = countQuery.eq("business_profile_id", businessProfileId);
         } else {
@@ -1153,23 +1154,13 @@ async function executeTool(
         const slotsAvailable = Math.max(0, 50 - (currentCount || 0));
 
         if (slotsAvailable === 0) {
-          // Delete oldest memories to make room
-          const { data: oldest } = await supabase
-            .from("user_memories")
-            .select("id")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: true })
-            .limit(memories.length);
-          
-          if (oldest && oldest.length > 0) {
-            await supabase
-              .from("user_memories")
-              .delete()
-              .in("id", oldest.map((m: any) => m.id));
-          }
+          return JSON.stringify({
+            error: "memory_full",
+            message: "Memorija je puna (50/50). Reci korisniku da moraš obrisati neku staru memoriju prije novih — koristi get_memories da mu pokažeš postojeće i pitaj koju obrisati.",
+          });
         }
 
-        const toInsert = memories.slice(0, 10).map((m: any) => ({
+        const toInsert = memories.slice(0, Math.min(10, slotsAvailable)).map((m: any) => ({
           user_id: userId,
           content: m.content,
           category: m.category || "fact",
@@ -1182,6 +1173,19 @@ async function executeTool(
           .select();
 
         if (error) return JSON.stringify({ error: error.message });
+
+        // Audit trail (direct execution, no confirmation needed for memories)
+        try {
+          await supabase.from('ai_action_log').insert(
+            (data || []).map((m: any) => ({
+              user_id: userId,
+              action_type: 'extract_memory',
+              decision: 'executed_direct',
+              new_value: { id: m.id, content: m.content, category: m.category },
+            }))
+          );
+        } catch { /* audit is best-effort */ }
+
         return JSON.stringify({ success: true, saved_count: (data || []).length, message: "Memorije spremljene." });
       }
 
@@ -1220,8 +1224,18 @@ async function executeTool(
         if (error) return JSON.stringify({ error: error.message });
         if (!data) return JSON.stringify({ error: "Memorija nije pronađena." });
 
+        try {
+          await supabase.from('ai_action_log').insert({
+            user_id: userId,
+            action_type: 'delete_memory',
+            decision: 'executed_direct',
+            old_value: data,
+          });
+        } catch { /* audit best-effort */ }
+
         return JSON.stringify({ success: true, message: `Memorija obrisana.` });
       }
+
 
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
