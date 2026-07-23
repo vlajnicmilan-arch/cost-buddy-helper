@@ -213,8 +213,7 @@ export const SubscriptionSection = () => {
               <div className="pt-1 space-y-1">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="rounded-lg gap-1.5 w-full sm:w-auto"
+                  className="rounded-lg gap-1.5 w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={openPortal}
                   disabled={portalLoading}
                 >
