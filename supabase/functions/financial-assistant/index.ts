@@ -5,10 +5,27 @@ import { checkAiQuota } from "../_shared/aiQuota.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 
+interface PendingProposal {
+  proposal_id: string;
+  action_type: 'create_savings_goal' | 'update_savings_goal' | 'create_reminder';
+  summary: string;
+  old_value?: unknown;
+  new_value?: unknown;
+}
+
+function encodeProposalMarker(p: PendingProposal): string {
+  return `[[AI_PROPOSAL]]${JSON.stringify(p)}[[/AI_PROPOSAL]]`;
+}
+
+function fmtEUR(n: number): string {
+  return `${Number(n).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
 
 // Tool definitions for the AI agent
 const tools = [
