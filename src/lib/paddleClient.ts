@@ -84,6 +84,12 @@ export interface OpenCheckoutArgs {
   email?: string | null;
   locale?: 'hr' | 'en' | 'de';
   successUrl?: string;
+  /**
+   * Optional Paddle discount code applied programmatically in the overlay.
+   * Paddle validates the code server-side and silently rejects it if it
+   * does not apply to the selected price — we never validate client-side.
+   */
+  discountCode?: string | null;
 }
 
 /**
