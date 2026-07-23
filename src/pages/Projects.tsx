@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { ReadOnlyBanner } from '@/components/access/ReadOnlyBanner';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,9 @@ const Projects = () => {
   const { storageMode } = useStorage();
   const navigate = useNavigate();
   const { refetch } = useExpenses();
-  const { hasAccess } = useFeatureAccess();
+  const { hasModuleAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
+  const hasProjectsAccess = hasModuleAccess('projekti');
 
 
   // Free users get access if they are a member of at least one project (invited as worker/member)
@@ -36,7 +39,7 @@ const Projects = () => {
   useEffect(() => {
     const check = async () => {
       if (!user) { setHasMemberships(false); return; }
-      if (hasAccess('projects')) { setHasMemberships(true); return; }
+       if (hasProjectsAccess) { setHasMemberships(true); return; }
       const { count } = await supabase
         .from('project_members')
         .select('id', { count: 'exact', head: true })
@@ -44,7 +47,14 @@ const Projects = () => {
       setHasMemberships((count || 0) > 0);
     };
     check();
-  }, [user, hasAccess]);
+  }, [user, hasProjectsAccess]);
+
+  const gatePromptedRef = useState<{ done: boolean }>({ done: false })[0];
+  useEffect(() => {
+    if (hasProjectsAccess || hasMemberships !== false || gatePromptedRef.done) return;
+    gatePromptedRef.done = true;
+    requestModule('projects', { onDismiss: () => navigate('/home', { replace: true }) });
+  }, [hasProjectsAccess, hasMemberships, requestModule, navigate, gatePromptedRef]);
 
   if (authLoading && storageMode === 'cloud') {
     return (
@@ -54,8 +64,8 @@ const Projects = () => {
     );
   }
 
-  const canSeePanel = hasAccess('projects') || hasMemberships === true;
-  const canCreate = hasAccess('projects');
+  const canSeePanel = hasProjectsAccess || hasMemberships === true;
+  const canCreate = hasProjectsAccess;
 
   return (
     <div className="min-h-dvh bg-background pb-20">

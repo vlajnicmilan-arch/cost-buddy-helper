@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface ProjectsPanelProps {
   onRefreshExpenses?: () => void;
@@ -50,6 +51,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const { projects, loading, addProject, updateProject, deleteProject, archiveProject, migrateToBusinessMode, refetch, activeBusinessProfileId } = useProjects();
   const { formatAmount } = useCurrency();
   const { hasAccess } = useFeatureAccess();
+  const { requestModule } = useModuleGate();
   const hasProjectsSubscription = hasAccess('projects');
   const { businessModeEnabled } = useAppState();
   
@@ -81,8 +83,12 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
   const { profiles: businessProfiles } = useBusinessProfiles();
 
   const handleOpenBlankDialog = () => {
-    setEditingProject(null);
-    setDialogOpen(true);
+    requestModule('projects', {
+      onGranted: () => {
+        setEditingProject(null);
+        setDialogOpen(true);
+      },
+    });
   };
 
   // Mount/unmount telemetry — sluzi za dokaz da li se panel remounta pri

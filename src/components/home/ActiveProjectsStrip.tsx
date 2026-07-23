@@ -13,6 +13,7 @@ import { calculateContractValue } from '@/lib/projectCalculations';
 import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLine';
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 const STATUS_ICON_MAP = {
   Sparkles,
@@ -82,6 +83,7 @@ export const ActiveProjectsStrip = React.memo(({
   const { projectsModuleEnabled } = useAppState();
   const { lightTap } = useHaptics();
   const { formatAmount } = useCurrency();
+  const { requestModule } = useModuleGate();
 
   const activeIds = useMemo(
     () =>
@@ -131,6 +133,12 @@ export const ActiveProjectsStrip = React.memo(({
 
   const handleNav = (path: string, state?: Record<string, unknown>) => {
     lightTap();
+    if (path === '/projects') {
+      requestModule('projects', {
+        onGranted: () => navigate(path, state ? { state } : undefined),
+      });
+      return;
+    }
     navigate(path, state ? { state } : undefined);
   };
 

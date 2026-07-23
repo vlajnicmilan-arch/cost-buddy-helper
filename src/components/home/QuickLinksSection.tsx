@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { SavingsGoalsSection } from '@/components/savings';
 import { Expense } from '@/types/expense';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface QuickLinksSectionProps {
   isLocalMode: boolean;
@@ -27,6 +28,7 @@ export const QuickLinksSection = React.memo(({
 }: QuickLinksSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { requestModule } = useModuleGate();
 
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -57,7 +59,7 @@ export const QuickLinksSection = React.memo(({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         whileHover={{ scale: 1.01 }}
-        onClick={() => navigate('/projects')}
+        onClick={() => requestModule('projects', { onGranted: () => navigate('/projects') })}
         className="p-4 rounded-2xl border border-border/50 backdrop-blur-md cursor-pointer transition-all duration-300 hover:shadow-lg relative overflow-hidden"
         style={{ borderLeftWidth: 3, borderLeftColor: 'hsl(var(--primary))', background: 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--primary) / 0.02) 50%, transparent 100%)' }}
       >

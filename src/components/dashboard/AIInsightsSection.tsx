@@ -6,6 +6,7 @@ import { useAIInsights, type AIInsight, type AISeverity } from "@/hooks/useAIIns
 import { useLocalAttentionInsights } from "@/hooks/useLocalAttentionInsights";
 import { AIInsightCard } from "./AIInsightCard";
 import type { Expense } from "@/types/expense";
+import { useModuleGate } from "@/hooks/useModuleGate";
 
 interface Props {
   enabled: boolean;
@@ -42,6 +43,7 @@ const mergeAndCap = (ai: AIInsight[], local: AIInsight[]): AIInsight[] => {
 export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { requestModule } = useModuleGate();
   const { insights: aiInsights, loading } = useAIInsights(enabled);
   const localInsights = useLocalAttentionInsights(allExpenses ?? []);
 
@@ -53,7 +55,9 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
   const handleAction = useCallback((insight: AIInsight) => {
     const action = insight.action;
     if (action?.type === "open_project" && action.target_id) {
-      navigate("/projects", { state: { openProjectId: action.target_id, from: "/home" } });
+      requestModule('projects', {
+        onGranted: () => navigate("/projects", { state: { openProjectId: action.target_id, from: "/home" } }),
+      });
       return;
     }
     if (action?.type === "open_invoice" && action.target_id) {
@@ -62,7 +66,7 @@ export const AIInsightsSection = ({ enabled, allExpenses }: Props) => {
       return;
     }
     window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: insight.prompt } }));
-  }, [navigate]);
+  }, [navigate, requestModule]);
 
   if (!enabled) return null;
   if (!loading && merged.length === 0) return null;

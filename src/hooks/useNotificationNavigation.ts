@@ -22,6 +22,7 @@ import { showSuccess } from '@/hooks/useStatusFeedback';
 import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayload';
 import { setPendingHighlight } from '@/lib/pendingHighlight';
 import { dispatchAttributionOpen, parseAttributionPayload } from '@/lib/attribution/events';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 /**
  * Izvuče project id iz route oblika `/projects?id=<UUID>`. Vraća null ako
@@ -43,6 +44,7 @@ export function useNotificationNavigation() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { t } = useTranslation();
+  const { requestModule } = useModuleGate();
 
   const navigateFromPayload = useCallback(
     (payload: NormalizedPayload): boolean => {
@@ -64,12 +66,14 @@ export function useNotificationNavigation() {
       const projectId = extractProjectId(target);
       if (projectId) {
         const h = payload.highlight;
-        navigate('/projects', {
-          state: {
-            openProjectId: projectId,
-            initialTab: h?.tab,
-            openExpenseId: h?.type === 'expense' ? h.id : undefined,
-          },
+        requestModule('projects', {
+          onGranted: () => navigate('/projects', {
+            state: {
+              openProjectId: projectId,
+              initialTab: h?.tab,
+              openExpenseId: h?.type === 'expense' ? h.id : undefined,
+            },
+          }),
         });
         return true;
       }
@@ -80,12 +84,14 @@ export function useNotificationNavigation() {
       // dočekaju korisnika s aktualnim stanjem umjesto prethodnog cache-a.
       if (target.startsWith('/krug')) {
         qc.invalidateQueries({ queryKey: ['krug'] });
+        requestModule('krug', { onGranted: () => navigate(target) });
+        return true;
       }
 
       navigate(target);
       return true;
     },
-    [navigate, qc],
+    [navigate, qc, requestModule],
   );
 
   const navigateFromNotification = useCallback(
