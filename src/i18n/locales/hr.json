@@ -2162,6 +2162,9 @@
       "scanCancelled": "Skeniranje je prekinuto. Pokušaj ponovno.",
       "scanFailed": "Greška pri skeniranju računa"
     },
+    "ai": {
+      "capReached": "AI obrada je privremeno pauzirana do 1. u mjesecu. Ispričavamo se na neugodnosti."
+    },
     "pdf": {
       "loginRequired": "Moraš biti prijavljen za analizu izvoda",
       "rateLimit": "Previše zahtjeva. Pokušaj ponovno za minutu.",
