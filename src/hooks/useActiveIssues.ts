@@ -44,7 +44,7 @@ export const useActiveIssues = (enabled: boolean) => {
     try {
       const { data, error } = await (supabase as any)
         .from("notifications")
-        .select("id, type, title, message, severity, dedup_key, entity_type, entity_id, data, created_at, last_seen_at")
+        .select("id, type, title, message, severity, dedup_key, entity_type, entity_id, data, created_at, last_seen_at, recurrence_count")
         .eq("user_id", user.id)
         .eq("status", "active")
         .order("created_at", { ascending: false })
