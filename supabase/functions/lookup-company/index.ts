@@ -10,6 +10,8 @@ const corsHeaders = {
 
 const SUDREG_API = "https://sudreg-data.gov.hr/api";
 const TOKEN_URL = `${SUDREG_API}/oauth/token`;
+const CACHE_TTL_MS = 7 * 86_400_000; // 7 days
+const DAILY_LIMIT_PER_USER = 30;
 
 async function getAccessToken(clientId: string, clientSecret: string): Promise<string> {
   const credentials = btoa(`${clientId}:${clientSecret}`);
@@ -29,18 +31,12 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
   }
 
   const data = await response.json();
-  console.log("Token response keys:", Object.keys(data).join(", "));
-  console.log("Token obtained, expires_in:", data.expires_in, "token_type:", data.token_type, "scope:", data.scope);
-  console.log("Token first 20 chars:", String(data.access_token).substring(0, 20));
+  console.log("Token obtained, expires_in:", data.expires_in, "token_type:", data.token_type);
   return data.access_token;
 }
 
-// Use the correct endpoint: /javni/detalji_subjekta
 async function fetchSubjectDetails(token: string, tipIdentifikatora: string, identifikator: string): Promise<any> {
   const url = `${SUDREG_API}/javni/detalji_subjekta?expand_relations=true&tip_identifikatora=${tipIdentifikatora}&identifikator=${identifikator}`;
-  console.log("Sudreg detalji_subjekta fetch:", url);
-  console.log("Using Bearer token (first 30):", token.substring(0, 30));
-
   const response = await fetch(url, {
     method: "GET",
     headers: {
@@ -49,7 +45,7 @@ async function fetchSubjectDetails(token: string, tipIdentifikatora: string, ide
     },
   });
 
-  console.log("Sudreg response status:", response.status, "headers:", JSON.stringify(Object.fromEntries(response.headers.entries())));
+  console.log("Sudreg response status:", response.status);
 
   if (!response.ok) {
     const errText = await response.text();
@@ -58,11 +54,9 @@ async function fetchSubjectDetails(token: string, tipIdentifikatora: string, ide
   }
 
   const data = await response.json();
-  console.log("Sudreg response data keys:", Object.keys(data).join(", "));
   return data;
 }
 
-// Build structured company data from detalji_subjekta response
 function buildCompanyData(data: any): any {
   const companyName = data.skracena_tvrtka?.ime || data.tvrtka?.ime || "";
   const oib = data.oib ? String(data.oib).padStart(11, "0") : "";
@@ -107,14 +101,11 @@ function buildCompanyData(data: any): any {
     iban: "",
     bank_name: "",
     email: emails.length > 0 ? emails[0].adresa || "" : "",
-    phone: "",
-    website: "",
     source: "sudreg",
   };
 }
 
-// AI fallback for entities not in court register
-async function extractWithAI(query: string, _lovableApiKey: string): Promise<any> {
+async function extractWithAI(query: string): Promise<any> {
   const isOIB = /^\d{11}$/.test(query.trim());
 
   const response = await callGemini({
@@ -154,8 +145,6 @@ Korisnik traži prema: ${isOIB ? "OIB broju" : "nazivu tvrtke"}`,
             mbs: { type: "string" },
             court_registry: { type: "string" },
             email: { type: "string" },
-            phone: { type: "string" },
-            website: { type: "string" },
             found: { type: "boolean" },
             source: { type: "string" },
           },
@@ -179,6 +168,12 @@ Korisnik traži prema: ${isOIB ? "OIB broju" : "nazivu tvrtke"}`,
 
   const companyData = JSON.parse(toolCall.function.arguments);
   companyData.source = "ai";
+
+  // Strip halucinable fields — AI has no reliable source for these
+  delete companyData.phone;
+  delete companyData.website;
+  if (companyData.source !== "sudreg") delete companyData.email;
+
   return companyData;
 }
 
@@ -186,44 +181,116 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // 1. JWT auth required
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userSupabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.slice("Bearer ".length);
+    const { data: claimsData, error: claimsError } = await userSupabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
     const { query } = await req.json();
-    if (!query || query.trim().length < 2) {
+    if (!query || typeof query !== "string" || query.trim().length < 2) {
       return new Response(JSON.stringify({ error: "Query too short" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const SUDREG_CLIENT_ID = Deno.env.get("SUDREG_CLIENT_ID");
-    const SUDREG_CLIENT_SECRET = Deno.env.get("SUDREG_CLIENT_SECRET");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const __svc = createClient(supabaseUrl, serviceKey);
+
+    // 2. Per-user daily rate limit (30/day) using existing ai_usage_daily
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usageRow } = await __svc
+      .from("ai_usage_daily")
+      .select("count")
+      .eq("user_id", userId)
+      .eq("route", "lookup-company")
+      .eq("usage_date", today)
+      .maybeSingle();
+    if ((usageRow?.count ?? 0) >= DAILY_LIMIT_PER_USER) {
+      return new Response(JSON.stringify({ error: "daily_limit_reached" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const trimmed = query.trim();
     const isOIB = /^\d{11}$/.test(trimmed);
     const isMBS = /^\d{9}$/.test(trimmed);
 
-    // Numeric identifiers are temporarily disabled because official registry access is unreliable.
     if (isOIB || isMBS) {
       return new Response(JSON.stringify({
         found: false,
         error: "Pretraga po OIB/MBS je trenutno isključena. Upišite naziv tvrtke.",
-        source: "disabled_numeric_lookup"
+        source: "disabled_numeric_lookup",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // For name searches, use AI (cost cap gate)
-    const __svc = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // 3. Cache lookup (7-day TTL)
+    const queryNorm = trimmed.toLowerCase().replace(/\s+/g, " ");
+    const { data: cached } = await __svc
+      .from("company_lookup_cache")
+      .select("payload, hit_count, updated_at")
+      .eq("query_normalized", queryNorm)
+      .maybeSingle();
+
+    if (cached && new Date(cached.updated_at).getTime() > Date.now() - CACHE_TTL_MS) {
+      __svc.from("company_lookup_cache")
+        .update({ hit_count: (cached.hit_count ?? 1) + 1 })
+        .eq("query_normalized", queryNorm)
+        .then(() => {}, () => {}); // best-effort
+      return new Response(JSON.stringify({ ...cached.payload, cached: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 4. AI call (gated by monthly cost cap)
     const __cap = await checkAiCostCap(__svc);
     if (__cap) return __cap;
-    const companyData = await extractWithAI(trimmed, LOVABLE_API_KEY);
+
+    const companyData = await extractWithAI(trimmed);
     recordAiCost(__svc, "lookup-company").catch(() => {});
-    console.log("AI result:", JSON.stringify(companyData));
+
+    // Increment per-user daily counter (best-effort)
+    __svc.from("ai_usage_daily")
+      .upsert({
+        user_id: userId,
+        usage_date: today,
+        route: "lookup-company",
+        count: (usageRow?.count ?? 0) + 1,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,usage_date,route" })
+      .then(() => {}, () => {});
+
+    // Cache write (best-effort)
+    __svc.from("company_lookup_cache")
+      .upsert({
+        query_normalized: queryNorm,
+        payload: companyData,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "query_normalized" })
+      .then(() => {}, () => {});
 
     return new Response(JSON.stringify(companyData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
