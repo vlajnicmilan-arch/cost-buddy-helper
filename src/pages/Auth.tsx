@@ -16,6 +16,8 @@ import { useStorage } from '@/contexts/StorageContext';
 import { lovable } from '@/integrations/lovable/index';
 import { Capacitor } from '@capacitor/core';
 import { useNativeOAuth } from '@/hooks/useNativeOAuth';
+import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywallCampaign';
+import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 const authSchema = z.object({
@@ -482,6 +484,9 @@ const Auth = () => {
           </button>
         )}
         
+        {/* Founding / campaign banner — visible whenever user landed with ?code= (persisted in sessionStorage) */}
+        <CampaignBanner />
+
         {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
@@ -722,6 +727,29 @@ const Auth = () => {
           </div>
         </form>
       </div>
+    </div>
+  );
+};
+
+const CampaignBanner = () => {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const campaign = (() => {
+    const fromUrl = readCampaignFromParams(new URLSearchParams(location.search));
+    return mergeCampaign(fromUrl, loadCampaign());
+  })();
+  if (!campaign.code) return null;
+  const isFounding = campaign.code.toUpperCase() === 'FOUNDING100';
+  const message = isFounding
+    ? t('auth.campaignBanner.founding')
+    : t('auth.campaignBanner.generic');
+  return (
+    <div
+      role="status"
+      className="rounded-2xl border border-primary/40 bg-primary/10 text-foreground p-4 flex items-start gap-3 animate-fade-in"
+    >
+      <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+      <p className="text-sm leading-snug">{message}</p>
     </div>
   );
 };

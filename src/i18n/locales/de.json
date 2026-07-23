@@ -1619,6 +1619,10 @@
     }
   },
   "auth": {
+    "campaignBanner": {
+      "founding": "🎉 Dein Founding-Angebot wartet — Komplet jährlich mit 50% Rabatt (129,95 € statt 259,90 €). Melde dich an oder erstelle ein Konto, wir bringen dich direkt hin.",
+      "generic": "🎉 Dein Rabatt wartet nach der Anmeldung. Melde dich an oder erstelle ein Konto — wir bringen dich direkt zum Angebot."
+    },
     "login": "Anmelden",
     "register": "Registrieren",
     "email": "E-Mail",

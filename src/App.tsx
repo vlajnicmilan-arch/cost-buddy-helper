@@ -226,6 +226,7 @@ const AppRoutes = () => {
           <Route path="/setup" element={<StorageSetup />} />
           <Route path="/install" element={<Install />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/paywall" element={<PaywallAuthRedirect />} />
           <Route path="/native-oauth/callback" element={<NativeOAuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

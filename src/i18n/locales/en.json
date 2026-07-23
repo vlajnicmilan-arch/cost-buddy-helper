@@ -1619,6 +1619,10 @@
     }
   },
   "auth": {
+    "campaignBanner": {
+      "founding": "🎉 Your Founding offer is waiting — Komplet yearly at 50% off (€129.95 instead of €259.90). Sign in or create an account and we'll take you straight to it.",
+      "generic": "🎉 Your discount is waiting after sign-in. Log in or create an account and we'll take you straight to the offer."
+    },
     "login": "Login",
     "register": "Register",
     "email": "Email",
