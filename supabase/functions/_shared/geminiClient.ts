@@ -522,21 +522,23 @@ function geminiSSEToOpenAISSE(input: ReadableStream<Uint8Array>): ReadableStream
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAI)}\n\n`));
                 }
                 if (p?.functionCall) {
+                  const toolCall: any = {
+                    index: 0,
+                    id: `call_${Date.now()}`,
+                    type: 'function',
+                    function: {
+                      name: p.functionCall.name,
+                      arguments: JSON.stringify(p.functionCall.args ?? {}),
+                    },
+                  };
+                  if (p.thoughtSignature) toolCall._thought_signature = p.thoughtSignature;
                   const openAI = {
                     id,
                     object: 'chat.completion.chunk',
                     choices: [{
                       index: 0,
                       delta: {
-                        tool_calls: [{
-                          index: 0,
-                          id: `call_${Date.now()}`,
-                          type: 'function',
-                          function: {
-                            name: p.functionCall.name,
-                            arguments: JSON.stringify(p.functionCall.args ?? {}),
-                          },
-                        }],
+                        tool_calls: [toolCall],
                       },
                       finish_reason: null,
                     }],
