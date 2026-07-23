@@ -197,6 +197,9 @@ export const usePDFParser = () => {
           emitCoreScanLimitReached(quotaError.resetAt);
           throw new Error(t('scanner.coreQuota.title', 'Iskorišten je besplatni limit skeniranja'));
         }
+        if (quotaError?.kind === 'cost_cap') {
+          throw new Error(t('errors.ai.capReached', 'AI obrada je privremeno pauzirana do 1. u mjesecu.'));
+        }
         throw new Error(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
       }
       if (response.status === 402) throw new Error(t('errors.pdf.noCredits', 'Nedostaje kredita za AI obradu.'));
