@@ -663,7 +663,8 @@ Deno.serve(async (req) => {
         'project_work_entries', 'project_workers', 'project_members', 'project_documents',
         'project_milestones', 'project_funding', 'project_worker_payouts',
         'project_collaborators', 'projects', 'user_entitlements',
-        'krug_membership', 'krug_shared_payment_source', 'krug',
+        'krug_membership', 'krug_ownership', 'krug_shared_payment_source',
+        'income_sources',
         'notifications', 'chat_messages', 'app_diagnostics_logs',
         'user_login_logs', 'feedback_submissions', 'reminders', 'savings_goals',
       ];
@@ -671,8 +672,10 @@ Deno.serve(async (req) => {
         for (const t of cleanupTables) {
           try { await a.from(t).delete().eq('user_id', uid); } catch { /* best effort */ }
         }
-        try { await a.from('krug').delete().eq('owner_id', uid); } catch { /* noop */ }
+        // krug real schema: no owner_id — clean via created_by
+        try { await a.from('krug').delete().eq('created_by', uid); } catch { /* noop */ }
       }
+
       after = await snapshot();
     } catch (e) {
       fatal = (fatal ? fatal + ' | ' : '') + 'teardown: ' + (e as Error).message;
