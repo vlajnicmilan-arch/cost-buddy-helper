@@ -183,9 +183,9 @@ type Ctx = {
 
 async function spec01_crossUserReads(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectAId = await createProject(ctx.aClient, ctx.aId);
-  const sourceAId = await createCustomSource(ctx.aClient, ctx.aId);
-  const expenseAId = await createExpense(ctx.aClient, ctx.aId, { project_id: projectAId, payment_source: `custom:${sourceAId}` });
+  const projectAId = await createProject(ctx.aId);
+  const sourceAId = await createCustomSource(ctx.aId);
+  const expenseAId = await createExpense(ctx.aId, { project_id: projectAId, payment_source: `custom:${sourceAId}` });
   try {
     let r;
     r = await ctx.bClient.from('projects').select('id').eq('id', projectAId);
@@ -220,38 +220,43 @@ async function spec01_crossUserReads(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
+  const projectId = await createProject(ctx.aId);
+  const incomeSourceAId = await createIncomeSource(ctx.aId);
   try {
     for (const role of ['worker', 'investor'] as const) {
       await admin().from('project_members').delete().eq('project_id', projectId);
-      await addProjectMember(ctx.aClient, projectId, ctx.bId, role);
+      await addProjectMember(projectId, ctx.bId, role);
 
+      // NOTE: project_milestones has no user_id column; real budget column is `budget`.
       let r: any = await ctx.bClient.from('project_milestones')
-        .insert({ project_id: projectId, user_id: ctx.bId, name: 'evil', total_budget: 999 });
+        .insert({ project_id: projectId, name: 'evil', budget: 999 });
       results.push(verdict(`02.${role}.1 ${role} ne INSERT milestone`, r.error !== null,
         { severity: 'CRITICAL', surface: 'project_milestones', role, failNote: 'insert prošao — mora biti odbijen' }));
 
-      const { data: m } = await ctx.aClient.from('project_milestones')
-        .insert({ project_id: projectId, user_id: ctx.aId, name: 'ok', total_budget: 100 })
-        .select('id').single();
-      r = await ctx.bClient.from('project_milestones').update({ total_budget: 999 }).eq('id', m!.id).select('id');
-      results.push(verdict(`02.${role}.2 ${role} ne UPDATE milestone budget`, r.error !== null || (r.data ?? []).length === 0,
-        { severity: 'CRITICAL', surface: 'project_milestones.total_budget', role }));
-      await admin().from('project_milestones').delete().eq('id', m!.id);
+      const mId = await createMilestone(projectId, 100);
+      r = await ctx.bClient.from('project_milestones').update({ budget: 999 }).eq('id', mId).select('id');
+      const { data: mChk } = await admin().from('project_milestones').select('budget').eq('id', mId).single();
+      const budgetTampered = mChk?.budget != null && Number(mChk.budget) !== 100;
+      results.push(verdict(`02.${role}.2 ${role} ne UPDATE milestone budget`,
+        (r.error !== null || (r.data ?? []).length === 0) && !budgetTampered,
+        { severity: 'CRITICAL', surface: 'project_milestones.budget', role,
+          failNote: budgetTampered ? `budget promijenjen na ${mChk?.budget}` : undefined }));
+      await admin().from('project_milestones').delete().eq('id', mId);
 
+      // project_funding real cols: project_id, income_source_id, allocated_amount
       r = await ctx.bClient.from('project_funding')
-        .insert({ project_id: projectId, user_id: ctx.bId, amount: 5000, source: 'x' });
+        .insert({ project_id: projectId, income_source_id: incomeSourceAId, allocated_amount: 5000 });
       results.push(verdict(`02.${role}.3 ${role} ne INSERT funding`, r.error !== null,
         { severity: 'CRITICAL', surface: 'project_funding', role }));
 
-      const { data: e } = await ctx.aClient.from('expenses').insert({
-        user_id: ctx.aId, project_id: projectId, amount: 10, type: 'expense',
-        date: new Date().toISOString().slice(0, 10), description: 'own',
-      }).select('id').single();
-      r = await ctx.bClient.from('expenses').delete().eq('id', e!.id).select('id');
-      results.push(verdict(`02.${role}.4 ${role} ne DELETE tuđi expense`, r.error !== null || (r.data ?? []).length === 0,
+      const eId = await createExpense(ctx.aId, { project_id: projectId, amount: 10, description: 'own' });
+      r = await ctx.bClient.from('expenses').delete().eq('id', eId).select('id');
+      const { data: eChk } = await admin().from('expenses').select('id, deleted_at').eq('id', eId).maybeSingle();
+      const wasDeleted = !eChk || eChk?.deleted_at != null;
+      results.push(verdict(`02.${role}.4 ${role} ne DELETE tuđi expense`,
+        (r.error !== null || (r.data ?? []).length === 0) && !wasDeleted,
         { severity: 'CRITICAL', surface: 'expenses', role }));
-      await admin().from('expenses').delete().eq('id', e!.id);
+      await admin().from('expenses').delete().eq('id', eId);
     }
   } finally {
     const a = admin();
@@ -259,6 +264,7 @@ async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
     await a.from('project_milestones').delete().eq('project_id', projectId);
     await a.from('project_funding').delete().eq('project_id', projectId);
     await a.from('expenses').delete().eq('project_id', projectId);
+    await a.from('income_sources').delete().eq('id', incomeSourceAId);
     await a.from('projects').delete().eq('id', projectId);
   }
   return results;
@@ -266,19 +272,12 @@ async function spec02_roleWrites(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const projectId = await createProject(ctx.aClient, ctx.aId);
-  await addProjectMember(ctx.aClient, projectId, ctx.bId, 'investor');
-  const { data: m } = await ctx.aClient.from('project_milestones')
-    .insert({ project_id: projectId, user_id: ctx.aId, name: 'M1', total_budget: 1234 })
-    .select('id').single();
-  const milestoneId = m!.id;
-  await ctx.aClient.from('expenses').insert({
-    user_id: ctx.aId, project_id: projectId, amount: 500, type: 'expense',
-    date: new Date().toISOString().slice(0, 10), description: 'interno',
-  });
-  await ctx.aClient.from('project_funding').insert({
-    project_id: projectId, user_id: ctx.aId, amount: 10000, source: 'investor-a',
-  });
+  const projectId = await createProject(ctx.aId);
+  await addProjectMember(projectId, ctx.bId, 'investor');
+  const milestoneId = await createMilestone(projectId, 1234);
+  await createExpense(ctx.aId, { project_id: projectId, amount: 500, description: 'interno' });
+  const incomeSourceAId = await createIncomeSource(ctx.aId);
+  await createFunding(projectId, incomeSourceAId, 10000);
   try {
     let r: any;
     r = await ctx.bClient.from('expenses').select('id, amount, description').eq('project_id', projectId);
@@ -297,12 +296,12 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_work_entries', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_workers').select('id, user_id').eq('project_id', projectId);
+    r = await ctx.bClient.from('project_workers').select('id').eq('project_id', projectId);
     results.push(verdict('03.4 investor NE čita workere',
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_workers', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_funding').select('id, amount').eq('project_id', projectId);
+    r = await ctx.bClient.from('project_funding').select('id, allocated_amount').eq('project_id', projectId);
     results.push(verdict('03.5 investor NE čita project_funding',
       !r.error && (r.data ?? []).length === 0,
       { severity: 'CRITICAL', surface: 'project_funding', role: 'investor',
@@ -313,13 +312,14 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
       !r.error && (r.data ?? []).length === 0,
       { severity: 'HIGH', surface: 'project_documents', role: 'investor' }));
 
-    r = await ctx.bClient.from('project_milestones').select('id, total_budget').eq('id', milestoneId);
+    // Real column is `budget` (not `total_budget`). Same privacy premise.
+    r = await ctx.bClient.from('project_milestones').select('id, budget').eq('id', milestoneId);
     const rows = (r.data ?? []);
-    const budgetLeak = rows.length > 0 && rows[0].total_budget != null;
-    results.push(verdict('03.7 investor NE čita milestone.total_budget',
+    const budgetLeak = rows.length > 0 && rows[0].budget != null;
+    results.push(verdict('03.7 investor NE čita milestone.budget',
       !r.error && !budgetLeak,
-      { severity: 'CRITICAL', surface: 'project_milestones.total_budget', role: 'investor',
-        failNote: budgetLeak ? `total_budget=${rows[0].total_budget} izložen investoru` : undefined }));
+      { severity: 'CRITICAL', surface: 'project_milestones.budget', role: 'investor',
+        failNote: budgetLeak ? `budget=${rows[0].budget} izložen investoru` : undefined }));
 
     r = await ctx.bClient.from('projects').select('id, name').eq('id', projectId);
     results.push(verdict('03.8 investor SMIJE vidjeti projekt (po dizajnu)',
@@ -334,10 +334,12 @@ async function spec03_investorScope(ctx: Ctx): Promise<Verdict[]> {
     await a.from('project_members').delete().eq('project_id', projectId);
     await a.from('project_worker_payouts').delete().eq('project_id', projectId);
     await a.from('project_work_entries').delete().eq('project_id', projectId);
+    await a.from('income_sources').delete().eq('id', incomeSourceAId);
     await a.from('projects').delete().eq('id', projectId);
   }
   return results;
 }
+
 
 async function spec04_rpcSpoofing(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
