@@ -1645,7 +1645,7 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }
 
           console.log(`Executing tool: ${fnName}`, fnArgs);
-          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService, businessProfileId);
+          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService, businessProfileId, toolCtx);
           
           currentMessages.push({
             role: "tool",
