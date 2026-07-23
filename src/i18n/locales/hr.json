@@ -127,6 +127,16 @@
   "aiInsights": {
     "title": "AI uvidi"
   },
+  "aiProposal": {
+    "before": "Prije",
+    "after": "Nakon",
+    "confirm": "Potvrdi",
+    "reject": "Odbij",
+    "confirmed": "Potvrđeno i spremljeno.",
+    "rejected": "Odbijeno.",
+    "error": "Greška"
+  },
+
   "attention": {
     "title": "Za pažnju",
     "empty": "Sve pod kontrolom",
