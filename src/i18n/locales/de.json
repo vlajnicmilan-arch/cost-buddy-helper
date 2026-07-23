@@ -4348,7 +4348,7 @@
       "backup": "Im Cloud-Modus werden Daten automatisch gesichert. Im lokalen Modus verwenden Sie \"Alle Daten exportieren\" aus den Einstellungen für ein manuelles JSON-Backup, das Sie später auf einem anderen Gerät importieren können.",
       "dataSecurity": "Alle Daten sind während der Übertragung (HTTPS/TLS) und im Ruhezustand verschlüsselt. Der Zugriff ist durch RLS-Richtlinien auf Datenbankebene beschränkt — nur Sie (und ausdrücklich eingeladene Mitglieder) können Ihre Daten sehen. In der EU gehostet.",
       "plans": "Kostenlose Stufe (Grundnutzung mit Limits: 30 Transaktionen/Mo, 1 Wallet, 1 Budget) plus einzelne Module Smjer, Krug, Projekti und das Komplet-Paket. Modul Biznis kommt bald. Details in Einstellungen → Abonnement.",
-      "cancelSubscription": "Du kannst dein Abo jederzeit in Einstellungen → Abonnement kündigen. Aktive Module bleiben bis zum Ende der bezahlten Periode nutzbar, danach wechselt die App in den Lese- und Export-Modus — deine Daten bleiben erhalten.",
+      "cancelSubscription": "Kündigen in Einstellungen → Abonnement → Abonnement verwalten (öffnet die Paddle-Seite). Aktive Module bleiben bis zum Ende der bezahlten Periode nutzbar, danach wechselt die App in den Lese- und Export-Modus — deine Daten bleiben erhalten.",
       "refund": "Schreiben Sie uns innerhalb von 14 Tagen nach Zahlung mit einem Grund an support@vmbalance.com. Wir prüfen jeden Antrag individuell nach EU-Verbraucherrecht.",
       "changePlan": "Planwechsel erfolgt in Einstellungen → Abonnement. Upgrades werden gemäß Paddle-Abrechnung sofort wirksam; Downgrades treten am Ende der laufenden Periode in Kraft.",
       "gdprDelete": "Einstellungen → Konto → \"Konto löschen\". Es folgt eine 30-tägige Karenzzeit — Sie erhalten eine Bestätigungs-E-Mail, und eine Anmeldung innerhalb der 30 Tage bricht die Löschung automatisch ab. Nach Ablauf werden alles dauerhaft gelöscht: alle Transaktionen, Projekte, Budgets, Dokumente, Einstellungen und Auth-Konto. Die Aktion ist unwiderruflich.",
@@ -5561,7 +5561,7 @@
     "managePortal": "Abonnement verwalten",
     "portalHint": "Öffnet Paddle — kündigen, Karte ändern oder Rechnungen herunterladen.",
     "portalError": "Paddle-Portal kann nicht geöffnet werden. Bitte später erneut versuchen oder support@vmbalance.com schreiben.",
-    "cancelHint": "Für weitere Fragen schreiben Sie uns an support@vmbalance.com.",
+    "cancelHint": "Kündigen, Karte ändern und Rechnungen — Button Abonnement verwalten oben. Bei Fragen: support@vmbalance.com.",
     "source": {
       "paddle": "Abonnement",
       "trial": "Testphase",
