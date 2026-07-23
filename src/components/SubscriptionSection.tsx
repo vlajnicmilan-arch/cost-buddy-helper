@@ -237,7 +237,7 @@ export const SubscriptionSection = () => {
             <p className="text-[11px] text-muted-foreground px-1 pt-1">
               {t(
                 'subscription.cancelHint',
-                'Za dodatna pitanja pišite nam na support@vmbalance.com.'
+                'Otkazivanje, promjena kartice i računi — gumb Upravljaj pretplatom iznad. Za pitanja pišite na support@vmbalance.com.'
               )}
             </p>
           </div>

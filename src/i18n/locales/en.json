@@ -4348,7 +4348,7 @@
       "backup": "In cloud mode data is backed up automatically. In local mode, use \"Export all data\" from Settings for a manual JSON backup you can later import on another device.",
       "dataSecurity": "All data is encrypted in transit (HTTPS/TLS) and at rest. Access is restricted by RLS policies at the database level — only you (and explicitly invited members) can see your data. Hosted in the EU.",
       "plans": "Free tier (basic use with limits: 30 transactions/mo, 1 wallet, 1 budget) plus separate modules Smjer, Krug, Projekti and the Komplet bundle. Biznis module coming soon. Details in Settings → Subscription.",
-      "cancelSubscription": "You can cancel your subscription at any time in Settings → Subscription. You keep access to active modules until the end of the paid period, after which the app switches to read-and-export — your data stays intact.",
+      "cancelSubscription": "Cancel in Settings → Subscription → Manage subscription (opens the Paddle page). Active modules stay until the end of the paid period, after which the app switches to read-and-export — your data stays intact.",
       "refund": "Email us at support@vmbalance.com with a reason within 14 days of payment. We review every request individually under EU consumer law.",
       "changePlan": "You change plans in Settings → Subscription. Upgrades apply immediately per Paddle's billing; downgrades take effect at the end of the current period.",
       "gdprDelete": "Settings → Account → \"Delete account\". A 30-day grace period follows — you'll receive a confirmation email, and signing in within 30 days automatically cancels deletion. After the grace period everything is permanently deleted: all transactions, projects, budgets, documents, settings and auth account. The action is irreversible.",
@@ -5561,7 +5561,7 @@
     "managePortal": "Manage subscription",
     "portalHint": "Opens Paddle — cancel, change card or download invoices.",
     "portalError": "Unable to open the Paddle portal. Please try again later or email support@vmbalance.com.",
-    "cancelHint": "For further questions, email us at support@vmbalance.com.",
+    "cancelHint": "Cancel, change card and invoices — use the Manage subscription button above. Questions: support@vmbalance.com.",
     "source": {
       "paddle": "Subscription",
       "trial": "Trial",

@@ -4354,7 +4354,7 @@
       "backup": "U cloud načinu rada podaci su automatski sigurnosno kopirani. U lokalnom načinu, koristite \"Izvoz svih podataka\" iz Postavki za ručni JSON backup koji možete kasnije uvesti na drugom uređaju.",
       "dataSecurity": "Svi podaci su šifrirani u prijenosu (HTTPS/TLS) i u mirovanju. Pristup je ograničen RLS politikama na razini baze — samo vi (i izričito pozvani članovi) možete vidjeti svoje podatke. Hostano u EU.",
       "plans": "Free razina (osnovni rad s limitima: 30 transakcija/mj, 1 novčanik, 1 budžet) + zasebni moduli Smjer, Krug, Projekti i Komplet paket. Biznis modul uskoro. Detalji u Postavke → Pretplata.",
-      "cancelSubscription": "Pretplatu možeš otkazati u bilo kojem trenutku u Postavke → Pretplata. Ostajete na aktivnim modulima do kraja plaćenog razdoblja, nakon čega prelazite u čitanje i izvoz — podaci ostaju netaknuti.",
+      "cancelSubscription": "Pretplatu otkažeš u Postavke → Pretplata → Upravljaj pretplatom (otvara se Paddle stranica). Aktivni moduli ostaju do kraja plaćenog razdoblja, nakon čega app prelazi u čitanje i izvoz — podaci ostaju netaknuti.",
       "refund": "Pišite nam na support@vmbalance.com s razlogom unutar 14 dana od plaćanja. Razmatramo svaki zahtjev pojedinačno u skladu s EU pravilima o potrošačkim ugovorima.",
       "changePlan": "Promjenu paketa radiš u Postavke → Pretplata. Nadogradnja se primjenjuje odmah prema Paddle obračunu; prelazak na niži paket stupa na snagu na kraju tekućeg razdoblja.",
       "gdprDelete": "Postavke → Račun → \"Obriši račun\". Slijedi 30-dnevni grace period — primit ćete email potvrdu, a ako se prijavite unutar 30 dana brisanje se automatski otkazuje. Nakon isteka roka brišu se trajno: sve transakcije, projekti, proračuni, dokumenti, postavke i auth račun. Akcija je nepovratna.",
@@ -5571,7 +5571,7 @@
     "managePortal": "Upravljaj pretplatom",
     "portalHint": "Otvara Paddle — otkaži, promijeni karticu ili preuzmi račune.",
     "portalError": "Nije moguće otvoriti Paddle portal. Pokušajte kasnije ili nam pišite na support@vmbalance.com.",
-    "cancelHint": "Za dodatna pitanja pišite nam na support@vmbalance.com.",
+    "cancelHint": "Otkazivanje, promjena kartice i računi — gumb Upravljaj pretplatom iznad. Za pitanja pišite na support@vmbalance.com.",
     "source": {
       "paddle": "Pretplata",
       "trial": "Probno razdoblje",
