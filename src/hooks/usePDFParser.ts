@@ -359,6 +359,10 @@ export const usePDFParser = () => {
             emitCoreScanLimitReached(quotaError.resetAt);
             return null;
           }
+          if (quotaError?.kind === 'cost_cap') {
+            showError(t('errors.ai.capReached', 'AI obrada je privremeno pauzirana do 1. u mjesecu.'));
+            return null;
+          }
           showError(t('errors.pdf.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
           return null;
         }
