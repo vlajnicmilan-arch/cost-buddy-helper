@@ -1040,29 +1040,48 @@ async function executeTool(
       case "create_reminder": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        const reminderData: any = {
-          user_id: userId,
+        const payload: Record<string, unknown> = {
           title: args.title,
           remind_at: args.remind_at,
           description: args.description || null,
           type: args.type || "custom",
         };
-        if (businessProfileId) reminderData.business_profile_id = businessProfileId;
+        if (businessProfileId) payload.business_profile_id = businessProfileId;
 
-        const { data, error } = await supabase
-          .from("reminders")
-          .insert(reminderData)
-          .select()
+        const summary = `Novi podsjetnik: "${args.title}" — ${new Date(args.remind_at).toLocaleString('hr-HR')}`;
+
+        const { data: proposal, error } = await supabase
+          .from('ai_proposed_actions')
+          .insert({
+            user_id: userId,
+            session_id: ctx.sessionId,
+            action_type: 'create_reminder',
+            summary,
+            payload,
+            status: 'proposed',
+          })
+          .select('id')
           .single();
 
-        if (error) return JSON.stringify({ error: error.message });
+        if (error || !proposal) {
+          return JSON.stringify({ error: `Ne mogu spremiti prijedlog: ${error?.message ?? 'unknown'}` });
+        }
+
+        ctx.pendingProposals.push({
+          proposal_id: (proposal as any).id,
+          action_type: 'create_reminder',
+          summary,
+          new_value: payload,
+        });
 
         return JSON.stringify({
-          success: true,
-          reminder: data,
-          message: `Podsjetnik "${args.title}" postavljen za ${new Date(args.remind_at).toLocaleString("hr-HR")}.`,
+          needs_confirmation: true,
+          proposal_id: (proposal as any).id,
+          summary,
+          note: "Prijedlog spremljen. NIŠTA nije upisano dok korisnik ne potvrdi karticu.",
         });
       }
+
 
       case "get_reminders": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
