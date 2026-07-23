@@ -1183,6 +1183,30 @@ export type Database = {
           },
         ]
       }
+      company_lookup_cache: {
+        Row: {
+          created_at: string
+          hit_count: number
+          payload: Json
+          query_normalized: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hit_count?: number
+          payload: Json
+          query_normalized: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hit_count?: number
+          payload?: Json
+          query_normalized?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       core_scan_usage: {
         Row: {
           count: number
