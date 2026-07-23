@@ -26,6 +26,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showError } from '@/hooks/useStatusFeedback';
 import { KRUG_PRESETS, type KrugPresetUiKey } from '@/lib/krugPresets';
+import { useModuleGate } from '@/hooks/useModuleGate';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { formatErrorForUser } from '@/lib/errorMessages';
 
 interface Props {
   open: boolean;
@@ -45,6 +48,8 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { requestModule } = useModuleGate();
+  const { hasModuleAccess } = useFeatureAccess();
 
   const [stepIdx, setStepIdx] = useState(0);
   const [name, setName] = useState('');
@@ -84,7 +89,13 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
       onCreated(krugId);
     },
     onError: (err: any) => {
-      showError(err?.message);
+      if (!hasModuleAccess('krug')) {
+        requestModule('krug');
+        return;
+      }
+      showError(formatErrorForUser(err, (key, defaultOrOpts, opts) => String(t(key, defaultOrOpts, opts)), {
+        fallbackText: t('krug.create.error', 'Kreiranje Kruga nije uspjelo. Pokušaj ponovno.'),
+      }));
     },
   });
 
@@ -216,7 +227,10 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
               {t('common.next', 'Dalje')}
             </Button>
           ) : (
-            <Button onClick={() => create.mutate()} disabled={create.isPending}>
+            <Button
+              onClick={() => requestModule('krug', { onGranted: () => create.mutate() })}
+              disabled={create.isPending}
+            >
               {create.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
               {t('krug.create.submit', 'Kreiraj Krug')}
             </Button>

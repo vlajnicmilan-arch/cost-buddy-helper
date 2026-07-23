@@ -31,6 +31,7 @@ import { useKrugSharedPaymentSources } from '@/hooks/useKrugSharedPaymentSources
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   krugId: string;
@@ -44,6 +45,7 @@ interface Props {
 export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Props) {
 
   const { t } = useTranslation();
+  const { requestModule } = useModuleGate();
   const { user } = useAuth();
   const {
     data: linked = [],
@@ -95,7 +97,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
   };
 
 
-  const handleAttach = async (id: string) => {
+  const performAttach = async (id: string) => {
     if (!id) return;
     try {
       await linkPaymentSource(id);
@@ -110,7 +112,11 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
     }
   };
 
-  const handleDetach = async (rowId: string) => {
+  const handleAttach = (id: string) => {
+    requestModule('krug', { onGranted: () => void performAttach(id) });
+  };
+
+  const performDetach = async (rowId: string) => {
     const ok = window.confirm(t('krug.sharedSource.detach.confirm', 'Odvojiti izvor od Kruga?'));
     if (!ok) return;
     try {
@@ -123,6 +129,10 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
           : t('krug.sharedSource.detach.error', 'Odvajanje nije uspjelo'),
       );
     }
+  };
+
+  const handleDetach = (rowId: string) => {
+    requestModule('krug', { onGranted: () => void performDetach(rowId) });
   };
 
   return (

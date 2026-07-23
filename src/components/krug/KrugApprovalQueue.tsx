@@ -26,6 +26,7 @@ import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   krugId: string;
@@ -39,6 +40,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
   const { formatAmount } = useCurrency();
   const { data: pending = [], isLoading } = useKrugPendingExpenses(krugId);
   const applyAct = useKrugApplyAct();
+  const { requestModule } = useModuleGate();
   const [selected, setSelected] = useState<Expense | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -89,13 +91,17 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
     };
   }, [viewerUserId, viewerIsFullMember]);
 
-  const handleAct = async (e: Expense, act: 'A1' | 'A2') => {
+  const performAct = async (e: Expense, act: 'A1' | 'A2') => {
     setActingId(e.id);
     try {
       await applyAct.mutateAsync({ expenseId: e.id, act });
     } finally {
       setActingId(null);
     }
+  };
+
+  const handleAct = (e: Expense, act: 'A1' | 'A2') => {
+    requestModule('krug', { onGranted: () => void performAct(e, act) });
   };
 
   return (

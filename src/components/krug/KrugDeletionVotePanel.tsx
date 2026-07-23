@@ -15,6 +15,7 @@ import {
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
 import type { KrugMemberView } from '@/hooks/useKrug';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   krugId: string;
@@ -28,6 +29,7 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
   const { data } = useKrugDeletionRequest(krugId);
   const vote = useKrugVoteDeletion();
   const cancel = useKrugCancelDeletion();
+  const { requestModule } = useModuleGate();
 
   const fullMembers = members.filter((m) => m.kind === 'owner' || m.kind === 'punopravni');
   const ids = [...new Set([...(data?.request ? [data.request.initiated_by] : []), ...fullMembers.map((m) => m.user_id)])];
@@ -112,7 +114,9 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => vote.mutate({ krugId, approve: true })}
+              onClick={() => requestModule('krug', {
+                onGranted: () => vote.mutate({ krugId, approve: true }),
+              })}
               disabled={vote.isPending}
               className="gap-1.5"
             >
@@ -126,7 +130,9 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
             <Button
               size="sm"
               variant="outline"
-              onClick={() => vote.mutate({ krugId, approve: false })}
+              onClick={() => requestModule('krug', {
+                onGranted: () => vote.mutate({ krugId, approve: false }),
+              })}
               disabled={vote.isPending}
             >
               {t('krug.delete.votePanel.reject', 'Protiv brisanja')}
@@ -137,7 +143,9 @@ export function KrugDeletionVotePanel({ krugId, members, isOwner, currentUserId 
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => cancel.mutate({ krugId })}
+            onClick={() => requestModule('krug', {
+              onGranted: () => cancel.mutate({ krugId }),
+            })}
             disabled={cancel.isPending}
             className="ml-auto"
           >

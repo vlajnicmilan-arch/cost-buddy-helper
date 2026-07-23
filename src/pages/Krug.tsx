@@ -33,9 +33,9 @@ export default function Krug() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { hasAccess } = useFeatureAccess();
+  const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
-  const hasKrugAccess = hasAccess('krug');
+  const hasKrugAccess = hasModuleAccess('krug');
   const isReadOnly = !hasKrugAccess;
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();

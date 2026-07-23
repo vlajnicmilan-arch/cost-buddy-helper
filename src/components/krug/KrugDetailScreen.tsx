@@ -41,6 +41,7 @@ import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 
 interface Props {
@@ -52,6 +53,7 @@ export function KrugDetailScreen({ krugId }: Props) {
   const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
   const { data: members = [] } = useKrugMembers(krugId);
+  const { requestModule } = useModuleGate();
   const changeRole = useKrugChangeMemberRole();
 
   const removeMember = useKrugRemoveMember();
@@ -92,6 +94,9 @@ export function KrugDetailScreen({ krugId }: Props) {
   const canPromoteToPunopravni = canAddPunopravni(krug.preset, punopravniCount);
 
   const handlePromote = async (m: KrugMemberView) => {
+    let granted = false;
+    requestModule('krug', { onGranted: () => { granted = true; } });
+    if (!granted) return;
     if (!m.membership_id) return;
     try {
       await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'punopravni' });
@@ -106,6 +111,9 @@ export function KrugDetailScreen({ krugId }: Props) {
   };
 
   const handleDemote = async (m: KrugMemberView) => {
+    let granted = false;
+    requestModule('krug', { onGranted: () => { granted = true; } });
+    if (!granted) return;
     if (!m.membership_id) return;
     try {
       await changeRole.mutateAsync({ krugId, membershipId: m.membership_id, role: 'obicni' });
@@ -116,6 +124,9 @@ export function KrugDetailScreen({ krugId }: Props) {
   };
 
   const handleRemove = async (m: KrugMemberView) => {
+    let granted = false;
+    requestModule('krug', { onGranted: () => { granted = true; } });
+    if (!granted) return;
     if (!m.membership_id) return;
     const ok = window.confirm(t('krug.member.remove.confirm', 'Ukloniti člana iz Kruga?'));
     if (!ok) return;
@@ -153,7 +164,7 @@ export function KrugDetailScreen({ krugId }: Props) {
             size="sm"
             variant="ghost"
             className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
-            onClick={() => setDeleteOpen(true)}
+            onClick={() => requestModule('krug', { onGranted: () => setDeleteOpen(true) })}
           >
             <Trash2 className="w-4 h-4 mr-1" />
             {t('krug.delete.cta', 'Obriši Krug')}
@@ -191,7 +202,11 @@ export function KrugDetailScreen({ krugId }: Props) {
             <span className="text-xs text-muted-foreground">({members.length})</span>
           </h3>
           {isOwner && (
-            <Button size="sm" onClick={() => setAddOpen(true)} className="h-8">
+            <Button
+              size="sm"
+              onClick={() => requestModule('krug', { onGranted: () => setAddOpen(true) })}
+              className="h-8"
+            >
               <UserPlus className="w-4 h-4 mr-1" />
               {t('krug.member.add.cta', 'Dodaj člana')}
             </Button>

@@ -10,6 +10,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { friendlyError, tr } from '@/lib/errorMessages';
 
 export interface KrugRetractOutcome {
   outcome: string;
@@ -47,9 +48,9 @@ export function useKrugRetract() {
         // odmah nakon A3 retracta (predlozena → personal).
         qc.invalidateQueries({ queryKey: ['krug', 'pending-expenses'] });
       } else {
-        showError(res.outcome);
+        showError(tr(`krug.act.error.${res.outcome}`, 'Akcija nije dopuštena.'));
       }
     },
-    onError: (err: any) => showError(err?.message),
+    onError: (err: any) => showError(friendlyError(err, 'krug.act.error.network', 'Akcija trenutno nije moguća. Pokušaj ponovno.')),
   });
 }

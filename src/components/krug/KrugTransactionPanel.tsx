@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, User, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   expenseId: string;
@@ -71,6 +72,8 @@ const PLACEHOLDER_REQUEST_ID = '00000000-0000-0000-0000-000000000000';
 export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuccess }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { requestModule } = useModuleGate();
+  const runWrite = (action: () => void) => requestModule('krug', { onGranted: action });
 
   const expQuery = useQuery({
     queryKey: ['expenses', 'krug-fields', expenseId],
@@ -293,7 +296,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
                   size="sm"
                   variant={active ? 'default' : 'outline'}
                   disabled={disabled}
-                  onClick={() =>
+                  onClick={() => runWrite(() =>
                     setPrivacy.mutate(
                       { expenseId, newPrivacy: opt.key },
                       {
@@ -301,8 +304,8 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
                           if (res && SET_PRIVACY_OK.has(res.outcome)) onReassignSuccess?.();
                         },
                       },
-                    )
-                  }
+                    ),
+                  )}
                   className="flex-col items-start text-left h-auto py-1.5 px-2.5 gap-0.5"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-medium">
@@ -335,7 +338,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="default"
               disabled={pending}
-              onClick={() => applyAct.mutate({ expenseId, act: 'A1' })}
+              onClick={() => runWrite(() => applyAct.mutate({ expenseId, act: 'A1' }))}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
@@ -347,7 +350,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => applyAct.mutate({ expenseId, act: 'A2' })}
+              onClick={() => runWrite(() => applyAct.mutate({ expenseId, act: 'A2' }))}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <X className="w-3.5 h-3.5" />
@@ -359,7 +362,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => applyAct.mutate({ expenseId, act: 'A5' })}
+              onClick={() => runWrite(() => applyAct.mutate({ expenseId, act: 'A5' }))}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -371,7 +374,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => withdraw.mutate({ expenseId })}
+              onClick={() => runWrite(() => withdraw.mutate({ expenseId }))}
               className="h-8 px-2.5 text-xs gap-1.5 text-destructive border-destructive/40"
             >
               <Undo2 className="w-3.5 h-3.5" />
@@ -383,7 +386,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() =>
+              onClick={() => runWrite(() =>
                 retract.mutate(
                   { expenseId },
                   {
@@ -391,8 +394,8 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
                       if (res && RETRACT_OK.has(res.outcome)) onReassignSuccess?.();
                     },
                   },
-                )
-              }
+                ),
+              )}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -404,7 +407,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() =>
+              onClick={() => runWrite(() =>
                 govern.mutate(
                   { expenseId },
                   {
@@ -412,8 +415,8 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
                       if (res && GOVERN_OK.has(res.outcome)) onReassignSuccess?.();
                     },
                   },
-                )
-              }
+                ),
+              )}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />

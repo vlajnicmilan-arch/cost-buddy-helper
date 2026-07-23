@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { friendlyError, tr } from '@/lib/errorMessages';
 
 export type KrugPrivacy = Database['public']['Enums']['krug_privacy'];
 
@@ -50,11 +51,11 @@ export function useKrugSetPrivacy() {
         qc.invalidateQueries({ queryKey: ['expenses'] });
       } else {
         // Business odbijenice (not_author / not_full_member / wrong_state / ...)
-        showError(res.outcome);
+        showError(tr(`krug.act.error.${res.outcome}`, 'Akcija nije dopuštena.'));
       }
     },
     onError: (err: any) => {
-      showError(err?.message);
+      showError(friendlyError(err, 'krug.act.error.network', 'Akcija trenutno nije moguća. Pokušaj ponovno.'));
     },
   });
 }

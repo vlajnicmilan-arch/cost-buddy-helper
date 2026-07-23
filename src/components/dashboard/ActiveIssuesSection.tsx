@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { clickableProps } from "@/lib/a11y";
 import type { Expense } from "@/types/expense";
 import type { ProjectWithOwnership } from "@/types/project";
+import { useModuleGate } from "@/hooks/useModuleGate";
 
 interface Props {
   enabled: boolean;
@@ -45,6 +46,7 @@ const HARD_CAP = 5;
 export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { requestModule } = useModuleGate();
 
   // Runs detection + upsert on mount and when data changes
   useIssueReconciler({ enabled, projects, allExpenses });
@@ -53,7 +55,9 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
 
   const handleAction = useCallback((issue: ActiveIssue) => {
     if (issue.entity_type === "project" && issue.entity_id) {
-      navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } });
+      requestModule('projects', {
+        onGranted: () => navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } }),
+      });
       return;
     }
     if (issue.entity_type === "budget" && issue.entity_id) {
@@ -71,7 +75,7 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
     const titleVars = (issue.data?.title_vars as Record<string, unknown>) ?? {};
     const msg = `${renderText(issue.title, titleVars, t)} — ${renderText(issue.message, (issue.data?.message_vars as Record<string, unknown>) ?? {}, t)}`;
     window.dispatchEvent(new CustomEvent("ai-assistant:ask", { detail: { prompt: msg } }));
-  }, [navigate, t]);
+  }, [navigate, requestModule, t]);
 
   if (!enabled) return null;
   if (!loading && issues.length === 0) return null;

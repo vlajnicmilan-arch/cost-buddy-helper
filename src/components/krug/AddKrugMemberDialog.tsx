@@ -18,6 +18,7 @@ import { useKrugAddMember, type KrugAddError, type KrugAddRole } from '@/hooks/u
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { TFunction } from 'i18next';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 
 interface Props {
@@ -32,6 +33,7 @@ interface Props {
 export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopravniCount }: Props) {
   const { t } = useTranslation();
   const addMember = useKrugAddMember();
+  const { requestModule } = useModuleGate();
 
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<KrugAddRole>('punopravni');
@@ -130,7 +132,10 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
             <Button variant="ghost" onClick={() => handleClose(false)} disabled={addMember.isPending}>
               {t('common.cancel', 'Odustani')}
             </Button>
-            <Button onClick={handleSubmit} disabled={!email.trim() || addMember.isPending}>
+            <Button
+              onClick={() => requestModule('krug', { onGranted: () => void handleSubmit() })}
+              disabled={!email.trim() || addMember.isPending}
+            >
               {addMember.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('krug.member.add.submit', 'Dodaj')}
             </Button>

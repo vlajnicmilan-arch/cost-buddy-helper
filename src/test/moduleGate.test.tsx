@@ -9,7 +9,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ModuleGateProvider, useModuleGate } from '@/hooks/useModuleGate';
 
 vi.mock('@/hooks/useFeatureAccess', () => ({
-  useFeatureAccess: () => ({ hasAccess: (f: string) => f === 'projects' }),
+  useFeatureAccess: () => ({ hasModuleAccess: (m: string) => m === 'projekti' }),
 }));
 
 // Dijalog nam ne treba renderirati — samo verificiramo ugovor open/dismiss.

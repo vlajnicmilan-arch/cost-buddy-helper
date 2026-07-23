@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useKrugRequestDeletion } from '@/hooks/useKrugDeletion';
 import { isOkOutcome } from '@/lib/krugDeletionDecisions';
+import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   open: boolean;
@@ -31,6 +32,7 @@ export function KrugDeleteDialog({ open, onOpenChange, krugId, krugName, fullMem
   const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const request = useKrugRequestDeletion();
+  const { requestModule } = useModuleGate();
   const isSolo = fullMemberCount <= 1;
 
   const handleSubmit = async () => {
@@ -71,7 +73,7 @@ export function KrugDeleteDialog({ open, onOpenChange, krugId, krugName, fullMem
           </Button>
           <Button
             variant="destructive"
-            onClick={handleSubmit}
+            onClick={() => requestModule('krug', { onGranted: () => void handleSubmit() })}
             disabled={request.isPending}
             className="min-w-[120px]"
           >
