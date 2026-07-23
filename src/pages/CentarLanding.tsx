@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import bodyHtmlHr from "./CentarLanding.body.html?raw";
 import bodyHtmlEn from "./CentarLanding.body.en.html?raw";
 import bodyHtmlDe from "./CentarLanding.body.de.html?raw";
+import { reduce as reduceLightbox, type LightboxPhase, type LightboxEffect } from "./lib/centarLightboxState";
 import "./CentarLanding.css";
+
 
 /**
  * CentarLanding — statički landing s runtime nadogradnjama:
@@ -181,52 +183,26 @@ export default function CentarLanding() {
     };
   }, [lang]);
 
-  // Lightbox — event delegation na kontejneru; support Esc, klik na backdrop,
-  // browser back gesta (pushState + popstate). Jezik ne utječe (radi delegacije).
+  // Lightbox — event delegation na kontejneru; state-machine iz
+  // ./lib/centarLightboxState upravlja fazama (idle → open → closing → idle)
+  // i garantira INVARIJANTU: push i back se izjednače na SVAKOM putu
+  // zatvaranja (X / Esc / backdrop / mobile back / SPA-nav unmount).
+  // Vidi src/test/centarLightboxState.test.ts za dokaz invarijanti.
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
 
-    let overlay: HTMLDivElement | null = null;
-    let pushedState = false;
     const HISTORY_TAG = "__centarLightbox";
+    let phase: LightboxPhase = "idle";
+    let overlay: HTMLDivElement | null = null;
+    let currentImg: HTMLImageElement | null = null;
 
-    const closeOverlay = (fromPopState = false) => {
-      if (!overlay) return;
-      overlay.remove();
-      overlay = null;
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", onKey);
-      if (pushedState && !fromPopState) {
-        pushedState = false;
-        try {
-          history.back();
-        } catch {
-          /* noop */
-        }
-      } else {
-        pushedState = false;
-      }
-    };
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeOverlay();
-    };
-
-    const onPop = () => {
-      if (overlay) {
-        pushedState = false;
-        closeOverlay(true);
-      }
-    };
-
-    const openLightbox = (img: HTMLImageElement) => {
-      if (overlay) return;
-      overlay = document.createElement("div");
-      overlay.className = "centar-lightbox";
-      overlay.setAttribute("role", "dialog");
-      overlay.setAttribute("aria-modal", "true");
-      overlay.setAttribute("aria-label", img.alt || "screenshot");
+    const buildOverlay = (img: HTMLImageElement): HTMLDivElement => {
+      const el = document.createElement("div");
+      el.className = "centar-lightbox";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-modal", "true");
+      el.setAttribute("aria-label", img.alt || "screenshot");
 
       const inner = document.createElement("div");
       inner.className = "centar-lightbox-inner";
@@ -244,26 +220,71 @@ export default function CentarLanding() {
         '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
       close.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        closeOverlay();
+        dispatch("user_close");
       });
 
-      overlay.addEventListener("click", (ev) => {
-        if (ev.target === overlay) closeOverlay();
+      el.addEventListener("click", (ev) => {
+        if (ev.target === el) dispatch("user_close");
       });
 
       inner.appendChild(big);
-      overlay.appendChild(inner);
-      overlay.appendChild(close);
-      document.body.appendChild(overlay);
-      document.body.style.overflow = "hidden";
-      document.addEventListener("keydown", onKey);
+      el.appendChild(inner);
+      el.appendChild(close);
+      return el;
+    };
 
-      try {
-        history.pushState({ [HISTORY_TAG]: true }, "");
-        pushedState = true;
-      } catch {
-        pushedState = false;
+    const applyEffect = (fx: LightboxEffect) => {
+      if (fx === "show" && currentImg) {
+        overlay = buildOverlay(currentImg);
+        document.body.appendChild(overlay);
+        document.body.style.overflow = "hidden";
+        document.addEventListener("keydown", onKey);
+      } else if (fx === "hide") {
+        if (overlay) {
+          overlay.remove();
+          overlay = null;
+        }
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", onKey);
+        currentImg = null;
+      } else if (fx === "push") {
+        // Guard: ne dupliraj marker ako je iz nekog razloga već postavljen
+        // (npr. StrictMode remount) — čita se history.state.
+        const st = (typeof history.state === "object" && history.state) || {};
+        if ((st as Record<string, unknown>)[HISTORY_TAG] !== true) {
+          try {
+            history.pushState({ ...(st as object), [HISTORY_TAG]: true }, "");
+          } catch {
+            /* noop */
+          }
+        }
+      } else if (fx === "back") {
+        try {
+          history.back();
+        } catch {
+          /* noop */
+        }
       }
+    };
+
+    const dispatch = (action:
+      | "user_open"
+      | "user_close"
+      | "popstate"
+      | "unmount") => {
+      const t = reduceLightbox(phase, action);
+      phase = t.next;
+      for (const fx of t.effects) applyEffect(fx);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") dispatch("user_close");
+    };
+
+    const onPop = () => {
+      // Popstate možemo dobiti i za tuđe navigacije (npr. router). Reagiraj
+      // samo dok je phase != idle — inače je to normalan back.
+      if (phase !== "idle") dispatch("popstate");
     };
 
     const onClick = (e: MouseEvent) => {
@@ -272,7 +293,8 @@ export default function CentarLanding() {
       const img = target.closest<HTMLImageElement>(".shot-img");
       if (!img) return;
       e.preventDefault();
-      openLightbox(img);
+      currentImg = img;
+      dispatch("user_open");
     };
 
     root.addEventListener("click", onClick);
@@ -281,13 +303,12 @@ export default function CentarLanding() {
     return () => {
       root.removeEventListener("click", onClick);
       window.removeEventListener("popstate", onPop);
-      if (overlay) {
-        overlay.remove();
-        document.body.style.overflow = "";
-      }
-      document.removeEventListener("keydown", onKey);
+      // Ako je overlay zatekao unmount otvoren — state machine emitira
+      // hide + back i history ostaje čista.
+      dispatch("unmount");
     };
   }, []);
+
 
   const langLabel: Record<Lang, string> = { hr: "HR", en: "EN", de: "DE" };
   const themeLabel: Record<Theme, string> = {
