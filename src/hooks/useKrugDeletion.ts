@@ -132,9 +132,19 @@ function useReport() {
   };
 }
 
+function useFriendlyDeletionError() {
+  const { t } = useTranslation();
+  return (err: unknown) => formatErrorForUser(
+    err,
+    (key, defaultOrOpts, opts) => t(key, defaultOrOpts, opts),
+    { fallbackKey: 'krug.delete.errors.unknown' },
+  );
+}
+
 export function useKrugRequestDeletion() {
   const invalidate = useKrugInvalidator();
   const report = useReport();
+  const friendlyError = useFriendlyDeletionError();
   return useMutation({
     mutationFn: async (vars: { krugId: string; reason?: string | null }) => {
       const { data, error } = await supabase.rpc('krug_request_deletion' as any, {
@@ -152,7 +162,7 @@ export function useKrugRequestDeletion() {
       // Resync deletion panel: server state may have advanced (vote counted,
       // request cancelled or approved by another member) before this call errored.
       invalidate(vars.krugId);
-      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
+      showError(friendlyError(err));
     },
   });
 }
@@ -160,6 +170,7 @@ export function useKrugRequestDeletion() {
 export function useKrugVoteDeletion() {
   const invalidate = useKrugInvalidator();
   const report = useReport();
+  const friendlyError = useFriendlyDeletionError();
   return useMutation({
     mutationFn: async (vars: { krugId: string; approve: boolean }) => {
       const { data, error } = await supabase.rpc('krug_vote_deletion' as any, {
@@ -175,7 +186,7 @@ export function useKrugVoteDeletion() {
     },
     onError: (err: any, vars) => {
       invalidate(vars.krugId);
-      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
+      showError(friendlyError(err));
     },
   });
 }
@@ -183,6 +194,7 @@ export function useKrugVoteDeletion() {
 export function useKrugCancelDeletion() {
   const invalidate = useKrugInvalidator();
   const report = useReport();
+  const friendlyError = useFriendlyDeletionError();
   return useMutation({
     mutationFn: async (vars: { krugId: string }) => {
       const { data, error } = await supabase.rpc('krug_cancel_deletion' as any, {
@@ -197,7 +209,7 @@ export function useKrugCancelDeletion() {
     },
     onError: (err: any, vars) => {
       invalidate(vars.krugId);
-      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
+      showError(friendlyError(err));
     },
   });
 }
