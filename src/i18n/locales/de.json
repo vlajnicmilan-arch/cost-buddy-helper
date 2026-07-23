@@ -127,6 +127,16 @@
   "aiInsights": {
     "title": "KI-Einblicke"
   },
+  "aiProposal": {
+    "before": "Vorher",
+    "after": "Nachher",
+    "confirm": "Bestätigen",
+    "reject": "Ablehnen",
+    "confirmed": "Bestätigt und gespeichert.",
+    "rejected": "Abgelehnt.",
+    "error": "Fehler"
+  },
+
   "attention": {
     "title": "Zu beachten",
     "empty": "Alles im Griff",

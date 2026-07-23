@@ -5,10 +5,77 @@ import { checkAiQuota } from "../_shared/aiQuota.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 
+interface PendingProposal {
+  proposal_id: string;
+  action_type: 'create_savings_goal' | 'update_savings_goal' | 'create_reminder';
+  summary: string;
+  old_value?: unknown;
+  new_value?: unknown;
+}
+
+function encodeProposalMarker(p: PendingProposal): string {
+  return `[[AI_PROPOSAL]]${JSON.stringify(p)}[[/AI_PROPOSAL]]`;
+}
+
+function fmtEUR(n: number): string {
+  return `${Number(n).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
+// Wrap an SSE ReadableStream so pending proposal markers are streamed as
+// additional `data:` chunks just before `data: [DONE]`. If no proposals,
+// returns the stream unchanged.
+function wrapStreamWithProposals(
+  input: ReadableStream<Uint8Array>,
+  proposals: PendingProposal[],
+): ReadableStream<Uint8Array> {
+  if (proposals.length === 0) return input;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let injected = false;
+  const markerText = proposals.map(encodeProposalMarker).join("");
+  const markerSse = `data: ${JSON.stringify({ choices: [{ delta: { content: `\n\n${markerText}` } }] })}\n\n`;
+
+  const transform = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const doneIdx = buffer.indexOf("data: [DONE]");
+      if (doneIdx !== -1 && !injected) {
+        const before = buffer.slice(0, doneIdx);
+        const after = buffer.slice(doneIdx);
+        controller.enqueue(encoder.encode(before + markerSse + after));
+        buffer = "";
+        injected = true;
+      } else {
+        // flush what we have so far (keep small tail for [DONE] detection)
+        const safeIdx = Math.max(0, buffer.length - 32);
+        if (safeIdx > 0) {
+          controller.enqueue(encoder.encode(buffer.slice(0, safeIdx)));
+          buffer = buffer.slice(safeIdx);
+        }
+      }
+    },
+    flush(controller) {
+      if (!injected && buffer.length > 0) {
+        // No [DONE] seen — append markers then flush
+        controller.enqueue(encoder.encode(buffer + markerSse + "data: [DONE]\n\n"));
+      } else if (buffer.length > 0) {
+        controller.enqueue(encoder.encode(buffer));
+      } else if (!injected) {
+        controller.enqueue(encoder.encode(markerSse + "data: [DONE]\n\n"));
+      }
+    },
+  });
+
+  return input.pipeThrough(transform);
+}
+
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
 
 // Tool definitions for the AI agent
 const tools = [
@@ -351,7 +418,8 @@ async function executeTool(
   args: Record<string, any>,
   userId: string,
   supabase: any,
-  businessProfileId: string | null
+  businessProfileId: string | null,
+  ctx: { sessionId: string | null; pendingProposals: PendingProposal[] }
 ): Promise<string> {
   try {
     switch (toolName) {
@@ -845,36 +913,48 @@ async function executeTool(
 
         const icon = args.icon || "🎯";
         const color = args.color || "#3b82f6";
-
-        const insertData: any = {
-          user_id: userId,
+        const payload: Record<string, unknown> = {
           name: args.name,
           target_amount: args.target_amount,
-          current_amount: 0,
           icon,
           color,
-          budget_id: null,
         };
-        if (args.target_date) insertData.target_date = args.target_date;
+        if (args.target_date) payload.target_date = args.target_date;
 
-        const { data, error } = await supabase
-          .from("savings_goals")
-          .insert(insertData)
-          .select()
+        const dateLabel = args.target_date
+          ? ` do ${new Date(args.target_date).toLocaleDateString('hr-HR')}`
+          : '';
+        const summary = `Novi cilj štednje: "${args.name}" — ${fmtEUR(Number(args.target_amount))}${dateLabel}`;
+
+        const { data: proposal, error } = await supabase
+          .from('ai_proposed_actions')
+          .insert({
+            user_id: userId,
+            session_id: ctx.sessionId,
+            action_type: 'create_savings_goal',
+            summary,
+            payload,
+            status: 'proposed',
+          })
+          .select('id')
           .single();
 
-        if (error) return JSON.stringify({ error: error.message });
+        if (error || !proposal) {
+          return JSON.stringify({ error: `Ne mogu spremiti prijedlog: ${error?.message ?? 'unknown'}` });
+        }
 
-        const monthsToGoal = args.target_date
-          ? Math.max(1, Math.round((new Date(args.target_date).getTime() - Date.now()) / (30.44 * 24 * 60 * 60 * 1000)))
-          : null;
-        const monthlyNeeded = monthsToGoal ? Math.round((args.target_amount / monthsToGoal) * 100) / 100 : null;
+        ctx.pendingProposals.push({
+          proposal_id: (proposal as any).id,
+          action_type: 'create_savings_goal',
+          summary,
+          new_value: payload,
+        });
 
         return JSON.stringify({
-          success: true,
-          goal: data,
-          monthly_contribution_needed: monthlyNeeded,
-          months_to_deadline: monthsToGoal,
+          needs_confirmation: true,
+          proposal_id: (proposal as any).id,
+          summary,
+          note: "Prijedlog spremljen. Kaži korisniku da klikne Potvrdi / Odbij na kartici koja se pojavljuje. NIŠTA nije upisano dok korisnik ne potvrdi.",
         });
       }
 
@@ -890,32 +970,64 @@ async function executeTool(
 
         if (fetchErr || !currentGoal) return JSON.stringify({ error: "Cilj štednje nije pronađen." });
 
-        const updates: any = {};
-        if (args.name) updates.name = args.name;
-        if (args.target_amount) updates.target_amount = args.target_amount;
-        if (args.target_date) updates.target_date = args.target_date;
+        const g = currentGoal as any;
+        const payload: Record<string, unknown> = { goal_id: args.goal_id };
+        if (args.name) payload.name = args.name;
+        if (args.target_amount) payload.target_amount = args.target_amount;
+        if (args.target_date) payload.target_date = args.target_date;
+        if (args.add_amount) payload.add_amount = args.add_amount;
 
-        if (args.add_amount) {
-          const newAmount = (currentGoal as any).current_amount + args.add_amount;
-          updates.current_amount = newAmount;
-          const targetAmt = args.target_amount || (currentGoal as any).target_amount;
-          if (newAmount >= targetAmt) {
-            updates.is_completed = true;
-            updates.completed_at = new Date().toISOString();
-          }
+        const parts: string[] = [];
+        if (args.add_amount) parts.push(`+${fmtEUR(Number(args.add_amount))} u štednju`);
+        if (args.name && args.name !== g.name) parts.push(`novi naziv "${args.name}"`);
+        if (args.target_amount && Number(args.target_amount) !== Number(g.target_amount)) {
+          parts.push(`cilj ${fmtEUR(Number(g.target_amount))} → ${fmtEUR(Number(args.target_amount))}`);
         }
+        if (args.target_date && args.target_date !== g.target_date) {
+          parts.push(`rok → ${new Date(args.target_date).toLocaleDateString('hr-HR')}`);
+        }
+        const summary = `Izmjena cilja "${g.name}": ${parts.join(', ') || 'bez promjena'}`;
 
-        const { data, error } = await supabase
-          .from("savings_goals")
-          .update(updates)
-          .eq("id", args.goal_id)
-          .eq("user_id", userId)
-          .select()
+        const oldSnapshot = {
+          name: g.name,
+          target_amount: g.target_amount,
+          target_date: g.target_date,
+          current_amount: g.current_amount,
+        };
+
+        const { data: proposal, error } = await supabase
+          .from('ai_proposed_actions')
+          .insert({
+            user_id: userId,
+            session_id: ctx.sessionId,
+            action_type: 'update_savings_goal',
+            summary,
+            payload,
+            status: 'proposed',
+          })
+          .select('id')
           .single();
 
-        if (error) return JSON.stringify({ error: error.message });
-        return JSON.stringify({ success: true, goal: data });
+        if (error || !proposal) {
+          return JSON.stringify({ error: `Ne mogu spremiti prijedlog: ${error?.message ?? 'unknown'}` });
+        }
+
+        ctx.pendingProposals.push({
+          proposal_id: (proposal as any).id,
+          action_type: 'update_savings_goal',
+          summary,
+          old_value: oldSnapshot,
+          new_value: payload,
+        });
+
+        return JSON.stringify({
+          needs_confirmation: true,
+          proposal_id: (proposal as any).id,
+          summary,
+          note: "Prijedlog spremljen. NIŠTA nije upisano dok korisnik ne potvrdi karticu.",
+        });
       }
+
 
       case "get_goal_progress": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
@@ -978,29 +1090,48 @@ async function executeTool(
       case "create_reminder": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
 
-        const reminderData: any = {
-          user_id: userId,
+        const payload: Record<string, unknown> = {
           title: args.title,
           remind_at: args.remind_at,
           description: args.description || null,
           type: args.type || "custom",
         };
-        if (businessProfileId) reminderData.business_profile_id = businessProfileId;
+        if (businessProfileId) payload.business_profile_id = businessProfileId;
 
-        const { data, error } = await supabase
-          .from("reminders")
-          .insert(reminderData)
-          .select()
+        const summary = `Novi podsjetnik: "${args.title}" — ${new Date(args.remind_at).toLocaleString('hr-HR')}`;
+
+        const { data: proposal, error } = await supabase
+          .from('ai_proposed_actions')
+          .insert({
+            user_id: userId,
+            session_id: ctx.sessionId,
+            action_type: 'create_reminder',
+            summary,
+            payload,
+            status: 'proposed',
+          })
+          .select('id')
           .single();
 
-        if (error) return JSON.stringify({ error: error.message });
+        if (error || !proposal) {
+          return JSON.stringify({ error: `Ne mogu spremiti prijedlog: ${error?.message ?? 'unknown'}` });
+        }
+
+        ctx.pendingProposals.push({
+          proposal_id: (proposal as any).id,
+          action_type: 'create_reminder',
+          summary,
+          new_value: payload,
+        });
 
         return JSON.stringify({
-          success: true,
-          reminder: data,
-          message: `Podsjetnik "${args.title}" postavljen za ${new Date(args.remind_at).toLocaleString("hr-HR")}.`,
+          needs_confirmation: true,
+          proposal_id: (proposal as any).id,
+          summary,
+          note: "Prijedlog spremljen. NIŠTA nije upisano dok korisnik ne potvrdi karticu.",
         });
       }
+
 
       case "get_reminders": {
         if (!userId) return JSON.stringify({ error: "Korisnik nije prijavljen." });
@@ -1056,12 +1187,13 @@ async function executeTool(
         const memories = args.memories || [];
         if (memories.length === 0) return JSON.stringify({ message: "Nema memorija za spremanje." });
 
-        // Check current count - max 50 per user per mode
+        // Check current count - max 50 per user per mode. Silent oldest-deletion is
+        // FORBIDDEN — return memory_full so the model can ask the user which to remove.
         let countQuery = supabase
           .from("user_memories")
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId);
-        
+
         if (businessProfileId) {
           countQuery = countQuery.eq("business_profile_id", businessProfileId);
         } else {
@@ -1072,23 +1204,13 @@ async function executeTool(
         const slotsAvailable = Math.max(0, 50 - (currentCount || 0));
 
         if (slotsAvailable === 0) {
-          // Delete oldest memories to make room
-          const { data: oldest } = await supabase
-            .from("user_memories")
-            .select("id")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: true })
-            .limit(memories.length);
-          
-          if (oldest && oldest.length > 0) {
-            await supabase
-              .from("user_memories")
-              .delete()
-              .in("id", oldest.map((m: any) => m.id));
-          }
+          return JSON.stringify({
+            error: "memory_full",
+            message: "Memorija je puna (50/50). Reci korisniku da moraš obrisati neku staru memoriju prije novih — koristi get_memories da mu pokažeš postojeće i pitaj koju obrisati.",
+          });
         }
 
-        const toInsert = memories.slice(0, 10).map((m: any) => ({
+        const toInsert = memories.slice(0, Math.min(10, slotsAvailable)).map((m: any) => ({
           user_id: userId,
           content: m.content,
           category: m.category || "fact",
@@ -1101,6 +1223,19 @@ async function executeTool(
           .select();
 
         if (error) return JSON.stringify({ error: error.message });
+
+        // Audit trail (direct execution, no confirmation needed for memories)
+        try {
+          await supabase.from('ai_action_log').insert(
+            (data || []).map((m: any) => ({
+              user_id: userId,
+              action_type: 'extract_memory',
+              decision: 'executed_direct',
+              new_value: { id: m.id, content: m.content, category: m.category },
+            }))
+          );
+        } catch { /* audit is best-effort */ }
+
         return JSON.stringify({ success: true, saved_count: (data || []).length, message: "Memorije spremljene." });
       }
 
@@ -1139,8 +1274,18 @@ async function executeTool(
         if (error) return JSON.stringify({ error: error.message });
         if (!data) return JSON.stringify({ error: "Memorija nije pronađena." });
 
+        try {
+          await supabase.from('ai_action_log').insert({
+            user_id: userId,
+            action_type: 'delete_memory',
+            decision: 'executed_direct',
+            old_value: data,
+          });
+        } catch { /* audit best-effort */ }
+
         return JSON.stringify({ success: true, message: `Memorija obrisana.` });
       }
+
 
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
@@ -1159,6 +1304,9 @@ serve(async (req) => {
   try {
     const { messages, financialContext, activeBusinessProfileId, businessProfileName, sessionId } = await req.json();
     const businessProfileId: string | null = activeBusinessProfileId || null;
+    const pendingProposals: PendingProposal[] = [];
+    const toolCtx = { sessionId: sessionId ?? null, pendingProposals };
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -1269,6 +1417,17 @@ TRENUTNI NAČIN RADA: 👤 OSOBNI
 
 ${crossModeInstructions}
 ${memoriesSection}
+
+═══════════════════════════════════════
+🛡️ DVOFAZNA POTVRDA WRITE AKCIJA (KRITIČNO)
+═══════════════════════════════════════
+Alati create_savings_goal, update_savings_goal i create_reminder NE PIŠU odmah — vraćaju "needs_confirmation: true" i "proposal_id". To znači:
+- Kad pozoveš takav alat, korisniku se u sučelju automatski pojavi kartica s gumbima Potvrdi / Odbij. TI ne renderiraš karticu.
+- NE tvrdi da je cilj/podsjetnik stvoren ili izmijenjen. Reci: "Pripremio sam prijedlog, klikni Potvrdi na kartici ispod." (jezik prilagodi korisniku)
+- Ne pozivaj isti write alat više puta zaredom bez korisnikove reakcije.
+- Ako alat vrati "error: memory_full", reci korisniku da je memorija puna (50/50) i predloži da izlistate postojeće (get_memories) pa odaberete koju obrisati.
+
+
 
 TVOJA ULOGA:
 Kombinacija stručnog financijskog savjetnika, analitičara i strateškog planera. Tretiraš korisnikove financije kao da si CFO ${businessProfileId ? `tvrtke "${businessProfileName}"` : "njegove osobne ekonomije"}. Koristiš razgovorne upite za dubinsku analizu umjesto dashboarda.
@@ -1520,9 +1679,10 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           })();
         }
 
-        return new Response(streamForClient, {
+        return new Response(wrapStreamWithProposals(streamForClient, pendingProposals), {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
+
       }
 
       const result = await response.json();
@@ -1547,7 +1707,7 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }
 
           console.log(`Executing tool: ${fnName}`, fnArgs);
-          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService, businessProfileId);
+          const toolResult = await executeTool(fnName, fnArgs, userId!, supabaseService, businessProfileId, toolCtx);
           
           currentMessages.push({
             role: "tool",
@@ -1573,10 +1733,14 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }).then(() => {});
         }
 
-        const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+        const markerTail = pendingProposals.length > 0
+          ? `data: ${JSON.stringify({ choices: [{ delta: { content: `\n\n${pendingProposals.map(encodeProposalMarker).join("")}` } }] })}\n\n`
+          : "";
+        const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n${markerTail}data: [DONE]\n\n`;
         return new Response(sseData, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
+
       }
 
       const __capB = await checkAiCostCap(supabaseAuth);
@@ -1627,14 +1791,15 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }
         })();
 
-        return new Response(streamForClient, {
+        return new Response(wrapStreamWithProposals(streamForClient, pendingProposals), {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       }
 
-      return new Response(finalResponse.body, {
+      return new Response(wrapStreamWithProposals(finalResponse.body!, pendingProposals), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
+
     }
 
     return new Response(JSON.stringify({ error: "Prekoračen broj koraka" }), {
