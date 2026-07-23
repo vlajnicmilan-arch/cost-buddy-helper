@@ -121,8 +121,20 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
                   "flex items-center gap-2.5",
                 )}
               >
-                <div className={cn("shrink-0", sev.icon)}>
+                <div className={cn("shrink-0 flex items-center gap-1", sev.icon)}>
                   <Icon className="w-4 h-4" />
+                  {issue.recurrence_count > 1 && (issue.severity === "warning" || issue.severity === "critical") && (
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold leading-none px-1.5 py-0.5 rounded-full border",
+                        "border-current/30 bg-background/60",
+                      )}
+                      aria-label={t("attention.recurrence", { count: issue.recurrence_count, defaultValue: "Ponavlja se {{count}}. put" })}
+                      title={t("attention.recurrence", { count: issue.recurrence_count, defaultValue: "Ponavlja se {{count}}. put" })}
+                    >
+                      {issue.recurrence_count >= 10 ? "9+" : `${issue.recurrence_count}×`}
+                    </span>
+                  )}
                 </div>
                 <div
                   {...clickableProps(() => handleAction(issue), {
