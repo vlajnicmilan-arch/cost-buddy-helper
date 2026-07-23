@@ -16,6 +16,8 @@ import { useStorage } from '@/contexts/StorageContext';
 import { lovable } from '@/integrations/lovable/index';
 import { Capacitor } from '@capacitor/core';
 import { useNativeOAuth } from '@/hooks/useNativeOAuth';
+import { loadCampaign, mergeCampaign, readCampaignFromParams } from '@/lib/paywallCampaign';
+import { Sparkles } from 'lucide-react';
 
 import i18n from '@/i18n';
 const authSchema = z.object({
