@@ -2503,6 +2503,10 @@
       },
       "fallback_project": "projekt"
     },
+    "work_entry_recorded": {
+      "title": "Sati upisani — {{project}}",
+      "message": "{{actor}} ti je upisao/la {{hours}}h za {{date}}."
+    },
     "project_transaction": {
       "title": "Transakcija u projektu „{{project}}\"",
       "message": {
