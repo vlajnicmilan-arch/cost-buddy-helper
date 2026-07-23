@@ -197,6 +197,14 @@
     "checkoutSuccess": "Thanks — your subscription is activating. It may take a few seconds.",
     "notSignedIn": "Sign in required.",
     "pricesError": "Failed to load prices. Please try again.",
+    "activeBadge": "Active",
+    "activeCta": "Active",
+    "overlap": {
+      "title": "You already have an active subscription",
+      "body": "You already have an active subscription: {{modules}}. Komplet is a SEPARATE subscription — after activating Komplet, cancel the individual one via “Manage subscription” so you don't pay twice.",
+      "continue": "Continue to Komplet",
+      "cancel": "Cancel"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
