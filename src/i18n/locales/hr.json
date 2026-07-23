@@ -197,6 +197,14 @@
     "checkoutSuccess": "Hvala — pretplata se aktivira. Može potrajati koju sekundu.",
     "notSignedIn": "Prijava potrebna za nastavak.",
     "pricesError": "Greška pri učitavanju cijena. Pokušaj ponovno.",
+    "activeBadge": "Aktivno",
+    "activeCta": "Aktivno",
+    "overlap": {
+      "title": "Već imaš aktivnu pretplatu",
+      "body": "Već imaš aktivnu pretplatu: {{modules}}. Komplet je ZASEBNA pretplata — nakon aktivacije Kompleta otkaži pojedinačnu kroz „Upravljaj pretplatom“ da ne plaćaš dvostruko.",
+      "continue": "Nastavi na Komplet",
+      "cancel": "Odustani"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
