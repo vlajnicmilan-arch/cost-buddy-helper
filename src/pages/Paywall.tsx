@@ -31,6 +31,13 @@ import {
   type EntitlementMap,
   type PaywallModule,
 } from '@/lib/paywallGate';
+import {
+  clearCampaign,
+  loadCampaign,
+  mergeCampaign,
+  readCampaignFromParams,
+  resolveInitialCycle,
+} from '@/lib/paywallCampaign';
 import logo from '@/assets/logo.webp';
 
 type PlanCardConfig = {
@@ -59,9 +66,19 @@ const Paywall: React.FC = () => {
   const checkoutStatus = params.get('checkout');
   const planParam = params.get('plan');
   const shopParam = params.get('shop') === '1';
-  const discountCode = params.get('code')?.trim() || null;
 
-  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  // Founding campaign: merge URL (?code=, ?cycle=) with any stored campaign
+  // that survived an /auth redirect. URL wins; consumed storage is cleared.
+  const [campaign] = useState(() => {
+    const fromUrl = readCampaignFromParams(params);
+    const fromStorage = loadCampaign();
+    const merged = mergeCampaign(fromUrl, fromStorage);
+    clearCampaign();
+    return merged;
+  });
+  const discountCode = campaign.code;
+
+  const [cycle, setCycle] = useState<BillingCycle>(() => resolveInitialCycle(campaign));
   const [loadingPlan, setLoadingPlan] = useState<PaywallPlan | null>(null);
   const [overlapPlan, setOverlapPlan] = useState<PaywallPlan | null>(null);
 
