@@ -3013,6 +3013,7 @@ export type Database = {
           last_seen_at: string
           message: string
           read: boolean
+          recurrence_count: number
           resolved_at: string | null
           severity: string
           status: string
@@ -3031,6 +3032,7 @@ export type Database = {
           last_seen_at?: string
           message: string
           read?: boolean
+          recurrence_count?: number
           resolved_at?: string | null
           severity?: string
           status?: string
@@ -3049,6 +3051,7 @@ export type Database = {
           last_seen_at?: string
           message?: string
           read?: boolean
+          recurrence_count?: number
           resolved_at?: string | null
           severity?: string
           status?: string
