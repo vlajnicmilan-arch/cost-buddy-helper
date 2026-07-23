@@ -759,9 +759,13 @@ async function printTable(headers: string[], rows: string[][]) {
 
 const MessageBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user';
-  const tableData = !isUser ? extractTableData(message.content) : null;
+  const { clean: displayContent, proposals } = !isUser
+    ? parseProposalMarkers(message.content)
+    : { clean: message.content, proposals: [] as ReturnType<typeof parseProposalMarkers>['proposals'] };
+  const tableData = !isUser ? extractTableData(displayContent) : null;
 
   return (
+
     <div className={cn('flex gap-2', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
         <motion.div 
