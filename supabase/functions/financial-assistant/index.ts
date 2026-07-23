@@ -1722,10 +1722,14 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }).then(() => {});
         }
 
-        const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+        const markerTail = pendingProposals.length > 0
+          ? `data: ${JSON.stringify({ choices: [{ delta: { content: `\n\n${pendingProposals.map(encodeProposalMarker).join("")}` } }] })}\n\n`
+          : "";
+        const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n${markerTail}data: [DONE]\n\n`;
         return new Response(sseData, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
+
       }
 
       const __capB = await checkAiCostCap(supabaseAuth);
