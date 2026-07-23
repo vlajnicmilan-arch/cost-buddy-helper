@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { captureEdgeError } from "../_shared/sentry.ts";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota } from "../_shared/aiQuota.ts";
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
@@ -551,6 +552,8 @@ Vrati SAMO JSON bez dodatnog teksta.`;
     };
 
     // Use Flash for receipt OCR. Pro was too slow on native scans and caused 503 before the UI got a result.
+    const __cap = await checkAiCostCap(supabase);
+    if (__cap) { if (!skipQuota) await refundCoreScanQuota(supabase); return __cap; }
     let aiResponse = await callAiGateway(LOVABLE_API_KEY, aiPayload);
 
     if (aiResponse.status >= 500) {
@@ -582,6 +585,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    recordAiCost(supabase, "parse-receipt").catch(() => {});
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';

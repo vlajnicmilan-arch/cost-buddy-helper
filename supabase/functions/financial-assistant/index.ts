@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { captureEdgeError } from "../_shared/sentry.ts";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 
 const corsHeaders = {
@@ -1453,7 +1454,10 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         aiBody.stream = true;
       }
 
+      const __capA = await checkAiCostCap(supabaseAuth);
+      if (__capA) return __capA;
       const response = await callGemini(aiBody);
+
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -1472,6 +1476,8 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      recordAiCost(supabaseAuth, "financial-assistant").catch(() => {});
+
 
       if (isLastPossibleRound) {
         // For streaming responses, we need to tee the stream to capture content for DB save
@@ -1573,11 +1579,15 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         });
       }
 
+      const __capB = await checkAiCostCap(supabaseAuth);
+      if (__capB) return __capB;
       const finalResponse = await callGemini({
         model: "google/gemini-3-flash-preview",
         messages: currentMessages,
         stream: true,
       });
+      recordAiCost(supabaseAuth, "financial-assistant").catch(() => {});
+
 
       // Tee for saving
       if (userId && sessionId && finalResponse.body) {

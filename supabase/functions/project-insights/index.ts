@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { callGemini } from '../_shared/geminiClient.ts';
 
@@ -91,6 +92,8 @@ Vrati STRIKTNO JSON (bez markdown):
   "next_actions": ["preporučena akcija 1", "akcija 2"]
 }`;
 
+    const __cap = await checkAiCostCap(userClient);
+    if (__cap) return __cap;
     const aiRes = await callGemini({
       model: 'google/gemini-2.5-flash-lite',
       messages: [{ role: 'user', content: prompt }],
@@ -102,6 +105,7 @@ Vrati STRIKTNO JSON (bez markdown):
       const t = await aiRes.text();
       return new Response(JSON.stringify({ error: 'AI failed', detail: t }), { status: aiRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    recordAiCost(userClient, "project-insights").catch(() => {});
 
     const aiData = await aiRes.json();
     const content = aiData?.choices?.[0]?.message?.content || '{}';

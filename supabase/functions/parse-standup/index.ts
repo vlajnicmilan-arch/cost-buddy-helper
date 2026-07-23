@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { requireAuth, checkAiQuota, corsHeaders } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 
@@ -60,6 +61,8 @@ Vrati STRIKTNO JSON (bez markdowna, bez dodatnog teksta) s ovim poljima:
 }
 Ako podatak nije naveden, koristi null ili praznu listu.`;
 
+    const __cap = await checkAiCostCap(auth.supabase);
+    if (__cap) return __cap;
     const aiRes = await callGemini({
       model: 'google/gemini-2.5-flash',
       messages: [{ role: 'user', content: prompt }],
@@ -71,6 +74,7 @@ Ako podatak nije naveden, koristi null ili praznu listu.`;
           status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      recordAiCost(auth.supabase, "parse-standup").catch(() => {});
       if (aiRes.status === 402) {
         return new Response(JSON.stringify({ error: 'Payment required, please add credits to your Lovable workspace.' }), {
           status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

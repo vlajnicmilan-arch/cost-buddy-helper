@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 // Admin-only daily health summary generator.
 // Aggregates last 24h of diagnostics and asks Lovable AI Gateway
 // (gemini-2.5-flash-lite) to produce a short paragraph in the requested
@@ -142,6 +143,8 @@ Deno.serve(async (req) => {
 
     const systemPrompt = `Ti si stručnjak za nadzor aplikacija. Odgovaraj isključivo na ${langLabel} jeziku. Daj kratak (3-6 rečenica) tehničko-poslovni sažetak stanja aplikacije u zadnja 24 sata na temelju proslijeđenih metrika. Naglasi probleme (greške, sporne rute, neažurirane verzije), ali budi sažet i konkretan. Ne izmišljaj brojeve.`;
 
+    const __cap = await checkAiCostCap(supabase);
+    if (__cap) return __cap;
     const aiResp = await callGemini({
       model: "google/gemini-2.5-flash-lite",
       messages: [
@@ -154,6 +157,7 @@ Deno.serve(async (req) => {
       const errText = await aiResp.text();
       throw new Error(`AI gateway: ${aiResp.status} ${errText.slice(0, 200)}`);
     }
+    recordAiCost(supabase, "generate-health-summary").catch(() => {});
 
     const aiData = await aiResp.json();
     const summaryText: string =

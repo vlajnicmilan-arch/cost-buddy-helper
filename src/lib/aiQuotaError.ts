@@ -13,6 +13,7 @@
 export type AiQuotaError =
   | { kind: "daily_limit"; limit: number; tier: string; route?: string }
   | { kind: "core_scan_limit"; resetAt: string | null }
+  | { kind: "cost_cap"; resetAt: string | null }
   | { kind: "rate_limit" };
 
 export interface QuotaResponseLike {
@@ -38,6 +39,12 @@ export async function parseAiQuotaError(
     if (body && body.error === "core_scan_limit_reached") {
       return {
         kind: "core_scan_limit",
+        resetAt: typeof body.reset_at === "string" ? body.reset_at : null,
+      };
+    }
+    if (body && body.error === "ai_cap_reached") {
+      return {
+        kind: "cost_cap",
         resetAt: typeof body.reset_at === "string" ? body.reset_at : null,
       };
     }

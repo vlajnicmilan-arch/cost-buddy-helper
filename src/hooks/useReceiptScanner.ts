@@ -206,6 +206,8 @@ export const useReceiptScanner = () => {
               defaultValue: `Iskoristio si dnevni limit od ${quotaError.limit} AI skenova (${quotaError.tier} plan). Nadogradi za više.`,
             }),
           );
+        } else if (quotaError?.kind === 'cost_cap') {
+          showError(t('errors.ai.capReached', 'AI obrada je privremeno pauzirana do 1. u mjesecu. Ispričavamo se na neugodnosti.'));
         } else {
           showError(t('errors.receipt.rateLimit', 'Previše zahtjeva. Pokušaj ponovno za minutu.'));
         }

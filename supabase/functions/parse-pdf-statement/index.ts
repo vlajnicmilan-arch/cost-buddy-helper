@@ -1,3 +1,4 @@
+import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
@@ -206,6 +207,8 @@ serve(async (req) => {
     // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
     const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
 
+    const __cap = await checkAiCostCap(supabase);
+    if (__cap) return __cap;
     const aiResponse = await callGemini({
         model: modelId,
         messages: [
@@ -443,6 +446,7 @@ PENDING / NA ČEKANJU:
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      recordAiCost(supabase, "parse-pdf-statement").catch(() => {});
       if (aiResponse.status === 402) {
         return new Response(
           JSON.stringify({ error: 'Nedostaje kredita za AI obradu.' }), 

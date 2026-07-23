@@ -140,6 +140,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cost_monthly: {
+        Row: {
+          call_count: number
+          month_key: string
+          route: string
+          total_eur: number
+          updated_at: string
+        }
+        Insert: {
+          call_count?: number
+          month_key: string
+          route: string
+          total_eur?: number
+          updated_at?: string
+        }
+        Update: {
+          call_count?: number
+          month_key?: string
+          route?: string
+          total_eur?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_insights_cache: {
         Row: {
           created_at: string
@@ -167,6 +191,24 @@ export type Database = {
           language?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ai_route_costs: {
+        Row: {
+          route: string
+          unit_cost_eur: number
+          updated_at: string
+        }
+        Insert: {
+          route: string
+          unit_cost_eur: number
+          updated_at?: string
+        }
+        Update: {
+          route?: string
+          unit_cost_eur?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5802,6 +5844,14 @@ export type Database = {
       }
       find_user_by_email: { Args: { p_email: string }; Returns: string }
       get_admin_user_stats: { Args: never; Returns: Json }
+      get_ai_monthly_spend: {
+        Args: never
+        Returns: {
+          cap_eur: number
+          month_key: string
+          spent_eur: number
+        }[]
+      }
       get_dashboard_scroll_distribution: {
         Args: { p_days?: number }
         Returns: {
@@ -6127,6 +6177,13 @@ export type Database = {
       recompute_custom_source_balance_preview: {
         Args: { p_mode: string; p_source_id: string }
         Returns: number
+      }
+      record_ai_cost: {
+        Args: { p_route: string }
+        Returns: {
+          cap_eur: number
+          monthly_eur: number
+        }[]
       }
       refresh_family_split_snapshot: {
         Args: {
