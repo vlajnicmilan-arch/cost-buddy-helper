@@ -40,7 +40,6 @@ describe('aiProposal', () => {
 
   it('handles empty/null input safely', () => {
     expect(parseProposalMarkers('').proposals).toEqual([]);
-    // @ts-expect-error - runtime robustness
-    expect(parseProposalMarkers(null).proposals).toEqual([]);
+    expect(parseProposalMarkers(null as unknown as string).proposals).toEqual([]);
   });
 });
