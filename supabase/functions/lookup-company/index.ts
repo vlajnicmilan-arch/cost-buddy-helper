@@ -214,8 +214,15 @@ serve(async (req) => {
       });
     }
 
-    // For name searches, use AI
+    // For name searches, use AI (cost cap gate)
+    const __svc = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const __cap = await checkAiCostCap(__svc);
+    if (__cap) return __cap;
     const companyData = await extractWithAI(trimmed, LOVABLE_API_KEY);
+    recordAiCost(__svc, "lookup-company").catch(() => {});
     console.log("AI result:", JSON.stringify(companyData));
 
     return new Response(JSON.stringify(companyData), {
