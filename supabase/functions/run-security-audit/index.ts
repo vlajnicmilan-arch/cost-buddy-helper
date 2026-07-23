@@ -484,11 +484,16 @@ async function spec06_aiAndExports(ctx: Ctx): Promise<Verdict[]> {
 
 async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
   const results: Verdict[] = [];
-  const { data: k, error: kerr } = await ctx.aClient
-    .from('krug').insert({ name: 'sec-krug', owner_id: ctx.aId }).select('id').single();
-  if (kerr) return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug insert: ${kerr.message}` }];
-  const krugId = k!.id;
-  await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ctx.bId, role: 'obicni' });
+  let krugId: string;
+  try {
+    krugId = await createKrug(ctx.aId, 'sec-krug');
+  } catch (e) {
+    return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug setup: ${(e as Error).message}` }];
+  }
+  const memIns = await admin().from('krug_membership').insert({ krug_id: krugId, user_id: ctx.bId, role: 'obicni' });
+  if (memIns.error) {
+    return [{ name: '07.setup', status: 'FAIL', severity: 'MEDIUM', note: `krug_membership(B): ${memIns.error.message}` }];
+  }
   try {
     let r: any = await ctx.bClient.from('krug').select('id').eq('id', krugId);
     results.push(verdict('07.1 obicni vidi krug (dozvoljeno)',
@@ -497,14 +502,18 @@ async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
 
     r = await ctx.bClient.from('krug_membership').update({ role: 'punopravni' })
       .eq('krug_id', krugId).eq('user_id', ctx.bId).select('id');
+    const { data: bChk } = await admin().from('krug_membership').select('role').eq('krug_id', krugId).eq('user_id', ctx.bId).single();
     results.push(verdict('07.2 obicni NE promovira sebe u punopravnog',
-      r.error !== null || (r.data ?? []).length === 0,
-      { severity: 'CRITICAL', surface: 'krug_membership.role', role: 'obicni' }));
+      (r.error !== null || (r.data ?? []).length === 0) && bChk?.role === 'obicni',
+      { severity: 'CRITICAL', surface: 'krug_membership.role', role: 'obicni',
+        failNote: bChk?.role !== 'obicni' ? `role promijenjen u ${bChk?.role}` : undefined }));
 
     r = await ctx.bClient.from('krug_membership').delete()
       .eq('krug_id', krugId).eq('user_id', ctx.aId).select('id');
+    const { count: ownerStillThere } = await admin().from('krug_membership').select('*', { count: 'exact', head: true })
+      .eq('krug_id', krugId).eq('user_id', ctx.aId);
     results.push(verdict('07.3 obicni NE briše ownera',
-      r.error !== null || (r.data ?? []).length === 0,
+      (r.error !== null || (r.data ?? []).length === 0) && (ownerStillThere ?? 0) > 0,
       { severity: 'CRITICAL', surface: 'krug_membership', role: 'obicni' }));
 
     r = await ctx.bClient.from('krug_shared_payment_source').insert({
@@ -518,13 +527,16 @@ async function spec07_krugMembership(ctx: Ctx): Promise<Verdict[]> {
     const { data: chk } = await admin().from('krug').select('name').eq('id', krugId).single();
     results.push(verdict('07.5 obicni NE mijenja krug meta',
       (r.error !== null || (r.data ?? []).length === 0) && chk?.name === 'sec-krug',
-      { severity: 'CRITICAL', surface: 'krug.name', role: 'obicni' }));
+      { severity: 'CRITICAL', surface: 'krug.name', role: 'obicni',
+        failNote: chk?.name !== 'sec-krug' ? `naziv promijenjen u ${chk?.name}` : undefined }));
   } finally {
     const a = admin();
     await a.from('krug_shared_payment_source').delete().eq('krug_id', krugId);
     await a.from('krug_membership').delete().eq('krug_id', krugId);
+    await a.from('krug_ownership').delete().eq('krug_id', krugId);
     await a.from('krug').delete().eq('id', krugId);
   }
+
   return results;
 }
 
