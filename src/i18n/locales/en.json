@@ -2157,6 +2157,9 @@
       "scanCancelled": "Scan was cancelled. Please try again.",
       "scanFailed": "Failed to scan receipt"
     },
+    "ai": {
+      "capReached": "AI processing is temporarily paused until the 1st of next month. Sorry for the inconvenience."
+    },
     "pdf": {
       "loginRequired": "You must be signed in to analyse statements",
       "rateLimit": "Too many requests. Please try again in a minute.",
