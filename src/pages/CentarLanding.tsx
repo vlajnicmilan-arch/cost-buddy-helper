@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import bodyHtmlHr from "./CentarLanding.body.html?raw";
 import bodyHtmlEn from "./CentarLanding.body.en.html?raw";
 import bodyHtmlDe from "./CentarLanding.body.de.html?raw";
+import { reduce as reduceLightbox, type LightboxPhase, type LightboxEffect } from "./lib/centarLightboxState";
 import "./CentarLanding.css";
+
 
 /**
  * CentarLanding — statički landing s runtime nadogradnjama:
