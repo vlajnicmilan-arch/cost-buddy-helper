@@ -84,6 +84,12 @@ export interface OpenCheckoutArgs {
   email?: string | null;
   locale?: 'hr' | 'en' | 'de';
   successUrl?: string;
+  /**
+   * Optional Paddle discount code applied programmatically in the overlay.
+   * Paddle validates the code server-side and silently rejects it if it
+   * does not apply to the selected price — we never validate client-side.
+   */
+  discountCode?: string | null;
 }
 
 /**
@@ -94,10 +100,12 @@ export interface OpenCheckoutArgs {
 export const openPaddleCheckout = async (args: OpenCheckoutArgs): Promise<boolean> => {
   const paddle = await getPaddle();
   if (!paddle) return false;
+  const trimmedCode = args.discountCode?.trim();
   paddle.Checkout.open({
     items: [{ priceId: args.priceId, quantity: 1 }],
     customData: { user_id: args.userId },
     customer: args.email ? { email: args.email } : undefined,
+    ...(trimmedCode ? { discountCode: trimmedCode } : {}),
     settings: {
       locale: args.locale ?? 'hr',
       successUrl:

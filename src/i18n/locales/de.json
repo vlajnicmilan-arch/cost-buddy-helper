@@ -205,6 +205,10 @@
       "continue": "Weiter zu Komplet",
       "cancel": "Abbrechen"
     },
+    "discount": {
+      "infoBar": "Rabattcode {{code}} wird an der Kasse angewendet",
+      "cycleHint": "Der Rabattcode gilt möglicherweise nur für die jährliche Option"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",

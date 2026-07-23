@@ -205,6 +205,10 @@
       "continue": "Continue to Komplet",
       "cancel": "Cancel"
     },
+    "discount": {
+      "infoBar": "Discount code {{code}} will be applied at checkout",
+      "cycleHint": "The discount code may apply only to the yearly option"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
