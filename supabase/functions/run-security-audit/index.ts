@@ -26,6 +26,9 @@ const LIVE_TABLES = [
   'projects', 'expenses', 'custom_payment_sources', 'user_entitlements',
   'krug', 'krug_membership', 'project_members', 'project_milestones',
   'project_worker_payouts', 'imported_statements',
+  'krug_ownership', 'krug_shared_payment_source', 'project_funding',
+  'project_documents', 'project_work_entries', 'project_workers',
+  'income_sources', 'chat_messages', 'free_tier_usage_monthly', 'core_scan_usage',
 ];
 
 type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
