@@ -173,11 +173,9 @@
     "chooseToContinue": "Aktiviraj module koje trebaš",
     "interval": {
       "monthly": "Mjesečno",
-      "yearly": "Godišnje",
-      "lifetime": "Lifetime"
+      "yearly": "Godišnje"
     },
     "yearlyBadge": "-25%",
-    "lifetimeBadge": "-75%",
     "period": {
       "monthly": "/mj",
       "yearly": "/god",
@@ -187,82 +185,10 @@
       "name": "Free",
       "tagline": "Za početak",
       "priceSuffix": "zauvijek",
-      "cta": "Nastavi besplatno",
-      "comingSoon": "Free plan dolazi uskoro"
-    },
-    "pro": {
-      "name": "Pro",
-      "tagline": "Za većinu ljudi",
-      "cta": "Odaberi Pro",
-      "yearlySavings": "Ušteda {amount}€ godišnje (~25%)"
-    },
-    "business": {
-      "name": "Business",
-      "tagline": "Za ozbiljne korisnike",
-      "cta": "Odaberi Business",
-      "yearlySavings": "Ušteda {amount}€ godišnje (~25%)"
+      "cta": "Nastavi besplatno"
     },
     "popular": "Najpopularniji",
-    "lifetime": {
-      "badge": "Founding Member · Limitirano",
-      "name": "Pro Lifetime",
-      "tagline": "Plati jednom — koristi zauvijek",
-      "oneTime": "jednokratno",
-      "equivalent": "💡 Ekvivalent ~16 mjeseci Pro pretplate. Otplati se za godinu i pol.",
-      "remainingLabel": "Ostalo",
-      "ofTotal": "od",
-      "soldSuffix": "prodano",
-      "soldOut": "Rasprodano",
-      "ctaBecome": "Postani Founding Member · {price}€",
-      "backToMonthly": "Vrati se na mjesečne planove",
-      "teaserSubtitle": "Plati jednom · Još {n} mjesta",
-      "teaserView": "Pogledaj →"
-    },
-    "features": {
-      "free": [
-        "Do 30 transakcija/mj",
-        "1 izvor plaćanja",
-        "1 budžet",
-        "AI skeniranje računa",
-        "Projekti i budžeti",
-        "AI asistent",
-        "Poslovno praćenje",
-        "Timski pristup"
-      ],
-      "pro": [
-        "Neograničene transakcije",
-        "Neograničeni projekti i budžeti",
-        "Više novčanika i kartica",
-        "AI financijski asistent",
-        "Recurring transakcije i ratna plaćanja",
-        "Cashflow prognoza (8 tjedana)",
-        "Više valuta po izvoru",
-        "Push notifikacije",
-        "CSV/PDF uvoz i izvoz",
-        "Detaljni izvještaji",
-        "Dijeljenje i obiteljske grupe",
-        "Osobno + poslovno praćenje"
-      ],
-      "business": [
-        "Sve iz Pro plana",
-        "Više profila tvrtki",
-        "Radnici i satnice",
-        "Timski pristup",
-        "Suradnici na projektima",
-        "Napredni projekti",
-        "Višekorisnički pristup"
-      ],
-      "lifetime": [
-        "Sve iz Pro plana — zauvijek",
-        "Bez ikakvih mjesečnih troškova",
-        "Sve buduće Pro značajke",
-        "Founding Member status",
-        "Prioritetna podrška",
-        "Limitirano na 200 korisnika"
-      ]
-    },
     "footer": {
-      "secure": "Sigurno plaćanje putem Paddlea. Otkazivanje u bilo kojem trenutku.",
       "signInOther": "Prijavite se s drugim računom",
       "securePaddle": "Sigurno plaćanje putem Paddle. Otkazivanje u bilo kojem trenutku."
     },
@@ -1273,24 +1199,24 @@
       "title": "Moduli",
       "subtitle": "Uključi samo ono što ti treba — sučelje ostaje čisto.",
       "active": "Aktivno",
-      "lockedToast": "Dostupno uz nadogradnju",
-      "upgradeCta": "Nadogradi",
+      "lockedToast": "Otključaj modul",
+      "upgradeCta": "Otključaj",
       "family": {
         "title": "Obitelj",
         "description": "Obiteljske grupe, dijeljeni računi i budžeti",
-        "locked": "Dostupno uz Pro pretplatu"
+        "locked": "Dostupno uz Krug pretplatu"
       },
       "projects": {
         "title": "Projekti",
         "description": "Praćenje budžeta i troškova po projektu",
-        "locked": "Dostupno uz Pro pretplatu",
+        "locked": "Dostupno uz Projekti pretplatu",
         "enabled": "Projekti uključeni",
         "disabled": "Projekti isključeni"
       },
       "business": {
         "title": "Business",
         "description": "Poslovna terminologija i profili tvrtki",
-        "locked": "Dostupno uz Business pretplatu"
+        "locked": "Biznis modul — uskoro"
       },
       "overrideBadge": {
         "source": "Admin override",
@@ -1672,12 +1598,16 @@
     "amountGreaterThanZero": "Iznos mora biti veći od 0"
   },
   "trial": {
+    "moduleActiveDaysLeft": "Probno razdoblje za {{module}} istječe za {{count}} dana",
+    "moduleActiveOneDay": "Probno razdoblje za {{module}} istječe sutra",
+    "moduleActiveLastDay": "Zadnji dan probnog razdoblja za {{module}}",
+    "upgrade": "Nadogradi",
     "featureChip": {
-      "label": "Probni period",
+      "label": "Probno razdoblje",
       "daysLeft": "{{count}} dana",
       "oneDay": "1 dan",
       "lastDay": "zadnji dan",
-      "aria": "Značajka dostupna tijekom probnog perioda. Klikni za nadogradnju."
+      "aria": "Klikni za otključavanje"
     }
   },
   "auth": {
@@ -3859,7 +3789,7 @@
         "f1": "Do 30 transakcija/mj",
         "f2": "1 izvor plaćanja",
         "f3": "1 budžet",
-        "f4": "Skeniranje računa (5/mj)"
+        "f4": "Iznad limita — samo čitanje i izvoz"
       },
       "pro": {
         "name": "Pro",
@@ -3999,7 +3929,7 @@
       "mKomplet": "Smjer + Krug + Projekti — 25,99 €/mj ili 259,90 €/god",
       "yearly": "Godišnje = platiš deset mjeseci, dobiješ dvanaest.",
       "biznis": "Biznis je zaseban modul i još nije dostupan; cijena i uvjeti bit će objavljeni prije pokretanja.",
-      "trial": "Probno razdoblje: novi korisnici dobivaju 30 dana besplatnog korištenja bez unosa kartice. Ako se u tom roku ne aktivira pretplata, naplata se ne pokreće.",
+      "trial": "Probno razdoblje: 30 dana besplatno PO MODULU, isključivo na svjesnu aktivaciju korisnika unutar aplikacije. Nema automatskog triala pri registraciji. Trial za pojedini modul može se iskoristiti samo jednom i traje od trenutka aktivacije. Modul Biznis nema probno razdoblje.",
       "free": "Free razina (nakon isteka probe bez pretplate): pristup s ograničenjem od 30 transakcija mjesečno, 1 novčanika i 1 budžeta. Moduli (Smjer, Krug, Projekti, Biznis) nisu uključeni u Free razinu. Podaci se ne brišu: sve što je korisnik prije unio — uključujući transakcije, novčanike, budžete i module iznad Free limita — ostaje vidljivo u načinu \"čitanje i izvoz\". Korisnik može te podatke pregledavati i izvesti (backup), ali ne može ih stvarati, uređivati ni brisati dok ne aktivira odgovarajuću pretplatu.",
       "founding": "Founding — prvih 100: Prvih 100 godišnjih pretplata dobiva zaključan popust izražen u postotku. Koliko god Centar poslije poskupio, tvoj popust ostaje — dok pretplatu obnavljaš bez prekida. Vrijedi i ako kasnije prijeđeš na veći paket. Prekid pretplate poništava popust; kod ponovnog uključivanja vrijedi cijena koja tada bude na snazi.",
       "billing": "Naplata: pretplate se obrađuju preko Paddle.com Market Ltd. kao merchant of record; Paddle izdaje račun i provodi povrate. Pretplate se automatski obnavljaju na kraju obračunskog razdoblja (mjesečno ili godišnje) dok ih ne otkažete."
@@ -4423,10 +4353,10 @@
       "importBank": "Da. Na početnoj stranici kliknite \"Bankovna poveznica\" i odaberite CSV izvod. Aplikacija prepoznaje formate većih hrvatskih banaka (Zagrebačka, PBZ, OTP, Erste, Raiffeisen) i automatski kategorizira transakcije.",
       "backup": "U cloud načinu rada podaci su automatski sigurnosno kopirani. U lokalnom načinu, koristite \"Izvoz svih podataka\" iz Postavki za ručni JSON backup koji možete kasnije uvesti na drugom uređaju.",
       "dataSecurity": "Svi podaci su šifrirani u prijenosu (HTTPS/TLS) i u mirovanju. Pristup je ograničen RLS politikama na razini baze — samo vi (i izričito pozvani članovi) možete vidjeti svoje podatke. Hostano u EU.",
-      "plans": "Free (osnovne značajke s limitima), Pro (neograničeno transakcija, projekata i budžeta) i Business (poslovni način, više profila tvrtki, radnici i satnice, naprednije izvještavanje). Detalji u Postavke → Pretplata.",
-      "cancelSubscription": "Pretplatu možeš otkazati u bilo kojem trenutku — upute stižu uz svaki račun e-mailom. Ostajete Pro do kraja plaćenog perioda, nakon čega prelazite na Free plan — vaši podaci ostaju netaknuti.",
+      "plans": "Free razina (osnovni rad s limitima: 30 transakcija/mj, 1 novčanik, 1 budžet) + zasebni moduli Smjer, Krug, Projekti i Komplet paket. Biznis modul uskoro. Detalji u Postavke → Pretplata.",
+      "cancelSubscription": "Pretplatu možeš otkazati u bilo kojem trenutku u Postavke → Pretplata. Ostajete na aktivnim modulima do kraja plaćenog razdoblja, nakon čega prelazite u čitanje i izvoz — podaci ostaju netaknuti.",
       "refund": "Pišite nam na support@vmbalance.com s razlogom unutar 14 dana od plaćanja. Razmatramo svaki zahtjev pojedinačno u skladu s EU pravilima o potrošačkim ugovorima.",
-      "changePlan": "Iz Postavke → Pretplata kliknite na željeni plan. Upgrade je trenutan s proporcionalnom naplatom razlike; downgrade stupa na snagu na kraju trenutnog billing perioda.",
+      "changePlan": "Promjenu paketa radiš u Postavke → Pretplata. Nadogradnja se primjenjuje odmah prema Paddle obračunu; prelazak na niži paket stupa na snagu na kraju tekućeg razdoblja.",
       "gdprDelete": "Postavke → Račun → \"Obriši račun\". Slijedi 30-dnevni grace period — primit ćete email potvrdu, a ako se prijavite unutar 30 dana brisanje se automatski otkazuje. Nakon isteka roka brišu se trajno: sve transakcije, projekti, proračuni, dokumenti, postavke i auth račun. Akcija je nepovratna.",
       "dataPortability": "Da. U skladu s GDPR čl. 20 možete bilo kada izvesti sve svoje podatke u CSV/JSON formatu kroz Postavke → Izvoz podataka — bez čekanja i bez naplate.",
       "cookies": "Samo nužne kolačiće za rad aplikacije po defaultu. Analitiku, performance monitoring (Sentry) i ostalo aktiviramo isključivo nakon vašeg pristanka kroz cookie banner — možete promijeniti odabir bilo kada u Postavkama.",
@@ -5592,6 +5522,43 @@
       "migration": "Naslijeđeno pri migraciji",
       "systemInitial": "Početno stanje",
       "unknown": "Nepoznato"
+    }
+  },
+  "moduleUpgrade": {
+    "krug": {
+      "title": "Krug",
+      "value": "Dijeli troškove, budžete i projekte s obitelji ili timom — bez ručnog usklađivanja."
+    },
+    "projekti": {
+      "title": "Projekti",
+      "value": "Vodi projekte s budžetom, milestone-ima, radnicima i P&L pregledom — jedno mjesto za sve."
+    },
+    "biznis": {
+      "title": "Biznis",
+      "value": "Poslovna terminologija, profili tvrtki i R1 računi. Uskoro."
+    },
+    "perMonth": "mjesečno",
+    "yearlyHint": "godišnje = 2 mj. gratis",
+    "biznisComingSoon": "Uskoro dostupno",
+    "notNow": "Ne sada",
+    "unlockCta": "Otključaj",
+    "comingSoonCta": "Uskoro",
+    "paddleMor": "Račun izdaje Paddle.com Market Ltd.",
+    "trialMicrocopy": "Probaj 30 dana besplatno · jednokratno po modulu · bez kartice",
+    "trial": {
+      "confirmTitle": "Aktivirati probno razdoblje?",
+      "confirmBody": "Probno razdoblje za {{module}} počinje ODMAH i traje do {{date}}. Može se aktivirati samo jednom.",
+      "confirmCta": "Aktiviraj",
+      "cancel": "Odustani",
+      "tryCta": "Isprobaj besplatno 30 dana",
+      "activatedToast": "Probno aktivno do {{date}}",
+      "activeUntil": "Probno aktivno do {{date}}",
+      "usedUntil": "Probno razdoblje iskorišteno (isteklo {{date}})",
+      "unavailable": "Probno razdoblje nije dostupno",
+      "availableHint": "30 dana besplatno — aktiviraj jednim klikom",
+      "errorInvalid": "Probno razdoblje nije dostupno za ovaj modul.",
+      "errorAuth": "Prijava je istekla. Osvježi stranicu.",
+      "errorGeneric": "Aktivacija nije uspjela. Pokušaj ponovno."
     }
   }
 }

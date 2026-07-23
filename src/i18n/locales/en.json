@@ -173,11 +173,9 @@
     "chooseToContinue": "Activate the modules you need",
     "interval": {
       "monthly": "Monthly",
-      "yearly": "Yearly",
-      "lifetime": "Lifetime"
+      "yearly": "Yearly"
     },
     "yearlyBadge": "-25%",
-    "lifetimeBadge": "-75%",
     "period": {
       "monthly": "/mo",
       "yearly": "/yr",
@@ -187,82 +185,10 @@
       "name": "Free",
       "tagline": "To get started",
       "priceSuffix": "forever",
-      "cta": "Continue free",
-      "comingSoon": "Free plan coming soon"
-    },
-    "pro": {
-      "name": "Pro",
-      "tagline": "For most people",
-      "cta": "Choose Pro",
-      "yearlySavings": "Save {amount}€ per year (~25%)"
-    },
-    "business": {
-      "name": "Business",
-      "tagline": "For serious users",
-      "cta": "Choose Business",
-      "yearlySavings": "Save {amount}€ per year (~25%)"
+      "cta": "Continue free"
     },
     "popular": "Most popular",
-    "lifetime": {
-      "badge": "Founding Member · Limited",
-      "name": "Pro Lifetime",
-      "tagline": "Pay once — use forever",
-      "oneTime": "one-time",
-      "equivalent": "💡 Equivalent to ~16 months of Pro. Pays off in about a year and a half.",
-      "remainingLabel": "Left",
-      "ofTotal": "of",
-      "soldSuffix": "sold",
-      "soldOut": "Sold out",
-      "ctaBecome": "Become a Founding Member · {price}€",
-      "backToMonthly": "Back to monthly plans",
-      "teaserSubtitle": "Pay once · {n} spots left",
-      "teaserView": "View →"
-    },
-    "features": {
-      "free": [
-        "Up to 30 transactions/mo",
-        "1 payment source",
-        "1 budget",
-        "AI receipt scanning",
-        "Projects & budgets",
-        "AI assistant",
-        "Business tracking",
-        "Team access"
-      ],
-      "pro": [
-        "Unlimited transactions",
-        "Unlimited projects & budgets",
-        "Multiple wallets & cards",
-        "AI financial assistant",
-        "Recurring transactions & installments",
-        "Cashflow forecast (8 weeks)",
-        "Multi-currency per source",
-        "Push notifications",
-        "CSV/PDF import & export",
-        "Detailed reports",
-        "Sharing & family groups",
-        "Personal + business tracking"
-      ],
-      "business": [
-        "Everything in Pro",
-        "Multiple company profiles",
-        "Workers & timesheets",
-        "Team access",
-        "Project collaborators",
-        "Advanced projects",
-        "Multi-user access"
-      ],
-      "lifetime": [
-        "Everything in Pro — forever",
-        "No recurring monthly cost",
-        "All future Pro features",
-        "Founding Member status",
-        "Priority support",
-        "Limited to 200 users"
-      ]
-    },
     "footer": {
-      "secure": "Secure payment via Paddle. Cancel anytime.",
       "signInOther": "Sign in with a different account",
       "securePaddle": "Secure payment via Paddle. Cancel anytime."
     },
@@ -1269,24 +1195,24 @@
       "title": "Modules",
       "subtitle": "Turn on only what you need — keep the interface clean.",
       "active": "Active",
-      "lockedToast": "Available with an upgrade",
-      "upgradeCta": "Upgrade",
+      "lockedToast": "Unlock module",
+      "upgradeCta": "Unlock",
       "family": {
         "title": "Family",
         "description": "Family groups, shared accounts and budgets",
-        "locked": "Available on Pro plan"
+        "locked": "Available with Krug subscription"
       },
       "projects": {
         "title": "Projects",
         "description": "Track budgets and expenses per project",
-        "locked": "Available on Pro plan",
+        "locked": "Available with Projekti subscription",
         "enabled": "Projects enabled",
         "disabled": "Projects disabled"
       },
       "business": {
         "title": "Business",
         "description": "Business terminology and company profiles",
-        "locked": "Available on Business plan"
+        "locked": "Biznis module — coming soon"
       },
       "overrideBadge": {
         "source": "Admin override",
@@ -1668,12 +1594,16 @@
     "amountGreaterThanZero": "Amount must be greater than 0"
   },
   "trial": {
+    "moduleActiveDaysLeft": "Trial for {{module}} expires in {{count}} days",
+    "moduleActiveOneDay": "Trial for {{module}} expires tomorrow",
+    "moduleActiveLastDay": "Last day of the {{module}} trial",
+    "upgrade": "Upgrade",
     "featureChip": {
       "label": "Trial",
-      "daysLeft": "{{count}} days left",
-      "oneDay": "1 day left",
+      "daysLeft": "{{count}} days",
+      "oneDay": "1 day",
       "lastDay": "last day",
-      "aria": "Feature available during trial. Click to upgrade."
+      "aria": "Click to unlock"
     }
   },
   "auth": {
@@ -3853,7 +3783,7 @@
         "f1": "Up to 30 transactions/mo",
         "f2": "1 payment source",
         "f3": "1 budget",
-        "f4": "Receipt scanning (5/mo)"
+        "f4": "Above limits — read and export only"
       },
       "pro": {
         "name": "Pro",
@@ -3993,7 +3923,7 @@
       "mKomplet": "Smjer + Krug + Projekti — €25.99/mo or €259.90/yr",
       "yearly": "Annual = pay for ten months, get twelve.",
       "biznis": "Biznis is a separate module and is not yet available; pricing and terms will be published before launch.",
-      "trial": "Trial: new users get 30 days of free use with no card required. If no subscription is activated within that period, no charge is made.",
+      "trial": "Trial: 30 days free PER MODULE, only upon the user's deliberate activation inside the app. There is no automatic trial on registration. Each module's trial can be used only once and starts at the moment of activation. The Business module has no trial.",
       "free": "Free tier (after trial ends without a subscription): access with a limit of 30 transactions per month, 1 wallet and 1 budget. Modules (Smjer, Krug, Projekti, Biznis) are not included in the Free tier. Data is not deleted: everything the user previously entered — including transactions, wallets, budgets and modules above the Free limits — remains visible in \"read and export\" mode. The user can view and export (backup) this data, but cannot create, edit or delete it until the relevant subscription is activated.",
       "founding": "Founding — first 100: The first 100 annual subscriptions receive a locked-in percentage discount. No matter how much Centar costs later, your discount stays — as long as your subscription renews without interruption. It also carries over if you later upgrade to a larger package. Interrupting the subscription cancels the discount; on re-subscription the then-current price applies.",
       "billing": "Billing: subscriptions are processed by Paddle.com Market Ltd. as merchant of record; Paddle issues invoices and handles refunds. Subscriptions renew automatically at the end of each billing period (monthly or annually) until you cancel."
@@ -4417,10 +4347,10 @@
       "importBank": "Yes. On the home screen tap \"Bank import\" and pick a CSV statement. The app recognizes formats from major Croatian banks (Zagrebačka, PBZ, OTP, Erste, Raiffeisen) and auto-categorizes transactions.",
       "backup": "In cloud mode data is backed up automatically. In local mode, use \"Export all data\" from Settings for a manual JSON backup you can later import on another device.",
       "dataSecurity": "All data is encrypted in transit (HTTPS/TLS) and at rest. Access is restricted by RLS policies at the database level — only you (and explicitly invited members) can see your data. Hosted in the EU.",
-      "plans": "Free (basic features with limits), Pro (unlimited transactions, projects and budgets) and Business (business mode, multiple company profiles, workers & timesheets, advanced reporting). Details in Settings → Subscription.",
-      "cancelSubscription": "You can cancel your subscription at any time — instructions arrive with every invoice by email. You stay on Pro until the end of the paid period, then drop to Free — your data stays intact.",
+      "plans": "Free tier (basic use with limits: 30 transactions/mo, 1 wallet, 1 budget) plus separate modules Smjer, Krug, Projekti and the Komplet bundle. Biznis module coming soon. Details in Settings → Subscription.",
+      "cancelSubscription": "You can cancel your subscription at any time in Settings → Subscription. You keep access to active modules until the end of the paid period, after which the app switches to read-and-export — your data stays intact.",
       "refund": "Email us at support@vmbalance.com with a reason within 14 days of payment. We review every request individually under EU consumer law.",
-      "changePlan": "From Settings → Subscription tap your desired plan. Upgrades are immediate with prorated billing; downgrades take effect at the end of the current billing period.",
+      "changePlan": "You change plans in Settings → Subscription. Upgrades apply immediately per Paddle's billing; downgrades take effect at the end of the current period.",
       "gdprDelete": "Settings → Account → \"Delete account\". A 30-day grace period follows — you'll receive a confirmation email, and signing in within 30 days automatically cancels deletion. After the grace period everything is permanently deleted: all transactions, projects, budgets, documents, settings and auth account. The action is irreversible.",
       "dataPortability": "Yes. Under GDPR Art. 20 you can export all your data in CSV/JSON format anytime via Settings → Export data — no waiting, no fees.",
       "cookies": "Only essential cookies for app functionality by default. Analytics, performance monitoring (Sentry) and others activate only after your consent via the cookie banner — you can change your choice anytime in Settings.",
@@ -5582,6 +5512,43 @@
       "migration": "Inherited on migration",
       "systemInitial": "Initial balance",
       "unknown": "Unknown"
+    }
+  },
+  "moduleUpgrade": {
+    "krug": {
+      "title": "Krug",
+      "value": "Share expenses, budgets and projects with your family or team — no manual reconciliation."
+    },
+    "projekti": {
+      "title": "Projekti",
+      "value": "Run projects with budgets, milestones, workers and P&L — one place for everything."
+    },
+    "biznis": {
+      "title": "Biznis",
+      "value": "Business terminology, company profiles and R1 invoices. Coming soon."
+    },
+    "perMonth": "per month",
+    "yearlyHint": "yearly = 2 months free",
+    "biznisComingSoon": "Coming soon",
+    "notNow": "Not now",
+    "unlockCta": "Unlock",
+    "comingSoonCta": "Coming soon",
+    "paddleMor": "Invoice issued by Paddle.com Market Ltd.",
+    "trialMicrocopy": "Try 30 days free · once per module · no card required",
+    "trial": {
+      "confirmTitle": "Activate the trial?",
+      "confirmBody": "The trial for {{module}} starts NOW and runs until {{date}}. It can only be activated once.",
+      "confirmCta": "Activate",
+      "cancel": "Cancel",
+      "tryCta": "Try 30 days free",
+      "activatedToast": "Trial active until {{date}}",
+      "activeUntil": "Trial active until {{date}}",
+      "usedUntil": "Trial already used (ended {{date}})",
+      "unavailable": "Trial not available",
+      "availableHint": "30 days free — activate in one click",
+      "errorInvalid": "Trial is not available for this module.",
+      "errorAuth": "Session expired. Refresh the page.",
+      "errorGeneric": "Activation failed. Please try again."
     }
   }
 }

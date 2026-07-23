@@ -43,7 +43,7 @@ export const TrialFeatureChip: React.FC<TrialFeatureChipProps> = ({ feature, cla
 
   const aria = t(
     'trial.featureChip.aria',
-    'Značajka dostupna tijekom probnog perioda. Klikni za nadogradnju.',
+    'Klikni za otključavanje',
   );
 
   return (

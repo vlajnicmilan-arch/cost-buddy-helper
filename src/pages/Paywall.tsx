@@ -272,10 +272,16 @@ const Paywall: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
-          className="text-center pb-4 pt-2 space-y-2"
+          className="text-center pb-4 pt-2 space-y-1.5"
         >
           <p className="text-xs text-muted-foreground">
+            {t('moduleUpgrade.trialMicrocopy', 'Probaj 30 dana besplatno · jednokratno po modulu · bez kartice')}
+          </p>
+          <p className="text-xs text-muted-foreground">
             {t('paywall.footer.securePaddle', 'Sigurno plaćanje putem Paddle. Otkazivanje u bilo kojem trenutku.')}
+          </p>
+          <p className="text-[11px] text-muted-foreground/80">
+            {t('moduleUpgrade.paddleMor', 'Račun izdaje Paddle.com Market Ltd.')}
           </p>
           <button
             onClick={() => navigate('/auth')}

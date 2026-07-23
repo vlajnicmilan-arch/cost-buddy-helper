@@ -76,8 +76,6 @@ const AvatarDemo = lazy(() => import("./pages/AvatarDemo"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const PublicProject = lazy(() => import("./pages/PublicProject"));
 const Landing = lazy(() => import("./pages/CentarLanding"));
-// Stari V&M landing zadržan kao rezerva, dostupan na /landing-legacy.
-const LegacyLanding = lazy(() => import("./pages/Landing"));
 const NativeOAuthCallback = lazy(() => import("./pages/NativeOAuthCallback"));
 const Trash = lazy(() => import("./pages/Trash"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
@@ -240,7 +238,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
-          <Route path="/landing-legacy" element={<LegacyLanding />} />
+          <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -299,7 +297,7 @@ const AppRoutes = () => {
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/p/:token" element={<PublicProject />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
-          <Route path="/landing-legacy" element={<LegacyLanding />} />
+          <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
           <Route path="/centar" element={<Navigate to="/" replace />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<Navigate to="/auth" replace />} />
@@ -345,7 +343,7 @@ const AppRoutes = () => {
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/avatar-demo" element={<Suspense fallback={<PageLoader />}><AvatarDemo /></Suspense>} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
-      <Route path="/landing-legacy" element={<Suspense fallback={<PageLoader />}><LegacyLanding /></Suspense>} />
+      <Route path="/landing-legacy" element={<Navigate to="/" replace />} />
       <Route path="/centar" element={<Navigate to="/" replace />} />
       <Route path="/unsubscribe" element={<Suspense fallback={<PageLoader />}><Unsubscribe /></Suspense>} />
       <Route path="/p/:token" element={<Suspense fallback={<PageLoader />}><PublicProject /></Suspense>} />

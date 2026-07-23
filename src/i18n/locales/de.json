@@ -173,11 +173,9 @@
     "chooseToContinue": "Aktiviere die Module, die du brauchst",
     "interval": {
       "monthly": "Monatlich",
-      "yearly": "Jährlich",
-      "lifetime": "Lifetime"
+      "yearly": "Jährlich"
     },
     "yearlyBadge": "-25%",
-    "lifetimeBadge": "-75%",
     "period": {
       "monthly": "/Mo",
       "yearly": "/Jahr",
@@ -187,82 +185,10 @@
       "name": "Kostenlos",
       "tagline": "Zum Starten",
       "priceSuffix": "für immer",
-      "cta": "Kostenlos weiter",
-      "comingSoon": "Kostenloser Plan kommt bald"
-    },
-    "pro": {
-      "name": "Pro",
-      "tagline": "Für die meisten",
-      "cta": "Pro wählen",
-      "yearlySavings": "Sparen Sie {amount}€ pro Jahr (~25%)"
-    },
-    "business": {
-      "name": "Business",
-      "tagline": "Für ernsthafte Nutzer",
-      "cta": "Business wählen",
-      "yearlySavings": "Sparen Sie {amount}€ pro Jahr (~25%)"
+      "cta": "Kostenlos weiter"
     },
     "popular": "Am beliebtesten",
-    "lifetime": {
-      "badge": "Founding Member · Limitiert",
-      "name": "Pro Lifetime",
-      "tagline": "Einmal zahlen — für immer nutzen",
-      "oneTime": "einmalig",
-      "equivalent": "💡 Entspricht ~16 Monaten Pro. Amortisiert sich in etwa eineinhalb Jahren.",
-      "remainingLabel": "Verbleibend",
-      "ofTotal": "von",
-      "soldSuffix": "verkauft",
-      "soldOut": "Ausverkauft",
-      "ctaBecome": "Founding Member werden · {price}€",
-      "backToMonthly": "Zurück zu Monatsplänen",
-      "teaserSubtitle": "Einmal zahlen · Noch {n} Plätze",
-      "teaserView": "Ansehen →"
-    },
-    "features": {
-      "free": [
-        "Bis zu 30 Transaktionen/Mo",
-        "1 Zahlungsquelle",
-        "1 Budget",
-        "KI-Belegscanning",
-        "Projekte & Budgets",
-        "KI-Assistent",
-        "Geschäftliche Verfolgung",
-        "Teamzugang"
-      ],
-      "pro": [
-        "Unbegrenzte Transaktionen",
-        "Unbegrenzte Projekte & Budgets",
-        "Mehrere Wallets & Karten",
-        "KI-Finanzassistent",
-        "Wiederkehrende Transaktionen & Raten",
-        "Cashflow-Prognose (8 Wochen)",
-        "Mehrere Währungen pro Quelle",
-        "Push-Benachrichtigungen",
-        "CSV/PDF-Import & Export",
-        "Detaillierte Berichte",
-        "Teilen & Familiengruppen",
-        "Privat + geschäftlich"
-      ],
-      "business": [
-        "Alles aus Pro",
-        "Mehrere Firmenprofile",
-        "Mitarbeiter & Zeiterfassung",
-        "Teamzugang",
-        "Projektmitarbeiter",
-        "Erweiterte Projekte",
-        "Mehrbenutzerzugang"
-      ],
-      "lifetime": [
-        "Alles aus Pro — für immer",
-        "Keine monatlichen Kosten",
-        "Alle zukünftigen Pro-Funktionen",
-        "Founding-Member-Status",
-        "Prioritätssupport",
-        "Limitiert auf 200 Nutzer"
-      ]
-    },
     "footer": {
-      "secure": "Sichere Zahlung via Paddle. Jederzeit kündbar.",
       "signInOther": "Mit anderem Konto anmelden",
       "securePaddle": "Sichere Zahlung via Paddle. Jederzeit kündbar."
     },
@@ -1269,24 +1195,24 @@
       "title": "Module",
       "subtitle": "Aktiviere nur, was du brauchst — die Oberfläche bleibt aufgeräumt.",
       "active": "Aktiv",
-      "lockedToast": "Mit Upgrade verfügbar",
-      "upgradeCta": "Upgraden",
+      "lockedToast": "Modul freischalten",
+      "upgradeCta": "Freischalten",
       "family": {
         "title": "Familie",
         "description": "Familiengruppen, geteilte Konten und Budgets",
-        "locked": "Im Pro-Tarif verfügbar"
+        "locked": "Verfügbar mit Krug-Abo"
       },
       "projects": {
         "title": "Projekte",
         "description": "Budgets und Ausgaben pro Projekt verfolgen",
-        "locked": "Im Pro-Tarif verfügbar",
+        "locked": "Verfügbar mit Projekti-Abo",
         "enabled": "Projekte aktiviert",
         "disabled": "Projekte deaktiviert"
       },
       "business": {
         "title": "Business",
         "description": "Geschäftsterminologie und Firmenprofile",
-        "locked": "Im Business-Tarif verfügbar"
+        "locked": "Modul Biznis — kommt bald"
       },
       "overrideBadge": {
         "source": "Admin-Override",
@@ -1668,12 +1594,16 @@
     "amountGreaterThanZero": "Betrag muss größer als 0 sein"
   },
   "trial": {
+    "moduleActiveDaysLeft": "Testphase für {{module}} läuft in {{count}} Tagen ab",
+    "moduleActiveOneDay": "Testphase für {{module}} läuft morgen ab",
+    "moduleActiveLastDay": "Letzter Tag der Testphase für {{module}}",
+    "upgrade": "Upgraden",
     "featureChip": {
-      "label": "Probezeit",
-      "daysLeft": "Noch {{count}} Tage",
-      "oneDay": "Noch 1 Tag",
+      "label": "Testphase",
+      "daysLeft": "{{count}} Tage",
+      "oneDay": "1 Tag",
       "lastDay": "letzter Tag",
-      "aria": "Funktion während der Probezeit verfügbar. Klicken zum Upgrade."
+      "aria": "Klicken zum Freischalten"
     }
   },
   "auth": {
@@ -3853,7 +3783,7 @@
         "f1": "Bis zu 30 Transaktionen/Mo",
         "f2": "1 Zahlungsquelle",
         "f3": "1 Budget",
-        "f4": "Quittungsscan (5/Mo)"
+        "f4": "Über den Limits — nur Lesen und Export"
       },
       "pro": {
         "name": "Pro",
@@ -3993,7 +3923,7 @@
       "mKomplet": "Smjer + Krug + Projekti — 25,99 €/Mon oder 259,90 €/Jahr",
       "yearly": "Jährlich = zehn Monate zahlen, zwölf bekommen.",
       "biznis": "Biznis ist ein separates Modul und noch nicht verfügbar; Preis und Bedingungen werden vor dem Start veröffentlicht.",
-      "trial": "Testphase: Neue Nutzer erhalten 30 Tage kostenlose Nutzung ohne Karteneingabe. Wird in diesem Zeitraum kein Abonnement aktiviert, erfolgt keine Abbuchung.",
+      "trial": "Testphase: 30 Tage kostenlos PRO MODUL, ausschließlich nach bewusster Aktivierung durch den Nutzer in der App. Es gibt keinen automatischen Trial bei der Registrierung. Der Trial pro Modul kann nur einmal genutzt werden und beginnt ab der Aktivierung. Das Modul Business hat keinen Trial.",
       "free": "Free-Stufe (nach Ablauf der Testphase ohne Abonnement): Zugang mit einer Beschränkung von 30 Transaktionen pro Monat, 1 Wallet und 1 Budget. Module (Smjer, Krug, Projekti, Biznis) sind in der Free-Stufe nicht enthalten. Daten werden nicht gelöscht: Alles, was der Nutzer zuvor eingegeben hat — einschließlich Transaktionen, Wallets, Budgets und Modulen über den Free-Limits — bleibt im Modus \"Lesen und Exportieren\" sichtbar. Der Nutzer kann diese Daten einsehen und exportieren (Backup), aber nicht erstellen, bearbeiten oder löschen, bis das entsprechende Abonnement aktiviert wird.",
       "founding": "Founding — erste 100: Die ersten 100 Jahresabonnements erhalten einen fest zugesicherten prozentualen Rabatt. Egal wie stark Centar später im Preis steigt, dein Rabatt bleibt — solange dein Abo ohne Unterbrechung verlängert wird. Gilt auch, wenn du später auf ein größeres Paket wechselst. Bei Unterbrechung des Abos verfällt der Rabatt; bei erneutem Abschluss gilt der dann aktuelle Preis.",
       "billing": "Abrechnung: Abonnements werden über Paddle.com Market Ltd. als Merchant of Record abgewickelt; Paddle stellt Rechnungen aus und führt Erstattungen durch. Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums (monatlich oder jährlich), bis sie gekündigt werden."
@@ -4417,10 +4347,10 @@
       "importBank": "Ja. Tippen Sie auf der Startseite auf \"Bank-Import\" und wählen Sie einen CSV-Auszug. Die App erkennt Formate größerer kroatischer Banken (Zagrebačka, PBZ, OTP, Erste, Raiffeisen) und kategorisiert Transaktionen automatisch.",
       "backup": "Im Cloud-Modus werden Daten automatisch gesichert. Im lokalen Modus verwenden Sie \"Alle Daten exportieren\" aus den Einstellungen für ein manuelles JSON-Backup, das Sie später auf einem anderen Gerät importieren können.",
       "dataSecurity": "Alle Daten sind während der Übertragung (HTTPS/TLS) und im Ruhezustand verschlüsselt. Der Zugriff ist durch RLS-Richtlinien auf Datenbankebene beschränkt — nur Sie (und ausdrücklich eingeladene Mitglieder) können Ihre Daten sehen. In der EU gehostet.",
-      "plans": "Free (Basisfunktionen mit Limits), Pro (unbegrenzte Transaktionen, Projekte und Budgets) und Business (Geschäftsmodus, mehrere Unternehmensprofile, Mitarbeiter & Arbeitszeiten, erweiterte Berichte). Details in Einstellungen → Abo.",
-      "cancelSubscription": "Sie können Ihr Abo jederzeit kündigen — die Anleitung erhalten Sie mit jeder Rechnung per E-Mail. Sie bleiben bis zum Ende der bezahlten Periode auf Pro, dann wechseln Sie auf Free — Ihre Daten bleiben erhalten.",
+      "plans": "Kostenlose Stufe (Grundnutzung mit Limits: 30 Transaktionen/Mo, 1 Wallet, 1 Budget) plus einzelne Module Smjer, Krug, Projekti und das Komplet-Paket. Modul Biznis kommt bald. Details in Einstellungen → Abonnement.",
+      "cancelSubscription": "Du kannst dein Abo jederzeit in Einstellungen → Abonnement kündigen. Aktive Module bleiben bis zum Ende der bezahlten Periode nutzbar, danach wechselt die App in den Lese- und Export-Modus — deine Daten bleiben erhalten.",
       "refund": "Schreiben Sie uns innerhalb von 14 Tagen nach Zahlung mit einem Grund an support@vmbalance.com. Wir prüfen jeden Antrag individuell nach EU-Verbraucherrecht.",
-      "changePlan": "Tippen Sie unter Einstellungen → Abo auf den gewünschten Tarif. Upgrades sind sofort mit anteiliger Abrechnung; Downgrades werden zum Ende der aktuellen Abrechnungsperiode wirksam.",
+      "changePlan": "Planwechsel erfolgt in Einstellungen → Abonnement. Upgrades werden gemäß Paddle-Abrechnung sofort wirksam; Downgrades treten am Ende der laufenden Periode in Kraft.",
       "gdprDelete": "Einstellungen → Konto → \"Konto löschen\". Es folgt eine 30-tägige Karenzzeit — Sie erhalten eine Bestätigungs-E-Mail, und eine Anmeldung innerhalb der 30 Tage bricht die Löschung automatisch ab. Nach Ablauf werden alles dauerhaft gelöscht: alle Transaktionen, Projekte, Budgets, Dokumente, Einstellungen und Auth-Konto. Die Aktion ist unwiderruflich.",
       "dataPortability": "Ja. Gemäß DSGVO Art. 20 können Sie alle Ihre Daten jederzeit im CSV/JSON-Format über Einstellungen → Daten exportieren — ohne Wartezeit, ohne Gebühren.",
       "cookies": "Standardmäßig nur essentielle Cookies für die App-Funktionalität. Analytics, Performance-Monitoring (Sentry) und andere aktivieren wir erst nach Ihrer Zustimmung über das Cookie-Banner — Sie können Ihre Wahl jederzeit in den Einstellungen ändern.",
@@ -5582,6 +5512,43 @@
       "migration": "Bei Migration übernommen",
       "systemInitial": "Anfangssaldo",
       "unknown": "Unbekannt"
+    }
+  },
+  "moduleUpgrade": {
+    "krug": {
+      "title": "Krug",
+      "value": "Teile Ausgaben, Budgets und Projekte mit Familie oder Team — ohne manuellen Abgleich."
+    },
+    "projekti": {
+      "title": "Projekti",
+      "value": "Projekte mit Budget, Meilensteinen, Mitarbeitern und G&V — alles an einem Ort."
+    },
+    "biznis": {
+      "title": "Biznis",
+      "value": "Geschäftliche Terminologie, Firmenprofile und R1-Rechnungen. Kommt bald."
+    },
+    "perMonth": "pro Monat",
+    "yearlyHint": "jährlich = 2 Monate gratis",
+    "biznisComingSoon": "Kommt bald",
+    "notNow": "Nicht jetzt",
+    "unlockCta": "Freischalten",
+    "comingSoonCta": "Kommt bald",
+    "paddleMor": "Rechnung ausgestellt von Paddle.com Market Ltd.",
+    "trialMicrocopy": "30 Tage kostenlos testen · einmalig pro Modul · ohne Karte",
+    "trial": {
+      "confirmTitle": "Testphase aktivieren?",
+      "confirmBody": "Die Testphase für {{module}} startet SOFORT und läuft bis {{date}}. Kann nur einmal aktiviert werden.",
+      "confirmCta": "Aktivieren",
+      "cancel": "Abbrechen",
+      "tryCta": "30 Tage kostenlos testen",
+      "activatedToast": "Testphase aktiv bis {{date}}",
+      "activeUntil": "Testphase aktiv bis {{date}}",
+      "usedUntil": "Testphase bereits genutzt (endete {{date}})",
+      "unavailable": "Testphase nicht verfügbar",
+      "availableHint": "30 Tage kostenlos — mit einem Klick aktivieren",
+      "errorInvalid": "Testphase ist für dieses Modul nicht verfügbar.",
+      "errorAuth": "Sitzung abgelaufen. Bitte Seite neu laden.",
+      "errorGeneric": "Aktivierung fehlgeschlagen. Bitte erneut versuchen."
     }
   }
 }
