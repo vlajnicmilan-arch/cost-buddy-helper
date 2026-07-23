@@ -1254,6 +1254,9 @@ serve(async (req) => {
   try {
     const { messages, financialContext, activeBusinessProfileId, businessProfileName, sessionId } = await req.json();
     const businessProfileId: string | null = activeBusinessProfileId || null;
+    const pendingProposals: PendingProposal[] = [];
+    const toolCtx = { sessionId: sessionId ?? null, pendingProposals };
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
