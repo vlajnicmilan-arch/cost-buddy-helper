@@ -48,6 +48,15 @@ describe("parseAiQuotaError", () => {
     });
   });
 
+  it("recognises ai_cap_reached payload", async () => {
+    const result = await parseAiQuotaError(
+      makeResp(429, { error: "ai_cap_reached", monthly_eur: 100, cap_eur: 100 }),
+    );
+    expect(result).toEqual({ kind: "cost_cap", resetAt: null });
+  });
+
+
+
   it("falls back to rate_limit for other 429 bodies", async () => {
     expect(
       await parseAiQuotaError(makeResp(429, { error: "too_many_requests" })),
