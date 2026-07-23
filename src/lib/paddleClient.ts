@@ -100,10 +100,12 @@ export interface OpenCheckoutArgs {
 export const openPaddleCheckout = async (args: OpenCheckoutArgs): Promise<boolean> => {
   const paddle = await getPaddle();
   if (!paddle) return false;
+  const trimmedCode = args.discountCode?.trim();
   paddle.Checkout.open({
     items: [{ priceId: args.priceId, quantity: 1 }],
     customData: { user_id: args.userId },
     customer: args.email ? { email: args.email } : undefined,
+    ...(trimmedCode ? { discountCode: trimmedCode } : {}),
     settings: {
       locale: args.locale ?? 'hr',
       successUrl:
