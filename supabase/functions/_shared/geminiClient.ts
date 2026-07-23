@@ -305,7 +305,9 @@ function openAIToGemini(body: OpenAIChatBody): any {
         for (const tc of msg.tool_calls) {
           let args: any = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { args = {}; }
-          parts.push({ functionCall: { name: tc.function?.name, args } });
+          const part: any = { functionCall: { name: tc.function?.name, args } };
+          if (tc._thought_signature) part.thoughtSignature = tc._thought_signature;
+          parts.push(part);
         }
       }
       contents.push({ role: 'model', parts: parts.length ? parts : [{ text: '' }] });
@@ -431,14 +433,16 @@ function geminiToOpenAIResponse(data: any): any {
   for (const p of parts) {
     if (typeof p?.text === 'string') text += p.text;
     if (p?.functionCall) {
-      toolCalls.push({
+      const call: any = {
         id: `call_${toolCalls.length}_${Date.now()}`,
         type: 'function',
         function: {
           name: p.functionCall.name,
           arguments: JSON.stringify(p.functionCall.args ?? {}),
         },
-      });
+      };
+      if (p.thoughtSignature) call._thought_signature = p.thoughtSignature;
+      toolCalls.push(call);
     }
   }
 
@@ -518,21 +522,23 @@ function geminiSSEToOpenAISSE(input: ReadableStream<Uint8Array>): ReadableStream
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAI)}\n\n`));
                 }
                 if (p?.functionCall) {
+                  const toolCall: any = {
+                    index: 0,
+                    id: `call_${Date.now()}`,
+                    type: 'function',
+                    function: {
+                      name: p.functionCall.name,
+                      arguments: JSON.stringify(p.functionCall.args ?? {}),
+                    },
+                  };
+                  if (p.thoughtSignature) toolCall._thought_signature = p.thoughtSignature;
                   const openAI = {
                     id,
                     object: 'chat.completion.chunk',
                     choices: [{
                       index: 0,
                       delta: {
-                        tool_calls: [{
-                          index: 0,
-                          id: `call_${Date.now()}`,
-                          type: 'function',
-                          function: {
-                            name: p.functionCall.name,
-                            arguments: JSON.stringify(p.functionCall.args ?? {}),
-                          },
-                        }],
+                        tool_calls: [toolCall],
                       },
                       finish_reason: null,
                     }],
