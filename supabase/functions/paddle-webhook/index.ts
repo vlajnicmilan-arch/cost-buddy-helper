@@ -28,6 +28,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { parsePaddleSignature, verifyPaddleSignature } from "../_shared/paddleSignature.ts";
 import { decideSubscriptionState } from "../_shared/paddleCancelDecision.ts";
+import { decideRefundAction } from "../_shared/paddleRefundDecision.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -122,7 +123,22 @@ async function applySubscriptionEntitlements(params: {
   const { userId, subscriptionId, priceIds, status, periodStart, periodEnd, metadata } = params;
   const map = await mapPriceIds(priceIds);
 
+  // Terminal-revoked guard: once a (user, module, provider_sub_id) is marked
+  // 'revoked' by a full refund, no subsequent subscription.* event may resurrect
+  // it. A brand-new purchase creates a NEW provider_sub_id and thus a new row.
+  const { data: revokedRows, error: revokedErr } = await admin
+    .from("user_entitlements")
+    .select("module")
+    .eq("provider", "paddle")
+    .eq("provider_sub_id", subscriptionId)
+    .eq("status", "revoked");
+  if (revokedErr) {
+    log("revoked_lookup_error", { error: revokedErr.message, subscription_id: subscriptionId });
+  }
+  const revokedModules = new Set<string>((revokedRows ?? []).map((r: { module: string }) => r.module));
+
   const rows: Array<Record<string, unknown>> = [];
+  const skippedRevoked: string[] = [];
   for (const pid of priceIds) {
     const mapped = map.get(pid);
     if (!mapped || mapped.length === 0) {
@@ -130,6 +146,10 @@ async function applySubscriptionEntitlements(params: {
       continue;
     }
     for (const m of mapped) {
+      if (revokedModules.has(m.module)) {
+        skippedRevoked.push(m.module);
+        continue;
+      }
       rows.push({
         user_id: userId,
         module: m.module,
@@ -144,6 +164,13 @@ async function applySubscriptionEntitlements(params: {
         metadata,
       });
     }
+  }
+
+  if (skippedRevoked.length > 0) {
+    log("entitlement_skipped_revoked_terminal", {
+      subscription_id: subscriptionId,
+      modules: skippedRevoked,
+    });
   }
 
   if (rows.length === 0) {
@@ -166,6 +193,72 @@ async function applySubscriptionEntitlements(params: {
     period_end: periodEnd,
   });
   return { upserts: rows.length };
+}
+
+async function revokeEntitlementsForSubscription(params: {
+  subscriptionId: string;
+  adjustmentId: string;
+  eventType: string;
+  reason: string | null;
+}) {
+  const { subscriptionId, adjustmentId, eventType, reason } = params;
+  const nowIso = new Date().toISOString();
+
+  // Fetch existing rows for this sub to preserve/merge metadata and to avoid
+  // touching rows that are already terminally revoked (idempotency).
+  const { data: existing, error: selErr } = await admin
+    .from("user_entitlements")
+    .select("id, module, status, metadata")
+    .eq("provider", "paddle")
+    .eq("provider_sub_id", subscriptionId);
+  if (selErr) {
+    log("revoke_lookup_error", { error: selErr.message, subscription_id: subscriptionId });
+    throw new Error(`revoke lookup failed: ${selErr.message}`);
+  }
+
+  const toRevoke = (existing ?? []).filter((r: { status: string }) => r.status !== "revoked");
+  if (toRevoke.length === 0) {
+    log("refund_revoke_noop_already_revoked_or_missing", {
+      subscription_id: subscriptionId,
+      adjustment_id: adjustmentId,
+      existing_count: existing?.length ?? 0,
+    });
+    return { revoked: 0 };
+  }
+
+  const ids = toRevoke.map((r: { id: string }) => r.id);
+  const revokeMeta = {
+    refund: {
+      adjustment_id: adjustmentId,
+      event_type: eventType,
+      reason,
+      revoked_at: nowIso,
+    },
+  };
+
+  // Update each row individually to merge metadata (jsonb) safely.
+  let revoked = 0;
+  for (const row of toRevoke as Array<{ id: string; module: string; metadata: Record<string, unknown> | null }>) {
+    const mergedMeta = { ...(row.metadata ?? {}), ...revokeMeta };
+    const { error: updErr } = await admin
+      .from("user_entitlements")
+      .update({ status: "revoked", period_end: nowIso, metadata: mergedMeta })
+      .eq("id", row.id);
+    if (updErr) {
+      log("revoke_update_error", { error: updErr.message, entitlement_id: row.id });
+      throw new Error(`revoke update failed: ${updErr.message}`);
+    }
+    revoked += 1;
+  }
+
+  log("entitlements_revoked_full_refund", {
+    subscription_id: subscriptionId,
+    adjustment_id: adjustmentId,
+    revoked_count: revoked,
+    modules: toRevoke.map((r: { module: string }) => r.module),
+  });
+  void ids;
+  return { revoked };
 }
 
 async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
@@ -216,11 +309,31 @@ async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
 }
 
 async function handleAdjustmentEvent(evt: PaddleEventEnvelope) {
-  // Refund / chargeback. Phase 2 policy: log only, do NOT auto-revoke.
-  // Milan to decide exact behavior (partial refund vs. full chargeback vs. dispute).
-  log("adjustment_received_no_action", {
-    event_type: evt.event_type,
-    adjustment_id: (evt.data as { id?: string })?.id,
+  const data = (evt.data ?? {}) as Record<string, unknown>;
+  const adjustmentId = (data.id as string | undefined) ?? "unknown";
+  const subscriptionId = (data.subscription_id as string | null | undefined) ?? null;
+  const decision = decideRefundAction({
+    action: data.action as string | undefined,
+    status: data.status as string | undefined,
+    type: data.type as string | undefined,
+    subscriptionId,
+  });
+
+  if (decision.kind === "noop") {
+    log("adjustment_received_no_action", {
+      event_type: evt.event_type,
+      adjustment_id: adjustmentId,
+      subscription_id: subscriptionId,
+      reason: decision.reason,
+    });
+    return;
+  }
+
+  await revokeEntitlementsForSubscription({
+    subscriptionId: decision.subscriptionId,
+    adjustmentId,
+    eventType: evt.event_type ?? "adjustment.unknown",
+    reason: (data.reason as string | null | undefined) ?? null,
   });
 }
 
