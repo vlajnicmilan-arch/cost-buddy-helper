@@ -140,6 +140,47 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_action_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          decision: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          proposal_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          decision: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          proposal_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          proposal_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_action_log_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposed_actions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_cost_monthly: {
         Row: {
           call_count: number
@@ -190,6 +231,51 @@ export type Database = {
           insights?: Json
           language?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_proposed_actions: {
+        Row: {
+          action_type: string
+          confirmed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          payload: Json
+          rejected_at: string | null
+          result: Json | null
+          session_id: string | null
+          status: string
+          summary: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload: Json
+          rejected_at?: string | null
+          result?: Json | null
+          session_id?: string | null
+          status?: string
+          summary: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload?: Json
+          rejected_at?: string | null
+          result?: Json | null
+          session_id?: string | null
+          status?: string
+          summary?: string
           user_id?: string
         }
         Relationships: []
