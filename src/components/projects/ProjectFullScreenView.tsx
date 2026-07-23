@@ -861,7 +861,7 @@ export const ProjectFullScreenView = ({
                     // Investor view — SAMO javna polja faze (naziv/opis/status/datumi/
                     // investor_price). BEZ milestone.budget, milestone.spent i toggle
                     // "Lista/Timeline" (Timeline pokazuje interni Gantt s trajanjima).
-                    <InvestorPhasesView milestones={milestones} loading={milestonesLoading} />
+                    <InvestorPhasesView projectId={project.id} />
                   ) : (
                     <>
                       {canSeeTab('timeline') && (
