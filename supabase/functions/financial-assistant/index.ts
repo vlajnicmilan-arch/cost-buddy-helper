@@ -1454,7 +1454,10 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         aiBody.stream = true;
       }
 
+      const __capA = await checkAiCostCap(supabaseAuth);
+      if (__capA) return __capA;
       const response = await callGemini(aiBody);
+
 
       if (!response.ok) {
         if (response.status === 429) {
