@@ -1307,12 +1307,6 @@ serve(async (req) => {
     const pendingProposals: PendingProposal[] = [];
     const toolCtx = { sessionId: sessionId ?? null, pendingProposals };
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
     // Require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
