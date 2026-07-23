@@ -22,10 +22,15 @@ jobs:
     timeout-minutes: 20
     env:
       CI: 'true'
-      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
-      E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      # SUPABASE URL i anon key su javni (bundlaju se u frontend) — hardkod fallback
+      # ako repo secret nije postavljen. Service role i test password MORAJU biti secreti.
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL || 'https://fzalxjretvtvokiotvkf.supabase.co' }}
+      E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6YWx4anJldHZ0dm9raW90dmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjczNDMsImV4cCI6MjA4NDYwMzM0M30.NKPTQ5hJnMt7M17NUPLNU07CQ3EFZZpOrE2ZQvuEtTw' }}
       E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
-      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      # Sintetički security+a/b useri se kreiraju u global-setupu; password je proizvoljan
+      # (nije korisnički). Ako repo ima E2E_USER_PASSWORD, koristi ga; inače fiksna vrijednost.
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD || 'security-audit-synthetic-pw-2026' }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
