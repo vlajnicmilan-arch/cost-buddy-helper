@@ -58,6 +58,9 @@ project_id = "fzalxjretvtvokiotvkf"
     verify_jwt = false
   [functions.trial-reminder]
     verify_jwt = false
+  # TEMPORARY AUDIT TOOL — delete this block after verdict
+  [functions.run-security-audit]
+    verify_jwt = true
   [functions.send-transactional-email]
     verify_jwt = true
   [functions.preview-transactional-email]
