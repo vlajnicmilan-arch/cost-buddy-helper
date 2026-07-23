@@ -2497,6 +2497,10 @@
       },
       "fallback_project": "project"
     },
+    "work_entry_recorded": {
+      "title": "Hours recorded — {{project}}",
+      "message": "{{actor}} recorded {{hours}}h for you on {{date}}."
+    },
     "project_transaction": {
       "title": "Transaction in project „{{project}}\"",
       "message": {
