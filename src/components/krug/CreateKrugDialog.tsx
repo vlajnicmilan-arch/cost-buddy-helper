@@ -93,7 +93,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
         requestModule('krug');
         return;
       }
-      showError(formatErrorForUser(err, (key, defaultOrOpts, opts) => t(key, defaultOrOpts, opts), {
+      showError(formatErrorForUser(err, (key, defaultOrOpts, opts) => String(t(key, defaultOrOpts, opts)), {
         fallbackText: t('krug.create.error', 'Kreiranje Kruga nije uspjelo. Pokušaj ponovno.'),
       }));
     },

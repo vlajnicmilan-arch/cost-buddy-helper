@@ -136,7 +136,7 @@ function useFriendlyDeletionError() {
   const { t } = useTranslation();
   return (err: unknown) => formatErrorForUser(
     err,
-    (key, defaultOrOpts, opts) => t(key, defaultOrOpts, opts),
+    (key, defaultOrOpts, opts) => String(t(key, defaultOrOpts, opts)),
     { fallbackKey: 'krug.delete.errors.unknown' },
   );
 }
