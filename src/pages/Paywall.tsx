@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -7,11 +7,30 @@ import { usePaddlePrices, type PaywallPlan, type BillingCycle } from '@/hooks/us
 import { openPaddleCheckout } from '@/lib/paddleClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Check, Loader2, Compass, Users, Briefcase, Sparkles, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { showError } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
+import {
+  shouldForceRedirectAway,
+  shouldExitOnCheckoutSuccess,
+  needsKompletOverlapConfirm,
+  overlappingPaddleModules,
+  isPlanAlreadyActive,
+  type EntitlementMap,
+  type PaywallModule,
+} from '@/lib/paywallGate';
 import logo from '@/assets/logo.webp';
 
 type PlanCardConfig = {
@@ -34,37 +53,49 @@ const Paywall: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { subscribed, loading: subLoading, entitlements, checkSubscription } = useSubscription();
+  const { loading: subLoading, entitlements, checkSubscription } = useSubscription();
   const { prices, loading: pricesLoading, error: pricesError } = usePaddlePrices();
   const [params] = useSearchParams();
   const checkoutStatus = params.get('checkout');
+  const planParam = params.get('plan');
+  const shopParam = params.get('shop') === '1';
 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [loadingPlan, setLoadingPlan] = useState<PaywallPlan | null>(null);
+  const [overlapPlan, setOverlapPlan] = useState<PaywallPlan | null>(null);
 
-  const hasAnyEntitlement =
-    !!entitlements.smjer?.active ||
-    !!entitlements.krug?.active ||
-    !!entitlements.projekti?.active ||
-    !!entitlements.biznis?.active;
+  const ents = entitlements as EntitlementMap;
 
-  // Exit paywall whenever the user is already entitled — subscribed flag OR
-  // any active module. Prevents a paid user with a lingering trial row (which
-  // used to poison paddleActive server-side) from being trapped here.
+  // Snapshot entitlements at mount so checkout=success can detect a NEW module.
+  const initialEntsRef = useRef<EntitlementMap | null>(null);
   useEffect(() => {
     if (subLoading) return;
-    if (subscribed || hasAnyEntitlement) {
+    if (initialEntsRef.current) return;
+    initialEntsRef.current = ents;
+  }, [subLoading, ents]);
+
+  const intent = useMemo(
+    () => ({ plan: planParam, shop: shopParam, checkoutSuccess: checkoutStatus === 'success' }),
+    [planParam, shopParam, checkoutStatus],
+  );
+
+  // Exit guard: only auto-redirect a paid user who has NO reason to be here.
+  // A ?plan= (from ModuleUpgradeDialog "Otključaj") or ?shop=1 (Settings →
+  // Cjenik) or an in-flight ?checkout=success poll keeps them on the paywall.
+  useEffect(() => {
+    if (subLoading) return;
+    if (shouldForceRedirectAway(intent, ents)) {
       navigate('/home', { replace: true });
     }
-  }, [subscribed, hasAnyEntitlement, subLoading, navigate]);
+  }, [subLoading, intent, ents, navigate]);
 
   // Poll for entitlement activation after returning from Paddle checkout.
+  // Exit only when a module that was NOT active at mount becomes active —
+  // prevents kicking a returning shopper out to the wrong screen when the
+  // webhook trails but they already had other entitlements.
   useEffect(() => {
     if (checkoutStatus !== 'success') return;
     toast.success(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'));
-    // Immediate refetch, then short poll (webhook can trail the redirect
-    // by a few seconds). The exit effect above will navigate as soon as
-    // any entitlement flips active.
     checkSubscription();
     let attempts = 0;
     const id = window.setInterval(() => {
@@ -75,13 +106,32 @@ const Paywall: React.FC = () => {
     return () => window.clearInterval(id);
   }, [checkoutStatus, checkSubscription, t]);
 
+  useEffect(() => {
+    if (checkoutStatus !== 'success') return;
+    if (subLoading) return;
+    const snapshot = initialEntsRef.current;
+    if (!snapshot) return;
+    if (shouldExitOnCheckoutSuccess(snapshot, ents)) {
+      navigate('/home', { replace: true });
+    }
+  }, [checkoutStatus, subLoading, ents, navigate]);
+
+  // Preselect billing cycle + scroll & highlight the plan from ?plan=.
+  const highlightedPlan = planParam as PaywallPlan | null;
+  useEffect(() => {
+    if (!highlightedPlan) return;
+    const el = document.getElementById(`paywall-plan-${highlightedPlan}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedPlan, pricesLoading]);
 
   const locale = useMemo<'hr' | 'en' | 'de'>(() => {
     const lang = (i18n.language || 'hr').slice(0, 2).toLowerCase();
     return lang === 'en' || lang === 'de' ? (lang as 'en' | 'de') : 'hr';
   }, [i18n.language]);
 
-  const handleCheckout = async (plan: PaywallPlan) => {
+  const runCheckout = async (plan: PaywallPlan) => {
     if (!user?.id) {
       showError(t('paywall.notSignedIn', 'Prijava potrebna'));
       return;
@@ -108,6 +158,21 @@ const Paywall: React.FC = () => {
       setLoadingPlan(null);
     }
   };
+
+  const handleCheckout = (plan: PaywallPlan) => {
+    // Ako klik na Komplet, a korisnik već ima aktivnu paddle pretplatu na
+    // pojedinačni modul → prvo confirm dijalog (dvostruko plaćanje warning).
+    if (needsKompletOverlapConfirm(plan, ents)) {
+      setOverlapPlan(plan);
+      return;
+    }
+    runCheckout(plan);
+  };
+
+  const overlapModules = overlappingPaddleModules(ents);
+  const overlapModulesLabel = overlapModules
+    .map((m) => t(`subscription.module.${m}`, m))
+    .join(', ');
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-background via-background to-muted/30 flex flex-col items-center px-4 py-8 overflow-y-auto">
@@ -157,23 +222,27 @@ const Paywall: React.FC = () => {
             const Icon = cfg.icon;
             const price = cycle === 'monthly' ? cfg.monthly : cfg.yearly;
             const priceId = prices[cfg.plan]?.[cycle];
+            const alreadyActive = isPlanAlreadyActive(cfg.plan, ents);
             const disabled =
+              alreadyActive ||
               pricesLoading || !priceId || loadingPlan !== null || !user?.id;
+            const isHighlighted = highlightedPlan === cfg.plan;
             const features = (t(`paywall.modules.${cfg.plan}.features`, {
               returnObjects: true,
               defaultValue: [],
             }) as string[]) || [];
             return (
               <motion.div
+                id={`paywall-plan-${cfg.plan}`}
                 key={cfg.plan}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
-                className={`rounded-2xl p-5 relative bg-card ${
+                className={`rounded-2xl p-5 relative bg-card transition-shadow ${
                   cfg.featured
                     ? 'border-2 border-primary shadow-lg shadow-primary/5'
                     : 'border border-border/60'
-                }`}
+                } ${isHighlighted ? 'ring-2 ring-primary/60 ring-offset-2 ring-offset-background' : ''}`}
               >
                 {cfg.featured && (
                   <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-3 py-0.5 bg-primary text-primary-foreground">
@@ -186,8 +255,14 @@ const Paywall: React.FC = () => {
                       <Icon className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="font-semibold text-base truncate">
+                      <h2 className="font-semibold text-base truncate flex items-center gap-1.5">
                         {t(`paywall.modules.${cfg.plan}.name`)}
+                        {alreadyActive && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
+                            <Check className="w-2.5 h-2.5" />
+                            {t('paywall.activeBadge', 'Aktivno')}
+                          </Badge>
+                        )}
                       </h2>
                       <p className="text-xs text-muted-foreground truncate">
                         {t(`paywall.modules.${cfg.plan}.tagline`)}
@@ -226,12 +301,21 @@ const Paywall: React.FC = () => {
                   variant={cfg.featured ? 'default' : 'outline'}
                   onClick={() => handleCheckout(cfg.plan)}
                   disabled={disabled}
-                  aria-label={t(`paywall.modules.${cfg.plan}.cta`, {
-                    defaultValue: 'Odaberi',
-                  })}
+                  aria-label={
+                    alreadyActive
+                      ? t('paywall.activeBadge', 'Aktivno')
+                      : t(`paywall.modules.${cfg.plan}.cta`, { defaultValue: 'Odaberi' })
+                  }
                 >
                   {loadingPlan === cfg.plan && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  {t(`paywall.modules.${cfg.plan}.cta`, 'Odaberi')}
+                  {alreadyActive ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      {t('paywall.activeCta', 'Aktivno')}
+                    </>
+                  ) : (
+                    t(`paywall.modules.${cfg.plan}.cta`, 'Odaberi')
+                  )}
                 </Button>
               </motion.div>
             );
@@ -291,6 +375,35 @@ const Paywall: React.FC = () => {
           </button>
         </motion.div>
       </div>
+
+      <AlertDialog open={!!overlapPlan} onOpenChange={(o) => { if (!o) setOverlapPlan(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('paywall.overlap.title', 'Već imaš aktivnu pretplatu')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('paywall.overlap.body', {
+                defaultValue:
+                  'Već imaš aktivnu pretplatu: {{modules}}. Komplet je ZASEBNA pretplata — nakon aktivacije Kompleta otkaži pojedinačnu kroz "Upravljaj pretplatom" da ne plaćaš dvostruko.',
+                modules: overlapModulesLabel,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('paywall.overlap.cancel', 'Odustani')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const plan = overlapPlan;
+                setOverlapPlan(null);
+                if (plan) runCheckout(plan);
+              }}
+            >
+              {t('paywall.overlap.continue', 'Nastavi na Komplet')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
