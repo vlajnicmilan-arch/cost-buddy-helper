@@ -218,7 +218,24 @@ const Paywall: React.FC = () => {
         </button>
       </div>
 
+      {discountCode && (
+        <p className="text-[11px] text-muted-foreground mb-3 -mt-2">
+          {t('paywall.discount.cycleHint', 'Kod popusta može vrijediti samo za godišnju opciju')}
+        </p>
+      )}
+
       <div className="w-full max-w-md space-y-3">
+        {discountCode && (
+          <div
+            role="status"
+            className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground"
+          >
+            {t('paywall.discount.infoBar', {
+              defaultValue: 'Kod popusta {{code}} će se primijeniti pri plaćanju',
+              code: discountCode,
+            })}
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {PLAN_PRICES.map((cfg) => {
             const Icon = cfg.icon;
