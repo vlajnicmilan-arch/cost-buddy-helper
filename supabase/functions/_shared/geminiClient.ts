@@ -305,7 +305,9 @@ function openAIToGemini(body: OpenAIChatBody): any {
         for (const tc of msg.tool_calls) {
           let args: any = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { args = {}; }
-          parts.push({ functionCall: { name: tc.function?.name, args } });
+          const part: any = { functionCall: { name: tc.function?.name, args } };
+          if (tc._thought_signature) part.thoughtSignature = tc._thought_signature;
+          parts.push(part);
         }
       }
       contents.push({ role: 'model', parts: parts.length ? parts : [{ text: '' }] });
