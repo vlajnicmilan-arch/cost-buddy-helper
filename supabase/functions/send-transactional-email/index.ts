@@ -32,6 +32,33 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Defense in depth: verify_jwt=true already gates at the platform layer.
+  // This function is invoked by internal callers (queue processor, service_role),
+  // so we accept any valid Bearer token here without hard-blocking on user claims.
+  // Missing/empty header → 401. Present but no user claim → warn and continue
+  // (expected for service_role invocations).
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ') || authHeader.replace('Bearer ', '').trim().length === 0) {
+    return new Response(
+      JSON.stringify({ error: 'unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+  try {
+    const parts = authHeader.replace('Bearer ', '').trim().split('.')
+    if (parts.length >= 2) {
+      const payload = JSON.parse(
+        atob(parts[1].replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(parts[1].length / 4) * 4, '=')),
+      )
+      if (!payload?.sub) {
+        console.warn('send-transactional-email: caller has no claims.sub (likely service_role)', { role: payload?.role })
+      }
+    }
+  } catch {
+    console.warn('send-transactional-email: failed to parse JWT claims (non-blocking)')
+  }
+
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
