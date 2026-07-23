@@ -585,6 +585,7 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    recordAiCost(supabase, "parse-receipt").catch(() => {});
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || '';
