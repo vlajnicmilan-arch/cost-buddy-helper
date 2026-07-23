@@ -127,6 +127,16 @@
   "aiInsights": {
     "title": "AI insights"
   },
+  "aiProposal": {
+    "before": "Before",
+    "after": "After",
+    "confirm": "Confirm",
+    "reject": "Reject",
+    "confirmed": "Confirmed and saved.",
+    "rejected": "Rejected.",
+    "error": "Error"
+  },
+
   "attention": {
     "title": "Needs attention",
     "empty": "All clear",
