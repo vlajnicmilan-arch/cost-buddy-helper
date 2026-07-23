@@ -206,9 +206,15 @@ async function spec01_crossUserReads(ctx: Ctx): Promise<Verdict[]> {
     r = await ctx.bClient.from('user_entitlements').select('id').eq('user_id', ctx.aId);
     results.push(verdict('01.6 B ne vidi A-ine user_entitlements', !r.error && (r.data ?? []).length === 0, { severity: 'HIGH', surface: 'user_entitlements' }));
 
-    r = await ctx.bClient.from('profiles').select('email').eq('user_id', ctx.aId);
-    const emailLeaked = (r.data ?? []).some((row: any) => row.email && row.email !== '');
-    results.push(verdict('01.7 B ne vidi A-in email preko profiles', !r.error && !emailLeaked, { severity: 'HIGH', surface: 'profiles.email' }));
+    // profiles nema `email` kolonu (email živi u auth.users). Provjeravamo da
+    // B ne dobije NI 'email' NI drugu osjetljivu kolonu kroz select('*') na A-in profil.
+    r = await ctx.bClient.from('profiles').select('*').eq('user_id', ctx.aId);
+    const leakedRows = r.data ?? [];
+    const leakedSensitive = leakedRows.some((row: any) =>
+      row && ('email' in row || 'phone' in row) && (row.email || row.phone),
+    );
+    results.push(verdict('01.7 B ne vidi A-in email/phone preko profiles',
+      !leakedSensitive, { severity: 'HIGH', surface: 'profiles' }));
   } finally {
     const a = admin();
     await a.from('expenses').delete().eq('user_id', ctx.aId);
