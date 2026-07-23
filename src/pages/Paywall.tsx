@@ -150,6 +150,7 @@ const Paywall: React.FC = () => {
         email: user.email ?? undefined,
         locale,
         successUrl: `${window.location.origin}/paywall?checkout=success`,
+        discountCode,
       });
       if (!ok) throw new Error('Paddle not initialized');
     } catch (err) {
