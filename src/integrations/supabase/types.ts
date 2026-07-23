@@ -5617,21 +5617,7 @@ export type Database = {
       }
     }
     Views: {
-      profiles_public: {
-        Row: {
-          display_name: string | null
-          user_id: string | null
-        }
-        Insert: {
-          display_name?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          display_name?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       _extract_custom_source_id: {
@@ -5942,6 +5928,13 @@ export type Database = {
       get_project_role: {
         Args: { _project_id: string; _user_id: string }
         Returns: string
+      }
+      get_public_profiles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
       }
       grant_module_access: {
         Args: {
