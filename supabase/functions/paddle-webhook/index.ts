@@ -27,6 +27,7 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { parsePaddleSignature, verifyPaddleSignature } from "../_shared/paddleSignature.ts";
+import { decideSubscriptionState } from "../_shared/paddleCancelDecision.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -185,21 +186,23 @@ async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
     .map((i) => i.price?.id)
     .filter((x): x is string => typeof x === "string");
 
-  const rawStatus = (data?.status ?? "").toLowerCase();
-  let status: "active" | "canceled" | "past_due" | "paused" = "active";
-  if (evt.event_type === "subscription.canceled" || rawStatus === "canceled") status = "canceled";
-  else if (evt.event_type === "subscription.past_due" || rawStatus === "past_due") status = "past_due";
-  else if (evt.event_type === "subscription.paused" || rawStatus === "paused") status = "paused";
-  else status = "active";
-
   const periodStart = data?.current_billing_period?.starts_at ?? new Date().toISOString();
   const periodEnd = data?.current_billing_period?.ends_at ?? null;
+
+  const decision = decideSubscriptionState({
+    eventType: evt.event_type ?? "",
+    status: data?.status ?? null,
+    scheduledChange: data?.scheduled_change ?? null,
+    canceledAt: data?.canceled_at ?? null,
+    periodEnd,
+    now: new Date(),
+  });
 
   await applySubscriptionEntitlements({
     userId,
     subscriptionId,
     priceIds,
-    status,
+    status: decision.status,
     periodStart,
     periodEnd,
     metadata: {
@@ -207,6 +210,7 @@ async function handleSubscriptionEvent(evt: PaddleEventEnvelope) {
       customer_id: data?.customer_id ?? null,
       scheduled_change: data?.scheduled_change ?? null,
       canceled_at: data?.canceled_at ?? null,
+      scheduled_cancel_at: decision.scheduledCancelAt,
     },
   });
 }
