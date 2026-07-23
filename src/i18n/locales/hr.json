@@ -1623,6 +1623,10 @@
     }
   },
   "auth": {
+    "campaignBanner": {
+      "founding": "🎉 Tvoja Founding ponuda te čeka — Komplet godišnji uz 50% popusta (129,95 € umjesto 259,90 €). Prijavi se ili otvori račun i vodimo te ravno na nju.",
+      "generic": "🎉 Tvoj popust te čeka nakon prijave. Prijavi se ili otvori račun i vodimo te ravno na ponudu."
+    },
     "login": "Prijava",
     "register": "Registracija",
     "email": "Email",
