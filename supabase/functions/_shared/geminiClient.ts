@@ -44,8 +44,11 @@ const DIRECT_MODEL_MAP: Record<string, string> = {
   'google/gemini-2.5-flash': 'gemini-3.5-flash',            // stable
   'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',  // stable
   'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',        // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
-  // Milan odobrio 16.7.2026 — jedini model koji financial-assistant koristi (streaming).
-  'google/gemini-3-flash-preview': 'gemini-3-flash-preview', // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
+  // HOTFIX 23.7.2026: privremeno preusmjereno s `gemini-3-flash-preview` na
+  // stabilan `gemini-3.5-flash`. Preview model od nedavno traži `thoughtSignature`
+  // na svakom functionCall partu koji vraćamo natrag (INVALID_ARGUMENT 400) —
+  // adapter to još ne propagira. Vratiti kad implementiramo signature round-trip.
+  'google/gemini-3-flash-preview': 'gemini-3.5-flash',
 };
 
 /**
