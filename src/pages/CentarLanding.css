@@ -306,4 +306,134 @@
    pozadine kao landing (spriječava bijeli bljesak iznad/ispod .centar-landing
    dok se stranica ne rasporedi). */
 body.centar-landing-body{background:#0A0D12;margin:0}
+body.centar-landing-body[data-centar-theme="light"]{background:#FAFBFC}
 .centar-landing{min-height:100dvh;display:block}
+
+/* ---------- SCREENSHOTS: klikabilni hint ---------- */
+.centar-landing .shot-img{cursor:zoom-in;transition:transform .2s ease, filter .2s ease}
+.centar-landing .shot:hover .shot-img{transform:scale(1.015);filter:brightness(1.05)}
+.centar-landing .shot{position:relative}
+.centar-landing .shot::after{
+  content:"⤢";position:absolute;top:10px;right:10px;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,.55);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;line-height:1;
+  opacity:0;transition:opacity .2s ease;pointer-events:none;
+}
+.centar-landing .shot:hover::after{opacity:1}
+
+/* ---------- TOOLBAR (theme + jezik) ---------- */
+.centar-toolbar{
+  position:fixed;top:12px;right:12px;z-index:40;
+  display:flex;gap:8px;
+  padding:6px;border-radius:999px;
+  background:rgba(18,23,31,.72);border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.centar-landing[data-theme="light"] ~ * .centar-toolbar,
+.centar-landing[data-theme="light"] .centar-toolbar{
+  background:rgba(255,255,255,.78);border-color:rgba(10,13,18,.10);
+}
+.centar-toolbar-btn{
+  width:36px;height:36px;border-radius:999px;
+  background:transparent;border:0;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:#E6EAF0;transition:background .15s ease, color .15s ease;
+}
+.centar-toolbar-btn:hover{background:rgba(255,255,255,.08)}
+.centar-toolbar-btn:focus-visible{outline:2px solid #3B82F6;outline-offset:2px}
+.centar-landing[data-theme="light"] .centar-toolbar-btn{color:#0A0D12}
+.centar-landing[data-theme="light"] .centar-toolbar-btn:hover{background:rgba(10,13,18,.06)}
+.centar-toolbar-lang{
+  display:inline-flex;align-items:center;padding:0 4px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;
+  letter-spacing:.08em;color:inherit;
+}
+.centar-toolbar-lang button{
+  background:transparent;border:0;cursor:pointer;
+  padding:8px 8px;font:inherit;color:inherit;opacity:.55;
+  border-radius:6px;transition:opacity .15s ease, background .15s ease;
+}
+.centar-toolbar-lang button:hover{opacity:.85}
+.centar-toolbar-lang button[aria-pressed="true"]{opacity:1;font-weight:700}
+.centar-toolbar-lang button + button{margin-left:2px}
+.centar-toolbar-lang .sep{opacity:.35;padding:0 2px}
+
+/* ---------- LIGHTBOX ---------- */
+.centar-lightbox{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(4,7,12,.88);
+  display:flex;align-items:center;justify-content:center;
+  padding:clamp(12px,4vw,48px);
+  animation:centarLbFade .18s ease-out;
+}
+@keyframes centarLbFade{from{opacity:0}to{opacity:1}}
+.centar-lightbox-inner{
+  max-width:min(96vw,1200px);max-height:96vh;
+  display:flex;align-items:center;justify-content:center;
+}
+.centar-lightbox-img{
+  max-width:100%;max-height:96vh;
+  display:block;object-fit:contain;
+  border-radius:6px;background:#0A0D12;
+  touch-action:pinch-zoom;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+.centar-lightbox-close{
+  position:absolute;top:16px;right:16px;
+  width:44px;height:44px;border-radius:999px;
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+  color:#fff;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s ease;
+}
+.centar-lightbox-close:hover{background:rgba(255,255,255,.20)}
+.centar-lightbox-close:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+/* ---------- LIGHT THEME OVERRIDES ---------- */
+.centar-landing[data-theme="light"]{
+  --ink:#FAFBFC;
+  --surface:#FFFFFF;
+  --surface-2:#F3F5F9;
+  --line:#E1E6EE;
+  --text:#0A0D12;
+  --muted:#5A6472;
+  --accent:#2563EB;
+}
+.centar-landing[data-theme="light"] strong{color:#0A0D12}
+.centar-landing[data-theme="light"] .lede{color:#3B4553}
+.centar-landing[data-theme="light"] .memo-text{color:#2A3140}
+.centar-landing[data-theme="light"] .memo-text em{color:#0A0D12}
+.centar-landing[data-theme="light"] .rline .ev b{color:#0A0D12}
+.centar-landing[data-theme="light"] .side p{color:#3B4553}
+.centar-landing[data-theme="light"] .verdict{color:#0A0D12}
+.centar-landing[data-theme="light"] .step p{color:#3B4553}
+.centar-landing[data-theme="light"] .callout{color:#0A0D12}
+.centar-landing[data-theme="light"] .bcell{color:#3B4553}
+.centar-landing[data-theme="light"] .brow-head .bcell{color:#0A0D12}
+.centar-landing[data-theme="light"] .balance-note{color:#3B4553}
+.centar-landing[data-theme="light"] .lst li{color:#3B4553}
+.centar-landing[data-theme="light"] .fence{color:#3B4553}
+.centar-landing[data-theme="light"] .mod p{color:#3B4553}
+.centar-landing[data-theme="light"] .mod-more li{color:#3B4553}
+.centar-landing[data-theme="light"] .story p{color:#3B4553}
+.centar-landing[data-theme="light"] .yearly-note{color:#3B4553}
+.centar-landing[data-theme="light"] .founding p{color:#3B4553}
+.centar-landing[data-theme="light"] details p{color:#3B4553}
+.centar-landing[data-theme="light"] summary{color:#0A0D12}
+.centar-landing[data-theme="light"] .btn-primary{color:#fff}
+.centar-landing[data-theme="light"] .btn-primary:hover{background:#1d55c9}
+.centar-landing[data-theme="light"] .btn-ghost{color:#0A0D12}
+.centar-landing[data-theme="light"] .btn:focus-visible{outline-color:#0A0D12}
+.centar-landing[data-theme="light"] .shot-img{background:#EEF1F6}
+.centar-landing[data-theme="light"] .shot-ph{
+  background:repeating-linear-gradient(45deg,#EEF1F6,#EEF1F6 10px,#E4E9F1 10px,#E4E9F1 20px);
+}
+.centar-landing[data-theme="light"] .record{
+  box-shadow:0 0 0 4px rgba(37,99,235,.08);
+}
+.centar-landing[data-theme="light"] .record-head{background:rgba(37,99,235,.06)}
+.centar-landing[data-theme="light"] .prow-best{background:rgba(37,99,235,.05)}
+.centar-landing[data-theme="light"] .founding{background:rgba(37,99,235,.05)}
+.centar-landing[data-theme="light"] .m-biz .mod-name{color:#5A6472}
