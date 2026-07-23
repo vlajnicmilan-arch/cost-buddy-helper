@@ -19,6 +19,12 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Dry-run detection: query param ?dry_run=true or header x-dry-run: true
+    const url = new URL(req.url);
+    const dryRun =
+      url.searchParams.get('dry_run') === 'true' ||
+      req.headers.get('x-dry-run') === 'true';
+
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { data: expiredTransactions, error: fetchError } = await supabase
@@ -33,15 +39,51 @@ Deno.serve(async (req) => {
     }
 
     if (!expiredTransactions || expiredTransactions.length === 0) {
+      if (dryRun) {
+        await supabase.from('app_diagnostics_logs').insert({
+          event: 'auto_reject_pending_dry_run',
+          severity: 'info',
+          details: { count: 0, ids: [] },
+        });
+      }
       return new Response(
-        JSON.stringify({ message: 'No expired transactions found', count: 0 }),
+        JSON.stringify({ message: 'No expired transactions found', count: 0, dryRun }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${expiredTransactions.length} expired pending transactions`);
+    console.log(`Found ${expiredTransactions.length} expired pending transactions${dryRun ? ' (DRY RUN)' : ''}`);
 
     const expiredIds = expiredTransactions.map(t => t.id);
+
+    // DRY RUN: log and exit — no delete, no notifications, no push
+    if (dryRun) {
+      const { error: logError } = await supabase.from('app_diagnostics_logs').insert({
+        event: 'auto_reject_pending_dry_run',
+        severity: 'warning',
+        details: {
+          count: expiredTransactions.length,
+          ids: expiredIds,
+          sample: expiredTransactions.slice(0, 10).map(t => ({
+            id: t.id,
+            description: t.description,
+            project_id: t.project_id,
+            submitted_by: t.submitted_by,
+          })),
+        },
+      });
+      if (logError) console.error('Dry-run log insert failed:', logError);
+
+      return new Response(
+        JSON.stringify({
+          message: 'DRY RUN — would auto-reject expired transactions',
+          count: expiredTransactions.length,
+          ids: expiredIds,
+          dryRun: true,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { error: deleteError } = await supabase
       .from('expenses')
@@ -52,6 +94,7 @@ Deno.serve(async (req) => {
       console.error('Error deleting expired transactions:', deleteError);
       throw deleteError;
     }
+
 
     const titleKey = 'notifications.auto_reject_pending.title';
     const messageKey = 'notifications.auto_reject_pending.message';
