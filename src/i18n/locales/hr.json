@@ -205,6 +205,10 @@
       "continue": "Nastavi na Komplet",
       "cancel": "Odustani"
     },
+    "discount": {
+      "infoBar": "Kod popusta {{code}} će se primijeniti pri plaćanju",
+      "cycleHint": "Kod popusta može vrijediti samo za godišnju opciju"
+    },
     "modules": {
       "smjer": {
         "name": "Smjer",
