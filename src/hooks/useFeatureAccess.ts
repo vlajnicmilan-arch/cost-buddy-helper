@@ -66,9 +66,16 @@ export function useFeatureAccess() {
 
   const effectiveTier: SubscriptionTier = trialActive ? 'business' : tier;
 
+  const hasModuleAccess = (module: EntitlementModule): boolean => {
+    if (entitlements[module]?.active) return true;
+    if (module === 'projekti' && hasActiveGrant('projects')) return true;
+    if (module === 'biznis' && hasActiveGrant('business')) return true;
+    return false;
+  };
+
   const hasEntitlement = (feature: Feature): boolean => {
     const module: EntitlementModule = FEATURE_MODULE_MAP[feature];
-    return !!entitlements[module]?.active;
+    return hasModuleAccess(module);
   };
 
   const hasTierAccess = (feature: Feature): boolean => {
@@ -98,6 +105,8 @@ export function useFeatureAccess() {
   return {
     tier: effectiveTier,
     hasAccess,
+    /** Strogi write gate: pravo iz entitlementa/admin granta, bez legacy tier fallbacka. */
+    hasModuleAccess,
     getRequiredTier,
     isFreeTier,
     isProTier,

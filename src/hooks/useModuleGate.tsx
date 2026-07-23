@@ -12,14 +12,15 @@
  */
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ModuleUpgradeDialog, type UpgradeModule } from '@/components/modules/ModuleUpgradeDialog';
-import { useFeatureAccess, type Feature } from '@/hooks/useFeatureAccess';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import type { EntitlementModule } from '@/lib/featureModuleMap';
 
 type GateModule = UpgradeModule; // 'krug' | 'projects' | 'business'
 
-const MODULE_FEATURE: Record<GateModule, Feature> = {
+const MODULE_ENTITLEMENT: Record<GateModule, EntitlementModule> = {
   krug: 'krug',
-  projects: 'projects',
-  business: 'business_module',
+  projects: 'projekti',
+  business: 'biznis',
 };
 
 interface RequestOpts {
@@ -40,7 +41,7 @@ interface Ctx {
 const ModuleGateContext = createContext<Ctx | null>(null);
 
 export function ModuleGateProvider({ children }: { children: ReactNode }) {
-  const { hasAccess } = useFeatureAccess();
+  const { hasModuleAccess } = useFeatureAccess();
   const [state, setState] = useState<{ open: boolean; module: GateModule }>({ open: false, module: 'krug' });
   const dismissRef = useRef<() => void>(() => {});
 
@@ -50,14 +51,14 @@ export function ModuleGateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestModule = useCallback<Ctx['requestModule']>((module, opts) => {
-    const feature = MODULE_FEATURE[module];
-    if (hasAccess(feature)) {
+    const entitlement = MODULE_ENTITLEMENT[module];
+    if (hasModuleAccess(entitlement)) {
       opts?.onGranted?.();
       return;
     }
     dismissRef.current = opts?.onDismiss ?? (() => {});
     setState({ open: true, module });
-  }, [hasAccess]);
+  }, [hasModuleAccess]);
 
   const onOpenChange = useCallback((open: boolean) => {
     setState((s) => ({ ...s, open }));

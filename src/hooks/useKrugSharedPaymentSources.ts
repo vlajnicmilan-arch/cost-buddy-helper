@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { friendlyError } from '@/lib/errorMessages';
 
 export interface KrugSharedPaymentSourceRow {
   id: string;
@@ -135,7 +136,7 @@ export function useKrugSharedPaymentSources(krugId: string | null | undefined) {
       showSuccess();
     },
     onError: (err: any) => {
-      showError(err?.message);
+      showError(friendlyError(err, 'krug.sharedSource.attach.error', 'Povezivanje izvora nije uspjelo.'));
     },
   });
 
@@ -154,7 +155,7 @@ export function useKrugSharedPaymentSources(krugId: string | null | undefined) {
       showSuccess();
     },
     onError: (err: any) => {
-      showError(err?.message);
+      showError(friendlyError(err, 'krug.sharedSource.detach.error', 'Odvajanje izvora nije uspjelo.'));
     },
   });
 

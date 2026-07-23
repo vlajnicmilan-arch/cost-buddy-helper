@@ -25,9 +25,9 @@ export function KrugListScreen({ onSelect }: Props) {
   const { t } = useTranslation();
   const { data: krugs = [], isLoading, isError, refetch } = useMyKrugs();
   const [createOpen, setCreateOpen] = useState(false);
-  const { hasAccess } = useFeatureAccess();
+  const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
-  const canCreate = hasAccess('krug');
+  const canCreate = hasModuleAccess('krug');
 
   // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni
   // gate. Za korisnike bez prava — otvori upgrade dijalog, NIKAD ne otvaraj

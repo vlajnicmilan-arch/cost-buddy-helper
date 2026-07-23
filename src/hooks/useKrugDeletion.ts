@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { isOkOutcome, type DeletionOutcome } from '@/lib/krugDeletionDecisions';
 import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
+import { formatErrorForUser } from '@/lib/errorMessages';
 
 const STALE = 30 * 1000;
 
@@ -151,7 +152,7 @@ export function useKrugRequestDeletion() {
       // Resync deletion panel: server state may have advanced (vote counted,
       // request cancelled or approved by another member) before this call errored.
       invalidate(vars.krugId);
-      showError(err?.message);
+      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
     },
   });
 }
@@ -174,7 +175,7 @@ export function useKrugVoteDeletion() {
     },
     onError: (err: any, vars) => {
       invalidate(vars.krugId);
-      showError(err?.message);
+      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
     },
   });
 }
@@ -196,7 +197,7 @@ export function useKrugCancelDeletion() {
     },
     onError: (err: any, vars) => {
       invalidate(vars.krugId);
-      showError(err?.message);
+      showError(formatErrorForUser(err, t, { fallbackKey: 'krug.delete.errors.unknown' }));
     },
   });
 }
