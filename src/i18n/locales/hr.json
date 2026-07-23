@@ -5560,5 +5560,39 @@
       "errorAuth": "Prijava je istekla. Osvježi stranicu.",
       "errorGeneric": "Aktivacija nije uspjela. Pokušaj ponovno."
     }
+  },
+  "subscription": {
+    "title": "Pretplata",
+    "subtitle": "Stanje po modulima. Otkaz, promjena kartice i računi dostupni su preko Paddle portala.",
+    "none": "Nemaš aktivnih pretplata.",
+    "viewPricing": "Pogledaj cjenik",
+    "validUntil": "vrijedi do",
+    "activeUntil": "aktivno do",
+    "managePortal": "Upravljaj pretplatom",
+    "portalHint": "Otvara Paddle — otkaži, promijeni karticu ili preuzmi račune.",
+    "portalError": "Nije moguće otvoriti Paddle portal. Pokušajte kasnije ili nam pišite na support@vmbalance.com.",
+    "cancelHint": "Za dodatna pitanja pišite nam na support@vmbalance.com.",
+    "source": {
+      "paddle": "Pretplata",
+      "trial": "Probno razdoblje",
+      "admin": "Admin dodijeljeno",
+      "migration": "Naslijeđeno"
+    },
+    "cycle": {
+      "monthly": "mjesečno",
+      "yearly": "godišnje",
+      "lifetime": "trajno"
+    },
+    "badge": {
+      "trial": "Trial",
+      "admin": "Admin",
+      "scheduledCancel": "Otkazano"
+    },
+    "module": {
+      "smjer": "Smjer",
+      "krug": "Krug",
+      "projekti": "Projekti",
+      "biznis": "Biznis"
+    }
   }
 }
