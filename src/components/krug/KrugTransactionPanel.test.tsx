@@ -51,6 +51,11 @@ vi.mock('@/hooks/useKrug', () => ({
 vi.mock('@/hooks/useKrugSetPrivacy', () => ({
   useKrugSetPrivacy: () => ({ mutate: hoisted.setPrivacyMutate, isPending: false }),
 }));
+vi.mock('@/hooks/useModuleGate', () => ({
+  useModuleGate: () => ({
+    requestModule: (_module: string, options?: { onGranted?: () => void }) => options?.onGranted?.(),
+  }),
+}));
 vi.mock('@/hooks/useKrugAct', () => ({
   useKrugApplyAct: () => ({ mutate: vi.fn(), isPending: false }),
   useKrugWithdraw: () => ({ mutate: vi.fn(), isPending: false }),
