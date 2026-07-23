@@ -1780,14 +1780,15 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
           }
         })();
 
-        return new Response(streamForClient, {
+        return new Response(wrapStreamWithProposals(streamForClient, pendingProposals), {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       }
 
-      return new Response(finalResponse.body, {
+      return new Response(wrapStreamWithProposals(finalResponse.body!, pendingProposals), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
+
     }
 
     return new Response(JSON.stringify({ error: "Prekoračen broj koraka" }), {
