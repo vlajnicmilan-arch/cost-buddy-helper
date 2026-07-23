@@ -1579,11 +1579,15 @@ Kad korisnik traži izvoz, preuzimanje, ispis ili pripremu podataka za izvoz:
         });
       }
 
+      const __capB = await checkAiCostCap(supabaseAuth);
+      if (__capB) return __capB;
       const finalResponse = await callGemini({
         model: "google/gemini-3-flash-preview",
         messages: currentMessages,
         stream: true,
       });
+      recordAiCost(supabaseAuth, "financial-assistant").catch(() => {});
+
 
       // Tee for saving
       if (userId && sessionId && finalResponse.body) {
