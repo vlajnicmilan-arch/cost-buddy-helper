@@ -1,158 +1,71 @@
-# P0 Audit — Mapa Reconciliation Sustava (READ-ONLY)
+# P0 audit — reconciliation, dio 2
 
-Ništa nije mijenjano. Sve reference verificirane u repou.
-
----
-
-## 1) Balance Anchor
-
-**Nema `balance_anchors` tablice.** Sidro je skup kolona na `custom_payment_sources`.
-
-| Kolona | Migracija | Napomena |
-|---|---|---|
-| `correction_anchor_date timestamptz` | `20260624083605_*.sql:3-5` | ISO timestamp sidra |
-| `correction_anchor_balance numeric(12,2)` | isto | saldo u trenutku sidra |
-| `anchor_source anchor_source_type` | `20260722180051_*.sql:12-24` | enum tag porijekla |
-| `balance` | (postojeća) | prikazni saldo, prepisan iz recomputea |
-
-**Enum `public.anchor_source_type` (4 vrijednosti):**
-- `'user_confirmed'` — korisnik ručno postavio (Balance Correction dialog)
-- `'migration'` — backfill za postojeće račune (Faza 1)
-- `'bank_reconciliation'` — prihvaćen bankin završni saldo (`align_source_to_bank`)
-- `'system_initial'` — auto-seed pri INSERT-u novog računa (`trg_cps_autoseed_anchor`)
-
-**Audit trail:** `public.anchor_audit` (`20260722180051_*.sql:27-53`) — svaka promjena sidra loga se s old/new vrijednostima + reason + actor. RLS: "Users view own anchor audit".
-
-**TS strana:** enum i kolone dostupne samo kroz generirani `src/integrations/supabase/types.ts` i UI `src/components/custom-payment-sources/AnchorInfoSection.tsx`. `src/types/customPaymentSource.ts` NE eksponira anchor polja (samo `balance`).
+Read-only nalaz. Ništa nije mijenjano.
 
 ---
 
-## 2) Balance Kalkulacija
+## A) `align_source_to_bank` — tok potvrde razlike
 
-**Single source of truth (SQL):** `public.recompute_custom_source_balance(p_source_id)`
-- Definicija: `20260624083605_*.sql:23-97` (originalna), izmijenjena u `20260628205415_*.sql:45-99` (no-op ako nema sidra, delta putanja u triggeru preuzima taj slučaj).
-- Formula: `new_balance = correction_anchor_balance + SUM(post-anchor rows)` gdje "post-anchor" znači `(e.date AT TIME ZONE 'UTC')::date > (anchor_date)::date`.
-- Isključuje: `deleted_at IS NOT NULL`, `expense_nature = 'correction'`.
+### Kod na disku
+- **RPC:** `supabase/migrations/20260722185218_*.sql`
+  - `preview_source_balance_after_batch(source_id, batch_id)` — vraća `{app_balance, bank_balance, delta, has_bank_row}` bez pisanja.
+  - `align_source_to_bank(source_id, bank_balance, as_of)` — piše novo sidro `anchor_source='bank_reconciliation'` na `as_of + 1s` i postavlja `balance = round(bank_balance, 2)`. Idempotentno po zadnjem `anchor_audit` retku.
+- **Queue / host:** `src/lib/reconciliation/queue.ts`, `src/components/ReconciliationDialogHost.tsx`.
+- **Akcije:** `src/lib/reconciliation/actions.ts` (`alignToBank`, `keepMine`).
+- **Executor punjenja queuea:** `src/lib/importReview/executor.ts` (poziva `preview_source_balance_after_batch` po sourceu i enqueue-a summary).
+- **Resume banner:** `src/components/ReconciliationResumeBanner.tsx` (za `pending` state nakon zatvaranja).
 
-**Trigger:** `trg_expenses_recompute_source_balance` (`20260630202419_*.sql:4-94`)
-- `AFTER INSERT/UPDATE/DELETE ON expenses`
-- Ako je izvor sidren → puni `recompute_custom_source_balance`.
-- Ako NIJE sidren → inkrementalni +/- delta iz OLD/NEW (izbjegava full-scan).
-- Deterministic lock order dodan u `20260713100009_*.sql` (`FOR UPDATE` + ORDER BY protiv lost update-a).
+### Odgovori na pitanja
 
-**TS mirror (test-only):** `src/lib/balance/anchorBalance.ts:1-105`, `computeAnchoredBalance()`
-- Dokumentirano kao "MUST NOT be imported by runtime code paths". Koristi ga isključivo SQL parity suite (`sqlParity.test.ts`).
-- Podržava dva engine mode-a: `day_cut` (default, produkcija) i `hybrid` (per-row cut po `time_confidence` C1–C4, opt-in preko `app_settings.anchor_engine_mode`).
+1. **Prima li RPC bankin saldo i tiho ga postavlja, ili se korisniku prikaže razlika PRIJE potvrde?**
+   - RPC `align_source_to_bank` **piše bez ikakvog internog upita**. Ali sam se **nikad ne poziva bez UI potvrde**. Tok je striktno dvofazan:
+     1. Executor nakon importa poziva `preview_source_balance_after_batch` → dobije `{app, bank, delta}` i enqueue-a `ReconciliationQueueEntry`.
+     2. `ReconciliationDialogHost` prikaže dijalog s tri retka (App/Banka/Razlika) i tri gumba (`Poravnaj s bankom` / `Zadrži moj saldo` / `Pregledaj transakcije`).
+     3. Tek klik na "Poravnaj" (`handleAlign`) poziva `align_source_to_bank`.
+   - Dakle: **razlika je uvijek prikazana prije poziva RPC-a.** RPC sam po sebi nema guard "jel korisnik vidio delta" (pretpostavlja klijenta koji je odradio preview), ali svi produkcijski pozivatelji to poštuju. Nema drugog callsitea.
 
-**Konzumenti balansa:**
-- `src/hooks/useBalanceUpdater.ts:60-67` — u cloud modu SAMO čeka trigger (nema klijentske matematike). Local/IndexedDB mod (`:44-59`) i dalje ručno ažurira balans.
-- UI: `src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx:72-153`, `Wallet.tsx`, `BusinessWallet.tsx`, `PaymentSourcesFullScreenView.tsx`, `ProjectTransactionsTab.tsx`, `useExpenseCRUD.ts`.
+2. **Gdje je UI ulaz?**
+   - Primarno: `ReconciliationDialogHost` (globalno montiran u `App.tsx`), triggeran iz `ImportReview.handleConfirm` preko queuea.
+   - Sekundarno (recovery): `ReconciliationResumeBanner` — nudi "Nastavi" za `pending` state (kad korisnik zatvori dijalog bez odluke).
+   - Dijalog prikazuje `App: X€ / Banka: Y€ / Razlika: Z€` + naziv sourcea + opcijski warning "sidro novije od izvoda" (dayKey usporedba).
 
----
+3. **Ostavlja li trag u `anchor_audit`?**
+   - **Da**, kad se stvarno napravi align: `align_source_to_bank` upisuje red u `public.anchor_audit` s `anchor_source='bank_reconciliation'`, `old_*`/`new_*` vrijednostima, `reason='align_source_to_bank: user prihvatio bankin završni saldo za batch'` i `actor=auth.uid()`.
+   - Dodatno: `alignToBank` klijent poziva `logDiagnostic('reconciliation_aligned', ...)`; `keepMine` loga `reconciliation_user_override` i piše per-source `user_override` u `imported_statements.reconciliation_meta.sources[sourceId]`.
+   - "Keep mine" ne dira `anchor_audit` (jer se sidro ne mijenja) — trag je samo u `imported_statements` + diagnostic log. To je konzistentno.
 
-## 3) Merge Logika
-
-**Ključna datoteka:** `src/lib/importReview/executor.ts` (header 1-40 opisuje cijelu shemu).
-
-**Dedup mehanizam (dvoslojni):**
-
-1. **Fingerprint (deterministic):** `src/lib/importFingerprint.ts` — `computeImportFingerprint({userId, paymentSource, date, type, amount, description, merchantName})` → `imp:<sha256>`. Normalizacija: opis lowercase+NFD, datum `YYYY-MM-DD`, iznos `.toFixed(2)`. Rezultat se upisuje u `expenses.bank_transaction_id`.
-
-2. **DB unique index:** `uniq_expenses_user_bank_tx (user_id, bank_transaction_id) WHERE bank_transaction_id IS NOT NULL` — garantira idempotentni re-import.
-
-**Merge state machine — `expenses.bank_match_status`:**
-- `'manual'` — korisnički ručno unesen red, još nije spojen s bankinim.
-- `'confirmed'` — ručni red spojen s bankinim uvozom (isti `bank_transaction_id`).
-- `'bank_only'` — samo iz izvoda, nema ručnog parnjaka.
-
-**MERGE grana** (`executor.ts:275-330`):
-```
-UPDATE expenses SET bank_transaction_id=?, bank_match_status='confirmed'
-WHERE id=manualId AND bank_transaction_id IS NULL
-```
-Guard `bank_transaction_id IS NULL` znači: drugi run pronađe 0 redaka i broji `skippedMerged` → race-safe i idempotentno.
-
-**NEW/TRANSFER grana** (`~361-369`): bulk `upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })` — DB odbija duplikate, balans se ažurira SAMO za stvarno umetnute redove.
-
-**Viši sloj:** `src/lib/reconciliation/{actions,queue,resume}.ts` — reconciliation queue i UI odluke iznad executora (nije čitano red po red).
+**Zaključak A:** Tok zadovoljava audit zahtjeve (prikaz razlike + eksplicitna korisnička potvrda + trag). Jedina "otvorena" pozicija: RPC `align_source_to_bank` teoretski može biti pozvan mimo dijaloga s bilo kojom `p_bank_balance` vrijednošću — nema server-side provjere da vrijednost dolazi baš iz `preview_source_balance_after_batch`. To je threat model odluka (ovlašteni owner = može ručno postaviti sidro). Ako želiš tvrđi guard, može se dodati.
 
 ---
 
-## 4) Korekcijske Transakcije
+## B) Anchor-confirm za `anchor_source='migration'` — potvrda porijekla bez promjene salda
 
-**Model:** `public.expenses.expense_nature = 'correction'` (nije poseban `type`; `type` ostaje `income`/`expense` ovisno o predznaku razlike).
+### Odgovori na pitanja
 
-**Write path:** RPC `public.set_source_anchor(p_source_id, p_anchor_ts, p_anchor_balance, p_correction jsonb)` (`20260722180051_*.sql:187-286`) atomarno:
-1. Postavi `correction_anchor_date/balance` na `custom_payment_sources`.
-2. Update-a `balance` kolonu.
-3. Postavi `anchor_source = 'user_confirmed'`.
-4. Loga u `anchor_audit`.
-5. Opcionalno umetne correction red u `expenses` (`expense_nature='correction'`, `event_at`, `time_confidence='C1'`).
-6. Poziva `recompute_custom_source_balance`.
+1. **Postoji li RPC ili UI koji dopušta korisniku da pregleda migracijski anchor i potvrdi ga?**
+   - **Pregled: DA.** `src/components/custom-payment-sources/AnchorInfoSection.tsx` prikazuje trenutno sidro s porijeklom (`migration`, `system_initial`, `user_confirmed`, `bank_reconciliation`) + povijest iz `anchor_audit`.
+   - **"Potvrda" gumb: DJELOMIČNO.** Kad je `anchor.source ∈ {migration, system_initial}` i postoji `onCorrectBalance` handler, prikaže se "Potvrdi stvarni saldo" (`anchor.confirmReal`) gumb koji **otvara Korekciju salda** (dijalog koji upisuje novi iznos).
 
-**UI ulaz:** `src/components/custom-payment-sources/BalanceCorrectionDialog.tsx` → `CustomPaymentSourcesPanel.tsx:72-153` → RPC.
+2. **Ako postoji — mijenja li potvrda samo `anchor_source`, ili dira i saldo?**
+   - **Dira i saldo.** "Confirm" gumb otvara postojeći correction dijalog koji poziva `set_source_anchor(source_id, anchor_ts, anchor_balance)` (migracija `20260722180051_*.sql`, korak 8). Ta RPC uvijek postavlja:
+     - `correction_anchor_date = p_anchor_ts`
+     - `correction_anchor_balance = p_anchor_balance`
+     - `balance = p_anchor_balance`
+     - `anchor_source = 'user_confirmed'`
+   - Dakle nema pathwaya "potvrdi bez promjene". Korisnik mora tipkati (ili re-unijeti) iznos; ako je slučajno unese `bilo koji ≠ stari`, saldo se mijenja. Ako unese jednak, saldo se overwriteo istim brojem (no-op numerički, ali novi audit red).
 
-**Isključivanje iz anchor sume:** filter `COALESCE(expense_nature,'regular') <> 'correction'` primijenjen u:
-- SQL recompute: `20260628205415_*.sql:83`
-- SQL delta trigger: `20260630202419_*.sql:32,39,60,72` (`NOT v_old_is_correction`, `NOT v_new_is_correction`)
-- TS mirror: `src/lib/balance/anchorBalance.ts:78`
+3. **Ako NE postoji — potvrdi prazninu.**
+   - **Praznina POSTOJI u obliku kakav audit traži:** nema RPC-a niti UI akcije koja bi samo prebacila `anchor_source: migration → user_confirmed` bez traženja/mijenjanja iznosa. Trenutno rješenje forsira korisnika kroz correction flow, što otvara rizik nenamjerne promjene salda i miješa dvije semantike ("potvrđujem da je migracijska vrijednost točna" vs "postavljam novi iznos").
 
-**Delete guard:** `src/lib/correctionDeleteGuard.ts` + `src/components/CorrectionDeleteConfirmHost.tsx` — sprječava brisanje correction reda bez rekonstrukcije sidra (detalji nisu čitani red po red).
-
----
-
-## 5) Import Idempotentnost
-
-**File-level (per izvod):** tablica `public.imported_statements` (`20260520050454_*.sql:2-27`)
-- Kolone: `file_hash`, `content_hash`, `file_name`, `file_size`, `mime_type`, `transactions_count`, `import_batch_id`, `reconciliation_state`, `reconciliation_meta`.
-- Unique partial indexi: `uniq_imported_statements_user_filehash (user_id, file_hash) WHERE file_hash IS NOT NULL` i `uniq_imported_statements_user_contenthash` — dupli upload iste datoteke blokiran na DB nivou.
-
-**Row-level (per transakciju):** `bank_transaction_id` fingerprint (vidi točku 3).
-
-**Draft/pending save:** `src/lib/importReview/draft.ts` (state prije commita), state machine `src/lib/importReview/state.ts` + `types.ts`, orkestracija `executor.ts`.
-
-**"Poništi uvoz" flow:** RPC `public.undo_import_batch(p_batch_id)` (`20260722203338_*.sql:13-171`)
-1. Ownership check (`:37-62`).
-2. Unmerge `confirmed` redaka: čisti `bank_transaction_id`, vraća `bank_match_status='manual'`, čisti `import_batch_id` (`:82-93`) — oslobađa fingerprint za novi uvoz.
-3. Hard-delete `bank_only` redaka i transfera (`:96-115`).
-4. Briše `imported_statements` red → oslobađa `file_hash`/`content_hash` (`:118-124`).
-5. Telemetrija: `import_undone` event (`:138-156`).
-6. Idempotentna: drugi poziv vraća `already_undone: true` (`:127-135`).
-7. **Ne dira anchor kolone ni `anchor_audit`** ("Option A", komentar `:172-173`) — ako je između uvoza bilo `align_source_to_bank`, sidro ostaje.
-
-**TS wrapper:** `src/lib/importReview/undoBatch.ts` → `src/components/ImportBatchDialog.tsx`, `ImportBatchDialogHost.tsx`.
+**Zaključak B:** Pregled i UI ulazna točka postoje, ali audit-tražena semantika "acknowledge without value change" nije implementirana. Nema `confirm_migration_anchor` (ili sličnog) RPC-a; jedini put je kroz `set_source_anchor` koji uvijek piše i `balance`.
 
 ---
 
-## 6) Migracijski Anchori
+## Sažetak i mogući sljedeći koraci (SAMO za odluku, ne implementiram)
 
-Kronološki:
+- **A) align tok:** ispunjava audit. Opcijski hardening: server-side re-check delte prije upisa (nova RPC koja interno poziva preview i odbije ako se `p_bank_balance` razlikuje od izračunatog `bank_balance` unutar batcha).
+- **B) confirm-only praznina:** dva realna smjera:
+  1. Nova RPC `confirm_migration_anchor(source_id)` — postavlja samo `anchor_source='user_confirmed'` + audit red s `old=new` (bez diranja `balance` / `correction_anchor_*`). Novi gumb "Potvrdi porijeklo" pored postojećeg "Ispravi saldo".
+  2. Zadržati postojeće ponašanje i eksplicitno dokumentirati da je "confirm" == "korekcija" (audit trpi kompromis).
 
-| Migracija | Radnja |
-|---|---|
-| `20260624083605_*.sql:142-186` | Prvi backfill — postavlja `correction_anchor_date/balance` iz najnovijeg `expense_nature='correction'` reda po izvoru. Bez `anchor_source` tag-a (enum ne postoji). |
-| `20260630202419_*.sql:2-42` | Revert/clear svih sidara osim jednog hardkodiranog wallet ID-a. Recompute postaje no-op kad nema sidra. |
-| `20260713100009_*.sql:1-46` | Regex backfill — parsira HR bilješke `"Saldo korigiran s X na Y"` da rekonstruira sidra. Guarded s consistency check-om, samo za `correction_anchor_date IS NULL`. |
-| `20260722180051_*.sql` **("FAZA 1 SIDRO/RECONCILIATION TEMELJ") — glavna** | Vidi ispod. |
-| `20260722185218_*.sql` ("FAZA 2") | RPC `align_source_to_bank`, taguje nova sidra `'bank_reconciliation'` (`:159-176`), idempotency guard protiv posljednjeg audit reda (`:133-144`). |
-
-**Faza 1 detalj (`20260722180051_*.sql`):**
-- `:12-24` — enum `anchor_source_type` + kolona `anchor_source` na `custom_payment_sources`.
-- `:27-53` — `anchor_audit` tablica + RLS.
-- `:56-60` — tagira **već sidrene** izvore kao `'user_confirmed'`.
-- `:67-121` — **backfill svih preostalih**: računa `anchor_balance = current_balance − SUM(post-anchor tx)`, `anchor_date = min_tx_date − 1 dan` (ili `created_at`), taguje `'migration'`. Idempotency-guarded (`anchor_source IS NULL`). Svaki upis loga se u `anchor_audit`.
-- `:139-183` — `trg_cps_autoseed_anchor` (`BEFORE INSERT`) auto-seed novih računa s `anchor_source='system_initial'` + audit trigger.
-- `:288-301` — `reconciliation_state_type` enum + `reconciliation_state`/`reconciliation_meta` kolone na `imported_statements`.
-
----
-
-## Otvorena područja (nije čitano red po red, kandidati za sljedeći pass)
-
-- `src/lib/reconciliation/{actions,queue,resume}.ts` — reconciliation UX i queue logika.
-- `src/lib/correctionDeleteGuard.ts` — točan uvjet zaštite correction redova od brisanja.
-- `src/lib/balance/{balanceEngineMirror,tierMerge,writerIntent,eventAtTrigger,decideScanTier}.ts` — "Val" precision engine iznad anchor modela (`time_confidence` C1–C4, hybrid mode).
-- Live vrijednost `app_settings.anchor_engine_mode` (`day_cut` vs `hybrid`) — treba DB query da se potvrdi produkcijsko stanje.
-
----
-
-**Ovo je mapa. Ne mijenjam ništa. Reci koje od otvorenih područja želiš da mapiram sljedeće ili idemo na konkretan popravak.**
+Reci koji smjer za B), i hoćeš li A) hardening ili ostaje kako je.
