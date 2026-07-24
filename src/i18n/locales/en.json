@@ -2461,7 +2461,19 @@
     "noHistory": "No historical data",
     "categoryComparison": "Comparison by directions",
     "spendingOverTime": "Trend over time",
-    "vsPrevPeriod": "vs previous period"
+    "vsPrevPeriod": "vs previous period",
+    "expired": "Expired",
+    "noDeadline": "No deadline",
+    "overLimitCategories": "Over limit:",
+    "countingNote": {
+      "short": "How spending is counted",
+      "full": "Refunds and shared expenses count at full amount."
+    },
+    "pace": {
+      "onTrack": "On track — pace is within plan",
+      "projectedOver": "At this pace: ~{{projected}} by period end (plan {{plan}})",
+      "tooEarly": "Too early to estimate pace"
+    }
   },
   "projectStatus": {
     "draft": "Draft",

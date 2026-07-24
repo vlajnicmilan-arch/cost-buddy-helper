@@ -2466,7 +2466,19 @@
     "noHistory": "Nema povijesnih podataka",
     "categoryComparison": "Usporedba po smjerovima",
     "spendingOverTime": "Kretanje kroz vrijeme",
-    "vsPrevPeriod": "u odnosu na prošli period"
+    "vsPrevPeriod": "u odnosu na prošli period",
+    "expired": "Istekao",
+    "noDeadline": "Bez roka",
+    "overLimitCategories": "Preko limita:",
+    "countingNote": {
+      "short": "Kako se broji potrošnja",
+      "full": "Povrati i dijeljeni troškovi računaju se po punom iznosu."
+    },
+    "pace": {
+      "onTrack": "Na dobrom putu — tempo je u okviru plana",
+      "projectedOver": "Ovim tempom: ~{{projected}} do kraja (plan {{plan}})",
+      "tooEarly": "Prerano za procjenu tempa"
+    }
   },
   "projectStatus": {
     "draft": "Nacrt",
