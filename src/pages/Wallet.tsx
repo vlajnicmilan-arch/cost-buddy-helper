@@ -228,6 +228,7 @@ const Wallet = () => {
           title={t('nav.wallet', 'Novčanik')}
           onDataImported={refetch}
         />
+        <WalletHeroCard />
         <CustomPaymentSourcesPanel
           onRefetchExpenses={refetch}
           autoOpenNew={autoOpenNewSource}
@@ -237,12 +238,12 @@ const Wallet = () => {
             refetch();
           }}
         />
+        <InstallmentsPanel />
         <WalletTransfersCard
           monthlyTransfers={monthlyTransfers}
           monthlyTransferCount={monthlyTransferCount}
           onClick={() => setTransferDialogOpen(true)}
         />
-        <InstallmentsPanel />
         <SavingsGoalsSection />
         <Collapsible className="group">
           <div className="glass-card rounded-2xl animate-fade-in p-4">
@@ -262,10 +263,28 @@ const Wallet = () => {
             </CollapsibleContent>
           </div>
         </Collapsible>
-        <CustomCategoriesPanel />
-        <OpenBankingPanel />
-        <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
-        <BackupRestore onDataImported={refetch} />
+
+        <Collapsible className="group">
+          <div className="rounded-2xl border bg-card p-4">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 text-muted-foreground">
+                  <Settings2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {t('wallet.settings', 'Postavke novčanika')}
+                </h3>
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="mt-4 space-y-6">
+                <CustomCategoriesPanel />
+                <OpenBankingPanel />
+                <BankConnection onImportCSV={importFromCSV} findDuplicates={findDuplicates} existingExpenses={allExpenses} />
+                <BackupRestore onDataImported={refetch} />
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
       </motion.div>
 
       <PaymentSourceTransactionsDialog
