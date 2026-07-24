@@ -850,6 +850,7 @@ export const AddExpenseDialog = ({
     setDescription('');
     setCategory('food');
     userManuallySetCategory.current = false;
+    categoryOriginRef.current = null;
     setAiSuggesting(false);
     cancelAICategorize();
     setMerchantName('');
