@@ -4574,7 +4574,12 @@
       "all": "Sve",
       "personal": "Osobno",
       "business": "Poslovno"
-    }
+    },
+    "totalBalance": "Ukupno",
+    "settings": "Postavke novčanika",
+    "includeHidden": "Uključi sakrivene",
+    "sharedAccounts": "+ {{amount}} na dijeljenim računima",
+    "personal": "Osobno"
   },
   "categoryIcons": {
     "groups": {
