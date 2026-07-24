@@ -27,7 +27,8 @@ import { SavingsGoalsSection } from '@/components/savings';
 import { CashflowForecast } from '@/components/CashflowForecast';
 import { useAppState } from '@/contexts/AppStateContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Settings2 } from 'lucide-react';
+import { WalletHeroCard } from '@/components/wallet/WalletHeroCard';
 
 import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
 import { TransferListDialog } from '@/components/TransferListDialog';
