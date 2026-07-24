@@ -288,6 +288,11 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         return b.percentage - a.percentage;
       });
 
+      // hasDeadline = real fixed period. one_time without end_date synthesizes a far-future endDate
+      // (year+10) which must NOT be presented as a real deadline.
+      const hasDeadline = !(budget.period_type === 'one_time' && !budget.end_date);
+      const isExpired = hasDeadline && now.getTime() > endDate.getTime();
+
       return {
         ...budget,
         spent,
@@ -299,6 +304,10 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
         daysRemaining,
         dailyAverage,
         trend,
+        periodStart: startDate,
+        periodEnd: endDate,
+        isExpired,
+        hasDeadline,
       };
     });
   }, [budgets, categories, expenses]);
