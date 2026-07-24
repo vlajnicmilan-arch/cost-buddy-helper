@@ -255,7 +255,7 @@ export const ScannedDataPreview = ({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <span className="text-muted-foreground">{t('common.amount')}:</span>
-            <p className="font-bold text-lg">€{scannedData.amount.toFixed(2)}</p>
+            <p className="font-bold text-lg">€{(scannedData.amount ?? 0).toFixed(2)}</p>
           </div>
           <div>
             <span className="text-muted-foreground">{t('common.date')}:</span>
