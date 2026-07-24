@@ -1,92 +1,158 @@
+# P0 Audit — Mapa Reconciliation Sustava (READ-ONLY)
 
-# Mišljenje: Wallet UX redizajn (točka 11)
-
-Ovo je **mišljenje + preporučeni scope**, nije naredba za gradnju. Odluka je tvoja.
+Ništa nije mijenjano. Sve reference verificirane u repou.
 
 ---
 
-## Odgovori na pitanja
+## 1) Balance Anchor
 
-### 1) Komplicira li išta ukupni saldo?
+**Nema `balance_anchors` tablice.** Sidro je skup kolona na `custom_payment_sources`.
 
-Da, tri stvari — sve rješive, ali moraju se **eksplicitno** riješiti u prvom PR-u:
+| Kolona | Migracija | Napomena |
+|---|---|---|
+| `correction_anchor_date timestamptz` | `20260624083605_*.sql:3-5` | ISO timestamp sidra |
+| `correction_anchor_balance numeric(12,2)` | isto | saldo u trenutku sidra |
+| `anchor_source anchor_source_type` | `20260722180051_*.sql:12-24` | enum tag porijekla |
+| `balance` | (postojeća) | prikazni saldo, prepisan iz recomputea |
 
-- **Skriveni računi** (`useHiddenPaymentSources` / `hiddenIds`). Dashboard već filtrira sakrivene (`PaymentSourcesSection.tsx:23-26`). Wallet mora **prikazivati sakrivene** (to je mjesto gdje ih user upravlja), pa hero saldo mora imati eksplicitni toggle: *"Uključi sakrivene"* — inače user vidi različit total na Home vs Wallet i ne zna zašto.
-- **Business/personal split** — `Wallet.tsx` je Personal ruta; Business ima svoj `BusinessWallet.tsx`. Već su izolirani preko `business_profile_id` u `useCustomPaymentSources`. Nema kontaminacije, ali hero mora jasno reći *"Osobno"* / *"[Naziv tvrtke]"* da user zna koji kontekst gleda.
-- **Viševalutnost** — `PaymentSourcesSection` već ima referentnu implementaciju (`useExchangeRates.convert` + `multiCurrencyEnabled`). Reuse ga direktno, ne reimplementiraj. Kad je `multiCurrencyEnabled=false`, samo prikaži naivni sum s napomenom valute.
-- **Dijeljeni računi** — kod ima `isOwned` flag i `ownedPaymentSources` selektor. Panel već koristi *owned*. Odluka: hero saldo = **samo owned** (novac koji je *tvoj*), ili **owned + shared-with-you** (novac kojim *raspolažeš*). Preferiram *owned only* jer je matematički čisto i konzistentno s onim što Home već zbraja.
+**Enum `public.anchor_source_type` (4 vrijednosti):**
+- `'user_confirmed'` — korisnik ručno postavio (Balance Correction dialog)
+- `'migration'` — backfill za postojeće račune (Faza 1)
+- `'bank_reconciliation'` — prihvaćen bankin završni saldo (`align_source_to_bank`)
+- `'system_initial'` — auto-seed pri INSERT-u novog računa (`trg_cps_autoseed_anchor`)
 
-### 2) "..." meni vs reorder mode — je li čist?
+**Audit trail:** `public.anchor_audit` (`20260722180051_*.sql:27-53`) — svaka promjena sidra loga se s old/new vrijednostima + reason + actor. RLS: "Users view own anchor audit".
 
-Čist je, ali samo ako `reorderMode` ostane **modalno stanje panela** kako je već implementiran (`CustomPaymentSourcesPanel.tsx:58`, `Switch` na vrhu). U reorder modu: sakrij "..." meni potpuno, prikaži samo `GripVertical`. U normal modu: "..." s Eye/Users/Pencil/Trash. To je već arhitekturalni pattern (touch handlere gate-a `reorderMode`), pa "..." samo dodaje treću granu na postojeći `if (reorderMode)` — nema novog stanja.
+**TS strana:** enum i kolone dostupne samo kroz generirani `src/integrations/supabase/types.ts` i UI `src/components/custom-payment-sources/AnchorInfoSection.tsx`. `src/types/customPaymentSource.ts` NE eksponira anchor polja (samo `balance`).
 
-**Upozorenje**: `Trash` u "..." meniju povećava rizik nenamjernog brisanja. Traži destructive confirm koji već imate.
+---
 
-### 3) Redoslijed sekcija
+## 2) Balance Kalkulacija
 
-Trenutno: Računi → Prijenosi → Rate → Ciljevi → Novčani tok → Kategorije → Open Banking → Uvoz → Backup.
+**Single source of truth (SQL):** `public.recompute_custom_source_balance(p_source_id)`
+- Definicija: `20260624083605_*.sql:23-97` (originalna), izmijenjena u `20260628205415_*.sql:45-99` (no-op ako nema sidra, delta putanja u triggeru preuzima taj slučaj).
+- Formula: `new_balance = correction_anchor_balance + SUM(post-anchor rows)` gdje "post-anchor" znači `(e.date AT TIME ZONE 'UTC')::date > (anchor_date)::date`.
+- Isključuje: `deleted_at IS NOT NULL`, `expense_nature = 'correction'`.
 
-Preporuka (po frekvenciji uporabe i mentalnom modelu *"koliko imam / gdje mi novac ide"*):
+**Trigger:** `trg_expenses_recompute_source_balance` (`20260630202419_*.sql:4-94`)
+- `AFTER INSERT/UPDATE/DELETE ON expenses`
+- Ako je izvor sidren → puni `recompute_custom_source_balance`.
+- Ako NIJE sidren → inkrementalni +/- delta iz OLD/NEW (izbjegava full-scan).
+- Deterministic lock order dodan u `20260713100009_*.sql` (`FOR UPDATE` + ORDER BY protiv lost update-a).
 
-```text
-1. Hero total + Računi              ← "koliko imam"
-2. Ciljevi štednje                  ← "gdje želim da ide"
-3. Rate / Installments              ← "što me čeka"
-4. Prijenosi (mjesečni sažetak)     ← "kako se kreće između računa"
-5. Cashflow forecast                ← "što će biti"
-─────────── Postavke novčanika (collapsible) ───────────
-6. Kategorije
-7. Open Banking / Bank connection
-8. Uvoz (CSV/PDF, ako nije u header meniju)
-9. Backup / Restore
+**TS mirror (test-only):** `src/lib/balance/anchorBalance.ts:1-105`, `computeAnchoredBalance()`
+- Dokumentirano kao "MUST NOT be imported by runtime code paths". Koristi ga isključivo SQL parity suite (`sqlParity.test.ts`).
+- Podržava dva engine mode-a: `day_cut` (default, produkcija) i `hybrid` (per-row cut po `time_confidence` C1–C4, opt-in preko `app_settings.anchor_engine_mode`).
+
+**Konzumenti balansa:**
+- `src/hooks/useBalanceUpdater.ts:60-67` — u cloud modu SAMO čeka trigger (nema klijentske matematike). Local/IndexedDB mod (`:44-59`) i dalje ručno ažurira balans.
+- UI: `src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx:72-153`, `Wallet.tsx`, `BusinessWallet.tsx`, `PaymentSourcesFullScreenView.tsx`, `ProjectTransactionsTab.tsx`, `useExpenseCRUD.ts`.
+
+---
+
+## 3) Merge Logika
+
+**Ključna datoteka:** `src/lib/importReview/executor.ts` (header 1-40 opisuje cijelu shemu).
+
+**Dedup mehanizam (dvoslojni):**
+
+1. **Fingerprint (deterministic):** `src/lib/importFingerprint.ts` — `computeImportFingerprint({userId, paymentSource, date, type, amount, description, merchantName})` → `imp:<sha256>`. Normalizacija: opis lowercase+NFD, datum `YYYY-MM-DD`, iznos `.toFixed(2)`. Rezultat se upisuje u `expenses.bank_transaction_id`.
+
+2. **DB unique index:** `uniq_expenses_user_bank_tx (user_id, bank_transaction_id) WHERE bank_transaction_id IS NOT NULL` — garantira idempotentni re-import.
+
+**Merge state machine — `expenses.bank_match_status`:**
+- `'manual'` — korisnički ručno unesen red, još nije spojen s bankinim.
+- `'confirmed'` — ručni red spojen s bankinim uvozom (isti `bank_transaction_id`).
+- `'bank_only'` — samo iz izvoda, nema ručnog parnjaka.
+
+**MERGE grana** (`executor.ts:275-330`):
 ```
+UPDATE expenses SET bank_transaction_id=?, bank_match_status='confirmed'
+WHERE id=manualId AND bank_transaction_id IS NULL
+```
+Guard `bank_transaction_id IS NULL` znači: drugi run pronađe 0 redaka i broji `skippedMerged` → race-safe i idempotentno.
 
-Razlog: 1-5 su *stanje i planiranje*; 6-9 su *konfiguracija* koja se dira jednom u par mjeseci. To potvrđuje tvoju hipotezu C.
+**NEW/TRANSFER grana** (`~361-369`): bulk `upsert(rows, { onConflict: 'user_id,bank_transaction_id', ignoreDuplicates: true })` — DB odbija duplikate, balans se ažurira SAMO za stvarno umetnute redove.
 
-### 4) bank_match_status agregacija — realno za ovaj sprint?
-
-**Preskoči za post-launch.** Razlozi:
-
-- Semantika nije stabilna za sve unosa (`manual` vs `pending_bank` vs `bank_only` vs `confirmed` — vidi `bankMatchStatus.ts`). CSV/PDF uvoz je `bank_only`, ručno je `manual`, samo `custom:UUID` s linked bank accountom postaje `pending_bank`. Većina usera nema linked bank → agregacija bi svima izgledala kao *"100% manual"* i djelovala beskorisno.
-- Launch je 28.8.2026; svaki dan koji trošiš na ovo je dan manje za regresiju hero/kolapsa/hijerarhije koji **svi useri** vide odmah.
-- Kad Bank Sync roadmap (vidi mem) dođe do faze u kojoj većina usera ima linked račun, tada agregacija ima signal. Do tada je vizualni šum.
-
-Realistična kompromisna verzija za launch: **jedan mali badge** na *individualnom* računu ako je `linked_payment_source_id` prisutan (npr. "Povezano ✓"), bez globalne agregacije. To je jeftino i educira usere o featureu.
-
-### 5) Što još je relevantno a nismo spomenuli
-
-- **`WalletViewModeContext`** postoji kao *single source of truth* za view mode (mem: wallet-view-mode-unified). Bilo koji novi toggle (npr. "uključi sakrivene u totalu") mora ući ovdje, ne u lokalni state Wallet.tsx.
-- **`AttributionSheet` deep linkovi** (`?openSourceCreate`, `?voidedAttribution`, `?highlight`) — svaki redizajn liste računa mora sačuvati anchor točke koje AttributionSheet cilja (source klik otvara `PaymentSourceTransactionsDialog`). Ako "..." meni proguta `onClick` na kartici, deep link puca.
-- **`data-tutorial="payment-sources"`** marker postoji na Home (`PaymentSourcesSection`). Provjeri koristi li tutorial isti marker u Walletu — ako da, novi hero ne smije razbiti tutorial highlight.
-- **`data-testid="summary-balance"`** je već na Home. Ako dodaš isti na Wallet hero, e2e testovi (`e2e/flows/`) mogu ga reusati.
-- **`SavingsGoalsSection`, `InstallmentsPanel`, `WalletTransfersCard`** — svaki ima svoju vizualnu težinu (glass-card, veliki brojevi). Ako hero total dođe iznad, ovi moraju vizualno "spustiti glas" (manji naslov, manji broj) inače hero se izgubi.
-- **`PageHeader`** već pruža slot za akcije (import trigger). Provjeri hoće li se "..." meni izvora sudariti s ikonama u PageHeaderu na mobilnom (384px).
+**Viši sloj:** `src/lib/reconciliation/{actions,queue,resume}.ts` — reconciliation queue i UI odluke iznad executora (nije čitano red po red).
 
 ---
 
-## Preporučeni scope (ako Milan odobri)
+## 4) Korekcijske Transakcije
 
-**PR1 — Hijerarhija i hero (visoka vrijednost, nizak rizik):**
-- Hero card iznad `CustomPaymentSourcesPanel`: total owned balance, toggle *Uključi sakrivene*, prikaz konteksta (Osobno / naziv tvrtke), FX preračun reused iz `PaymentSourcesSection`.
-- Reorder sekcija po preporuci iz #3.
-- Collapsible *"Postavke novčanika"* koji obuhvaća Kategorije + Open Banking + Bank Connection + Backup. Default: zatvoreno.
+**Model:** `public.expenses.expense_nature = 'correction'` (nije poseban `type`; `type` ostaje `income`/`expense` ovisno o predznaku razlike).
 
-**PR2 — "..." meni po računu (srednji rizik zbog reorder/deep link/tutorial interakcije):**
-- Eye/Users/Pencil/Trash u DropdownMenu. Ostavi kartici jedan primarni tap = otvori transakcije.
-- Reorder mode i dalje sakriva meni i prikazuje samo grip.
-- Destructive confirm za Trash.
+**Write path:** RPC `public.set_source_anchor(p_source_id, p_anchor_ts, p_anchor_balance, p_correction jsonb)` (`20260722180051_*.sql:187-286`) atomarno:
+1. Postavi `correction_anchor_date/balance` na `custom_payment_sources`.
+2. Update-a `balance` kolonu.
+3. Postavi `anchor_source = 'user_confirmed'`.
+4. Loga u `anchor_audit`.
+5. Opcionalno umetne correction red u `expenses` (`expense_nature='correction'`, `event_at`, `time_confidence='C1'`).
+6. Poziva `recompute_custom_source_balance`.
 
-**PR3 — Post-launch:**
-- bank_match_status agregacija (kad Bank Sync ima kritičnu masu).
-- Per-source "Povezano ✓" badge može ući u PR1 ili PR2 ako je jeftino.
+**UI ulaz:** `src/components/custom-payment-sources/BalanceCorrectionDialog.tsx` → `CustomPaymentSourcesPanel.tsx:72-153` → RPC.
 
-**Ne diram:** business_profile isolation, WalletViewModeContext, useCustomPaymentSources, deep link protokol (`?highlight`, `?openSourceCreate`), tutorial markere, testide.
+**Isključivanje iz anchor sume:** filter `COALESCE(expense_nature,'regular') <> 'correction'` primijenjen u:
+- SQL recompute: `20260628205415_*.sql:83`
+- SQL delta trigger: `20260630202419_*.sql:32,39,60,72` (`NOT v_old_is_correction`, `NOT v_new_is_correction`)
+- TS mirror: `src/lib/balance/anchorBalance.ts:78`
+
+**Delete guard:** `src/lib/correctionDeleteGuard.ts` + `src/components/CorrectionDeleteConfirmHost.tsx` — sprječava brisanje correction reda bez rekonstrukcije sidra (detalji nisu čitani red po red).
 
 ---
 
-## Otvoreno pitanje za tebe
+## 5) Import Idempotentnost
 
-Prije nego pređemo u build:
+**File-level (per izvod):** tablica `public.imported_statements` (`20260520050454_*.sql:2-27`)
+- Kolone: `file_hash`, `content_hash`, `file_name`, `file_size`, `mime_type`, `transactions_count`, `import_batch_id`, `reconciliation_state`, `reconciliation_meta`.
+- Unique partial indexi: `uniq_imported_statements_user_filehash (user_id, file_hash) WHERE file_hash IS NOT NULL` i `uniq_imported_statements_user_contenthash` — dupli upload iste datoteke blokiran na DB nivou.
 
-- **Hero saldo — owned only ili owned + shared-with-you?** Utječe na semantiku "koliko imam" i konzistentnost s Home. Moja preporuka: **owned only**, uz mali sekundarni redak *"+ X€ na dijeljenim računima"* ako je vrijednost > 0.
-- **PR1 + PR2 zajedno ili sekvencijalno?** Odvojeno je sigurnije za launch; zajedno štedi jedan regresijski krug.
+**Row-level (per transakciju):** `bank_transaction_id` fingerprint (vidi točku 3).
+
+**Draft/pending save:** `src/lib/importReview/draft.ts` (state prije commita), state machine `src/lib/importReview/state.ts` + `types.ts`, orkestracija `executor.ts`.
+
+**"Poništi uvoz" flow:** RPC `public.undo_import_batch(p_batch_id)` (`20260722203338_*.sql:13-171`)
+1. Ownership check (`:37-62`).
+2. Unmerge `confirmed` redaka: čisti `bank_transaction_id`, vraća `bank_match_status='manual'`, čisti `import_batch_id` (`:82-93`) — oslobađa fingerprint za novi uvoz.
+3. Hard-delete `bank_only` redaka i transfera (`:96-115`).
+4. Briše `imported_statements` red → oslobađa `file_hash`/`content_hash` (`:118-124`).
+5. Telemetrija: `import_undone` event (`:138-156`).
+6. Idempotentna: drugi poziv vraća `already_undone: true` (`:127-135`).
+7. **Ne dira anchor kolone ni `anchor_audit`** ("Option A", komentar `:172-173`) — ako je između uvoza bilo `align_source_to_bank`, sidro ostaje.
+
+**TS wrapper:** `src/lib/importReview/undoBatch.ts` → `src/components/ImportBatchDialog.tsx`, `ImportBatchDialogHost.tsx`.
+
+---
+
+## 6) Migracijski Anchori
+
+Kronološki:
+
+| Migracija | Radnja |
+|---|---|
+| `20260624083605_*.sql:142-186` | Prvi backfill — postavlja `correction_anchor_date/balance` iz najnovijeg `expense_nature='correction'` reda po izvoru. Bez `anchor_source` tag-a (enum ne postoji). |
+| `20260630202419_*.sql:2-42` | Revert/clear svih sidara osim jednog hardkodiranog wallet ID-a. Recompute postaje no-op kad nema sidra. |
+| `20260713100009_*.sql:1-46` | Regex backfill — parsira HR bilješke `"Saldo korigiran s X na Y"` da rekonstruira sidra. Guarded s consistency check-om, samo za `correction_anchor_date IS NULL`. |
+| `20260722180051_*.sql` **("FAZA 1 SIDRO/RECONCILIATION TEMELJ") — glavna** | Vidi ispod. |
+| `20260722185218_*.sql` ("FAZA 2") | RPC `align_source_to_bank`, taguje nova sidra `'bank_reconciliation'` (`:159-176`), idempotency guard protiv posljednjeg audit reda (`:133-144`). |
+
+**Faza 1 detalj (`20260722180051_*.sql`):**
+- `:12-24` — enum `anchor_source_type` + kolona `anchor_source` na `custom_payment_sources`.
+- `:27-53` — `anchor_audit` tablica + RLS.
+- `:56-60` — tagira **već sidrene** izvore kao `'user_confirmed'`.
+- `:67-121` — **backfill svih preostalih**: računa `anchor_balance = current_balance − SUM(post-anchor tx)`, `anchor_date = min_tx_date − 1 dan` (ili `created_at`), taguje `'migration'`. Idempotency-guarded (`anchor_source IS NULL`). Svaki upis loga se u `anchor_audit`.
+- `:139-183` — `trg_cps_autoseed_anchor` (`BEFORE INSERT`) auto-seed novih računa s `anchor_source='system_initial'` + audit trigger.
+- `:288-301` — `reconciliation_state_type` enum + `reconciliation_state`/`reconciliation_meta` kolone na `imported_statements`.
+
+---
+
+## Otvorena područja (nije čitano red po red, kandidati za sljedeći pass)
+
+- `src/lib/reconciliation/{actions,queue,resume}.ts` — reconciliation UX i queue logika.
+- `src/lib/correctionDeleteGuard.ts` — točan uvjet zaštite correction redova od brisanja.
+- `src/lib/balance/{balanceEngineMirror,tierMerge,writerIntent,eventAtTrigger,decideScanTier}.ts` — "Val" precision engine iznad anchor modela (`time_confidence` C1–C4, hybrid mode).
+- Live vrijednost `app_settings.anchor_engine_mode` (`day_cut` vs `hybrid`) — treba DB query da se potvrdi produkcijsko stanje.
+
+---
+
+**Ovo je mapa. Ne mijenjam ništa. Reci koje od otvorenih područja želiš da mapiram sljedeće ili idemo na konkretan popravak.**
