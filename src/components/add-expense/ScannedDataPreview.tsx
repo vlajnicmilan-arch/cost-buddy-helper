@@ -383,7 +383,7 @@ export const ScannedDataPreview = ({
           <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
             <p className="text-sm font-medium text-accent-foreground flex items-center gap-2">
               💳 Kupnja na rate: {scannedData.installment_count} rata
-              {scannedData.installment_amount && ` × €${scannedData.installment_amount.toFixed(2)}`}
+              {scannedData.installment_amount != null && ` × €${(scannedData.installment_amount ?? 0).toFixed(2)}`}
             </p>
           </div>
         )}
