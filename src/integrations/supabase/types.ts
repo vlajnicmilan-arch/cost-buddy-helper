@@ -1094,6 +1094,50 @@ export type Database = {
           },
         ]
       }
+      category_corrections: {
+        Row: {
+          corrected_category: string
+          created_at: string
+          description: string | null
+          expense_id: string | null
+          id: string
+          merchant_name: string | null
+          original_category: string
+          original_origin: string | null
+          user_id: string
+        }
+        Insert: {
+          corrected_category: string
+          created_at?: string
+          description?: string | null
+          expense_id?: string | null
+          id?: string
+          merchant_name?: string | null
+          original_category: string
+          original_origin?: string | null
+          user_id: string
+        }
+        Update: {
+          corrected_category?: string
+          created_at?: string
+          description?: string | null
+          expense_id?: string | null
+          id?: string
+          merchant_name?: string | null
+          original_category?: string
+          original_origin?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_corrections_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           business_profile_id: string | null
@@ -1504,6 +1548,7 @@ export type Database = {
           business_profile_id: string | null
           cash_register_id: string | null
           category: string
+          category_origin: string | null
           collaborator_id: string | null
           created_at: string
           currency: string | null
@@ -1560,6 +1605,7 @@ export type Database = {
           business_profile_id?: string | null
           cash_register_id?: string | null
           category?: string
+          category_origin?: string | null
           collaborator_id?: string | null
           created_at?: string
           currency?: string | null
@@ -1616,6 +1662,7 @@ export type Database = {
           business_profile_id?: string | null
           cash_register_id?: string | null
           category?: string
+          category_origin?: string | null
           collaborator_id?: string | null
           created_at?: string
           currency?: string | null
@@ -5800,6 +5847,7 @@ export type Database = {
           business_profile_id: string | null
           cash_register_id: string | null
           category: string
+          category_origin: string | null
           collaborator_id: string | null
           created_at: string
           currency: string | null
