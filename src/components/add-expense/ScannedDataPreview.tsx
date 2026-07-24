@@ -229,7 +229,7 @@ export const ScannedDataPreview = ({
               );
               return matched ? (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Saldo računa "{matched.name}" će se automatski uvećati za €{scannedData.amount.toFixed(2)}
+                  Saldo računa "{matched.name}" će se automatski uvećati za €{(scannedData.amount ?? 0).toFixed(2)}
                 </p>
               ) : (
                 <p className="text-xs text-destructive mt-1">
@@ -255,7 +255,7 @@ export const ScannedDataPreview = ({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <span className="text-muted-foreground">{t('common.amount')}:</span>
-            <p className="font-bold text-lg">€{scannedData.amount.toFixed(2)}</p>
+            <p className="font-bold text-lg">€{(scannedData.amount ?? 0).toFixed(2)}</p>
           </div>
           <div>
             <span className="text-muted-foreground">{t('common.date')}:</span>
@@ -356,7 +356,7 @@ export const ScannedDataPreview = ({
               🫰 Sa napojnicom (ukupno):
             </Label>
             <MoneyInput
-              placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
+              placeholder={`npr. ${((scannedData.amount ?? 0) + 2).toFixed(2)}`}
               value={totalWithTip}
               onChange={(e) => onTotalWithTipChange(e.target.value)}
               className="rounded-lg text-sm"
@@ -383,7 +383,7 @@ export const ScannedDataPreview = ({
           <div className="p-3 bg-accent/10 border border-accent/30 rounded-lg">
             <p className="text-sm font-medium text-accent-foreground flex items-center gap-2">
               💳 Kupnja na rate: {scannedData.installment_count} rata
-              {scannedData.installment_amount && ` × €${scannedData.installment_amount.toFixed(2)}`}
+              {scannedData.installment_amount != null && ` × €${(scannedData.installment_amount ?? 0).toFixed(2)}`}
             </p>
           </div>
         )}
@@ -500,7 +500,7 @@ export const ScannedDataPreview = ({
               {scannedData.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-xs bg-background/50 px-2 py-1 rounded">
                   <span className="truncate flex-1">{item.name}</span>
-                  <span className="font-mono ml-2">€{item.total_price.toFixed(2)}</span>
+                  <span className="font-mono ml-2">€{(item.total_price ?? 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
