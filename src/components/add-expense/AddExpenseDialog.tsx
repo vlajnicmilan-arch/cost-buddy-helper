@@ -1144,6 +1144,7 @@ export const AddExpenseDialog = ({
 
   const handleCategoryChange = useCallback((value: Category | IncomeCategory) => {
     userManuallySetCategory.current = true;
+    categoryOriginRef.current = 'user';
     setCategory(value);
   }, []);
 
