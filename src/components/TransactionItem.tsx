@@ -487,6 +487,7 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.amount === next.expense.amount &&
     prev.expense.description === next.expense.description &&
     prev.expense.category === next.expense.category &&
+    prev.expense.category_origin === next.expense.category_origin &&
     prev.expense.type === next.expense.type &&
     prev.expense.payment_source === next.expense.payment_source &&
     prev.expense.payment_source_card_id === next.expense.payment_source_card_id &&
