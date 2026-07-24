@@ -1081,6 +1081,7 @@ export const useExpenseCRUD = ({
             payment_source: canonical as string,
             merchant_name: tx.merchant_name || null,
             ai_extracted: false,
+            category_origin: 'import',
             import_batch_id: batchId,
             business_profile_id: activeBusinessProfileId || null,
             bank_transaction_id: fingerprint,
