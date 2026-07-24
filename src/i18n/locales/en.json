@@ -4568,7 +4568,12 @@
       "all": "All",
       "personal": "Personal",
       "business": "Business"
-    }
+    },
+    "totalBalance": "Total",
+    "settings": "Wallet settings",
+    "includeHidden": "Include hidden",
+    "sharedAccounts": "+ {{amount}} on shared accounts",
+    "personal": "Personal"
   },
   "categoryIcons": {
     "groups": {
