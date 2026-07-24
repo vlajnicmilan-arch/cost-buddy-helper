@@ -711,6 +711,7 @@ export const AddExpenseDialog = ({
         merchant_name: scannedData.merchant?.trim() || scannedData.issuer_name?.trim() || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true,
+        category_origin: 'ai_receipt' as const,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
