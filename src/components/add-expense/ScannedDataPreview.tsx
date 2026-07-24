@@ -356,7 +356,7 @@ export const ScannedDataPreview = ({
               🫰 Sa napojnicom (ukupno):
             </Label>
             <MoneyInput
-              placeholder={`npr. ${(scannedData.amount + 2).toFixed(2)}`}
+              placeholder={`npr. ${((scannedData.amount ?? 0) + 2).toFixed(2)}`}
               value={totalWithTip}
               onChange={(e) => onTotalWithTipChange(e.target.value)}
               className="rounded-lg text-sm"
