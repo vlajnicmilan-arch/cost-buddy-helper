@@ -355,6 +355,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       income_source_id: decision.targetIncomeSourceId,
       merchant_name: tx.merchantName,
       ai_extracted: false,
+      category_origin: 'rule',
       import_batch_id: batchId,
       business_profile_id: input.activeBusinessProfileId,
       bank_transaction_id: tx.fingerprint,
