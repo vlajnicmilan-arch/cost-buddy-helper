@@ -608,6 +608,17 @@ export const useExpenseCRUD = ({
               : 'predlozena';
         }
 
+        // category_origin lifecycle: eksplicitni override (npr. AI/scan re-apply) ima
+        // prednost; inače, ako je user promijenio kategoriju → reset na 'user' i log
+        // korekciju u category_corrections (best-effort telemetrija).
+        const explicitOrigin = (expense as any).category_origin as string | undefined;
+        const categoryChanged = !!oldExpense && oldExpense.category !== expense.category;
+        const nextCategoryOrigin = explicitOrigin
+          ? explicitOrigin
+          : categoryChanged
+            ? 'user'
+            : ((oldExpense as any)?.category_origin ?? 'user');
+
         const updatePayload = normalizeExpensePayload({
           amount: expense.amount,
           description: expense.description,
@@ -624,6 +635,7 @@ export const useExpenseCRUD = ({
           expense_nature: expense.expense_nature || null,
           note: expense.note || null,
           currency: expense.currency || null,
+          category_origin: nextCategoryOrigin,
           // Collaborator advances — održi paritet s insert putem.
           is_advance: (expense as any).is_advance ?? false,
           collaborator_id: (expense as any).collaborator_id ?? null,
@@ -641,6 +653,24 @@ export const useExpenseCRUD = ({
           .eq('id', expense.id);
 
         if (error) throw error;
+
+        // Feedback petlja: log korekciju samo ako je user promijenio AI/habit prijedlog.
+        if (categoryChanged && !explicitOrigin) {
+          const oldOrigin = (oldExpense as any)?.category_origin as string | undefined;
+          if (oldOrigin === 'ai_suggested' || oldOrigin === 'ai_receipt' || oldOrigin === 'habit') {
+            supabase.from('category_corrections').insert({
+              user_id: user.id,
+              expense_id: expense.id,
+              old_category: oldExpense!.category,
+              new_category: expense.category,
+              old_origin: oldOrigin,
+              merchant_name: expense.merchant_name ?? null,
+              description: expense.description ?? null,
+            } as any).then(({ error: cErr }) => {
+              if (cErr) console.warn('[category_corrections] log failed', cErr.message);
+            });
+          }
+        }
 
         // Reflect canonical value in local state + downstream balance/owner-loan calls.
         const canonicalExpense: Expense = { ...expense, payment_source: canonicalPaymentSource as PaymentSource };
