@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { computeBudgetPaceSignal } from '@/lib/budgetPaceSignal';
+import {
+  TrendingUp,
+  TrendingDown,
   Minus,
   Calendar,
   Pencil,
   Trash2,
-  Repeat
+  Repeat,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import {
   AlertDialog,
