@@ -265,7 +265,7 @@ const Wallet = () => {
         </Collapsible>
 
         <Collapsible className="group">
-          <div className="rounded-2xl border bg-card p-4">
+          <div className="glass-card rounded-2xl animate-fade-in p-4">
             <CollapsibleTrigger asChild>
               <button className="w-full flex items-center justify-between hover:opacity-80 transition-opacity">
                 <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 text-muted-foreground">
