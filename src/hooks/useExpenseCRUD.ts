@@ -661,9 +661,9 @@ export const useExpenseCRUD = ({
             supabase.from('category_corrections').insert({
               user_id: user.id,
               expense_id: expense.id,
-              old_category: oldExpense!.category,
-              new_category: expense.category,
-              old_origin: oldOrigin,
+              original_category: oldExpense!.category,
+              corrected_category: expense.category,
+              original_origin: oldOrigin,
               merchant_name: expense.merchant_name ?? null,
               description: expense.description ?? null,
             } as any).then(({ error: cErr }) => {
