@@ -136,7 +136,6 @@
     "rejected": "Odbijeno.",
     "error": "Greška"
   },
-
   "attention": {
     "title": "Za pažnju",
     "empty": "Sve pod kontrolom",
@@ -5628,5 +5627,10 @@
       "projekti": "Projekti",
       "biznis": "Biznis"
     }
+  },
+  "categoryOrigin": {
+    "aiSuggested": "AI prijedlog",
+    "aiReceipt": "AI iz računa",
+    "habit": "Prepoznato po navici"
   }
 }
