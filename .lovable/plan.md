@@ -1,71 +1,81 @@
-# P0 audit — reconciliation, dio 2
+# P0 RLS audit — politike s `USING (true)` / `WITH CHECK (true)`
 
-Read-only nalaz. Ništa nije mijenjano.
+Read-only ispitivanje `pg_policies` (public schema). Nalaz je **znatno manji od očekivanog** — vanjski audit je preuveličao rizik.
 
----
+## 1. Popis svih permisivnih politika
 
-## A) `align_source_to_bank` — tok potvrde razlike
+Ukupno 9 politika u `public` s `qual='true'` ili `with_check='true'`. Grupirano po namjeni:
 
-### Kod na disku
-- **RPC:** `supabase/migrations/20260722185218_*.sql`
-  - `preview_source_balance_after_batch(source_id, batch_id)` — vraća `{app_balance, bank_balance, delta, has_bank_row}` bez pisanja.
-  - `align_source_to_bank(source_id, bank_balance, as_of)` — piše novo sidro `anchor_source='bank_reconciliation'` na `as_of + 1s` i postavlja `balance = round(bank_balance, 2)`. Idempotentno po zadnjem `anchor_audit` retku.
-- **Queue / host:** `src/lib/reconciliation/queue.ts`, `src/components/ReconciliationDialogHost.tsx`.
-- **Akcije:** `src/lib/reconciliation/actions.ts` (`alignToBank`, `keepMine`).
-- **Executor punjenja queuea:** `src/lib/importReview/executor.ts` (poziva `preview_source_balance_after_batch` po sourceu i enqueue-a summary).
-- **Resume banner:** `src/components/ReconciliationResumeBanner.tsx` (za `pending` state nakon zatvaranja).
+### A) Service-role only (NIZAK / NAMJERAN)
+Ograničene na `service_role` — klijent (anon/authenticated JWT) nikad ne pogađa `service_role`, ove politike su nedostupne s frontenda.
 
-### Odgovori na pitanja
+| Tablica | Politika | Cmd |
+|---|---|---|
+| `email_send_log` | Only service_role can access | ALL |
+| `email_unsubscribe_tokens` | Only service_role can access | ALL |
+| `suppressed_emails` | Only service_role can access | ALL |
 
-1. **Prima li RPC bankin saldo i tiho ga postavlja, ili se korisniku prikaže razlika PRIJE potvrde?**
-   - RPC `align_source_to_bank` **piše bez ikakvog internog upita**. Ali sam se **nikad ne poziva bez UI potvrde**. Tok je striktno dvofazan:
-     1. Executor nakon importa poziva `preview_source_balance_after_batch` → dobije `{app, bank, delta}` i enqueue-a `ReconciliationQueueEntry`.
-     2. `ReconciliationDialogHost` prikaže dijalog s tri retka (App/Banka/Razlika) i tri gumba (`Poravnaj s bankom` / `Zadrži moj saldo` / `Pregledaj transakcije`).
-     3. Tek klik na "Poravnaj" (`handleAlign`) poziva `align_source_to_bank`.
-   - Dakle: **razlika je uvijek prikazana prije poziva RPC-a.** RPC sam po sebi nema guard "jel korisnik vidio delta" (pretpostavlja klijenta koji je odradio preview), ali svi produkcijski pozivatelji to poštuju. Nema drugog callsitea.
+Status: **OK, ne dirati.** Edge funkcije s service_role ključem legitimno pišu.
 
-2. **Gdje je UI ulaz?**
-   - Primarno: `ReconciliationDialogHost` (globalno montiran u `App.tsx`), triggeran iz `ImportReview.handleConfirm` preko queuea.
-   - Sekundarno (recovery): `ReconciliationResumeBanner` — nudi "Nastavi" za `pending` state (kad korisnik zatvori dijalog bez odluke).
-   - Dijalog prikazuje `App: X€ / Banka: Y€ / Razlika: Z€` + naziv sourcea + opcijski warning "sidro novije od izvoda" (dayKey usporedba).
+### B) Javna referentna tablica — SELECT (NIZAK / NAMJERAN)
 
-3. **Ostavlja li trag u `anchor_audit`?**
-   - **Da**, kad se stvarno napravi align: `align_source_to_bank` upisuje red u `public.anchor_audit` s `anchor_source='bank_reconciliation'`, `old_*`/`new_*` vrijednostima, `reason='align_source_to_bank: user prihvatio bankin završni saldo za batch'` i `actor=auth.uid()`.
-   - Dodatno: `alignToBank` klijent poziva `logDiagnostic('reconciliation_aligned', ...)`; `keepMine` loga `reconciliation_user_override` i piše per-source `user_override` u `imported_statements.reconciliation_meta.sources[sourceId]`.
-   - "Keep mine" ne dira `anchor_audit` (jer se sidro ne mijenja) — trag je samo u `imported_statements` + diagnostic log. To je konzistentno.
+| Tablica | Politika | Rizik |
+|---|---|---|
+| `app_settings` | Anyone can read (authenticated) | Sadrži samo runtime kill-switche (`entitlements_mode`, feature flags). Nema PII/financija. **OK.** |
+| `paddle_price_map` | readable by authenticated | Javne cijene i mapping module→price_id. **OK.** |
+| `ai_route_costs` | authenticated read | Cijene po ruti (unit_cost_eur). Bezopasno. **OK.** |
 
-**Zaključak A:** Tok zadovoljava audit zahtjeve (prikaz razlike + eksplicitna korisnička potvrda + trag). Jedina "otvorena" pozicija: RPC `align_source_to_bank` teoretski može biti pozvan mimo dijaloga s bilo kojom `p_bank_balance` vrijednošću — nema server-side provjere da vrijednost dolazi baš iz `preview_source_balance_after_batch`. To je threat model odluka (ovlašteni owner = može ručno postaviti sidro). Ako želiš tvrđi guard, može se dodati.
+Status: **OK.** SELECT `true` je namjeran za katalog-tip tablica bez osjetljivih stupaca.
 
----
+### C) Anonymous/authenticated INSERT s `WITH CHECK (true)` — jedini pravi nalaz
 
-## B) Anchor-confirm za `anchor_source='migration'` — potvrda porijekla bez promjene salda
+| Tablica | Politika | Roles | Rizik |
+|---|---|---|---|
+| `app_diagnostics_logs` | Anyone can insert diagnostic logs | anon, authenticated | **SREDNJI** |
+| `support_tickets` | Anyone can create support tickets | public | **SREDNJI** |
 
-### Odgovori na pitanja
+Oba su **insert-only telemetrija/inbox** — dizajnirano da radi bez sesije (crash na login screenu, kontakt forma iz landing stranice).
 
-1. **Postoji li RPC ili UI koji dopušta korisniku da pregleda migracijski anchor i potvrdi ga?**
-   - **Pregled: DA.** `src/components/custom-payment-sources/AnchorInfoSection.tsx` prikazuje trenutno sidro s porijeklom (`migration`, `system_initial`, `user_confirmed`, `bank_reconciliation`) + povijest iz `anchor_audit`.
-   - **"Potvrda" gumb: DJELOMIČNO.** Kad je `anchor.source ∈ {migration, system_initial}` i postoji `onCorrectBalance` handler, prikaže se "Potvrdi stvarni saldo" (`anchor.confirmReal`) gumb koji **otvara Korekciju salda** (dijalog koji upisuje novi iznos).
+**Realne rupe:**
+- **Spam/flooding**: bilo tko s anon ključem može pumpati tisuće redova → napuhavanje troška baze i šum u alarmima. Ublažavanje: već postoji `notify-crash` edge fn s IP rate-limitom (20/h), ali direktni PostgREST INSERT na `app_diagnostics_logs` **ne prolazi kroz taj rate-limit**.
+- **User-ID spoofing na `app_diagnostics_logs`**: `user_id` je nullable i `WITH CHECK (true)` **ne validira** da odgovara `auth.uid()`. Napadač može podmetnuti tuđi `user_id` u dijagnostiku → truje admin dashboard i telemetriju krivim atribucijama. Nije data breach, ali je audit-log tampering.
+- **`support_tickets`**: `email` polje slobodno, ne validira da je vlasnika JWT-a. Napadač može otvoriti tiket "u ime" žrtve; odgovor auto-respondera ide na taj email pa je limitirani phishing/joe-job vektor moguć.
 
-2. **Ako postoji — mijenja li potvrda samo `anchor_source`, ili dira i saldo?**
-   - **Dira i saldo.** "Confirm" gumb otvara postojeći correction dijalog koji poziva `set_source_anchor(source_id, anchor_ts, anchor_balance)` (migracija `20260722180051_*.sql`, korak 8). Ta RPC uvijek postavlja:
-     - `correction_anchor_date = p_anchor_ts`
-     - `correction_anchor_balance = p_anchor_balance`
-     - `balance = p_anchor_balance`
-     - `anchor_source = 'user_confirmed'`
-   - Dakle nema pathwaya "potvrdi bez promjene". Korisnik mora tipkati (ili re-unijeti) iznos; ako je slučajno unese `bilo koji ≠ stari`, saldo se mijenja. Ako unese jednak, saldo se overwriteo istim brojem (no-op numerički, ali novi audit red).
+### D) Denial politike (informativno, ne rizik)
+`company_lookup_cache`, `notifications` (prevent direct insert), `project_activity_push_throttle` — sve `qual=false` / `with_check=false` za klijente. To je **whitelist zatvaranja**, ne rupa.
 
-3. **Ako NE postoji — potvrdi prazninu.**
-   - **Praznina POSTOJI u obliku kakav audit traži:** nema RPC-a niti UI akcije koja bi samo prebacila `anchor_source: migration → user_confirmed` bez traženja/mijenjanja iznosa. Trenutno rješenje forsira korisnika kroz correction flow, što otvara rizik nenamjerne promjene salda i miješa dvije semantike ("potvrđujem da je migracijska vrijednost točna" vs "postavljam novi iznos").
+## 2. Što NIJE nađeno (dobre vijesti)
 
-**Zaključak B:** Pregled i UI ulazna točka postoje, ali audit-tražena semantika "acknowledge without value change" nije implementirana. Nema `confirm_migration_anchor` (ili sličnog) RPC-a; jedini put je kroz `set_source_anchor` koji uvijek piše i `balance`.
+- Nula politika na financijskim tablicama (`expenses`, `custom_payment_sources`, `project_*`, `budget_*`, `invoices`, `installments`) koje bi imale `WITH CHECK (true)` za INSERT/UPDATE/DELETE.
+- Nula politika koje dozvoljavaju authenticated korisniku upisati red s tuđim `user_id` (osim `app_diagnostics_logs` opisanog gore).
+- Osjetljive tablice (`profiles`, `user_roles`, `user_entitlements`, `user_subscriptions`, `bank_connections`, `bank_accounts`) — sve provjeravaju `auth.uid()` ili `has_role()`.
 
----
+Vanjski nalaz "200+ SECURITY DEFINER poziva iz anon" iz prošlog izvješća je zasebna tema (funkcijske grante), **ne** RLS politike, i ne pokriva se ovim planom.
 
-## Sažetak i mogući sljedeći koraci (SAMO za odluku, ne implementiram)
+## 3. Prijedlog plana popravka
 
-- **A) align tok:** ispunjava audit. Opcijski hardening: server-side re-check delte prije upisa (nova RPC koja interno poziva preview i odbije ako se `p_bank_balance` razlikuje od izračunatog `bank_balance` unutar batcha).
-- **B) confirm-only praznina:** dva realna smjera:
-  1. Nova RPC `confirm_migration_anchor(source_id)` — postavlja samo `anchor_source='user_confirmed'` + audit red s `old=new` (bez diranja `balance` / `correction_anchor_*`). Novi gumb "Potvrdi porijeklo" pored postojećeg "Ispravi saldo".
-  2. Zadržati postojeće ponašanje i eksplicitno dokumentirati da je "confirm" == "korekcija" (audit trpi kompromis).
+**Prioritet 1 — `app_diagnostics_logs` user_id spoofing (jedina prava logička rupa)**
+- Zamijeniti `WITH CHECK (true)` s: `WITH CHECK (user_id IS NULL OR user_id = auth.uid())`.
+- Rizik lomljenja: **nizak**. Legitimni klijenti već šalju vlastiti `user_id` ili null (crash prije logina). Verificirati u `src/lib/diagnostics*` da nema slučaja gdje se šalje tuđi UUID.
 
-Reci koji smjer za B), i hoćeš li A) hardening ili ostaje kako je.
+**Prioritet 2 — `support_tickets` email spoofing**
+- Za authenticated slučajeve: `WITH CHECK (auth.uid() IS NULL OR email = (SELECT email FROM auth.users WHERE id = auth.uid()))` ili jednostavnije — natjerati `user_id = auth.uid()` kad je JWT prisutan i držati email slobodnim samo za anon (kontakt forma s landing stranice).
+- Rizik lomljenja: **srednji**. Trebamo znati koristi li se forma i za "prijavi problem prijatelja" flow. Ako da, treba dodati captcha/rate-limit umjesto stroge validacije.
+
+**Prioritet 3 — Rate-limit na INSERT-only tablice**
+- Dodati per-IP ili per-user throttle (npr. `create_diagnostic_log_v2(...)` RPC s brojačem u `activation_nudge_log`-stilu) i **revokati** direktni PostgREST INSERT.
+- Rizik lomljenja: **srednji-visok** — mijenja klijentski write-path na sva tri mjesta (diagnostics, support forma, crash reporter). Zahtijeva koordinirani deploy.
+
+**Prioritet 4 — Ne dirati**
+- Sve service-role politike ostaju.
+- SELECT `true` na `app_settings` / `paddle_price_map` / `ai_route_costs` ostaje (namjerni javni katalog).
+
+## 4. Otvorena pitanja za Milana
+
+1. **`support_tickets` — anonymous submitters:** je li landing kontakt forma (bez logina) i dalje potrebna? Ako je, P2 fix mora zadržati anon put; ako nije, možemo zaključati na `auth.uid()`.
+2. **P3 rate-limit:** vrijedi li ulagati u RPC-baziran write-path za dijagnostiku, ili je dovoljno ostaviti direktni INSERT i osloniti se na Supabase infra rate-limite + Sentry?
+3. **Šire skeniranje:** želiš li da u istom planu obradim i (a) `SECURITY DEFINER` funkcije koje `anon` može zvati, i (b) tablice **bez ijedne** RLS politike ali s enabled RLS-om (implicitno deny, ali vrijedi provjeriti)? To su zasebni P0 kandidati koji nisu pokriveni ovim naslovom.
+
+## 5. Ključni zaključak
+
+Vanjski audit je preuveličao domet problema. Stvarna slika: **1 prava logička rupa (P1)** + **1 poluotvoreni email spoofing (P2)** + **kozmetika**. Financijski i osobni podaci nisu izloženi kroz `true` politike.
