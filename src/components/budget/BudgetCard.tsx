@@ -228,6 +228,47 @@ export const BudgetCard = ({
           </div>
 
 
+          {/* Pace projection — koristi computeBudgetPaceSignal (isti signal kao alerti). */}
+          {showPaceRow && (
+            <div className="text-xs text-muted-foreground pt-1">
+              {projectionOverPlan
+                ? t('budget.pace.projectedOver', {
+                    projected: formatAmount(projectedSpend!),
+                    plan: formatAmount(budget.total_amount),
+                    defaultValue: 'Ovim tempom: ~{{projected}} do kraja (plan {{plan}})',
+                  })
+                : t('budget.pace.onTrack', 'Na dobrom putu — tempo je u okviru plana')}
+            </div>
+          )}
+          {showTooEarly && (
+            <div className="text-xs text-muted-foreground/70 italic pt-1">
+              {t('budget.pace.tooEarly', 'Prerano za procjenu tempa')}
+            </div>
+          )}
+
+          {/* Over-limit categories — suptilan destructive-outline naglasak */}
+          {overLimitCategories.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-border/50">
+              <AlertTriangle className="w-3 h-3 text-muted-foreground mr-0.5" aria-hidden="true" />
+              <span className="text-xs text-muted-foreground mr-1">
+                {t('budget.overLimitCategories', 'Preko limita:')}
+              </span>
+              {overLimitCategories.map(cat => {
+                const catDisplay = getCategoryDisplay(cat.category);
+                return (
+                  <Badge
+                    key={cat.id}
+                    variant="outline"
+                    className="text-xs py-0 px-1.5 border-destructive/50 text-foreground"
+                  >
+                    <span className="mr-0.5">{cat.icon || catDisplay.icon}</span>
+                    {catDisplay.name}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+
           {/* Show original categories */}
           {uniqueOriginalCategories.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/50">
@@ -243,6 +284,29 @@ export const BudgetCard = ({
               })}
             </div>
           )}
+
+          {/* Known limitations note — refundi i shared troškovi ulaze punim iznosom */}
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2 inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                >
+                  <Info className="w-3 h-3" aria-hidden="true" />
+                  {t('budget.countingNote.short', 'Kako se broji potrošnja')}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs">
+                {t(
+                  'budget.countingNote.full',
+                  'Povrati i dijeljeni troškovi računaju se po punom iznosu.'
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
 
           {/* Action footer — always visible (mobile-first), separated from content */}
           <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/50">
