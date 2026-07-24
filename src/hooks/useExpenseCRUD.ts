@@ -760,6 +760,7 @@ export const useExpenseCRUD = ({
           const bulkPayload = normalizeExpensePayload({
             category: expense.category,
             payment_source: canonical,
+            category_origin: 'user',
             updated_at: new Date().toISOString(),
           }, 'default');
           const { error } = await supabase
