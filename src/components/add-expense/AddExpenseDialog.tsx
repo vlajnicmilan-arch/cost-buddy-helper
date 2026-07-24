@@ -329,12 +329,14 @@ export const AddExpenseDialog = ({
       const suggested = getSuggestedCategory(value);
       if (suggested) {
         setCategory(suggested as Category);
+        categoryOriginRef.current = 'habit';
         userManuallySetCategory.current = false;
       } else if (!userManuallySetCategory.current) {
         setAiSuggesting(true);
         aiCategorize(description, value, (cat) => {
           if (!userManuallySetCategory.current) {
             setCategory(cat as Category);
+            categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
         }, items.length > 0 ? items : undefined);
@@ -352,6 +354,7 @@ export const AddExpenseDialog = ({
         aiCategorize(value, merchantName, (cat) => {
           if (!userManuallySetCategory.current) {
             setCategory(cat as Category);
+            categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
         }, items.length > 0 ? items : undefined);
