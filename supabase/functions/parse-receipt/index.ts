@@ -693,9 +693,23 @@ Vrati SAMO JSON bez dodatnog teksta.`;
 
     console.log('Parsed receipt data:', receiptData);
 
+    // Sanitize numeric fields to guard against Gemini salvage returning
+    // partial/undefined values that would crash the client (.toFixed on undefined).
+    const sanitizedItems = Array.isArray(receiptData.items)
+      ? receiptData.items
+          .filter((it: any) => it && typeof it.name === 'string' && it.name.trim() !== '')
+          .map((it: any) => ({
+            ...it,
+            name: String(it.name).trim(),
+            quantity: Number(it.quantity) || 1,
+            unit_price: Number(it.unit_price) || 0,
+            total_price: Number(it.total_price) || 0,
+          }))
+      : [];
+
     return new Response(
       JSON.stringify({
-        amount: receiptData.amount,
+        amount: Number(receiptData.amount) || 0,
         merchant: receiptData.merchant,
         description: receiptData.description,
         category: receiptData.category,
@@ -717,9 +731,9 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         payment_source_card_id: receiptData.payment_source_card_id || null,
         is_installment: receiptData.is_installment || false,
         installment_count: receiptData.installment_count || null,
-        installment_amount: receiptData.installment_amount || null,
-        items: receiptData.items || []
-      }), 
+        installment_amount: receiptData.installment_amount != null ? (Number(receiptData.installment_amount) || 0) : null,
+        items: sanitizedItems,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
