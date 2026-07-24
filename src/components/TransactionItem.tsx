@@ -376,7 +376,23 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
             )}
             <span className="text-muted-foreground/50">•</span>
             {expense.type === 'expense' && (
-              <span className="truncate max-w-[60px]">{category.name}</span>
+              <span className="inline-flex items-center gap-0.5 truncate max-w-[80px]">
+                <span className="truncate">{category.name}</span>
+                {(expense.category_origin === 'ai_suggested' || expense.category_origin === 'ai_receipt' || expense.category_origin === 'habit') && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Sparkles className="w-3 h-3 text-primary/70 shrink-0" aria-label={t('categoryOrigin.aiSuggested', 'AI prijedlog')} />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {expense.category_origin === 'habit'
+                        ? t('categoryOrigin.habit', 'Prepoznato po navici')
+                        : expense.category_origin === 'ai_receipt'
+                          ? t('categoryOrigin.aiReceipt', 'AI iz računa')
+                          : t('categoryOrigin.aiSuggested', 'AI prijedlog')}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
             )}
             {expense.type === 'transfer' && (
               <span className="text-primary">{t('transactions.transfer')}</span>
@@ -471,6 +487,7 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.amount === next.expense.amount &&
     prev.expense.description === next.expense.description &&
     prev.expense.category === next.expense.category &&
+    prev.expense.category_origin === next.expense.category_origin &&
     prev.expense.type === next.expense.type &&
     prev.expense.payment_source === next.expense.payment_source &&
     prev.expense.payment_source_card_id === next.expense.payment_source_card_id &&

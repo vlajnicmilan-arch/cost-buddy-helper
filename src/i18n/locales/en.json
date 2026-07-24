@@ -136,7 +136,6 @@
     "rejected": "Rejected.",
     "error": "Error"
   },
-
   "attention": {
     "title": "Needs attention",
     "empty": "All clear",
@@ -5618,5 +5617,10 @@
       "projekti": "Projekti",
       "biznis": "Biznis"
     }
+  },
+  "categoryOrigin": {
+    "aiSuggested": "AI suggestion",
+    "aiReceipt": "AI from receipt",
+    "habit": "Recognized from habit"
   }
 }

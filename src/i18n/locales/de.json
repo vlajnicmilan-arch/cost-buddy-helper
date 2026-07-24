@@ -136,7 +136,6 @@
     "rejected": "Abgelehnt.",
     "error": "Fehler"
   },
-
   "attention": {
     "title": "Zu beachten",
     "empty": "Alles im Griff",
@@ -5618,5 +5617,10 @@
       "projekti": "Projekti",
       "biznis": "Biznis"
     }
+  },
+  "categoryOrigin": {
+    "aiSuggested": "KI-Vorschlag",
+    "aiReceipt": "KI aus Beleg",
+    "habit": "Nach Gewohnheit erkannt"
   }
 }

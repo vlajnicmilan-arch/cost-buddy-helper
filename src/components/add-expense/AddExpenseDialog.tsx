@@ -226,6 +226,9 @@ export const AddExpenseDialog = ({
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
+  // category_origin tracker — započinje null (nema kategorizacije), setovi ispod
+  // (habit/AI/manual/scan) markiraju izvor. Save flow čita ref i šalje u payload.
+  const categoryOriginRef = useRef<import('@/types/expense').CategoryOrigin | null>(null);
   const cameraActiveRef = useRef(false);
   const scanInProgressRef = useRef(false);
   const scannedPreviewActiveRef = useRef(false);
@@ -326,12 +329,14 @@ export const AddExpenseDialog = ({
       const suggested = getSuggestedCategory(value);
       if (suggested) {
         setCategory(suggested as Category);
+        categoryOriginRef.current = 'habit';
         userManuallySetCategory.current = false;
       } else if (!userManuallySetCategory.current) {
         setAiSuggesting(true);
         aiCategorize(description, value, (cat) => {
           if (!userManuallySetCategory.current) {
             setCategory(cat as Category);
+            categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
         }, items.length > 0 ? items : undefined);
@@ -349,6 +354,7 @@ export const AddExpenseDialog = ({
         aiCategorize(value, merchantName, (cat) => {
           if (!userManuallySetCategory.current) {
             setCategory(cat as Category);
+            categoryOriginRef.current = 'ai_suggested';
           }
           setAiSuggesting(false);
         }, items.length > 0 ? items : undefined);
@@ -517,7 +523,7 @@ export const AddExpenseDialog = ({
     setAmount(String(result.amount ?? ''));
     setDescription(safeDescription);
     if (result.merchant) setMerchantName(result.merchant);
-    if (result.category) setCategory(result.category as Category);
+    if (result.category) { setCategory(result.category as Category); categoryOriginRef.current = 'ai_receipt'; }
     if (result.date) setExpenseDate(result.date);
     if (result.payment_source_card_id) setSelectedCardId(result.payment_source_card_id);
 
@@ -705,6 +711,7 @@ export const AddExpenseDialog = ({
         merchant_name: scannedData.merchant?.trim() || scannedData.issuer_name?.trim() || undefined,
         receipt_url: receiptUrl,
         ai_extracted: true,
+        category_origin: 'ai_receipt' as const,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
@@ -843,6 +850,7 @@ export const AddExpenseDialog = ({
     setDescription('');
     setCategory('food');
     userManuallySetCategory.current = false;
+    categoryOriginRef.current = null;
     setAiSuggesting(false);
     cancelAICategorize();
     setMerchantName('');
@@ -1041,6 +1049,7 @@ export const AddExpenseDialog = ({
         merchant_name: merchantName || undefined,
         receipt_url: receiptUrl,
         ai_extracted: scannedData !== null,
+        category_origin: scannedData !== null ? 'ai_receipt' : (categoryOriginRef.current ?? 'user'),
         note: installmentNote,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
@@ -1082,6 +1091,7 @@ export const AddExpenseDialog = ({
       merchant_name: merchantName || undefined,
       receipt_url: receiptUrl,
       ai_extracted: scannedData !== null,
+      category_origin: scannedData !== null ? 'ai_receipt' : (categoryOriginRef.current ?? 'user'),
       note: note.trim() || undefined,
       project_id: selectedProjectId || undefined,
       budget_id: selectedBudgetId || undefined,
@@ -1135,6 +1145,7 @@ export const AddExpenseDialog = ({
 
   const handleCategoryChange = useCallback((value: Category | IncomeCategory) => {
     userManuallySetCategory.current = true;
+    categoryOriginRef.current = 'user';
     setCategory(value);
   }, []);
 

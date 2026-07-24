@@ -176,6 +176,8 @@ export interface ReceiptItem {
 
 export type TransactionType = 'expense' | 'income' | 'transfer';
 
+export type CategoryOrigin = 'ai_suggested' | 'ai_receipt' | 'habit' | 'user' | 'import' | 'rule';
+
 export type TransactionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Expense {
@@ -191,6 +193,7 @@ export interface Expense {
   receipt_url?: string | null;
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
+  category_origin?: CategoryOrigin | string | null;
   income_source_id?: string | null;
   project_id?: string | null;
   budget_id?: string | null;
