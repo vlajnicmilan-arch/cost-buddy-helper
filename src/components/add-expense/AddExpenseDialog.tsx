@@ -1049,6 +1049,7 @@ export const AddExpenseDialog = ({
         merchant_name: merchantName || undefined,
         receipt_url: receiptUrl,
         ai_extracted: scannedData !== null,
+        category_origin: scannedData !== null ? 'ai_receipt' : (categoryOriginRef.current ?? 'user'),
         note: installmentNote,
         project_id: selectedProjectId || undefined,
         budget_id: selectedBudgetId || undefined,
