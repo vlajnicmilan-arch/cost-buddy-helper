@@ -229,7 +229,7 @@ export const ScannedDataPreview = ({
               );
               return matched ? (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Saldo računa "{matched.name}" će se automatski uvećati za €{scannedData.amount.toFixed(2)}
+                  Saldo računa "{matched.name}" će se automatski uvećati za €{(scannedData.amount ?? 0).toFixed(2)}
                 </p>
               ) : (
                 <p className="text-xs text-destructive mt-1">
