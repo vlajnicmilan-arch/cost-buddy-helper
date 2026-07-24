@@ -523,7 +523,7 @@ export const AddExpenseDialog = ({
     setAmount(String(result.amount ?? ''));
     setDescription(safeDescription);
     if (result.merchant) setMerchantName(result.merchant);
-    if (result.category) setCategory(result.category as Category);
+    if (result.category) { setCategory(result.category as Category); categoryOriginRef.current = 'ai_receipt'; }
     if (result.date) setExpenseDate(result.date);
     if (result.payment_source_card_id) setSelectedCardId(result.payment_source_card_id);
 
