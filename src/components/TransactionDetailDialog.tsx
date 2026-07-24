@@ -542,6 +542,18 @@ export const TransactionDetailDialog = ({
                 <p className="font-medium flex items-center gap-1">
                   <span>{categoryInfo.icon}</span>
                   <span>{categoryInfo.name}</span>
+                  {(expense.category_origin === 'ai_suggested' || expense.category_origin === 'ai_receipt' || expense.category_origin === 'habit') && (
+                    <span className="inline-flex items-center gap-1 ml-1 text-xs text-muted-foreground">
+                      <Sparkles className="w-3 h-3 text-primary/70" />
+                      <span>
+                        {expense.category_origin === 'habit'
+                          ? t('categoryOrigin.habit', 'Prepoznato po navici')
+                          : expense.category_origin === 'ai_receipt'
+                            ? t('categoryOrigin.aiReceipt', 'AI iz računa')
+                            : t('categoryOrigin.aiSuggested', 'AI prijedlog')}
+                      </span>
+                    </span>
+                  )}
                 </p>
               </div>
             )}
