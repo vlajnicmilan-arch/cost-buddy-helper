@@ -500,7 +500,7 @@ export const ScannedDataPreview = ({
               {scannedData.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-xs bg-background/50 px-2 py-1 rounded">
                   <span className="truncate flex-1">{item.name}</span>
-                  <span className="font-mono ml-2">€{item.total_price.toFixed(2)}</span>
+                  <span className="font-mono ml-2">€{(item.total_price ?? 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
