@@ -161,7 +161,19 @@ export const BudgetCard = ({
                     {t('budget.oneTime', 'Jednokratno')}
                   </Badge>
                 )}
-                {budget.daysRemaining !== undefined && budget.daysRemaining >= 0 && (
+                {budget.isExpired ? (
+                  <>
+                    <span>•</span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-muted-foreground/40">
+                      {t('budget.expired', 'Istekao')}
+                    </Badge>
+                  </>
+                ) : !budget.hasDeadline ? (
+                  <>
+                    <span>•</span>
+                    <span className="italic">{t('budget.noDeadline', 'Bez roka')}</span>
+                  </>
+                ) : budget.daysRemaining !== undefined && budget.daysRemaining >= 0 ? (
                   <>
                     <span>•</span>
                     <span className="flex items-center gap-1">
@@ -169,7 +181,7 @@ export const BudgetCard = ({
                       {budget.daysRemaining} {t('common.daysLeft', 'dana')}
                     </span>
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
