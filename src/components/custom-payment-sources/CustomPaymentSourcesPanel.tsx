@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, Sparkles, GripVertical, Users, Settings2, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -26,6 +26,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
@@ -406,51 +413,44 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                   €{(source.balance || 0).toFixed(2)}
                 </span>
                 {!reorderMode && (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); toggleHidden(source.id); }}
-                      title={
-                        hidden
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => e.stopPropagation()}
+                        title={t('common.actions', 'Actions')}
+                        aria-label={t('common.actions', 'Actions')}
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleHidden(source.id); }}>
+                        {hidden ? <EyeOff className="h-3.5 w-3.5 mr-2" /> : <Eye className="h-3.5 w-3.5 mr-2" />}
+                        {hidden
                           ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
-                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
-                      }
-                      aria-label={
-                        hidden
-                          ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
-                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')
-                      }
-                    >
-                      {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); setMembersDialogSource(source); }}
-                      title={t('common.members', 'Članovi')}
-                    >
-                      <Users className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); handleEdit(source); }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(source); }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                          : t('paymentSources.hideFromDashboard', 'Sakrij s dashboarda')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setMembersDialogSource(source); }}>
+                        <Users className="h-3.5 w-3.5 mr-2" />
+                        {t('common.members', 'Članovi')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(source); }}>
+                        <Pencil className="h-3.5 w-3.5 mr-2" />
+                        {t('common.edit', 'Uredi')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(source); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        {t('common.delete', 'Obriši')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
               {/* Cards display */}
