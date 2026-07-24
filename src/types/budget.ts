@@ -43,6 +43,11 @@ export interface BudgetWithStats extends Budget {
   daysRemaining?: number;
   dailyAverage?: number;
   trend?: 'up' | 'down' | 'stable';
+  // Period bounds derived by useBudgets (used for pace signal + expired state)
+  periodStart?: Date;
+  periodEnd?: Date;
+  isExpired?: boolean;
+  hasDeadline?: boolean;
 }
 
 export interface BudgetCategoryWithStats extends BudgetCategory {
