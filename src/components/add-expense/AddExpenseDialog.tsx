@@ -226,6 +226,9 @@ export const AddExpenseDialog = ({
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const userManuallySetCategory = useRef(false);
+  // category_origin tracker — započinje null (nema kategorizacije), setovi ispod
+  // (habit/AI/manual/scan) markiraju izvor. Save flow čita ref i šalje u payload.
+  const categoryOriginRef = useRef<import('@/types/expense').CategoryOrigin | null>(null);
   const cameraActiveRef = useRef(false);
   const scanInProgressRef = useRef(false);
   const scannedPreviewActiveRef = useRef(false);
