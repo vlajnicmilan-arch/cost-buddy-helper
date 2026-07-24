@@ -312,6 +312,7 @@ export const useExpenseCRUD = ({
           receipt_url: normalizedExpense.receipt_url,
           merchant_name: normalizedExpense.merchant_name,
           ai_extracted: normalizedExpense.ai_extracted,
+          category_origin: (normalizedExpense as any).category_origin || 'user',
           income_source_id: normalizedExpense.income_source_id,
           project_id: normalizedExpense.project_id || null,
           budget_id: normalizedExpense.budget_id || null,
