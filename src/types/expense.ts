@@ -193,7 +193,7 @@ export interface Expense {
   receipt_url?: string | null;
   merchant_name?: string | null;
   ai_extracted?: boolean | null;
-  category_origin?: CategoryOrigin | null;
+  category_origin?: CategoryOrigin | string | null;
   income_source_id?: string | null;
   project_id?: string | null;
   budget_id?: string | null;
