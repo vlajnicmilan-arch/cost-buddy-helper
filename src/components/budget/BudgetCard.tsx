@@ -75,8 +75,39 @@ export const BudgetCard = ({
   const allOriginalCategories = budget.categories
     .filter(c => c.originalCategories && c.originalCategories.length > 0)
     .flatMap(c => c.originalCategories || []);
-  
+
   const uniqueOriginalCategories = [...new Set(allOriginalCategories)];
+
+  // Over-limit categories (excluding synthetic "manually assigned" bucket which has limit_amount === 0)
+  const overLimitCategories = useMemo(
+    () => budget.categories.filter(c => c.isOverBudget && c.limit_amount > 0),
+    [budget.categories]
+  );
+
+  // Pace projection — reuse shared helper, honors minElapsedDays guard.
+  // Only meaningful for budgets with a real deadline and an active period.
+  const paceSignal = useMemo(() => {
+    if (!budget.hasDeadline || !budget.periodStart || !budget.periodEnd) return null;
+    if (budget.isExpired) return null;
+    return computeBudgetPaceSignal({
+      spent: budget.spent,
+      totalAmount: budget.total_amount,
+      startDate: budget.periodStart,
+      endDate: budget.periodEnd,
+      now: new Date(),
+    });
+  }, [budget.hasDeadline, budget.isExpired, budget.periodStart, budget.periodEnd, budget.spent, budget.total_amount]);
+
+  // Projected end-of-period spend at current daily pace (only when elapsedPct > 0)
+  const projectedSpend = useMemo(() => {
+    if (!paceSignal || paceSignal.elapsedPct <= 0) return null;
+    return (budget.spent / paceSignal.elapsedPct) * 100;
+  }, [paceSignal, budget.spent]);
+
+  // Show projection row only when we have enough data (past minElapsedDays guard).
+  const showPaceRow = !!paceSignal && paceSignal.reason !== 'before_min_days' && !budget.isOverBudget;
+  const showTooEarly = !!paceSignal && paceSignal.reason === 'before_min_days' && !budget.isOverBudget;
+  const projectionOverPlan = projectedSpend !== null && projectedSpend > budget.total_amount;
 
   return (
     <>
