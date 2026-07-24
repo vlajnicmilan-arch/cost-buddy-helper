@@ -2461,7 +2461,19 @@
     "noHistory": "Keine historischen Daten",
     "categoryComparison": "Vergleich nach Richtungen",
     "spendingOverTime": "Verlauf über die Zeit",
-    "vsPrevPeriod": "vs. Vorperiode"
+    "vsPrevPeriod": "vs. Vorperiode",
+    "expired": "Abgelaufen",
+    "noDeadline": "Ohne Frist",
+    "overLimitCategories": "Über Limit:",
+    "countingNote": {
+      "short": "Wie Ausgaben gezählt werden",
+      "full": "Erstattungen und geteilte Ausgaben werden mit dem vollen Betrag gezählt."
+    },
+    "pace": {
+      "onTrack": "Auf Kurs — Tempo im Plan",
+      "projectedOver": "In diesem Tempo: ~{{projected}} bis zum Ende (Plan {{plan}})",
+      "tooEarly": "Zu früh für eine Tempo-Einschätzung"
+    }
   },
   "projectStatus": {
     "draft": "Entwurf",
