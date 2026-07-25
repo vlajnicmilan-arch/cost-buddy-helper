@@ -62,6 +62,11 @@ export const ContactSupportDialog = ({ open, onOpenChange, onOpenHelp }: Contact
     e.preventDefault();
     if (submitting) return;
 
+    if (!user?.id) {
+      showError(t('support.errorMustBeLoggedIn', 'Za slanje upita morate biti prijavljeni'));
+      return;
+    }
+
     if (!email.trim() || !subject.trim() || !message.trim()) {
       showError(t('support.errorMissingFields', 'Molimo ispunite sva obavezna polja'));
       return;
@@ -79,8 +84,9 @@ export const ContactSupportDialog = ({ open, onOpenChange, onOpenHelp }: Contact
 
       const { error: insertError } = await supabase.from('support_tickets').insert({
         id: ticketId,
-        user_id: user?.id ?? null,
+        user_id: user.id,
         email: email.trim(),
+
         name: name.trim() || null,
         subject: subject.trim(),
         message: message.trim(),
