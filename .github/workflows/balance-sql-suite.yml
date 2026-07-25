@@ -124,6 +124,14 @@ jobs:
           echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
 
 
+      - name: SECDEF anon CI shim (dynamic revoke)
+        # CI-only. The curated baseline doesn't replay production REVOKE
+        # migrations, so this shim dynamically revokes anon+PUBLIC EXECUTE on
+        # every callable SECDEF function in `public` — same predicate as the
+        # invariant test below. Keeps CI honest without a hand-maintained list.
+        # See supabase/tests/security/secdef_anon_shim.sql.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/secdef_anon_shim.sql
+
       - name: SECDEF anon regression invariant
         # See supabase/tests/security/secdef_anon_invariant.sql — fails the
         # build if any callable SECURITY DEFINER function in `public` becomes
