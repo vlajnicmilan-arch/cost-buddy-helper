@@ -5900,6 +5900,13 @@ export type Database = {
         }
       }
       assert_projects_write_allowed: { Args: never; Returns: undefined }
+      audit_secdef_anon_regression: {
+        Args: never
+        Returns: {
+          inserted: boolean
+          leaked_signature: string
+        }[]
+      }
       can_log_own_work: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
