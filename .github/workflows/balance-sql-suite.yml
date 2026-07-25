@@ -123,3 +123,9 @@ jobs:
           fi
           echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
 
+
+      - name: SECDEF anon regression invariant
+        # See supabase/tests/security/secdef_anon_invariant.sql — fails the
+        # build if any callable SECURITY DEFINER function in `public` becomes
+        # anon-executable through a migration in this PR/push.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/secdef_anon_invariant.sql
