@@ -1,81 +1,92 @@
-# P0 RLS audit — politike s `USING (true)` / `WITH CHECK (true)`
 
-Read-only ispitivanje `pg_policies` (public schema). Nalaz je **znatno manji od očekivanog** — vanjski audit je preuveličao rizik.
+# Audit SECURITY DEFINER + tablice bez politike (read-only)
 
-## 1. Popis svih permisivnih politika
+## Brojke
 
-Ukupno 9 politika u `public` s `qual='true'` ili `with_check='true'`. Grupirano po namjeni:
+- **162** SECURITY DEFINER funkcija u `public` schemi (ukupno).
+- **98** ima `EXECUTE` grant za rolu `anon`.
+  - **~28** su trigger funkcije (`RETURNS trigger`) — anon grant je bezopasan jer ih engine poziva interno, nisu dostupne preko PostgREST-a. Ignorabilne.
+  - **~70** su pozivive funkcije (RPC-ovi) — **stvarna površina napada iz `anon` role**.
+- **0** SECDEF funkcija bez `SET search_path`. Sve već imaju set → točka **(B) nije problem**.
+- **Tablice s RLS enabled ali bez politike:** `webhook_events` (jedina). Namjerno — piše samo service_role iz webhook edge fn.
 
-### A) Service-role only (NIZAK / NAMJERAN)
-Ograničene na `service_role` — klijent (anon/authenticated JWT) nikad ne pogađa `service_role`, ove politike su nedostupne s frontenda.
+## (A) 70 anon-dostupnih RPC-ova — klasifikacija
 
-| Tablica | Politika | Cmd |
-|---|---|---|
-| `email_send_log` | Only service_role can access | ALL |
-| `email_unsubscribe_tokens` | Only service_role can access | ALL |
-| `suppressed_emails` | Only service_role can access | ALL |
+### Grupa 1 — VISOK RIZIK (mijenja stanje, anonimno pozivo)
+Ove funkcije zaobilaze RLS po definiciji (SECDEF). Ako interna provjera `auth.uid()` nije stroga ili je `auth.uid()` NULL prihvatljiv, anonimni klijent može zloupotrijebiti. Treba pojedinačno pročitati tijelo prije `REVOKE`, ali defaultna preporuka je **REVOKE EXECUTE FROM anon**:
 
-Status: **OK, ne dirati.** Edge funkcije s service_role ključem legitimno pišu.
+- **Financije/saldo:** `apply_balance_delta_if_unanchored`, `apply_split_override`, `merge_manual_with_bank`, `unmerge_import_row`, `recompute_custom_source_balance`, `recompute_custom_source_balance_preview`
+- **Meke izmjene/koš:** `soft_delete_record`, `restore_trash_item`, `purge_trash_item`, `purge_old_trash`, `list_trash`
+- **Notifikacije/aktivni problemi:** `dismiss_notification`, `upsert_active_issue`, `resolve_stale_issues`
+- **Onboarding/članstvo:** `complete_onboarding`, `link_worker_to_member`, `mark_guided_home_exited`
+- **Email queue (interno):** `enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq`, `email_queue_dispatch`, `email_queue_wake`
+- **Admin (mora biti zaključano na admin rolu, ne anon):** `grant_module_access`, `revoke_module_access`, `admin_get_cohort_retention`, `get_dashboard_scroll_distribution`, `get_dashboard_section_stats`, `filter_projects_subscribers`, `refresh_family_split_snapshot`, `drain_participant_digest`, `enqueue_participant_digest_event`
+- **AI/kvota:** `increment_ai_usage`, `increment_ai_usage_v2`, `consume_core_scan_quota`, `refund_core_scan_quota`, `peek_core_scan_quota`, `get_free_tier_usage_current_month`
+- **Trial:** `create_trial_entitlements`
 
-### B) Javna referentna tablica — SELECT (NIZAK / NAMJERAN)
+### Grupa 2 — SREDNJI (predikat helperi, vjerojatno interno validiraju, ali anon grant nepotreban)
+Boolean/lookup helperi koje RLS politike zovu interno. `anon` ne treba executive privilegij — RLS provjera radi u kontekstu `authenticated`:
+- `has_role`, `has_any_paid_plan`, `has_active_module_grant`, `has_full_payment_source_access`
+- `is_budget_owner`, `is_budget_member`, `is_project_owner`, `is_project_member`, `is_project_investor`, `is_project_participant_active`, `is_projects_subscriber`, `is_payment_source_owner`, `is_payment_source_member`, `is_income_source_owner`, `is_income_source_member`, `is_push_category_enabled`
+- `can_log_own_work`, `can_write_payment_source`, `assert_projects_write_allowed`
+- `get_project_role`, `get_project_member_profiles`, `payment_source_role`
 
-| Tablica | Politika | Rizik |
-|---|---|---|
-| `app_settings` | Anyone can read (authenticated) | Sadrži samo runtime kill-switche (`entitlements_mode`, feature flags). Nema PII/financija. **OK.** |
-| `paddle_price_map` | readable by authenticated | Javne cijene i mapping module→price_id. **OK.** |
-| `ai_route_costs` | authenticated read | Cijene po ruti (unit_cost_eur). Bezopasno. **OK.** |
+### Grupa 3 — CRON/CLEANUP (mora biti isključivo service_role/pg_cron)
+`REVOKE FROM PUBLIC, anon, authenticated`:
+- `cleanup_duplicate_push_tokens`, `cleanup_old_ai_usage`, `cleanup_old_chat_messages`, `cleanup_old_diagnostic_logs`, `cleanup_old_health_summaries`, `cleanup_old_login_logs`, `cleanup_old_monitor_alerts`, `cleanup_old_push_logs`, `cleanup_stale_push_tokens`, `delete_expired_invitations`
 
-Status: **OK.** SELECT `true` je namjeran za katalog-tip tablica bez osjetljivih stupaca.
+### Grupa 4 — POTENCIJALNO NAMJERNO ANON (auth/redemption flow — POTVRDITI PRIJE REVOKE)
+- **`consume_invitation_token(...)`** (2 signatures) — pozvano tijekom prijave/redemptiona pozivnice. Ako flow radi na `anon` sesiji prije auth, `REVOKE` ga lomi. Treba potvrditi pozivač (edge fn vs klijent).
 
-### C) Anonymous/authenticated INSERT s `WITH CHECK (true)` — jedini pravi nalaz
+## (B) `SET search_path`
+Nije problem — svih 162 SECDEF funkcija ima `search_path` postavljen. Vanjski linter (`SUPA_function_search_path_mutable`) vjerojatno gleda druge, ne-SECDEF funkcije; provjera je izvan opsega ovog plana.
 
-| Tablica | Politika | Roles | Rizik |
-|---|---|---|---|
-| `app_diagnostics_logs` | Anyone can insert diagnostic logs | anon, authenticated | **SREDNJI** |
-| `support_tickets` | Anyone can create support tickets | public | **SREDNJI** |
+## (C) Tablice s RLS bez politike
+Samo `webhook_events`. **Namjerno** (idempotentni store za Paddle webhook, piše samo service_role, čitanje nikad ne treba iz klijenta). Ostaviti kako jest, dokumentirati komentarom u budućnosti.
 
-Oba su **insert-only telemetrija/inbox** — dizajnirano da radi bez sesije (crash na login screenu, kontakt forma iz landing stranice).
+## (D) Plan popravka — faze
 
-**Realne rupe:**
-- **Spam/flooding**: bilo tko s anon ključem može pumpati tisuće redova → napuhavanje troška baze i šum u alarmima. Ublažavanje: već postoji `notify-crash` edge fn s IP rate-limitom (20/h), ali direktni PostgREST INSERT na `app_diagnostics_logs` **ne prolazi kroz taj rate-limit**.
-- **User-ID spoofing na `app_diagnostics_logs`**: `user_id` je nullable i `WITH CHECK (true)` **ne validira** da odgovara `auth.uid()`. Napadač može podmetnuti tuđi `user_id` u dijagnostiku → truje admin dashboard i telemetriju krivim atribucijama. Nije data breach, ali je audit-log tampering.
-- **`support_tickets`**: `email` polje slobodno, ne validira da je vlasnika JWT-a. Napadač može otvoriti tiket "u ime" žrtve; odgovor auto-respondera ide na taj email pa je limitirani phishing/joe-job vektor moguć.
+Sve promjene ide kroz migracije, po grupama, s validacijom nakon svake faze (vitest + smoke test ključnih tokova). **NE izvršavam ništa dok Milan ne odobri.**
 
-### D) Denial politike (informativno, ne rizik)
-`company_lookup_cache`, `notifications` (prevent direct insert), `project_activity_push_throttle` — sve `qual=false` / `with_check=false` za klijente. To je **whitelist zatvaranja**, ne rupa.
+**Faza 0 — Verifikacija (read-only, prije bilo koje izmjene)**
+- Za svaku funkciju iz Grupe 1 pročitati `pg_get_functiondef` i provjeriti prisutnost `auth.uid()` guarda + što se dogodi kad je `NULL`.
+- Za Grupu 4 (`consume_invitation_token`): grep pozivača u `src/` i `supabase/functions/` — je li ikad pozvan iz anon sesije?
+- Izvještaj Milanu s per-funkcija odlukom prije Faze 1.
 
-## 2. Što NIJE nađeno (dobre vijesti)
+**Faza 1 — CRON (Grupa 3, 10 funkcija) — najniži rizik lomljenja**
+- `REVOKE EXECUTE ON FUNCTION public.<f>() FROM PUBLIC, anon, authenticated;`
+- Ne dira `service_role`. pg_cron radi kao superuser → i dalje prolazi.
+- Rizik lomljenja: **nizak**. Ako neki UI zove cleanup ručno (nije očekivano), pojavit će se u testovima.
 
-- Nula politika na financijskim tablicama (`expenses`, `custom_payment_sources`, `project_*`, `budget_*`, `invoices`, `installments`) koje bi imale `WITH CHECK (true)` za INSERT/UPDATE/DELETE.
-- Nula politika koje dozvoljavaju authenticated korisniku upisati red s tuđim `user_id` (osim `app_diagnostics_logs` opisanog gore).
-- Osjetljive tablice (`profiles`, `user_roles`, `user_entitlements`, `user_subscriptions`, `bank_connections`, `bank_accounts`) — sve provjeravaju `auth.uid()` ili `has_role()`.
+**Faza 2 — Admin/AI kvota + email queue (dio Grupe 1) — zaključati na `authenticated` ili `service_role`**
+- Admin RPC-ovi (`grant_module_access`, `revoke_module_access`, `admin_get_cohort_retention`, dashboard stats): `REVOKE FROM anon`; interna `has_role(auth.uid(),'admin')` ostaje.
+- Email queue (pgmq wrappers): `REVOKE FROM PUBLIC, anon, authenticated` — pozivaju ih samo edge funkcije preko service_role.
+- AI kvota RPC-ovi: `REVOKE FROM anon` (kvota je per-user, `auth.uid()` mora postojati).
+- Rizik: **nizak-srednji**. Provjeriti da edge funkcije koje ih pozivaju koriste `service_role` klijent.
 
-Vanjski nalaz "200+ SECURITY DEFINER poziva iz anon" iz prošlog izvješća je zasebna tema (funkcijske grante), **ne** RLS politike, i ne pokriva se ovim planom.
+**Faza 3 — Predikat helperi (Grupa 2, ~22 funkcije)**
+- `REVOKE EXECUTE FROM anon`, ostaviti `authenticated` + `service_role`.
+- RLS politike ih zovu unutar `WITH CHECK`/`USING` — to je server-side i ne treba anon grant.
+- Rizik lomljenja: **vrlo nizak** ako se ne poziva iz anon sesije. Provjeriti da nema takvog callsitea u kodu.
 
-## 3. Prijedlog plana popravka
+**Faza 4 — Financije/saldo/koš/onboarding (Grupa 1 core, ~20 funkcija)**
+- Najosjetljivije: `apply_balance_delta_if_unanchored`, `merge_manual_with_bank`, `unmerge_import_row`, `soft_delete_record`, `complete_onboarding` itd.
+- `REVOKE FROM anon`. Interni `auth.uid()` guardovi ostaju kao defence-in-depth.
+- Rizik: **srednji** — ako neki flow pogrešno koristi anon session key umjesto autentificiranog, javit će se odmah u E2E testovima.
 
-**Prioritet 1 — `app_diagnostics_logs` user_id spoofing (jedina prava logička rupa)**
-- Zamijeniti `WITH CHECK (true)` s: `WITH CHECK (user_id IS NULL OR user_id = auth.uid())`.
-- Rizik lomljenja: **nizak**. Legitimni klijenti već šalju vlastiti `user_id` ili null (crash prije logina). Verificirati u `src/lib/diagnostics*` da nema slučaja gdje se šalje tuđi UUID.
+**Faza 5 — Grupa 4 (`consume_invitation_token`) — odluka Milana**
+- **Opcija A:** Ostaviti anon EXECUTE ako je redemption anoniman prije signup completion.
+- **Opcija B:** Migrirati flow na `authenticated`-only i redemption raditi post-signup.
+- Ne dirati bez eksplicitne odluke.
 
-**Prioritet 2 — `support_tickets` email spoofing**
-- Za authenticated slučajeve: `WITH CHECK (auth.uid() IS NULL OR email = (SELECT email FROM auth.users WHERE id = auth.uid()))` ili jednostavnije — natjerati `user_id = auth.uid()` kad je JWT prisutan i držati email slobodnim samo za anon (kontakt forma s landing stranice).
-- Rizik lomljenja: **srednji**. Trebamo znati koristi li se forma i za "prijavi problem prijatelja" flow. Ako da, treba dodati captcha/rate-limit umjesto stroge validacije.
+## Što se NE dira
+- Trigger funkcije (~35) — nemaju direktnu API površinu.
+- `webhook_events` RLS bez politike — namjerno.
+- SECDEF funkcije s `service_role`-only pozivačima gdje je grant već ispravan.
+- Nijedan RLS policy iz prethodnog kruga (`app_diagnostics_logs`, `support_tickets`).
+- Nijedan grant/politika/funkcija do eksplicitne odluke Milana.
 
-**Prioritet 3 — Rate-limit na INSERT-only tablice**
-- Dodati per-IP ili per-user throttle (npr. `create_diagnostic_log_v2(...)` RPC s brojačem u `activation_nudge_log`-stilu) i **revokati** direktni PostgREST INSERT.
-- Rizik lomljenja: **srednji-visok** — mijenja klijentski write-path na sva tri mjesta (diagnostics, support forma, crash reporter). Zahtijeva koordinirani deploy.
-
-**Prioritet 4 — Ne dirati**
-- Sve service-role politike ostaju.
-- SELECT `true` na `app_settings` / `paddle_price_map` / `ai_route_costs` ostaje (namjerni javni katalog).
-
-## 4. Otvorena pitanja za Milana
-
-1. **`support_tickets` — anonymous submitters:** je li landing kontakt forma (bez logina) i dalje potrebna? Ako je, P2 fix mora zadržati anon put; ako nije, možemo zaključati na `auth.uid()`.
-2. **P3 rate-limit:** vrijedi li ulagati u RPC-baziran write-path za dijagnostiku, ili je dovoljno ostaviti direktni INSERT i osloniti se na Supabase infra rate-limite + Sentry?
-3. **Šire skeniranje:** želiš li da u istom planu obradim i (a) `SECURITY DEFINER` funkcije koje `anon` može zvati, i (b) tablice **bez ijedne** RLS politike ali s enabled RLS-om (implicitno deny, ali vrijedi provjeriti)? To su zasebni P0 kandidati koji nisu pokriveni ovim naslovom.
-
-## 5. Ključni zaključak
-
-Vanjski audit je preuveličao domet problema. Stvarna slika: **1 prava logička rupa (P1)** + **1 poluotvoreni email spoofing (P2)** + **kozmetika**. Financijski i osobni podaci nisu izloženi kroz `true` politike.
+## Otvorena pitanja za Milana
+1. Faza 5 (`consume_invitation_token`) — Opcija A ili B?
+2. Radimo li svih 5 faza u jednoj migraciji ili razdvojeno po fazi (preporuka: **razdvojeno**, s vitestom između)?
+3. Faza 0 (per-funkcija čitanje `pg_get_functiondef`) — želiš li puni izvještaj po funkciji prije Faze 1, ili je gornja klasifikacija dovoljna?
