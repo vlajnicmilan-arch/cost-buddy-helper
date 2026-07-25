@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.audit_secdef_anon_regression() FROM authenticated;
