@@ -1,60 +1,66 @@
-# Audit-alert: anon EXECUTE regresija na 45 SECDEF funkcija
 
-Opseg: mehanizam koji upozorava ako `anon` EXECUTE grant ikad bude vraćen na bilo koju od 45 funkcija zaključanih u Fazi 1 (34) + Fazi 2a (11). Ništa se ne dira u tijelima funkcija, financijskoj logici ni RLS-u.
+# Dijagnoza dva TypeError-a — SAMO nalazi, bez izmjena
 
-Popis funkcija se ne smije hardkodirati na 45 mjesta — treba **jedan izvor istine**.
+## Ograničenje istrage
 
----
+Nemam pristup Sentryju iz sandboxa. Bez stack tracea, source-mape ili route/komponenta labela ne mogu s **sigurnošću** pokazati liniju koja je izbacila `z.slice`. Umjesto pogađanja pojedine linije, dolje su svi realni kandidati koje sam pronašao statičkim pregledom danas dirnutih datoteka (git diff za 2 dana), plus što je isključeno.
 
-## Opcija A — DB funkcija + pg_cron (runtime detekcija)
-
-**Kako:**
-1. Tablica `public.secdef_anon_lockdown` (mala allowlist): `function_signature text primary key, phase text, locked_at timestamptz default now(), note text`. Popuni jednim seed INSERT-om s 45 potpisa (proname + argtypes). RLS on, samo `service_role` čita/piše. Ovo je **jedan izvor istine**.
-2. SECDEF funkcija `public.audit_secdef_anon_regression()` koja za svaki red iz allowliste zove `has_function_privilege('anon', signature, 'EXECUTE')` i za svaki hit:
-   - upsertira u `public.notifications` (admin user_id) **ili** koristi postojeći `upsert_active_issue` mehanizam (dedup key `secdef_anon_regression:<sig>`, severity `critical`) — ovo je već sigurna funkcija s `auth.uid()` guardom, pa umjesto nje koristimo direktan insert kao service_role kroz cron kontekst;
-   - preferirano: piše red u `public.monitor_alerts_log` (već postoji, koristi ga `monitor-app-health`) sa `source='secdef_audit'` i signature-om.
-3. pg_cron job (dnevno u 03:00): `SELECT public.audit_secdef_anon_regression();`
-4. Postojeći crash-email/push kanal (`monitor-app-health` cron već čita `monitor_alerts_log`) — provjeriti gura li alertove svih source-ova ili filtrira; ako filtrira, dodati mali sibling notifier ili proširiti scan. **Otvoreno pitanje za Milana** — vidi dolje.
-
-**Isporuka alerta:** monitor_alerts_log red → admin email/push kroz postojeći cron kanal.
-
-**Rizik:** minimalan. Read-only nad `pg_proc`/ACL. Nema efekta na app rutine. Ako allowlist popis zastari (dodamo novu SECDEF funkciju kasnije), samo je propuštamo — ne generira false positive.
-
-**Minus:** detekcija je dnevna (do 24h kašnjenja). pg_cron dependency (već koristimo).
+**Molim Milana da doda iz Sentryja:** (a) top frame stack tracea sa source-mape (unminificirani file:line), (b) breadcrumbs zadnje 2–3 akcije, (c) URL/route gdje se dogodilo. To će presjeći od 5 kandidata na 1.
 
 ---
 
-## Opcija B — CI/test provjera (shift-left)
+## Greška 1 — `TypeError: z.slice is not a function` (3 pojave)
 
-**Kako:**
-1. Isti jedan izvor istine, ali kao TypeScript/JSON popis pod `supabase/tests/security/anon-lockdown.json` (45 potpisa).
-2. Novi vitest ili SQL test (`supabase/tests/security/anon_lockdown.sql`) koji se spaja na test DB i za svaki potpis pita `has_function_privilege('anon', $1, 'EXECUTE')` — mora biti `false`. Fail = crveni CI.
-3. Registrirati u `.github/workflows/test.yml` (ili balance-sql-suite ako koristimo psql harness).
+### Isključeno (sigurno, provjereno)
 
-**Isporuka alerta:** GitHub Actions failure na PR/push.
+- `src/lib/dayKey.ts` — `toDayKey` i `isOnOrBeforeDay` type-guardaju sve ulaze (`instanceof Date`, `typeof === 'string'`, regex prije `input.slice(0,10)`). Ima regresijski test (`src/test/dayKey.test.ts:36`) upravo za `z.slice` scenarij. Nije uzrok.
+- `src/pages/Wallet.tsx:150` — zaštićeno `if (!expense.payment_source)` guardom na liniji 140 + `.startsWith('custom:')` bi puknuo prije `.slice` da payment_source nije string.
+- `src/components/budget/BudgetHistoryTab.tsx:174,194` — `label` uvijek dolazi iz `format()`/`.toString()` (string), `periods` uvijek niz.
+- `src/hooks/useExpenseCRUD.ts:141,213,244,983` — sve pozvano na `String(...)` ili guarded `(x || '')`.
+- Sve `Date.now()...toString(36).slice(...)` i `new Date().toISOString().slice(0,10)` pozicije — pozvano na garantiranim string primitivima.
 
-**Rizik:** minimalan. Test treba pristup živoj/replika bazi ili replay migracija — SQL varijanta se najlakše veže na već postojeći stress/balance harness koji replaya migracije lokalno.
+### Realni kandidati (nezaštićeni `.slice` na vrijednosti nesigurnog tipa)
 
-**Minus:** hvata samo regresije koje prođu kroz migraciju u repou. Ako netko ručno grantira u produkciji (npr. iz Supabase UI-a), CI to ne vidi.
+| # | Datoteka | Linija | Kod | Uzrok pucanja |
+|---|----------|-------|-----|---------------|
+| 1a | `src/lib/decisionPdfExport.ts` | 531 | `(data.closedAt ?? data.generatedAt).slice(0, 10)` | Tipski deklarirano `string \| null` + `string`, ali ako pozivač proslijedi `Date` (npr. `now` umjesto `now.toISOString()`), padne. Nije dirnuto danas — ako se okida, vjerojatno nezavisno od današnjeg deploya. Trigger je isključivo PDF izvoz odluke. |
+| 1b | `src/lib/csvParsers.ts` | 917 | `format.charAt(0).toUpperCase() + format.slice(1)` | `format` može biti proizvoljna vrijednost iz auto-detekcije; ako grana vrati non-string, padne. Nezavisno od danas. |
+| 1c | *(mogući, ne pronađen statički)* | — | — | Neki od tijekom današnjeg dana dodanih call-siteova koji prosljeđuje **novo polje** (npr. `category_origin`, `recurrence_count`, `bank_row_seq`, `balance_after`) tamo gdje downstream očekuje string i radi `.slice`. Statičkim pregledom nisam našao takav call-site. |
+
+### Veza s današnjim deployem
+
+Ne mogu potvrditi. Nijedan **danas dodan** `.slice` poziv nema očigledan nezaštićen tip. Vrlo vjerojatno je uzrok postojeći, latentan poziv koji je aktiviran nekim novim podatkom/putem — što tek stack trace može potvrditi.
 
 ---
 
-## Opcija C — Kombinacija (preporuka)
+## Greška 2 — `TypeError: Cannot read properties of undefined` (1 pojava)
 
-- **B kao primarni gate** (SQL test u CI-u, blokira PR koji vrati grant kroz migraciju).
-- **A kao runtime safety net** (dnevni cron hvata ručne intervencije mimo migracija).
-- **Jedan izvor istine dijeljen između obje:** tablica `public.secdef_anon_lockdown` u bazi + SQL test u CI-u čita istu tablicu (`SELECT function_signature FROM public.secdef_anon_lockdown`), tako da se popis ažurira na jednom mjestu (migracija koja INSERT-ira u tablicu kad god zaključamo novu funkciju).
+**Polje odrezano u digestu** → bez naziva polja i frame-a ovo je pogađanje. Statički najvjerojatniji kandidati iz današnje diff-e:
 
-**Rizik kombinacije:** i dalje minimalan; samo jedna nova tablica + jedna nova SECDEF funkcija (s `auth.uid() IS NULL` guardom za direktne pozive, dopušteno samo service_role/cron kontekstu) + jedan cron job + jedan CI test.
+| # | Datoteka | Kontekst | Mogući undefined pristup |
+|---|----------|----------|--------------------------|
+| 2a | `src/components/dashboard/ActiveIssuesSection.tsx:126,132,135` | Novi `recurrence_count` badge | Ako neki live-updated red iz `active-issues-changed` eventa ne prođe `select("...recurrence_count")` (npr. optimistic update ili legacy row), `issue.recurrence_count` je `undefined`. Usporedbe `> 1` i `>= 10` na `undefined` daju `false` (ne baca), ali render `${issue.recurrence_count}×` ispisao bi `undefined×`. Ne baca sam po sebi — vjerojatno **nije ovo**. |
+| 2b | `src/components/TransactionItem.tsx:381–389`, `TransactionDetailDialog.tsx:545–551` | Novi Sparkles badge za `category_origin` | Čita `expense.category_origin`; ako `expense` postane `undefined` u nekoj memo/comparator putanji (`prev.expense.category_origin === next.expense.category_origin` na liniji 490), padne s "Cannot read properties of undefined (reading 'category_origin')". Realan kandidat. |
+| 2c | `src/components/wallet/WalletHeroCard.tsx` | Novi hero saldo | `useCustomPaymentSources()` može vratiti sources s missing `currency`/`balance`; kod već defenzivno radi `s.balance \|\| 0` — ne vidim undefined access. Manje vjerojatno. |
+| 2d | `src/components/budget/BudgetCard.tsx:89–110` | Nova pace projekcija | `budget.periodStart`/`periodEnd` su Date iz `useBudgets`, ali `computeBudgetPaceSignal` radi `.getTime()` na njima. Ako ikoji code path vrati string umjesto Date, dobili bismo "Cannot read properties of undefined (reading 'getTime')" — različit oblik, ali istog reda veličine. |
+
+### Bez punog naziva polja nema sigurne dijagnoze.
 
 ---
 
-## Otvorena pitanja za Milana (prije izvršenja)
+## Što tražim od Milana prije bilo kakvog popravka
 
-1. **A, B ili C?** (preporuka: C, ali A sam je dovoljan ako želimo minimalnu površinu izmjene.)
-2. **Kanal alerta za opciju A:** `monitor_alerts_log` (postojeći, ide kroz `monitor-app-health` push+email cron) ili zaseban `notifications` red za admine? Treba li `monitor-app-health` proširiti da čita `source='secdef_audit'` redove?
-3. **Ritam crona za A:** dnevno (03:00) ili češće (svaka 4h)?
-4. **Popis 45 funkcija** — potvrđujemo točan popis iz Faza 1+2a prije seed migracije (mogu ga izvući iz `pg_proc` filtrirano po tome što više nemaju anon EXECUTE, ali će trebati ručna potvrda da nije uhvaćeno nešto što je oduvijek bilo bez anon granta).
-5. **Ako Milan odabere B/C:** ide li SQL test u `.github/workflows/test.yml` (brz, ali treba psql + migracije) ili u `balance-sql-suite.yml` (već ima harness)?
+1. **Sentry stack trace (source-mapiran) za oba errora** — file:line prvog user-code framea.
+2. **Puni tekst greške 2** (koje polje, koja klasa).
+3. **Route/URL** i **breadcrumbs** (koja komponenta, koji klik).
+4. Ako moguće, **release SHA** koji ih generira, da potvrdimo jesu li nakon točno kojeg deploya.
 
-Ništa se ne izvršava dok Milan ne odabere opciju i odgovori na pitanja 2–5.
+## Što ne treba dirati sada
+
+- Ništa. Ne popravljam ni jedno mjesto dok Milan ne dostavi stack trace ili eksplicitno odabere kandidata za defenzivni fix (najjači kandidat: `TransactionItem` memo comparator, 2b).
+
+## Bilješke
+
+- `.lovable/plan.md` **nije** dirnut u ovoj istrazi.
+- Vitest nije pokrenut (nema izmjena).
+- Nijedan REVOKE/migracija/edge deploy nije izvršen.
