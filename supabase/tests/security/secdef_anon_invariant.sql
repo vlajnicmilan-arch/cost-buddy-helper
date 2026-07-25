@@ -3,9 +3,9 @@
 -- balance-sql-suite (curated baseline + whitelisted migrations).
 --
 -- Test-only allowlist: intentionally empty. As of 2026-07-25 no anon-
--- exposed SECDEF function is required. Add here ONLY functions that must
--- stay anon-callable in non-production (e.g. `e2e_reset_user` if ever
--- promoted to anon — currently it is not).
+-- exposed SECDEF function is required. To add an exception, extend the
+-- VALUES list in the allowlist CTE below with a `('signature')` row that
+-- exactly matches `proname||'('||pg_get_function_identity_arguments||')'`.
 --
 -- Failure mode: raises with the offending signatures so the CI step
 -- exits non-zero (psql ON_ERROR_STOP=1).
@@ -17,16 +17,18 @@ DECLARE
   v_count int := 0;
 BEGIN
   FOR v_leaked IN
-    SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')'
+    WITH allowlist(sig) AS (
+      SELECT sig FROM (VALUES (NULL::text)) AS t(sig) WHERE sig IS NOT NULL
+    )
+    SELECT p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' AS sig
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
       AND p.prosecdef
       AND p.prorettype <> 'trigger'::regtype
       AND has_function_privilege('anon', p.oid, 'EXECUTE')
-      -- ALLOWLIST (empty — see header):
-      AND p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')'
-          NOT IN ()  -- placeholder replaced below
+      AND (p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')')
+          NOT IN (SELECT sig FROM allowlist)
     ORDER BY 1
   LOOP
     v_count := v_count + 1;
