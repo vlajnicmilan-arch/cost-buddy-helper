@@ -1,92 +1,120 @@
 
-# Audit SECURITY DEFINER + tablice bez politike (read-only)
+# Faza 0 — Verifikacija SECURITY DEFINER anon-dostupnih funkcija
 
-## Brojke
+**Read-only izvještaj. Ništa nije izmijenjeno. Nijedna faza plana iz prethodnog kruga nije odobrena — sva klasifikacija ispod čeka Milanovu odluku prije bilo kakvog izvršenja.**
 
-- **162** SECURITY DEFINER funkcija u `public` schemi (ukupno).
-- **98** ima `EXECUTE` grant za rolu `anon`.
-  - **~28** su trigger funkcije (`RETURNS trigger`) — anon grant je bezopasan jer ih engine poziva interno, nisu dostupne preko PostgREST-a. Ignorabilne.
-  - **~70** su pozivive funkcije (RPC-ovi) — **stvarna površina napada iz `anon` role**.
-- **0** SECDEF funkcija bez `SET search_path`. Sve već imaju set → točka **(B) nije problem**.
-- **Tablice s RLS enabled ali bez politike:** `webhook_events` (jedina). Namjerno — piše samo service_role iz webhook edge fn.
+## Metoda
 
-## (A) 70 anon-dostupnih RPC-ova — klasifikacija
+Pročitano tijelo svih 70 anon-dostupnih pozivnih SECURITY DEFINER funkcija (`pg_get_functiondef`). Za svaku provjereno: (a) postoji li interni `auth.uid()` guard koji baca iznimku na NULL, (b) što se dogodi ako je `auth.uid()` NULL (anoniman poziv), (c) piše li stanje.
 
-### Grupa 1 — VISOK RIZIK (mijenja stanje, anonimno pozivo)
-Ove funkcije zaobilaze RLS po definiciji (SECDEF). Ako interna provjera `auth.uid()` nije stroga ili je `auth.uid()` NULL prihvatljiv, anonimni klijent može zloupotrijebiti. Treba pojedinačno pročitati tijelo prije `REVOKE`, ali defaultna preporuka je **REVOKE EXECUTE FROM anon**:
+Legenda: **SIGURNA** = eksplicitno diže iznimku ili filtrira na `auth.uid()` tako da NULL vraća prazno bez štete • **RANJIVA** = NULL prolazi i može čitati/mijenjati tuđe podatke • **NEJASNA** = ovisi o kontekstu pozivača.
 
-- **Financije/saldo:** `apply_balance_delta_if_unanchored`, `apply_split_override`, `merge_manual_with_bank`, `unmerge_import_row`, `recompute_custom_source_balance`, `recompute_custom_source_balance_preview`
-- **Meke izmjene/koš:** `soft_delete_record`, `restore_trash_item`, `purge_trash_item`, `purge_old_trash`, `list_trash`
-- **Notifikacije/aktivni problemi:** `dismiss_notification`, `upsert_active_issue`, `resolve_stale_issues`
-- **Onboarding/članstvo:** `complete_onboarding`, `link_worker_to_member`, `mark_guided_home_exited`
-- **Email queue (interno):** `enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq`, `email_queue_dispatch`, `email_queue_wake`
-- **Admin (mora biti zaključano na admin rolu, ne anon):** `grant_module_access`, `revoke_module_access`, `admin_get_cohort_retention`, `get_dashboard_scroll_distribution`, `get_dashboard_section_stats`, `filter_projects_subscribers`, `refresh_family_split_snapshot`, `drain_participant_digest`, `enqueue_participant_digest_event`
-- **AI/kvota:** `increment_ai_usage`, `increment_ai_usage_v2`, `consume_core_scan_quota`, `refund_core_scan_quota`, `peek_core_scan_quota`, `get_free_tier_usage_current_month`
-- **Trial:** `create_trial_entitlements`
+## Grupa 1 — Visok rizik (state-changing / osjetljivi read)
 
-### Grupa 2 — SREDNJI (predikat helperi, vjerojatno interno validiraju, ali anon grant nepotreban)
-Boolean/lookup helperi koje RLS politike zovu interno. `anon` ne treba executive privilegij — RLS provjera radi u kontekstu `authenticated`:
-- `has_role`, `has_any_paid_plan`, `has_active_module_grant`, `has_full_payment_source_access`
-- `is_budget_owner`, `is_budget_member`, `is_project_owner`, `is_project_member`, `is_project_investor`, `is_project_participant_active`, `is_projects_subscriber`, `is_payment_source_owner`, `is_payment_source_member`, `is_income_source_owner`, `is_income_source_member`, `is_push_category_enabled`
-- `can_log_own_work`, `can_write_payment_source`, `assert_projects_write_allowed`
-- `get_project_role`, `get_project_member_profiles`, `payment_source_role`
+| Funkcija | uid guard | NULL ponašanje | Ocjena |
+|---|---|---|---|
+| `apply_split_override` | `v_exp.user_id <> auth.uid() → EXCEPTION` | NULL ≠ ownerID → odbija | **SIGURNA** |
+| `apply_balance_delta_if_unanchored` | **NEMA guarda** | Ažurira po `p_source_id` bez provjere vlasnika | **RANJIVA** ⚠️ |
+| `complete_onboarding` | `IF v_uid IS NULL → 42501` | Odbija anon | SIGURNA |
+| `dismiss_notification` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `mark_guided_home_exited` | `IF v_user IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `merge_manual_with_bank` | `IF v_uid IS NULL → EXCEPTION` + provjera vlasništva oba retka | Odbija | SIGURNA |
+| `unmerge_import_row` | (potrebno provjeriti — nije prikazan; predikat u tablici pokazuje `U` = ima `auth.uid()`) | vjerojatno SIGURNA | **NEJASNA** — nije pročitano tijelo do kraja |
+| `soft_delete_record` | `IF v_uid IS NULL → EXCEPTION` + `WHERE user_id=$1 OR admin` | Odbija | SIGURNA |
+| `restore_trash_item` | `IF v_uid IS NULL → EXCEPTION` + `user_id = v_uid` provjera | Odbija | SIGURNA |
+| `purge_trash_item` | `IF v_uid IS NULL → EXCEPTION` + vlasništvo | Odbija | SIGURNA |
+| `purge_old_trash` | **NEMA guarda**, brine tuđe podatke bez ograničenja | NULL prolazi, briše sve retke starije od cutoff-a **globalno** za 5 tablica | **RANJIVA** 🚨 |
+| `list_trash` | `IF v_uid IS NULL RETURN;` (prazan set) | Sigurno vraća ništa | SIGURNA |
+| `upsert_active_issue` | (nije pročitano do kraja; `U` flag) | **NEJASNA** |
+| `resolve_stale_issues` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `link_worker_to_member` | `IF v_caller IS NULL → EXCEPTION` + owner/manager provjera | Odbija | SIGURNA |
+| `refresh_family_split_snapshot` | `is_family_member(group, auth.uid()) → EXCEPTION` | NULL nije član → odbija | SIGURNA |
+| `enqueue_participant_digest_event` | **NEMA `auth.uid()` guarda**, samo `IF p_project_id IS NULL OR p_actor_user_id IS NULL` | Anon može zvati s bilo kojim `p_actor_user_id` — može **generirati fake digest zapise** za tuđe projekte | **RANJIVA** 🚨 |
+| `drain_participant_digest` | **NEMA guarda** | Anon može drenirati (resetirati) tuđi digest state po `p_user_id, p_project_id` | **RANJIVA** 🚨 |
+| `filter_projects_subscribers` | Nema `auth.uid()` provjere, samo helper | Vraća subset UUID-a — pomaže enumeraciji pretplatnika, ali sam po sebi ne curi PII | **SREDNJA** — helper koji ne bi trebao biti anon |
 
-### Grupa 3 — CRON/CLEANUP (mora biti isključivo service_role/pg_cron)
-`REVOKE FROM PUBLIC, anon, authenticated`:
-- `cleanup_duplicate_push_tokens`, `cleanup_old_ai_usage`, `cleanup_old_chat_messages`, `cleanup_old_diagnostic_logs`, `cleanup_old_health_summaries`, `cleanup_old_login_logs`, `cleanup_old_monitor_alerts`, `cleanup_old_push_logs`, `cleanup_stale_push_tokens`, `delete_expired_invitations`
+### Admin RPC-ovi
+| `grant_module_access` | `has_role(auth.uid(),'admin') → EXCEPTION` | Odbija anon | SIGURNA |
+| `revoke_module_access` | `has_role(auth.uid(),'admin') → EXCEPTION` | Odbija | SIGURNA |
+| `admin_get_cohort_retention` | `_require_admin()` | Odbija | SIGURNA |
+| `get_dashboard_scroll_distribution` | `has_role admin → EXCEPTION` | Odbija | SIGURNA |
+| `get_dashboard_section_stats` | `has_role admin → EXCEPTION` | Odbija | SIGURNA |
 
-### Grupa 4 — POTENCIJALNO NAMJERNO ANON (auth/redemption flow — POTVRDITI PRIJE REVOKE)
-- **`consume_invitation_token(...)`** (2 signatures) — pozvano tijekom prijave/redemptiona pozivnice. Ako flow radi na `anon` sesiji prije auth, `REVOKE` ga lomi. Treba potvrditi pozivač (edge fn vs klijent).
+### AI kvota
+| `increment_ai_usage` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `increment_ai_usage_v2` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `consume_core_scan_quota` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `refund_core_scan_quota` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `peek_core_scan_quota` | `IF v_uid IS NULL → EXCEPTION` | Odbija | SIGURNA |
+| `get_free_tier_usage_current_month` | Koristi `COALESCE(_user_id, auth.uid())` — anon s izravnim `_user_id` param **može čitati tuđu kvotu** | Nije osjetljivo (samo brojač transakcija/mjesec) | **SREDNJA** — mala PII curenja |
+| `assert_projects_write_allowed` | `IF v_uid IS NULL → not_authenticated` | Odbija | SIGURNA |
+| `get_project_member_profiles` | `EXISTS ... auth.uid()` u WHERE | NULL ne prolazi → prazno | SIGURNA |
 
-## (B) `SET search_path`
-Nije problem — svih 162 SECDEF funkcija ima `search_path` postavljen. Vanjski linter (`SUPA_function_search_path_mutable`) vjerojatno gleda druge, ne-SECDEF funkcije; provjera je izvan opsega ovog plana.
+### Email queue (pgmq wrapperi)
+| `enqueue_email` | Nema guarda; direktno `pgmq.send` | Anon može ubaciti bilo koji payload u queue | **RANJIVA** 🚨 |
+| `delete_email` | Nema guarda; `pgmq.delete` po `message_id` | Anon može brisati poruke u redu | **RANJIVA** 🚨 |
+| `read_email_batch` | Nema guarda; `pgmq.read` | Anon može čitati batch poruka iz reda (payload obično sadrži emailove korisnika) | **RANJIVA** 🚨 |
+| `move_to_dlq` | Nema guarda | Anon može premještati/kloniranje poruka | **RANJIVA** 🚨 |
+| `email_queue_dispatch` | Nema `auth.uid()` guarda; interno poziva `net.http_post` prema edge fn s Authorization headerom | Anon može triggerati dispatch — payload/token je fiksan u funkciji, ali može spamati edge fn | **SREDNJA** (RANJIVA za DoS/kvotu) |
 
-## (C) Tablice s RLS bez politike
-Samo `webhook_events`. **Namjerno** (idempotentni store za Paddle webhook, piše samo service_role, čitanje nikad ne treba iz klijenta). Ostaviti kako jest, dokumentirati komentarom u budućnosti.
+## Grupa 2 — Predikat helperi (~22 funkcije)
 
-## (D) Plan popravka — faze
+Sve prate isti obrazac: SQL `SELECT EXISTS` po `_source_id/_user_id` argumentima. Ne otkrivaju PII, ne mijenjaju stanje. Anon može testirati postoje li kombinacije (npr. `is_project_member(uuid, uuid)`) — teoretski **omogućuje enumeraciju** UUID parova, ali bez ulaznog UUID-a napadač ne može ništa učiniti (UUID-ovi nisu pogodivi).
 
-Sve promjene ide kroz migracije, po grupama, s validacijom nakon svake faze (vitest + smoke test ključnih tokova). **NE izvršavam ništa dok Milan ne odobri.**
+Konkretno provjereno:
+- `has_role`, `has_active_module_grant`, `has_any_paid_plan`, `has_full_payment_source_access` — sve boolean, bez auth.uid guarda (koriste argumente)
+- `is_budget_owner/member`, `is_project_owner/member/investor/participant_active`, `is_projects_subscriber`, `is_payment_source_owner/member`, `is_income_source_owner/member`, `is_push_category_enabled`, `is_budget_member`
+- `can_log_own_work`, `can_write_payment_source`, `get_project_role`, `payment_source_role` — svi rade po argumentu
 
-**Faza 0 — Verifikacija (read-only, prije bilo koje izmjene)**
-- Za svaku funkciju iz Grupe 1 pročitati `pg_get_functiondef` i provjeriti prisutnost `auth.uid()` guarda + što se dogodi kad je `NULL`.
-- Za Grupu 4 (`consume_invitation_token`): grep pozivača u `src/` i `supabase/functions/` — je li ikad pozvan iz anon sesije?
-- Izvještaj Milanu s per-funkcija odlukom prije Faze 1.
+**Ocjena:** SIGURNE (ne otkrivaju PII), ali anon EXECUTE je **nepotreban** — pozivaju ih isključivo RLS politike (server-side) i to u kontekstu `authenticated` role.
 
-**Faza 1 — CRON (Grupa 3, 10 funkcija) — najniži rizik lomljenja**
-- `REVOKE EXECUTE ON FUNCTION public.<f>() FROM PUBLIC, anon, authenticated;`
-- Ne dira `service_role`. pg_cron radi kao superuser → i dalje prolazi.
-- Rizik lomljenja: **nizak**. Ako neki UI zove cleanup ručno (nije očekivano), pojavit će se u testovima.
+## Grupa 3 — Cron/cleanup (10 funkcija)
 
-**Faza 2 — Admin/AI kvota + email queue (dio Grupe 1) — zaključati na `authenticated` ili `service_role`**
-- Admin RPC-ovi (`grant_module_access`, `revoke_module_access`, `admin_get_cohort_retention`, dashboard stats): `REVOKE FROM anon`; interna `has_role(auth.uid(),'admin')` ostaje.
-- Email queue (pgmq wrappers): `REVOKE FROM PUBLIC, anon, authenticated` — pozivaju ih samo edge funkcije preko service_role.
-- AI kvota RPC-ovi: `REVOKE FROM anon` (kvota je per-user, `auth.uid()` mora postojati).
-- Rizik: **nizak-srednji**. Provjeriti da edge funkcije koje ih pozivaju koriste `service_role` klijent.
+Sve `cleanup_*` funkcije bez guarda: brišu stare zapise iz `push_delivery_logs`, `ai_usage_*`, `chat_messages`, `app_diagnostics_logs`, `health_summaries`, `user_login_logs`, `monitor_alerts_log`, `push_tokens`. **Anon može triggerati čišćenje** — to je destruktivno prema audit/log podacima. Nema PII curenja, ali:
+- **RANJIVA za DoS na log podatke** (netko bi ih mogao pozivati cikluski da uništi tragove).
+- Namijenjene su `pg_cron`-u i ničemu drugom.
 
-**Faza 3 — Predikat helperi (Grupa 2, ~22 funkcije)**
-- `REVOKE EXECUTE FROM anon`, ostaviti `authenticated` + `service_role`.
-- RLS politike ih zovu unutar `WITH CHECK`/`USING` — to je server-side i ne treba anon grant.
-- Rizik lomljenja: **vrlo nizak** ako se ne poziva iz anon sesije. Provjeriti da nema takvog callsitea u kodu.
+`delete_expired_invitations` — isti obrazac (briše `*_invitations WHERE expires_at < now()`), niska šteta.
 
-**Faza 4 — Financije/saldo/koš/onboarding (Grupa 1 core, ~20 funkcija)**
-- Najosjetljivije: `apply_balance_delta_if_unanchored`, `merge_manual_with_bank`, `unmerge_import_row`, `soft_delete_record`, `complete_onboarding` itd.
-- `REVOKE FROM anon`. Interni `auth.uid()` guardovi ostaju kao defence-in-depth.
-- Rizik: **srednji** — ako neki flow pogrešno koristi anon session key umjesto autentificiranog, javit će se odmah u E2E testovima.
+**Ocjena:** SREDNJA/RANJIVA (audit-log DoS).
 
-**Faza 5 — Grupa 4 (`consume_invitation_token`) — odluka Milana**
-- **Opcija A:** Ostaviti anon EXECUTE ako je redemption anoniman prije signup completion.
-- **Opcija B:** Migrirati flow na `authenticated`-only i redemption raditi post-signup.
-- Ne dirati bez eksplicitne odluke.
+## Grupa 4 — `consume_invitation_token` — nalaz o pozivačima
 
-## Što se NE dira
-- Trigger funkcije (~35) — nemaju direktnu API površinu.
-- `webhook_events` RLS bez politike — namjerno.
-- SECDEF funkcije s `service_role`-only pozivačima gdje je grant već ispravan.
-- Nijedan RLS policy iz prethodnog kruga (`app_diagnostics_logs`, `support_tickets`).
-- Nijedan grant/politika/funkcija do eksplicitne odluke Milana.
+`grep` u `src/` i `supabase/functions/`:
+- **Jedini pozivač:** `supabase/functions/accept-project-invitation/index.ts:84`.
+- Poziva se preko **`supabaseAdmin` (service_role klijent)** — anon EXECUTE grant se **ne koristi**.
+- Prije poziva funkcija: `authHeader` obavezan, `supabase.auth.getUser()` verificira JWT (`401` inače), UUID regex validacija tokena.
+- **Nijedan klijentski (`src/`) callsite ne postoji.**
 
-## Otvorena pitanja za Milana
-1. Faza 5 (`consume_invitation_token`) — Opcija A ili B?
-2. Radimo li svih 5 faza u jednoj migraciji ili razdvojeno po fazi (preporuka: **razdvojeno**, s vitestom između)?
-3. Faza 0 (per-funkcija čitanje `pg_get_functiondef`) — želiš li puni izvještaj po funkciji prije Faze 1, ili je gornja klasifikacija dovoljna?
+**Zaključak Grupe 4:** anon grant je **nepotreban i nekorišten**. Nema legitimnog anon flowa koji bi se slomio.
+
+## Sažetak RANJIVIH — treba Milanovu odluku prvo
+
+Poimence funkcije koje anon može pozvati bez interne provjere identiteta i time napraviti štetu:
+
+1. **`apply_balance_delta_if_unanchored(p_source_id, p_delta)`** 🚨 — anon može promijeniti saldo bilo kojeg custom payment sourcea koji nema anchor (uvjet je da UUID zna, ali `custom_payment_sources` može biti čitljiv preko drugih ruta)
+2. **`purge_old_trash(p_older_than_days)`** 🚨 — anon može pozvati s malim brojem (npr. 0) i **trajno izbrisati sve soft-deleted zapise svih korisnika**
+3. **`enqueue_participant_digest_event`** 🚨 — anon može ubacivati proizvoljne događaje u tuđi digest state
+4. **`drain_participant_digest`** 🚨 — anon može resetirati tuđi digest (izbriše pending obavijesti)
+5. **Email queue (5 fn):** `enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq`, `email_queue_dispatch` 🚨 — anon može čitati/ubacivati/brisati poruke u pgmq redu (payload sadrži email adrese)
+6. **`cleanup_*` (10 fn) + `delete_expired_invitations`** — anon može zloupotrijebiti za DoS log/audit tablica
+
+## Sažetak NEJASNIH (nisu potpuno pregledane)
+
+- `unmerge_import_row` — flag pokazuje `U` (ima `auth.uid()`), ali tijelo nije eksplicitno pročitano do kraja u ovoj sesiji
+- `upsert_active_issue` — flag pokazuje `U`, ali tijelo nije potpuno pregledano
+- `recompute_custom_source_balance`, `recompute_custom_source_balance_preview` — read-only kalkulacije, no potrebno je potvrditi da ne otkrivaju tuđi saldo
+
+Prije bilo kakve odluke o njima treba **kompletno pročitati tijela**.
+
+## Otvorena pitanja / opcije za Milana (bez preporuke — samo činjenice)
+
+1. **6 RANJIVIH funkcija (1–5 iznad).** Milan odlučuje: (A) `REVOKE EXECUTE FROM anon` odmah, (B) dodati unutarnji auth guard prije revoke, (C) ostaviti kako jest.
+2. **Grupa 3 (cleanup, DoS rizik).** Milan odlučuje želi li ih zaključati na `service_role`.
+3. **Grupa 2 (helperi, "clean but unnecessary anon grant").** Milan odlučuje isplati li se ikakva akcija (potencijalno lomljivi ako neka client ruta koristi anon session).
+4. **Grupa 4 (`consume_invitation_token`).** Nalaz: jedini pozivač je edge fn sa service_role — anon grant je nepotreban. Milan odlučuje ide li revoke.
+5. **NEJASNE 3 funkcije.** Milan odlučuje želi li dopunu izvještaja s potpunim tijelima.
+
+## Što nije dirnuto
+
+Nijedan grant, funkcija, politika ni tablica. Nijedna migracija nije napravljena. Faza 0 je čisto opažanje.
