@@ -244,12 +244,96 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ============================================================
+    // secdef_audit source — anon-SECDEF regression alerts.
+    // Written by cron job `audit-secdef-anon-regression-daily` via
+    // public.audit_secdef_anon_regression(). We deliver push+email
+    // for any un-notified rows in the last 25h (cron runs daily 03:00).
+    // ============================================================
+    let secdefAlertsDispatched = 0;
+    try {
+      const secdefSinceIso = new Date(Date.now() - 25 * 60 * 60_000).toISOString();
+      const { data: secdefRows } = await supabase
+        .from("monitor_alerts_log")
+        .select("id, alert_signature, sample_message, details, triggered_at")
+        .eq("source", "secdef_audit")
+        .eq("notified", false)
+        .gte("triggered_at", secdefSinceIso)
+        .order("triggered_at", { ascending: false })
+        .limit(50);
+
+      const secdefList = (secdefRows ?? []) as Array<{
+        id: string; alert_signature: string; sample_message: string;
+        details: any; triggered_at: string;
+      }>;
+
+      if (secdefList.length > 0) {
+        const { data: adminRoles2 } = await supabase
+          .from("user_roles").select("user_id").eq("role", "admin");
+        const adminIds2 = (adminRoles2 ?? []).map((r: any) => r.user_id);
+        const adminEmails2 = await getAdminEmails(supabase);
+
+        for (const row of secdefList) {
+          const sig = row.details?.function_signature ?? row.alert_signature;
+          const title = "🚨 SECDEF anon regresija";
+          const body = `Funkcija ${sig} je ponovno dostupna anonimno.`;
+
+          let pushed = 0;
+          for (const adminId of adminIds2) {
+            try {
+              const { data, error: pushErr } = await supabase.functions.invoke("send-push", {
+                body: {
+                  user_id: adminId, title, body,
+                  data: { type: "secdef_audit_alert", alert_id: row.id, signature: sig },
+                  source_function: "monitor-app-health",
+                  lifecycle_stage: "monitor",
+                },
+              });
+              if (!pushErr && data) pushed += 1;
+            } catch (e) {
+              console.warn("[monitor:secdef] push failed:", e);
+            }
+          }
+
+          const adminUrl = `${PUBLIC_BASE_URL.replace(/\/$/, "")}/admin?tab=pulse&alert=${row.id}`;
+          const emailPayload: CrashAlertPayload = {
+            occurredAt: row.triggered_at,
+            source: "secdef_audit",
+            message: `SECDEF anon regresija: ${sig}`,
+            route: undefined,
+            userId: undefined,
+            signature: `secdef_audit|${sig}`,
+            errorCount: 1,
+            affectedUsers: 0,
+            adminUrl,
+          };
+          let emailed = 0;
+          for (const a of adminEmails2) {
+            const idempotencyKey = `secdef-${sig.slice(0, 80)}-${a.userId}-${row.id}`;
+            const res = await enqueueCrashAlertEmail(supabase, a.email, emailPayload, idempotencyKey);
+            if (res.ok) emailed += 1;
+          }
+
+          await supabase.from("monitor_alerts_log")
+            .update({ notified: pushed > 0, notified_email: emailed > 0 })
+            .eq("id", row.id);
+
+          secdefAlertsDispatched += 1;
+          notifiedPushTotal += pushed;
+          notifiedEmailTotal += emailed;
+        }
+      }
+    } catch (e) {
+      console.error("[monitor:secdef_audit] scan failed", e);
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
         scanned: events.length,
         groups: groups.size,
         triggered: triggered.length,
+        secdef_alerts_dispatched: secdefAlertsDispatched,
         notifications_push: notifiedPushTotal,
         notifications_email: notifiedEmailTotal,
         duration_ms: Date.now() - startedAt,
