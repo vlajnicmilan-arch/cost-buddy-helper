@@ -1,0 +1,27 @@
+
+REVOKE EXECUTE ON FUNCTION public.admin_get_cohort_retention() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.apply_split_override(uuid, jsonb) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.complete_onboarding(text, text, numeric, text, jsonb) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.consume_core_scan_quota() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.dismiss_notification(uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.filter_projects_subscribers(uuid[]) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_dashboard_scroll_distribution(integer) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_dashboard_section_stats(integer) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_free_tier_usage_current_month(uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.grant_module_access(uuid, admin_grant_module[], timestamptz, admin_grant_reason_code, text) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_ai_usage(text, integer) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_ai_usage_v2(text, integer, integer) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.link_worker_to_member(uuid, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.list_trash() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.mark_guided_home_exited() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.merge_manual_with_bank(uuid, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.peek_core_scan_quota() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.purge_trash_item(text, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.refresh_family_split_snapshot(uuid, date, date) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.refund_core_scan_quota() FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.resolve_stale_issues(text, text[]) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.restore_trash_item(text, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.revoke_module_access(uuid, text) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.soft_delete_record(text, uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.unmerge_import_row(uuid) FROM anon, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.upsert_active_issue(text, text, text, text, text, jsonb, text, uuid) FROM anon, PUBLIC;
