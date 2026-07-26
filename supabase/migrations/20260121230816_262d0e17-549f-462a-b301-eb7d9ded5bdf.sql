@@ -157,7 +157,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_new_user();
+-- Guard: u CI/replay kontekstu rola koja izvršava migracije nema ovlast
+-- nad auth.users (vlasnik: supabase_auth_admin). Produkcija (postgres/
+-- supabase_admin) izvrši normalno; CI tiho preskoči.
+DO $mig$
+BEGIN
+  CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping CREATE TRIGGER on_auth_user_created on auth.users: insufficient_privilege (CI/replay).';
+END
+$mig$;

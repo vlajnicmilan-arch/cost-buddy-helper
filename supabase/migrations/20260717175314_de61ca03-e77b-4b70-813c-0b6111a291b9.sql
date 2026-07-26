@@ -33,10 +33,20 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
-CREATE TRIGGER on_auth_user_created_trial
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.create_trial_entitlements();
+-- Guard: u CI/replay kontekstu rola koja izvršava migracije nema ovlast
+-- nad auth.users (vlasnik: supabase_auth_admin). Produkcija (postgres/
+-- supabase_admin) izvrši normalno; CI tiho preskoči.
+DO $mig$
+BEGIN
+  DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
+  CREATE TRIGGER on_auth_user_created_trial
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.create_trial_entitlements();
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping DROP/CREATE TRIGGER on_auth_user_created_trial on auth.users: insufficient_privilege (CI/replay).';
+END
+$mig$;
 
 -- 3) is_projects_subscriber → delegat na has_entitlement
 --    ROLLBACK (stara definicija):
