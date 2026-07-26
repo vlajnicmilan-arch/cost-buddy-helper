@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const { data: project } = await admin
       .from('projects')
-      .select('id, name, description, icon, color, status, start_date, end_date, total_budget')
+      .select('id, name, description, icon, color, status, start_date, end_date')
       .eq('id', link.project_id)
       .single();
 
@@ -68,16 +68,8 @@ Deno.serve(async (req) => {
       milestones = data || [];
     }
 
-    let financials: any = null;
-    if (link.show_financials) {
-      const { data: expenses } = await admin
-        .from('expenses')
-        .select('amount, type')
-        .eq('project_id', project.id);
-      const totalSpent = (expenses || []).filter(e => e.type === 'expense').reduce((s, e) => s + Number(e.amount), 0);
-      const totalIncome = (expenses || []).filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
-      financials = { totalSpent, totalIncome, totalBudget: Number(project.total_budget) || 0 };
-    }
+    // SECURITY: financial data (budget/spent/income) is intentionally NOT exposed
+    // via public share links. Investor policy — external viewers see progress only.
 
     let photos: any[] = [];
     if (link.show_photos) {
