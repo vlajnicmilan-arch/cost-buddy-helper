@@ -8,22 +8,25 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2 } from 'lucide-react';
 import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKrugSettlement';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
+import { KrugSettlementSettings } from './KrugSettlementSettings';
 
 interface Props {
   krugId: string;
   isFullMember: boolean;
+  isOwner?: boolean;
 }
 
 const fmt = (n: number, currency: string) =>
   new Intl.NumberFormat('hr-HR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
 
-export function KrugSettlementSection({ krugId, isFullMember }: Props) {
+export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
   const { t, i18n } = useTranslation();
   const [range, setRange] = useState(() => currentMonthRange());
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { data, isLoading, isError, error } = useKrugSettlement({
     krugId,
@@ -59,6 +62,17 @@ export function KrugSettlementSection({ krugId, isFullMember }: Props) {
           {t('krug.settlement.title', 'Razračun')}
         </h3>
         <div className="flex items-center gap-1">
+          {isOwner && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setSettingsOpen(true)}
+              aria-label={t('krug.settlement.settings.title', 'Postavke razračuna')}
+            >
+              <Settings2 className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             size="icon"
             variant="ghost"
