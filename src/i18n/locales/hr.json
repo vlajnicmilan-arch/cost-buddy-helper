@@ -5401,6 +5401,27 @@
         "unauthorized": "Nisi prijavljen",
         "unknown": "Nepoznata greška"
       }
+    },
+    "settlement": {
+      "title": "Razračun",
+      "previous": "Prethodni mjesec",
+      "next": "Sljedeći mjesec",
+      "paid": "Platio",
+      "owed": "Duguje",
+      "net": "Neto",
+      "transfers": "Predloženi transferi",
+      "empty": "Nema potvrđenih zajedničkih troškova u ovom periodu.",
+      "error": "Nije moguće izračunati razračun.",
+      "displayCurrency": "Valuta",
+      "fxNotice": "FX snapshot",
+      "mixedCurrenciesNotice": "Više valuta — FX konverzija",
+      "manualFallbackNotice": "Manual mod: u ovoj fazi dijeli jednako. Per-transakciju override dolazi u sljedećoj fazi.",
+      "missingIncomeNotice": "Nedostaju omjeri prihoda za dio članova — koristim jednake udjele.",
+      "splitMode": {
+        "equal": "Jednako",
+        "proportional_income": "Prema prihodima",
+        "manual": "Ručno"
+      }
     }
   },
   "attribution": {
