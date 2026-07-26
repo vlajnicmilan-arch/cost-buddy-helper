@@ -5413,6 +5413,79 @@
         "proportional_income": "By income",
         "manual": "Manual"
       }
+    },
+    "settle": {
+      "error": {
+        "not_full_member": "You don't have permission to mark a settlement in this Krug.",
+        "from_equals_to": "Sender and recipient must differ.",
+        "party_not_full_member": "Selected member is not a full member.",
+        "invalid_amount": "Invalid amount.",
+        "invalid_currency": "Invalid currency.",
+        "already_voided": "This settlement has already been voided.",
+        "reason_required": "A reason is required.",
+        "not_found": "Record not found.",
+        "generic": "Could not save the settlement."
+      },
+      "success": {
+        "marked": "Settlement recorded.",
+        "voided": "Settlement voided."
+      },
+      "dialog": {
+        "title": "Mark as settled",
+        "body": "{{from}} pays {{to}} {{amount}} {{currency}}.",
+        "noteLabel": "Note (optional)",
+        "notePlaceholder": "e.g. cash on Jul 25",
+        "confirm": "Confirm settlement",
+        "confirmCountdown": "Confirm ({{s}}s)"
+      },
+      "history": {
+        "title": "Settlement history",
+        "empty": "No settlements recorded yet.",
+        "noNote": "no note",
+        "voidedLabel": "Voided",
+        "void": "Void",
+        "voidPrompt": "Reason for voiding:"
+      }
+    },
+    "override": {
+      "title": "Manual expense split",
+      "sumLabel": "Total",
+      "pendingProposedBy": "Proposed by",
+      "rejectPrompt": "Reason for rejection (optional):",
+      "badge": {
+        "active": "Active",
+        "pending": "Awaiting {{n}} confirmations"
+      },
+      "actions": {
+        "propose": "Propose manual split",
+        "propose_new": "Propose a new split",
+        "submit": "Send proposal",
+        "withdraw": "Withdraw proposal",
+        "confirm": "Confirm",
+        "reject": "Reject"
+      },
+      "error": {
+        "unauthenticated": "Your session has expired.",
+        "expense_not_eligible": "This expense is not part of the shared flow.",
+        "not_full_member": "You don't have permission to propose a split.",
+        "shares_invalid": "Invalid split format.",
+        "shares_all_members": "The split must cover all full members.",
+        "shares_users_mismatch": "The members in the split do not match the Krug members.",
+        "shares_sum": "Percentages must sum to 100%.",
+        "not_pending": "This proposal is no longer open for decision.",
+        "proposer_cannot_reject": "The proposer cannot reject their own proposal. Withdraw it instead.",
+        "only_proposer_withdraw": "Only the proposer can withdraw the proposal.",
+        "not_found": "Proposal not found.",
+        "generic": "Failed to process the proposal.",
+        "negative": "Percentage cannot be negative."
+      },
+      "success": {
+        "activated": "Manual split activated.",
+        "proposed": "Proposal sent for confirmation.",
+        "confirmed": "Confirmation recorded.",
+        "rejected": "Proposal rejected.",
+        "withdrawn": "Proposal withdrawn."
+      }
     }
   },
   "attribution": {

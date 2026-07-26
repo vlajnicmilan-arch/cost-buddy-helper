@@ -5413,6 +5413,79 @@
         "proportional_income": "Nach Einkommen",
         "manual": "Manuell"
       }
+    },
+    "settle": {
+      "error": {
+        "not_full_member": "Du hast keine Berechtigung, einen Ausgleich in diesem Krug zu markieren.",
+        "from_equals_to": "Sender und Empfänger müssen unterschiedlich sein.",
+        "party_not_full_member": "Das ausgewählte Mitglied hat kein Entscheidungsrecht.",
+        "invalid_amount": "Ungültiger Betrag.",
+        "invalid_currency": "Ungültige Währung.",
+        "already_voided": "Dieser Ausgleich wurde bereits storniert.",
+        "reason_required": "Ein Grund ist erforderlich.",
+        "not_found": "Datensatz nicht gefunden.",
+        "generic": "Ausgleich konnte nicht gespeichert werden."
+      },
+      "success": {
+        "marked": "Ausgleich erfasst.",
+        "voided": "Ausgleich storniert."
+      },
+      "dialog": {
+        "title": "Als ausgeglichen markieren",
+        "body": "{{from}} zahlt {{to}} {{amount}} {{currency}}.",
+        "noteLabel": "Notiz (optional)",
+        "notePlaceholder": "z. B. Bar am 25.7.",
+        "confirm": "Ausgleich bestätigen",
+        "confirmCountdown": "Bestätigen ({{s}}s)"
+      },
+      "history": {
+        "title": "Ausgleichs-Historie",
+        "empty": "Noch keine Ausgleiche erfasst.",
+        "noNote": "keine Notiz",
+        "voidedLabel": "Storniert",
+        "void": "Stornieren",
+        "voidPrompt": "Grund der Stornierung:"
+      }
+    },
+    "override": {
+      "title": "Manuelle Aufteilung der Ausgabe",
+      "sumLabel": "Summe",
+      "pendingProposedBy": "Vorgeschlagen von",
+      "rejectPrompt": "Grund der Ablehnung (optional):",
+      "badge": {
+        "active": "Aktiv",
+        "pending": "Wartet auf {{n}} Bestätigungen"
+      },
+      "actions": {
+        "propose": "Manuelle Aufteilung vorschlagen",
+        "propose_new": "Neue Aufteilung vorschlagen",
+        "submit": "Vorschlag senden",
+        "withdraw": "Vorschlag zurückziehen",
+        "confirm": "Bestätigen",
+        "reject": "Ablehnen"
+      },
+      "error": {
+        "unauthenticated": "Deine Sitzung ist abgelaufen.",
+        "expense_not_eligible": "Diese Ausgabe ist nicht Teil des gemeinsamen Ablaufs.",
+        "not_full_member": "Du hast keine Berechtigung, eine Aufteilung vorzuschlagen.",
+        "shares_invalid": "Ungültiges Aufteilungsformat.",
+        "shares_all_members": "Die Aufteilung muss alle vollwertigen Mitglieder umfassen.",
+        "shares_users_mismatch": "Die Mitglieder in der Aufteilung stimmen nicht mit den Krug-Mitgliedern überein.",
+        "shares_sum": "Die Prozentwerte müssen 100% ergeben.",
+        "not_pending": "Dieser Vorschlag steht nicht mehr zur Entscheidung offen.",
+        "proposer_cannot_reject": "Der Vorschlagende kann seinen eigenen Vorschlag nicht ablehnen. Ziehe ihn stattdessen zurück.",
+        "only_proposer_withdraw": "Nur der Vorschlagende kann den Vorschlag zurückziehen.",
+        "not_found": "Vorschlag nicht gefunden.",
+        "generic": "Fehler bei der Verarbeitung des Vorschlags.",
+        "negative": "Prozentsatz darf nicht negativ sein."
+      },
+      "success": {
+        "activated": "Manuelle Aufteilung aktiviert.",
+        "proposed": "Vorschlag zur Bestätigung gesendet.",
+        "confirmed": "Bestätigung erfasst.",
+        "rejected": "Vorschlag abgelehnt.",
+        "withdrawn": "Vorschlag zurückgezogen."
+      }
     }
   },
   "attribution": {
