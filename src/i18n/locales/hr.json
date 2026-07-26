@@ -5422,6 +5422,79 @@
         "proportional_income": "Prema prihodima",
         "manual": "Ručno"
       }
+    },
+    "settle": {
+      "error": {
+        "not_full_member": "Nemaš pravo označiti podmirenje u ovom Krugu.",
+        "from_equals_to": "Isti član ne može biti pošiljatelj i primatelj.",
+        "party_not_full_member": "Odabrani član nije punopravni.",
+        "invalid_amount": "Neispravan iznos.",
+        "invalid_currency": "Neispravna valuta.",
+        "already_voided": "Podmirenje je već poništeno.",
+        "reason_required": "Razlog je obavezan.",
+        "not_found": "Zapis ne postoji.",
+        "generic": "Nije moguće spremiti podmirenje."
+      },
+      "success": {
+        "marked": "Podmirenje zabilježeno.",
+        "voided": "Podmirenje poništeno."
+      },
+      "dialog": {
+        "title": "Označi podmireno",
+        "body": "{{from}} plaća {{to}} iznos {{amount}} {{currency}}.",
+        "noteLabel": "Napomena (opcionalno)",
+        "notePlaceholder": "npr. gotovina 25.7.",
+        "confirm": "Potvrdi podmirenje",
+        "confirmCountdown": "Potvrdi ({{s}}s)"
+      },
+      "history": {
+        "title": "Povijest podmirenja",
+        "empty": "Još nema zabilježenih podmirenja.",
+        "noNote": "bez napomene",
+        "voidedLabel": "Poništeno",
+        "void": "Poništi",
+        "voidPrompt": "Razlog poništenja:"
+      }
+    },
+    "override": {
+      "title": "Ručna podjela troška",
+      "sumLabel": "Zbroj",
+      "pendingProposedBy": "Predlagatelj",
+      "rejectPrompt": "Razlog odbijanja (opcionalno):",
+      "badge": {
+        "active": "Aktivno",
+        "pending": "Čeka {{n}} potvrda"
+      },
+      "actions": {
+        "propose": "Predloži ručnu podjelu",
+        "propose_new": "Predloži novu podjelu",
+        "submit": "Pošalji prijedlog",
+        "withdraw": "Povuci prijedlog",
+        "confirm": "Potvrdi",
+        "reject": "Odbij"
+      },
+      "error": {
+        "unauthenticated": "Prijava je istekla.",
+        "expense_not_eligible": "Trošak nije u zajedničkom toku.",
+        "not_full_member": "Nemaš pravo predložiti podjelu.",
+        "shares_invalid": "Neispravan format podjele.",
+        "shares_all_members": "Podjela mora obuhvatiti sve punopravne članove.",
+        "shares_users_mismatch": "Skup članova u podjeli ne odgovara članovima Kruga.",
+        "shares_sum": "Zbroj postotaka mora biti 100%.",
+        "not_pending": "Prijedlog više nije aktivan za odlučivanje.",
+        "proposer_cannot_reject": "Predlagatelj ne može odbiti vlastiti prijedlog. Umjesto toga možeš ga povući.",
+        "only_proposer_withdraw": "Samo predlagatelj može povući prijedlog.",
+        "not_found": "Prijedlog ne postoji.",
+        "generic": "Greška pri obradi prijedloga.",
+        "negative": "Postotak ne smije biti negativan."
+      },
+      "success": {
+        "activated": "Ručna podjela aktivirana.",
+        "proposed": "Prijedlog poslan na potvrdu.",
+        "confirmed": "Potvrda zabilježena.",
+        "rejected": "Prijedlog odbijen.",
+        "withdrawn": "Prijedlog povučen."
+      }
     }
   },
   "attribution": {
