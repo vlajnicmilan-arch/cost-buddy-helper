@@ -30,6 +30,8 @@ const NON_MONEY_ALLOWLIST = new Set<string>([
   'src/components/reports/ItemsAnalysisTab.tsx',             // recharts XAxis
   'src/components/projects/ProjectReportsDialog.tsx',        // recharts XAxis
   'src/components/TransactionFilters.tsx',                   // (now MoneyInput; residual matches are recharts)
+  'src/components/krug/KrugExpenseSplitPanel.tsx',           // share % (0-100), not money
+  'src/components/krug/KrugSettlementSettings.tsx',          // income ratio weights, not money
 ]);
 
 const findFiles = (): string[] => {
