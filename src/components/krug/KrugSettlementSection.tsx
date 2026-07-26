@@ -211,7 +211,7 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
               <Card className="divide-y divide-border">
                 {data.transfers.map((tr, i) => (
                   <div key={i} className="px-4 py-2.5 flex items-center justify-between gap-2 text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="truncate">{nameFor(tr.from_user)}</span>
                       <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate font-medium">{nameFor(tr.to_user)}</span>
@@ -219,6 +219,16 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
                     <div className="text-sm font-semibold tabular-nums shrink-0">
                       {fmt(tr.amount, tr.currency)}
                     </div>
+                    <Button
+                      size="sm" variant="outline" className="h-8 shrink-0"
+                      onClick={() => setSettleTransfer({
+                        fromUser: tr.from_user, toUser: tr.to_user,
+                        amount: tr.amount, currency: tr.currency,
+                        fromName: nameFor(tr.from_user), toName: nameFor(tr.to_user),
+                      })}
+                    >
+                      {t('krug.settlement.markSettled', 'Podmiri')}
+                    </Button>
                   </div>
                 ))}
               </Card>
@@ -228,12 +238,22 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
           <div className="text-[10px] text-muted-foreground px-1">
             {t('krug.settlement.fxNotice', 'FX snapshot')}: {data.fx.snapshot_date} · {data.fx.source}
           </div>
+
+          <KrugSettlementHistory krugId={krugId} isFullMember={isFullMember} />
         </>
       )}
 
       {isOwner && (
         <KrugSettlementSettings krugId={krugId} open={settingsOpen} onOpenChange={setSettingsOpen} />
       )}
+
+      <KrugSettleTransferDialog
+        krugId={krugId}
+        open={!!settleTransfer}
+        onOpenChange={(v) => { if (!v) setSettleTransfer(null); }}
+        transfer={settleTransfer}
+      />
     </section>
   );
+
 }
