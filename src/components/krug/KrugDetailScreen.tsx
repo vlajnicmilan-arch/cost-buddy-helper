@@ -38,6 +38,7 @@ import { KrugDecidedSection } from './KrugDecidedSection';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
+import { KrugSettlementSection } from './KrugSettlementSection';
 
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -317,6 +318,8 @@ export function KrugDetailScreen({ krugId }: Props) {
       </section>
 
       <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
+
+      <KrugSettlementSection krugId={krugId} isFullMember={!!isFullMember} isOwner={isOwner} />
 
 
 

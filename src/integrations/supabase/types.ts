@@ -2540,6 +2540,8 @@ export type Database = {
           lifecycle_state: Database["public"]["Enums"]["krug_lifecycle_state"]
           name: string
           preset: Database["public"]["Enums"]["krug_preset"]
+          settlement_currency: string | null
+          split_mode: Database["public"]["Enums"]["krug_split_mode"]
           updated_at: string
         }
         Insert: {
@@ -2551,6 +2553,8 @@ export type Database = {
           lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
           name: string
           preset: Database["public"]["Enums"]["krug_preset"]
+          settlement_currency?: string | null
+          split_mode?: Database["public"]["Enums"]["krug_split_mode"]
           updated_at?: string
         }
         Update: {
@@ -2562,6 +2566,8 @@ export type Database = {
           lifecycle_state?: Database["public"]["Enums"]["krug_lifecycle_state"]
           name?: string
           preset?: Database["public"]["Enums"]["krug_preset"]
+          settlement_currency?: string | null
+          split_mode?: Database["public"]["Enums"]["krug_split_mode"]
           updated_at?: string
         }
         Relationships: []
@@ -2663,6 +2669,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "krug_deletion_request"
             referencedColumns: ["krug_id"]
+          },
+        ]
+      }
+      krug_income_ratio: {
+        Row: {
+          created_at: string
+          effective_from: string
+          id: string
+          krug_id: string
+          updated_at: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          id?: string
+          krug_id: string
+          updated_at?: string
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          id?: string
+          krug_id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_income_ratio_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -6285,6 +6329,16 @@ export type Database = {
         }
         Returns: Json
       }
+      krug_settlement_preview: {
+        Args: {
+          p_display_currency?: string
+          p_fx_rates?: Json
+          p_krug_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: Json
+      }
       krug_shares_krug_with: {
         Args: { _target: string; _viewer: string }
         Returns: boolean
@@ -6534,6 +6588,7 @@ export type Database = {
         | "klub"
       krug_privacy: "personal" | "private" | "shared"
       krug_shared_status: "predlozena" | "potvrdjena" | "nepotvrdjena"
+      krug_split_mode: "equal" | "proportional_income" | "manual"
       milestone_revision_coverage: "increase_total" | "transfer" | "contingency"
       milestone_revision_type:
         | "overrun"
@@ -6722,6 +6777,7 @@ export const Constants = {
       ],
       krug_privacy: ["personal", "private", "shared"],
       krug_shared_status: ["predlozena", "potvrdjena", "nepotvrdjena"],
+      krug_split_mode: ["equal", "proportional_income", "manual"],
       milestone_revision_coverage: [
         "increase_total",
         "transfer",

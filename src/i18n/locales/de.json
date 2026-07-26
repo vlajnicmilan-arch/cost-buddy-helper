@@ -5392,6 +5392,27 @@
         "unauthorized": "Nicht angemeldet",
         "unknown": "Unbekannter Fehler"
       }
+    },
+    "settlement": {
+      "title": "Abrechnung",
+      "previous": "Vorheriger Monat",
+      "next": "Nächster Monat",
+      "paid": "Bezahlt",
+      "owed": "Schuldet",
+      "net": "Netto",
+      "transfers": "Vorgeschlagene Überweisungen",
+      "empty": "Keine bestätigten gemeinsamen Ausgaben in diesem Zeitraum.",
+      "error": "Abrechnung konnte nicht berechnet werden.",
+      "displayCurrency": "Währung",
+      "fxNotice": "FX-Stand",
+      "mixedCurrenciesNotice": "Mehrere Währungen — FX umgerechnet",
+      "manualFallbackNotice": "Manueller Modus: teilt vorerst gleichmäßig. Overrides pro Transaktion folgen in der nächsten Phase.",
+      "missingIncomeNotice": "Einkommensanteile fehlen für einige Mitglieder — verwende gleiche Anteile.",
+      "splitMode": {
+        "equal": "Gleich",
+        "proportional_income": "Nach Einkommen",
+        "manual": "Manuell"
+      }
     }
   },
   "attribution": {

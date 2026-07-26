@@ -5392,6 +5392,27 @@
         "unauthorized": "Not signed in",
         "unknown": "Unknown error"
       }
+    },
+    "settlement": {
+      "title": "Settlement",
+      "previous": "Previous month",
+      "next": "Next month",
+      "paid": "Paid",
+      "owed": "Owed",
+      "net": "Net",
+      "transfers": "Suggested transfers",
+      "empty": "No confirmed shared expenses in this period.",
+      "error": "Unable to compute settlement.",
+      "displayCurrency": "Currency",
+      "fxNotice": "FX snapshot",
+      "mixedCurrenciesNotice": "Mixed currencies — FX converted",
+      "manualFallbackNotice": "Manual mode: splits equally for now. Per-transaction override comes in the next phase.",
+      "missingIncomeNotice": "Income ratios missing for some members — using equal shares.",
+      "splitMode": {
+        "equal": "Equal",
+        "proportional_income": "By income",
+        "manual": "Manual"
+      }
     }
   },
   "attribution": {
