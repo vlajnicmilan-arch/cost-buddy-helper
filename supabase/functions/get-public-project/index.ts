@@ -100,10 +100,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       project,
       milestones,
-      financials,
       photos,
       permissions: {
-        show_financials: link.show_financials,
+        show_financials: false,
         show_photos: link.show_photos,
         show_milestones: link.show_milestones,
       },
