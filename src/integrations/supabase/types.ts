@@ -2672,6 +2672,125 @@ export type Database = {
           },
         ]
       }
+      krug_expense_split_confirmation: {
+        Row: {
+          confirmed_at: string
+          override_id: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          override_id: string
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          override_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_expense_split_confirmation_override_id_fkey"
+            columns: ["override_id"]
+            isOneToOne: false
+            referencedRelation: "krug_expense_split_override"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_expense_split_override: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          expense_id: string
+          id: string
+          krug_id: string
+          proposed_by: string
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["krug_override_status"]
+          superseded_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          expense_id: string
+          id?: string
+          krug_id: string
+          proposed_by: string
+          reject_reason?: string | null
+          status?: Database["public"]["Enums"]["krug_override_status"]
+          superseded_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          expense_id?: string
+          id?: string
+          krug_id?: string
+          proposed_by?: string
+          reject_reason?: string | null
+          status?: Database["public"]["Enums"]["krug_override_status"]
+          superseded_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_expense_split_override_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_expense_split_override_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "krug_expense_split_override_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "krug_expense_split_override"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_expense_split_share: {
+        Row: {
+          created_at: string
+          id: string
+          override_id: string
+          share_percent: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          override_id: string
+          share_percent: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          override_id?: string
+          share_percent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_expense_split_share_override_id_fkey"
+            columns: ["override_id"]
+            isOneToOne: false
+            referencedRelation: "krug_expense_split_override"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       krug_income_ratio: {
         Row: {
           created_at: string
@@ -2775,6 +2894,65 @@ export type Database = {
             foreignKeyName: "krug_ownership_krug_id_fkey"
             columns: ["krug_id"]
             isOneToOne: true
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      krug_settlement_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          from_user: string
+          id: string
+          krug_id: string
+          marked_at: string
+          marked_by: string
+          note: string | null
+          to_user: string
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          from_user: string
+          id?: string
+          krug_id: string
+          marked_at?: string
+          marked_by: string
+          note?: string | null
+          to_user: string
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          from_user?: string
+          id?: string
+          krug_id?: string
+          marked_at?: string
+          marked_by?: string
+          note?: string | null
+          to_user?: string
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_settlement_ledger_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
             referencedRelation: "krug"
             referencedColumns: ["id"]
           },
@@ -6302,6 +6480,17 @@ export type Database = {
         Args: { _krug: string; _user: string }
         Returns: boolean
       }
+      krug_mark_settled: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_from_user: string
+          p_krug_id: string
+          p_note?: string
+          p_to_user: string
+        }
+        Returns: Json
+      }
       krug_notify_all_members: {
         Args: { p_krug_id: string }
         Returns: string[]
@@ -6310,6 +6499,16 @@ export type Database = {
         Args: { p_krug_id: string }
         Returns: string[]
       }
+      krug_override_confirm: { Args: { p_override_id: string }; Returns: Json }
+      krug_override_propose: {
+        Args: { p_expense_id: string; p_shares: Json }
+        Returns: Json
+      }
+      krug_override_reject: {
+        Args: { p_override_id: string; p_reason?: string }
+        Returns: Json
+      }
+      krug_override_withdraw: { Args: { p_override_id: string }; Returns: Json }
       krug_purge_deleted: {
         Args: { p_older_than_days?: number }
         Returns: number
@@ -6342,6 +6541,10 @@ export type Database = {
       krug_shares_krug_with: {
         Args: { _target: string; _viewer: string }
         Returns: boolean
+      }
+      krug_void_settlement: {
+        Args: { p_ledger_id: string; p_reason: string }
+        Returns: Json
       }
       krug_vote_deletion: {
         Args: { p_approve: boolean; p_krug_id: string }
@@ -6579,6 +6782,7 @@ export type Database = {
         | "read_only"
         | "deleted"
       krug_membership_role: "punopravni" | "obicni"
+      krug_override_status: "pending" | "potvrdjena" | "povucena" | "odbijena"
       krug_preset:
         | "partner"
         | "su_roditelj"
@@ -6767,6 +6971,7 @@ export const Constants = {
         "deleted",
       ],
       krug_membership_role: ["punopravni", "obicni"],
+      krug_override_status: ["pending", "potvrdjena", "povucena", "odbijena"],
       krug_preset: [
         "partner",
         "su_roditelj",
