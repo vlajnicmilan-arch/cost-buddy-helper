@@ -343,24 +343,38 @@ if [ "${MIG_EC}" -ne 0 ]; then
   psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_members'::regclass AND contype = 'c';" || true
   psql "$DB_URL_VAL" -c "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.project_invitations'::regclass AND contype = 'c';" || true
 
-  # ---- Diagnostics A: replay the failing migration directly through psql to get the REAL PG error + SQLSTATE ----
+  # ---- Diagnostics A: replay the ACTUALLY failing migration directly through psql to get the REAL PG error + SQLSTATE ----
   # supabase-cli wraps errors in effect/sql/SqlError and drops SQLSTATE. psql with
   # VERBOSITY=verbose exposes the native ERROR line, SQLSTATE, DETAIL, HINT, and LINE.
-  # The DB is exactly in the pre-034641 state (CLI rolled back the failing tx),
+  # The DB is exactly in the pre-<failed> state (CLI rolled back the failing tx),
   # so replaying the same file reproduces the same failure with full context.
-  FAILED_MIG="$(ls -1 "${HARNESS_MIGRATIONS_DIR:-supabase/migrations}"/20260609034641_*.sql 2>/dev/null | head -n1 || true)"
-  if [ -z "${FAILED_MIG}" ]; then
-    FAILED_MIG="$(ls -1 supabase/migrations/20260609034641_*.sql 2>/dev/null | head -n1 || true)"
+  #
+  # Detect which migration actually failed from the debug log. `supabase migration up
+  # --debug` prints a line like `Applying migration <version>_<slug>.sql` before each
+  # file; the LAST such line before MIG_EC=1 is the failed one. Fall back to scanning
+  # any 14-digit version stem mentioned in the tail of the log.
+  FAILED_VERSION="$(grep -oE '[Aa]pplying migration [0-9]{14}[_A-Za-z0-9-]*' /tmp/phase5-migration-up.log 2>/dev/null | tail -n1 | grep -oE '[0-9]{14}' || true)"
+  if [ -z "${FAILED_VERSION}" ]; then
+    FAILED_VERSION="$(grep -oE '[0-9]{14}_[A-Za-z0-9_-]+\.sql' /tmp/phase5-migration-up.log 2>/dev/null | tail -n1 | grep -oE '[0-9]{14}' || true)"
+  fi
+  FAILED_MIG=""
+  if [ -n "${FAILED_VERSION}" ]; then
+    FAILED_MIG="$(ls -1 "${MIGRATIONS_DIR}"/${FAILED_VERSION}_*.sql 2>/dev/null | head -n1 || true)"
+    if [ -z "${FAILED_MIG}" ]; then
+      FAILED_MIG="$(ls -1 supabase/migrations/${FAILED_VERSION}_*.sql 2>/dev/null | head -n1 || true)"
+    fi
   fi
   if [ -n "${FAILED_MIG}" ]; then
+    log "PHASE 5 diag A — detected failed migration version=${FAILED_VERSION}"
     log "PHASE 5 diag A — direct psql replay of ${FAILED_MIG} with verbose errors:"
-    PGOPTIONS='--client-min-messages=warning' \
+    PGOPTIONS='--client-min-messages=notice' \
       psql "$DB_URL_VAL" \
         -v ON_ERROR_STOP=1 \
         --set=VERBOSITY=verbose \
-        -f "${FAILED_MIG}" 2>&1 | tail -n 60 || true
+        -e \
+        -f "${FAILED_MIG}" 2>&1 | tail -n 120 || true
   else
-    log "PHASE 5 diag A — could not locate 034641 migration file for direct replay"
+    log "PHASE 5 diag A — could not detect failed migration from /tmp/phase5-migration-up.log (FAILED_VERSION='${FAILED_VERSION}')"
   fi
 
   exit "${MIG_EC}"
