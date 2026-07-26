@@ -1,5 +1,14 @@
 -- 1) Ugasi auto-trial trigger na auth.users (postojeći trial redovi ostaju kao "iskorišteno")
-DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
+-- Guard: u CI/replay kontekstu rola koja izvršava migraciju nije vlasnik auth.users
+-- (vlasnik je supabase_auth_admin), pa DROP puca s insufficient_privilege PRIJE nego
+-- IF EXISTS uspije evaluirati. U produkciji rola ima ovlast → trigger se obriše normalno.
+DO $$
+BEGIN
+  DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'skip DROP TRIGGER on auth.users — insufficient privilege (CI/replay context)';
+END $$;
 -- Funkciju create_trial_entitlements zadržavamo (ne poziva se više nigdje) za auditni trag;
 -- može biti obrisana kasnije zasebnim čišćenjem.
 
