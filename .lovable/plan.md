@@ -1,54 +1,30 @@
-## Nalaz iz re-runa 30212404131 (read-only)
+## Nalaz (read-only, bez izmjena)
 
-**CI koraci:**
-- Install Supabase CLI: **PROŠAO** (v2.109.1, nema rate limita)
-- Stigao do PHASE 5: **DA**
-- Diag A je ispravno detektirao palu migraciju: `version=20260722223736` ✓
+**Klasifikacija:** (b) bootstrap pao na NOVOJ migraciji. Auth.users guardovi rade.
 
-**Originalna greška iz `supabase db push`:**
-```
-effect/sql/SqlError: Failed to execute statement
-At statement: 0
-DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users
-```
-CLI ne izlaže SQLSTATE — samo Effect/SQL wrapper poruku.
+### 1. Auth.users guardovi — potvrđeno RADE
+Bootstrap je prošao migraciju `20260722223736` (i ostale s auth.users DDL) bez greške. Napredovao je ~200 migracija dalje od prethodne točke pada.
 
-**Diag A verbose psql replay iste migracije — PROLAZI ČISTO:**
-```
-DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
-DROP TRIGGER
-CREATE OR REPLACE FUNCTION public.activate_module_trial(...)
-CREATE FUNCTION
-REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon;
-REVOKE
-GRANT EXECUTE ON FUNCTION ... TO authenticated;
-GRANT
-```
-**Nema ERROR:, nema SQLSTATE, nema DETAIL/HINT.** Sve naredbe u fajlu se izvrše bez greške kad ih vozi psql kao superuser (`postgres`).
+### 2. Stress scenariji nisu krenuli
+PHASE 5 pao prije scenarija. `stress/reports/` upload prazan (warn).
 
-## Interpretacija (nepotvrđena hipoteza)
+### 3. Nova točka pada
+- **Migracija:** `20260725044309_17ffcff3-9b9d-47cf-83bf-a6d7b9e8689d.sql`
+- **Statement 17:** `REVOKE EXECUTE ON FUNCTION public.is_budget_member(uuid, uuid) FROM anon`
+- **Diag A (pravi SQLSTATE):** `42883: function public.is_budget_member(uuid, uuid) does not exist`
+- **LOCATION:** `LookupFuncWithArgs, parse_func.c:2444`
 
-Migracija je sintaktički i semantički ispravna. Razlog zašto `supabase db push` puca, a direktni psql prolazi:
+Prethodnih 16 REVOKE naredbi u istoj migraciji prošlo je (consume_invitation_token, cleanup_*, has_role, has_any_paid_plan, has_active_module_grant, has_full_payment_source_access, is_budget_owner). `is_budget_member(uuid, uuid)` je prva funkcija koja u lokalno replayanom lancu ne postoji s tim potpisom.
 
-- `supabase db push` (i lokalni bootstrap) primjenjuje migracije kao role koja nije vlasnik `auth.users` tablice (vlasnik je `supabase_auth_admin`).
-- U novijim verzijama Supabase lokalnog setupa DDL nad `auth.*` (uključujući `DROP TRIGGER ... ON auth.users`) baca `insufficient_privilege` (SQLSTATE 42501) prije nego što se `IF EXISTS` guard uopće evaluira.
-- CLI zamota tu grešku u Effect SQL error bez originalnog SQLSTATE-a → izgleda "prazno".
-- Diag B potvrđuje: trigger `on_auth_user_created_trial` **ne postoji** u lokalnoj bazi u tom trenutku (nije nabrojan u constraint-ima) — pa je DROP logički no-op, ali privilege check svejedno puca.
+### 4. Nije infra pad
+CLI, `supabase start`, PHASE 1–4 svi OK. Pad u ~4s nakon starta PHASE 5.
 
-**Ova hipoteza nije 100% potvrđena** — CLI nije ispljunuo SQLSTATE. Ako želiš potpunu potvrdu, sljedeći korak može biti dinamički diag koji direktno provjerava `has_table_privilege('auth.users', 'TRIGGER')` za role koju CLI koristi.
+### Značajno
+Ovo je ista klasa problema kao anon-REVOKE plan (Faze 1/2/3): migracija tvrdi postojanje funkcije koja u lokalnom migracijskom lancu ne postoji s tim potpisom. Guard-shim `secdef_anon_shim.sql` ovdje NE pomaže jer se ne pokreće u bootstrap replayu — samo prije CI invariant testa.
 
-## Opcije za sljedeći korak (Milan bira, NIŠTA nije odobreno)
+### Sljedeći koraci (prijedlog, čekam Milanovu odluku)
+- **Opcija A:** Guard po šablonu iz `20260609034641` — omotati REVOKE u `to_regproc(...) IS NOT NULL` provjeru (safe: revoke se preskoči ako funkcije nema).
+- **Opcija B:** Whitelistati migraciju u stress bootstrapu.
+- **Opcija C:** Istražiti zašto `is_budget_member(uuid, uuid)` nedostaje u lokalnom lancu (možda je definirana s drukčijim potpisom u nekoj ranijoj migraciji, ili je uvedena samo direktno u produkciju).
 
-**Opcija A — Uklonjivi DROP TRIGGER iz migracije**
-Trigger `on_auth_user_created_trial` u tvojoj bazi već ne postoji (produkcija je uspjela, lokalno ga nikad nije ni bilo). `DROP TRIGGER IF EXISTS` je defenzivan potez koji lokalno pravi problem. Ukloniti ga iz migracije, ili premotati u `DO $$ BEGIN ... EXCEPTION WHEN insufficient_privilege THEN NULL; END $$`. Trajno rješava CI, ne mijenja produkcijsku semantiku.
-
-**Opcija B — Whitelistati ovu migraciju iz stress bootstrap-a**
-`stress/bin/bootstrap-local-db.sh` može preskočiti tu specifičnu migraciju (kao što već postoji BALANCE_MIGRATIONS_IGNORE.txt uzorak) — samo za CI, produkcija ostaje netaknuta. Riskira budući drift.
-
-**Opcija C — Dinamički privilege diag (potvrda hipoteze)**
-Nadograditi diag A da prije replaya ispiše `SELECT current_user`, `SELECT has_table_privilege('auth.users','TRIGGER')`, i pokuša istu DROP naredbu kao ta role. Daje čvrst SQLSTATE 42501 dokaz prije bilo kakve izmjene same migracije.
-
-**Opcija D — Ništa ne diramo, ignoriramo stress smoke**
-Migracija radi u produkciji. Ako ti smoke test nije blocker za launch, ostavi ovako.
-
-Ne diram ništa dok ne odlučiš.
+Nikakva izmjena nije napravljena. Stress workflow nije dispatchan.
