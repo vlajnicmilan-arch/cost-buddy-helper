@@ -3,13 +3,19 @@
 -- 0) Drop trigger
 DROP TRIGGER IF EXISTS add_project_owner_as_member_trigger ON public.projects;
 DO $$
-DECLARE r record;
+DECLARE
+  r record;
+  fn_oid oid := to_regprocedure('public.add_project_owner_as_member()');
 BEGIN
+  IF fn_oid IS NULL THEN
+    -- Funkcija ne postoji (from-scratch CI replay); nema triggera za drop.
+    RETURN;
+  END IF;
   FOR r IN
     SELECT tgname FROM pg_trigger
      WHERE tgrelid = 'public.projects'::regclass
        AND NOT tgisinternal
-       AND tgfoid = 'public.add_project_owner_as_member()'::regprocedure
+       AND tgfoid = fn_oid
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.projects', r.tgname);
   END LOOP;
