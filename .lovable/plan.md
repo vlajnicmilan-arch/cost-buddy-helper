@@ -1,45 +1,54 @@
-# Stanje
+## Nalaz iz re-runa 30212404131 (read-only)
 
-Run 30212214458 (job 89820253788, head sha `782df07`) je pao na **korak 3 "Install Supabase CLI"** s greškom:
+**CI koraci:**
+- Install Supabase CLI: **PROŠAO** (v2.109.1, nema rate limita)
+- Stigao do PHASE 5: **DA**
+- Diag A je ispravno detektirao palu migraciju: `version=20260722223736` ✓
 
+**Originalna greška iz `supabase db push`:**
 ```
-##[error]Failed to resolve latest Supabase CLI release: rate limit exceeded
+effect/sql/SqlError: Failed to execute statement
+At statement: 0
+DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users
 ```
+CLI ne izlaže SQLSTATE — samo Effect/SQL wrapper poruku.
 
-Koraci "Start Supabase with cron extension bootstrap", "Run stress harness" i sve ostalo iza toga su `skipped`. PHASE 5 nikad nije startao, pa dinamični diag A (iz commita `782df07`) nije imao priliku pokazati je li ispravno detektirao `20260722223736`.
-
-Ovo je infrastrukturna greška CI-a, **ne kvar migracije**. `supabase/setup-cli@v1` s `version: latest` poziva `api.github.com/repos/supabase/cli/releases/latest` bez auth headera i pao je na anonimni rate limit (60/h po runner IP-u).
-
-# Što se NIJE saznalo
-
-- Pravi SQLSTATE za `20260722223736`
-- Točna naredba koja puca (DROP TRIGGER na `auth.users`, CREATE FUNCTION `activate_module_trial`, REVOKE/GRANT, ili nešto četvrto)
-- DETAIL/HINT/LINE
-- Je li novi dinamični diag A uopće ispravno parsirao `phase5-migration-up.log`
-
-# Opcije za sljedeći korak (Milan bira)
-
-## Opcija 1 — Prazan rerun (najbrže, 0 promjena)
-Milan ručno klikne "Re-run failed jobs" na runu 30212214458. Ako je runner dobio drugu IP adresu, rate limit se ne aktivira i diag A se izvrši. Rizik: isti IP → ista greška. Nema kod izmjena, nema odobrenja izvan opsega.
-
-## Opcija 2 — Zaključati verziju Supabase CLI (jedna izmjena workflowa)
-U `.github/workflows/stress-smoke.yml` promijeniti:
-```yaml
-- uses: supabase/setup-cli@v1
-  with:
-    version: latest
+**Diag A verbose psql replay iste migracije — PROLAZI ČISTO:**
 ```
-u fiksnu verziju (npr. `version: 2.15.0` — provjerit ću stvarnu zadnju stabilnu prije commita). Fiksna verzija preskače `releases/latest` API poziv → nema rate limita. Trajno rješenje. Zahtijeva Milanov OK za izmjenu workflowa.
+DROP TRIGGER IF EXISTS on_auth_user_created_trial ON auth.users;
+DROP TRIGGER
+CREATE OR REPLACE FUNCTION public.activate_module_trial(...)
+CREATE FUNCTION
+REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon;
+REVOKE
+GRANT EXECUTE ON FUNCTION ... TO authenticated;
+GRANT
+```
+**Nema ERROR:, nema SQLSTATE, nema DETAIL/HINT.** Sve naredbe u fajlu se izvrše bez greške kad ih vozi psql kao superuser (`postgres`).
 
-## Opcija 3 — Proslijediti GitHub token setup-cli akciji
-Dodati `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` env varijablu na taj korak. Autentificirani API pozivi imaju limit 1000/h, ne 60/h. Također trajno rješenje, ali samo ako `setup-cli@v1` čita `GITHUB_TOKEN` iz env — treba potvrditi čitanjem source koda akcije prije commita.
+## Interpretacija (nepotvrđena hipoteza)
 
-# Preporuka za redoslijed
+Migracija je sintaktički i semantički ispravna. Razlog zašto `supabase db push` puca, a direktni psql prolazi:
 
-1. Milan pokreće **Opciju 1** ručno (0 rizika, 0 odobrenja).
-2. Ako opet padne s rate limitom → Milan odobrava **Opciju 2 ili 3**.
-3. Kad diag A napokon prođe → dobijemo pravi SQLSTATE za `20260722223736` i tek onda planiramo popravak same migracije.
+- `supabase db push` (i lokalni bootstrap) primjenjuje migracije kao role koja nije vlasnik `auth.users` tablice (vlasnik je `supabase_auth_admin`).
+- U novijim verzijama Supabase lokalnog setupa DDL nad `auth.*` (uključujući `DROP TRIGGER ... ON auth.users`) baca `insufficient_privilege` (SQLSTATE 42501) prije nego što se `IF EXISTS` guard uopće evaluira.
+- CLI zamota tu grešku u Effect SQL error bez originalnog SQLSTATE-a → izgleda "prazno".
+- Diag B potvrđuje: trigger `on_auth_user_created_trial` **ne postoji** u lokalnoj bazi u tom trenutku (nije nabrojan u constraint-ima) — pa je DROP logički no-op, ali privilege check svejedno puca.
 
-# Ovlasti
+**Ova hipoteza nije 100% potvrđena** — CLI nije ispljunuo SQLSTATE. Ako želiš potpunu potvrdu, sljedeći korak može biti dinamički diag koji direktno provjerava `has_table_privilege('auth.users', 'TRIGGER')` za role koju CLI koristi.
 
-Ovaj plan **ne** sadrži izmjenu migracije `20260722223736` niti bilo koje druge. Sve tri opcije čekaju eksplicitno Milanovo odobrenje prije bilo kakvog commita. Opcija 1 uopće ne zahtijeva agenta.
+## Opcije za sljedeći korak (Milan bira, NIŠTA nije odobreno)
+
+**Opcija A — Uklonjivi DROP TRIGGER iz migracije**
+Trigger `on_auth_user_created_trial` u tvojoj bazi već ne postoji (produkcija je uspjela, lokalno ga nikad nije ni bilo). `DROP TRIGGER IF EXISTS` je defenzivan potez koji lokalno pravi problem. Ukloniti ga iz migracije, ili premotati u `DO $$ BEGIN ... EXCEPTION WHEN insufficient_privilege THEN NULL; END $$`. Trajno rješava CI, ne mijenja produkcijsku semantiku.
+
+**Opcija B — Whitelistati ovu migraciju iz stress bootstrap-a**
+`stress/bin/bootstrap-local-db.sh` može preskočiti tu specifičnu migraciju (kao što već postoji BALANCE_MIGRATIONS_IGNORE.txt uzorak) — samo za CI, produkcija ostaje netaknuta. Riskira budući drift.
+
+**Opcija C — Dinamički privilege diag (potvrda hipoteze)**
+Nadograditi diag A da prije replaya ispiše `SELECT current_user`, `SELECT has_table_privilege('auth.users','TRIGGER')`, i pokuša istu DROP naredbu kao ta role. Daje čvrst SQLSTATE 42501 dokaz prije bilo kakve izmjene same migracije.
+
+**Opcija D — Ništa ne diramo, ignoriramo stress smoke**
+Migracija radi u produkciji. Ako ti smoke test nije blocker za launch, ostavi ovako.
+
+Ne diram ništa dok ne odlučiš.
