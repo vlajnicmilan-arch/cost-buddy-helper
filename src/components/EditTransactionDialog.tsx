@@ -31,6 +31,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { KrugSelector } from '@/components/krug/KrugSelector';
+import { KrugExpenseSplitPanelGate } from '@/components/krug/KrugExpenseSplitPanelGate';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
