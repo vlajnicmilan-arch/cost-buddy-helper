@@ -65,6 +65,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "business.vat.period": "Same word in EN",
     "gdpr.cat.marketing": "Same word in EN",
     "kpi.foodCost": "Industry KPI term",
+    "krug.settlement.fxNotice": "Technical FX label, same term in EN",
     "toasts.eracuniConnected": "External service brand",
     "toasts.eracuniDisconnected": "External service brand",
     "toasts.eInvoiceSentToEracuni": "External service brand",
