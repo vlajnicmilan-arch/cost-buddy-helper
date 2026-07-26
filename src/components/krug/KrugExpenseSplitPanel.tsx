@@ -84,7 +84,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
       share_percent: Number(draft[id] ?? 0),
     }));
     const v = validateOverrideShares(shares, fullMemberIds);
-    if (!v.ok) {
+    if (v.ok !== true) {
       const map = {
         missing_members: t('krug.override.error.shares_all_members', 'Podjela mora obuhvatiti sve punopravne članove.'),
         extra_members: t('krug.override.error.shares_users_mismatch', 'Skup članova ne odgovara.'),
