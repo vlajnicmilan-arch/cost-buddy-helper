@@ -30,6 +30,10 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
   const { t, i18n } = useTranslation();
   const [range, setRange] = useState(() => currentMonthRange());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settleTransfer, setSettleTransfer] = useState<null | {
+    fromUser: string; toUser: string; amount: number; currency: string; fromName: string; toName: string;
+  }>(null);
+
 
   const { data, isLoading, isError, error } = useKrugSettlement({
     krugId,
