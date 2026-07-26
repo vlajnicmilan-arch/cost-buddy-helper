@@ -13,6 +13,9 @@ import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKru
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { KrugSettlementSettings } from './KrugSettlementSettings';
+import { KrugSettleTransferDialog } from './KrugSettleTransferDialog';
+import { KrugSettlementHistory } from './KrugSettlementHistory';
+
 
 interface Props {
   krugId: string;
