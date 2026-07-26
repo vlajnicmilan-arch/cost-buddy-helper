@@ -319,7 +319,7 @@ export function KrugDetailScreen({ krugId }: Props) {
 
       <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
 
-      <KrugSettlementSection krugId={krugId} isFullMember={!!isFullMember} />
+      <KrugSettlementSection krugId={krugId} isFullMember={!!isFullMember} isOwner={isOwner} />
 
 
 

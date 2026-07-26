@@ -223,6 +223,10 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
           </div>
         </>
       )}
+
+      {isOwner && (
+        <KrugSettlementSettings krugId={krugId} open={settingsOpen} onOpenChange={setSettingsOpen} />
+      )}
     </section>
   );
 }
