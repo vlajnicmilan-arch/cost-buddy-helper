@@ -31,6 +31,7 @@ import { showError } from '@/hooks/useStatusFeedback';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { getDateRange, makeCalendarDisabled } from '@/lib/dateValidation';
 import { KrugSelector } from '@/components/krug/KrugSelector';
+import { KrugExpenseSplitPanelGate } from '@/components/krug/KrugExpenseSplitPanelGate';
 
 interface EditTransactionDialogProps {
   expense: Expense | null;
@@ -662,6 +663,12 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
               legacyPrivate={initialKrugPrivacy === 'private'}
             />
           )}
+
+          {/* Krug Faza B — ručna podjela (override). Samo za shared troškove Kruga. */}
+          {type === 'expense' && krugId && krugPrivacy === 'shared' && expense?.id && (
+            <KrugExpenseSplitPanelGate krugId={krugId} expenseId={expense.id} />
+          )}
+
 
         </div>
 
