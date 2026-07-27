@@ -5424,6 +5424,56 @@
         "equal": "Equal",
         "proportional_income": "By income",
         "manual": "Manual"
+      },
+      "pdf": {
+        "title": "Krug settlement report",
+        "exportButton": "Export PDF",
+        "exportSuccess": "PDF report saved.",
+        "exportError": "Could not export PDF.",
+        "filenameBase": "krug-settlement",
+        "splitModeLabel": "Split mode",
+        "metaLabel": "Item",
+        "metaValue": "Value",
+        "fxSource": "FX source",
+        "fxSnapshotDate": "FX snapshot date",
+        "fxStatus": "FX status",
+        "fxFrozen": "Frozen (monthly snapshot)",
+        "fxLive": "Live",
+        "membersHeader": "Krug members",
+        "transfersHeader": "Suggested transfers",
+        "balanced": "No open transfers — the Krug is balanced.",
+        "timelineHeader": "Settlement timeline",
+        "overridesHeader": "Manual split history",
+        "overridesNone": "No manual splits in this period.",
+        "proposedBy": "Proposed by",
+        "confirmedBy": "Confirmed by",
+        "confirmedNone": "Confirmations: —",
+        "statusLabel": "Status",
+        "expenseNoDesc": "(no description)",
+        "col": {
+          "member": "Member",
+          "from": "From",
+          "to": "To",
+          "amount": "Amount",
+          "currency": "Currency",
+          "date": "Date",
+          "status": "Status",
+          "share": "Share %"
+        },
+        "status": {
+          "settled": "Settled",
+          "voided": "Voided"
+        },
+        "overrideStatus": {
+          "potvrdjena": "Confirmed",
+          "povucena": "Withdrawn",
+          "odbijena": "Rejected"
+        },
+        "flags": {
+          "mixedCurrencies": "Multiple currencies — FX conversion applied.",
+          "manualFallback": "Manual mode: fell back to equal shares.",
+          "missingIncome": "Missing income ratios — equal shares used."
+        }
       }
     },
     "settle": {
