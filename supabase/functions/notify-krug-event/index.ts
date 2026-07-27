@@ -46,7 +46,9 @@ type EventType =
   | "krug_expense_confirmed"
   | "krug_expense_rejected"
   | "krug_deletion_requested"
-  | "krug_deleted";
+  | "krug_deleted"
+  | "krug_settlement_marked_settled"
+  | "krug_settlement_reminder";
 
 interface Payload {
   event_type: EventType;
@@ -65,6 +67,8 @@ const VALID: readonly EventType[] = [
   "krug_expense_rejected",
   "krug_deletion_requested",
   "krug_deleted",
+  "krug_settlement_marked_settled",
+  "krug_settlement_reminder",
 ];
 
 function isUuid(v: unknown): v is string {
@@ -331,6 +335,13 @@ function event_type_shortKey(t: EventType): string {
     case "krug_deletion_requested":
       return "deletion_requested";
     case "krug_deleted":
+      return "deleted";
+    case "krug_settlement_marked_settled":
+      return "settlement_settled";
+    case "krug_settlement_reminder":
+      return "settlement_reminder";
+  }
+}
       return "deleted";
   }
 }
