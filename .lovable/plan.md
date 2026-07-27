@@ -1,110 +1,165 @@
 
-# Faza C — prijedlog izvedbe (Krug settlement automatizacija)
+# Faza C1 — FX snapshot + auto-freeze cron (PRIJEDLOG, čeka "gradi C1")
 
-Status: **prijedlog, nije odobren**. Ništa se ne gradi dok Milan ne kaže "gradi". Faze A/B zatvorene, Milan odobrio cilj (puni C s multi-currency). Grupirano u 4 pod-faze, gradive inkrementalno; svaka je sama za sebe upotrebljiva.
+Cilj: povijesni Krug settlement postaje deterministički i immutabilan po zaključenju mjeseca. `touches_balance = false` (ne dira `expenses`, salda, ledger, ni bilo koji balance engine put).
 
-## Rizik / non-goals (potvrde tražene)
+## Verificirano prije plana (žive činjenice iz baze)
 
-- **Balance engine i `expenses` write put se NE diraju.** Sve nove tablice žive uz Krug ledger, čitanje ide kroz postojeće RPC-ove (`krug_settlement_preview`). `touches_balance=false` za cijelu Fazu C.
-- **Cron infrastruktura postoji** (`audit_secdef_anon_regression`, `monitor-app-health`, `backup-weekly`, `flush-participant-digest`, `check-*`). Reuse: pg_cron + `net.http_post` s vault-storaged internal key (isti obrazac kao `krug_emit_notification`). **Nema novog secreta ako reuse-amo `krug_notify_internal_key`** za nove Krug cron edge fn pozive.
-- **Default privilege revoke** za nove SECDEF funkcije: već automatski (ALTER DEFAULT PRIVILEGES). Svaka nova cron/service fn eksplicitno `REVOKE ALL FROM anon, PUBLIC` + `GRANT EXECUTE TO service_role` radi paper traila.
-- **Nova cron funkcija** (npr. `krug_cron_freeze_fx_snapshots`) mora biti service_role only — isti obrazac kao audit regression cron.
+- Member-check funkcija koja se koristi u `krug_settlement_preview` je `public.krug_is_full_member(uuid, uuid)` (potvrđeno iz `pg_get_functiondef`). Koristi se identično u RLS-u nove tablice.
+- Živi potpis preview-a: `krug_settlement_preview(p_krug_id uuid, p_period_start date, p_period_end date, p_display_currency text DEFAULT NULL, p_fx_rates jsonb DEFAULT '{}')` — `STABLE SECURITY DEFINER`, `search_path=public`. Novi kod polazi od `pg_get_functiondef` na `regprocedure`, ne od migracijske memorije (constraint `replace-function-start-from-live-def`).
+- Vault secret `krug_notify_internal_key` postoji (potvrđeno `SELECT name FROM vault.secrets`). Reuse je slobodan.
+- `exchange-rates` edge fn vraća `{ rates: { EUR:1, USD:…, HRK:7.5345, BAM:1.95583, … }, date, cached }` (verificirano iz `supabase/functions/exchange-rates/index.ts`). Format je stabilan i pokriva sve valute koje preview zove.
+- Postoji referentna service-role cron funkcija `audit_secdef_anon_regression` — koristi se kao uzorak (REVOKE FROM anon, PUBLIC; GRANT EXECUTE TO service_role; SECURITY DEFINER).
 
----
+## C1.1 — Tablica `public.krug_settlement_fx_snapshot`
 
-## C1 — FX snapshot per period + auto-freeze cron
+Kolone:
+- `krug_id uuid NOT NULL REFERENCES public.krug(id) ON DELETE CASCADE`
+- `period_start date NOT NULL`
+- `period_end date NOT NULL`
+- `display_currency text NOT NULL`
+- `rates jsonb NOT NULL` — mapa base=EUR, isti oblik kao klijentski `p_fx_rates`
+- `source text NOT NULL DEFAULT 'frankfurter.app'`
+- `snapshot_date date NOT NULL` — datum ratesa iz `exchange-rates` odgovora (`data.date`)
+- `frozen_at timestamptz NOT NULL DEFAULT now()`
+- `frozen_by text NOT NULL CHECK (frozen_by IN ('cron','manual'))`
+- `created_at timestamptz NOT NULL DEFAULT now()`
+- PK: `(krug_id, period_start, period_end, display_currency)`
 
-**Cilj:** povijesni settlement izračun postaje immutabilan po zaključenju perioda.
+Poredak u migraciji (4 koraka, isti obrazac kao ostatak projekta):
+1. `CREATE TABLE public.krug_settlement_fx_snapshot (...)`
+2. `GRANT SELECT ON public.krug_settlement_fx_snapshot TO authenticated;`
+   `GRANT ALL ON public.krug_settlement_fx_snapshot TO service_role;`
+   (bez `anon` — sve čita samo član kruga)
+3. `ALTER TABLE public.krug_settlement_fx_snapshot ENABLE ROW LEVEL SECURITY;`
+4. Policies:
+   - SELECT `TO authenticated USING (public.krug_is_full_member(krug_id, auth.uid()))`
+   - INSERT/UPDATE/DELETE: **nema policyja** → samo `service_role` (bypass RLS) piše. Nema client write puta.
 
-### C1.1 Tablica `krug_settlement_fx_snapshot`
-- Kolone: `krug_id uuid`, `period_start date`, `period_end date`, `display_currency text`, `rates jsonb`, `snapshot_date timestamptz`, `source text` (npr. `frankfurter.app`), `frozen_at timestamptz`, `frozen_by text` (`'cron'|'manual'`).
-- PK: `(krug_id, period_start, period_end, display_currency)`.
-- RLS: SELECT za članove kruga (kroz postojeći `is_krug_member(auth.uid(), krug_id)`); INSERT/UPDATE samo `service_role`.
-- GRANT: `SELECT` na `authenticated`, `ALL` na `service_role`. Bez `anon`.
+Bez triggera. Nema veze s balance engineom.
 
-### C1.2 Preview RPC prilagodba (minimalna)
-- `krug_settlement_preview` dobiva neobavezan interni ogranak: **ako postoji snapshot za taj `(krug_id, period, display_currency)` — koristi `rates` iz snapshota i ignoriraj `p_fx_rates` parametar**; inače koristi klijentski `p_fx_rates` (kao danas, Faza A ponašanje za tekući period).
-- Backward-compat: potpis RPC-a ostaje isti. Klijent (`useKrugSettlement`) i dalje šalje `rates` iz `useExchangeRates` — RPC odlučuje.
-- U response payload dodati flag `fx.frozen: boolean` da UI zna prikazati "podaci zamrznuti".
+## C1.2 — `krug_settlement_preview` (minimalna, aditivna izmjena)
 
-### C1.3 Cron freeze fn
-- **Opcija A (preporučeno):** čista SQL cron funkcija `public.krug_cron_freeze_fx_snapshots()` (SECDEF, service_role only) — zove postojeći `exchange-rates` edge fn preko `net.http_post`, zapiše snapshot za sve aktivne Krugove za prethodni mjesec. Prednost: nema novog edge fn, jedna round-trip komponenta.
-- **Opcija B:** nova edge fn `krug-freeze-fx-snapshots` — samo ako trebamo složeniju logiku (npr. hitrost cache-anja rata).
-- **Preporuka: A.** Manje pomičnih dijelova; `exchange-rates` fn već postoji i vraća ratese.
-- Schedule: `0 3 1 * *` (1. u mjesecu, 03:00 UTC) za period `[prošli_mjesec_start, prošli_mjesec_end]`.
-- Idempotent: `ON CONFLICT (krug_id, period_start, period_end, display_currency) DO NOTHING`.
+Postupak (obavezan):
+1. `SELECT pg_get_functiondef('public.krug_settlement_preview(uuid,date,date,text,jsonb)'::regprocedure)` → `/tmp/live_preview.sql`.
+2. Diff u tu ŽIVU verziju, ne rewrite iz memorije.
 
-**Ovisnosti:** postojeći `exchange-rates` edge fn, `net.http_post`, `vault` (reuse `krug_notify_internal_key` ili novi `krug_fx_freeze_internal_key` — Milan odlučuje).
+Točke izmjene (samo dvije):
 
----
+a) Nakon što se izračuna `v_display_currency` (linije ~52–62), dodati:
+```
+DECLARE v_snapshot_rates jsonb; v_snapshot_source text; v_snapshot_date date; v_frozen boolean := false;
+SELECT rates, source, snapshot_date
+  INTO v_snapshot_rates, v_snapshot_source, v_snapshot_date
+FROM public.krug_settlement_fx_snapshot
+WHERE krug_id = p_krug_id
+  AND period_start = p_period_start
+  AND period_end   = p_period_end
+  AND display_currency = v_display_currency;
+IF v_snapshot_rates IS NOT NULL THEN
+  v_frozen := true;
+END IF;
+```
 
-## C2 — Reminderi + push notifikacije
+b) Svugdje gdje trenutna funkcija čita rate iz `p_fx_rates` (za konverziju paid/owed → display currency), zamijeniti izvor:
+```
+COALESCE(v_snapshot_rates, p_fx_rates)
+```
+Netting logika, gate (`krug_is_full_member`), override read, weights, transferi — **ne diraju se**.
 
-### C2.1 Weekly Krug settlement reminder
-- **Nova preferenca**: `notification_preferences.krug_settlement_reminder_enabled boolean default true`.
-  - Napomena: postojeći `krug_enabled` je globalni Krug prekidač; settlement reminder je posebna vertikala (weekly digest), pa opravdana zasebna preferenca. Ako Milan preferira reuse, `krug_enabled` je fallback.
-- **Edge fn `krug-settlement-reminder`** — cron `0 8 * * 1` (ponedjeljak 08:00 UTC).
-  - Za svakog usera koji ima `krug_settlement_reminder_enabled=true` I `krug_enabled=true`, agregira nepodmirene transfere po Krugu (preview.transfers minus ledger settled) i emitira 1 notifikaciju po Krugu ("Imaš N nepodmirenih stavki u Krugu X, ukupno €Y").
-  - Šalje kroz postojeći `krug_emit_notification` sloj (koji zove `notify-krug-event`) — reuse push, in-app, i18n već pokriveni.
+c) U izlazni `jsonb_build_object(...)` za `fx`:
+```
+'fx', jsonb_build_object(
+   'rates_used',   COALESCE(v_snapshot_rates, v_rates_used),
+   'snapshot_date', COALESCE(v_snapshot_date, current_date),
+   'source',       COALESCE(v_snapshot_source, 'client'),
+   'frozen',       v_frozen
+)
+```
 
-### C2.2 Push kad se transfer označi podmireno (odgođeno iz Faze B)
-- `krug_mark_settled` RPC (postoji) dodaje `PERFORM krug_emit_notification(...)` s eventom `settlement_marked_settled` i payloadom `{from_user, to_user, amount, currency}`.
-- `notify-krug-event` fn: dodati case za novi event, exclude actor (isti obrazac kao ostali eventi — već testirano u `notifyKrugEventGuards.test.ts`).
-- i18n: novi ključevi `notifications.krug.settlementMarkedSettled.title/body` u hr/en/de.
+Backward-compat: potpis, ime, `SECURITY DEFINER`, `search_path`, `STABLE` — sve ostaje. Klijent (`useKrugSettlement`) i dalje šalje `p_fx_rates` — kad snapshota nema, ponašanje je bit-identično današnjem.
 
-**Ovisnosti:** postojeći `krug_emit_notification` + `notify-krug-event` (zero-diff arhitektura), `notification_preferences`.
+Frontend u ovoj pod-fazi se **ne** dira; `fx.frozen` je čisto aditivan i UI ga može čitati kasnije (npr. u C3).
 
----
+## C1.3 — Cron freeze funkcija (Opcija A: čista SQL, bez novog edge fn)
 
-## C3 — PDF izvoz settlement izvještaja
+Naziv: `public.krug_cron_freeze_fx_snapshots()`
+Potpis: `RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public`
+Vlasništvo: `postgres` (kao ostale cron fn).
+Grantovi (obavezno u istoj migraciji, isti obrazac kao `audit_secdef_anon_regression`):
+```
+REVOKE ALL ON FUNCTION public.krug_cron_freeze_fx_snapshots() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.krug_cron_freeze_fx_snapshots() TO service_role;
+```
 
-- **Infrastruktura postoji**: `src/lib/loadJsPdf.ts`, `pdfBranding.ts`, `pdfReportKit.ts`, referentni izvoznici (`projectFinancePdfExport.ts`, `decisionPdfExport.ts`, `invoicePdf.ts`).
-- **Preporuka: klijentski PDF, ne edge fn.** Konzistentno s ostatkom aplikacije (jsPDF + autoTable), radi offline, ne troši edge fn budget, koristi postojeći branding kit.
-- Nova datoteka `src/lib/krugSettlementPdf.ts`:
-  - Fn `exportKrugSettlementPdf({ krug, period, preview, ledger, brand, mode })`.
-  - Sadržaj: header (Krug ime, period, display_currency, FX source + snapshot date + `frozen` flag), tablica članova (paid/owed/net), tablica transfera (from → to, amount, currency, status: predloženo/podmireno/void), timeline void/settle akcija iz `krug_settlement_ledger`.
-  - Footer: brand kit (isti kao `projectFinancePdfExport`).
-- UI hook: gumb "Izvezi PDF" u `KrugSettlementSection.tsx` pored postojeće povijesti.
-- i18n: `krug.settlement.pdf.*` (hr/en/de).
+Skica tijela:
+```
+-- 1) Odredi prethodni mjesec (UTC)
+v_period_start := date_trunc('month', (now() AT TIME ZONE 'UTC') - interval '1 month')::date;
+v_period_end   := (date_trunc('month', (now() AT TIME ZONE 'UTC')) - interval '1 day')::date;
 
-**Ne graditi edge fn PDF varijantu za launch** — post-launch samo ako treba server-side (npr. e-mail attachment).
+-- 2) Dohvati ratese kroz postojeći edge fn (reuse krug_notify_internal_key)
+SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'krug_notify_internal_key';
+SELECT net.http_post(
+  url     := 'https://<project>.functions.supabase.co/exchange-rates',
+  headers := jsonb_build_object(
+    'Content-Type','application/json',
+    'Authorization','Bearer ' || v_key,
+    'apikey', v_key
+  ),
+  body    := '{}'::jsonb,
+  timeout_milliseconds := 10000
+) INTO v_req_id;
+-- pollaj net._http_response dok status != NULL, parsiraj body → v_rates, v_snapshot_date
+```
+Za svaki `(krug_id, display_currency)` par (iterira aktivne krugove; `display_currency` = ista logika kao u `krug_settlement_preview` — `COALESCE(krug.settlement_currency, prvi shared source currency, 'EUR')`):
+```
+INSERT INTO public.krug_settlement_fx_snapshot
+  (krug_id, period_start, period_end, display_currency, rates, source, snapshot_date, frozen_by)
+VALUES (..., v_rates, 'frankfurter.app', v_snapshot_date, 'cron')
+ON CONFLICT (krug_id, period_start, period_end, display_currency) DO NOTHING;
+```
+Vraća sažetak `{frozen: N, skipped: M, period_start, period_end}`.
 
----
+Napomena o URL-u: koristi projektni functions domain (isti obrazac kao postojeći cron pozivi na `net.http_post` u projektu, npr. `notify-krug-event`). URL se hardkodira u tijelu funkcije (kao u drugim cron fn-ovima) — nije secret.
 
-## C4 — SQL invariant testovi (manualni template)
+## C1.4 — pg_cron schedule (odvojeni `supabase--insert` poziv, ne migracija)
 
-- Nova datoteka `supabase/tests/krug/settlement_invariants.sql` (rollback-safe template, isti obrazac kao `governance_flow.sql` — **ne izvršava se protiv produkcije**).
-- Invarijante:
-  1. **Balance sum**: `sum(members.paid) == sum(members.owed)` po periodu (tolerancija za FX zaokruživanje: ±0.02 * broj_članova).
-  2. **Settled ≤ owed**: za svaki par (from, to), `sum(ledger.settled_amount) ≤ preview.transfer.amount`.
-  3. **FX snapshot immutabilnost**: nakon freeze-a, ponovno izvršavanje `krug_settlement_preview` za taj period vraća **istovjetne** transfere (byte-equal na round(6)).
-  4. **Override integritet**: svaka `krug_expense_split_override.status='potvrdjena'` ima potvrde od svih punopravnih članova (osim predlagatelja koji se auto-računa).
-  5. **Ledger non-negativity**: `sum(settled_amount) - sum(voided_amount) >= 0` po (krug, from, to, currency).
-- Header s a/b/c/d klauzulama (isti template stil): BEGIN...ROLLBACK, sintetički korisnici, COUNT prije=poslije, pg_locks provjera.
-- **Ne dispatch-ati** — ostaje kao dev-cluster referenca.
+Zaključavanje policy-a: schedule sadrži env-specifične vrijednosti pa ide kroz `supabase--insert`, ne migraciju (isto kao postojeći cronovi):
+```
+SELECT cron.schedule(
+  'krug_cron_freeze_fx_snapshots_monthly',
+  '0 3 1 * *',                          -- 1. u mjesecu, 03:00 UTC
+  $$ SELECT public.krug_cron_freeze_fx_snapshots(); $$
+);
+```
+Idempotent: prije `cron.schedule` napravi `cron.unschedule` ako job već postoji (isti obrazac kao ostali projektni cronovi).
 
----
+## Sigurnosne / arhitektonske potvrde (kritične)
 
-## Predlagani redoslijed gradnje (inkrementalno)
+- **touches_balance = false**: nova tablica + čitanje snapshota u preview-u; nema pisanja u `expenses`, `custom_payment_sources`, ni bilo koji anchor/ledger. Balance regression suite (`supabase/tests/balance/`) nije relevantan gate.
+- **Cron fn service-role only**: eksplicitni `REVOKE FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE TO service_role`. Isti obrazac kao `audit_secdef_anon_regression`.
+- **Preview aditivna**: kad snapshota nema, izlaz je bit-identičan današnjem (samo dobiva `fx.frozen: false`). Klijent i vitest suite ne trebaju izmjene za C1.
+- **Reuse secreta**: `krug_notify_internal_key` postoji, koristi se za Authorization/apikey header. Nema novog secreta.
+- **Živa definicija**: preview se prepisuje s diffom nad `pg_get_functiondef`, ne iz stare migracije (constraint iz mem/index).
+- **RLS**: SELECT ograničen na članove kruga preko `krug_is_full_member`. Write puta iz klijenta nema (nema INSERT/UPDATE/DELETE policyja) — samo `service_role` piše.
 
-1. **C1** (FX snapshot + preview integracija + cron) — temelj, mora prvo.
-2. **C2** (reminderi + push) — nezavisno od C1, može paralelno.
-3. **C3** (PDF izvoz) — čisti frontend, može zadnje ili paralelno s C2.
-4. **C4** (invariant template) — nakon C1 (jer testira FX immutabilnost).
+## Redoslijed dispatcha (kad Milan kaže "gradi C1")
 
-## Post-launch kandidati (moja preporuka za odgodu)
+1. Jedna `supabase--migration`: tablica + grants + RLS + policy + izmjena `krug_settlement_preview` (na temelju live def) + kreiranje `krug_cron_freeze_fx_snapshots()` + revoke/grant na cron fn.
+2. Jedna `supabase--insert` poziv: `cron.unschedule` (ako postoji) + `cron.schedule('0 3 1 * *', ...)`.
+3. Manualni smoke: `SELECT public.krug_cron_freeze_fx_snapshots();` (kao service_role) za tekući `now()-1mj` — provjera `net._http_response`, provjera INSERT-a, provjera da idempotentno vraća `skipped>0` na re-run.
+4. Manualni preview smoke: pozvati `krug_settlement_preview` za period koji ima snapshot → provjeriti `fx.frozen=true` i identične transfere prije/poslije freezea (byte-equal na round(6)).
 
-- **PDF preko edge fn** (server-side) — jsPDF klijentski pokriva launch use-case.
-- **Realtime settlement dashboard widget** (agregat kroz sve Krugove korisnika).
-- **Push za override propose/confirm eventi** — dodatak povrh in-app notifikacija.
+## STOP-ovi (gdje se zaustavljam i javljam)
 
----
+- Ako `exchange-rates` fn počne vraćati drugačiji shape od `{rates:{...}, date}` → ne pišem workaround, javljam.
+- Ako `krug_notify_internal_key` u trenutku gradnje nije čitljiv kroz `vault.decrypted_secrets` iz cron fn konteksta → javljam prije nego se pišu radna rješenja.
+- Ako preview živa definicija odudara od očekivanog (npr. netko je dodao lokalne CTE-ove za rate resolving) → javljam, ne gazim.
 
-## Otvorena pitanja za Milana (traže odluku prije koda)
+## Ne dirati u C1
 
-1. **FX snapshot vault key**: reuse `krug_notify_internal_key` ili novi `krug_fx_freeze_internal_key`?
-2. **Weekly reminder preferenca**: nova `krug_settlement_reminder_enabled` ili reuse postojeći `krug_enabled`?
-3. **Cron schedule za reminder**: ponedjeljak 08:00 UTC odgovara ili drugi termin?
-4. **PDF sadržaj**: uključiti i override povijest (tko je predložio/potvrdio) ili samo settlement transfere?
-
-Čekam Milanove odgovore + eksplicitno "gradi" prije bilo kakvog koda.
+- `krug_settlement_ledger`, `krug_expense_split_*`, `krug_income_ratio` — nula izmjena.
+- `expenses`, salda, anchor, balance triggere, `custom_payment_sources`.
+- Frontend (`useKrugSettlement`, `KrugSettlementSection`, dialozi) — nula izmjena.
+- C2 (reminderi/push), C3 (PDF), C4 (invarijante) — ne diram.
