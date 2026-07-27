@@ -1,140 +1,93 @@
 
-## Cilj
+# Faza C4 — Krug settlement SQL invariant template (PRIJEDLOG)
 
-Klijentski PDF izvještaj Krug settlementa za odabrani period: koristi postojeći `pdfReportKit`/`pdfBranding` sloj (isti kao `projectFinancePdfExport.ts`), reuse-a postojeće hookove za podatke, dodaje jedan novi period-scope read za override povijest.
+Ovo je **prijedlog izvedbe** — čeka Milanov "gradi C4". Nula migracija, nula RPC-ova, nula edge funkcija, `touches_balance=false`. Samo jedna nova **template** datoteka istog stila kao `supabase/tests/krug/governance_flow.sql`.
 
-**Nula backend izmjena.** `touches_balance=false`. Nula edge funkcija. Nula migracija.
+## Opseg
 
----
+Nova datoteka: `supabase/tests/krug/settlement_invariants.sql`
 
-## 1. Novi klijentski modul — `src/lib/krugSettlementPdf.ts`
+- Manualni template — NE izvršava se u CI-ju, NE dispatcha se, NE dira produkciju.
+- `BEGIN ... ROLLBACK` cijeli sadržaj → rollback-safe by design.
+- Zahtijeva dev-cluster gdje izvršavajuća rola ima USAGE na `auth` schema (ista napomena kao u `governance_flow.sql`).
+- Ulaz preko `psql -v` varijabli: `krug_id`, `owner_id`, `other_id`, `third_id`, `period_start`, `period_end`.
+- Svaka invarijanta u zasebnom `DO $$ ... $$` bloku s `RAISE NOTICE 'PASS Ix ...'` ili `RAISE EXCEPTION 'FAIL Ix ...'`.
 
-**Signatura (jedina javna funkcija):**
-```ts
-exportKrugSettlementPdf(input: {
-  krugName: string;
-  periodStart: string; // YYYY-MM-DD
-  periodEnd: string;
-  language: 'hr' | 'en' | 'de';
-  preview: SettlementPreview;                  // iz useKrugSettlement
-  ledger: KrugSettlementLedgerRow[];           // iz useKrugSettlementLedger
-  overrides: OverrideHistoryRow[];             // iz novog useKrugPeriodOverrides (v. §3)
-  nameFor: (uid: string) => string;            // iz useUserProfiles + getMemberDisplayName
-  mode?: ExportMode;                           // 'download' | 'open'
-}): Promise<void>
+## Header (a/b/c/d klauzule, isti stil kao Faza B)
+
+```text
+a) Requires dev cluster with auth schema USAGE (auth.uid() u SECURITY DEFINER RPC-ovima).
+b) Cijeli sadržaj u BEGIN...ROLLBACK — nula perzistencije.
+c) Pokriva 5 read-only invarijanti settlement enginea; NE mijenja balance,
+   NE piše u ledger, NE poziva mark_settled/override_confirm.
+d) NE pokretati protiv produkcije — koristi sintetičke UUID-ove kreirane
+   izvan transakcije (fixtures) ili već postojeći dev-krug s test podacima.
 ```
 
-**Struktura, redom, na Variant B brand kartici (`drawReportHeader`/`drawReportFooter`):**
+Dodatno preflight (mirrors govern.flow):
+- `SELECT count(*)` prije/poslije za `krug_settlement_ledger`, `krug_expense_split_override`, `krug_expense_split_share`, `krug_settlement_fx_snapshot` → mora biti identičan (dokaz da su svi pozivi read-only).
+- `SELECT count(*) FROM pg_locks WHERE granted = false` prije i poslije → 0 = 0 (ne držimo blokade).
 
-1. **Header card** — naslov `t('krug.settlement.pdf.title')`, subtitle `${krugName} · ${periodLabel}`, owner + confidentiality iz `resolveBrand` obrasca (kopirati iz `projectFinancePdfExport.ts`).
-2. **Meta strip** (mala tablica, brandAutoTable): `display_currency`, FX source (`preview.fx.source`), snapshot date (`preview.fx.snapshot_date`), `frozen` flag (badge iz C1: "🔒 zamrznut" ili "⟳ uživo"). Flag-ovi iz `preview.flags` (mixed_currencies, manual_mode_fallback_equal, missing_income_data) prikazani kao warning trake pomoću `pdfReportKit` (ako trake postoje; inače tekst).
-3. **Tablica članova** (`brandAutoTable`): kolone [Član, Plaćeno, Duguje, Neto], sortirano po `nameFor`. Formatirano `fmt(n, preview.display_currency)`.
-4. **Tablica transfera**: kolone [Od, Prima, Iznos, Valuta]. Ako je `transfers` prazan → prikaz `t('krug.settlement.pdf.balanced')`.
-5. **Timeline podmirenja** (`ledger`): kolone [Datum, Od, Prima, Iznos, Napomena, Status]. Voidani retci označeni tekstom `[✕ ${void_reason}]`. Sortirano `marked_at ASC`. Skrivaj sekciju ako je `ledger.length===0`.
-6. **Override povijest** (v. §3): za svaki `krug_expense_split_override` u periodu (status `potvrdjena` ili `povucena`/`odbijena` s activated_at≠null), zaglavlje po trošku (`expense.description · date · amount currency`), zatim ispod:
-   - **Podjela**: član → postotak (`share_percent`).
-   - **Predložio**: `nameFor(proposed_by)` na `created_at`.
-   - **Potvrdili**: lista `nameFor(user_id) · confirmed_at`.
-   - **Status**: `potvrdjena`/`povučena`/`odbijena` (+ `reject_reason` ako postoji).
-   Ako je lista prazna → `t('krug.settlement.pdf.overridesNone')`.
-7. **Footer** — `drawReportFooter` (page X of Y, intended-for).
+## Invarijante — SQL skica
 
-**Izlaz**: `exportPDFDoc(doc, buildReportFileName('krug-settlement', krugName, periodStart), mode)` — konzistentno s ostalim izvoznicima.
-
-**Nula toucha balance/DB write. Nula HTTP izlaska iz PDF modula.**
-
----
-
-## 2. Reuse hookova (bez izmjena)
-
-- `useKrugSettlement({krugId, periodStart, periodEnd})` — daje `preview` (members/transfers/fx/flags). **Bez izmjene.**
-- `useKrugSettlementLedger(krugId, enabled)` — daje `ledger`. **Bez izmjene.**
-- `useUserProfiles(memberIds)` + `getMemberDisplayName` — daje `nameFor`. **Bez izmjene.**
-
----
-
-## 3. Novi period-scope override hook — `src/hooks/useKrugPeriodOverrides.ts`
-
-**Zašto novi hook:** postojeći `useKrugExpenseOverride(expenseId)` je per-expense (troši 1 upit po trošku). PDF treba sve overridee u periodu odjednom.
-
-**Zašto NE treba novi RPC:** sve 3 tablice (`krug_expense_split_override`, `_share`, `_confirmation`) imaju `SELECT` RLS policyje za `authenticated` full membere Kruga (potvrđeno pg_policies queryjem). Klijent može čitati direktno kroz Supabase JS klijenta, isti obrazac kao `useKrugExpenseOverride`, samo s drugačijim filterom.
-
-**Signatura:**
-```ts
-useKrugPeriodOverrides(krugId, periodStart, periodEnd, enabled): {
-  data: OverrideHistoryRow[]
-}
+### I1. Balance sum (paid ≡ owed po periodu)
+```sql
+WITH r AS (
+  SELECT public.krug_settlement_preview(
+    v_krug, v_period_start, v_period_end, 'EUR', '{}'::jsonb
+  ) AS j
+),
+tot AS (
+  SELECT
+    (SELECT sum((m->>'paid')::numeric) FROM r, jsonb_array_elements(j->'members') m) AS paid,
+    (SELECT sum((m->>'owed')::numeric) FROM r, jsonb_array_elements(j->'members') m) AS owed,
+    (SELECT jsonb_array_length(j->'members') FROM r) AS n
+  FROM r
+)
+SELECT abs(paid - owed) <= 0.02 * n FROM tot;  -- FX rounding tolerance
 ```
+FAIL ako razlika > `0.02 * broj_članova`.
 
-**Implementacija (client-only, 3 selecta):**
-1. `krug_expense_split_override` gdje `krug_id=$krugId` AND `created_at BETWEEN periodStart AND periodEnd + interval '1 day'` (grubi filter — bolji je join na `expenses.date`, v. dolje).
-2. Za dobijene `id`-ove: batch fetch `_share` i `_confirmation` (isti kao u `useKrugExpenseOverride`).
-3. Za `expense_id`-ove: fetch minimalnih polja iz `expenses` (`id, description, amount, currency, date`) — filter po `expense_id IN (...)`. Krug expense RLS ionako propušta full membere; dodatno filtriraj klijentski po `expense.date BETWEEN periodStart AND periodEnd` za točan period-scope.
+### I2. Settled ≤ owed (po paru from→to)
+Za svaki `transfer` iz preview outputa: `sum(ledger.amount) FILTER (WHERE voided_at IS NULL)` za taj (krug, from_user, to_user, currency, period) `<=` `transfer.amount + 0.01`. Ako nema transfera, ledger za par mora biti 0.
 
-Vraća merged `OverrideHistoryRow[]` sa svime što PDF renderer treba, sortirano po `expense.date DESC`.
+### I3. FX snapshot immutabilnost
+```sql
+-- Ako postoji snapshot za period:
+v_p1 := public.krug_settlement_preview(v_krug, v_ps, v_pe, 'EUR', '{}');
+v_p2 := public.krug_settlement_preview(v_krug, v_ps, v_pe, 'EUR', '{}');
+-- Normaliziraj transfere na round(6) i usporedi jsonb_agg ORDER BY from,to
+```
+Također potvrditi da odgovor sadrži `fx.frozen = true` kad postoji snapshot za taj (krug, period, display_currency).
 
----
+### I4. Override integritet (multi-sig)
+Za svaki `krug_expense_split_override` sa `status='potvrdjena'`:
+- Broj punopravnih članova `krug_membership WHERE role IN ('owner','full')` **osim** `proposed_by`.
+- Broj `krug_expense_split_confirmation` za taj override.
+- Prvi = drugi (predlagatelj se auto-računa, ostali svi punopravni potvrdili).
 
-## 4. UI plumbing — `src/components/krug/KrugSettlementSection.tsx`
+### I5. Ledger non-negativity
+```sql
+SELECT krug_id, from_user_id, to_user_id, currency,
+       sum(amount) FILTER (WHERE voided_at IS NULL) AS net
+FROM public.krug_settlement_ledger
+WHERE krug_id = v_krug
+GROUP BY 1,2,3,4
+HAVING sum(amount) FILTER (WHERE voided_at IS NULL) < 0;
+```
+FAIL ako bilo koji redak → negativna neto suma znači "voidano više nego zapisano".
 
-- Dodati gumb `<Button variant="outline">` s `Download` ikonom (lucide) u header traku sekcije, uz postojeći `Settings2` (owner) — vidljiv **svim punopravnim članovima**, ne samo owneru (izvještaj je legitimno svih).
-- On-click:
-  1. Osigurati da su `preview`, `ledger`, `overrides` fetchani (`ledger` je lazy iza `open` togglea u `KrugSettlementHistory` — treba dedicirati enable=true unutar section handlera samo za izvoz, ili prefetchati kroz `queryClient.fetchQuery`).
-  2. Zvati `exportKrugSettlementPdf(...)`.
-  3. Feedback preko `showSuccess`/`showError` (postojeći `useStatusFeedback`).
-- Loading state: dok fetch traje, spinner na gumbu (`disabled + Loader2`).
-- Non-owner ne vidi `KrugSettlementSettings`, ali vidi izvoz. Neispravni statusi (`isLoading` prevoda `useKrugSettlement`, `isError`) — gumb disabled.
+## Što ovaj korak NE radi
 
-**Nula izmjena** u `KrugSettlementHistory.tsx`, `KrugSettleTransferDialog.tsx`, mutation hookovima.
+- Ne pokreće se ni ručno ni automatski.
+- Ne dispatcha edge funkcije, ne pravi cron.
+- Ne mijenja `run-all.sh`, ne dodaje CI korak, ne dira stress harness.
+- Ne stvara fixtures loader — koristi već postojeći dev krug (Milan pokreće ručno kad odluči).
 
----
+## Verifikacija nakon commita (kad Milan kaže "gradi")
 
-## 5. i18n — nova grana `krug.settlement.pdf.*`
+- `wc -l` na novoj datoteci.
+- Grep dokaz: `git grep -n "settlement_invariants.sql"` vraća SAMO tu datoteku (nije nigdje pozvana).
+- Napomena Milanu: "template only, run manually na dev clusteru s `psql -v`".
 
-**hr / en / de** ključevi u `src/i18n/locales/{hr,en,de}.json`:
-- `krug.settlement.pdf.title` — "Krug settlement izvještaj"
-- `krug.settlement.pdf.exportButton` — "Izvezi PDF"
-- `krug.settlement.pdf.periodLabel`, `krug.settlement.pdf.displayCurrency`, `krug.settlement.pdf.fxSource`, `krug.settlement.pdf.fxSnapshotDate`, `krug.settlement.pdf.fxFrozen`, `krug.settlement.pdf.fxLive`
-- `krug.settlement.pdf.membersHeader` + kolone `member/paid/owed/net`
-- `krug.settlement.pdf.transfersHeader` + kolone `from/to/amount/currency`, `krug.settlement.pdf.balanced`
-- `krug.settlement.pdf.timelineHeader` + kolone `date/from/to/amount/note/status`, statusi `settled/voided`
-- `krug.settlement.pdf.overridesHeader`, `krug.settlement.pdf.overridesNone`, poljski `proposedBy/confirmedBy/status`, statusi `potvrdjena/povucena/odbijena`
-- `krug.settlement.pdf.flags.mixedCurrencies`, `krug.settlement.pdf.flags.manualFallback`, `krug.settlement.pdf.flags.missingIncome`
-- `krug.settlement.pdf.filenameBase` — "krug-settlement"
-
-Ključ `settings.notifKrug.settlement.pdf.title` (isti "Krug settlement" u sva 3 jezika) → dodati u `untranslatedLocaleWhitelist.ts` ako test padne (kao što je bio slučaj s `settings.notifKrug` u C2).
-
----
-
-## 6. Testovi
-
-- Nova unit datoteka `src/lib/__tests__/krugSettlementPdf.test.ts` — testira pure helper funkcije (formatiranje transfera, grouping override rowova po expense), stubira jsPDF preko `vi.mock('@/lib/loadJsPdf')`. Ne renderira stvarni PDF u testovima.
-- Postojećih 2092 testova mora ostati zeleno (nula regresija — sve promjene su aditivne).
-
----
-
-## 7. Nula-toucha lista
-
-- Nula izmjena `expenses`, `custom_payment_sources`, balance triggera, anchor stack.
-- Nula izmjena `krug_mark_settled`, `krug_settlement_preview`, `krug_freeze_fx_snapshots_monthly`, override RPC-ova.
-- Nula novih edge funkcija.
-- Nula migracija (potvrđeno: sve 3 override tablice + ledger + preview imaju sve što treba za klijentski read).
-- Nula izmjena balance/settlement engine logike.
-- C4 (SQL invarijante) ostaje izvan opsega — čeka odobrenje.
-
----
-
-## 8. Verifikacija prije commita (kad Milan kaže "gradi C3")
-
-1. Vitest 2092+ testova PASS.
-2. Manualni klik u browseru: gumb "Izvezi PDF" na testnom Krugu → PDF se skida, sadrži header, članove, transfere, timeline i override sekciju.
-3. PDF QA (per PDF skill): renderirati stranice pomoću `pdftoppm`, provjeriti overlap, cut-off, font glyphove (naročito ć/š/đ/ž — koristiti `applyBrandFont` koji već rješava Unicode za Croatian).
-4. `touches_balance` DB provjera (dat će Milan) — mora ostati `false`.
-
----
-
-## Otvorena pitanja (odgovoriti prije "gradi")
-
-1. **Override scope u periodu**: filter po `expenses.date` (kad se trošak dogodio) ili po `override.created_at` (kad je prijedlog nastao)? Prijedlog: **`expenses.date`** (semantički odgovara periodu izvještaja; poklapa se s onim što settlement preview uzima u obračun). Ako Milan želi drugačije — javiti.
-2. **Odbijeni prijedlozi (`odbijena`, `povucena`)**: uključiti ih u override povijest ili samo `potvrdjena`? Prijedlog: **uključiti sve non-pending** (transparentnost governancea — ionako je to point Faze B). Ako Milan želi samo aktivne — javiti.
-3. **PDF file naming**: `krug-settlement__${krugSlug}__${YYYY-MM}.pdf` (koristeći `buildReportFileName`)?
+Reci **"gradi C4"** za izvedbu, ili navedi izmjene.
