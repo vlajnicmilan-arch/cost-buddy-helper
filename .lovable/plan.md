@@ -1,36 +1,79 @@
-# Nalaz: Privacy i Terms stranice — status za Enable Banking
+## Enable Banking — prijelaz na produkciju: analiza + prijedlog
 
-## URL-ovi za prijavu
+### 1. Kako auth radi sada
 
-| Polje | URL |
-|---|---|
-| Privacy URL | `https://vmbalance.com/privacy-policy` |
-| Terms URL | `https://vmbalance.com/terms-of-service` |
+`supabase/functions/_shared/enableBankingJwt.ts`:
+- Čita **dvije** tajne iz Deno env-a:
+  - `ENABLE_BANKING_APP_ID` (→ ide u JWT header `kid`)
+  - `ENABLE_BANKING_PRIVATE_KEY` (PKCS#8 PEM, RS256)
+- Bazni URL je **hard-kodiran**: `https://api.enablebanking.com`
+- JWT: `iss=enablebanking.com`, `aud=api.enablebanking.com`, `exp=+1h`
+- Sve bank edge funkcije (`bank-list-aspsps`, `bank-connect-start`, `bank-connect-complete`, `bank-link-account`, `bank-sync-transactions`) idu kroz `ebFetch()` → koriste **isti par tajni**.
 
-Obje rute postoje u `src/App.tsx` (SPA, React Router, lazy-loaded), s produkcijskom domenom `vmbalance.com` (iz `capacitor.config.ts` i canonical taga u `public/terms-of-service/index.html`).
+**Zaključak:** JEDAN set tajni. Nema sandbox/prod razdvajanja u kodu.
 
-## Sadržaj
+### 2. Base URL
 
-- **PrivacyPolicy.tsx** (875 linija, HR/EN/DE, v2.1) — stvaran sadržaj. Sekcija 2.2 "Financijski i poslovni podaci" spominje *analizu bankovnih izvoda*, AI OCR, kategorizaciju. Član 22 GDPR pokriven.
-- **TermsOfService.tsx** (127 linija, i18n HR/EN/DE) — stvaran sadržaj: Tactura j.d.o.o., cjenik modula, Paddle MoR, 14-dnevni povrat, GDPR prava, ograničenje odgovornosti.
-- **RefundPolicy.tsx** i **Impressum.tsx** također postoje kao pune stranice.
+Isti host `api.enablebanking.com` služi i sandbox i produkciju kod Enable Bankinga — okruženje se određuje isključivo prema `APP_ID` (koji ključ je registriran za koju aplikaciju). Nema env flaga i **ne treba ga**.
 
-## ⚠️ Rizik za Enable Banking compliance review
+### 3. Hard-kodiran FI
 
-Trenutne stranice **postoje i nisu prazne**, ali **NE spominju eksplicitno**:
+Dva mjesta:
+- **Backend** `supabase/functions/bank-list-aspsps/index.ts:33` — default `"FI"` ako klijent ne pošalje `?country=`.
+- **Frontend** `src/components/OpenBankingPanel.tsx`:
+  - `useState('FI')` (linija 46)
+  - `COUNTRIES_SANDBOX` lista (linije 27–32): FI/EE/LV/LT (samo sandbox zemlje, **HR nije u listi**).
 
-1. **"Open Banking" / "PSD2" / "AISP"** u pravnom dokumentu (spomen postoji samo u UI stringovima `i18n/locales/*.json` na ekranu za povezivanje banke).
-2. **Enable Banking Oy** (Finska) kao imenovani **sub-processor / data processor**.
-3. **Pravnu osnovu** za dohvat bankovnih transakcija (izričita privola korisnika, čl. 6(1)(a) GDPR + PSD2 SCA).
-4. **Tijek podataka** Banka → Enable Banking → Centar i **retenciju** dohvaćenih bankovnih transakcija.
-5. **Prava korisnika specifično za bank-sync**: povlačenje privole = raskid AIS konekcije, brisanje dohvaćenih transakcija.
+Za HR banke: dodati `HR` u dropdown listu i promijeniti default na `HR`. UI izbor već postoji, samo su opcije ograničene na sandbox tržišta. Backend default (`"FI"`) manje bitan jer frontend uvijek šalje `?country=`.
 
-Enable Banking u produkcijskoj AISP registraciji tipično zahtijeva da Privacy Policy imenuje njih kao sub-processora i opiše PSD2 flow. Postoji realna šansa da će review tražiti dopunu prije odobrenja.
+### 4. Strategija — preporuka: **Opcija A (zamjena tajni)**
 
-## Preporuka (za Milanovu odluku, ne gradim ništa)
+- **Opcija A** — zamijeni `ENABLE_BANKING_APP_ID` i `ENABLE_BANKING_PRIVATE_KEY` produkcijskim vrijednostima. Sandbox prestaje raditi.
+- **Opcija B** — dodaj `ENABLE_BANKING_PROD_*` + env flag → treba kod-promjene u `enableBankingJwt.ts` (odabir seta), rizik konfuzije, više tajni za rotirati.
 
-Predati URL-ove sada kakvi jesu i pričekati feedback Enable Banking reviewa. Ako traže dopunu, dodati novu sekciju u Privacy Policy (npr. "3.x Open Banking / PSD2") s gornjih 5 točaka na sva tri jezika + spomen u ToS-u. Manji, izoliran posao (bez dodira balance/settlement/RLS/migracija).
+**Preporuka:** Opcija A. Razlozi:
+- Milan solo ide na prave račune, sandbox mu ne treba za dnevni rad.
+- Nula kod-promjena u auth sloju.
+- Rollback = vratiti stare sandbox tajne kad bude trebalo testirati.
+- Sandbox aplikacija (`d5f12f1e…`) ostaje Active u Enable Bankingu — ako ikad treba, tajne se ponovno mogu zamijeniti.
 
-## Van opsega ovog nalaza
+### 5. Točan popis tajni za Supabase (Project Settings → Secrets)
 
-Nula izmjena. Nula migracija, RPC-ova, edge fn ni frontend koda. Ako Milan odobri dopunu, tražim posebno odobrenje s konkretnim tekstom prije pisanja.
+Milan mijenja vrijednosti za dvije postojeće tajne:
+
+| Ime tajne | Nova vrijednost |
+|-----------|-----------------|
+| `ENABLE_BANKING_APP_ID` | `ef3e7b6f-b54c-45ea-9c56-737d14ea899c` (produkcijski APP_ID "Centar production") |
+| `ENABLE_BANKING_PRIVATE_KEY` | Produkcijski PKCS#8 PEM privatni ključ (cijeli blok s `-----BEGIN PRIVATE KEY-----` / `-----END PRIVATE KEY-----`) |
+
+Ništa novo se ne dodaje. Nakon spremanja, edge funkcije automatski povuku nove vrijednosti na sljedeći poziv (nema deploya).
+
+### 6. Sigurnost bankovnih podataka (RLS)
+
+Provjereno u živoj bazi:
+
+- `bank_connections` — SELECT/UPDATE/DELETE: `auth.uid() = user_id`; INSERT bez `WITH CHECK` (edge funkcija koristi user token pa piše samo za sebe, ali **preporuka je dodati `WITH CHECK (auth.uid() = user_id)`** za oba INSERT-a).
+- `bank_accounts` — isti obrazac, ista rupica na INSERT-u.
+- Nema odvojene `bank_transactions` tablice — sinkronizirane transakcije završavaju u `expenses` (via `linked_payment_source_id`), koji već ima strogi RLS.
+
+**Napomena:** INSERT bez `WITH CHECK` je klasa (a) sitna rupa (autentificirani korisnik bi teoretski mogao insertati red s tuđim `user_id` direktno preko PostgREST-a). Ne blokira produkciju za solo račune, ali vrijedi zatvoriti kad bude prilika (odvojena mikro-migracija).
+
+### Što u kodu treba promijeniti (kad Milan kaže "gradi")
+
+Minimalno, samo frontend:
+
+1. **`src/components/OpenBankingPanel.tsx`**
+   - Dodati `HR` u listu zemalja (i preimenovati konstantu, npr. `COUNTRIES` bez sufiksa `_SANDBOX`), po potrebi dodati i druge EU zemlje (SI, AT, DE) — Milanova odluka.
+   - Promijeniti default `useState('FI')` → `useState('HR')`.
+   - i18n labeli (bez "(sandbox)" oznake).
+
+2. **`supabase/functions/bank-list-aspsps/index.ts:33`** (opcionalno)
+   - Default `"FI"` → `"HR"`. Kozmetika; frontend uvijek šalje eksplicitni parametar.
+
+**Nula dodira:** `enableBankingJwt.ts`, ostale bank edge fn, balance/settlement logika, migracije, RPC.
+
+### Otvoreno pitanje za Milana
+
+- Koje zemlje treba u dropdownu? Samo **HR**, ili **HR + EU susjedi** (SI, AT, DE, IT)? Enable Banking pokriva praktički sve EU tržište; sužavanje na HR je najjednostavnije, više zemalja daje fleksibilnost bez dodatnog troška.
+
+Plan je prijedlog. Čekam odobrenje prije koda.
