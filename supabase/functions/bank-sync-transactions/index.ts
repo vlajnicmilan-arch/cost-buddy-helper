@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     // Load bank account + connection
     const { data: account, error: accErr } = await admin
       .from("bank_accounts")
-      .select("id, user_id, business_profile_id, account_uid, currency, last_synced_at, linked_payment_source_id, connection_id")
+      .select("id, user_id, business_profile_id, account_uid, currency, last_synced_at, last_sync_error, updated_at, linked_payment_source_id, connection_id")
       .eq("id", body.bank_account_id)
       .maybeSingle();
 
