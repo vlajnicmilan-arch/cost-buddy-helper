@@ -10,6 +10,12 @@ interface Body {
   bank_account_id: string;
 }
 
+// Throttle constants (per-account cooldowns).
+// Faza 1: bez migracije — koristimo postojeći last_synced_at + last_sync_error(+updated_at kao proxy).
+const SYNC_COOLDOWN_MINUTES = 120;
+const RATE_LIMIT_COOLDOWN_MINUTES = 240;
+const RATE_LIMIT_ERROR_MARKER = "aspsp_rate_limited_429";
+
 interface EBTransaction {
   entry_reference?: string;
   transaction_id?: string;
