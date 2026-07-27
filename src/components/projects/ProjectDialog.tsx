@@ -286,6 +286,7 @@ export const ProjectDialog = ({
                     <div className="relative">
                       <Textarea
                         id="description"
+                        sentenceCase
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder={t('projects.descriptionPlaceholder')}
