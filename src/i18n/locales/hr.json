@@ -5112,7 +5112,7 @@
     "disconnectConfirm": "Sigurno želiš prekinuti vezu s ovom bankom?",
     "connected": "Banka spojena",
     "connectError": "Greška pri spajanju banke",
-    "sandboxNotice": "Trenutno koristimo sandbox okruženje za testiranje. HR banke dolaze nakon produkcijske aktivacije.",
+    
     "contextPersonal": "Osobno",
     "linkSource": "Poveži s izvorom",
     "linkSourcePlaceholder": "Odaberi izvor plaćanja",

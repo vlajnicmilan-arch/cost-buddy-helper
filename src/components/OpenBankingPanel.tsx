@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Info, Link2, RefreshCw, Check } from 'lucide-react';
+import { Building2, Plus, Loader2, ExternalLink, Trash2, AlertCircle, Link2, RefreshCw, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -261,10 +261,6 @@ export const OpenBankingPanel = () => {
         </Button>
       </div>
 
-      <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3 flex gap-2 text-xs text-muted-foreground">
-        <Info className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-        <span>{t('openBanking.sandboxNotice')}</span>
-      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-6 text-muted-foreground">
