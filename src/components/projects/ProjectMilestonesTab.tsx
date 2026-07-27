@@ -551,13 +551,14 @@ export const ProjectMilestonesTab = ({
 
             <div className="space-y-2">
               <Label>{dialogMode === 'vtr' ? t('projects.vtr.nameLabel', 'Naziv VTR-a') : t('projects.milestoneName')}</Label>
-              <Input data-testid="milestone-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
+              <Input sentenceCase data-testid="milestone-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={dialogMode === 'vtr' ? t('projects.vtr.namePlaceholder', 'npr. Dodatni radovi na fasadi') : t('projects.milestoneNamePlaceholder')} />
             </div>
 
             <div className="space-y-2">
               <Label>{t('projects.description')}</Label>
               <div className="relative">
                 <Textarea
+                  sentenceCase
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
@@ -574,7 +575,7 @@ export const ProjectMilestonesTab = ({
             {dialogMode === 'vtr' && !editingMilestone && (
               <div className="space-y-2">
                 <Label>{t('projects.vtr.noteLabel', 'Bilješka uz aneks (opcionalno)')}</Label>
-                <Input value={vtrNote} onChange={(e) => setVtrNote(e.target.value)} placeholder={t('projects.vtr.notePlaceholder', 'npr. Klijent zatražio dodatne radove 12.5.2026')} />
+                <Input sentenceCase value={vtrNote} onChange={(e) => setVtrNote(e.target.value)} placeholder={t('projects.vtr.notePlaceholder', 'npr. Klijent zatražio dodatne radove 12.5.2026')} />
               </div>
             )}
 
