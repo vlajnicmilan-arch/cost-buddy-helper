@@ -245,5 +245,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.settlement.pdf.statusLabel": "Same word in DE",
     "krug.settlement.pdf.col.status": "Same word in DE",
     "krug.settlement.pdf.col.date": "Same word in DE (Datum)",
+    "openBanking.throttle.durationHm": "Numeric duration format identical across locales",
+    "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
 };
