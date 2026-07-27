@@ -2899,6 +2899,47 @@ export type Database = {
           },
         ]
       }
+      krug_settlement_fx_snapshot: {
+        Row: {
+          display_currency: string
+          frozen_at: string
+          krug_id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          rates: Json
+          source: string
+        }
+        Insert: {
+          display_currency: string
+          frozen_at?: string
+          krug_id: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          rates: Json
+          source?: string
+        }
+        Update: {
+          display_currency?: string
+          frozen_at?: string
+          krug_id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          rates?: Json
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_settlement_fx_snapshot_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       krug_settlement_ledger: {
         Row: {
           amount: number
@@ -6451,6 +6492,7 @@ export type Database = {
       }
       krug_cancel_deletion: { Args: { p_krug_id: string }; Returns: Json }
       krug_cleanup_act_dedup: { Args: never; Returns: Json }
+      krug_cron_freeze_fx_snapshots: { Args: never; Returns: number }
       krug_emit_notification: {
         Args: {
           p_actor_id: string
