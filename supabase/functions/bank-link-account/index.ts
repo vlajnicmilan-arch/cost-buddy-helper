@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     // Verify ownership
     const { data: account, error: accErr } = await admin
       .from("bank_accounts")
-      .select("id, user_id, business_profile_id, currency, name")
+      .select("id, user_id, business_profile_id, currency, name, balance, last_synced_at")
       .eq("id", body.bank_account_id)
       .maybeSingle();
 
@@ -72,15 +72,32 @@ Deno.serve(async (req) => {
         .limit(1);
       const nextOrder = ((existing?.[0]?.sort_order as number) ?? -1) + 1;
 
+      // Auto-anchor from bank balance when provider reports one. When it does not,
+      // fall back to the historical autoseed (trigger sets anchor=0).
+      const bankBalanceRaw = (account as any).balance;
+      const hasBankBalance = bankBalanceRaw !== null && bankBalanceRaw !== undefined;
+      const bankBalance = hasBankBalance
+        ? Math.round(Number(bankBalanceRaw) * 100) / 100
+        : null;
+      const anchorDateIso = ((account as any).last_synced_at as string | null) ?? new Date().toISOString();
+
+      const insertPayload: Record<string, unknown> = {
+        user_id: userId,
+        name: body.create_new.name,
+        currency: body.create_new.currency ?? account.currency ?? "EUR",
+        business_profile_id: account.business_profile_id,
+        sort_order: nextOrder,
+      };
+      if (hasBankBalance) {
+        insertPayload.balance = bankBalance;
+        insertPayload.correction_anchor_balance = bankBalance;
+        insertPayload.correction_anchor_date = anchorDateIso;
+        insertPayload.anchor_source = "bank_reconciliation";
+      }
+
       const { data: newSource, error: createErr } = await admin
         .from("custom_payment_sources")
-        .insert({
-          user_id: userId,
-          name: body.create_new.name,
-          currency: body.create_new.currency ?? account.currency ?? "EUR",
-          business_profile_id: account.business_profile_id,
-          sort_order: nextOrder,
-        })
+        .insert(insertPayload)
         .select("id")
         .single();
 
@@ -91,6 +108,27 @@ Deno.serve(async (req) => {
         });
       }
       paymentSourceId = newSource.id;
+
+      // Audit trail for the initial bank-sourced anchor.
+      if (hasBankBalance) {
+        const { error: auditErr } = await admin
+          .from("anchor_audit")
+          .insert({
+            source_id: paymentSourceId,
+            user_id: userId,
+            old_anchor_date: null,
+            old_anchor_balance: null,
+            old_balance: null,
+            new_anchor_date: anchorDateIso,
+            new_anchor_balance: bankBalance,
+            anchor_source: "bank_reconciliation",
+            reason: "bank-link-account: initial anchor from bank balance",
+            actor: userId,
+          });
+        if (auditErr) {
+          console.error("[bank-link-account] anchor_audit insert failed", auditErr);
+        }
+      }
     }
 
     // Update mapping (paymentSourceId may be null to unlink)
