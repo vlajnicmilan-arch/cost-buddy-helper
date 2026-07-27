@@ -1,293 +1,110 @@
 
-## Krug Settlement — Faza B: izvedbeni plan
+# Faza C — prijedlog izvedbe (Krug settlement automatizacija)
 
-Nastavak Faze A (`krug_settlement_preview` RPC). NULA dodira na balance engine, `expenses` write put, anchor, `custom_payment_sources` ni jednu balance funkciju. Sve nove tablice su **zaseban settlement sloj** koji čita `expenses` samo read-only kroz SECURITY DEFINER RPC-e.
+Status: **prijedlog, nije odobren**. Ništa se ne gradi dok Milan ne kaže "gradi". Faze A/B zatvorene, Milan odobrio cilj (puni C s multi-currency). Grupirano u 4 pod-faze, gradive inkrementalno; svaka je sama za sebe upotrebljiva.
 
----
+## Rizik / non-goals (potvrde tražene)
 
-### 1. Migracija (schema-only, additive)
-
-#### 1.1 `krug_settlement_ledger` — zabilježena podmirenja
-
-```sql
-CREATE TYPE public.krug_settlement_status AS ENUM ('settled','voided');
-
-CREATE TABLE public.krug_settlement_ledger (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  krug_id        uuid NOT NULL REFERENCES public.krug(id) ON DELETE CASCADE,
-  from_user      uuid NOT NULL,           -- dužnik (plaća)
-  to_user        uuid NOT NULL,           -- vjerovnik (prima)
-  amount         numeric(14,2) NOT NULL CHECK (amount > 0),
-  currency       text NOT NULL,           -- ISO 4217, isti kao settlement u trenutku klika
-  status         public.krug_settlement_status NOT NULL DEFAULT 'settled',
-  note           text,
-  settled_at     timestamptz NOT NULL DEFAULT now(),
-  settled_by     uuid NOT NULL,           -- tko je kliknuo "Označi podmireno"
-  voided_at      timestamptz,
-  voided_by      uuid,
-  void_reason    text,
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  updated_at     timestamptz NOT NULL DEFAULT now(),
-  CHECK (from_user <> to_user)
-);
-CREATE INDEX ON public.krug_settlement_ledger (krug_id, status, settled_at DESC);
-CREATE INDEX ON public.krug_settlement_ledger (krug_id, from_user, to_user, status);
-```
-
-**Bez `period_start/end` kolona.** Milanova odluka: mjesec se ne zaključava tvrdo. Ledger je čist tijek podmirenja; preview živog perioda oduzima cijelu zbroj-po-paru neovisno o mjesecu (§3).
-
-Ne stavljamo `UNIQUE` na aktivne redove (jer korisnik može legitimno podmiriti isti par dva puta u istom mjesecu — npr. dvije rate). Zaštita od dvostrukog klika ide kroz **advisory lock u RPC-u + optimistic client debounce**, ne kroz DB unique.
-
-#### 1.2 `krug_expense_split_override` — manual per-član udjeli
-
-```sql
-CREATE TABLE public.krug_expense_split_override (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  expense_id    uuid NOT NULL REFERENCES public.expenses(id) ON DELETE CASCADE,
-  user_id       uuid NOT NULL,          -- član kojemu se pripisuje udio
-  share_pct     numeric(6,3) NOT NULL CHECK (share_pct >= 0 AND share_pct <= 100),
-  created_by    uuid NOT NULL,
-  created_at    timestamptz NOT NULL DEFAULT now(),
-  updated_at    timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (expense_id, user_id)
-);
-CREATE INDEX ON public.krug_expense_split_override (expense_id);
-```
-
-**Zašto `share_pct` a ne `share_amount`:**
-- Iznos troška se može editirati u budućnosti (typo fix). Postotak preživljava — 70% ostaje 70% bez retro-korekcije override tablice.
-- Multi-currency safe: postotak je valuta-agnostičan, konverzija ide na razini settlement RPC-a.
-- Validacija "sum == 100 ± 0.01" ide u **write RPC**, ne u CHECK constraint (CHECK ne može gledati druge redove).
-
-`ON DELETE CASCADE`: ako se trošak obriše, override umire s njim. Ako se trošak retracta iz Kruga (`krug_privacy` promjena), override ostaje kao mrtav podatak — settlement ga jednostavno neće čitati (WHERE `krug_privacy='shared'`). Čisto.
-
-#### 1.3 RLS + GRANT
-
-```sql
--- ledger
-GRANT SELECT ON public.krug_settlement_ledger TO authenticated;
-GRANT ALL   ON public.krug_settlement_ledger TO service_role;
-ALTER TABLE public.krug_settlement_ledger ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "ledger_full_members_read" ON public.krug_settlement_ledger
-  FOR SELECT TO authenticated
-  USING (public.krug_is_full_member(krug_id, auth.uid()));
--- NEMA insert/update/delete politike → sav write ide isključivo kroz SECURITY DEFINER RPC-e (§2).
-
--- override
-GRANT SELECT ON public.krug_expense_split_override TO authenticated;
-GRANT ALL   ON public.krug_expense_split_override TO service_role;
-ALTER TABLE public.krug_expense_split_override ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "override_full_members_read" ON public.krug_expense_split_override
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM public.expenses e
-    WHERE e.id = expense_id
-      AND e.krug_id IS NOT NULL
-      AND public.krug_is_full_member(e.krug_id, auth.uid())
-  ));
--- Write i za override ide isključivo kroz RPC (§2.3) — nema direct DML politike.
-```
-
-`updated_at` trigger na obje tablice (koristi postojeći `update_updated_at_column()`).
+- **Balance engine i `expenses` write put se NE diraju.** Sve nove tablice žive uz Krug ledger, čitanje ide kroz postojeće RPC-ove (`krug_settlement_preview`). `touches_balance=false` za cijelu Fazu C.
+- **Cron infrastruktura postoji** (`audit_secdef_anon_regression`, `monitor-app-health`, `backup-weekly`, `flush-participant-digest`, `check-*`). Reuse: pg_cron + `net.http_post` s vault-storaged internal key (isti obrazac kao `krug_emit_notification`). **Nema novog secreta ako reuse-amo `krug_notify_internal_key`** za nove Krug cron edge fn pozive.
+- **Default privilege revoke** za nove SECDEF funkcije: već automatski (ALTER DEFAULT PRIVILEGES). Svaka nova cron/service fn eksplicitno `REVOKE ALL FROM anon, PUBLIC` + `GRANT EXECUTE TO service_role` radi paper traila.
+- **Nova cron funkcija** (npr. `krug_cron_freeze_fx_snapshots`) mora biti service_role only — isti obrazac kao audit regression cron.
 
 ---
 
-### 2. RPC-ovi (svi SECURITY DEFINER, `set search_path = public`, gate `krug_is_full_member`)
+## C1 — FX snapshot per period + auto-freeze cron
 
-#### 2.1 `krug_settlement_mark_settled`
+**Cilj:** povijesni settlement izračun postaje immutabilan po zaključenju perioda.
 
-```
-krug_settlement_mark_settled(
-  p_krug_id   uuid,
-  p_from_user uuid,
-  p_to_user   uuid,
-  p_amount    numeric,
-  p_currency  text,
-  p_note      text DEFAULT NULL
-) RETURNS uuid  -- id novog ledger reda
-```
+### C1.1 Tablica `krug_settlement_fx_snapshot`
+- Kolone: `krug_id uuid`, `period_start date`, `period_end date`, `display_currency text`, `rates jsonb`, `snapshot_date timestamptz`, `source text` (npr. `frankfurter.app`), `frozen_at timestamptz`, `frozen_by text` (`'cron'|'manual'`).
+- PK: `(krug_id, period_start, period_end, display_currency)`.
+- RLS: SELECT za članove kruga (kroz postojeći `is_krug_member(auth.uid(), krug_id)`); INSERT/UPDATE samo `service_role`.
+- GRANT: `SELECT` na `authenticated`, `ALL` na `service_role`. Bez `anon`.
 
-Logika:
-1. Gate: `krug_is_full_member(p_krug_id, auth.uid())` — inače `insufficient_privilege`.
-2. Validacija: `p_from_user <> p_to_user`, oba `krug_is_full_member`, `amount > 0`, `currency ~ '^[A-Z]{3}$'`.
-3. Advisory lock: `PERFORM pg_advisory_xact_lock(hashtext('krug_settle:'||p_krug_id::text||':'||least(p_from_user,p_to_user)::text||':'||greatest(...)::text))` — dvostruki klik čeka na prvog i vidi već-upisano stanje (klijent detektira duplikat kroz refetch, ne kroz DB error).
-4. Insert red sa `status='settled'`, `settled_by=auth.uid()`.
-5. Return `id`.
+### C1.2 Preview RPC prilagodba (minimalna)
+- `krug_settlement_preview` dobiva neobavezan interni ogranak: **ako postoji snapshot za taj `(krug_id, period, display_currency)` — koristi `rates` iz snapshota i ignoriraj `p_fx_rates` parametar**; inače koristi klijentski `p_fx_rates` (kao danas, Faza A ponašanje za tekući period).
+- Backward-compat: potpis RPC-a ostaje isti. Klijent (`useKrugSettlement`) i dalje šalje `rates` iz `useExchangeRates` — RPC odlučuje.
+- U response payload dodati flag `fx.frozen: boolean` da UI zna prikazati "podaci zamrznuti".
 
-**Nije idempotentan po (from,to,amount,currency)** — Milanova odluka: povijest se gradi iz mark_settled zapisa, korisnik može legitimno podmiriti dvije rate iste vrijednosti.
+### C1.3 Cron freeze fn
+- **Opcija A (preporučeno):** čista SQL cron funkcija `public.krug_cron_freeze_fx_snapshots()` (SECDEF, service_role only) — zove postojeći `exchange-rates` edge fn preko `net.http_post`, zapiše snapshot za sve aktivne Krugove za prethodni mjesec. Prednost: nema novog edge fn, jedna round-trip komponenta.
+- **Opcija B:** nova edge fn `krug-freeze-fx-snapshots` — samo ako trebamo složeniju logiku (npr. hitrost cache-anja rata).
+- **Preporuka: A.** Manje pomičnih dijelova; `exchange-rates` fn već postoji i vraća ratese.
+- Schedule: `0 3 1 * *` (1. u mjesecu, 03:00 UTC) za period `[prošli_mjesec_start, prošli_mjesec_end]`.
+- Idempotent: `ON CONFLICT (krug_id, period_start, period_end, display_currency) DO NOTHING`.
 
-#### 2.2 `krug_settlement_void`
-
-```
-krug_settlement_void(p_ledger_id uuid, p_reason text DEFAULT NULL) RETURNS void
-```
-
-1. `SELECT ... FROM krug_settlement_ledger WHERE id=p_ledger_id FOR UPDATE`.
-2. Gate: `krug_is_full_member(krug_id, auth.uid())`.
-3. Guard: `IF status='voided' THEN RAISE 'already_voided'`.
-4. `UPDATE ... SET status='voided', voided_at=now(), voided_by=auth.uid(), void_reason=p_reason`.
-
-Void = soft-poništeno (za auditsku povijest). Preview ga tretira kao da ne postoji.
-
-#### 2.3 `krug_expense_override_upsert`
-
-```
-krug_expense_override_upsert(
-  p_expense_id uuid,
-  p_shares     jsonb   -- [{"user_id":"...","share_pct":70}, ...]
-) RETURNS void
-```
-
-1. Lookup: `SELECT krug_id, user_id AS payer FROM expenses WHERE id=p_expense_id FOR UPDATE`; ako `krug_id IS NULL` → `RAISE 'not_krug_expense'`.
-2. Gate: `krug_is_full_member(krug_id, auth.uid())`.
-3. Validacija: svi `user_id` u `p_shares` su punopravni članovi Kruga (query `krug_membership` + `krug_ownership`); zbroj `share_pct = 100 ± 0.01`; nema duplikata.
-4. Atomično: `DELETE FROM krug_expense_split_override WHERE expense_id=p_expense_id`; `INSERT ... FROM jsonb_to_recordset(...)`.
-5. Prazan array `[]` = obriši override, vrati na default (krug.split_mode).
-
-#### 2.4 Nema snapshot RPC-a
-
-Milanova UX odluka: **nema tvrdog zaključavanja mjeseca.** Povijest = tijek `ledger` zapisa. `krug_settlement_snapshot` iz originalne skice se **briše iz opsega Faze B.** Ako se ikad zatreba (npr. PDF izvještaj), dolazi u Fazu C.
-
-#### 2.5 Ažuriranje `krug_settlement_preview` iz Faze A
-
-RPC već postoji (potpis `(uuid, date, date, text, jsonb) → jsonb`). Faza B ga proširuje da:
-
-a) čita `krug_expense_split_override` per trošak i koristi te postotke umjesto default `split_mode` share-ova; ako override postoji ali je nepotpun (npr. samo 2 od 3 člana ubačena — teoretski ne moguće nakon validacije, ali defenzivno), fallback na equal + flag `partial_override_fallback`;
-b) čita `krug_settlement_ledger WHERE status='settled'` **za cijeli Krug** (ne period-vezano) i računa `already_settled[from,to] = SUM(amount konvertiran u display_currency)`;
-c) **prije greedy nettinga** oduzima settled iznose od netova: net-per-par se korigira. Konkretno:
-   - Formiraj `net_matrix[i,j]` iz živog perioda (paid/owed).
-   - Za svaki settled red `(from=A, to=B, amount=X)`: to znači "A je već platio B X" → smanjuje A-ov dug prema B. Efektivno: `net[A] += X`, `net[B] -= X`. (A više ne duguje toliko, B više ne prima toliko.)
-   - Nakon korekcije, pokreni greedy netting nad novim netovima.
-d) Response dobiva dva nova polja:
-   - `settled_transfers`: lista već-podmirenih zapisa u periodu-neovisnom rasponu (za povijest tab).
-   - `flags.has_overrides`: `true` ako bilo koji trošak u periodu ima override red.
-
-**Rationale za "nije period-vezano":** ako se novi trošak pojavi 1. dana sljedećeg mjeseca, on ulazi u živi izračun tekućeg preview-a; ako korisnik gleda "prošli mjesec", već-podmireni transferi između istih ljudi svejedno smanjuju net. Live preview je uvijek "sve neriješeno između vas" filtrirano po prikaznom periodu troškova. Ovo je Milanov "još 12 € od zadnjeg poravnanja" model.
-
-Update ide kroz `CREATE OR REPLACE FUNCTION` — obvezno krećemo od žive definicije (`pg_get_functiondef`) po memoriji `replace-function-start-from-live-def`.
-
-#### 2.6 GRANT-ovi
-
-```sql
-REVOKE EXECUTE ON FUNCTION public.krug_settlement_mark_settled(...)  FROM PUBLIC, anon;
-GRANT  EXECUTE ON FUNCTION public.krug_settlement_mark_settled(...)  TO authenticated;
--- isto za void i override_upsert
-```
+**Ovisnosti:** postojeći `exchange-rates` edge fn, `net.http_post`, `vault` (reuse `krug_notify_internal_key` ili novi `krug_fx_freeze_internal_key` — Milan odlučuje).
 
 ---
 
-### 3. Frontend
+## C2 — Reminderi + push notifikacije
 
-#### 3.1 Manual override — inline u ExpenseEdit
+### C2.1 Weekly Krug settlement reminder
+- **Nova preferenca**: `notification_preferences.krug_settlement_reminder_enabled boolean default true`.
+  - Napomena: postojeći `krug_enabled` je globalni Krug prekidač; settlement reminder je posebna vertikala (weekly digest), pa opravdana zasebna preferenca. Ako Milan preferira reuse, `krug_enabled` je fallback.
+- **Edge fn `krug-settlement-reminder`** — cron `0 8 * * 1` (ponedjeljak 08:00 UTC).
+  - Za svakog usera koji ima `krug_settlement_reminder_enabled=true` I `krug_enabled=true`, agregira nepodmirene transfere po Krugu (preview.transfers minus ledger settled) i emitira 1 notifikaciju po Krugu ("Imaš N nepodmirenih stavki u Krugu X, ukupno €Y").
+  - Šalje kroz postojeći `krug_emit_notification` sloj (koji zove `notify-krug-event`) — reuse push, in-app, i18n već pokriveni.
 
-**Plug točka:** `src/components/expense-edit/ExpenseEditForm.tsx` (ili ekvivalent — verificiram prije koda). Uvjet renderiranja: `expense.krug_id != null` i user je punopravni član tog Kruga.
+### C2.2 Push kad se transfer označi podmireno (odgođeno iz Faze B)
+- `krug_mark_settled` RPC (postoji) dodaje `PERFORM krug_emit_notification(...)` s eventom `settlement_marked_settled` i payloadom `{from_user, to_user, amount, currency}`.
+- `notify-krug-event` fn: dodati case za novi event, exclude actor (isti obrazac kao ostali eventi — već testirano u `notifyKrugEventGuards.test.ts`).
+- i18n: novi ključevi `notifications.krug.settlementMarkedSettled.title/body` u hr/en/de.
 
-Nova komponenta: `src/components/krug/KrugExpenseSplitPanel.tsx`
-- Zatvoreni stanje: mala linija `Podijeli: {mod} ▾` gdje je `{mod}` ili "Jednako", "Prema prihodu", "Prilagođeno (Ti 70%, Petar 30%)".
-- Otvoreni stanje (Collapsible): lista svih punopravnih članova s number input `%`, live suma i validacija "mora biti 100%". Gumbi: `Poništi override` (obriše sve), `Spremi` (poziva `krug_expense_override_upsert`).
-- Preset gumbi: `Jednako 50/50`, `Sve na mene`, `Ostavi default`.
-- Read-only preview za neovlaštene (ne-članove, workere) — ne renderira se uopće.
-
-Hook: `src/hooks/useKrugExpenseOverride.ts` — `useQuery` za dohvat postojećeg override-a per expense + `useMutation` za upsert. Invalidira `['krug','settlement', krugId, ...]`.
-
-#### 3.2 "Podmiri" gumb
-
-Plug točka: `src/components/krug/KrugSettlementSection.tsx` — postojeći "Predloženi transferi" list (linije 199-219). Uz svaki transfer dodati gumb `Označi podmireno` (desno, ikona `Check`).
-
-- Klik → confirm dijalog (`AlertDialog`): "Označiti kao podmireno: {from} → {to} {amount}?" + opcijski note textarea.
-- Confirm → poziva `krug_settlement_mark_settled` mutation.
-- Optimistic update: transfer nestaje s liste, ledger se refetcha.
-- Debounce: gumb disabled 3s nakon klika (obrana od dvostrukog klika povrh advisory locka).
-- Bilo koji punopravni član smije (server gate to potvrđuje).
-
-Nova komponenta: `src/components/krug/KrugSettleTransferDialog.tsx`.
-
-Hook: `src/hooks/useKrugSettlementMutations.ts` — `useMarkSettled`, `useVoidSettlement`, `useOverrideUpsert`.
-
-#### 3.3 Povijest podmirenja
-
-Nova komponenta: `src/components/krug/KrugSettlementHistory.tsx` — sekcija ispod transfera u `KrugSettlementSection`.
-- Lista svih ledger zapisa Kruga (najnoviji prvo), grupirano po mjesecu.
-- Svaki red: `{from} → {to}  {amount currency}  · {settled_at}  · {settled_by_ime}` + opcijski note.
-- Voided zapisi: prikazani prekriženo, sa oznakom "Poništeno {voided_at}".
-- Gumb `Poništi` (`Undo2` ikona) na svakom aktivnom redu — confirm dijalog → `krug_settlement_void`.
-- Default collapsed (Collapsible sa "Povijest podmirenja ({count}) ▾").
-
-Hook: `useKrugSettlementLedger(krugId)` — `useQuery` direct SELECT (RLS ionako filtrira).
-
-#### 3.4 i18n
-
-Nova grana `krug.settlement.settle.*`, `krug.settlement.override.*`, `krug.settlement.history.*` u hr/en/de (`src/i18n/locales/*.ts`). Konkretni ključevi:
-
-- `settle.button`, `settle.confirmTitle`, `settle.confirmBody`, `settle.noteLabel`, `settle.success`, `settle.void`, `settle.voidConfirm`, `settle.voidReason`
-- `override.title`, `override.panelHelp`, `override.presetEqual`, `override.presetAllOnMe`, `override.presetDefault`, `override.sumMustBe100`, `override.saveButton`, `override.clearButton`, `override.summaryLine` (npr. "Ti 70%, {name} 30%"), `override.badgeCustom`
-- `history.title`, `history.emptyState`, `history.settledLine`, `history.voidedBadge`, `history.byUser`
-
-#### 3.5 Push notif — **odgoditi u Fazu C**
-
-Milan spomenuo kao pitanje. Prijedlog: **odgoditi.** Razlog: Faza B je već guste opsega (2 tablice, 3 RPC-a, override panel, povijest, void flow). Push je čista dodatnica — traži `push-notification` edge fn integraciju, `notification_preferences` grana i i18n za notif body. Bolje u Fazu C gdje ionako sjedi digest/reminder infrastruktura.
-
-Ako Milan inzistira na Fazi B, dodajem naknadno kao 3.6 (server-side hook u `krug_settlement_mark_settled` koji `PERFORM net.http_post` na push edge fn).
+**Ovisnosti:** postojeći `krug_emit_notification` + `notify-krug-event` (zero-diff arhitektura), `notification_preferences`.
 
 ---
 
-### 4. Testovi
+## C3 — PDF izvoz settlement izvještaja
 
-#### 4.1 Vitest — čista logika (`src/test/`)
+- **Infrastruktura postoji**: `src/lib/loadJsPdf.ts`, `pdfBranding.ts`, `pdfReportKit.ts`, referentni izvoznici (`projectFinancePdfExport.ts`, `decisionPdfExport.ts`, `invoicePdf.ts`).
+- **Preporuka: klijentski PDF, ne edge fn.** Konzistentno s ostatkom aplikacije (jsPDF + autoTable), radi offline, ne troši edge fn budget, koristi postojeći branding kit.
+- Nova datoteka `src/lib/krugSettlementPdf.ts`:
+  - Fn `exportKrugSettlementPdf({ krug, period, preview, ledger, brand, mode })`.
+  - Sadržaj: header (Krug ime, period, display_currency, FX source + snapshot date + `frozen` flag), tablica članova (paid/owed/net), tablica transfera (from → to, amount, currency, status: predloženo/podmireno/void), timeline void/settle akcija iz `krug_settlement_ledger`.
+  - Footer: brand kit (isti kao `projectFinancePdfExport`).
+- UI hook: gumb "Izvezi PDF" u `KrugSettlementSection.tsx` pored postojeće povijesti.
+- i18n: `krug.settlement.pdf.*` (hr/en/de).
 
-- `krugSettlementOverride.test.ts` — validacija sum=100, presets, konverzija pct→amount pri renderiranju sažetka.
-- `krugSettlementNetting.test.ts` — proširiti postojeći: input net + settled_transfers → očekivani net-nakon-poravnanja → transfers. Case: dva partial podmirenja, void, cross-currency settled iznos.
-
-#### 4.2 SQL — `supabase/tests/krug/`
-
-Nove datoteke:
-- `settlement_mark_settled.sql` — 3 punopravna člana, insert ledger, provjeri da preview umanjuje net; non-member ne smije pozvati RPC (RAISES insufficient_privilege); dvostruki paralelni poziv → advisory lock serijalizira, oba završe, refetch pokazuje 2 reda (očekivano, ne unique-blocked).
-- `settlement_void.sql` — void aktivan red, preview vraća net na staro; void već voided → RAISES `already_voided`; non-member void → gate fail.
-- `settlement_override.sql` — upsert 70/30, sum≠100 → error; član-ne-član u shares → error; obriši override [] → preview vraća default equal split; expense delete → override cascade obriše.
-
-#### 4.3 Balance regression policy
-
-Faza B **ne aktivira** `supabase/tests/balance/` suite jer:
-- Nema DDL/DML na `expenses`, `custom_payment_sources`, trigger-e balance-a, anchor-e.
-- Nove tablice su izolirane; `expense_id` FK je ONLY-CASCADE-ON-DELETE (referencija, ne mutacija).
-
-Ipak pokrećemo `detect-drift.sh` jednom prije/poslije da potvrdimo nula drifta u whitelistu.
+**Ne graditi edge fn PDF varijantu za launch** — post-launch samo ako treba server-side (npr. e-mail attachment).
 
 ---
 
-### 5. Rizik-potvrda (Milanov zahtjev)
+## C4 — SQL invariant testovi (manualni template)
 
-- ✅ `krug_expense_split_override` NE dira `expenses.amount`, `type`, `krug_privacy`, `krug_shared_status`. Samo READ FK.
-- ✅ `krug_settlement_ledger` NE dira `expenses` uopće. Zaseban ledger.
-- ✅ Balance engine (`recompute_balance_from_anchor`, triggeri na `expenses`, anchor RPC-i) — nula CREATE/ALTER/REPLACE.
-- ✅ `custom_payment_sources` — nula dodira.
-- ✅ Jedini pisci u nove tablice: 3 SECURITY DEFINER RPC-a. Direct DML zaključan (nema policy za INSERT/UPDATE/DELETE — RLS-om default deny).
-- ✅ Preview je jedini čitatelj koji spaja override + ledger sa živim `expenses` podacima. Balance engine ništa od ovoga ne vidi.
-
----
-
-### 6. Redoslijed implementacije kad Milan kaže "gradi"
-
-1. Migracija (schema + RLS + GRANT + 3 nova RPC-a + izmjena `krug_settlement_preview`).
-2. Regeneracija Supabase tipova (auto).
-3. Frontend hooks (`useKrugExpenseOverride`, `useKrugSettlementMutations`, `useKrugSettlementLedger`).
-4. `KrugExpenseSplitPanel` + integracija u ExpenseEdit.
-5. `KrugSettleTransferDialog` + gumb u `KrugSettlementSection`.
-6. `KrugSettlementHistory` sekcija.
-7. i18n hr/en/de.
-8. Vitest testovi.
-9. SQL testovi.
-10. Drift check.
+- Nova datoteka `supabase/tests/krug/settlement_invariants.sql` (rollback-safe template, isti obrazac kao `governance_flow.sql` — **ne izvršava se protiv produkcije**).
+- Invarijante:
+  1. **Balance sum**: `sum(members.paid) == sum(members.owed)` po periodu (tolerancija za FX zaokruživanje: ±0.02 * broj_članova).
+  2. **Settled ≤ owed**: za svaki par (from, to), `sum(ledger.settled_amount) ≤ preview.transfer.amount`.
+  3. **FX snapshot immutabilnost**: nakon freeze-a, ponovno izvršavanje `krug_settlement_preview` za taj period vraća **istovjetne** transfere (byte-equal na round(6)).
+  4. **Override integritet**: svaka `krug_expense_split_override.status='potvrdjena'` ima potvrde od svih punopravnih članova (osim predlagatelja koji se auto-računa).
+  5. **Ledger non-negativity**: `sum(settled_amount) - sum(voided_amount) >= 0` po (krug, from, to, currency).
+- Header s a/b/c/d klauzulama (isti template stil): BEGIN...ROLLBACK, sintetički korisnici, COUNT prije=poslije, pg_locks provjera.
+- **Ne dispatch-ati** — ostaje kao dev-cluster referenca.
 
 ---
 
-### 7. Otvorena pitanja za Milana prije koda
+## Predlagani redoslijed gradnje (inkrementalno)
 
-1. **Push notif u Fazi B ili C?** Prijedlog: **C.** Potvrdi ili odbij.
-2. **Void ovlast:** bilo koji punopravni član, ili samo `settled_by` autor + owner? Prijedlog: **bilo koji punopravni** (konzistentno s mark_settled ovlašću). Potvrdi.
-3. **Override editing rights:** bilo koji punopravni član smije editirati override bilo kojeg krug-troška, ili samo autor troška (`expenses.user_id`)? Prijedlog: **bilo koji punopravni** (isti gate kao settle) — ali ako Milan želi restriktivnije, samo autor + owner je čist gate. Potvrdi.
-4. **Ledger `currency`:** koristimo `settlement_currency` iz trenutka klika (snapshot). Ako se kasnije promijeni `krug.settlement_currency`, stari ledger red ostaje u svojoj valuti i preview ga konvertira kroz živi FX. OK ili tražiš re-denominaciju? Prijedlog: **snapshot, konvertiraj u previewu.**
+1. **C1** (FX snapshot + preview integracija + cron) — temelj, mora prvo.
+2. **C2** (reminderi + push) — nezavisno od C1, može paralelno.
+3. **C3** (PDF izvoz) — čisti frontend, može zadnje ili paralelno s C2.
+4. **C4** (invariant template) — nakon C1 (jer testira FX immutabilnost).
 
-Kad Milan odgovori i kaže "gradi" — dispatcham Fazu B.
+## Post-launch kandidati (moja preporuka za odgodu)
+
+- **PDF preko edge fn** (server-side) — jsPDF klijentski pokriva launch use-case.
+- **Realtime settlement dashboard widget** (agregat kroz sve Krugove korisnika).
+- **Push za override propose/confirm eventi** — dodatak povrh in-app notifikacija.
+
+---
+
+## Otvorena pitanja za Milana (traže odluku prije koda)
+
+1. **FX snapshot vault key**: reuse `krug_notify_internal_key` ili novi `krug_fx_freeze_internal_key`?
+2. **Weekly reminder preferenca**: nova `krug_settlement_reminder_enabled` ili reuse postojeći `krug_enabled`?
+3. **Cron schedule za reminder**: ponedjeljak 08:00 UTC odgovara ili drugi termin?
+4. **PDF sadržaj**: uključiti i override povijest (tko je predložio/potvrdio) ili samo settlement transfere?
+
+Čekam Milanove odgovore + eksplicitno "gradi" prije bilo kakvog koda.
