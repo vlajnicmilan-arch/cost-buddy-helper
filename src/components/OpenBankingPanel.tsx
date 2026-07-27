@@ -45,7 +45,7 @@ export const OpenBankingPanel = () => {
   const contextLabel = activeProfileName ?? t('openBanking.contextPersonal', 'Osobno');
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [country, setCountry] = useState('FI');
+  const [country, setCountry] = useState('HR');
   const [aspsps, setAspsps] = useState<Aspsp[]>([]);
   const [loadingAspsps, setLoadingAspsps] = useState(false);
   const [selectedAspsp, setSelectedAspsp] = useState<string>('');
@@ -429,7 +429,7 @@ export const OpenBankingPanel = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {COUNTRIES_SANDBOX.map(c => (
+                  {COUNTRIES.map(c => (
                     <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>
