@@ -24,11 +24,13 @@ interface Aspsp {
   psu_types?: string[];
 }
 
-const COUNTRIES_SANDBOX = [
-  { code: 'FI', label: 'Finland (sandbox)' },
-  { code: 'EE', label: 'Estonia (sandbox)' },
-  { code: 'LV', label: 'Latvia (sandbox)' },
-  { code: 'LT', label: 'Lithuania (sandbox)' },
+const COUNTRIES = [
+  { code: 'HR', label: 'Hrvatska' },
+  { code: 'SI', label: 'Slovenija' },
+  { code: 'AT', label: 'Austrija' },
+  { code: 'DE', label: 'Njemačka' },
+  { code: 'IT', label: 'Italija' },
+  { code: 'LT', label: 'Litva' },
 ];
 
 export const OpenBankingPanel = () => {
@@ -43,7 +45,7 @@ export const OpenBankingPanel = () => {
   const contextLabel = activeProfileName ?? t('openBanking.contextPersonal', 'Osobno');
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [country, setCountry] = useState('FI');
+  const [country, setCountry] = useState('HR');
   const [aspsps, setAspsps] = useState<Aspsp[]>([]);
   const [loadingAspsps, setLoadingAspsps] = useState(false);
   const [selectedAspsp, setSelectedAspsp] = useState<string>('');
@@ -427,7 +429,7 @@ export const OpenBankingPanel = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {COUNTRIES_SANDBOX.map(c => (
+                  {COUNTRIES.map(c => (
                     <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
                   ))}
                 </SelectContent>

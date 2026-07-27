@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const country = url.searchParams.get("country") || "FI"; // sandbox default
+    const country = url.searchParams.get("country") || "HR";
     const psuType = url.searchParams.get("psu_type") || "personal";
 
     const res = await ebFetch(`/aspsps?country=${country}&psu_type=${psuType}`);
