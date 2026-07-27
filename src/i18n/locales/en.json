@@ -5129,6 +5129,14 @@
       "expired": "Expired",
       "revoked": "Revoked",
       "failed": "Failed"
+    },
+    "throttle": {
+      "buttonCountdown": "Refresh in {{remaining}}",
+      "recent": "Last synced {{ago}} ago. Next sync possible in {{remaining}}.",
+      "rateLimited": "Bank temporarily rate-limited requests. Try again in {{remaining}}.",
+      "durationHm": "{{h}} h {{m}} min",
+      "durationM": "{{m}} min",
+      "durationLtMinute": "less than a minute"
     }
   },
   "trash": {
