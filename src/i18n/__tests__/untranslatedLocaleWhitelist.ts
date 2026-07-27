@@ -114,6 +114,8 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.settlement.pdf.fxStatus": "Technical FX label, same term in EN",
     "krug.settlement.pdf.statusLabel": "Same word in EN",
     "krug.settlement.pdf.col.status": "Same word in EN",
+    "openBanking.throttle.durationHm": "Numeric duration format identical across locales",
+    "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
     "subscription.badge.admin": "Admin terminology",
@@ -243,5 +245,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.settlement.pdf.statusLabel": "Same word in DE",
     "krug.settlement.pdf.col.status": "Same word in DE",
     "krug.settlement.pdf.col.date": "Same word in DE (Datum)",
+    "openBanking.throttle.durationHm": "Numeric duration format identical across locales",
+    "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
 };

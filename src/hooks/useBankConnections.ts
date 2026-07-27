@@ -31,6 +31,7 @@ export interface BankAccount {
   linked_payment_source_id: string | null;
   last_synced_at: string | null;
   last_sync_error: string | null;
+  updated_at: string | null;
 }
 
 /**

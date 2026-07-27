@@ -10,6 +10,12 @@ interface Body {
   bank_account_id: string;
 }
 
+// Throttle constants (per-account cooldowns).
+// Faza 1: bez migracije — koristimo postojeći last_synced_at + last_sync_error(+updated_at kao proxy).
+const SYNC_COOLDOWN_MINUTES = 120;
+const RATE_LIMIT_COOLDOWN_MINUTES = 240;
+const RATE_LIMIT_ERROR_MARKER = "aspsp_rate_limited_429";
+
 interface EBTransaction {
   entry_reference?: string;
   transaction_id?: string;
@@ -90,7 +96,7 @@ Deno.serve(async (req) => {
     // Load bank account + connection
     const { data: account, error: accErr } = await admin
       .from("bank_accounts")
-      .select("id, user_id, business_profile_id, account_uid, currency, last_synced_at, linked_payment_source_id, connection_id")
+      .select("id, user_id, business_profile_id, account_uid, currency, last_synced_at, last_sync_error, updated_at, linked_payment_source_id, connection_id")
       .eq("id", body.bank_account_id)
       .maybeSingle();
 
@@ -131,6 +137,67 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Throttle pre-flight (Faza 1) ──────────────────────────────────────
+    // 1) Post-429 cooldown: ako je zadnji sync pao s ASPSP rate-limitom, čekamo dulje.
+    //    Koristimo updated_at kao proxy za "kad je error zabilježen" (bez migracije).
+    const nowMs = Date.now();
+    const wasRateLimited =
+      typeof account.last_sync_error === "string" &&
+      account.last_sync_error.includes("429");
+    if (wasRateLimited && account.updated_at) {
+      const errAgeMs = nowMs - new Date(account.updated_at).getTime();
+      const cooldownMs = RATE_LIMIT_COOLDOWN_MINUTES * 60 * 1000;
+      if (errAgeMs >= 0 && errAgeMs < cooldownMs) {
+        const retryAfter = Math.ceil((cooldownMs - errAgeMs) / 1000);
+        return new Response(
+          JSON.stringify({
+            error: "aspsp_cooldown",
+            throttled: true,
+            reason: "aspsp_cooldown",
+            retry_after_seconds: retryAfter,
+            last_error_at: account.updated_at,
+            cooldown_minutes: RATE_LIMIT_COOLDOWN_MINUTES,
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+            },
+          },
+        );
+      }
+    }
+
+    // 2) Normalni cooldown: nedavno uspješan sync — spriječi rapid-fire "Osvježi".
+    if (account.last_synced_at) {
+      const ageMs = nowMs - new Date(account.last_synced_at).getTime();
+      const cooldownMs = SYNC_COOLDOWN_MINUTES * 60 * 1000;
+      if (ageMs >= 0 && ageMs < cooldownMs) {
+        const retryAfter = Math.ceil((cooldownMs - ageMs) / 1000);
+        return new Response(
+          JSON.stringify({
+            error: "throttled",
+            throttled: true,
+            reason: "recent_sync",
+            retry_after_seconds: retryAfter,
+            last_synced_at: account.last_synced_at,
+            cooldown_minutes: SYNC_COOLDOWN_MINUTES,
+          }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfter),
+            },
+          },
+        );
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     // Compute date_from: last_synced_at, or 90 days ago
     const since = account.last_synced_at
       ? new Date(account.last_synced_at)
@@ -150,10 +217,33 @@ Deno.serve(async (req) => {
       const text = await res.text();
       if (!res.ok) {
         console.error("[bank-sync-transactions] fetch failed", res.status, text);
+        const errorMarker =
+          res.status === 429 ? RATE_LIMIT_ERROR_MARKER : `fetch_failed_${res.status}`;
         await admin
           .from("bank_accounts")
-          .update({ last_sync_error: `fetch_failed_${res.status}` })
+          .update({ last_sync_error: errorMarker })
           .eq("id", account.id);
+        if (res.status === 429) {
+          const retryAfter = RATE_LIMIT_COOLDOWN_MINUTES * 60;
+          return new Response(
+            JSON.stringify({
+              error: "aspsp_cooldown",
+              throttled: true,
+              reason: "aspsp_cooldown",
+              retry_after_seconds: retryAfter,
+              cooldown_minutes: RATE_LIMIT_COOLDOWN_MINUTES,
+              upstream_status: 429,
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "Retry-After": String(retryAfter),
+              },
+            },
+          );
+        }
         return new Response(JSON.stringify({ error: "fetch_failed", status: res.status, details: text.slice(0, 500) }), {
           status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

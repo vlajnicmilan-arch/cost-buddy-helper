@@ -33,6 +33,56 @@ const COUNTRIES = [
   { code: 'LT', label: 'Litva' },
 ];
 
+// Throttle constants — mora ostati u sinkronu s bank-sync-transactions edge funkcijom.
+const SYNC_COOLDOWN_MINUTES = 120;
+const RATE_LIMIT_COOLDOWN_MINUTES = 240;
+
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function formatDurationHm(totalSeconds: number, t: TFn): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return t('openBanking.throttle.durationHm', { h, m });
+  if (m > 0) return t('openBanking.throttle.durationM', { m });
+  return t('openBanking.throttle.durationLtMinute');
+}
+
+function formatRemaining(totalSeconds: number, t: TFn): string {
+  return formatDurationHm(totalSeconds, t);
+}
+
+function formatAgo(when: Date, t: TFn): string {
+  const s = Math.max(0, Math.floor((Date.now() - when.getTime()) / 1000));
+  return formatDurationHm(s, t);
+}
+
+interface ThrottleInfo {
+  remainingSec: number;
+  reason: 'recent_sync' | 'aspsp_cooldown';
+}
+
+/** Vrati throttle status ili null ako je gumb slobodan. */
+function computeThrottle(acc: BankAccount, nowMs: number): ThrottleInfo | null {
+  const rateLimited =
+    typeof acc.last_sync_error === 'string' && acc.last_sync_error.includes('429');
+  if (rateLimited && acc.updated_at) {
+    const remainingMs =
+      RATE_LIMIT_COOLDOWN_MINUTES * 60 * 1000 - (nowMs - new Date(acc.updated_at).getTime());
+    if (remainingMs > 0) {
+      return { remainingSec: Math.ceil(remainingMs / 1000), reason: 'aspsp_cooldown' };
+    }
+  }
+  if (acc.last_synced_at) {
+    const remainingMs =
+      SYNC_COOLDOWN_MINUTES * 60 * 1000 - (nowMs - new Date(acc.last_synced_at).getTime());
+    if (remainingMs > 0) {
+      return { remainingSec: Math.ceil(remainingMs / 1000), reason: 'recent_sync' };
+    }
+  }
+  return null;
+}
+
 export const OpenBankingPanel = () => {
   const { t } = useTranslation();
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
@@ -57,6 +107,12 @@ export const OpenBankingPanel = () => {
   const [newSourceName, setNewSourceName] = useState('');
   const [linking, setLinking] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  // Tick za live-osvježavanje countdowna (30s) — dovoljno fino, ne trošimo baterije.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Refresh on focus / postMessage from callback
   useEffect(() => {
@@ -193,13 +249,41 @@ export const OpenBankingPanel = () => {
   const handleSync = async (acc: BankAccount) => {
     setSyncingId(acc.id);
     try {
-      const { data, error } = await supabaseInvoke<{ imported: number; skipped: number }>(
-        'bank-sync-transactions',
-        { body: { bank_account_id: acc.id } }
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bank-sync-transactions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token ?? ''}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          },
+          body: JSON.stringify({ bank_account_id: acc.id }),
+        }
       );
-      if (error) throw new Error((error as any)?.message || 'sync_failed');
-      const imported = data?.imported ?? 0;
-      const skipped = data?.skipped ?? 0;
+      const payload = await res.json().catch(() => ({} as any));
+
+      if (res.status === 429 && payload?.throttled) {
+        const remaining = formatRemaining(payload.retry_after_seconds ?? 0, t);
+        if (payload.reason === 'aspsp_cooldown') {
+          showError(t('openBanking.throttle.rateLimited', { remaining }));
+        } else {
+          const ago = payload.last_synced_at
+            ? formatAgo(new Date(payload.last_synced_at), t)
+            : '';
+          showError(t('openBanking.throttle.recent', { ago, remaining }));
+        }
+        refetch();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error || `sync_failed_${res.status}`);
+      }
+
+      const imported = payload?.imported ?? 0;
+      const skipped = payload?.skipped ?? 0;
       if (skipped > 0) {
         showSuccess(t('openBanking.syncSuccessSkipped', { imported, skipped }));
       } else {
@@ -324,6 +408,9 @@ export const OpenBankingPanel = () => {
                     ? customPaymentSources.find(s => s.id === acc.linked_payment_source_id)
                     : null;
                   const isSyncing = syncingId === acc.id;
+                  const throttle = computeThrottle(acc, nowMs);
+                  const remainingLabel = throttle ? formatRemaining(throttle.remainingSec, t as TFn) : '';
+                  const sessionExpired = acc.last_sync_error === 'session_expired';
                   return (
                     <li
                       key={acc.id}
@@ -371,26 +458,49 @@ export const OpenBankingPanel = () => {
                             <Button
                               size="sm"
                               onClick={() => handleSync(acc)}
-                              disabled={isSyncing}
+                              disabled={isSyncing || !!throttle}
                               className="h-8 px-2 text-xs"
+                              title={throttle
+                                ? (throttle.reason === 'aspsp_cooldown'
+                                    ? t('openBanking.throttle.rateLimited', { remaining: remainingLabel })
+                                    : t('openBanking.throttle.recent', {
+                                        ago: acc.last_synced_at ? formatAgo(new Date(acc.last_synced_at), t as TFn) : '',
+                                        remaining: remainingLabel,
+                                      }))
+                                : undefined}
                             >
                               {isSyncing ? (
                                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                               ) : (
                                 <RefreshCw className="w-3 h-3 mr-1" />
                               )}
-                              {isSyncing ? t('openBanking.syncing') : t('openBanking.sync')}
+                              {isSyncing
+                                ? t('openBanking.syncing')
+                                : throttle
+                                  ? t('openBanking.throttle.buttonCountdown', { remaining: remainingLabel })
+                                  : t('openBanking.sync')}
                             </Button>
                           )}
                         </div>
                       </div>
 
-                      {(acc.last_synced_at || acc.last_sync_error) && (
+                      {throttle && !isSyncing && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {throttle.reason === 'aspsp_cooldown'
+                            ? t('openBanking.throttle.rateLimited', { remaining: remainingLabel })
+                            : t('openBanking.throttle.recent', {
+                                ago: acc.last_synced_at ? formatAgo(new Date(acc.last_synced_at), t as TFn) : '',
+                                remaining: remainingLabel,
+                              })}
+                        </div>
+                      )}
+
+                      {!throttle && (acc.last_synced_at || acc.last_sync_error) && (
                         <div className="text-[11px] text-muted-foreground">
                           {acc.last_sync_error ? (
                             <span className="text-destructive flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
-                              {acc.last_sync_error === 'session_expired'
+                              {sessionExpired
                                 ? t('openBanking.sessionExpired')
                                 : `${t('openBanking.syncError')}: ${acc.last_sync_error}`}
                             </span>

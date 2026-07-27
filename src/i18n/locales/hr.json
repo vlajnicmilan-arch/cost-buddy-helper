@@ -5138,6 +5138,14 @@
       "expired": "Isteklo",
       "revoked": "Prekinuto",
       "failed": "Neuspješno"
+    },
+    "throttle": {
+      "buttonCountdown": "Osvježi za {{remaining}}",
+      "recent": "Zadnja sinkronizacija prije {{ago}}. Sljedeća moguća za {{remaining}}.",
+      "rateLimited": "Banka je privremeno ograničila zahtjeve. Pokušaj ponovno za {{remaining}}.",
+      "durationHm": "{{h}} h {{m}} min",
+      "durationM": "{{m}} min",
+      "durationLtMinute": "manje od minute"
     }
   },
   "trash": {

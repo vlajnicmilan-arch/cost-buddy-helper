@@ -5129,6 +5129,14 @@
       "expired": "Abgelaufen",
       "revoked": "Widerrufen",
       "failed": "Fehlgeschlagen"
+    },
+    "throttle": {
+      "buttonCountdown": "Aktualisieren in {{remaining}}",
+      "recent": "Zuletzt vor {{ago}} synchronisiert. Nächste Synchronisation in {{remaining}} möglich.",
+      "rateLimited": "Die Bank hat Anfragen vorübergehend begrenzt. Erneut versuchen in {{remaining}}.",
+      "durationHm": "{{h}} h {{m}} min",
+      "durationM": "{{m}} min",
+      "durationLtMinute": "weniger als eine Minute"
     }
   },
   "trash": {
