@@ -15,12 +15,33 @@ export interface InputProps extends React.ComponentProps<"input"> {
 const NO_CAP_TYPES = new Set(["email", "password", "url", "tel", "number"]);
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, sentenceCase, onChange, autoCapitalize, ...props }, ref) => {
+  (
+    {
+      className,
+      type,
+      sentenceCase,
+      onChange,
+      onCompositionStart,
+      onCompositionEnd,
+      autoCapitalize,
+      ...props
+    },
+    ref,
+  ) => {
     const lastCappedIdx = React.useRef<number | null>(null);
     const composingRef = React.useRef(false);
     const prevValueRef = React.useRef<string>(
-      typeof props.value === "string" ? props.value : typeof props.defaultValue === "string" ? props.defaultValue : "",
+      typeof props.value === "string"
+        ? props.value
+        : typeof props.defaultValue === "string"
+          ? props.defaultValue
+          : "",
     );
+
+    // Kad je controlled i vrijednost se promijeni izvana, sinkroniziraj prevRef.
+    React.useEffect(() => {
+      if (typeof props.value === "string") prevValueRef.current = props.value;
+    }, [props.value]);
 
     const enabled = !!sentenceCase && !NO_CAP_TYPES.has(type ?? "text");
 
@@ -40,7 +61,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         const selStart = el.selectionStart;
         const selEnd = el.selectionEnd;
         el.value = value;
-        // Očuvaj cursor (zamjena znaka je iste dužine).
         try {
           if (selStart !== null && selEnd !== null) el.setSelectionRange(selStart, selEnd);
         } catch {
@@ -51,8 +71,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       onChange?.(e);
     };
 
-    const resolvedAutoCap =
-      autoCapitalize ?? (enabled ? "sentences" : undefined);
+    const resolvedAutoCap = autoCapitalize ?? (enabled ? "sentences" : undefined);
 
     return (
       <input
@@ -63,27 +82,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className,
         )}
         ref={ref}
-        onChange={handleChange}
-        onCompositionStart={(e) => {
-          composingRef.current = true;
-          props.onCompositionStart?.(e);
-        }}
-        onCompositionEnd={(e) => {
-          composingRef.current = false;
-          prevValueRef.current = (e.target as HTMLInputElement).value;
-          props.onCompositionEnd?.(e);
-        }}
         {...props}
-        // Namjerno OVDJE opet, da handleri iznad ne budu prebrisani spreadom:
         onChange={handleChange}
         onCompositionStart={(e) => {
           composingRef.current = true;
-          props.onCompositionStart?.(e);
+          onCompositionStart?.(e);
         }}
         onCompositionEnd={(e) => {
           composingRef.current = false;
           prevValueRef.current = (e.target as HTMLInputElement).value;
-          props.onCompositionEnd?.(e);
+          onCompositionEnd?.(e);
         }}
       />
     );
