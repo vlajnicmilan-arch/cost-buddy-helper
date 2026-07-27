@@ -193,13 +193,41 @@ export const OpenBankingPanel = () => {
   const handleSync = async (acc: BankAccount) => {
     setSyncingId(acc.id);
     try {
-      const { data, error } = await supabaseInvoke<{ imported: number; skipped: number }>(
-        'bank-sync-transactions',
-        { body: { bank_account_id: acc.id } }
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bank-sync-transactions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token ?? ''}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+          },
+          body: JSON.stringify({ bank_account_id: acc.id }),
+        }
       );
-      if (error) throw new Error((error as any)?.message || 'sync_failed');
-      const imported = data?.imported ?? 0;
-      const skipped = data?.skipped ?? 0;
+      const payload = await res.json().catch(() => ({} as any));
+
+      if (res.status === 429 && payload?.throttled) {
+        const remaining = formatRemaining(payload.retry_after_seconds ?? 0, t);
+        if (payload.reason === 'aspsp_cooldown') {
+          showError(t('openBanking.throttle.rateLimited', { remaining }));
+        } else {
+          const ago = payload.last_synced_at
+            ? formatAgo(new Date(payload.last_synced_at), t)
+            : '';
+          showError(t('openBanking.throttle.recent', { ago, remaining }));
+        }
+        refetch();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(payload?.error || `sync_failed_${res.status}`);
+      }
+
+      const imported = payload?.imported ?? 0;
+      const skipped = payload?.skipped ?? 0;
       if (skipped > 0) {
         showSuccess(t('openBanking.syncSuccessSkipped', { imported, skipped }));
       } else {
