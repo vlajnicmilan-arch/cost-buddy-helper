@@ -192,6 +192,17 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
           {t('krug.settlement.title', 'Razračun')}
         </h3>
         <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={handleExportPdf}
+            disabled={exporting || !data || isLoading}
+            aria-label={t('krug.settlement.pdf.exportButton', 'Izvezi PDF')}
+            title={t('krug.settlement.pdf.exportButton', 'Izvezi PDF')}
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          </Button>
           {isOwner && (
             <Button
               size="icon"
@@ -203,6 +214,7 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
               <Settings2 className="w-4 h-4" />
             </Button>
           )}
+
           <Button
             size="icon"
             variant="ghost"
