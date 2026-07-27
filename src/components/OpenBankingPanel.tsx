@@ -107,6 +107,12 @@ export const OpenBankingPanel = () => {
   const [newSourceName, setNewSourceName] = useState('');
   const [linking, setLinking] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  // Tick za live-osvježavanje countdowna (30s) — dovoljno fino, ne trošimo baterije.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Refresh on focus / postMessage from callback
   useEffect(() => {
