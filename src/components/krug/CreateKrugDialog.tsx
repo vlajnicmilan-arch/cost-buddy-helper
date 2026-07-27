@@ -135,6 +135,7 @@ export function CreateKrugDialog({ open, onOpenChange, onCreated }: Props) {
             <Label htmlFor="krug-name">{t('krug.create.nameLabel', 'Naziv Kruga')}</Label>
             <Input
               id="krug-name"
+              sentenceCase
               autoFocus
               value={name}
               maxLength={60}

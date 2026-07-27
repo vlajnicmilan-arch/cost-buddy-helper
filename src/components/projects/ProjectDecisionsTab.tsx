@@ -630,6 +630,7 @@ function DecisionDetail({
           {(legal.canCounter || legal.canCorrect) && (
             <>
               <Textarea
+                sentenceCase
                 value={replyMsg}
                 onChange={(e) => setReplyMsg(e.target.value)}
                 placeholder={t('projects.decisions.replyPlaceholder', 'Poruka za drugu stranu (obavezno kod protuprijedloga/korekcije)...') as string}

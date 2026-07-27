@@ -273,6 +273,7 @@ export const TransactionNotesThread = ({
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Textarea
+            sentenceCase
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder={t('transactions.writeNote', 'Napiši napomenu...')}

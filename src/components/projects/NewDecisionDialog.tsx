@@ -95,6 +95,7 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
             <Label htmlFor="decision-title">{t('projects.decisions.field.title', 'Naslov')} *</Label>
             <Input
               id="decision-title"
+              sentenceCase
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('projects.decisions.field.titlePlaceholder', 'Kratki naslov odluke') as string}
@@ -105,6 +106,7 @@ export function NewDecisionDialog({ open, onOpenChange, onSubmit }: NewDecisionD
             <Label htmlFor="decision-desc">{t('projects.decisions.field.description', 'Opis prijedloga')} *</Label>
             <Textarea
               id="decision-desc"
+              sentenceCase
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('projects.decisions.field.descriptionPlaceholder', 'Detaljno opišite prijedlog...') as string}
