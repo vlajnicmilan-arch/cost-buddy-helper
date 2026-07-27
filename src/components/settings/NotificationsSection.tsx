@@ -159,24 +159,43 @@ export const NotificationsSection = ({
               {categoryItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.key} className="flex items-center justify-between p-2.5 bg-muted/20 rounded-lg">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-primary" />
+                  <div key={item.key}>
+                    <div className="flex items-center justify-between p-2.5 bg-muted/20 rounded-lg">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <Label className="text-xs font-medium cursor-pointer block truncate">
+                            {t(item.labelKey, item.labelDefault)}
+                          </Label>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {t(item.descKey, item.descDefault)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <Label className="text-xs font-medium cursor-pointer block truncate">
-                          {t(item.labelKey, item.labelDefault)}
-                        </Label>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {t(item.descKey, item.descDefault)}
-                        </p>
-                      </div>
+                      <Switch
+                        checked={item.enabled}
+                        onCheckedChange={(v) => setCategory(item.key, v)}
+                      />
                     </div>
-                    <Switch
-                      checked={item.enabled}
-                      onCheckedChange={(v) => setCategory(item.key, v)}
-                    />
+                    {item.key === 'krug' && prefs.krug_enabled && (
+                      <div className="flex items-center justify-between p-2.5 ml-9 mr-1 mt-1 bg-muted/10 rounded-lg">
+                        <div className="min-w-0 pr-2">
+                          <Label htmlFor="krug-settlement-reminder" className="text-xs font-medium cursor-pointer block truncate">
+                            {t('settings.notifKrugReminder', 'Podsjetnici za Krug (tjedno)')}
+                          </Label>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {t('settings.notifKrugReminderDesc', 'Ponedjeljkom u 08:00 UTC: sažetak nepodmirenih stavki koje duguješ.')}
+                          </p>
+                        </div>
+                        <Switch
+                          id="krug-settlement-reminder"
+                          checked={prefs.krug_settlement_reminder_enabled}
+                          onCheckedChange={(v) => setFlag('krug_settlement_reminder_enabled', v)}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

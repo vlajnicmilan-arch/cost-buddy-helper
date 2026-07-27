@@ -1339,7 +1339,11 @@
     "multiCurrencyDisabled": "Multi-currency mode disabled",
     "contactSupport": "Contact support",
     "contactSupportDesc": "Reply within 24h • support@vmbalance.com",
-    "_removed_usageProfile": {}
+    "_removed_usageProfile": {},
+    "notifKrug": "Krug",
+    "notifKrugDesc": "Approvals, membership and Krug deletion",
+    "notifKrugReminder": "Krug settlement reminders (weekly)",
+    "notifKrugReminderDesc": "Every Monday 08:00 UTC: summary of outstanding items you owe."
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
@@ -2580,6 +2584,14 @@
       "deleted": {
         "title": "Krug was deleted",
         "message": "A Krug you were part of has been permanently removed."
+      },
+      "settlement_settled": {
+        "title": "Settlement confirmed",
+        "message": "A Krug member marked a transfer as settled."
+      },
+      "settlement_reminder": {
+        "title": "Outstanding items in Krug",
+        "message": "You have {{count}} outstanding items totalling {{total}} {{currency}}."
       }
     },
     "payment_source_transaction": {

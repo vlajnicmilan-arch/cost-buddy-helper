@@ -29,6 +29,7 @@ export interface NotificationPreferences {
   participant_digest_enabled: boolean;
   participant_digest_hour: number;
   krug_enabled: boolean;
+  krug_settlement_reminder_enabled: boolean;
   decisions_enabled: boolean;
 }
 
@@ -47,6 +48,7 @@ const DEFAULT_PREFS: NotificationPreferences = {
   participant_digest_enabled: true,
   participant_digest_hour: 19,
   krug_enabled: true,
+  krug_settlement_reminder_enabled: true,
   decisions_enabled: true,
 };
 
@@ -97,6 +99,7 @@ export const useNotificationPreferences = () => {
           participant_digest_enabled: data.participant_digest_enabled ?? true,
           participant_digest_hour: data.participant_digest_hour ?? 19,
           krug_enabled: (data as any).krug_enabled ?? true,
+          krug_settlement_reminder_enabled: (data as any).krug_settlement_reminder_enabled ?? true,
           decisions_enabled: (data as any).decisions_enabled ?? true,
         });
       } else {
