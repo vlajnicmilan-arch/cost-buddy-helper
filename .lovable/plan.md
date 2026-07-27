@@ -1,65 +1,72 @@
-# Dijagnoza (read-only)
 
-## 1. "Sandbox" poruka — (a) STATIČNA, kozmetika
+# Dijagnoza — Erste "Tekući" pokazuje 0,00 umjesto -3,00
 
-`src/components/OpenBankingPanel.tsx:264-267` bezuvjetno renderira amber banner s tekstom `t('openBanking.sandboxNotice')`. Nema flaga, nema detekcije okruženja — natpis se prikazuje uvijek, čak i kad backend koristi produkcijske tajne. Zastarjelo od prethodne faze (kad smo bili u sandboxu).
+**SAMO dijagnoza. Ništa nije mijenjano. Odluka je Milanova.**
 
-**Izvori:**
-- `src/i18n/locales/hr.json:5115` — "Trenutno koristimo sandbox okruženje…"
-- `src/i18n/locales/en.json:5106` — isto
-- (de.json vjerojatno analogno)
+## Ukratko
 
-**Zaključak:** poruka NE utječe na funkcionalnost. To je samo natpis koji treba maknuti/prepraviti.
+Nesklad nastaje pri **kreiranju novog novčanika kroz "poveži račun"**, ne u sync-u i ne u prikazu. `bank-link-account` INSERTa novi `custom_payment_sources` red **bez `balance` polja** → default 0. Trigger `_cps_autoseed_anchor` odmah postavi sidro na **`correction_anchor_balance = 0.00`**. Nakon toga sve što bank sync ubaci u transakcije **je datirano PRIJE sidra** (tx-ovi iz 04.–07. mj., sidro 27.07. 19:08), pa recompute vidi 0 post-anchor prometa → prikazuje 0,00.
 
-## 2. Milanovi zapisi u bazi
+Wallet čita `custom_payment_sources.balance`. `bank_accounts.balance = -3,00` **ne završava nigdje u tom lancu**.
 
+## Dokazi iz baze
+
+**bank_accounts** (relevantni red):
+- `277b375d…` IBAN `HR47…4976` EUR, `balance = -3,00`, `linked_payment_source_id = d28bc2f5…` (Tekući). Zadnji update 19:09:12.
+
+**custom_payment_sources** (novi red):
+- `d28bc2f5… "Tekući"`, `balance = 0,00`, `correction_anchor_date = 2026-07-27 19:08:34`, `correction_anchor_balance = 0,00`. Kreiran 19:08:34.
+
+**anchor_audit** (jedini zapis za taj source):
+- `system_initial`, "Auto-seed pri kreiranju novčanika", `new_anchor_balance = 0.00`, 19:08:34. **Nema drugih zapisa**, tj. nijedan naknadan reconciliation nije pokušan.
+
+**Trigger `_cps_autoseed_anchor`** (živa definicija):
 ```
-bank_connections (Milan):
-  1 red, status='pending', bank='Erste & Steiermärkische Bank',
-  created_at=2026-07-27 18:53:50 UTC
-
-bank_accounts (Milan):
-  0 redova
+IF NEW.correction_anchor_date IS NULL THEN
+  NEW.correction_anchor_date    := NEW.created_at;
+  NEW.correction_anchor_balance := COALESCE(NEW.balance, 0);
+  NEW.anchor_source             := 'system_initial';
+END IF;
 ```
+INSERT je došao bez `balance` → `COALESCE(NULL,0) = 0` → sidro 0.
 
-**Interpretacija:**
-- Milan JE pokrenuo flow kroz Centar (`bank-connect-start` je upisao pending red).
-- Ali `bank-connect-complete` nikad nije završio uspješno — status nije prešao u `active`, session_id nije upisan, računi nisu insertani.
-- Znači: ili callback iz Enable Banking nije stigao natrag na `/functions/v1/bank-connect-complete`, ili je stigao i pao (npr. state token mismatch, EB session exchange fail), ili je Milan povezivanje dovršio DIREKTNO u EB dashboardu ("Activate by linking accounts" u EB panelu) što NE trigira Centar callback.
+**`bank-link-account/index.ts` `create_new` grana** (linije 75–86): INSERTa `{ user_id, name, currency, business_profile_id, sort_order }`. **Ne postavlja `balance`, ne postavlja `correction_anchor_*`.** Balans banke se ovdje ne prosljeđuje.
 
-Nema logova od `bank-connect-complete` u prethodnom edge-function log dumpu (nije bootan) — to potvrđuje da callback vjerojatno nikad nije ni pogođen s Milanovog spajanja, ili nije bio unutar log prozora.
+**Expenses povezani na taj source** (14 redova, svi PRIJE sidra 27.07. 19:08):
+- Većinom parovi income+expense istog iznosa (neto 0).
+- Jedini "solo" red je income +3,00 od 27.07. 10:00. Njegov `date = 2026-07-27` je **jednak** danu sidra → recompute reže striktnim `>` (day cut / hybrid) → isključen.
+- Ni jedan post-anchor red → `recompute` vraća `anchor_balance + 0 = 0,00`. Točno kako se prikazuje.
 
-## 3. Koji APP_ID edge fn koristi
+Napomena: kad bi sidro bilo dovoljno rano da uhvati svih 14 redova, zbroj bi bio **+3,00**, ne -3,00 (parni parovi + solo +3). Znači i "pomak sidra unazad" **ne bi** sam po sebi reproducirao -3. Realan bank saldo -3 nije potpuno pokriven zapisanim tx-ovima; sinkronizirano je najvjerojatnije samo posljednjih ~90 dana, ranija povijest nedostaje.
 
-Ne mogu čitati vrijednost tajne u vaultu (secret values nisu izloženi). Indirektna provjera nije napravljena (nisam htio dispatchati poziv bez odobrenja). Dvije opcije za verifikaciju kasnije:
-- Trigger `bank-list-aspsps?country=HR` i gledati vraća li stvarne HR ASPSP-ove (produkcija) ili prazno/error (sandbox nema HR).
-- Dodati jednokratni `console.log(APP_ID.slice(0,8))` u shared helper (ne sad, treba odobrenje).
+## Odgovori na 5 pitanja
 
-**Indicij da su prod tajne aktivne:** Milan tvrdi da je uspješno linkao PRAVE Erste račune kroz EB produkcijski dashboard koristeći isti APP_ID (`ef3e7b6f…`). To znači tajne u vaultu su ispravne (jer Milan ih je zamijenio). Da su edge fn još držale stari APP_ID, EB /auth poziv bi vratio grešku ili sandbox flow. Umjesto toga imamo pending red = EB /auth je prošao = APP_ID stvarno je produkcijski.
+1. **Sidro postoji**, `system_initial`, 27.07. 19:08:34, vrijednost **0,00** (ne -3,00). Kreiran ga je autoseed trigger u istoj INSERT transakciji.
 
-## Glavna hipoteza zašto računi ne dolaze u Wallet
+2. **Bank-sync i bank-link-account ne prosljeđuju bank saldo u payment source.** `bank-sync-transactions` ažurira samo `bank_accounts.balance`. `bank-link-account.create_new` kreira `custom_payment_sources` s defaultima; balans/sidro nikad ne postavlja iz `bank_accounts.balance`.
 
-Milan je klikom u **Enable Banking dashboardu** ("Activate by linking accounts") linkao račune na EB strani, ali to je *EB-side aktivacija licence/pristupa*, ne PSD2 consent flow za konkretnog krajnjeg korisnika kroz Centar. PSD2 consent + session koji Centar treba mora ići:
+3. **Nema clampa na nulu.** Ostali Milanovi novčanici drže negative bez problema (-186.38, -535.60, -1077.07, -77.48). Balance triggeri (`_cps_balance_guard_*`, `_expenses_recompute_source_balance`) ne clampaju.
 
-```
-Wallet UI → bank-connect-start → EB /auth (redirect na banku)
-→ user login/consent na Ersteu → banka redirecta na
-bank-connect-complete → EB /sessions (razmjena code→session_id)
-→ bank_connections.status='active' + bank_accounts INSERT
-```
+4. **Wallet čita `custom_payment_sources.balance`** (0,00), ne `bank_accounts.balance` (-3,00). Nesklad je stvaran i sistemski: dvije tablice, jedan smjer sinkronizacije (Enable Banking → `bank_accounts`), nijedan smjer prema `custom_payment_sources.balance` osim ručnog "Poravnaj s bankom" (align_source_to_bank) i user set_source_anchor.
 
-Ako Milan nije dovršio bankovni login+consent na Ersteovim stranicama tako da završi na `.../functions/v1/bank-connect-complete?code=…&state=…`, session nikad nije razmijenjen i računi ne postoje u Centar bazi. Stanje `pending` bez pripadajućih računa je točno taj scenarij.
+5. **Dodavanje drugog računa NIJE poremetilo sidro prvog.** "Tekući zaštićeni" (99f9425d, IBAN 6624…5267) i dalje ima svoje sidro iz 07.07., nepromijenjeno. `anchor_audit` za taj source ne pokazuje nikakav zapis nakon Faza 1 backfilla 22.07. Novi anchor 27.07. 19:08 pripada isključivo **novom** source-u d28bc2f5. Nema koliziji između sidara — svaki novčanik ima svoje.
 
-Pomoćni uzroci koje treba isključiti:
-- **CORS / redirect URL mismatch:** `REDIRECT_URI` u `bank-connect-start` je `${SUPABASE_URL}/functions/v1/bank-connect-complete`. Ako u EB dashboardu (produkcijska app) taj URL nije whitelistan kao dopušteni redirect, banka nikad ne redirecta natrag.
-- **`verify_jwt = false` za complete:** treba potvrditi u `supabase/config.toml` — ako je true, poziv iz EB (bez JWT-a) bi bio odbijen s 401 i pending bi zauvijek ostao pending.
+## Hipoteza / gdje je saldo postao 0
 
-## Preporuka Milanu (samo za razmatranje, ne gradim)
+- **Root cause:** `bank-link-account` `create_new` grana + `_cps_autoseed_anchor` trigger zajedno garantiraju da svaki novčanik nastao klikom "poveži i stvori novi" starta sa **balance = 0 i sidrom 0**, neovisno o tome što banka javlja kao stvarni saldo tog IBAN-a.
+- **Zašto -3 nikad ne stigne u UI:** poznati bankin saldo živi u `bank_accounts.balance` i nema mehanizma koji ga pri linkanju kopira u novi source niti postavlja odgovarajuće sidro. Ručni "Poravnaj s bankom" (`align_source_to_bank`) je jedini put — nije pokrenut (nema `bank_reconciliation` zapisa u auditu za d28bc2f5).
+- **Sekundarno:** čak i da recompute uhvati sve tx-ove, iznos bi bio +3 (ne -3) jer sinkronizirana povijest nije dovoljno duboka. Bez oslanjanja na bankin saldo pri linkanju, saldo se ne može ispravno rekonstruirati iz samih transakcija.
 
-Prije bilo kakvog popravka, korisno je:
-1. U EB produkcijskoj aplikaciji provjeriti da je registriran redirect URL `https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/bank-connect-complete`.
-2. Potvrditi `verify_jwt = false` za `bank-connect-complete` u `supabase/config.toml`.
-3. Milan iznova pokreće flow **iz Centar Walleta** (ne iz EB dashboarda), prati redirect na Erste, završi login/SCA, i gleda vraća li ga na Centar stranicu s porukom "Banka je spojena". Ako da — bank_accounts se puni. Ako ne — logovi `bank-connect-complete` pokazat će zašto.
-4. Sandbox banner (točka 1) makne se ili zamijeni statusnim natpisom "Produkcija — HR banke aktivne" u zasebnoj mikroizmjeni.
+## Značajno usput
 
-Ništa nije mijenjano.
+- `bank_accounts` sadrži **duplikate istog IBAN-a s različitim valutama** (HR41…6997 postoji i kao EUR i kao HRK; HR47…4976 postoji i kao EUR i kao HRK). To je artefakt Enable Banking "multi-currency subaccount" modela. Prilikom linkanja treba paziti da se veže **EUR** subaccount (ovdje je Milan spojio ispravan EUR red 277b375d…, ne HRK aa1fce2a…).
+- Tri od pet Milanovih bank_accounts redova (dva HRK i jedan EUR HR41…6997) **nisu linkani** ni na jedan payment source. To je zasebno pitanje, ne uzrok trenutnog -3 vs 0 nesklada.
+
+## Što NIJE uzrok
+
+- Nije clamp na 0.
+- Nije trigger koji tretira negative kao grešku.
+- Nije "drugi račun je pojeo sidro prvog".
+- Nije bug u prikazu — komponenta prikazuje točno ono što `custom_payment_sources.balance` sadrži.
+
+Čekam Milanovu odluku o smjeru — više opcija je moguće (autoseed iz bank_accounts.balance pri link-anju, ili obavezno predlaganje "Poravnaj s bankom" odmah nakon linkanja, ili nešto treće). Ništa se ne mijenja bez odobrenja.
