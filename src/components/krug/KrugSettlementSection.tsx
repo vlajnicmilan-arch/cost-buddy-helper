@@ -2,19 +2,23 @@
  * KrugSettlementSection — Faza A read-only preview.
  * BEZ write akcija. "Označi podmireno" je Faza B.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2, Download } from 'lucide-react';
 import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKrugSettlement';
+import { useKrug } from '@/hooks/useKrug';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { KrugSettlementSettings } from './KrugSettlementSettings';
 import { KrugSettleTransferDialog } from './KrugSettleTransferDialog';
 import { KrugSettlementHistory } from './KrugSettlementHistory';
+
 
 
 interface Props {
