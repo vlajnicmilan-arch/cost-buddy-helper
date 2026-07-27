@@ -1,55 +1,73 @@
-## Nalaz (read-only, ništa nije mijenjano)
+## Cilj
+Dobiti sirovi Enable Banking payload za Revolut sesiju `276ab9c0-3157-4f68-9f5b-0b29dbe1fe88` da razriješimo:
+- **(a)** EB stvarno vraća prazno (Revolut PSD2 / EB strana ne izlaže račun), ili
+- **(b)** EB vraća račune u ključu koji naš parser (`session.accounts ?? []`) ne čita.
 
-### 1. Stanje u bazi
-`bank_connections` red `d6176227-…ebbe`:
-- provider: `enable_banking`
-- aspsp_name: **Revolut**, aspsp_country: **LT** (dakle NIJE krivi ASPSP — Milan je spojio Revolut pod LT, što je ispravno)
-- status: `active`
-- session_id: `276ab9c0-3157-4f68-9f5b-0b29dbe1fe88` (postoji → EB `/sessions` razmjena je uspjela s 200 OK)
-- valid_until: `2027-01-23` (~180 dana, uredno)
-- last_error: `NULL`
+## 1. Koji EB endpoint pokazuje istinu
 
-`bank_accounts` za tu konekciju: **0 redova**.
+Naš `bank-connect-complete` radi jedan poziv:
+- `POST /sessions` (razmjena `code` → session objekt). Iz tog odgovora čita `session.accounts` (fallback `[]`) i `session.session_id`.
 
-### 2. Što kaže kod (`supabase/functions/bank-connect-complete/index.ts`)
-Redoslijed nakon uspješne razmjene:
-```ts
-const session = JSON.parse(sessText);
-const accounts: any[] = session.accounts ?? [];   // <-- kritična točka
-...
-if (accounts.length > 0) { upsert + balance fetch }
-```
-Loga se **samo greška** (session exchange fail, accounts upsert error, balance fetch warn). **Success path ne loga ništa.**
+Za dijagnozu su tri EB endpointa relevantna, svi read-only (GET), autorizirani istim RS256 JWT-om (App ID + private key) preko postojećeg `ebFetch()` helpera:
 
-### 3. Što kažu edge logovi
-Za funkciju `bank-connect-complete` u zadnjem prozoru **nema nijednog log retka koji spominje** `Revolut`, `d6176227`, `276ab9c0`, `accounts`, `session`, `balance` — samo Boot/Shutdown zapisi. To znači:
-- `sessRes.ok === true` (inače bi bio error log + status='failed')
-- `accounts.length === 0` (inače bi barem balance-fetch warn ili accounts upsert error postojao) — a i status je postavljen na `active` što se događa **bez obzira** na accounts.length
+1. **`GET /sessions/{session_id}`** — vraća cijeli session objekt kakav postoji sada na EB strani. Očekivani oblik (prema EB dokumentaciji):
+   ```json
+   {
+     "status": "AUTHORIZED",
+     "accounts": [ { "uid": "...", "account_id": {"iban": "..."}, "name": "...", "currency": "EUR", ... } ],
+     "access": { "accounts": [...], "valid_until": "..." },
+     "aspsp": { "name": "Revolut", "country": "LT" },
+     "psu_type": "personal"
+   }
+   ```
+   Ako je `accounts: []` ovdje, EB stvarno nema računa za taj consent → **(a)**.
+   Ako `accounts` sadrži elemente, ili se pojavljuje pod drugim ključem (`accounts_data`, `access.accounts`, itd.) → **(b)**.
 
-Dakle grana `if (accounts.length > 0)` **nije se izvršila** za Revolut, dok je za Erste jest.
+2. **`GET /accounts`** (s `Session-Id` header / query param — točan mehanizam ovisi o EB implementaciji; treba provjeriti u dokumentaciji prije poziva). Alternativni pogled istog resursa; korisno ako `/sessions/{id}` iz nekog razloga ne vraća `accounts` array uopće.
 
-### 4. Gdje se točno "gube" računi
-Ne mogu razlikovati bez uhvaćenog EB response payloada (kod ne loga session body):
-- **(a) EB je vratio prazan `session.accounts: []`** za Revolut consent — problem na Revolut/EB strani (consent bez računa, ili LT Revolut sandbox/live specifika).
-- **(b) EB je vratio ne-prazan payload pod drugim ključem** (npr. `session.account_list`, `session.access.accounts`) pa `session.accounts ?? []` završi kao prazan → problem u našem parseru.
+3. **`GET /sessions/{session_id}/accounts`** (ako postoji kao poseban resurse) — neki PSD2 agregatori razdvajaju session metadata od accounts liste.
 
-Grešku (c — 401/403/422) mogu isključiti: status bi bio `failed` i `last_error` popunjen.
+**Prijedlog:** krenuti s (1). Ako je jasan odgovor, ne trebaju (2)/(3). Ako je payload dvosmislen, dodati (2) u istoj dijagnostici.
 
-### 5. Hipoteza (najvjerojatnije)
-Prislanjajući na to da:
-- Erste (kroz isti kod, isto polje `session.accounts`) je vratio 5 računa uredno,
-- Enable Banking dokumentacija koristi `session.accounts` konzistentno preko ASPSP-ova,
-- Revolut LT pod EB je poznat po tome da user tijekom Revolut consent flowa **bira koje račune dijeli**, i default može biti "nijedan" ili samo neki produkti (npr. samo Vaults/Pockets bez glavnog EUR računa),
+## 2. Opcije izvršenja (za Milanovu odluku)
 
-**vjerojatnije (a): EB je vratio prazan accounts array** jer Revolut consent nije obuhvatio nijedan account resource, iako je Milan "sve odobrio" u našoj percepciji. Revolut PSD2 UI zna imati zaseban korak "select accounts to share" koji se lako preskoči.
+### Opcija A — privremeni `console.log` u `bank-connect-complete`
+- **Što se mijenja:** jedan redak `console.log("[diag] EB session payload:", sessText)` odmah nakon `sessRes.text()`.
+- **Postupak:** deploy → Milan ponovno pokreće Revolut spajanje → payload završi u edge logu → log se čita → redak se briše u istom radu (isti commit dodaje i vadi).
+- **Prednosti:** hvata točno onaj payload koji dolazi u realnom OAuth flowu.
+- **Mane:** traži da Milan **prekine trenutnu konekciju** (`d6176227…`) i napravi novu (jer se `code→/sessions` razmjena dešava samo jednom po authorization codeu). Trenutni session_id nam ne pomaže jer taj put ne prolazi kroz callback ponovno.
+- **Trajnost:** privremeno; nakon vađenja log-a, kod je vraćen u prethodno stanje.
 
-Sekundarna mogućnost (b) postoji ali je manje vjerojatna jer bi ista shema pukla i za druge banke.
+### Opcija B — jednokratna read-only diag edge funkcija
+- **Što se mijenja:** dodaje se privremena edge funkcija (npr. `eb-diag-revolut`) koja radi **samo GET** pozive na EB (`/sessions/{id}`, opcionalno `/accounts`) koristeći postojeći `ebFetch()` iz `_shared/enableBankingJwt.ts`. Vraća raw JSON. **Ne piše u bazu.** Session ID je hardkodiran ili prosljeđen kao query param, restriktiran na Milanovu rolu.
+- **Napomena:** iz konteksta prethodnog rada takva funkcija (`supabase/functions/eb-diag-revolut/index.ts`) već postoji od zadnjeg turn-a. Ovaj plan predlaže: **potvrditi da je i dalje read-only**, pozvati je jednom nad **trenutnom** sesijom (`276ab9c0…`), pročitati odgovor, **obrisati funkciju** u istom radu.
+- **Prednosti:** ne traži novi consent flow niti prekid trenutne konekcije. Radi nad *točno onom* sesijom koja je vratila 0 računa. Trenutačan odgovor.
+- **Mane:** ostavlja edge funkciju u repo-u do brisanja; treba disciplina da se očisti odmah.
+- **Trajnost:** privremeno; funkcija se briše (`supabase--delete_edge_functions` + rm izvornog fajla) u istom radu.
 
-### 6. Što bi jednoznačno potvrdilo uzrok (NE izvršavam)
-Jedan direktan read-only GET na EB `/sessions/276ab9c0-3157-4f68-9f5b-0b29dbe1fe88` (ili `/sessions/{id}` + `/accounts` s tim session bearerom) vratio bi točan payload i završio dilemu (a) vs (b). To zahtijeva dispatch edge funkcije ili dodavanje diag logiranja — čekam Milanovu odluku prije bilo kakve akcije.
+### Opcija C — poziv EB API-ja izvana (curl s JWT-om)
+- **Što se mijenja:** ništa u repo-u ni u bazi. Lokalno se generira JWT (isti algoritam kao `enableBankingJwt.ts`) pomoću `ENABLE_BANKING_APP_ID` i `ENABLE_BANKING_PRIVATE_KEY`, i pozove `curl https://api.enablebanking.com/sessions/276ab9c0…`.
+- **Prednosti:** apsolutno nula promjena u aplikaciji. Najčišći "read-only".
+- **Mane:** private key nije dostupan izvan Lovable Cloud secrets-a — Milan bi ga trebao ručno izvući ili se poziv radi iz sandboxa koji ima pristup secretima. Praktično je ekvivalentno Opciji B ali bez edge funkcije, ako ovaj sandbox može pozvati EB direktno s JWT-om napravljenim u Deno/Node skripti koja učita secrete.
+- **Trajnost:** ništa se ne dodaje ni ne mijenja.
 
-### Preporuka za odluku (samo opis, ne izvršavam)
-- **Ako Milan potvrdi (a):** ponovno spojiti Revolut i pažljivo proći sve korake u Revolut consent flowu (posebno "select accounts" ekran).
-- **Ako želi hard proof prije:** odobriti jednokratni read-only diag poziv na EB `/sessions/{session_id}` (dodati privremeni log ili pozvati kroz jednokratni helper) — da vidimo točan payload prije bilo kakve akcije.
+## 3. Preporuka
 
-**Ništa nije mijenjano. Čekam Milanovu odluku.**
+**Opcija B** — jer:
+- Radi nad **trenutnom** sesijom (`276ab9c0…`) koja je konkretno vratila 0 računa. Opcija A traži novi consent flow i moglo bi se ponoviti isto ponašanje bez uvida u staru sesiju.
+- Ne dira produkcijski `bank-connect-complete` path (nema rizika za druge banke / balance / settlement).
+- Diagnostička funkcija već postoji iz prethodnog turn-a — treba samo potvrditi opseg (GET only, bez DB writeova), pozvati, pročitati, obrisati.
+
+Ako Opcija B ne razriješi (npr. EB vrati isti prazan payload i za `/sessions/{id}` i za `/accounts`), tada Opcija A kao drugi korak: dodati diag log i tražiti Milana da ponovi consent flow, jer tada trebamo vidjeti **inicijalnu** `POST /sessions` razmjenu, ne samo current state.
+
+## 4. Ograničenja (potvrđeno)
+
+- **Baza:** nula pisanja. `bank_connections`, `bank_accounts`, `expenses`, sve netaknuto.
+- **Trajni kod:** nula izmjena. `bank-connect-complete`, `bank-connect-start`, `_shared/enableBankingJwt.ts` netaknuti.
+- **EB strana:** samo GET pozivi, nula pisanja.
+- **Druge banke / balance / settlement / recurring / sync:** netaknuto.
+- Diagnostika (Opcija A log ili Opcija B funkcija) briše se **u istom radu** čim se odgovor pročita.
+
+## Čeka Milanovu odluku
+- Opcija A, B ili C?
+- Ako B: potvrda da smijem re-verificirati opseg postojeće `eb-diag-revolut` funkcije (samo `code--view`, bez izmjena) prije poziva.
