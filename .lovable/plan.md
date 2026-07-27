@@ -1,64 +1,73 @@
 
-# Dijagnoza: automatski raspored bank-sync (read-only)
+# Plan: throttle za ručni bank-sync (Faza 1)
 
-Sve tvrdnje ispod potvrđene su čitanjem `cron.job`, `supabase/functions/bank-sync-transactions/index.ts` i `src/components/OpenBankingPanel.tsx`. Ništa nije mijenjano.
+Cilj: spriječiti da ručni "Osvježi" udara u ASPSP 429. Bez dirananja auth modela, multi-tenanta, balance engine-a ili crona.
 
-## 1. Postoji li cron za bank-sync?
+## 1. Gdje throttle živi — **oboje**
 
-**Ne.** `cron.job` sadrži ~15 aktivnih jobova (trial-reminder, check-reminders, milestone-deadlines, monitor-app-health, activation-nudge, process-pending-deletions, cleanup-stale-push-tokens, send-daily-summary itd.). **Nijedan ne zove `bank-sync-transactions` ni bilo koji `bank-*` endpoint.** Filter `jobname ILIKE '%bank%' OR command ILIKE '%bank-sync%'` vratio je 0 redova.
+- **Backend (`bank-sync-transactions/index.ts`) = prava zaštita.** Odmah nakon učitavanja `bank_accounts` reda, prije prvog `ebFetch` poziva, provjeri:
+  - `last_synced_at` — ako je unutar cooldown prozora, vrati `429` (ili `409`) s JSON-om `{ error: "throttled", retry_after_seconds: N, last_synced_at }`. **Ne troši EB poziv.**
+  - `last_sync_error` — ako je zadnji sync završio s `fetch_failed_429` (ili novom oznakom `aspsp_rate_limited`) unutar cooldowna nakon 429, vrati `{ error: "aspsp_cooldown", retry_after_seconds: N }`.
+- **Frontend (`OpenBankingPanel.tsx`) = UX sloj.** Iz već poznatog `acc.last_synced_at` izračuna preostalo vrijeme, disable-a "Osvježi" gumb i prikazuje odbrojavanje ("Sljedeće osvježavanje moguće za 42 min"). Ako korisnik svejedno klikne (npr. drugi tab), backend ga vrati s prijaznom porukom umjesto EB pozivom.
 
-## 2. Kako se `bank-sync-transactions` pokreće?
+Frontend sam nije dovoljan (može se zaobići reloadom, drugom sesijom, curl-om). Backend sam radi ali je UX loš (klik → čekanje → greška). Oboje = robust + čist UX.
 
-**Samo ručno, iz UI-a.** Jedini pozivatelj u repou je `OpenBankingPanel.tsx` → `handleSync(acc)` → `supabase.functions.invoke('bank-sync-transactions', { body: { bank_account_id: acc.id } })`.
+## 2. Prag (cooldown)
 
-- Prima **`bank_account_id`** (jedan račun po pozivu).
-- **Ne** postoji "sync sve" endpoint — UI ima gumb "Osvježi" po pojedinom računu.
-- Funkcija zahtijeva JWT (user token), pa je iz crona pozvati nije trivijalno (treba service role ili synthetic token).
+- **Normalni cooldown: 30 minuta po računu.** PSD2 dozvoljava 4/dan/račun (unattended); kad je korisnik prisutan (SCA ≤ 90 dana) nema strogog limita, ali Erste ipak vraća 429 na burst. 30 min ostavlja Milanu ~48 slotova dnevno kad zbilja treba svjež podatak, dok sprječava rapid-fire.
+- **Post-429 cooldown: 60 minuta po računu.** Ako je EB/ASPSP već vratio 429, čekamo dulje.
+- Vrijednosti izložene kao **konstante na vrhu edge funkcije** (`SYNC_COOLDOWN_MINUTES = 30`, `RATE_LIMIT_COOLDOWN_MINUTES = 60`), lako kasnije podesiti bez migracije.
 
-## 3. Rate limit — po računu ili po konekciji?
+Ne predlažem dnevni brojač (4/dan) u fazi 1 — dodaje state i tablicu; 30-min cooldown pokriva 90%+ slučajeva jednostavnije.
 
-**Ne može se utvrditi iz našeg koda.** Kod samo prosljeđuje HTTP poziv Enable Bankingu (`ebFetch('/accounts/{account_uid}/transactions?...')`) i pri 429 vraća `fetch_failed_429`. Nema logike koja bi otkrila je li limit per-account ili per-session/consent.
+## 3. Kako izmjeriti "koliko je prošlo"
 
-Danas viđena poruka: `ASPSP_RATE_LIMIT_EXCEEDED` — to je limit **ASPSP-a (banke)**, ne EB-a. PSD2 regulativa (RTS on SCA, čl. 10) definira **4 dohvata podataka po računu / 24h** kad korisnik nije prisutan (unattended). Kad je korisnik prisutan (SCA unutar 90 dana), nema limita. Većina hrvatskih banaka (Erste uključujući) taj limit tumači **per-account per-24h**, ali to treba **potvrditi u Erste/EB dokumentaciji** — ne izvodim to iz koda.
+**`bank_accounts.last_synced_at` je dovoljan** i već postoji (potvrđeno u schemi: `timestamp with time zone`). Funkcija ga trenutno ažurira na kraju uspješnog sync-a (`.update({ last_synced_at: new Date().toISOString(), last_sync_error: null })`).
 
-Praktični worst case za planiranje: **4 poziva po računu dnevno**.
+Za post-429 cooldown iskoristit ćemo postojeći `last_sync_error` (tekstualno polje). Kod već upisuje `fetch_failed_429` kad EB vrati 429. Trebat će samo dodati timestamp — najjednostavnije **iskoristi `updated_at`** (auto-touched preko update triggera) uz `last_sync_error LIKE '%429%'`. Ako se pokaže da `updated_at` "drifta" iz drugih razloga, u fazi 1.5 dodamo `last_sync_error_at` kolonu (jedna migracija). **Za fazu 1: bez migracije.**
 
-## 4. Troši li ručni "Osvježi" istu kvotu?
+## 4. Poruka korisniku (i18n hr/en/de)
 
-**Da.** Ručni i automatski poziv idu istim putem (`ebFetch → GET /accounts/{uid}/transactions`). ASPSP broji HTTP pozive, ne razlikuje "user pressed refresh" od "cron ran". Milanovih 4+ ručnih klika danas potrošilo je dnevnu kvotu.
+Backend vraća strukturirani JSON, frontend prevodi. Novi i18n ključevi (u `src/i18n/locales/{hr,en,de}/*`):
 
-## 5. Koliko EB poziva jedan sync napravi?
+- `bank.throttle.recent` → "Osvježeno prije {{ago}}. Sljedeće osvježavanje moguće za {{remaining}}."
+- `bank.throttle.rateLimited` → "Banka je privremeno ograničila pristup. Pokušajte ponovno za {{remaining}}."
+- `bank.throttle.buttonCountdown` → "Osvježi (za {{remaining}})"
 
-**≥ 1 po računu, moguće više zbog paginacije.** Petlja `do { ebFetch(...) } while (continuation_key && safety < 20)` — svaka stranica je jedan poziv. Za normalan sync (posljednji `last_synced_at`, malo novih transakcija) tipično **1 poziv**. Za prvi sync (90 dana povijesti) može biti više stranica.
+Bez toast tehničkih grešaka. `StatusFeedback` (postojeći sustav, 1200ms) za "Osvježeno" success; inline hint ispod gumba za throttle stanje.
 
-Milan ima Erste (5 računa) + Revolut (0 računa) = **5 računa × ~1 poziv = ~5 EB poziva po "sync sve" ako bi netko sve odjednom vrtio**. Kvota po računu je neovisna, pa "sync sve" ne troši quotu jednog računa 5×.
+## 5. Cooldown nakon 429
 
-## 6. Ima li throttle u kodu?
+Već pokriveno u točki 2: `RATE_LIMIT_COOLDOWN_MINUTES = 60`. Trigger:
+- Ako `ebFetch` vrati 429 → backend upiše `last_sync_error = 'aspsp_rate_limited_429'` (mala promjena postojeće poruke `fetch_failed_429` radi jasnoće) i vrati HTTP 429 s `retry_after_seconds`.
+- Sljedeći poziv u prozoru: backend vidi flag, vraća `{ error: "aspsp_cooldown" }` **bez EB poziva**.
+- Nakon isteka: normalno stanje.
 
-**Ne.** Funkcija nema:
-- provjere "koliko je prošlo od `last_synced_at`",
-- brojača dnevnih poziva,
-- cooldowna nakon 429.
+## 6. Opseg i rizik
 
-Slijepo zove EB pri svakom triggeru. Jedina "zaštita" je `last_sync_error` koji se upisuje nakon neuspjeha, ali ne blokira sljedeći poziv.
+**Ne dira:**
+- ❌ auth model (funkcija i dalje traži user JWT, isti flow)
+- ❌ multi-tenant (throttle je per-account, per-user već preko postojećih RLS-a)
+- ❌ balance/settlement/engine (ne dira `expenses`, ne dira sidra, ne dira `custom_payment_sources`)
+- ❌ cron (nema novog rasporeda)
+- ❌ baza (nema migracije u fazi 1)
+- ❌ `_shared/enableBankingJwt.ts` (throttle je iznad EB poziva)
 
-## Zaključak
+**Dira samo:**
 
-| Pitanje | Odgovor |
+| Datoteka | Promjena |
 |---|---|
-| Cron za bank-sync | **Ne postoji** |
-| Trigger | Ručno, per account, iz `OpenBankingPanel` |
-| Parametri | `bank_account_id` (jedan račun) |
-| EB poziva po sync | 1 (obično), do 20 (paginacija) |
-| Rate limit | PSD2: 4/dan/račun (potrebno potvrditi kod Erste/EB) |
-| Ručni vs auto | Ista kvota |
-| Throttle u kodu | **Nema** |
+| `supabase/functions/bank-sync-transactions/index.ts` | ~40 linija: konstante, pre-flight provjera `last_synced_at` + `last_sync_error`, strukturirani 429 odgovori, precizniji `last_sync_error` string |
+| `src/components/OpenBankingPanel.tsx` | Odbrojavanje preostalog vremena iz `acc.last_synced_at`, disable gumba, čitanje strukturiranog error responsea, prikaz i18n poruke |
+| `src/i18n/locales/hr/*.json` (+ en, de) | 3 nova ključa iz t. 4 |
 
-**Značajno za daljnju odluku (zastajem prije bilo kakve gradnje):**
+Rizik: nizak. Ne mijenja tijek podataka; samo dodaje pre-flight guard i UX oko postojećeg gumba.
 
-1. **`bank-sync-transactions` traži JWT usera** — cron ne može direktno zvati funkciju kao Milan bez service-role bypassa ili refactora funkcije da prihvati service-role poziv s `user_id` parametrom. To je arhitektonska odluka koja mijenja auth model.
-2. **Nema "sync svi računi"** — cron bi morao iterirati `bank_accounts` (koje? sve u sustavu? samo aktivne?) i zvati funkciju N puta. Multi-tenant efekt (svi useri, ne samo Milan).
-3. **PSD2 limit treba potvrditi** prije odabira rasporeda (4/dan = svakih 6h; ako je manje, treba veće razmake).
-4. **Throttle je preduvjet** za auto-sync — bez njega bi cron + ručni klikovi zajedno vjerojatno opet udarali u 429.
+## Otvoreno pitanje za Milana prije build-a
 
-Čekam Milanovu odluku o smjeru (auth model, opseg multi-tenant, potvrđivanje EB/Erste limita) prije bilo kakvog plana implementacije.
+Potvrdi vrijednosti:
+- **Normal cooldown: 30 min** — OK, ili radije 60 min (konzervativnije, veći headroom za budući cron)?
+- **Post-429 cooldown: 60 min** — OK, ili 120 min?
+- Koristiti postojeći `updated_at` kao proxy za "kad je bio zadnji error" (**bez migracije**) ili radije dodati `last_sync_error_at` kolonu odmah (**jedna mini-migracija**)?
+
+Čekam potvrdu prije bilo kakve gradnje.
