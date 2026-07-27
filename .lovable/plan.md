@@ -1,79 +1,70 @@
 
-# Dijagnoza — "Tekući zaštićeni" (HR6624020063581325267)
+# Dijagnoza — SAMO NALAZ, BEZ IZMJENA
 
-**READ-ONLY. Ništa nije mijenjano.**
+Source: `custom:99f9425d-f37c-44ea-81b9-3d10e311b44d` ("Tekući zaštićeni"), Milan.
 
-## 1) Identifikacija sourca
+## 1. Transakcija iz 2028
 
-| polje | vrijednost |
+| Polje | Vrijednost |
 |---|---|
-| source_id | `99f9425d-f37c-44ea-81b9-3d10e311b44d` |
-| name | Tekući zaštićeni |
-| currency | EUR |
-| **balance (prikaz)** | **-77,48** |
-| **correction_anchor_balance** | **7,30** |
-| correction_anchor_date | 2026-07-07 05:32:29 UTC |
-| anchor_source | `user_confirmed` |
-| bank_accounts.balance | **57,34** |
-| bank last_synced_at | 2026-07-27 19:43 UTC |
+| id | `974aeebc-781d-4cbd-b444-ce1b657fc9b8` |
+| type | expense |
+| amount | **4,82 EUR** |
+| description | "Tjedna kupovina" |
+| category | groceries |
+| event_at | **2028-06-26** 10:00 UTC |
+| date | 2028-06-26 |
+| created_at | **2026-06-28** 15:42 UTC |
+| expense_nature | (prazno) |
 
-## 2) anchor_audit — samo JEDAN zapis
+**Interpretacija:** kreirana 28.6.2026, ali user je upisao datum događaja 26.6.**2028** (tipfeler — 2028 umjesto 2026, razlika točno dvije godine). Nije transfer, nije correction. Sitan iznos.
 
-```
-2026-07-22 18:01:01  |  → 7,30  @ 2026-07-07 05:32:29  |  user_confirmed
-actor: Milan
-reason: "Faza 1 backfill: postojeće korisničko sidro dokumentirano u auditu"
-```
+## 2. Utjecaj na trenutni saldo
 
-Sidro je došlo iz **Faze 1 backfill migracije** koja je dokumentirala tada zatečeno stanje (7,30) kao `user_confirmed`. Nakon toga sidro nikad nije dirano. **Bankin realni saldo 57,34 nikad nije postavljen kao sidro** — isti obrazac kao Tekući −3,00, samo obrnut smjer.
+Engine (`_expenses_recompute_source_balance`) koristi **event_at** za cutoff, **bez gornje granice** — buduće transakcije se broje.
 
-## 3) Post-anchor transakcije (event_at > 2026-07-07 05:32:29)
+Stanje sidra: `correction_anchor_balance = 7,30`, `correction_anchor_date = 2026-07-07 05:32 UTC`, `anchor_source = user_confirmed`.
 
-12 redova ukupno:
-- expense: 10 kom, suma **808,37**
-- income: 2 kom, suma **655,99**
-- net delta: **−152,38**
+Post-anchor agregat (event_at > 2026-07-07):
 
-Očekivano po formuli `balance = anchor + net_delta`:
-`7,30 + (−152,38) = −145,08`
+| kategorija | count | zbroj |
+|---|---:|---:|
+| expense regular | 6 | 735,95 |
+| expense (bez nature) — **2028-tx** | 1 | 4,82 |
+| income regular | 2 | 655,99 |
 
-Stvarno prikazano: **−77,48**
+Izračun: `7,30 + 655,99 − 740,77 = **−77,48**` ✓
 
-**Drift: +67,60** koji formula ne objašnjava. Mogući uzroci (nisam verificirao — treba recompute preview koji ne postoji kao funkcija u ovoj bazi):
-- transferi (7 redova u ukupnoj povijesti, potencijalno neki nakon sidra kroz drugi payment_source label),
-- reverse/refund/correction expense_nature,
-- day-cut/hybrid pravilo koje odsijeca dio post-anchor transakcija (jedan expense je datiran **2028-06-26** — očito ručno unesen s krivim datumom, izvan realnog raspona; može utjecati na cutoff logiku),
-- razlika između `event_at` i cutoff kolone koju engine koristi.
+**App prikazuje točno ono što baza računa.** Nema drifta unutar engine izračuna — moja prethodna dijagnoza ("drift 67,60") bila je **kriva**: pogrešno sam sumirao post-anchor delta kao −152,38. Ispravan neto je −84,78, i formula se poklapa u cent.
 
-**Ovo NIJE čisti "krivo sidro" slučaj** — ima drift koji zahtijeva dodatnu analizu prije nego se sidro pomakne.
+2028-transakcija **jest** uračunata u −77,48 (jer engine nema future-cutoff), ali doprinosi tek 4,82 EUR.
 
-## 4) Ključni nalaz
+## 3. Prava razlika app vs banka
 
-- Sidro **jest** postavljeno na krivu (prestaru) vrijednost 7,30 iz backfilla — to je primarna netočnost.
-- Ali samo pomicanje sidra na 57,34 **neće nužno dati saldo koji Milan očekuje**, jer trenutni prikaz (−77,48) već ne slijedi čistu formulu anchor+delta. Postoji dodatni faktor (~67,60) koji engine primjenjuje.
-- Prije popravka treba razumjeti taj drift, inače popravak može dati novu netočnu brojku.
+- App: **−77,48**
+- Banka javlja: **57,34**
+- Razlika: **134,82 EUR**
 
-## 5) Predloženi popravak — SAMO OPIS, ne izvršavam
+To NIJE artefakt engine-a. Objašnjenja su drugdje:
 
-Ako Milan potvrdi da 57,34 **jest** stvarno stanje **na današnji datum** (a ne na neki povijesni presjek), popravak bi bio isti obrazac kao −3,00 slučaj:
+a) **Sidro 7,30 je vjerojatno bilo krivo od početka.** Postavljeno backfill migracijom kao `user_confirmed`, ne iz banke.
+b) **Nedostaju bankovne transakcije** između 7.7.2026 i danas koje bi objasnile razliku (npr. dolazne uplate koje app ne vidi jer Enable Banking sync ne pokriva ovaj račun / IBAN nije mapiran).
+c) 2028-tipfeler je **kozmetički problem** (4,82 EUR), ne uzrok razlike.
 
-```sql
-SELECT public.set_source_anchor(
-  p_source_id   => '99f9425d-f37c-44ea-81b9-3d10e311b44d'::uuid,
-  p_new_balance => 57.34,
-  p_as_of       => now(),
-  p_reason      => 'Manual fix: sidro poravnato s bankinim realnim saldom (backfill 7,30 bio zastario)'
-);
-```
+## 4. Zaključak
 
-Efekt: novi `user_confirmed` audit red, balance i sidro postavljeni na 57,34, sve post-anchor transakcije s `event_at <= now()` biti će odsječene (jer je novo sidro "istina od sada"), buduće transakcije računat će se od 57,34.
+- 2028-transakcija = greška u datumu (tipfeler 2028 umjesto 2026), iznos 4,82 EUR, marginalan utjecaj.
+- Nema bug u recomputeu — formula sidro + post-anchor delta odgovara prikazu.
+- Razlika 134,82 vs banka dolazi iz (a) potencijalno krivog sidra 7,30 i/ili (b) nedostajućih bankovnih transakcija u aplikaciji.
 
-**Ali:** ako Milan želi da povijest ostane vidljiva i da saldo bude 57,34 **s uvažavanjem** budućih promjena, ovo je ispravan potez. Ako želi rekonstrukciju "što je pošlo krivo" — treba prvo istražiti drift od 67,60 (transfer/refund/2028-datum artefakt).
+## 5. Opcije popravka (SAMO OPIS, ne izvršavam)
 
-## Preporuka
+Za 2028-transakciju:
+- **A)** Ispraviti `event_at` i `date` na 2026-06-26 (najvjerojatniji stvarni datum, poklapa se s created_at).
+- **B)** Obrisati ako je duplikat neke postojeće 2026 transakcije (treba provjeriti).
 
-Prije nego se pozove `set_source_anchor`, tražim od Milana odgovor na dva pitanja:
-1. Je li 57,34 **trenutno stanje danas** (bankin live saldo)? Ako da, pomicanje sidra na now() je ispravno.
-2. Želi li da istražim drift od 67,60 (zašto engine pokazuje −77,48 umjesto −145,08) prije popravka? Može indicirati širi bug u recomputeu — ili banalan uzrok (transfer/2028-datum) koji ne zahtijeva odgodu.
+Za razliku 134,82 vs banka (odvojena odluka):
+- **C)** Poravnati sidro na trenutni bankin saldo 57,34 s današnjim datumom (odsjeca povijest, ne objašnjava razliku).
+- **D)** Prvo istražiti zašto sync ne povlači nove bankovne redove, pa tek onda odlučiti o sidru.
 
-Ne izvršavam ništa dok Milan ne odluči.
+**Milan odlučuje. Ne izvršavam ništa bez izričitog "gradi".**
