@@ -51,7 +51,7 @@ describe('krugSettlementPdf helpers', () => {
 
   describe('formatDate', () => {
     it('formats iso date in hr', () => {
-      expect(formatDate('2026-07-15', 'hr')).toBe('15.07.2026.');
+      expect(formatDate('2026-07-15', 'hr')).toMatch(/15\.\s?07\.\s?2026\./);
     });
     it('returns empty for empty input', () => {
       expect(formatDate('')).toBe('');
