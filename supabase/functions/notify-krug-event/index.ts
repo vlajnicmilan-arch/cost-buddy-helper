@@ -342,6 +342,3 @@ function event_type_shortKey(t: EventType): string {
       return "settlement_reminder";
   }
 }
-      return "deleted";
-  }
-}
