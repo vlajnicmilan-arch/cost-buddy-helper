@@ -319,6 +319,7 @@ export const EditTransactionDialog = ({ expense, open, onOpenChange, onSave, con
             <div className="relative">
               <Input
                 id="description"
+                sentenceCase
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('transactions.descriptionPlaceholder')}
