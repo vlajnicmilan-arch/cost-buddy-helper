@@ -38,14 +38,18 @@ Deno.serve(async (req) => {
   }
 
   // --- HARD GATE: internal key check (before any work) ---
+  // Accepted from either: `x-krug-internal-key` header (preferred, avoids
+  // conflict with gateway's JWT parsing of Authorization) OR Authorization
+  // Bearer OR apikey. Any request without the correct value -> 401.
   const internalKey = Deno.env.get('KRUG_NOTIFY_INTERNAL_KEY') ?? '';
   if (!internalKey) {
     console.error('krug-freeze-fx-snapshot: KRUG_NOTIFY_INTERNAL_KEY not configured');
     return json(500, { error: 'server_misconfigured' });
   }
   const bearer = extractBearer(req.headers.get('Authorization'));
+  const customHeader = req.headers.get('x-krug-internal-key');
   const apiKeyHeader = req.headers.get('apikey');
-  const presented = bearer ?? apiKeyHeader ?? '';
+  const presented = customHeader ?? bearer ?? apiKeyHeader ?? '';
   if (presented !== internalKey) {
     return json(401, { error: 'unauthorized' });
   }
