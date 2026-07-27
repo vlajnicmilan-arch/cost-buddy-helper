@@ -34,6 +34,12 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
   const { t, i18n } = useTranslation();
   const [range, setRange] = useState(() => currentMonthRange());
   const [settingsOpen, setSettingsOpen] = useState(false);
+export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
+  const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
+  const [range, setRange] = useState(() => currentMonthRange());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [settleTransfer, setSettleTransfer] = useState<null | {
     fromUser: string; toUser: string; amount: number; currency: string; fromName: string; toName: string;
   }>(null);
@@ -45,6 +51,8 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
     periodEnd: range.end,
     enabled: isFullMember,
   });
+  const { data: krugDetail } = useKrug(krugId);
+
 
   const memberIds = useMemo(
     () => Array.from(new Set([
