@@ -552,6 +552,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         <div className="relative">
           <Input
             id="description"
+            sentenceCase
             data-testid="manual-expense-description"
             placeholder={props.type === 'transfer' ? t('transactions.transferDescriptionPlaceholder') : t('transactions.descriptionPlaceholder')}
             value={props.description}
@@ -734,6 +735,7 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
         <Label htmlFor="note" className="text-sm font-medium">{t('common.note', 'Bilješka')}</Label>
         <Input
           id="note"
+          sentenceCase
           placeholder={t('transactions.notePlaceholder', 'Dodatna bilješka...')}
           value={props.note}
           onChange={(e) => props.onNoteChange(e.target.value)}
