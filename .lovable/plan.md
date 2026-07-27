@@ -1,165 +1,182 @@
+# Faza C2 — Prijedlog izvedbe (NE gradi dok Milan ne kaže "gradi C2")
 
-# Faza C1 — FX snapshot + auto-freeze cron (PRIJEDLOG, čeka "gradi C1")
+Sve promjene su **aditivne**. `touches_balance = false` za cijeli C2 (potvrđeno u dijelu 7).
 
-Cilj: povijesni Krug settlement postaje deterministički i immutabilan po zaključenju mjeseca. `touches_balance = false` (ne dira `expenses`, salda, ledger, ni bilo koji balance engine put).
+---
 
-## Verificirano prije plana (žive činjenice iz baze)
+## 1. Migracija: nova preferenca
 
-- Member-check funkcija koja se koristi u `krug_settlement_preview` je `public.krug_is_full_member(uuid, uuid)` (potvrđeno iz `pg_get_functiondef`). Koristi se identično u RLS-u nove tablice.
-- Živi potpis preview-a: `krug_settlement_preview(p_krug_id uuid, p_period_start date, p_period_end date, p_display_currency text DEFAULT NULL, p_fx_rates jsonb DEFAULT '{}')` — `STABLE SECURITY DEFINER`, `search_path=public`. Novi kod polazi od `pg_get_functiondef` na `regprocedure`, ne od migracijske memorije (constraint `replace-function-start-from-live-def`).
-- Vault secret `krug_notify_internal_key` postoji (potvrđeno `SELECT name FROM vault.secrets`). Reuse je slobodan.
-- `exchange-rates` edge fn vraća `{ rates: { EUR:1, USD:…, HRK:7.5345, BAM:1.95583, … }, date, cached }` (verificirano iz `supabase/functions/exchange-rates/index.ts`). Format je stabilan i pokriva sve valute koje preview zove.
-- Postoji referentna service-role cron funkcija `audit_secdef_anon_regression` — koristi se kao uzorak (REVOKE FROM anon, PUBLIC; GRANT EXECUTE TO service_role; SECURITY DEFINER).
+Živa struktura `notification_preferences` potvrđena (24 kolone, `krug_enabled bool default true` već postoji, svaka preferenca je zasebna `bool NOT NULL` kolona sa `DEFAULT`).
 
-## C1.1 — Tablica `public.krug_settlement_fx_snapshot`
-
-Kolone:
-- `krug_id uuid NOT NULL REFERENCES public.krug(id) ON DELETE CASCADE`
-- `period_start date NOT NULL`
-- `period_end date NOT NULL`
-- `display_currency text NOT NULL`
-- `rates jsonb NOT NULL` — mapa base=EUR, isti oblik kao klijentski `p_fx_rates`
-- `source text NOT NULL DEFAULT 'frankfurter.app'`
-- `snapshot_date date NOT NULL` — datum ratesa iz `exchange-rates` odgovora (`data.date`)
-- `frozen_at timestamptz NOT NULL DEFAULT now()`
-- `frozen_by text NOT NULL CHECK (frozen_by IN ('cron','manual'))`
-- `created_at timestamptz NOT NULL DEFAULT now()`
-- PK: `(krug_id, period_start, period_end, display_currency)`
-
-Poredak u migraciji (4 koraka, isti obrazac kao ostatak projekta):
-1. `CREATE TABLE public.krug_settlement_fx_snapshot (...)`
-2. `GRANT SELECT ON public.krug_settlement_fx_snapshot TO authenticated;`
-   `GRANT ALL ON public.krug_settlement_fx_snapshot TO service_role;`
-   (bez `anon` — sve čita samo član kruga)
-3. `ALTER TABLE public.krug_settlement_fx_snapshot ENABLE ROW LEVEL SECURITY;`
-4. Policies:
-   - SELECT `TO authenticated USING (public.krug_is_full_member(krug_id, auth.uid()))`
-   - INSERT/UPDATE/DELETE: **nema policyja** → samo `service_role` (bypass RLS) piše. Nema client write puta.
-
-Bez triggera. Nema veze s balance engineom.
-
-## C1.2 — `krug_settlement_preview` (minimalna, aditivna izmjena)
-
-Postupak (obavezan):
-1. `SELECT pg_get_functiondef('public.krug_settlement_preview(uuid,date,date,text,jsonb)'::regprocedure)` → `/tmp/live_preview.sql`.
-2. Diff u tu ŽIVU verziju, ne rewrite iz memorije.
-
-Točke izmjene (samo dvije):
-
-a) Nakon što se izračuna `v_display_currency` (linije ~52–62), dodati:
-```
-DECLARE v_snapshot_rates jsonb; v_snapshot_source text; v_snapshot_date date; v_frozen boolean := false;
-SELECT rates, source, snapshot_date
-  INTO v_snapshot_rates, v_snapshot_source, v_snapshot_date
-FROM public.krug_settlement_fx_snapshot
-WHERE krug_id = p_krug_id
-  AND period_start = p_period_start
-  AND period_end   = p_period_end
-  AND display_currency = v_display_currency;
-IF v_snapshot_rates IS NOT NULL THEN
-  v_frozen := true;
-END IF;
+```sql
+ALTER TABLE public.notification_preferences
+  ADD COLUMN IF NOT EXISTS krug_settlement_reminder_enabled boolean NOT NULL DEFAULT true;
 ```
 
-b) Svugdje gdje trenutna funkcija čita rate iz `p_fx_rates` (za konverziju paid/owed → display currency), zamijeniti izvor:
-```
-COALESCE(v_snapshot_rates, p_fx_rates)
-```
-Netting logika, gate (`krug_is_full_member`), override read, weights, transferi — **ne diraju se**.
+- Isti obrazac kao `krug_enabled`, `daily_summary_enabled`. Default `true` → postojeći redovi automatski uključeni.
+- Nema izmjene RLS-a (postojeće politike pokrivaju sve kolone).
+- **Zasebna od `krug_enabled`** — user može ugasiti samo remindere, a zadržati transactional Krug pushove.
+- Filter pri slanju: `krug_enabled = true AND krug_settlement_reminder_enabled = true`.
+- Bez izmjena `types.ts` u ovoj migraciji (regenerira se automatski nakon approve).
 
-c) U izlazni `jsonb_build_object(...)` za `fx`:
-```
-'fx', jsonb_build_object(
-   'rates_used',   COALESCE(v_snapshot_rates, v_rates_used),
-   'snapshot_date', COALESCE(v_snapshot_date, current_date),
-   'source',       COALESCE(v_snapshot_source, 'client'),
-   'frozen',       v_frozen
-)
-```
+---
 
-Backward-compat: potpis, ime, `SECURITY DEFINER`, `search_path`, `STABLE` — sve ostaje. Klijent (`useKrugSettlement`) i dalje šalje `p_fx_rates` — kad snapshota nema, ponašanje je bit-identično današnjem.
+## 2. Edge fn `krug-settlement-reminder`
 
-Frontend u ovoj pod-fazi se **ne** dira; `fx.frozen` je čisto aditivan i UI ga može čitati kasnije (npr. u C3).
+**Datoteka:** `supabase/functions/krug-settlement-reminder/index.ts`
+**config.toml:** `verify_jwt = false` (kao `krug-freeze-fx-snapshot`).
 
-## C1.3 — Cron freeze funkcija (Opcija A: čista SQL, bez novog edge fn)
+**Zaštita (identična freeze fn):**
+- Gateway: anon key u `Authorization` (potrebno za `pg_net`).
+- Interni sloj: header `x-krug-internal-key` mora se poklopiti s env `KRUG_NOTIFY_INTERNAL_KEY` (constant-time compare). Bez key-a → `401` prije bilo kakvog rada.
+- Reuse postojećeg secreta `krug_notify_internal_key` (vault + edge env).
 
-Naziv: `public.krug_cron_freeze_fx_snapshots()`
-Potpis: `RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public`
-Vlasništvo: `postgres` (kao ostale cron fn).
-Grantovi (obavezno u istoj migraciji, isti obrazac kao `audit_secdef_anon_regression`):
-```
-REVOKE ALL ON FUNCTION public.krug_cron_freeze_fx_snapshots() FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.krug_cron_freeze_fx_snapshots() TO service_role;
-```
+**Logika (SERVICE_ROLE klijent):**
+1. Učitaj sve krugove: `SELECT DISTINCT krug_id FROM krug_membership WHERE role='punopravni'`.
+2. Za svaki krug pozovi `krug_settlement_preview(p_krug_id)` (već postoji, već korigira ledger, već čita FX snapshot iz C1).
+   - **Reuse RPC-a** — ne dupliramo netting logiku u TS-u.
+3. `preview.transfers` = rezidualne nepodmirene stavke (ledger je već oduzet unutar RPC-a). Ako je prazno → skip krug.
+4. Grupiraj transfere po **primatelju** (`to_user`) i po **dužniku** (`from_user`) — svaki punopravni član dobije notifikaciju samo za retke gdje je involviran (from **ili** to).
+5. Za svakog takvog usera:
+   - Provjeri `notification_preferences.krug_enabled = true AND krug_settlement_reminder_enabled = true` (join). Ako false → skip.
+   - Sumiraj (jednostavno per-currency total; multi-currency → prikaži glavnu valutu Kruga + `+N more` u body).
+   - Pozovi `krug_emit_notification(event_type := 'krug_settlement_reminder', p_krug_id, p_actor_id := <system uuid ili NULL>, p_dedup_ref := 'reminder:'||krug_id||':'||to_char(now(),'IYYY-IW'), p_recipient_override := ARRAY[user_id])`.
+   - **Dedup po ISO tjednu** → dupli cron pokreti u istom tjednu neće poslati duplu notifikaciju (postojeći notification insert path već koristi `dedup_ref` za unique gating).
 
-Skica tijela:
-```
--- 1) Odredi prethodni mjesec (UTC)
-v_period_start := date_trunc('month', (now() AT TIME ZONE 'UTC') - interval '1 month')::date;
-v_period_end   := (date_trunc('month', (now() AT TIME ZONE 'UTC')) - interval '1 day')::date;
+**Cron schedule (zaseban SQL insert, ne dio migracije edge fn):**
+```sql
+DO $$ BEGIN
+  PERFORM cron.unschedule('krug_settlement_reminder_weekly');
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
--- 2) Dohvati ratese kroz postojeći edge fn (reuse krug_notify_internal_key)
-SELECT decrypted_secret INTO v_key FROM vault.decrypted_secrets WHERE name = 'krug_notify_internal_key';
-SELECT net.http_post(
-  url     := 'https://<project>.functions.supabase.co/exchange-rates',
-  headers := jsonb_build_object(
-    'Content-Type','application/json',
-    'Authorization','Bearer ' || v_key,
-    'apikey', v_key
-  ),
-  body    := '{}'::jsonb,
-  timeout_milliseconds := 10000
-) INTO v_req_id;
--- pollaj net._http_response dok status != NULL, parsiraj body → v_rates, v_snapshot_date
-```
-Za svaki `(krug_id, display_currency)` par (iterira aktivne krugove; `display_currency` = ista logika kao u `krug_settlement_preview` — `COALESCE(krug.settlement_currency, prvi shared source currency, 'EUR')`):
-```
-INSERT INTO public.krug_settlement_fx_snapshot
-  (krug_id, period_start, period_end, display_currency, rates, source, snapshot_date, frozen_by)
-VALUES (..., v_rates, 'frankfurter.app', v_snapshot_date, 'cron')
-ON CONFLICT (krug_id, period_start, period_end, display_currency) DO NOTHING;
-```
-Vraća sažetak `{frozen: N, skipped: M, period_start, period_end}`.
-
-Napomena o URL-u: koristi projektni functions domain (isti obrazac kao postojeći cron pozivi na `net.http_post` u projektu, npr. `notify-krug-event`). URL se hardkodira u tijelu funkcije (kao u drugim cron fn-ovima) — nije secret.
-
-## C1.4 — pg_cron schedule (odvojeni `supabase--insert` poziv, ne migracija)
-
-Zaključavanje policy-a: schedule sadrži env-specifične vrijednosti pa ide kroz `supabase--insert`, ne migraciju (isto kao postojeći cronovi):
-```
 SELECT cron.schedule(
-  'krug_cron_freeze_fx_snapshots_monthly',
-  '0 3 1 * *',                          -- 1. u mjesecu, 03:00 UTC
-  $$ SELECT public.krug_cron_freeze_fx_snapshots(); $$
+  'krug_settlement_reminder_weekly',
+  '0 8 * * 1',  -- pon 08:00 UTC
+  $$ SELECT net.http_post(
+       url := 'https://fzalxjretvtvokiotvkf.supabase.co/functions/v1/krug-settlement-reminder',
+       headers := jsonb_build_object(
+         'Content-Type','application/json',
+         'apikey', <anon key>,
+         'Authorization', 'Bearer ' || <anon key>,
+         'x-krug-internal-key', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='krug_notify_internal_key' LIMIT 1)
+       ),
+       body := '{}'::jsonb
+     ); $$
 );
 ```
-Idempotent: prije `cron.schedule` napravi `cron.unschedule` ako job već postoji (isti obrazac kao ostali projektni cronovi).
 
-## Sigurnosne / arhitektonske potvrde (kritične)
+**Ne kreira SECDEF RPC** (za razliku od freeze) — reminder samo čita i emitira kroz postojeći `krug_emit_notification`. Ako Milan preferira konzistentnost s C1 obrascem (RPC wrapper + service_role-only + cron zove RPC), reci — dodat ćemo `krug_cron_settlement_reminders()` wrapper. **Prijedlog:** direktan `net.http_post` iz cron-a je jednostavniji, isti sigurnosni profil (internal key iz vaulta), manje površine.
 
-- **touches_balance = false**: nova tablica + čitanje snapshota u preview-u; nema pisanja u `expenses`, `custom_payment_sources`, ni bilo koji anchor/ledger. Balance regression suite (`supabase/tests/balance/`) nije relevantan gate.
-- **Cron fn service-role only**: eksplicitni `REVOKE FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE TO service_role`. Isti obrazac kao `audit_secdef_anon_regression`.
-- **Preview aditivna**: kad snapshota nema, izlaz je bit-identičan današnjem (samo dobiva `fx.frozen: false`). Klijent i vitest suite ne trebaju izmjene za C1.
-- **Reuse secreta**: `krug_notify_internal_key` postoji, koristi se za Authorization/apikey header. Nema novog secreta.
-- **Živa definicija**: preview se prepisuje s diffom nad `pg_get_functiondef`, ne iz stare migracije (constraint iz mem/index).
-- **RLS**: SELECT ograničen na članove kruga preko `krug_is_full_member`. Write puta iz klijenta nema (nema INSERT/UPDATE/DELETE policyja) — samo `service_role` piše.
+---
 
-## Redoslijed dispatcha (kad Milan kaže "gradi C1")
+## 3. `krug_mark_settled` — aditivni PERFORM na kraju
 
-1. Jedna `supabase--migration`: tablica + grants + RLS + policy + izmjena `krug_settlement_preview` (na temelju live def) + kreiranje `krug_cron_freeze_fx_snapshots()` + revoke/grant na cron fn.
-2. Jedna `supabase--insert` poziv: `cron.unschedule` (ako postoji) + `cron.schedule('0 3 1 * *', ...)`.
-3. Manualni smoke: `SELECT public.krug_cron_freeze_fx_snapshots();` (kao service_role) za tekući `now()-1mj` — provjera `net._http_response`, provjera INSERT-a, provjera da idempotentno vraća `skipped>0` na re-run.
-4. Manualni preview smoke: pozvati `krug_settlement_preview` za period koji ima snapshot → provjeriti `fx.frozen=true` i identične transfere prije/poslije freezea (byte-equal na round(6)).
+Živa definicija pročitana (`pg_get_functiondef`). Trenutni tok: auth check → member checks → validacija → **advisory lock** → INSERT u ledger → RETURN.
 
-## STOP-ovi (gdje se zaustavljam i javljam)
+**Izmjena:** dodaj **jedan** `PERFORM` **nakon** `INSERT ... RETURNING id INTO v_id`, **prije** `RETURN`. Sve ostalo (lock, INSERT, validacije, potpis, RETURN shape) ostaje bit-identično.
 
-- Ako `exchange-rates` fn počne vraćati drugačiji shape od `{rates:{...}, date}` → ne pišem workaround, javljam.
-- Ako `krug_notify_internal_key` u trenutku gradnje nije čitljiv kroz `vault.decrypted_secrets` iz cron fn konteksta → javljam prije nego se pišu radna rješenja.
-- Ako preview živa definicija odudara od očekivanog (npr. netko je dodao lokalne CTE-ove za rate resolving) → javljam, ne gazim.
+```sql
+-- ... (postojeći INSERT) ...
+RETURNING id INTO v_id;
 
-## Ne dirati u C1
+-- C2: aditivni push (best-effort; ne mijenja settlement rezultat)
+BEGIN
+  PERFORM public.krug_emit_notification(
+    p_event_type := 'krug_settlement_marked_settled',
+    p_krug_id := p_krug_id,
+    p_actor_id := v_uid,
+    p_dedup_ref := 'settled:'||v_id::text
+    -- recipient_override NULL → resolver uzima punopravne članove, exclude actor
+  );
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'krug_mark_settled: notify failed: %', SQLERRM;
+END;
 
-- `krug_settlement_ledger`, `krug_expense_split_*`, `krug_income_ratio` — nula izmjena.
-- `expenses`, salda, anchor, balance triggere, `custom_payment_sources`.
-- Frontend (`useKrugSettlement`, `KrugSettlementSection`, dialozi) — nula izmjena.
-- C2 (reminderi/push), C3 (PDF), C4 (invarijante) — ne diram.
+RETURN jsonb_build_object('ok', true, 'id', v_id);
+```
+
+**Concurrency/idempotentnost netaknuti:**
+- Advisory lock već otpušten na COMMIT-u; PERFORM je unutar iste transakcije, iste tx-lock semantike.
+- Dedup po `settled:<ledger_id>` — ledger PK je unique → svaki settled event dedupa 1:1. Retry istog RPC poziva ne postoji (INSERT bi kreirao novi red).
+- `EXCEPTION` wrap: ako notify padne (npr. vault key nedostaje), settlement svejedno prolazi — isti obrazac kao `krug_emit_notification` interno (warn + return).
+- `krug_emit_notification` koristi `net.http_post` koji je async → nema blokiranja settlement RPC-a.
+
+---
+
+## 4. `notify-krug-event` — novi event
+
+**Izmjena `supabase/functions/notify-krug-event/index.ts`:**
+
+1. Proširi tipove:
+   ```ts
+   type EventType = ... | "krug_settlement_marked_settled" | "krug_settlement_reminder";
+   const VALID = [..., "krug_settlement_marked_settled", "krug_settlement_reminder"];
+   ```
+2. Proširi `event_type_shortKey`:
+   - `krug_settlement_marked_settled` → `"settlement_settled"`
+   - `krug_settlement_reminder` → `"settlement_reminder"`
+3. **Exclude actor obrazac** — postojeći kod već radi `recipients.delete(actor_id)` osim za `krug_deleted`. Novi eventi spadaju u default granu → actor automatski isključen. Za reminder actor je system/NULL → delete je no-op.
+4. **Recipient resolution** — postojeći put (punopravni članovi) je točan za `marked_settled`. Za `reminder` **koristimo `recipient_override`** (edge fn već cilja pojedinca) → resolver samo verificira listu.
+5. Bez izmjena dedup/insert logike (već koristi `dedup_ref`).
+
+**i18n ključevi (hr/en/de) — dodati u `src/i18n/locales/*/notifications.ts` (ili gdje postoje `notifications.krug.*`):**
+- `notifications.krug.settlement_settled.title`
+- `notifications.krug.settlement_settled.message` — placeholderi `{from}`, `{to}`, `{amount}`, `{currency}`
+- `notifications.krug.settlement_reminder.title`
+- `notifications.krug.settlement_reminder.message` — placeholderi `{krug}`, `{count}`, `{total}`, `{currency}`
+
+Točne stringove ću predložiti u build fazi (kratke, u tonu postojećih Krug notifikacija).
+
+---
+
+## 5. Datoteke koje se mijenjaju
+
+| # | Path | Tip |
+|---|------|-----|
+| M1 | `supabase/migrations/<ts>_c2_reminder_pref_and_mark_settled_notify.sql` | nova migracija: ADD COLUMN + CREATE OR REPLACE `krug_mark_settled` (od žive def) |
+| M2 | zaseban `supabase--insert` za `cron.schedule` (anon key nije za migraciju) | project-specific |
+| F1 | `supabase/functions/krug-settlement-reminder/index.ts` | nova |
+| F2 | `supabase/config.toml` | dodaj `[functions.krug-settlement-reminder] verify_jwt = false` |
+| F3 | `supabase/functions/notify-krug-event/index.ts` | +2 event tipa, +2 shortKey grane |
+| I1 | `src/i18n/locales/hr/notifications.*` | +4 ključa |
+| I2 | `src/i18n/locales/en/notifications.*` | +4 ključa |
+| I3 | `src/i18n/locales/de/notifications.*` | +4 ključa |
+
+**Bez dodira:** balance engine, `expenses`, `custom_payment_sources`, `krug_settlement_ledger` shape, `krug_settlement_preview`, netting/override/weights/gate, `krug_freeze_fx_snapshots`, klijentski Krug UI (osim i18n stringova).
+
+---
+
+## 6. Preferenca UI (out-of-scope za ovaj plan)
+
+Novi bool ide u backend. **Toggle u Settings/Notifications UI** nije dio C2 opsega (Milan nije spomenuo). Default `true` znači da su svi useri odmah uključeni. Ako želiš da C2 uključi i UI toggle uz postojeće `krug_enabled` prekidače — javi, dodam kao C2.5.
+
+---
+
+## 7. Kritične potvrde
+
+| Provjera | Status |
+|----------|--------|
+| `touches_balance=false` | ✅ Reminder samo čita (`krug_settlement_preview`) i emitira notify. `mark_settled` PERFORM je aditivan; postojeći RPC već ne dira `expenses`/`custom_payment_sources`/anchor. Nova preferenca kolona je bool na `notification_preferences`. |
+| Reminder fn zaštićena | ✅ Isti dual layer (anon gateway + `x-krug-internal-key`) kao freeze fn. 401 bez internal key-a. |
+| REVOKE anon/PUBLIC | ✅ Migracija ne kreira nove SECDEF funkcije (osim CREATE OR REPLACE `krug_mark_settled`, koja zadržava postojeći security profil). Ako Milan odabere opciju s `krug_cron_settlement_reminders()` wrapperom → dodat ćemo REVOKE FROM PUBLIC,anon,authenticated + GRANT service_role obrazac (isto kao `krug_cron_freeze_fx_snapshots`). |
+| `mark_settled` concurrency/idempotentnost | ✅ Advisory lock, INSERT, RETURN shape netaknuti. PERFORM je poslije INSERT-a, wrap u EXCEPTION → notify failure ne baca settlement. Dedup `settled:<ledger_id>` (ledger PK unique). |
+| Vitest | Očekivano ostaje 2092/2092 (klijent netaknut osim i18n stringova). |
+
+---
+
+## 8. STOP uvjeti (ne gradim ako):
+- Milan želi C2 bez novog eventa u `notify-krug-event` (nemam alt kanal za push).
+- `krug_notify_internal_key` nije prisutan u edge env (bez njega reminder fn ne može auth-ati sama sebe u prod-u).
+- Milan želi cron wrapper RPC umjesto direktnog `net.http_post` iz cron-a — reci prije builda, radim po C1 obrascu.
+- Milan želi da reminder ide samo dužnicima ili samo primateljima (trenutni prijedlog: oboje, jer oba su "involvirana strana").
+
+---
+
+## 9. Otvorena pitanja za Milana prije builda
+
+1. **Reminder recipient scope:** obje strane transfera (dužnik + primatelj) ili samo dužnik ("ti duguješ X")? Prijedlog: obje.
+2. **Multi-currency u jednoj notif:** dominantna valuta + `+N more` u body, ili zasebna notif per currency? Prijedlog: prvo.
+3. **Cron wrapper RPC** (C1 obrazac) vs direktan `net.http_post` iz cron SQL-a? Prijedlog: direktan (jednostavnije, isti sigurnosni profil).
+4. **UI toggle za novu preferencu** — dio C2 (C2.5) ili zasebna faza?
+
+Čekam odgovore + eksplicitno "gradi C2".
