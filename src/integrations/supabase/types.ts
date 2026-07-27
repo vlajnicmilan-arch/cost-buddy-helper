@@ -3271,6 +3271,7 @@ export type Database = {
           family_reactions_push: boolean
           id: string
           krug_enabled: boolean
+          krug_settlement_reminder_enabled: boolean
           participant_digest_enabled: boolean
           participant_digest_hour: number
           pending_enabled: boolean
@@ -3297,6 +3298,7 @@ export type Database = {
           family_reactions_push?: boolean
           id?: string
           krug_enabled?: boolean
+          krug_settlement_reminder_enabled?: boolean
           participant_digest_enabled?: boolean
           participant_digest_hour?: number
           pending_enabled?: boolean
@@ -3323,6 +3325,7 @@ export type Database = {
           family_reactions_push?: boolean
           id?: string
           krug_enabled?: boolean
+          krug_settlement_reminder_enabled?: boolean
           participant_digest_enabled?: boolean
           participant_digest_hour?: number
           pending_enabled?: boolean
