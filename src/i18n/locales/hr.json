@@ -1343,7 +1343,11 @@
     "version": "Verzija",
     "contactSupport": "Kontakt podrška",
     "contactSupportDesc": "Odgovor unutar 24h • support@vmbalance.com",
-    "_removed_usageProfile": {}
+    "_removed_usageProfile": {},
+    "notifKrug": "Krug",
+    "notifKrugDesc": "Odobrenja, članstvo i brisanje Kruga",
+    "notifKrugReminder": "Podsjetnici za Krug (tjedno)",
+    "notifKrugReminderDesc": "Ponedjeljkom u 08:00 UTC: sažetak nepodmirenih stavki koje duguješ."
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
@@ -2586,6 +2590,14 @@
       "deleted": {
         "title": "Krug je obrisan",
         "message": "Krug u kojem si bio član je trajno uklonjen."
+      },
+      "settlement_settled": {
+        "title": "Poravnanje potvrđeno",
+        "message": "Član Kruga je označio transfer podmirenim."
+      },
+      "settlement_reminder": {
+        "title": "Nepodmirene stavke u Krugu",
+        "message": "Imaš {{count}} nepodmirenih stavki, ukupno {{total}} {{currency}}."
       }
     },
     "payment_source_transaction": {

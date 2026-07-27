@@ -1339,7 +1339,11 @@
     "multiCurrencyDisabled": "Mehrwährungsmodus deaktiviert",
     "contactSupport": "Support kontaktieren",
     "contactSupportDesc": "Antwort innerhalb von 24h • support@vmbalance.com",
-    "_removed_usageProfile": {}
+    "_removed_usageProfile": {},
+    "notifKrug": "Krug",
+    "notifKrugDesc": "Genehmigungen, Mitgliedschaft und Löschung des Krug",
+    "notifKrugReminder": "Krug-Abrechnungserinnerungen (wöchentlich)",
+    "notifKrugReminderDesc": "Montags 08:00 UTC: Übersicht offener Beträge, die du schuldest."
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -2580,6 +2584,14 @@
       "deleted": {
         "title": "Krug wurde gelöscht",
         "message": "Ein Krug, in dem du Mitglied warst, wurde endgültig entfernt."
+      },
+      "settlement_settled": {
+        "title": "Abrechnung bestätigt",
+        "message": "Ein Krug-Mitglied hat einen Transfer als beglichen markiert."
+      },
+      "settlement_reminder": {
+        "title": "Offene Posten im Krug",
+        "message": "Du hast {{count}} offene Posten in Höhe von {{total}} {{currency}}."
       }
     },
     "payment_source_transaction": {
