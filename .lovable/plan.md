@@ -1,70 +1,55 @@
+## Nalaz (read-only, ništa nije mijenjano)
 
-# Dijagnoza — SAMO NALAZ, BEZ IZMJENA
+### 1. Stanje u bazi
+`bank_connections` red `d6176227-…ebbe`:
+- provider: `enable_banking`
+- aspsp_name: **Revolut**, aspsp_country: **LT** (dakle NIJE krivi ASPSP — Milan je spojio Revolut pod LT, što je ispravno)
+- status: `active`
+- session_id: `276ab9c0-3157-4f68-9f5b-0b29dbe1fe88` (postoji → EB `/sessions` razmjena je uspjela s 200 OK)
+- valid_until: `2027-01-23` (~180 dana, uredno)
+- last_error: `NULL`
 
-Source: `custom:99f9425d-f37c-44ea-81b9-3d10e311b44d` ("Tekući zaštićeni"), Milan.
+`bank_accounts` za tu konekciju: **0 redova**.
 
-## 1. Transakcija iz 2028
+### 2. Što kaže kod (`supabase/functions/bank-connect-complete/index.ts`)
+Redoslijed nakon uspješne razmjene:
+```ts
+const session = JSON.parse(sessText);
+const accounts: any[] = session.accounts ?? [];   // <-- kritična točka
+...
+if (accounts.length > 0) { upsert + balance fetch }
+```
+Loga se **samo greška** (session exchange fail, accounts upsert error, balance fetch warn). **Success path ne loga ništa.**
 
-| Polje | Vrijednost |
-|---|---|
-| id | `974aeebc-781d-4cbd-b444-ce1b657fc9b8` |
-| type | expense |
-| amount | **4,82 EUR** |
-| description | "Tjedna kupovina" |
-| category | groceries |
-| event_at | **2028-06-26** 10:00 UTC |
-| date | 2028-06-26 |
-| created_at | **2026-06-28** 15:42 UTC |
-| expense_nature | (prazno) |
+### 3. Što kažu edge logovi
+Za funkciju `bank-connect-complete` u zadnjem prozoru **nema nijednog log retka koji spominje** `Revolut`, `d6176227`, `276ab9c0`, `accounts`, `session`, `balance` — samo Boot/Shutdown zapisi. To znači:
+- `sessRes.ok === true` (inače bi bio error log + status='failed')
+- `accounts.length === 0` (inače bi barem balance-fetch warn ili accounts upsert error postojao) — a i status je postavljen na `active` što se događa **bez obzira** na accounts.length
 
-**Interpretacija:** kreirana 28.6.2026, ali user je upisao datum događaja 26.6.**2028** (tipfeler — 2028 umjesto 2026, razlika točno dvije godine). Nije transfer, nije correction. Sitan iznos.
+Dakle grana `if (accounts.length > 0)` **nije se izvršila** za Revolut, dok je za Erste jest.
 
-## 2. Utjecaj na trenutni saldo
+### 4. Gdje se točno "gube" računi
+Ne mogu razlikovati bez uhvaćenog EB response payloada (kod ne loga session body):
+- **(a) EB je vratio prazan `session.accounts: []`** za Revolut consent — problem na Revolut/EB strani (consent bez računa, ili LT Revolut sandbox/live specifika).
+- **(b) EB je vratio ne-prazan payload pod drugim ključem** (npr. `session.account_list`, `session.access.accounts`) pa `session.accounts ?? []` završi kao prazan → problem u našem parseru.
 
-Engine (`_expenses_recompute_source_balance`) koristi **event_at** za cutoff, **bez gornje granice** — buduće transakcije se broje.
+Grešku (c — 401/403/422) mogu isključiti: status bi bio `failed` i `last_error` popunjen.
 
-Stanje sidra: `correction_anchor_balance = 7,30`, `correction_anchor_date = 2026-07-07 05:32 UTC`, `anchor_source = user_confirmed`.
+### 5. Hipoteza (najvjerojatnije)
+Prislanjajući na to da:
+- Erste (kroz isti kod, isto polje `session.accounts`) je vratio 5 računa uredno,
+- Enable Banking dokumentacija koristi `session.accounts` konzistentno preko ASPSP-ova,
+- Revolut LT pod EB je poznat po tome da user tijekom Revolut consent flowa **bira koje račune dijeli**, i default može biti "nijedan" ili samo neki produkti (npr. samo Vaults/Pockets bez glavnog EUR računa),
 
-Post-anchor agregat (event_at > 2026-07-07):
+**vjerojatnije (a): EB je vratio prazan accounts array** jer Revolut consent nije obuhvatio nijedan account resource, iako je Milan "sve odobrio" u našoj percepciji. Revolut PSD2 UI zna imati zaseban korak "select accounts to share" koji se lako preskoči.
 
-| kategorija | count | zbroj |
-|---|---:|---:|
-| expense regular | 6 | 735,95 |
-| expense (bez nature) — **2028-tx** | 1 | 4,82 |
-| income regular | 2 | 655,99 |
+Sekundarna mogućnost (b) postoji ali je manje vjerojatna jer bi ista shema pukla i za druge banke.
 
-Izračun: `7,30 + 655,99 − 740,77 = **−77,48**` ✓
+### 6. Što bi jednoznačno potvrdilo uzrok (NE izvršavam)
+Jedan direktan read-only GET na EB `/sessions/276ab9c0-3157-4f68-9f5b-0b29dbe1fe88` (ili `/sessions/{id}` + `/accounts` s tim session bearerom) vratio bi točan payload i završio dilemu (a) vs (b). To zahtijeva dispatch edge funkcije ili dodavanje diag logiranja — čekam Milanovu odluku prije bilo kakve akcije.
 
-**App prikazuje točno ono što baza računa.** Nema drifta unutar engine izračuna — moja prethodna dijagnoza ("drift 67,60") bila je **kriva**: pogrešno sam sumirao post-anchor delta kao −152,38. Ispravan neto je −84,78, i formula se poklapa u cent.
+### Preporuka za odluku (samo opis, ne izvršavam)
+- **Ako Milan potvrdi (a):** ponovno spojiti Revolut i pažljivo proći sve korake u Revolut consent flowu (posebno "select accounts" ekran).
+- **Ako želi hard proof prije:** odobriti jednokratni read-only diag poziv na EB `/sessions/{session_id}` (dodati privremeni log ili pozvati kroz jednokratni helper) — da vidimo točan payload prije bilo kakve akcije.
 
-2028-transakcija **jest** uračunata u −77,48 (jer engine nema future-cutoff), ali doprinosi tek 4,82 EUR.
-
-## 3. Prava razlika app vs banka
-
-- App: **−77,48**
-- Banka javlja: **57,34**
-- Razlika: **134,82 EUR**
-
-To NIJE artefakt engine-a. Objašnjenja su drugdje:
-
-a) **Sidro 7,30 je vjerojatno bilo krivo od početka.** Postavljeno backfill migracijom kao `user_confirmed`, ne iz banke.
-b) **Nedostaju bankovne transakcije** između 7.7.2026 i danas koje bi objasnile razliku (npr. dolazne uplate koje app ne vidi jer Enable Banking sync ne pokriva ovaj račun / IBAN nije mapiran).
-c) 2028-tipfeler je **kozmetički problem** (4,82 EUR), ne uzrok razlike.
-
-## 4. Zaključak
-
-- 2028-transakcija = greška u datumu (tipfeler 2028 umjesto 2026), iznos 4,82 EUR, marginalan utjecaj.
-- Nema bug u recomputeu — formula sidro + post-anchor delta odgovara prikazu.
-- Razlika 134,82 vs banka dolazi iz (a) potencijalno krivog sidra 7,30 i/ili (b) nedostajućih bankovnih transakcija u aplikaciji.
-
-## 5. Opcije popravka (SAMO OPIS, ne izvršavam)
-
-Za 2028-transakciju:
-- **A)** Ispraviti `event_at` i `date` na 2026-06-26 (najvjerojatniji stvarni datum, poklapa se s created_at).
-- **B)** Obrisati ako je duplikat neke postojeće 2026 transakcije (treba provjeriti).
-
-Za razliku 134,82 vs banka (odvojena odluka):
-- **C)** Poravnati sidro na trenutni bankin saldo 57,34 s današnjim datumom (odsjeca povijest, ne objašnjava razliku).
-- **D)** Prvo istražiti zašto sync ne povlači nove bankovne redove, pa tek onda odlučiti o sidru.
-
-**Milan odlučuje. Ne izvršavam ništa bez izričitog "gradi".**
+**Ništa nije mijenjano. Čekam Milanovu odluku.**
