@@ -31,10 +31,7 @@ const fmt = (n: number, currency: string) =>
   new Intl.NumberFormat('hr-HR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
 
 export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
-  const { t, i18n } = useTranslation();
-  const [range, setRange] = useState(() => currentMonthRange());
-  const [settingsOpen, setSettingsOpen] = useState(false);
-export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
+
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const [range, setRange] = useState(() => currentMonthRange());
