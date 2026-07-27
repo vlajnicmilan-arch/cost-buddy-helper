@@ -2,19 +2,23 @@
  * KrugSettlementSection — Faza A read-only preview.
  * BEZ write akcija. "Označi podmireno" je Faza B.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2, Download } from 'lucide-react';
 import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKrugSettlement';
+import { useKrug } from '@/hooks/useKrug';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { KrugSettlementSettings } from './KrugSettlementSettings';
 import { KrugSettleTransferDialog } from './KrugSettleTransferDialog';
 import { KrugSettlementHistory } from './KrugSettlementHistory';
+
 
 
 interface Props {
@@ -27,9 +31,12 @@ const fmt = (n: number, currency: string) =>
   new Intl.NumberFormat('hr-HR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
 
 export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
+
   const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
   const [range, setRange] = useState(() => currentMonthRange());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [settleTransfer, setSettleTransfer] = useState<null | {
     fromUser: string; toUser: string; amount: number; currency: string; fromName: string; toName: string;
   }>(null);
@@ -41,6 +48,8 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
     periodEnd: range.end,
     enabled: isFullMember,
   });
+  const { data: krugDetail } = useKrug(krugId);
+
 
   const memberIds = useMemo(
     () => Array.from(new Set([
@@ -51,15 +60,129 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
   );
   const profileMap = useUserProfiles(memberIds);
 
-  const nameFor = (uid: string) =>
-    getMemberDisplayName(profileMap.get(uid), uid, t('krug.member.unknown', 'Nepoznat član'));
+  const nameFor = useCallback(
+    (uid: string) => getMemberDisplayName(profileMap.get(uid), uid, t('krug.member.unknown', 'Nepoznat član')),
+    [profileMap, t],
+  );
   const initialsFor = (uid: string) => getInitials(profileMap.get(uid)?.display_name || '', uid);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!data || exporting) return;
+    setExporting(true);
+    try {
+      const [{ exportKrugSettlementPdf }, { supabase }] = await Promise.all([
+        import('@/lib/krugSettlementPdf'),
+        import('@/integrations/supabase/client'),
+      ]);
+      // Prefetch ledger + overrides in parallel (both read-only, RLS-scoped).
+      const [ledger, overrides] = await Promise.all([
+        qc.fetchQuery({
+          queryKey: ['krug', 'ledger', krugId],
+          staleTime: 30 * 1000,
+          queryFn: async () => {
+            const { data: rows, error: err } = await supabase
+              .from('krug_settlement_ledger' as any)
+              .select('*')
+              .eq('krug_id', krugId)
+              .order('marked_at', { ascending: false })
+              .limit(200);
+            if (err) throw err;
+            return (rows ?? []) as any[];
+          },
+        }),
+        qc.fetchQuery({
+          queryKey: ['krug', 'periodOverrides', krugId, range.start, range.end],
+          staleTime: 60 * 1000,
+          queryFn: async () => {
+            const mod = await import('@/hooks/useKrugPeriodOverrides');
+            // Reuse the same fetch logic by inlining a minimal call — the hook
+            // exposes only the React query wrapper. We keep it DRY by writing a
+            // parallel function; if this ever drifts, extract the fetcher.
+            void mod; // for tree-shake safety hint
+            const { data: overrideRows, error: err } = await supabase
+              .from('krug_expense_split_override' as any)
+              .select('id, expense_id, krug_id, proposed_by, status, activated_at, reject_reason, created_at')
+              .eq('krug_id', krugId)
+              .in('status', ['potvrdjena', 'povucena', 'odbijena'])
+              .order('created_at', { ascending: false })
+              .limit(500);
+            if (err) throw err;
+            const rows = (overrideRows ?? []) as any[];
+            if (rows.length === 0) return [];
+            const ids = rows.map((r) => r.id);
+            const expenseIds = Array.from(new Set(rows.map((r) => r.expense_id)));
+            const [sh, cf, ex] = await Promise.all([
+              supabase.from('krug_expense_split_share' as any).select('*').in('override_id', ids),
+              supabase.from('krug_expense_split_confirmation' as any).select('*').in('override_id', ids),
+              supabase.from('expenses').select('id, description, amount, currency, date').in('id', expenseIds),
+            ]);
+            if (sh.error) throw sh.error;
+            if (cf.error) throw cf.error;
+            if (ex.error) throw ex.error;
+            const shares = (sh.data ?? []) as any[];
+            const confirms = (cf.data ?? []) as any[];
+            const expensesMap = new Map<string, any>(
+              ((ex.data ?? []) as any[]).map((e) => [e.id, {
+                id: e.id,
+                description: e.description ?? null,
+                amount: Number(e.amount ?? 0),
+                currency: e.currency || 'EUR',
+                date: e.date || '',
+              }]),
+            );
+            const inPeriod = (d: string) => !!d && d >= range.start && d <= range.end;
+            return rows
+              .map((r) => {
+                const expense = expensesMap.get(r.expense_id);
+                if (!expense || !inPeriod(expense.date)) return null;
+                return {
+                  id: r.id,
+                  expense,
+                  krug_id: r.krug_id,
+                  proposed_by: r.proposed_by,
+                  status: r.status,
+                  activated_at: r.activated_at ?? null,
+                  reject_reason: r.reject_reason ?? null,
+                  created_at: r.created_at,
+                  shares: shares.filter((s) => s.override_id === r.id)
+                    .map((s) => ({ user_id: s.user_id, share_percent: Number(s.share_percent) })),
+                  confirmations: confirms.filter((c) => c.override_id === r.id)
+                    .map((c) => ({ user_id: c.user_id, confirmed_at: c.confirmed_at })),
+                };
+              })
+              .filter((r): r is any => r !== null)
+              .sort((a: any, b: any) => (a.expense.date < b.expense.date ? 1 : -1));
+          },
+        }),
+      ]);
+
+      const krugName = (krugDetail as any)?.name || t('krug.title', 'Krug');
+      await exportKrugSettlementPdf({
+        krugName,
+        periodStart: range.start,
+        periodEnd: range.end,
+        language: (i18n.language as any) || 'hr',
+        preview: data,
+        ledger: ledger as any,
+        overrides: overrides as any,
+        nameFor,
+      });
+      showSuccess(t('krug.settlement.pdf.exportSuccess', 'PDF izvještaj spremljen.'));
+    } catch (e: any) {
+      console.error('[krug pdf]', e);
+      showError(t('krug.settlement.pdf.exportError', 'Nije moguće izvesti PDF.'));
+    } finally {
+      setExporting(false);
+    }
+  }, [data, exporting, qc, krugId, range.start, range.end, krugDetail, i18n.language, nameFor, t]);
 
   if (!isFullMember) return null;
 
   const periodLabel = new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(
     new Date(range.start + 'T00:00:00Z'),
   );
+
+
 
   return (
     <section className="space-y-2">
@@ -69,6 +192,17 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
           {t('krug.settlement.title', 'Razračun')}
         </h3>
         <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={handleExportPdf}
+            disabled={exporting || !data || isLoading}
+            aria-label={t('krug.settlement.pdf.exportButton', 'Izvezi PDF')}
+            title={t('krug.settlement.pdf.exportButton', 'Izvezi PDF')}
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          </Button>
           {isOwner && (
             <Button
               size="icon"
@@ -80,6 +214,7 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
               <Settings2 className="w-4 h-4" />
             </Button>
           )}
+
           <Button
             size="icon"
             variant="ghost"

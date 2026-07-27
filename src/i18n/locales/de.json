@@ -5424,6 +5424,56 @@
         "equal": "Gleich",
         "proportional_income": "Nach Einkommen",
         "manual": "Manuell"
+      },
+      "pdf": {
+        "title": "Krug-Abrechnungsbericht",
+        "exportButton": "PDF exportieren",
+        "exportSuccess": "PDF-Bericht gespeichert.",
+        "exportError": "PDF-Export nicht möglich.",
+        "filenameBase": "krug-settlement",
+        "splitModeLabel": "Aufteilungsmodus",
+        "metaLabel": "Position",
+        "metaValue": "Wert",
+        "fxSource": "FX-Quelle",
+        "fxSnapshotDate": "FX-Snapshot-Datum",
+        "fxStatus": "FX-Status",
+        "fxFrozen": "Eingefroren (monatlicher Snapshot)",
+        "fxLive": "Live",
+        "membersHeader": "Krug-Mitglieder",
+        "transfersHeader": "Vorgeschlagene Überweisungen",
+        "balanced": "Keine offenen Überweisungen — der Krug ist ausgeglichen.",
+        "timelineHeader": "Abrechnungsverlauf",
+        "overridesHeader": "Verlauf manueller Aufteilungen",
+        "overridesNone": "Keine manuellen Aufteilungen in diesem Zeitraum.",
+        "proposedBy": "Vorgeschlagen von",
+        "confirmedBy": "Bestätigt von",
+        "confirmedNone": "Bestätigungen: —",
+        "statusLabel": "Status",
+        "expenseNoDesc": "(ohne Beschreibung)",
+        "col": {
+          "member": "Mitglied",
+          "from": "Von",
+          "to": "An",
+          "amount": "Betrag",
+          "currency": "Währung",
+          "date": "Datum",
+          "status": "Status",
+          "share": "Anteil %"
+        },
+        "status": {
+          "settled": "Beglichen",
+          "voided": "Storniert"
+        },
+        "overrideStatus": {
+          "potvrdjena": "Bestätigt",
+          "povucena": "Zurückgezogen",
+          "odbijena": "Abgelehnt"
+        },
+        "flags": {
+          "mixedCurrencies": "Mehrere Währungen — FX-Umrechnung angewendet.",
+          "manualFallback": "Manueller Modus: Rückfall auf gleiche Anteile.",
+          "missingIncome": "Einkommensverhältnisse fehlen — gleiche Anteile verwendet."
+        }
       }
     },
     "settle": {

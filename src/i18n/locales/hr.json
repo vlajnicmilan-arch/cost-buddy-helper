@@ -5433,6 +5433,56 @@
         "equal": "Jednako",
         "proportional_income": "Prema prihodima",
         "manual": "Ručno"
+      },
+      "pdf": {
+        "title": "Krug settlement izvještaj",
+        "exportButton": "Izvezi PDF",
+        "exportSuccess": "PDF izvještaj spremljen.",
+        "exportError": "Nije moguće izvesti PDF.",
+        "filenameBase": "krug-settlement",
+        "splitModeLabel": "Način podjele",
+        "metaLabel": "Stavka",
+        "metaValue": "Vrijednost",
+        "fxSource": "FX izvor",
+        "fxSnapshotDate": "FX datum snapshota",
+        "fxStatus": "FX status",
+        "fxFrozen": "Zamrznut (mjesečni snapshot)",
+        "fxLive": "Uživo",
+        "membersHeader": "Članovi Kruga",
+        "transfersHeader": "Predloženi transferi",
+        "balanced": "Nema otvorenih transfera — Krug je u ravnoteži.",
+        "timelineHeader": "Timeline podmirenja",
+        "overridesHeader": "Povijest ručnih podjela",
+        "overridesNone": "Nema ručnih podjela u ovom periodu.",
+        "proposedBy": "Predložio",
+        "confirmedBy": "Potvrdili",
+        "confirmedNone": "Potvrde: —",
+        "statusLabel": "Status",
+        "expenseNoDesc": "(bez opisa)",
+        "col": {
+          "member": "Član",
+          "from": "Od",
+          "to": "Prima",
+          "amount": "Iznos",
+          "currency": "Valuta",
+          "date": "Datum",
+          "status": "Status",
+          "share": "Udio %"
+        },
+        "status": {
+          "settled": "Podmireno",
+          "voided": "Poništeno"
+        },
+        "overrideStatus": {
+          "potvrdjena": "Potvrđena",
+          "povucena": "Povučena",
+          "odbijena": "Odbijena"
+        },
+        "flags": {
+          "mixedCurrencies": "Više valuta — primijenjena FX konverzija.",
+          "manualFallback": "Manual mod: fallback na jednake udjele.",
+          "missingIncome": "Nedostaju omjeri prihoda — korišteni jednaki udjeli."
+        }
       }
     },
     "settle": {
