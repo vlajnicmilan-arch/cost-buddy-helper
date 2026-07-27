@@ -110,6 +110,10 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "krug.selector.label": "Feature brand name",
     "krug.member.add.emailLabel": "Same word in EN",
     "krug.delete.votePanel.progress": "Placeholder-only counter",
+    "krug.settlement.pdf.filenameBase": "Brand string, intentionally identical across locales",
+    "krug.settlement.pdf.fxStatus": "Technical FX label, same term in EN",
+    "krug.settlement.pdf.statusLabel": "Same word in EN",
+    "krug.settlement.pdf.col.status": "Same word in EN",
   },
   de: {
     "subscription.badge.admin": "Admin terminology",
