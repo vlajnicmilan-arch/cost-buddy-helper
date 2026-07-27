@@ -33,6 +33,56 @@ const COUNTRIES = [
   { code: 'LT', label: 'Litva' },
 ];
 
+// Throttle constants — mora ostati u sinkronu s bank-sync-transactions edge funkcijom.
+const SYNC_COOLDOWN_MINUTES = 120;
+const RATE_LIMIT_COOLDOWN_MINUTES = 240;
+
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function formatDurationHm(totalSeconds: number, t: TFn): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return t('openBanking.throttle.durationHm', { h, m });
+  if (m > 0) return t('openBanking.throttle.durationM', { m });
+  return t('openBanking.throttle.durationLtMinute');
+}
+
+function formatRemaining(totalSeconds: number, t: TFn): string {
+  return formatDurationHm(totalSeconds, t);
+}
+
+function formatAgo(when: Date, t: TFn): string {
+  const s = Math.max(0, Math.floor((Date.now() - when.getTime()) / 1000));
+  return formatDurationHm(s, t);
+}
+
+interface ThrottleInfo {
+  remainingSec: number;
+  reason: 'recent_sync' | 'aspsp_cooldown';
+}
+
+/** Vrati throttle status ili null ako je gumb slobodan. */
+function computeThrottle(acc: BankAccount, nowMs: number): ThrottleInfo | null {
+  const rateLimited =
+    typeof acc.last_sync_error === 'string' && acc.last_sync_error.includes('429');
+  if (rateLimited && acc.updated_at) {
+    const remainingMs =
+      RATE_LIMIT_COOLDOWN_MINUTES * 60 * 1000 - (nowMs - new Date(acc.updated_at).getTime());
+    if (remainingMs > 0) {
+      return { remainingSec: Math.ceil(remainingMs / 1000), reason: 'aspsp_cooldown' };
+    }
+  }
+  if (acc.last_synced_at) {
+    const remainingMs =
+      SYNC_COOLDOWN_MINUTES * 60 * 1000 - (nowMs - new Date(acc.last_synced_at).getTime());
+    if (remainingMs > 0) {
+      return { remainingSec: Math.ceil(remainingMs / 1000), reason: 'recent_sync' };
+    }
+  }
+  return null;
+}
+
 export const OpenBankingPanel = () => {
   const { t } = useTranslation();
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
