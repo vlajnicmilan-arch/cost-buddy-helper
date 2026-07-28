@@ -5132,6 +5132,8 @@
     "notLinked": "Nije povezano",
     "mappedTo": "Povezano s",
     "sync": "Sinkroniziraj",
+    "excludedFromSync": "Ovaj račun je isključen iz sinkronizacije",
+    "excludedFromSyncShort": "Isključeno iz sinkronizacije",
     "syncing": "Sinkronizacija...",
     "syncSuccess": "Uvezeno transakcija: {{count}}",
     "syncSuccessSkipped": "Uvezeno: {{imported}} · Preskočeno: {{skipped}}",

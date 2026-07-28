@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useBankConnections, type BankAccount } from '@/hooks/useBankConnections';
+import { isAccountSyncExcluded } from '@/lib/bankSyncExclusions';
 
 // Throttle constants — MORAJU ostati u sinkronu s bank-sync-transactions edge funkcijom.
 // Server je autoritativan; klijentski pre-check je samo brži mirror da izbjegnemo mrežne pozive.
@@ -65,8 +66,14 @@ export interface UseSyncAllBankAccountsResult {
  */
 export function useSyncAllBankAccounts(): UseSyncAllBankAccountsResult {
   const { t } = useTranslation();
-  const { accounts, refetch } = useBankConnections();
+  const { accounts: allAccounts, refetch } = useBankConnections();
   const qc = useQueryClient();
+
+  // Isključeni računi ne smiju utjecati na hasAccounts/allCooldown ni na sam sync.
+  const accounts = useMemo(
+    () => allAccounts.filter((a) => !isAccountSyncExcluded(a.id)),
+    [allAccounts],
+  );
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<SyncAllProgress | null>(null);

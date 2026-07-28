@@ -5123,6 +5123,8 @@
     "notLinked": "Nicht verknüpft",
     "mappedTo": "Verknüpft mit",
     "sync": "Synchronisieren",
+    "excludedFromSync": "Dieses Konto ist von der Synchronisierung ausgeschlossen",
+    "excludedFromSyncShort": "Von Sync ausgeschlossen",
     "syncing": "Synchronisiere...",
     "syncSuccess": "Importierte Transaktionen: {{count}}",
     "syncSuccessSkipped": "Importiert: {{imported}} · Übersprungen: {{skipped}}",
