@@ -17,13 +17,24 @@ function dispatch(state: FeedbackState) {
   listeners.forEach((l) => l(memoryState));
 }
 
+function computeDuration(type: FeedbackType, message?: string): number {
+  const base = type === 'error' ? 2500 : 2000;
+  const min = type === 'error' ? 3000 : 2500;
+  const max = type === 'error' ? 6000 : 4500;
+  const len = message?.length ?? 0;
+  const extra = Math.max(0, len - 20) * 40;
+  const raw = base + extra;
+  return Math.min(max, Math.max(min, raw));
+}
+
 function show(type: FeedbackType, message?: string) {
   if (hideTimeout) clearTimeout(hideTimeout);
   dispatch({ visible: true, type, message });
+  const duration = computeDuration(type, message);
   hideTimeout = setTimeout(() => {
     dispatch({ visible: false, type, message });
     hideTimeout = null;
-  }, 1200);
+  }, duration);
 }
 
 export function showSuccess(message?: string) {
