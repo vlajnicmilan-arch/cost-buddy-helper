@@ -565,7 +565,29 @@ const Index = () => {
     curMonthExpenses,
   };
 
-  // Business chip = contextual filter only; render single dashboard always.
+  if (isBusinessMode) {
+    return (
+      <BusinessModeView
+        {...sharedDialogProps}
+        businessTab={businessTab}
+        onBusinessTabChange={setBusinessTab}
+        businessProfile={businessProfile}
+        displayName={displayName}
+        onBackToPersonal={() => {
+          setBusinessModeEnabled(false);
+          setActiveBusinessProfileId(null);
+          setBusinessTab('dashboard');
+        }}
+        onAddExpense={addExpenseWithRecurringCheck}
+        bulkUpdateExpenses={bulkUpdateExpenses}
+        checkDuplicate={checkDuplicate}
+        refetch={refetch}
+        totalReceivable={totalReceivable}
+        totalPayable={totalPayable}
+        formatAmount={formatAmount}
+      />
+    );
+  }
 
   return (
     <PersonalModeView
