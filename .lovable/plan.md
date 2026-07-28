@@ -1,73 +1,62 @@
 
-# Plan: throttle za ručni bank-sync (Faza 1)
+# Plan: Sakrivanje mrtvih HRK bank računa iz Walleta
 
-Cilj: spriječiti da ručni "Osvježi" udara u ASPSP 429. Bez dirananja auth modela, multi-tenanta, balance engine-a ili crona.
+## 1. Gdje filtrirati — **Opcija A (UI filter)**
 
-## 1. Gdje throttle živi — **oboje**
+Filtrirati u prezentacijskom sloju, ne pri sync/link upisu.
 
-- **Backend (`bank-sync-transactions/index.ts`) = prava zaštita.** Odmah nakon učitavanja `bank_accounts` reda, prije prvog `ebFetch` poziva, provjeri:
-  - `last_synced_at` — ako je unutar cooldown prozora, vrati `429` (ili `409`) s JSON-om `{ error: "throttled", retry_after_seconds: N, last_synced_at }`. **Ne troši EB poziv.**
-  - `last_sync_error` — ako je zadnji sync završio s `fetch_failed_429` (ili novom oznakom `aspsp_rate_limited`) unutar cooldowna nakon 429, vrati `{ error: "aspsp_cooldown", retry_after_seconds: N }`.
-- **Frontend (`OpenBankingPanel.tsx`) = UX sloj.** Iz već poznatog `acc.last_synced_at` izračuna preostalo vrijeme, disable-a "Osvježi" gumb i prikazuje odbrojavanje ("Sljedeće osvježavanje moguće za 42 min"). Ako korisnik svejedno klikne (npr. drugi tab), backend ga vrati s prijaznom porukom umjesto EB pozivom.
+**Zašto A, ne B:**
+- B (guard u `bank-sync-transactions` / `bank-link-account`) dira produkcijsku sync logiku koju smo upravo throttleali — nepotreban rizik.
+- Ako EB jednog dana vrati stvarni HRK račun, B bi ga tiho progutao. A ga samo sakrije uz jasan uvjet i lako je vratiti.
+- Baza ostaje istinit odraz onoga što EB javlja — dobro za buduće revizije.
 
-Frontend sam nije dovoljan (može se zaobići reloadom, drugom sesijom, curl-om). Backend sam radi ali je UX loš (klik → čekanje → greška). Oboje = robust + čist UX.
+**Konkretno mjesto filtra:** `src/hooks/useBankConnections.ts`, `accountsQuery` selector — vrati filtriran niz. Time je jedna točka istine za sve komponente koje čitaju hook (`OpenBankingPanel`, i buduće). Ne diramo `OpenBankingPanel.tsx` po jsx granama.
 
-## 2. Prag (cooldown)
+## 2. Uvjet za skrivanje
 
-- **Normalni cooldown: 30 minuta po računu.** PSD2 dozvoljava 4/dan/račun (unattended); kad je korisnik prisutan (SCA ≤ 90 dana) nema strogog limita, ali Erste ipak vraća 429 na burst. 30 min ostavlja Milanu ~48 slotova dnevno kad zbilja treba svjež podatak, dok sprječava rapid-fire.
-- **Post-429 cooldown: 60 minuta po računu.** Ako je EB/ASPSP već vratio 429, čekamo dulje.
-- Vrijednosti izložene kao **konstante na vrhu edge funkcije** (`SYNC_COOLDOWN_MINUTES = 30`, `RATE_LIMIT_COOLDOWN_MINUTES = 60`), lako kasnije podesiti bez migracije.
+```
+currency = 'HRK'
+AND balance = 0
+AND last_synced_at IS NULL
+AND linked_payment_source_id IS NULL
+```
 
-Ne predlažem dnevni brojač (4/dan) u fazi 1 — dodaje state i tablicu; 30-min cooldown pokriva 90%+ slučajeva jednostavnije.
+Sva četiri uvjeta zajedno. `last_synced_at IS NULL` i `linked_payment_source_id IS NULL` su zaštitni pojasi: ako korisnik račun ikad linkao na payment source ili je EB ikad povukao transakcije, ne diramo ga bez obzira što je valuta HRK.
 
-## 3. Kako izmjeriti "koliko je prošlo"
+## 3. Provjera rizika false-hide (read-only nalaz)
 
-**`bank_accounts.last_synced_at` je dovoljan** i već postoji (potvrđeno u schemi: `timestamp with time zone`). Funkcija ga trenutno ažurira na kraju uspješnog sync-a (`.update({ last_synced_at: new Date().toISOString(), last_sync_error: null })`).
+Milanova `bank_accounts` (5 redova, sve Erste, sve `active`):
 
-Za post-429 cooldown iskoristit ćemo postojeći `last_sync_error` (tekstualno polje). Kod već upisuje `fetch_failed_429` kad EB vrati 429. Trebat će samo dodati timestamp — najjednostavnije **iskoristi `updated_at`** (auto-touched preko update triggera) uz `last_sync_error LIKE '%429%'`. Ako se pokaže da `updated_at` "drifta" iz drugih razloga, u fazi 1.5 dodamo `last_sync_error_at` kolonu (jedna migracija). **Za fazu 1: bez migracije.**
+| Currency | Balance | last_synced_at | linked_ps | Sakriti? |
+|---|---|---|---|---|
+| EUR 57.34 | linked → "Tekući zaštićeni" | sinkroniziran | da | **NE** |
+| EUR −3.00 | linked → drugi source | sinkroniziran | da | **NE** |
+| EUR 0.00 | nesink., nelinked | — | — | **NE** (EUR, izvan opsega) |
+| HRK 0.00 | nesink., nelinked | — | — | **DA** |
+| HRK 0.00 | nesink., nelinked | — | — | **DA** |
 
-## 4. Poruka korisniku (i18n hr/en/de)
+Nijedan HRK račun s prometom, saldom ≠ 0, ili linkom ne postoji. Uvjet ne pogađa niti jedan aktivan račun. Napomena: postoji jedan **EUR** račun s 0.00 i bez sync-a (`d3782fc0…`) — nije predmet ovog filtra, ostaje vidljiv.
 
-Backend vraća strukturirani JSON, frontend prevodi. Novi i18n ključevi (u `src/i18n/locales/{hr,en,de}/*`):
+## 4. Utjecaj na balance
 
-- `bank.throttle.recent` → "Osvježeno prije {{ago}}. Sljedeće osvježavanje moguće za {{remaining}}."
-- `bank.throttle.rateLimited` → "Banka je privremeno ograničila pristup. Pokušajte ponovno za {{remaining}}."
-- `bank.throttle.buttonCountdown` → "Osvježi (za {{remaining}})"
+Nula. Ti HRK redovi imaju `linked_payment_source_id = NULL`, znači nisu spojeni ni na jedan `custom_payment_sources` red pa ne ulaze u balance engine. Filtriramo samo prikaz u Wallet listi bank računa.
 
-Bez toast tehničkih grešaka. `StatusFeedback` (postojeći sustav, 1200ms) za "Osvježeno" success; inline hint ispod gumba za throttle stanje.
+## 5. Reverzibilnost
 
-## 5. Cooldown nakon 429
+Potpuno. Filter je 4-uvjetni `Array.filter` u jednom hooku. Uklanjanje = maknuti taj poziv. Baza netaknuta, sync netaknut, RLS netaknut.
 
-Već pokriveno u točki 2: `RATE_LIMIT_COOLDOWN_MINUTES = 60`. Trigger:
-- Ako `ebFetch` vrati 429 → backend upiše `last_sync_error = 'aspsp_rate_limited_429'` (mala promjena postojeće poruke `fetch_failed_429` radi jasnoće) i vrati HTTP 429 s `retry_after_seconds`.
-- Sljedeći poziv u prozoru: backend vidi flag, vraća `{ error: "aspsp_cooldown" }` **bez EB poziva**.
-- Nakon isteka: normalno stanje.
+## Opseg izmjene (kad Milan odobri build)
 
-## 6. Opseg i rizik
+Jedan file: `src/hooks/useBankConnections.ts` — dodati filter u `accountsQuery.queryFn` return. ~5 linija. Bez migracije, bez i18n, bez UI komponenti.
 
-**Ne dira:**
-- ❌ auth model (funkcija i dalje traži user JWT, isti flow)
-- ❌ multi-tenant (throttle je per-account, per-user već preko postojećih RLS-a)
-- ❌ balance/settlement/engine (ne dira `expenses`, ne dira sidra, ne dira `custom_payment_sources`)
-- ❌ cron (nema novog rasporeda)
-- ❌ baza (nema migracije u fazi 1)
-- ❌ `_shared/enableBankingJwt.ts` (throttle je iznad EB poziva)
+## Ne dira
 
-**Dira samo:**
+- ❌ `bank-sync-transactions` (upravo dobio throttle, ne diramo)
+- ❌ `bank-link-account`
+- ❌ bazu (nema migracije, nema DELETE)
+- ❌ balance/anchor engine
+- ❌ RLS
 
-| Datoteka | Promjena |
-|---|---|
-| `supabase/functions/bank-sync-transactions/index.ts` | ~40 linija: konstante, pre-flight provjera `last_synced_at` + `last_sync_error`, strukturirani 429 odgovori, precizniji `last_sync_error` string |
-| `src/components/OpenBankingPanel.tsx` | Odbrojavanje preostalog vremena iz `acc.last_synced_at`, disable gumba, čitanje strukturiranog error responsea, prikaz i18n poruke |
-| `src/i18n/locales/hr/*.json` (+ en, de) | 3 nova ključa iz t. 4 |
+## Otvoreno pitanje
 
-Rizik: nizak. Ne mijenja tijek podataka; samo dodaje pre-flight guard i UX oko postojećeg gumba.
-
-## Otvoreno pitanje za Milana prije build-a
-
-Potvrdi vrijednosti:
-- **Normal cooldown: 30 min** — OK, ili radije 60 min (konzervativnije, veći headroom za budući cron)?
-- **Post-429 cooldown: 60 min** — OK, ili 120 min?
-- Koristiti postojeći `updated_at` kao proxy za "kad je bio zadnji error" (**bez migracije**) ili radije dodati `last_sync_error_at` kolonu odmah (**jedna mini-migracija**)?
-
-Čekam potvrdu prije bilo kakve gradnje.
+Uvjet uključuje `currency = 'HRK'` doslovno. Ako EB ikad vrati stariju šifru poput `'HRK '` s razmakom ili `'191'` (ISO numeric), promakla bi. Predlažem striktno `'HRK'` — jednostavno, i pokriva sve Milanove trenutne redove. OK?
