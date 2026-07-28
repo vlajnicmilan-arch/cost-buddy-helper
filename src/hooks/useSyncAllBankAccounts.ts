@@ -47,9 +47,9 @@ export interface SyncAllProgress {
 export interface UseSyncAllBankAccountsResult {
   /** True ako korisnik uopće ima bank account u trenutnom kontekstu. */
   hasAccounts: boolean;
-  /** True ako je SVAKI account u cooldownu (klijentski pre-check). */
+  /** True ako je BILO KOJI account u cooldownu (gumb čeka da SVI budu spremni). */
   allCooldown: boolean;
-  /** Human-readable "još Xm" do prvog slobodnog accounta (samo kad allCooldown). */
+  /** Human-readable "još Xm" do trenutka kad će i zadnji račun biti slobodan. */
   nextAvailableLabel: string;
   /** True dok traje sekvencijalna orkestracija. */
   isRunning: boolean;
@@ -87,28 +87,29 @@ export function useSyncAllBankAccounts(): UseSyncAllBankAccountsResult {
 
   const hasAccounts = accounts.length > 0;
 
-  const { allCooldown, minRemainingSec } = useMemo(() => {
+  const { allCooldown, maxRemainingSec } = useMemo(() => {
     if (accounts.length === 0) {
-      return { allCooldown: false, minRemainingSec: 0 };
+      return { allCooldown: false, maxRemainingSec: 0 };
     }
-    let allCd = true;
-    let minRem = Number.POSITIVE_INFINITY;
+    let anyCd = false;
+    let maxRem = 0;
     for (const a of accounts) {
       const rem = computeAccountThrottleRemainingSec(a, nowMs);
-      if (rem <= 0) {
-        allCd = false;
-      } else if (rem < minRem) {
-        minRem = rem;
+      if (rem > 0) {
+        anyCd = true;
+      }
+      if (rem > maxRem) {
+        maxRem = rem;
       }
     }
     return {
-      allCooldown: allCd,
-      minRemainingSec: Number.isFinite(minRem) ? minRem : 0,
+      allCooldown: anyCd,
+      maxRemainingSec: maxRem,
     };
   }, [accounts, nowMs]);
 
   const nextAvailableLabel = allCooldown
-    ? formatDurationHm(minRemainingSec, t as TFn)
+    ? formatDurationHm(maxRemainingSec, t as TFn)
     : '';
 
   const run = useCallback(async () => {
