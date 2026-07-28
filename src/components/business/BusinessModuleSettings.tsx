@@ -14,7 +14,7 @@ import {
   type IndustryType, type ModuleId,
 } from '@/lib/businessModules';
 
-export type BusinessTheme = 'ocean-blue' | 'emerald' | 'indigo' | 'crimson' | 'amber' | 'slate' | 'teal';
+export type BusinessTheme = 'ocean-blue' | 'emerald' | 'indigo' | 'crimson' | 'amber' | 'slate' | 'teal' | 'premium-dark';
 
 const THEME_DESCRIPTION_KEYS: Record<BusinessTheme, string> = {
   'ocean-blue': 'businessModules.themeOceanBlue',
@@ -24,6 +24,7 @@ const THEME_DESCRIPTION_KEYS: Record<BusinessTheme, string> = {
   'amber': 'businessModules.themeAmber',
   'slate': 'businessModules.themeSlate',
   'teal': 'businessModules.themeTeal',
+  'premium-dark': 'businessModules.themePremiumDark',
 };
 
 const BUSINESS_THEMES: { id: BusinessTheme; label: string; previewColor: string }[] = [
@@ -34,6 +35,7 @@ const BUSINESS_THEMES: { id: BusinessTheme; label: string; previewColor: string 
   { id: 'amber', label: 'Amber', previewColor: 'hsl(38 92% 50%)' },
   { id: 'slate', label: 'Slate', previewColor: 'hsl(215 25% 27%)' },
   { id: 'teal', label: 'Teal', previewColor: 'hsl(174 72% 40%)' },
+  { id: 'premium-dark', label: 'Onyx', previewColor: 'hsl(42 38% 68%)' },
 ];
 
 export const BusinessModuleSettings = () => {
