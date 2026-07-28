@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { supabaseInvoke } from '@/lib/supabaseInvoke';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { useBankConnections, type BankAccount } from '@/hooks/useBankConnections';
+import { isAccountSyncExcluded } from '@/lib/bankSyncExclusions';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useQueryClient } from '@tanstack/react-query';
@@ -408,6 +409,7 @@ export const OpenBankingPanel = () => {
                     ? customPaymentSources.find(s => s.id === acc.linked_payment_source_id)
                     : null;
                   const isSyncing = syncingId === acc.id;
+                  const isExcluded = isAccountSyncExcluded(acc.id);
                   const throttle = computeThrottle(acc, nowMs);
                   const remainingLabel = throttle ? formatRemaining(throttle.remainingSec, t as TFn) : '';
                   const sessionExpired = acc.last_sync_error === 'session_expired';
@@ -458,16 +460,18 @@ export const OpenBankingPanel = () => {
                             <Button
                               size="sm"
                               onClick={() => handleSync(acc)}
-                              disabled={isSyncing || !!throttle}
+                              disabled={isSyncing || !!throttle || isExcluded}
                               className="h-8 px-2 text-xs"
-                              title={throttle
-                                ? (throttle.reason === 'aspsp_cooldown'
-                                    ? t('openBanking.throttle.rateLimited', { remaining: remainingLabel })
-                                    : t('openBanking.throttle.recent', {
-                                        ago: acc.last_synced_at ? formatAgo(new Date(acc.last_synced_at), t as TFn) : '',
-                                        remaining: remainingLabel,
-                                      }))
-                                : undefined}
+                              title={isExcluded
+                                ? t('openBanking.excludedFromSync')
+                                : throttle
+                                  ? (throttle.reason === 'aspsp_cooldown'
+                                      ? t('openBanking.throttle.rateLimited', { remaining: remainingLabel })
+                                      : t('openBanking.throttle.recent', {
+                                          ago: acc.last_synced_at ? formatAgo(new Date(acc.last_synced_at), t as TFn) : '',
+                                          remaining: remainingLabel,
+                                        }))
+                                  : undefined}
                             >
                               {isSyncing ? (
                                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -476,10 +480,17 @@ export const OpenBankingPanel = () => {
                               )}
                               {isSyncing
                                 ? t('openBanking.syncing')
-                                : throttle
-                                  ? t('openBanking.throttle.buttonCountdown', { remaining: remainingLabel })
-                                  : t('openBanking.sync')}
+                                : isExcluded
+                                  ? t('openBanking.excludedFromSyncShort')
+                                  : throttle
+                                    ? t('openBanking.throttle.buttonCountdown', { remaining: remainingLabel })
+                                    : t('openBanking.sync')}
                             </Button>
+                          )}
+                          {isExcluded && !linkedSource && (
+                            <Badge variant="outline" className="text-muted-foreground text-[11px]">
+                              {t('openBanking.excludedFromSyncShort')}
+                            </Badge>
                           )}
                         </div>
                       </div>

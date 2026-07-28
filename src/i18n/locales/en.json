@@ -5123,6 +5123,8 @@
     "notLinked": "Not linked",
     "mappedTo": "Linked to",
     "sync": "Sync",
+    "excludedFromSync": "This account is excluded from sync",
+    "excludedFromSyncShort": "Excluded from sync",
     "syncing": "Syncing...",
     "syncSuccess": "Imported transactions: {{count}}",
     "syncSuccessSkipped": "Imported: {{imported}} · Skipped: {{skipped}}",
