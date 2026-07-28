@@ -246,7 +246,17 @@
       inset 0 -1px 0 hsl(30 8% 2% / 0.40),
       /* Lifted outer shadow for separation from the deep black background */
       0 8px 32px -14px hsl(0 0% 0% / 0.95);
+
+    /* Accent-aware variant: identical strength to --shadow-premium, but the
+       hairline + glow follow the card's own accent (--card-accent) instead of
+       being fixed gold. Falls back to the gold palette when unset. */
+    --shadow-premium-accent:
+      inset 0 1px 0 hsl(var(--card-accent, 40 50% 88%) / 0.22),
+      inset 0 -1px 0 hsl(30 8% 2% / 0.40),
+      0 8px 32px -14px hsl(0 0% 0% / 0.95),
+      0 0 24px -10px hsl(var(--card-accent, 40 55% 48%) / 0.35);
   }
+
 
   /* Header accent bar → hairline instead of a thick primary strip. */
   .business-theme-premium-dark > .h-1.bg-primary {
@@ -275,14 +285,23 @@
   }
   .business-theme-premium-dark .glass-card,
   .business-theme-premium-dark [class*='rounded-2xl'].bg-card,
-  .business-theme-premium-dark [class*='rounded-xl'].bg-card {
-    box-shadow: var(--shadow-premium);
+  .business-theme-premium-dark [class*='rounded-xl'].bg-card,
+  .business-theme-premium-dark [class*='rounded-2xl'][class*='backdrop-blur-md'] {
+    box-shadow: var(--shadow-premium-accent);
     background-image: linear-gradient(
       180deg,
       hsl(40 30% 100% / 0.05) 0%,
       transparent 55%
     );
   }
+
+  /* Accent cards paint their own inline gradient background; keep it and let
+     the glow carry the sheen so the semantic tint is not washed out. */
+  .business-theme-premium-dark [class*='rounded-2xl'][class*='backdrop-blur-md'] {
+    background-image: none;
+    border-color: hsl(var(--card-accent, 40 55% 48%) / 0.18);
+  }
+
 
 
 

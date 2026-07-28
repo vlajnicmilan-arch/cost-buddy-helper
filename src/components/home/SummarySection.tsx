@@ -81,6 +81,7 @@ export const SummarySection = React.memo(({
           style={{ 
             borderLeftWidth: 3, 
             borderLeftColor: 'hsl(var(--primary))',
+            ['--card-accent' as string]: 'var(--primary)',
             background: 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--primary) / 0.02) 50%, transparent 100%)',
           }}
         >
@@ -104,6 +105,7 @@ export const SummarySection = React.memo(({
           style={{ 
             borderLeftWidth: 3, 
             borderLeftColor: 'hsl(168 80% 50%)',
+            ['--card-accent' as string]: '168 80% 50%',
             background: 'linear-gradient(135deg, hsl(168 80% 50% / 0.06) 0%, hsl(168 80% 50% / 0.02) 50%, transparent 100%)',
           }}
         >
@@ -128,6 +130,7 @@ export const SummarySection = React.memo(({
           style={{ 
             borderLeftWidth: 3, 
             borderLeftColor: 'hsl(var(--income))',
+            ['--card-accent' as string]: 'var(--income)',
             background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, hsl(var(--income) / 0.02) 50%, transparent 100%)',
           }}
           onClick={onIncomeClick}
@@ -159,6 +162,7 @@ export const SummarySection = React.memo(({
           style={{ 
             borderLeftWidth: 3, 
             borderLeftColor: 'hsl(var(--destructive))',
+            ['--card-accent' as string]: 'var(--destructive)',
             background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, hsl(var(--destructive) / 0.02) 50%, transparent 100%)',
           }}
           onClick={onExpenseClick}
@@ -197,6 +201,7 @@ export const SummarySection = React.memo(({
         style={{ 
           borderLeftWidth: 3, 
           borderLeftColor: 'hsl(var(--muted-foreground))',
+          ['--card-accent' as string]: 'var(--muted-foreground)',
           background: 'linear-gradient(135deg, hsl(var(--muted-foreground) / 0.04) 0%, transparent 100%)',
         }}
         onClick={onTransferClick}
@@ -235,6 +240,7 @@ export const SummarySection = React.memo(({
           style={{ 
             borderLeftWidth: 3, 
             borderLeftColor: 'hsl(var(--accent))',
+            ['--card-accent' as string]: 'var(--accent)',
             background: 'linear-gradient(135deg, hsl(var(--accent) / 0.06) 0%, hsl(var(--accent) / 0.02) 50%, transparent 100%)',
           }}
           onClick={onRecurringClick}
