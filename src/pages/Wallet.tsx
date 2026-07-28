@@ -29,6 +29,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowRight, ChevronDown, Settings2 } from 'lucide-react';
 import { WalletHeroCard } from '@/components/wallet/WalletHeroCard';
+import { SyncAllBankAccountsButton } from '@/components/wallet/SyncAllBankAccountsButton';
 
 import { WalletTransfersCard } from '@/components/wallet/WalletTransfersCard';
 import { TransferListDialog } from '@/components/TransferListDialog';
@@ -229,6 +230,9 @@ const Wallet = () => {
           onDataImported={refetch}
         />
         <WalletHeroCard />
+        <div className="flex justify-end">
+          <SyncAllBankAccountsButton />
+        </div>
         <CustomPaymentSourcesPanel
           onRefetchExpenses={refetch}
           autoOpenNew={autoOpenNewSource}
