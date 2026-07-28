@@ -279,8 +279,8 @@
     box-shadow: var(--shadow-premium);
     background-image: linear-gradient(
       180deg,
-      hsl(40 30% 100% / 0.02) 0%,
-      transparent 40%
+      hsl(40 30% 100% / 0.05) 0%,
+      transparent 55%
     );
   }
 
