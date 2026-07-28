@@ -247,15 +247,35 @@
       /* Lifted outer shadow for separation from the deep black background */
       0 8px 32px -14px hsl(0 0% 0% / 0.95);
 
+    /* Perceptual glow equalisation.
+       Raw accents differ wildly in perceived brightness on black even at the
+       same HSL lightness (gold 40 55% 48% reads far brighter than red
+       0 62% 50%). --card-glow normalises the accent to a fixed perceptual
+       lightness while keeping hue + chroma, so green/red glow as strongly as
+       gold/turquoise. Fallback chain: raw accent → white mix → oklch pin. */
+    --card-glow: hsl(var(--card-accent, 40 55% 48%));
+    --card-glow: color-mix(
+      in srgb,
+      hsl(var(--card-accent, 40 55% 48%)) 55%,
+      hsl(45 45% 96%)
+    );
+    --card-glow: oklch(from hsl(var(--card-accent, 40 55% 48%)) 0.84 c h);
+
     /* Accent-aware variant: identical strength to --shadow-premium, but the
-       hairline + glow follow the card's own accent (--card-accent) instead of
-       being fixed gold. Falls back to the gold palette when unset. */
+       hairline + glow follow the card's own accent instead of being fixed
+       gold. Falls back to the gold palette when --card-accent is unset. */
     --shadow-premium-accent:
       inset 0 1px 0 hsl(var(--card-accent, 40 50% 88%) / 0.22),
       inset 0 -1px 0 hsl(30 8% 2% / 0.40),
       0 8px 32px -14px hsl(0 0% 0% / 0.95),
       0 0 24px -10px hsl(var(--card-accent, 40 55% 48%) / 0.35);
+    --shadow-premium-accent:
+      inset 0 1px 0 color-mix(in srgb, var(--card-glow) 30%, transparent),
+      inset 0 -1px 0 hsl(30 8% 2% / 0.40),
+      0 8px 32px -14px hsl(0 0% 0% / 0.95),
+      0 0 26px -8px color-mix(in srgb, var(--card-glow) 50%, transparent);
   }
+
 
 
   /* Header accent bar → hairline instead of a thick primary strip. */
@@ -300,7 +320,9 @@
   .business-theme-premium-dark [class*='rounded-2xl'][class*='backdrop-blur-md'] {
     background-image: none;
     border-color: hsl(var(--card-accent, 40 55% 48%) / 0.18);
+    border-color: color-mix(in srgb, var(--card-glow) 24%, transparent);
   }
+
 
 
 
