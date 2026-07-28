@@ -45,6 +45,7 @@ const Index = () => {
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
+  const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
 
   // Boot-trace: confirms HomePage actually mounted. If app crashes between
   // /home route_change and this event, we know the failure is inside Index
