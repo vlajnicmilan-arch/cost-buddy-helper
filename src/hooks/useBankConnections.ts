@@ -76,7 +76,16 @@ export const useBankConnections = () => {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as BankAccount[];
+      const rows = (data ?? []) as BankAccount[];
+      // Sakrij mrtve HRK podračune (ugašena valuta od 2023).
+      // Uvjeti moraju biti ISPUNJENI SVI ČETIRI da red nestane iz prikaza:
+      // HRK valuta, saldo 0, nikad sinkroniziran, i nije linkan na payment source.
+      return rows.filter((a) => !(
+        a.currency === 'HRK' &&
+        Number(a.balance ?? 0) === 0 &&
+        a.last_synced_at === null &&
+        a.linked_payment_source_id === null
+      ));
     },
   });
 
