@@ -19,7 +19,8 @@ import { useBulkActions } from '@/hooks/useBulkActions';
 import { useSoftDeleteWithUndo } from '@/hooks/useSoftDeleteWithUndo';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters, applyFilters } from '@/components/TransactionFilters';
-// BusinessModeView removed: business chip is now a contextual filter on PersonalModeView.
+import { BusinessTab } from '@/components/business/BusinessBottomNav';
+import { BusinessModeView } from '@/components/home/BusinessModeView';
 import { PersonalModeView } from '@/components/home/PersonalModeView';
 import { Expense } from '@/types/expense';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
@@ -44,6 +45,7 @@ const Index = () => {
   // (Saldo, Novčanici, Slobodno, Neto, Prihodi/Rashodi) all reflect the chosen context.
   const isBusinessMode = !!activeBusinessProfileId;
   const [businessProfile, setBusinessProfile] = useState<{ id: string; company_name: string; is_vat_payer: boolean; industry_type?: string; enabled_modules?: string[]; theme_color?: string } | null>(null);
+  const [businessTab, setBusinessTab] = useState<BusinessTab>('dashboard');
 
   // Boot-trace: confirms HomePage actually mounted. If app crashes between
   // /home route_change and this event, we know the failure is inside Index
@@ -563,7 +565,29 @@ const Index = () => {
     curMonthExpenses,
   };
 
-  // Business chip = contextual filter only; render single dashboard always.
+  if (isBusinessMode) {
+    return (
+      <BusinessModeView
+        {...sharedDialogProps}
+        businessTab={businessTab}
+        onBusinessTabChange={setBusinessTab}
+        businessProfile={businessProfile}
+        displayName={displayName}
+        onBackToPersonal={() => {
+          setBusinessModeEnabled(false);
+          setActiveBusinessProfileId(null);
+          setBusinessTab('dashboard');
+        }}
+        onAddExpense={addExpenseWithRecurringCheck}
+        bulkUpdateExpenses={bulkUpdateExpenses}
+        checkDuplicate={checkDuplicate}
+        refetch={refetch}
+        totalReceivable={totalReceivable}
+        totalPayable={totalPayable}
+        formatAmount={formatAmount}
+      />
+    );
+  }
 
   return (
     <PersonalModeView
