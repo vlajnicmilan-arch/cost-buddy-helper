@@ -239,8 +239,13 @@
       hsl(40 55% 48% / 0.35),
       transparent
     );
-    --shadow-premium: inset 0 1px 0 hsl(40 40% 80% / 0.05),
-      0 8px 24px -12px hsl(0 0% 0% / 0.85);
+    --shadow-premium:
+      /* Top hairline highlight — warm champagne barely catching light */
+      inset 0 1px 0 hsl(40 40% 88% / 0.06),
+      /* Soft bottom inset depth */
+      inset 0 -1px 0 hsl(30 8% 2% / 0.35),
+      /* Lifted outer shadow for separation from the deep black background */
+      0 8px 32px -16px hsl(0 0% 0% / 0.9);
   }
 
   /* Header accent bar → hairline instead of a thick primary strip. */
@@ -272,6 +277,11 @@
   .business-theme-premium-dark [class*='rounded-2xl'].bg-card,
   .business-theme-premium-dark [class*='rounded-xl'].bg-card {
     box-shadow: var(--shadow-premium);
+    background-image: linear-gradient(
+      180deg,
+      hsl(40 30% 100% / 0.02) 0%,
+      transparent 40%
+    );
   }
 
 
