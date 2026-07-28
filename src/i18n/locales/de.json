@@ -4597,7 +4597,16 @@
     "settings": "Wallet-Einstellungen",
     "includeHidden": "Versteckte einbeziehen",
     "sharedAccounts": "+ {{amount}} auf geteilten Konten",
-    "personal": "Persönlich"
+    "personal": "Persönlich",
+    "syncAll": {
+      "button": "Alle synchronisieren",
+      "inProgress": "Synchronisiere {{current}}/{{total}}…",
+      "nextIn": "Nächste Synchronisierung in {{duration}}",
+      "summarySynced": "{{count}} Konten aktualisiert",
+      "summaryMixed": "{{synced}} aktualisiert, {{skipped}} übersprungen",
+      "summaryAllRecent": "Alle Konten wurden kürzlich aktualisiert",
+      "summaryPartialError": "{{count}} Konten fehlgeschlagen (Bank vorübergehend nicht erreichbar)"
+    }
   },
   "categoryIcons": {
     "groups": {
