@@ -16,7 +16,7 @@ const StatusFeedback = () => {
           exit={{ opacity: 0, transition: { duration: 0.3 } }}
         >
           <motion.div
-            className="flex flex-col items-center gap-2"
+            className="flex flex-col items-center gap-2 px-4"
             initial={{ scale: 0, opacity: 0 }}
             animate={{
               scale: [0, 1.2, 1],
@@ -37,7 +37,7 @@ const StatusFeedback = () => {
               )}
             </div>
             {message && (
-              <span className="text-sm text-muted-foreground font-medium max-w-[200px] text-center truncate">
+              <span className="max-w-[min(320px,80vw)] text-center text-sm font-medium leading-snug break-words line-clamp-3 text-muted-foreground">
                 {message}
               </span>
             )}
