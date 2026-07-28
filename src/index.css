@@ -320,7 +320,9 @@
   .business-theme-premium-dark [class*='rounded-2xl'][class*='backdrop-blur-md'] {
     background-image: none;
     border-color: hsl(var(--card-accent, 40 55% 48%) / 0.18);
+    border-color: color-mix(in srgb, var(--card-glow) 24%, transparent);
   }
+
 
 
 
