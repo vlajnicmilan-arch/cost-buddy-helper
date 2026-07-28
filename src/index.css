@@ -213,34 +213,34 @@
      across every theme. */
   .business-theme-premium-dark,
   .dark .business-theme-premium-dark {
-    --background: 30 6% 6%;
-    --card: 30 6% 9%;
-    --card-foreground: 40 15% 93%;
-    --popover: 30 6% 9%;
-    --popover-foreground: 40 15% 93%;
-    --foreground: 40 15% 93%;
-    --secondary: 30 5% 13%;
-    --secondary-foreground: 40 15% 93%;
-    --muted: 30 5% 13%;
+    --background: 30 8% 4%;
+    --card: 30 8% 7%;
+    --card-foreground: 40 12% 92%;
+    --popover: 30 8% 7%;
+    --popover-foreground: 40 12% 92%;
+    --foreground: 40 12% 92%;
+    --secondary: 30 6% 11%;
+    --secondary-foreground: 40 12% 92%;
+    --muted: 30 6% 11%;
     --muted-foreground: 38 10% 64%;
-    --primary: 42 38% 68%;
-    --primary-foreground: 30 8% 8%;
-    --accent: 42 30% 58%;
-    --accent-foreground: 40 15% 93%;
-    --border: 40 8% 18%;
-    --input: 40 8% 18%;
-    --ring: 42 38% 68%;
+    --primary: 40 55% 48%;
+    --primary-foreground: 30 10% 6%;
+    --accent: 40 55% 32%;
+    --accent-foreground: 40 12% 92%;
+    --border: 40 15% 16%;
+    --input: 40 15% 16%;
+    --ring: 40 55% 48%;
     --radius: 0.5rem;
 
     color: hsl(var(--foreground));
     --premium-hairline: linear-gradient(
       90deg,
       transparent,
-      hsl(42 38% 68% / 0.35),
+      hsl(40 55% 48% / 0.35),
       transparent
     );
-    --shadow-premium: inset 0 1px 0 hsl(40 20% 100% / 0.04),
-      0 8px 24px -12px hsl(0 0% 0% / 0.8);
+    --shadow-premium: inset 0 1px 0 hsl(40 40% 80% / 0.05),
+      0 8px 24px -12px hsl(0 0% 0% / 0.85);
   }
 
   /* Header accent bar → hairline instead of a thick primary strip. */
