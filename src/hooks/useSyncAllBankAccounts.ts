@@ -87,28 +87,29 @@ export function useSyncAllBankAccounts(): UseSyncAllBankAccountsResult {
 
   const hasAccounts = accounts.length > 0;
 
-  const { allCooldown, minRemainingSec } = useMemo(() => {
+  const { allCooldown, maxRemainingSec } = useMemo(() => {
     if (accounts.length === 0) {
-      return { allCooldown: false, minRemainingSec: 0 };
+      return { allCooldown: false, maxRemainingSec: 0 };
     }
-    let allCd = true;
-    let minRem = Number.POSITIVE_INFINITY;
+    let anyCd = false;
+    let maxRem = 0;
     for (const a of accounts) {
       const rem = computeAccountThrottleRemainingSec(a, nowMs);
-      if (rem <= 0) {
-        allCd = false;
-      } else if (rem < minRem) {
-        minRem = rem;
+      if (rem > 0) {
+        anyCd = true;
+      }
+      if (rem > maxRem) {
+        maxRem = rem;
       }
     }
     return {
-      allCooldown: allCd,
-      minRemainingSec: Number.isFinite(minRem) ? minRem : 0,
+      allCooldown: anyCd,
+      maxRemainingSec: maxRem,
     };
   }, [accounts, nowMs]);
 
   const nextAvailableLabel = allCooldown
-    ? formatDurationHm(minRemainingSec, t as TFn)
+    ? formatDurationHm(maxRemainingSec, t as TFn)
     : '';
 
   const run = useCallback(async () => {
