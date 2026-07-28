@@ -7,7 +7,7 @@ import { useAppState } from '@/contexts/AppStateContext';
  *  - `business:<uuid>`      → only sources/transactions tied to that company
  *
  * SINGLE SOURCE OF TRUTH: derived directly from AppStateContext
- * (`businessModeEnabled` + `activeBusinessProfileId`). This eliminates the
+ * (`activeBusinessProfileId` only). This eliminates the
  * dual-state ping-pong that previously caused dashboard flickering.
  */
 export type WalletViewMode = 'personal' | `business:${string}`;
@@ -27,12 +27,11 @@ export const WalletViewModeProvider = ({ children }: { children: ReactNode }) =>
   const {
     activeBusinessProfileId,
     setActiveBusinessProfileId,
-    businessModeEnabled,
   } = useAppState();
 
-  // When business mode is disabled in Settings, force personal view regardless of
-  // stored activeBusinessProfileId (which we keep so it returns when re-enabled).
-  const mode: WalletViewMode = (businessModeEnabled && activeBusinessProfileId)
+  // Single source of truth: an active business profile means we are in that
+  // company's view. `businessModeEnabled` is no longer part of the condition.
+  const mode: WalletViewMode = activeBusinessProfileId
     ? (`business:${activeBusinessProfileId}` as WalletViewMode)
     : 'personal';
 
