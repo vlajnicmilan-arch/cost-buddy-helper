@@ -4597,7 +4597,16 @@
     "settings": "Wallet settings",
     "includeHidden": "Include hidden",
     "sharedAccounts": "+ {{amount}} on shared accounts",
-    "personal": "Personal"
+    "personal": "Personal",
+    "syncAll": {
+      "button": "Sync all",
+      "inProgress": "Syncing {{current}}/{{total}}…",
+      "nextIn": "Next sync in {{duration}}",
+      "summarySynced": "{{count}} accounts refreshed",
+      "summaryMixed": "{{synced}} refreshed, {{skipped}} skipped",
+      "summaryAllRecent": "All accounts were recently refreshed",
+      "summaryPartialError": "{{count}} accounts failed (bank temporarily unavailable)"
+    }
   },
   "categoryIcons": {
     "groups": {

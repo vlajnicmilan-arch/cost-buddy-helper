@@ -4603,7 +4603,16 @@
     "settings": "Postavke novčanika",
     "includeHidden": "Uključi sakrivene",
     "sharedAccounts": "+ {{amount}} na dijeljenim računima",
-    "personal": "Osobno"
+    "personal": "Osobno",
+    "syncAll": {
+      "button": "Sinkroniziraj sve",
+      "inProgress": "Sinkroniziram {{current}}/{{total}}…",
+      "nextIn": "Sljedeća sinkronizacija za {{duration}}",
+      "summarySynced": "{{count}} računa osvježeno",
+      "summaryMixed": "{{synced}} osvježeno, {{skipped}} preskočeno",
+      "summaryAllRecent": "Svi računi su nedavno osvježeni",
+      "summaryPartialError": "{{count}} računa nije uspjelo (banka privremeno nedostupna)"
+    }
   },
   "categoryIcons": {
     "groups": {

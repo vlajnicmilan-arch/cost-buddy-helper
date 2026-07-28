@@ -6,6 +6,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { PaymentSourceTransactionsDialog } from '@/components/PaymentSourceTransactionsDialog';
 import { CustomPaymentSource } from '@/types/customPaymentSource';
 import { Wallet, Info } from 'lucide-react';
+import { SyncAllBankAccountsButton } from '@/components/wallet/SyncAllBankAccountsButton';
 
 export const BusinessWallet = () => {
   const { t } = useTranslation();
@@ -18,9 +19,12 @@ export const BusinessWallet = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Wallet className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-bold">{t('business.nav.wallet', 'Novčanik')}</h2>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Wallet className="w-5 h-5 text-primary shrink-0" />
+          <h2 className="text-lg font-bold truncate">{t('business.nav.wallet', 'Novčanik')}</h2>
+        </div>
+        <SyncAllBankAccountsButton />
       </div>
 
       {hasNoSources && (
