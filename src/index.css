@@ -205,6 +205,77 @@
     --ring: 174 72% 50%;
   }
 
+  /* ── Premium "Onyx / Champagne" business theme ───────────────────────────
+     Self-contained: identical values in light and dark, because the theme
+     class sits on the business wrapper (not on <html>), so `.dark` may or
+     may not be active. Status tokens (income/expense/destructive/warning)
+     are intentionally NOT overridden — financial semantics stay identical
+     across every theme. */
+  .business-theme-premium-dark,
+  .dark .business-theme-premium-dark {
+    --background: 30 6% 6%;
+    --card: 30 6% 9%;
+    --card-foreground: 40 15% 93%;
+    --popover: 30 6% 9%;
+    --popover-foreground: 40 15% 93%;
+    --foreground: 40 15% 93%;
+    --secondary: 30 5% 13%;
+    --secondary-foreground: 40 15% 93%;
+    --muted: 30 5% 13%;
+    --muted-foreground: 38 10% 64%;
+    --primary: 42 38% 68%;
+    --primary-foreground: 30 8% 8%;
+    --accent: 42 30% 58%;
+    --accent-foreground: 40 15% 93%;
+    --border: 40 8% 18%;
+    --input: 40 8% 18%;
+    --ring: 42 38% 68%;
+    --radius: 0.5rem;
+
+    color: hsl(var(--foreground));
+    --premium-hairline: linear-gradient(
+      90deg,
+      transparent,
+      hsl(42 38% 68% / 0.35),
+      transparent
+    );
+    --shadow-premium: inset 0 1px 0 hsl(40 20% 100% / 0.04),
+      0 8px 24px -12px hsl(0 0% 0% / 0.8);
+  }
+
+  /* Header accent bar → hairline instead of a thick primary strip. */
+  .business-theme-premium-dark > .h-1.bg-primary {
+    height: 1px;
+    background: var(--premium-hairline);
+    border-radius: 0;
+  }
+
+  /* Elegant Inter treatment: lighter large numerals, airy uppercase labels,
+     tighter headings. Scoped strictly to this theme. */
+  .business-theme-premium-dark h1,
+  .business-theme-premium-dark h2 {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .business-theme-premium-dark .text-2xl,
+  .business-theme-premium-dark .text-3xl,
+  .business-theme-premium-dark .text-4xl {
+    font-weight: 300;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+  }
+  .business-theme-premium-dark .uppercase {
+    letter-spacing: 0.18em;
+    font-weight: 500;
+  }
+  .business-theme-premium-dark .glass-card,
+  .business-theme-premium-dark [class*='rounded-2xl'].bg-card,
+  .business-theme-premium-dark [class*='rounded-xl'].bg-card {
+    box-shadow: var(--shadow-premium);
+  }
+
+
+
   .dark {
     /* Deep near-black background (~5% L, subtle cool tint).
        Not pure #000 — shadows and depth need a floor above black. */
