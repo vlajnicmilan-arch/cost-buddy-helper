@@ -574,7 +574,6 @@ const Index = () => {
         businessProfile={businessProfile}
         displayName={displayName}
         onBackToPersonal={() => {
-          setBusinessModeEnabled(false);
           setActiveBusinessProfileId(null);
           setBusinessTab('dashboard');
         }}
