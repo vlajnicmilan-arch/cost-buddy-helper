@@ -13,7 +13,7 @@ export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => 
   const { t } = useTranslation();
   const { mode, setMode } = useWalletViewMode();
   const { profiles } = useBusinessProfiles();
-  const { businessModeEnabled } = useAppState();
+  const { businessFeatureEnabled } = useAppState();
 
   type Item = { key: WalletViewMode; label: string; icon: typeof User };
   const items: Item[] = [
@@ -25,8 +25,8 @@ export const WalletViewModeChips = ({ className }: WalletViewModeChipsProps) => 
     })),
   ];
 
-  // Hide chips entirely when business mode is disabled in Settings, or no profiles exist.
-  if (!businessModeEnabled || items.length <= 1) return null;
+  // Hide chips entirely when the business module is disabled in Settings, or no profiles exist.
+  if (!businessFeatureEnabled || items.length <= 1) return null;
 
   return (
     <div className={cn('flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1', className)}>
