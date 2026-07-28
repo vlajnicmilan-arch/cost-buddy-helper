@@ -47,9 +47,9 @@ export interface SyncAllProgress {
 export interface UseSyncAllBankAccountsResult {
   /** True ako korisnik uopće ima bank account u trenutnom kontekstu. */
   hasAccounts: boolean;
-  /** True ako je SVAKI account u cooldownu (klijentski pre-check). */
+  /** True ako je BILO KOJI account u cooldownu (gumb čeka da SVI budu spremni). */
   allCooldown: boolean;
-  /** Human-readable "još Xm" do prvog slobodnog accounta (samo kad allCooldown). */
+  /** Human-readable "još Xm" do trenutka kad će i zadnji račun biti slobodan. */
   nextAvailableLabel: string;
   /** True dok traje sekvencijalna orkestracija. */
   isRunning: boolean;
