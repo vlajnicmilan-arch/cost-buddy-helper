@@ -73,7 +73,7 @@ export const QuickBusinessProfileDialog = ({
       <DialogContent className="sm:max-w-sm z-[70]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-amber-600" />
+            <Briefcase className="w-5 h-5 text-warning" />
             {t('business.quickCreate.title', 'Nova tvrtka')}
           </DialogTitle>
           <DialogDescription>

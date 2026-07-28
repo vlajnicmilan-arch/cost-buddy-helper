@@ -189,10 +189,10 @@ export const BusinessTransactions = ({ expenses, onAddClick, onScanClick, addAct
 
       {/* Business import: bankovni izvod uvijek dolazi s jednog tvrtkinog računa */}
       {businessSources.length === 0 ? (
-        <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-amber-500/30 bg-amber-500/5">
-          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-warning/30 bg-warning/5">
+          <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium text-amber-700 dark:text-amber-400">
+            <p className="font-medium text-warning">
               {t('import.noBusinessSourceWarning', 'Najprije dodaj poslovni izvor plaćanja (račun tvrtke) za koji uvoziš izvod.')}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
