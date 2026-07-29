@@ -11,9 +11,11 @@ import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 interface PaymentSourcesSectionProps {
   customPaymentSources: CustomPaymentSource[];
   onSourceClick: (source: CustomPaymentSource) => void;
+  /** Optional title override (defaults to shared `common.financesOverview`). */
+  titleOverride?: string;
 }
 
-export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement, PaymentSourcesSectionProps>(({ customPaymentSources, onSourceClick }, _ref) => {
+export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement, PaymentSourcesSectionProps>(({ customPaymentSources, onSourceClick, titleOverride }, _ref) => {
   const { t } = useTranslation();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
