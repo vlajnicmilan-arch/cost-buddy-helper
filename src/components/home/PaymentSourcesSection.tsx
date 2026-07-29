@@ -20,6 +20,9 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { hiddenIds } = useHiddenPaymentSources();
+  // Monarch restyle is business-scoped: only the business dashboard passes a title override.
+  const monarch = titleOverride !== undefined;
+
 
   // Exclude sources hidden from dashboard (per-user toggle)
   const visibleSources = useMemo(
