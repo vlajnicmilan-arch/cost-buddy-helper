@@ -3224,7 +3224,10 @@
       "workforceDesc": "Worker records, hours and labor costs",
       "recurringObligations": "Recurring obligations",
       "recurringObligationsDesc": "Rent, subscriptions, leasing and more"
-    }
+    },
+    "accountsOverview": "Accounts – overview",
+    "analysisButton": "Analytics",
+    "importTransactions": "Import transactions"
   },
   "guidedHome": {
     "entry": {
@@ -5113,7 +5116,6 @@
     "disconnectConfirm": "Are you sure you want to disconnect this bank?",
     "connected": "Bank connected",
     "connectError": "Failed to connect bank",
-    
     "contextPersonal": "Personal",
     "linkSource": "Link to source",
     "linkSourcePlaceholder": "Select payment source",

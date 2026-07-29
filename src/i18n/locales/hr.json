@@ -3098,7 +3098,10 @@
       "workforceDesc": "Evidencija radnika, sati i troškova rada",
       "recurringObligations": "Ponavljajuće obveze",
       "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo"
-    }
+    },
+    "accountsOverview": "Računi – pregled",
+    "analysisButton": "Analiza",
+    "importTransactions": "Uvoz transakcija"
   },
   "guidedHome": {
     "entry": {
@@ -5122,7 +5125,6 @@
     "disconnectConfirm": "Sigurno želiš prekinuti vezu s ovom bankom?",
     "connected": "Banka spojena",
     "connectError": "Greška pri spajanju banke",
-    
     "contextPersonal": "Osobno",
     "linkSource": "Poveži s izvorom",
     "linkSourcePlaceholder": "Odaberi izvor plaćanja",
