@@ -258,6 +258,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
 
             {/* 3. Profit / Loss this month */}
             <BusinessProfitCard
+              variant="monarch"
               curMonthIncome={props.curMonthIncome ?? 0}
               curMonthExpenses={props.curMonthExpenses ?? 0}
               prevMonthIncome={props.prevMonthIncome ?? 0}
@@ -268,20 +269,21 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
 
 
             {/* Receivables & Payables — always visible (0 € muted) */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}>
-                <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
-                <p className={`text-sm font-bold ${props.totalReceivable > 0 ? 'text-income' : 'text-muted-foreground/60'}`}>
+            <div className="grid grid-cols-2 gap-6 mb-6 sm:mb-8 pb-5 border-b border-border/40">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t('business.dashboard.receivables', 'Potraživanja')}</p>
+                <p className={`mt-0.5 text-xl font-semibold tabular-nums tracking-tight ${props.totalReceivable > 0 ? 'text-income' : 'text-muted-foreground/60'}`}>
                   {props.formatAmount(props.totalReceivable)}
                 </p>
               </div>
-              <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}>
-                <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
-                <p className={`text-sm font-bold ${props.totalPayable > 0 ? 'text-destructive' : 'text-muted-foreground/60'}`}>
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t('business.dashboard.payables', 'Dugovanja')}</p>
+                <p className={`mt-0.5 text-xl font-semibold tabular-nums tracking-tight ${props.totalPayable > 0 ? 'text-destructive' : 'text-muted-foreground/60'}`}>
                   {props.formatAmount(props.totalPayable)}
                 </p>
               </div>
             </div>
+
 
             {/* Recent Transactions */}
             <TransactionListSection
