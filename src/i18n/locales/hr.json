@@ -2979,6 +2979,7 @@
       "allPaid": "Svi računi plaćeni ✓",
       "profitLoss": "Dobit / Gubitak (ovaj mjesec)",
       "profitLabel": "Dobit",
+      "lossLabel": "Gubitak",
       "balanceGroup": "Stanje",
       "receivables": "Potraživanja",
       "payables": "Dugovanja",
