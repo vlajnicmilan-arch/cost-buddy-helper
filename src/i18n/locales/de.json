@@ -3092,7 +3092,10 @@
       "workforceDesc": "Mitarbeiterakten, Stunden und Arbeitskosten",
       "recurringObligations": "Wiederkehrende Verpflichtungen",
       "recurringObligationsDesc": "Miete, Abonnements, Leasing und mehr"
-    }
+    },
+    "accountsOverview": "Konten – Übersicht",
+    "analysisButton": "Analyse",
+    "importTransactions": "Transaktionen importieren"
   },
   "guidedHome": {
     "entry": {
@@ -5113,7 +5116,6 @@
     "disconnectConfirm": "Möchten Sie die Verbindung zu dieser Bank wirklich trennen?",
     "connected": "Bank verbunden",
     "connectError": "Verbindung zur Bank fehlgeschlagen",
-    
     "contextPersonal": "Privat",
     "linkSource": "Mit Quelle verknüpfen",
     "linkSourcePlaceholder": "Zahlungsquelle wählen",

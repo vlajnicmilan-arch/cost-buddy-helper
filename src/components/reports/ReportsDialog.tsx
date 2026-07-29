@@ -74,6 +74,8 @@ import { ExportButton } from '@/components/ui/export-button';
 interface ReportsDialogProps {
   expenses: Expense[];
   triggerClassName?: string;
+  /** Optional label override for the trigger button (defaults to shared `bulk.reports`). */
+  triggerLabel?: string;
 }
 
 type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
@@ -176,7 +178,7 @@ const calculateStats = (expenseList: Expense[]) => {
   };
 };
 
-export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps) => {
+export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   
@@ -666,7 +668,7 @@ export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps
           }}
         >
           <FileText className="w-4 h-4" />
-          {t('bulk.reports')}
+          {triggerLabel ?? t('bulk.reports')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-1rem)] sm:w-auto p-4 sm:p-6">

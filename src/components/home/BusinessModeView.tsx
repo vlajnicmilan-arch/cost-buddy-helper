@@ -156,12 +156,14 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-3xl font-bold text-foreground tracking-tight truncate">
-              {displayName ? t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName) : 'Centar'}
-            </h1>
-            <p className="text-xs sm:text-sm text-primary/80 font-medium truncate">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
               {businessProfile?.company_name || 'Tvrtka'}
-            </p>
+            </h1>
+            {displayName && (
+              <p className="text-sm text-muted-foreground truncate">
+                {t('common.greeting', 'Bok, {{name}}!').replace('{{name}}', displayName)}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -170,18 +172,22 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4">
         {businessTab === 'dashboard' && (
           <>
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <ReportsDialog expenses={props.allExpenses} />
+            {/* Action buttons — single row */}
+            <div className="flex items-center gap-2 mb-4">
+              <ReportsDialog
+                expenses={props.allExpenses}
+                triggerClassName="flex-1 min-w-0 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
+                triggerLabel={t('business.analysisButton', 'Analiza')}
+              />
               {props.importFromCSV && (
                 <>
                   <Button
                     variant="outline"
-                    className="gap-2 rounded-xl"
+                    className="gap-2 rounded-xl flex-1 min-w-0 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
                     onClick={() => setBusinessImportOpen(true)}
                   >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    {t('import.title', 'Uvoz izvoda')}
+                    <FileSpreadsheet className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{t('business.importTransactions', 'Uvoz transakcija')}</span>
                   </Button>
                   <CSVImportDialog
                     onImport={props.importFromCSV}
@@ -194,6 +200,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               )}
               <ManualAddTriggerButton
                 businessProfileId={props.businessProfile?.id ?? null}
+                triggerClassName="flex-shrink-0 font-semibold px-3 text-xs sm:text-sm whitespace-nowrap"
               />
             </div>
 
@@ -201,7 +208,9 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             <PaymentSourcesSection
               customPaymentSources={props.customPaymentSources}
               onSourceClick={props.onPaymentSourceClick}
+              titleOverride={t('business.accountsOverview', 'Računi – pregled')}
             />
+
 
             {/* Summary Cards */}
             <SummarySection

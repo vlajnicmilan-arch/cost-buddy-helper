@@ -11,9 +11,11 @@ import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 interface PaymentSourcesSectionProps {
   customPaymentSources: CustomPaymentSource[];
   onSourceClick: (source: CustomPaymentSource) => void;
+  /** Optional title override (defaults to shared `common.financesOverview`). */
+  titleOverride?: string;
 }
 
-export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement, PaymentSourcesSectionProps>(({ customPaymentSources, onSourceClick }, _ref) => {
+export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement, PaymentSourcesSectionProps>(({ customPaymentSources, onSourceClick, titleOverride }, _ref) => {
   const { t } = useTranslation();
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
@@ -54,7 +56,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm sm:text-base font-semibold">{t('common.financesOverview', 'Novčanik - pregled')}</p>
+                <p className="text-sm sm:text-base font-semibold">{titleOverride ?? t('common.financesOverview', 'Novčanik - pregled')}</p>
                 <p className="text-xs text-muted-foreground">
                   {visibleSources.length} {visibleSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')}&nbsp;
                 </p>
