@@ -48,7 +48,7 @@ export const UnpaidInvoicesWidget = ({ showEmptyState = false, variant = 'defaul
     <>
       <div
         {...clickableProps(() => setOpen(true))}
-        className="mb-4 p-3 rounded-2xl border border-border/50 hover:bg-muted/30 transition-colors"
+        className={`${wrapperSpacing} p-3 rounded-2xl border border-border/50 hover:bg-muted/30 transition-colors`}
         style={{ background: hasOverdue
           ? 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)'
           : 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)' }}
