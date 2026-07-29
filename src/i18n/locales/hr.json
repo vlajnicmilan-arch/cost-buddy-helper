@@ -2978,6 +2978,8 @@
       "vsLastMonth": "vs prošli mj.",
       "allPaid": "Svi računi plaćeni ✓",
       "profitLoss": "Dobit / Gubitak (ovaj mjesec)",
+      "profitLabel": "Dobit",
+      "balanceGroup": "Stanje",
       "receivables": "Potraživanja",
       "payables": "Dugovanja",
       "monthlyTrend": "Mjesečni trend",
