@@ -1,15 +1,43 @@
 import { useState, useEffect } from 'react';
+import { CENTAR_NOTE_ENABLED, CENTAR_NOTE_ERROR_DURATION_MS } from '@/lib/notifyFlags';
+import { resolveNoteModule, type NoteModule } from '@/lib/notifyModule';
 
 type FeedbackType = 'success' | 'error';
+export type FeedbackSeverity = 'info' | 'error';
+
+export interface FeedbackAction {
+  label: string;
+  onClick: () => void;
+}
+
+export interface FeedbackOptions {
+  /** Eksplicitni modul; ako izostane, rezolvira se iz konteksta rute. */
+  module?: NoteModule;
+  /** Opcionalni CTA gumb. */
+  action?: FeedbackAction;
+  /** Naslov iznad poruke (opcionalno). */
+  title?: string;
+}
 
 interface FeedbackState {
   visible: boolean;
   type: FeedbackType;
   message?: string;
+  severity: FeedbackSeverity;
+  module: NoteModule;
+  action?: FeedbackAction;
+  title?: string;
+  duration: number;
 }
 
 const listeners: Array<(state: FeedbackState) => void> = [];
-let memoryState: FeedbackState = { visible: false, type: 'success' };
+let memoryState: FeedbackState = {
+  visible: false,
+  type: 'success',
+  severity: 'info',
+  module: 'centar',
+  duration: 0,
+};
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function dispatch(state: FeedbackState) {
@@ -27,22 +55,40 @@ function computeDuration(type: FeedbackType, message?: string): number {
   return Math.min(max, Math.max(min, raw));
 }
 
-function show(type: FeedbackType, message?: string) {
+export { computeDuration };
+
+function show(type: FeedbackType, message?: string, options?: FeedbackOptions) {
   if (hideTimeout) clearTimeout(hideTimeout);
-  dispatch({ visible: true, type, message });
-  const duration = computeDuration(type, message);
+  const severity: FeedbackSeverity = type === 'error' ? 'error' : 'info';
+  const module = resolveNoteModule({ explicit: options?.module, message });
+  const duration =
+    CENTAR_NOTE_ENABLED && severity === 'error'
+      ? CENTAR_NOTE_ERROR_DURATION_MS
+      : computeDuration(type, message);
+
+  dispatch({
+    visible: true,
+    type,
+    message,
+    severity,
+    module,
+    action: options?.action,
+    title: options?.title,
+    duration,
+  });
+
   hideTimeout = setTimeout(() => {
-    dispatch({ visible: false, type, message });
+    dispatch({ ...memoryState, visible: false });
     hideTimeout = null;
   }, duration);
 }
 
-export function showSuccess(message?: string) {
-  show('success', message);
+export function showSuccess(message?: string, options?: FeedbackOptions) {
+  show('success', message, options);
 }
 
-export function showError(message?: string) {
-  show('error', message);
+export function showError(message?: string, options?: FeedbackOptions) {
+  show('error', message, options);
 }
 
 export function useStatusFeedback() {

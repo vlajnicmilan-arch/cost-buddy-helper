@@ -1,10 +1,32 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useStatusFeedback } from '@/hooks/useStatusFeedback';
+import { CENTAR_NOTE_ENABLED } from '@/lib/notifyFlags';
+import CentarNote from '@/components/CentarNote';
 
 const StatusFeedback = () => {
-  const { visible, type, message } = useStatusFeedback();
+  const { visible, type, message, severity, module, action, title, duration } =
+    useStatusFeedback();
 
+  if (CENTAR_NOTE_ENABLED) {
+    return (
+      <AnimatePresence>
+        {visible && (
+          <CentarNote
+            key="centar-note"
+            severity={severity}
+            module={module}
+            title={title}
+            message={message}
+            action={action}
+            duration={duration}
+          />
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // --- Legacy vizual (rollback: CENTAR_NOTE_ENABLED = false) ---
   return (
     <AnimatePresence>
       {visible && (
