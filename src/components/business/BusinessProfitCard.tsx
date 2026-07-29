@@ -75,8 +75,11 @@ export const BusinessProfitCard = React.memo(({
           <p className={monarch
             ? 'text-[10px] font-medium uppercase tracking-widest text-muted-foreground'
             : 'text-xs text-muted-foreground'}>
-            {t('business.dashboard.profitLoss', 'Dobit / Gubitak (ovaj mjesec)')}
+            {monarch
+              ? t('business.dashboard.profitLabel', 'Dobit')
+              : t('business.dashboard.profitLoss', 'Dobit / Gubitak (ovaj mjesec)')}
           </p>
+
 
           <p className="text-[10px] text-muted-foreground/70 capitalize">{currentMonthLabel}</p>
         </div>
