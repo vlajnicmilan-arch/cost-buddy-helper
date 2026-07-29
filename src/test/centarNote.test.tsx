@@ -125,16 +125,16 @@ describe('store + StatusFeedback adapter', () => {
     expect(screen.getByTestId('centar-note')).toHaveAttribute('data-severity', 'info');
   });
 
-  it('greška traje 6s', () => {
+  it('greška je sticky — ostaje vidljiva i nakon 10s', () => {
     act(() => showError('Nešto je puklo'));
-    act(() => vi.advanceTimersByTime(5900));
+    act(() => vi.advanceTimersByTime(10000));
     const Probe = () => {
       const s = useStatusFeedback();
       return <span data-testid="vis">{String(s.visible)}</span>;
     };
     render(<Probe />);
     expect(screen.getByTestId('vis').textContent).toBe('true');
-    act(() => vi.advanceTimersByTime(200));
+    act(() => dismissFeedback());
     expect(screen.getByTestId('vis').textContent).toBe('false');
   });
 
@@ -174,13 +174,25 @@ describe('Faza 2 — sticky, warning, dedup', () => {
     expect(screen.getByTestId('vis').textContent?.startsWith('false')).toBe(true);
   });
 
-  it('wallet greška se i dalje gasi nakon 6s (koegzistencija)', () => {
+  it('svi moduli su sticky — wallet greška ostaje nakon 10s', () => {
     render(<Probe />);
     act(() => showError('Novčanik greška', { module: 'wallet' }));
-    expect(screen.getByTestId('vis').textContent).toBe('true|error|6000');
-    act(() => vi.advanceTimersByTime(6100));
+    expect(screen.getByTestId('vis').textContent).toBe('true|error|0');
+    act(() => vi.advanceTimersByTime(10000));
+    expect(screen.getByTestId('vis').textContent).toBe('true|error|0');
+    act(() => dismissFeedback());
     expect(screen.getByTestId('vis').textContent?.startsWith('false')).toBe(true);
   });
+
+  it.each(['projects', 'wallet', 'budgets', 'krug', 'overview', 'centar'] as const)(
+    'modul %s: greška je sticky (duration 0)',
+    (module) => {
+      render(<Probe />);
+      act(() => showError(`Greška ${module}`, { module }));
+      expect(screen.getByTestId('vis').textContent).toBe('true|error|0');
+      act(() => dismissFeedback());
+    },
+  );
 
   it('dedup: 2× ista greška unutar 2s emitira jedan prikaz', () => {
     const seen: boolean[] = [];
