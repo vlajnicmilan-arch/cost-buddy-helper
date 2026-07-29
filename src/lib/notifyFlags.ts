@@ -17,11 +17,17 @@ export const CENTAR_NOTE_ERROR_DURATION_MS = 6000;
 export const CENTAR_NOTE_WARNING_DURATION_MS = 5000;
 
 /**
- * Faza 2 (korak 1): moduli u kojima greška ostaje na ekranu dok korisnik
- * ne reagira (sticky). Prazna lista = Faza 1 ponašanje (sve greške 6s).
- * Širenje = 1 linija po modulu.
+ * Faza 2 (korak 2): sticky greške u SVIM modulima — svaka greška čeka
+ * korisnikovu reakciju. Prazna lista = Faza 1 ponašanje (sve greške 6s).
  */
-export const STICKY_ERROR_MODULES: NoteModule[] = ['projects'];
+export const STICKY_ERROR_MODULES: NoteModule[] = [
+  'projects',
+  'wallet',
+  'budgets',
+  'krug',
+  'overview',
+  'centar',
+];
 
 /** Prozor unutar kojeg se identična poruka iste ozbiljnosti ne prikazuje ponovno. */
 export const CENTAR_NOTE_DEDUP_WINDOW_MS = 2000;
