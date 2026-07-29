@@ -5,9 +5,13 @@ import StatusFeedback from '@/components/StatusFeedback';
 import {
   showSuccess,
   showError,
+  showWarning,
   computeDuration,
   useStatusFeedback,
+  dismissFeedback,
+  __resetFeedbackDedup,
 } from '@/hooks/useStatusFeedback';
+import i18n from '@/i18n';
 import { resolveNoteModule, noteModuleHsl } from '@/lib/notifyModule';
 import { MODULE_HSL } from '@/lib/moduleColors';
 
@@ -144,5 +148,80 @@ describe('store + StatusFeedback adapter', () => {
     render(<Probe />);
     expect(screen.getByTestId('meta').textContent).toBe('error|budgets');
     delete document.body.dataset.module;
+  });
+});
+
+describe('Faza 2 — sticky, warning, dedup', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    delete document.body.dataset.module;
+    __resetFeedbackDedup();
+    dismissFeedback();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const Probe = () => {
+    const s = useStatusFeedback();
+    return <span data-testid="vis">{`${s.visible}|${s.severity}|${s.duration}`}</span>;
+  };
+
+  it('projects greška je sticky i ostaje vidljiva nakon 10s', () => {
+    render(<Probe />);
+    act(() => showError('Projekt nije spremljen', { module: 'projects' }));
+    act(() => vi.advanceTimersByTime(10000));
+    expect(screen.getByTestId('vis').textContent).toBe('true|error|0');
+    act(() => dismissFeedback());
+    expect(screen.getByTestId('vis').textContent?.startsWith('false')).toBe(true);
+  });
+
+  it('wallet greška se i dalje gasi nakon 6s (koegzistencija)', () => {
+    render(<Probe />);
+    act(() => showError('Novčanik greška', { module: 'wallet' }));
+    expect(screen.getByTestId('vis').textContent).toBe('true|error|6000');
+    act(() => vi.advanceTimersByTime(6100));
+    expect(screen.getByTestId('vis').textContent?.startsWith('false')).toBe(true);
+  });
+
+  it('dedup: 2× ista greška unutar 2s emitira jedan prikaz', () => {
+    const seen: boolean[] = [];
+    const Counter = () => {
+      const s = useStatusFeedback();
+      seen.push(s.visible);
+      return null;
+    };
+    render(<Counter />);
+    const before = seen.length;
+    act(() => showError('Ista poruka', { module: 'wallet' }));
+    act(() => showError('Ista poruka', { module: 'wallet' }));
+    expect(seen.length - before).toBe(1);
+  });
+
+  it('showWarning: severity warning, 5s, ima progress crticu', () => {
+    render(<Probe />);
+    act(() => showWarning('Pazi', { module: 'wallet' }));
+    expect(screen.getByTestId('vis').textContent).toBe('true|warning|5000');
+    act(() => vi.advanceTimersByTime(5100));
+    expect(screen.getByTestId('vis').textContent?.startsWith('false')).toBe(true);
+    render(<CentarNote severity="warning" module="wallet" message="Pazi" duration={5000} />);
+    expect(screen.getByTestId('centar-note-progress')).toBeInTheDocument();
+  });
+
+  it('sticky kartica ima default gumb "U redu" koji gasi obavijest', () => {
+    const onDismiss = vi.fn();
+    render(
+      <CentarNote
+        severity="error"
+        module="projects"
+        message="Greška"
+        duration={0}
+        onDismiss={onDismiss}
+      />,
+    );
+    const btn = screen.getByTestId('centar-note-action');
+    expect(btn.textContent).toBe(i18n.t('common.ok'));
+    act(() => {
+      btn.click();
+    });
+    expect(onDismiss).toHaveBeenCalled();
   });
 });

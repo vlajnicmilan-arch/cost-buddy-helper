@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
-import { CENTAR_NOTE_ENABLED, CENTAR_NOTE_ERROR_DURATION_MS } from '@/lib/notifyFlags';
+import {
+  CENTAR_NOTE_ENABLED,
+  CENTAR_NOTE_ERROR_DURATION_MS,
+  CENTAR_NOTE_WARNING_DURATION_MS,
+  CENTAR_NOTE_DEDUP_WINDOW_MS,
+  STICKY_ERROR_MODULES,
+} from '@/lib/notifyFlags';
 import { resolveNoteModule, type NoteModule } from '@/lib/notifyModule';
 
-type FeedbackType = 'success' | 'error';
-export type FeedbackSeverity = 'info' | 'error';
+type FeedbackType = 'success' | 'warning' | 'error';
+export type FeedbackSeverity = 'info' | 'warning' | 'error';
 
 export interface FeedbackAction {
   label: string;
@@ -39,6 +45,14 @@ let memoryState: FeedbackState = {
   duration: 0,
 };
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastKey: string | null = null;
+let lastShownAt = 0;
+
+/** Testna pomoćna funkcija — resetira dedup prozor. */
+export function __resetFeedbackDedup() {
+  lastKey = null;
+  lastShownAt = 0;
+}
 
 function dispatch(state: FeedbackState) {
   memoryState = state;
@@ -57,14 +71,43 @@ function computeDuration(type: FeedbackType, message?: string): number {
 
 export { computeDuration };
 
+function severityOf(type: FeedbackType): FeedbackSeverity {
+  if (type === 'error') return 'error';
+  if (type === 'warning') return 'warning';
+  return 'info';
+}
+
+function resolveDuration(severity: FeedbackSeverity, module: NoteModule, message?: string): number {
+  if (!CENTAR_NOTE_ENABLED) return computeDuration(severity === 'info' ? 'success' : 'error', message);
+  if (severity === 'error') {
+    return STICKY_ERROR_MODULES.includes(module) ? 0 : CENTAR_NOTE_ERROR_DURATION_MS;
+  }
+  if (severity === 'warning') return CENTAR_NOTE_WARNING_DURATION_MS;
+  return computeDuration('success', message);
+}
+
 function show(type: FeedbackType, message?: string, options?: FeedbackOptions) {
-  if (hideTimeout) clearTimeout(hideTimeout);
-  const severity: FeedbackSeverity = type === 'error' ? 'error' : 'info';
+  const severity = severityOf(type);
   const module = resolveNoteModule({ explicit: options?.module, message });
-  const duration =
-    CENTAR_NOTE_ENABLED && severity === 'error'
-      ? CENTAR_NOTE_ERROR_DURATION_MS
-      : computeDuration(type, message);
+  const duration = resolveDuration(severity, module, message);
+
+  // DEDUP: ista poruka + ozbiljnost unutar prozora se ne prikazuje ponovno.
+  const key = `${severity}|${message ?? ''}`;
+  const now = Date.now();
+  if (lastKey === key && now - lastShownAt < CENTAR_NOTE_DEDUP_WINDOW_MS && memoryState.visible) {
+    if (duration > 0) {
+      if (hideTimeout) clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        dispatch({ ...memoryState, visible: false });
+        hideTimeout = null;
+      }, duration);
+    }
+    return;
+  }
+  lastKey = key;
+  lastShownAt = now;
+
+  if (hideTimeout) clearTimeout(hideTimeout);
 
   dispatch({
     visible: true,
@@ -77,14 +120,31 @@ function show(type: FeedbackType, message?: string, options?: FeedbackOptions) {
     duration,
   });
 
-  hideTimeout = setTimeout(() => {
-    dispatch({ ...memoryState, visible: false });
+  if (duration > 0) {
+    hideTimeout = setTimeout(() => {
+      dispatch({ ...memoryState, visible: false });
+      hideTimeout = null;
+    }, duration);
+  }
+}
+
+/** Ručno gašenje obavijesti (sticky greške). */
+export function dismissFeedback() {
+  if (hideTimeout) {
+    clearTimeout(hideTimeout);
     hideTimeout = null;
-  }, duration);
+  }
+  lastKey = null;
+  lastShownAt = 0;
+  dispatch({ ...memoryState, visible: false });
 }
 
 export function showSuccess(message?: string, options?: FeedbackOptions) {
   show('success', message, options);
+}
+
+export function showWarning(message?: string, options?: FeedbackOptions) {
+  show('warning', message, options);
 }
 
 export function showError(message?: string, options?: FeedbackOptions) {
