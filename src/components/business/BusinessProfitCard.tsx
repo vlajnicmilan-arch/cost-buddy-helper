@@ -112,9 +112,12 @@ export const BusinessProfitCard = React.memo(({
       ) : (
         <>
           <p
-            className="mt-1 text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight"
+            className={monarch
+              ? 'mt-0.5 text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight'
+              : 'mt-1 text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight'}
             style={{ color: `hsl(${accent})` }}
           >
+
             {profit > 0 ? '+' : ''}{formatAmount(profit)}
           </p>
 
