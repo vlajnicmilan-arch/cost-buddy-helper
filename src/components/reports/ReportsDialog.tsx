@@ -178,7 +178,7 @@ const calculateStats = (expenseList: Expense[]) => {
   };
 };
 
-export const ReportsDialog = ({ expenses, triggerClassName }: ReportsDialogProps) => {
+export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: ReportsDialogProps) => {
   const { t } = useTranslation();
   const { hasAccess } = useFeatureAccess();
   
