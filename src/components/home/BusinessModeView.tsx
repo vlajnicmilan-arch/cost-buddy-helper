@@ -21,6 +21,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
+import { BusinessProjectsOverview } from '@/components/business/BusinessProjectsOverview';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
