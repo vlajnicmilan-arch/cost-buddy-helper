@@ -9,10 +9,13 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { DEFAULT_PROJECT_COLORS } from '@/types/project';
 import { cn } from '@/lib/utils';
+import { BusinessDashboardSection } from './BusinessDashboardSection';
 
 interface BusinessProjectsOverviewProps {
   /** Navigates to the business "projects" tab. */
   onViewAll: () => void;
+  /** Visual variant. `default` = pre-Phase-4 look, `monarch` = Phase 4 restyle. */
+  variant?: 'default' | 'monarch';
 }
 
 const MAX_VISIBLE = 6;
@@ -49,11 +52,12 @@ const HEALTH_TEXT: Record<Health, string> = {
  * Totals come from `useActiveProjectsSummary` — the same source the personal
  * `ActiveProjectsStrip` uses (cumulative, all-time, approved rows only).
  */
-export const BusinessProjectsOverview = React.memo(({ onViewAll }: BusinessProjectsOverviewProps) => {
+export const BusinessProjectsOverview = React.memo(({ onViewAll, variant = 'default' }: BusinessProjectsOverviewProps) => {
   const { t } = useTranslation();
   const { projects, loading } = useProjects();
   const { formatAmount } = useCurrency();
   const { lightTap } = useHaptics();
+  const monarch = variant === 'monarch';
 
   const activeProjects = useMemo(
     () => projects.filter(p => p.status === 'active' || p.status === 'draft').slice(0, MAX_VISIBLE),
@@ -91,11 +95,14 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll }: BusinessProje
     onViewAll();
   };
 
+  const sectionLabel = t('business.dashboard.activeProjects', 'Aktivni projekti');
+  const viewAllLabel = t('business.dashboard.viewAllProjects', 'Pogledaj sve');
+
   const header = (
     <div className="flex items-center justify-between mb-3 px-1">
       <h2 className="text-base font-semibold flex items-center gap-2">
         <FolderKanban className="w-4 h-4 text-primary" />
-        {t('business.dashboard.activeProjects', 'Aktivni projekti')}
+        {sectionLabel}
         {rows.length > 0 && (
           <span className="text-xs font-normal text-muted-foreground">({rows.length})</span>
         )}
@@ -104,113 +111,136 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll }: BusinessProje
         onClick={handleViewAll}
         className="text-xs text-primary hover:underline flex items-center gap-1"
       >
-        {t('business.dashboard.viewAllProjects', 'Pogledaj sve')}
+        {viewAllLabel}
         <ChevronRight className="w-3 h-3" />
       </button>
     </div>
   );
 
+  /** Wraps content in the Monarch section primitive, or the legacy header block. */
+  const wrap = (content: React.ReactNode) =>
+    monarch ? (
+      <BusinessDashboardSection
+        label={sectionLabel}
+        icon={<FolderKanban className="w-3 h-3 text-primary" />}
+        actionLabel={viewAllLabel}
+        onAction={handleViewAll}
+      >
+        {content}
+      </BusinessDashboardSection>
+    ) : (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        {header}
+        {content}
+      </motion.div>
+    );
+
   if (loading && rows.length === 0) {
-    return (
+    const skeleton = (
+      <div className={monarch ? 'space-y-4' : 'space-y-2'}>
+        {[1, 2].map(i => (
+          <div key={i} className="h-[74px] rounded-2xl bg-muted/30 animate-pulse" />
+        ))}
+      </div>
+    );
+    return monarch ? (
+      wrap(skeleton)
+    ) : (
       <div className="mb-6">
         {header}
-        <div className="space-y-2">
-          {[1, 2].map(i => (
-            <div key={i} className="h-[74px] rounded-2xl bg-muted/30 animate-pulse" />
-          ))}
-        </div>
+        {skeleton}
       </div>
     );
   }
 
   if (rows.length === 0) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        {header}
-        <button
-          onClick={handleViewAll}
-          className="w-full p-4 rounded-2xl border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors flex items-center justify-between text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-              <Plus className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm text-foreground">
-                {t('business.dashboard.noActiveProjects', 'Nema aktivnih projekata')}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t('business.dashboard.openProjects', 'Otvori projekte')}
-              </p>
-            </div>
+    return wrap(
+      <button
+        onClick={handleViewAll}
+        className="w-full p-4 rounded-2xl border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+            <Plus className="w-5 h-5 text-primary" />
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </button>
-      </motion.div>
+          <div>
+            <p className="font-medium text-sm text-foreground">
+              {t('business.dashboard.noActiveProjects', 'Nema aktivnih projekata')}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t('business.dashboard.openProjects', 'Otvori projekte')}
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+      </button>
     );
   }
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-      {header}
-      <div className="space-y-2">
-        {rows.map(row => {
-          const accent = HEALTH_COLOR[row.health];
-          const barPct = row.usedPct === null ? 0 : Math.max(0, Math.min(100, row.usedPct));
-          return (
-            <div
-              key={row.project.id}
-              className="rounded-2xl bg-card border border-border/60 p-3 shadow-[var(--shadow-premium-accent,none)]"
-              style={{ ['--card-accent' as string]: row.color, borderLeft: `3px solid ${row.color}` }}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium text-sm truncate">{row.project.name}</p>
-                {row.margin !== null && (
-                  <span className={cn('text-xs font-semibold shrink-0', HEALTH_TEXT[row.health])}>
-                    {t('business.dashboard.marginShort', 'Marža')} {Math.round(row.margin * 100)}%
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-1">
-                {row.hasBudget
-                  ? t('business.dashboard.spentOfBudget', '{{spent}} od {{budget}}', {
-                      spent: formatAmount(row.spent),
-                      budget: formatAmount(row.budget),
-                    })
-                  : t('business.dashboard.spentNoBudget', 'Potrošeno {{spent}}', {
-                      spent: formatAmount(row.spent),
-                    })}
-                {row.usedPct !== null && (
-                  <span className={cn('ml-1 font-medium', HEALTH_TEXT[row.health])}>
-                    · {Math.round(row.usedPct)}%
-                  </span>
-                )}
+  return wrap(
+    <div className={monarch ? 'space-y-4' : 'space-y-2'}>
+      {rows.map(row => {
+        const accent = HEALTH_COLOR[row.health];
+        const barPct = row.usedPct === null ? 0 : Math.max(0, Math.min(100, row.usedPct));
+        return (
+          <div
+            key={row.project.id}
+            className={
+              monarch
+                ? 'pl-3 py-0.5'
+                : 'rounded-2xl bg-card border border-border/60 p-3 shadow-[var(--shadow-premium-accent,none)]'
+            }
+            style={{ ['--card-accent' as string]: row.color, borderLeft: `3px solid ${row.color}` }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className={monarch ? 'font-medium text-[15px] truncate' : 'font-medium text-sm truncate'}>
+                {row.project.name}
               </p>
-
-              <div className="h-[3px] w-full rounded-full bg-muted/50 mt-2 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${barPct}%`, backgroundColor: accent }}
-                />
-              </div>
-
-              {row.hasBudget && (
-                <p className="text-[11px] mt-1.5">
-                  <span className="text-muted-foreground">
-                    {t('business.dashboard.profit', 'Zarada')}:{' '}
-                  </span>
-                  <span className={row.profit >= 0 ? 'text-income font-medium' : 'text-destructive font-medium'}>
-                    {row.profit >= 0 ? '+' : '−'}
-                    {formatAmount(Math.abs(row.profit))}
-                  </span>
-                </p>
+              {row.margin !== null && (
+                <span className={cn('text-xs font-semibold shrink-0 tabular-nums', HEALTH_TEXT[row.health])}>
+                  {t('business.dashboard.marginShort', 'Marža')} {Math.round(row.margin * 100)}%
+                </span>
               )}
             </div>
-          );
-        })}
-      </div>
-    </motion.div>
+
+            <p className={cn('text-xs text-muted-foreground', monarch ? 'mt-0.5' : 'mt-1')}>
+              {row.hasBudget
+                ? t('business.dashboard.spentOfBudget', '{{spent}} od {{budget}}', {
+                    spent: formatAmount(row.spent),
+                    budget: formatAmount(row.budget),
+                  })
+                : t('business.dashboard.spentNoBudget', 'Potrošeno {{spent}}', {
+                    spent: formatAmount(row.spent),
+                  })}
+              {row.usedPct !== null && (
+                <span className={cn('ml-1 font-medium', HEALTH_TEXT[row.health])}>
+                  · {Math.round(row.usedPct)}%
+                </span>
+              )}
+            </p>
+
+            <div className="h-[3px] w-full rounded-full bg-muted/50 mt-2 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${barPct}%`, backgroundColor: accent }}
+              />
+            </div>
+
+            {row.hasBudget && (
+              <p className="text-[11px] mt-1.5">
+                <span className="text-muted-foreground">
+                  {t('business.dashboard.profit', 'Zarada')}:{' '}
+                </span>
+                <span className={row.profit >= 0 ? 'text-income font-medium' : 'text-destructive font-medium'}>
+                  {row.profit >= 0 ? '+' : '−'}
+                  {formatAmount(Math.abs(row.profit))}
+                </span>
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 });
 

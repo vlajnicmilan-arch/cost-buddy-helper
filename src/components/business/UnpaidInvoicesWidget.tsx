@@ -15,20 +15,24 @@ import { clickableProps } from '@/lib/a11y';
 interface UnpaidInvoicesWidgetProps {
   /** Opt-in: render a quiet "all paid" row instead of nothing when there is no debt. */
   showEmptyState?: boolean;
+  /** Visual variant. `default` = pre-Phase-4 look, `monarch` = Phase 4 restyle. */
+  variant?: 'default' | 'monarch';
 }
 
-export const UnpaidInvoicesWidget = ({ showEmptyState = false }: UnpaidInvoicesWidgetProps = {}) => {
+export const UnpaidInvoicesWidget = ({ showEmptyState = false, variant = 'default' }: UnpaidInvoicesWidgetProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { totalOutstanding, overdueCount, overdueTotal, unpaid, buckets, loading } = useUnpaidInvoices();
   const [open, setOpen] = useState(false);
+  const monarch = variant === 'monarch';
+  const wrapperSpacing = monarch ? 'mb-6 sm:mb-8' : 'mb-4';
 
   if (loading) return null;
 
   if (unpaid.length === 0) {
     if (!showEmptyState) return null;
     return (
-      <div className="mb-4 p-3 rounded-2xl border border-border/50 flex items-center gap-2">
+      <div className={`${wrapperSpacing} p-3 rounded-2xl border border-border/50 flex items-center gap-2`}>
         <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
         <p className="text-xs text-muted-foreground">
           {t('business.dashboard.allPaid', 'Svi računi plaćeni ✓')}
@@ -39,11 +43,12 @@ export const UnpaidInvoicesWidget = ({ showEmptyState = false }: UnpaidInvoicesW
 
   const hasOverdue = overdueCount > 0;
 
+
   return (
     <>
       <div
         {...clickableProps(() => setOpen(true))}
-        className="mb-4 p-3 rounded-2xl border border-border/50 hover:bg-muted/30 transition-colors"
+        className={`${wrapperSpacing} p-3 rounded-2xl border border-border/50 hover:bg-muted/30 transition-colors`}
         style={{ background: hasOverdue
           ? 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)'
           : 'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)' }}
@@ -52,12 +57,17 @@ export const UnpaidInvoicesWidget = ({ showEmptyState = false }: UnpaidInvoicesW
           <div className="flex items-center gap-2 min-w-0">
             <FileText className={`w-4 h-4 shrink-0 ${hasOverdue ? 'text-destructive' : 'text-primary'}`} />
             <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground">
+              <p className={monarch
+                ? 'text-[10px] font-medium uppercase tracking-widest text-muted-foreground'
+                : 'text-[10px] text-muted-foreground'}>
                 {t('invoices.widget.title', 'Neplaćeni računi')}
               </p>
-              <p className="text-sm font-bold truncate">
+              <p className={monarch
+                ? 'text-lg font-semibold tabular-nums tracking-tight truncate mt-0.5'
+                : 'text-sm font-bold truncate'}>
                 {formatAmount(totalOutstanding)}
               </p>
+
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

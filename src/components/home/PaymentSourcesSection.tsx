@@ -20,6 +20,9 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
   const { formatAmount, currency, multiCurrencyEnabled } = useCurrency();
   const { convert } = useExchangeRates(multiCurrencyEnabled);
   const { hiddenIds } = useHiddenPaymentSources();
+  // Monarch restyle is business-scoped: only the business dashboard passes a title override.
+  const monarch = titleOverride !== undefined;
+
 
   // Exclude sources hidden from dashboard (per-user toggle)
   const visibleSources = useMemo(
@@ -38,32 +41,42 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
   }, 0);
 
   return (
-    <Collapsible className="mb-4 group" data-tutorial="payment-sources">
+    <Collapsible className={monarch ? 'mb-6 sm:mb-8 group' : 'mb-4 group'} data-tutorial="payment-sources">
       <CollapsibleTrigger asChild>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           whileTap={{ scale: 0.98 }}
-          className="p-3 sm:p-4 rounded-xl border bg-card cursor-pointer transition-colors w-full"
-          style={{
+          className={monarch
+            ? 'pb-3 border-b border-border/40 cursor-pointer transition-colors w-full'
+            : 'p-3 sm:p-4 rounded-xl border bg-card cursor-pointer transition-colors w-full'}
+          style={monarch ? undefined : {
             borderLeftWidth: 4,
             borderLeftColor: 'hsl(var(--primary))'
           }}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Wallet className="w-5 h-5 text-primary" />
-              </div>
+            <div className={monarch ? 'flex items-center gap-2 min-w-0' : 'flex items-center gap-3 min-w-0'}>
+              {monarch ? (
+                <Wallet className="w-3 h-3 text-primary flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Wallet className="w-5 h-5 text-primary" />
+                </div>
+              )}
               <div className="min-w-0">
-                <p className="text-sm sm:text-base font-semibold">{titleOverride ?? t('common.financesOverview', 'Novčanik - pregled')}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className={monarch
+                  ? 'text-[10px] font-medium uppercase tracking-widest text-muted-foreground truncate'
+                  : 'text-sm sm:text-base font-semibold'}>
+                  {titleOverride ?? t('common.financesOverview', 'Novčanik - pregled')}
+                </p>
+                <p className={monarch ? 'text-[11px] text-muted-foreground mt-0.5' : 'text-xs text-muted-foreground'}>
                   {visibleSources.length} {visibleSources.length === 1 ? t('common.account', 'račun') : t('common.accounts', 'računa')}&nbsp;
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <p data-testid="summary-balance" className={`text-base sm:text-xl font-bold ${totalBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+              <p data-testid="summary-balance" className={`${monarch ? 'text-2xl font-semibold tabular-nums tracking-tight' : 'text-base sm:text-xl font-bold'} ${totalBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatAmount(totalBalance)}
               </p>
               <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
@@ -71,6 +84,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
           </div>
         </motion.div>
       </CollapsibleTrigger>
+
 
       <CollapsibleContent>
         <motion.div
@@ -95,7 +109,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
                   background: `linear-gradient(135deg, ${source.color}0A 0%, ${source.color}04 50%, transparent 100%)`,
                   borderLeftWidth: 3,
                   borderLeftColor: source.color,
-                  boxShadow: `0 2px 12px ${source.color}08`,
+                  boxShadow: monarch ? `0 1px 8px ${source.color}08` : `0 2px 12px ${source.color}08`,
                 }}
                 whileHover={{
                   boxShadow: `0 4px 20px ${source.color}18`,
