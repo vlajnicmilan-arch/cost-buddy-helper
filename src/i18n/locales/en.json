@@ -3109,7 +3109,15 @@
       "monthlyTrend": "Monthly trend",
       "topExpenseCategories": "Top expense categories",
       "noTransactions": "No business transactions yet",
-      "addFirstHint": "Add your first transaction in the \"Transactions\" tab"
+      "addFirstHint": "Add your first transaction in the \"Transactions\" tab",
+      "activeProjects": "Active projects",
+      "viewAllProjects": "View all",
+      "noActiveProjects": "No active projects",
+      "openProjects": "Open projects",
+      "marginShort": "Margin",
+      "spentOfBudget": "{{spent}} of {{budget}}",
+      "spentNoBudget": "Spent {{spent}}",
+      "profit": "Profit"
     },
     "transactions": {
       "search": "Search...",

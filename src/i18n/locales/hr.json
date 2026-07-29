@@ -2983,7 +2983,15 @@
       "monthlyTrend": "Mjesečni trend",
       "topExpenseCategories": "Top kategorije rashoda",
       "noTransactions": "Još nema poslovnih transakcija",
-      "addFirstHint": "Dodajte prvu transakciju u kartici \"Transakcije\""
+      "addFirstHint": "Dodajte prvu transakciju u kartici \"Transakcije\"",
+      "activeProjects": "Aktivni projekti",
+      "viewAllProjects": "Pogledaj sve",
+      "noActiveProjects": "Nema aktivnih projekata",
+      "openProjects": "Otvori projekte",
+      "marginShort": "Marža",
+      "spentOfBudget": "{{spent}} od {{budget}}",
+      "spentNoBudget": "Potrošeno {{spent}}",
+      "profit": "Zarada"
     },
     "transactions": {
       "search": "Pretraži...",
