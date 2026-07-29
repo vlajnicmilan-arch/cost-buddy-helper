@@ -134,13 +134,13 @@ export const BusinessProfitCard = React.memo(({
                 <span className="text-xs text-muted-foreground">
                   {t('business.dashboard.income', 'Prihodi')}
                 </span>
-                <span className="text-sm font-medium tabular-nums text-income">
+                <span className={`text-sm font-medium tabular-nums ${monarch ? 'text-foreground/80' : 'text-income'}`}>
                   {formatAmount(curMonthIncome)}
                 </span>
               </div>
-              <div className="h-[3px] rounded-full bg-muted/40 overflow-hidden">
+              <div className={`h-[3px] rounded-full overflow-hidden ${monarch ? 'bg-muted/25' : 'bg-muted/40'}`}>
                 <div
-                  className="h-full rounded-full bg-income transition-all duration-500"
+                  className={`h-full rounded-full transition-all duration-500 ${monarch ? 'bg-income/40' : 'bg-income'}`}
                   style={{ width: `${incomeWidth}%` }}
                 />
               </div>
@@ -155,13 +155,13 @@ export const BusinessProfitCard = React.memo(({
                 <span className="text-xs text-muted-foreground">
                   {t('business.dashboard.expenses', 'Rashodi')}
                 </span>
-                <span className="text-sm font-medium tabular-nums text-destructive">
+                <span className={`text-sm font-medium tabular-nums ${monarch ? 'text-foreground/80' : 'text-destructive'}`}>
                   {formatAmount(curMonthExpenses)}
                 </span>
               </div>
-              <div className="h-[3px] rounded-full bg-muted/40 overflow-hidden">
+              <div className={`h-[3px] rounded-full overflow-hidden ${monarch ? 'bg-muted/25' : 'bg-muted/40'}`}>
                 <div
-                  className="h-full rounded-full bg-destructive transition-all duration-500"
+                  className={`h-full rounded-full transition-all duration-500 ${monarch ? 'bg-destructive/40' : 'bg-destructive'}`}
                   style={{ width: `${expenseWidth}%` }}
                 />
               </div>
