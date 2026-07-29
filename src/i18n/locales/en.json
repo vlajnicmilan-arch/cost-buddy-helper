@@ -3105,6 +3105,7 @@
       "allPaid": "All invoices paid ✓",
       "profitLoss": "Profit / Loss (this month)",
       "profitLabel": "Profit",
+      "lossLabel": "Loss",
       "balanceGroup": "Balance",
       "receivables": "Receivables",
       "payables": "Payables",

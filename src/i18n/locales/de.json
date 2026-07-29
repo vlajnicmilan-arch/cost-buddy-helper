@@ -2973,6 +2973,7 @@
       "allPaid": "Alle Rechnungen bezahlt ✓",
       "profitLoss": "Gewinn / Verlust (diesen Monat)",
       "profitLabel": "Gewinn",
+      "lossLabel": "Verlust",
       "balanceGroup": "Saldo",
       "receivables": "Forderungen",
       "payables": "Verbindlichkeiten",
