@@ -2972,6 +2972,8 @@
       "vsLastMonth": "vs letzten Monat",
       "allPaid": "Alle Rechnungen bezahlt ✓",
       "profitLoss": "Gewinn / Verlust (diesen Monat)",
+      "profitLabel": "Gewinn",
+      "balanceGroup": "Saldo",
       "receivables": "Forderungen",
       "payables": "Verbindlichkeiten",
       "monthlyTrend": "Monatstrend",

@@ -3104,6 +3104,8 @@
       "vsLastMonth": "vs last month",
       "allPaid": "All invoices paid ✓",
       "profitLoss": "Profit / Loss (this month)",
+      "profitLabel": "Profit",
+      "balanceGroup": "Balance",
       "receivables": "Receivables",
       "payables": "Payables",
       "monthlyTrend": "Monthly trend",
