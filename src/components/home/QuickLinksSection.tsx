@@ -78,8 +78,8 @@ export const QuickLinksSection = React.memo(({
         </div>
       </motion.div>
 
-      {/* Quick link to Budgets */}
-      {!isLocalMode && (
+      {/* Quick link to Budgets — hidden in business mode */}
+      {!isLocalMode && !isBusiness && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,8 +102,8 @@ export const QuickLinksSection = React.memo(({
         </motion.div>
       )}
 
-      {/* Savings Goals */}
-      {!isLocalMode && <SavingsGoalsSection />}
+      {/* Savings Goals — hidden in business mode */}
+      {!isLocalMode && !isBusiness && <SavingsGoalsSection />}
 
       {/* Category breakdown */}
       <Accordion type="multiple" className="space-y-4">
