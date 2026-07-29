@@ -333,7 +333,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             companyName={businessProfile?.company_name || 'Tvrtka'}
           />
         )}
-        {businessTab === 'more' && <BusinessMore expenses={props.expenses} />}
+        {businessTab === 'more' && <BusinessMore expenses={props.expenses} companyName={businessProfile?.company_name || ''} />}
       </div>
 
       {/* Dialogs */}
