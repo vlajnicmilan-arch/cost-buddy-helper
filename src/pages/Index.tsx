@@ -227,9 +227,32 @@ const Index = () => {
   }, [recurringTransactions.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allTransfers = useMemo(() =>
-    expenses.filter(e => e.type === 'transfer').sort((a, b) => b.date.getTime() - a.date.getTime()),
-    [expenses]
+    expenses
+      .filter(e => e.type === 'transfer' && (!activeBusinessProfileId || e.business_profile_id === activeBusinessProfileId))
+      .sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [expenses, activeBusinessProfileId]
   );
+
+  // In business mode the transfer metrics must reflect only the active company.
+  // In personal mode they stay exactly as computed by useExpenses.
+  const { totalTransfers, monthlyTransfers, monthlyTransferCount } = useMemo(() => {
+    if (!activeBusinessProfileId) {
+      return {
+        totalTransfers: baseTotalTransfers,
+        monthlyTransfers: baseMonthlyTransfers,
+        monthlyTransferCount: baseMonthlyTransferCount,
+      };
+    }
+    const now = new Date();
+    const monthly = allTransfers.filter(
+      e => e.date.getMonth() === now.getMonth() && e.date.getFullYear() === now.getFullYear()
+    );
+    return {
+      totalTransfers: allTransfers.reduce((sum, e) => sum + Number(e.amount), 0),
+      monthlyTransfers: monthly.reduce((sum, e) => sum + Number(e.amount), 0),
+      monthlyTransferCount: monthly.length,
+    };
+  }, [activeBusinessProfileId, allTransfers, baseTotalTransfers, baseMonthlyTransfers, baseMonthlyTransferCount]);
 
   const allCards = useMemo(() =>
     customPaymentSources.flatMap(source => source.cards || []),
