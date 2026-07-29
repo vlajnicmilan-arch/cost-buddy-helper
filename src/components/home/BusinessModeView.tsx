@@ -4,7 +4,7 @@ import { FilterState } from '@/components/TransactionFilters';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { RecurringMatch } from '@/hooks/useRecurringMatcher';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
-import { SummarySection } from '@/components/home/SummarySection';
+import { BusinessProfitCard } from '@/components/business/BusinessProfitCard';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { TransactionListSection } from '@/components/home/TransactionListSection';
 import { SharedDialogs } from '@/components/home/SharedDialogs';
