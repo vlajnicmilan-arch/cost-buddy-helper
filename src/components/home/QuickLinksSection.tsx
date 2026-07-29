@@ -8,6 +8,7 @@ import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { SavingsGoalsSection } from '@/components/savings';
 import { Expense } from '@/types/expense';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface QuickLinksSectionProps {
   isLocalMode: boolean;
