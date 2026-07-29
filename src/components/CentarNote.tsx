@@ -9,7 +9,8 @@
  * ⚠ ikona + lagani shake. STICKY NIJE UVEDEN (Faza 2).
  */
 import { motion } from 'framer-motion';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, TriangleAlert } from 'lucide-react';
+import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 import { noteModuleHsl, noteModuleHslMuted, type NoteModule } from '@/lib/notifyModule';
 import type { FeedbackAction, FeedbackSeverity } from '@/hooks/useStatusFeedback';
@@ -22,6 +23,8 @@ interface CentarNoteProps {
   action?: FeedbackAction;
   /** Trajanje u ms — pokreće animaciju progress crtice. 0 = bez crtice (sticky). */
   duration: number;
+  /** Gašenje sticky obavijesti (gumb "U redu" i klik na pozadinu). */
+  onDismiss?: () => void;
 }
 
 const MODULE_LABEL: Record<NoteModule, string> = {
@@ -40,18 +43,28 @@ export const CentarNote = ({
   message,
   action,
   duration,
+  onDismiss,
 }: CentarNoteProps) => {
   const accent = noteModuleHsl(module);
   const accentMuted = noteModuleHslMuted(module);
   const isError = severity === 'error';
-  const Icon = isError ? AlertTriangle : CheckCircle2;
+  const isWarning = severity === 'warning';
+  const isSticky = duration === 0;
+  const Icon = isError ? AlertTriangle : isWarning ? TriangleAlert : CheckCircle2;
+  const effectiveAction: FeedbackAction | undefined =
+    action ?? (isSticky && onDismiss ? { label: i18n.t('common.ok'), onClick: onDismiss } : undefined);
+  const interactive = Boolean(effectiveAction);
 
   return (
     <motion.div
       data-testid="centar-note"
       data-severity={severity}
       data-module={module}
-      className="fixed inset-0 z-[80] flex items-center justify-center p-6 pointer-events-none backdrop-blur-[2px] bg-background/25"
+      className={cn(
+        'fixed inset-0 z-[80] flex items-center justify-center p-6 backdrop-blur-[2px] bg-background/25',
+        isSticky ? 'pointer-events-auto' : 'pointer-events-none',
+      )}
+      onClick={isSticky ? onDismiss : undefined}
       style={
         {
           '--module-accent': accent,
@@ -75,8 +88,9 @@ export const CentarNote = ({
         className={cn(
           'relative w-full max-w-[340px] rounded-[26px] border border-border/60',
           'bg-card/95 px-6 pt-7 pb-6 shadow-2xl',
-          action ? 'pointer-events-auto' : 'pointer-events-none',
+          interactive ? 'pointer-events-auto' : 'pointer-events-none',
         )}
+        onClick={(e) => e.stopPropagation()}
         initial={{ scale: 0.82, y: 10, opacity: 0 }}
         animate={{
           scale: 1,
@@ -126,14 +140,15 @@ export const CentarNote = ({
           </p>
         )}
 
-        {action && (
+        {effectiveAction && (
           <button
             type="button"
-            onClick={action.onClick}
+            data-testid="centar-note-action"
+            onClick={effectiveAction.onClick}
             className="mt-5 min-h-[44px] w-full rounded-xl px-4 text-sm font-semibold text-white"
             style={{ background: 'hsl(var(--module-accent))' }}
           >
-            {action.label}
+            {effectiveAction.label}
           </button>
         )}
 

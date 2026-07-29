@@ -122,7 +122,8 @@
     "unknown": "Unknown",
     "clearSearch": "Clear search",
     "dismiss": "Dismiss",
-    "actions": "Actions"
+    "actions": "Actions",
+    "ok": "OK"
   },
   "aiInsights": {
     "title": "AI insights"

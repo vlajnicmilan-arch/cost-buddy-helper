@@ -122,7 +122,8 @@
     "unknown": "Nepoznato",
     "clearSearch": "Očisti pretragu",
     "dismiss": "Sakrij",
-    "actions": "Akcije"
+    "actions": "Akcije",
+    "ok": "U redu"
   },
   "aiInsights": {
     "title": "AI uvidi"

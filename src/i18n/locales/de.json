@@ -122,7 +122,8 @@
     "unknown": "Unbekannt",
     "clearSearch": "Suche löschen",
     "dismiss": "Ausblenden",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "ok": "OK"
   },
   "aiInsights": {
     "title": "KI-Einblicke"

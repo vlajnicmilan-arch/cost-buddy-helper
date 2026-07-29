@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import { useStatusFeedback } from '@/hooks/useStatusFeedback';
+import { useStatusFeedback, dismissFeedback } from '@/hooks/useStatusFeedback';
 import { CENTAR_NOTE_ENABLED } from '@/lib/notifyFlags';
 import CentarNote from '@/components/CentarNote';
 
@@ -20,6 +20,7 @@ const StatusFeedback = () => {
             message={message}
             action={action}
             duration={duration}
+            onDismiss={dismissFeedback}
           />
         )}
       </AnimatePresence>
