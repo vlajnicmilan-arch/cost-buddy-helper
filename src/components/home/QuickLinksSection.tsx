@@ -8,6 +8,7 @@ import { CategoryBreakdown } from '@/components/CategoryBreakdown';
 import { SavingsGoalsSection } from '@/components/savings';
 import { Expense } from '@/types/expense';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { useAppState } from '@/contexts/AppStateContext';
 
 interface QuickLinksSectionProps {
   isLocalMode: boolean;
@@ -29,6 +30,8 @@ export const QuickLinksSection = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { requestModule } = useModuleGate();
+  const { activeBusinessProfileId } = useAppState();
+  const isBusiness = !!activeBusinessProfileId;
 
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -75,8 +78,8 @@ export const QuickLinksSection = React.memo(({
         </div>
       </motion.div>
 
-      {/* Quick link to Budgets */}
-      {!isLocalMode && (
+      {/* Quick link to Budgets — hidden in business mode */}
+      {!isLocalMode && !isBusiness && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -99,8 +102,8 @@ export const QuickLinksSection = React.memo(({
         </motion.div>
       )}
 
-      {/* Savings Goals */}
-      {!isLocalMode && <SavingsGoalsSection />}
+      {/* Savings Goals — hidden in business mode */}
+      {!isLocalMode && !isBusiness && <SavingsGoalsSection />}
 
       {/* Category breakdown */}
       <Accordion type="multiple" className="space-y-4">
