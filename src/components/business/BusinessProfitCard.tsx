@@ -14,6 +14,8 @@ interface BusinessProfitCardProps {
   prevMonthExpenses: number;
   onIncomeClick?: () => void;
   onExpenseClick?: () => void;
+  /** Visual variant. `default` = pre-Phase-4 look, `monarch` = Phase 4 restyle. */
+  variant?: 'default' | 'monarch';
 }
 
 export const BusinessProfitCard = React.memo(({
@@ -23,9 +25,11 @@ export const BusinessProfitCard = React.memo(({
   prevMonthExpenses,
   onIncomeClick,
   onExpenseClick,
+  variant = 'default',
 }: BusinessProfitCardProps) => {
   const { t, i18n } = useTranslation();
   const { formatAmount } = useCurrency();
+  const monarch = variant === 'monarch';
 
   const dateLocale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? deLocale : hrLocale;
   const currentMonthLabel = format(new Date(), 'LLLL yyyy', { locale: dateLocale });
@@ -46,14 +50,26 @@ export const BusinessProfitCard = React.memo(({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-4 p-4 sm:p-5 rounded-2xl border border-border/50 backdrop-blur-md relative overflow-hidden transition-all duration-300"
-      style={{
-        borderLeftWidth: 3,
-        borderLeftColor: `hsl(${accent})`,
-        ['--card-accent' as string]: accent,
-        background: `linear-gradient(135deg, hsl(${accent} / 0.05) 0%, transparent 60%)`,
-      }}
+      className={
+        monarch
+          ? 'mb-6 sm:mb-8 pb-5 border-b border-border/40 pl-3 relative'
+          : 'mb-4 p-4 sm:p-5 rounded-2xl border border-border/50 backdrop-blur-md relative overflow-hidden transition-all duration-300'
+      }
+      style={
+        monarch
+          ? {
+              borderLeft: `3px solid hsl(${accent})`,
+              ['--card-accent' as string]: accent,
+            }
+          : {
+              borderLeftWidth: 3,
+              borderLeftColor: `hsl(${accent})`,
+              ['--card-accent' as string]: accent,
+              background: `linear-gradient(135deg, hsl(${accent} / 0.05) 0%, transparent 60%)`,
+            }
+      }
     >
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">
