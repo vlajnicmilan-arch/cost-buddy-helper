@@ -4,7 +4,7 @@ import { FilterState } from '@/components/TransactionFilters';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { RecurringMatch } from '@/hooks/useRecurringMatcher';
 import { PaymentSourcesSection } from '@/components/home/PaymentSourcesSection';
-import { SummarySection } from '@/components/home/SummarySection';
+import { BusinessProfitCard } from '@/components/business/BusinessProfitCard';
 import { QuickLinksSection } from '@/components/home/QuickLinksSection';
 import { TransactionListSection } from '@/components/home/TransactionListSection';
 import { SharedDialogs } from '@/components/home/SharedDialogs';
@@ -133,6 +133,16 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
     });
   }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
+  // Same aggregation SummarySection received as `balance` before Phase 3.
+  const availableBalance = props.customPaymentSources.reduce((sum, s) => {
+    if (hiddenIds.has(s.id)) return sum;
+    const bal = s.balance || 0;
+    if (props.multiCurrencyEnabled && s.currency && s.currency !== props.currencyCode) {
+      return sum + props.convert(bal, s.currency, props.currencyCode);
+    }
+    return sum + bal;
+  }, 0);
+
 
   const {
     businessTab,
@@ -219,35 +229,42 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               titleOverride={t('business.accountsOverview', 'Računi – pregled')}
             />
 
+            {/* Secondary rows under Accounts: Available / Net worth / Transfers */}
+            <div className="mb-4 rounded-2xl border border-border/50 divide-y divide-border/40">
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <span className="text-xs text-muted-foreground">{t('business.dashboard.available', 'Slobodno')}</span>
+                <span className={`text-sm font-semibold tabular-nums ${availableBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  {props.formatAmount(availableBalance)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <span className="text-xs text-muted-foreground">{t('business.dashboard.netWorth', 'Neto vrijednost')}</span>
+                <span className="text-sm font-semibold tabular-nums text-foreground">
+                  {props.formatAmount(props.netWorth)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => props.onTransferDialogChange(true)}
+                className="w-full flex items-center justify-between px-3 py-2.5 min-h-[44px] hover:bg-muted/30 transition-colors rounded-b-2xl"
+              >
+                <span className="text-xs text-muted-foreground">{t('business.dashboard.transfers', 'Prijenosi')}</span>
+                <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+                  {props.formatAmount(props.monthlyTransfers)}
+                </span>
+              </button>
+            </div>
 
-            {/* Summary Cards */}
-            <SummarySection
-              balance={props.customPaymentSources.reduce((sum, s) => {
-                if (hiddenIds.has(s.id)) return sum;
-                const bal = s.balance || 0;
-                if (props.multiCurrencyEnabled && s.currency && s.currency !== props.currencyCode) {
-                  return sum + props.convert(bal, s.currency, props.currencyCode);
-                }
-                return sum + bal;
-              }, 0)}
-              netWorth={props.netWorth}
-              totalIncome={props.totalIncome}
-              totalExpenses={props.totalExpenses}
-              totalTransfers={props.totalTransfers}
-              monthlyTransfers={props.monthlyTransfers}
-              monthlyTransferCount={props.monthlyTransferCount}
-              allTransfers={props.allTransfers}
-              recurringCount={props.activeRecurringCount}
-              isLocalMode={props.isLocalMode}
-              prevMonthIncome={props.prevMonthIncome ?? 0}
-              prevMonthExpenses={props.prevMonthExpenses ?? 0}
+            {/* 3. Profit / Loss this month */}
+            <BusinessProfitCard
               curMonthIncome={props.curMonthIncome ?? 0}
               curMonthExpenses={props.curMonthExpenses ?? 0}
+              prevMonthIncome={props.prevMonthIncome ?? 0}
+              prevMonthExpenses={props.prevMonthExpenses ?? 0}
               onIncomeClick={() => props.onIncomeDialogChange(true)}
               onExpenseClick={() => props.onExpenseDialogChange(true)}
-              onTransferClick={() => props.onTransferDialogChange(true)}
-              onRecurringClick={props.onRecurringPanelOpen}
             />
+
 
             {/* Receivables & Payables — always visible (0 € muted) */}
             <div className="grid grid-cols-2 gap-3 mb-4">

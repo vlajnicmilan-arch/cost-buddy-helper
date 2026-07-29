@@ -2991,7 +2991,11 @@
       "marginShort": "Marža",
       "spentOfBudget": "{{spent}} od {{budget}}",
       "spentNoBudget": "Potrošeno {{spent}}",
-      "profit": "Zarada"
+      "profit": "Zarada",
+      "noActivity": "Još nema prometa ovog mjeseca",
+      "available": "Slobodno",
+      "netWorth": "Neto vrijednost",
+      "transfers": "Prijenosi"
     },
     "transactions": {
       "search": "Pretraži...",

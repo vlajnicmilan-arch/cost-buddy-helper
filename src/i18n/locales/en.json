@@ -3117,7 +3117,11 @@
       "marginShort": "Margin",
       "spentOfBudget": "{{spent}} of {{budget}}",
       "spentNoBudget": "Spent {{spent}}",
-      "profit": "Profit"
+      "profit": "Profit",
+      "noActivity": "No activity this month yet",
+      "available": "Available",
+      "netWorth": "Net worth",
+      "transfers": "Transfers"
     },
     "transactions": {
       "search": "Search...",

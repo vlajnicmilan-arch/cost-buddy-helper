@@ -2985,7 +2985,11 @@
       "marginShort": "Marge",
       "spentOfBudget": "{{spent}} von {{budget}}",
       "spentNoBudget": "Ausgegeben {{spent}}",
-      "profit": "Gewinn"
+      "profit": "Gewinn",
+      "noActivity": "Diesen Monat noch keine Bewegungen",
+      "available": "Verfügbar",
+      "netWorth": "Nettovermögen",
+      "transfers": "Überweisungen"
     },
     "transactions": {
       "search": "Suchen...",
