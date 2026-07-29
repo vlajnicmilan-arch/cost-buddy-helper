@@ -315,6 +315,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               allCards={props.allCards}
               paymentSources={props.customPaymentSources}
               showScopeFilter={false}
+              variant="monarch"
             />
 
             {/* Quick Links */}

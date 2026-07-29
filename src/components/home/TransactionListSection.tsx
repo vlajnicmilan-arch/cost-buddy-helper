@@ -105,7 +105,7 @@ export const TransactionListSection = ({
             ? `animate-fade-in transition-all duration-200 border-l-[3px] border-b border-border/40 pl-3 ${transactionsOpen ? 'pb-5 pt-1' : 'py-2'}`
             : `glass-card rounded-2xl animate-fade-in transition-all duration-200 border-l-[3px] ${transactionsOpen ? 'p-6' : 'p-4'}`
         }
-        style={{ borderLeftColor: 'hsl(var(--destructive) / 0.5)' }}
+        style={{ borderLeftColor: variant === 'monarch' ? 'hsl(var(--destructive) / 0.5)' : 'hsl(var(--destructive))' }}
       >
         <CollapsibleTrigger asChild>
           <button
