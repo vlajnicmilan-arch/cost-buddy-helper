@@ -3102,6 +3102,7 @@
       "income": "Income",
       "expenses": "Expenses",
       "vsLastMonth": "vs last month",
+      "allPaid": "All invoices paid ✓",
       "profitLoss": "Profit / Loss (this month)",
       "receivables": "Receivables",
       "payables": "Payables",

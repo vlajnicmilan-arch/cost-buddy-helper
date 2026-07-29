@@ -12,13 +12,30 @@ import { clickableProps } from '@/lib/a11y';
  * overdue invoice totals so the user can act on them without opening a
  * specific project.
  */
-export const UnpaidInvoicesWidget = () => {
+interface UnpaidInvoicesWidgetProps {
+  /** Opt-in: render a quiet "all paid" row instead of nothing when there is no debt. */
+  showEmptyState?: boolean;
+}
+
+export const UnpaidInvoicesWidget = ({ showEmptyState = false }: UnpaidInvoicesWidgetProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { totalOutstanding, overdueCount, overdueTotal, unpaid, buckets, loading } = useUnpaidInvoices();
   const [open, setOpen] = useState(false);
 
-  if (loading || unpaid.length === 0) return null;
+  if (loading) return null;
+
+  if (unpaid.length === 0) {
+    if (!showEmptyState) return null;
+    return (
+      <div className="mb-4 p-3 rounded-2xl border border-border/50 flex items-center gap-2">
+        <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">
+          {t('business.dashboard.allPaid', 'Svi računi plaćeni ✓')}
+        </p>
+      </div>
+    );
+  }
 
   const hasOverdue = overdueCount > 0;
 
