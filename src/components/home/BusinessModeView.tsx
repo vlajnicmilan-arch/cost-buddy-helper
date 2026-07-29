@@ -21,6 +21,7 @@ import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
+import { BusinessProjectsOverview } from '@/components/business/BusinessProjectsOverview';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -205,7 +206,10 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               />
             </div>
 
-            {/* 1. Unpaid invoices — top priority (empty state instead of vanishing) */}
+            {/* 1. Active projects — top priority */}
+            <BusinessProjectsOverview onViewAll={() => props.onBusinessTabChange('projects')} />
+
+            {/* 2. Unpaid invoices (empty state instead of vanishing) */}
             <UnpaidInvoicesWidget showEmptyState />
 
             {/* Payment Sources */}

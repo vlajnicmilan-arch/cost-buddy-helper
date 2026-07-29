@@ -2977,7 +2977,15 @@
       "monthlyTrend": "Monatstrend",
       "topExpenseCategories": "Top Ausgabenkategorien",
       "noTransactions": "Noch keine Geschäftstransaktionen",
-      "addFirstHint": "Fügen Sie Ihre erste Transaktion im Tab \"Transaktionen\" hinzu"
+      "addFirstHint": "Fügen Sie Ihre erste Transaktion im Tab \"Transaktionen\" hinzu",
+      "activeProjects": "Aktive Projekte",
+      "viewAllProjects": "Alle ansehen",
+      "noActiveProjects": "Keine aktiven Projekte",
+      "openProjects": "Projekte öffnen",
+      "marginShort": "Marge",
+      "spentOfBudget": "{{spent}} von {{budget}}",
+      "spentNoBudget": "Ausgegeben {{spent}}",
+      "profit": "Gewinn"
     },
     "transactions": {
       "search": "Suchen...",
