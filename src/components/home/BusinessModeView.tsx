@@ -205,7 +205,10 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               />
             </div>
 
-            {/* 1. Unpaid invoices — top priority (empty state instead of vanishing) */}
+            {/* 1. Active projects — top priority */}
+            <BusinessProjectsOverview onViewAll={() => props.onBusinessTabChange('projects')} />
+
+            {/* 2. Unpaid invoices (empty state instead of vanishing) */}
             <UnpaidInvoicesWidget showEmptyState />
 
             {/* Payment Sources */}
