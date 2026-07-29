@@ -74,6 +74,8 @@ import { ExportButton } from '@/components/ui/export-button';
 interface ReportsDialogProps {
   expenses: Expense[];
   triggerClassName?: string;
+  /** Optional label override for the trigger button (defaults to shared `bulk.reports`). */
+  triggerLabel?: string;
 }
 
 type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
