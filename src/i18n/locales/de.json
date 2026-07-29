@@ -2963,7 +2963,8 @@
       "wallet": "Geldbörse",
       "transactions": "Transaktionen",
       "reports": "Berichte",
-      "more": "Mehr"
+      "more": "Mehr",
+      "accounts": "Konten"
     },
     "dashboard": {
       "income": "Einnahmen",
@@ -3091,7 +3092,9 @@
       "workforce": "Mitarbeiter & Stunden",
       "workforceDesc": "Mitarbeiterakten, Stunden und Arbeitskosten",
       "recurringObligations": "Wiederkehrende Verpflichtungen",
-      "recurringObligationsDesc": "Miete, Abonnements, Leasing und mehr"
+      "recurringObligationsDesc": "Miete, Abonnements, Leasing und mehr",
+      "reports": "Berichte",
+      "reportsDesc": "Monats-, Quartals- und Jahresübersicht"
     },
     "accountsOverview": "Konten – Übersicht",
     "analysisButton": "Analyse",

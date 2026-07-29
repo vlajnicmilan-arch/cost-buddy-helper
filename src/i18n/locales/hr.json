@@ -2969,7 +2969,8 @@
       "wallet": "Novčanik",
       "transactions": "Transakcije",
       "reports": "Izvještaji",
-      "more": "Više"
+      "more": "Više",
+      "accounts": "Računi"
     },
     "dashboard": {
       "income": "Prihodi",
@@ -3097,7 +3098,9 @@
       "workforce": "Radnici & satnice",
       "workforceDesc": "Evidencija radnika, sati i troškova rada",
       "recurringObligations": "Ponavljajuće obveze",
-      "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo"
+      "recurringObligationsDesc": "Najam, pretplate, leasing i ostalo",
+      "reports": "Izvještaji",
+      "reportsDesc": "Mjesečni, kvartalni i godišnji pregled"
     },
     "accountsOverview": "Računi – pregled",
     "analysisButton": "Analiza",

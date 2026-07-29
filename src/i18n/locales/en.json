@@ -3095,7 +3095,8 @@
       "wallet": "Wallet",
       "transactions": "Transactions",
       "reports": "Reports",
-      "more": "More"
+      "more": "More",
+      "accounts": "Accounts"
     },
     "dashboard": {
       "income": "Income",
@@ -3223,7 +3224,9 @@
       "workforce": "Workers & hours",
       "workforceDesc": "Worker records, hours and labor costs",
       "recurringObligations": "Recurring obligations",
-      "recurringObligationsDesc": "Rent, subscriptions, leasing and more"
+      "recurringObligationsDesc": "Rent, subscriptions, leasing and more",
+      "reports": "Reports",
+      "reportsDesc": "Monthly, quarterly and yearly overview"
     },
     "accountsOverview": "Accounts – overview",
     "analysisButton": "Analytics",

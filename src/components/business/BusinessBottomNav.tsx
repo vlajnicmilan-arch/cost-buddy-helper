@@ -1,6 +1,11 @@
-import { LayoutDashboard, ArrowLeftRight, FileBarChart, MoreHorizontal, Wallet, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, MoreHorizontal, Wallet, FolderKanban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * Tabovi biznis moda. 'transactions' i 'reports' nisu u donjoj navigaciji
+ * (transakcije se otvaraju klikom na račun, izvještaji kroz "Više"),
+ * ali ostaju validni tabovi jer se njihov sadržaj i dalje renderira.
+ */
 export type BusinessTab = 'dashboard' | 'wallet' | 'transactions' | 'projects' | 'reports' | 'more';
 
 interface Props {
@@ -13,12 +18,11 @@ export const BusinessBottomNav = ({ activeTab, onTabChange }: Props) => {
 
   const tabs = [
     { id: 'dashboard' as BusinessTab, icon: LayoutDashboard, label: t('business.nav.overview', 'Pregled') },
-    { id: 'wallet' as BusinessTab, icon: Wallet, label: t('business.nav.wallet', 'Novčanik') },
-    { id: 'transactions' as BusinessTab, icon: ArrowLeftRight, label: t('business.nav.transactions', 'Transakcije') },
+    { id: 'wallet' as BusinessTab, icon: Wallet, label: t('business.nav.accounts', 'Računi') },
     { id: 'projects' as BusinessTab, icon: FolderKanban, label: t('nav.projects', 'Projekti') },
-    { id: 'reports' as BusinessTab, icon: FileBarChart, label: t('business.nav.reports', 'Izvještaji') },
     { id: 'more' as BusinessTab, icon: MoreHorizontal, label: t('business.nav.more', 'Više') },
   ];
+
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md safe-area-bottom">

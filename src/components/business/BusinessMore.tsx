@@ -1,23 +1,26 @@
 import { useState } from 'react';
-import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature } from 'lucide-react';
+import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature, FileBarChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessRecurring } from './BusinessRecurring';
 import { BusinessProfileView } from './BusinessProfileView';
 import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { ProjectEstimatesPanel } from '@/components/projects/ProjectEstimatesPanel';
+import { BusinessReports } from './BusinessReports';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useTranslation } from 'react-i18next';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates';
+type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates' | 'reports';
 
 interface Props {
   expenses: Expense[];
+  /** Naziv tvrtke za izvještaje (Izvještaji su premješteni iz donje navigacije u "Više"). */
+  companyName?: string;
 }
 
-export const BusinessMore = ({ expenses }: Props) => {
+export const BusinessMore = ({ expenses, companyName }: Props) => {
   const { t } = useTranslation();
   const [view, setView] = useState<SubView>('menu');
 
@@ -31,6 +34,7 @@ export const BusinessMore = ({ expenses }: Props) => {
   if (view === 'modules') return <div>{backButton}<BusinessModuleSettings /></div>;
   if (view === 'debts') return <div>{backButton}<BusinessDebtTracker /></div>;
   if (view === 'recurring') return <div>{backButton}<BusinessRecurring /></div>;
+  if (view === 'reports') return <div>{backButton}<BusinessReports expenses={expenses} companyName={companyName ?? ''} /></div>;
   if (view === 'estimates') return <div>{backButton}<ProjectEstimatesPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string };
@@ -39,6 +43,7 @@ export const BusinessMore = ({ expenses }: Props) => {
     { id: 'profile', icon: Building2, label: t('business.more.companyData', 'Podaci o tvrtki'), desc: t('business.more.companyDataDesc', 'Naziv, OIB, adresa, IBAN i ostali podaci') },
     { id: 'modules', icon: Settings2, label: t('business.more.modulesAndIndustry', 'Djelatnost i moduli'), desc: t('business.more.modulesAndIndustryDesc', 'Odaberite djelatnost i prilagodite module') },
     { id: 'estimates', icon: FileSignature, label: t('estimates.title', 'Ponude i predračuni'), desc: t('estimates.menuDesc', 'Pripremi ponudu i pretvori je u projekt') },
+    { id: 'reports', icon: FileBarChart, label: t('business.more.reports', 'Izvještaji'), desc: t('business.more.reportsDesc', 'Mjesečni, kvartalni i godišnji pregled') },
     { id: 'debts', icon: Receipt, label: t('business.more.openInvoices', 'Otvoreni računi'), desc: t('business.more.openInvoicesDesc', 'Praćenje neplaćenih računa i potraživanja') },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
   ];
