@@ -133,6 +133,16 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
     });
   }, [registerHandlers, props.onAddExpense, props.checkDuplicate]);
 
+  // Same aggregation SummarySection received as `balance` before Phase 3.
+  const availableBalance = props.customPaymentSources.reduce((sum, s) => {
+    if (hiddenIds.has(s.id)) return sum;
+    const bal = s.balance || 0;
+    if (props.multiCurrencyEnabled && s.currency && s.currency !== props.currencyCode) {
+      return sum + props.convert(bal, s.currency, props.currencyCode);
+    }
+    return sum + bal;
+  }, 0);
+
 
   const {
     businessTab,
