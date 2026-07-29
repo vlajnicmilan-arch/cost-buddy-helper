@@ -76,7 +76,9 @@ export const BusinessProfitCard = React.memo(({
             ? 'text-[10px] font-medium uppercase tracking-widest text-muted-foreground'
             : 'text-xs text-muted-foreground'}>
             {monarch
-              ? t('business.dashboard.profitLabel', 'Dobit')
+              ? (positive
+                  ? t('business.dashboard.profitLabel', 'Dobit')
+                  : t('business.dashboard.lossLabel', 'Gubitak'))
               : t('business.dashboard.profitLoss', 'Dobit / Gubitak (ovaj mjesec)')}
           </p>
 
