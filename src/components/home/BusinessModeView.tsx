@@ -22,6 +22,7 @@ import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { BusinessProjectsOverview } from '@/components/business/BusinessProjectsOverview';
+import { BusinessDashboardSection } from '@/components/business/BusinessDashboardSection';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -230,30 +231,32 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
             />
 
             {/* Secondary rows under Accounts: Available / Net worth / Transfers */}
-            <div className="mb-6 sm:mb-8 pb-5 border-b border-border/40 divide-y divide-border/30">
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t('business.dashboard.available', 'Slobodno')}</span>
-                <span className={`text-base font-semibold tabular-nums ${availableBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {props.formatAmount(availableBalance)}
-                </span>
+            <BusinessDashboardSection label={t('business.dashboard.balanceGroup', 'Stanje')}>
+              <div className="space-y-0 divide-y divide-border/30 border-t border-border/30">
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-muted-foreground">{t('business.dashboard.available', 'Slobodno')}</span>
+                  <span className={`text-base font-semibold tabular-nums ${availableBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {props.formatAmount(availableBalance)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-muted-foreground">{t('business.dashboard.netWorth', 'Neto vrijednost')}</span>
+                  <span className="text-base font-semibold tabular-nums text-foreground">
+                    {props.formatAmount(props.netWorth)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => props.onTransferDialogChange(true)}
+                  className="w-full flex items-center justify-between py-2 min-h-[44px] hover:bg-muted/20 transition-colors"
+                >
+                  <span className="text-sm text-muted-foreground">{t('business.dashboard.transfers', 'Prijenosi')}</span>
+                  <span className="text-base font-semibold tabular-nums text-muted-foreground">
+                    {props.formatAmount(props.monthlyTransfers)}
+                  </span>
+                </button>
               </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t('business.dashboard.netWorth', 'Neto vrijednost')}</span>
-                <span className="text-base font-semibold tabular-nums text-foreground">
-                  {props.formatAmount(props.netWorth)}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => props.onTransferDialogChange(true)}
-                className="w-full flex items-center justify-between py-2.5 min-h-[44px] hover:bg-muted/20 transition-colors"
-              >
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t('business.dashboard.transfers', 'Prijenosi')}</span>
-                <span className="text-base font-semibold tabular-nums text-muted-foreground">
-                  {props.formatAmount(props.monthlyTransfers)}
-                </span>
-              </button>
-            </div>
+            </BusinessDashboardSection>
 
 
             {/* 3. Profit / Loss this month */}
@@ -323,6 +326,7 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
                 expenses={props.expenses}
                 onUpdateExpense={props.onUpdateExpense}
                 onDeleteExpense={props.onDeleteExpense}
+                variant="monarch"
               />
             </div>
           </>
