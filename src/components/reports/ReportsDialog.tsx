@@ -668,7 +668,7 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
           }}
         >
           <FileText className="w-4 h-4" />
-          {t('bulk.reports')}
+          {triggerLabel ?? t('bulk.reports')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-1rem)] sm:w-auto p-4 sm:p-6">
