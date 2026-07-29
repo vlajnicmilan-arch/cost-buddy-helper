@@ -109,7 +109,7 @@ export const PaymentSourcesSection = React.memo(React.forwardRef<HTMLDivElement,
                   background: `linear-gradient(135deg, ${source.color}0A 0%, ${source.color}04 50%, transparent 100%)`,
                   borderLeftWidth: 3,
                   borderLeftColor: source.color,
-                  boxShadow: `0 2px 12px ${source.color}08`,
+                  boxShadow: monarch ? `0 1px 8px ${source.color}08` : `0 2px 12px ${source.color}08`,
                 }}
                 whileHover={{
                   boxShadow: `0 4px 20px ${source.color}18`,
