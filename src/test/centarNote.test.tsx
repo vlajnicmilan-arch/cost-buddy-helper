@@ -23,10 +23,10 @@ describe('CentarNote — render po severity', () => {
     expect(screen.queryByTestId('centar-note-progress')).toBeNull();
   });
 
-  it('oznaka modula je mala slova bez točke', () => {
+  it('oznaka modula ima veliko prvo slovo i odgovara nazivu u aplikaciji', () => {
     render(<CentarNote severity="info" module="projects" message="ok" duration={3000} />);
     const label = screen.getByTestId('centar-note-module-label');
-    expect(label.textContent).toBe('projekti');
+    expect(label.textContent).toBe('Projekti');
   });
 
   it('boja dolazi iz MODULE_HSL mape, ne iz literala', () => {

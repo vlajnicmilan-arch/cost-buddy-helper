@@ -25,12 +25,12 @@ interface CentarNoteProps {
 }
 
 const MODULE_LABEL: Record<NoteModule, string> = {
-  overview: 'pregled',
-  projects: 'projekti',
-  wallet: 'novčanik',
-  budgets: 'budžeti',
-  krug: 'krug',
-  centar: 'centar',
+  overview: 'Pregled',
+  projects: 'Projekti',
+  wallet: 'Novčanik',
+  budgets: 'Smjer',
+  krug: 'Krug',
+  centar: 'Centar',
 };
 
 export const CentarNote = ({
