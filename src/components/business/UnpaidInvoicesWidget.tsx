@@ -57,12 +57,17 @@ export const UnpaidInvoicesWidget = ({ showEmptyState = false, variant = 'defaul
           <div className="flex items-center gap-2 min-w-0">
             <FileText className={`w-4 h-4 shrink-0 ${hasOverdue ? 'text-destructive' : 'text-primary'}`} />
             <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground">
+              <p className={monarch
+                ? 'text-[10px] font-medium uppercase tracking-widest text-muted-foreground'
+                : 'text-[10px] text-muted-foreground'}>
                 {t('invoices.widget.title', 'Neplaćeni računi')}
               </p>
-              <p className="text-sm font-bold truncate">
+              <p className={monarch
+                ? 'text-lg font-semibold tabular-nums tracking-tight truncate mt-0.5'
+                : 'text-sm font-bold truncate'}>
                 {formatAmount(totalOutstanding)}
               </p>
+
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
