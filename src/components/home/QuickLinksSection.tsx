@@ -30,6 +30,8 @@ export const QuickLinksSection = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { requestModule } = useModuleGate();
+  const { activeBusinessProfileId } = useAppState();
+  const isBusiness = !!activeBusinessProfileId;
 
   return (
     <div className="lg:col-span-1 space-y-6">
