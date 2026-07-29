@@ -2976,6 +2976,7 @@
       "income": "Prihodi",
       "expenses": "Rashodi",
       "vsLastMonth": "vs prošli mj.",
+      "allPaid": "Svi računi plaćeni ✓",
       "profitLoss": "Dobit / Gubitak (ovaj mjesec)",
       "receivables": "Potraživanja",
       "payables": "Dugovanja",

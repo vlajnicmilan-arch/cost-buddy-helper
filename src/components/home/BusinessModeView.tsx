@@ -19,6 +19,7 @@ import { BusinessTransactions } from '@/components/business/BusinessTransactions
 import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
+import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
@@ -204,6 +205,9 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               />
             </div>
 
+            {/* 1. Unpaid invoices — top priority (empty state instead of vanishing) */}
+            <UnpaidInvoicesWidget showEmptyState />
+
             {/* Payment Sources */}
             <PaymentSourcesSection
               customPaymentSources={props.customPaymentSources}
@@ -241,19 +245,21 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
               onRecurringClick={props.onRecurringPanelOpen}
             />
 
-            {/* Receivables & Payables */}
-            {(props.totalReceivable > 0 || props.totalPayable > 0) && (
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
-                  <p className="text-sm font-bold text-income">{props.formatAmount(props.totalReceivable)}</p>
-                </div>
-                <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
-                  <p className="text-sm font-bold text-destructive">{props.formatAmount(props.totalPayable)}</p>
-                </div>
+            {/* Receivables & Payables — always visible (0 € muted) */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--income) / 0.06) 0%, transparent 100%)' }}>
+                <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.receivables', 'Potraživanja')}</p>
+                <p className={`text-sm font-bold ${props.totalReceivable > 0 ? 'text-income' : 'text-muted-foreground/60'}`}>
+                  {props.formatAmount(props.totalReceivable)}
+                </p>
               </div>
-            )}
+              <div className="p-3 rounded-2xl border border-border/50 text-center" style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.06) 0%, transparent 100%)' }}>
+                <p className="text-[10px] text-muted-foreground mb-0.5">{t('business.dashboard.payables', 'Dugovanja')}</p>
+                <p className={`text-sm font-bold ${props.totalPayable > 0 ? 'text-destructive' : 'text-muted-foreground/60'}`}>
+                  {props.formatAmount(props.totalPayable)}
+                </p>
+              </div>
+            </div>
 
             {/* Recent Transactions */}
             <TransactionListSection
