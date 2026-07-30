@@ -5,6 +5,11 @@ import {
   aggregateCategoryTotalsByName,
   formatPercent,
   isCorrectionTx,
+  buildExecutiveSummary,
+  buildMetaParts,
+  cleanFeedTitle,
+  stripActionPrefix,
+  computeTransferSplit,
 } from '@/lib/reportTotals';
 
 const tx = (over: Partial<any> = {}) => ({
@@ -305,5 +310,108 @@ describe('periodPresets', () => {
   it('all koristi najraniji datum', () => {
     const r = resolvePeriodRange('all', { now, dates: [new Date(2024, 2, 3), new Date(2025, 0, 1)] });
     expect(r.start).toEqual(new Date(2024, 2, 3));
+  });
+});
+
+describe('sažetak — spojena rečenica, meta i prijenosi', () => {
+  const f = {
+    currency: (n: number) => `${n.toFixed(2)} €`,
+    date: (d: Date) => d.toISOString().slice(0, 10),
+    percent: (v: number, t: number) => `${Math.round((v / t) * 100)}%`,
+  };
+  const tpl = {
+    main: 'Main.',
+    categoriesTwo: 'Najviše je otišlo na {{cat1}} ({{pct1}}{{ins}}), zatim {{cat2}} ({{pct2}}).',
+    categoriesOne: 'Najviše je otišlo na {{cat1}} ({{pct1}}{{ins}}).',
+    merchantsInsertTwo: ' — prvenstveno {{m1}} i {{m2}}',
+    merchantsInsertOne: ' — prvenstveno {{m1}}',
+    largest: 'Najveći pojedinačni trošak: {{title}} {{amount}} {{date}}.',
+    empty: 'Nema.',
+  };
+  const base = {
+    start: new Date('2026-01-01'), end: new Date('2026-01-31'), count: 5,
+    income: 0, expenses: 1000, net: -1000,
+    categories: [{ name: 'Računi', amount: 600 }, { name: 'Hrana', amount: 200 }],
+  };
+
+  it('dva trgovca — umetak unutar rečenice kategorija, bez zasebne rečenice', () => {
+    const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [
+      { name: 'Telemach', amount: 400 }, { name: 'HEP', amount: 200 },
+    ] }, f, tpl);
+    expect(s[1]).toBe('Najviše je otišlo na Računi (60% — prvenstveno Telemach i HEP), zatim Hrana (20%).');
+    expect(s.filter(x => x.includes('Računi')).length).toBe(1);
+  });
+
+  it('jedan trgovac — bez "i m2"', () => {
+    const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [{ name: 'Telemach', amount: 400 }] }, f, tpl);
+    expect(s[1]).toContain('— prvenstveno Telemach)');
+  });
+
+  it('bez trgovaca — rečenica bez umetka', () => {
+    const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [] }, f, tpl);
+    expect(s[1]).toBe('Najviše je otišlo na Računi (60%), zatim Hrana (20%).');
+  });
+
+  it('nema duple točke kod "d.o.o." i prefiks se skida', () => {
+    const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [
+      { name: 'Placanje racuna - Telemach Hrvatska d.o.o.', amount: 400 },
+    ] }, f, tpl);
+    expect(s[1]).toContain('prvenstveno Telemach Hrvatska d.o.o)');
+    expect(s[1]).not.toContain('d.o.o..');
+  });
+
+  it('preskače najveći trošak kada je isti trgovac kao m1', () => {
+    const s = buildExecutiveSummary({
+      ...base,
+      topCategoryMerchants: [{ name: 'Telemach Hrvatska d.o.o.', amount: 400 }],
+      largestExpense: { title: 'Placanje racuna - Telemach Hrvatska d.o.o.', amount: 400, date: new Date('2026-01-10') },
+    }, f, tpl);
+    expect(s.some(x => x.startsWith('Najveći'))).toBe(false);
+  });
+
+  it('zadržava najveći trošak kada je drugi trgovac', () => {
+    const s = buildExecutiveSummary({
+      ...base,
+      topCategoryMerchants: [{ name: 'Telemach', amount: 400 }],
+      largestExpense: { title: 'Placanje racuna - HEP', amount: 300, date: new Date('2026-01-10') },
+    }, f, tpl);
+    expect(s[2]).toContain('Najveći pojedinačni trošak: HEP');
+  });
+
+  it('meta red: dedupe + "Ostalo" skriven → transfer daje samo "Prijenos"', () => {
+    expect(buildMetaParts(['Prijenos', 'Ostalo', 'Prijenos'], ['Ostalo'])).toEqual(['Prijenos']);
+  });
+
+  it('meta red: korekcija samo "Korekcija"', () => {
+    expect(buildMetaParts(['Korekcija'], ['Ostalo'])).toEqual(['Korekcija']);
+  });
+
+  it('meta red: zadržava stvarne segmente', () => {
+    expect(buildMetaParts(['Hrana', 'Aircash', 'Ostalo'], ['Ostalo'])).toEqual(['Hrana', 'Aircash']);
+  });
+
+  it('kapitalizacija naslova: aircash.eu → Aircash.eu', () => {
+    expect(cleanFeedTitle('aircash.eu')).toBe('Aircash.eu');
+  });
+
+  it('stripActionPrefix uzima zadnji segment', () => {
+    expect(stripActionPrefix('Placanje racuna - Telemach Hrvatska d.o.o.')).toBe('Telemach Hrvatska d.o.o.');
+    expect(stripActionPrefix('Telemach')).toBe('Telemach');
+  });
+
+  it('prijenosi razrez: oba smjera', () => {
+    const s = computeTransferSplit([
+      tx({ type: 'transfer', amount: 100, income_source_id: 'acc' }),
+      tx({ type: 'transfer', amount: 40, income_source_id: 'other' }),
+      tx({ type: 'expense', amount: 10 }),
+    ], 'acc');
+    expect(s).toEqual({ inbound: 100, outbound: 40 });
+  });
+
+  it('prijenosi razrez: samo izlazni / nula', () => {
+    expect(computeTransferSplit([tx({ type: 'transfer', amount: 40, income_source_id: 'other' })], 'acc'))
+      .toEqual({ inbound: 0, outbound: 40 });
+    expect(computeTransferSplit([tx({ type: 'expense', amount: 40 })], 'acc'))
+      .toEqual({ inbound: 0, outbound: 0 });
   });
 });
