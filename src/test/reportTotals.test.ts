@@ -253,11 +253,12 @@ describe('merchant extraction', () => {
   });
 });
 
-describe('interpretive merchant sentence', () => {
+describe('interpretive merchant insert', () => {
   const tpl = {
     ...tplHr,
-    merchantsTwo: 'Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}} i {{m2}}.',
-    merchantsOne: 'Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}}.',
+    categoriesOne: 'Najviše je otišlo na {{cat1}} ({{pct1}}{{ins}}).',
+    merchantsInsertTwo: ' — prvenstveno {{m1}} i {{m2}}',
+    merchantsInsertOne: ' — prvenstveno {{m1}}',
   };
   const base = {
     start: new Date(2026, 6, 1), end: new Date(2026, 6, 31), count: 5,
@@ -270,21 +271,22 @@ describe('interpretive merchant sentence', () => {
       { ...base, topCategoryMerchants: [{ name: 'Lidl', amount: 200 }, { name: 'Konzum', amount: 100 }] },
       fmt, tpl,
     );
-    expect(s).toContain('Najviše sredstava otišlo je na Hrana, prvenstveno Lidl i Konzum.');
+    expect(s.join(' ')).toContain('— prvenstveno Lidl i Konzum)');
   });
 
   it('jedan trgovac → jednočlana varijanta', () => {
     const s = buildExecutiveSummary(
       { ...base, topCategoryMerchants: [{ name: 'Lidl', amount: 200 }] }, fmt, tpl,
     );
-    expect(s).toContain('Najviše sredstava otišlo je na Hrana, prvenstveno Lidl.');
+    expect(s.join(' ')).toContain('— prvenstveno Lidl)');
   });
 
-  it('bez trgovaca → rečenica se preskače', () => {
+  it('bez trgovaca → umetak se preskače', () => {
     const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [] }, fmt, tpl);
     expect(s.join(' ')).not.toContain('prvenstveno');
   });
 });
+
 
 describe('periodPresets', () => {
   const now = new Date(2026, 7, 15);
