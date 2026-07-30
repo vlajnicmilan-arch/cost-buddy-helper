@@ -47,6 +47,11 @@ export const CentarNote = ({
 }: CentarNoteProps) => {
   const accent = noteModuleHsl(module);
   const accentMuted = noteModuleHslMuted(module);
+  // Split poruke na PRVOM '\n': prvi red = naslov, ostatak = opis.
+  // Ako je `title` eksplicitno zadan, poruka se ne dijeli.
+  const nlIndex = !title && message ? message.indexOf('\n') : -1;
+  const effectiveTitle = nlIndex > -1 ? message!.slice(0, nlIndex).trim() : title;
+  const effectiveMessage = nlIndex > -1 ? message!.slice(nlIndex + 1).trim() : message;
   const isError = severity === 'error';
   const isWarning = severity === 'warning';
   const isSticky = duration === 0;
@@ -54,6 +59,7 @@ export const CentarNote = ({
   const effectiveAction: FeedbackAction | undefined =
     action ?? (isSticky && onDismiss ? { label: i18n.t('common.ok'), onClick: onDismiss } : undefined);
   const interactive = Boolean(effectiveAction);
+
 
   return (
     <motion.div
