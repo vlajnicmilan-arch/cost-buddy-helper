@@ -3,6 +3,52 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { shouldSuppressMenuPointerUp } from "@/lib/menuTouchGuard";
+
+/**
+ * Blocks the pointerup/click that belongs to the gesture which OPENED the menu
+ * (Radix opens on pointerdown, so on touch the finger lifts over a menu item).
+ * See src/lib/menuTouchGuard.ts for the full rationale.
+ */
+const useMenuTouchGuard = () => {
+  const openedAtRef = React.useRef(0);
+  const hadPointerDownInsideRef = React.useRef(false);
+  const suppressNextClickRef = React.useRef(false);
+
+  React.useEffect(() => {
+    openedAtRef.current = Date.now();
+    hadPointerDownInsideRef.current = false;
+    suppressNextClickRef.current = false;
+  }, []);
+
+  const onPointerDownCapture = React.useCallback(() => {
+    hadPointerDownInsideRef.current = true;
+  }, []);
+
+  const onPointerUpCapture = React.useCallback((event: React.PointerEvent) => {
+    const suppress = shouldSuppressMenuPointerUp({
+      pointerType: event.pointerType,
+      openedAt: openedAtRef.current,
+      now: Date.now(),
+      hadPointerDownInside: hadPointerDownInsideRef.current,
+    });
+    hadPointerDownInsideRef.current = false;
+    if (!suppress) return;
+    suppressNextClickRef.current = true;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  const onClickCapture = React.useCallback((event: React.MouseEvent) => {
+    if (!suppressNextClickRef.current) return;
+    suppressNextClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  return { onPointerDownCapture, onPointerUpCapture, onClickCapture };
+};
+
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 
