@@ -146,9 +146,12 @@ const titleCaseIfShouting = (s: string): string => {
   return s
     .split(' ')
     .map((w) =>
+      // Only the first dotted segment is capitalised ("AIRCASH.EU" → "Aircash.eu")
       w
         .split('.')
-        .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p))
+        .map((part, i) =>
+          !part ? part : i === 0 ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part.toLowerCase(),
+        )
         .join('.'),
     )
     .join(' ');

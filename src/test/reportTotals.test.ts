@@ -119,7 +119,7 @@ describe('report dashboard helpers', () => {
   it('dvoredni trgovac: podnaslov samo kad se razlikuje', () => {
     const raw = 'WOLT ZAGREB, 3dd09f2b-c6bc-4603-b819-a392f1234567';
     const clean = cleanFeedTitle(raw);
-    expect(clean).toBe('WOLT ZAGREB');
+    expect(clean).toBe('Wolt Zagreb');
     expect(buildFeedSubtitle(raw, clean)).toContain('3dd09f2b');
     expect(buildFeedSubtitle('Kava', 'Kava')).toBe('');
   });
@@ -219,7 +219,7 @@ describe('merchant extraction', () => {
   it('KEKS Pay: druga strana · svrha (vlasnik izvješća izbačen)', () => {
     const raw = 'KEKS Pay - Vinka P šalje Milan V za "Kava" - 326633655, 08d7fdb9-1111-2222-3333-444455556666';
     expect(cleanFeedTitle(raw, 'Milan V')).toBe('Vinka P · Kava');
-    expect(parseKeksPay(raw, 'Vinka P')?.title).toBe('Vinka P · Kava');
+    expect(parseKeksPay(raw, 'Vinka P')?.title).toBe('Milan V · Kava');
   });
 
   it('emoji shortcode se uklanja', () => {
