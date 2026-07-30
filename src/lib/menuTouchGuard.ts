@@ -28,7 +28,18 @@ export interface MenuPointerUpContext {
   now: number;
   /** Whether a `pointerdown` for this gesture landed inside the menu content. */
   hadPointerDownInside: boolean;
+  /**
+   * pointerType of the last `pointerup` seen on the menu content, if it arrived
+   * within {@link MENU_POINTERUP_EXEMPT_MS} before this activation. A mouse
+   * press-drag-release always delivers that pointerup; ghost clicks never do.
+   */
+  lastPointerUpType?: string;
+  /** Timestamp (ms) of that pointerup. */
+  lastPointerUpAt?: number;
 }
+
+/** How recent a mouse pointerup must be to exempt the following click. */
+export const MENU_POINTERUP_EXEMPT_MS = 1000;
 
 /**
  * Returns true when the activation (pointerup or the click itself) must be
@@ -44,10 +55,19 @@ export const shouldSuppressMenuActivation = ({
   openedAt,
   now,
   hadPointerDownInside,
+  lastPointerUpType,
+  lastPointerUpAt,
 }: MenuPointerUpContext): boolean => {
   if (hadPointerDownInside) return false;
   // Mouse press-drag-release over a menu item stays supported.
   if (pointerType === 'mouse') return false;
+  if (
+    lastPointerUpType === 'mouse' &&
+    lastPointerUpAt &&
+    now - lastPointerUpAt < MENU_POINTERUP_EXEMPT_MS
+  ) {
+    return false;
+  }
   if (!openedAt) return false;
   return now - openedAt < MENU_TOUCH_GUARD_WINDOW_MS;
 };
