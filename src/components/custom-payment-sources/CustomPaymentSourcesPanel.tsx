@@ -427,7 +427,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleHidden(source.id); }}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleHidden(source.id, 'wallet-panel-menu-item'); }}>
                         {hidden ? <EyeOff className="h-3.5 w-3.5 mr-2" /> : <Eye className="h-3.5 w-3.5 mr-2" />}
                         {hidden
                           ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')

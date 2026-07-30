@@ -5,6 +5,7 @@ import { useStorage } from '@/contexts/StorageContext';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
+import { logMenuDebug, MENU_DEBUG_ENABLED } from '@/lib/menuDebug';
 
 const LOCAL_KEY = 'dashboardHiddenSources';
 const SESSION_KEY = 'dashboardHiddenSources:cache';
@@ -139,11 +140,21 @@ export const useHiddenPaymentSources = () => {
   };
 
   const toggleHidden = useCallback(
-    async (sourceId: string) => {
+    async (sourceId: string, caller?: string) => {
       const isCurrentlyHidden = hiddenIds.has(sourceId);
       const next = new Set(hiddenIds);
       if (isCurrentlyHidden) next.delete(sourceId);
       else next.add(sourceId);
+      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+      if (MENU_DEBUG_ENABLED) {
+        const stack = new Error().stack?.split('\n').slice(0, 5).join('\n') ?? null;
+        logMenuDebug('toggle_hidden_called', {
+          source_id: sourceId,
+          hidden: !isCurrentlyHidden,
+          caller: caller ?? 'unspecified',
+          stack,
+        });
+      }
       // Optimistic propagation across all instances
       setCache(next);
 
