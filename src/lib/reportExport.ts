@@ -328,16 +328,33 @@ export const generatePDFReport = async (
     { label: i18n.t('reports.kpiTransactions', 'Transakcije') as string, value: String(data.expenses.length), tone: 'accent' },
   ]);
 
-  // --- Transfers, discrete line ---
-  y += 4;
-  doc.setFont('Inter', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text(
-    `${toAscii(i18n.t('reports.transfersLabel', 'Prijenosi') as string)}: ${formatCurrency(data.totals.transfers, data.currency)}`,
-    REPORT_MARGIN_X,
-    y,
-  );
+  // --- Transfers, discrete line (inbound / outbound split, display only) ---
+  const transferSplit = computeTransferSplit(data.expenses as any, data.accountId);
+  const transferSegments: string[] = [];
+  if (transferSplit.inbound > 0) {
+    transferSegments.push(i18n.t('reports.transfersIn', {
+      amount: formatCurrency(transferSplit.inbound, data.currency),
+      defaultValue: 'ulazni +{{amount}}',
+    }) as string);
+  }
+  if (transferSplit.outbound > 0) {
+    transferSegments.push(i18n.t('reports.transfersOut', {
+      amount: formatCurrency(transferSplit.outbound, data.currency),
+      defaultValue: 'izlazni −{{amount}}',
+    }) as string);
+  }
+  if (transferSegments.length > 0) {
+    y += 4;
+    doc.setFont('Inter', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `${toAscii(i18n.t('reports.transfersSplit', 'Prijenosi:') as string)} ${transferSegments.join(' · ')}`,
+      REPORT_MARGIN_X,
+      y,
+    );
+  }
+
 
   // --- Executive summary (deterministic) ---
   const allCategoryRows = aggregateCategoryTotalsByName(
