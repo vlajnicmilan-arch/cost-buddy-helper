@@ -4,16 +4,7 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { shouldSuppressMenuActivation } from "@/lib/menuTouchGuard";
-import { logMenuDebug, MENU_DEBUG_ENABLED } from "@/lib/menuDebug";
 
-// TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-const describeMenuEventTarget = (target: EventTarget | null) => {
-  if (!(target instanceof Element)) return { tagName: null, textContent: null };
-  return {
-    tagName: target.tagName,
-    textContent: target.textContent?.trim().slice(0, 30) ?? null,
-  };
-};
 
 interface MenuOpenState {
   /** Timestamp of the last real open (onOpenChange(true)), NOT of content mount. */
@@ -45,40 +36,12 @@ const useMenuTouchGuard = () => {
     if (!rootState) fallbackOpenedAtRef.current = Date.now();
     hadPointerDownInsideRef.current = false;
     suppressNextClickRef.current = false;
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      logMenuDebug('content_mount', {
-        opened_at_ms: openedAtRef.current,
-        opened_at_source: rootState ? 'root_open_change' : 'content_mount_fallback',
-      });
-    }
-    return () => {
-      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-      if (MENU_DEBUG_ENABLED) {
-        logMenuDebug('content_unmount', {
-          opened_at_ms: openedAtRef.current,
-          timestamp_ms: Date.now(),
-        });
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onPointerDownCapture = React.useCallback((event: React.PointerEvent) => {
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      const now = Date.now();
-      logMenuDebug('pointer_down_capture', {
-        event_type: event.type,
-        pointer_type: event.pointerType,
-        opened_delta_ms: now - openedAtRef.current,
-        had_pointer_down_inside: hadPointerDownInsideRef.current,
-        suppress: false,
-        target: describeMenuEventTarget(event.target),
-      });
-    }
+  const onPointerDownCapture = React.useCallback(() => {
     hadPointerDownInsideRef.current = true;
-  }, [openedAtRef]);
+  }, []);
 
   const onPointerUpCapture = React.useCallback((event: React.PointerEvent) => {
     const now = Date.now();
@@ -89,18 +52,6 @@ const useMenuTouchGuard = () => {
       now,
       hadPointerDownInside: hadPointerDownInsideRef.current,
     });
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      logMenuDebug('pointer_up_capture', {
-        event_type: event.type,
-        pointer_type: event.pointerType,
-        last_pointer_type: lastPointerTypeRef.current,
-        opened_delta_ms: now - openedAtRef.current,
-        had_pointer_down_inside: hadPointerDownInsideRef.current,
-        suppress,
-        target: describeMenuEventTarget(event.target),
-      });
-    }
     // `hadPointerDownInside` is consumed by the click gate, not here — the
     // click of a deliberate tap must still see that the gesture started inside.
     if (!suppress) return;
@@ -123,28 +74,14 @@ const useMenuTouchGuard = () => {
       lastPointerUpType: lastPointerUpRef.current.type,
       lastPointerUpAt: lastPointerUpRef.current.at,
     });
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      logMenuDebug('click_capture', {
-        event_type: event.type,
-        pointer_type: nativePointerType,
-        last_pointer_type: lastPointerTypeRef.current,
-        opened_at_ms: openedAtRef.current,
-        opened_at_source: rootState ? 'root_open_change' : 'content_mount_fallback',
-        opened_delta_ms: now - openedAtRef.current,
-        had_pointer_down_inside: hadPointerDownInsideRef.current,
-        suppress_next_click: suppressNextClickRef.current,
-        suppress,
-        target: describeMenuEventTarget(event.target),
-      });
-    }
     suppressNextClickRef.current = false;
     hadPointerDownInsideRef.current = false;
     lastPointerUpRef.current = { type: '', at: 0 };
     if (!suppress) return;
     event.preventDefault();
     event.stopPropagation();
-  }, [lastPointerTypeRef, openedAtRef, rootState]);
+  }, [lastPointerTypeRef, openedAtRef]);
+
 
   return { onPointerDownCapture, onPointerUpCapture, onClickCapture };
 };
@@ -166,14 +103,7 @@ const DropdownMenu = ({
 
   const handleOpenChange = React.useCallback((open: boolean) => {
     if (open) openedAtRef.current = Date.now();
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      logMenuDebug('root_open_change', {
-        open,
-        opened_at_ms: openedAtRef.current,
-        last_pointer_type: lastPointerTypeRef.current,
-      });
-    }
+
     // Compose with the consumer handler — never swallow it.
     onOpenChange?.(open);
   }, [onOpenChange]);
