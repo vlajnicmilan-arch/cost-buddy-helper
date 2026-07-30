@@ -51,6 +51,19 @@ interface Props {
   memberNameMap: Map<string, string>;
 }
 
+/**
+ * i18n ključ poruke potvrde nakon izvršene akcije na odluci.
+ * Samo accept/reject/counter imaju vlastiti tekst; ostalo ostaje "Zabilježeno".
+ */
+export const decisionActionNoteKey = (action: DecisionAction): string => {
+  switch (action) {
+    case 'accept': return 'projects.decisions.acceptedNote';
+    case 'reject': return 'projects.decisions.declinedNote';
+    case 'counter': return 'projects.decisions.counterNote';
+    default: return 'projects.decisions.actionRecorded';
+  }
+};
+
 const dtFmt = (iso: string | undefined) => iso
   ? format(new Date(iso), 'd. MMM yyyy · HH:mm', { locale: hr })
   : '';
