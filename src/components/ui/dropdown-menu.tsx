@@ -36,24 +36,9 @@ const useMenuTouchGuard = () => {
     if (!rootState) fallbackOpenedAtRef.current = Date.now();
     hadPointerDownInsideRef.current = false;
     suppressNextClickRef.current = false;
-    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-    if (MENU_DEBUG_ENABLED) {
-      logMenuDebug('content_mount', {
-        opened_at_ms: openedAtRef.current,
-        opened_at_source: rootState ? 'root_open_change' : 'content_mount_fallback',
-      });
-    }
-    return () => {
-      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-      if (MENU_DEBUG_ENABLED) {
-        logMenuDebug('content_unmount', {
-          opened_at_ms: openedAtRef.current,
-          timestamp_ms: Date.now(),
-        });
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const onPointerDownCapture = React.useCallback((event: React.PointerEvent) => {
     // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
