@@ -116,11 +116,13 @@ describe('report dashboard helpers', () => {
     expect(topCategoriesWithRest(rows, 5, 'Ostale')).toEqual(rows);
   });
 
-  it('dvoredni trgovac: podnaslov samo kad se razlikuje', () => {
+  it('dvoredni trgovac: podnaslov samo kad se razlikuje (nakon čišćenja obje strane)', () => {
     const raw = 'WOLT ZAGREB, 3dd09f2b-c6bc-4603-b819-a392f1234567';
     const clean = cleanFeedTitle(raw);
     expect(clean).toBe('Wolt Zagreb');
-    expect(buildFeedSubtitle(raw, clean)).toContain('3dd09f2b');
+    // UUID rep se briše s obje strane → nema dodatne informacije → nema podnaslova
+    expect(buildFeedSubtitle(raw, clean)).toBe('');
+    expect(buildFeedSubtitle('WOLT ZAGREB, Trg bana Jelacica 1', clean)).toContain('Jelacica');
     expect(buildFeedSubtitle('Kava', 'Kava')).toBe('');
   });
 
