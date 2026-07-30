@@ -308,21 +308,16 @@ export const PaymentSourceTransactionsDialog = ({
     return applyFilters(sourceExpenses, filters);
   }, [sourceExpenses, filters]);
 
-  // Calculate totals
+  // Calculate totals (report layer rules: corrections excluded, transfers never income)
   const { totalIncome, totalExpenses: totalExp, totalTransfers } = useMemo(() => {
-    return sourceExpenses.reduce((acc, e) => {
-      if (e.type === 'income') acc.totalIncome += e.amount;
-      else if (e.type === 'expense') acc.totalExpenses += e.amount;
-      else if (e.type === 'transfer') {
-        if (e.income_source_id === paymentSource?.id) {
-          acc.totalIncome += e.amount;
-        } else {
-          acc.totalTransfers += e.amount;
-        }
-      }
-      return acc;
-    }, { totalIncome: 0, totalExpenses: 0, totalTransfers: 0 });
-  }, [sourceExpenses, paymentSource]);
+    const totals = computeReportTotals(sourceExpenses as any);
+    return {
+      totalIncome: totals.income,
+      totalExpenses: totals.expenses,
+      totalTransfers: totals.transfers,
+    };
+  }, [sourceExpenses]);
+
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
