@@ -20,6 +20,8 @@ import {
   buildExecutiveSummary,
   findLargestExpense,
   aggregateMerchants,
+  computeTransferSplit,
+  buildMetaParts,
 
   type CategoryRow,
 } from '@/lib/reportTotals';
