@@ -2076,7 +2076,17 @@
     "categoryDetails": "Details by category",
     "noTransactionsToCompare": "No transactions to compare in selected periods",
     "netForPeriod": "Net for period",
-    "correctionLabel": "Correction"
+    "correctionLabel": "Correction",
+    "summaryTitle": "Period summary",
+    "kpiTransactions": "Transactions",
+    "transfersLabel": "Transfers",
+    "topCategories": "Top categories",
+    "otherCategories": "Other categories",
+    "summaryMain": "Between {{start}} and {{end}}, {{count}} transactions were recorded: {{income}} in income and {{expenses}} in expenses (net {{net}}).",
+    "summaryCategoriesTwo": "Most went to {{cat1}} ({{pct1}}), then {{cat2}} ({{pct2}}).",
+    "summaryCategoriesOne": "Most went to {{cat1}} ({{pct1}}).",
+    "summaryLargest": "Largest single expense: {{title}}, {{amount}} ({{date}}).",
+    "summaryEmpty": "No transactions in the selected period."
   },
   "update": {
     "available": "New version available!",

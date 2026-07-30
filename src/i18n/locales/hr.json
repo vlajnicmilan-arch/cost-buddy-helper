@@ -2081,7 +2081,17 @@
     "categoryDetails": "Detalji po kategoriji",
     "noTransactionsToCompare": "Nema transakcija za usporedbu u odabranim razdobljima",
     "netForPeriod": "Neto razdoblja",
-    "correctionLabel": "Korekcija"
+    "correctionLabel": "Korekcija",
+    "summaryTitle": "Sažetak razdoblja",
+    "kpiTransactions": "Transakcije",
+    "transfersLabel": "Prijenosi",
+    "topCategories": "Glavne kategorije",
+    "otherCategories": "Ostale kategorije",
+    "summaryMain": "U razdoblju od {{start}} do {{end}} zabilježeno je {{count}} transakcija: {{income}} prihoda i {{expenses}} troškova (neto {{net}}).",
+    "summaryCategoriesTwo": "Najviše je otišlo na {{cat1}} ({{pct1}}), zatim {{cat2}} ({{pct2}}).",
+    "summaryCategoriesOne": "Najviše je otišlo na {{cat1}} ({{pct1}}).",
+    "summaryLargest": "Najveći pojedinačni trošak: {{title}}, {{amount}} ({{date}}).",
+    "summaryEmpty": "U odabranom razdoblju nema transakcija."
   },
   "update": {
     "available": "Nova verzija dostupna!",
