@@ -190,6 +190,13 @@ export const parseKeksPay = (
  * references from a raw bank description so report titles stay readable.
  * Manual entries (no bank noise) come back unchanged.
  */
+/** "aircash.eu" → "Aircash.eu"; the rest of the string is left alone. */
+const capitalizeFirst = (s: string): string => {
+  const i = s.search(/\p{L}/u);
+  if (i < 0) return s;
+  return s.slice(0, i) + s.charAt(i).toUpperCase() + s.slice(i + 1);
+};
+
 export const cleanFeedTitle = (
   raw: string | undefined | null,
   owner?: string | null,
@@ -198,7 +205,7 @@ export const cleanFeedTitle = (
   let s = stripEmojiShortcodes(String(raw));
 
   const keks = parseKeksPay(s, owner);
-  if (keks) return keks.title;
+  if (keks) return capitalizeFirst(keks.title);
 
   // Privacy: drop masked card segments ("Kartica: 416598******1542")
   s = s.replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ');
@@ -212,8 +219,9 @@ export const cleanFeedTitle = (
     s = recipientSplit.slice(1).join(' ');
   }
   s = stripReferenceTails(s);
-  return titleCaseIfShouting(s);
+  return capitalizeFirst(titleCaseIfShouting(s));
 };
+
 
 /**
  * Secondary (raw) line under a cleaned merchant name. Returned only when the
@@ -268,6 +276,71 @@ export const aggregateMerchants = (
     .sort((a, b) => b.amount - a.amount);
 };
 
+// ===== Display helpers (summary + meta line) =====
+
+/**
+ * Drop the leading action prefix of bank descriptions so the summary names the
+ * counterparty: "Placanje racuna - Telemach Hrvatska d.o.o." → "Telemach
+ * Hrvatska d.o.o.". Used only in the summary, never in the transaction list.
+ */
+export const stripActionPrefix = (title: string): string => {
+  if (!title) return '';
+  const parts = String(title).split(/\s+[-–—]\s+/);
+  const last = tidy(parts[parts.length - 1] || '');
+  return last || tidy(String(title));
+};
+
+/** Avoid "d.o.o.." when a merchant name lands before sentence punctuation. */
+export const trimTrailingDot = (s: string): string =>
+  String(s || '').replace(/\.+$/, '');
+
+/**
+ * Meta line segments for one transaction row: falsy and "unknown/other"
+ * labels are dropped, remaining segments deduplicated (case/diacritics
+ * insensitive) preserving order.
+ */
+export const buildMetaParts = (
+  parts: (string | null | undefined)[],
+  hiddenLabels: (string | null | undefined)[] = [],
+): string[] => {
+  const hidden = new Set(
+    hiddenLabels.filter(Boolean).map((l) => normalizeName(String(l))),
+  );
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of parts) {
+    const value = tidy(String(raw || ''));
+    if (!value) continue;
+    const key = normalizeName(value);
+    if (hidden.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+};
+
+export interface TransferSplit {
+  inbound: number;
+  outbound: number;
+}
+
+/**
+ * Inbound / outbound split of transfer rows for one account. Display only —
+ * report totals stay untouched.
+ */
+export const computeTransferSplit = <T extends ReportTotalsTx>(
+  list: T[],
+  accountId?: string | null,
+): TransferSplit => {
+  const split: TransferSplit = { inbound: 0, outbound: 0 };
+  for (const e of list) {
+    if (isCorrectionTx(e)) continue;
+    if (e.type !== 'transfer') continue;
+    if (accountId && e.income_source_id === accountId) split.inbound += e.amount;
+    else split.outbound += e.amount;
+  }
+  return split;
+};
 
 
 // ===== Executive summary (deterministic, template based — no AI) =====
@@ -299,11 +372,12 @@ export interface ExecutiveSummaryFormatters {
 
 export interface ExecutiveSummaryTemplates {
   main: string;              // {{start}} {{end}} {{count}} {{income}} {{expenses}} {{net}}
-  categoriesTwo: string;     // {{cat1}} {{pct1}} {{cat2}} {{pct2}}
-  categoriesOne: string;     // {{cat1}} {{pct1}}
+  categoriesTwo: string;     // {{cat1}} {{pct1}} {{ins}} {{cat2}} {{pct2}}
+  categoriesOne: string;     // {{cat1}} {{pct1}} {{ins}}
   largest: string;           // {{title}} {{amount}} {{date}}
-  merchantsTwo?: string;     // {{cat}} {{m1}} {{m2}}
-  merchantsOne?: string;     // {{cat}} {{m1}}
+  /** Inline fragment merged into the categories sentence. */
+  merchantsInsertTwo?: string; // {{m1}} {{m2}}
+  merchantsInsertOne?: string; // {{m1}}
   empty: string;
 }
 
@@ -311,9 +385,13 @@ export interface ExecutiveSummaryTemplates {
 const fill = (tpl: string, vars: Record<string, string>): string =>
   tpl.replace(/\{\{(\w+)\}\}/g, (_m, k) => (k in vars ? vars[k] : ''));
 
+/** Summary-only merchant display: no action prefix, no trailing dot. */
+const summaryName = (s: string): string => trimTrailingDot(stripActionPrefix(s));
+
 /**
  * Builds 1-3 purely factual sentences from data already present in the report.
- * Never interpretive, never fetches anything.
+ * The merchant interpretation is merged into the categories sentence so the
+ * summary never repeats the same fact twice.
  */
 export const buildExecutiveSummary = (
   input: ExecutiveSummaryInput,
@@ -333,11 +411,34 @@ export const buildExecutiveSummary = (
     }),
   ];
 
+  // Merchants inside the biggest expense category, deduplicated after the
+  // action prefix is stripped ("Placanje racuna - X" and "X" are one merchant).
+  const merchantNames: string[] = [];
+  const seenMerchants = new Set<string>();
+  for (const m of input.topCategoryMerchants || []) {
+    if (!(m.amount > 0)) continue;
+    const name = summaryName(m.name);
+    if (!name) continue;
+    const key = normalizeName(name);
+    if (seenMerchants.has(key)) continue;
+    seenMerchants.add(key);
+    merchantNames.push(name);
+    if (merchantNames.length === 2) break;
+  }
+
+  let ins = '';
+  if (merchantNames.length >= 2 && tpl.merchantsInsertTwo) {
+    ins = fill(tpl.merchantsInsertTwo, { m1: merchantNames[0], m2: merchantNames[1] });
+  } else if (merchantNames.length === 1 && tpl.merchantsInsertOne) {
+    ins = fill(tpl.merchantsInsertOne, { m1: merchantNames[0] });
+  }
+
   const cats = input.categories.filter((c) => c.amount > 0);
   if (cats.length >= 2) {
     sentences.push(fill(tpl.categoriesTwo, {
       cat1: cats[0].name,
       pct1: f.percent(cats[0].amount, input.expenses),
+      ins,
       cat2: cats[1].name,
       pct2: f.percent(cats[1].amount, input.expenses),
     }));
@@ -345,35 +446,26 @@ export const buildExecutiveSummary = (
     sentences.push(fill(tpl.categoriesOne, {
       cat1: cats[0].name,
       pct1: f.percent(cats[0].amount, input.expenses),
+      ins,
     }));
   }
 
-  // Interpretive-but-factual sentence: merchants inside the biggest category.
-  const merchants = (input.topCategoryMerchants || []).filter((m) => m.amount > 0);
-  if (cats.length >= 1 && merchants.length >= 1) {
-    if (merchants.length >= 2 && tpl.merchantsTwo) {
-      sentences.push(fill(tpl.merchantsTwo, {
-        cat: cats[0].name,
-        m1: merchants[0].name,
-        m2: merchants[1].name,
-      }));
-    } else if (tpl.merchantsOne) {
-      sentences.push(fill(tpl.merchantsOne, {
-        cat: cats[0].name,
-        m1: merchants[0].name,
-      }));
-    }
-  }
-
   const largest = input.largestExpense;
+  const largestName = largest ? summaryName(largest.title) : '';
+  const repeatsTopMerchant =
+    !!merchantNames.length &&
+    !!largestName &&
+    normalizeName(largestName) === normalizeName(merchantNames[0]);
 
-  if (largest && largest.amount > 0) {
+  if (largest && largest.amount > 0 && !repeatsTopMerchant) {
     sentences.push(fill(tpl.largest, {
-      title: largest.title,
+      title: largestName || largest.title,
       amount: f.currency(largest.amount),
       date: f.date(largest.date),
     }));
   }
+
+
 
   return sentences;
 };

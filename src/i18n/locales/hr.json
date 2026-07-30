@@ -2088,15 +2088,18 @@
     "topCategories": "Glavne kategorije",
     "otherCategories": "Ostale kategorije",
     "summaryMain": "U razdoblju od {{start}} do {{end}} zabilježeno je {{count}} transakcija: {{income}} prihoda i {{expenses}} troškova (neto {{net}}).",
-    "summaryCategoriesTwo": "Najviše je otišlo na {{cat1}} ({{pct1}}), zatim {{cat2}} ({{pct2}}).",
-    "summaryCategoriesOne": "Najviše je otišlo na {{cat1}} ({{pct1}}).",
+    "summaryCategoriesTwo": "Najviše je otišlo na {{cat1}} ({{pct1}}{{ins}}), zatim {{cat2}} ({{pct2}}).",
+    "summaryCategoriesOne": "Najviše je otišlo na {{cat1}} ({{pct1}}{{ins}}).",
     "summaryLargest": "Najveći pojedinačni trošak: {{title}}, {{amount}} ({{date}}).",
     "summaryEmpty": "U odabranom razdoblju nema transakcija.",
-    "summaryMerchantsTwo": "Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}} i {{m2}}.",
-    "summaryMerchantsOne": "Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}}.",
     "generatedIn": "Generirano u Centru · {{date}}",
     "transactionReportTitle": "{{source}} — izvješće transakcija",
-    "exportPeriodTitle": "Razdoblje izvoza"
+    "exportPeriodTitle": "Razdoblje izvoza",
+    "summaryMerchantsInsertTwo": " — prvenstveno {{m1}} i {{m2}}",
+    "summaryMerchantsInsertOne": " — prvenstveno {{m1}}",
+    "transfersSplit": "Prijenosi:",
+    "transfersIn": "ulazni +{{amount}}",
+    "transfersOut": "izlazni −{{amount}}"
   },
   "update": {
     "available": "Nova verzija dostupna!",

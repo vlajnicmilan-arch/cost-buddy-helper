@@ -2083,15 +2083,18 @@
     "topCategories": "Wichtigste Kategorien",
     "otherCategories": "Weitere Kategorien",
     "summaryMain": "Im Zeitraum von {{start}} bis {{end}} wurden {{count}} Transaktionen erfasst: {{income}} Einnahmen und {{expenses}} Ausgaben (netto {{net}}).",
-    "summaryCategoriesTwo": "Am meisten entfiel auf {{cat1}} ({{pct1}}), danach {{cat2}} ({{pct2}}).",
-    "summaryCategoriesOne": "Am meisten entfiel auf {{cat1}} ({{pct1}}).",
+    "summaryCategoriesTwo": "Am meisten entfiel auf {{cat1}} ({{pct1}}{{ins}}), danach {{cat2}} ({{pct2}}).",
+    "summaryCategoriesOne": "Am meisten entfiel auf {{cat1}} ({{pct1}}{{ins}}).",
     "summaryLargest": "Größte Einzelausgabe: {{title}}, {{amount}} ({{date}}).",
     "summaryEmpty": "Keine Transaktionen im ausgewählten Zeitraum.",
-    "summaryMerchantsTwo": "Die meisten Mittel flossen in {{cat}}, vor allem {{m1}} und {{m2}}.",
-    "summaryMerchantsOne": "Die meisten Mittel flossen in {{cat}}, vor allem {{m1}}.",
     "generatedIn": "Erstellt in Centar · {{date}}",
     "transactionReportTitle": "{{source}} — Transaktionsbericht",
-    "exportPeriodTitle": "Exportzeitraum"
+    "exportPeriodTitle": "Exportzeitraum",
+    "summaryMerchantsInsertTwo": " — vor allem {{m1}} und {{m2}}",
+    "summaryMerchantsInsertOne": " — vor allem {{m1}}",
+    "transfersSplit": "Überweisungen:",
+    "transfersIn": "eingehend +{{amount}}",
+    "transfersOut": "ausgehend −{{amount}}"
   },
   "update": {
     "available": "Neue Version verfügbar!",

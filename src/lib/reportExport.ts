@@ -20,6 +20,8 @@ import {
   buildExecutiveSummary,
   findLargestExpense,
   aggregateMerchants,
+  computeTransferSplit,
+  buildMetaParts,
 
   type CategoryRow,
 } from '@/lib/reportTotals';
@@ -56,6 +58,8 @@ export interface ReportData {
   byCategory: Record<string, number>;
   byPaymentSource: Record<string, number>;
   currency?: CurrencyConfig;
+  /** Account the report is scoped to — used for the inbound/outbound split. */
+  accountId?: string | null;
 }
 
 const formatDate = (date: Date): string => {
@@ -326,16 +330,33 @@ export const generatePDFReport = async (
     { label: i18n.t('reports.kpiTransactions', 'Transakcije') as string, value: String(data.expenses.length), tone: 'accent' },
   ]);
 
-  // --- Transfers, discrete line ---
-  y += 4;
-  doc.setFont('Inter', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text(
-    `${toAscii(i18n.t('reports.transfersLabel', 'Prijenosi') as string)}: ${formatCurrency(data.totals.transfers, data.currency)}`,
-    REPORT_MARGIN_X,
-    y,
-  );
+  // --- Transfers, discrete line (inbound / outbound split, display only) ---
+  const transferSplit = computeTransferSplit(data.expenses as any, data.accountId);
+  const transferSegments: string[] = [];
+  if (transferSplit.inbound > 0) {
+    transferSegments.push(i18n.t('reports.transfersIn', {
+      amount: formatCurrency(transferSplit.inbound, data.currency),
+      defaultValue: 'ulazni +{{amount}}',
+    }) as string);
+  }
+  if (transferSplit.outbound > 0) {
+    transferSegments.push(i18n.t('reports.transfersOut', {
+      amount: formatCurrency(transferSplit.outbound, data.currency),
+      defaultValue: 'izlazni −{{amount}}',
+    }) as string);
+  }
+  if (transferSegments.length > 0) {
+    y += 4;
+    doc.setFont('Inter', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `${toAscii(i18n.t('reports.transfersSplit', 'Prijenosi:') as string)} ${transferSegments.join(' · ')}`,
+      REPORT_MARGIN_X,
+      y,
+    );
+  }
+
 
   // --- Executive summary (deterministic) ---
   const allCategoryRows = aggregateCategoryTotalsByName(
@@ -399,8 +420,8 @@ export const generatePDFReport = async (
       categoriesTwo: i18n.t('reports.summaryCategoriesTwo') as string,
       categoriesOne: i18n.t('reports.summaryCategoriesOne') as string,
       largest: i18n.t('reports.summaryLargest') as string,
-      merchantsTwo: i18n.t('reports.summaryMerchantsTwo') as string,
-      merchantsOne: i18n.t('reports.summaryMerchantsOne') as string,
+      merchantsInsertTwo: i18n.t('reports.summaryMerchantsInsertTwo') as string,
+      merchantsInsertOne: i18n.t('reports.summaryMerchantsInsertOne') as string,
       empty: i18n.t('reports.summaryEmpty') as string,
     },
   );
@@ -465,18 +486,18 @@ export const generatePDFReport = async (
       const signed: 'pos' | 'neg' | 'neutral' = isCorrection
         ? 'neutral'
         : expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
-      const otherLabel = (i18n.t('common.other', 'Ostalo') as string).toLowerCase();
-      const categoryLabel = categoryInfo.name && categoryInfo.name.toLowerCase() !== otherLabel
-        ? categoryInfo.name
-        : '';
-      const meta: string[] = [categoryLabel, paymentInfo.name];
-      if (isCorrection) meta.push(i18n.t('reports.correctionLabel', 'Korekcija') as string);
-      else if (expense.type !== 'expense') meta.push(typeInfo.name);
+      const hiddenMeta = [
+        i18n.t('common.other', 'Ostalo') as string,
+        i18n.t('common.unknown', 'Nepoznato') as string,
+      ];
+      const metaSource: (string | null | undefined)[] = isCorrection
+        ? [i18n.t('reports.correctionLabel', 'Korekcija') as string]
+        : [categoryInfo.name, paymentInfo.name, expense.type !== 'expense' ? typeInfo.name : ''];
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
         rawDescription: expense.description || '',
-        metaParts: meta.filter(Boolean) as string[],
+        metaParts: buildMetaParts(metaSource, hiddenMeta),
         amount: expense.amount,
         signed,
       };
