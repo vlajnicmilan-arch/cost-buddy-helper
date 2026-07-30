@@ -27,7 +27,6 @@ export const isCorrectionTx = (tx: { expense_nature?: string | null }): boolean 
  */
 export const computeReportTotals = <T extends ReportTotalsTx>(
   list: T[],
-  sourceId?: string | null,
 ): ReportTotals => {
   const acc = list.reduce<ReportTotals>(
     (a, e) => {
