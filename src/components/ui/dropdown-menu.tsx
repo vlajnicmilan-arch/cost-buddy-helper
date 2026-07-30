@@ -93,7 +93,7 @@ const useMenuTouchGuard = () => {
       const now = Date.now();
       logMenuDebug('click_capture', {
         event_type: event.type,
-        pointer_type: 'mouse',
+        pointer_type: (event.nativeEvent as PointerEvent).pointerType ?? '',
         opened_delta_ms: now - openedAtRef.current,
         had_pointer_down_inside: hadPointerDownInsideRef.current,
         suppress: suppressNextClickRef.current,
