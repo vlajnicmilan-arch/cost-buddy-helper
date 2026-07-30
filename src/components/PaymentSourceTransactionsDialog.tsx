@@ -1747,6 +1747,14 @@ export const PaymentSourceTransactionsDialog = ({
           findDuplicates={findDuplicates}
         />
       )}
+
+      {/* Export period picker (default: this month) */}
+      <ExportPeriodDialog
+        open={exportPeriodOpen}
+        onOpenChange={(o) => { setExportPeriodOpen(o); if (!o) setPendingExport(null); }}
+        dates={filteredSourceExpenses.map((e) => e.date)}
+        onConfirm={(range) => runPendingExport(range)}
+      />
     </>
   );
 };
