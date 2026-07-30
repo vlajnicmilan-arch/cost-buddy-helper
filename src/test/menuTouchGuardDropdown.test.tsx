@@ -1,0 +1,129 @@
+import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+
+vi.mock('@/lib/diagnosticLogger', () => ({ logDiagnostic: vi.fn() }));
+
+beforeAll(() => {
+  // jsdom lacks the pointer capture APIs Radix touches.
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+});
+
+const Harness = ({
+  onSelect,
+  onOpenChange,
+}: {
+  onSelect: () => void;
+  onOpenChange?: (open: boolean) => void;
+}) => (
+  <DropdownMenu onOpenChange={onOpenChange}>
+    <DropdownMenuTrigger aria-label="more">⋯</DropdownMenuTrigger>
+    <DropdownMenuContent>
+      <DropdownMenuItem onClick={onSelect}>Prikaži na dashboardu</DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
+/**
+ * jsdom cannot deliver Radix's pointerdown-open path, so the menu is opened via
+ * the keyboard. What matters for the guard is the onOpenChange(true) anchor and
+ * the pointerType of the last pointerdown, both simulated explicitly.
+ */
+// jsdom has no PointerEvent constructor, so fireEvent drops `pointerType`.
+const dispatchPointer = (target: Element | Document, type: string, pointerType: string) => {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  target.dispatchEvent(event);
+};
+
+const openMenu = (pointerType: string) => {
+  if (pointerType) {
+    dispatchPointer(document.body, 'pointerdown', pointerType);
+  }
+  fireEvent.keyDown(screen.getByLabelText('more'), { key: 'Enter' });
+};
+
+
+
+describe('dropdown-menu touch guard (open-anchored)', () => {
+  it('suppresses the ghost click that follows the opening tap (stale mount scenario)', async () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+
+    openMenu('touch');
+    const item = await screen.findByText('Prikaži na dashboardu');
+
+    // Ghost click: no pointerdown and no pointerup inside the content.
+    fireEvent.click(item, { detail: 0 });
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('allows a deliberate tap that starts inside the content', async () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+
+    openMenu('touch');
+    const item = await screen.findByText('Prikaži na dashboardu');
+
+    dispatchPointer(item, 'pointerdown', 'touch');
+    dispatchPointer(item, 'pointerup', 'touch');
+    fireEvent.click(item, { detail: 1 });
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows a slow deliberate click after the guard window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const onSelect = vi.fn();
+      render(<Harness onSelect={onSelect} />);
+
+      openMenu('touch');
+      const item = await screen.findByText('Prikaži na dashboardu');
+
+      vi.advanceTimersByTime(1500);
+      fireEvent.click(item, { detail: 1 });
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps mouse press-drag-release working', async () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+
+    openMenu('mouse');
+    const item = await screen.findByText('Prikaži na dashboardu');
+
+    dispatchPointer(item, 'pointerup', 'mouse');
+    fireEvent.click(item, { detail: 1 });
+
+    // Radix itself synthesises the click on pointerup, so >= 1 activation.
+    expect(onSelect).toHaveBeenCalled();
+  });
+
+  it('still calls the consumer onOpenChange (composition)', async () => {
+    const onOpenChange = vi.fn();
+    render(<Harness onSelect={vi.fn()} onOpenChange={onOpenChange} />);
+
+    openMenu('touch');
+    await screen.findByText('Prikaži na dashboardu');
+
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+});
