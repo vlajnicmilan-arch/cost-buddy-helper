@@ -32,6 +32,7 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
+import { computeReportTotals, buildCategoryTotalsById } from '@/lib/reportTotals';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
@@ -781,10 +782,8 @@ export const PaymentSourceTransactionsDialog = ({
     const byCategory: Record<string, number> = {};
     const byPaymentSource: Record<string, number> = {};
     
+    Object.assign(byCategory, buildCategoryTotalsById(filteredSourceExpenses as any));
     filteredSourceExpenses.forEach(e => {
-      if (e.type === 'expense') {
-        byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
-      }
       const ps = e.payment_source || 'cash';
       byPaymentSource[ps] = (byPaymentSource[ps] || 0) + e.amount;
     });

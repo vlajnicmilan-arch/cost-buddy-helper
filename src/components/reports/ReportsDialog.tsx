@@ -62,6 +62,7 @@ import {
   ReportData, 
   IncomeReportData 
 } from '@/lib/reportExport';
+import { computeReportTotals, buildCategoryTotalsById } from '@/lib/reportTotals';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 import { cn } from '@/lib/utils';
@@ -123,22 +124,13 @@ const INCOME_CATEGORY_COLORS: Record<string, string> = {
 };
 
 const calculateStats = (expenseList: Expense[]) => {
-  const income = expenseList
-    .filter(e => e.type === 'income')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const expenseTotal = expenseList
-    .filter(e => e.type === 'expense')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const transfers = expenseList
-    .filter(e => e.type === 'transfer')
-    .reduce((sum, e) => sum + e.amount, 0);
+  // Report layer: corrections excluded, transfers never counted as income.
+  const reportTotals = computeReportTotals(expenseList as any);
+  const income = reportTotals.income;
+  const expenseTotal = reportTotals.expenses;
+  const transfers = reportTotals.transfers;
 
-  const byCategory: Record<string, number> = {};
-  expenseList
-    .filter(e => e.type === 'expense')
-    .forEach(e => {
-      byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
-    });
+  const byCategory: Record<string, number> = buildCategoryTotalsById(expenseList as any);
 
   // Bucket by canonical payment source key so raw UUID / `custom:UUID` /
   // built-in slug collapse into one stable bucket. NULL/empty → '__unknown__'
