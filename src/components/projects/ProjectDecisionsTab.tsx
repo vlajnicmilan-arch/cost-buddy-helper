@@ -51,6 +51,19 @@ interface Props {
   memberNameMap: Map<string, string>;
 }
 
+/**
+ * i18n ključ poruke potvrde nakon izvršene akcije na odluci.
+ * Samo accept/reject/counter imaju vlastiti tekst; ostalo ostaje "Zabilježeno".
+ */
+export const decisionActionNoteKey = (action: DecisionAction): string => {
+  switch (action) {
+    case 'accept': return 'projects.decisions.acceptedNote';
+    case 'reject': return 'projects.decisions.declinedNote';
+    case 'counter': return 'projects.decisions.counterNote';
+    default: return 'projects.decisions.actionRecorded';
+  }
+};
+
 const dtFmt = (iso: string | undefined) => iso
   ? format(new Date(iso), 'd. MMM yyyy · HH:mm', { locale: hr })
   : '';
@@ -147,7 +160,7 @@ export function ProjectDecisionsTab({
         }}
         onAction={async (action, message, price, attachments) => {
           const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
-          if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
+          if (res.ok) showSuccess(t(decisionActionNoteKey(action), 'Zabilježeno'));
           return res;
         }}
         onRequestAdmin={async (type) => {
