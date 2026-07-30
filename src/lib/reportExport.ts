@@ -19,6 +19,8 @@ import {
   buildFeedSubtitle,
   buildExecutiveSummary,
   findLargestExpense,
+  aggregateMerchants,
+
   type CategoryRow,
 } from '@/lib/reportTotals';
 
@@ -94,7 +96,9 @@ const drawTransactionFeed = (
   currency: CurrencyConfig | undefined,
   startY: number,
   locale: string,
+  owner?: string | null,
 ): void => {
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const leftX = REPORT_MARGIN_X;
@@ -313,8 +317,8 @@ export const generatePDFReport = async (
   const numberLocale = data.currency?.locale || 'hr-HR';
   const dateLocale = language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US';
 
-  // --- KPI strip ---
-  let y = drawKpiCards(doc, bodyStartY, [
+  // --- KPI strip (compact) ---
+  let y = drawKpiCards(doc, bodyStartY - 3, [
     { label: i18n.t('reports.income', 'Prihodi') as string, value: formatCurrency(data.totals.income, data.currency), tone: 'income' },
     { label: i18n.t('reports.expenses', 'Troškovi') as string, value: formatCurrency(data.totals.expenses, data.currency), tone: 'expense' },
     { label: i18n.t('reports.netForPeriod', 'Neto razdoblja') as string, value: formatCurrency(data.totals.balance, data.currency), tone: data.totals.balance >= 0 ? 'income' : 'expense' },
@@ -322,7 +326,7 @@ export const generatePDFReport = async (
   ]);
 
   // --- Transfers, discrete line ---
-  y += 5;
+  y += 4;
   doc.setFont('Inter', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
@@ -347,6 +351,25 @@ export const generatePDFReport = async (
       date: e.date,
     })),
   );
+
+  // Merchants inside the biggest expense category (post-extraction).
+  const topCategoryName = allCategoryRows[0]?.name;
+  const topCategoryMerchants = topCategoryName
+    ? aggregateMerchants(
+        data.expenses
+          .filter(
+            (e) =>
+              e.type === 'expense' &&
+              !isCorrectionTx(e as any) &&
+              getCategoryInfo(e.category as any).name === topCategoryName,
+          )
+          .map((e) => ({
+            title: cleanFeedTitle(e.description, owner),
+            amount: e.amount,
+          })),
+      ).filter((m) => m.name.toLowerCase() !== topCategoryName.toLowerCase())
+    : [];
+
   const summarySentences = buildExecutiveSummary(
     {
       start: data.dateRange.start,
@@ -356,9 +379,10 @@ export const generatePDFReport = async (
       expenses: data.totals.expenses,
       net: data.totals.balance,
       categories: allCategoryRows,
+      topCategoryMerchants,
       largestExpense: largest
         ? {
-            title: cleanFeedTitle(largest.description) || getCategoryInfo(largest.category as any).name,
+            title: cleanFeedTitle(largest.description, owner) || getCategoryInfo(largest.category as any).name,
             amount: largest.amount,
             date: largest.date as Date,
           }
@@ -374,34 +398,36 @@ export const generatePDFReport = async (
       categoriesTwo: i18n.t('reports.summaryCategoriesTwo') as string,
       categoriesOne: i18n.t('reports.summaryCategoriesOne') as string,
       largest: i18n.t('reports.summaryLargest') as string,
+      merchantsTwo: i18n.t('reports.summaryMerchantsTwo') as string,
+      merchantsOne: i18n.t('reports.summaryMerchantsOne') as string,
       empty: i18n.t('reports.summaryEmpty') as string,
     },
   );
 
-  y += 9;
+  y += 7;
   doc.setFont('Inter', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
   doc.text(toAscii(i18n.t('reports.summaryTitle', 'Sažetak razdoblja') as string), REPORT_MARGIN_X, y);
-  y += 5;
+  y += 4.5;
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const textWidth = pageWidth - REPORT_MARGIN_X * 2;
   doc.setFont('Inter', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
   const summaryLines = doc.splitTextToSize(toAscii(summarySentences.join(' ')), textWidth) as string[];
   doc.text(summaryLines, REPORT_MARGIN_X, y);
-  y += summaryLines.length * 4.6;
+  y += summaryLines.length * 4.1;
 
   // --- Category bars (top 5 + rest) ---
   if (allCategoryRows.length > 0) {
-    y += 7;
+    y += 5;
     doc.setFont('Inter', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10.5);
     doc.setTextColor(15, 23, 42);
     doc.text(toAscii(i18n.t('reports.topCategories', 'Glavne kategorije') as string), REPORT_MARGIN_X, y);
-    y += 6;
+    y += 5;
     y = drawCategoryBars(
       doc,
       y,
@@ -412,37 +438,19 @@ export const generatePDFReport = async (
     );
   }
 
-  // --- Full category table (detail, page 2) ---
-  if (allCategoryRows.length > 5) {
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.setFont('Inter', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text(toAscii('Troškovi po kategorijama'), REPORT_MARGIN_X, 20);
-    brandAutoTable(doc, autoTable, {
-      startY: 24,
-      head: [['Kategorija', 'Iznos', 'Udio']],
-      body: allCategoryRows.map(({ name, amount }) => [
-        toAscii(name),
-        formatCurrency(amount, data.currency),
-        formatPercent(amount, data.totals.expenses, numberLocale),
-      ]),
-      margin: { left: REPORT_MARGIN_X },
-      tableWidth: 120,
-    });
-  }
-
-  doc.addPage();
-  doc.setFontSize(14);
+  // --- Transactions continue right below, no forced page break ---
+  y += 5;
+  doc.setFontSize(11);
   doc.setFont('Inter', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(toAscii(i18n.t('reports.transactionList', 'Popis transakcija') as string), REPORT_MARGIN_X, 20);
+  doc.text(toAscii(i18n.t('reports.transactionList', 'Popis transakcija') as string), REPORT_MARGIN_X, y);
+  y += 6;
 
   if (data.expenses.length === 0) {
     doc.setFont('Inter', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(toAscii(i18n.t('reports.noTransactionsInPeriod', 'Nema transakcija u odabranom razdoblju') as string), REPORT_MARGIN_X, 30);
+    doc.text(toAscii(i18n.t('reports.noTransactionsInPeriod', 'Nema transakcija u odabranom razdoblju') as string), REPORT_MARGIN_X, y);
   }
 
   const feedItems: FeedItem[] = data.expenses
@@ -474,7 +482,7 @@ export const generatePDFReport = async (
     });
 
 
-  drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
+  drawTransactionFeed(doc, feedItems, data.currency, y, dateLocale, owner);
 
 
   const period = `${formatDate(data.dateRange.start)}_${formatDate(data.dateRange.end)}`.replace(/\./g, '-');
@@ -482,12 +490,17 @@ export const generatePDFReport = async (
   drawReportFooter(doc, {
     brand: fullBrand,
     pageLabel: i18n.t('reportBranding.pageXofY'),
+    generatedLabel: i18n.t('reports.generatedIn', {
+      date: new Date().toLocaleDateString(dateLocale),
+      defaultValue: 'Generirano u Centru · {{date}}',
+    }) as string,
     intendedForLabel: fullBrand.confidentiality !== 'none' && owner
       ? `${i18n.t('reportBranding.intendedFor')}: ${owner}`
       : undefined,
   });
   await exportPDFDoc(doc, fileName, mode);
 };
+
 
 export const generateCSVReport = async (data: ReportData, mode: ExportMode = 'save'): Promise<void> => {
   const headers = ['Datum', 'Tip', 'Opis', 'Kategorija', 'Način plaćanja', 'Iznos'];

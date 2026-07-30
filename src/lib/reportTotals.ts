@@ -110,15 +110,97 @@ export const topCategoriesWithRest = (
   return top;
 };
 
+// ===== Merchant extraction =====
+
+/** Emoji shortcodes used by mobile payment apps (":moneybag:"). */
+const EMOJI_SHORTCODE = /:[a-z_]+:/gi;
+
+/** Masked card prefixes: "462765XXXXXX7262" / "416598******1542". */
+const MASKED_CARD = /\b\d{6}[X*x•]{4,}\d{4}\b/g;
+
+const stripEmojiShortcodes = (s: string): string => s.replace(EMOJI_SHORTCODE, ' ');
+
+const tidy = (s: string): string =>
+  s
+    .replace(/[,\s]+(?=$|[,\s])/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s,;:–-]+/, '')
+    .replace(/[\s,;:–-]+$/g, '')
+    .trim();
+
+/** Drop UUID / long-hex / long numeric reference tails. */
+const stripReferenceTails = (s: string): string => {
+  let out = s;
+  out = out.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ' ');
+  out = out.replace(/\b[0-9a-f-]{32,}\b/gi, ' ');
+  out = out.replace(/\b[0-9a-f]{16,}\b/gi, ' ');
+  out = tidy(out);
+  out = out.replace(/[\s,–-]+\d{6,}\s*$/g, '');
+  return tidy(out);
+};
+
+/** "AIRCASH.EU ZAGREB" → "Aircash.eu Zagreb"; mixed-case input untouched. */
+const titleCaseIfShouting = (s: string): string => {
+  const letters = s.replace(/[^\p{L}]/gu, '');
+  if (!letters || letters !== letters.toUpperCase()) return s;
+  return s
+    .split(' ')
+    .map((w) =>
+      w
+        .split('.')
+        .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p))
+        .join('.'),
+    )
+    .join(' ');
+};
+
+const normalizeName = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+
+/**
+ * KEKS Pay style descriptions:
+ * 'KEKS Pay - Vinka P šalje Milan V za "Kava" - 326633655, <uuid>'
+ * → "{other party} · {purpose}". The party matching the report owner is
+ * dropped; otherwise the sender (first party) is used.
+ */
+export const parseKeksPay = (
+  raw: string,
+  owner?: string | null,
+): { title: string } | null => {
+  const m = raw.match(/keks\s*pay\s*[-–:]\s*(.+?)\s+(?:šalje|salje|sends|sendet)\s+(.+?)(?:\s+za\s+(.+))?$/i);
+  if (!m) return null;
+  const sender = tidy(stripEmojiShortcodes(m[1]));
+  const receiver = tidy(stripReferenceTails(stripEmojiShortcodes(m[2] || '')));
+  const purposeRaw = m[3] ? stripReferenceTails(stripEmojiShortcodes(m[3])) : '';
+  const purpose = tidy(purposeRaw.replace(/^["'“„]/, '').replace(/["'”“].*$/, ''));
+
+  const o = owner ? normalizeName(owner) : '';
+  let other = sender;
+  if (o && normalizeName(sender) === o && receiver) other = receiver;
+
+  const title = [other, purpose].filter(Boolean).join(' · ');
+  return { title: tidy(title) };
+};
+
 /**
  * Strip UUIDs, masked card numbers, long hex chains and trailing numeric
  * references from a raw bank description so report titles stay readable.
+ * Manual entries (no bank noise) come back unchanged.
  */
-export const cleanFeedTitle = (raw: string | undefined | null): string => {
+export const cleanFeedTitle = (
+  raw: string | undefined | null,
+  owner?: string | null,
+): string => {
   if (!raw) return '';
-  let s = String(raw);
+  let s = stripEmojiShortcodes(String(raw));
+
+  const keks = parseKeksPay(s, owner);
+  if (keks) return keks.title;
+
   // Privacy: drop masked card segments ("Kartica: 416598******1542")
   s = s.replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ');
+  // Bare masked card number, typically leading ("462765XXXXXX7262, AIRCASH.EU")
+  s = s.replace(MASKED_CARD, ' ');
   // Drop redundant "Primatelj:" / "Recipient:" tails when a cleaner name exists
   const recipientSplit = s.split(/\b(?:primatelj|primalac|recipient|empfänger)\s*:/i);
   if (recipientSplit.length > 1 && recipientSplit[0].trim().length >= 3) {
@@ -126,34 +208,64 @@ export const cleanFeedTitle = (raw: string | undefined | null): string => {
   } else if (recipientSplit.length > 1) {
     s = recipientSplit.slice(1).join(' ');
   }
-  s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
-  s = s.replace(/\b[0-9a-f]{16,}\b/gi, '');
-  s = s.replace(/[,\s]+(?=$|[,\s])/g, ' ');
-  s = s.replace(/[\s,–-]+\d{6,}\s*$/g, '');
-  s = s.replace(/\s+/g, ' ').replace(/[\s,;:–-]+$/g, '').trim();
-  return s;
+  s = stripReferenceTails(s);
+  return titleCaseIfShouting(s);
 };
 
 /**
  * Secondary (raw) line under a cleaned merchant name. Returned only when the
  * raw description carries extra information beyond the cleaned title.
- * Card numbers stay stripped for privacy.
+ * Card numbers stay stripped for privacy; comparison happens after both
+ * sides are cleaned.
  */
 export const buildFeedSubtitle = (
   raw: string | undefined | null,
   cleanTitle: string,
 ): string => {
   if (!raw) return '';
-  const masked = String(raw)
-    .replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/[\s,;:–-]+$/g, '')
-    .trim();
+  const masked = tidy(
+    stripReferenceTails(
+      stripEmojiShortcodes(String(raw))
+        .replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ')
+        .replace(MASKED_CARD, ' '),
+    ),
+  );
   if (!masked) return '';
-  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-  if (norm(masked) === norm(cleanTitle)) return '';
+  if (normalizeName(masked) === normalizeName(cleanTitle)) return '';
   return masked;
 };
+
+// ===== Merchant aggregation (for the interpretive summary sentence) =====
+
+export interface MerchantRow {
+  name: string;
+  amount: number;
+}
+
+/**
+ * Sum amounts per extracted merchant name, biggest first.
+ * Entries without a usable merchant name are ignored.
+ */
+export const aggregateMerchants = (
+  items: { title: string; amount: number }[],
+): MerchantRow[] => {
+  const byName = new Map<string, number>();
+  const displayNames = new Map<string, string>();
+  for (const it of items) {
+    const name = tidy(it.title || '');
+    if (!name || name === '—') continue;
+    if (!(it.amount > 0)) continue;
+    const key = normalizeName(name);
+    const prev = byName.get(key);
+    byName.set(key, (prev || 0) + it.amount);
+    if (!prev) displayNames.set(key, name);
+  }
+  return Array.from(byName.entries())
+    .map(([key, amount]) => ({ name: displayNames.get(key) || key, amount }))
+    .sort((a, b) => b.amount - a.amount);
+};
+
+
 
 // ===== Executive summary (deterministic, template based — no AI) =====
 
@@ -172,6 +284,8 @@ export interface ExecutiveSummaryInput {
   net: number;
   categories: CategoryRow[];        // aggregated by name, sorted desc
   largestExpense?: SummaryLargestExpense | null;
+  /** Merchants inside the biggest expense category, sorted desc. */
+  topCategoryMerchants?: MerchantRow[];
 }
 
 export interface ExecutiveSummaryFormatters {
@@ -185,8 +299,11 @@ export interface ExecutiveSummaryTemplates {
   categoriesTwo: string;     // {{cat1}} {{pct1}} {{cat2}} {{pct2}}
   categoriesOne: string;     // {{cat1}} {{pct1}}
   largest: string;           // {{title}} {{amount}} {{date}}
+  merchantsTwo?: string;     // {{cat}} {{m1}} {{m2}}
+  merchantsOne?: string;     // {{cat}} {{m1}}
   empty: string;
 }
+
 
 const fill = (tpl: string, vars: Record<string, string>): string =>
   tpl.replace(/\{\{(\w+)\}\}/g, (_m, k) => (k in vars ? vars[k] : ''));
@@ -228,7 +345,25 @@ export const buildExecutiveSummary = (
     }));
   }
 
+  // Interpretive-but-factual sentence: merchants inside the biggest category.
+  const merchants = (input.topCategoryMerchants || []).filter((m) => m.amount > 0);
+  if (cats.length >= 1 && merchants.length >= 1) {
+    if (merchants.length >= 2 && tpl.merchantsTwo) {
+      sentences.push(fill(tpl.merchantsTwo, {
+        cat: cats[0].name,
+        m1: merchants[0].name,
+        m2: merchants[1].name,
+      }));
+    } else if (tpl.merchantsOne) {
+      sentences.push(fill(tpl.merchantsOne, {
+        cat: cats[0].name,
+        m1: merchants[0].name,
+      }));
+    }
+  }
+
   const largest = input.largestExpense;
+
   if (largest && largest.amount > 0) {
     sentences.push(fill(tpl.largest, {
       title: largest.title,
