@@ -5,9 +5,7 @@ import {
   aggregateCategoryTotalsByName,
   formatPercent,
   isCorrectionTx,
-  buildExecutiveSummary,
   buildMetaParts,
-  cleanFeedTitle,
   stripActionPrefix,
   computeTransferSplit,
 } from '@/lib/reportTotals';
