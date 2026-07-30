@@ -294,7 +294,8 @@ export const generatePDFReport = async (
   mode: ExportMode = 'save',
   brand: ReportBrandOptions = {},
 ): Promise<void> => {
-  const { jsPDF, autoTable } = await loadPdfLibs();
+  const { jsPDF } = await loadPdfLibs();
+
   await ensureReportLogo();
   const doc = new jsPDF();
   applyBrandFont(doc);
