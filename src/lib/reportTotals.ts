@@ -190,6 +190,13 @@ export const parseKeksPay = (
  * references from a raw bank description so report titles stay readable.
  * Manual entries (no bank noise) come back unchanged.
  */
+/** "aircash.eu" → "Aircash.eu"; the rest of the string is left alone. */
+const capitalizeFirst = (s: string): string => {
+  const i = s.search(/\p{L}/u);
+  if (i < 0) return s;
+  return s.slice(0, i) + s.charAt(i).toUpperCase() + s.slice(i + 1);
+};
+
 export const cleanFeedTitle = (
   raw: string | undefined | null,
   owner?: string | null,
@@ -198,7 +205,7 @@ export const cleanFeedTitle = (
   let s = stripEmojiShortcodes(String(raw));
 
   const keks = parseKeksPay(s, owner);
-  if (keks) return keks.title;
+  if (keks) return capitalizeFirst(keks.title);
 
   // Privacy: drop masked card segments ("Kartica: 416598******1542")
   s = s.replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ');
@@ -212,8 +219,9 @@ export const cleanFeedTitle = (
     s = recipientSplit.slice(1).join(' ');
   }
   s = stripReferenceTails(s);
-  return titleCaseIfShouting(s);
+  return capitalizeFirst(titleCaseIfShouting(s));
 };
+
 
 /**
  * Secondary (raw) line under a cleaned merchant name. Returned only when the
