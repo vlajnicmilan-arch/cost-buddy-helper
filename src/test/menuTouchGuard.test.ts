@@ -73,3 +73,28 @@ describe('menuTouchGuard', () => {
     ).toBe(false);
   });
 });
+
+describe('mouse pointerup exemption', () => {
+  const base = {
+    pointerType: '',
+    openedAt: 1_000,
+    now: 1_080,
+    hadPointerDownInside: false,
+  };
+
+  it('does not suppress a click right after a mouse pointerup on the content', () => {
+    expect(
+      shouldSuppressMenuActivation({
+        ...base,
+        lastPointerUpType: 'mouse',
+        lastPointerUpAt: 1_070,
+      }),
+    ).toBe(true === false);
+  });
+
+  it('suppresses a ghost click with no pointerup at all (Propust B)', () => {
+    expect(
+      shouldSuppressMenuActivation({ ...base, lastPointerUpType: '', lastPointerUpAt: 0 }),
+    ).toBe(true);
+  });
+});
