@@ -86,7 +86,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
           const msg = String(err?.message || err);
           // Server je poslao "free_limit_exceeded" — pretvori u prijateljski toast.
           if (/free_limit_exceeded/i.test(msg)) {
-            toast.error(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
+            showError(t('access.freeLimitServer', 'Prekoračen je Free limit — potrebna je pretplata.'), {
               action: { label: ctaLabel, onClick: () => navigate('/paywall') },
             });
             return undefined;
@@ -94,7 +94,7 @@ export function useWriteGuard(scope: WriteScope): GuardResult {
           throw err;
         }
       }
-      toast.error(blockReason ?? t('access.blocked', 'Akcija nije dopuštena bez pretplate.'), {
+      showError(blockReason ?? t('access.blocked', 'Akcija nije dopuštena bez pretplate.'), {
         action: { label: ctaLabel, onClick: () => navigate('/paywall') },
       });
       return undefined;
