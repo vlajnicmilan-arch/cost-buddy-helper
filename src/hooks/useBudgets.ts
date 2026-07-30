@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useExpenses } from '@/hooks/useExpenses';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { useFeatureAccess, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { 

@@ -13,7 +13,7 @@ import { resolveTransferEndpoints } from '@/lib/transferMatching';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';

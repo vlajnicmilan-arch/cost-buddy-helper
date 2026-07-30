@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import {
   AlertDialog,
   AlertDialogAction,

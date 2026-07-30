@@ -14,7 +14,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { useFeatureAccess, Feature, FREE_LIMITS } from '@/hooks/useFeatureAccess';
 import { useFreeTierUsage } from '@/hooks/useFreeTierUsage';
 

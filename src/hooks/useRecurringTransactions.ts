@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 import { useAppState } from '@/contexts/AppStateContext';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 
 export interface RecurringTransaction {

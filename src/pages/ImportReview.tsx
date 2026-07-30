@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showError } from '@/hooks/useStatusFeedback';
 import { AlertTriangle, ArrowLeft, ArrowRightLeft, CheckCircle2, HelpCircle, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';

@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Check, Loader2, Compass, Users, Briefcase, Sparkles, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import {
   shouldForceRedirectAway,

@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { AlertTriangle, ArrowRightLeft, Loader2, Wallet as WalletIcon } from 'lucide-react';
 import {
   Dialog,

@@ -23,8 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';

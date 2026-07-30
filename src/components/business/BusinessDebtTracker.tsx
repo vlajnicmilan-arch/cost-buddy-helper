@@ -20,8 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from './LoanDetectionDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 
 export const BusinessDebtTracker = () => {
