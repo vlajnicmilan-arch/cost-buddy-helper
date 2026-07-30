@@ -486,18 +486,18 @@ export const generatePDFReport = async (
       const signed: 'pos' | 'neg' | 'neutral' = isCorrection
         ? 'neutral'
         : expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
-      const otherLabel = (i18n.t('common.other', 'Ostalo') as string).toLowerCase();
-      const categoryLabel = categoryInfo.name && categoryInfo.name.toLowerCase() !== otherLabel
-        ? categoryInfo.name
-        : '';
-      const meta: string[] = [categoryLabel, paymentInfo.name];
-      if (isCorrection) meta.push(i18n.t('reports.correctionLabel', 'Korekcija') as string);
-      else if (expense.type !== 'expense') meta.push(typeInfo.name);
+      const hiddenMeta = [
+        i18n.t('common.other', 'Ostalo') as string,
+        i18n.t('common.unknown', 'Nepoznato') as string,
+      ];
+      const metaSource: (string | null | undefined)[] = isCorrection
+        ? [i18n.t('reports.correctionLabel', 'Korekcija') as string]
+        : [categoryInfo.name, paymentInfo.name, expense.type !== 'expense' ? typeInfo.name : ''];
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
         rawDescription: expense.description || '',
-        metaParts: meta.filter(Boolean) as string[],
+        metaParts: buildMetaParts(metaSource, hiddenMeta),
         amount: expense.amount,
         signed,
       };
