@@ -2086,7 +2086,12 @@
     "summaryCategoriesTwo": "Most went to {{cat1}} ({{pct1}}), then {{cat2}} ({{pct2}}).",
     "summaryCategoriesOne": "Most went to {{cat1}} ({{pct1}}).",
     "summaryLargest": "Largest single expense: {{title}}, {{amount}} ({{date}}).",
-    "summaryEmpty": "No transactions in the selected period."
+    "summaryEmpty": "No transactions in the selected period.",
+    "summaryMerchantsTwo": "Most funds went to {{cat}}, primarily {{m1}} and {{m2}}.",
+    "summaryMerchantsOne": "Most funds went to {{cat}}, primarily {{m1}}.",
+    "generatedIn": "Generated in Centar · {{date}}",
+    "transactionReportTitle": "{{source}} — transaction report",
+    "exportPeriodTitle": "Export period"
   },
   "update": {
     "available": "New version available!",

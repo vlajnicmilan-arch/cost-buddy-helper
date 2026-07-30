@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
+import { resolvePeriodRange, type PeriodPreset as SharedPeriodPreset } from '@/lib/periodPresets';
+
 import {
   Dialog,
   DialogContent,
@@ -79,7 +81,7 @@ interface ReportsDialogProps {
   triggerLabel?: string;
 }
 
-type PeriodPreset = 'this-month' | 'last-month' | 'this-year' | 'last-year' | 'all' | 'custom';
+type PeriodPreset = SharedPeriodPreset;
 type ComparePreset = 'month-vs-month' | 'year-vs-year' | 'custom';
 type ChartType = 'pie' | 'bar';
 type IncomeViewType = 'grouped' | 'individual';
@@ -208,46 +210,16 @@ export const ReportsDialog = ({ expenses, triggerClassName, triggerLabel }: Repo
   const [customCompare2Start, setCustomCompare2Start] = useState('');
   const [customCompare2End, setCustomCompare2End] = useState('');
 
-  const dateRange = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    switch (periodPreset) {
-      case 'this-month':
-        return {
-          start: new Date(now.getFullYear(), now.getMonth(), 1),
-          end: today,
-        };
-      case 'last-month':
-        return {
-          start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-          end: new Date(now.getFullYear(), now.getMonth(), 0),
-        };
-      case 'this-year':
-        return {
-          start: new Date(now.getFullYear(), 0, 1),
-          end: today,
-        };
-      case 'last-year':
-        return {
-          start: new Date(now.getFullYear() - 1, 0, 1),
-          end: new Date(now.getFullYear() - 1, 11, 31),
-        };
-      case 'all':
-        const dates = expenses.map(e => e.date.getTime());
-        return {
-          start: dates.length > 0 ? new Date(Math.min(...dates)) : today,
-          end: today,
-        };
-      case 'custom':
-        return {
-          start: customStart ? new Date(customStart) : today,
-          end: customEnd ? new Date(customEnd) : today,
-        };
-      default:
-        return { start: today, end: today };
-    }
-  }, [periodPreset, customStart, customEnd, expenses]);
+  const dateRange = useMemo(
+    () =>
+      resolvePeriodRange(periodPreset, {
+        customStart,
+        customEnd,
+        dates: expenses.map((e) => e.date),
+      }),
+    [periodPreset, customStart, customEnd, expenses],
+  );
+
 
   // Comparison date ranges
   const compareDateRanges = useMemo(() => {

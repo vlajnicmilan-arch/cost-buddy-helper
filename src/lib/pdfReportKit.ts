@@ -151,8 +151,10 @@ export interface DrawFooterInput {
   brand: ReportBrandOptions;
   intendedForLabel?: string;  // localized e.g. "Namijenjeno: Milan"
   pageLabel?: string;          // localized e.g. "Stranica {{n}} / {{total}}"
+  generatedLabel?: string;     // localized e.g. "Generirano u Centru · 30.7.2026."
   disclaimer?: string;         // optional second small line
 }
+
 
 /**
  * Adds footer on every page: optional intendedFor line + page X / Y.
@@ -182,11 +184,17 @@ export const drawReportFooter = (doc: JsPDFType, input: DrawFooterInput): void =
       doc.text(input.intendedForLabel, PAGE_MARGIN_X, pageHeight - 8);
     }
 
+    // Center: "Generirano u Centru · datum"
+    if (input.generatedLabel) {
+      doc.text(input.generatedLabel, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    }
+
     // Right: page X / Y
     if (input.pageLabel) {
       const label = input.pageLabel.replace('{{n}}', String(i)).replace('{{total}}', String(total));
       doc.text(label, pageWidth - PAGE_MARGIN_X, pageHeight - 8, { align: 'right' });
     }
+
 
     // Optional disclaimer line
     if (input.disclaimer) {

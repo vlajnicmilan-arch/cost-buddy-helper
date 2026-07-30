@@ -116,11 +116,13 @@ describe('report dashboard helpers', () => {
     expect(topCategoriesWithRest(rows, 5, 'Ostale')).toEqual(rows);
   });
 
-  it('dvoredni trgovac: podnaslov samo kad se razlikuje', () => {
+  it('dvoredni trgovac: podnaslov samo kad se razlikuje (nakon čišćenja obje strane)', () => {
     const raw = 'WOLT ZAGREB, 3dd09f2b-c6bc-4603-b819-a392f1234567';
     const clean = cleanFeedTitle(raw);
-    expect(clean).toBe('WOLT ZAGREB');
-    expect(buildFeedSubtitle(raw, clean)).toContain('3dd09f2b');
+    expect(clean).toBe('Wolt Zagreb');
+    // UUID rep se briše s obje strane → nema dodatne informacije → nema podnaslova
+    expect(buildFeedSubtitle(raw, clean)).toBe('');
+    expect(buildFeedSubtitle('WOLT ZAGREB, Trg bana Jelacica 1', clean)).toContain('Jelacica');
     expect(buildFeedSubtitle('Kava', 'Kava')).toBe('');
   });
 
@@ -202,5 +204,106 @@ describe('report dashboard helpers', () => {
       tx({ amount: 60 }),
     ] as any);
     expect(l?.amount).toBe(60);
+  });
+});
+
+// ===== Merchant extraction (real DB samples) + period presets =====
+import { parseKeksPay, aggregateMerchants } from '@/lib/reportTotals';
+import { resolvePeriodRange, isWithinPeriod } from '@/lib/periodPresets';
+
+describe('merchant extraction', () => {
+  it('maskirana kartica na početku + UUID rep → title-case naziv', () => {
+    const raw = '462765XXXXXX7262, AIRCASH.EU ZAGREB, c6838442-9d1e-4881-8c01-a2e70b7f33d3';
+    expect(cleanFeedTitle(raw)).toBe('Aircash.eu Zagreb');
+    expect(buildFeedSubtitle(raw, cleanFeedTitle(raw))).not.toContain('462765');
+  });
+
+  it('KEKS Pay: druga strana · svrha (vlasnik izvješća izbačen)', () => {
+    const raw = 'KEKS Pay - Vinka P šalje Milan V za "Kava" - 326633655, 08d7fdb9-1111-2222-3333-444455556666';
+    expect(cleanFeedTitle(raw, 'Milan V')).toBe('Vinka P · Kava');
+    expect(parseKeksPay(raw, 'Vinka P')?.title).toBe('Milan V · Kava');
+  });
+
+  it('emoji shortcode se uklanja', () => {
+    const raw = 'KEKS Pay - Vinka P šalje Milan V za "Šaljem :moneybag:" - 326633655';
+    expect(cleanFeedTitle(raw, 'Milan V')).toBe('Vinka P · Šaljem');
+  });
+
+  it('ručni unos ostaje nepromijenjen', () => {
+    expect(cleanFeedTitle('Kava s Ivanom')).toBe('Kava s Ivanom');
+    expect(buildFeedSubtitle('Kava s Ivanom', 'Kava s Ivanom')).toBe('');
+  });
+
+  it('aggregateMerchants sumira po imenu, sortirano', () => {
+    const rows = aggregateMerchants([
+      { title: 'Konzum', amount: 10 },
+      { title: 'konzum', amount: 5 },
+      { title: 'Lidl', amount: 20 },
+      { title: '', amount: 99 },
+    ]);
+    expect(rows).toEqual([
+      { name: 'Lidl', amount: 20 },
+      { name: 'Konzum', amount: 15 },
+    ]);
+  });
+});
+
+describe('interpretive merchant sentence', () => {
+  const tpl = {
+    ...tplHr,
+    merchantsTwo: 'Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}} i {{m2}}.',
+    merchantsOne: 'Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}}.',
+  };
+  const base = {
+    start: new Date(2026, 6, 1), end: new Date(2026, 6, 31), count: 5,
+    income: 0, expenses: 300, net: -300,
+    categories: [{ name: 'Hrana', amount: 300 }],
+  };
+
+  it('dva trgovca', () => {
+    const s = buildExecutiveSummary(
+      { ...base, topCategoryMerchants: [{ name: 'Lidl', amount: 200 }, { name: 'Konzum', amount: 100 }] },
+      fmt, tpl,
+    );
+    expect(s).toContain('Najviše sredstava otišlo je na Hrana, prvenstveno Lidl i Konzum.');
+  });
+
+  it('jedan trgovac → jednočlana varijanta', () => {
+    const s = buildExecutiveSummary(
+      { ...base, topCategoryMerchants: [{ name: 'Lidl', amount: 200 }] }, fmt, tpl,
+    );
+    expect(s).toContain('Najviše sredstava otišlo je na Hrana, prvenstveno Lidl.');
+  });
+
+  it('bez trgovaca → rečenica se preskače', () => {
+    const s = buildExecutiveSummary({ ...base, topCategoryMerchants: [] }, fmt, tpl);
+    expect(s.join(' ')).not.toContain('prvenstveno');
+  });
+});
+
+describe('periodPresets', () => {
+  const now = new Date(2026, 7, 15);
+
+  it('this-month granice', () => {
+    const r = resolvePeriodRange('this-month', { now });
+    expect(r.start).toEqual(new Date(2026, 7, 1));
+    expect(r.end).toEqual(new Date(2026, 7, 15));
+  });
+
+  it('last-month granice', () => {
+    const r = resolvePeriodRange('last-month', { now });
+    expect(r.start).toEqual(new Date(2026, 6, 1));
+    expect(r.end).toEqual(new Date(2026, 6, 31));
+  });
+
+  it('custom raspon', () => {
+    const r = resolvePeriodRange('custom', { customStart: '2026-01-05', customEnd: '2026-02-10' });
+    expect(isWithinPeriod(new Date(2026, 0, 5), r)).toBe(true);
+    expect(isWithinPeriod(new Date(2026, 1, 11), r)).toBe(false);
+  });
+
+  it('all koristi najraniji datum', () => {
+    const r = resolvePeriodRange('all', { now, dates: [new Date(2024, 2, 3), new Date(2025, 0, 1)] });
+    expect(r.start).toEqual(new Date(2024, 2, 3));
   });
 });

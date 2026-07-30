@@ -34,6 +34,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { computeReportTotals, buildCategoryTotalsById } from '@/lib/reportTotals';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { isWithinPeriod, type PeriodRange } from '@/lib/periodPresets';
+import { ExportPeriodDialog } from '@/components/reports/ExportPeriodDialog';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
@@ -303,6 +305,10 @@ export const PaymentSourceTransactionsDialog = ({
     
     return balanceMap;
   }, [sourceExpenses, paymentSource]);
+
+  // Export period selection (default: this month)
+  const [exportPeriodOpen, setExportPeriodOpen] = useState(false);
+  const [pendingExport, setPendingExport] = useState<'pdf' | 'csv' | 'print' | null>(null);
 
   // Apply filters (search + date + amount + category)
   const filteredSourceExpenses = useMemo(() => {
@@ -709,11 +715,11 @@ export const PaymentSourceTransactionsDialog = ({
 
 
   // Print handler
-  const handlePrint = async () => {
-    if (!paymentSource || filteredSourceExpenses.length === 0) return;
+  const handlePrint = async (list: Expense[] = filteredSourceExpenses) => {
+    if (!paymentSource || list.length === 0) return;
     await ensureReportLogo();
 
-    const feedItems: FeedItem[] = filteredSourceExpenses.map(e => {
+    const feedItems: FeedItem[] = list.map(e => {
       const cat = resolveCategory(e.category, customCategories);
       const isInbound = e.type === 'transfer' && e.income_source_id === paymentSource.id;
       const isPos = e.type === 'income' || isInbound;
@@ -736,11 +742,12 @@ export const PaymentSourceTransactionsDialog = ({
       };
     });
 
-    const net = totalIncome - totalExp;
+    const listTotals = computeReportTotals(list as any);
+    const net = listTotals.income - listTotals.expenses;
     const kpiStrip = renderHtmlKpiStrip([
       { label: t('summary.balance'), value: formatAmount(paymentSource.balance), hero: true },
-      { label: t('summary.totalIncome'), value: formatAmount(totalIncome), tone: 'pos' },
-      { label: t('summary.totalExpenses'), value: formatAmount(totalExp), tone: 'neg' },
+      { label: t('summary.totalIncome'), value: formatAmount(listTotals.income), tone: 'pos' },
+      { label: t('summary.totalExpenses'), value: formatAmount(listTotals.expenses), tone: 'neg' },
       { label: t('common.balance', 'Razlika'), value: formatAmount(net) },
     ]);
 
@@ -755,7 +762,7 @@ export const PaymentSourceTransactionsDialog = ({
         owner: reportOwner,
         language: (i18n.language as any) || 'hr',
         confidentiality,
-        subtitle: `${filteredSourceExpenses.length} ${t('transactions.transactions')}`,
+        subtitle: `${list.length} ${t('transactions.transactions')}`,
       },
       bodyHtml,
       confidentialityLabel: {
@@ -778,19 +785,19 @@ export const PaymentSourceTransactionsDialog = ({
   };
 
   // Export handlers
-  const buildReportData = (): ReportData => {
+  const buildReportData = (list: Expense[], range?: PeriodRange): ReportData => {
     const byCategory: Record<string, number> = {};
     const byPaymentSource: Record<string, number> = {};
-    
-    Object.assign(byCategory, buildCategoryTotalsById(filteredSourceExpenses as any));
-    filteredSourceExpenses.forEach(e => {
+
+    Object.assign(byCategory, buildCategoryTotalsById(list as any));
+    list.forEach(e => {
       const ps = e.payment_source || 'cash';
       byPaymentSource[ps] = (byPaymentSource[ps] || 0) + e.amount;
     });
 
-    const dates = filteredSourceExpenses.map(e => e.date.getTime());
-    const start = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
-    const end = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
+    const dates = list.map(e => e.date.getTime());
+    const start = range?.start ?? (dates.length > 0 ? new Date(Math.min(...dates)) : new Date());
+    const end = range?.end ?? (dates.length > 0 ? new Date(Math.max(...dates)) : new Date());
 
     const currencyConfig: CurrencyConfig = {
       code: currency.code,
@@ -798,14 +805,16 @@ export const PaymentSourceTransactionsDialog = ({
       locale: currency.locale,
     };
 
+    const listTotals = computeReportTotals(list as any);
+
     return {
-      expenses: filteredSourceExpenses,
+      expenses: list,
       dateRange: { start, end },
       totals: {
-        income: totalIncome,
-        expenses: totalExp,
-        balance: totalIncome - totalExp,
-        transfers: totalTransfers,
+        income: listTotals.income,
+        expenses: listTotals.expenses,
+        balance: listTotals.balance,
+        transfers: listTotals.transfers,
       },
       byCategory,
       byPaymentSource,
@@ -813,24 +822,45 @@ export const PaymentSourceTransactionsDialog = ({
     };
   };
 
-  const handleExportPDF = async () => {
-    if (!paymentSource || filteredSourceExpenses.length === 0) return;
-    const data = buildReportData();
+  const handleExportPDF = async (list: Expense[] = filteredSourceExpenses, range?: PeriodRange) => {
+    if (!paymentSource || list.length === 0) return;
+    const data = buildReportData(list, range);
     await generatePDFReport(
       data,
-      `${paymentSource.name} – ${t('transactions.transactions')}`,
+      t('reports.transactionReportTitle', { source: paymentSource.name, defaultValue: '{{source}} — izvješće transakcija' }),
       'save',
       { owner: reportOwner, confidentiality, language: (i18n.language as any) || 'hr' },
     );
     showSuccess(t('reports.pdfExported', 'PDF izvoz završen'));
   };
 
-  const handleExportCSV = async () => {
-    if (!paymentSource || filteredSourceExpenses.length === 0) return;
-    const data = buildReportData();
+  const handleExportCSV = async (list: Expense[] = filteredSourceExpenses, range?: PeriodRange) => {
+    if (!paymentSource || list.length === 0) return;
+    const data = buildReportData(list, range);
     await generateCSVReport(data);
     showSuccess(t('reports.csvExported', 'CSV izvoz završen'));
   };
+
+  /** Every export path first asks for the period (default: this month). */
+  const requestExport = (kind: 'pdf' | 'csv' | 'print') => {
+    setPendingExport(kind);
+    setExportPeriodOpen(true);
+  };
+
+  const runPendingExport = (range: PeriodRange) => {
+    const list = filteredSourceExpenses.filter((e) => isWithinPeriod(e.date, range));
+    const kind = pendingExport;
+    setPendingExport(null);
+    if (!kind) return;
+    if (list.length === 0) {
+      showError(t('reports.noTransactionsInPeriod', 'Nema transakcija u odabranom razdoblju'));
+      return;
+    }
+    if (kind === 'pdf') void handleExportPDF(list, range);
+    else if (kind === 'csv') void handleExportCSV(list, range);
+    else void handlePrint(list);
+  };
+
 
   if (!paymentSource) return null;
 
@@ -931,15 +961,15 @@ export const PaymentSourceTransactionsDialog = ({
                           <div className="px-2 py-1.5 border-b mb-1">
                             <ConfidentialityPicker value={confidentiality} onChange={setConfidentiality} />
                           </div>
-                          <DropdownMenuItem onClick={handlePrint}>
+                          <DropdownMenuItem onClick={() => requestExport('print')}>
                             <Printer className="w-4 h-4 mr-2" />
                             {t('common.print', 'Ispis')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportPDF}>
+                          <DropdownMenuItem onClick={() => requestExport('pdf')}>
                             <FileText className="w-4 h-4 mr-2" />
                             PDF
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportCSV}>
+                          <DropdownMenuItem onClick={() => requestExport('csv')}>
                             <Download className="w-4 h-4 mr-2" />
                             CSV
                           </DropdownMenuItem>
@@ -1104,7 +1134,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handlePrint}
+                        onClick={() => requestExport('print')}
                         className="h-7 text-xs gap-1.5"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -1113,7 +1143,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleExportPDF}
+                        onClick={() => requestExport('pdf')}
                         className="h-7 text-xs gap-1.5"
                       >
                         <FileText className="w-3.5 h-3.5" />
@@ -1717,6 +1747,14 @@ export const PaymentSourceTransactionsDialog = ({
           findDuplicates={findDuplicates}
         />
       )}
+
+      {/* Export period picker (default: this month) */}
+      <ExportPeriodDialog
+        open={exportPeriodOpen}
+        onOpenChange={(o) => { setExportPeriodOpen(o); if (!o) setPendingExport(null); }}
+        dates={filteredSourceExpenses.map((e) => e.date)}
+        onConfirm={(range) => runPendingExport(range)}
+      />
     </>
   );
 };
