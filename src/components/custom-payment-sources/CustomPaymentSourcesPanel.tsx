@@ -50,8 +50,6 @@ interface CustomPaymentSourcesPanelProps {
   autoOpenNew?: boolean;
 }
 
-// TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-import { logMenuDebug, MENU_DEBUG_ENABLED } from '@/lib/menuDebug';
 
 
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses, autoOpenNew = false }: CustomPaymentSourcesPanelProps) => {
@@ -417,14 +415,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                   €{(source.balance || 0).toFixed(2)}
                 </span>
                 {!reorderMode && (
-                  <DropdownMenu
-                    onOpenChange={(open) => {
-                      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS (logging only)
-                      if (MENU_DEBUG_ENABLED) {
-                        logMenuDebug('menu_open_change', { open, source_id: source.id });
-                      }
-                    }}
-                  >
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -440,16 +431,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenuItem onClick={(e) => {
                         e.stopPropagation();
-                        // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS (logging only)
-                        if (MENU_DEBUG_ENABLED) {
-                          logMenuDebug('hide_item_onclick', {
-                            source_id: source.id,
-                            currently_hidden: hidden,
-                            is_trusted: (e.nativeEvent as MouseEvent)?.isTrusted ?? null,
-                            detail: (e.nativeEvent as MouseEvent)?.detail ?? null,
-                          });
-                        }
-                        toggleHidden(source.id, 'wallet-panel-menu-item');
+                        toggleHidden(source.id);
                       }}>
 
                         {hidden ? <EyeOff className="h-3.5 w-3.5 mr-2" /> : <Eye className="h-3.5 w-3.5 mr-2" />}

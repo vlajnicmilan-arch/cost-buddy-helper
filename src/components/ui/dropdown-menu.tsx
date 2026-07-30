@@ -39,11 +39,9 @@ const useMenuTouchGuard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  const onPointerDownCapture = React.useCallback((event: React.PointerEvent) => {
+  const onPointerDownCapture = React.useCallback(() => {
     hadPointerDownInsideRef.current = true;
-  }, [openedAtRef]);
-
+  }, []);
 
   const onPointerUpCapture = React.useCallback((event: React.PointerEvent) => {
     const now = Date.now();
@@ -55,7 +53,6 @@ const useMenuTouchGuard = () => {
       hadPointerDownInside: hadPointerDownInsideRef.current,
     });
     // `hadPointerDownInside` is consumed by the click gate, not here — the
-
     // click of a deliberate tap must still see that the gesture started inside.
     if (!suppress) return;
 
