@@ -4,16 +4,7 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { shouldSuppressMenuActivation } from "@/lib/menuTouchGuard";
-import { logMenuDebug, MENU_DEBUG_ENABLED } from "@/lib/menuDebug";
 
-// TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
-const describeMenuEventTarget = (target: EventTarget | null) => {
-  if (!(target instanceof Element)) return { tagName: null, textContent: null };
-  return {
-    tagName: target.tagName,
-    textContent: target.textContent?.trim().slice(0, 30) ?? null,
-  };
-};
 
 interface MenuOpenState {
   /** Timestamp of the last real open (onOpenChange(true)), NOT of content mount. */
