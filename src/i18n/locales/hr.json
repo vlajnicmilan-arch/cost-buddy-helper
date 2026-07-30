@@ -2079,7 +2079,9 @@
     "difference": "Razlika",
     "comparisonChart": "Grafikon usporedbe",
     "categoryDetails": "Detalji po kategoriji",
-    "noTransactionsToCompare": "Nema transakcija za usporedbu u odabranim razdobljima"
+    "noTransactionsToCompare": "Nema transakcija za usporedbu u odabranim razdobljima",
+    "netForPeriod": "Neto razdoblja",
+    "correctionLabel": "Korekcija"
   },
   "update": {
     "available": "Nova verzija dostupna!",

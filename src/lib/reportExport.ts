@@ -10,6 +10,7 @@ import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfRe
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
+import { aggregateCategoryTotalsByName, formatPercent, isCorrectionTx } from '@/lib/reportTotals';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -84,6 +85,15 @@ const dayLabel = (d: Date, locale: string) =>
 const cleanFeedTitle = (raw: string | undefined | null): string => {
   if (!raw) return '';
   let s = String(raw);
+  // Privacy: drop masked card segments ("Kartica: 416598******1542")
+  s = s.replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ');
+  // Drop redundant "Primatelj:" / "Recipient:" tails when a cleaner name exists
+  const recipientSplit = s.split(/\b(?:primatelj|primalac|recipient|empfänger)\s*:/i);
+  if (recipientSplit.length > 1 && recipientSplit[0].trim().length >= 3) {
+    s = recipientSplit[0];
+  } else if (recipientSplit.length > 1) {
+    s = recipientSplit.slice(1).join(' ');
+  }
   // Remove full UUIDs
   s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
   // Remove standalone long hex strings (>=16 chars)
@@ -229,7 +239,7 @@ export const generatePDFReport = async (
   const summaryData = [
     [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
     [toAscii('Ukupni troškovi'), formatCurrency(data.totals.expenses, data.currency)],
-    ['Stanje', formatCurrency(data.totals.balance, data.currency)],
+    [toAscii(i18n.t('reports.netForPeriod', 'Neto razdoblja') as string), formatCurrency(data.totals.balance, data.currency)],
     ['Prijenosi', formatCurrency(data.totals.transfers, data.currency)],
   ];
 
@@ -244,18 +254,17 @@ export const generatePDFReport = async (
   const categoryY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(14);
   doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Troskovi po kategorijama'), 14, categoryY);
+  doc.text(toAscii('Troškovi po kategorijama'), 14, categoryY);
 
-  const categoryData = Object.entries(data.byCategory)
-    .filter(([_, amount]) => amount > 0)
-    .sort((a, b) => b[1] - a[1])
-    .map(([categoryId, amount]) => {
-      const info = getCategoryInfo(categoryId as any);
-      const percentage = data.totals.expenses > 0 
-        ? ((amount / data.totals.expenses) * 100).toFixed(1) 
-        : '0';
-      return [toAscii(info.name), formatCurrency(amount, data.currency), `${percentage}%`];
-    });
+  const numberLocale = data.currency?.locale || 'hr-HR';
+  const categoryData = aggregateCategoryTotalsByName(
+    data.byCategory,
+    (categoryId) => getCategoryInfo(categoryId as any).name,
+  ).map(({ name, amount }) => [
+    toAscii(name),
+    formatCurrency(amount, data.currency),
+    formatPercent(amount, data.totals.expenses, numberLocale),
+  ]);
 
   if (categoryData.length > 0) {
     brandAutoTable(doc, autoTable, {
@@ -280,10 +289,17 @@ export const generatePDFReport = async (
       const typeInfo = getTransactionTypeInfo(expense.type);
       const categoryInfo = getCategoryInfo(expense.category);
       const paymentInfo = getPaymentSourceInfo(expense.payment_source || 'cash');
-      const signed: 'pos' | 'neg' | 'neutral' =
-        expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
-      const meta: string[] = [categoryInfo.name, paymentInfo.name];
-      if (expense.type !== 'expense') meta.push(typeInfo.name);
+      const isCorrection = isCorrectionTx(expense as any);
+      const signed: 'pos' | 'neg' | 'neutral' = isCorrection
+        ? 'neutral'
+        : expense.type === 'expense' ? 'neg' : expense.type === 'income' ? 'pos' : 'neutral';
+      const otherLabel = (i18n.t('common.other', 'Ostalo') as string).toLowerCase();
+      const categoryLabel = categoryInfo.name && categoryInfo.name.toLowerCase() !== otherLabel
+        ? categoryInfo.name
+        : '';
+      const meta: string[] = [categoryLabel, paymentInfo.name];
+      if (isCorrection) meta.push(i18n.t('reports.correctionLabel', 'Korekcija') as string);
+      else if (expense.type !== 'expense') meta.push(typeInfo.name);
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
@@ -418,10 +434,11 @@ export const generateIncomePDFReport = async (
     .filter(([_, amount]) => amount > 0)
     .sort((a, b) => b[1] - a[1])
     .map(([categoryId, amount]) => {
-      const percentage = data.totalIncome > 0 
-        ? ((amount / data.totalIncome) * 100).toFixed(1) 
-        : '0';
-      return [toAscii(categoryId), formatCurrency(amount, data.currency), `${percentage}%`];
+      return [
+        toAscii(categoryId),
+        formatCurrency(amount, data.currency),
+        formatPercent(amount, data.totalIncome, data.currency?.locale || 'hr-HR'),
+      ];
     });
 
   if (categoryData.length > 0) {

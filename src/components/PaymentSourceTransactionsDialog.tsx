@@ -32,6 +32,7 @@ import { ParsedTransaction } from '@/lib/csvParsers';
 import { CSVImportDialog } from './CSVImportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
+import { computeReportTotals, buildCategoryTotalsById } from '@/lib/reportTotals';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
@@ -308,21 +309,16 @@ export const PaymentSourceTransactionsDialog = ({
     return applyFilters(sourceExpenses, filters);
   }, [sourceExpenses, filters]);
 
-  // Calculate totals
+  // Calculate totals (report layer rules: corrections excluded, transfers never income)
   const { totalIncome, totalExpenses: totalExp, totalTransfers } = useMemo(() => {
-    return sourceExpenses.reduce((acc, e) => {
-      if (e.type === 'income') acc.totalIncome += e.amount;
-      else if (e.type === 'expense') acc.totalExpenses += e.amount;
-      else if (e.type === 'transfer') {
-        if (e.income_source_id === paymentSource?.id) {
-          acc.totalIncome += e.amount;
-        } else {
-          acc.totalTransfers += e.amount;
-        }
-      }
-      return acc;
-    }, { totalIncome: 0, totalExpenses: 0, totalTransfers: 0 });
-  }, [sourceExpenses, paymentSource]);
+    const totals = computeReportTotals(sourceExpenses as any);
+    return {
+      totalIncome: totals.income,
+      totalExpenses: totals.expenses,
+      totalTransfers: totals.transfers,
+    };
+  }, [sourceExpenses]);
+
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -786,10 +782,8 @@ export const PaymentSourceTransactionsDialog = ({
     const byCategory: Record<string, number> = {};
     const byPaymentSource: Record<string, number> = {};
     
+    Object.assign(byCategory, buildCategoryTotalsById(filteredSourceExpenses as any));
     filteredSourceExpenses.forEach(e => {
-      if (e.type === 'expense') {
-        byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
-      }
       const ps = e.payment_source || 'cash';
       byPaymentSource[ps] = (byPaymentSource[ps] || 0) + e.amount;
     });
