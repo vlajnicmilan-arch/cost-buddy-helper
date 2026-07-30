@@ -1,58 +1,45 @@
-## Nalaz (provjereno u kodu)
+## 1. Uzrok (točne datoteke/linije)
 
-**Kako kartice sad dobivaju rub i sjaj**
+Nije bug u logici Novčanika — riječ je o **Radix pointer "click-through"** ponašanju na touch uređajima.
 
-1. `src/components/home/SummarySection.tsx` — kartice "Slobodno", "Neto vrijednost", "Ukupni prihodi", "Ukupni troškovi", "Transferi" su `motion.div` s klasama `p-3 rounded-2xl border border-border/50 backdrop-blur-md` i **inline `style`**:
-   - `borderLeftWidth: 3`, `borderLeftColor`: `hsl(var(--primary))` (Slobodno), `hsl(168 80% 50%)` (Neto vrijednost, hardkodirano), `hsl(var(--income))` (prihodi), `hsl(var(--destructive))` (troškovi), `hsl(var(--muted-foreground))` (transferi)
-   - inline `background` linear-gradient iste boje + radial "blob" 0.06
-   - `boxShadow` samo na `whileHover` (framer), statički box-shadow nemaju.
-2. `src/components/wallet/WalletHeroCard.tsx` — `rounded-2xl border bg-card`.
+Relevantna mjesta:
 
-**Zašto su zlatne jače:** Onyx pravilo u `index.css` (linije 276–285) hvata samo `.glass-card` i `[class*='rounded-2xl'].bg-card` → `--shadow-premium` (zlatni hairline + dubina) dobiva **samo** WalletHeroCard i slične `bg-card` kartice. Summary kartice nemaju `bg-card` ni `glass-card`, pa ne dobivaju `--shadow-premium` uopće; njihov "sjaj" je samo blagi inline gradijent. Kartice koje ipak izgledaju zlatno-sjajno to su jer im je akcent `--primary` (= zlato u Onyxu).
+- `src/components/custom-payment-sources/CustomPaymentSourcesPanel.tsx:416-453` — kartica računa; `DropdownMenuTrigger` (gumb ⋮/MoreHorizontal, linije 417-428) i `DropdownMenuContent` (429) čija je **prva stavka** `toggleHidden(source.id)` (430-435).
+- `node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs:74-79` — trigger otvara meni na **`pointerdown`** (`context.onOpenToggle()`), ne na `click`.
+- `node_modules/@radix-ui/react-menu/dist/index.mjs:373, 392-400` — `MenuItem` drži `isPointerDownRef`. Na `pointerup`: `if (!isPointerDownRef.current) event.currentTarget?.click();` — tj. ako `pointerdown` **nije** bio na toj stavci, Radix svejedno sintetizira klik na stavku koja je pod pokazivačem u trenutku otpuštanja. To je namjerno za "press-drag-release" mišem, ali na dodiru je štetno.
+- Posljedica: `toggleHidden` u `src/hooks/useHiddenPaymentSources.ts` (funkcija `toggleHidden`, optimistički `setCache(next)`) odmah promijeni vidljivost — bez potvrde, uz `showSuccess` note.
 
-## Zašto se ne može čisto samo u index.css
+## 2. Slijed eventova koji daje simptom
 
-Boje rubova su **inline** po kartici. CSS ne može pročitati `border-left-color` i ubaciti ga u `box-shadow`. Selektori tipa `.income-card` ne postoje — nema klasa po tipu kartice. Jedina "čisto CSS" alternativa bila bi hvatati kartice po redoslijedu (`:nth-child`), što je krhko i puca kad je `compact` mod aktivan (tada se renderiraju samo 2 kartice).
+1. Prst dodirne područje ⋮ → `pointerdown` (button 0) na `DropdownMenuTrigger` → meni se **odmah otvara i renderira**.
+2. Radix Popper pozicionira `DropdownMenuContent` `side="bottom"`, `sideOffset=4` (`src/components/ui/dropdown-menu.tsx:58`), `align="end"` — dakle svega ~4px ispod gumba, poravnato desno, točno u zoni gdje je prst.
+3. Prst se podigne (ili minimalno klizne prema dolje) → `pointerup` se dostavlja elementu koji je sada pod tom točkom = **prva stavka menija "Sakrij/Prikaži s dashboarda"**.
+4. `MenuItem.onPointerUp` vidi `isPointerDownRef === false` (pointerdown je bio na trigeru, ne na stavci) → poziva `currentTarget.click()` → `handleSelect()` → `toggleHidden(source.id)` + `rootContext.onClose()`.
+5. Meni se zatvori u istom frameu, pa korisnik **nikad ne vidi popup** — samo račun koji se sakrio/pokazao.
 
-## Predloženi najčišći put (traži Milanovo odobrenje za 1 komponentu)
+Zašto "ponekad": ovisi o točnoj y-koordinati dodira i mikropomaku prsta (Android ne šalje `pointerup` na istom elementu ako je prst pomaknut), te o poziciji kartice na ekranu. Ako je kartica pri dnu ekrana, Popper flipa meni prema gore i tada pod prstom završi **zadnja** stavka — "Obriši" (isti mehanizam, veći rizik; ipak tu slijedi AlertDialog potvrda pa nije destruktivno bez potvrde).
 
-**Korak 1 — SummarySection.tsx (samo prezentacija, bez logike):**
-Svakoj kartici u inline `style` dodati CSS varijablu s njezinom akcentnom bojom, npr.:
-```
-style={{ ['--card-accent' as string]: 'var(--income)', borderLeftWidth: 3, borderLeftColor: 'hsl(var(--income))', ... }}
-```
-- Slobodno → `var(--primary)`
-- Neto vrijednost → `168 80% 50%` (ostaje ista boja)
-- Prihodi → `var(--income)`
-- Troškovi → `var(--destructive)`
-- Transferi/Recurring → `var(--muted-foreground)` (ili `--primary` kao neutralno — na odabir)
+Napomena: isti obrazac ⋮-menija postoji i drugdje (npr. `src/components/projects/ProjectHeaderMenu.tsx`), pa je popravak najbolje napraviti centralno.
 
-Nikakva promjena boja, teksta, klasa ni logike — samo dodatak varijable.
+## 3. Prijedlog popravka (opis, bez koda)
 
-**Korak 2 — index.css, isključivo unutar `.business-theme-premium-dark`:**
-```
---shadow-premium-accent:
-  inset 0 1px 0 hsl(var(--card-accent, 40 50% 88%) / 0.22),
-  inset 0 -1px 0 hsl(30 8% 2% / 0.40),
-  0 8px 32px -14px hsl(0 0% 0% / 0.95),
-  0 0 24px -10px hsl(var(--card-accent, 40 55% 48%) / 0.35);
-```
-i pravilo koje ga primjenjuje na summary kartice unutar teme:
-```
-.business-theme-premium-dark [class*='rounded-2xl'][class*='backdrop-blur-md'] { box-shadow: var(--shadow-premium-accent); }
-```
-Postojeće `.glass-card` / `.bg-card` pravilo također prebaciti na `--shadow-premium-accent` s fallbackom na zlato, tako da zlatne kartice ostanu identične kao sad, a obojene dobiju istu jačinu u svojoj boji.
+Preporučeno, centralno, minimalno invazivno — u `src/components/ui/dropdown-menu.tsx`:
 
-**Jačina:** identična onoj koju je Milan odobrio na zlatnima (highlight 0.14 baza; kod obojenih se koristi ~0.22 jer su boje tamnije od šampanjca — kalibrirat ću vizualno da percipirana jačina bude ista).
+1. **Neutralizirati click-through na dodir**: u `DropdownMenuContent` dodati `onPointerUp` guard koji ignorira/spriječi prvi `pointerup` čiji `pointerType` nije `mouse`, a koji stiže unutar kratkog prozora od otvaranja (odnosno kad odgovarajući `pointerdown` nije bio unutar sadržaja menija). Efektivno: stavka se može odabrati tek zasebnim, novim dodirom.
+2. **Povećati `sideOffset` / `collisionPadding`** za touch (npr. 8-10px) kako izlazna zona menija ne bi doslovno graničila s prstom. Ovo sâmo po sebi nije dovoljno — samo smanjuje učestalost; koristiti kao dopunu, ne kao rješenje.
 
-## Što ostaje netaknuto
-- Semantika boja (zeleno = prihod, crveno = trošak) — nepromijenjena
-- Onyx paleta (`--background`, `--primary`, `--accent`…) — nepromijenjena
-- Druge teme, biznis logika, balance/settlement — nedirnuto
+Alternativa lokalno u `CustomPaymentSourcesPanel.tsx` (ako se ne želi dirati zajednički UI primitiv):
+- Trigger prebaciti na otvaranje na `click` umjesto `pointerdown` (kontrolirani `open` state + `onPointerDown` preventDefault na dodiru). Tada u trenutku otvaranja menija prst je već gore i nema sintetiziranog klika.
 
-## Verifikacija
-- `npm test` (očekivano 2114 PASS)
-- Screenshot Onyx dashboarda (Playwright) radi vizualne potvrde jednake jačine
-- Commit + SHA u izvješću
+Dodatno (neovisno o gornjem, kao obrana u dubinu):
+- Prvu stavku menija **ne** ostaviti kao mutirajuću akciju bez potvrde — npr. redoslijed: Članovi / Uredi / Sakrij / (separator) Obriši, ili barem uvesti Undo za "Sakrij".
+- Povećati touch target trigera na min 44px (trenutno `h-7 w-7`, `CustomPaymentSourcesPanel.tsx:421`) — mali cilj povećava vjerojatnost da centroid dodira padne izvan gumba.
 
-**Potrebno odobrenje:** dodirivanje `SummarySection.tsx` (dodavanje `--card-accent` varijable). Bez toga se zahtjev ne može izvesti stabilno.
+## 4. Ako se traži tvrda potvrda prije popravka
+
+Instrumentacija za live provjeru na uređaju (samo dijagnostika, privremeno):
+- Na trigeru i na prvoj `DropdownMenuItem` logirati `pointerdown`/`pointerup`/`click` s `event.pointerType`, `clientX/Y`, `event.target`, `timeStamp`.
+- Očekivani potpis buga: `pointerdown@trigger (pointerType="touch")` → `pointerup@menuitem` → `click@menuitem`, sve unutar ~100-200 ms, bez ijednog `pointerdown@menuitem`.
+- Automatizirano se isto može reproducirati Playwright-om (Chromium, `hasTouch: true`, CDP `Input.dispatchTouchEvent` start/end na koordinatama ⋮ s pomakom od ~6px prema dolje) — ali kod je već jednoznačan, ovo služi samo kao regresijski test nakon popravka.
+
+**Ništa nije mijenjano — ovo je samo dijagnoza.**
