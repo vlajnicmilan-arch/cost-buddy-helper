@@ -99,10 +99,10 @@ const useMenuTouchGuard = () => {
         target: describeMenuEventTarget(event.target),
       });
     }
-    if (!suppress) {
-      hadPointerDownInsideRef.current = false;
-      return;
-    }
+    // `hadPointerDownInside` is consumed by the click gate, not here — the
+    // click of a deliberate tap must still see that the gesture started inside.
+    if (!suppress) return;
+
     suppressNextClickRef.current = true;
     event.preventDefault();
     event.stopPropagation();
