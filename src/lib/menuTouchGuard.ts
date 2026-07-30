@@ -31,10 +31,15 @@ export interface MenuPointerUpContext {
 }
 
 /**
- * Returns true when the pointerup (and the click it produces) must be
- * suppressed because it is a leftover of the gesture that opened the menu.
+ * Returns true when the activation (pointerup or the click itself) must be
+ * suppressed because it is a leftover of the gesture that OPENED the menu.
+ *
+ * `pointerType` must be the pointerType of the LAST pointerdown seen while the
+ * menu was open (falling back to the event's own pointerType). Ghost clicks on
+ * Android arrive with no pointerup and an empty `pointerType`, so relying on
+ * the click event alone is not enough.
  */
-export const shouldSuppressMenuPointerUp = ({
+export const shouldSuppressMenuActivation = ({
   pointerType,
   openedAt,
   now,
@@ -43,5 +48,10 @@ export const shouldSuppressMenuPointerUp = ({
   if (hadPointerDownInside) return false;
   // Mouse press-drag-release over a menu item stays supported.
   if (pointerType === 'mouse') return false;
+  if (!openedAt) return false;
   return now - openedAt < MENU_TOUCH_GUARD_WINDOW_MS;
 };
+
+/** @deprecated use shouldSuppressMenuActivation */
+export const shouldSuppressMenuPointerUp = shouldSuppressMenuActivation;
+
