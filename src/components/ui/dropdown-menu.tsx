@@ -37,6 +37,7 @@ const useMenuTouchGuard = () => {
   const lastPointerTypeRef = rootState?.lastPointerTypeRef ?? fallbackPointerTypeRef;
   const hadPointerDownInsideRef = React.useRef(false);
   const suppressNextClickRef = React.useRef(false);
+  const lastPointerUpRef = React.useRef<{ type: string; at: number }>({ type: '', at: 0 });
 
   React.useEffect(() => {
     // Content mount is NOT the open anchor anymore (content is recycled on some
@@ -81,6 +82,7 @@ const useMenuTouchGuard = () => {
 
   const onPointerUpCapture = React.useCallback((event: React.PointerEvent) => {
     const now = Date.now();
+    lastPointerUpRef.current = { type: event.pointerType, at: now };
     const suppress = shouldSuppressMenuActivation({
       pointerType: lastPointerTypeRef.current || event.pointerType,
       openedAt: openedAtRef.current,
@@ -118,6 +120,8 @@ const useMenuTouchGuard = () => {
       openedAt: openedAtRef.current,
       now,
       hadPointerDownInside: hadPointerDownInsideRef.current,
+      lastPointerUpType: lastPointerUpRef.current.type,
+      lastPointerUpAt: lastPointerUpRef.current.at,
     });
     // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
     if (MENU_DEBUG_ENABLED) {
@@ -136,6 +140,7 @@ const useMenuTouchGuard = () => {
     }
     suppressNextClickRef.current = false;
     hadPointerDownInsideRef.current = false;
+    lastPointerUpRef.current = { type: '', at: 0 };
     if (!suppress) return;
     event.preventDefault();
     event.stopPropagation();
