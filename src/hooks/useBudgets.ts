@@ -448,7 +448,7 @@ export const useBudgets = (options?: UseBudgetsOptions) => {
 
   // Reset budget (just refreshes stats since we're calculating from expenses)
   const resetBudget = useCallback(async (id: string) => {
-    toast.info(t('budget.resetInfo', 'Statistike se automatski računaju iz transakcija'));
+    showSuccess(t('budget.resetInfo', 'Statistike se automatski računaju iz transakcija'), { module: 'budgets' });
   }, [t]);
 
   // Generate trend data for the chart

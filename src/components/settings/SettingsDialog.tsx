@@ -245,7 +245,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       }
       setPushEnabled(false);
       setPushNotificationsEnabled(false);
-      toast.info(t('settings.pushDisabled', 'Push obavijesti isključene'));
+      showSuccess(t('settings.pushDisabled', 'Push obavijesti isključene'), { module: 'centar' });
     }
   };
 

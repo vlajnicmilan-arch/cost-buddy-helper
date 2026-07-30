@@ -1232,7 +1232,7 @@ export const useExpenseCRUD = ({
         ));
 
         if (insertedData.length === 0 && mergedCount === 0) {
-          toast.info(t('import.allAlreadyExists', { count: transactions.length, defaultValue: `Nema novih transakcija — svih ${transactions.length} već postoji.` }));
+          showWarning(t('import.allAlreadyExists', { count: transactions.length, defaultValue: `Nema novih transakcija — svih ${transactions.length} već postoji.` }), { module: 'wallet' });
         } else if (mergedCount > 0 && skippedCount > 0) {
           showSuccess(t('import.summaryFull', { inserted: insertedData.length, merged: mergedCount, skipped: skippedCount, defaultValue: `Uvezeno ${insertedData.length} novih, spojeno ${mergedCount} s ručnim, ${skippedCount} već postoji.` }));
         } else if (mergedCount > 0) {

@@ -97,14 +97,14 @@ export const BusinessDebtTracker = () => {
       }));
 
       if (businessTxs.length === 0) {
-        toast.info(t('business.debts.noTransactions', 'Nema transakcija za skeniranje'));
+        showWarning(t('business.debts.noTransactions', 'Nema transakcija za skeniranje'), { module: 'centar' });
         setScanning(false);
         return;
       }
 
       const detected = await detectLoans(businessTxs);
       if (detected.length === 0) {
-        toast.info(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'));
+        showWarning(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'), { module: 'centar' });
       } else {
         setDetectedLoans(detected);
         setLoanDialogOpen(true);

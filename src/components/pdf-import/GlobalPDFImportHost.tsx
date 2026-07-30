@@ -217,7 +217,7 @@ export const GlobalPDFImportHost = () => {
           const result = await waitForPDFParseJob(jobId);
           if (!result) return;
           if (result.transactions.length === 0) {
-            toast.warning(t('toasts.pdfNoTransactions'));
+            showWarning(t('toasts.pdfNoTransactions'), { module: 'wallet' });
             resetAll();
             return;
           }
@@ -270,7 +270,7 @@ export const GlobalPDFImportHost = () => {
           const result = await parseHTML(content);
           if (!result) return;
           if (result.transactions.length === 0) {
-            toast.warning(t('toasts.htmlNoTransactions'));
+            showWarning(t('toasts.htmlNoTransactions'), { module: 'wallet' });
             resetAll();
             return;
           }
@@ -688,7 +688,7 @@ export const GlobalPDFImportHost = () => {
           duplicateResult.suspiciousDuplicates.length === 0 &&
           (duplicateResult.autoMergeMatches?.length ?? 0) === 0
         ) {
-          toast.info(t('import.noNewTransactions'));
+          showWarning(t('import.noNewTransactions'), { module: 'wallet' });
           resetAll();
           return;
         }
@@ -773,7 +773,7 @@ export const GlobalPDFImportHost = () => {
       ...forcedManualMerges.map(m => m.tx),
     ];
     if (transactions.length === 0 && forcedManualMerges.length === 0) {
-      toast.info(t('import.noNewTransactions'));
+      showWarning(t('import.noNewTransactions'), { module: 'wallet' });
       resetAll();
       return;
     }

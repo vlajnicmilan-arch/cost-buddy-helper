@@ -117,7 +117,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     clearFilePickerGuardRelease();
     const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
     if (pdfInputRef.current) pdfInputRef.current.value = '';
-    toast.info(t('toasts.loadingPdf'));
+    showSuccess(t('toasts.loadingPdf'), { module: 'wallet' });
 
     const reader = new FileReader();
     reader.onerror = () => {
@@ -333,7 +333,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     const transactionsToImport = overrideToBusinessSource([...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude]);
 
     if (transactionsToImport.length === 0) {
-      toast.info(t('import.noNewTransactions'));
+      showWarning(t('import.noNewTransactions'), { module: 'wallet' });
       setDuplicateWarningOpen(false);
       clearParsedData();
       setLocalParsedData(null);

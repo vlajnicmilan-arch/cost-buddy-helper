@@ -122,7 +122,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
     setPhase('review');
 
     if (newSuggestions.length === 0) {
-      toast.info(t('toasts.allCategorized'));
+      showSuccess(t('toasts.allCategorized'), { module: 'wallet' });
     }
   };
 

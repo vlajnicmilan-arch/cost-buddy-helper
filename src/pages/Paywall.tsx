@@ -113,7 +113,7 @@ const Paywall: React.FC = () => {
   // webhook trails but they already had other entitlements.
   useEffect(() => {
     if (checkoutStatus !== 'success') return;
-    toast.success(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'));
+    showSuccess(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'), { module: 'centar' });
     checkSubscription();
     let attempts = 0;
     const id = window.setInterval(() => {

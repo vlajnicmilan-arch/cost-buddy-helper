@@ -123,7 +123,7 @@ const ImportReview = () => {
   const handleConfirm = useCallback(async () => {
     if (!payload || !decisions || !summary?.canConfirm) return;
     if (!user) {
-      toast.error(t('common.notAuthenticated'));
+      showError(t('common.notAuthenticated'), { module: 'wallet' });
       return;
     }
     setConfirming(true);
@@ -192,7 +192,7 @@ const ImportReview = () => {
           message: e instanceof Error ? e.message : String(e),
         });
       } catch { /* noop */ }
-      toast.error(t('importReview.confirmFailed'));
+      showError(t('importReview.confirmFailed'), { module: 'wallet' });
     } finally {
       setConfirming(false);
     }

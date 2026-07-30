@@ -183,7 +183,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(t('toasts.noDataFoundFor', { name: partnerName }));
+        showWarning(t('toasts.noDataFoundFor', { name: partnerName }), { module: 'wallet' });
         return;
       }
 

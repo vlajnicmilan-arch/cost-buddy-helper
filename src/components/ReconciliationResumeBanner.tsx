@@ -106,7 +106,7 @@ export function ReconciliationResumeBanner() {
           } catch { /* nastavi s ostalima */ }
         }
       }
-      toast(t('reconciliation.resumeBanner.discardedToast'));
+      showSuccess(t('reconciliation.resumeBanner.discardedToast'), { module: 'wallet' });
     } finally {
       setBusy(false);
       setConfirmOpen(false);

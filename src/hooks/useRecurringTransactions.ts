@@ -219,7 +219,7 @@ export const useRecurringTransactions = () => {
 
       if (generated > 0) {
         await fetchRecurring();
-        toast.info(`Generirano ${generated} ponavljajućih transakcija`);
+        showSuccess(`Generirano ${generated} ponavljajućih transakcija`, { module: 'wallet' });
       }
 
       return generated;
