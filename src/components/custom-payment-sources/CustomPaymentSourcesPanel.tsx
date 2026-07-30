@@ -413,7 +413,14 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                   €{(source.balance || 0).toFixed(2)}
                 </span>
                 {!reorderMode && (
-                  <DropdownMenu>
+                  <DropdownMenu
+                    onOpenChange={(open) => {
+                      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS (logging only)
+                      if (MENU_DEBUG_ENABLED) {
+                        logMenuDebug('menu_open_change', { open, source_id: source.id });
+                      }
+                    }}
+                  >
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -427,7 +434,20 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleHidden(source.id, 'wallet-panel-menu-item'); }}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS (logging only)
+                        if (MENU_DEBUG_ENABLED) {
+                          logMenuDebug('hide_item_onclick', {
+                            source_id: source.id,
+                            currently_hidden: hidden,
+                            is_trusted: (e.nativeEvent as MouseEvent)?.isTrusted ?? null,
+                            detail: (e.nativeEvent as MouseEvent)?.detail ?? null,
+                          });
+                        }
+                        toggleHidden(source.id, 'wallet-panel-menu-item');
+                      }}>
+
                         {hidden ? <EyeOff className="h-3.5 w-3.5 mr-2" /> : <Eye className="h-3.5 w-3.5 mr-2" />}
                         {hidden
                           ? t('paymentSources.showOnDashboard', 'Prikaži na dashboardu')
