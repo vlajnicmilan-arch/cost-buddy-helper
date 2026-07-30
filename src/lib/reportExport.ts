@@ -56,6 +56,8 @@ export interface ReportData {
   byCategory: Record<string, number>;
   byPaymentSource: Record<string, number>;
   currency?: CurrencyConfig;
+  /** Account the report is scoped to — used for the inbound/outbound split. */
+  accountId?: string | null;
 }
 
 const formatDate = (date: Date): string => {
