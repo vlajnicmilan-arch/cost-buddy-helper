@@ -818,6 +818,7 @@ export const PaymentSourceTransactionsDialog = ({
       },
       byCategory,
       byPaymentSource,
+      accountId: paymentSource?.id ?? null,
       currency: currencyConfig,
     };
   };
