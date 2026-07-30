@@ -4,6 +4,16 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { shouldSuppressMenuPointerUp } from "@/lib/menuTouchGuard";
+import { logMenuDebug, MENU_DEBUG_ENABLED } from "@/lib/menuDebug";
+
+// TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+const describeMenuEventTarget = (target: EventTarget | null) => {
+  if (!(target instanceof Element)) return { tagName: null, textContent: null };
+  return {
+    tagName: target.tagName,
+    textContent: target.textContent?.trim().slice(0, 30) ?? null,
+  };
+};
 
 /**
  * Blocks the pointerup/click that belongs to the gesture which OPENED the menu
@@ -16,22 +26,60 @@ const useMenuTouchGuard = () => {
   const suppressNextClickRef = React.useRef(false);
 
   React.useEffect(() => {
-    openedAtRef.current = Date.now();
+    const openedAt = Date.now();
+    openedAtRef.current = openedAt;
     hadPointerDownInsideRef.current = false;
     suppressNextClickRef.current = false;
+    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+    if (MENU_DEBUG_ENABLED) {
+      logMenuDebug('content_mount', { opened_at_ms: openedAt });
+    }
+    return () => {
+      // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+      if (MENU_DEBUG_ENABLED) {
+        logMenuDebug('content_unmount', {
+          opened_at_ms: openedAtRef.current,
+          timestamp_ms: Date.now(),
+        });
+      }
+    };
   }, []);
 
-  const onPointerDownCapture = React.useCallback(() => {
+  const onPointerDownCapture = React.useCallback((event: React.PointerEvent) => {
+    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+    if (MENU_DEBUG_ENABLED) {
+      const now = Date.now();
+      logMenuDebug('pointer_down_capture', {
+        event_type: event.type,
+        pointer_type: event.pointerType,
+        opened_delta_ms: now - openedAtRef.current,
+        had_pointer_down_inside: hadPointerDownInsideRef.current,
+        suppress: false,
+        target: describeMenuEventTarget(event.target),
+      });
+    }
     hadPointerDownInsideRef.current = true;
   }, []);
 
   const onPointerUpCapture = React.useCallback((event: React.PointerEvent) => {
+    const now = Date.now();
     const suppress = shouldSuppressMenuPointerUp({
       pointerType: event.pointerType,
       openedAt: openedAtRef.current,
-      now: Date.now(),
+      now,
       hadPointerDownInside: hadPointerDownInsideRef.current,
     });
+    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+    if (MENU_DEBUG_ENABLED) {
+      logMenuDebug('pointer_up_capture', {
+        event_type: event.type,
+        pointer_type: event.pointerType,
+        opened_delta_ms: now - openedAtRef.current,
+        had_pointer_down_inside: hadPointerDownInsideRef.current,
+        suppress,
+        target: describeMenuEventTarget(event.target),
+      });
+    }
     hadPointerDownInsideRef.current = false;
     if (!suppress) return;
     suppressNextClickRef.current = true;
@@ -40,6 +88,18 @@ const useMenuTouchGuard = () => {
   }, []);
 
   const onClickCapture = React.useCallback((event: React.MouseEvent) => {
+    // TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+    if (MENU_DEBUG_ENABLED) {
+      const now = Date.now();
+      logMenuDebug('click_capture', {
+        event_type: event.type,
+        pointer_type: 'mouse',
+        opened_delta_ms: now - openedAtRef.current,
+        had_pointer_down_inside: hadPointerDownInsideRef.current,
+        suppress: suppressNextClickRef.current,
+        target: describeMenuEventTarget(event.target),
+      });
+    }
     if (!suppressNextClickRef.current) return;
     suppressNextClickRef.current = false;
     event.preventDefault();
