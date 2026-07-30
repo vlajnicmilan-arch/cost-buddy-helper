@@ -142,7 +142,7 @@ const drawTransactionFeed = (
 
     for (let i = 0; i < dayItems.length; i++) {
       const it = dayItems[i];
-      const cleanTitle = cleanFeedTitle(it.title) || '—';
+      const cleanTitle = cleanFeedTitle(it.title, owner) || '—';
       const rawLine = buildFeedSubtitle(it.rawDescription, cleanTitle);
       const metaText = it.metaParts.filter(Boolean).join(' · ');
       const rowHeight = 3.2 + (rawLine ? 3.1 : 0) + (metaText ? 3.3 : 0);
