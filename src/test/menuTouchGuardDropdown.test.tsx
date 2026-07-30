@@ -36,12 +36,18 @@ const Harness = ({
   </DropdownMenu>
 );
 
+/**
+ * jsdom cannot deliver Radix's pointerdown-open path, so the menu is opened via
+ * the keyboard. What matters for the guard is the onOpenChange(true) anchor and
+ * the pointerType of the last pointerdown, both simulated explicitly.
+ */
 const openMenu = (pointerType: string) => {
-  const trigger = screen.getByLabelText('more');
-  fireEvent.pointerDown(trigger, { pointerType, button: 0, ctrlKey: false });
-  fireEvent.pointerUp(trigger, { pointerType });
-  fireEvent.click(trigger, { detail: 1 });
+  if (pointerType) {
+    fireEvent.pointerDown(document.body, { pointerType });
+  }
+  fireEvent.keyDown(screen.getByLabelText('more'), { key: 'Enter' });
 };
+
 
 describe('dropdown-menu touch guard (open-anchored)', () => {
   it('suppresses the ghost click that follows the opening tap (stale mount scenario)', async () => {
