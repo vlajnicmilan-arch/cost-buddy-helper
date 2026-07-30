@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { showError } from '@/hooks/useStatusFeedback';
+// IZNIMKA (Faza 3): uspješni sažetak uvoza ostaje na sonneru — treba duration 10s
+// + Undo akciju koju CentarNote (fiksna trajanja) još ne podržava.
+import { toast } from 'sonner';
 import { AlertTriangle, ArrowLeft, ArrowRightLeft, CheckCircle2, HelpCircle, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
