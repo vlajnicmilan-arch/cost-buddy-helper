@@ -276,6 +276,71 @@ export const aggregateMerchants = (
     .sort((a, b) => b.amount - a.amount);
 };
 
+// ===== Display helpers (summary + meta line) =====
+
+/**
+ * Drop the leading action prefix of bank descriptions so the summary names the
+ * counterparty: "Placanje racuna - Telemach Hrvatska d.o.o." → "Telemach
+ * Hrvatska d.o.o.". Used only in the summary, never in the transaction list.
+ */
+export const stripActionPrefix = (title: string): string => {
+  if (!title) return '';
+  const parts = String(title).split(/\s+[-–—]\s+/);
+  const last = tidy(parts[parts.length - 1] || '');
+  return last || tidy(String(title));
+};
+
+/** Avoid "d.o.o.." when a merchant name lands before sentence punctuation. */
+export const trimTrailingDot = (s: string): string =>
+  String(s || '').replace(/\.+$/, '');
+
+/**
+ * Meta line segments for one transaction row: falsy and "unknown/other"
+ * labels are dropped, remaining segments deduplicated (case/diacritics
+ * insensitive) preserving order.
+ */
+export const buildMetaParts = (
+  parts: (string | null | undefined)[],
+  hiddenLabels: (string | null | undefined)[] = [],
+): string[] => {
+  const hidden = new Set(
+    hiddenLabels.filter(Boolean).map((l) => normalizeName(String(l))),
+  );
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of parts) {
+    const value = tidy(String(raw || ''));
+    if (!value) continue;
+    const key = normalizeName(value);
+    if (hidden.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+};
+
+export interface TransferSplit {
+  inbound: number;
+  outbound: number;
+}
+
+/**
+ * Inbound / outbound split of transfer rows for one account. Display only —
+ * report totals stay untouched.
+ */
+export const computeTransferSplit = <T extends ReportTotalsTx>(
+  list: T[],
+  accountId?: string | null,
+): TransferSplit => {
+  const split: TransferSplit = { inbound: 0, outbound: 0 };
+  for (const e of list) {
+    if (isCorrectionTx(e)) continue;
+    if (e.type !== 'transfer') continue;
+    if (accountId && e.income_source_id === accountId) split.inbound += e.amount;
+    else split.outbound += e.amount;
+  }
+  return split;
+};
 
 
 // ===== Executive summary (deterministic, template based — no AI) =====
