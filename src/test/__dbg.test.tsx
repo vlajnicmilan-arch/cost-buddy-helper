@@ -10,7 +10,7 @@ beforeAll(() => {
 describe('x', () => {
   it('opens', async () => {
     render(<D.Root><D.Trigger aria-label="more">x</D.Trigger><D.Portal><D.Content><D.Item>ITEM</D.Item></D.Content></D.Portal></D.Root>);
-    fireEvent.pointerDown(screen.getByLabelText('more'), { button: 0, ctrlKey: false, pointerType: 'touch' });
+    fireEvent.keyDown(screen.getByLabelText('more'), { key: 'Enter' });
     console.log(document.body.innerHTML.slice(0,400));
     await screen.findByText('ITEM');
   });
