@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Users, Check, Plus, RefreshCw, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useTranslation } from 'react-i18next';
@@ -183,7 +182,7 @@ export const DetectedPartnersDialog = ({ open, onOpenChange, merchantNames }: De
 
       if (error) throw error;
       if (!data?.found) {
-        toast.info(t('toasts.noDataFoundFor', { name: partnerName }));
+        showWarning(t('toasts.noDataFoundFor', { name: partnerName }), { module: 'wallet' });
         return;
       }
 

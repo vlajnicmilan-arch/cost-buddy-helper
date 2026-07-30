@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 import { AlertCircle, ArrowRightLeft, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -106,7 +106,7 @@ export function ReconciliationResumeBanner() {
           } catch { /* nastavi s ostalima */ }
         }
       }
-      toast(t('reconciliation.resumeBanner.discardedToast'));
+      showSuccess(t('reconciliation.resumeBanner.discardedToast'), { module: 'wallet' });
     } finally {
       setBusy(false);
       setConfirmOpen(false);

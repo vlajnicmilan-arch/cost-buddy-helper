@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,14 +67,15 @@ export const HardDeleteUserDialog = ({
         body: { userId, email },
       });
       if (error) {
-        toast.error(t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'), {
-          description: error.message,
+        showError(error.message, {
+          title: t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'),
+          module: 'centar',
         });
         return;
       }
       const status = (data as { status?: string } | null)?.status;
       if (status === 'deleted') {
-        toast.success(t('admin.hardDelete.successToast', 'Korisnik trajno obrisan'));
+        showSuccess(t('admin.hardDelete.successToast', 'Korisnik trajno obrisan'), { module: 'centar' });
         onDeleted?.();
         onOpenChange(false);
         reset();
@@ -83,22 +84,26 @@ export const HardDeleteUserDialog = ({
       if (status === 'blocked') {
         const blockedBy = (data as { blockedBy?: string }).blockedBy;
         if (blockedBy === 'krug_multi_member') {
-          toast.warning(
+          showWarning(
             t('admin.hardDelete.blockedKrugToast', 'Korisnik posjeduje krug s drugim članovima. Raspusti krug ručno prije brisanja.'),
+            { module: 'centar' },
           );
         } else {
-          toast.warning(t('admin.hardDelete.blockedGenericToast', 'Brisanje blokirano'), {
-            description: blockedBy,
+          showWarning(String(blockedBy ?? ''), {
+            title: t('admin.hardDelete.blockedGenericToast', 'Brisanje blokirano'),
+            module: 'centar',
           });
         }
         return;
       }
-      toast.error(t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'), {
-        description: JSON.stringify(data),
+      showError(JSON.stringify(data), {
+        title: t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'),
+        module: 'centar',
       });
     } catch (e) {
-      toast.error(t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'), {
-        description: e instanceof Error ? e.message : String(e),
+      showError(e instanceof Error ? e.message : String(e), {
+        title: t('admin.hardDelete.errorToast', 'Brisanje nije uspjelo'),
+        module: 'centar',
       });
     } finally {
       setSubmitting(false);

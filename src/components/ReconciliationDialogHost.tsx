@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { AlertTriangle, ArrowRightLeft, Loader2, Wallet as WalletIcon } from 'lucide-react';
 import {
   Dialog,
@@ -91,10 +91,10 @@ export function ReconciliationDialogHost() {
         importedStatementId: active.importedStatementId ?? null,
       });
       try { logDiagnostic('reconciliation_aligned', { source_id: active.summary.sourceId, batch_id: active.batchId, delta: active.summary.delta }); } catch { /* noop */ }
-      toast.success(t('reconciliation.alignedToast', { balance: formatAmount(res.newBalance) }));
+      showSuccess(t('reconciliation.alignedToast', { balance: formatAmount(res.newBalance) }), { module: 'wallet' });
       finish(active.summary.sourceId);
     } catch (e) {
-      toast.error(t('reconciliation.alignFailed'));
+      showError(t('reconciliation.alignFailed'), { module: 'wallet' });
       setBusy(null);
     }
   };
@@ -109,10 +109,10 @@ export function ReconciliationDialogHost() {
         importedStatementId: active.importedStatementId ?? null,
       });
       try { logDiagnostic('reconciliation_user_override', { source_id: active.summary.sourceId, batch_id: active.batchId, delta: active.summary.delta }); } catch { /* noop */ }
-      toast(t('reconciliation.keptToast'));
+      showSuccess(t('reconciliation.keptToast'), { module: 'wallet' });
       finish(active.summary.sourceId);
     } catch (e) {
-      toast.error(t('reconciliation.keepFailed'));
+      showError(t('reconciliation.keepFailed'), { module: 'wallet' });
       setBusy(null);
     }
   };

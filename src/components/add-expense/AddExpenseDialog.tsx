@@ -13,8 +13,7 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { useInstallments } from '@/hooks/useInstallments';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import { useNativeCamera } from '@/hooks/useNativeCamera';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useTranslation } from 'react-i18next';
 import { CustomIncomeCategoryDialog } from '@/components/custom-categories/CustomIncomeCategoryDialog';
 import { DuplicateWarningDialog } from '@/components/DuplicateWarningDialog';
@@ -659,7 +658,7 @@ export const AddExpenseDialog = ({
       const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
       let receiptUrl: string | undefined;
       if (saveReceipt && receiptImage) {
-        toast.info(t('toasts.savingReceipt'));
+        showSuccess(t('toasts.savingReceipt'), { module: 'wallet' });
         const uploadedUrl = await uploadReceiptImage(receiptImage);
         if (uploadedUrl) receiptUrl = uploadedUrl;
       }
@@ -1072,7 +1071,7 @@ export const AddExpenseDialog = ({
     const validItems = items.filter(item => item.name && item.total_price > 0);
     let receiptUrl: string | undefined;
     if (saveReceipt && receiptImage) {
-      toast.info(t('transactions.savingReceipt'));
+      showSuccess(t('transactions.savingReceipt'), { module: 'wallet' });
       const uploadedUrl = await uploadReceiptImage(receiptImage);
       if (uploadedUrl) {
         receiptUrl = uploadedUrl;

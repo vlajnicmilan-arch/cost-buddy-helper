@@ -13,7 +13,7 @@ import { resolveTransferEndpoints } from '@/lib/transferMatching';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -648,10 +648,10 @@ export const TransactionDetailDialog = ({
                             // Refresh URL from cloud
                             const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(filePath);
                             if (urlData?.publicUrl) setFreshReceiptUrl(urlData.publicUrl);
-                            toast.success(t('transactions.savedToCloud', 'Spremljeno u oblak'));
+                            showSuccess(t('transactions.savedToCloud', 'Spremljeno u oblak'), { module: 'wallet' });
                           } catch (e: any) {
                             console.error('Cloud upload error:', e);
-                            toast.error(t('common.error', 'Greška'));
+                            showError(t('common.error', 'Greška'), { module: 'wallet' });
                           }
                         }}
                       >
@@ -677,7 +677,7 @@ export const TransactionDetailDialog = ({
                                 if (localPath && user) {
                                   await supabase.from('expenses').update({ receipt_url: `local:${localPath}` }).eq('id', expense.id);
                                   setIsLocalReceipt(true);
-                                  toast.success(t('transactions.savedToDevice', 'Spremljeno na uređaj'));
+                                  showSuccess(t('transactions.savedToDevice', 'Spremljeno na uređaj'), { module: 'wallet' });
                                 }
                               };
                               reader.readAsDataURL(blob);
@@ -691,12 +691,12 @@ export const TransactionDetailDialog = ({
                               document.body.appendChild(a);
                               a.click();
                               setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-                              toast.success(t('transactions.savedToDevice', 'Spremljeno na uređaj'));
+                              showSuccess(t('transactions.savedToDevice', 'Spremljeno na uređaj'), { module: 'wallet' });
                             }
                           } catch (e: any) {
                             if (!e?.message?.includes('cancel') && !e?.message?.includes('abort')) {
                               console.error('Save error:', e);
-                              toast.error(t('common.error', 'Greška'));
+                              showError(t('common.error', 'Greška'), { module: 'wallet' });
                             }
                           }
                         }}

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { showError } from '@/hooks/useStatusFeedback';
+// IZNIMKA (Faza 3): uspješni sažetak uvoza ostaje na sonneru — treba duration 10s
+// + Undo akciju koju CentarNote (fiksna trajanja) još ne podržava.
 import { toast } from 'sonner';
 import { AlertTriangle, ArrowLeft, ArrowRightLeft, CheckCircle2, HelpCircle, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -123,7 +126,7 @@ const ImportReview = () => {
   const handleConfirm = useCallback(async () => {
     if (!payload || !decisions || !summary?.canConfirm) return;
     if (!user) {
-      toast.error(t('common.notAuthenticated'));
+      showError(t('common.notAuthenticated'), { module: 'wallet' });
       return;
     }
     setConfirming(true);
@@ -154,11 +157,11 @@ const ImportReview = () => {
       } catch { /* noop */ }
 
       if (result.errors.length > 0) {
-        toast.error(t('importReview.confirmedWithErrors', {
+        showError(t('importReview.confirmedWithErrors', {
           merged: result.merged,
           inserted: result.inserted,
           errors: result.errors.length,
-        }));
+        }), { module: 'wallet' });
         return;
       }
 
@@ -192,7 +195,7 @@ const ImportReview = () => {
           message: e instanceof Error ? e.message : String(e),
         });
       } catch { /* noop */ }
-      toast.error(t('importReview.confirmFailed'));
+      showError(t('importReview.confirmFailed'), { module: 'wallet' });
     } finally {
       setConfirming(false);
     }

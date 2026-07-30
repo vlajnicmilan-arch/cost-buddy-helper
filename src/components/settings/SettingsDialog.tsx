@@ -13,8 +13,7 @@ import { BugReportDialog } from '@/components/BugReportDialog';
 import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { motion } from 'framer-motion';
 import { checkForUpdates } from '@/components/PWAUpdatePrompt';
 
@@ -245,7 +244,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
       }
       setPushEnabled(false);
       setPushNotificationsEnabled(false);
-      toast.info(t('settings.pushDisabled', 'Push obavijesti isključene'));
+      showSuccess(t('settings.pushDisabled', 'Push obavijesti isključene'), { module: 'centar' });
     }
   };
 

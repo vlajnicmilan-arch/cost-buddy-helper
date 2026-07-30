@@ -20,8 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useLoanDetection, DetectedLoan } from '@/hooks/useLoanDetection';
 import { LoanDetectionDialog } from './LoanDetectionDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { getDateRange, toInputDate, clampInputDate, getDateValidationKey } from '@/lib/dateValidation';
 
 export const BusinessDebtTracker = () => {
@@ -97,14 +96,14 @@ export const BusinessDebtTracker = () => {
       }));
 
       if (businessTxs.length === 0) {
-        toast.info(t('business.debts.noTransactions', 'Nema transakcija za skeniranje'));
+        showWarning(t('business.debts.noTransactions', 'Nema transakcija za skeniranje'), { module: 'centar' });
         setScanning(false);
         return;
       }
 
       const detected = await detectLoans(businessTxs);
       if (detected.length === 0) {
-        toast.info(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'));
+        showWarning(t('business.debts.noLoansFound', 'Nije pronađena nijedna pozajmica u transakcijama'), { module: 'centar' });
       } else {
         setDetectedLoans(detected);
         setLoanDialogOpen(true);

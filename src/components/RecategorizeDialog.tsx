@@ -10,8 +10,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Sparkles, Loader2, Check, X, ArrowRight, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from 'react-i18next';
 
@@ -122,7 +121,7 @@ export const RecategorizeDialog = ({ expenses, onUpdateExpenses, open, onOpenCha
     setPhase('review');
 
     if (newSuggestions.length === 0) {
-      toast.info(t('toasts.allCategorized'));
+      showSuccess(t('toasts.allCategorized'), { module: 'wallet' });
     }
   };
 

@@ -8,8 +8,7 @@ import { CSVImportDialog } from './CSVImportDialog';
 import { ParsedTransaction } from '@/lib/csvParsers';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePDFParser } from '@/hooks/usePDFParser';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -117,7 +116,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     clearFilePickerGuardRelease();
     const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'application/pdf' });
     if (pdfInputRef.current) pdfInputRef.current.value = '';
-    toast.info(t('toasts.loadingPdf'));
+    showSuccess(t('toasts.loadingPdf'), { module: 'wallet' });
 
     const reader = new FileReader();
     reader.onerror = () => {
@@ -333,7 +332,7 @@ export const BankConnection = ({ onImportCSV, findDuplicates, existingExpenses, 
     const transactionsToImport = overrideToBusinessSource([...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude]);
 
     if (transactionsToImport.length === 0) {
-      toast.info(t('import.noNewTransactions'));
+      showWarning(t('import.noNewTransactions'), { module: 'wallet' });
       setDuplicateWarningOpen(false);
       clearParsedData();
       setLocalParsedData(null);

@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Check, Loader2, Compass, Users, Briefcase, Sparkles, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { tr } from '@/lib/errorMessages';
 import {
   shouldForceRedirectAway,
@@ -113,7 +112,7 @@ const Paywall: React.FC = () => {
   // webhook trails but they already had other entitlements.
   useEffect(() => {
     if (checkoutStatus !== 'success') return;
-    toast.success(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'));
+    showSuccess(t('paywall.checkoutSuccess', 'Hvala — pretplata se aktivira'), { module: 'centar' });
     checkSubscription();
     let attempts = 0;
     const id = window.setInterval(() => {

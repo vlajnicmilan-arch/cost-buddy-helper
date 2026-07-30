@@ -23,8 +23,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { showSuccess, showError } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePDFParser } from '@/hooks/usePDFParser';
@@ -410,7 +409,7 @@ export const PaymentSourceTransactionsDialog = ({
       activePdfJobIdRef.current = null;
       setPdfJobId(null);
       try { logDiagnostic('payment_source_pdf_no_transactions', { job_id: jobId }); } catch {}
-      toast.warning(t('toasts.pdfNoTransactions'));
+      showWarning(t('toasts.pdfNoTransactions'), { module: 'wallet' });
     }
   }, [clearStoredPdfJob, t]);
 
@@ -579,7 +578,7 @@ export const PaymentSourceTransactionsDialog = ({
 
     const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'application/pdf' });
     if (pdfInputRef.current) pdfInputRef.current.value = '';
-    toast.info(t('toasts.loadingPdf'));
+    showSuccess(t('toasts.loadingPdf'), { module: 'wallet' });
     await startPdfImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
@@ -603,7 +602,7 @@ export const PaymentSourceTransactionsDialog = ({
     }
     const fileClone = new File([await file.arrayBuffer()], file.name, { type: file.type || 'text/html' });
     if (htmlInputRef.current) htmlInputRef.current.value = '';
-    toast.info(t('toasts.loadingHtml'));
+    showSuccess(t('toasts.loadingHtml'), { module: 'wallet' });
     await startHtmlImport({ file: fileClone, source: paymentSource, releaseGuard: releaseFilePickerGuardSoon });
   };
 
@@ -646,7 +645,7 @@ export const PaymentSourceTransactionsDialog = ({
         if (duplicates.length > 0 || fuzzyDuplicates.length > 0) {
           if (unique.length === 0 && fuzzyDuplicates.length === 0) {
             try { logDiagnostic('payment_source_pdf_import_all_duplicates', { source_id: paymentSource.id, count: transactions.length }); } catch {}
-            toast.info(t('import.noNewTransactions'));
+            showWarning(t('import.noNewTransactions'), { module: 'wallet' });
             setPdfPreviewOpen(false);
             resetPdfImportState();
             return;
@@ -686,7 +685,7 @@ export const PaymentSourceTransactionsDialog = ({
     const transactionsToImport = [...duplicateInfo.unique, ...fuzzyToInclude, ...strictToInclude];
     try { logDiagnostic('payment_source_pdf_duplicate_confirm_clicked', { count: transactionsToImport.length, unique: duplicateInfo.unique.length, fuzzy_selected: fuzzyToInclude.length, strict_selected: strictToInclude.length }); } catch {}
     if (transactionsToImport.length === 0) {
-      toast.info(t('import.noNewTransactions'));
+      showWarning(t('import.noNewTransactions'), { module: 'wallet' });
       setDuplicateWarningOpen(false);
       resetPdfImportState();
       setDuplicateInfo(null);
