@@ -399,8 +399,8 @@ export const generatePDFReport = async (
       categoriesTwo: i18n.t('reports.summaryCategoriesTwo') as string,
       categoriesOne: i18n.t('reports.summaryCategoriesOne') as string,
       largest: i18n.t('reports.summaryLargest') as string,
-      merchantsTwo: i18n.t('reports.summaryMerchantsTwo') as string,
-      merchantsOne: i18n.t('reports.summaryMerchantsOne') as string,
+      merchantsInsertTwo: i18n.t('reports.summaryMerchantsInsertTwo') as string,
+      merchantsInsertOne: i18n.t('reports.summaryMerchantsInsertOne') as string,
       empty: i18n.t('reports.summaryEmpty') as string,
     },
   );
