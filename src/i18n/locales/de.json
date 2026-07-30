@@ -2074,7 +2074,9 @@
     "difference": "Differenz",
     "comparisonChart": "Vergleichsdiagramm",
     "categoryDetails": "Details nach Kategorie",
-    "noTransactionsToCompare": "Keine Transaktionen zum Vergleichen in den ausgewählten Zeiträumen"
+    "noTransactionsToCompare": "Keine Transaktionen zum Vergleichen in den ausgewählten Zeiträumen",
+    "netForPeriod": "Netto im Zeitraum",
+    "correctionLabel": "Korrektur"
   },
   "update": {
     "available": "Neue Version verfügbar!",

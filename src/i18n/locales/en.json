@@ -2074,7 +2074,9 @@
     "difference": "Difference",
     "comparisonChart": "Comparison chart",
     "categoryDetails": "Details by category",
-    "noTransactionsToCompare": "No transactions to compare in selected periods"
+    "noTransactionsToCompare": "No transactions to compare in selected periods",
+    "netForPeriod": "Net for period",
+    "correctionLabel": "Correction"
   },
   "update": {
     "available": "New version available!",

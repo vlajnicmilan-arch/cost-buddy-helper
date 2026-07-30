@@ -434,10 +434,11 @@ export const generateIncomePDFReport = async (
     .filter(([_, amount]) => amount > 0)
     .sort((a, b) => b[1] - a[1])
     .map(([categoryId, amount]) => {
-      const percentage = data.totalIncome > 0 
-        ? ((amount / data.totalIncome) * 100).toFixed(1) 
-        : '0';
-      return [toAscii(categoryId), formatCurrency(amount, data.currency), `${percentage}%`];
+      return [
+        toAscii(categoryId),
+        formatCurrency(amount, data.currency),
+        formatPercent(amount, data.totalIncome, data.currency?.locale || 'hr-HR'),
+      ];
     });
 
   if (categoryData.length > 0) {
