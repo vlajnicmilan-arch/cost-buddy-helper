@@ -160,7 +160,7 @@ export function ProjectDecisionsTab({
         }}
         onAction={async (action, message, price, attachments) => {
           const res = await addStep({ decisionId: selectedDecision.id, action, message, price, attachments });
-          if (res.ok) showSuccess(t('projects.decisions.actionRecorded', 'Zabilježeno'));
+          if (res.ok) showSuccess(t(decisionActionNoteKey(action), 'Zabilježeno'));
           return res;
         }}
         onRequestAdmin={async (type) => {
