@@ -34,7 +34,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "loading": "Loading...",
-    "error": "Error",
+    "error": "Something didn't work\nTry again in a few moments.",
     "success": "Success",
     "yes": "Yes",
     "no": "No",
@@ -72,7 +72,7 @@
     "updated": "Updated",
     "you": "You",
     "member": "Member",
-    "deleted": "Deleted",
+    "deleted": "Deleted\nYou can restore it from Trash within 30 days.",
     "merchant": "Merchant",
     "items": "Items",
     "cards": "cards",
@@ -505,7 +505,7 @@
       "description": "Generate a link the client can open without signing in. They see only what you choose.",
       "generate": "Generate link"
     },
-    "created": "Project created",
+    "created": "Your project is ready\nAdd phases, expenses and decisions.",
     "updated": "Project updated",
     "deleted": "Project deleted",
     "deleteConfirmTitle": "Delete project?",
@@ -837,7 +837,7 @@
       "optKeepHint": "Status becomes Completed but stays visible on Projects.",
       "recommended": "Recommended",
       "finishCta": "Complete project",
-      "success": "Project completed"
+      "success": "Project finished 🏁\nReady for the final review."
     },
     "advances": {
       "sectionTitle": "Advance / collaborator",
@@ -962,7 +962,7 @@
         "pendingAnnul": "Awaiting confirmation: annulment",
         "pendingAnnulBanner": "Annulment proposed — awaiting the other party's response.",
         "requestedBy": "Requested by: {{name}} · {{when}}",
-        "requestSent": "Request sent to the other party",
+        "requestSent": "Request sent\nWaiting for the other side — we'll let you know.",
         "withdrawn": "Request withdrawn",
         "annulledOk": "Decision annulled",
         "declinedOk": "Request declined",
@@ -1362,9 +1362,9 @@
     "existingTransaction": "Existing transaction",
     "merge": "Merge",
     "notSame": "Not the same",
-    "merged": "Transactions merged",
+    "merged": "Merged into one record\nThe bank and your entry now match — no duplicates.",
     "mergeError": "Merge failed",
-    "dismissed": "Marked as different",
+    "dismissed": "Marked as different\nBoth transactions stay separate.",
     "dismissError": "Action failed"
   },
   "transactions": {
@@ -1913,7 +1913,7 @@
     "total": "Total",
     "importCount": "Import {{count}} transactions",
     "importBreakdown": "New: {{newCount}} · Will merge: {{mergeCount}} · Skipped: {{skipCount}}",
-    "importedFromPDF": "Imported {{count}} transactions from PDF",
+    "importedFromPDF": "Import done\n{{count}} transactions from your PDF are in place.",
     "importing": "Importing...",
     "installment": {
       "badge": "Installment {{cur}}/{{total}}"
@@ -1934,8 +1934,8 @@
     "compareAndSelect": "Compare and select which ones to import:",
     "existing": "Existing",
     "noNewTransactions": "No new transactions to import",
-    "importedTransactions": "Imported {{count}} transactions",
-    "importedWithAutoMerge": "Imported {{count}} transactions ({{merged}} auto-merged with manual entries)",
+    "importedTransactions": "Import done\n{{count}} new transactions are in place.",
+    "importedWithAutoMerge": "Import done\n{{count}} new, {{merged}} merged with your entries — no duplicates.",
     "autoMerge": {
       "title": "✅ Auto-merged with your entries ({{count}})",
       "description": "These transactions already exist as your manual entries and will be linked to the statement.",
@@ -2090,7 +2090,7 @@
     "installing": "Installing..."
   },
   "errors": {
-    "generic": "Something went wrong. Please try again.",
+    "generic": "Something got stuck\nTry again — if it happens again, we're here.",
     "network": "No internet connection. Check your network and try again.",
     "timeout": "The request timed out. Please try again.",
     "unauthorized": "You are not signed in. Please sign in and try again.",
@@ -2098,10 +2098,10 @@
     "notFound": "Item not found.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "duplicate": "An item with these details already exists.",
-    "mustBeLoggedIn": "You must be signed in to do this.",
+    "mustBeLoggedIn": "Sign in to do this",
     "unknownError": "Unknown error",
     "fetchError": "Error fetching data",
-    "saveError": "Error saving",
+    "saveError": "Saving didn't work\nNothing is lost — try again.",
     "deleteError": "Error deleting",
     "networkError": "Network error",
     "fetch": {
@@ -3613,7 +3613,7 @@
     "loadingHtml": "Loading HTML statement...",
     "htmlNoTransactions": "HTML processed, but no transactions found.",
     "htmlAnalysisError": "Error analyzing HTML statement",
-    "importError": "Error importing transactions",
+    "importError": "Import didn't finish\nNothing gets imported twice — feel free to try again.",
     "allCategorized": "All transactions are already correctly categorized! ✅",
     "recategorizeError": "Error updating",
     "scanError": "Error scanning",
@@ -3673,7 +3673,7 @@
     "invitationSent": "Invitation sent",
     "invitationSendError": "Error sending invitation",
     "duplicateDatesForWorker": "All selected dates already have entries for this worker",
-    "pdfReportGenerated": "PDF report generated!",
+    "pdfReportGenerated": "Your PDF is ready\nShare it or save it whenever you like.",
     "pdfGenerateError": "Error generating PDF",
     "csvGenerateError": "Error generating CSV",
     "jsonGenerateError": "Error generating JSON",
@@ -3720,7 +3720,7 @@
     "incomeCategoryDeleted": "Income category deleted",
     "linkCreated": "Link created",
     "linkRevoked": "Link revoked",
-    "deleted": "Deleted",
+    "deleted": "Deleted\nYou can restore it from Trash within 30 days.",
     "installmentPlanCreated": "Installment plan created",
     "installmentPlanDeleted": "Installment plan deleted",
     "recurringAdded": "Recurring transaction added",
@@ -3794,10 +3794,10 @@
   },
   "feedback": {
     "incomeAdded": "Income added",
-    "expenseAdded": "Expense added",
+    "expenseAdded": "Noted\nYour balance is updated.",
     "updated": "Updated",
     "deleted": "Deleted",
-    "mustBeLoggedIn": "You must be logged in",
+    "mustBeLoggedIn": "Sign in to do this",
     "pendingSent": "Transaction sent to owner for approval",
     "missingDescription": "Missing transaction description. Enter a description and try again.",
     "addError": "Error adding transaction",
@@ -5151,7 +5151,7 @@
     "syncing": "Syncing...",
     "syncSuccess": "Imported transactions: {{count}}",
     "syncSuccessSkipped": "Imported: {{imported}} · Skipped: {{skipped}}",
-    "syncError": "Sync failed",
+    "syncError": "Sync didn't work\nYour transactions are safe — try again in a minute.",
     "lastSync": "Last sync",
     "neverSynced": "Never synced",
     "sessionExpired": "Session expired, reconnect",
@@ -5373,7 +5373,7 @@
         "roleLabel": "Role",
         "roleHint": "With decision rights: approves shared expenses and votes on Krug changes. Without: sees and adds expenses, but doesn't decide.",
         "submit": "Add",
-        "success": "Member added",
+        "success": "They're in the Krug\nFrom now on they see shared expenses.",
         "punopravniCapReached": "Maximum members with decision rights reached for this Krug type.",
         "errors": {
           "user_not_found": "No user with that email yet.",
@@ -5396,7 +5396,7 @@
       },
       "remove": {
         "confirm": "Remove member from Krug?",
-        "success": "Member removed",
+        "success": "Member removed\nThey no longer have access to shared data.",
         "error": "Failed to remove member"
       },
       "actions": {
@@ -5470,7 +5470,7 @@
       "pdf": {
         "title": "Krug settlement report",
         "exportButton": "Export PDF",
-        "exportSuccess": "PDF report saved.",
+        "exportSuccess": "Your PDF is ready\nYou can share it with your Krug.",
         "exportError": "Could not export PDF.",
         "filenameBase": "krug-settlement",
         "splitModeLabel": "Split mode",

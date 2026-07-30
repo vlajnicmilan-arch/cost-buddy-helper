@@ -34,7 +34,7 @@
     "close": "Schließen",
     "confirm": "Bestätigen",
     "loading": "Laden...",
-    "error": "Fehler",
+    "error": "Etwas hat nicht geklappt\nVersuch es in ein paar Augenblicken erneut.",
     "success": "Erfolgreich",
     "yes": "Ja",
     "no": "Nein",
@@ -71,7 +71,7 @@
     "updated": "Aktualisiert",
     "you": "Du",
     "member": "Mitglied",
-    "deleted": "Gelöscht",
+    "deleted": "Gelöscht\nDu kannst es innerhalb von 30 Tagen aus dem Papierkorb zurückholen.",
     "merchant": "Händler",
     "items": "Artikel",
     "cards": "Karten",
@@ -501,7 +501,7 @@
       "description": "Erstelle einen Link, den der Kunde ohne Anmeldung öffnen kann. Sichtbar ist nur, was du auswählst.",
       "generate": "Link erstellen"
     },
-    "created": "Projekt erstellt",
+    "created": "Dein Projekt ist bereit\nFüge Phasen, Ausgaben und Entscheidungen hinzu.",
     "updated": "Projekt aktualisiert",
     "deleted": "Projekt gelöscht",
     "deleteConfirmTitle": "Projekt löschen?",
@@ -815,7 +815,7 @@
       "optKeepHint": "Status wird Abgeschlossen, bleibt aber bei Projekten sichtbar.",
       "recommended": "Empfohlen",
       "finishCta": "Projekt abschließen",
-      "success": "Projekt abgeschlossen"
+      "success": "Projekt abgeschlossen 🏁\nBereit für die letzte Durchsicht."
     },
     "onboarding": {
       "title": "Projekte",
@@ -962,7 +962,7 @@
         "pendingAnnul": "Warten auf Bestätigung: Aufhebung",
         "pendingAnnulBanner": "Aufhebung vorgeschlagen — wartet auf Antwort der Gegenseite.",
         "requestedBy": "Antragsteller: {{name}} · {{when}}",
-        "requestSent": "Antrag an die Gegenseite gesendet",
+        "requestSent": "Anfrage gesendet\nWartet auf die andere Seite — wir sagen dir Bescheid.",
         "withdrawn": "Antrag zurückgezogen",
         "annulledOk": "Entscheidung aufgehoben",
         "declinedOk": "Antrag abgelehnt",
@@ -1362,9 +1362,9 @@
     "existingTransaction": "Bestehende Transaktion",
     "merge": "Zusammenführen",
     "notSame": "Nicht gleich",
-    "merged": "Transaktionen zusammengeführt",
+    "merged": "Zu einem Eintrag zusammengeführt\nBank und dein Eintrag stimmen jetzt überein — keine Duplikate.",
     "mergeError": "Zusammenführen fehlgeschlagen",
-    "dismissed": "Als unterschiedlich markiert",
+    "dismissed": "Als unterschiedlich markiert\nBeide Transaktionen bleiben getrennt.",
     "dismissError": "Aktion fehlgeschlagen"
   },
   "transactions": {
@@ -1913,7 +1913,7 @@
     "total": "Gesamt",
     "importCount": "{{count}} Transaktionen importieren",
     "importBreakdown": "Neu: {{newCount}} · Wird zusammengeführt: {{mergeCount}} · Übersprungen: {{skipCount}}",
-    "importedFromPDF": "{{count}} Transaktionen aus PDF importiert",
+    "importedFromPDF": "Import fertig\n{{count}} Transaktionen aus deinem PDF sind an ihrem Platz.",
     "importing": "Importiere...",
     "installment": {
       "badge": "Rate {{cur}}/{{total}}"
@@ -1934,8 +1934,8 @@
     "compareAndSelect": "Vergleichen und auswählen, welche importiert werden sollen:",
     "existing": "Bestehend",
     "noNewTransactions": "Keine neuen Transaktionen zum Importieren",
-    "importedTransactions": "{{count}} Transaktionen importiert",
-    "importedWithAutoMerge": "{{count}} Transaktionen importiert ({{merged}} automatisch mit manuellen Einträgen zusammengeführt)",
+    "importedTransactions": "Import fertig\n{{count}} neue Transaktionen sind an ihrem Platz.",
+    "importedWithAutoMerge": "Import fertig\n{{count}} neue, {{merged}} mit deinen Einträgen zusammengeführt — keine Duplikate.",
     "autoMerge": {
       "title": "✅ Automatisch mit deinen Einträgen zusammengeführt ({{count}})",
       "description": "Diese Transaktionen existieren bereits als deine manuellen Einträge und werden mit dem Kontoauszug verknüpft.",
@@ -2090,7 +2090,7 @@
     "installing": "Installation läuft..."
   },
   "errors": {
-    "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "generic": "Etwas ist hängen geblieben\nVersuch es erneut — falls es wieder passiert, sind wir da.",
     "network": "Keine Internetverbindung. Prüfen Sie das Netzwerk und versuchen Sie es erneut.",
     "timeout": "Zeitüberschreitung. Bitte versuchen Sie es erneut.",
     "unauthorized": "Sie sind nicht angemeldet. Bitte melden Sie sich an.",
@@ -2098,10 +2098,10 @@
     "notFound": "Element nicht gefunden.",
     "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
     "duplicate": "Ein Eintrag mit diesen Daten existiert bereits.",
-    "mustBeLoggedIn": "Sie müssen angemeldet sein.",
+    "mustBeLoggedIn": "Melde dich an, um das zu tun",
     "unknownError": "Unbekannter Fehler",
     "fetchError": "Fehler beim Abrufen der Daten",
-    "saveError": "Fehler beim Speichern",
+    "saveError": "Speichern hat nicht geklappt\nNichts ist verloren — versuch es erneut.",
     "deleteError": "Fehler beim Löschen",
     "networkError": "Netzwerkfehler",
     "fetch": {
@@ -3613,7 +3613,7 @@
     "loadingHtml": "HTML-Auszug wird geladen...",
     "htmlNoTransactions": "HTML verarbeitet, aber keine Transaktionen gefunden.",
     "htmlAnalysisError": "Fehler bei der HTML-Analyse",
-    "importError": "Fehler beim Importieren der Transaktionen",
+    "importError": "Import hat nicht geklappt\nNichts wird doppelt importiert — versuch es einfach erneut.",
     "allCategorized": "Alle Transaktionen sind bereits korrekt kategorisiert! ✅",
     "recategorizeError": "Fehler beim Aktualisieren",
     "scanError": "Fehler beim Scannen",
@@ -3673,7 +3673,7 @@
     "invitationSent": "Einladung gesendet",
     "invitationSendError": "Fehler beim Senden der Einladung",
     "duplicateDatesForWorker": "Alle ausgewählten Daten haben bereits Einträge für diesen Mitarbeiter",
-    "pdfReportGenerated": "PDF-Bericht erstellt!",
+    "pdfReportGenerated": "Dein PDF ist fertig\nTeile es oder speichere es, wann du willst.",
     "pdfGenerateError": "Fehler beim Erstellen des PDF",
     "csvGenerateError": "Fehler beim Erstellen der CSV",
     "jsonGenerateError": "Fehler beim Erstellen der JSON",
@@ -3720,7 +3720,7 @@
     "incomeCategoryDeleted": "Einnahmekategorie gelöscht",
     "linkCreated": "Link erstellt",
     "linkRevoked": "Link widerrufen",
-    "deleted": "Gelöscht",
+    "deleted": "Gelöscht\nDu kannst es innerhalb von 30 Tagen aus dem Papierkorb zurückholen.",
     "installmentPlanCreated": "Ratenzahlungsplan erstellt",
     "installmentPlanDeleted": "Ratenzahlungsplan gelöscht",
     "recurringAdded": "Wiederkehrende Transaktion hinzugefügt",
@@ -3794,10 +3794,10 @@
   },
   "feedback": {
     "incomeAdded": "Einnahme hinzugefügt",
-    "expenseAdded": "Ausgabe hinzugefügt",
+    "expenseAdded": "Notiert\nDein Saldo ist aktualisiert.",
     "updated": "Aktualisiert",
     "deleted": "Gelöscht",
-    "mustBeLoggedIn": "Sie müssen angemeldet sein",
+    "mustBeLoggedIn": "Melde dich an, um das zu tun",
     "pendingSent": "Transaktion zur Genehmigung gesendet",
     "missingDescription": "Transaktionsbeschreibung fehlt. Bitte eingeben und erneut versuchen.",
     "addError": "Fehler beim Hinzufügen",
@@ -5151,7 +5151,7 @@
     "syncing": "Synchronisiere...",
     "syncSuccess": "Importierte Transaktionen: {{count}}",
     "syncSuccessSkipped": "Importiert: {{imported}} · Übersprungen: {{skipped}}",
-    "syncError": "Synchronisation fehlgeschlagen",
+    "syncError": "Synchronisierung hat nicht geklappt\nDeine Transaktionen sind sicher — versuch es in einer Minute erneut.",
     "lastSync": "Letzte Synchronisation",
     "neverSynced": "Noch nie synchronisiert",
     "sessionExpired": "Sitzung abgelaufen, neu verbinden",
@@ -5373,7 +5373,7 @@
         "roleLabel": "Rolle",
         "roleHint": "Mit Entscheidungsrecht: bestätigt gemeinsame Ausgaben und stimmt über Krug-Änderungen ab. Ohne: sieht und fügt Ausgaben hinzu, entscheidet aber nicht.",
         "submit": "Hinzufügen",
-        "success": "Mitglied hinzugefügt",
+        "success": "Jetzt im Krug\nAb sofort sieht das Mitglied gemeinsame Ausgaben.",
         "punopravniCapReached": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
         "errors": {
           "user_not_found": "Kein Nutzer mit dieser E-Mail vorhanden.",
@@ -5396,7 +5396,7 @@
       },
       "remove": {
         "confirm": "Mitglied aus dem Krug entfernen?",
-        "success": "Mitglied entfernt",
+        "success": "Mitglied entfernt\nEs hat keinen Zugriff mehr auf gemeinsame Daten.",
         "error": "Entfernen fehlgeschlagen"
       },
       "actions": {
@@ -5470,7 +5470,7 @@
       "pdf": {
         "title": "Krug-Abrechnungsbericht",
         "exportButton": "PDF exportieren",
-        "exportSuccess": "PDF-Bericht gespeichert.",
+        "exportSuccess": "Dein PDF ist fertig\nDu kannst es mit deinem Krug teilen.",
         "exportError": "PDF-Export nicht möglich.",
         "filenameBase": "krug-settlement",
         "splitModeLabel": "Aufteilungsmodus",

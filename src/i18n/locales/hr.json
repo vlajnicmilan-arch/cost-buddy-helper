@@ -39,7 +39,7 @@
     "close": "Zatvori",
     "confirm": "Potvrdi",
     "loading": "Učitavanje...",
-    "error": "Greška",
+    "error": "Nešto nije uspjelo\nPokušaj ponovno za nekoliko trenutaka.",
     "success": "Uspješno",
     "yes": "Da",
     "no": "Ne",
@@ -76,7 +76,7 @@
     "created": "Kreirano",
     "updated": "Ažurirano",
     "member": "Član",
-    "deleted": "Obrisano",
+    "deleted": "Obrisano\nMožeš vratiti iz Smeća u roku 30 dana.",
     "merchant": "Trgovac",
     "items": "Artikli",
     "cards": "kartica",
@@ -509,7 +509,7 @@
       "description": "Generiraj link koji klijent može otvoriti bez prijave. Vidi samo što ti odabereš.",
       "generate": "Generiraj link"
     },
-    "created": "Projekt kreiran",
+    "created": "Projekt je spreman\nMožeš dodavati faze, troškove i odluke.",
     "updated": "Projekt ažuriran",
     "deleted": "Projekt obrisan",
     "deleteConfirmTitle": "Obriši projekt?",
@@ -841,7 +841,7 @@
       "optKeepHint": "Status postaje Završen, ali ostaje vidljiv na Projektima.",
       "recommended": "Preporučeno",
       "finishCta": "Završi projekt",
-      "success": "Projekt završen"
+      "success": "Projekt završen 🏁\nSpreman za konačni pregled."
     },
     "advances": {
       "sectionTitle": "Avans / suradnik",
@@ -966,7 +966,7 @@
         "pendingAnnul": "Čeka potvrdu: poništenje",
         "pendingAnnulBanner": "Predloženo poništenje odluke — čeka odgovor druge strane.",
         "requestedBy": "Predlagatelj: {{name}} · {{when}}",
-        "requestSent": "Zahtjev poslan drugoj strani",
+        "requestSent": "Zahtjev poslan\nČeka potvrdu druge strane — javit ćemo ti odgovor.",
         "withdrawn": "Zahtjev povučen",
         "annulledOk": "Odluka poništena",
         "declinedOk": "Zahtjev odbijen",
@@ -1366,9 +1366,9 @@
     "existingTransaction": "Postojeća transakcija",
     "merge": "Spoji",
     "notSame": "Nisu isto",
-    "merged": "Transakcije spojene",
+    "merged": "Spojeno u jedan zapis\nBanka i tvoj unos sada su isto — bez duplikata.",
     "mergeError": "Spajanje nije uspjelo",
-    "dismissed": "Označeno kao različito",
+    "dismissed": "Označeno kao različito\nObje transakcije ostaju zasebne.",
     "dismissError": "Akcija nije uspjela"
   },
   "transactions": {
@@ -1918,7 +1918,7 @@
     "total": "Ukupno",
     "importCount": "Uvezi {{count}} transakcija",
     "importBreakdown": "Novo: {{newCount}} · Spojit će se: {{mergeCount}} · Preskočeno: {{skipCount}}",
-    "importedFromPDF": "Uvezeno {{count}} transakcija iz PDF-a",
+    "importedFromPDF": "Uvoz gotov\n{{count}} transakcija iz PDF-a je na svom mjestu.",
     "importing": "Uvozim...",
     "installment": {
       "badge": "Rata {{cur}}/{{total}}"
@@ -1939,8 +1939,8 @@
     "compareAndSelect": "Usporedi i odaberi koje želiš uvesti:",
     "existing": "Postojeća",
     "noNewTransactions": "Nema novih transakcija za uvoz",
-    "importedTransactions": "Uvezeno {{count}} transakcija",
-    "importedWithAutoMerge": "Uvezeno {{count}} transakcija ({{merged}} automatski spojeno s ručnim unosima)",
+    "importedTransactions": "Uvoz gotov\n{{count}} novih transakcija je na svom mjestu.",
+    "importedWithAutoMerge": "Uvoz gotov\n{{count}} novih, {{merged}} spojeno s tvojim unosima — bez duplikata.",
     "autoMerge": {
       "title": "✅ Automatski spojeno s tvojim unosima ({{count}})",
       "description": "Ove transakcije već postoje kao tvoji ručni unosi i bit će povezane s izvodom.",
@@ -2095,7 +2095,7 @@
     "installing": "Instaliranje..."
   },
   "errors": {
-    "generic": "Nešto je pošlo po krivu. Pokušajte ponovno.",
+    "generic": "Nešto je zapelo\nPokušaj ponovno — ako se ponovi, tu smo.",
     "network": "Nema internetske veze. Provjerite mrežu i pokušajte ponovno.",
     "timeout": "Zahtjev je istekao. Pokušajte ponovno.",
     "unauthorized": "Niste prijavljeni. Prijavite se i pokušajte ponovno.",
@@ -2103,10 +2103,10 @@
     "notFound": "Stavka nije pronađena.",
     "sessionExpired": "Vaša sesija je istekla. Prijavite se ponovno.",
     "duplicate": "Stavka s tim podacima već postoji.",
-    "mustBeLoggedIn": "Morate biti prijavljeni za ovu radnju.",
+    "mustBeLoggedIn": "Prijavi se za ovu radnju",
     "unknownError": "Nepoznata greška",
     "fetchError": "Greška pri dohvaćanju podataka",
-    "saveError": "Greška pri spremanju",
+    "saveError": "Spremanje nije uspjelo\nNišta nije izgubljeno — pokušaj ponovno.",
     "deleteError": "Greška pri brisanju",
     "networkError": "Greška u mreži",
     "fetch": {
@@ -3619,7 +3619,7 @@
     "loadingHtml": "Učitavanje HTML izvoda...",
     "htmlNoTransactions": "HTML je obrađen, ali nisu pronađene transakcije.",
     "htmlAnalysisError": "Greška pri analizi HTML izvoda",
-    "importError": "Greška pri uvozu transakcija",
+    "importError": "Uvoz nije uspio\nNišta nije uvezeno dvaput — slobodno pokušaj ponovno.",
     "allCategorized": "Sve transakcije su već ispravno kategorizirane! ✅",
     "recategorizeError": "Greška pri ažuriranju",
     "scanError": "Greška pri skeniranju",
@@ -3679,7 +3679,7 @@
     "invitationSent": "Pozivnica poslana",
     "invitationSendError": "Greška pri slanju pozivnice",
     "duplicateDatesForWorker": "Svi odabrani datumi već imaju zapise za ovog djelatnika",
-    "pdfReportGenerated": "PDF izvješće generirano!",
+    "pdfReportGenerated": "PDF je spreman\nMožeš ga podijeliti ili spremiti kad želiš.",
     "pdfGenerateError": "Greška pri generiranju PDF-a",
     "csvGenerateError": "Greška pri generiranju CSV-a",
     "jsonGenerateError": "Greška pri generiranju JSON-a",
@@ -3726,7 +3726,7 @@
     "incomeCategoryDeleted": "Kategorija prihoda obrisana",
     "linkCreated": "Link kreiran",
     "linkRevoked": "Link opozvan",
-    "deleted": "Obrisano",
+    "deleted": "Obrisano\nMožeš vratiti iz Smeća u roku 30 dana.",
     "installmentPlanCreated": "Plan plaćanja na rate kreiran",
     "installmentPlanDeleted": "Plan plaćanja obrisan",
     "recurringAdded": "Ponavljajuća transakcija dodana",
@@ -3800,10 +3800,10 @@
   },
   "feedback": {
     "incomeAdded": "Prihod dodan",
-    "expenseAdded": "Trošak dodan",
+    "expenseAdded": "Zabilježeno\nSaldo je ažuriran.",
     "updated": "Ažurirano",
     "deleted": "Obrisano",
-    "mustBeLoggedIn": "Moraš biti prijavljen",
+    "mustBeLoggedIn": "Prijavi se za ovu radnju",
     "pendingSent": "Transakcija poslana vlasniku na odobrenje",
     "missingDescription": "Nedostaje opis transakcije. Unesi opis i pokušaj ponovno.",
     "addError": "Greška pri dodavanju",
@@ -5160,7 +5160,7 @@
     "syncing": "Sinkronizacija...",
     "syncSuccess": "Uvezeno transakcija: {{count}}",
     "syncSuccessSkipped": "Uvezeno: {{imported}} · Preskočeno: {{skipped}}",
-    "syncError": "Greška pri sinkronizaciji",
+    "syncError": "Sinkronizacija nije uspjela\nTvoje transakcije su sigurne — pokušaj za koju minutu.",
     "lastSync": "Zadnja sinkronizacija",
     "neverSynced": "Nikada sinkronizirano",
     "sessionExpired": "Sesija je istekla, ponovno se spoji",
@@ -5382,7 +5382,7 @@
         "roleLabel": "Uloga",
         "roleHint": "S pravom odluke: odobrava zajedničke troškove i glasa o promjenama Kruga. Bez prava odluke: vidi i dodaje troškove, ali ne odlučuje.",
         "submit": "Dodaj",
-        "success": "Član dodan",
+        "success": "Član je u Krugu\nOd sad vidi zajedničke troškove.",
         "punopravniCapReached": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
         "errors": {
           "user_not_found": "Korisnik s tim emailom još nema račun.",
@@ -5405,7 +5405,7 @@
       },
       "remove": {
         "confirm": "Ukloniti člana iz Kruga?",
-        "success": "Član uklonjen",
+        "success": "Član uklonjen\nViše nema pristup zajedničkim podacima.",
         "error": "Greška pri uklanjanju člana"
       },
       "actions": {
@@ -5479,7 +5479,7 @@
       "pdf": {
         "title": "Krug settlement izvještaj",
         "exportButton": "Izvezi PDF",
-        "exportSuccess": "PDF izvještaj spremljen.",
+        "exportSuccess": "PDF je spreman\nMožeš ga podijeliti s članovima Kruga.",
         "exportError": "Nije moguće izvesti PDF.",
         "filenameBase": "krug-settlement",
         "splitModeLabel": "Način podjele",
