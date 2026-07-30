@@ -23,7 +23,7 @@ export const isCorrectionTx = (tx: { expense_nature?: string | null }): boolean 
 /**
  * Report totals for a set of transactions.
  * - corrections are excluded entirely
- * - inbound transfers (income_source_id === sourceId) count as transfers, not income
+ * - transfers (incl. inbound ones) count as transfers, never as income
  */
 export const computeReportTotals = <T extends ReportTotalsTx>(
   list: T[],
