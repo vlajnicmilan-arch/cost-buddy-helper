@@ -78,8 +78,8 @@ describe('dropdown-menu touch guard (open-anchored)', () => {
     openMenu('touch');
     const item = await screen.findByText('Prikaži na dashboardu');
 
-    fireEvent.pointerDown(item, { pointerType: 'touch' });
-    fireEvent.pointerUp(item, { pointerType: 'touch' });
+    dispatchPointer(item, 'pointerdown', 'touch');
+    dispatchPointer(item, 'pointerup', 'touch');
     fireEvent.click(item, { detail: 1 });
 
     expect(onSelect).toHaveBeenCalledTimes(1);
@@ -110,7 +110,7 @@ describe('dropdown-menu touch guard (open-anchored)', () => {
     openMenu('mouse');
     const item = await screen.findByText('Prikaži na dashboardu');
 
-    fireEvent.pointerUp(item, { pointerType: 'mouse' });
+    dispatchPointer(item, 'pointerup', 'mouse');
     fireEvent.click(item, { detail: 1 });
 
     expect(onSelect).toHaveBeenCalledTimes(1);
