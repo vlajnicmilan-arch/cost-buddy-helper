@@ -131,20 +131,27 @@ export const CentarNote = ({
           />
         </div>
 
-        {title && (
-          <h2 className="mt-6 text-[19px] font-semibold leading-snug text-foreground">{title}</h2>
+        {effectiveTitle && (
+          <h2
+            data-testid="centar-note-title"
+            className="mt-6 text-[19px] font-semibold leading-snug text-foreground"
+          >
+            {effectiveTitle}
+          </h2>
         )}
 
-        {message && (
+        {effectiveMessage && (
           <p
+            data-testid="centar-note-description"
             className={cn(
               'text-[14px] leading-relaxed text-muted-foreground break-words line-clamp-4',
-              title ? 'mt-3' : 'mt-6',
+              effectiveTitle ? 'mt-3' : 'mt-6',
             )}
           >
-            {message}
+            {effectiveMessage}
           </p>
         )}
+
 
         {effectiveAction && (
           <button
