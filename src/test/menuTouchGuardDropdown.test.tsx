@@ -41,12 +41,20 @@ const Harness = ({
  * the keyboard. What matters for the guard is the onOpenChange(true) anchor and
  * the pointerType of the last pointerdown, both simulated explicitly.
  */
+// jsdom has no PointerEvent constructor, so fireEvent drops `pointerType`.
+const dispatchPointer = (target: Element | Document, type: string, pointerType: string) => {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  target.dispatchEvent(event);
+};
+
 const openMenu = (pointerType: string) => {
   if (pointerType) {
-    fireEvent.pointerDown(document.body, { pointerType });
+    dispatchPointer(document.body, 'pointerdown', pointerType);
   }
   fireEvent.keyDown(screen.getByLabelText('more'), { key: 'Enter' });
 };
+
 
 
 describe('dropdown-menu touch guard (open-anchored)', () => {
