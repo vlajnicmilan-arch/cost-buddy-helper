@@ -79,3 +79,128 @@ describe('reportTotals', () => {
     expect(isCorrectionTx({ expense_nature: 'regular' })).toBe(false);
   });
 });
+
+// ===== Dashboard / executive summary layer =====
+import {
+  topCategoriesWithRest,
+  cleanFeedTitle,
+  buildFeedSubtitle,
+  buildExecutiveSummary,
+  findLargestExpense,
+} from '@/lib/reportTotals';
+
+const fmt = {
+  currency: (n: number) => `${n.toFixed(2)} EUR`,
+  date: (d: Date) => d.toLocaleDateString('hr-HR'),
+  percent: (v: number, t: number) => formatPercent(v, t, 'hr-HR'),
+};
+
+const tplHr = {
+  main: 'U razdoblju od {{start}} do {{end}} zabilježeno je {{count}} transakcija: {{income}} prihoda i {{expenses}} troškova (neto {{net}}).',
+  categoriesTwo: 'Najviše je otišlo na {{cat1}} ({{pct1}}), zatim {{cat2}} ({{pct2}}).',
+  categoriesOne: 'Najviše je otišlo na {{cat1}} ({{pct1}}).',
+  largest: 'Najveći pojedinačni trošak: {{title}}, {{amount}} ({{date}}).',
+  empty: 'U odabranom razdoblju nema transakcija.',
+};
+
+describe('report dashboard helpers', () => {
+  it('top 5 + ostale agregacija', () => {
+    const rows = [10, 9, 8, 7, 6, 5, 4].map((a, i) => ({ name: `K${i}`, amount: a }));
+    const out = topCategoriesWithRest(rows, 5, 'Ostale kategorije');
+    expect(out).toHaveLength(6);
+    expect(out[5]).toEqual({ name: 'Ostale kategorije', amount: 9 });
+  });
+
+  it('ne dodaje ostale kad ih nema', () => {
+    const rows = [{ name: 'A', amount: 5 }];
+    expect(topCategoriesWithRest(rows, 5, 'Ostale')).toEqual(rows);
+  });
+
+  it('dvoredni trgovac: podnaslov samo kad se razlikuje', () => {
+    const raw = 'WOLT ZAGREB, 3dd09f2b-c6bc-4603-b819-a392f1234567';
+    const clean = cleanFeedTitle(raw);
+    expect(clean).toBe('WOLT ZAGREB');
+    expect(buildFeedSubtitle(raw, clean)).toContain('3dd09f2b');
+    expect(buildFeedSubtitle('Kava', 'Kava')).toBe('');
+  });
+
+  it('podnaslov nikad ne sadrži broj kartice', () => {
+    const raw = 'LIDL, Kartica: 416598******1542';
+    const clean = cleanFeedTitle(raw);
+    const sub = buildFeedSubtitle(raw, clean);
+    expect(sub).not.toContain('416598');
+  });
+
+  it('summary šablona s tipičnim podacima', () => {
+    const s = buildExecutiveSummary(
+      {
+        start: new Date(2026, 6, 1),
+        end: new Date(2026, 6, 31),
+        count: 12,
+        income: 1000,
+        expenses: 800,
+        net: 200,
+        categories: [{ name: 'Hrana', amount: 400 }, { name: 'Prijevoz', amount: 200 }],
+        largestExpense: { title: 'Konzum', amount: 150, date: new Date(2026, 6, 10) },
+      },
+      fmt,
+      tplHr,
+    );
+    expect(s).toHaveLength(3);
+    expect(s[0]).toContain('12 transakcija');
+    expect(s[0]).toContain('1000.00 EUR prihoda');
+    expect(s[1]).toBe('Najviše je otišlo na Hrana (50,0%), zatim Prijevoz (25,0%).');
+    expect(s[2]).toContain('Konzum, 150.00 EUR');
+  });
+
+  it('edge: prazno razdoblje daje urednu poruku', () => {
+    const s = buildExecutiveSummary(
+      { start: new Date(), end: new Date(), count: 0, income: 0, expenses: 0, net: 0, categories: [] },
+      fmt,
+      tplHr,
+    );
+    expect(s).toEqual([tplHr.empty]);
+  });
+
+  it('edge: 1 transakcija, 0 troškova — nema NaN', () => {
+    const s = buildExecutiveSummary(
+      {
+        start: new Date(2026, 0, 1),
+        end: new Date(2026, 0, 1),
+        count: 1,
+        income: 50,
+        expenses: 0,
+        net: 50,
+        categories: [],
+        largestExpense: null,
+      },
+      fmt,
+      tplHr,
+    );
+    expect(s).toHaveLength(1);
+    expect(s.join(' ')).not.toContain('NaN');
+  });
+
+  it('edge: jedna kategorija koristi jednočlanu šablonu', () => {
+    const s = buildExecutiveSummary(
+      {
+        start: new Date(2026, 0, 1), end: new Date(2026, 0, 31), count: 1,
+        income: 0, expenses: 100, net: -100,
+        categories: [{ name: 'Ostalo', amount: 100 }],
+      },
+      fmt,
+      tplHr,
+    );
+    expect(s[1]).toBe('Najviše je otišlo na Ostalo (100,0%).');
+  });
+
+  it('findLargestExpense preskače korekcije i prihode', () => {
+    const l = findLargestExpense([
+      tx({ amount: 20 }),
+      tx({ amount: 900, expense_nature: 'correction' }),
+      tx({ type: 'income', amount: 999 }),
+      tx({ amount: 60 }),
+    ] as any);
+    expect(l?.amount).toBe(60);
+  });
+});

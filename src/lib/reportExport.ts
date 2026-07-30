@@ -10,7 +10,17 @@ import { drawReportHeader, drawReportFooter, REPORT_MARGIN_X } from '@/lib/pdfRe
 import { ensureReportLogo } from '@/lib/reportLogo';
 import { buildReportFileName, loadLastConfidentiality, type ReportBrandOptions } from '@/lib/reportDesign';
 import { getReportOwner } from '@/hooks/useReportOwner';
-import { aggregateCategoryTotalsByName, formatPercent, isCorrectionTx } from '@/lib/reportTotals';
+import {
+  aggregateCategoryTotalsByName,
+  formatPercent,
+  isCorrectionTx,
+  topCategoriesWithRest,
+  cleanFeedTitle,
+  buildFeedSubtitle,
+  buildExecutiveSummary,
+  findLargestExpense,
+  type CategoryRow,
+} from '@/lib/reportTotals';
 
 let pdfLibsPromise: Promise<{ jsPDF: typeof JsPDFType; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 const loadPdfLibs = () => {
@@ -66,6 +76,8 @@ const toAscii = (text: string): string => text;
 interface FeedItem {
   date: Date;
   title: string;
+  /** Raw bank description shown dimmed under the title when it differs. */
+  rawDescription?: string;
   metaParts: string[];
   amount: number;
   signed: 'pos' | 'neg' | 'neutral';
@@ -75,37 +87,6 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 const dayLabel = (d: Date, locale: string) =>
   d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-/** Strip UUIDs, long hex chains and trailing numeric references from a
- * transaction description so PDF feed titles stay human-readable.
- * Examples cleaned:
- *  - "KEKS Pay - … Jadrolinija 304883586, e079598e-fb21-4a72-b819-a392f…"
- *    → "KEKS Pay - … Jadrolinija"
- *  - "WOLT ZAGREB, 3dd09f2b-c6bc-4603-…" → "WOLT ZAGREB"
- */
-const cleanFeedTitle = (raw: string | undefined | null): string => {
-  if (!raw) return '';
-  let s = String(raw);
-  // Privacy: drop masked card segments ("Kartica: 416598******1542")
-  s = s.replace(/\b(kartica|card)\s*:?\s*[0-9*x]{6,}[0-9*x\s-]*/gi, ' ');
-  // Drop redundant "Primatelj:" / "Recipient:" tails when a cleaner name exists
-  const recipientSplit = s.split(/\b(?:primatelj|primalac|recipient|empfänger)\s*:/i);
-  if (recipientSplit.length > 1 && recipientSplit[0].trim().length >= 3) {
-    s = recipientSplit[0];
-  } else if (recipientSplit.length > 1) {
-    s = recipientSplit.slice(1).join(' ');
-  }
-  // Remove full UUIDs
-  s = s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
-  // Remove standalone long hex strings (>=16 chars)
-  s = s.replace(/\b[0-9a-f]{16,}\b/gi, '');
-  // Remove trailing ", " left over from removed UUIDs
-  s = s.replace(/[,\s]+(?=$|[,\s])/g, ' ');
-  // Remove trailing standalone numeric reference (>=6 digits) at end
-  s = s.replace(/[\s,–-]+\d{6,}\s*$/g, '');
-  // Collapse whitespace and trim trailing punctuation
-  s = s.replace(/\s+/g, ' ').replace(/[\s,;:–-]+$/g, '').trim();
-  return s;
-};
 
 const drawTransactionFeed = (
   doc: JsPDFType,
@@ -136,29 +117,38 @@ const drawTransactionFeed = (
     }
   };
 
+  const fit = (text: string, maxWidth: number): string => {
+    if (doc.getTextWidth(text) <= maxWidth) return text;
+    const r = maxWidth / Math.max(doc.getTextWidth(text), 1);
+    return text.substring(0, Math.max(1, Math.floor(text.length * r) - 1)) + '…';
+  };
+
   for (const key of sortedKeys) {
     const dayItems = grouped.get(key)!;
-    ensureSpace(10);
+    ensureSpace(9);
     doc.setFont('Inter', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
     doc.text(toAscii(dayLabel(dayItems[0].date, locale)), leftX, y);
-    y += 4;
+    y += 2.6;
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.1);
     doc.line(leftX, y, rightX, y);
-    y += 2;
+    y += 3.4;
 
     for (let i = 0; i < dayItems.length; i++) {
       const it = dayItems[i];
-      const hasMeta = it.metaParts.filter(Boolean).length > 0;
-      const rowHeight = hasMeta ? 11 : 8;
-      ensureSpace(rowHeight);
+      const cleanTitle = cleanFeedTitle(it.title) || '—';
+      const rawLine = buildFeedSubtitle(it.rawDescription, cleanTitle);
+      const metaText = it.metaParts.filter(Boolean).join(' · ');
+      const rowHeight = 3.2 + (rawLine ? 3.1 : 0) + (metaText ? 3.3 : 0);
+      ensureSpace(rowHeight + 3);
+
       const amountText = (it.signed === 'neg' ? '-' : it.signed === 'pos' ? '+' : '') +
         formatCurrency(Math.abs(it.amount), currency);
 
       doc.setFont('Inter', 'bold');
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       if (it.signed === 'neg') doc.setTextColor(220, 38, 38);
       else if (it.signed === 'pos') doc.setTextColor(22, 163, 74);
       else doc.setTextColor(15, 23, 42);
@@ -166,43 +156,132 @@ const drawTransactionFeed = (
       doc.text(amountText, rightX - amountWidth, y);
 
       doc.setFont('Inter', 'normal');
-      doc.setFontSize(9.5);
+      doc.setFontSize(9);
       doc.setTextColor(15, 23, 42);
-      const maxTitleWidth = rightX - leftX - amountWidth - 6;
-      let title = toAscii(cleanFeedTitle(it.title) || '—');
-      if (doc.getTextWidth(title) > maxTitleWidth) {
-        const r = maxTitleWidth / Math.max(doc.getTextWidth(title), 1);
-        title = title.substring(0, Math.max(1, Math.floor(title.length * r) - 1)) + '…';
-      }
-      doc.text(title, leftX, y);
+      doc.text(fit(toAscii(cleanTitle), rightX - leftX - amountWidth - 6), leftX, y);
 
-      const metaText = toAscii(it.metaParts.filter(Boolean).join(' · '));
+      let lineY = y;
+      if (rawLine) {
+        lineY += 3.1;
+        doc.setFontSize(6.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text(fit(toAscii(rawLine), rightX - leftX), leftX, lineY);
+      }
       if (metaText) {
-        doc.setFont('Inter', 'normal');
-        doc.setFontSize(7.5);
+        lineY += 3.3;
+        doc.setFontSize(7);
         doc.setTextColor(100, 116, 139);
-        const maxMetaWidth = rightX - leftX;
-        let meta = metaText;
-        if (doc.getTextWidth(meta) > maxMetaWidth) {
-          const r = maxMetaWidth / Math.max(doc.getTextWidth(meta), 1);
-          meta = meta.substring(0, Math.max(1, Math.floor(meta.length * r) - 1)) + '…';
-        }
-        doc.text(meta, leftX, y + 3.6);
+        doc.text(fit(toAscii(metaText), rightX - leftX), leftX, lineY);
       }
 
-      y += rowHeight - 2;
-      // Hairline separator between rows (skip after last item in day)
+      y += rowHeight;
       if (i < dayItems.length - 1) {
-        doc.setDrawColor(226, 232, 240);
+        doc.setDrawColor(240, 244, 248);
         doc.setLineWidth(0.1);
         doc.line(leftX, y, rightX, y);
       }
-      y += 2;
+      y += 2.6;
     }
 
-    y += 3;
+    y += 2.4;
   }
 };
+
+// ===== Page 1 dashboard =====
+
+const KPI_GAP = 4;
+
+const drawKpiCards = (
+  doc: JsPDFType,
+  y: number,
+  cards: { label: string; value: string; tone: 'income' | 'expense' | 'neutral' | 'accent' }[],
+): number => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const totalW = pageWidth - REPORT_MARGIN_X * 2;
+  const n = Math.max(cards.length, 1);
+  const cardW = (totalW - KPI_GAP * (n - 1)) / n;
+  const cardH = 20;
+
+  cards.forEach((c, i) => {
+    const x = REPORT_MARGIN_X + i * (cardW + KPI_GAP);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(x, y, cardW, cardH, 2, 2, 'F');
+    const accent: [number, number, number] =
+      c.tone === 'income' ? [22, 163, 74]
+      : c.tone === 'expense' ? [220, 38, 38]
+      : c.tone === 'accent' ? [35, 170, 145]
+      : [71, 85, 105];
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.roundedRect(x, y, 1.6, cardH, 0.8, 0.8, 'F');
+
+    doc.setFont('Inter', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(toAscii(c.label).toUpperCase(), x + 4, y + 6.5);
+
+    doc.setFont('Inter', 'bold');
+    doc.setTextColor(accent[0], accent[1], accent[2]);
+    let size = 13;
+    doc.setFontSize(size);
+    while (size > 7 && doc.getTextWidth(c.value) > cardW - 8) {
+      size -= 0.5;
+      doc.setFontSize(size);
+    }
+    doc.text(c.value, x + 4, y + 15);
+  });
+
+  doc.setTextColor(0, 0, 0);
+  return y + cardH;
+};
+
+const CATEGORY_BAR_COLORS: [number, number, number][] = [
+  [23, 138, 118],
+  [35, 170, 145],
+  [72, 190, 168],
+  [122, 208, 192],
+  [168, 224, 213],
+  [203, 213, 225],
+];
+
+const drawCategoryBars = (
+  doc: JsPDFType,
+  y: number,
+  rows: CategoryRow[],
+  totalExpenses: number,
+  currency: CurrencyConfig | undefined,
+  numberLocale: string,
+): number => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const leftX = REPORT_MARGIN_X;
+  const rightX = pageWidth - REPORT_MARGIN_X;
+  const trackW = rightX - leftX;
+  const max = rows.reduce((m, r) => Math.max(m, r.amount), 0);
+
+  let cursor = y;
+  rows.forEach((r, i) => {
+    const color = CATEGORY_BAR_COLORS[Math.min(i, CATEGORY_BAR_COLORS.length - 1)];
+    doc.setFont('Inter', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii(r.name), leftX, cursor);
+
+    const valueText = `${formatCurrency(r.amount, currency)}  ·  ${formatPercent(r.amount, totalExpenses, numberLocale)}`;
+    doc.setTextColor(100, 116, 139);
+    doc.text(valueText, rightX - doc.getTextWidth(valueText), cursor);
+
+    cursor += 1.8;
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(leftX, cursor, trackW, 3, 1.5, 1.5, 'F');
+    const w = max > 0 ? Math.max((r.amount / max) * trackW, 1.5) : 1.5;
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.roundedRect(leftX, cursor, w, 3, 1.5, 1.5, 'F');
+    cursor += 7;
+  });
+
+  doc.setTextColor(0, 0, 0);
+  return cursor;
+};
+
 
 
 export const generatePDFReport = async (
@@ -231,47 +310,124 @@ export const generatePDFReport = async (
     },
   });
 
-  doc.setFontSize(11);
-  doc.setFont('Inter', 'bold');
-  doc.setTextColor(15, 23, 42);
-  doc.text(toAscii('Sažetak'), REPORT_MARGIN_X, bodyStartY + 2);
-
-  const summaryData = [
-    [toAscii('Ukupni prihodi'), formatCurrency(data.totals.income, data.currency)],
-    [toAscii('Ukupni troškovi'), formatCurrency(data.totals.expenses, data.currency)],
-    [toAscii(i18n.t('reports.netForPeriod', 'Neto razdoblja') as string), formatCurrency(data.totals.balance, data.currency)],
-    ['Prijenosi', formatCurrency(data.totals.transfers, data.currency)],
-  ];
-
-  brandAutoTable(doc, autoTable, {
-    startY: bodyStartY + 5,
-    head: [['Stavka', 'Iznos']],
-    body: summaryData,
-    margin: { left: REPORT_MARGIN_X },
-    tableWidth: 90,
-  });
-
-  const categoryY = (doc as any).lastAutoTable.finalY + 15;
-  doc.setFontSize(14);
-  doc.setFont('Inter', 'bold');
-  doc.text(toAscii('Troškovi po kategorijama'), 14, categoryY);
-
   const numberLocale = data.currency?.locale || 'hr-HR';
-  const categoryData = aggregateCategoryTotalsByName(
-    data.byCategory,
-    (categoryId) => getCategoryInfo(categoryId as any).name,
-  ).map(({ name, amount }) => [
-    toAscii(name),
-    formatCurrency(amount, data.currency),
-    formatPercent(amount, data.totals.expenses, numberLocale),
+  const dateLocale = language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US';
+
+  // --- KPI strip ---
+  let y = drawKpiCards(doc, bodyStartY, [
+    { label: i18n.t('reports.income', 'Prihodi') as string, value: formatCurrency(data.totals.income, data.currency), tone: 'income' },
+    { label: i18n.t('reports.expenses', 'Troškovi') as string, value: formatCurrency(data.totals.expenses, data.currency), tone: 'expense' },
+    { label: i18n.t('reports.netForPeriod', 'Neto razdoblja') as string, value: formatCurrency(data.totals.balance, data.currency), tone: data.totals.balance >= 0 ? 'income' : 'expense' },
+    { label: i18n.t('reports.kpiTransactions', 'Transakcije') as string, value: String(data.expenses.length), tone: 'accent' },
   ]);
 
-  if (categoryData.length > 0) {
+  // --- Transfers, discrete line ---
+  y += 5;
+  doc.setFont('Inter', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text(
+    `${toAscii(i18n.t('reports.transfersLabel', 'Prijenosi') as string)}: ${formatCurrency(data.totals.transfers, data.currency)}`,
+    REPORT_MARGIN_X,
+    y,
+  );
+
+  // --- Executive summary (deterministic) ---
+  const allCategoryRows = aggregateCategoryTotalsByName(
+    data.byCategory,
+    (categoryId) => getCategoryInfo(categoryId as any).name,
+  );
+  const largest = findLargestExpense(
+    data.expenses.map((e) => ({
+      type: e.type,
+      amount: e.amount,
+      category: e.category,
+      expense_nature: (e as any).expense_nature ?? null,
+      description: e.description,
+      date: e.date,
+    })),
+  );
+  const summarySentences = buildExecutiveSummary(
+    {
+      start: data.dateRange.start,
+      end: data.dateRange.end,
+      count: data.expenses.length,
+      income: data.totals.income,
+      expenses: data.totals.expenses,
+      net: data.totals.balance,
+      categories: allCategoryRows,
+      largestExpense: largest
+        ? {
+            title: cleanFeedTitle(largest.description) || getCategoryInfo(largest.category as any).name,
+            amount: largest.amount,
+            date: largest.date as Date,
+          }
+        : null,
+    },
+    {
+      currency: (n) => formatCurrency(n, data.currency),
+      date: (d) => formatDate(d),
+      percent: (v, total) => formatPercent(v, total, numberLocale),
+    },
+    {
+      main: i18n.t('reports.summaryMain') as string,
+      categoriesTwo: i18n.t('reports.summaryCategoriesTwo') as string,
+      categoriesOne: i18n.t('reports.summaryCategoriesOne') as string,
+      largest: i18n.t('reports.summaryLargest') as string,
+      empty: i18n.t('reports.summaryEmpty') as string,
+    },
+  );
+
+  y += 9;
+  doc.setFont('Inter', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text(toAscii(i18n.t('reports.summaryTitle', 'Sažetak razdoblja') as string), REPORT_MARGIN_X, y);
+  y += 5;
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const textWidth = pageWidth - REPORT_MARGIN_X * 2;
+  doc.setFont('Inter', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  const summaryLines = doc.splitTextToSize(toAscii(summarySentences.join(' ')), textWidth) as string[];
+  doc.text(summaryLines, REPORT_MARGIN_X, y);
+  y += summaryLines.length * 4.6;
+
+  // --- Category bars (top 5 + rest) ---
+  if (allCategoryRows.length > 0) {
+    y += 7;
+    doc.setFont('Inter', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii(i18n.t('reports.topCategories', 'Glavne kategorije') as string), REPORT_MARGIN_X, y);
+    y += 6;
+    y = drawCategoryBars(
+      doc,
+      y,
+      topCategoriesWithRest(allCategoryRows, 5, i18n.t('reports.otherCategories', 'Ostale kategorije') as string),
+      data.totals.expenses,
+      data.currency,
+      numberLocale,
+    );
+  }
+
+  // --- Full category table (detail, page 2) ---
+  if (allCategoryRows.length > 5) {
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setFont('Inter', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(toAscii('Troškovi po kategorijama'), REPORT_MARGIN_X, 20);
     brandAutoTable(doc, autoTable, {
-      startY: categoryY + 4,
+      startY: 24,
       head: [['Kategorija', 'Iznos', 'Udio']],
-      body: categoryData,
-      margin: { left: 14 },
+      body: allCategoryRows.map(({ name, amount }) => [
+        toAscii(name),
+        formatCurrency(amount, data.currency),
+        formatPercent(amount, data.totals.expenses, numberLocale),
+      ]),
+      margin: { left: REPORT_MARGIN_X },
       tableWidth: 120,
     });
   }
@@ -281,6 +437,13 @@ export const generatePDFReport = async (
   doc.setFont('Inter', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text(toAscii(i18n.t('reports.transactionList', 'Popis transakcija') as string), REPORT_MARGIN_X, 20);
+
+  if (data.expenses.length === 0) {
+    doc.setFont('Inter', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(toAscii(i18n.t('reports.noTransactionsInPeriod', 'Nema transakcija u odabranom razdoblju') as string), REPORT_MARGIN_X, 30);
+  }
 
   const feedItems: FeedItem[] = data.expenses
     .slice()
@@ -303,11 +466,13 @@ export const generatePDFReport = async (
       return {
         date: expense.date,
         title: expense.description || categoryInfo.name,
+        rawDescription: expense.description || '',
         metaParts: meta.filter(Boolean) as string[],
         amount: expense.amount,
         signed,
       };
     });
+
 
   drawTransactionFeed(doc, feedItems, data.currency, 28, language === 'hr' ? 'hr-HR' : language === 'de' ? 'de-DE' : 'en-US');
 
@@ -466,6 +631,7 @@ export const generateIncomePDFReport = async (
       return {
         date: income.date,
         title: income.description || categoryLabel,
+        rawDescription: income.description || '',
         metaParts: [categoryLabel, paymentInfo.name].filter(Boolean) as string[],
         amount: income.amount,
         signed: 'pos' as const,

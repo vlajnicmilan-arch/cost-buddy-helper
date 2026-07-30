@@ -2076,7 +2076,17 @@
     "categoryDetails": "Details nach Kategorie",
     "noTransactionsToCompare": "Keine Transaktionen zum Vergleichen in den ausgewählten Zeiträumen",
     "netForPeriod": "Netto im Zeitraum",
-    "correctionLabel": "Korrektur"
+    "correctionLabel": "Korrektur",
+    "summaryTitle": "Zusammenfassung des Zeitraums",
+    "kpiTransactions": "Transaktionen",
+    "transfersLabel": "Übertragungen",
+    "topCategories": "Wichtigste Kategorien",
+    "otherCategories": "Weitere Kategorien",
+    "summaryMain": "Im Zeitraum von {{start}} bis {{end}} wurden {{count}} Transaktionen erfasst: {{income}} Einnahmen und {{expenses}} Ausgaben (netto {{net}}).",
+    "summaryCategoriesTwo": "Am meisten entfiel auf {{cat1}} ({{pct1}}), danach {{cat2}} ({{pct2}}).",
+    "summaryCategoriesOne": "Am meisten entfiel auf {{cat1}} ({{pct1}}).",
+    "summaryLargest": "Größte Einzelausgabe: {{title}}, {{amount}} ({{date}}).",
+    "summaryEmpty": "Keine Transaktionen im ausgewählten Zeitraum."
   },
   "update": {
     "available": "Neue Version verfügbar!",
