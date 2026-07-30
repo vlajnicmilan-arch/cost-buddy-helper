@@ -50,6 +50,10 @@ interface CustomPaymentSourcesPanelProps {
   autoOpenNew?: boolean;
 }
 
+// TEMPORARY — REMOVE AFTER BUG DIAGNOSIS
+import { logMenuDebug, MENU_DEBUG_ENABLED } from '@/lib/menuDebug';
+
+
 export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, onRefetchExpenses, autoOpenNew = false }: CustomPaymentSourcesPanelProps) => {
   const { ownedPaymentSources: customPaymentSources, loading, addCustomPaymentSource, updateCustomPaymentSource, deleteCustomPaymentSource, addCard, deleteCard, updateCard, reorderPaymentSources } = useCustomPaymentSources();
   const { isHidden, toggleHidden } = useHiddenPaymentSources();
