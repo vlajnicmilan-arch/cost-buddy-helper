@@ -6,8 +6,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // ---- Mocks --------------------------------------------------------------
+// Faza 3: useWriteGuard emitira kroz CentarNote store (useStatusFeedback), ne sonner.
 const toastError = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastError(...a) } }));
+vi.mock('@/hooks/useStatusFeedback', () => ({ showError: (...a: unknown[]) => toastError(...a) }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_k: string, d?: string | Record<string, unknown>) => (typeof d === 'string' ? d : _k) }),
