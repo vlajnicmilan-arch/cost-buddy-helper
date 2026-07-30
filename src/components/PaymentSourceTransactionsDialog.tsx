@@ -34,6 +34,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { generatePDFReport, generateCSVReport, ReportData, CurrencyConfig } from '@/lib/reportExport';
 import { computeReportTotals, buildCategoryTotalsById } from '@/lib/reportTotals';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
+import { isWithinPeriod, type PeriodRange } from '@/lib/periodPresets';
+import { ExportPeriodDialog } from '@/components/reports/ExportPeriodDialog';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { printHtmlDocument } from '@/lib/printHtml';
 import { Capacitor } from '@capacitor/core';
@@ -303,6 +305,10 @@ export const PaymentSourceTransactionsDialog = ({
     
     return balanceMap;
   }, [sourceExpenses, paymentSource]);
+
+  // Export period selection (default: this month)
+  const [exportPeriodOpen, setExportPeriodOpen] = useState(false);
+  const [pendingExport, setPendingExport] = useState<'pdf' | 'csv' | 'print' | null>(null);
 
   // Apply filters (search + date + amount + category)
   const filteredSourceExpenses = useMemo(() => {
@@ -955,15 +961,15 @@ export const PaymentSourceTransactionsDialog = ({
                           <div className="px-2 py-1.5 border-b mb-1">
                             <ConfidentialityPicker value={confidentiality} onChange={setConfidentiality} />
                           </div>
-                          <DropdownMenuItem onClick={handlePrint}>
+                          <DropdownMenuItem onClick={() => requestExport('print')}>
                             <Printer className="w-4 h-4 mr-2" />
                             {t('common.print', 'Ispis')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportPDF}>
+                          <DropdownMenuItem onClick={() => requestExport('pdf')}>
                             <FileText className="w-4 h-4 mr-2" />
                             PDF
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleExportCSV}>
+                          <DropdownMenuItem onClick={() => requestExport('csv')}>
                             <Download className="w-4 h-4 mr-2" />
                             CSV
                           </DropdownMenuItem>
@@ -1128,7 +1134,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handlePrint}
+                        onClick={() => requestExport('print')}
                         className="h-7 text-xs gap-1.5"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -1137,7 +1143,7 @@ export const PaymentSourceTransactionsDialog = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleExportPDF}
+                        onClick={() => requestExport('pdf')}
                         className="h-7 text-xs gap-1.5"
                       >
                         <FileText className="w-3.5 h-3.5" />
