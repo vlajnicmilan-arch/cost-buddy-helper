@@ -2091,7 +2091,12 @@
     "summaryCategoriesTwo": "Najviše je otišlo na {{cat1}} ({{pct1}}), zatim {{cat2}} ({{pct2}}).",
     "summaryCategoriesOne": "Najviše je otišlo na {{cat1}} ({{pct1}}).",
     "summaryLargest": "Najveći pojedinačni trošak: {{title}}, {{amount}} ({{date}}).",
-    "summaryEmpty": "U odabranom razdoblju nema transakcija."
+    "summaryEmpty": "U odabranom razdoblju nema transakcija.",
+    "summaryMerchantsTwo": "Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}} i {{m2}}.",
+    "summaryMerchantsOne": "Najviše sredstava otišlo je na {{cat}}, prvenstveno {{m1}}.",
+    "generatedIn": "Generirano u Centru · {{date}}",
+    "transactionReportTitle": "{{source}} — izvješće transakcija",
+    "exportPeriodTitle": "Razdoblje izvoza"
   },
   "update": {
     "available": "Nova verzija dostupna!",

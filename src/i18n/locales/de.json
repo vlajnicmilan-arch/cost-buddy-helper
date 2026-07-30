@@ -2086,7 +2086,12 @@
     "summaryCategoriesTwo": "Am meisten entfiel auf {{cat1}} ({{pct1}}), danach {{cat2}} ({{pct2}}).",
     "summaryCategoriesOne": "Am meisten entfiel auf {{cat1}} ({{pct1}}).",
     "summaryLargest": "Größte Einzelausgabe: {{title}}, {{amount}} ({{date}}).",
-    "summaryEmpty": "Keine Transaktionen im ausgewählten Zeitraum."
+    "summaryEmpty": "Keine Transaktionen im ausgewählten Zeitraum.",
+    "summaryMerchantsTwo": "Die meisten Mittel flossen in {{cat}}, vor allem {{m1}} und {{m2}}.",
+    "summaryMerchantsOne": "Die meisten Mittel flossen in {{cat}}, vor allem {{m1}}.",
+    "generatedIn": "Erstellt in Centar · {{date}}",
+    "transactionReportTitle": "{{source}} — Transaktionsbericht",
+    "exportPeriodTitle": "Exportzeitraum"
   },
   "update": {
     "available": "Neue Version verfügbar!",
