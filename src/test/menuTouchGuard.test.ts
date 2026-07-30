@@ -89,7 +89,7 @@ describe('mouse pointerup exemption', () => {
         lastPointerUpType: 'mouse',
         lastPointerUpAt: 1_070,
       }),
-    ).toBe(true === false);
+    ).toBe(false);
   });
 
   it('suppresses a ghost click with no pointerup at all (Propust B)', () => {
