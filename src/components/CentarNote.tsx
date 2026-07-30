@@ -47,6 +47,11 @@ export const CentarNote = ({
 }: CentarNoteProps) => {
   const accent = noteModuleHsl(module);
   const accentMuted = noteModuleHslMuted(module);
+  // Split poruke na PRVOM '\n': prvi red = naslov, ostatak = opis.
+  // Ako je `title` eksplicitno zadan, poruka se ne dijeli.
+  const nlIndex = !title && message ? message.indexOf('\n') : -1;
+  const effectiveTitle = nlIndex > -1 ? message!.slice(0, nlIndex).trim() : title;
+  const effectiveMessage = nlIndex > -1 ? message!.slice(nlIndex + 1).trim() : message;
   const isError = severity === 'error';
   const isWarning = severity === 'warning';
   const isSticky = duration === 0;
@@ -54,6 +59,7 @@ export const CentarNote = ({
   const effectiveAction: FeedbackAction | undefined =
     action ?? (isSticky && onDismiss ? { label: i18n.t('common.ok'), onClick: onDismiss } : undefined);
   const interactive = Boolean(effectiveAction);
+
 
   return (
     <motion.div
@@ -125,20 +131,27 @@ export const CentarNote = ({
           />
         </div>
 
-        {title && (
-          <h2 className="mt-6 text-[19px] font-semibold leading-snug text-foreground">{title}</h2>
+        {effectiveTitle && (
+          <h2
+            data-testid="centar-note-title"
+            className="mt-6 text-[19px] font-semibold leading-snug text-foreground"
+          >
+            {effectiveTitle}
+          </h2>
         )}
 
-        {message && (
+        {effectiveMessage && (
           <p
+            data-testid="centar-note-description"
             className={cn(
               'text-[14px] leading-relaxed text-muted-foreground break-words line-clamp-4',
-              title ? 'mt-3' : 'mt-6',
+              effectiveTitle ? 'mt-3' : 'mt-6',
             )}
           >
-            {message}
+            {effectiveMessage}
           </p>
         )}
+
 
         {effectiveAction && (
           <button
