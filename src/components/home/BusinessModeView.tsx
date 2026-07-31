@@ -28,6 +28,7 @@ import { ArrowLeft, Building2, FileSpreadsheet, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
+import { useBusinessBodyTheme } from '@/hooks/useBusinessBodyTheme';
 
 interface BusinessModeViewProps {
   businessTab: BusinessTab;
