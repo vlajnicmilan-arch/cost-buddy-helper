@@ -212,6 +212,7 @@
      are intentionally NOT overridden — financial semantics stay identical
      across every theme. */
   .business-theme-premium-dark,
+  .business-theme-premium-dark.dark,
   .dark .business-theme-premium-dark {
     --background: 30 8% 4%;
     --card: 30 8% 7%;
