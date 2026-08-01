@@ -35,21 +35,24 @@ export async function ensureSecUser(email: string): Promise<string> {
   return userId;
 }
 
+/** Moduli koje sigurnosni specovi trebaju za pisanje (can_write_module). */
+const SEC_MODULES = ['projekti', 'krug'] as const;
+
 /**
- * Sintetički user mora imati 'projekti' pravo — bez njega RLS
+ * Sintetički user mora imati pravo na modul — bez njega RLS
  * (can_write_module / projects_downgrade_ok) blokira svaki insert nad
- * projects / project_members / project_milestones.
+ * projects / project_members / project_milestones / krug.
  */
-export async function ensureProjectsEntitlement(userId: string): Promise<void> {
+export async function ensureModuleEntitlement(userId: string, module: string): Promise<void> {
   const a = admin();
   await a
     .from('user_entitlements')
     .delete()
     .eq('user_id', userId)
-    .eq('module', 'projekti');
+    .eq('module', module);
   const { error } = await a.from('user_entitlements').insert({
     user_id: userId,
-    module: 'projekti',
+    module,
     source: 'trial',
     status: 'active',
     billing_cycle: 'trial',
@@ -58,11 +61,17 @@ export async function ensureProjectsEntitlement(userId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function ensureSecEntitlements(userId: string): Promise<void> {
+  for (const m of SEC_MODULES) {
+    await ensureModuleEntitlement(userId, m);
+  }
+}
+
 export async function ensureBothSecUsers(): Promise<{ aId: string; bId: string }> {
   const aId = await ensureSecUser(SEC_USERS.a);
   const bId = await ensureSecUser(SEC_USERS.b);
-  await ensureProjectsEntitlement(aId);
-  await ensureProjectsEntitlement(bId);
+  await ensureSecEntitlements(aId);
+  await ensureSecEntitlements(bId);
   return { aId, bId };
 }
 
