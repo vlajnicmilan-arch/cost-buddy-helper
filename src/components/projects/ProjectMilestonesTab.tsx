@@ -42,6 +42,12 @@ interface ProjectMilestonesTabProps {
   onRefetch: () => void;
   /** When true, all write paths are gated with the read-only toast. */
   isReadOnly?: boolean;
+  /**
+   * Korak B — projekt tvrtke (business_profile_id) ima investitora, pa se
+   * prikazuje polje „Cijena prema investitoru". Osobni projekt ostaje na
+   * jednom iznosu (trošak).
+   */
+  projectBusinessProfileId?: string | null;
 }
 
 export const ProjectMilestonesTab = ({
@@ -51,7 +57,9 @@ export const ProjectMilestonesTab = ({
   loading,
   onRefetch,
   isReadOnly = false,
+  projectBusinessProfileId = null,
 }: ProjectMilestonesTabProps) => {
+
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
