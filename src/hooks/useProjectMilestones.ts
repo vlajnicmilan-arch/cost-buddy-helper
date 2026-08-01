@@ -125,7 +125,10 @@ export const useProjectMilestones = (projectId: string | null) => {
           project_id: projectId,
           name: milestone.name,
           description: milestone.description,
-          budget: milestone.budget,
+          budget: milestone.budget ?? null,
+          ...((milestone as any).investor_price !== undefined
+            ? { investor_price: (milestone as any).investor_price }
+            : {}),
           status: milestone.status,
           start_date: milestone.start_date,
           due_date: milestone.due_date,
@@ -146,7 +149,8 @@ export const useProjectMilestones = (projectId: string | null) => {
       const newMilestone: ProjectMilestone = {
         ...data,
         status: data.status as MilestoneStatus,
-        budget: Number(data.budget) || 0,
+        budget: data.budget == null ? null : Number(data.budget),
+        investor_price: (data as any).investor_price == null ? null : Number((data as any).investor_price),
         spent: 0,
         is_contingency: !!(data as any).is_contingency,
         is_vtr: !!(data as any).is_vtr,
@@ -322,7 +326,10 @@ export const useProjectMilestones = (projectId: string | null) => {
       const updatePayload: Record<string, any> = {
         name: milestone.name,
         description: milestone.description,
-        budget: milestone.budget,
+        budget: milestone.budget ?? null,
+        ...((milestone as any).investor_price !== undefined
+          ? { investor_price: (milestone as any).investor_price }
+          : {}),
         status: milestone.status,
         start_date: milestone.start_date,
         due_date: milestone.due_date,
