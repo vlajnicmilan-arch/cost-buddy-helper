@@ -45,11 +45,11 @@ test.describe('02 — niža uloga → financijski write', () => {
       // A najprije kreira milestone
       const { data: m } = await aClient
         .from('project_milestones')
-        .insert({ project_id: projectId, user_id: aId, name: 'ok', total_budget: 100 })
+        .insert({ project_id: projectId, name: 'ok', budget: 100 })
         .select('id').single();
       const { data, error } = await bClient
         .from('project_milestones')
-        .update({ total_budget: 999 })
+        .update({ budget: 999 })
         .eq('id', m!.id)
         .select('id');
       // Ili greška, ili "prazan update" (RLS filter na row)
