@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { readMilestoneAmount, isAmountHidden, sumVisibleAmounts } from '@/lib/milestoneAmounts';
+import { readMilestoneAmount, isAmountHidden, sumVisibleAmounts, computeMilestoneMargin } from '@/lib/milestoneAmounts';
 
 const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
