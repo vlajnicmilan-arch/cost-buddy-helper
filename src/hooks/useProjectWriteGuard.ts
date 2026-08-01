@@ -20,6 +20,10 @@ interface UseProjectWriteGuardInput {
    * may proceed even when accessLevel === 'participant'. Owner-readonly remains blocked.
    */
   allowOwnWorkLog?: boolean;
+  /** Korak D — uloga na projektu (potrebna za `allowMemberProgress`). */
+  role?: ProjectRoleKey | null;
+  /** Korak D — opt-in za upise napretka koje voditelj (member) smije izvesti. */
+  allowMemberProgress?: boolean;
 }
 
 export interface ProjectWriteGuard {
@@ -45,7 +49,10 @@ export function useProjectWriteGuard(input: UseProjectWriteGuardInput = {}): Pro
     isReadOnly: input.isReadOnly,
     accessLevel,
     allowOwnWorkLog: input.allowOwnWorkLog,
+    role: input.role,
+    allowMemberProgress: input.allowMemberProgress,
   });
+
 
   const guard = useCallback((): boolean => {
     if (!isReadOnly) return true;
