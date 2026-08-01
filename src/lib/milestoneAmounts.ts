@@ -96,3 +96,30 @@ export function buildMilestoneAmountsLine(
   if (p !== null) return { key: 'projects.milestoneAmounts.listLinePriceOnly', cost: null, price: p };
   return null;
 }
+
+/**
+ * Vidljivost polja s iznosima faze ovisi o ULOZI, nikad o vrijednosti.
+ * `null` iznos ne razlikuje „skriveno za ulogu" od „još nije upisano", pa se
+ * prikaz polja NE smije izvoditi iz podatka.
+ *
+ *   - trošak (`budget`)          → vlasnik, viewer, member
+ *   - cijena (`investor_price`)  → vlasnik, viewer, investor
+ *   - worker                     → nijedan iznos
+ */
+export type MilestoneAmountRole = 'owner' | 'member' | 'worker' | 'viewer' | 'investor';
+
+export function canSeeMilestoneCostField(
+  role: MilestoneAmountRole | null | undefined,
+  isOwner = false,
+): boolean {
+  if (isOwner) return true;
+  return role === 'owner' || role === 'viewer' || role === 'member';
+}
+
+export function canSeeMilestonePriceField(
+  role: MilestoneAmountRole | null | undefined,
+  isOwner = false,
+): boolean {
+  if (isOwner) return true;
+  return role === 'owner' || role === 'viewer' || role === 'investor';
+}
