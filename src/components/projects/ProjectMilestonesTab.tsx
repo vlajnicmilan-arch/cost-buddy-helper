@@ -209,15 +209,27 @@ export const ProjectMilestonesTab = ({
       showError(t('projects.revisions.selectSourceRequired', 'Odaberite izvornu fazu za prijenos sredstava.'));
       return;
     }
-    
+
+    // VTR: iznos ostaje OBAVEZAN — prazan VTR ne smije stvoriti aneks na 0.
+    const costEntered = budget.trim() !== '';
+    if (dialogMode === 'vtr' && (!costEntered || newBudgetNum <= 0)) {
+      showError(t('projects.milestoneAmounts.vtrCostRequired'));
+      return;
+    }
+
     setSaving(true);
     try {
       const milestoneData = {
         project_id: projectId,
         name: name.trim(),
         description: description.trim() || null,
-        budget: parseLocaleAmount(budget).value || 0,
+        // Prazno polje se sprema kao NULL ("nije upisano"), nikad kao 0.
+        budget: costEntered ? newBudgetNum : null,
+        ...(showInvestorPrice && !investorPriceLocked
+          ? { investor_price: investorPrice.trim() === '' ? null : parseLocaleAmount(investorPrice).value }
+          : {}),
         status,
+
         color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
