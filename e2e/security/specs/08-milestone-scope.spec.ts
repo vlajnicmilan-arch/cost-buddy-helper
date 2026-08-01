@@ -34,7 +34,7 @@ test.describe('08 — scope iznosa na fazama projekta', () => {
     for (const role of ROLES) {
       const pid = await createProject(aClient, aId, `sec-ms-${role}-${Date.now()}`);
       projectByRole[role] = pid;
-      await addProjectMember(aClient, pid, bId, role as any);
+      await addProjectMember(aClient, pid, bId, role);
       const { data, error } = await aClient
         .from('project_milestones')
         .insert({
