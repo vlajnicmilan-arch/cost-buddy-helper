@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, Pencil, Trash2, Bell, Link2, GripVertical, Shield, FileSignature, Gavel, Ban } from 'lucide-react';
 import { getMilestoneDecisionBadge } from '@/lib/milestoneDecisionSource';
+import { buildMilestoneAmountsLine } from '@/lib/milestoneAmounts';
 import { format, differenceInDays } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';

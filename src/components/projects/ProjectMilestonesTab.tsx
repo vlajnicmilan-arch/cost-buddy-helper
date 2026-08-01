@@ -291,7 +291,8 @@ export const ProjectMilestonesTab = ({
       } else if (dialogMode === 'vtr') {
         await createVtr({ ...milestoneData, note: vtrNote.trim() || null } as any);
       } else {
-        await addMilestone(milestoneData);
+        // Nova faza uvijek prikazuje polje troška, pa je `budget` uvijek dio payloada.
+        await addMilestone({ ...milestoneData, budget: costEntered ? newBudgetNum : null });
       }
       
       setDialogOpen(false);
