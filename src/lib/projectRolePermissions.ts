@@ -128,6 +128,10 @@ export function deriveProjectPermissions(ctx: ProjectRoleContext): ProjectPermis
 
     // ── Project financials ──────────────────────────────
     canEditMilestones: isOwnerEffective,
+    // Korak D: napredak faze smije i voditelj; iznose i dalje samo vlasnik.
+    canEditMilestoneProgress: isOwnerEffective || isMember,
+    canEditMilestoneAmounts: isOwnerEffective,
+
     canEditFunding: isOwnerEffective,
     canEditCollaborators: isOwnerEffective,
     canApprovePendingTransactions: isOwnerEffective,
