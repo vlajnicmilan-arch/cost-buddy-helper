@@ -21,7 +21,12 @@ import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
 import { MilestoneAmountsSection } from './MilestoneAmountsSection';
-import { buildMilestoneAmountsLine } from '@/lib/milestoneAmounts';
+import {
+  buildMilestoneAmountsLine,
+  canSeeMilestoneCostField,
+  canSeeMilestonePriceField,
+  type MilestoneAmountRole,
+} from '@/lib/milestoneAmounts';
 
 import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
