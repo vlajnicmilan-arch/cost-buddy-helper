@@ -379,11 +379,14 @@ export const ProjectMilestonesTab = ({
               return score(b) - score(a);
             })
             .map((milestone) => {
-            const budgetUsed = milestone.budget > 0 
-              ? ((milestone.spent || 0) / milestone.budget) * 100 
+            // Korak A/B: iznos može biti NULL (skriven za ulogu ili neupisan).
+            const milestoneBudget = milestone.budget ?? null;
+            const budgetUsed = milestoneBudget && milestoneBudget > 0
+              ? ((milestone.spent || 0) / milestoneBudget) * 100
               : 0;
-            const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
-            const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
+            const isOverBudget = !!milestoneBudget && milestoneBudget > 0 && (milestone.spent || 0) > milestoneBudget;
+            const overAmount = isOverBudget ? (milestone.spent || 0) - (milestoneBudget as number) : 0;
+
             const isContingency = !!milestone.is_contingency;
             const isVtr = !!milestone.is_vtr;
 
