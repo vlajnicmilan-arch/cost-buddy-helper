@@ -606,26 +606,29 @@ export const ProjectMilestonesTab = ({
                       <MilestoneChecklist
                         milestoneId={milestone.id}
                         milestoneName={milestone.name}
-                        canEdit={isManager}
+                        canEdit={canEditProgress}
                       />
                     </details>
                   </div>
 
-                  {isManager && (
+                  {canEditProgress && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (!guard()) return; openDialog(milestone); }} disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (!progressGuard()) return; openDialog(milestone); }} title={undefined}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(milestone.id)}
-                        disabled={isReadOnly}
-                        title={isReadOnly ? blockProps.title : undefined}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {isManager && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDelete(milestone.id)}
+                          disabled={isReadOnly}
+                          title={isReadOnly ? blockProps.title : undefined}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+
                     </div>
                   )}
                 </div>
