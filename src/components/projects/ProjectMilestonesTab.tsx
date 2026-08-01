@@ -477,11 +477,16 @@ export const ProjectMilestonesTab = ({
                       );
                     })()}
 
-                    {milestone.budget > 0 && (
+                    {milestoneBudget !== null && milestoneBudget > 0 && (
                       <div className="mb-2">
                         <div className="flex items-center justify-between text-sm mb-1">
                           <span className="font-medium text-primary">
-                            {formatAmount(milestone.budget)}
+                            {milestone.investor_price != null
+                              ? t('projects.milestoneAmounts.listLine', {
+                                  cost: formatAmount(milestoneBudget),
+                                  price: formatAmount(milestone.investor_price),
+                                })
+                              : formatAmount(milestoneBudget)}
                           </span>
                           {(milestone.spent || 0) > 0 && (
                             <span className={cn("text-xs", isOverBudget ? "text-destructive" : "text-muted-foreground")}>
@@ -497,6 +502,7 @@ export const ProjectMilestonesTab = ({
                         )}
                       </div>
                     )}
+
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       {milestone.start_date && (
