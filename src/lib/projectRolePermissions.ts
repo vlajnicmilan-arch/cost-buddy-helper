@@ -48,11 +48,19 @@ export interface ProjectPermissions {
 
   // Project financials
   canEditMilestones: boolean;
+  /**
+   * Korak D — voditelj (member) smije mijenjati NAPREDAK faze:
+   * status, datume, opis, dokumente i checklist. Iznose NE.
+   */
+  canEditMilestoneProgress: boolean;
+  /** Novčani stupci faze (`budget`, `investor_price`) — isključivo vlasnik. */
+  canEditMilestoneAmounts: boolean;
   canEditFunding: boolean;
   canEditCollaborators: boolean;
   canApprovePendingTransactions: boolean;
   canAddTransaction: boolean;
   canEditOthersTransaction: boolean;
+
 
   // Project lifecycle
   canCompleteOrReopenProject: boolean;
