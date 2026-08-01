@@ -93,6 +93,9 @@ export const ProjectMilestonesTab = ({
     allowMemberProgress: true,
   });
   const canEditProgress = (isManager || memberProgressAllowed) && !progressBlockProps.disabled;
+  /** Novčani stupci (`budget`, `investor_price`) — isključivo vlasnik s pravom pisanja. */
+  const canEditAmounts = isManager && !isReadOnly;
+
 
   
   
