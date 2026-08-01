@@ -666,10 +666,12 @@ export const ProjectMilestonesTab = ({
               onCostChange={setBudget}
               price={investorPrice}
               onPriceChange={setInvestorPrice}
-              showCost={showCost}
-              showPrice={showInvestorPrice}
+              role={currentUserRole}
+              isOwner={isOwner}
+              priceApplicable={investorPriceApplicable}
               priceLocked={investorPriceLocked}
             />
+
 
             <div className="space-y-2">
               <Label>{t('projects.status')}</Label>
