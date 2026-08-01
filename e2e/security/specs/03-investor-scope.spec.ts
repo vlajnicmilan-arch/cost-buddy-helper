@@ -26,7 +26,7 @@ test.describe('03 — investor scope', () => {
     await addProjectMember(aClient, projectId, bId, 'investor');
     const { data: m } = await aClient
       .from('project_milestones')
-      .insert({ project_id: projectId, user_id: aId, name: 'M1', total_budget: 1234 })
+      .insert({ project_id: projectId, name: 'M1', budget: 1234 })
       .select('id').single();
     milestoneId = m!.id;
     const { data: e } = await aClient
