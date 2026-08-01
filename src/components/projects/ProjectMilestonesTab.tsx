@@ -72,6 +72,8 @@ export const ProjectMilestonesTab = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
+  const [investorPrice, setInvestorPrice] = useState('');
+
   const [status, setStatus] = useState<MilestoneStatus>('pending');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
