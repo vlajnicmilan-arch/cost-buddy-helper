@@ -478,31 +478,37 @@ export const ProjectMilestonesTab = ({
                       );
                     })()}
 
-                    {milestoneBudget !== null && milestoneBudget > 0 && (
-                      <div className="mb-2">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="font-medium text-primary">
-                            {milestone.investor_price != null
-                              ? t('projects.milestoneAmounts.listLine', {
-                                  cost: formatAmount(milestoneBudget),
-                                  price: formatAmount(milestone.investor_price),
-                                })
-                              : formatAmount(milestoneBudget)}
-                          </span>
-                          {(milestone.spent || 0) > 0 && (
-                            <span className={cn("text-xs", isOverBudget ? "text-destructive" : "text-muted-foreground")}>
-                              {formatAmount(milestone.spent || 0)} ({budgetUsed.toFixed(0)}%)
-                            </span>
+                    {(() => {
+                      const amountsLine = buildMilestoneAmountsLine(milestoneBudget, milestone.investor_price ?? null);
+                      const showCostBar = milestoneBudget !== null && milestoneBudget > 0;
+                      if (!amountsLine && !showCostBar) return null;
+                      return (
+                        <div className="mb-2">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            {amountsLine && (
+                              <span className="font-medium text-primary">
+                                {t(amountsLine.key, {
+                                  cost: amountsLine.cost !== null ? formatAmount(amountsLine.cost) : '',
+                                  price: amountsLine.price !== null ? formatAmount(amountsLine.price) : '',
+                                })}
+                              </span>
+                            )}
+                            {showCostBar && (milestone.spent || 0) > 0 && (
+                              <span className={cn("text-xs", isOverBudget ? "text-destructive" : "text-muted-foreground")}>
+                                {formatAmount(milestone.spent || 0)} ({budgetUsed.toFixed(0)}%)
+                              </span>
+                            )}
+                          </div>
+                          {showCostBar && (milestone.spent || 0) > 0 && (
+                            <Progress
+                              value={Math.min(budgetUsed, 100)}
+                              className={cn("h-1.5", isOverBudget && "[&>div]:bg-destructive")}
+                            />
                           )}
                         </div>
-                        {(milestone.spent || 0) > 0 && (
-                          <Progress 
-                            value={Math.min(budgetUsed, 100)} 
-                            className={cn("h-1.5", isOverBudget && "[&>div]:bg-destructive")} 
-                          />
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
+
 
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
