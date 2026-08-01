@@ -47,7 +47,7 @@ export async function createCustomSource(
 ): Promise<string> {
   const { data, error } = await client
     .from('custom_payment_sources')
-    .insert({ user_id: ownerId, name, type: 'wallet', currency: 'EUR' })
+    .insert({ user_id: ownerId, name, currency: 'EUR' })
     .select('id')
     .single();
   if (error) throw new Error(`createCustomSource: ${error.message}`);
