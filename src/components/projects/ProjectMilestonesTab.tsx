@@ -97,9 +97,23 @@ export const ProjectMilestonesTab = ({
   const [amendmentNote, setAmendmentNote] = useState('');
 
   const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
-  const previousBudget = editingMilestone ? editingMilestone.budget : 0;
+  /** Korak B: `null` = faza dosad NIJE imala upisan iznos (nije isto što i 0). */
+  const previousBudget: number | null = editingMilestone ? editingMilestone.budget : null;
   const newBudgetNum = parseLocaleAmount(budget).value || 0;
-  const budgetChanged = !!editingMilestone && Math.abs(newBudgetNum - previousBudget) > 0.001;
+  /**
+   * Revizija budžeta se traži SAMO kad se mijenja postojeći iznos.
+   * Prvi upis u praznu fazu (`previousBudget === null`) nije revizija.
+   */
+  const budgetChanged =
+    !!editingMilestone &&
+    previousBudget !== null &&
+    Math.abs(newBudgetNum - previousBudget) > 0.001;
+  /** Cijena prema investitoru postoji samo na projektima tvrtke (ili ako je iznos već upisan). */
+  const showInvestorPrice =
+    !!projectBusinessProfileId || (editingMilestone?.investor_price ?? null) !== null;
+  /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
+  const investorPriceLocked = !!editingMilestone?.source_decision_id;
+
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
