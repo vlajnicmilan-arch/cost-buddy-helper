@@ -33,6 +33,8 @@ Idempotentno kreirani u `global-setup.ts`, potpuno očišćeni u `global-teardow
 | 05-removed-member | Bivši član nakon delete membershipa |
 | 06-ai-and-exports | financial-assistant + izvozi — scope pozivatelja |
 | 07-krug-membership | Obicni vs punopravni — write privilegije |
+| 08-milestone-scope | Role-scoped čitanje iznosa na fazama |
+| 09-role-writes-matrix | Korak D — matrica prava pisanja; svako odbijanje mora biti 42501 ili dokazano no-op uz owner control |
 
 ## Politika nalaza
 
