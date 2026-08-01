@@ -17,7 +17,8 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
     const A = await authedClientFor('a'); aId = A.userId; aClient = A.client;
     const B = await authedClientFor('b'); bId = B.userId; bClient = B.client;
     const { data: k, error: kerr } = await aClient
-      .from('krug').insert({ name: 'sec-krug', owner_id: aId }).select('id').single();
+      .from('krug').insert({ name: 'sec-krug', preset: 'partner', created_by: aId })
+      .select('id').single();
     if (kerr) throw kerr;
     krugId = k!.id;
     // owner bootstrap trigger (krug_bootstrap_creator) postavlja A kao punopravnog.
