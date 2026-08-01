@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { sumVisibleAmounts } from '@/lib/milestoneAmounts';
 import { useProjectEstimates } from '@/hooks/useProjectEstimates';
 import { useProjectInvoices } from '@/hooks/useProjectInvoices';
 import { ProjectEstimatesPanel } from './ProjectEstimatesPanel';
@@ -51,7 +52,9 @@ export const ProjectFundingTab = ({
   
   // Pending milestones (in progress or pending)
   const pendingMilestones = milestones.filter(m => m.status === 'in_progress' || m.status === 'pending');
-  const reservedForPending = pendingMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+  // Korak B: skriveni/neupisani iznosi (NULL) ne smiju se zbrajati kao 0.
+  const reservedForPending = sumVisibleAmounts(pendingMilestones.map((m) => m.budget));
+
 
   const hasAnySource = funding.length > 0 || incomeSources.length > 0;
 
@@ -88,7 +91,7 @@ export const ProjectFundingTab = ({
       </div>
 
       {/* Reserved for pending milestones */}
-      {reservedForPending > 0 && (
+      {reservedForPending !== null && reservedForPending > 0 && (
         <div className="flex items-center justify-between text-sm p-3 rounded-lg bg-warning/10 border border-warning/20">
           <span className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
@@ -120,7 +123,7 @@ export const ProjectFundingTab = ({
                 )}
               </div>
               <p className="text-lg font-semibold tabular-nums">
-                {formatAmount(m.budget || 0)}
+                {m.budget == null ? '—' : formatAmount(m.budget)}
               </p>
               <p className="text-[10px] text-muted-foreground sr-only">{t('projects.funding.plannedCost', 'Planirani trošak')}</p>
             </div>

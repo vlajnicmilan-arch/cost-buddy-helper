@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Geplante Kosten",
+      "costHelp": "Wie viel diese Phase voraussichtlich kostet.",
+      "priceHelp": "Der Betrag, der dem Investor für diese Phase berechnet wird.",
+      "priceLabel": "Preis an Investor",
+      "fromDecisionLocked": "Der Betrag stammt aus einer Entscheidung und kann hier nicht geändert werden.",
+      "marginLine": "Kosten {{cost}} · An Investor {{price}} · Marge {{margin}}%",
+      "negativeHint": "— diese Phase bringt keinen Gewinn.",
+      "listLine": "Kosten {{cost}} · An Investor {{price}}",
+      "vtrCostRequired": "Geben Sie die geplanten Kosten des Nachtrags ein."
+    },
     "card": {
       "margin": "MARGE",
       "contracted": "Vereinbart",

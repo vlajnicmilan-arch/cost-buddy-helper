@@ -21,6 +21,8 @@ import { getMilestoneDecisionBadge } from '@/lib/milestoneDecisionSource';
 import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
+import { MilestoneAmountsSection } from './MilestoneAmountsSection';
+
 import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { format } from 'date-fns';
@@ -42,6 +44,12 @@ interface ProjectMilestonesTabProps {
   onRefetch: () => void;
   /** When true, all write paths are gated with the read-only toast. */
   isReadOnly?: boolean;
+  /**
+   * Korak B — projekt tvrtke (business_profile_id) ima investitora, pa se
+   * prikazuje polje „Cijena prema investitoru". Osobni projekt ostaje na
+   * jednom iznosu (trošak).
+   */
+  projectBusinessProfileId?: string | null;
 }
 
 export const ProjectMilestonesTab = ({
@@ -51,7 +59,9 @@ export const ProjectMilestonesTab = ({
   loading,
   onRefetch,
   isReadOnly = false,
+  projectBusinessProfileId = null,
 }: ProjectMilestonesTabProps) => {
+
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
@@ -72,6 +82,8 @@ export const ProjectMilestonesTab = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
+  const [investorPrice, setInvestorPrice] = useState('');
+
   const [status, setStatus] = useState<MilestoneStatus>('pending');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
@@ -95,9 +107,23 @@ export const ProjectMilestonesTab = ({
   const [amendmentNote, setAmendmentNote] = useState('');
 
   const contingencyMilestone = milestones.find((m) => m.is_contingency) || null;
-  const previousBudget = editingMilestone ? editingMilestone.budget : 0;
+  /** Korak B: `null` = faza dosad NIJE imala upisan iznos (nije isto što i 0). */
+  const previousBudget: number | null = editingMilestone ? editingMilestone.budget : null;
   const newBudgetNum = parseLocaleAmount(budget).value || 0;
-  const budgetChanged = !!editingMilestone && Math.abs(newBudgetNum - previousBudget) > 0.001;
+  /**
+   * Revizija budžeta se traži SAMO kad se mijenja postojeći iznos.
+   * Prvi upis u praznu fazu (`previousBudget === null`) nije revizija.
+   */
+  const budgetChanged =
+    !!editingMilestone &&
+    previousBudget !== null &&
+    Math.abs(newBudgetNum - previousBudget) > 0.001;
+  /** Cijena prema investitoru postoji samo na projektima tvrtke (ili ako je iznos već upisan). */
+  const showInvestorPrice =
+    !!projectBusinessProfileId || (editingMilestone?.investor_price ?? null) !== null;
+  /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
+  const investorPriceLocked = !!editingMilestone?.source_decision_id;
+
 
   const MILESTONE_COLORS = [
     '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', 
@@ -112,7 +138,9 @@ export const ProjectMilestonesTab = ({
       setDialogMode(milestone.is_vtr ? 'vtr' : 'milestone');
       setName(milestone.name);
       setDescription(milestone.description || '');
-      setBudget(milestone.budget.toString());
+      // Korak A/B: `budget` može biti null (nije upisan ILI skriven za ulogu).
+      setBudget(milestone.budget == null ? '' : String(milestone.budget));
+      setInvestorPrice(milestone.investor_price == null ? '' : String(milestone.investor_price));
       setStatus(milestone.status);
       setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
@@ -127,6 +155,8 @@ export const ProjectMilestonesTab = ({
       setName('');
       setDescription('');
       setBudget('');
+      setInvestorPrice('');
+
       setStatus('pending');
       setColor(mode === 'vtr' ? 'hsl(38 92% 50%)' : '#3b82f6');
       setStartDate(undefined);
@@ -181,15 +211,27 @@ export const ProjectMilestonesTab = ({
       showError(t('projects.revisions.selectSourceRequired', 'Odaberite izvornu fazu za prijenos sredstava.'));
       return;
     }
-    
+
+    // VTR: iznos ostaje OBAVEZAN — prazan VTR ne smije stvoriti aneks na 0.
+    const costEntered = budget.trim() !== '';
+    if (dialogMode === 'vtr' && (!costEntered || newBudgetNum <= 0)) {
+      showError(t('projects.milestoneAmounts.vtrCostRequired'));
+      return;
+    }
+
     setSaving(true);
     try {
       const milestoneData = {
         project_id: projectId,
         name: name.trim(),
         description: description.trim() || null,
-        budget: parseLocaleAmount(budget).value || 0,
+        // Prazno polje se sprema kao NULL ("nije upisano"), nikad kao 0.
+        budget: costEntered ? newBudgetNum : null,
+        ...(showInvestorPrice && !investorPriceLocked
+          ? { investor_price: investorPrice.trim() === '' ? null : parseLocaleAmount(investorPrice).value }
+          : {}),
         status,
+
         color,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
@@ -337,11 +379,14 @@ export const ProjectMilestonesTab = ({
               return score(b) - score(a);
             })
             .map((milestone) => {
-            const budgetUsed = milestone.budget > 0 
-              ? ((milestone.spent || 0) / milestone.budget) * 100 
+            // Korak A/B: iznos može biti NULL (skriven za ulogu ili neupisan).
+            const milestoneBudget = milestone.budget ?? null;
+            const budgetUsed = milestoneBudget && milestoneBudget > 0
+              ? ((milestone.spent || 0) / milestoneBudget) * 100
               : 0;
-            const isOverBudget = milestone.budget > 0 && (milestone.spent || 0) > milestone.budget;
-            const overAmount = isOverBudget ? (milestone.spent || 0) - milestone.budget : 0;
+            const isOverBudget = !!milestoneBudget && milestoneBudget > 0 && (milestone.spent || 0) > milestoneBudget;
+            const overAmount = isOverBudget ? (milestone.spent || 0) - (milestoneBudget as number) : 0;
+
             const isContingency = !!milestone.is_contingency;
             const isVtr = !!milestone.is_vtr;
 
@@ -390,8 +435,9 @@ export const ProjectMilestonesTab = ({
                           revisionCount={getRevisionCount(milestone.id)}
                           recentTrend={getRecentTrend(milestone.id, 30)}
                           isContingency={isContingency}
-                          contingencyOriginal={isContingency ? milestone.budget + (milestone.spent || 0) : undefined}
-                          contingencyRemaining={isContingency ? milestone.budget : undefined}
+                          contingencyOriginal={isContingency && milestoneBudget !== null ? milestoneBudget + (milestone.spent || 0) : undefined}
+                          contingencyRemaining={isContingency ? milestoneBudget ?? undefined : undefined}
+
                           usagePct={!isContingency ? budgetUsed : undefined}
                           onClick={(e) => { e.stopPropagation(); setRevisionsTarget(milestone); setRevisionsDialogOpen(true); }}
                         />
@@ -432,11 +478,16 @@ export const ProjectMilestonesTab = ({
                       );
                     })()}
 
-                    {milestone.budget > 0 && (
+                    {milestoneBudget !== null && milestoneBudget > 0 && (
                       <div className="mb-2">
                         <div className="flex items-center justify-between text-sm mb-1">
                           <span className="font-medium text-primary">
-                            {formatAmount(milestone.budget)}
+                            {milestone.investor_price != null
+                              ? t('projects.milestoneAmounts.listLine', {
+                                  cost: formatAmount(milestoneBudget),
+                                  price: formatAmount(milestone.investor_price),
+                                })
+                              : formatAmount(milestoneBudget)}
                           </span>
                           {(milestone.spent || 0) > 0 && (
                             <span className={cn("text-xs", isOverBudget ? "text-destructive" : "text-muted-foreground")}>
@@ -452,6 +503,7 @@ export const ProjectMilestonesTab = ({
                         )}
                       </div>
                     )}
+
 
                     <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       {milestone.start_date && (
@@ -579,35 +631,30 @@ export const ProjectMilestonesTab = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('projects.budget')}</Label>
-                <div className="relative">
-                  <MoneyInput 
-                    value={budget} 
-                    onChange={(e) => setBudget(e.target.value)} 
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {currency.symbol}
-                  </span>
-                </div>
-              </div>
+            <MilestoneAmountsSection
+              cost={budget}
+              onCostChange={setBudget}
+              price={investorPrice}
+              onPriceChange={setInvestorPrice}
+              showCost
+              showPrice={showInvestorPrice}
+              priceLocked={investorPriceLocked}
+            />
 
-              <div className="space-y-2">
-                <Label>{t('projects.status')}</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as MilestoneStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(MILESTONE_STATUS_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>{t('projects.status')}</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as MilestoneStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(MILESTONE_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
 
             {budgetChanged && editingMilestone && !editingMilestone.is_contingency && (
               <MilestoneBudgetChangeSection

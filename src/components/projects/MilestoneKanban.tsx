@@ -78,8 +78,10 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                 )}
 
                 {items.map((m) => {
-                  const used = m.budget > 0 ? Math.min(((m.spent || 0) / m.budget) * 100, 100) : 0;
-                  const isOverBudget = m.budget > 0 && (m.spent || 0) > m.budget;
+                  // Korak A/B: iznos može biti NULL (skriven za ulogu ili neupisan).
+                  const mBudget = m.budget ?? null;
+                  const used = mBudget && mBudget > 0 ? Math.min(((m.spent || 0) / mBudget) * 100, 100) : 0;
+                  const isOverBudget = !!mBudget && mBudget > 0 && (m.spent || 0) > mBudget;
                   const daysLeft = m.due_date ? differenceInDays(new Date(m.due_date), new Date()) : null;
 
                   return (
@@ -144,10 +146,17 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                         </div>
                       </div>
 
-                      {m.budget > 0 && (
+                      {mBudget !== null && mBudget > 0 && (
                         <div className="mt-2 space-y-1">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-medium text-primary">{formatAmount(m.budget)}</span>
+                            <span className="font-medium text-primary">
+                              {m.investor_price != null
+                                ? t('projects.milestoneAmounts.listLine', {
+                                    cost: formatAmount(mBudget),
+                                    price: formatAmount(m.investor_price),
+                                  })
+                                : formatAmount(mBudget)}
+                            </span>
                             {(m.spent || 0) > 0 && (
                               <span className={cn(isOverBudget ? 'text-destructive' : 'text-muted-foreground')}>
                                 {formatAmount(m.spent || 0)}
@@ -184,9 +193,9 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                             revisionCount={getRevisionCount(m.id)}
                             recentTrend={getRecentTrend(m.id, 30)}
                             isContingency={!!m.is_contingency}
-                            contingencyOriginal={m.is_contingency ? m.budget + (m.spent || 0) : undefined}
-                            contingencyRemaining={m.is_contingency ? m.budget : undefined}
-                            usagePct={!m.is_contingency && m.budget > 0 ? ((m.spent || 0) / m.budget) * 100 : undefined}
+                            contingencyOriginal={m.is_contingency && mBudget !== null ? mBudget + (m.spent || 0) : undefined}
+                            contingencyRemaining={m.is_contingency ? mBudget ?? undefined : undefined}
+                            usagePct={!m.is_contingency && mBudget && mBudget > 0 ? ((m.spent || 0) / mBudget) * 100 : undefined}
                             onClick={(e) => { e.stopPropagation(); onShowRevisions?.(m); }}
                             compact
                           />

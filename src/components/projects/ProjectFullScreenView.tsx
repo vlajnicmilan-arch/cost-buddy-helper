@@ -905,6 +905,8 @@ export const ProjectFullScreenView = ({
                           loading={milestonesLoading}
                           onRefetch={refetchMilestones}
                           isReadOnly={isReadOnly}
+                          projectBusinessProfileId={project.business_profile_id ?? null}
+
                         />
                       )}
                     </>

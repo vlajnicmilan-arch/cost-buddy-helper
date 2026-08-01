@@ -4673,7 +4673,7 @@ export type Database = {
         Row: {
           actual_end_date: string | null
           actual_start_date: string | null
-          budget: number
+          budget: number | null
           color: string | null
           completed_at: string | null
           created_at: string
@@ -4698,7 +4698,7 @@ export type Database = {
         Insert: {
           actual_end_date?: string | null
           actual_start_date?: string | null
-          budget?: number
+          budget?: number | null
           color?: string | null
           completed_at?: string | null
           created_at?: string
@@ -4723,7 +4723,7 @@ export type Database = {
         Update: {
           actual_end_date?: string | null
           actual_start_date?: string | null
-          budget?: number
+          budget?: number | null
           color?: string | null
           completed_at?: string | null
           created_at?: string

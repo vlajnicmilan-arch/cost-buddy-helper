@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Planned cost",
+      "costHelp": "How much you expect this phase to cost.",
+      "priceLabel": "Price to investor",
+      "priceHelp": "The amount charged to the investor for this phase.",
+      "fromDecisionLocked": "The amount comes from a decision and cannot be changed here.",
+      "marginLine": "Cost {{cost}} · To investor {{price}} · Margin {{margin}}%",
+      "negativeHint": "— this phase makes no profit.",
+      "listLine": "Cost {{cost}} · To investor {{price}}",
+      "vtrCostRequired": "Enter the planned cost of the addendum."
+    },
     "noPaymentSource": "No source",
     "card": {
       "margin": "MARGIN",

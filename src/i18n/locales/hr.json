@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Planirani trošak",
+      "costHelp": "Koliko očekuješ da će te ova faza koštati.",
+      "priceLabel": "Cijena prema investitoru",
+      "priceHelp": "Iznos koji se za ovu fazu naplaćuje investitoru.",
+      "fromDecisionLocked": "Iznos je preuzet iz odluke i ne može se mijenjati ovdje.",
+      "marginLine": "Trošak {{cost}} · Investitoru {{price}} · Marža {{margin}}%",
+      "negativeHint": "— faza je bez zarade.",
+      "listLine": "Trošak {{cost}} · Investitoru {{price}}",
+      "vtrCostRequired": "Upišite planirani trošak aneksa."
+    },
     "noPaymentSource": "Bez izvora",
     "card": {
       "margin": "MARŽA",

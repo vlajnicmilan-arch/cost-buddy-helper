@@ -315,6 +315,8 @@ export const ProjectDetailDialog = ({
                 isManager={isManager}
                 loading={milestonesLoading}
                 onRefetch={refetchMilestones}
+                projectBusinessProfileId={project.business_profile_id ?? null}
+
               />
             </TabsContent>
             )}
