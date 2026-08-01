@@ -17,7 +17,8 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
     const A = await authedClientFor('a'); aId = A.userId; aClient = A.client;
     const B = await authedClientFor('b'); bId = B.userId; bClient = B.client;
     const { data: k, error: kerr } = await aClient
-      .from('krug').insert({ name: 'sec-krug', owner_id: aId }).select('id').single();
+      .from('krug').insert({ name: 'sec-krug', preset: 'partner', created_by: aId })
+      .select('id').single();
     if (kerr) throw kerr;
     krugId = k!.id;
     // owner bootstrap trigger (krug_bootstrap_creator) postavlja A kao punopravnog.
@@ -59,7 +60,11 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
     // krug_sps INSERT dozvoljen samo full memberu koji je i vlasnik sourcea
     const { error } = await bClient
       .from('krug_shared_payment_source')
-      .insert({ krug_id: krugId, source_id: '00000000-0000-0000-0000-000000000000', added_by: bId });
+      .insert({
+        krug_id: krugId,
+        payment_source_id: '00000000-0000-0000-0000-000000000000',
+        linked_by: bId,
+      });
     expect(error).not.toBeNull();
   });
 

@@ -26,7 +26,7 @@ test.describe('03 — investor scope', () => {
     await addProjectMember(aClient, projectId, bId, 'investor');
     const { data: m } = await aClient
       .from('project_milestones')
-      .insert({ project_id: projectId, user_id: aId, name: 'M1', total_budget: 1234 })
+      .insert({ project_id: projectId, name: 'M1', budget: 1234 })
       .select('id').single();
     milestoneId = m!.id;
     const { data: e } = await aClient
@@ -79,7 +79,7 @@ test.describe('03 — investor scope', () => {
 
   test('investor NE SMIJE čitati project_funding', async () => {
     const { data, error } = await bClient
-      .from('project_funding').select('id, amount').eq('project_id', projectId);
+      .from('project_funding').select('id, allocated_amount').eq('project_id', projectId);
     expect(error).toBeNull();
     // rupa: prisustvo funding retka je financijski leak
     expect(data ?? []).toEqual([]);
@@ -92,17 +92,17 @@ test.describe('03 — investor scope', () => {
     expect(data ?? []).toEqual([]);
   });
 
-  test('investor NE SMIJE čitati milestone total_budget', async () => {
+  test('investor NE SMIJE čitati milestone budget', async () => {
     // Ovaj test dokumentira "što investitor ne bi trebao vidjeti"; ako RLS pušta,
     // spec padne i to je nalaz.
     const { data, error } = await bClient
-      .from('project_milestones').select('id, total_budget').eq('id', milestoneId);
+      .from('project_milestones').select('id, budget').eq('id', milestoneId);
     expect(error).toBeNull();
     if ((data ?? []).length > 0) {
-      // Formalno tvrdimo da total_budget nije eksponiran; ovdje samo prijavljujemo.
+      // Formalno tvrdimo da budget nije eksponiran; ovdje samo prijavljujemo.
       // Ako je politika promijenjena da vraća, expect failuje.
-      const budget = data![0].total_budget;
-      expect(budget, 'investor je pročitao total_budget milestonea').toBeNull();
+      const budget = data![0].budget;
+      expect(budget, 'investor je pročitao budget milestonea').toBeNull();
     }
   });
 
