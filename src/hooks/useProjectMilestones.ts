@@ -271,9 +271,19 @@ export const useProjectMilestones = (projectId: string | null) => {
   const updateMilestone = async (
     milestone: ProjectMilestone,
     revision?: PendingRevisionInput,
-    previousBudget?: number
+    previousBudget?: number,
+    /**
+     * Korak D — novčani stupci ulaze u payload SAMO kad ih pozivatelj smije
+     * mijenjati. Voditelj (member) čita `budget`/`investor_price` kao NULL
+     * (zaštita iz koraka A), pa bi ih slanje pokušalo obrisati — a DB trigger
+     * `guard_milestone_column_writes` takav upis odbija.
+     */
+    options?: { includeCost?: boolean; includePrice?: boolean },
   ): Promise<void> => {
+    const includeCost = options?.includeCost ?? true;
+    const includePrice = options?.includePrice ?? true;
     try {
+
       const previous = milestones.find((m) => m.id === milestone.id);
       const prevStatus = previous?.status;
       const nowIso = new Date().toISOString();

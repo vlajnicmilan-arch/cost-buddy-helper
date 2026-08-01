@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { showError } from '@/hooks/useStatusFeedback';
 import { useProjectAccessLevel } from '@/hooks/useProjectAccessLevel';
 import type { ProjectAccessLevel } from '@/lib/projectAccess';
+import type { ProjectRoleKey } from '@/lib/projectRolePermissions';
+
 import { isProjectReadOnly } from '@/lib/projectWriteGuard';
 
 interface ProjectInput {
