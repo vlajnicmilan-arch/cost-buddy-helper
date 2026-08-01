@@ -58,7 +58,7 @@ export async function addProjectMember(
   client: SupabaseClient,
   projectId: string,
   userId: string,
-  role: 'member' | 'worker' | 'investor',
+  role: 'member' | 'viewer' | 'worker' | 'investor',
 ): Promise<string> {
   const { data, error } = await client
     .from('project_members')
