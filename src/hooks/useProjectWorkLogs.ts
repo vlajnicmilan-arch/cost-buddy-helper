@@ -32,7 +32,7 @@ export const useProjectWorkLogs = (projectId: string | null) => {
 
       // 2) milestones (for names)
       const { data: msRows } = await supabase
-        .from('project_milestones')
+        .from('project_milestones_scoped')
         .select('id, name')
         .eq('project_id', projectId);
       const msMap = new Map<string, string>((msRows || []).map((m: any) => [m.id, m.name]));

@@ -1765,6 +1765,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expenses_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "expenses_payment_source_card_id_fkey"
             columns: ["payment_source_card_id"]
             isOneToOne: false
@@ -3071,6 +3078,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "milestone_budget_alerts_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "milestone_budget_alerts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -3140,6 +3154,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "milestone_budget_revisions_linked_milestone_id_fkey"
+            columns: ["linked_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "milestone_budget_revisions_linked_revision_id_fkey"
             columns: ["linked_revision_id"]
             isOneToOne: false
@@ -3151,6 +3172,13 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_budget_revisions_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
             referencedColumns: ["id"]
           },
           {
@@ -3205,6 +3233,13 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestone_checklist_items_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
             referencedColumns: ["id"]
           },
         ]
@@ -3872,6 +3907,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_collaborators_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_collaborators_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -3920,6 +3962,13 @@ export type Database = {
             columns: ["linked_milestone_id"]
             isOneToOne: false
             referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_contract_amendments_linked_milestone_id_fkey"
+            columns: ["linked_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
             referencedColumns: ["id"]
           },
           {
@@ -4705,6 +4754,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_milestones_depends_on_milestone_id_fkey"
+            columns: ["depends_on_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_milestones_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -5015,6 +5071,13 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_logs_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
             referencedColumns: ["id"]
           },
           {
@@ -6043,7 +6106,110 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      project_milestones_scoped: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          budget: number | null
+          color: string | null
+          completed_at: string | null
+          created_at: string | null
+          deleted_at: string | null
+          depends_on_milestone_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string | null
+          investor_price: number | null
+          is_contingency: boolean | null
+          is_vtr: boolean | null
+          name: string | null
+          project_id: string | null
+          reminder_days_before: number | null
+          sort_order: number | null
+          source_decision_id: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          budget?: never
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          depends_on_milestone_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string | null
+          investor_price?: never
+          is_contingency?: boolean | null
+          is_vtr?: boolean | null
+          name?: string | null
+          project_id?: string | null
+          reminder_days_before?: number | null
+          sort_order?: number | null
+          source_decision_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          budget?: never
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          depends_on_milestone_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string | null
+          investor_price?: never
+          is_contingency?: boolean | null
+          is_vtr?: boolean | null
+          name?: string | null
+          project_id?: string | null
+          reminder_days_before?: number | null
+          sort_order?: number | null
+          source_decision_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_milestones_depends_on_milestone_id_fkey"
+            columns: ["depends_on_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_depends_on_milestone_id_fkey"
+            columns: ["depends_on_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "project_milestones_scoped"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_source_decision_id_fkey"
+            columns: ["source_decision_id"]
+            isOneToOne: false
+            referencedRelation: "project_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _extract_custom_source_id: {

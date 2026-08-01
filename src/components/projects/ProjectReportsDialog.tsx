@@ -275,7 +275,7 @@ export const ProjectReportsDialog = ({
           .eq('project_id', project.id)
           .order('log_date', { ascending: false }),
         supabase
-          .from('project_milestones')
+          .from('project_milestones_scoped')
           .select('id, name')
           .eq('project_id', project.id),
       ]);

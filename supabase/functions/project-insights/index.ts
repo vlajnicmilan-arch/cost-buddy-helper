@@ -62,6 +62,20 @@ Deno.serve(async (req) => {
       });
     }
 
+
+    // Korak A: sazetak po prirodi sadrzi iznose -> dopusten samo vlasniku,
+    // vieweru i clanu. Radnik i investitor nemaju pristup.
+    const { data: roleData } = await userClient.rpc('get_project_role', {
+      _project_id: project_id,
+      _user_id: claimsData.claims.sub,
+    });
+    const role = typeof roleData === 'string' ? roleData : null;
+    if (!role || !['owner', 'viewer', 'member'].includes(role)) {
+      return new Response(JSON.stringify({ error: 'forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Pull data with service role (already authorized)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const { data: milestones } = await supabase.from('project_milestones')
