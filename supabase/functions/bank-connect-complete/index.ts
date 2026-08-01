@@ -33,33 +33,6 @@ setTimeout(() => { try { window.location.href = '/wallet?bank_connected=${ok ? 1
   });
 }
 
-// TEMPORARY DIAGNOSTIC INSTRUMENTATION — remove after Enable Banking debug.
-// Fire-and-forget insert into app_diagnostics_logs. Never throws, never alters flow.
-async function obLog(
-  admin: any,
-  ctx: { userId?: string | null; connId?: string | null; businessProfileId?: string | null },
-  point: string,
-  details: Record<string, unknown>,
-): Promise<void> {
-  try {
-    await admin.from("app_diagnostics_logs").insert({
-      event: "ob_debug",
-      severity: "info",
-      user_id: ctx.userId ?? null,
-      session_id: `edge-bank-connect-complete-${ctx.connId ?? "unknown"}`,
-      route: "/functions/bank-connect-complete",
-      details: {
-        point,
-        connection_id: ctx.connId ?? null,
-        business_profile_id: ctx.businessProfileId ?? null,
-        ...details,
-      },
-    });
-  } catch (_e) {
-    // swallow — diagnostics must never break the flow
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -121,27 +94,11 @@ Deno.serve(async (req) => {
     let accounts: any[] = session.accounts ?? [];
     const validUntil: string | null = session.access?.valid_until ?? null;
 
-    const logCtx = {
-      userId: conn.user_id,
-      connId: conn.id,
-      businessProfileId: conn.business_profile_id ?? null,
-    };
-    const sessionAccountsLen = Array.isArray(session.accounts) ? session.accounts.length : null;
-    let reachedFallback = false;
-
-    await obLog(admin, logCtx, "session_post", {
-      accounts_len: sessionAccountsLen,
-      session_keys: Object.keys(session ?? {}),
-      has_session_id: !!session.session_id,
-      sessionId: sessionId ?? null,
-    });
-
     // Fallback: neke autorizacije vrate session s praznim `accounts`.
     // GET /sessions/{id} vraća `accounts` (lista UID stringova) i `accounts_data`
     // (SessionAccount: { uid, identification_hash, ... }) — bez iban/name/currency,
     // pa detalje dohvaćamo per račun preko GET /accounts/{uid}/details.
     if (accounts.length === 0 && sessionId) {
-      reachedFallback = true;
       try {
         const sRes = await ebFetch(`/sessions/${encodeURIComponent(sessionId)}`);
         if (sRes.ok) {
@@ -149,18 +106,6 @@ Deno.serve(async (req) => {
           const uids: string[] = Array.isArray(sData.accounts_data) && sData.accounts_data.length > 0
             ? sData.accounts_data.map((a: any) => a?.uid).filter(Boolean)
             : (Array.isArray(sData.accounts) ? sData.accounts.map((a: any) => (typeof a === "string" ? a : a?.uid)).filter(Boolean) : []);
-
-          await obLog(admin, logCtx, "session_get", {
-            status: sRes.status,
-            accounts_data_len: Array.isArray(sData.accounts_data) ? sData.accounts_data.length : null,
-            accounts_len: Array.isArray(sData.accounts) ? sData.accounts.length : null,
-            top_keys: Object.keys(sData ?? {}),
-            sample_uid: uids[0] ?? null,
-          });
-
-          if (uids.length === 0) {
-            await obLog(admin, logCtx, "no_uids", { reason: "session_get vratio 0 uid" });
-          }
 
           const normalized: any[] = [];
           for (const uid of uids) {
@@ -172,14 +117,6 @@ Deno.serve(async (req) => {
               } else {
                 console.warn("[bank-connect-complete] details fetch", uid, dRes.status);
               }
-              if (uid === uids[0]) {
-                await obLog(admin, logCtx, "account_details", {
-                  status: dRes.status,
-                  detail_keys: details ? Object.keys(details) : null,
-                  has_iban: !!(details?.account_id?.iban || details?.iban),
-                  currency: details?.currency ?? null,
-                });
-              }
             } catch (e) {
               console.warn("[bank-connect-complete] details err", uid, e);
             }
@@ -189,16 +126,6 @@ Deno.serve(async (req) => {
           accounts = normalized;
         } else {
           console.warn("[bank-connect-complete] session refetch", sRes.status);
-          let bodySnippet = "";
-          try {
-            bodySnippet = (await sRes.text()).slice(0, 300);
-          } catch (_e) {
-            bodySnippet = "";
-          }
-          await obLog(admin, logCtx, "session_get_failed", {
-            status: sRes.status,
-            body_snippet: bodySnippet,
-          });
         }
       } catch (e) {
         console.warn("[bank-connect-complete] session refetch err", e);
@@ -207,17 +134,6 @@ Deno.serve(async (req) => {
         console.warn("[bank-connect-complete] accounts empty after session refetch");
       }
     }
-
-    if (accounts.length === 0) {
-      await obLog(admin, logCtx, "final_zero", {
-        had_session_accounts: sessionAccountsLen ?? 0,
-        reached_fallback: reachedFallback,
-      });
-    } else {
-      await obLog(admin, logCtx, "pre_insert", { rows_count: accounts.length });
-    }
-
-
 
     // Update connection
     await admin
