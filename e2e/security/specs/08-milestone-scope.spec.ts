@@ -39,7 +39,6 @@ test.describe('08 — scope iznosa na fazama projekta', () => {
         .from('project_milestones')
         .insert({
           project_id: pid,
-          user_id: aId,
           name: `M-${role}`,
           budget: BUDGET,
           investor_price: PRICE,
