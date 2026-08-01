@@ -112,7 +112,9 @@ export const ProjectMilestonesTab = ({
       setDialogMode(milestone.is_vtr ? 'vtr' : 'milestone');
       setName(milestone.name);
       setDescription(milestone.description || '');
-      setBudget(milestone.budget.toString());
+      // Korak A/B: `budget` može biti null (nije upisan ILI skriven za ulogu).
+      setBudget(milestone.budget == null ? '' : String(milestone.budget));
+      setInvestorPrice(milestone.investor_price == null ? '' : String(milestone.investor_price));
       setStatus(milestone.status);
       setColor(milestone.color || '#3b82f6');
       setStartDate(milestone.start_date ? new Date(milestone.start_date) : undefined);
@@ -127,6 +129,8 @@ export const ProjectMilestonesTab = ({
       setName('');
       setDescription('');
       setBudget('');
+      setInvestorPrice('');
+
       setStatus('pending');
       setColor(mode === 'vtr' ? 'hsl(38 92% 50%)' : '#3b82f6');
       setStartDate(undefined);
