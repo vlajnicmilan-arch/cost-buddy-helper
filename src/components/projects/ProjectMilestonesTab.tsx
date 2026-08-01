@@ -700,7 +700,9 @@ export const ProjectMilestonesTab = ({
               isOwner={isOwner}
               priceApplicable={investorPriceApplicable}
               priceLocked={investorPriceLocked}
+              amountsReadOnly={!canEditAmounts}
             />
+
 
 
             <div className="space-y-2">
