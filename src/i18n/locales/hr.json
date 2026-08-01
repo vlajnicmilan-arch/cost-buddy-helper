@@ -309,6 +309,8 @@
       "fromDecisionLocked": "Iznos je preuzet iz odluke i ne može se mijenjati ovdje.",
       "marginLine": "Trošak {{cost}} · Investitoru {{price}} · Marža {{margin}}%",
       "negativeHint": "— faza je bez zarade.",
+      "forbiddenForRole": "Iznose faze smije mijenjati samo vlasnik projekta.",
+
       "listLine": "Trošak {{cost}} · Investitoru {{price}}",
       "listLineCostOnly": "Trošak {{cost}}",
       "listLinePriceOnly": "Investitoru {{price}}",

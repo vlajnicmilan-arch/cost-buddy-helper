@@ -309,6 +309,8 @@
       "fromDecisionLocked": "Der Betrag stammt aus einer Entscheidung und kann hier nicht geändert werden.",
       "marginLine": "Kosten {{cost}} · An Investor {{price}} · Marge {{margin}}%",
       "negativeHint": "— diese Phase bringt keinen Gewinn.",
+      "forbiddenForRole": "Nur der Projektinhaber darf Phasenbeträge ändern.",
+
       "listLine": "Kosten {{cost}} · An Investor {{price}}",
       "listLineCostOnly": "Kosten {{cost}}",
       "listLinePriceOnly": "An Investor {{price}}",
