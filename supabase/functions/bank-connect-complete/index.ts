@@ -91,8 +91,50 @@ Deno.serve(async (req) => {
     }
     const session = JSON.parse(sessText);
     const sessionId: string = session.session_id;
-    const accounts: any[] = session.accounts ?? [];
+    let accounts: any[] = session.accounts ?? [];
     const validUntil: string | null = session.access?.valid_until ?? null;
+
+    // Fallback: neke autorizacije vrate session s praznim `accounts`.
+    // GET /sessions/{id} vraća `accounts` (lista UID stringova) i `accounts_data`
+    // (SessionAccount: { uid, identification_hash, ... }) — bez iban/name/currency,
+    // pa detalje dohvaćamo per račun preko GET /accounts/{uid}/details.
+    if (accounts.length === 0 && sessionId) {
+      try {
+        const sRes = await ebFetch(`/sessions/${encodeURIComponent(sessionId)}`);
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          const uids: string[] = Array.isArray(sData.accounts_data) && sData.accounts_data.length > 0
+            ? sData.accounts_data.map((a: any) => a?.uid).filter(Boolean)
+            : (Array.isArray(sData.accounts) ? sData.accounts.map((a: any) => (typeof a === "string" ? a : a?.uid)).filter(Boolean) : []);
+
+          const normalized: any[] = [];
+          for (const uid of uids) {
+            let details: any = null;
+            try {
+              const dRes = await ebFetch(`/accounts/${encodeURIComponent(uid)}/details`);
+              if (dRes.ok) {
+                details = await dRes.json();
+              } else {
+                console.warn("[bank-connect-complete] details fetch", uid, dRes.status);
+              }
+            } catch (e) {
+              console.warn("[bank-connect-complete] details err", uid, e);
+            }
+            // Nikad ne preskačemo račun zbog manjka detalja.
+            normalized.push({ ...(details ?? {}), uid, currency: details?.currency ?? "EUR" });
+          }
+          accounts = normalized;
+        } else {
+          console.warn("[bank-connect-complete] session refetch", sRes.status);
+        }
+      } catch (e) {
+        console.warn("[bank-connect-complete] session refetch err", e);
+      }
+      if (accounts.length === 0) {
+        console.warn("[bank-connect-complete] accounts empty after session refetch");
+      }
+    }
+
 
     // Update connection
     await admin
