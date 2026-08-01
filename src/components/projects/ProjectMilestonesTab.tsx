@@ -215,7 +215,9 @@ export const ProjectMilestonesTab = ({
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    if (!guard()) return;
+    // Uređivanje postojeće faze smije i voditelj (samo napredak); kreiranje i VTR ostaju vlasniku.
+    if (editingMilestone ? !progressGuard() : !guard()) return;
+
 
     // Validate dependency: can't start if dependency not completed
     if (status === 'in_progress' && dependsOn) {
@@ -390,18 +392,23 @@ export const ProjectMilestonesTab = ({
       {viewMode === 'kanban' && milestones.length > 0 && (
         <MilestoneKanban
           milestones={milestones}
-          isManager={isManager && !isReadOnly}
+          isManager={canEditProgress}
+          canDelete={isManager && !isReadOnly}
           projectId={projectId}
-          onEdit={(m) => { if (!guard()) return; openDialog(m); }}
+          onEdit={(m) => { if (!progressGuard()) return; openDialog(m); }}
           onDelete={(id) => { if (!guard()) return; handleDelete(id); }}
           onShowRevisions={(m) => { setRevisionsTarget(m); setRevisionsDialogOpen(true); }}
           onStatusChange={async (m, newStatus) => {
-            if (!guard()) return;
-            await updateMilestone({ ...m, status: newStatus });
+            if (!progressGuard()) return;
+            await updateMilestone({ ...m, status: newStatus }, undefined, undefined, {
+              includeCost: canEditAmounts,
+              includePrice: canEditAmounts,
+            });
             onRefetch();
           }}
         />
       )}
+
 
       {milestones.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
