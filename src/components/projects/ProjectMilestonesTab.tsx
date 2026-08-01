@@ -321,7 +321,11 @@ export const ProjectMilestonesTab = ({
                 : null,
             }
           : undefined;
-        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
+        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget, {
+          includeCost: canEditAmounts,
+          includePrice: canEditAmounts,
+        });
+
       } else if (dialogMode === 'vtr') {
         await createVtr({ ...milestoneData, note: vtrNote.trim() || null } as any);
       } else {
