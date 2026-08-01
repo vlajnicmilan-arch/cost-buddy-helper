@@ -79,7 +79,7 @@ test.describe('03 — investor scope', () => {
 
   test('investor NE SMIJE čitati project_funding', async () => {
     const { data, error } = await bClient
-      .from('project_funding').select('id, amount').eq('project_id', projectId);
+      .from('project_funding').select('id, allocated_amount').eq('project_id', projectId);
     expect(error).toBeNull();
     // rupa: prisustvo funding retka je financijski leak
     expect(data ?? []).toEqual([]);
