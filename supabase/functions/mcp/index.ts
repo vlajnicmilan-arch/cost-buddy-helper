@@ -396,7 +396,7 @@ var get_project_details_default = defineTool9({
     const sb = supabaseForUser4(ctx);
     const [project, milestones, members, expenses] = await Promise.all([
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
-      sb.from("project_milestones").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
+      sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
       sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null)
     ]);
@@ -437,7 +437,7 @@ var list_project_milestones_default = defineTool10({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const { data, error } = await supabaseForUser4(ctx).from("project_milestones").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at,sort_order").eq("project_id", project_id).is("deleted_at", null).order("sort_order");
+    const { data, error } = await supabaseForUser4(ctx).from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at,sort_order").eq("project_id", project_id).is("deleted_at", null).order("sort_order");
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     const enriched = (data ?? []).map((m) => {
       const end = m.actual_end_date || (m.completed_at ? String(m.completed_at).slice(0, 10) : null);

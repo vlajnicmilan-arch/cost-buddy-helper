@@ -77,7 +77,11 @@ export interface ProjectMilestone {
   project_id: string;
   name: string;
   description?: string | null;
-  budget: number;
+  /**
+   * Korak A — planirani trošak faze. `null` znači SKRIVENO za trenutnu ulogu
+   * (radnik, investitor), a NE 0. Nikad ne raditi `Number(budget) || 0`.
+   */
+  budget: number | null;
   status: MilestoneStatus;
   start_date?: string | null;
   due_date?: string | null;

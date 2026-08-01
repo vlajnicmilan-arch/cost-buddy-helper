@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_investor_project_phases(uuid) TO supabase_read_only_user;

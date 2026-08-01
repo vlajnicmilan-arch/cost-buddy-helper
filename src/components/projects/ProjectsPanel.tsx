@@ -217,7 +217,7 @@ export const ProjectsPanel = ({ onRefreshExpenses, canCreate = true }: ProjectsP
     const [expensesRes, fundingRes, milestonesRes, membersRes] = await Promise.all([
       (supabase.from('expenses').select('project_id, amount, type, status, expense_nature') as any).in('project_id', projectIds),
       supabase.from('project_funding').select('project_id, allocated_amount').in('project_id', projectIds),
-      supabase.from('project_milestones').select('project_id, budget, status, due_date').in('project_id', projectIds),
+      supabase.from('project_milestones_scoped').select('project_id, budget, status, due_date').in('project_id', projectIds),
       (supabase.from('project_members') as any).select('project_id').in('project_id', projectIds),
     ]);
 

@@ -16,7 +16,7 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const { data, error } = await supabaseForUser(ctx)
-      .from("project_milestones")
+      .from("project_milestones_scoped")
       .select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at,sort_order")
       .eq("project_id", project_id)
       .is("deleted_at", null)

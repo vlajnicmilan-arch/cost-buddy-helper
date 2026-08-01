@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { PendingRevisionInput } from '@/types/milestoneRevision';
 import { notifyProjectActivity } from '@/lib/notifyProjectActivity';
 import { applyContractAmendment, calculateNetExpenseAmount, isCountedProjectTransaction, type RawProjectExpense } from '@/lib/projectCalculations';
+import { readMilestoneAmount } from '@/lib/milestoneAmounts';
 
 export const useProjectMilestones = (projectId: string | null) => {
   const { user } = useAuth();
@@ -23,13 +24,28 @@ export const useProjectMilestones = (projectId: string | null) => {
 
     setLoading(true);
     try {
+      // Korak A: čitanje ide preko role-scoped pogleda. Pogled vraća NULL na
+      // `budget` / `investor_price` kad ih uloga ne smije vidjeti.
       const { data, error } = await supabase
-        .from('project_milestones')
-        .select('*, source_decision:project_decisions!source_decision_id(id, title, annulled_at)')
+        .from('project_milestones_scoped')
+        .select('*')
         .eq('project_id', projectId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
+
+      // Metapodaci izvorne odluke — zaseban dohvat (pogled nema embed relaciju).
+      const decisionIds = Array.from(
+        new Set((data || []).map((m: any) => m.source_decision_id).filter(Boolean)),
+      ) as string[];
+      const decisionMap = new Map<string, { id: string; title: string | null; annulled_at: string | null }>();
+      if (decisionIds.length > 0) {
+        const { data: decisions } = await supabase
+          .from('project_decisions')
+          .select('id, title, annulled_at')
+          .in('id', decisionIds);
+        (decisions || []).forEach((d: any) => decisionMap.set(d.id, d));
+      }
 
       // F4 — per-milestone spent uses unified filter (approved expense only, no
       // transfer / correction, advance-netted) so it matches Spent on Budget tab.
@@ -54,15 +70,16 @@ export const useProjectMilestones = (projectId: string | null) => {
       setMilestones((data || []).map((m: any) => ({
         ...m,
         status: m.status as MilestoneStatus,
-        budget: Number(m.budget) || 0,
+        // Skriveno (NULL) OSTAJE null — nikad 0.
+        budget: readMilestoneAmount(m.budget),
         spent: spentByMilestone.get(m.id) || 0,
         depends_on_milestone_id: m.depends_on_milestone_id || null,
         reminder_days_before: m.reminder_days_before ?? 3,
         is_contingency: !!m.is_contingency,
         is_vtr: !!m.is_vtr,
         source_decision_id: m.source_decision_id ?? null,
-        investor_price: m.investor_price != null ? Number(m.investor_price) : null,
-        source_decision: m.source_decision ?? null,
+        investor_price: readMilestoneAmount(m.investor_price),
+        source_decision: m.source_decision_id ? decisionMap.get(m.source_decision_id) ?? null : null,
       })));
     } catch (error) {
       console.error('Error fetching milestones:', error);

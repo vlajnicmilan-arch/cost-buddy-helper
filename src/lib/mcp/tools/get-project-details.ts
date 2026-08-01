@@ -18,7 +18,7 @@ export default defineTool({
     const sb = supabaseForUser(ctx);
     const [project, milestones, members, expenses] = await Promise.all([
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
-      sb.from("project_milestones").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
+      sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
       sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null),
     ]);

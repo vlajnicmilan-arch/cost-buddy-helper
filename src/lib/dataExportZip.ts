@@ -29,7 +29,8 @@ const USER_OWNED_TABLES = [
   'cash_registers',
   'clients',
   'projects',
-  'project_milestones',
+  // Korak A: izvoz ide preko role-scoped pogleda (skriveni iznosi ostaju prazni).
+  'project_milestones_scoped',
   'project_work_logs',
   'project_work_entries',
   'project_workers',
