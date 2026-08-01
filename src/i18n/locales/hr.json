@@ -2932,7 +2932,9 @@
     },
     "wallet": {
       "emptyTitle": "Dodajte prvi poslovni račun",
-      "emptyHint": "Npr. Žiroračun tvrtke, Blagajna, Devizni račun. Bez izvora plaćanja saldo se ne ažurira automatski."
+      "emptyHint": "Npr. Žiroračun tvrtke, Blagajna, Devizni račun. Bez izvora plaćanja saldo se ne ažurira automatski.",
+      "bankingTitle": "Banka i uvoz izvoda",
+      "bankingHint": "Povežite poslovni račun putem Open Bankinga ili uvezite izvod."
     },
     "quickCreate": {
       "title": "Nova tvrtka",
