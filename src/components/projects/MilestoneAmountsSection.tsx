@@ -31,6 +31,11 @@ interface MilestoneAmountsSectionProps {
   priceApplicable: boolean;
   /** Faza nastala iz odluke — cijena je snimka odluke, samo za čitanje. */
   priceLocked?: boolean;
+  /**
+   * Korak D — uloga smije ČITATI iznose, ali ih ne smije mijenjati
+   * (voditelj/member). Polja ostaju vidljiva, ali onemogućena.
+   */
+  amountsReadOnly?: boolean;
 }
 
 /**
@@ -47,7 +52,9 @@ export const MilestoneAmountsSection = ({
   isOwner,
   priceApplicable,
   priceLocked = false,
+  amountsReadOnly = false,
 }: MilestoneAmountsSectionProps) => {
+
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
 
