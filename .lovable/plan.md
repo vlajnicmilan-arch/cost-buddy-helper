@@ -1,128 +1,121 @@
-# Korak B — dva iznosa na fazi (trošak + cijena investitoru)
+# Korak D — prava pisanja po ulogama
 
-## Prvo: četiri neslaganja između zahtjeva i repozitorija
+## Prvo: gdje se matrica kosi s repozitorijem
 
-1. **`budget` se u kodu već koristi kao `number | null` u tipu, ali kod ga tretira kao broj.** `src/types/project.ts` (Korak A) već ima `budget: number | null`, a `tsconfig.app.json` ima `"strict": false` — TypeScript zato NE javlja nijednu grešku na `m.budget > 0`, `m.budget + spent`, `formatAmount(m.budget)`. To znači da nas prevoditelj neće upozoriti ni na jedno mjesto; popis mora biti ručni (dolje, točka 2).
-2. **Postoji stvarni pad, već danas.** `ProjectMilestonesTab.tsx:115` radi `setBudget(milestone.budget.toString())`. Čim `budget` bude `null` (skriveno ili prazno), otvaranje forme baca `TypeError`. Ovo se mora popraviti u istom koraku, inače shema iz točke 1 ruši formu.
-3. **Model tipova projekta NEMA pojam "ima investitora".** `src/lib/projectTypes.ts` nosi samo `icon`, `color`, `labelKeys`, `templateCategory`. Pravilo iz točke 6 zahtijeva novo polje na presetu — prijedlog dolje.
-4. **Uloga u komponenti faza trenutno nije dostupna.** `ProjectFullScreenView.tsx` zna `currentUserRole` i `isOwner`, ali `ProjectMilestonesTab` ih ne prima. Vidljivost polja u koraku B **ne smije** se izvoditi iz uloge u komponenti — izvodi se iz **podatka** (`null` iz pogleda = ne prikazuj). To je i sigurnije i točno prati korak A. Iznimka je prazna nova faza (nema podatka), gdje se ionako radi samo o vlasniku jer je pisanje vlasnikovo.
+Provjereno upitom nad živim politikama (`pg_policies`) i definicijama funkcija.
 
-## 1. Migracija baze (jedna, mala)
+1. **Nije točno da uloge imaju identična prava.** Tri tablice već danas puštaju *bilo kojeg* člana (uključivo `viewer` i `investor`, jer `is_project_member` ne gleda ulogu):
+   - `project_documents` — INSERT/UPDATE: `is_project_member(...)`
+   - `milestone_checklist_items` — INSERT/UPDATE: `is_project_member(...)`
+   - `project_budget_revisions` i `milestone_budget_revisions` — INSERT: `is_project_member(...)`
+   Zadnje dvije su **novčani put**: član danas može upisati reviziju budžeta faze. To je rupa koju korak D mora zatvoriti, a ne otvoriti.
+2. **`worker` već ima prava pisanja.** `can_log_own_work` vraća `true` za `owner|member|worker`, pa radnik već sada upisuje `project_work_logs` i vlastite `project_work_entries` — bez stanja „na čekanju". Matrica kaže da radnik u koraku D ne dobiva ništa; on to *već ima*. Odluka je potrebna: ostaviti kako jest do koraka E (preporuka — ne diramo zatečeno ponašanje) ili odmah suziti.
+3. **Mrtva referenca na ulogu `manager`.** `project_contract_amendments` INSERT politika još provjerava `pm.role = 'manager'`, uloge koja više ne postoji. Politika je time efektivno owner-only, ali treba je očistiti.
+4. **Pretplata (točka 3) je već ispravno postavljena za vlasnika**, ali ne za buduće članove: `projects_readonly_when_downgraded`, `project_milestones_readonly_when_downgraded`, `project_documents_readonly_when_downgraded`, `project_funding_readonly_when_downgraded` svi imaju oblik „nije moj projekt ILI sam pretplatnik" — dakle pretplata veže samo vlastite projekte. **Ali** `with_check` na `project_milestones` INSERT/UPDATE ima *bezuvjetni* `can_write_module(auth.uid(),'projekti')`. Danas je bezopasno (pišu samo vlasnici); čim voditelj dobije pisanje, taj uvjet bi tražio pretplatu i od člana. Mora se maknuti iz članskih politika.
+5. **Čitanje faza je nakon koraka A owner-only.** SELECT na `project_milestones` je samo `is_project_owner`; ostali čitaju kroz `project_milestones_scoped`. Posljedica: voditeljev `UPDATE` bi prošao, ali `return=representation` (zadano u supabase-js) vratio bi prazno i klijent bi to protumačio kao grešku. Ovo se mora riješiti u istom koraku.
 
-```
-ALTER TABLE public.project_milestones
-  ALTER COLUMN budget DROP DEFAULT,
-  ALTER COLUMN budget DROP NOT NULL;
-```
+---
 
-Postojeći redovi se ne diraju (nule ostaju nule). `investor_price` je već nullable. Nakon migracije se regeneriraju Supabase tipovi, pa i pogled `project_milestones_scoped` vraća nullable `budget` (već ga vraća zbog `CASE`).
+## 1. Mehanizam ograničenja po stupcu
 
-**Posljedica koju treba svjesno prihvatiti:** od sada `budget = 0` i `budget = NULL` znače različite stvari u cijelom sustavu. Sve što danas upisuje `0` kao "nema iznosa" mora upisivati `NULL` — vidi točku 3.
+RLS ne zna za stupce. Tri opcije:
 
-## 2. Mjesta gdje `null` može tiho postati 0 ili srušiti prikaz
+- **`GRANT UPDATE(col)`** — radi po *bazi* roli (`authenticated`), ne po korisniku projekta. Isti korisnik je vlasnik jednog i voditelj drugog projekta → neupotrebljivo.
+- **Namjenski RPC** (`update_milestone_progress(...)`) — čist model, ali traži prepisivanje svih postojećih poziva i ostavlja tablicu otvorenom za direktan `UPDATE`.
+- **BEFORE UPDATE trigger koji uspoređuje OLD/NEW** ← **preporuka.**
 
-Nabrojano iz stvarnog grepa, po ozbiljnosti.
+**Izbor: BEFORE UPDATE trigger na `project_milestones`.**
 
-**A. Pad (crash)**
-- `ProjectMilestonesTab.tsx:115` — `milestone.budget.toString()`.
+`public.guard_milestone_column_writes()` — `SECURITY DEFINER`, čita ulogu preko `get_project_role`:
+- uloga `owner` → prolaz bez provjere;
+- uloga `member` → ako se mijenja ijedan zaštićeni stupac (`budget`, `investor_price`, `budget_locked`/analogni, `project_id`), `RAISE EXCEPTION` s `errcode 42501` i stabilnim tekstom (`milestone_amount_forbidden`);
+- ostale uloge ne dolaze do trigger a (RLS ih odbija ranije).
 
-**B. Tiho pretvaranje u 0 pri PISANJU (najgore — kvari podatak)**
-- `useProjectMilestones.ts:191` (`ProjectMilestonesTab` submit) — `parseLocaleAmount(budget).value || 0`
-- `useProjectMilestones.ts:149`, `180`, `245`, `489` — `Number(...) || 0` na povratnim/VTR putanjama
-- `useProjectMilestones.ts:349`, `363` — revizije budžeta
+Usporedba mora biti NULL-safe (`IS DISTINCT FROM`) — inače bi upis `null` nad `null` lažno pao.
 
-Ove se u koraku B mijenjaju samo tamo gdje je riječ o **korisnikovu unosu** (prazno polje → `null`). Putanje revizija i VTR-a rade nad fazama koje po definiciji imaju iznos; njih se ne dira, ali se dodaje zaštita: ako je iznos `null`, revizija/VTR se ne pokreće (umjesto da računa s 0).
+Zašto trigger: postojeći UI šalje cijeli objekt faze u `update()`, pa bi RPC značio refaktor svakog poziva. Trigger vrijedi za svaki put do tablice (UI, budući importi, edge funkcije koje ne koriste service role) i ne mijenja potpis nijednog postojećeg poziva.
 
-**C. Prikaz — `null > 0` je `false`, pa se redak sam sakrije (ponašanje koje ŽELIMO)**
-- `ProjectMilestonesTab.tsx:340,343,344,435`, `MilestoneKanban.tsx:81,82,147,189`, `ProjectTimelineTab.tsx:305`, `ProjectTransactionAddDialog.tsx:174`, `ProjectReportsDialog.tsx:196,378,599`, `projectStatusLine.ts:108`, `projectReportExport.ts:207`
-- Ovdje nema promjene ponašanja; samo se u listi faza (točka 7) mijenja sadržaj retka.
+**Posljedica za postojeći kod:** forma već izostavlja skrivene iznose iz payloada (korak B), pa voditelj u praksi neće ni slati `budget`. Ali forma šalje cijeli objekt drugih polja — treba provjeriti da se `budget`/`investor_price` ne šalju kao „nepromijenjeni echo" (echo iste vrijednosti prolazi zbog `IS DISTINCT FROM`, pa je i to sigurno).
 
-**D. Aritmetika gdje `null` postaje 0 bez guarda (mora se eksplicitno rukovati)**
-- `ProjectMilestonesTab.tsx:393` i `MilestoneKanban.tsx:187` — `m.budget + (m.spent || 0)` za contingency: `null + 5` = `5`, lažni podatak → dodati `null` guard (ne prikazuj contingency brojke).
-- `ProjectFundingTab.tsx:54` — `sum + (m.budget || 0)` zbraja skriveno/prazno kao 0. Prelazi na `sumVisibleAmounts` iz `src/lib/milestoneAmounts.ts`; ako je rezultat `null`, prikaz je „—", ne 0.
-- `ProjectFundingTab.tsx:123`, `projectReportExport.ts:228,393,573`, `ProjectReportsDialog.tsx:156,201,627`, `FinancialAssistantDialog.tsx:170` — formatiraju iznos izravno; `formatAmount(null)` daje 0,00 €. Prikaz „—" umjesto iznosa.
-- `ProjectMilestonesTab.tsx:98` — `previousBudget = editingMilestone.budget` pa `Math.abs(new - previous)`: `null` → 0, pa upis prve vrijednosti izgleda kao „promjena budžeta" i traži razlog revizije. Guard: ako je prethodni `null`, to je **prvi upis**, ne revizija.
-- `ProjectMilestonesTab.tsx:259` (VTR delete warning), `627` (usagePct), `ProjectRevisionsReport.tsx:102`, `MilestoneBudgetChangeSection.tsx:84,89,154,233,259` — svi rade s contingency/revizijama; dodaje se `null` guard bez promjene formule.
+---
 
-**Izvješća (PDF/CSV) se po zahtjevu NE diraju** — samo se `formatAmount(null)` zamijeni s „—" da izvješće ne tvrdi „0,00 €" tamo gdje iznosa nema. To nije promjena izračuna.
+## 2. Tablice i politike koje se diraju
 
-## 3. Forma faze
+| Tablica | Danas | Promjena u koraku D |
+| --- | --- | --- |
+| `project_milestones` | UPDATE samo owner | UPDATE dodatno za `member`; + BEFORE UPDATE trigger za iznose. INSERT/DELETE ostaju owner-only. Iz članske grane izbaciti `can_write_module`. |
+| `project_milestones` (SELECT) | owner-only | dodati SELECT za sudionike **ograničen na nefinancijske stupce nije moguć na tablici** → rješenje: klijent za članske upise koristi `Prefer: return=minimal` i osvježava kroz `project_milestones_scoped`. Alternativa (skuplja): članski `UPDATE` kroz RPC koji vraća scoped redak. |
+| `project_documents` | svaki član piše | suziti na `owner|member` (viewer/worker/investor gube upis). DELETE ostaje uploader-or-owner. |
+| `milestone_checklist_items` | svaki član piše | suziti na `owner|member`. |
+| `project_budget_revisions`, `milestone_budget_revisions` | svaki član INSERT | **suziti na owner-only** — to je novčani zapis. |
+| `project_contract_amendments` | referira nepostojeći `manager` | očistiti na owner-only. |
+| `project_workers`, `project_worker_rate_history` | owner-only | bez promjene (cijene po satu). |
+| `project_members`, `project_member_permissions`, `project_invitations` | owner-only | bez promjene. |
+| `project_funding`, `project_collaborators` | owner-only | bez promjene. |
+| `projects` | owner-only | bez promjene (ugovorena vrijednost ostaje vlasnikova). |
+| `project_work_logs`, `project_work_entries` | owner + `can_log_own_work` | **bez promjene** — pomiče se u korak E zajedno sa stanjem „na čekanju". |
+| `expenses` | vlastiti + owner | **bez promjene** (izvan opsega, potvrđeno). |
+| `project_activity_log` | svaki član INSERT | bez promjene (dnevnik, ne novac). |
 
-Datoteka: `src/components/projects/ProjectMilestonesTab.tsx` (dijalog, 819 linija — pri diranju izdvojiti dijalog u zasebnu komponentu `MilestoneFormDialog.tsx` da ostane ispod ~300 linija, uz `MilestoneAmountsSection.tsx` za dva polja + živi redak).
+Tablice koje korisnik nije spomenuo a spadaju u matricu: **dokumenti**, **checkliste faza**, **revizije budžeta** (gore), te `project_estimates` i `project_invoices` — oba su vezana uz `user_id`/vlasnika i ostaju izvan članskog pisanja.
 
-- `budget` → labela „Planirani trošak" + pomoćni tekst (materijal, radnici, podizvođači).
-- `investor_price` → labela „Cijena prema investitoru" + pomoćni tekst.
-- Oba prazna po defaultu; prazno se sprema kao `null`, ne 0.
-- Popunjavanje pri uređivanju: `milestone.budget == null ? '' : String(milestone.budget)` (rješava pad iz točke 2A).
-- **Prikaz polja ovisi o podatku, ne o ulozi:** kod uređivanja, ako je vrijednost `null` a faza postoji, polje se **ne renderira uopće** (skriveno iz pogleda). Kod nove faze prikazuju se oba (unos je vlasnikov).
-- Faza iz odluke (`source_decision_id != null`): polje cijene je `disabled` uz kratku napomenu i poveznicu na odluku. Logika badge-a već postoji u `src/lib/milestoneDecisionSource.ts` — koristi se ona, ne nova.
+---
 
-## 4. Živi izračun marže
+## 3. Pretplata
 
-Nova čista funkcija u `src/lib/milestoneAmounts.ts` (proširenje, ne nova datoteka):
+Pravilo „pretplata ograničava samo vlastite projekte" **već vrijedi** kroz `*_readonly_when_downgraded` politike i `projects_downgrade_ok`. Potrebno:
+- iz svih novih/izmijenjenih *članskih* grana **ne** stavljati `can_write_module`;
+- iz `project_milestones` INSERT/UPDATE `with_check` zadržati `can_write_module` samo u owner-grani;
+- uvesti jedan predikat `public.can_write_project_progress(_project_id, _user_id)` = `get_project_role IN ('owner','member') AND projects_downgrade_ok(...)`, da se pravilo ne piše na pet mjesta (isti obrazac kao `can_read_project_phases` iz koraka A).
 
-```
-computeMilestoneMargin(cost: number|null, price: number|null)
-  -> null                       // bilo koji null, ili price <= 0
-  -> { pct, isNegative }        // pct = (price - cost) / price * 100
-```
+---
 
-Redak se renderira samo kad funkcija vrati objekt. `isNegative` (cost >= price) → destructive boja + kratka napomena. Nikad „0%", nikad crtica.
+## 4. Sučelje
 
-## 5. Tip projekta (točka 6)
+Mjesta koja danas pretpostavljaju „piše samo vlasnik":
+- `useProjectWriteGuard` / `lib/projectWriteGuard.ts` — `isProjectWriteAllowed` propušta isključivo `owner_subscriber`; `participant` prolazi samo uz `allowOwnWorkLog`. Treba analogni opt-in `allowMemberProgress` (bez novog stanja i bez diranja postojeće semantike).
+- `lib/projectRolePermissions.ts` — `canEditMilestones: isOwnerEffective`. Za `member` postaje istina samo za *napredak*; uvesti razdvojene zastavice `canEditMilestoneProgress` (owner+member) i `canEditMilestoneAmounts` (owner) da UI ne miješa to dvoje.
+- `ProjectMilestonesTab.tsx` / `MilestoneKanban.tsx` — gumbi „Nova faza"/„Obriši" ostaju owner-only; „Uredi"/promjena statusa/datuma otvara se voditelju. Polja iznosa u formi već se skrivaju po ulozi (korak B) i ne ulaze u payload.
+- `ProjectDocumentsTab.tsx`, `MilestoneChecklist.tsx` — upload/dodavanje uvjetovati novim `member` pravom umjesto `isReadOnly`.
+- `MilestoneBudgetChangeSection.tsx` / `MilestoneRevisionsDialog.tsx` — ostaju owner-only, sada i u bazi.
+- `ProjectFullScreenView.tsx` i `ProjectDetailDialog.tsx` već imaju `currentUserRole` + `isOwner`, pa se nova prava izvode iz istog izvora (nema novih propova iz podataka).
+- i18n: nova poruka odbijanja za pokušaj promjene iznosa (hr/en/de).
 
-Najčišće prema postojećem modelu: dodati **`hasInvestor?: boolean`** na `ProjectTypePreset` u `src/lib/projectTypes.ts` i pomoćnik `projectTypeHasInvestor(project)`. Bez `hasInvestor` polje cijene se ne prikazuje, a labela troška ostaje „Planirani trošak".
+---
 
-Prijedlog vrijednosti (`true` = postoji vanjski naručitelj kojem se faza fakturira):
+## 5. Testovi
 
-| `hasInvestor: true` | `hasInvestor: false` |
-|---|---|
-| construction_new, renovation, interior, it_software, marketing, retail_opening, manufacturing, hospitality_event | general, education, beauty, healthcare, private_event |
+Novi `e2e/security/specs/09-role-writes-matrix.spec.ts` po obrascu iz `08-milestone-scope.spec.ts` (isti fixture helperi, `ensureSecEntitlements`, pet korisnika: owner, member, viewer, worker, investor).
 
-`general` je namjerno `false` — to je i osobni mod i sve zatečene projekte (svi su danas `general`), pa se u osobnom kontekstu forma ne mijenja vizualno. **Ovo je jedina odluka u planu koja je prosudba, ne nalaz — potvrdi ili ispravi popis.**
+Za svaku ulogu × radnju provjerava se **odgovor baze**, ne UI:
+- UPDATE statusa faze → member OK, viewer/worker/investor odbijen
+- UPDATE `budget` na fazi → **member odbijen** (`42501`), owner OK
+- UPDATE `investor_price` → member odbijen
+- UPDATE `contract_value` na `projects` → svi osim ownera odbijeni
+- INSERT/DELETE faze → member odbijen
+- INSERT `milestone_budget_revisions` → member odbijen
+- INSERT dokumenta → member OK, viewer/investor odbijen
+- INSERT checklist stavke → member OK, viewer odbijen
+- INSERT `project_workers` / UPDATE `hourly_rate` → svi osim ownera odbijeni
+- INSERT `project_members` / `project_invitations` → svi osim ownera odbijeni
+- vlasnik bez pretplate → odbijen na svom projektu; **član bez pretplate → prolazi** na tuđem projektu
 
-Iznimka: ako faza već IMA `investor_price` (npr. iz odluke) na projektu bez investitora, polje se svejedno prikazuje (read-only) — podatak se ne smije sakriti sam od sebe.
+Uz to vitest jedinični testovi za nove pure helpere u `projectRolePermissions.ts` / `projectWriteGuard.ts`.
 
-## 6. Lista faza (točka 7)
+---
 
-`ProjectMilestonesTab.tsx:435-443` i `MilestoneKanban.tsx:147-150`: umjesto `{milestone.budget > 0 && ...}` s jednim iznosom → jedan pomoćnik koji vraća retke:
-- oba: `Trošak X · Investitoru Y`
-- samo trošak: `Trošak X`
-- samo cijena: `Investitoru Y`
-- nijedan (oba `null`): **retka nema**
+## 6. Rizici
 
-Postojeći progress bar potrošnje ostaje vezan isključivo uz trošak i prikazuje se samo kad je trošak broj > 0.
+- **Neizravni put do iznosa:** `milestone_budget_revisions` i `project_budget_revisions` su danas otvoreni svakom članu — to je *stvarna* rupa, zatvara se ovim korakom. Provjeriti i trigger `_guard_contract_value_update` te `create_worker_payout` (SECURITY DEFINER) — potvrditi da interno traže vlasnika, ne samo članstvo.
+- **VTR i predlošci:** faza iz odluke ima zaključanu cijenu; trigger to dodatno tvrdi na razini baze. Predlošci (`project_templates`) kreiraju faze samo pri stvaranju projekta (vlasnik) — nema članskog puta.
+- **`return=representation`:** najveći praktični rizik. Bez rješenja iz točke 2 voditeljev upis „radi u bazi, puca u UI-ju".
+- **SECURITY DEFINER funkcije** koje pišu po fazama zaobilaze RLS, ali **ne** zaobilaze trigger — to je dodatni argument za trigger umjesto RPC-a.
+- **Postojeći zapisi:** politike ne diraju podatke; nijedna promjena nije retroaktivna. Suženje (dokumenti, checkliste, revizije) može nekome oduzeti mogućnost koju je imao — vrijedi provjeriti ima li u produkciji redova koje su unijeli `viewer`/`investor` prije nego se politika suzi.
 
-## 7. i18n
+---
 
-Novi ključevi pod `projects.milestoneAmounts.*` (`costLabel`, `costHelp`, `priceLabel`, `priceHelp`, `marginLine`, `negativeHint`, `fromDecisionLocked`, `hidden`) u `src/i18n/locales/{hr,en,de}.json`. Postojeći test `src/i18n/__tests__/untranslatedLocales.test.ts` hvata nedostajuće prijevode.
+## Otvoreno pitanje: kvačica „ovaj voditelj vidi cijenu"
 
-## 8. Testovi
+**Preporuka: odgoditi.** Ne spada prirodno u korak D — korak D je o *pisanju*, a kvačica je iznimka u *čitanju* iz koraka A. Miješanje bi značilo ponovno otvaranje `project_milestones_scoped` i `can_read_project_phases` usred izmjene write politika, pa bi jedan regresijski test padao a ne bi se znalo iz kojeg sloja.
 
-Vitest, čista logika (`src/test/milestoneMargin.test.ts`):
-- `computeMilestoneMargin(null, 100) === null`, `(100, null) === null`, `(null, null) === null`
-- `(100, 0) === null` i `(100, -5) === null` — nema dijeljenja s nulom
-- `(0, 100)` → 100% (nula je legitiman trošak, nije „prazno")
-- `(100, 100)` i `(120, 100)` → `isNegative: true`
-- `(8000, 10500)` → 24% (zaokruživanje kao u zahtjevu)
-- `sumVisibleAmounts` preskače `null`, ne zbraja ga kao 0
-
-Render (`@testing-library/react`, prema postojećem `src/test/milestoneVisibility.test.ts`):
-- faza s `budget: null` → u DOM-u nema ni labele „Planirani trošak" ni praznog inputa (`queryByLabelText` = `null`), ne samo prazna vrijednost
-- faza s `investor_price: null` → isto za cijenu
-- faza sa samo jednim iznosom → nema retka marže u DOM-u
-- projekt bez investitora → polje cijene se ne renderira
-- faza iz odluke → polje cijene prisutno i `disabled`
-
-## 9. Rizici
-
-- **Osobni mod.** Svi zatečeni projekti su `project_type = 'general'`, koji je predložen kao `hasInvestor: false` → forma u osobnom modu vizualno nepromijenjena osim nove labele i pomoćnog teksta. Ako se `general` prebaci na `true`, svaki osobni projekt dobiva polje „Cijena prema investitoru" — to bi bila regresija u osobnom kontekstu.
-- **VTR.** VTR faza pri stvaranju dodaje svoj `budget` na `contract_value` projekta (`useProjectMilestones.ts:180-232`). Ako VTR ostane bez iznosa (`null`), aneks bi se stvorio na 0. Rješenje: za VTR trošak ostaje **obavezan** (validacija u formi), ostatak faza je neobavezan. Bez toga se dira ugovorena vrijednost, što je izričito zabranjeno.
-- **Faze iz odluka.** `investor_price` je snimka odluke; zaključavanje polja sprječava razmimoilaženje, ali korisnik može i dalje mijenjati trošak — to je namjerno i ne dira aneks.
-- **Revizije budžeta.** Prvi upis iznosa u fazu koja je bila prazna ne smije aktivirati `MilestoneBudgetChangeSection` (traženje razloga i tipa revizije), inače se novi tok blokira. Guard je opisan u točki 2D.
-- **Skriveno vs. prazno.** UI ne razlikuje „nemaš pravo vidjeti" od „nije upisano" — u oba slučaja polje se ne renderira. To je namjerno i u skladu sa zahtjevom („ne smije ni naslutiti da polje postoji"), ali znači da vlasnik ne vidi razliku ni za sebe; za vlasnika se polje uvijek renderira (vlasnik nikad ne dobiva `null` iz zaštite), pa je razlika bezopasna.
-- **Zbrojevi na razini projekta** ostaju nepromijenjeni; jedina promjena je da `ProjectFundingTab` više ne broji skriveno kao 0. Ako se to smatra promjenom izračuna, reci i ostavljam ga netaknutim.
-
-## Što se izričito NE dira
-
-Ugovorena vrijednost projekta, saldo, marža i zarada na dashboardu, sadržaj i formule PDF izvješća, prava pisanja po ulogama (korak D), postojeći podaci i njihova migracija.
+Kad se radi, traži: `boolean` stupac na `project_members` (npr. `can_see_investor_price`, default `false`), izmjenu `CASE` grane za `investor_price` u pogledu, kvačicu u `ProjectMemberPermissionsDialog` (owner-only upis, već postoji), i proširenje `canSeeMilestonePriceField` da prima tu zastavicu umjesto samo uloge. Realno pola dana, najbolje kao zaseban korak D2 odmah nakon D.
