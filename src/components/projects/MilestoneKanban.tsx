@@ -220,11 +220,14 @@ export const MilestoneKanban = ({ milestones, isManager, canDelete, projectId, o
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(m)}>
                               <Pencil className="w-3 h-3" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(m.id)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            {canRemove && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(m.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
                         )}
+
                       </div>
                     </motion.div>
                   );
