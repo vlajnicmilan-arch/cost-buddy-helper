@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { buildMilestoneAmountsLine } from '@/lib/milestoneAmounts';
+import { buildMilestoneAmountsLine, type MilestoneAmountRole } from '@/lib/milestoneAmounts';
 import { MilestoneAmountsSection } from '@/components/projects/MilestoneAmountsSection';
 
 vi.mock('react-i18next', () => ({
