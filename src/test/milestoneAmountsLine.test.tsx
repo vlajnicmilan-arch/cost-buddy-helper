@@ -48,23 +48,48 @@ describe('buildMilestoneAmountsLine — četiri slučaja retka s iznosima', () =
   });
 });
 
-describe('MilestoneAmountsSection — skriveno polje troška se ne renderira', () => {
+describe('MilestoneAmountsSection — vidljivost polja ovisi o ULOZI, ne o vrijednosti', () => {
   const baseProps = {
     cost: '',
     onCostChange: vi.fn(),
     price: '',
     onPriceChange: vi.fn(),
-    showPrice: true,
+    priceApplicable: true,
   };
 
-  it('postojeća faza s budget === null -> polje troška izostaje', () => {
-    render(<MilestoneAmountsSection {...baseProps} showCost={false} />);
-    expect(screen.queryByTestId('milestone-cost')).toBeNull();
-    expect(screen.getByTestId('milestone-price')).toBeTruthy();
+  const cases: Array<{
+    role: MilestoneAmountRole;
+    isOwner: boolean;
+    cost: boolean;
+    price: boolean;
+  }> = [
+    { role: 'owner', isOwner: true, cost: true, price: true },
+    { role: 'viewer', isOwner: false, cost: true, price: true },
+    { role: 'member', isOwner: false, cost: true, price: false },
+    { role: 'investor', isOwner: false, cost: false, price: true },
+    { role: 'worker', isOwner: false, cost: false, price: false },
+  ];
+
+  it.each(cases)('$role -> trošak: $cost, cijena: $price', ({ role, isOwner, cost, price }) => {
+    const { unmount } = render(
+      <MilestoneAmountsSection {...baseProps} role={role} isOwner={isOwner} />,
+    );
+    expect(!!screen.queryByTestId('milestone-cost')).toBe(cost);
+    expect(!!screen.queryByTestId('milestone-price')).toBe(price);
+    unmount();
   });
 
-  it('nova faza / vlasnik -> polje troška je vidljivo', () => {
-    render(<MilestoneAmountsSection {...baseProps} showCost />);
+  it('vlasnik s praznom fazom (budget === null) I DALJE ima polje troška', () => {
+    render(<MilestoneAmountsSection {...baseProps} cost="" role="owner" isOwner />);
     expect(screen.getByTestId('milestone-cost')).toBeTruthy();
   });
+
+  it('cijena se ne prikazuje kad nije primjenjiva (osobni projekt bez iznosa)', () => {
+    render(
+      <MilestoneAmountsSection {...baseProps} priceApplicable={false} role="owner" isOwner />,
+    );
+    expect(screen.getByTestId('milestone-cost')).toBeTruthy();
+    expect(screen.queryByTestId('milestone-price')).toBeNull();
+  });
 });
+
