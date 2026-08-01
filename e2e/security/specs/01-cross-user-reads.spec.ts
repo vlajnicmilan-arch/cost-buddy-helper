@@ -75,13 +75,13 @@ test.describe('01 — cross-user reads (RLS)', () => {
   });
 
   test('B ne vidi A-in profile detalje kroz maska za listu', async () => {
-    // profiles su vidljivi ali samo javna polja — ovdje samo tvrdimo da B ne vidi A-in email
+    // profiles nema stupac email; display_name je jedino osobno polje u tablici
     const { data, error } = await bClient
-      .from('profiles').select('email').eq('user_id', aId);
+      .from('profiles').select('display_name').eq('user_id', aId);
     expect(error).toBeNull();
-    // Politika bi trebala vratiti prazno ili null email
+    // Politika bi trebala vratiti prazno ili null display_name
     for (const row of data ?? []) {
-      expect(row.email == null || row.email === '').toBeTruthy();
+      expect(row.display_name == null || row.display_name === '').toBeTruthy();
     }
   });
 });
