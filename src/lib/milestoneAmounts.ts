@@ -58,3 +58,41 @@ export function computeMilestoneMargin(
   return { pct, isNegative: cost >= price };
 }
 
+
+export interface MilestoneAmountsLine {
+  /** i18n ključ retka. */
+  key:
+    | 'projects.milestoneAmounts.listLine'
+    | 'projects.milestoneAmounts.listLineCostOnly'
+    | 'projects.milestoneAmounts.listLinePriceOnly';
+  /** Sirovi iznosi za formatiranje u komponenti (formatAmount). */
+  cost: number | null;
+  price: number | null;
+}
+
+/**
+ * Korak B — jedinstveni izvor logike za redak s iznosima u popisu faza
+ * (lista i kanban koriste isti helper, logika se ne piše dvaput).
+ *
+ * Četiri slučaja:
+ *   - oba iznosa  -> `listLine`           ("Trošak X · Investitoru Y")
+ *   - samo trošak -> `listLineCostOnly`   ("Trošak X")
+ *   - samo cijena -> `listLinePriceOnly`  ("Investitoru Y")
+ *   - nijedan     -> `null`               (retka nema)
+ *
+ * Iznos se smatra prikazivim kad je konačan broj veći od nule; `null`
+ * (nije upisano ILI skriveno za ulogu) i 0 ne daju redak sami za sebe.
+ *
+ * NAPOMENA: traka potrošnje ovisi ISKLJUČIVO o trošku i nije dio ovog helpera.
+ */
+export function buildMilestoneAmountsLine(
+  cost: number | null | undefined,
+  price: number | null | undefined,
+): MilestoneAmountsLine | null {
+  const c = typeof cost === 'number' && Number.isFinite(cost) && cost > 0 ? cost : null;
+  const p = typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;
+  if (c !== null && p !== null) return { key: 'projects.milestoneAmounts.listLine', cost: c, price: p };
+  if (c !== null) return { key: 'projects.milestoneAmounts.listLineCostOnly', cost: c, price: null };
+  if (p !== null) return { key: 'projects.milestoneAmounts.listLinePriceOnly', cost: null, price: p };
+  return null;
+}

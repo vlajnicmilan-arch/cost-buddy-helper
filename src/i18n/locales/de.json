@@ -310,6 +310,8 @@
       "marginLine": "Kosten {{cost}} · An Investor {{price}} · Marge {{margin}}%",
       "negativeHint": "— diese Phase bringt keinen Gewinn.",
       "listLine": "Kosten {{cost}} · An Investor {{price}}",
+      "listLineCostOnly": "Kosten {{cost}}",
+      "listLinePriceOnly": "An Investor {{price}}",
       "vtrCostRequired": "Geben Sie die geplanten Kosten des Nachtrags ein."
     },
     "card": {
