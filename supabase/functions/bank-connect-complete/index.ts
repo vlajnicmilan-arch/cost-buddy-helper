@@ -33,6 +33,33 @@ setTimeout(() => { try { window.location.href = '/wallet?bank_connected=${ok ? 1
   });
 }
 
+// TEMPORARY DIAGNOSTIC INSTRUMENTATION — remove after Enable Banking debug.
+// Fire-and-forget insert into app_diagnostics_logs. Never throws, never alters flow.
+async function obLog(
+  admin: any,
+  ctx: { userId?: string | null; connId?: string | null; businessProfileId?: string | null },
+  point: string,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await admin.from("app_diagnostics_logs").insert({
+      event: "ob_debug",
+      severity: "info",
+      user_id: ctx.userId ?? null,
+      session_id: `edge-bank-connect-complete-${ctx.connId ?? "unknown"}`,
+      route: "/functions/bank-connect-complete",
+      details: {
+        point,
+        connection_id: ctx.connId ?? null,
+        business_profile_id: ctx.businessProfileId ?? null,
+        ...details,
+      },
+    });
+  } catch (_e) {
+    // swallow — diagnostics must never break the flow
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
