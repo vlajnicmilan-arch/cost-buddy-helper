@@ -146,28 +146,34 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                         </div>
                       </div>
 
-                      {mBudget !== null && mBudget > 0 && (
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-medium text-primary">
-                              {m.investor_price != null
-                                ? t('projects.milestoneAmounts.listLine', {
-                                    cost: formatAmount(mBudget),
-                                    price: formatAmount(m.investor_price),
-                                  })
-                                : formatAmount(mBudget)}
-                            </span>
-                            {(m.spent || 0) > 0 && (
-                              <span className={cn(isOverBudget ? 'text-destructive' : 'text-muted-foreground')}>
-                                {formatAmount(m.spent || 0)}
-                              </span>
+                      {(() => {
+                        const amountsLine = buildMilestoneAmountsLine(mBudget, m.investor_price ?? null);
+                        const showCostBar = mBudget !== null && mBudget > 0;
+                        if (!amountsLine && !showCostBar) return null;
+                        return (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                              {amountsLine && (
+                                <span className="font-medium text-primary">
+                                  {t(amountsLine.key, {
+                                    cost: amountsLine.cost !== null ? formatAmount(amountsLine.cost) : '',
+                                    price: amountsLine.price !== null ? formatAmount(amountsLine.price) : '',
+                                  })}
+                                </span>
+                              )}
+                              {showCostBar && (m.spent || 0) > 0 && (
+                                <span className={cn(isOverBudget ? 'text-destructive' : 'text-muted-foreground')}>
+                                  {formatAmount(m.spent || 0)}
+                                </span>
+                              )}
+                            </div>
+                            {showCostBar && (m.spent || 0) > 0 && (
+                              <Progress value={used} className={cn('h-1', isOverBudget && '[&>div]:bg-destructive')} />
                             )}
                           </div>
-                          {(m.spent || 0) > 0 && (
-                            <Progress value={used} className={cn('h-1', isOverBudget && '[&>div]:bg-destructive')} />
-                          )}
-                        </div>
-                      )}
+                        );
+                      })()}
+
 
                       <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
