@@ -309,6 +309,8 @@
       "fromDecisionLocked": "The amount comes from a decision and cannot be changed here.",
       "marginLine": "Cost {{cost}} · To investor {{price}} · Margin {{margin}}%",
       "negativeHint": "— this phase makes no profit.",
+      "forbiddenForRole": "Only the project owner can change phase amounts.",
+
       "listLine": "Cost {{cost}} · To investor {{price}}",
       "listLineCostOnly": "Cost {{cost}}",
       "listLinePriceOnly": "To investor {{price}}",

@@ -81,6 +81,22 @@ export const ProjectMilestonesTab = ({
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
+  /**
+   * Korak D — voditelj (member) smije mijenjati NAPREDAK faze (status, datumi,
+   * opis, checklist), ali ne i iznose. Vlasnik bez pretplate (owner_readonly)
+   * ostaje blokiran — to je naplatna brana, neovisna o ulozi.
+   */
+  const memberProgressAllowed = !isOwner && currentUserRole === 'member';
+  const { guard: progressGuard, blockProps: progressBlockProps } = useProjectWriteGuard({
+    isReadOnly: isReadOnly && !memberProgressAllowed,
+    role: currentUserRole as any,
+    allowMemberProgress: true,
+  });
+  const canEditProgress = (isManager || memberProgressAllowed) && !progressBlockProps.disabled;
+  /** Novčani stupci (`budget`, `investor_price`) — isključivo vlasnik s pravom pisanja. */
+  const canEditAmounts = isManager && !isReadOnly;
+
+
   
   
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -202,7 +218,9 @@ export const ProjectMilestonesTab = ({
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    if (!guard()) return;
+    // Uređivanje postojeće faze smije i voditelj (samo napredak); kreiranje i VTR ostaju vlasniku.
+    if (editingMilestone ? !progressGuard() : !guard()) return;
+
 
     // Validate dependency: can't start if dependency not completed
     if (status === 'in_progress' && dependsOn) {
@@ -303,7 +321,11 @@ export const ProjectMilestonesTab = ({
                 : null,
             }
           : undefined;
-        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget);
+        await updateMilestone({ ...editingMilestone, ...milestoneData }, revisionInput, previousBudget, {
+          includeCost: canEditAmounts,
+          includePrice: canEditAmounts,
+        });
+
       } else if (dialogMode === 'vtr') {
         await createVtr({ ...milestoneData, note: vtrNote.trim() || null } as any);
       } else {
@@ -377,18 +399,23 @@ export const ProjectMilestonesTab = ({
       {viewMode === 'kanban' && milestones.length > 0 && (
         <MilestoneKanban
           milestones={milestones}
-          isManager={isManager && !isReadOnly}
+          isManager={canEditProgress}
+          canDelete={isManager && !isReadOnly}
           projectId={projectId}
-          onEdit={(m) => { if (!guard()) return; openDialog(m); }}
+          onEdit={(m) => { if (!progressGuard()) return; openDialog(m); }}
           onDelete={(id) => { if (!guard()) return; handleDelete(id); }}
           onShowRevisions={(m) => { setRevisionsTarget(m); setRevisionsDialogOpen(true); }}
           onStatusChange={async (m, newStatus) => {
-            if (!guard()) return;
-            await updateMilestone({ ...m, status: newStatus });
+            if (!progressGuard()) return;
+            await updateMilestone({ ...m, status: newStatus }, undefined, undefined, {
+              includeCost: canEditAmounts,
+              includePrice: canEditAmounts,
+            });
             onRefetch();
           }}
         />
       )}
+
 
       {milestones.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
@@ -583,26 +610,29 @@ export const ProjectMilestonesTab = ({
                       <MilestoneChecklist
                         milestoneId={milestone.id}
                         milestoneName={milestone.name}
-                        canEdit={isManager}
+                        canEdit={canEditProgress}
                       />
                     </details>
                   </div>
 
-                  {isManager && (
+                  {canEditProgress && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (!guard()) return; openDialog(milestone); }} disabled={isReadOnly} title={isReadOnly ? blockProps.title : undefined}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (!progressGuard()) return; openDialog(milestone); }} title={undefined}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(milestone.id)}
-                        disabled={isReadOnly}
-                        title={isReadOnly ? blockProps.title : undefined}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {isManager && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDelete(milestone.id)}
+                          disabled={isReadOnly}
+                          title={isReadOnly ? blockProps.title : undefined}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+
                     </div>
                   )}
                 </div>
@@ -670,7 +700,9 @@ export const ProjectMilestonesTab = ({
               isOwner={isOwner}
               priceApplicable={investorPriceApplicable}
               priceLocked={investorPriceLocked}
+              amountsReadOnly={!canEditAmounts}
             />
+
 
 
             <div className="space-y-2">

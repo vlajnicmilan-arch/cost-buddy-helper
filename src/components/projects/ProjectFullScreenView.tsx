@@ -940,7 +940,12 @@ export const ProjectFullScreenView = ({
 
                 {!isInvestorViewer && (
                 <TabsContent value="documents" className="m-0">
-                  <ProjectDocumentsTab projectId={project.id} isReadOnly={isReadOnly} />
+                  <ProjectDocumentsTab
+                    projectId={project.id}
+                    isReadOnly={isReadOnly}
+                    canWriteProgress={!isOwner && currentUserRole === 'member'}
+                  />
+
                 </TabsContent>
                 )}
 

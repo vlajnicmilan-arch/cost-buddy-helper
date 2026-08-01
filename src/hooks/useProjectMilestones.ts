@@ -271,9 +271,19 @@ export const useProjectMilestones = (projectId: string | null) => {
   const updateMilestone = async (
     milestone: ProjectMilestone,
     revision?: PendingRevisionInput,
-    previousBudget?: number
+    previousBudget?: number,
+    /**
+     * Korak D — novčani stupci ulaze u payload SAMO kad ih pozivatelj smije
+     * mijenjati. Voditelj (member) čita `budget`/`investor_price` kao NULL
+     * (zaštita iz koraka A), pa bi ih slanje pokušalo obrisati — a DB trigger
+     * `guard_milestone_column_writes` takav upis odbija.
+     */
+    options?: { includeCost?: boolean; includePrice?: boolean },
   ): Promise<void> => {
+    const includeCost = options?.includeCost ?? true;
+    const includePrice = options?.includePrice ?? true;
     try {
+
       const previous = milestones.find((m) => m.id === milestone.id);
       const prevStatus = previous?.status;
       const nowIso = new Date().toISOString();
@@ -326,8 +336,8 @@ export const useProjectMilestones = (projectId: string | null) => {
       const updatePayload: Record<string, any> = {
         name: milestone.name,
         description: milestone.description,
-        budget: milestone.budget ?? null,
-        ...((milestone as any).investor_price !== undefined
+        ...(includeCost ? { budget: milestone.budget ?? null } : {}),
+        ...(includePrice && (milestone as any).investor_price !== undefined
           ? { investor_price: (milestone as any).investor_price }
           : {}),
         status: milestone.status,
@@ -344,12 +354,25 @@ export const useProjectMilestones = (projectId: string | null) => {
         updatePayload.completed_at = completedAtUpdate;
       }
 
+      // `update()` bez `.select()` šalje Prefer: return=minimal — voditelj nema
+      // SELECT pravo na sirovoj tablici (korak A), pa bi representation vratio
+      // prazno i lažno izgledao kao greška. Osvježavanje ide kroz
+      // `project_milestones_scoped` (fetchMilestones / realtime).
       const { error } = await supabase
         .from('project_milestones')
         .update(updatePayload)
         .eq('id', milestone.id);
 
-      if (error) throw error;
+      if (error) {
+        // Trigger `guard_milestone_column_writes` — razumljiva poruka umjesto
+        // sirovog teksta iz baze.
+        if (String((error as any).message || '').includes('milestone_amount_forbidden')) {
+          showError(t('projects.milestoneAmounts.forbiddenForRole'));
+          return;
+        }
+        throw error;
+      }
+
 
       // If a budget revision was attached, persist the audit trail and balance siblings
       if (revision && previousBudget !== undefined && user && projectId) {

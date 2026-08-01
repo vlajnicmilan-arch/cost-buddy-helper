@@ -48,11 +48,19 @@ export interface ProjectPermissions {
 
   // Project financials
   canEditMilestones: boolean;
+  /**
+   * Korak D — voditelj (member) smije mijenjati NAPREDAK faze:
+   * status, datume, opis, dokumente i checklist. Iznose NE.
+   */
+  canEditMilestoneProgress: boolean;
+  /** Novčani stupci faze (`budget`, `investor_price`) — isključivo vlasnik. */
+  canEditMilestoneAmounts: boolean;
   canEditFunding: boolean;
   canEditCollaborators: boolean;
   canApprovePendingTransactions: boolean;
   canAddTransaction: boolean;
   canEditOthersTransaction: boolean;
+
 
   // Project lifecycle
   canCompleteOrReopenProject: boolean;
@@ -75,6 +83,9 @@ const EMPTY: ProjectPermissions = {
   canDeleteOwnWorkLog: false,
   canDeleteOthersWorkLog: false,
   canEditMilestones: false,
+  canEditMilestoneProgress: false,
+  canEditMilestoneAmounts: false,
+
   canEditFunding: false,
   canEditCollaborators: false,
   canApprovePendingTransactions: false,
@@ -117,6 +128,10 @@ export function deriveProjectPermissions(ctx: ProjectRoleContext): ProjectPermis
 
     // ── Project financials ──────────────────────────────
     canEditMilestones: isOwnerEffective,
+    // Korak D: napredak faze smije i voditelj; iznose i dalje samo vlasnik.
+    canEditMilestoneProgress: isOwnerEffective || isMember,
+    canEditMilestoneAmounts: isOwnerEffective,
+
     canEditFunding: isOwnerEffective,
     canEditCollaborators: isOwnerEffective,
     canApprovePendingTransactions: isOwnerEffective,

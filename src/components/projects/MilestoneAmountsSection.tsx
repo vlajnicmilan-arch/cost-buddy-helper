@@ -31,6 +31,11 @@ interface MilestoneAmountsSectionProps {
   priceApplicable: boolean;
   /** Faza nastala iz odluke — cijena je snimka odluke, samo za čitanje. */
   priceLocked?: boolean;
+  /**
+   * Korak D — uloga smije ČITATI iznose, ali ih ne smije mijenjati
+   * (voditelj/member). Polja ostaju vidljiva, ali onemogućena.
+   */
+  amountsReadOnly?: boolean;
 }
 
 /**
@@ -47,7 +52,9 @@ export const MilestoneAmountsSection = ({
   isOwner,
   priceApplicable,
   priceLocked = false,
+  amountsReadOnly = false,
 }: MilestoneAmountsSectionProps) => {
+
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
 
@@ -72,6 +79,8 @@ export const MilestoneAmountsSection = ({
               data-testid="milestone-cost"
               value={cost}
               onChange={(e) => onCostChange(e.target.value)}
+              disabled={amountsReadOnly}
+
               className="pr-12"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -91,7 +100,7 @@ export const MilestoneAmountsSection = ({
               data-testid="milestone-price"
               value={price}
               onChange={(e) => onPriceChange(e.target.value)}
-              disabled={priceLocked}
+              disabled={priceLocked || amountsReadOnly}
               className="pr-12"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">

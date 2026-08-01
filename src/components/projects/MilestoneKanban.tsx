@@ -16,7 +16,13 @@ import { MilestoneRevisionTrendBadge } from './MilestoneRevisionTrendBadge';
 
 interface MilestoneKanbanProps {
   milestones: ProjectMilestone[];
+  /** Smije mijenjati napredak (drag/status, uređivanje) — vlasnik ili voditelj. */
   isManager: boolean;
+  /**
+   * Korak D — brisanje faze je isključivo vlasnikovo pravo. Kad nije zadano,
+   * prati `isManager` (zatečeno ponašanje za vlasnika).
+   */
+  canDelete?: boolean;
   projectId: string;
   onEdit: (m: ProjectMilestone) => void;
   onDelete: (id: string) => void;
@@ -31,7 +37,9 @@ const COLUMNS: { id: MilestoneStatus; bg: string; border: string }[] = [
   { id: 'overdue',     bg: 'bg-destructive/5',     border: 'border-destructive/30' },
 ];
 
-export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDelete, onStatusChange, onShowRevisions }: MilestoneKanbanProps) => {
+export const MilestoneKanban = ({ milestones, isManager, canDelete, projectId, onEdit, onDelete, onStatusChange, onShowRevisions }: MilestoneKanbanProps) => {
+  const canRemove = canDelete ?? isManager;
+
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
@@ -212,11 +220,14 @@ export const MilestoneKanban = ({ milestones, isManager, projectId, onEdit, onDe
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(m)}>
                               <Pencil className="w-3 h-3" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(m.id)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            {canRemove && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onDelete(m.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
                         )}
+
                       </div>
                     </motion.div>
                   );
