@@ -336,8 +336,8 @@ export const useProjectMilestones = (projectId: string | null) => {
       const updatePayload: Record<string, any> = {
         name: milestone.name,
         description: milestone.description,
-        budget: milestone.budget ?? null,
-        ...((milestone as any).investor_price !== undefined
+        ...(includeCost ? { budget: milestone.budget ?? null } : {}),
+        ...(includePrice && (milestone as any).investor_price !== undefined
           ? { investor_price: (milestone as any).investor_price }
           : {}),
         status: milestone.status,
@@ -354,12 +354,25 @@ export const useProjectMilestones = (projectId: string | null) => {
         updatePayload.completed_at = completedAtUpdate;
       }
 
+      // `update()` bez `.select()` šalje Prefer: return=minimal — voditelj nema
+      // SELECT pravo na sirovoj tablici (korak A), pa bi representation vratio
+      // prazno i lažno izgledao kao greška. Osvježavanje ide kroz
+      // `project_milestones_scoped` (fetchMilestones / realtime).
       const { error } = await supabase
         .from('project_milestones')
         .update(updatePayload)
         .eq('id', milestone.id);
 
-      if (error) throw error;
+      if (error) {
+        // Trigger `guard_milestone_column_writes` — razumljiva poruka umjesto
+        // sirovog teksta iz baze.
+        if (String((error as any).message || '').includes('milestone_amount_forbidden')) {
+          showError(t('projects.milestoneAmounts.forbiddenForRole'));
+          return;
+        }
+        throw error;
+      }
+
 
       // If a budget revision was attached, persist the audit trail and balance siblings
       if (revision && previousBudget !== undefined && user && projectId) {
