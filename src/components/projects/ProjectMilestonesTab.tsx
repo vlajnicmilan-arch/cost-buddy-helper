@@ -55,6 +55,12 @@ interface ProjectMilestonesTabProps {
    * jednom iznosu (trošak).
    */
   projectBusinessProfileId?: string | null;
+  /**
+   * Uloga trenutnog korisnika na projektu — prosljeđuje ju ekran projekta.
+   * Jedini izvor vidljivosti polja s iznosima faze.
+   */
+  currentUserRole: MilestoneAmountRole | null;
+  isOwner: boolean;
 }
 
 export const ProjectMilestonesTab = ({
@@ -65,7 +71,10 @@ export const ProjectMilestonesTab = ({
   onRefetch,
   isReadOnly = false,
   projectBusinessProfileId = null,
+  currentUserRole,
+  isOwner,
 }: ProjectMilestonesTabProps) => {
+
 
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
