@@ -83,6 +83,9 @@ const EMPTY: ProjectPermissions = {
   canDeleteOwnWorkLog: false,
   canDeleteOthersWorkLog: false,
   canEditMilestones: false,
+  canEditMilestoneProgress: false,
+  canEditMilestoneAmounts: false,
+
   canEditFunding: false,
   canEditCollaborators: false,
   canApprovePendingTransactions: false,
