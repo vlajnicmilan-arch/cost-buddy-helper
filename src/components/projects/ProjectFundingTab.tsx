@@ -51,7 +51,9 @@ export const ProjectFundingTab = ({
   
   // Pending milestones (in progress or pending)
   const pendingMilestones = milestones.filter(m => m.status === 'in_progress' || m.status === 'pending');
-  const reservedForPending = pendingMilestones.reduce((sum, m) => sum + (m.budget || 0), 0);
+  // Korak B: skriveni/neupisani iznosi (NULL) ne smiju se zbrajati kao 0.
+  const reservedForPending = sumVisibleAmounts(pendingMilestones.map((m) => m.budget));
+
 
   const hasAnySource = funding.length > 0 || incomeSources.length > 0;
 
