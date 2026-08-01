@@ -6343,6 +6343,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      can_read_project_phases: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_write_module: {
         Args: { _module: string; _user: string }
         Returns: boolean
@@ -6822,6 +6826,10 @@ export type Database = {
           p_worker_id: string
         }
         Returns: Json
+      }
+      projects_downgrade_ok: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
       }
       purge_old_trash: { Args: { p_older_than_days?: number }; Returns: Json }
       purge_trash_item: {
