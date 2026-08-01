@@ -36,7 +36,7 @@ test.describe('02 — niža uloga → financijski write', () => {
       await addProjectMember(aClient, projectId, bId, role);
       const { error } = await bClient
         .from('project_milestones')
-        .insert({ project_id: projectId, user_id: bId, name: 'evil', total_budget: 999 });
+        .insert({ project_id: projectId, name: 'evil', budget: 999 });
       expect(error, `${role} bi trebao biti odbijen`).not.toBeNull();
     });
 
