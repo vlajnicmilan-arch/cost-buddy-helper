@@ -189,3 +189,30 @@ describe('Korak A — jedan predikat, dva pozivatelja', () => {
   });
 });
 
+
+describe('computeMilestoneMargin (Korak B)', () => {
+  it('vraća null kad nedostaje bilo koji iznos', () => {
+    expect(computeMilestoneMargin(null, 100)).toBeNull();
+    expect(computeMilestoneMargin(100, null)).toBeNull();
+    expect(computeMilestoneMargin(undefined, undefined)).toBeNull();
+  });
+
+  it('vraća null kad je cijena nula ili negativna (nema smislene marže)', () => {
+    expect(computeMilestoneMargin(100, 0)).toBeNull();
+    expect(computeMilestoneMargin(100, -50)).toBeNull();
+  });
+
+  it('računa postotak marže na cijenu i zaokružuje', () => {
+    expect(computeMilestoneMargin(800, 1000)).toEqual({ pct: 20, isNegative: false });
+    expect(computeMilestoneMargin(333, 1000)).toEqual({ pct: 67, isNegative: false });
+  });
+
+  it('označava fazu bez zarade kad je trošak >= cijena', () => {
+    expect(computeMilestoneMargin(1000, 1000)).toEqual({ pct: 0, isNegative: true });
+    expect(computeMilestoneMargin(1200, 1000)).toEqual({ pct: -20, isNegative: true });
+  });
+
+  it('nula kao trošak je legitiman iznos, ne "nije upisano"', () => {
+    expect(computeMilestoneMargin(0, 500)).toEqual({ pct: 100, isNegative: false });
+  });
+});
