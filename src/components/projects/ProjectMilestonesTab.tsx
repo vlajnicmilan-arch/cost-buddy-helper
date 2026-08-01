@@ -619,35 +619,30 @@ export const ProjectMilestonesTab = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('projects.budget')}</Label>
-                <div className="relative">
-                  <MoneyInput 
-                    value={budget} 
-                    onChange={(e) => setBudget(e.target.value)} 
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {currency.symbol}
-                  </span>
-                </div>
-              </div>
+            <MilestoneAmountsSection
+              cost={budget}
+              onCostChange={setBudget}
+              price={investorPrice}
+              onPriceChange={setInvestorPrice}
+              showCost
+              showPrice={showInvestorPrice}
+              priceLocked={investorPriceLocked}
+            />
 
-              <div className="space-y-2">
-                <Label>{t('projects.status')}</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as MilestoneStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(MILESTONE_STATUS_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>{t('projects.status')}</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as MilestoneStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(MILESTONE_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
 
             {budgetChanged && editingMilestone && !editingMilestone.is_contingency && (
               <MilestoneBudgetChangeSection
