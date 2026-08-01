@@ -303,14 +303,14 @@
   "projects": {
     "milestoneAmounts": {
       "costLabel": "Geplante Kosten",
-      "costHelp": "Material, Arbeiter, Subunternehmer.",
-      "priceLabel": "Preis für den Investor",
-      "priceHelp": "Wie viel du dem Investor für diese Phase in Rechnung stellst.",
-      "marginLine": "Kosten {{cost}} · Investor {{price}} · Marge {{margin}}%",
-      "negativeHint": "Diese Phase ist im Minus.",
-      "fromDecisionLocked": "Der Betrag stammt aus einer genehmigten Entscheidung und kann hier nicht geändert werden.",
-      "vtrCostRequired": "Der VTR-Betrag ist erforderlich.",
-      "notSet": "—"
+      "costHelp": "Wie viel diese Phase voraussichtlich kostet.",
+      "priceHelp": "Der Betrag, der dem Investor für diese Phase berechnet wird.",
+      "priceLabel": "Preis an Investor",
+      "fromDecisionLocked": "Der Betrag stammt aus einer Entscheidung und kann hier nicht geändert werden.",
+      "marginLine": "Kosten {{cost}} · An Investor {{price}} · Marge {{margin}}%",
+      "negativeHint": "— diese Phase bringt keinen Gewinn.",
+      "listLine": "Kosten {{cost}} · An Investor {{price}}",
+      "vtrCostRequired": "Geben Sie die geplanten Kosten des Nachtrags ein."
     },
     "card": {
       "margin": "MARGE",
