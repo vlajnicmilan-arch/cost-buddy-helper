@@ -119,14 +119,16 @@ export const ProjectMilestonesTab = ({
     previousBudget !== null &&
     Math.abs(newBudgetNum - previousBudget) > 0.001;
   /** Cijena prema investitoru postoji samo na projektima tvrtke (ili ako je iznos već upisan). */
-  const showInvestorPrice =
+  const investorPriceApplicable =
     !!projectBusinessProfileId || (editingMilestone?.investor_price ?? null) !== null;
   /**
-   * Trošak se NE prikazuje kad postojeća faza ima `budget === null` — iznos je
-   * ili skriven za ulogu ili nije upisan; prazno polje ne smije spremiti `null`
-   * preko postojećeg iznosa. Nova faza uvijek prikazuje polje.
+   * Vidljivost polja ovisi ISKLJUČIVO o ulozi (vidi lib/milestoneAmounts).
+   * Vlasnik uvijek vidi polje troška, i na postojećoj fazi s `budget === null`.
    */
-  const showCost = !editingMilestone || editingMilestone.budget !== null;
+  const showCost = canSeeMilestoneCostField(currentUserRole, isOwner);
+  const showInvestorPrice =
+    canSeeMilestonePriceField(currentUserRole, isOwner) && investorPriceApplicable;
+
   /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
   const investorPriceLocked = !!editingMilestone?.source_decision_id;
 
