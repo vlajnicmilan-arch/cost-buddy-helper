@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Planned cost",
+      "costHelp": "Materials, workers, subcontractors.",
+      "priceLabel": "Price for the investor",
+      "priceHelp": "How much you invoice the investor for this phase.",
+      "marginLine": "Cost {{cost}} · Investor {{price}} · margin {{margin}}%",
+      "negativeHint": "This phase is at a loss.",
+      "fromDecisionLocked": "The amount comes from an approved decision and cannot be changed here.",
+      "vtrCostRequired": "The VTR amount is required.",
+      "notSet": "—"
+    },
     "noPaymentSource": "No source",
     "card": {
       "margin": "MARGIN",

@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Planirani trošak",
+      "costHelp": "Materijal, radnici, podizvođači.",
+      "priceLabel": "Cijena prema investitoru",
+      "priceHelp": "Koliko za ovu fazu fakturiraš investitoru.",
+      "marginLine": "Trošak {{cost}} · Investitoru {{price}} · marža {{margin}}%",
+      "negativeHint": "Faza je u minusu.",
+      "fromDecisionLocked": "Iznos dolazi iz odobrene odluke i ne može se mijenjati ovdje.",
+      "vtrCostRequired": "Iznos VTR-a je obavezan.",
+      "notSet": "—"
+    },
     "noPaymentSource": "Bez izvora",
     "card": {
       "margin": "MARŽA",

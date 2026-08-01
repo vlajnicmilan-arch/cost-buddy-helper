@@ -301,6 +301,17 @@
     }
   },
   "projects": {
+    "milestoneAmounts": {
+      "costLabel": "Geplante Kosten",
+      "costHelp": "Material, Arbeiter, Subunternehmer.",
+      "priceLabel": "Preis für den Investor",
+      "priceHelp": "Wie viel du dem Investor für diese Phase in Rechnung stellst.",
+      "marginLine": "Kosten {{cost}} · Investor {{price}} · Marge {{margin}}%",
+      "negativeHint": "Diese Phase ist im Minus.",
+      "fromDecisionLocked": "Der Betrag stammt aus einer genehmigten Entscheidung und kann hier nicht geändert werden.",
+      "vtrCostRequired": "Der VTR-Betrag ist erforderlich.",
+      "notSet": "—"
+    },
     "card": {
       "margin": "MARGE",
       "contracted": "Vereinbart",
