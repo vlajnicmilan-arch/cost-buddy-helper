@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { MoneyInput } from '@/components/ui/money-input';
 import { parseLocaleAmount } from '@/lib/money';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +21,7 @@ import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
 import { MilestoneAmountsSection } from './MilestoneAmountsSection';
+import { buildMilestoneAmountsLine } from '@/lib/milestoneAmounts';
 
 import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -63,7 +63,7 @@ export const ProjectMilestonesTab = ({
 }: ProjectMilestonesTabProps) => {
 
   const { t } = useTranslation();
-  const { formatAmount, currency } = useCurrency();
+  const { formatAmount } = useCurrency();
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
@@ -121,6 +121,12 @@ export const ProjectMilestonesTab = ({
   /** Cijena prema investitoru postoji samo na projektima tvrtke (ili ako je iznos već upisan). */
   const showInvestorPrice =
     !!projectBusinessProfileId || (editingMilestone?.investor_price ?? null) !== null;
+  /**
+   * Trošak se NE prikazuje kad postojeća faza ima `budget === null` — iznos je
+   * ili skriven za ulogu ili nije upisan; prazno polje ne smije spremiti `null`
+   * preko postojećeg iznosa. Nova faza uvijek prikazuje polje.
+   */
+  const showCost = !editingMilestone || editingMilestone.budget !== null;
   /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
   const investorPriceLocked = !!editingMilestone?.source_decision_id;
 
@@ -226,7 +232,8 @@ export const ProjectMilestonesTab = ({
         name: name.trim(),
         description: description.trim() || null,
         // Prazno polje se sprema kao NULL ("nije upisano"), nikad kao 0.
-        budget: costEntered ? newBudgetNum : null,
+        // Kad polje troška nije prikazano, `budget` uopće ne ide u payload.
+        ...(showCost ? { budget: costEntered ? newBudgetNum : null } : {}),
         ...(showInvestorPrice && !investorPriceLocked
           ? { investor_price: investorPrice.trim() === '' ? null : parseLocaleAmount(investorPrice).value }
           : {}),
@@ -642,7 +649,7 @@ export const ProjectMilestonesTab = ({
               onCostChange={setBudget}
               price={investorPrice}
               onPriceChange={setInvestorPrice}
-              showCost
+              showCost={showCost}
               showPrice={showInvestorPrice}
               priceLocked={investorPriceLocked}
             />
