@@ -81,6 +81,19 @@ export const ProjectMilestonesTab = ({
   const { addMilestone, createVtr, updateMilestone, deleteMilestone } = useProjectMilestones(projectId);
   const { getRevisionCount, getRecentTrend } = useMilestoneRevisions(projectId);
   const { guard, blockProps } = useProjectWriteGuard({ isReadOnly });
+  /**
+   * Korak D — voditelj (member) smije mijenjati NAPREDAK faze (status, datumi,
+   * opis, checklist), ali ne i iznose. Vlasnik bez pretplate (owner_readonly)
+   * ostaje blokiran — to je naplatna brana, neovisna o ulozi.
+   */
+  const memberProgressAllowed = !isOwner && currentUserRole === 'member';
+  const { guard: progressGuard, blockProps: progressBlockProps } = useProjectWriteGuard({
+    isReadOnly: isReadOnly && !memberProgressAllowed,
+    role: currentUserRole as any,
+    allowMemberProgress: true,
+  });
+  const canEditProgress = (isManager || memberProgressAllowed) && !progressBlockProps.disabled;
+
   
   
   const [dialogOpen, setDialogOpen] = useState(false);
