@@ -3058,7 +3058,9 @@
     },
     "wallet": {
       "emptyTitle": "Add your first business account",
-      "emptyHint": "E.g. company current account, cash register, foreign currency account. Without a payment source the balance is not updated automatically."
+      "emptyHint": "E.g. company current account, cash register, foreign currency account. Without a payment source the balance is not updated automatically.",
+      "bankingTitle": "Bank & statement import",
+      "bankingHint": "Connect a business account via Open Banking or import a statement."
     },
     "quickCreate": {
       "title": "New company",

@@ -2926,7 +2926,9 @@
     },
     "wallet": {
       "emptyTitle": "Erstes Geschäftskonto hinzufügen",
-      "emptyHint": "Z. B. Geschäftskonto, Kasse, Fremdwährungskonto. Ohne Zahlungsquelle wird der Saldo nicht automatisch aktualisiert."
+      "emptyHint": "Z. B. Geschäftskonto, Kasse, Fremdwährungskonto. Ohne Zahlungsquelle wird der Saldo nicht automatisch aktualisiert.",
+      "bankingTitle": "Bank & Kontoauszug-Import",
+      "bankingHint": "Verbinden Sie ein Geschäftskonto über Open Banking oder importieren Sie einen Kontoauszug."
     },
     "quickCreate": {
       "title": "Neue Firma",
