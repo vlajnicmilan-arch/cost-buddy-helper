@@ -35,9 +35,34 @@ export async function ensureSecUser(email: string): Promise<string> {
   return userId;
 }
 
+/**
+ * Sintetički user mora imati 'projekti' pravo — bez njega RLS
+ * (can_write_module / projects_downgrade_ok) blokira svaki insert nad
+ * projects / project_members / project_milestones.
+ */
+export async function ensureProjectsEntitlement(userId: string): Promise<void> {
+  const a = admin();
+  await a
+    .from('user_entitlements')
+    .delete()
+    .eq('user_id', userId)
+    .eq('module', 'projekti');
+  const { error } = await a.from('user_entitlements').insert({
+    user_id: userId,
+    module: 'projekti',
+    source: 'trial',
+    status: 'active',
+    billing_cycle: 'trial',
+    period_end: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  });
+  if (error) throw error;
+}
+
 export async function ensureBothSecUsers(): Promise<{ aId: string; bId: string }> {
   const aId = await ensureSecUser(SEC_USERS.a);
   const bId = await ensureSecUser(SEC_USERS.b);
+  await ensureProjectsEntitlement(aId);
+  await ensureProjectsEntitlement(bId);
   return { aId, bId };
 }
 
