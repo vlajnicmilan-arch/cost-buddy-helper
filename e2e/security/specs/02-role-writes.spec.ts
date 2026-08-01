@@ -61,7 +61,11 @@ test.describe('02 — niža uloga → financijski write', () => {
       await addProjectMember(aClient, projectId, bId, role);
       const { error } = await bClient
         .from('project_funding')
-        .insert({ project_id: projectId, user_id: bId, amount: 5000, source: 'x' });
+        .insert({
+          project_id: projectId,
+          income_source_id: '00000000-0000-0000-0000-000000000000',
+          allocated_amount: 5000,
+        });
       expect(error).not.toBeNull();
     });
 
