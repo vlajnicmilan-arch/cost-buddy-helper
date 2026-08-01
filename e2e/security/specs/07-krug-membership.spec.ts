@@ -60,7 +60,11 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
     // krug_sps INSERT dozvoljen samo full memberu koji je i vlasnik sourcea
     const { error } = await bClient
       .from('krug_shared_payment_source')
-      .insert({ krug_id: krugId, source_id: '00000000-0000-0000-0000-000000000000', added_by: bId });
+      .insert({
+        krug_id: krugId,
+        payment_source_id: '00000000-0000-0000-0000-000000000000',
+        linked_by: bId,
+      });
     expect(error).not.toBeNull();
   });
 
