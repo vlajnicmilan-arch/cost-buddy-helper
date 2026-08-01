@@ -3,22 +3,32 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { parseLocaleAmount } from '@/lib/money';
-import { computeMilestoneMargin } from '@/lib/milestoneAmounts';
+import {
+  computeMilestoneMargin,
+  canSeeMilestoneCostField,
+  canSeeMilestonePriceField,
+  type MilestoneAmountRole,
+} from '@/lib/milestoneAmounts';
 import { cn } from '@/lib/utils';
 
 interface MilestoneAmountsSectionProps {
   /** Raw input value for planned cost (`budget`). Empty string = not entered. */
   cost: string;
   onCostChange: (value: string) => void;
-  /** Raw input value for investor price. Ignored when `showPrice` is false. */
+  /** Raw input value for investor price. Ignored when the role can't see it. */
   price: string;
   onPriceChange: (value: string) => void;
   /**
-   * Korak A — polje se NE renderira kad iznos nije namijenjen trenutnoj ulozi.
-   * Skriveno polje ne smije ostaviti nikakav trag u sučelju.
+   * Uloga trenutnog korisnika na projektu — jedini izvor vidljivosti polja.
+   * NIKAD se ne izvodi iz vrijednosti (`null` je dvoznačan).
    */
-  showCost: boolean;
-  showPrice: boolean;
+  role: MilestoneAmountRole | null;
+  isOwner: boolean;
+  /**
+   * Cijena prema investitoru ima smisla samo na projektima tvrtke ili kad je
+   * iznos već upisan. Uloga i dalje odlučuje smije li se uopće vidjeti.
+   */
+  priceApplicable: boolean;
   /** Faza nastala iz odluke — cijena je snimka odluke, samo za čitanje. */
   priceLocked?: boolean;
 }
@@ -33,18 +43,23 @@ export const MilestoneAmountsSection = ({
   onCostChange,
   price,
   onPriceChange,
-  showCost,
-  showPrice,
+  role,
+  isOwner,
+  priceApplicable,
   priceLocked = false,
 }: MilestoneAmountsSectionProps) => {
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
+
+  const showCost = canSeeMilestoneCostField(role, isOwner);
+  const showPrice = canSeeMilestonePriceField(role, isOwner) && priceApplicable;
 
   const costNum = cost.trim() === '' ? null : parseLocaleAmount(cost).value;
   const priceNum = price.trim() === '' ? null : parseLocaleAmount(price).value;
   const margin = showCost && showPrice ? computeMilestoneMargin(costNum, priceNum) : null;
 
   if (!showCost && !showPrice) return null;
+
 
   return (
     <div className="space-y-3">
