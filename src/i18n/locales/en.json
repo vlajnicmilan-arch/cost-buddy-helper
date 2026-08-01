@@ -310,6 +310,8 @@
       "marginLine": "Cost {{cost}} · To investor {{price}} · Margin {{margin}}%",
       "negativeHint": "— this phase makes no profit.",
       "listLine": "Cost {{cost}} · To investor {{price}}",
+      "listLineCostOnly": "Cost {{cost}}",
+      "listLinePriceOnly": "To investor {{price}}",
       "vtrCostRequired": "Enter the planned cost of the addendum."
     },
     "noPaymentSource": "No source",
