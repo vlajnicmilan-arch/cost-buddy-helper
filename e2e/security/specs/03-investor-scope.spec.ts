@@ -92,17 +92,17 @@ test.describe('03 — investor scope', () => {
     expect(data ?? []).toEqual([]);
   });
 
-  test('investor NE SMIJE čitati milestone total_budget', async () => {
+  test('investor NE SMIJE čitati milestone budget', async () => {
     // Ovaj test dokumentira "što investitor ne bi trebao vidjeti"; ako RLS pušta,
     // spec padne i to je nalaz.
     const { data, error } = await bClient
-      .from('project_milestones').select('id, total_budget').eq('id', milestoneId);
+      .from('project_milestones').select('id, budget').eq('id', milestoneId);
     expect(error).toBeNull();
     if ((data ?? []).length > 0) {
-      // Formalno tvrdimo da total_budget nije eksponiran; ovdje samo prijavljujemo.
+      // Formalno tvrdimo da budget nije eksponiran; ovdje samo prijavljujemo.
       // Ako je politika promijenjena da vraća, expect failuje.
-      const budget = data![0].total_budget;
-      expect(budget, 'investor je pročitao total_budget milestonea').toBeNull();
+      const budget = data![0].budget;
+      expect(budget, 'investor je pročitao budget milestonea').toBeNull();
     }
   });
 
