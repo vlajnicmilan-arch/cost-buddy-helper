@@ -316,8 +316,10 @@ export const ProjectDetailDialog = ({
                 loading={milestonesLoading}
                 onRefetch={refetchMilestones}
                 projectBusinessProfileId={project.business_profile_id ?? null}
-
+                currentUserRole={currentUserRole}
+                isOwner={project.isOwner}
               />
+
             </TabsContent>
             )}
 

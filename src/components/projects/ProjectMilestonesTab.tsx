@@ -21,7 +21,12 @@ import { MilestoneKanban } from './MilestoneKanban';
 import { MilestoneChecklist } from './MilestoneChecklist';
 import { MilestoneBudgetChangeSection } from './MilestoneBudgetChangeSection';
 import { MilestoneAmountsSection } from './MilestoneAmountsSection';
-import { buildMilestoneAmountsLine } from '@/lib/milestoneAmounts';
+import {
+  buildMilestoneAmountsLine,
+  canSeeMilestoneCostField,
+  canSeeMilestonePriceField,
+  type MilestoneAmountRole,
+} from '@/lib/milestoneAmounts';
 
 import { MilestoneRevisionsDialog } from './MilestoneRevisionsDialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -50,6 +55,12 @@ interface ProjectMilestonesTabProps {
    * jednom iznosu (trošak).
    */
   projectBusinessProfileId?: string | null;
+  /**
+   * Uloga trenutnog korisnika na projektu — prosljeđuje ju ekran projekta.
+   * Jedini izvor vidljivosti polja s iznosima faze.
+   */
+  currentUserRole: MilestoneAmountRole | null;
+  isOwner: boolean;
 }
 
 export const ProjectMilestonesTab = ({
@@ -60,7 +71,10 @@ export const ProjectMilestonesTab = ({
   onRefetch,
   isReadOnly = false,
   projectBusinessProfileId = null,
+  currentUserRole,
+  isOwner,
 }: ProjectMilestonesTabProps) => {
+
 
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -119,14 +133,16 @@ export const ProjectMilestonesTab = ({
     previousBudget !== null &&
     Math.abs(newBudgetNum - previousBudget) > 0.001;
   /** Cijena prema investitoru postoji samo na projektima tvrtke (ili ako je iznos već upisan). */
-  const showInvestorPrice =
+  const investorPriceApplicable =
     !!projectBusinessProfileId || (editingMilestone?.investor_price ?? null) !== null;
   /**
-   * Trošak se NE prikazuje kad postojeća faza ima `budget === null` — iznos je
-   * ili skriven za ulogu ili nije upisan; prazno polje ne smije spremiti `null`
-   * preko postojećeg iznosa. Nova faza uvijek prikazuje polje.
+   * Vidljivost polja ovisi ISKLJUČIVO o ulozi (vidi lib/milestoneAmounts).
+   * Vlasnik uvijek vidi polje troška, i na postojećoj fazi s `budget === null`.
    */
-  const showCost = !editingMilestone || editingMilestone.budget !== null;
+  const showCost = canSeeMilestoneCostField(currentUserRole, isOwner);
+  const showInvestorPrice =
+    canSeeMilestonePriceField(currentUserRole, isOwner) && investorPriceApplicable;
+
   /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
   const investorPriceLocked = !!editingMilestone?.source_decision_id;
 
@@ -650,10 +666,12 @@ export const ProjectMilestonesTab = ({
               onCostChange={setBudget}
               price={investorPrice}
               onPriceChange={setInvestorPrice}
-              showCost={showCost}
-              showPrice={showInvestorPrice}
+              role={currentUserRole}
+              isOwner={isOwner}
+              priceApplicable={investorPriceApplicable}
               priceLocked={investorPriceLocked}
             />
+
 
             <div className="space-y-2">
               <Label>{t('projects.status')}</Label>

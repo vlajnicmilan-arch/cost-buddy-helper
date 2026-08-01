@@ -906,8 +906,10 @@ export const ProjectFullScreenView = ({
                           onRefetch={refetchMilestones}
                           isReadOnly={isReadOnly}
                           projectBusinessProfileId={project.business_profile_id ?? null}
-
+                          currentUserRole={currentUserRole}
+                          isOwner={isOwner}
                         />
+
                       )}
                     </>
                   )}
