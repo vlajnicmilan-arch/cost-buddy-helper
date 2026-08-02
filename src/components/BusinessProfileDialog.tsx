@@ -341,17 +341,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                {!p.is_active && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    onClick={e => { e.stopPropagation(); handleSetActive(p.id!); }}
-                    title={t('business.setActive', 'Postavi kao aktivnu')}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                )}
+
                 <Button
                   variant="ghost"
                   size="icon"
