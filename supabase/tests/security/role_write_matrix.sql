@@ -381,9 +381,13 @@ BEGIN
     format('INSERT INTO public.project_invitations (project_id, invited_by, email) VALUES (%L, %L, ''x@rwm.test'')', p1, u_investor));
 
   -- ---- 9. pretplata veže samo vlastite projekte -----------------------------
-  PERFORM pg_temp.expect_blocked_silently('53 vlasnik BEZ pretplate — odbijen na svom projektu', u_nosub,
-    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2), u_owner_control_dummy())
-    ;
+  -- Kontrolni korisnik je ovdje `member` (voditelj na tuđem projektu): isti
+  -- zahvat mora njemu proći, čime je dokazano da stupac i vrijednost postoje.
+  PERFORM pg_temp.expect_blocked_silently('53 vlasnik BEZ pretplate — odbijen na SVOM projektu', u_nosub,
+    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2), u_member);
+  PERFORM pg_temp.expect_ok('54 member BEZ pretplate — prolazi na TUĐEM projektu (vlasnik bez pretplate)', u_member,
+    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2));
+
 END;
 $$;
 
