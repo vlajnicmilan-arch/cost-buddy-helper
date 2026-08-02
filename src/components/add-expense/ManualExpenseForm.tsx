@@ -158,7 +158,6 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
       <ReceiptCaptureButtons
         scanning={props.scanning}
         showMultiImageCollector={props.showMultiImageCollector}
-        showMultiImageCollector={props.showMultiImageCollector}
         receiptImages={props.receiptImages}
         isNative={props.isNative}
         onNativeCapture={props.onNativeCapture}
