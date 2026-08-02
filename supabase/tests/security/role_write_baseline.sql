@@ -4433,3 +4433,9 @@ CREATE POLICY "hide_soft_deleted" ON public.expenses AS RESTRICTIVE FOR SELECT T
 
 DROP TRIGGER IF EXISTS trg_guard_expense_review_writes ON public.expenses;
 CREATE TRIGGER trg_guard_expense_review_writes BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION guard_expense_review_writes();
+
+-- Korak E: EXECUTE za `authenticated` (produkcija ih ima; CI shim skida samo
+-- anon+PUBLIC, pa ovi grantovi ostaju na snazi).
+GRANT EXECUTE ON FUNCTION public.is_income_source_member(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_income_source_owner(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.review_project_expense(uuid, text, text) TO authenticated;
