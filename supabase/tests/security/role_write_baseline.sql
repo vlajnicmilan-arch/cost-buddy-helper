@@ -4100,40 +4100,57 @@ ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_members TO authenticated, anon;
 ALTER TABLE public.project_invitations ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_invitations TO authenticated, anon;
+DROP POLICY IF EXISTS "Project members can view milestone revisions" ON public.milestone_budget_revisions;
 CREATE POLICY "Project members can view milestone revisions" ON public.milestone_budget_revisions AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_member(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owner can delete milestone revisions" ON public.milestone_budget_revisions;
 CREATE POLICY "Project owner can delete milestone revisions" ON public.milestone_budget_revisions AS PERMISSIVE FOR DELETE TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can insert milestone revisions" ON public.milestone_budget_revisions;
 CREATE POLICY "Project owners can insert milestone revisions" ON public.milestone_budget_revisions AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND (user_id = auth.uid())));
+DROP POLICY IF EXISTS "members can view checklist" ON public.milestone_checklist_items;
 CREATE POLICY "members can view checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_milestone_project_member(milestone_id, auth.uid()));
+DROP POLICY IF EXISTS "owner or manager can insert checklist" ON public.milestone_checklist_items;
 CREATE POLICY "owner or manager can insert checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (((auth.uid() = user_id) AND can_write_milestone_children(milestone_id, auth.uid())));
+DROP POLICY IF EXISTS "owner or manager can update checklist" ON public.milestone_checklist_items;
 CREATE POLICY "owner or manager can update checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR UPDATE TO authenticated
   USING (can_write_milestone_children(milestone_id, auth.uid()))
   WITH CHECK (can_write_milestone_children(milestone_id, auth.uid()));
+DROP POLICY IF EXISTS "owner or project owner can delete checklist" ON public.milestone_checklist_items;
 CREATE POLICY "owner or project owner can delete checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR DELETE TO authenticated
   USING (((auth.uid() = user_id) OR is_milestone_project_owner(milestone_id, auth.uid())));
+DROP POLICY IF EXISTS "Project members can view revisions" ON public.project_budget_revisions;
 CREATE POLICY "Project members can view revisions" ON public.project_budget_revisions AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_member(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can create revisions" ON public.project_budget_revisions;
 CREATE POLICY "Project owners can create revisions" ON public.project_budget_revisions AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project members can view contract amendments" ON public.project_contract_amendments;
 CREATE POLICY "Project members can view contract amendments" ON public.project_contract_amendments AS PERMISSIVE FOR SELECT TO public
   USING (is_project_member(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can delete contract amendments" ON public.project_contract_amendments;
 CREATE POLICY "Project owners can delete contract amendments" ON public.project_contract_amendments AS PERMISSIVE FOR DELETE TO public
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can insert contract amendments" ON public.project_contract_amendments;
 CREATE POLICY "Project owners can insert contract amendments" ON public.project_contract_amendments AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (((auth.uid() = user_id) AND is_project_owner(project_id, auth.uid())));
+DROP POLICY IF EXISTS "Owner or manager can insert project documents" ON public.project_documents;
 CREATE POLICY "Owner or manager can insert project documents" ON public.project_documents AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((can_write_project_progress(project_id, auth.uid()) AND (uploaded_by = auth.uid())));
+DROP POLICY IF EXISTS "Owner or manager can update project documents" ON public.project_documents;
 CREATE POLICY "Owner or manager can update project documents" ON public.project_documents AS PERMISSIVE FOR UPDATE TO authenticated
   USING (can_write_project_progress(project_id, auth.uid()))
   WITH CHECK (can_write_project_progress(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project participants can view documents" ON public.project_documents;
 CREATE POLICY "Project participants can view documents" ON public.project_documents AS PERMISSIVE FOR SELECT TO public
   USING (is_project_participant_active(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Uploader or owner can delete documents" ON public.project_documents;
 CREATE POLICY "Uploader or owner can delete documents" ON public.project_documents AS PERMISSIVE FOR DELETE TO authenticated
   USING (((uploaded_by = auth.uid()) OR is_project_owner(project_id, auth.uid())));
+DROP POLICY IF EXISTS "project_documents_readonly_when_downgraded" ON public.project_documents;
 CREATE POLICY "project_documents_readonly_when_downgraded" ON public.project_documents AS RESTRICTIVE FOR ALL TO authenticated
   USING (((NOT (EXISTS ( SELECT 1
    FROM projects p
@@ -4141,55 +4158,77 @@ CREATE POLICY "project_documents_readonly_when_downgraded" ON public.project_doc
   WITH CHECK (((NOT (EXISTS ( SELECT 1
    FROM projects p
   WHERE ((p.id = project_documents.project_id) AND (p.user_id = auth.uid()))))) OR is_projects_subscriber(auth.uid())));
+DROP POLICY IF EXISTS "Invited users can view their project invitations" ON public.project_invitations;
 CREATE POLICY "Invited users can view their project invitations" ON public.project_invitations AS PERMISSIVE FOR SELECT TO authenticated
   USING ((invited_user_id = auth.uid()));
+DROP POLICY IF EXISTS "Project owners can create invitations" ON public.project_invitations;
 CREATE POLICY "Project owners can create invitations" ON public.project_invitations AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can delete invitations" ON public.project_invitations;
 CREATE POLICY "Project owners can delete invitations" ON public.project_invitations AS PERMISSIVE FOR DELETE TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can update invitations" ON public.project_invitations;
 CREATE POLICY "Project owners can update invitations" ON public.project_invitations AS PERMISSIVE FOR UPDATE TO authenticated
   USING (is_project_owner(project_id, auth.uid()))
   WITH CHECK (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can view invitations" ON public.project_invitations;
 CREATE POLICY "Project owners can view invitations" ON public.project_invitations AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Members can update own context" ON public.project_members;
 CREATE POLICY "Members can update own context" ON public.project_members AS PERMISSIVE FOR UPDATE TO authenticated
   USING ((auth.uid() = user_id))
   WITH CHECK ((auth.uid() = user_id));
+DROP POLICY IF EXISTS "Project members can view memberships" ON public.project_members;
 CREATE POLICY "Project members can view memberships" ON public.project_members AS PERMISSIVE FOR SELECT TO public
   USING (is_project_member(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can delete members" ON public.project_members;
 CREATE POLICY "Project owners can delete members" ON public.project_members AS PERMISSIVE FOR DELETE TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can insert members" ON public.project_members;
 CREATE POLICY "Project owners can insert members" ON public.project_members AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Project owners can update members" ON public.project_members;
 CREATE POLICY "Project owners can update members" ON public.project_members AS PERMISSIVE FOR UPDATE TO authenticated
   USING (is_project_owner(project_id, auth.uid()))
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Managers can update milestone progress" ON public.project_milestones;
 CREATE POLICY "Managers can update milestone progress" ON public.project_milestones AS PERMISSIVE FOR UPDATE TO authenticated
   USING (can_write_project_progress(project_id, auth.uid()))
   WITH CHECK (can_write_project_progress(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can create milestones" ON public.project_milestones;
 CREATE POLICY "Project owners can create milestones" ON public.project_milestones AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Project owners can delete milestones" ON public.project_milestones;
 CREATE POLICY "Project owners can delete milestones" ON public.project_milestones AS PERMISSIVE FOR DELETE TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can update milestones" ON public.project_milestones;
 CREATE POLICY "Project owners can update milestones" ON public.project_milestones AS PERMISSIVE FOR UPDATE TO authenticated
   USING (is_project_owner(project_id, auth.uid()))
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Project owners can view milestones" ON public.project_milestones;
 CREATE POLICY "Project owners can view milestones" ON public.project_milestones AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "hide_soft_deleted" ON public.project_milestones;
 CREATE POLICY "hide_soft_deleted" ON public.project_milestones AS RESTRICTIVE FOR SELECT TO authenticated
   USING ((deleted_at IS NULL));
+DROP POLICY IF EXISTS "project_milestones_readonly_when_downgraded" ON public.project_milestones;
 CREATE POLICY "project_milestones_readonly_when_downgraded" ON public.project_milestones AS RESTRICTIVE FOR ALL TO authenticated
   USING (projects_downgrade_ok(project_id, auth.uid()))
   WITH CHECK (projects_downgrade_ok(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Owners see all workers, members see only own row" ON public.project_workers;
 CREATE POLICY "Owners see all workers, members see only own row" ON public.project_workers AS PERMISSIVE FOR SELECT TO public
   USING ((is_project_owner(project_id, auth.uid()) OR (user_id = auth.uid())));
+DROP POLICY IF EXISTS "Project owners can add workers" ON public.project_workers;
 CREATE POLICY "Project owners can add workers" ON public.project_workers AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Project owners can manage workers" ON public.project_workers;
 CREATE POLICY "Project owners can manage workers" ON public.project_workers AS PERMISSIVE FOR ALL TO public
   USING (is_project_owner(project_id, auth.uid()));
+DROP POLICY IF EXISTS "Project owners can update workers" ON public.project_workers;
 CREATE POLICY "Project owners can update workers" ON public.project_workers AS PERMISSIVE FOR UPDATE TO authenticated
   USING (is_project_owner(project_id, auth.uid()))
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Users can manage business workers" ON public.project_workers;
 CREATE POLICY "Users can manage business workers" ON public.project_workers AS PERMISSIVE FOR ALL TO authenticated
   USING (((business_profile_id IS NOT NULL) AND (EXISTS ( SELECT 1
    FROM business_profiles bp
@@ -4197,19 +4236,26 @@ CREATE POLICY "Users can manage business workers" ON public.project_workers AS P
   WITH CHECK (((business_profile_id IS NOT NULL) AND (EXISTS ( SELECT 1
    FROM business_profiles bp
   WHERE ((bp.id = project_workers.business_profile_id) AND (bp.user_id = auth.uid()))))));
+DROP POLICY IF EXISTS "Members can view shared projects" ON public.projects;
 CREATE POLICY "Members can view shared projects" ON public.projects AS PERMISSIVE FOR SELECT TO public
   USING (is_project_member(id, auth.uid()));
+DROP POLICY IF EXISTS "Users can create their own projects" ON public.projects;
 CREATE POLICY "Users can create their own projects" ON public.projects AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (((auth.uid() = user_id) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Users can delete their own projects" ON public.projects;
 CREATE POLICY "Users can delete their own projects" ON public.projects AS PERMISSIVE FOR DELETE TO public
   USING ((auth.uid() = user_id));
+DROP POLICY IF EXISTS "Users can update their own projects" ON public.projects;
 CREATE POLICY "Users can update their own projects" ON public.projects AS PERMISSIVE FOR UPDATE TO authenticated
   USING ((auth.uid() = user_id))
   WITH CHECK (((auth.uid() = user_id) AND can_write_module(auth.uid(), 'projekti'::text)));
+DROP POLICY IF EXISTS "Users can view their own projects" ON public.projects;
 CREATE POLICY "Users can view their own projects" ON public.projects AS PERMISSIVE FOR SELECT TO public
   USING ((auth.uid() = user_id));
+DROP POLICY IF EXISTS "hide_soft_deleted" ON public.projects;
 CREATE POLICY "hide_soft_deleted" ON public.projects AS RESTRICTIVE FOR SELECT TO authenticated
   USING ((deleted_at IS NULL));
+DROP POLICY IF EXISTS "projects_readonly_when_downgraded" ON public.projects;
 CREATE POLICY "projects_readonly_when_downgraded" ON public.projects AS RESTRICTIVE FOR ALL TO authenticated
   USING (((user_id <> auth.uid()) OR is_projects_subscriber(auth.uid())))
   WITH CHECK (((user_id <> auth.uid()) OR is_projects_subscriber(auth.uid())));
@@ -4348,12 +4394,14 @@ $function$;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.expenses TO authenticated, anon;
 
+DROP POLICY IF EXISTS "Users can create their own expenses" ON public.expenses;
 CREATE POLICY "Users can create their own expenses" ON public.expenses AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (
 CASE
     WHEN (project_id IS NOT NULL) THEN ((auth.uid() = user_id) AND (is_project_owner(project_id, auth.uid()) OR ((get_project_role(project_id, auth.uid()) = 'member'::text) AND (status = 'pending'::transaction_status) AND (submitted_by = auth.uid()))))
     ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_member(income_source_id, auth.uid())))
 END);
+DROP POLICY IF EXISTS "Users can update their own expenses" ON public.expenses;
 CREATE POLICY "Users can update their own expenses" ON public.expenses AS PERMISSIVE FOR UPDATE TO authenticated
   USING (
 CASE
@@ -4365,18 +4413,21 @@ CASE
     WHEN (project_id IS NOT NULL) THEN (is_project_participant_active(project_id, auth.uid()) AND ((auth.uid() = user_id) OR is_project_owner(project_id, auth.uid())))
     ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_owner(auth.uid(), income_source_id)))
 END);
+DROP POLICY IF EXISTS "Users can delete their own expenses" ON public.expenses;
 CREATE POLICY "Users can delete their own expenses" ON public.expenses AS PERMISSIVE FOR DELETE TO authenticated
   USING (
 CASE
     WHEN (project_id IS NOT NULL) THEN (is_project_participant_active(project_id, auth.uid()) AND ((auth.uid() = user_id) OR is_project_owner(project_id, auth.uid())))
     ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_owner(auth.uid(), income_source_id)))
 END);
+DROP POLICY IF EXISTS "Users can view their own expenses" ON public.expenses;
 CREATE POLICY "Users can view their own expenses" ON public.expenses AS PERMISSIVE FOR SELECT TO authenticated
   USING (
 CASE
     WHEN (project_id IS NOT NULL) THEN is_project_participant_active(project_id, auth.uid())
     ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_member(income_source_id, auth.uid())))
 END);
+DROP POLICY IF EXISTS "hide_soft_deleted" ON public.expenses;
 CREATE POLICY "hide_soft_deleted" ON public.expenses AS RESTRICTIVE FOR SELECT TO authenticated
   USING ((deleted_at IS NULL));
 
