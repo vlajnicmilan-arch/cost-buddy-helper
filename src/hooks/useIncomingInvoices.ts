@@ -144,6 +144,7 @@ export const useIncomingInvoices = () => {
     saveBatch,
     undoBatch,
     markPaid,
+    markCollected,
     deleteInvoice,
   };
 };
