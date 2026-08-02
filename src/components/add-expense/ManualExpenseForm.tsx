@@ -425,6 +425,17 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
             />
           )}
 
+          {/* Faza — nudi se odmah uz projekt, ostaje preskočiva. */}
+          {projectsModuleEnabled && props.onSelectedMilestoneIdChange && props.type !== 'transfer' && (
+            <MilestoneSelectRow
+              projectId={props.selectedProjectId}
+              value={props.selectedMilestoneId ?? null}
+              onChange={props.onSelectedMilestoneIdChange}
+            />
+          )}
+
+
+
 
 
           {/* Expense Nature */}
