@@ -43,13 +43,37 @@
 -- ============================================================================
 
 \set ON_ERROR_STOP on
+-- Okolišni preduvjet: bootstrap.sql stvara `auth` schemu, ali bez GRANT-ova
+-- koje pravi Supabase image ima. Bez njih svaki poziv auth.uid() iz politike
+-- pada s "permission denied for schema auth" — što je također 42501 i moglo bi
+-- lažno "potvrditi" zaštitu. Zato grantovi + preflight provjera niže.
+GRANT USAGE ON SCHEMA auth TO authenticated, anon;
+GRANT SELECT ON auth.users TO authenticated;
+
 BEGIN;
+
+-- Preflight: auth.uid() mora biti pozivljiv kao `authenticated`, inače su svi
+-- rezultati bezvrijedni.
+DO $$
+DECLARE v uuid;
+BEGIN
+  SET LOCAL ROLE authenticated;
+  PERFORM set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-0000000000ff', true);
+  SELECT auth.uid() INTO v;
+  RESET ROLE;
+  IF v IS NULL THEN
+    RAISE EXCEPTION 'PREFLIGHT FAIL — auth.uid() ne vraća sub claim';
+  END IF;
+  RAISE NOTICE 'PREFLIGHT ok — auth.uid() radi kao authenticated';
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Brojači
 -- ---------------------------------------------------------------------------
 CREATE TEMP TABLE _rwm_stats (passed int NOT NULL DEFAULT 0);
 INSERT INTO _rwm_stats VALUES (0);
+
 
 -- ---------------------------------------------------------------------------
 -- Jezgra: izvrši p_sql kao korisnik p_user i uvijek poništi učinak.
