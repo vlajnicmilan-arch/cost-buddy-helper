@@ -284,6 +284,14 @@ export const IncomingInvoicesPanel = () => {
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
                   <div className="mt-1">{dueBadge(inv)}</div>
+                  {!inv.paid_at && Number(inv.settled_amount ?? 0) > 0 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {t('eracun.match.settledOf', 'Plaćeno {{paid}} od {{total}}', {
+                        paid: formatAmount(Number(inv.settled_amount)),
+                        total: formatAmount(Number(inv.total_amount)),
+                      })}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-semibold text-sm">{formatAmount(Number(inv.total_amount))}</p>
