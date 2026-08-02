@@ -111,7 +111,7 @@ describe('matchPayments — šest identičnih iznosa iste druge strane', () => {
   const tx: MatchTransaction = {
     id: 'tx-planton',
     amount: 312.5,
-    date: '2026-06-10',
+    date: '2026-04-01',
     description: 'PLANTON FORK DOO uplata',
   };
 
@@ -139,13 +139,13 @@ describe('matchPayments — djelomična uplata', () => {
   it('raspoređuje manji iznos na najstariji račun i označava ga djelomičnim', () => {
     const invoice = inv({
       id: 'partial',
-      counterpartyName: 'Tactura j.d.o.o.',
+      counterpartyName: 'Tactura Grupa j.d.o.o.',
       totalAmount: 1000,
       settledAmount: 200,
     });
     const [s] = matchPayments({
       invoices: [invoice],
-      transactions: [{ id: 'tx-p', amount: 300, date: '2026-02-15', description: 'TACTURA JDOO djelomicno' }],
+      transactions: [{ id: 'tx-p', amount: 300, date: '2026-02-15', description: 'TACTURA GRUPA JDOO djelomicno' }],
     });
     expect(remainingOf(invoice)).toBe(800);
     expect(s.candidates[0].allocation.partial).toBe(300);
