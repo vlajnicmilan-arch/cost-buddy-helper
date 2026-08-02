@@ -1651,6 +1651,7 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
+          invoice_id: string | null
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
@@ -1710,6 +1711,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          invoice_id?: string | null
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
@@ -1769,6 +1771,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
+          invoice_id?: string | null
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
@@ -6361,6 +6364,7 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
+          invoice_id: string | null
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
