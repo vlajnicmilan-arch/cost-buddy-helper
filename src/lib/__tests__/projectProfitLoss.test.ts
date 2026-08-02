@@ -254,37 +254,99 @@ describe('computeProjectProfitLoss — material derivation', () => {
 });
 
 describe('computeProjectProfitLoss — production regressions (cash basis)', () => {
+  // Fixtures below mirror the live rows for each project:
+  //   expenses: deleted_at IS NULL, non-transfer, non-correction, status approved
+  //   collaborators: project_collaborators.paid_amount / total_price
+  //   work entries: actual_hours priced with project_worker_rate_history.rate at work_date
   it('Solin: hours exceed expenses, material is no longer clamped to 0', () => {
     const r = computeProjectProfitLoss({
       ...empty,
       transactions: [{ type: 'expense', amount: 159.63 }],
-      workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 14 }],
-      workEntries: [{ worker_id: 'w1', actual_hours: 16 }], // 224 accrued, 0 paid
+      workers: [{ id: 'w1', first_name: 'Petar', last_name: '-', hourly_rate: 7 }],
+      workEntries: [{ worker_id: 'w1', actual_hours: 32 }], // 224 accrued, 0 paid
     });
     expect(r.laborCost).toBe(0);
+    expect(r.collaboratorCost).toBe(0);
     expect(r.materialCost).toBe(159.63);
     expect(r.materialCostAnomaly).toBe(false);
+    expect(r.accruedLaborCost).toBe(224);
     expect(r.unpaidLaborCost).toBe(224);
+    expect(r.unpaidHours).toBe(32);
     expect(r.netProfit).toBe(-159.63);
+    expect(r.laborCost + r.collaboratorCost + r.materialCost).toBeCloseTo(r.totalExpenses, 2);
   });
 
-  it('Duje i Dunja: paid labor is small, rest is material, cash balance unchanged', () => {
+  it('Duje i Dunja: collaborator paid is a real cost, material is the remainder', () => {
     const r = computeProjectProfitLoss({
       ...empty,
+      project: { contract_value: 42333.52 },
       transactions: [
+        { type: 'income', amount: 23536.95 },
         { type: 'expense', amount: 28040.77 },
         { type: 'expense', amount: 1308, worker_payout_id: 'p1' },
       ],
       workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 1 }],
       workEntries: [{ worker_id: 'w1', actual_hours: 7642 }], // 7642 accrued
+      collaborators: [
+        { id: 'c1', first_name: 'Nikola', last_name: 'S', total_price: 4900, paid_amount: 4900 },
+        { id: 'c2', first_name: 'Ivica', last_name: 'L', total_price: 0, paid_amount: 0 },
+      ],
     });
+    expect(r.totalIncome).toBeCloseTo(23536.95, 2);
     expect(r.totalExpenses).toBeCloseTo(29348.77, 2);
     expect(r.laborCost).toBe(1308);
-    expect(r.materialCost).toBeCloseTo(28040.77, 2);
+    expect(r.collaboratorCost).toBe(4900);
+    expect(r.materialCost).toBeCloseTo(23140.77, 2);
+    expect(r.materialCostAnomaly).toBe(false);
     expect(r.unpaidLaborCost).toBeCloseTo(6334, 2);
-    expect(r.netProfit).toBeCloseTo(-29348.77, 2);
+    expect(r.netProfit).toBeCloseTo(-5811.82, 2);
+    expect(r.expectedProfit).toBeCloseTo(12984.75, 2);
+    expect(r.laborCost + r.collaboratorCost + r.materialCost).toBeCloseTo(r.totalExpenses, 2);
+  });
+
+  it('Lucija i Mate: collaborators exist but nothing is paid out to them', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      project: { contract_value: 29700 },
+      transactions: [
+        { type: 'income', amount: 15000 },
+        { type: 'expense', amount: 10604.14 },
+        { type: 'expense', amount: 56, worker_payout_id: 'p1' },
+      ],
+      workers: [{ id: 'w1', first_name: 'Petar', last_name: '-', hourly_rate: 7 }],
+      workEntries: [
+        { worker_id: 'w1', actual_hours: 8, payout_id: 'p1' },
+        { worker_id: 'w1', actual_hours: 80 },
+      ],
+      collaborators: [
+        { id: 'c1', first_name: 'Ivan', last_name: 'S', total_price: 0, paid_amount: 0 },
+        { id: 'c2', first_name: 'Domagoj', last_name: 'J', total_price: 0, paid_amount: 0 },
+      ],
+    });
+    expect(r.totalExpenses).toBeCloseTo(10660.14, 2);
+    expect(r.laborCost).toBe(56);
+    expect(r.collaboratorCost).toBe(0);
+    expect(r.materialCost).toBeCloseTo(10604.14, 2);
+    expect(r.accruedLaborCost).toBe(616);
+    expect(r.unpaidLaborCost).toBe(560);
+    expect(r.unpaidHours).toBe(80);
+    expect(r.netProfit).toBeCloseTo(4339.86, 2);
+    expect(r.expectedProfit).toBeCloseTo(19039.86, 2);
+    expect(r.laborCost + r.collaboratorCost + r.materialCost).toBeCloseTo(r.totalExpenses, 2);
+  });
+
+  it('Eda Zg: empty project stays at zero across the board', () => {
+    const r = computeProjectProfitLoss({ ...empty });
+    expect(r.totalIncome).toBe(0);
+    expect(r.totalExpenses).toBe(0);
+    expect(r.laborCost).toBe(0);
+    expect(r.collaboratorCost).toBe(0);
+    expect(r.materialCost).toBe(0);
+    expect(r.unpaidLaborCost).toBe(0);
+    expect(r.netProfit).toBe(0);
   });
 });
+
 
 
 describe('computeProjectProfitLoss — cash view (margin)', () => {
