@@ -21,6 +21,10 @@ const EMPTY: PLResult = {
   laborCost: 0,
   collaboratorCost: 0,
   materialCost: 0,
+  materialCostAnomaly: false,
+  accruedLaborCost: 0,
+  unpaidLaborCost: 0,
+  unpaidHours: 0,
   netProfit: 0,
   margin: 0,
   workers: [],
@@ -31,6 +35,7 @@ const EMPTY: PLResult = {
   collectedPercentage: 0,
   remainingToCollect: 0,
 };
+
 
 export const useProjectProfitLoss = (projectId: string | null): ProfitLossData => {
   const { user } = useAuth();
