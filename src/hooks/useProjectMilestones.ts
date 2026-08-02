@@ -635,12 +635,14 @@ export const useProjectMilestones = (projectId: string | null) => {
         sort_order: index
       }));
 
+      // Redoslijed je dio napretka — isti RPC put kao status i datumi.
       for (const update of updates) {
-        await supabase
-          .from('project_milestones')
-          .update({ sort_order: update.sort_order })
-          .eq('id', update.id);
+        await supabase.rpc('update_milestone_progress' as any, {
+          p_milestone_id: update.id,
+          p_patch: { sort_order: update.sort_order },
+        });
       }
+
 
       setMilestones(reorderedMilestones.map((m, index) => ({ ...m, sort_order: index })));
     } catch (error) {
