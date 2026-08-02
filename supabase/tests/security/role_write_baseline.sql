@@ -2529,3 +2529,151 @@ CREATE TRIGGER update_project_workers_updated_at BEFORE UPDATE ON public.project
 CREATE TRIGGER trg_cascade_project_soft_delete AFTER UPDATE OF deleted_at ON public.projects FOR EACH ROW EXECUTE FUNCTION cascade_project_soft_delete();
 CREATE TRIGGER trg_guard_contract_value_update BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION _guard_contract_value_update();
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===========================================================================
+-- Korak E — troškovi na potvrdu (snimka žive sheme, 2026-08-02)
+-- ---------------------------------------------------------------------------
+-- Namjerno se preuzima SAMO ono što matrica dotiče: stupci pregleda, INSERT/
+-- UPDATE/DELETE/SELECT politike za `expenses`, guard trigger i RPC.
+-- NIJE preuzeto (i harness o tome ne tvrdi ništa):
+--   * politike za krug i dijeljene izvore plaćanja (krug_select_visibility,
+--     "Members can ... shared payment sources") — druga domena, druge funkcije,
+--   * balance trigeri nad `expenses` — utjecaj pending/rejected na saldo
+--     dokazuje balance paket (supabase/tests/balance, scenariji E1–E6).
+-- ===========================================================================
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS rejection_reason text,
+  ADD COLUMN IF NOT EXISTS reviewed_by uuid,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamp with time zone;
+ALTER TABLE public.expenses
+  DROP CONSTRAINT IF EXISTS expenses_rejection_reason_requires_rejected;
+ALTER TABLE public.expenses
+  ADD CONSTRAINT expenses_rejection_reason_requires_rejected
+  CHECK (rejection_reason IS NULL OR status = 'rejected'::transaction_status);
+
+CREATE OR REPLACE FUNCTION public.is_income_source_member(_source_id uuid, _user_id uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.income_source_members
+    WHERE income_source_id = _source_id AND user_id = _user_id
+  )
+$function$;
+
+CREATE OR REPLACE FUNCTION public.is_income_source_owner(_user_id uuid, _source_id uuid)
+ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.income_source_members
+    WHERE user_id = _user_id AND income_source_id = _source_id AND role = 'owner'
+  ) OR EXISTS (
+    SELECT 1 FROM public.income_sources
+    WHERE id = _source_id AND user_id = _user_id
+  )
+$function$;
+
+CREATE OR REPLACE FUNCTION public.guard_expense_review_writes()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.project_id IS NULL AND OLD.project_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.status IS DISTINCT FROM OLD.status
+     OR NEW.rejection_reason IS DISTINCT FROM OLD.rejection_reason
+     OR NEW.reviewed_by IS DISTINCT FROM OLD.reviewed_by
+     OR NEW.reviewed_at IS DISTINCT FROM OLD.reviewed_at
+  THEN
+    IF COALESCE(current_setting('app.expense_reviewer', true), '') <> 'rpc' THEN
+      RAISE EXCEPTION 'Review fields can only be changed through review_project_expense()'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.review_project_expense(p_expense_id uuid, p_decision text, p_reason text DEFAULT NULL::text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_project uuid;
+  v_status transaction_status;
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '42501';
+  END IF;
+  IF p_decision NOT IN ('approve','reject') THEN
+    RAISE EXCEPTION 'Invalid decision' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT project_id, status INTO v_project, v_status
+    FROM public.expenses
+   WHERE id = p_expense_id AND deleted_at IS NULL
+   FOR UPDATE;
+
+  IF NOT FOUND OR v_project IS NULL THEN
+    RAISE EXCEPTION 'Project expense not found' USING ERRCODE = '42501';
+  END IF;
+  IF NOT public.is_project_owner(v_project, v_uid) THEN
+    RAISE EXCEPTION 'Only the project owner can review expenses' USING ERRCODE = '42501';
+  END IF;
+  IF v_status <> 'pending'::transaction_status THEN
+    RAISE EXCEPTION 'Expense is not pending' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM set_config('app.expense_reviewer', 'rpc', true);
+  UPDATE public.expenses
+     SET status = CASE WHEN p_decision = 'approve'
+                       THEN 'approved'::transaction_status
+                       ELSE 'rejected'::transaction_status END,
+         rejection_reason = CASE WHEN p_decision = 'reject' THEN NULLIF(p_reason, '') ELSE NULL END,
+         reviewed_by = v_uid,
+         reviewed_at = now()
+   WHERE id = p_expense_id;
+  PERFORM set_config('app.expense_reviewer', '', true);
+
+  RETURN jsonb_build_object('id', p_expense_id, 'decision', p_decision);
+END;
+$function$;
+
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.expenses TO authenticated, anon;
+
+CREATE POLICY "Users can create their own expenses" ON public.expenses AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK (
+CASE
+    WHEN (project_id IS NOT NULL) THEN ((auth.uid() = user_id) AND (is_project_owner(project_id, auth.uid()) OR ((get_project_role(project_id, auth.uid()) = 'member'::text) AND (status = 'pending'::transaction_status) AND (submitted_by = auth.uid()))))
+    ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_member(income_source_id, auth.uid())))
+END);
+CREATE POLICY "Users can update their own expenses" ON public.expenses AS PERMISSIVE FOR UPDATE TO authenticated
+  USING (
+CASE
+    WHEN (project_id IS NOT NULL) THEN (is_project_participant_active(project_id, auth.uid()) AND ((auth.uid() = user_id) OR is_project_owner(project_id, auth.uid())))
+    ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_owner(auth.uid(), income_source_id)))
+END)
+  WITH CHECK (
+CASE
+    WHEN (project_id IS NOT NULL) THEN (is_project_participant_active(project_id, auth.uid()) AND ((auth.uid() = user_id) OR is_project_owner(project_id, auth.uid())))
+    ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_owner(auth.uid(), income_source_id)))
+END);
+CREATE POLICY "Users can delete their own expenses" ON public.expenses AS PERMISSIVE FOR DELETE TO authenticated
+  USING (
+CASE
+    WHEN (project_id IS NOT NULL) THEN (is_project_participant_active(project_id, auth.uid()) AND ((auth.uid() = user_id) OR is_project_owner(project_id, auth.uid())))
+    ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_owner(auth.uid(), income_source_id)))
+END);
+CREATE POLICY "Users can view their own expenses" ON public.expenses AS PERMISSIVE FOR SELECT TO authenticated
+  USING (
+CASE
+    WHEN (project_id IS NOT NULL) THEN is_project_participant_active(project_id, auth.uid())
+    ELSE ((auth.uid() = user_id) OR ((income_source_id IS NOT NULL) AND is_income_source_member(income_source_id, auth.uid())))
+END);
+CREATE POLICY "hide_soft_deleted" ON public.expenses AS RESTRICTIVE FOR SELECT TO authenticated
+  USING ((deleted_at IS NULL));
+
+DROP TRIGGER IF EXISTS trg_guard_expense_review_writes ON public.expenses;
+CREATE TRIGGER trg_guard_expense_review_writes BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION guard_expense_review_writes();
