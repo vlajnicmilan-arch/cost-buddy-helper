@@ -1092,6 +1092,13 @@
         }
       },
       "phasePriceCoverage": "Cijene upisane na {{withPrice}} od {{total}} faza"
+    },
+    "unassignedMilestone": {
+      "title": "Troškovi bez faze",
+      "subtitle": "Poredano po iznosu, od najvećeg.",
+      "empty": "Sve transakcije imaju fazu.",
+      "summary": "{{count}} stavki • {{amount}}",
+      "cta": "{{count}} transakcija bez faze — razvrstaj"
     }
   },
   "estimates": {
