@@ -132,6 +132,23 @@ jobs:
         # See supabase/tests/security/secdef_anon_shim.sql.
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/secdef_anon_shim.sql
 
+      - name: Apply role-write security baseline (snapshot of live schema)
+        # Snimka žive sheme (tablice, enumi, RLS politike, trigeri i closure
+        # funkcija) potrebna za matricu prava pisanja po ulogama projekta.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/role_write_baseline.sql
+
+      - name: Role write matrix (RLS + trigger, bez ijednog secreta)
+        # SQL pandan e2e/security/specs/09-role-writes-matrix.spec.ts, koji
+        # zahtijeva service_role ključ. Granice pokrivenosti su u zaglavlju
+        # supabase/tests/security/role_write_matrix.sql.
+        run: |
+          set -euo pipefail
+          psql -f supabase/tests/security/role_write_matrix.sql 2>&1 | tee /tmp/rwm.out
+          if grep -E '(WARNING:  (FAIL|SCHEMA BUG)|^psql:.*ERROR)' /tmp/rwm.out; then
+            echo "Role write matrix reported failures" >&2
+            exit 1
+          fi
+
       - name: SECDEF anon regression invariant
         # See supabase/tests/security/secdef_anon_invariant.sql — fails the
         # build if any callable SECURITY DEFINER function in `public` becomes
