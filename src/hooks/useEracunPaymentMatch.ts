@@ -21,6 +21,7 @@ import {
   type PaymentSuggestion,
   type LearnedIban,
 } from '@/lib/eracun/matchPayments';
+import { applyCountedFilter, isCountedExpenseRow } from '@/lib/countedExpense';
 import type { IncomingInvoice } from '@/hooks/useIncomingInvoices';
 
 const EPS = 0.005;
@@ -60,10 +61,11 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
 
     let txQuery = supabase
       .from('expenses')
-      .select('id, amount, date, description, merchant_name, expense_nature, deleted_at')
+      .select('id, amount, date, description, merchant_name, expense_nature, deleted_at, status')
       .eq('user_id', user.id)
       .eq('type', 'income')
       .gte('date', since);
+    txQuery = applyCountedFilter(txQuery);
     txQuery = activeBusinessProfileId
       ? txQuery.eq('business_profile_id', activeBusinessProfileId)
       : txQuery.is('business_profile_id', null);
@@ -77,6 +79,7 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
     const linked = new Set(((linkRows ?? []) as any[]).map((r) => r.expense_id));
     setTransactions(
       ((txRows ?? []) as any[])
+        .filter((r) => isCountedExpenseRow(r))
         .filter((r) => !r.deleted_at && r.expense_nature !== 'correction' && r.expense_nature !== 'transfer')
         .filter((r) => !linked.has(r.id))
         .map((r) => ({
