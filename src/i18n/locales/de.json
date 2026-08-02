@@ -316,10 +316,8 @@
       "vtrCostRequired": "Geben Sie die geplanten Kosten des Nachtrags ein."
     },
     "card": {
-      "margin": "MARGE",
       "contracted": "Vereinbart",
       "spent": "Kosten",
-      "profit": "Gewinn",
       "setContracted": "Vertragsbetrag festlegen"
     },
     "templates": {
@@ -364,14 +362,7 @@
     "budgetWarning": "Budget fast aufgebraucht!",
     "received": "Eingegangen",
     "receivedOfContract": "{{pct}}% des Vertrags",
-    "margin": "Marge",
     "currentBalance": "Aktueller Saldo",
-    "marginStatus": {
-      "healthy": "Gesund",
-      "attention": "Achtung",
-      "critical": "Kritisch",
-      "neutral": "—"
-    },
     "progress": {
       "cost": "Kosten",
       "collection": "Eingang"
@@ -383,9 +374,9 @@
     "forecast": {
       "title": "🔮 Prognose — beim aktuellen Tempo",
       "eac": "Voraussichtliche Endkosten",
-      "predictedMargin": "Prognostizierte Marge",
       "tooEarly": "Prognose verfügbar ab 10% Projektabschluss",
-      "noMilestones": "Füge Projektphasen hinzu, um die Prognose zu sehen"
+      "noMilestones": "Füge Projektphasen hinzu, um die Prognose zu sehen",
+      "predictedRemainder": "Prognostiziert verbleibend"
     },
     "noBudgetSet": "Kein Budget festgelegt",
     "startDate": "Startdatum",
@@ -652,15 +643,6 @@
       "marginUnknown": "Vertragswert eingeben für genauere Analyse",
       "profit": "Gewinn",
       "noIncomeYet": "Noch keine Einnahmen",
-      "trafficLight": {
-        "green": "Gesund: Marge über 30%",
-        "yellow": "Achtung: Marge unter 30%",
-        "red": "Kritisch: Marge unter 10%"
-      },
-      "aiWarning": {
-        "yellow": "Marge niedrig · {{pct}}% — Kosten senken",
-        "red": "Marge kritisch · {{pct}}% — sofort handeln"
-      },
       "daysLeft_few": "{{count}} T verbleibend",
       "overdueDays_few": "{{count}} T überfällig"
     },
@@ -668,8 +650,6 @@
       "title": "Earned Value",
       "contracted": "Vertragswert",
       "spent": "Kosten",
-      "marginAmount": "Marge",
-      "marginPct": "Marge %",
       "eac": "Voraussichtliche Endkosten",
       "eacHint": "Hochrechnung anhand der aktuellen Ausgabenrate",
       "scoreLabel": "Zustand",
@@ -1068,7 +1048,46 @@
     "unpaidLaborHoursLabel": "Stunden",
     "unpaidLaborExpectedNote": "Unbezahlte Arbeit ({{amount}}) steht noch aus und mindert den Gewinn bei Auszahlung.",
     "plLaborPaid": "Arbeitskraft (ausgezahlt)",
-    "materialCostAnomaly": "Die Materialkosten sind negativ — eine Lohnauszahlung wurde vermutlich außerhalb des Auszahlungsprozesses erfasst."
+    "materialCostAnomaly": "Die Materialkosten sind negativ — eine Lohnauszahlung wurde vermutlich außerhalb des Auszahlungsprozesses erfasst.",
+    "remainder": {
+      "remainingPct": "Verbleibend",
+      "remainingPctUpper": "VERBLEIBEND",
+      "unspent": "Nicht ausgegeben",
+      "realizedMarginPct": "Erzielte Marge",
+      "realizedMarginPctUpper": "ERZIELTE MARGE",
+      "realizedProfit": "Gewinn",
+      "plannedMargin": "Geplante Marge",
+      "plannedCoverage": "basierend auf {{withBoth}} von {{total}} Phasen",
+      "unclassified": "Vertraglich {{contract}} · Phasen zugeordnet {{phases}} · nicht zugeordnet {{diff}}",
+      "status": {
+        "healthy": "Gesund",
+        "attention": "Achtung",
+        "critical": "Kritisch",
+        "neutral": "—"
+      },
+      "traffic": {
+        "open": {
+          "healthy": "Gesund: Ausgaben im Plan",
+          "attention": "Achtung: Ausgaben nahe der Grenze",
+          "critical": "Kritisch: Ausgaben überschreiten den Plan"
+        },
+        "realized": {
+          "healthy": "Gesund: Projekt mit Marge abgeschlossen",
+          "attention": "Achtung: niedrige erzielte Marge",
+          "critical": "Kritisch: Projekt mit Verlust abgeschlossen"
+        }
+      },
+      "warning": {
+        "open": {
+          "attention": "Wenig verbleibend · {{pct}}% — Kosten senken",
+          "critical": "Plan überschritten · {{pct}}% verbleibend"
+        },
+        "realized": {
+          "attention": "Niedrige erzielte Marge · {{pct}}%",
+          "critical": "Projekt mit Verlust abgeschlossen · {{pct}}%"
+        }
+      }
+    }
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
@@ -3060,10 +3079,8 @@
       "viewAllProjects": "Alle ansehen",
       "noActiveProjects": "Keine aktiven Projekte",
       "openProjects": "Projekte öffnen",
-      "marginShort": "Marge",
       "spentOfBudget": "{{spent}} von {{budget}}",
       "spentNoBudget": "Ausgegeben {{spent}}",
-      "profit": "Gewinn",
       "noActivity": "Diesen Monat noch keine Bewegungen",
       "available": "Verfügbar",
       "netWorth": "Nettovermögen",

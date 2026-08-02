@@ -317,10 +317,8 @@
     },
     "noPaymentSource": "Bez izvora",
     "card": {
-      "margin": "MARŽA",
       "contracted": "Ugovoreno",
       "spent": "Trošak",
-      "profit": "Zarada",
       "setContracted": "Postavi ugovoreni iznos"
     },
     "onboarding": {
@@ -368,14 +366,7 @@
     "budgetWarning": "Budžet pri kraju!",
     "received": "Primljeno",
     "receivedOfContract": "{{pct}}% od ugovorenog",
-    "margin": "Marža",
     "currentBalance": "Trenutni saldo",
-    "marginStatus": {
-      "healthy": "Zdrav",
-      "attention": "Pažnja",
-      "critical": "Kritično",
-      "neutral": "—"
-    },
     "progress": {
       "cost": "Trošak",
       "collection": "Naplata"
@@ -387,9 +378,9 @@
     "forecast": {
       "title": "🔮 Prognoza — po trenutnom tempu",
       "eac": "Predviđeni finalni trošak",
-      "predictedMargin": "Predviđena marža",
       "tooEarly": "Prognoza dostupna nakon 10% dovršenosti projekta",
-      "noMilestones": "Dodaj faze projekta da vidiš prognozu"
+      "noMilestones": "Dodaj faze projekta da vidiš prognozu",
+      "predictedRemainder": "Predviđeno preostalo"
     },
     "noBudgetSet": "Budžet nije postavljen",
     "startDate": "Datum početka",
@@ -661,23 +652,12 @@
       "margin": "Marža",
       "marginUnknown": "Unesite ugovoreni iznos za točniju analizu",
       "profit": "Profit",
-      "noIncomeYet": "Još nema prihoda",
-      "trafficLight": {
-        "green": "Zdravo: marža iznad 30%",
-        "yellow": "Pažnja: marža ispod 30%",
-        "red": "Kritično: marža ispod 10%"
-      },
-      "aiWarning": {
-        "yellow": "Marža niska · {{pct}}% — smanji troškove",
-        "red": "Marža kritična · {{pct}}% — hitno reagiraj"
-      }
+      "noIncomeYet": "Još nema prihoda"
     },
     "earnedValue": {
       "title": "Earned Value",
       "contracted": "Ugovoreno",
       "spent": "Trošak",
-      "marginAmount": "Marža",
-      "marginPct": "Marža %",
       "eac": "Predviđeni finalni trošak",
       "eacHint": "Procjena na temelju trenutnog tempa potrošnje",
       "scoreLabel": "Zdravlje",
@@ -1072,7 +1052,46 @@
     "unpaidLaborHoursLabel": "Sati",
     "unpaidLaborExpectedNote": "Neisplaćeni rad ({{amount}}) još nije plaćen i smanjit će profit kad se isplati.",
     "plLaborPaid": "Radna snaga (isplaćeno)",
-    "materialCostAnomaly": "Materijalni troškovi su negativni — isplata rada vjerojatno je unesena izvan obračuna isplata."
+    "materialCostAnomaly": "Materijalni troškovi su negativni — isplata rada vjerojatno je unesena izvan obračuna isplata.",
+    "remainder": {
+      "remainingPct": "Preostalo",
+      "remainingPctUpper": "PREOSTALO",
+      "unspent": "Neutrošeno",
+      "realizedMarginPct": "Ostvarena marža",
+      "realizedMarginPctUpper": "OSTVARENA MARŽA",
+      "realizedProfit": "Zarada",
+      "plannedMargin": "Planirana marža",
+      "plannedCoverage": "temeljeno na {{withBoth}} od {{total}} faza",
+      "unclassified": "Ugovoreno {{contract}} · po fazama razvrstano {{phases}} · nerazvrstano {{diff}}",
+      "status": {
+        "healthy": "Zdrav",
+        "attention": "Pažnja",
+        "critical": "Kritično",
+        "neutral": "—"
+      },
+      "traffic": {
+        "open": {
+          "healthy": "Zdravo: potrošnja unutar plana",
+          "attention": "Pažnja: potrošnja blizu granice",
+          "critical": "Kritično: potrošnja prelazi plan"
+        },
+        "realized": {
+          "healthy": "Zdravo: projekt završen s maržom",
+          "attention": "Pažnja: niska ostvarena marža",
+          "critical": "Kritično: projekt završen u minusu"
+        }
+      },
+      "warning": {
+        "open": {
+          "attention": "Malo preostalo · {{pct}}% — smanji troškove",
+          "critical": "Prekoračenje plana · preostalo {{pct}}%"
+        },
+        "realized": {
+          "attention": "Niska ostvarena marža · {{pct}}%",
+          "critical": "Projekt završen u minusu · {{pct}}%"
+        }
+      }
+    }
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -3066,10 +3085,8 @@
       "viewAllProjects": "Pogledaj sve",
       "noActiveProjects": "Nema aktivnih projekata",
       "openProjects": "Otvori projekte",
-      "marginShort": "Marža",
       "spentOfBudget": "{{spent}} od {{budget}}",
       "spentNoBudget": "Potrošeno {{spent}}",
-      "profit": "Zarada",
       "noActivity": "Još nema prometa ovog mjeseca",
       "available": "Slobodno",
       "netWorth": "Neto vrijednost",

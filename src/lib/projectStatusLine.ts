@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { ProjectStatus } from '@/types/project';
+import type { RemainderLevel } from './projectCostBaseline';
 
 export type StatusLineTone = 'info' | 'success' | 'muted' | 'warning';
 
@@ -9,12 +10,19 @@ export interface StatusLineInput {
   end_date?: string | null;
   income: number;
   spent: number;
-  budget: number;
-  margin: number | null;
+  /** Osnovica iz getCostBaseline (planirani trošak faza ili ugovoreno). */
+  baseline: number;
+  /** Preostalo kao udio osnovice; null kad osnovice nema. */
+  remainderRatio: number | null;
   txCount: number;
-  /** Health from ActiveProjectsStrip — used only to suppress when AI warning will render. */
-  health: 'green' | 'yellow' | 'red';
+  /**
+   * Razina iz `getHealthLevel` — jedini izvor istine za ton. Status line se
+   * skriva kad je razina 'attention'/'critical' jer tada kartica prikazuje
+   * upozorenje iznad.
+   */
+  level: RemainderLevel;
 }
+
 
 export interface StatusLine {
   text: string;
@@ -38,8 +46,8 @@ export function getProjectStatusLine(
   data: StatusLineInput,
   t: TFunction,
 ): StatusLine | null {
-  // 1) Yellow / red are handled by the AI warning row above — skip status line.
-  if (data.health !== 'green') return null;
+  // 1) Attention / critical are handled by the warning row above — skip status line.
+  if (data.level === 'attention' || data.level === 'critical') return null;
 
   // 2) Paused
   if (data.status === 'paused') {
@@ -96,7 +104,7 @@ export function getProjectStatusLine(
   }
 
   // 6) Healthy with realised income → motivational
-  if (data.income > 0 && data.margin !== null && data.margin >= 0.30) {
+  if (data.income > 0 && data.level === 'healthy') {
     return {
       text: t('projects.statusLine.stable', 'Stabilan — bravo!'),
       tone: 'success',
@@ -104,9 +112,9 @@ export function getProjectStatusLine(
     };
   }
 
-  // 7-9) Budget-phase descriptors (no income yet, but has budget)
-  if (data.budget > 0) {
-    const usedPct = Math.max(0, Math.min(100, Math.round((data.spent / data.budget) * 100)));
+  // 7-9) Baseline-phase descriptors (no income yet, but has a cost baseline)
+  if (data.baseline > 0) {
+    const usedPct = Math.max(0, Math.min(100, Math.round((data.spent / data.baseline) * 100)));
     const remainingPct = Math.max(0, 100 - usedPct);
 
     if (usedPct < 30) {
@@ -131,7 +139,7 @@ export function getProjectStatusLine(
     };
   }
 
-  // 10) Fallback — has some activity but no budget
+  // 10) Fallback — has some activity but no baseline
   return {
     text: t('projects.statusLine.inProgress', 'U tijeku · {{count}} unosa', { count: data.txCount }),
     tone: 'muted',

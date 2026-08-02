@@ -10,6 +10,8 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import type { Project } from '@/types/project';
 import type { ProjectMilestone } from '@/types/project';
 import { cn } from '@/lib/utils';
+import { getBaselineSummary } from '@/lib/projectCostBaseline';
+import { getRemainderLabels, getRemainderStatusLabel } from '@/lib/projectMetricLabels';
 
 interface Props {
   project: Project;
@@ -65,11 +67,12 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
   const marginPct = health.marginPct ?? 0;
   const eac = health.eac ?? spent;
 
-  const statusKey: 'healthy' | 'risk' | 'loss' =
-    marginPct < 0 ? 'loss' : marginPct < 10 ? 'risk' : 'healthy';
-  const statusLabel = t(`projects.earnedValue.status.${statusKey}`,
-    statusKey === 'healthy' ? 'Zdravo' : statusKey === 'risk' ? 'Rizik' : 'Gubitak'
-  );
+  // Razina i natpisi dolaze iz istih pomoćnika kao kartica na naslovnici.
+  const baselineSummary = getBaselineSummary(project, spent, milestones);
+  const remainderLevel = baselineSummary.level;
+  const remainderLabels = getRemainderLabels(project.status);
+  const statusSpec = getRemainderStatusLabel(remainderLevel);
+  const statusLabel = t(statusSpec.key, statusSpec.fallback);
 
   const handleExport = async () => {
     if (exporting) return;
@@ -82,6 +85,7 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
         spent,
         marginAmount,
         marginPct,
+        remainderLabel: t(remainderLabels.pct.key, remainderLabels.pct.fallback),
         eac,
         healthScore: health.score,
         healthLevel: health.level,
@@ -129,14 +133,14 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
         <Metric label={t('projects.earnedValue.contracted', 'Ugovoreno')} value={formatAmount(contractValue)} />
         <Metric label={t('projects.earnedValue.spent', 'Trošak')} value={formatAmount(spent)} />
         <Metric
-          label={t('projects.earnedValue.marginAmount', 'Marža')}
+          label={t(remainderLabels.amount.key, remainderLabels.amount.fallback)}
           value={`${marginAmount >= 0 ? '+' : ''}${formatAmount(marginAmount)}`}
-          tone={marginAmount < 0 ? 'destructive' : marginPct < 10 ? 'warning' : 'income'}
+          tone={remainderLevel === 'critical' ? 'destructive' : remainderLevel === 'attention' ? 'warning' : 'income'}
         />
         <Metric
-          label={t('projects.earnedValue.marginPct', 'Marža %')}
+          label={`${t(remainderLabels.pct.key, remainderLabels.pct.fallback)} %`}
           value={`${marginPct.toFixed(1)}%`}
-          tone={marginPct < 0 ? 'destructive' : marginPct < 10 ? 'warning' : 'income'}
+          tone={remainderLevel === 'critical' ? 'destructive' : remainderLevel === 'attention' ? 'warning' : 'income'}
         />
         <Metric
           label={t('projects.earnedValue.eac', 'Predviđeni finalni trošak')}

@@ -9,7 +9,12 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
-import { calculateContractValue } from '@/lib/projectCalculations';
+import { getBaselineSummary, type RemainderLevel } from '@/lib/projectCostBaseline';
+import {
+  getRemainderLabels,
+  getRemainderTrafficLabel,
+  getRemainderWarningLabel,
+} from '@/lib/projectMetricLabels';
 import { getProjectStatusLine, type StatusLineTone } from '@/lib/projectStatusLine';
 import { cn } from '@/lib/utils';
 import { TrialFeatureChip } from '@/components/TrialFeatureChip';
@@ -39,37 +44,30 @@ interface ActiveProjectsStripProps {
 
 const MAX_VISIBLE = 5;
 
-type HealthLevel = 'green' | 'yellow' | 'red' | 'neutral';
-
 interface ProjectCardData {
   project: ProjectWithOwnership;
   spent: number;
-  budget: number;
-  margin: number | null; // ratio, e.g. 0.42
-  hasMargin: boolean;
-  health: HealthLevel;
+  baseline: number;
+  /** Preostalo kao udio osnovice (npr. 0.42); null kad osnovice nema. */
+  remainderRatio: number | null;
+  hasBaseline: boolean;
+  level: RemainderLevel;
 }
 
-const healthFromMargin = (margin: number | null): HealthLevel => {
-  if (margin === null) return 'neutral';
-  if (margin >= 0.30) return 'green';
-  if (margin >= 0.10) return 'yellow';
-  return 'red';
-};
-
-const HEALTH_DOT_COLOR: Record<HealthLevel, string> = {
-  green: 'hsl(var(--income))',
-  yellow: 'hsl(var(--warning))',
-  red: 'hsl(var(--destructive))',
+const HEALTH_DOT_COLOR: Record<RemainderLevel, string> = {
+  healthy: 'hsl(var(--income))',
+  attention: 'hsl(var(--warning))',
+  critical: 'hsl(var(--destructive))',
   neutral: 'hsl(var(--muted-foreground))',
 };
 
-const HEALTH_TEXT_CLASS: Record<HealthLevel, string> = {
-  green: 'text-income',
-  yellow: 'text-warning',
-  red: 'text-destructive',
+const HEALTH_TEXT_CLASS: Record<RemainderLevel, string> = {
+  healthy: 'text-income',
+  attention: 'text-warning',
+  critical: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
+
 
 export const ActiveProjectsStrip = React.memo(({
   projects,
@@ -101,22 +99,17 @@ export const ActiveProjectsStrip = React.memo(({
     return active.slice(0, MAX_VISIBLE).map(p => {
       const entry = summary.get(p.id);
       const spent = entry?.spent ?? 0;
-      const budget = calculateContractValue(p);
-
-      let margin: number | null = null;
-      let hasMargin = false;
-      if (budget > 0) {
-        margin = (budget - spent) / budget;
-        hasMargin = true;
-      }
+      // Dashboard ne učitava faze, pa je osnovica ovdje ugovorena vrijednost
+      // (getCostBaseline sam pada na `contract` kad planiranog troška nema).
+      const summaryData = getBaselineSummary(p, spent);
 
       return {
         project: p,
         spent,
-        budget,
-        margin,
-        hasMargin,
-        health: healthFromMargin(margin),
+        baseline: summaryData.baseline.value,
+        remainderRatio: summaryData.remainderPct === null ? null : summaryData.remainderPct / 100,
+        hasBaseline: summaryData.hasBaseline,
+        level: summaryData.level,
       };
     });
   }, [projects, summary]);
@@ -198,12 +191,6 @@ export const ActiveProjectsStrip = React.memo(({
     );
   }
 
-  const trafficLightLabel = (level: HealthLevel) => {
-    if (level === 'red') return t('projects.health.trafficLight.red', 'Kritično: marža ispod 10%');
-    if (level === 'yellow') return t('projects.health.trafficLight.yellow', 'Pažnja: marža ispod 30%');
-    if (level === 'green') return t('projects.health.trafficLight.green', 'Zdravo: marža iznad 30%');
-    return '';
-  };
 
   return (
     <motion.div
@@ -228,26 +215,34 @@ export const ActiveProjectsStrip = React.memo(({
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-3 px-3 sm:-mx-4 sm:px-4 scrollbar-none">
         {activeProjects.map((data, idx) => {
-          const { project, spent, budget, margin, hasMargin, health } = data;
+          const { project, spent, baseline, remainderRatio, hasBaseline, level } = data;
           const color = project.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length];
-          const dotColor = HEALTH_DOT_COLOR[health];
-          const trafficLabel = trafficLightLabel(health);
+          const dotColor = HEALTH_DOT_COLOR[level];
+          // Natpisi i prateći tekstovi dolaze iz istog pomoćnika — kartica ne
+          // može reći „Preostalo 90 %" a ispod „marža zdrava".
+          const labels = getRemainderLabels(project.status);
+          const trafficSpec = getRemainderTrafficLabel(project.status, level);
+          const trafficLabel = trafficSpec ? t(trafficSpec.key, trafficSpec.fallback) : '';
+          const pctRounded = Math.round((remainderRatio ?? 0) * 100);
+          const warningSpec = getRemainderWarningLabel(project.status, level);
+          const warningText = warningSpec
+            ? t(warningSpec.key, warningSpec.fallback, { pct: pctRounded })
+            : null;
 
           let ariaLabel: string;
-          if (!hasMargin) {
+          if (!hasBaseline) {
             ariaLabel = `${project.name}: ${t('projects.card.setContracted', 'Postavi ugovoreni iznos')}`;
           } else {
-            const pct = `${Math.round((margin ?? 0) * 100)}%`;
-            ariaLabel = `${project.name}: ${t('projects.card.margin', 'MARŽA')} ${pct}${trafficLabel ? `, ${trafficLabel}` : ''}`;
+            ariaLabel = `${project.name}: ${t(labels.pct.key, labels.pct.fallback)} ${pctRounded}%${trafficLabel ? `, ${trafficLabel}` : ''}`;
           }
 
           const renderFooterLines = () => {
-            if (!hasMargin) return null;
-            const profit = budget - spent;
+            if (!hasBaseline) return null;
+            const remainderAmount = baseline - spent;
             const lines = [
-              { label: t('projects.card.contracted', 'Ugovoreno'), value: budget, signed: false },
+              { label: t('projects.card.contracted', 'Ugovoreno'), value: baseline, signed: false },
               { label: t('projects.card.spent', 'Trošak'), value: spent, signed: false },
-              { label: t('projects.card.profit', 'Zarada'), value: profit, signed: true },
+              { label: t(labels.amount.key, labels.amount.fallback), value: remainderAmount, signed: true },
             ];
             return (
               <div className="space-y-1 pt-1.5 border-t border-border/40">
@@ -274,12 +269,9 @@ export const ActiveProjectsStrip = React.memo(({
           };
 
           const renderProgressBar = () => {
-            if (!hasMargin || budget <= 0) return null;
-            const usedPct = Math.max(0, Math.min(100, (spent / budget) * 100));
-            const barColor =
-              health === 'red' ? 'hsl(var(--destructive))'
-              : health === 'yellow' ? 'hsl(var(--warning))'
-              : 'hsl(var(--income))';
+            if (!hasBaseline || baseline <= 0) return null;
+            const usedPct = Math.max(0, Math.min(100, (spent / baseline) * 100));
+            const barColor = HEALTH_DOT_COLOR[level];
             return (
               <div className="px-0.5">
                 <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
@@ -296,7 +288,7 @@ export const ActiveProjectsStrip = React.memo(({
           };
 
           const renderCenter = () => {
-            if (!hasMargin) {
+            if (!hasBaseline) {
               return (
                 <div className="flex flex-col items-center justify-center text-center px-2 py-3">
                   <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center mb-1.5">
@@ -308,15 +300,19 @@ export const ActiveProjectsStrip = React.memo(({
                 </div>
               );
             }
-            const pct = `${Math.round((margin ?? 0) * 100)}%`;
             return (
               <div className="flex flex-col items-center justify-center py-1">
-                <p className={cn('text-3xl font-bold leading-none tabular-nums tracking-tight', HEALTH_TEXT_CLASS[health])}>
-                  {pct}
+                <p className={cn('text-3xl font-bold leading-none tabular-nums tracking-tight', HEALTH_TEXT_CLASS[level])}>
+                  {pctRounded}%
                 </p>
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 text-center">
-                  {t('projects.card.margin', 'MARŽA')}
+                  {t(labels.pctUpper.key, labels.pctUpper.fallback)}
                 </p>
+                {warningText && (
+                  <p className={cn('text-[10px] mt-1 text-center font-medium', HEALTH_TEXT_CLASS[level])}>
+                    {warningText}
+                  </p>
+                )}
               </div>
             );
           };
@@ -328,10 +324,10 @@ export const ActiveProjectsStrip = React.memo(({
               end_date: project.end_date,
               income: summary.get(project.id)?.income ?? 0,
               spent,
-              budget,
-              margin,
+              baseline,
+              remainderRatio,
               txCount: summary.get(project.id)?.txCount ?? 0,
-              health: health === 'neutral' ? 'green' : health,
+              level,
             },
             t,
           );
@@ -408,7 +404,7 @@ export const ActiveProjectsStrip = React.memo(({
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{
                     backgroundColor: dotColor,
-                    boxShadow: health !== 'neutral' ? `0 0 6px ${dotColor}` : 'none',
+                    boxShadow: level !== 'neutral' ? `0 0 6px ${dotColor}` : 'none',
                   }}
                   aria-label={trafficLabel}
                   role="img"
@@ -416,7 +412,7 @@ export const ActiveProjectsStrip = React.memo(({
                 />
               </div>
 
-              {/* Centerpiece: margin % or CTA */}
+              {/* Centerpiece: preostalo % or CTA */}
               {renderCenter()}
 
               {/* Progress bar: budget burn */}

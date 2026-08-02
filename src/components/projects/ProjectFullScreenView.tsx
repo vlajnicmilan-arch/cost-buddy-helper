@@ -62,6 +62,9 @@ import { ProjectReadOnlyBanner } from './ProjectReadOnlyBanner';
 import { isProjectsReadonlyError } from '@/lib/softDelete';
 import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
+import { getBaselineSummary } from '@/lib/projectCostBaseline';
+import { computeProjectPlannedMargin, computeUnclassifiedContract } from '@/lib/projectPlannedMargin';
+import { getRemainderLabels, getRemainderStatusLabel } from '@/lib/projectMetricLabels';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { projectViewState } from '@/lib/projectViewState';
@@ -362,47 +365,31 @@ export const ProjectFullScreenView = ({
   // project_funding (totalAllocated) je alokacija izvora, ne stvarna uplata klijenta.
   const totalReceived = stats.totalIncome || 0;
 
-  // Margin — identical formula to ActiveProjectsStrip home card: (budget - spent) / budget
-  const marginPct = budget > 0 ? ((budget - totalSpent) / budget) * 100 : null;
-  const marginStatusKey: 'healthy' | 'attention' | 'critical' | 'neutral' =
-    marginPct === null ? 'neutral'
-    : marginPct >= 30 ? 'healthy'
-    : marginPct >= 10 ? 'attention'
-    : 'critical';
+  // Korak F — jedna osnovica (planirani trošak faza kad postoji, inače
+  // ugovoreno) i jedan semafor. Nikakvo grananje pragova izvan pomoćnika.
+  const baselineSummary = getBaselineSummary(project, totalSpent, milestones);
+  const baseline = baselineSummary.baseline.value;
+  const remainderPct = baselineSummary.remainderPct;
+  const remainderLevel = baselineSummary.level;
+  const remainderLabels = getRemainderLabels(project.status);
+  const remainderStatusSpec = getRemainderStatusLabel(remainderLevel);
+  const remainderStatusLabel = t(remainderStatusSpec.key, remainderStatusSpec.fallback);
 
-  const costPct = budget > 0 ? (totalSpent / budget) * 100 : 0;
+  // Planirana marža (samo faze koje imaju OBA iznosa) i napomena o
+  // nerazvrstanom iznosu. Ugovoreno i zbroj faza se nikad ne zbrajaju.
+  const plannedMargin = computeProjectPlannedMargin(milestones);
+  const unclassified = computeUnclassifiedContract(effectiveContract, milestones);
+
+  const costPct = baseline > 0 ? (totalSpent / baseline) * 100 : 0;
   const collectionPct = budget > 0 ? (totalReceived / budget) * 100 : 0;
 
-  // Independent alarms (only when contracted budget exists)
-  const showBudgetAlarm = budget > 0 && costPct >= 80;
+  // Independent alarms (only when a cost baseline exists)
+  const showBudgetAlarm = baseline > 0 && costPct >= 80;
   const daysSinceStart = project.start_date
     ? Math.floor((Date.now() - new Date(project.start_date).getTime()) / 86400000)
     : 0;
   const showCollectionAlarm = budget > 0 && collectionPct < 50 && daysSinceStart > 30;
 
-  // Status token maps
-  const marginDotClass = {
-    healthy: 'bg-income',
-    attention: 'bg-warning',
-    critical: 'bg-destructive',
-    neutral: 'bg-muted-foreground',
-  }[marginStatusKey];
-  const marginTextClass = {
-    healthy: 'text-income',
-    attention: 'text-warning',
-    critical: 'text-destructive',
-    neutral: 'text-muted-foreground',
-  }[marginStatusKey];
-  const marginBarClass = {
-    healthy: '[&>div]:bg-income',
-    attention: '[&>div]:bg-warning',
-    critical: '[&>div]:bg-destructive',
-    neutral: '',
-  }[marginStatusKey];
-  const marginStatusLabel = t(`projects.marginStatus.${marginStatusKey}`,
-    marginStatusKey === 'healthy' ? 'Zdrav'
-    : marginStatusKey === 'attention' ? 'Pažnja'
-    : marginStatusKey === 'critical' ? 'Kritično' : '—');
 
   return (
     <AnimatePresence>
@@ -584,7 +571,7 @@ export const ProjectFullScreenView = ({
               {/* Forecast section — shown whenever funding is visible and a budget exists.
                   Investor NIKAD ne dobiva Forecast (otkriva projekciju finalnog troška). */}
               {!isInvestorViewer && canSeeTab('funding') && budget > 0 && (
-                <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
+                <ProjectForecastCard baseline={baselineSummary.baseline} spent={totalSpent} milestones={milestones} />
               )}
 
               {/* Wave 2: unified single tab strip.
@@ -843,8 +830,13 @@ export const ProjectFullScreenView = ({
                     totalSpent={totalSpent}
                     costPct={costPct}
                     collectionPct={collectionPct}
-                    marginPct={marginPct}
-                    marginStatusKey={marginStatusKey}
+                    baseline={baseline}
+                    remainderPct={remainderPct}
+                    remainderLevel={remainderLevel}
+                    remainderLabels={remainderLabels}
+                    remainderStatusLabel={remainderStatusLabel}
+                    plannedMargin={plannedMargin}
+                    unclassified={unclassified}
                     showBudgetAlarm={showBudgetAlarm}
                     showCollectionAlarm={showCollectionAlarm}
                     canAccessBusinessTabs={canAccessBusinessTabs}

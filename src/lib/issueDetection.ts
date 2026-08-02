@@ -33,8 +33,12 @@ export interface IssueCandidate {
 }
 
 // ============================================================
-// 1. Project loss zone — margin < 10% of contract_value
+// 1. Project loss zone — razina 'critical' iz getHealthLevel nad osnovicom
+// (planirani trošak faza kad postoji, inače ugovoreno).
 // ============================================================
+
+import { getBaselineSummary } from "./projectCostBaseline";
+import type { PlannedMarginMilestone } from "./projectPlannedMargin";
 
 interface ProjectInput {
   id: string;
@@ -42,6 +46,8 @@ interface ProjectInput {
   contract_value?: number | null;
   total_budget?: number;
   status?: string;
+  /** Faze projekta kad su dostupne — daju planirani trošak kao osnovicu. */
+  milestones?: PlannedMarginMilestone[] | null;
 }
 
 interface ExpenseInput {
@@ -68,11 +74,12 @@ export const detectProjectLossZone = (
   const out: IssueCandidate[] = [];
   for (const p of projects) {
     if (p.status === "completed" || p.status === "cancelled") continue;
-    const contract = Number(p.contract_value || 0);
-    if (contract <= 0) continue;
     const spent = spentByProject.get(p.id) ?? 0;
-    const marginPct = ((contract - spent) / contract) * 100;
-    if (marginPct >= 10) continue;
+    const summary = getBaselineSummary(p, spent, p.milestones);
+    if (!summary.hasBaseline) continue;
+    if (summary.level !== "critical") continue;
+    const contract = summary.baseline.value;
+    const marginPct = summary.remainderPct ?? 0;
 
     const severity: IssueSeverity = marginPct < 0 ? "critical" : "warning";
     out.push({
