@@ -6,6 +6,9 @@
  *   `cbc:`/`cac:` i za dokumente s drugačijim prefiksima.
  * - Ne odlučuje ništa umjesto korisnika: neuobičajene tipove i valute vraća
  *   kroz `warnings`, a ne kroz tihu pretpostavku.
+ * - SVJESNA ODLUKA (v1): digitalni potpis (XAdES) se NE provjerava. Uvoz je
+ *   ručan i korisnik potvrđuje svaki dokument u pregledu prije spremanja;
+ *   provjera potpisa ostaje za drugi krug.
  */
 
 import {
