@@ -614,7 +614,53 @@ BEGIN
   PERFORM pg_temp.expect_denied('67 zastavica — viewer je NE smije postaviti sebi (trigger)', u_viewer,
     format('UPDATE public.project_members SET can_see_investor_price = true WHERE project_id = %L AND user_id = %L', p1, u_viewer));
 
+  -- ---- 11. korak E: troškovi na potvrdu ------------------------------------
+  -- Voditelj smije upisati SAMO `pending` trošak, i to na svoje ime.
+  PERFORM pg_temp.expect_ok('68 trošak INSERT pending — member prolazi', u_member,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''pending'')', u_member, u_member, p1));
+  PERFORM pg_temp.expect_denied('69 trošak INSERT approved — member odbijen', u_member,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''approved'')', u_member, u_member, p1));
+  PERFORM pg_temp.expect_denied('70 trošak INSERT — worker odbijen', u_worker,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''pending'')', u_worker, u_worker, p1));
+  PERFORM pg_temp.expect_denied('71 trošak INSERT — investor odbijen', u_investor,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''pending'')', u_investor, u_investor, p1));
+  PERFORM pg_temp.expect_denied('72 trošak INSERT — viewer odbijen', u_viewer,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''pending'')', u_viewer, u_viewer, p1));
+  PERFORM pg_temp.expect_ok('73 trošak INSERT approved — vlasnik prolazi', u_owner,
+    format('INSERT INTO public.expenses (user_id, submitted_by, project_id, amount, description, type, date, status) VALUES (%L, %L, %L, 10, ''rwm'', ''expense'', now(), ''approved'')', u_owner, u_owner, p1));
+
+  -- Polja pregleda (`status`, `rejection_reason`, `reviewed_by/at`) smije
+  -- mijenjati SAMO RPC. Mehanizam C nije potreban: RLS voditelju PUŠTA vlastiti
+  -- redak, što test 74 i dokazuje (isti redak, drugi stupac → prolazi). Zato
+  -- odbijanje u 75 može doći isključivo od trigera.
+  PERFORM pg_temp.expect_ok('74 vlastiti pending trošak — member smije mijenjati NE-review stupac (dokaz da redak prolazi RLS)', u_member,
+    format('UPDATE public.expenses SET description = ''izmijenjeno'' WHERE id = %L', e1));
+  PERFORM pg_temp.expect_denied('75 status na vlastitom trošku — member odbijen (trigger, redak mu je dostupan)', u_member,
+    format('UPDATE public.expenses SET status = ''approved'' WHERE id = %L', e1));
+  PERFORM pg_temp.expect_denied('76 status izravno — odbijen i vlasniku (trigger; jedini put je RPC)', u_owner,
+    format('UPDATE public.expenses SET status = ''approved'' WHERE id = %L', e1));
+
+  -- Dopušteni put: review_project_expense.
+  PERFORM pg_temp.expect_ok('77 review_project_expense approve — vlasnik prolazi', u_owner,
+    format('SELECT public.review_project_expense(%L, ''approve'')', e1));
+  PERFORM pg_temp.expect_ok('78 review_project_expense reject — vlasnik prolazi (razlog se čuva)', u_owner,
+    format('SELECT public.review_project_expense(%L, ''reject'', ''nedostaje račun'')', e1));
+  PERFORM pg_temp.expect_denied('79 review_project_expense — member odbijen', u_member,
+    format('SELECT public.review_project_expense(%L, ''approve'')', e1));
+  PERFORM pg_temp.expect_denied('80 review_project_expense — worker odbijen', u_worker,
+    format('SELECT public.review_project_expense(%L, ''approve'')', e1));
+  PERFORM pg_temp.expect_denied('81 review_project_expense — investor odbijen', u_investor,
+    format('SELECT public.review_project_expense(%L, ''approve'')', e1));
+  PERFORM pg_temp.expect_denied('82 review_project_expense — viewer odbijen', u_viewer,
+    format('SELECT public.review_project_expense(%L, ''approve'')', e1));
+
+  -- NAMJERNO IZOSTAVLJENO: utjecaj pending/rejected troška na saldo izvora.
+  -- Ovaj paket ne učitava balance motor (trigeri nad `expenses`, sidra,
+  -- recompute). Provjera postoji i zelena je u balance paketu:
+  -- supabase/tests/balance/10_scenarios.sql, scenariji E1–E6.
+
 END;
+
 $$;
 
 DO $$
