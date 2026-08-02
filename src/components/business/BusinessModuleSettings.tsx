@@ -33,18 +33,17 @@ export const BusinessModuleSettings = () => {
     setLoading(true);
     supabase
       .from('business_profiles')
-      .select('industry_type, enabled_modules, theme_color')
+      .select('industry_type, enabled_modules')
       .eq('id', activeBusinessProfileId)
       .single()
       .then(({ data }) => {
         if (data) {
           const it = (data as any).industry_type as IndustryType || 'other';
           const em = (data as any).enabled_modules as string[] || [];
-          const tc = (data as any).theme_color as BusinessTheme || 'ocean-blue';
           setIndustryType(it);
           setEnabledModules(em.length > 0 ? em as ModuleId[] : getDefaultModules(it));
-          setThemeColor(tc);
         }
+
         setLoading(false);
       });
   }, [activeBusinessProfileId, user]);
