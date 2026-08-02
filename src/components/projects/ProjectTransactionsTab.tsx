@@ -205,6 +205,7 @@ export const ProjectTransactionsTab = ({
   const [editCollaboratorId, setEditCollaboratorId] = useState<string | null>(null);
   const [editLinkedAdvanceIds, setEditLinkedAdvanceIds] = useState<string[]>([]);
 
+  const [rejectReason, setRejectReason] = useState('');
   const [filterDateOpen, setFilterDateOpen] = useState(false);
   const [addDateOpen, setAddDateOpen] = useState(false);
   const [editDateOpen, setEditDateOpen] = useState(false);
@@ -222,7 +223,8 @@ export const ProjectTransactionsTab = ({
   // F8–F10: viewer is strictly read-only (no pending either); worker manages only own work.
   // Approved write: manager (incl. owner) or regular member.
   const canAddTransaction = isManager || userRole === 'member';
-  const needsApproval = false;
+  // Korak E: voditeljev upis ide na potvrdu vlasniku i ne dira saldo do odobrenja.
+  const needsApproval = !isManager && userRole === 'member';
 
   const resetForm = () => {
     setExpenseType('expense');
@@ -320,15 +322,18 @@ export const ProjectTransactionsTab = ({
   };
 
   const handleReject = (transactionId: string) => {
+    setRejectReason('');
     setTransactionToReject(transactionId);
     setRejectDialogOpen(true);
   };
 
   const confirmReject = async () => {
     if (transactionToReject) {
-      await rejectTransaction(transactionToReject);
+      await rejectTransaction(transactionToReject, rejectReason.trim() || undefined);
       setRejectDialogOpen(false);
       setTransactionToReject(null);
+      setRejectReason('');
+      onRefetch();
     }
   };
 
@@ -588,7 +593,7 @@ export const ProjectTransactionsTab = ({
           {needsApproval && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <AlertCircle className="w-4 h-4" />
-              {t('projects.viewerNote', 'Vaše transakcije zahtijevaju odobrenje člana')}
+              {t('projects.memberApprovalNote')}
             </div>
           )}
           <Button
@@ -768,7 +773,7 @@ export const ProjectTransactionsTab = ({
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('projects.rejectTransactionAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -782,13 +787,23 @@ export const ProjectTransactionsTab = ({
               {t('projects.confirmRejectTransaction', 'Jeste li sigurni da želite odbiti ovu transakciju?')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">{t('projects.rejectReasonLabel')}</Label>
+            <Textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder={t('projects.rejectReasonPlaceholder')}
+              rows={3}
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmReject}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('common.delete')}
+              {t('projects.rejectTransactionAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
