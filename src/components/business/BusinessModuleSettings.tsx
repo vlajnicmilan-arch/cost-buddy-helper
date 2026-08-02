@@ -24,7 +24,7 @@ export const BusinessModuleSettings = () => {
   const { user } = useAuth();
   const [industryType, setIndustryType] = useState<IndustryType>('other');
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
-  const [themeColor, setThemeColor] = useState<BusinessTheme>('ocean-blue');
+  const [loading, setLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
