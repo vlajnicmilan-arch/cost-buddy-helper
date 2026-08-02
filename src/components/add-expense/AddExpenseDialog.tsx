@@ -1393,6 +1393,11 @@ export const AddExpenseDialog = ({
               krugPrivacy={krugPrivacy}
               onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
               showKrugSelector={!effectiveBusinessProfileId}
+              extraImportSlot={
+                effectiveBusinessProfileId ? (
+                  <EracunImportButton onParsed={applyEracunDraft} disabled={isSaving || scanning} />
+                ) : null
+              }
               onSubmit={handleSubmit}
             />
           )}
