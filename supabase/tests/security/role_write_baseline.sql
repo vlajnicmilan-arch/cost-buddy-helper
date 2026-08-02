@@ -4434,8 +4434,11 @@ CREATE POLICY "hide_soft_deleted" ON public.expenses AS RESTRICTIVE FOR SELECT T
 DROP TRIGGER IF EXISTS trg_guard_expense_review_writes ON public.expenses;
 CREATE TRIGGER trg_guard_expense_review_writes BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION guard_expense_review_writes();
 
--- Korak E: EXECUTE za `authenticated` (produkcija ih ima; CI shim skida samo
--- anon+PUBLIC, pa ovi grantovi ostaju na snazi).
-GRANT EXECUTE ON FUNCTION public.is_income_source_member(uuid, uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_income_source_owner(uuid, uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.review_project_expense(uuid, text, text) TO authenticated;
+-- EXECUTE za `authenticated` na svim funkcijama iz ovog baselinea.
+-- U produkciji `authenticated` ima EXECUTE (naslijeđeno od PUBLIC); posebnim
+-- migracijama skinut je samo `anon`. U CI-ju to isto radi secdef_anon_shim.sql,
+-- koji se pokreće NAKON ovog fajla i skida anon+PUBLIC — pa ovaj grant ostaje
+-- jedini put i vjerno reproducira produkcijsko stanje. Bez njega bi provjere
+-- padale na "permission denied for function", što harness prijavljuje kao
+-- SCHEMA BUG (a ne kao potvrdu zaštite).
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
