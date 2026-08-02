@@ -115,7 +115,13 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Snapshot migration-added functions (SECDEF anon gate, 2/2)
+        # Funkcije koje dolaze iz migracija — jedini skup koji shim NE dira,
+        # pa invarijanta stvarno pada kad migracija ostavi anon-izvršiv SECDEF.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/ci_snapshot_post.sql
+
       - name: Run balance regression suite (setup + scenarios in one session)
+
         run: |
           set -euo pipefail
           # 00_setup.sql opens BEGIN + SAVEPOINT before_scenarios; 10_scenarios.sql
