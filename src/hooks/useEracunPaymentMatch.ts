@@ -52,6 +52,14 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
   const [learnedIbans, setLearnedIbans] = useState<LearnedIban[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const matchInvoices = useMemo(() => invoices.map(toMatchInvoice), [invoices]);
+  const fetchWindow = useMemo(
+    () => paymentFetchWindow(matchInvoices, 'out'),
+    [matchInvoices],
+  );
+
+
+
   const load = useCallback(async () => {
     if (!authReady || !user) return;
     // Prozor dolazi iz motora (`paymentFetchWindow`) — sidren na račune, ne na
