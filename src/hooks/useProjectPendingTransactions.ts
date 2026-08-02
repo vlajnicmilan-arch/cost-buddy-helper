@@ -106,7 +106,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         body: { expense_id: transactionId, action: 'reviewed', decision: 'approve' },
       });
 
-      setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
+      await fetchPending();
       showSuccess(t('projects.transactionApproved', 'Transakcija odobrena'));
     } catch (error) {
       console.error('Error approving transaction:', error);
@@ -135,7 +135,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         },
       });
 
-      setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
+      await fetchPending();
       showSuccess(t('projects.transactionRejected', 'Transakcija odbijena'));
     } catch (error) {
       console.error('Error rejecting transaction:', error);
