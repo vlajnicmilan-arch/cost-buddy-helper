@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 // We no longer ship a Service Worker (the legacy PWA SW was caching a stale
 // bundle and breaking the Capacitor APK on /setup). The local stub keeps the
 // existing update UI happy without registering anything.
