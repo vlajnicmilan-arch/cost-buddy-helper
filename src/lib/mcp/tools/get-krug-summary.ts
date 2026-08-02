@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 export default defineTool({
   name: "get_krug_summary",
@@ -33,7 +34,8 @@ export default defineTool({
         .select("amount,type")
         .in("payment_source", srcIds)
         .gte("date", since)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .in("status", COUNTED_EXPENSE_STATUSES);
       for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
     }
     const result = {
