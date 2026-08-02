@@ -36,6 +36,8 @@ export interface MatchInvoice {
   readonly invoiceNumber: string;
   readonly counterpartyName: string | null;
   readonly counterpartyOib: string | null;
+  /** Poziv na broj s računa (`HR00 345-3-1`). */
+  readonly paymentReference?: string | null;
   readonly totalAmount: number;
   readonly settledAmount: number | null;
   readonly issueDate: string | null;
