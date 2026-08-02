@@ -1903,27 +1903,6 @@ RELEASE SAVEPOINT s_g5;
 -- E — Korak E: pending / rejected troškovi ne ulaze u saldo
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION pg_temp.mk_expense_status(
-  p_type text,
-  p_amount numeric,
-  p_src uuid,
-  p_date timestamptz,
-  p_status text
-) RETURNS uuid LANGUAGE plpgsql AS $$
-DECLARE v_id uuid := gen_random_uuid();
-BEGIN
-  INSERT INTO public.expenses (
-    id, user_id, type, amount, payment_source, date, status, description, category
-  ) VALUES (
-    v_id,
-    (SELECT val FROM _bfix WHERE key='user'),
-    p_type, p_amount,
-    CASE WHEN p_src IS NULL THEN NULL ELSE 'custom:' || p_src::text END,
-    p_date, p_status::public.transaction_status, 'harness', 'harness'
-  );
-  RETURN v_id;
-END;
-$$;
 
 -- E1 — pending trošak na neusidrenom izvoru NE mijenja saldo
 ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e1;
