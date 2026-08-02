@@ -35,7 +35,13 @@ export const filterCountedExpenses = <T extends { status?: string | null }>(rows
  * Applies the counted-status filter to a PostgREST query builder.
  * Typed loosely on purpose — the same call site shape is used for
  * `supabase.from('expenses').select(...)` chains everywhere.
+ *
+ * NULL mora proći: motor salda (`COALESCE(e.status,'approved')`) i klijentski
+ * `isCountedExpenseRow` tretiraju redak bez statusa kao `approved`. SQL `IN`
+ * ne hvata NULL, pa bi `.in('status', [...])` tiho odbacio takve retke —
+ * odstupanje, ne pravilo. Zato `.or(...)`.
  */
-export const applyCountedFilter = <T extends { in: (col: string, values: readonly unknown[]) => T }>(
+export const applyCountedFilter = <T extends { or: (filter: string) => T }>(
   query: T,
-): T => query.in('status', COUNTED_EXPENSE_STATUSES as readonly string[]);
+): T => query.or(`status.is.null,${COUNTED_EXPENSE_STATUSES.map((s) => `status.eq.${s}`).join(',')}`);
+
