@@ -63,7 +63,8 @@ describe('eRačun — smjer po OIB-u', () => {
 
 describe('eRačun — dvostruko kodiran tekst', () => {
   it('popravlja hrvatske dijakritike', () => {
-    expect(fixMojibake("graÄ'evinski")).toBe('građevinski');
+    // Bajtovi iz stvarne datoteke: đ (C4 91) pročitan kao cp1252 → "Ä" + U+2018.
+    expect(fixMojibake('gra\u00C4\u2018evinski')).toBe('građevinski');
     expect(fixMojibake('GaliÄ‡')).toBe('Galić');
   });
 
