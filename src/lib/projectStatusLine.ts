@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { ProjectStatus } from '@/types/project';
+import type { RemainderLevel } from './projectCostBaseline';
 
 export type StatusLineTone = 'info' | 'success' | 'muted' | 'warning';
 
@@ -9,12 +10,19 @@ export interface StatusLineInput {
   end_date?: string | null;
   income: number;
   spent: number;
-  budget: number;
-  margin: number | null;
+  /** Osnovica iz getCostBaseline (planirani trošak faza ili ugovoreno). */
+  baseline: number;
+  /** Preostalo kao udio osnovice; null kad osnovice nema. */
+  remainderRatio: number | null;
   txCount: number;
-  /** Health from ActiveProjectsStrip — used only to suppress when AI warning will render. */
-  health: 'green' | 'yellow' | 'red';
+  /**
+   * Razina iz `getHealthLevel` — jedini izvor istine za ton. Status line se
+   * skriva kad je razina 'attention'/'critical' jer tada kartica prikazuje
+   * upozorenje iznad.
+   */
+  level: RemainderLevel;
 }
+
 
 export interface StatusLine {
   text: string;
