@@ -13,7 +13,14 @@
  * The allowlist is a frozen snapshot: a NEW unfiltered read makes this test
  * fail, which is the whole point — the rule must not leak on the next change.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+/**
+ * Ovi testovi skeniraju cijeli `src/` (i migracije) sa sinkronim fs pozivima,
+ * pa im default od 5 s zna isteći u punom prolazu na opterećenom stroju.
+ * Timeout je zadan u datoteci da rezultat ne ovisi o načinu pokretanja.
+ */
+vi.setConfig({ testTimeout: 30000, hookTimeout: 30000 });
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import allowlist from './countedExpenseAllowlist.json';
