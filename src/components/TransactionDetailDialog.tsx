@@ -25,6 +25,8 @@ import { useTranslation } from 'react-i18next';
 import { TransactionNotesThread } from './TransactionNotesThread';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { useNativeShare } from '@/hooks/useNativeShare';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
+
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
