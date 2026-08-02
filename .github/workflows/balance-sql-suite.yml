@@ -84,7 +84,13 @@ jobs:
       - name: Apply curated balance baseline
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/baseline.sql
 
+      - name: Snapshot pre-migration functions (SECDEF anon gate, 1/2)
+        # Sve prije migracija dolazi iz kuriranog baselinea → izuzeto iz
+        # invarijante. Vidi supabase/tests/security/ci_snapshot_pre.sql.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/ci_snapshot_pre.sql
+
       - name: Apply balance-relevant migrations in order
+
         run: |
           set -euo pipefail
           # Read whitelist, strip trailing `# comments`, skip blank lines.
