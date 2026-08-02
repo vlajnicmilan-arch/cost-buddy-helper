@@ -899,7 +899,7 @@ CREATE TABLE IF NOT EXISTS public.milestone_budget_revisions (
   user_id uuid NOT NULL,
   previous_amount numeric DEFAULT 0 NOT NULL,
   new_amount numeric DEFAULT 0 NOT NULL,
-  delta numeric DEFAULT (new_amount - previous_amount),
+  delta numeric GENERATED ALWAYS AS ((new_amount - previous_amount)) STORED,
   reason text NOT NULL,
   change_type milestone_revision_type,
   coverage milestone_revision_coverage DEFAULT 'increase_total'::milestone_revision_coverage NOT NULL,
