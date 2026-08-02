@@ -1712,6 +1712,89 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
   PRIMARY KEY (id)
 );
 -- functions (closure of policy/trigger/default dependencies)
+CREATE OR REPLACE FUNCTION public.set_worker_hourly_rate(p_worker_id uuid, p_rate numeric, p_effective_from date)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_caller uuid := auth.uid();
+  v_project_id uuid;
+  v_owner_id uuid;
+  v_conflict_payout uuid;
+  v_conflict_end date;
+BEGIN
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'set_worker_hourly_rate: unauthenticated' USING ERRCODE = '42501';
+  END IF;
+  IF p_rate < 0 THEN
+    RAISE EXCEPTION 'set_worker_hourly_rate: rate negative' USING ERRCODE = '22023';
+  END IF;
+  IF p_effective_from IS NULL THEN
+    RAISE EXCEPTION 'set_worker_hourly_rate: effective_from required' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT project_id INTO v_project_id
+    FROM public.project_workers WHERE id = p_worker_id FOR UPDATE;
+  IF v_project_id IS NULL THEN
+    RAISE EXCEPTION 'set_worker_hourly_rate: worker not found' USING ERRCODE = 'P0002';
+  END IF;
+  SELECT user_id INTO v_owner_id FROM public.projects WHERE id = v_project_id;
+  IF v_owner_id <> v_caller THEN
+    RAISE EXCEPTION 'set_worker_hourly_rate: not project owner' USING ERRCODE = '42501';
+  END IF;
+
+  -- Collision: latest non-voided payout for this worker whose period_end >= effective_from
+  SELECT id, period_end INTO v_conflict_payout, v_conflict_end
+  FROM public.project_worker_payouts
+  WHERE worker_id = p_worker_id
+    AND status <> 'voided'
+    AND period_end >= p_effective_from
+  ORDER BY period_end DESC
+  LIMIT 1;
+
+  IF v_conflict_payout IS NOT NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = '22023',
+      MESSAGE = format(
+        'rate_change_collides_with_payout|%s|%s',
+        v_conflict_payout::text,
+        (v_conflict_end + 1)::text
+      );
+  END IF;
+
+  PERFORM set_config('app.allow_rate_write', 'on', true);
+
+  INSERT INTO public.project_worker_rate_history (worker_id, rate, effective_from, created_by)
+  VALUES (p_worker_id, p_rate, p_effective_from, v_caller)
+  ON CONFLICT (worker_id, effective_from) DO UPDATE
+    SET rate = EXCLUDED.rate, created_by = EXCLUDED.created_by, created_at = now();
+
+  UPDATE public.project_workers
+     SET hourly_rate = public.rate_at(p_worker_id, CURRENT_DATE)
+   WHERE id = p_worker_id;
+
+  RETURN jsonb_build_object(
+    'worker_id',      p_worker_id,
+    'rate',           p_rate,
+    'effective_from', p_effective_from,
+    'current_rate',   public.rate_at(p_worker_id, CURRENT_DATE)
+  );
+END;
+$function$;
+CREATE OR REPLACE FUNCTION public.rate_at(_worker_id uuid, _d date)
+ RETURNS numeric
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT rate
+  FROM public.project_worker_rate_history
+  WHERE worker_id = _worker_id AND effective_from <= _d
+  ORDER BY effective_from DESC
+  LIMIT 1
+$function$;
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2038,6 +2121,19 @@ AS $function$
       AND role <> 'investor'
   );
 $function$;
+-- grants
+GRANT EXECUTE ON FUNCTION public.set_worker_hourly_rate(p_worker_id uuid, p_rate numeric, p_effective_from date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rate_at(_worker_id uuid, _d date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_project_role(_project_id uuid, _user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_projects_subscriber(_user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_entitlement(_user_id uuid, _module text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_write_module(_user uuid, _module text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(_user_id uuid, _role app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_project_member(_project_id uuid, _user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_project_owner(_project_id uuid, _user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.projects_downgrade_ok(_project_id uuid, _user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_write_project_progress(_project_id uuid, _user_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_project_participant_active(_project_id uuid, _user_id uuid) TO authenticated;
 -- RLS + policies for matrix tables
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects FORCE ROW LEVEL SECURITY;
