@@ -118,6 +118,24 @@ ne treba nijedan secret:
   baselinea, inače njegove SECDEF funkcije ostanu anon-izvršive)
 - trenutni obuhvat: **87 provjera** (koraci D, D2 i E)
 
+#### SECDEF anon gate (zašto redoslijed nije kozmetika)
+
+`secdef_anon_invariant.sql` je do 2.8.2026 bio zelen po definiciji: `secdef_anon_shim.sql`
+je prije njega dinamički revokirao **svaku** SECDEF funkciju, uključujući one koje su
+donijele migracije. Zato nije uhvatio produkcijsku rupu iz koraka E
+(`review_project_expense`, `auto_reject_expired_pending_expenses` izvršive `anon`-u).
+
+Sada CI slijed razdvaja dva skupa funkcija:
+
+1. `ci_snapshot_pre.sql` (nakon balance baselinea) — kurirane funkcije, izuzete.
+2. migracije → `ci_snapshot_post.sql` — razlika = funkcije iz migracija.
+3. `ci_prod_revokes.sql` — doslovan replay `REVOKE ... FROM anon` naredbi iz migracija.
+4. `secdef_anon_shim.sql` — čisti SAMO kurirane funkcije, migracijske ne dira.
+5. `secdef_anon_invariant.sql` — pada ako je ijedna funkcija iz migracije anon-izvršiva.
+
+Dokazano negativnim testom: bez hotfix migracije `20260802075553` invarijanta pada s
+točno te dvije funkcije.
+
 Korak E (troškovi na potvrdu) pokriven je provjerama 68–82: tko smije upisati
 `pending`/`approved` trošak, da polja pregleda mijenja isključivo
 `review_project_expense`, i tko smije taj RPC pozvati. Utjecaj `pending`/

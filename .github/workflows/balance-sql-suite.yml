@@ -84,7 +84,13 @@ jobs:
       - name: Apply curated balance baseline
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/balance/baseline.sql
 
+      - name: Snapshot pre-migration functions (SECDEF anon gate, 1/2)
+        # Sve prije migracija dolazi iz kuriranog baselinea → izuzeto iz
+        # invarijante. Vidi supabase/tests/security/ci_snapshot_pre.sql.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/ci_snapshot_pre.sql
+
       - name: Apply balance-relevant migrations in order
+
         run: |
           set -euo pipefail
           # Read whitelist, strip trailing `# comments`, skip blank lines.
@@ -109,6 +115,11 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
           done
 
+      - name: Snapshot migration-added functions (SECDEF anon gate, 2/2)
+        # Funkcije koje dolaze iz migracija — jedini skup koji shim NE dira,
+        # pa invarijanta stvarno pada kad migracija ostavi anon-izvršiv SECDEF.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/ci_snapshot_post.sql
+
       - name: Run balance regression suite (setup + scenarios in one session)
         run: |
           set -euo pipefail
@@ -124,10 +135,17 @@ jobs:
           echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
 
 
+      - name: Replay production anon REVOKEs (only for functions present in CI)
+        # Doslovan replay `REVOKE EXECUTE ... FROM anon` naredbi iz
+        # supabase/migrations/*.sql. Nije popis iznimaka: funkcija koju
+        # nijedna migracija ne revokira ostaje pod invarijantom.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/ci_prod_revokes.sql
+
       - name: Apply role-write security baseline (snapshot of live schema)
         # Snimka žive sheme (tablice, enumi, RLS politike, trigeri i closure
         # funkcija) potrebna za matricu prava pisanja po ulogama projekta.
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/role_write_baseline.sql
+
 
       - name: SECDEF anon CI shim (dynamic revoke)
         # CI-only. The curated baseline doesn't replay production REVOKE
