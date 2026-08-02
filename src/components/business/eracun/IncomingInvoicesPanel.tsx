@@ -335,6 +335,13 @@ export const IncomingInvoicesPanel = () => {
         saving={savingPayment}
         onConfirm={handleConfirmPaid}
       />
+
+      <MarkCollectedDialog
+        invoice={collectTarget}
+        onOpenChange={(open) => !open && setCollectTarget(null)}
+        saving={savingPayment}
+        onConfirm={handleConfirmCollected}
+      />
     </div>
   );
 };
