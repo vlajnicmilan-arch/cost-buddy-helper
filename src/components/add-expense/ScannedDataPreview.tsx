@@ -101,8 +101,11 @@ export const ScannedDataPreview = ({
   budgets,
   selectedProjectId,
   onSelectedProjectIdChange,
+  selectedMilestoneId = null,
+  onSelectedMilestoneIdChange,
   selectedBudgetId,
   onSelectedBudgetIdChange,
+
   expenseNature,
   onExpenseNatureChange,
   totalWithTip,
