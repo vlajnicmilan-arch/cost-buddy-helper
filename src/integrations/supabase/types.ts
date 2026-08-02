@@ -6347,6 +6347,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      can_write_milestone_children: {
+        Args: { _milestone_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_write_module: {
         Args: { _module: string; _user: string }
         Returns: boolean
@@ -6615,6 +6619,14 @@ export type Database = {
       }
       is_income_source_owner: {
         Args: { _source_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_milestone_project_member: {
+        Args: { _milestone_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_milestone_project_owner: {
+        Args: { _milestone_id: string; _user_id: string }
         Returns: boolean
       }
       is_payment_source_member: {
@@ -6942,6 +6954,39 @@ export type Database = {
           p_reason?: string
         }
         Returns: Json
+      }
+      update_milestone_progress: {
+        Args: { p_milestone_id: string; p_patch: Json }
+        Returns: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          budget: number | null
+          color: string | null
+          completed_at: string | null
+          created_at: string | null
+          deleted_at: string | null
+          depends_on_milestone_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string | null
+          investor_price: number | null
+          is_contingency: boolean | null
+          is_vtr: boolean | null
+          name: string | null
+          project_id: string | null
+          reminder_days_before: number | null
+          sort_order: number | null
+          source_decision_id: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_milestones_scoped"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_active_issue: {
         Args: {
