@@ -425,6 +425,8 @@ DECLARE
   m1 uuid := (SELECT val FROM _rwm WHERE key='m1');
   m2 uuid := (SELECT val FROM _rwm WHERE key='m2');
   w1 uuid := (SELECT val FROM _rwm WHERE key='w1');
+  e1 uuid := (SELECT val FROM _rwm WHERE key='e1');
+
   s_status text;
   s_rpc_status text;
 BEGIN
