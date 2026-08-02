@@ -27,7 +27,7 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
       .from('business_profiles')
       .select('id, company_name, legal_form, is_active')
       .eq('user_id', user.id)
-      .order('is_active', { ascending: false })
+      .order('company_name', { ascending: true })
       .then(({ data }) => {
         if (data) setProfiles(data);
       });

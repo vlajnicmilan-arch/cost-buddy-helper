@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, Loader2, Sparkles, Plus, ArrowLeft, Trash2, Check } from 'lucide-react';
+import { Building2, Save, Loader2, Sparkles, Plus, ArrowLeft, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +33,6 @@ interface BusinessProfile {
   mbs: string;
   court_registry: string;
   legal_form: string;
-  is_active: boolean;
 }
 
 const emptyProfile: BusinessProfile = {
@@ -55,7 +54,6 @@ const emptyProfile: BusinessProfile = {
   mbs: '',
   court_registry: '',
   legal_form: '',
-  is_active: false,
 };
 
 interface BusinessProfileDialogProps {
@@ -90,8 +88,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         .from('business_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .order('is_active', { ascending: false })
-        .order('created_at', { ascending: true });
+        .order('company_name', { ascending: true });
 
       if (error) throw error;
       setProfiles(
@@ -115,36 +112,12 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           mbs: d.mbs || '',
           court_registry: d.court_registry || '',
           legal_form: d.legal_form || '',
-          is_active: d.is_active ?? false,
         }))
       );
     } catch (error) {
       console.error('Error loading business profiles:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSetActive = async (profileId: string) => {
-    if (!user) return;
-    try {
-      // Deactivate all
-      await supabase
-        .from('business_profiles')
-        .update({ is_active: false })
-        .eq('user_id', user.id);
-
-      // Activate selected
-      await supabase
-        .from('business_profiles')
-        .update({ is_active: true })
-        .eq('id', profileId);
-
-      showSuccess(t('business.activated', 'Tvrtka postavljena kao aktivna'));
-      loadProfiles();
-    } catch (error) {
-      console.error('Error setting active profile:', error);
-      showError(t('errors.generic', 'Došlo je do greške'));
     }
   };
 
@@ -171,7 +144,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   };
 
   const handleNew = () => {
-    setProfile({ ...emptyProfile, is_active: profiles.length === 0 });
+    setProfile({ ...emptyProfile });
     setView('edit');
   };
 
