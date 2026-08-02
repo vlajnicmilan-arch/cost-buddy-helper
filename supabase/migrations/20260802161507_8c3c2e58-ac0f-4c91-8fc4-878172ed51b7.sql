@@ -1,0 +1,1 @@
+ALTER TABLE public.business_profiles ALTER COLUMN enabled_modules SET DEFAULT ARRAY['projects']::text[];

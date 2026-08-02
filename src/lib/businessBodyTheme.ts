@@ -16,6 +16,14 @@
 export const BUSINESS_THEME_PREFIX = 'business-theme-';
 export const DEFAULT_BUSINESS_THEME = 'ocean-blue';
 
+/**
+ * Jedini izgled biznis moda (kolovoz 2026). `business_profiles.theme_color`
+ * se i dalje čuva u bazi, ali se NE koristi za prikaz — svaka tvrtka izgleda
+ * isto (Onyx). Osobni mod ovo ne dira.
+ */
+export const FORCED_BUSINESS_THEME = 'premium-dark';
+
+
 /** Business themes that define a full, inherently dark palette. */
 export const DARK_BUSINESS_THEMES = new Set(['premium-dark']);
 
