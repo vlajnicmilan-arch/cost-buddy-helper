@@ -16,6 +16,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
+import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 
@@ -65,13 +66,29 @@ export const IncomingInvoicesPanel = () => {
           onUndo: () =>
             undoBatch(batchId)
               .then((removed) => showSuccess(t('eracun.import.undone', 'Poništeno: {{n}}', { n: removed })))
-              .catch(() => showError(t('eracun.import.undoFailed', 'Poništavanje nije uspjelo.'))),
+              .catch((err) => {
+              console.error('[eRacun] undoBatch failed', err);
+              showError(t('eracun.import.undoFailedDetailed', 'Poništavanje nije uspjelo: {{reason}}', {
+                reason: describeDbError(err, t('eracun.error.unknown', 'Nepoznata greška')),
+              }));
+            }),
         });
       } catch (err: any) {
+        console.error('[eRacun] saveBatch failed', err, { rows: rows.length });
         if (String(err?.code) === '23505') {
-          showError(t('eracun.import.duplicateServer', 'Neki od računa su već uvezeni.'));
+          showError(t('eracun.import.duplicateServer', 'Neki od računa su već uvezeni. ({{reason}})', {
+            reason: describeDbError(err),
+          }));
         } else {
-          showError(t('eracun.import.failed', 'Uvoz nije uspio.'));
+          const numbers = rows
+            .map((r: any) => r?.invoice_number)
+            .filter(Boolean)
+            .slice(0, 5)
+            .join(', ');
+          showError(t('eracun.import.failedDetailed', 'Uvoz nije uspio: {{reason}}{{where}}', {
+            reason: describeDbError(err, t('eracun.error.unknown', 'Nepoznata greška')),
+            where: numbers ? ` (${numbers})` : '',
+          }));
         }
         throw err;
       }
@@ -96,15 +113,37 @@ export const IncomingInvoicesPanel = () => {
             business_profile_id: activeBusinessProfileId,
           } as any,
         });
-        if (!created?.id) throw new Error('expense_not_created');
+        if (!created?.id) {
+          throw new Error(t('eracun.paid.expenseNotCreated', 'Trošak nije stvoren — spremanje je odbijeno.'));
+        }
         await markPaid(payTarget.id, created.id, paymentDate.toISOString());
         setPayTarget(null);
-      } catch {
-        showError(t('eracun.paid.failed', 'Bilježenje plaćanja nije uspjelo.'));
+      } catch (err) {
+        console.error('[eRacun] markPaid failed', err, { invoiceId: payTarget.id });
+        showError(t('eracun.paid.failedDetailed', 'Bilježenje plaćanja nije uspjelo: {{reason}}', {
+          reason: describeInvoiceDbError(err, {
+            supplier: payTarget.supplier_name,
+            invoiceNumber: payTarget.invoice_number,
+          }, t('eracun.error.unknown', 'Nepoznata greška')),
+        }));
       }
     });
     setSavingPayment(false);
   }, [payTarget, guard, addExpense, markPaid, activeBusinessProfileId, t]);
+
+  const handleDelete = useCallback(async (invoice: IncomingInvoice) => {
+    try {
+      await deleteInvoice(invoice.id);
+    } catch (err) {
+      console.error('[eRacun] deleteInvoice failed', err, { invoiceId: invoice.id });
+      showError(t('eracun.list.deleteFailed', 'Brisanje nije uspjelo: {{reason}}', {
+        reason: describeInvoiceDbError(err, {
+          supplier: invoice.supplier_name,
+          invoiceNumber: invoice.invoice_number,
+        }, t('eracun.error.unknown', 'Nepoznata greška')),
+      }));
+    }
+  }, [deleteInvoice, t]);
 
   const dueBadge = (invoice: IncomingInvoice) => {
     if (invoice.paid_at) {
@@ -197,7 +236,7 @@ export const IncomingInvoicesPanel = () => {
                     size="sm"
                     variant="ghost"
                     className="text-muted-foreground"
-                    onClick={() => guard(() => deleteInvoice(inv.id))}
+                    onClick={() => guard(() => handleDelete(inv))}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
