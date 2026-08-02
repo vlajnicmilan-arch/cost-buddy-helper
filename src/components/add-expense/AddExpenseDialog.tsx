@@ -36,8 +36,6 @@ import { validateAmountInput } from '@/lib/amountValidation';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
-import { EracunImportButton } from './EracunImportButton';
-import type { EracunExpenseDraft } from '@/lib/eracun/toExpenseDraft';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
@@ -614,23 +612,6 @@ export const AddExpenseDialog = ({
     } catch {}
   };
 
-  /**
-   * eRačun (UBL XML) → popunjava postojeći obrazac za trošak.
-   * Ne sprema ništa: korisnik pregleda, po potrebi mijenja datum i sam sprema
-   * (uključujući postojeću provjeru duplikata na submitu).
-   */
-  const applyEracunDraft = useCallback((draft: EracunExpenseDraft) => {
-    setType('expense');
-    if (draft.amount) setAmount(draft.amount);
-    if (draft.merchantName) handleMerchantChange(draft.merchantName);
-    setDescription(draft.description);
-    setExpenseDate(draft.date);
-    setNote((prev) => (prev.trim() ? `${prev} • ${draft.note}` : draft.note));
-    if (draft.items.length > 0) {
-      setItems(draft.items);
-      setShowItems(true);
-    }
-  }, [handleMerchantChange]);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1393,11 +1374,6 @@ export const AddExpenseDialog = ({
               krugPrivacy={krugPrivacy}
               onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
               showKrugSelector={!effectiveBusinessProfileId}
-              extraImportSlot={
-                effectiveBusinessProfileId ? (
-                  <EracunImportButton onParsed={applyEracunDraft} disabled={isSaving || scanning} />
-                ) : null
-              }
               onSubmit={handleSubmit}
             />
           )}

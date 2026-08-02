@@ -2166,6 +2166,96 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_invoices: {
+        Row: {
+          business_profile_id: string | null
+          created_at: string
+          currency: string
+          doc_type: string
+          due_date: string | null
+          fingerprint: string
+          iban: string | null
+          id: string
+          import_batch_id: string | null
+          invoice_number: string
+          issue_date: string | null
+          items: Json
+          note: string | null
+          paid_at: string | null
+          paid_expense_id: string | null
+          source_filename: string | null
+          supplier_name: string | null
+          supplier_oib: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+          vat_amount: number | null
+        }
+        Insert: {
+          business_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          doc_type: string
+          due_date?: string | null
+          fingerprint: string
+          iban?: string | null
+          id?: string
+          import_batch_id?: string | null
+          invoice_number: string
+          issue_date?: string | null
+          items?: Json
+          note?: string | null
+          paid_at?: string | null
+          paid_expense_id?: string | null
+          source_filename?: string | null
+          supplier_name?: string | null
+          supplier_oib: string
+          total_amount: number
+          updated_at?: string
+          user_id: string
+          vat_amount?: number | null
+        }
+        Update: {
+          business_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          doc_type?: string
+          due_date?: string | null
+          fingerprint?: string
+          iban?: string | null
+          id?: string
+          import_batch_id?: string | null
+          invoice_number?: string
+          issue_date?: string | null
+          items?: Json
+          note?: string | null
+          paid_at?: string | null
+          paid_expense_id?: string | null
+          source_filename?: string | null
+          supplier_name?: string | null
+          supplier_oib?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          vat_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_invoices_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incoming_invoices_paid_expense_id_fkey"
+            columns: ["paid_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installment_plans: {
         Row: {
           category: string

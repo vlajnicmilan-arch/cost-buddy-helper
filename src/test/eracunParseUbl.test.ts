@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { parseUbl } from '@/lib/eracun/parseUbl';
-import { toExpenseDraft } from '@/lib/eracun/toExpenseDraft';
 import { EracunParseError } from '@/lib/eracun/types';
 
 /**
@@ -161,16 +160,6 @@ describe('parseUbl — bankovne naknade (380, 8 stavki, bez PDV-a)', () => {
     expect(invoice.warnings).toEqual([]);
   });
 
-  it('mapira se u nacrt troška sa stavkama i podacima u napomeni', () => {
-    const draft = toExpenseDraft(invoice, '2026-08-02');
-    expect(draft.merchantName).toBe('Primjer banka d.d.');
-    expect(draft.amount).toBe('40.00');
-    expect(draft.date).toBe('2026-07-31');
-    expect(draft.items).toHaveLength(8);
-    expect(draft.note).toContain('Račun: 2026-0001-BANK');
-    expect(draft.note).toContain('OIB: 12345678901');
-    expect(draft.note).toContain('IBAN: HR1723600001101234565');
-  });
 });
 
 describe('parseUbl — leasing kamata (394, jedna stavka)', () => {
@@ -187,13 +176,6 @@ describe('parseUbl — leasing kamata (394, jedna stavka)', () => {
     expect(invoice.hrFiskPresent).toBe(true);
   });
 
-  it('nacrt koristi iznos s PDV-om i datum izdavanja', () => {
-    const draft = toExpenseDraft(invoice, '2026-08-02');
-    expect(draft.amount).toBe('150.00');
-    expect(draft.date).toBe('2026-07-01');
-    expect(draft.description).toBe('Primjer Leasing d.o.o. — LZ-2026-000456');
-    expect(draft.items[0]).toMatchObject({ name: 'Kamata po ugovoru o leasingu 07/2026', total_price: 120 });
-  });
 });
 
 describe('parseUbl — rubni slučajevi', () => {
