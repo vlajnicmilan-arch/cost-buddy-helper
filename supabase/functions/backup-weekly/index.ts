@@ -1,6 +1,6 @@
 // supabase/functions/backup-weekly/index.ts
 // Tjedni backup: exportira ključne tablice u CSV.gz, upload u PRIVATNI bucket `backups/YYYY-MM-DD/`.
-// Retencija: briše foldere starije od 8 tjedana.
+// Retencija: briše foldere starije od 30 dana.
 // Poziva se iz pg_cron nedjeljom 03:00 Europe/Zagreb.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
@@ -57,7 +57,10 @@ const TABLES = [
 ];
 
 const PAGE_SIZE = 1000;
-const RETENTION_WEEKS = 8;
+// Retencija: 30 dana (usklađeno s politikom privatnosti).
+const RETENTION_DAYS = 30;
+// Prozor mapa u kojem tražimo već prenesene priloge (tjedni ciklus + rezerva).
+const PRIOR_INDEX_FOLDERS = Math.ceil(RETENTION_DAYS / 7) + 1;
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -210,7 +213,7 @@ async function readManifest(supabase: any, folder: string): Promise<any | null> 
 /**
  * Delete pooled files that appear in no manifest within the retention window.
  * A user-deleted attachment therefore disappears from the pool at most
- * RETENTION_WEEKS after its last backup run.
+ * RETENTION_DAYS after its last backup run.
  */
 async function pruneOrphanFiles(supabase: any, keep: Set<string>) {
   const pooled: string[] = [];
@@ -247,7 +250,7 @@ async function backupStorage(
   // Index of what previous runs already stored: path -> manifest entry
   const folders = await listBackupFolders(supabase);
   const priorIndex = new Map<string, ManifestFile>();
-  for (const f of folders.slice(0, RETENTION_WEEKS + 1)) {
+  for (const f of folders.slice(0, PRIOR_INDEX_FOLDERS)) {
     const m = await readManifest(supabase, f);
     for (const entry of (m?.files ?? []) as ManifestFile[]) {
       const key = `${entry.bucket}::${entry.path}::${entry.size}::${entry.updated_at ?? ""}`;
@@ -419,8 +422,8 @@ Deno.serve(async (req) => {
         upsert: true,
       });
 
-    // Retencija: obriši foldere starije od 8 tjedana
-    const cutoff = new Date(Date.now() - RETENTION_WEEKS * 7 * 86400 * 1000);
+    // Retencija: obriši foldere starije od 30 dana
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * 86400 * 1000);
     const prune = await pruneOldFolders(supabase, cutoff);
 
     // Retencija priloga: iz spremišta ispada sve što nije ni u jednom
