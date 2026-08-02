@@ -308,6 +308,12 @@ DECLARE
   s_status text;
 BEGIN
   -- ---- 1. status faze -----------------------------------------------------
+  -- ZNANI NALAZ (02, 07, 09, 34, 53, 54 padaju): project_milestones ima SELECT
+  -- politiku samo za vlasnika ("Project owners can view milestones"). Postgres
+  -- primjenjuje SELECT politike i pri čitanju redaka za UPDATE/DELETE, pa
+  -- voditelj (member) nikad ne dohvati redak — politika "Managers can update
+  -- milestone progress" i checklist INSERT (koji radi EXISTS nad fazama) su
+  -- nedostižni. Testovi namjerno ostaju strogi dok se politika ne popravi.
   s_status := format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m1);
   PERFORM pg_temp.expect_ok('01 status faze — vlasnik prolazi', u_owner, s_status);
   PERFORM pg_temp.expect_ok('02 status faze — member (voditelj) prolazi', u_member, s_status);
