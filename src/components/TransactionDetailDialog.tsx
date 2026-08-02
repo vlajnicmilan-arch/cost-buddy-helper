@@ -754,12 +754,64 @@ export const TransactionDetailDialog = ({
                     </Button>
                   </div>
                 </>
+              ) : receiptMissing ? (
+                <div className="p-4 rounded-lg border border-dashed bg-muted/30 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Smartphone className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium">
+                        {t('transactions.receiptMissingTitle', 'Slika nije dostupna na ovom uređaju')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('transactions.receiptMissingDesc', 'Slika je spremljena samo lokalno pa je vjerojatno ostala na prethodnom uređaju ili je uklonjena pri ponovnoj instalaciji. Transakcija je netaknuta.')}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs"
+                    disabled={attachingReceipt}
+                    onClick={async () => {
+                      if (!expense?.receipt_url) return;
+                      setAttachingReceipt(true);
+                      try {
+                        const base64 = isNativeCamera ? await takePhoto() : await pickFromGallery();
+                        if (!base64) return;
+                        const localRef = expense.receipt_url.replace('local:', '');
+                        if (Capacitor.isNativePlatform()) {
+                          const fileName = localRef.split('/').pop() || `receipt_${expense.id}.jpg`;
+                          const saved = await LocalFileCache.saveReceiptImage(base64, fileName);
+                          if (!saved) throw new Error('save failed');
+                        } else {
+                          await LocalStorage.set(localRef, base64);
+                        }
+                        setFreshReceiptUrl(base64);
+                        setReceiptMissing(false);
+                        showSuccess(t('transactions.receiptReattached', 'Nova slika priložena'), { module: 'wallet' });
+                      } catch (e) {
+                        console.error('Reattach receipt error:', e);
+                        showError(t('common.error', 'Greška'), { module: 'wallet' });
+                      } finally {
+                        setAttachingReceipt(false);
+                      }
+                    }}
+                  >
+                    {attachingReceipt
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <Upload className="w-3.5 h-3.5" />}
+                    {t('transactions.attachNewReceipt', 'Priloži novu sliku')}
+                  </Button>
+                  <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" />
+                  <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" />
+                </div>
               ) : (
                 <div className="flex items-center justify-center p-6 rounded-lg border bg-muted/30">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mr-2" />
                   <span className="text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</span>
                 </div>
               )}
+
             </div>
           )}
 
