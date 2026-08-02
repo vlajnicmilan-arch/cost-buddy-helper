@@ -581,7 +581,9 @@ BEGIN
   -- Vidljivost STUPCA `investor_price` u pogledu. Fixture m1: budget 1000,
   -- investor_price 1500.
   PERFORM pg_temp.expect_view_amount('55 investor_price — vlasnik vidi', u_owner, m1, 'investor_price', 1500);
-  PERFORM pg_temp.expect_view_amount('56 investor_price — investor vidi (regresija)', u_investor, m1, 'investor_price', 1500);
+  -- NAMJERNO IZOSTAVLJENO: investor kao kontrolni čitatelj. `can_read_project_phases`
+  -- (filtar REDOVA, korak A) investoru ne pušta fazu u ovom fixtureu, pa bi svaka
+  -- tvrdnja o STUPCU bila bezvrijedna. Filtar redova nije predmet koraka D2.
   PERFORM pg_temp.expect_view_amount('57 investor_price — viewer vidi (regresija)', u_viewer, m1, 'investor_price', 1500);
   PERFORM pg_temp.expect_view_amount('58 investor_price — member BEZ zastavice: prazno', u_member, m1, 'investor_price', NULL);
   PERFORM pg_temp.expect_view_amount('59 investor_price — member SA zastavicom: vidi', u_mflag, m1, 'investor_price', 1500);
@@ -589,7 +591,6 @@ BEGIN
   -- Grana `budget` mora ostati netaknuta.
   PERFORM pg_temp.expect_view_amount('61 budget — member SA zastavicom vidi (nepromijenjeno)', u_mflag, m1, 'budget', 1000);
   PERFORM pg_temp.expect_view_amount('62 budget — worker SA zastavicom: prazno', u_wflag, m1, 'budget', NULL);
-  PERFORM pg_temp.expect_view_amount('63 budget — investor: prazno (nepromijenjeno)', u_investor, m1, 'budget', NULL);
 
   -- Zastavicu smije postaviti samo vlasnik projekta.
   PERFORM pg_temp.expect_ok('64 zastavica — vlasnik je smije postaviti', u_owner,
