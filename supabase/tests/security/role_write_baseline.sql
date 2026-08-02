@@ -2193,6 +2193,155 @@ CREATE UNIQUE INDEX IF NOT EXISTS krug_act_dedup_user_id_expense_id_act_client_r
 -- grants: prod ima ALL za anon+authenticated na svim public tablicama
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+-- ---- Korak D popravak: pogled + pomoćnici + RPC za napredak ----
+CREATE OR REPLACE FUNCTION public.can_read_project_phases(_project_id uuid, _user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT public.is_project_participant_active(_project_id, _user_id)
+     AND public.projects_downgrade_ok(_project_id, _user_id);
+$function$;
+CREATE OR REPLACE VIEW public.project_milestones_scoped AS
+ SELECT id,
+    project_id,
+    name,
+    description,
+    status,
+    start_date,
+    due_date,
+    completed_at,
+    actual_start_date,
+    actual_end_date,
+    sort_order,
+    color,
+    depends_on_milestone_id,
+    reminder_days_before,
+    is_contingency,
+    is_vtr,
+    source_decision_id,
+    deleted_at,
+    created_at,
+    updated_at,
+        CASE
+            WHEN get_project_role(project_id, auth.uid()) = ANY (ARRAY['owner'::text, 'viewer'::text, 'member'::text]) THEN budget
+            ELSE NULL::numeric
+        END AS budget,
+        CASE
+            WHEN get_project_role(project_id, auth.uid()) = ANY (ARRAY['owner'::text, 'viewer'::text, 'investor'::text]) THEN investor_price
+            ELSE NULL::numeric
+        END AS investor_price
+   FROM project_milestones m
+  WHERE deleted_at IS NULL AND can_read_project_phases(project_id, auth.uid());
+GRANT SELECT ON public.project_milestones_scoped TO authenticated;
+CREATE OR REPLACE FUNCTION public.can_write_milestone_children(_milestone_id uuid, _user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_milestones m
+    WHERE m.id = _milestone_id
+      AND public.can_write_project_progress(m.project_id, _user_id)
+  );
+$function$;
+CREATE OR REPLACE FUNCTION public.is_milestone_project_member(_milestone_id uuid, _user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_milestones m
+    WHERE m.id = _milestone_id
+      AND public.is_project_member(m.project_id, _user_id)
+  );
+$function$;
+CREATE OR REPLACE FUNCTION public.is_milestone_project_owner(_milestone_id uuid, _user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_milestones m
+    WHERE m.id = _milestone_id
+      AND public.is_project_owner(m.project_id, _user_id)
+  );
+$function$;
+CREATE OR REPLACE FUNCTION public.update_milestone_progress(p_milestone_id uuid, p_patch jsonb)
+ RETURNS project_milestones_scoped
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_project uuid;
+  v_row public.project_milestones_scoped%ROWTYPE;
+  k text;
+  c_allowed CONSTANT text[] := ARRAY[
+    'name','description','status','start_date','due_date',
+    'actual_start_date','actual_end_date','completed_at',
+    'sort_order','color','depends_on_milestone_id','reminder_days_before'
+  ];
+  c_forbidden CONSTANT text[] := ARRAY[
+    'budget','investor_price','is_vtr','is_contingency','source_decision_id',
+    'project_id','id','deleted_at','deleted_by'
+  ];
+BEGIN
+  IF p_patch IS NULL OR jsonb_typeof(p_patch) <> 'object' OR p_patch = '{}'::jsonb THEN
+    RAISE EXCEPTION 'milestone_patch_empty' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT m.project_id INTO v_project
+  FROM public.project_milestones m
+  WHERE m.id = p_milestone_id AND m.deleted_at IS NULL;
+
+  IF v_project IS NULL THEN
+    RAISE EXCEPTION 'milestone_not_found' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- Uloga + stanje pretplate vlasnika u jednom predikatu (owner|member).
+  IF NOT public.can_write_project_progress(v_project, auth.uid()) THEN
+    RAISE EXCEPTION 'milestone_progress_forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  FOR k IN SELECT jsonb_object_keys(p_patch) LOOP
+    IF k = ANY (c_forbidden) THEN
+      RAISE EXCEPTION 'milestone_amount_forbidden' USING ERRCODE = '42501';
+    ELSIF NOT (k = ANY (c_allowed)) THEN
+      RAISE EXCEPTION 'milestone_field_not_allowed: %', k USING ERRCODE = '22023';
+    END IF;
+  END LOOP;
+
+  UPDATE public.project_milestones m SET
+    name        = CASE WHEN p_patch ? 'name'        THEN p_patch->>'name'        ELSE m.name END,
+    description = CASE WHEN p_patch ? 'description' THEN p_patch->>'description' ELSE m.description END,
+    status      = CASE WHEN p_patch ? 'status'      THEN p_patch->>'status'      ELSE m.status END,
+    start_date        = CASE WHEN p_patch ? 'start_date'        THEN (p_patch->>'start_date')::date        ELSE m.start_date END,
+    due_date          = CASE WHEN p_patch ? 'due_date'          THEN (p_patch->>'due_date')::date          ELSE m.due_date END,
+    actual_start_date = CASE WHEN p_patch ? 'actual_start_date' THEN (p_patch->>'actual_start_date')::date ELSE m.actual_start_date END,
+    actual_end_date   = CASE WHEN p_patch ? 'actual_end_date'   THEN (p_patch->>'actual_end_date')::date   ELSE m.actual_end_date END,
+    completed_at      = CASE WHEN p_patch ? 'completed_at'      THEN (p_patch->>'completed_at')::timestamptz ELSE m.completed_at END,
+    sort_order        = CASE WHEN p_patch ? 'sort_order'        THEN (p_patch->>'sort_order')::int         ELSE m.sort_order END,
+    color             = CASE WHEN p_patch ? 'color'             THEN p_patch->>'color'                     ELSE m.color END,
+    depends_on_milestone_id = CASE WHEN p_patch ? 'depends_on_milestone_id' THEN (p_patch->>'depends_on_milestone_id')::uuid ELSE m.depends_on_milestone_id END,
+    reminder_days_before    = CASE WHEN p_patch ? 'reminder_days_before'    THEN (p_patch->>'reminder_days_before')::int    ELSE m.reminder_days_before END,
+    updated_at = now()
+  WHERE m.id = p_milestone_id;
+
+  -- Povrat kroz role-scoped pogled: pozivatelj dobiva samo ono što smije vidjeti.
+  SELECT * INTO v_row FROM public.project_milestones_scoped v WHERE v.id = p_milestone_id;
+  RETURN v_row;
+END;
+$function$;
+GRANT EXECUTE ON FUNCTION public.can_read_project_phases(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_write_milestone_children(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_milestone_project_member(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_milestone_project_owner(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_milestone_progress(uuid, jsonb) TO authenticated;
 -- RLS + policies for matrix tables
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.projects TO authenticated, anon;
@@ -2220,25 +2369,15 @@ CREATE POLICY "Project owner can delete milestone revisions" ON public.milestone
   USING (is_project_owner(project_id, auth.uid()));
 CREATE POLICY "Project owners can insert milestone revisions" ON public.milestone_budget_revisions AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((is_project_owner(project_id, auth.uid()) AND (user_id = auth.uid())));
-CREATE POLICY "members can view checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR SELECT TO public
-  USING ((EXISTS ( SELECT 1
-   FROM project_milestones m
-  WHERE ((m.id = milestone_checklist_items.milestone_id) AND is_project_member(m.project_id, auth.uid())))));
+CREATE POLICY "members can view checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR SELECT TO authenticated
+  USING (is_milestone_project_member(milestone_id, auth.uid()));
 CREATE POLICY "owner or manager can insert checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR INSERT TO authenticated
-  WITH CHECK (((auth.uid() = user_id) AND (EXISTS ( SELECT 1
-   FROM project_milestones m
-  WHERE ((m.id = milestone_checklist_items.milestone_id) AND can_write_project_progress(m.project_id, auth.uid()))))));
+  WITH CHECK (((auth.uid() = user_id) AND can_write_milestone_children(milestone_id, auth.uid())));
 CREATE POLICY "owner or manager can update checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR UPDATE TO authenticated
-  USING ((EXISTS ( SELECT 1
-   FROM project_milestones m
-  WHERE ((m.id = milestone_checklist_items.milestone_id) AND can_write_project_progress(m.project_id, auth.uid())))))
-  WITH CHECK ((EXISTS ( SELECT 1
-   FROM project_milestones m
-  WHERE ((m.id = milestone_checklist_items.milestone_id) AND can_write_project_progress(m.project_id, auth.uid())))));
-CREATE POLICY "owner or project owner can delete checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR DELETE TO public
-  USING (((auth.uid() = user_id) OR (EXISTS ( SELECT 1
-   FROM project_milestones m
-  WHERE ((m.id = milestone_checklist_items.milestone_id) AND is_project_owner(m.project_id, auth.uid()))))));
+  USING (can_write_milestone_children(milestone_id, auth.uid()))
+  WITH CHECK (can_write_milestone_children(milestone_id, auth.uid()));
+CREATE POLICY "owner or project owner can delete checklist" ON public.milestone_checklist_items AS PERMISSIVE FOR DELETE TO authenticated
+  USING (((auth.uid() = user_id) OR is_milestone_project_owner(milestone_id, auth.uid())));
 CREATE POLICY "Project members can view revisions" ON public.project_budget_revisions AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_member(project_id, auth.uid()));
 CREATE POLICY "Project owners can create revisions" ON public.project_budget_revisions AS PERMISSIVE FOR INSERT TO authenticated

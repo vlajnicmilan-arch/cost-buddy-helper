@@ -84,6 +84,7 @@ CREATE TEMP TABLE _rwm_failures (kind text NOT NULL, label text NOT NULL, reason
 CREATE OR REPLACE FUNCTION pg_temp.try_as(
   p_user uuid,
   p_sql  text,
+  p_as_definer boolean DEFAULT false,
   OUT outcome text,
   OUT rows_affected int,
   OUT sqlstate_code text,
@@ -95,7 +96,13 @@ DECLARE
 BEGIN
   outcome := NULL; rows_affected := NULL; sqlstate_code := NULL; err_message := NULL;
   BEGIN
-    EXECUTE 'SET LOCAL ROLE authenticated';
+    -- p_as_definer = true → RLS se ne primjenjuje (kao u SECURITY DEFINER
+    -- funkciji ili bilo kojem drugom putu koji zaobiđe politike), ali auth.uid()
+    -- i dalje vraća korisnika. Time se dokazuje da TRIGGER stvarno opali, a ne
+    -- da je zahvat "propao" jer politika nije dala redak.
+    IF NOT p_as_definer THEN
+      EXECUTE 'SET LOCAL ROLE authenticated';
+    END IF;
     PERFORM set_config('request.jwt.claim.sub', p_user::text, true);
     PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
     EXECUTE p_sql;
@@ -239,6 +246,50 @@ BEGIN
 END;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- expect_trigger_denied — mehanizam C (dodan nakon nalaza iz koraka D).
+-- Kad RLS ne pusti redak, UPDATE tiho vrati 0 redaka i test ne može znati je li
+-- zaštita iznosa uopće dotaknuta. Zato se ovdje zahvat izvodi putem koji
+-- ZAOBILAZI RLS (kao SECURITY DEFINER RPC), pa jedino što ga može zaustaviti
+-- jest trigger guard_milestone_column_writes. Traži se 42501 I očekivana
+-- poruka; kontrolni zahvat istim putem mora proći vlasniku.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.expect_trigger_denied(
+  p_label text, p_user uuid, p_sql text, p_control uuid, p_msg text
+)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE r record; c record;
+BEGIN
+  SELECT * INTO c FROM pg_temp.try_as(p_control, p_sql, true);
+  IF c.outcome = 'err' THEN
+    PERFORM pg_temp.fail('SCHEMA BUG', p_label,
+      format('kontrolni zahvat (vlasnik, isti put) pao na %s (%s) — provjera ne bi značila ništa', c.sqlstate_code, c.err_message));
+    RETURN;
+  END IF;
+  IF c.rows_affected = 0 THEN
+    PERFORM pg_temp.fail('FAIL', p_label, 'kontrolni zahvat je pogodio 0 redaka; provjera bi bila bezvrijedna');
+    RETURN;
+  END IF;
+
+  SELECT * INTO r FROM pg_temp.try_as(p_user, p_sql, true);
+  IF r.outcome = 'ok' THEN
+    PERFORM pg_temp.fail('FAIL', p_label,
+      format('trigger NIJE opalio — zahvat je prošao (%s redaka) mimo RLS-a', r.rows_affected));
+    RETURN;
+  END IF;
+  IF pg_temp.is_schema_bug(r.sqlstate_code, r.err_message) THEN
+    PERFORM pg_temp.fail('SCHEMA BUG', p_label, format('%s (%s)', r.sqlstate_code, r.err_message));
+    RETURN;
+  END IF;
+  IF r.sqlstate_code <> '42501' OR r.err_message NOT LIKE '%' || p_msg || '%' THEN
+    PERFORM pg_temp.fail('FAIL', p_label,
+      format('očekivan 42501 s porukom "%s", dobiveno %s (%s)', p_msg, r.sqlstate_code, r.err_message));
+    RETURN;
+  END IF;
+  PERFORM pg_temp.pass(p_label || '  [trigger: ' || left(r.err_message, 40) || ']');
+END;
+$$;
+
 
 -- ===========================================================================
 -- FIXTURE (upisuje se kao postgres → RLS se ne primjenjuje)
@@ -306,30 +357,45 @@ DECLARE
   m2 uuid := (SELECT val FROM _rwm WHERE key='m2');
   w1 uuid := (SELECT val FROM _rwm WHERE key='w1');
   s_status text;
+  s_rpc_status text;
 BEGIN
   -- ---- 1. status faze -----------------------------------------------------
-  -- ZNANI NALAZ (02, 07, 09, 34, 53, 54 padaju): project_milestones ima SELECT
-  -- politiku samo za vlasnika ("Project owners can view milestones"). Postgres
-  -- primjenjuje SELECT politike i pri čitanju redaka za UPDATE/DELETE, pa
-  -- voditelj (member) nikad ne dohvati redak — politika "Managers can update
-  -- milestone progress" i checklist INSERT (koji radi EXISTS nad fazama) su
-  -- nedostižni. Testovi namjerno ostaju strogi dok se politika ne popravi.
+  -- Napredak faze ide kroz namjenski RPC `update_milestone_progress` (SECURITY
+  -- DEFINER, bez ijednog novčanog parametra u potpisu). SELECT na sirovoj
+  -- tablici ostaje samo vlasniku (korak A) — zato voditelj IZRAVNIM UPDATE-om
+  -- ne pogađa redak, što test 02b i dokazuje.
   s_status := format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m1);
-  PERFORM pg_temp.expect_ok('01 status faze — vlasnik prolazi', u_owner, s_status);
-  PERFORM pg_temp.expect_ok('02 status faze — member (voditelj) prolazi', u_member, s_status);
+  s_rpc_status := format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m1);
+
+  PERFORM pg_temp.expect_ok('01 status faze — vlasnik prolazi (izravno)', u_owner, s_status);
+  PERFORM pg_temp.expect_ok('01b status faze — vlasnik prolazi (RPC, isti put kao voditelj)', u_owner, s_rpc_status);
+  PERFORM pg_temp.expect_ok('02 status faze — member (voditelj) prolazi kroz RPC', u_member, s_rpc_status);
+  PERFORM pg_temp.expect_blocked_silently('02b status faze — member NE prolazi izravno (SELECT je i dalje samo vlasnikov)',
+    u_member, s_status, u_owner);
   PERFORM pg_temp.expect_blocked_silently('03 status faze — viewer odbijen',   u_viewer,   s_status, u_owner);
   PERFORM pg_temp.expect_blocked_silently('04 status faze — worker odbijen',   u_worker,   s_status, u_owner);
   PERFORM pg_temp.expect_blocked_silently('05 status faze — investor odbijen', u_investor, s_status, u_owner);
+  PERFORM pg_temp.expect_denied('03b status faze RPC — viewer odbijen',   u_viewer,   s_rpc_status);
+  PERFORM pg_temp.expect_denied('04b status faze RPC — worker odbijen',   u_worker,   s_rpc_status);
+  PERFORM pg_temp.expect_denied('05b status faze RPC — investor odbijen', u_investor, s_rpc_status);
 
   -- ---- 2. iznosi na fazi (trigger guard_milestone_column_writes) ----------
   PERFORM pg_temp.expect_ok('06 budget faze — vlasnik prolazi', u_owner,
     format('UPDATE public.project_milestones SET budget = 2222 WHERE id = %L', m1));
-  PERFORM pg_temp.expect_denied('07 budget faze — member odbijen (trigger)', u_member,
-    format('UPDATE public.project_milestones SET budget = 2222 WHERE id = %L', m1));
+  -- 07/09: dokaz da je TRIGGER opalio, ne da je RLS vratio 0 redaka.
+  PERFORM pg_temp.expect_trigger_denied('07 budget faze — member odbijen (trigger, mimo RLS-a)', u_member,
+    format('UPDATE public.project_milestones SET budget = 2222 WHERE id = %L', m1), u_owner, 'milestone_amount_forbidden');
   PERFORM pg_temp.expect_ok('08 investor_price faze — vlasnik prolazi', u_owner,
     format('UPDATE public.project_milestones SET investor_price = 3333 WHERE id = %L', m1));
-  PERFORM pg_temp.expect_denied('09 investor_price faze — member odbijen (trigger)', u_member,
-    format('UPDATE public.project_milestones SET investor_price = 3333 WHERE id = %L', m1));
+  PERFORM pg_temp.expect_trigger_denied('09 investor_price faze — member odbijen (trigger, mimo RLS-a)', u_member,
+    format('UPDATE public.project_milestones SET investor_price = 3333 WHERE id = %L', m1), u_owner, 'milestone_amount_forbidden');
+  -- RPC ne smije imati nijedan put do iznosa — ni za vlasnika.
+  PERFORM pg_temp.expect_denied('09b RPC odbija budget u patchu — member', u_member,
+    format('SELECT public.update_milestone_progress(%L, ''{"budget":2222}''::jsonb)', m1));
+  PERFORM pg_temp.expect_denied('09c RPC odbija investor_price u patchu — member', u_member,
+    format('SELECT public.update_milestone_progress(%L, ''{"investor_price":3333}''::jsonb)', m1));
+  PERFORM pg_temp.expect_denied('09d RPC odbija budget u patchu — i vlasniku', u_owner,
+    format('SELECT public.update_milestone_progress(%L, ''{"budget":2222}''::jsonb)', m1));
 
   -- ---- 3. contract_value na projektu --------------------------------------
   PERFORM pg_temp.expect_ok('10 contract_value — vlasnik prolazi', u_owner,
@@ -444,10 +510,13 @@ BEGIN
   -- ---- 9. pretplata veže samo vlastite projekte -----------------------------
   -- Kontrolni korisnik je ovdje `member` (voditelj na tuđem projektu): isti
   -- zahvat mora njemu proći, čime je dokazano da stupac i vrijednost postoje.
-  PERFORM pg_temp.expect_blocked_silently('53 vlasnik BEZ pretplate — odbijen na SVOM projektu', u_nosub,
-    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2), u_member);
-  PERFORM pg_temp.expect_ok('54 member BEZ pretplate — prolazi na TUĐEM projektu (vlasnik bez pretplate)', u_member,
-    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2));
+  PERFORM pg_temp.expect_denied('53 vlasnik BEZ pretplate — odbijen na SVOM projektu (RPC)', u_nosub,
+    format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m2));
+  -- Izravni put za nosub-vlasnika NIJE testiran: kontrolni zahvat nije moguć
+  -- (jedini tko bi ga mogao izvesti je isti taj vlasnik, kojem se i testira
+  -- odbijanje), pa provjera ne bi razlikovala zaštitu od promašenog WHERE-a.
+  PERFORM pg_temp.expect_ok('54 member BEZ pretplate — prolazi na TUĐEM projektu (RPC)', u_member,
+    format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m2));
 
 END;
 $$;

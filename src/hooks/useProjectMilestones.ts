@@ -333,13 +333,11 @@ export const useProjectMilestones = (projectId: string | null) => {
         actualStartUpdate = todayDate;
       }
 
-      const updatePayload: Record<string, any> = {
+      // Napredak faze (bez ijednog novčanog polja) — jedinstveni put za sve
+      // uloge koje smiju pisati napredak, uključujući vlasnika.
+      const progressPatch: Record<string, any> = {
         name: milestone.name,
         description: milestone.description,
-        ...(includeCost ? { budget: milestone.budget ?? null } : {}),
-        ...(includePrice && (milestone as any).investor_price !== undefined
-          ? { investor_price: (milestone as any).investor_price }
-          : {}),
         status: milestone.status,
         start_date: milestone.start_date,
         due_date: milestone.due_date,
@@ -351,27 +349,51 @@ export const useProjectMilestones = (projectId: string | null) => {
         actual_end_date: actualEndUpdate,
       };
       if (completedAtUpdate !== undefined) {
-        updatePayload.completed_at = completedAtUpdate;
+        progressPatch.completed_at = completedAtUpdate;
       }
 
-      // `update()` bez `.select()` šalje Prefer: return=minimal — voditelj nema
-      // SELECT pravo na sirovoj tablici (korak A), pa bi representation vratio
-      // prazno i lažno izgledao kao greška. Osvježavanje ide kroz
-      // `project_milestones_scoped` (fetchMilestones / realtime).
-      const { error } = await supabase
-        .from('project_milestones')
-        .update(updatePayload)
-        .eq('id', milestone.id);
+      // Korak D (popravak): `project_milestones` ima SELECT samo za vlasnika
+      // (korak A), pa izravan UPDATE voditelju ne pogodi nijedan redak. Napredak
+      // zato ide kroz SECURITY DEFINER RPC koji sam provjerava ulogu i nema
+      // nijedan novčani parametar u potpisu.
+      const { error } = await supabase.rpc('update_milestone_progress' as any, {
+        p_milestone_id: milestone.id,
+        p_patch: progressPatch,
+      });
 
       if (error) {
-        // Trigger `guard_milestone_column_writes` — razumljiva poruka umjesto
-        // sirovog teksta iz baze.
-        if (String((error as any).message || '').includes('milestone_amount_forbidden')) {
+        if (String((error as any).message || '').includes('milestone_progress_forbidden')) {
           showError(t('projects.milestoneAmounts.forbiddenForRole'));
           return;
         }
         throw error;
       }
+
+      // Iznosi — isključivo vlasnikov izravan put. Trigger
+      // `guard_milestone_column_writes` ostaje druga brava.
+      const amountsPayload: Record<string, any> = {
+        ...(includeCost ? { budget: milestone.budget ?? null } : {}),
+        ...(includePrice && (milestone as any).investor_price !== undefined
+          ? { investor_price: (milestone as any).investor_price }
+          : {}),
+      };
+      if (Object.keys(amountsPayload).length > 0) {
+        const { error: amountsError } = await supabase
+          .from('project_milestones')
+          .update(amountsPayload)
+          .eq('id', milestone.id);
+
+        if (amountsError) {
+          // Trigger `guard_milestone_column_writes` — razumljiva poruka umjesto
+          // sirovog teksta iz baze.
+          if (String((amountsError as any).message || '').includes('milestone_amount_forbidden')) {
+            showError(t('projects.milestoneAmounts.forbiddenForRole'));
+            return;
+          }
+          throw amountsError;
+        }
+      }
+
 
 
       // If a budget revision was attached, persist the audit trail and balance siblings
@@ -613,12 +635,14 @@ export const useProjectMilestones = (projectId: string | null) => {
         sort_order: index
       }));
 
+      // Redoslijed je dio napretka — isti RPC put kao status i datumi.
       for (const update of updates) {
-        await supabase
-          .from('project_milestones')
-          .update({ sort_order: update.sort_order })
-          .eq('id', update.id);
+        await supabase.rpc('update_milestone_progress' as any, {
+          p_milestone_id: update.id,
+          p_patch: { sort_order: update.sort_order },
+        });
       }
+
 
       setMilestones(reorderedMilestones.map((m, index) => ({ ...m, sort_order: index })));
     } catch (error) {
