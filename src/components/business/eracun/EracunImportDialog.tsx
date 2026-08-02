@@ -213,7 +213,7 @@ export const EracunImportDialog = ({
     >
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('eracun.import.title', 'Uvoz ulaznih računa (eRačun)')}</DialogTitle>
+          <DialogTitle>{t('eracun.import.title', 'Uvoz eRačuna (XML)')}</DialogTitle>
         </DialogHeader>
 
         <input
