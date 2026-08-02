@@ -6029,6 +6029,21 @@
       "emptyUncollected": "Nema nenaplaćenih izlaznih računa.",
       "markCollected": "Naplaćeno"
     },
+    "match": {
+      "open": "Poveži uplate",
+      "title": "Poveži uplate s računima",
+      "subtitle": "Spajanje ne stvara prihod ni trošak i ne mijenja saldo — uplata je već zabilježena iz izvoda.",
+      "empty": "Nema prijedloga za spajanje.",
+      "confirm": "Potvrdi ({{n}})",
+      "done": "Spojeno uplata: {{n}}",
+      "failed": "Spajanje nije uspjelo: {{reason}}",
+      "reasonReference": "Poziv na broj",
+      "reasonIban": "Naučeni IBAN",
+      "reasonAmountName": "Iznos + naziv",
+      "partial": "Djelomično",
+      "oldestNote": "Više računa iste druge strane ima isti iznos — predložen je najstariji nenaplaćeni.",
+      "settledOf": "Plaćeno {{paid}} od {{total}}"
+    },
     "paid": {
       "title": "Označi kao plaćeno",
       "dateLabel": "Datum plaćanja",
