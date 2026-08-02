@@ -146,6 +146,14 @@ export const AddExpenseDialog = ({
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
   const [totalWithTip, setTotalWithTip] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  // Faza odabranog projekta. Preskočiva; promjena/uklanjanje projekta je poništava,
+  // jer faza pripada isključivo tom projektu.
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+  const handleSelectedProjectIdChange = (id: string | null) => {
+    setSelectedProjectId(id);
+    setSelectedMilestoneId(null);
+  };
+
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
   // Collaborator advance fields (see mem://features/collaborator-advances)
