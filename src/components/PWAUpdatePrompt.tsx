@@ -23,7 +23,9 @@ export { checkForNativeUpdates as checkForUpdates } from '@/components/update/Na
 
 const SHOW_TEST_BUTTON = false;
 
-let webCheckForUpdatesRef: (() => Promise<void>) | null = null;
+// `manual: true` = korisnik je sam pokrenuo provjeru (Postavke → "Provjeri
+// ažuriranja"). Samo tada se prikazuje potvrda "Aplikacija je ažurna".
+let webCheckForUpdatesRef: ((manual?: boolean) => Promise<void>) | null = null;
 
 const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
@@ -31,13 +33,15 @@ const PWAUpdatePromptInner = () => {
   const [isTestMode, setIsTestMode] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [pendingUpdateCheck, setPendingUpdateCheck] = useState(false);
+  const isManualCheckRef = useRef(false);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
-      webCheckForUpdatesRef = async () => {
+      webCheckForUpdatesRef = async (manual = false) => {
+        isManualCheckRef.current = manual;
         setIsChecking(true);
         setPendingUpdateCheck(true);
 
