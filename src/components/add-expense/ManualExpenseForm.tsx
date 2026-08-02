@@ -152,9 +152,12 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
 
   return (
     <form onSubmit={props.onSubmit} className="space-y-5 pb-4">
+      {props.extraImportSlot}
+
       {/* Receipt Scan Buttons */}
       <ReceiptCaptureButtons
         scanning={props.scanning}
+        showMultiImageCollector={props.showMultiImageCollector}
         showMultiImageCollector={props.showMultiImageCollector}
         receiptImages={props.receiptImages}
         isNative={props.isNative}
