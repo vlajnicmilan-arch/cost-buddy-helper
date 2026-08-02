@@ -62,6 +62,10 @@ export const TransactionDetailDialog = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [freshReceiptUrl, setFreshReceiptUrl] = useState<string | null>(null);
   const [isLocalReceipt, setIsLocalReceipt] = useState(false);
+  const [receiptMissing, setReceiptMissing] = useState(false);
+  const [attachingReceipt, setAttachingReceipt] = useState(false);
+  const { takePhoto, pickFromGallery, isNative: isNativeCamera, cameraInputRef, galleryInputRef } = useNativeCamera();
+
 
   // Stable close helper for receipt viewer
   const closeReceiptViewer = useCallback(() => {
