@@ -1,108 +1,155 @@
-# Korak E — Trošak voditelja ide na potvrdu (sati ne)
+# Sati u profitu projekta — uskladiti P&L s onim što je stvarno plaćeno
 
-## Prvo: što se kosi s tvojom pretpostavkom
+## Odgovor na pitanje 1: da, isplata rada stvara zapis u `expenses`
 
-Prije rješenja, tri nalaza iz repozitorija koja mijenjaju opseg.
+Provjereno u živoj definiciji `public.create_worker_payout`: funkcija u istoj transakciji
+prvo ubacuje redak u `expenses` (`type='expense'`, iznos = `p_paid_amount`, `project_id`,
+`category='other'`, opis „Isplata: ime"), zatim redak u `project_worker_payouts` s
+`expense_id`, pa `UPDATE expenses SET worker_payout_id = <payout>`. Veza je dvosmjerna.
 
-**1. Voditelj VEĆ danas smije upisati trošak — i to odmah kao potvrđen.**
-INSERT politika na `expenses` glasi: kad je `project_id` postavljen, dopušteno je svakom aktivnom sudioniku projekta (`is_project_participant_active`), bez ikakve provjere uloge i bez provjere stanja. Dakle korak D nije zatvorio upis troška; zatvorio je samo faze. Trenutno i `worker` može upisati trošak. Korak E stoga nije "otvaranje prava", nego **sužavanje**: neovlaštenima zabraniti, voditelju dopustiti samo `pending`.
+Znači: **plaćeni rad je u `expenses`**, neplaćeni nije. Zato formula
+`materialCost = max(0, expenses − labor − collab)` i postoji — da isti novac ne uđe dvaput.
 
-**2. Voditelj bi si danas mogao sam potvrditi trošak.**
-UPDATE politika dopušta izmjenu vlastitog retka (`auth.uid() = user_id`) bez ograničenja stupca `status`. Bez zaključavanja, `pending → approved` je jedan klik podnositelja.
+Provjera na produkcijskim podacima (5 isplata, 4 projekta s radom):
 
-**3. NAJVAŽNIJE — nepotvrđen trošak DANAS ULAZI U SALDO.**
-Motor salda (`_expenses_recompute_source_balance` i `recompute_custom_source_balance`) filtrira samo `deleted_at` i `expense_nature <> 'correction'`. Stupac `status` se **nigdje ne spominje**. Znači: svaki `pending` trošak već sada pomiče saldo novčanika, a pri odbijanju se saldo vraća samo zato što se zapis fizički briše. Čim odbijanje prestane brisati (tvoja točka 4), saldo ostaje kriv. Ovo je jezgra koraka E, ne sporedni detalj.
+| Projekt | expenses | isplate u expenses | labor (svi sati) | od toga neisplaćeno | material danas |
+|---|---|---|---|---|---|
+| Duje i Dunja | 29.348,77 | 1.308,00 | 7.642,00 | 6.334,00 | 21.706,77 |
+| Lucija i Mate Č. | 10.660,14 | 56,00 | 616,00 | 560,00 | 10.044,14 |
+| Solin | 159,63 | 0 | 224,00 | 224,00 | 0 (clamp) |
+| Radiona i ostalo | 0 | 0 | 42,00 | 42,00 | 0 (clamp) |
 
-**4. Odgovor na pitanje o satima.**
-Provjereno u `src/lib/projectProfitLoss.ts`:
-- **Trošak po fazi** (`useProjectMilestones`, `useProjectStats`) računa se **isključivo iz `expenses`**. Neisplaćeni sati NE ulaze u trošak faze. Tu je stanje već onakvo kakvo želiš.
-- **P&L projekta** računa `laborCost` iz **svih** radnih unosa (`actual_hours × rate_at`), bez obzira na isplatu, i još `materialCost = max(0, expenses − labor − collab)`. Dakle **u P&L-u neisplaćeni rad ulazi u trošak**, i to na obračunskoj, ne novčanoj osnovi — iako je kartica opisana kao "cash view".
-Ovo je odstupanje od tvog cilja, ali je **promjena izračuna** i u ovom koraku je **ne diram**. Prijavljujem i čekam odluku.
+Ukupno 81 od 104 radna unosa nema `payout_id` (657 neisplaćenih sati).
 
----
+Bitno za formulu: `laborCost` se računa iz svih sati, a `materialCost` oduzima taj isti
+iznos od `expenses`. Zbroj ostaje točan **samo dok je `expenses ≥ labor + collab`**:
+tada `totalCosts` ispadne točno jednak `totalExpenses`. Kod Solina i Radione uvjet ne
+vrijedi — `max(0, …)` reže materijal na nulu, pa `totalCosts` (224 odnosno 42) **premašuje
+stvarno potrošen novac** (159,63 odnosno 0). Radiona pokazuje cash saldo −42 € iako na
+projektu nije potrošeno ništa.
 
-## 1. Mehanizam stanja — stupac, ne zaseban zapis
+Dakle imamo dvije različite pogreške ovisno o projektu:
+- veliki projekti: ukupni iznos slučajno točan, ali **razrada laže** — neisplaćeni rad je
+  tiho premješten iz „Materijalni troškovi" u „Radna snaga" (kod Duje i Dunje 6.334 €),
+- mali projekti: **i ukupni iznos laže** jer clamp probije identitet.
 
-Ostajemo na `expenses.status` (`pending | approved | rejected`), koji već postoji i koristi se za budžete i prihodne izvore (`usePendingTransactions`, `useProjectPendingTransactions`, `notify-pending-transaction`).
+## Odgovor na pitanje 2: kartica danas nije ni cash ni accrual — preporuka je A
 
-Zašto ne zaseban "prijedlog" zapis: trošak nosi ~50 stupaca (izvor plaćanja, faza, tip rada, predujmovi, sidrenje vremena, uvozni otisak). Duplikat bi značio drugu shemu, drugu RLS matricu i pretvorbu pri potvrdi — nova klasa tihih odstupanja.
+Lijeva kolona kartice doslovno piše „Trenutno stanje (gotovina)". Ulaz u nju je
+`totalIncome − (labor + collab + material)`, gdje je labor obračunski, a collab i material
+gotovinski. To je hibrid, a ne jedan ni drugi model.
 
-Cijena tog izbora je poznata i eksplicitno se plaća u točki 3: kad je zapis u `expenses`, **saldo ga vidi po zadanom**, pa izuzeće mora biti u motoru, a ne u pozivateljima.
+**Preporuka: varijanta A (cash), s neisplaćenim radom kao zasebnom otvorenom stavkom.**
+Razlozi, redom po težini:
 
-Dodaje se:
-- `expenses.rejection_reason text null`
-- `expenses.reviewed_by uuid null`, `expenses.reviewed_at timestamptz null`
-- CHECK: `rejection_reason` smije biti popunjen samo uz `status = 'rejected'`
+1. Vlasnikovo pravilo je „knjiži ono što je odlučeno i plaćeno". Trošak po fazi već radi
+   tako (isključivo `expenses`), a korak E ide u istom smjeru — nepotvrđeni trošak ne ulazi.
+   A vraća P&L u isti model; B trajno zadržava dva različita modela na istom projektu.
+2. Samo A uklanja clamp. U B varijanti Solin i Radiona i dalje prikazuju trošak veći od
+   potrošenog novca, jer accrual bez upisa neisplaćenog rada u `expenses` nema odakle
+   povući protustavku. B bi zapravo tražio i treću stavku (obveza prema radnicima) da bi
+   bio konzistentan — to je veći zahvat od A, ne manji.
+3. Ostatak podataka je već cash: suradnici se broje po `paid_amount`, prihod po naplati.
 
-## 2. Popis SVIH mjesta koja zbrajaju troškove
+Što se mijenja u brojkama koje korisnik danas vidi (A):
 
-Popis je iz stvarnog stabla; stupac "danas" je izmjereno stanje.
+- `laborCost` = zbroj isplata (nedeleted isplatni `expenses`), ne svi sati.
+  Duje i Dunja 7.642 → 1.308; Lucija 616 → 56; Solin 224 → 0; Radiona 42 → 0.
+- `materialCost` = `expenses − isplaćeni rad − collab`, bez clampa.
+  Duje i Dunja 21.706,77 → 23.140,77; Lucija 10.044,14 → 10.604,14; Solin 0 → 159,63.
+- **Cash saldo i „Svi troškovi" ostaju nepromijenjeni kod Duje i Dunje i Lucije** (identitet
+  `totalCosts = totalExpenses`), a **ispravljaju se kod Solina (+64,37) i Radione (+42,00)**.
+- Novo: „Neisplaćeni rad" kao zasebna otvorena stavka (6.334 / 560 / 224 / 42 €), izvan
+  zbroja troškova, s brojem sati.
+- Očekivani profit prema ugovoru raste za iznos neisplaćenog rada, pa uz njega ide
+  napomena da neisplaćeni rad tek predstoji.
 
-| # | Mjesto | Danas filtrira `status`? | Postupak |
-|---|---|---|---|
-| 1 | `src/lib/projectCalculations.ts` (`isCountedProjectTransaction`) | DA (`status && !== 'approved'` → out) | bez izmjene |
-| 2 | `src/lib/projectProfitLoss.ts` (`isCountedTx`) | DA | bez izmjene |
-| 3 | `useProjectStats.ts` | DA (`.eq('status','approved')` u upitu) | bez izmjene |
-| 4 | `useProjectMilestones.ts` (trošak po fazi) | DA (kroz #1) | bez izmjene |
-| 5 | `useActiveProjectsSummary.ts` | DA | bez izmjene |
-| 6 | `src/pages/Index.tsx` (dashboard) | provjeriti pri gradnji | uskladiti ako fali |
-| 7 | `src/lib/reportTotals.ts` / `reportExport.ts` | **NE spominju `status`** — ovise o ulazu pozivatelja | dodati filtar u samom helperu (obrana u dubinu), ne samo u pozivatelju |
-| 8 | `ProjectReportsDialog.tsx` (PDF) | dolazi iz #3/#4 | provjeriti svaki ulaz; dodati oznaku "N nepotvrđenih, nije uključeno" |
-| 9 | `supabase/functions/check-milestone-budgets` | **NE** — `select amount where milestone_id, type='expense'` | dodati `.neq('status','pending')` |
-| 10 | `supabase/functions/mcp` (`project_summary`, popis projekata, budžet, krug) | **NE** ni u jednom upitu | dodati filtar u svakom |
-| 11 | `supabase/functions/project-insights` | provjeriti | uskladiti |
-| 12 | `supabase/functions/generate-ai-insights`, `financial-assistant` | provjeriti | uskladiti |
-| 13 | `supabase/functions/send-daily-summary` | **NE** | dodati filtar |
-| 14 | `supabase/functions/check-budget-alerts` | DA (`.eq('status','approved')`) | bez izmjene |
-| 15 | Motor salda (DB) | **NE** | vidi točku 3 |
+## Usput nađeno (odluka potrebna)
 
-Pravilo koje uvodimo umjesto 15 pojedinačnih obećanja: **jedan zajednički filtar** (`isCountedProjectTransaction` na klijentu, jedan `_shared/countedExpense.ts` na edge strani) i vitest koji prolazi kroz popis i pada ako se pojavi novi upit nad `expenses` bez filtra.
+`useProjectProfitLoss` dohvaća `expenses` bez filtra na `deleted_at`. U produkciji je
+7 obrisanih projektnih redaka u ukupnom iznosu 103,36 €, od čega 3 nastala storniranjem
+isplata (`status='voided'`). Ti iznosi danas ulaze u `totalExpenses`. Predlažem dodati
+`.is('deleted_at', null)` u istom zahvatu, jer bez toga bi nova `laborCost` iz isplata
+brojala i stornirane isplate. To dira samo čitanje, ne podatke.
 
-## 3. Saldo — ovdje se odluka doista donosi
+## Gdje se `laborCost` / `materialCost` koriste
 
-Izmjena je u motoru, ne u pozivateljima:
-- `_expenses_recompute_source_balance`: `pending` se tretira kao nepostojeći (i na strani OLD i na strani NEW). Prijelaz `pending → approved` postaje pozitivna delta, `approved → rejected` negativna, `pending → rejected` nula.
-- `recompute_custom_source_balance`: u oba načina (`day_cut` i `hybrid`) u `WHERE` dolazi `AND COALESCE(e.status,'approved') <> 'pending'`.
-- `rejected` se također isključuje, istim uvjetom (`status NOT IN ('pending','rejected')`), jer odbijeni zapis ostaje u tablici umjesto da se briše.
+Cijeli obuhvat, provjeren pretragom po `src`, `supabase`, `docs`:
 
-**Ovo je promjena semantike motora salda**, pa po pravilu iz memorije aktivira BALANCE DEPLOY GATE:
-- `supabase/tests/balance/` mora biti zelen u cijelosti,
-- `baseline.sql` se osvježava s nove žive definicije funkcija (`pg_get_functiondef`, nikad iz stare migracije),
-- novi slučajevi: insert `pending` → saldo nepromijenjen; `pending → approved` → saldo pomaknut točno jednom; `approved → rejected` → saldo vraćen; sidrena i nesidrena grana odvojeno; `pending` transfer na obje strane.
-- **Migracija zatečenih podataka**: postojeći `pending` troškovi već su ušli u saldo. Migracija mora nakon izmjene funkcija pokrenuti `recompute` za svaki pogođeni izvor, inače stanje ostaje krivo. To je jedina dopuštena promjena podataka u koraku E.
+- `src/lib/projectProfitLoss.ts` — jedini izračun.
+- `src/lib/projectLaborCost.ts` — dijeljeni helper za sate (koristi ga i
+  `useWorkerEarningsPreview` / `MyWorkerPayCard`; **ne dira se**, on prikazuje zaradu
+  radnika, a ne trošak projekta).
+- `src/hooks/useProjectProfitLoss.ts` — dohvat.
+- `src/components/projects/ProjectProfitLossCard.tsx` — kartica, jedini UI potrošač.
+- `src/components/projects/ProjectFullScreenView.tsx` — ugrađuje karticu.
+- `src/lib/projectFinancePdfExport.ts` — PDF „Profitabilnost (P&L)", redci Radna snaga /
+  Materijalni troškovi / ukupno.
+- `src/i18n/locales/{hr,en,de}.json` — ključevi.
+- Testovi: `projectProfitLoss.test.ts`, `projectLaborCost.test.ts`,
+  `projectFinanceUnified.test.ts`.
 
-## 4. Prava u bazi
+**Nijedna edge funkcija, MCP ruta ni dashboard ne koriste ove veličine** — nema pogodaka
+u `supabase/functions`. Zahvat je time zatvoren u frontend + PDF.
 
-- **INSERT**: postojeću politiku zamijeniti tako da vlasnik smije upisati bilo koje stanje, `member` smije upisati **samo** `status = 'pending'` i `submitted_by = auth.uid()`, a `worker` i `investor` ne smiju upisati ništa (danas smiju — to je zatvaranje rupe).
-- **UPDATE**: novi guard trigger na `expenses` (druga brava, po uzoru na `guard_milestone_column_writes`): tko nije vlasnik projekta, ne smije mijenjati `status`, `rejection_reason`, `reviewed_by/at`. Podnositelj svoj `pending` zapis smije uređivati sadržajno; nakon `approved` više ne (vidi rizike).
-- **Namjenski put — da, potreban je**, iz istog razloga kao `update_milestone_progress`: `review_project_expense(p_expense_id uuid, p_decision text, p_reason text)`, SECURITY DEFINER, provjerava `is_project_owner`, postavlja stanje + revizora + razlog atomarno, i time izbjegava ovisnost o SELECT-preduvjetu RLS-a koji nas je već ugrizao u koraku D. Trigger ostaje kao druga brava.
-- Ne diramo: čitanje iz koraka A/D2, prava pisanja na fazama, `update_milestone_progress`.
+## Djelomično isplaćeno razdoblje
 
-## 5. Obavijesti — postoji, koristimo postojeće
+Isplata nosi `status` (`paid`, `partial`, `advance`, `voided`), `gross_amount` (obračunato)
+i `paid_amount` (plaćeno), a pokriveni unosi dobiju `payout_id`. Ponašanje:
 
-Već postoje `notify-pending-transaction` (koristi ga `useExpenseCRUD`) i `notify-project-transaction`, plus `notification_preferences` i push infrastruktura. Traži se:
-- pri INSERT-u `pending` na projektu: `notify-pending-transaction` → vlasniku,
-- pri odbijanju: nova vrsta poruke voditelju, s razlogom, kroz isti put (`notifications` + push), po uzoru na `transaction_auto_rejected` koji već postoji,
-- ključevi u hr/en/de; bez novog kanala i bez nove tablice.
+- **A:** u trošak ulazi `paid_amount` (jer je to iznos u `expenses`). Manjak
+  `gross − paid` ostaje u otvorenoj stavci, pa se neisplaćeni rad računa kao
+  „svi sati po `rate_at` − isplaćeno", ne kao „sati bez `payout_id`". Time je i predujam
+  (`advance`, sati 0 uz plaćeni iznos) pokriven bez negativnih vrijednosti; otvorena
+  stavka se floora na 0.
+- **B:** trošak se ne mijenja (svi sati), a otvorena stavka je isti iznos
+  `sati − isplaćeno`. Razlika je samo u tome ulazi li obračunati dio u zbroj troškova.
 
-Napomena: cron `auto-reject-pending` danas **fizički briše** istekle `pending` zapise. Uz točku 4 to postaje nedosljedno — mijenja se u `status='rejected'` s automatskim razlogom.
+Stornirane isplate (`voided`, obrisani `expenses` redak) ne ulaze ni u trošak ni u pokriće —
+to je izravno vezano uz `deleted_at` filtar gore.
 
-## 6. Testovi
+## Testovi
 
-- **SQL harness** (`supabase/tests/security/role_write_matrix.sql`), uz obavezno zeleno svih **72** postojećih: `member` INSERT `pending` prolazi; `member` INSERT `approved` → 42501; `worker`/`investor` INSERT → 42501; `member` UPDATE `status` → 42501 (i kroz trigger, mehanizmom C); vlasnik kroz RPC prolazi; ne-vlasnik kroz RPC → 42501.
-- **Balance SQL suite**: slučajevi iz točke 3.
-- **Vitest**: `pending` i `rejected` izuzeti u `projectCalculations`, `projectProfitLoss`, `reportTotals`; regresija na trošak po fazi; postojećih 2305 ostaje zeleno.
+- Regresija na današnje brojke: fixture po sva četiri produkcijska projekta s očekivanim
+  vrijednostima prije i poslije, uz izričitu tvrdnju da cash saldo Duje i Dunje i Lucije
+  ostaje isti, a Solinu i Radioni se ispravlja.
+- Identitet `laborCost + collaboratorCost + materialCost === totalExpenses` bez clampa —
+  test koji pada ako se clamp vrati.
+- `materialCost` nikad negativan uz uredne podatke; ako ispadne negativan, to je znak
+  isplate izvan `expenses` — test to prijavljuje eksplicitno, ne prikriva `max(0, …)`.
+- Djelomična isplata: gross 300 / paid 100 → trošak 100, otvoreno 200.
+- Predujam: sati 0 / paid 150 → trošak 150, otvoreno 0 (ne −150).
+- Stornirana isplata se ne broji ni u trošak ni u pokriće.
+- Bez ijedne isplate: trošak rada 0, sve sate u otvorenoj stavci.
+- PDF izvoz: novi redak otvorene stavke izvan zbroja, zbroj i dalje jednak `totalExpenses`.
 
-## 7. Rizici
+## Rizici
 
-1. **Saldo (najveći).** Dok motor ne filtrira, svaki `pending` je tiho odstupanje. Ako se promjena funkcija i recompute zatečenih podataka ne dogode u istoj migraciji, ostaje pomak koji nitko ne vidi.
-2. **Nefiltrirani upiti** — MCP, `check-milestone-budgets`, `send-daily-summary` danas broje sve. Nakon koraka E to više nisu bezopasni propusti nego put kojim nepotvrđeno ulazi u brojku.
-3. **Potvrđen pa naknadno izmijenjen.** Prijedlog: nakon `approved` podnositelj gubi pravo izmjene; vlasnik smije mijenjati. Izmjena iznosa od strane vlasnika ide kroz motor salda normalno. Alternativa (vraćanje u `pending` pri izmjeni iznosa) donosi treperenje salda i ne predlažem je.
-4. **Zatečeni podaci** — postoje li `pending` troškovi na projektima, treba prebrojati prije migracije; oni su nakon izmjene prvi kandidati za krivi saldo.
-5. **Sati u P&L-u** (nalaz 4 gore) ostaje otvoren; dok se ne riješi, "marža" i "trošak po fazi" ne govore isto.
+- **Dvostruko brojanje** — glavni rizik. Nastaje ako se isplaćeni rad izvede iz sati
+  umjesto iz isplatnih `expenses` redaka. Zato je izvor `expenses.worker_payout_id`
+  (nedeleted), a materijal je ostatak istog skupa — isti novac fizički ne može ući dvaput.
+  Pokriveno testom identiteta.
+- **Isplata izvan RPC-a.** Ako netko ručno unese trošak isplate bez `worker_payout_id`,
+  on pada u materijal, a rad ostaje otvoren. Ne rješavamo u ovom koraku; test negativnog
+  materijala i otvorena stavka to čine vidljivim umjesto da tiho pomakne brojke.
+- **Razilaženje s troškom po fazi** — A ga smanjuje, ne povećava: oba ekrana onda gledaju
+  isti `expenses`. Ostaje razlika u obuhvatu (faze dijele po fazi, P&L ne), što je namjerno.
+- **Percepcija** — vlasniku profit optički raste za neisplaćeni rad. Ublažava se time da
+  otvorena stavka stoji odmah uz cash saldo i ulazi u PDF.
+- **Korak E** — pending i rejected troškovi već su isključeni preko `status` filtra u
+  `isCountedTx`; A ne mijenja taj filtar.
 
-## Što trebam od tebe prije gradnje
+## Tehnički sažetak
 
-1. Potvrdi zatvaranje rupe: `worker` i `investor` gube INSERT na troškove.
-2. Potvrdi da `rejected` ne ulazi u saldo (ostaje kao zapis, bez učinka).
-3. Odluči za sate u P&L-u: ostavljam kako jest u ovom koraku (moj prijedlog), ili to postaje zaseban korak F.
+1. `useProjectProfitLoss`: u `expenses` select dodati `worker_payout_id` i
+   `.is('deleted_at', null)`; dohvatiti `project_worker_payouts`
+   (`paid_amount, gross_amount, status`) i `payout_id` na radnim unosima.
+2. `projectProfitLoss.ts`: `laborCost` = zbroj nedeleted isplatnih `expenses`;
+   `materialCost = totalExpenses − laborCost − collaboratorCost` bez clampa;
+   novo polje `unpaidLaborCost` (+ `unpaidHours`) izvan `totalCosts`.
+3. `ProjectProfitLossCard.tsx`: „Radna snaga (isplaćeno)" u razradi, nova stavka
+   „Neisplaćeni rad" vizualno odvojena od zbroja, uz sate.
+4. `projectFinancePdfExport.ts`: isti redak u izvozu, izvan zbroja.
+5. i18n ključevi u hr/en/de.
+6. Ne dira se: trošak po fazi, motor salda, korak E, čitanja iz A/D2, prava pisanja iz D,
+   iznosi na fazama, ugovorena vrijednost, `projectLaborCost.ts`, postojeći podaci.
