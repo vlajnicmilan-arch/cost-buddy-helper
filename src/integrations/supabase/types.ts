@@ -1580,6 +1580,9 @@ export type Database = {
           project_id: string | null
           receipt_url: string | null
           recurring_transaction_id: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           time_confidence: string
@@ -1637,6 +1640,9 @@ export type Database = {
           project_id?: string | null
           receipt_url?: string | null
           recurring_transaction_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           time_confidence?: string
@@ -1694,6 +1700,9 @@ export type Database = {
           project_id?: string | null
           receipt_url?: string | null
           recurring_transaction_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by?: string | null
           time_confidence?: string
@@ -6314,6 +6323,9 @@ export type Database = {
           project_id: string | null
           receipt_url: string | null
           recurring_transaction_id: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["transaction_status"] | null
           submitted_by: string | null
           time_confidence: string
@@ -6340,6 +6352,16 @@ export type Database = {
         Returns: {
           inserted: boolean
           leaked_signature: string
+        }[]
+      }
+      auto_reject_expired_pending_expenses: {
+        Args: { p_older_than?: string }
+        Returns: {
+          description: string
+          id: string
+          project_id: string
+          submitted_by: string
+          user_id: string
         }[]
       }
       can_log_own_work: {
@@ -6920,6 +6942,10 @@ export type Database = {
       restore_trash_item: {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
+      }
+      review_project_expense: {
+        Args: { p_decision: string; p_expense_id: string; p_reason?: string }
+        Returns: Json
       }
       revoke_module_access: {
         Args: { p_grant_id: string; p_revoke_reason: string }
