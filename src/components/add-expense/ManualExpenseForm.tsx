@@ -139,6 +139,8 @@ interface ManualExpenseFormProps {
   onKrugChange?: (next: { krugId: string | null; privacy: 'personal' | 'shared' | null }) => void;
 
   showKrugSelector?: boolean;
+  /** Dodatni ulaz iznad obrasca (biznis mod: „Učitaj eRačun (XML)"). */
+  extraImportSlot?: ReactNode;
   // Submit
   onSubmit: (e: React.FormEvent) => void;
 }
