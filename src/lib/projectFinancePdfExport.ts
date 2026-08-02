@@ -89,10 +89,10 @@ export const exportEarnedValuePdf = async (
     ['Ugovoreno', fmt(data.contractValue, data.currency)],
     ['Trosak', fmt(data.spent, data.currency)],
     [
-      toAscii(data.remainderLabel),
+      data.remainderLabel,
       `${data.marginAmount >= 0 ? '+' : ''}${fmt(data.marginAmount, data.currency)}`,
     ],
-    [`${toAscii(data.remainderLabel)} %`, `${data.marginPct.toFixed(1)}%`],
+    [`${data.remainderLabel} %`, `${data.marginPct.toFixed(1)}%`],
     ['Predvideni finalni trosak (EAC)', fmt(data.eac, data.currency)],
     ['Zdravlje projekta', `${data.healthScore}/100 (${data.healthLevel})`],
   ];
