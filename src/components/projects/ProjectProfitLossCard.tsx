@@ -55,6 +55,9 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
         laborCost: pl.laborCost,
         collaboratorCost: pl.collaboratorCost,
         materialCost: pl.materialCost,
+        unpaidLaborCost: pl.unpaidLaborCost,
+        unpaidHours: pl.unpaidHours,
+
         netProfit: pl.netProfit,
         margin: pl.margin,
         contractValue: pl.contractValue,
