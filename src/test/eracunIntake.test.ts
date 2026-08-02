@@ -65,11 +65,11 @@ describe('eRačun — pravila prihvaćanja (v1)', () => {
     expect(res).toMatchObject({ accepted: true, amount: -150, isCreditNote: true });
   });
 
-  it('ostali tipovi se odbijaju s razlogom', () => {
+  it('nepoznat tip se ne odbija, nego traži odluku korisnika', () => {
     const res = evaluateInvoice(baseInvoice({ docType: 'other', docTypeRaw: '325' }));
-    expect(res.accepted).toBe(false);
-    expect(res.reason).toBe('unsupported_doc_type');
-    expect(res.params).toEqual({ docType: '325' });
+    expect(res.accepted).toBe(true);
+    expect(res.needsDecision).toBe(true);
+    expect(res.cautions).toEqual([{ code: 'unknown_doc_type', params: { docType: '325' } }]);
   });
 
   it('valuta osim EUR se odbija', () => {
