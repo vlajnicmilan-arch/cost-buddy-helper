@@ -390,25 +390,6 @@ export const ProjectFullScreenView = ({
     : 0;
   const showCollectionAlarm = budget > 0 && collectionPct < 50 && daysSinceStart > 30;
 
-  // Status token maps
-  const marginDotClass = {
-    healthy: 'bg-income',
-    attention: 'bg-warning',
-    critical: 'bg-destructive',
-    neutral: 'bg-muted-foreground',
-  }[remainderLevel];
-  const marginTextClass = {
-    healthy: 'text-income',
-    attention: 'text-warning',
-    critical: 'text-destructive',
-    neutral: 'text-muted-foreground',
-  }[remainderLevel];
-  const marginBarClass = {
-    healthy: '[&>div]:bg-income',
-    attention: '[&>div]:bg-warning',
-    critical: '[&>div]:bg-destructive',
-    neutral: '',
-  }[remainderLevel];
 
   return (
     <AnimatePresence>
