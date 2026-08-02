@@ -2136,34 +2136,24 @@ GRANT EXECUTE ON FUNCTION public.can_write_project_progress(_project_id uuid, _u
 GRANT EXECUTE ON FUNCTION public.is_project_participant_active(_project_id uuid, _user_id uuid) TO authenticated;
 -- RLS + policies for matrix tables
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.projects TO authenticated, anon;
 ALTER TABLE public.project_milestones ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_milestones FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_milestones TO authenticated, anon;
 ALTER TABLE public.milestone_budget_revisions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.milestone_budget_revisions FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.milestone_budget_revisions TO authenticated, anon;
 ALTER TABLE public.project_budget_revisions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_budget_revisions FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_budget_revisions TO authenticated, anon;
 ALTER TABLE public.project_contract_amendments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_contract_amendments FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_contract_amendments TO authenticated, anon;
 ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_documents FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_documents TO authenticated, anon;
 ALTER TABLE public.milestone_checklist_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.milestone_checklist_items FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.milestone_checklist_items TO authenticated, anon;
 ALTER TABLE public.project_workers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_workers FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_workers TO authenticated, anon;
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_members FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_members TO authenticated, anon;
 ALTER TABLE public.project_invitations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.project_invitations FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_invitations TO authenticated, anon;
 CREATE POLICY "Project members can view milestone revisions" ON public.milestone_budget_revisions AS PERMISSIVE FOR SELECT TO authenticated
   USING (is_project_member(project_id, auth.uid()));
