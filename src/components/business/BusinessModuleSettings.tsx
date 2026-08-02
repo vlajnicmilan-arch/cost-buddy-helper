@@ -98,42 +98,8 @@ export const BusinessModuleSettings = () => {
         <h2 className="text-base font-bold">{t('businessModules.title')}</h2>
       </div>
 
-      {/* Theme Color Selection */}
-      <Card className="border-none shadow-sm">
-        <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Palette className="w-3.5 h-3.5" />
-            {t('businessModules.themeColor')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            {BUSINESS_THEMES.map(theme => (
-              <button
-                key={theme.id}
-                onClick={() => setThemeColor(theme.id)}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
-                  themeColor === theme.id
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                    : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
-                }`}
-              >
-                <div
-                  className="w-6 h-6 rounded-lg flex-shrink-0 shadow-sm"
-                  style={{ backgroundColor: theme.previewColor }}
-                />
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{theme.label}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">{t(THEME_DESCRIPTION_KEYS[theme.id])}</p>
-                </div>
-                {themeColor === theme.id && (
-                  <Check className="w-3.5 h-3.5 text-primary ml-auto flex-shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
+
 
       {/* Industry Selection */}
       <Card className="border-none shadow-sm">
