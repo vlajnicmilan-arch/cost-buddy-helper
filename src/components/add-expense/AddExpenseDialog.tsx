@@ -864,6 +864,8 @@ export const AddExpenseDialog = ({
     setShowScannedPreview(false);
     setNote('');
     setSelectedProjectId(null);
+    setSelectedMilestoneId(null);
+
     setSelectedBudgetId(null);
     setExpenseNature('regular');
     setIsAdvance(false);
