@@ -404,8 +404,13 @@ BEGIN
   -- (trigger _guard_worker_rate_direct_update). Dopušten put je RPC.
   PERFORM pg_temp.expect_denied('41 hourly_rate izravan UPDATE — odbijen i vlasniku (trigger)', u_owner,
     format('UPDATE public.project_workers SET hourly_rate = 99 WHERE id = %L', w1));
-  PERFORM pg_temp.expect_denied('42 hourly_rate izravan UPDATE — member odbijen', u_member,
-    format('UPDATE public.project_workers SET hourly_rate = 99 WHERE id = %L', w1));
+  -- NAMJERNO IZOSTAVLJENO: "hourly_rate izravan UPDATE — member odbijen".
+  -- Za member-a RLS vrati 0 redaka prije nego trigger uopće opali, a kontrolni
+  -- zahvat nije moguć jer isti UPDATE trigger zabranjuje i vlasniku. Provjera
+  -- zato ne bi mogla razlikovati "politika drži" od "WHERE ne pogađa redak",
+  -- pa je izostavljena umjesto da lažno zeleni. Member je pokriven testom 44
+  -- (dopušteni put — RPC set_worker_hourly_rate).
+
   PERFORM pg_temp.expect_ok('43 hourly_rate preko set_worker_hourly_rate — vlasnik prolazi', u_owner,
     format('SELECT public.set_worker_hourly_rate(%L, 99, CURRENT_DATE)', w1));
   PERFORM pg_temp.expect_denied('44 set_worker_hourly_rate — member odbijen', u_member,
