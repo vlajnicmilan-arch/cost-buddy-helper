@@ -354,7 +354,10 @@ INSERT INTO _rwm VALUES
   ('p2',         '20000000-0000-0000-0000-000000000002'),
   ('m1',         '30000000-0000-0000-0000-000000000001'),
   ('m2',         '30000000-0000-0000-0000-000000000002'),
-  ('w1',         '40000000-0000-0000-0000-000000000001');
+  ('w1',         '40000000-0000-0000-0000-000000000001'),
+  -- Korak E: trošak na projektu P1 u stanju `pending`, upisao ga voditelj.
+  ('e1',         '50000000-0000-0000-0000-000000000001');
+
 
 INSERT INTO auth.users (id, email)
 SELECT val, key || '@rwm.test' FROM _rwm WHERE key IN ('owner','member','viewer','worker','investor','nosub','memberflag','workerflag')
