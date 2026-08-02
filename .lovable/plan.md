@@ -1,155 +1,135 @@
-# Sati u profitu projekta — uskladiti P&L s onim što je stvarno plaćeno
+# Korak F — „Marža" i „Zarada" prestaju lagati
 
-## Odgovor na pitanje 1: da, isplata rada stvara zapis u `expenses`
+## Prvo: tri stvari iz repozitorija koje mijenjaju opseg
 
-Provjereno u živoj definiciji `public.create_worker_payout`: funkcija u istoj transakciji
-prvo ubacuje redak u `expenses` (`type='expense'`, iznos = `p_paid_amount`, `project_id`,
-`category='other'`, opis „Isplata: ime"), zatim redak u `project_worker_payouts` s
-`expense_id`, pa `UPDATE expenses SET worker_payout_id = <payout>`. Veza je dvosmjerna.
+**1. Planirani trošak faze je prazan na cijeloj produkciji.**
+Upit nad `project_milestones` (bez obrisanih): 54 faze na tri projekta, od toga **0 faza ima `budget`**. `investor_price` postoji: Duje i Dunja 28/28 faza, zbroj 41.778,65 (potvrđuje vašu brojku), Lucija i Mate 1/9 faza (2.900,00), Solin 0/17.
+Posljedica: planirana marža (točka 2) i pragovi vezani na planirani trošak (točka 3) danas se **neće prikazati ni na jednom projektu**, dok vlasnik ne počne upisivati trošak po fazama. To nije greška plana — to je stvarno stanje podataka nakon koraka B. Gradimo mehanizam, ne očekujemo trenutni vizualni učinak.
 
-Znači: **plaćeni rad je u `expenses`**, neplaćeni nije. Zato formula
-`materialCost = max(0, expenses − labor − collab)` i postoji — da isti novac ne uđe dvaput.
+**2. `total_budget` je zaseban i neusklađen podatak, ne alias ugovorenog.**
+Duje i Dunja: `contract_value` 42.333,52, `total_budget` 30.000. Solin i još tri projekta imaju `total_budget = 0`. Pritom `total_budget` danas nije samo prikaz — on je ulaz u `calculateProjectHealth` (komponenta „budget", 30–40 % ocjene) i pogoni traku iskorištenosti na `ProjectCard`. Micanje s prikaza znači i odluku što s tom komponentom ocjene.
 
-Provjera na produkcijskim podacima (5 isplata, 4 projekta s radom):
+**3. Preimenovanje samo natpisa ostavlja laž u susjednom tekstu.**
+Boje, semafor i AI upozorenja koriste iste brojke pod imenom marže: „Zdravo: marža iznad 30 %", „Marža kritična · {{pct}} %", `projects.marginStatus.*`, `issueDetection` („projekt u zoni gubitka" kad je `(contract − spent)/contract < 10 %`). Ako se broj preimenuje u „Preostalo", ti pratећi tekstovi moraju ići s njim, inače kartica kaže „Preostalo 90 %" i odmah ispod „marža zdrava".
 
-| Projekt | expenses | isplate u expenses | labor (svi sati) | od toga neisplaćeno | material danas |
-|---|---|---|---|---|---|
-| Duje i Dunja | 29.348,77 | 1.308,00 | 7.642,00 | 6.334,00 | 21.706,77 |
-| Lucija i Mate Č. | 10.660,14 | 56,00 | 616,00 | 560,00 | 10.044,14 |
-| Solin | 159,63 | 0 | 224,00 | 224,00 | 0 (clamp) |
-| Radiona i ostalo | 0 | 0 | 42,00 | 42,00 | 0 (clamp) |
+---
 
-Ukupno 81 od 104 radna unosa nema `payout_id` (657 neisplaćenih sati).
+## 1. Popis svih mjesta gdje se danas prikazuje taj broj
 
-Bitno za formulu: `laborCost` se računa iz svih sati, a `materialCost` oduzima taj isti
-iznos od `expenses`. Zbroj ostaje točan **samo dok je `expenses ≥ labor + collab`**:
-tada `totalCosts` ispadne točno jednak `totalExpenses`. Kod Solina i Radione uvjet ne
-vrijedi — `max(0, …)` reže materijal na nulu, pa `totalCosts` (224 odnosno 42) **premašuje
-stvarno potrošen novac** (159,63 odnosno 0). Radiona pokazuje cash saldo −42 € iako na
-projektu nije potrošeno ništa.
+| Mjesto | Datoteka | Što prikazuje danas |
+|---|---|---|
+| Dashboard, traka aktivnih projekata | `src/components/home/ActiveProjectsStrip.tsx` | veliki postotak „MARŽA" = `(contract − spent)/contract`; footer redak „Zarada" = `contract − spent`; semafor `healthFromMargin` (30/10 %) |
+| Status-rečenica ispod kartice | `src/lib/projectStatusLine.ts` | grane „Stabilan", „Pripremna faza · X % budžeta", „Pred kraj · preostalo X %" — ulaz je isti `margin` |
+| Detalj projekta, tab Budžet | `src/components/projects/ProjectBudgetTab.tsx` | KPI „Marža" + status točka; ulaz `marginPct` iz `ProjectFullScreenView.tsx` (linija 366) |
+| Detalj projekta, Earned Value | `src/components/projects/ProjectEarnedValueCard.tsx` | „Marža" (iznos) i „Marža %" iz `projectHealthScore.marginAmount / marginPct` |
+| Ocjena zdravlja | `src/lib/projectHealthScore.ts` | `marginPct = (contract − spent)/contract`, 40 % težine ocjene |
+| Biznis pregled projekata | `src/components/business/BusinessProjectsOverview.tsx` | „Marža X %" i „Zarada" iz `(budget − spent)` |
+| Kartica u listi projekata | `src/components/projects/ProjectCard.tsx` | nema natpisa „Marža", ali traka „Iskorišteno" i zdravlje dolaze iz iste logike |
+| Detekcija problema / alarm | `src/lib/issueDetection.ts`, `src/hooks/useProjectLossZoneAlert.ts` | „zona gubitka" kad je preostalo < 10 % |
+| Prognoza | `src/components/projects/ProjectForecastCard.tsx` | `marginStatus(forecastMarginPct)` |
+| PDF Earned Value | `src/lib/projectFinancePdfExport.ts` (`exportEarnedValuePdf`) | retci „Marza" i „Marza %" |
+| PDF izvještaj projekta | `src/lib/projectReportExport.ts` | „Ocekivani profit (X %)" |
+| MCP | `.lovable/mcp/manifest.json`, `src/lib/mcp/index.ts` | alat za projekte vraća prihod/rashod/`profit` iz transakcija (gotovinski) — **ne** `contract − spent`. Ovdje nema laži i ne dira se, osim opisa ako se pokaže dvosmislen |
 
-Dakle imamo dvije različite pogreške ovisno o projektu:
-- veliki projekti: ukupni iznos slučajno točan, ali **razrada laže** — neisplaćeni rad je
-  tiho premješten iz „Materijalni troškovi" u „Radna snaga" (kod Duje i Dunje 6.334 €),
-- mali projekti: **i ukupni iznos laže** jer clamp probije identitet.
+P&L kartica (`ProjectProfitLossCard`) i njezin PDF ostaju netaknuti — oni su već gotovinski i imenovani točno.
 
-## Odgovor na pitanje 2: kartica danas nije ni cash ni accrual — preporuka je A
+## 2. Preimenovanje
 
-Lijeva kolona kartice doslovno piše „Trenutno stanje (gotovina)". Ulaz u nju je
-`totalIncome − (labor + collab + material)`, gdje je labor obračunski, a collab i material
-gotovinski. To je hibrid, a ne jedan ni drugi model.
+Novi par natpisa za **otvorene** projekte (`draft`, `active`, `paused`, `cancelled`):
+- „Marža" → **„Preostalo"** (`projects.card.remainingPct`)
+- „Zarada" → **„Neutrošeno"** (`projects.card.unspent`)
 
-**Preporuka: varijanta A (cash), s neisplaćenim radom kao zasebnom otvorenom stavkom.**
-Razlozi, redom po težini:
+Za `status = 'completed'` isti izračun zadržava „Ostvarena marža" / „Zarada" (`projects.card.realizedMargin`, `projects.card.realizedProfit`).
 
-1. Vlasnikovo pravilo je „knjiži ono što je odlučeno i plaćeno". Trošak po fazi već radi
-   tako (isključivo `expenses`), a korak E ide u istom smjeru — nepotvrđeni trošak ne ulazi.
-   A vraća P&L u isti model; B trajno zadržava dva različita modela na istom projektu.
-2. Samo A uklanja clamp. U B varijanti Solin i Radiona i dalje prikazuju trošak veći od
-   potrošenog novca, jer accrual bez upisa neisplaćenog rada u `expenses` nema odakle
-   povući protustavku. B bi zapravo tražio i treću stavku (obveza prema radnicima) da bi
-   bio konzistentan — to je veći zahvat od A, ne manji.
-3. Ostatak podataka je već cash: suradnici se broje po `paid_amount`, prihod po naplati.
+Izbor imena rješava jedan pomoćnik, `src/lib/projectMetricLabels.ts`:
 
-Što se mijenja u brojkama koje korisnik danas vidi (A):
+```text
+getRemainderLabels(status) -> { pctKey, amountKey, isRealized }
+```
 
-- `laborCost` = zbroj isplata (nedeleted isplatni `expenses`), ne svi sati.
-  Duje i Dunja 7.642 → 1.308; Lucija 616 → 56; Solin 224 → 0; Radiona 42 → 0.
-- `materialCost` = `expenses − isplaćeni rad − collab`, bez clampa.
-  Duje i Dunja 21.706,77 → 23.140,77; Lucija 10.044,14 → 10.604,14; Solin 0 → 159,63.
-- **Cash saldo i „Svi troškovi" ostaju nepromijenjeni kod Duje i Dunje i Lucije** (identitet
-  `totalCosts = totalExpenses`), a **ispravljaju se kod Solina (+64,37) i Radione (+42,00)**.
-- Novo: „Neisplaćeni rad" kao zasebna otvorena stavka (6.334 / 560 / 224 / 42 €), izvan
-  zbroja troškova, s brojem sati.
-- Očekivani profit prema ugovoru raste za iznos neisplaćenog rada, pa uz njega ide
-  napomena da neisplaćeni rad tek predstoji.
+Sva mjesta iz tablice zovu njega; nijedna komponenta ne odlučuje sama. Isti pomoćnik pokriva i pratеće tekstove (semafor, `marginStatus`, AI upozorenja, `statusLine`), da se ne dogodi „Preostalo 90 % / marža zdrava".
 
-## Usput nađeno (odluka potrebna)
+Prijevodi hr/en/de: hr „Preostalo" / „Neutrošeno" / „Ostvarena marža"; en „Remaining" / „Unspent" / „Realized margin"; de „Verbleibend" / „Nicht ausgegeben" / „Erzielte Marge". Stari ključevi ostaju u datotekama dok se svi potrošači ne prebace, pa se brišu u istom koraku.
 
-`useProjectProfitLoss` dohvaća `expenses` bez filtra na `deleted_at`. U produkciji je
-7 obrisanih projektnih redaka u ukupnom iznosu 103,36 €, od čega 3 nastala storniranjem
-isplata (`status='voided'`). Ti iznosi danas ulaze u `totalExpenses`. Predlažem dodati
-`.is('deleted_at', null)` u istom zahvatu, jer bez toga bi nova `laborCost` iz isplata
-brojala i stornirane isplate. To dira samo čitanje, ne podatke.
+## 3. Planirana marža projekta (zbroj po fazama)
 
-## Gdje se `laborCost` / `materialCost` koriste
+Novi čisti modul `src/lib/projectPlannedMargin.ts`, izgrađen nad postojećim `sumVisibleAmounts` iz `src/lib/milestoneAmounts.ts` (već razlikuje „skriveno/neupisano" od nule).
 
-Cijeli obuhvat, provjeren pretragom po `src`, `supabase`, `docs`:
+```text
+computeProjectPlannedMargin(milestones) -> null | {
+  plannedCost, plannedPrice, plannedMarginAmount, plannedMarginPct,
+  covered: { withBoth, total }, partial: boolean
+}
+```
 
-- `src/lib/projectProfitLoss.ts` — jedini izračun.
-- `src/lib/projectLaborCost.ts` — dijeljeni helper za sate (koristi ga i
-  `useWorkerEarningsPreview` / `MyWorkerPayCard`; **ne dira se**, on prikazuje zaradu
-  radnika, a ne trošak projekta).
-- `src/hooks/useProjectProfitLoss.ts` — dohvat.
-- `src/components/projects/ProjectProfitLossCard.tsx` — kartica, jedini UI potrošač.
-- `src/components/projects/ProjectFullScreenView.tsx` — ugrađuje karticu.
-- `src/lib/projectFinancePdfExport.ts` — PDF „Profitabilnost (P&L)", redci Radna snaga /
-  Materijalni troškovi / ukupno.
-- `src/i18n/locales/{hr,en,de}.json` — ključevi.
-- Testovi: `projectProfitLoss.test.ts`, `projectLaborCost.test.ts`,
-  `projectFinanceUnified.test.ts`.
+**Pravilo za djelomične podatke.** Zbrajaju se **samo faze koje imaju oba iznosa** (`budget` i `investor_price` različiti od `null`). Rezultat se vraća samo kad je takvih faza barem jedna; inače `null` i ništa se ne prikazuje — nikad 0 %.
+Obrazloženje: marža je omjer dvaju zbrojeva. Ako se u brojnik uzmu cijene svih faza, a u nazivnik troškovi samo nekih, postotak je izmišljen i uvijek previsok. Uzeti prazan trošak kao 0 znači tvrditi „ova faza je čista zarada", što je najgori mogući smjer pogreške. Zato je jedinica zbrajanja **faza s parom**, a ne pojedino polje.
 
-**Nijedna edge funkcija, MCP ruta ni dashboard ne koriste ove veličine** — nema pogodaka
-u `supabase/functions`. Zahvat je time zatvoren u frontend + PDF.
+Kad je `withBoth < total`, iznad brojke stoji tiha napomena „temeljeno na {{withBoth}} od {{total}} faza" — brojka je istinita za ono što pokriva i sama kaže koliko pokriva. Faze koje uloga ne smije vidjeti već dolaze kao `null` iz `project_milestones_scoped`, pa ispadaju iz zbroja istim putem; investitor i radnik zbog toga ne dobivaju novi kanal prema marži.
 
-## Djelomično isplaćeno razdoblje
+Planirana marža je **snimka faza** i ne miješa se s ugovorenom vrijednošću — vidi pravilo niže.
 
-Isplata nosi `status` (`paid`, `partial`, `advance`, `voided`), `gross_amount` (obračunato)
-i `paid_amount` (plaćeno), a pokriveni unosi dobiju `payout_id`. Ponašanje:
+## 4. Napomena o nerazvrstanom iznosu
 
-- **A:** u trošak ulazi `paid_amount` (jer je to iznos u `expenses`). Manjak
-  `gross − paid` ostaje u otvorenoj stavci, pa se neisplaćeni rad računa kao
-  „svi sati po `rate_at` − isplaćeno", ne kao „sati bez `payout_id`". Time je i predujam
-  (`advance`, sati 0 uz plaćeni iznos) pokriven bez negativnih vrijednosti; otvorena
-  stavka se floora na 0.
-- **B:** trošak se ne mijenja (svi sati), a otvorena stavka je isti iznos
-  `sati − isplaćeno`. Razlika je samo u tome ulazi li obračunati dio u zbroj troškova.
+`unclassified = contract_value − Σ investor_price` (samo prikaz, nikad ulaz u izračun).
+Prikazuje se kao tiha rečenica u sivom, bez ikone upozorenja i bez boje, samo kad postoji barem jedna faza s cijenom i kad je razlika po apsolutnoj vrijednosti veća od 0,01. Tekst: „Ugovoreno {{contract}} · po fazama razvrstano {{phases}} · nerazvrstano {{diff}}". Negativna razlika (zbroj faza veći od ugovorenog) dobiva istu rečenicu s drugim predznakom, i dalje bez alarma. Duje i Dunja: 42.333,52 / 41.778,65 / 554,87.
 
-Stornirane isplate (`voided`, obrisani `expenses` redak) ne ulaze ni u trošak ni u pokriće —
-to je izravno vezano uz `deleted_at` filtar gore.
+## 5. Pragovi zdravlja bez grananja na pet mjesta
+
+Danas su pragovi rasuti: `ActiveProjectsStrip.healthFromMargin` (0,30 / 0,10), `ProjectFullScreenView` linija 373–377 (`costPct >= 80`), `projectHealthScore.marginScoreFromPct` (5/15/30), `issueDetection` (10 %), `useProjectLossZoneAlert` (90 %).
+
+Uvodi se jedan pojam — **osnovica za pragove** — u `src/lib/projectCostBaseline.ts`:
+
+```text
+getCostBaseline(project, milestones) ->
+  { value, source: 'planned_cost' | 'contract' | 'none' }
+```
+
+- `planned_cost` kad Σ `budget` po fazama > 0 (nove, oštrije granice: žuto na 80 % planiranog troška, crveno preko 100 %)
+- `contract` kad planiranog troška nema (današnje ponašanje, nepromijenjeno)
+- `none` kad nema ni ugovorenog — nema pragova, nema boje
+
+Svako od pet mjesta prelazi na `getCostBaseline` + zajednički `getHealthLevel(spent, baseline)`; grananje `planned_cost` vs `contract` postoji **samo unutar** te dvije funkcije. Prag ostaje 80/100 — mijenja se ono na što se 80 % odnosi, a ne broj. `projectHealthScore` zadržava svoju strukturu ocjene, ali `budgetUsedPct` računa iz osnovice umjesto iz `total_budget`.
+
+## 6. Odnos prema `total_budget`
+
+Prijedlog: **maknuti ga s prikaza, zadržati u bazi.**
+- s korisničkog sučelja nestaje kao zaseban KPI i kao nazivnik trake „Iskorišteno" na `ProjectCard` (zamjenjuje ga osnovica iz točke 5);
+- ostaje kao **posljednji fallback** u `calculateContractValue`, jer ga koriste stari projekti bez `contract_value` (Eda Zg, Milan) i `applyContractAmendment`;
+- stupac se **ne** briše i podaci se ne diraju — nikakva migracija.
+
+Time nestaje dvoznačnost „30.000 ili 42.333,52", a nijedan postojeći projekt ne ostaje bez brojke.
+
+## Pravilo koje se ne smije prekršiti
+
+Ugovorena vrijednost je knjiga (osnovica + aneksi, s tragom preko `project_contract_amendments`). Zbroj cijena po fazama je snimka. Njih dvoje **nikad ne ulaze u isti izračun** i zbroj faza se **nikad ne pribraja** ugovorenoj vrijednosti. Kod Duje i Dunje aneksi već čine 13.945,52 od ugovorenih 42.333,52 — pribrajanje faza bilo bi dvostruko brojanje.
+
+Provedba u kodu: `projectPlannedMargin.ts` prima **samo** faze, bez pristupa projektu; `getCostBaseline` prima projekt i faze, ali ih koristi kao **alternative** (`source`), nikad kao pribrojnike. Jedina točka gdje se oba pojma pojavljuju zajedno je oduzimanje iz točke 4, koje je čisti prikaz.
 
 ## Testovi
 
-- Regresija na današnje brojke: fixture po sva četiri produkcijska projekta s očekivanim
-  vrijednostima prije i poslije, uz izričitu tvrdnju da cash saldo Duje i Dunje i Lucije
-  ostaje isti, a Solinu i Radioni se ispravlja.
-- Identitet `laborCost + collaboratorCost + materialCost === totalExpenses` bez clampa —
-  test koji pada ako se clamp vrati.
-- `materialCost` nikad negativan uz uredne podatke; ako ispadne negativan, to je znak
-  isplate izvan `expenses` — test to prijavljuje eksplicitno, ne prikriva `max(0, …)`.
-- Djelomična isplata: gross 300 / paid 100 → trošak 100, otvoreno 200.
-- Predujam: sati 0 / paid 150 → trošak 150, otvoreno 0 (ne −150).
-- Stornirana isplata se ne broji ni u trošak ni u pokriće.
-- Bez ijedne isplate: trošak rada 0, sve sate u otvorenoj stavci.
-- PDF izvoz: novi redak otvorene stavke izvan zbroja, zbroj i dalje jednak `totalExpenses`.
+Vitest, novi `src/lib/__tests__/projectPlannedMargin.test.ts` i `projectCostBaseline.test.ts`:
+1. sve faze s parom → planirana marža točna; nijedna s parom → `null` (ne 0 %);
+2. djelomično pokriće → računa se samo iz faza s parom, `covered` javlja 1/9 (slučaj Lucija i Mate);
+3. skriveni iznosi (`null` iz scoped pogleda) ne postaju 0;
+4. cijena 0 ili negativna → bez postotka;
+5. **zabrana pribrajanja**: za Duje i Dunja (ugovoreno 42.333,52, Σ cijena 41.778,65) tvrdi se da nijedan izlaz nije 84.112,17 i da `plannedPrice` nikad ne ovisi o `contract_value` — test pada ako netko uvede zbrajanje;
+6. nerazvrstani iznos = 554,87, s pozitivnim i negativnim smjerom;
+7. osnovica: `planned_cost` kad postoji Σ trošak, `contract` kad ne postoji, `none` kad nema ničega; pragovi 80/100 na svakoj od njih;
+8. natpisi: otvoren projekt → „Preostalo"/„Neutrošeno", `completed` → „Ostvarena marža"/„Zarada";
+9. i18n: novi ključevi postoje u hr/en/de (postojeći test potpunosti prijevoda).
+
+SQL paket (balance, role write matrix, SECDEF invarijanta) pokreće se nepromijenjen kao regresija — korak F ne dira bazu, pa se očekuje isti rezultat.
 
 ## Rizici
 
-- **Dvostruko brojanje** — glavni rizik. Nastaje ako se isplaćeni rad izvede iz sati
-  umjesto iz isplatnih `expenses` redaka. Zato je izvor `expenses.worker_payout_id`
-  (nedeleted), a materijal je ostatak istog skupa — isti novac fizički ne može ući dvaput.
-  Pokriveno testom identiteta.
-- **Isplata izvan RPC-a.** Ako netko ručno unese trošak isplate bez `worker_payout_id`,
-  on pada u materijal, a rad ostaje otvoren. Ne rješavamo u ovom koraku; test negativnog
-  materijala i otvorena stavka to čine vidljivim umjesto da tiho pomakne brojke.
-- **Razilaženje s troškom po fazi** — A ga smanjuje, ne povećava: oba ekrana onda gledaju
-  isti `expenses`. Ostaje razlika u obuhvatu (faze dijele po fazi, P&L ne), što je namjerno.
-- **Percepcija** — vlasniku profit optički raste za neisplaćeni rad. Ublažava se time da
-  otvorena stavka stoji odmah uz cash saldo i ulazi u PDF.
-- **Korak E** — pending i rejected troškovi već su isključeni preko `status` filtra u
-  `isCountedTx`; A ne mijenja taj filtar.
+- **Osobni mod.** `ActiveProjectsStrip` se u osobnom modu prikazuje; faze ondje često nemaju iznose, pa će osnovica biti `contract`, a planirane marže neće biti. Nova imena („Preostalo") ipak vrijede i ondje — što je i cilj.
+- **Projekti bez ijednog iznosa** (Solin, dva prazna „Milan"): osnovica `none`, bez pragova i bez boje, umjesto današnjeg tihog nule-ponašanja. Postojeći poziv „Postavi ugovoreni iznos" ostaje jedini sadržaj kartice.
+- **Prazan planirani trošak na cijeloj produkciji** (nalaz 1): nakon isporuke vlasnik neće vidjeti razliku dok ne upiše troškove po fazama. Treba to reći unaprijed da se izostanak brojke ne pročita kao kvar.
+- **Zaoštreni pragovi.** Čim se upiše planirani trošak, projekti koji su danas zeleni prelaze u žuto ranije. To je namjera, ali je vidljiva promjena ponašanja.
+- **Ocjena zdravlja** se pomiče jer `budgetUsedPct` mijenja nazivnik; brojka „X/100" na Earned Value kartici neće biti ista kao jučer.
+- **Uloge.** Planirana marža izvedena je iz `project_milestones_scoped`, pa nasljeđuje zaštitu iz koraka A i D2. Rizik bi nastao samo ako bi se zbroj računao na neskopiranom izvoru — testovi 3 i 5 to čuvaju.
 
-## Tehnički sažetak
+## Ne dira se
 
-1. `useProjectProfitLoss`: u `expenses` select dodati `worker_payout_id` i
-   `.is('deleted_at', null)`; dohvatiti `project_worker_payouts`
-   (`paid_amount, gross_amount, status`) i `payout_id` na radnim unosima.
-2. `projectProfitLoss.ts`: `laborCost` = zbroj nedeleted isplatnih `expenses`;
-   `materialCost = totalExpenses − laborCost − collaboratorCost` bez clampa;
-   novo polje `unpaidLaborCost` (+ `unpaidHours`) izvan `totalCosts`.
-3. `ProjectProfitLossCard.tsx`: „Radna snaga (isplaćeno)" u razradi, nova stavka
-   „Neisplaćeni rad" vizualno odvojena od zbroja, uz sate.
-4. `projectFinancePdfExport.ts`: isti redak u izvozu, izvan zbroja.
-5. i18n ključevi u hr/en/de.
-6. Ne dira se: trošak po fazi, motor salda, korak E, čitanja iz A/D2, prava pisanja iz D,
-   iznosi na fazama, ugovorena vrijednost, `projectLaborCost.ts`, postojeći podaci.
+Motor salda, korak E (troškovi na potvrdu), čitanja iz koraka A i D2, prava pisanja iz koraka D, P&L kartica i njezin PDF, postojeći podaci. Nema migracije baze.
