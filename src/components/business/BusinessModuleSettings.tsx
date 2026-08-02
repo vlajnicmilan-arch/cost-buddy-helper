@@ -25,7 +25,7 @@ export const BusinessModuleSettings = () => {
   const [industryType, setIndustryType] = useState<IndustryType>('other');
   const [enabledModules, setEnabledModules] = useState<ModuleId[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
