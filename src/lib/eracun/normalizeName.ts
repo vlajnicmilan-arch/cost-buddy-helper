@@ -49,15 +49,24 @@ export const nameTokens = (value: string | null | undefined): string[] => {
 };
 
 /**
- * `true` kad je kraći skup tokena u cijelosti sadržan u dužem
- * i ima barem 2 tokena.
+ * „Jezgra" naziva — prva dva značajna tokena (nositelj identiteta tvrtke).
+ * Ostalo (ime vlasnika, djelatnost, grad) razlikuje se između izvora i ne
+ * smije rušiti podudaranje.
+ */
+export const nameCore = (value: string | null | undefined): string[] =>
+  nameTokens(value).slice(0, 2);
+
+/**
+ * `true` kad se jezgra jednog naziva (točno 2 značajna tokena) u cijelosti
+ * nalazi među tokenima drugog. Deterministički i objašnjivo: „prve dvije
+ * značajne riječi naziva pojavljuju se na drugoj strani".
  */
 export const namesMatch = (a: string | null | undefined, b: string | null | undefined): boolean => {
+  const contains = (core: string[], tokens: string[]) =>
+    core.length === 2 && core.every((token) => tokens.includes(token));
   const ta = nameTokens(a);
   const tb = nameTokens(b);
   if (ta.length === 0 || tb.length === 0) return false;
-  const [shorter, longer] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
-  if (shorter.length < 2) return false;
-  const set = new Set(longer);
-  return shorter.every((token) => set.has(token));
+  return contains(nameCore(a), tb) || contains(nameCore(b), ta);
 };
+
