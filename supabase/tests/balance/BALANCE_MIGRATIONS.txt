@@ -35,3 +35,4 @@
 
 20260713100009_*.sql   # Lost-update fix: recompute_custom_source_balance FOR UPDATE + trigger deterministic lock order (ORDER BY x)
 20260802065756_*.sql   # Korak E: pending/rejected troskovi ne ulaze u saldo (trigger + recompute filtar) + review RPC
+20260802075553_*.sql   # Korak E hotfix: REVOKE anon EXECUTE na review_project_expense + auto_reject_expired_pending_expenses (+ interna brana: cron/service_role only)
