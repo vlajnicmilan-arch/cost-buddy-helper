@@ -296,14 +296,15 @@ describe('computeProjectProfitLoss — cash view (margin)', () => {
         { type: 'expense', amount: 800 },
       ],
       workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 10 }],
-      workEntries: [{ worker_id: 'w1', actual_hours: 20 }], // 200
+      workEntries: [{ worker_id: 'w1', actual_hours: 20 }], // 200 accrued, unpaid
       collaborators: [
         { id: 'c1', first_name: 'X', last_name: 'Y', total_price: 0, paid_amount: 100 },
       ],
     });
-    // material = max(0, 800 - 200 - 100) = 500
-    // total costs = 200 + 100 + 500 = 800
+    // labor paid = 0, material = 800 - 0 - 100 = 700
+    // total costs = 0 + 100 + 700 = 800
     expect(r.netProfit).toBe(1200);
+
     expect(r.margin).toBe(60);
   });
 
