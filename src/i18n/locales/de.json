@@ -6019,6 +6019,21 @@
       "emptyUncollected": "Keine offenen Ausgangsrechnungen.",
       "markCollected": "Bezahlt erhalten"
     },
+    "match": {
+      "open": "Zahlungen zuordnen",
+      "title": "Zahlungen den Rechnungen zuordnen",
+      "subtitle": "Die Zuordnung erzeugt weder Einnahme noch Ausgabe und ändert keinen Saldo — die Zahlung stammt bereits aus dem Kontoauszug.",
+      "empty": "Keine Zuordnungsvorschläge.",
+      "confirm": "Bestätigen ({{n}})",
+      "done": "Zugeordnete Zahlungen: {{n}}",
+      "failed": "Zuordnung fehlgeschlagen: {{reason}}",
+      "reasonReference": "Zahlungsreferenz",
+      "reasonIban": "Gelernte IBAN",
+      "reasonAmountName": "Betrag + Name",
+      "partial": "Teilweise",
+      "oldestNote": "Mehrere Rechnungen derselben Gegenpartei haben denselben Betrag — vorgeschlagen wird die älteste offene.",
+      "settledOf": "Bezahlt {{paid}} von {{total}}"
+    },
     "paid": {
       "title": "Als bezahlt markieren",
       "dateLabel": "Zahlungsdatum",

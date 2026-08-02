@@ -6019,6 +6019,21 @@
       "emptyUncollected": "No uncollected outgoing invoices.",
       "markCollected": "Collected"
     },
+    "match": {
+      "open": "Match payments",
+      "title": "Match payments to invoices",
+      "subtitle": "Matching creates no income or expense and does not change balances — the payment is already recorded from the statement.",
+      "empty": "No match suggestions.",
+      "confirm": "Confirm ({{n}})",
+      "done": "Payments matched: {{n}}",
+      "failed": "Matching failed: {{reason}}",
+      "reasonReference": "Payment reference",
+      "reasonIban": "Learned IBAN",
+      "reasonAmountName": "Amount + name",
+      "partial": "Partial",
+      "oldestNote": "Several invoices from the same counterparty share this amount — the oldest unpaid one is suggested.",
+      "settledOf": "Paid {{paid}} of {{total}}"
+    },
     "paid": {
       "title": "Mark as paid",
       "dateLabel": "Payment date",

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { AlertTriangle, CheckCircle2, Loader2, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Link2, Loader2, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +21,7 @@ import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
+import { PaymentMatchReview } from './PaymentMatchReview';
 
 type Filter = 'unpaid' | 'paid' | 'all';
 type Direction = 'in' | 'out';
@@ -43,12 +44,13 @@ export const IncomingInvoicesPanel = () => {
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, refetch,
   } = useIncomingInvoices();
 
   const [direction, setDirection] = useState<Direction>('in');
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
+  const [matchOpen, setMatchOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
   const [collectTarget, setCollectTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
@@ -242,10 +244,18 @@ export const IncomingInvoicesPanel = () => {
             <TabsTrigger value="all" className="text-xs">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button size="sm" className="min-h-[36px]" onClick={() => setImportOpen(true)}>
-          <Upload className="w-3.5 h-3.5 mr-1" />
-          {t('eracun.importButton', 'Učitaj eRačun (XML)')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {direction === 'out' && (
+            <Button size="sm" variant="outline" className="min-h-[36px]" onClick={() => setMatchOpen(true)}>
+              <Link2 className="w-3.5 h-3.5 mr-1" />
+              {t('eracun.match.open', 'Poveži uplate')}
+            </Button>
+          )}
+          <Button size="sm" className="min-h-[36px]" onClick={() => setImportOpen(true)}>
+            <Upload className="w-3.5 h-3.5 mr-1" />
+            {t('eracun.importButton', 'Učitaj eRačun (XML)')}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -274,6 +284,14 @@ export const IncomingInvoicesPanel = () => {
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
                   <div className="mt-1">{dueBadge(inv)}</div>
+                  {!inv.paid_at && Number(inv.settled_amount ?? 0) > 0 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {t('eracun.match.settledOf', 'Plaćeno {{paid}} od {{total}}', {
+                        paid: formatAmount(Number(inv.settled_amount)),
+                        total: formatAmount(Number(inv.total_amount)),
+                      })}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-semibold text-sm">{formatAmount(Number(inv.total_amount))}</p>
@@ -341,6 +359,13 @@ export const IncomingInvoicesPanel = () => {
         onOpenChange={(open) => !open && setCollectTarget(null)}
         saving={savingPayment}
         onConfirm={handleConfirmCollected}
+      />
+
+      <PaymentMatchReview
+        open={matchOpen}
+        onOpenChange={setMatchOpen}
+        invoices={invoices}
+        onDone={refetch}
       />
     </div>
   );
