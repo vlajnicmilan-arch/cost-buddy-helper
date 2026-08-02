@@ -3,7 +3,7 @@ import { useProjectProfitLoss } from '@/hooks/useProjectProfitLoss';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature, Download } from 'lucide-react';
+import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature, Download, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportProfitLossPdf } from '@/lib/projectFinancePdfExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
