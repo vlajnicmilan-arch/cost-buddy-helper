@@ -105,11 +105,11 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
       })),
     );
     setLoading(false);
-  }, [user, authReady, activeBusinessProfileId]);
+  }, [user, authReady, activeBusinessProfileId, fetchWindow]);
 
   useEffect(() => { load(); }, [load]);
 
-  const matchInvoices = useMemo(() => invoices.map(toMatchInvoice), [invoices]);
+
 
   const suggestions: PaymentSuggestion[] = useMemo(
     () => matchPayments({ invoices: matchInvoices, transactions, learnedIbans, direction: 'out' }),
