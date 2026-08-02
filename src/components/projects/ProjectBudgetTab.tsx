@@ -7,11 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
 import type { RemainderLevel } from '@/lib/projectCostBaseline';
-import type { PlannedMarginResult, UnclassifiedContract } from '@/lib/projectPlannedMargin';
+import type { PlannedMarginResult, ContractPhaseNote } from '@/lib/projectPlannedMargin';
 import {
   PLANNED_MARGIN_COVERAGE_LABEL,
   PLANNED_MARGIN_LABEL,
   UNCLASSIFIED_CONTRACT_LABEL,
+  PHASE_PRICE_COVERAGE_LABEL,
   type RemainderLabels,
 } from '@/lib/projectMetricLabels';
 
@@ -34,7 +35,7 @@ interface ProjectBudgetTabProps {
   remainderLabels: RemainderLabels;
   remainderStatusLabel: string;
   plannedMargin: PlannedMarginResult | null;
-  unclassified: UnclassifiedContract | null;
+  contractPhaseNote: ContractPhaseNote | null;
   showBudgetAlarm: boolean;
   showCollectionAlarm: boolean;
   canAccessBusinessTabs: boolean;
@@ -64,7 +65,7 @@ export const ProjectBudgetTab = ({
   remainderLabels,
   remainderStatusLabel,
   plannedMargin,
-  unclassified,
+  contractPhaseNote,
   showBudgetAlarm,
   showCollectionAlarm,
   canAccessBusinessTabs,
@@ -210,13 +211,22 @@ export const ProjectBudgetTab = ({
         </div>
       )}
 
-      {/* Nerazvrstani iznos — siva rečenica, bez ikone i bez boje */}
-      {unclassified && (
+      {/* Napomena uz faze — siva rečenica, bez ikone i bez boje.
+          Razlika se spominje SAMO kad svaka faza ima cijenu. */}
+      {contractPhaseNote?.kind === 'unclassified' && (
         <p className="text-[11px] text-muted-foreground">
           {t(UNCLASSIFIED_CONTRACT_LABEL.key, UNCLASSIFIED_CONTRACT_LABEL.fallback, {
-            contract: formatAmount(unclassified.contractValue),
-            phases: formatAmount(unclassified.phasesTotal),
-            diff: formatAmount(unclassified.diff),
+            contract: formatAmount(contractPhaseNote.contractValue),
+            phases: formatAmount(contractPhaseNote.phasesTotal),
+            diff: formatAmount(contractPhaseNote.diff),
+          })}
+        </p>
+      )}
+      {contractPhaseNote?.kind === 'partialCoverage' && (
+        <p className="text-[11px] text-muted-foreground">
+          {t(PHASE_PRICE_COVERAGE_LABEL.key, PHASE_PRICE_COVERAGE_LABEL.fallback, {
+            withPrice: contractPhaseNote.coverage.withPrice,
+            total: contractPhaseNote.coverage.total,
           })}
         </p>
       )}
