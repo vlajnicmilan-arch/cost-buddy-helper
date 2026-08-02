@@ -120,6 +120,10 @@ export interface ProfitLossExportData {
   laborCost: number;
   collaboratorCost: number;
   materialCost: number;
+  /** Open labor liability — reported outside the cost total. */
+  unpaidLaborCost?: number;
+  unpaidHours?: number;
+
   netProfit: number;
   margin: number;
   contractValue: number;
