@@ -10,6 +10,18 @@
 export type EracunDocType =
   /** Obični račun */
   | '380'
+  /** Račun za mjerene usluge (struja, plin, voda) */
+  | '82'
+  /** Građevinska privremena situacija */
+  | '875'
+  /** Građevinska privremena okončana situacija */
+  | '876'
+  /** Građevinska okončana situacija */
+  | '877'
+  /** Ispravak računa */
+  | '384'
+  /** Faktoring račun */
+  | '393'
   /** Odobrenje (credit note) — negativan iznos */
   | '381'
   /** Terećenje (debit note) */

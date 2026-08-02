@@ -5963,7 +5963,6 @@
     "title": "Eingangsrechnungen (E-Rechnung)",
     "menuDesc": "E-Rechnungs-XML importieren und als bezahlt markieren",
     "reject": {
-      "unsupported_doc_type": "Dokumenttyp {{docType}} wird in dieser Version nicht unterstützt.",
       "unsupported_currency": "Währung {{currency}} wird nicht unterstützt — nur EUR.",
       "missing_total": "Gesamtbetrag in der Datei nicht gefunden.",
       "missing_supplier": "USt-IdNr. des Lieferanten nicht gefunden.",
@@ -5972,7 +5971,7 @@
     "import": {
       "title": "Eingangsrechnungen importieren (E-Rechnung)",
       "pickFiles": "XML-Dateien auswählen",
-      "hint": "Rechnungen (380), periodische Abrechnungen (394) und Gutschriften (381, negativer Betrag) werden akzeptiert, nur in EUR. Die digitale Signatur wird in dieser Version nicht geprüft.",
+      "hint": "Akzeptiert: Rechnungen (380), verbrauchsabhängige Leistungen (82 — Strom, Gas, Wasser), Bauabrechnungen (875/876/877), Leasing (394), Gutschriftverfahren (389) und Factoring (393). Gutschriften (381) werden negativ gespeichert; Korrekturen (384) und Anzahlungen (386) mit Warnhinweis. Unbekannte Typen entscheidest du selbst. Nur EUR. Die digitale Signatur wird in dieser Version nicht geprüft.",
       "save": "Speichern ({{n}})",
       "saved": "{{n}} Eingangsrechnungen importiert",
       "undo": "Import rückgängig",
@@ -5987,7 +5986,8 @@
       "rejected": "Abgelehnt",
       "willImport": "Zu importieren",
       "unknownSupplier": "Unbekannter Lieferant",
-      "summary": "{{total}} Dokumente · {{importable}} zu importieren · {{duplicates}} Duplikate · {{rejected}} abgelehnt"
+      "summary": "{{total}} Dokumente · {{importable}} zu importieren · {{duplicates}} Duplikate · {{rejected}} abgelehnt",
+      "needsDecision": "Zu entscheiden"
     },
     "list": {
       "unpaid": "Unbezahlt",
@@ -6011,6 +6011,11 @@
       "confirm": "Zahlung erfassen",
       "expenseDescription": "Eingangsrechnung {{number}}",
       "failed": "Erfassen der Zahlung fehlgeschlagen."
+    },
+    "caution": {
+      "correction": "Dies ist eine Rechnungskorrektur (Typ {{docType}}). Sie kann die Originalrechnung duplizieren — vor dem Import prüfen.",
+      "prepayment": "Dies ist eine Anzahlungsrechnung (Typ {{docType}}). Eine Schlussrechnung folgt — Risiko der Doppelbuchung.",
+      "unknown_doc_type": "Unbekannter Dokumenttyp (Code {{docType}}). Dokument prüfen und selbst über den Import entscheiden."
     }
   }
 }

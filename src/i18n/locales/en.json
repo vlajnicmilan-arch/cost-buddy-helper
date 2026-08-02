@@ -5963,7 +5963,6 @@
     "title": "Incoming invoices (e-Invoice)",
     "menuDesc": "Import e-Invoice XML files and mark them paid",
     "reject": {
-      "unsupported_doc_type": "Document type {{docType}} is not supported in this version.",
       "unsupported_currency": "Currency {{currency}} is not supported — only EUR is.",
       "missing_total": "Total amount not found in the file.",
       "missing_supplier": "Supplier VAT ID not found.",
@@ -5972,7 +5971,7 @@
     "import": {
       "title": "Import incoming invoices (e-Invoice)",
       "pickFiles": "Choose XML files",
-      "hint": "Invoices (380), periodic statements (394) and credit notes (381, negative amount) are accepted, EUR only. The digital signature is not verified in this version.",
+      "hint": "Accepted: invoices (380), metered services (82 — electricity, gas, water), construction situations (875/876/877), leasing (394), self-billed (389) and factoring (393). Credit notes (381) are saved as a negative amount; corrections (384) and prepayments (386) pass with a warning. Unknown types are yours to decide on. EUR only. Digital signature is not verified in this version.",
       "save": "Save ({{n}})",
       "saved": "Imported {{n}} incoming invoices",
       "undo": "Undo import",
@@ -5987,7 +5986,8 @@
       "rejected": "Rejected",
       "willImport": "To import",
       "unknownSupplier": "Unknown supplier",
-      "summary": "{{total}} documents · {{importable}} to import · {{duplicates}} duplicates · {{rejected}} rejected"
+      "summary": "{{total}} documents · {{importable}} to import · {{duplicates}} duplicates · {{rejected}} rejected",
+      "needsDecision": "Your call"
     },
     "list": {
       "unpaid": "Unpaid",
@@ -6011,6 +6011,11 @@
       "confirm": "Record payment",
       "expenseDescription": "Incoming invoice {{number}}",
       "failed": "Recording the payment failed."
+    },
+    "caution": {
+      "correction": "This is an invoice correction (type {{docType}}). It may duplicate the original invoice — check before importing.",
+      "prepayment": "This is a prepayment invoice (type {{docType}}). A final invoice will follow — risk of double booking.",
+      "unknown_doc_type": "Unknown document type (code {{docType}}). Review the document and decide whether to import it."
     }
   }
 }
