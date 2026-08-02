@@ -1594,7 +1594,9 @@
     "attachment": {
       "smjer": "Richtung",
       "assignToSmjer": "Richtung zuweisen"
-    }
+    },
+    "assignToMilestone": "Phase zuordnen",
+    "noMilestone": "Ohne Phase"
   },
   "dashboard": {
     "balance": "Kontostand",

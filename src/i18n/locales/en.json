@@ -1594,7 +1594,9 @@
     "attachment": {
       "smjer": "Direction",
       "assignToSmjer": "Assign direction"
-    }
+    },
+    "assignToMilestone": "Assign to phase",
+    "noMilestone": "No phase"
   },
   "dashboard": {
     "balance": "Balance",

@@ -1598,7 +1598,9 @@
       "smjer": "Smjer",
       "assignToSmjer": "Pridruži smjeru"
     },
-    "amountHint": "Za decimale koristi točku ili zarez (npr. 150,50)"
+    "amountHint": "Za decimale koristi točku ili zarez (npr. 150,50)",
+    "assignToMilestone": "Pridruži fazi",
+    "noMilestone": "Bez faze"
   },
   "dashboard": {
     "balance": "Stanje",
