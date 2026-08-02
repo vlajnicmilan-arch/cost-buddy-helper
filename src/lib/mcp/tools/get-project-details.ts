@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 export default defineTool({
   name: "get_project_details",
@@ -20,7 +21,7 @@ export default defineTool({
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
       sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
-      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null),
+      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES),
     ]);
     if (project.error) return { content: [{ type: "text", text: project.error.message }], isError: true };
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };

@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 export default defineTool({
   name: "get_budget_details",
@@ -26,7 +27,8 @@ export default defineTool({
         .from("expenses")
         .select("category,amount,type")
         .eq("budget_id", budget_id)
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .in("status", COUNTED_EXPENSE_STATUSES),
     ]);
     if (plan.error) return { content: [{ type: "text", text: plan.error.message }], isError: true };
     if (!plan.data) return { content: [{ type: "text", text: "Budget not found" }], isError: true };

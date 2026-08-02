@@ -1057,7 +1057,15 @@
     },
     "investorPriceLabel": "Vidi cijenu prema investitoru",
     "investorPriceHint": "Ovaj voditelj već vidi planirani trošak faze. Uključiš li ovo, vidjet će i cijenu prema investitoru — dakle i koliko zarađuješ na svakoj fazi.",
-    "investorPriceSaved": "Vidljivost cijene spremljena"
+    "investorPriceSaved": "Vidljivost cijene spremljena",
+    "rejectReasonLabel": "Razlog odbijanja (nije obavezno)",
+    "rejectReasonPlaceholder": "Npr. nedostaje račun ili trošak nije za ovaj projekt",
+    "rejectTransactionAction": "Odbij",
+    "memberApprovalNote": "Vaše transakcije idu vlasniku na potvrdu i ne ulaze u saldo dok nisu odobrene.",
+    "rejectedTransactions": "Odbijene transakcije",
+    "rejectedNoEffect": "Odbijeni zapisi ostaju vidljivi, ali ne ulaze ni u jedan zbroj.",
+    "rejectionReason": "Razlog",
+    "autoRejectExpired": "Automatski odbijeno — isteklo bez odluke"
   },
   "estimates": {
     "title": "Ponude i predračuni",
@@ -2804,6 +2812,23 @@
       "daily": {
         "title": "Odluka i dalje čeka odgovor",
         "body": "„{{title}}\" — molimo tvoj odgovor."
+      }
+    },
+    "project_expense_review": {
+      "submitted": {
+        "title": "Trošak čeka vašu potvrdu",
+        "message": {
+          "expense": "{{actor}} je poslao trošak „{{description}}\" ({{amount}}) u projektu „{{project}}\". Čeka vašu potvrdu.",
+          "income": "{{actor}} je poslao prihod „{{description}}\" ({{amount}}) u projektu „{{project}}\". Čeka vašu potvrdu."
+        }
+      },
+      "approved": {
+        "title": "Trošak odobren",
+        "message": "{{actor}} je odobrio „{{description}}\" ({{amount}}) u projektu „{{project}}\"."
+      },
+      "rejected": {
+        "title": "Trošak odbijen",
+        "message": "{{actor}} je odbio „{{description}}\" ({{amount}}) u projektu „{{project}}\". Razlog: {{reason}}"
       }
     }
   },

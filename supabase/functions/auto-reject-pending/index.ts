@@ -85,14 +85,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { error: deleteError } = await supabase
-      .from('expenses')
-      .delete()
-      .in('id', expiredIds);
+    // Korak E: istekli zahtjev se NE briše — označava se kao odbijen, uz
+    // automatski razlog. Stanje se mijenja isključivo kroz zaštićeni RPC.
+    const { error: rejectError } = await supabase.rpc('auto_reject_expired_pending_expenses', {
+      p_older_than: '24 hours',
+    });
 
-    if (deleteError) {
-      console.error('Error deleting expired transactions:', deleteError);
-      throw deleteError;
+    if (rejectError) {
+      console.error('Error auto-rejecting expired transactions:', rejectError);
+      throw rejectError;
     }
 
 

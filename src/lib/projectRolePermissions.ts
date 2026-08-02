@@ -59,6 +59,11 @@ export interface ProjectPermissions {
   canEditCollaborators: boolean;
   canApprovePendingTransactions: boolean;
   canAddTransaction: boolean;
+  /**
+   * Korak E — voditelj (member) smije upisati trošak, ali isključivo u stanju
+   * `pending`. Vlasnik upisuje odmah odobreno. Ostale role ne upisuju uopće.
+   */
+  mustSubmitTransactionsForApproval: boolean;
   canEditOthersTransaction: boolean;
 
 
@@ -90,6 +95,7 @@ const EMPTY: ProjectPermissions = {
   canEditCollaborators: false,
   canApprovePendingTransactions: false,
   canAddTransaction: false,
+  mustSubmitTransactionsForApproval: false,
   canEditOthersTransaction: false,
   canCompleteOrReopenProject: false,
   canDeleteProject: false,
@@ -137,6 +143,8 @@ export function deriveProjectPermissions(ctx: ProjectRoleContext): ProjectPermis
     canApprovePendingTransactions: isOwnerEffective,
     // Viewer i Worker ne unose transakcije.
     canAddTransaction: isOwnerEffective || isMember,
+    // Korak E: samo vlasnikov upis ide odmah u saldo.
+    mustSubmitTransactionsForApproval: !isOwnerEffective && isMember,
     canEditOthersTransaction: isOwnerEffective,
 
     // ── Project lifecycle ───────────────────────────────

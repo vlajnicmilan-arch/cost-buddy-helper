@@ -214,6 +214,7 @@ var list_budgets_default = defineTool4({
 // src/lib/mcp/tools/get-budget-details.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z4 } from "npm:zod@^3.25.76";
+import { COUNTED_EXPENSE_STATUSES } from "npm:@/lib/countedExpense";
 var get_budget_details_default = defineTool5({
   name: "get_budget_details",
   title: "Get budget details",
@@ -230,7 +231,7 @@ var get_budget_details_default = defineTool5({
     const [plan, categories, spent] = await Promise.all([
       sb.from("budget_plans").select("*").eq("id", budget_id).maybeSingle(),
       sb.from("budget_categories").select("id,category,limit_amount,icon,color").eq("budget_id", budget_id),
-      sb.from("expenses").select("category,amount,type").eq("budget_id", budget_id).is("deleted_at", null)
+      sb.from("expenses").select("category,amount,type").eq("budget_id", budget_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES)
     ]);
     if (plan.error) return { content: [{ type: "text", text: plan.error.message }], isError: true };
     if (!plan.data) return { content: [{ type: "text", text: "Budget not found" }], isError: true };
@@ -336,6 +337,7 @@ var add_budget_category_default = defineTool7({
 // src/lib/mcp/tools/list-projects.ts
 import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z7 } from "npm:zod@^3.25.76";
+import { COUNTED_EXPENSE_STATUSES as COUNTED_EXPENSE_STATUSES2 } from "npm:@/lib/countedExpense";
 var list_projects_default = defineTool8({
   name: "list_projects",
   title: "List projects",
@@ -358,7 +360,7 @@ var list_projects_default = defineTool8({
     const ids = (projects ?? []).map((p) => p.id);
     let totals = /* @__PURE__ */ new Map();
     if (ids.length) {
-      const { data: exp } = await sb.from("expenses").select("project_id,type,amount").in("project_id", ids).is("deleted_at", null);
+      const { data: exp } = await sb.from("expenses").select("project_id,type,amount").in("project_id", ids).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES2);
       for (const e of exp ?? []) {
         const key = e.project_id;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
@@ -381,6 +383,7 @@ var list_projects_default = defineTool8({
 // src/lib/mcp/tools/get-project-details.ts
 import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z8 } from "npm:zod@^3.25.76";
+import { COUNTED_EXPENSE_STATUSES as COUNTED_EXPENSE_STATUSES3 } from "npm:@/lib/countedExpense";
 var get_project_details_default = defineTool9({
   name: "get_project_details",
   title: "Get project details",
@@ -398,7 +401,7 @@ var get_project_details_default = defineTool9({
       sb.from("projects").select("*").eq("id", project_id).is("deleted_at", null).maybeSingle(),
       sb.from("project_milestones_scoped").select("id,name,status,budget,start_date,due_date,actual_start_date,actual_end_date,completed_at").eq("project_id", project_id).is("deleted_at", null).order("sort_order"),
       sb.from("project_members").select("*").eq("project_id", project_id),
-      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null)
+      sb.from("expenses").select("type,amount").eq("project_id", project_id).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES3)
     ]);
     if (project.error) return { content: [{ type: "text", text: project.error.message }], isError: true };
     if (!project.data) return { content: [{ type: "text", text: "Project not found" }], isError: true };
@@ -547,6 +550,7 @@ var list_krugs_default = defineTool13({
 // src/lib/mcp/tools/get-krug-summary.ts
 import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z12 } from "npm:zod@^3.25.76";
+import { COUNTED_EXPENSE_STATUSES as COUNTED_EXPENSE_STATUSES4 } from "npm:@/lib/countedExpense";
 var get_krug_summary_default = defineTool14({
   name: "get_krug_summary",
   title: "Get krug summary",
@@ -571,7 +575,7 @@ var get_krug_summary_default = defineTool14({
     let recent_expense_total = 0;
     if (srcIds.length) {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3).toISOString();
-      const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null);
+      const { data: exp } = await sb.from("expenses").select("amount,type").in("payment_source", srcIds).gte("date", since).is("deleted_at", null).in("status", COUNTED_EXPENSE_STATUSES4);
       for (const e of exp ?? []) if (e.type === "expense") recent_expense_total += Number(e.amount);
     }
     const result = {

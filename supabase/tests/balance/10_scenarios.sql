@@ -1899,11 +1899,92 @@ RELEASE SAVEPOINT s_g5;
 
 
 -- Always roll back the harness transaction.
+-- ============================================================
+-- E — Korak E: pending / rejected troškovi ne ulaze u saldo
+-- ============================================================
+
+
+-- E1 — pending trošak na neusidrenom izvoru NE mijenja saldo
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e1;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.mk_expense_status('expense', 20,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-02 10:00:00+00', 'pending');
+SELECT pg_temp.assert_eq('E1 pending excluded (unanchored)', 0,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_e1;
+
+-- E2 — odbijeni trošak NE mijenja saldo
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e2;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.mk_expense_status('expense', 35,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-02 10:00:00+00', 'rejected');
+SELECT pg_temp.assert_eq('E2 rejected excluded (unanchored)', 0,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_e2;
+
+-- E3 — odobrenje pending troška ulazi u saldo (delta staza)
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e3;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.mk_expense_status('expense', 20,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-02 10:00:00+00', 'pending') AS _e3 \gset
+UPDATE public.expenses SET status = 'approved'::public.transaction_status WHERE id = :'_e3';
+SELECT pg_temp.assert_eq('E3 approve applies delta', -20,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+UPDATE public.expenses SET status = 'rejected'::public.transaction_status WHERE id = :'_e3';
+SELECT pg_temp.assert_eq('E3 reject reverses delta', 0,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_e3;
+
+-- E4 — usidreni izvor: recompute preskače pending i rejected
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e4;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.set_mode('day_cut');
+SELECT pg_temp.set_anchor(
+  (SELECT val FROM _bfix WHERE key='src_a'),
+  '2026-06-01 09:00:00+00', 1000.00);
+SELECT pg_temp.mk_expense_status('expense', 100,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-03 10:00:00+00', 'pending');
+SELECT pg_temp.mk_expense_status('expense', 50,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-03 10:00:00+00', 'rejected');
+SELECT pg_temp.mk_expense_status('expense', 10,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-03 10:00:00+00', 'approved');
+SELECT public.recompute_custom_source_balance((SELECT val FROM _bfix WHERE key='src_a'));
+SELECT pg_temp.assert_eq('E4 anchored recompute counts only approved', 990.00,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_e4;
+
+-- E5 — brisanje pending troška ne pomiče saldo
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e5;
+SELECT pg_temp.reset_sources();
+SELECT pg_temp.mk_expense_status('expense', 15,
+  (SELECT val FROM _bfix WHERE key='src_a'), '2026-06-02 10:00:00+00', 'pending') AS _e5 \gset
+UPDATE public.expenses SET deleted_at = now() WHERE id = :'_e5';
+DELETE FROM public.expenses WHERE id = :'_e5';
+SELECT pg_temp.assert_eq('E5 delete of pending is a no-op', 0,
+  pg_temp.bal((SELECT val FROM _bfix WHERE key='src_a')));
+RELEASE SAVEPOINT s_e5;
+
+-- E6 — razlog odbijanja smije postojati samo uz status rejected
+ROLLBACK TO SAVEPOINT before_scenarios; SAVEPOINT s_e6;
+SELECT pg_temp.reset_sources();
+DO $$
+DECLARE v_ok boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.expenses (user_id, type, amount, payment_source, date, status, rejection_reason, description, category)
+    VALUES ((SELECT val FROM _bfix WHERE key='user'), 'expense', 5,
+            'custom:' || (SELECT val FROM _bfix WHERE key='src_a')::text,
+            '2026-06-02 10:00:00+00', 'approved'::public.transaction_status,
+            'nema veze', 'harness', 'harness');
+  EXCEPTION WHEN check_violation THEN
+    v_ok := true;
+  END;
+  IF v_ok THEN
+    RAISE NOTICE 'PASS E6 rejection_reason requires rejected';
+  ELSE
+    RAISE EXCEPTION 'FAIL E6 rejection_reason accepted on approved row';
+  END IF;
+END $$;
+RELEASE SAVEPOINT s_e6;
+
 ROLLBACK;
-
-
-
-
-
-
-

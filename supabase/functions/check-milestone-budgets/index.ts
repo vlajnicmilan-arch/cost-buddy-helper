@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { translate } from "../_shared/i18n/index.ts";
+import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +48,8 @@ Deno.serve(async (req) => {
         .from("expenses")
         .select("amount, expense_nature")
         .eq("milestone_id", m.id)
-        .eq("type", "expense");
+        .eq("type", "expense")
+        .in("status", COUNTED_EXPENSE_STATUSES);
       if (spentErr) {
         console.warn("Failed to compute spent for milestone", m.id, spentErr);
         continue;

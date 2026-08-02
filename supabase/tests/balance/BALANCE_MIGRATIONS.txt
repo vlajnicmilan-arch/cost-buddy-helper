@@ -34,3 +34,4 @@
 20260709055017_*.sql   # Faza B: _cps_balance_guard_before/after — auto-anchor za sirov UPDATE balance-a + engine marker u recompute/set_source_anchor
 
 20260713100009_*.sql   # Lost-update fix: recompute_custom_source_balance FOR UPDATE + trigger deterministic lock order (ORDER BY x)
+20260802065756_*.sql   # Korak E: pending/rejected troskovi ne ulaze u saldo (trigger + recompute filtar) + review RPC

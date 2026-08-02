@@ -16,17 +16,22 @@ export interface ProjectPendingTransaction {
   milestone_id?: string | null;
   submitted_by?: string | null;
   submitter_name?: string;
+  status?: string | null;
+  rejection_reason?: string | null;
 }
 
 export const useProjectPendingTransactions = (projectId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [pendingTransactions, setPendingTransactions] = useState<ProjectPendingTransaction[]>([]);
+  // Korak E: odbijeni zapisi ostaju vidljivi (s razlogom), bez učinka na zbrojeve.
+  const [rejectedTransactions, setRejectedTransactions] = useState<ProjectPendingTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPending = useCallback(async () => {
     if (!projectId || !user) {
       setPendingTransactions([]);
+      setRejectedTransactions([]);
       setLoading(false);
       return;
     }
@@ -37,7 +42,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         .from('expenses')
         .select('*') as any)
         .eq('project_id', projectId)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'rejected'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -62,7 +67,8 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         submitter_name: t.submitted_by ? submitterMap.get(t.submitted_by) || 'Nepoznato' : undefined
       }));
 
-      setPendingTransactions(transactions);
+      setPendingTransactions(transactions.filter((t: any) => t.status === 'pending'));
+      setRejectedTransactions(transactions.filter((t: any) => t.status === 'rejected'));
     } catch (error) {
       console.error('Error fetching pending project transactions:', error);
       showError(t('common.error'));
@@ -77,10 +83,13 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
   const approveTransaction = async (transactionId: string) => {
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .update({ status: 'approved' })
-        .eq('id', transactionId);
+      // Korak E: stanje se mijenja isključivo kroz namjenski RPC
+      // (trigger `trg_guard_expense_review_writes` je druga brava).
+      const { error } = await (supabase.rpc as any)('review_project_expense', {
+        p_expense_id: transactionId,
+        p_decision: 'approve',
+        p_reason: null,
+      });
 
       if (error) throw error;
 
@@ -92,7 +101,12 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         });
       }
 
-      setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
+      invokeNotifyFunction({
+        functionName: 'notify-project-expense-review',
+        body: { expense_id: transactionId, action: 'reviewed', decision: 'approve' },
+      });
+
+      await fetchPending();
       showSuccess(t('projects.transactionApproved', 'Transakcija odobrena'));
     } catch (error) {
       console.error('Error approving transaction:', error);
@@ -100,16 +114,28 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
     }
   };
 
-  const rejectTransaction = async (transactionId: string) => {
+  const rejectTransaction = async (transactionId: string, reason?: string) => {
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', transactionId);
+      // Odbijeni trošak OSTAJE kao zapis (bez učinka na saldo) — nema brisanja.
+      const { error } = await (supabase.rpc as any)('review_project_expense', {
+        p_expense_id: transactionId,
+        p_decision: 'reject',
+        p_reason: reason ?? null,
+      });
 
       if (error) throw error;
 
-      setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
+      invokeNotifyFunction({
+        functionName: 'notify-project-expense-review',
+        body: {
+          expense_id: transactionId,
+          action: 'reviewed',
+          decision: 'reject',
+          rejection_reason: reason ?? null,
+        },
+      });
+
+      await fetchPending();
       showSuccess(t('projects.transactionRejected', 'Transakcija odbijena'));
     } catch (error) {
       console.error('Error rejecting transaction:', error);
@@ -119,6 +145,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
   return {
     pendingTransactions,
+    rejectedTransactions,
     loading,
     approveTransaction,
     rejectTransaction,

@@ -1053,7 +1053,15 @@
     },
     "investorPriceLabel": "Can see the investor price",
     "investorPriceHint": "This manager already sees each phase's planned cost. Turn this on and they will also see the investor price — that is, how much you earn on every phase.",
-    "investorPriceSaved": "Price visibility saved"
+    "investorPriceSaved": "Price visibility saved",
+    "rejectReasonLabel": "Rejection reason (optional)",
+    "rejectReasonPlaceholder": "E.g. missing receipt or not related to this project",
+    "rejectTransactionAction": "Reject",
+    "memberApprovalNote": "Your transactions go to the owner for approval and do not affect the balance until approved.",
+    "rejectedTransactions": "Rejected transactions",
+    "rejectedNoEffect": "Rejected records stay visible but are excluded from every total.",
+    "rejectionReason": "Reason",
+    "autoRejectExpired": "Auto-rejected — expired without a decision"
   },
   "estimates": {
     "title": "Quotes & Estimates",
@@ -2798,6 +2806,23 @@
       "daily": {
         "title": "Decision is still awaiting a response",
         "body": "\"{{title}}\" — please respond."
+      }
+    },
+    "project_expense_review": {
+      "submitted": {
+        "title": "Expense awaits your approval",
+        "message": {
+          "expense": "{{actor}} submitted expense „{{description}}\" ({{amount}}) in project „{{project}}\". Awaiting your approval.",
+          "income": "{{actor}} submitted income „{{description}}\" ({{amount}}) in project „{{project}}\". Awaiting your approval."
+        }
+      },
+      "approved": {
+        "title": "Expense approved",
+        "message": "{{actor}} approved „{{description}}\" ({{amount}}) in project „{{project}}\"."
+      },
+      "rejected": {
+        "title": "Expense rejected",
+        "message": "{{actor}} rejected „{{description}}\" ({{amount}}) in project „{{project}}\". Reason: {{reason}}"
       }
     }
   },

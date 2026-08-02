@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_client";
+import { COUNTED_EXPENSE_STATUSES } from '@/lib/countedExpense';
 
 export default defineTool({
   name: "list_projects",
@@ -35,7 +36,8 @@ export default defineTool({
         .from("expenses")
         .select("project_id,type,amount")
         .in("project_id", ids)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .in("status", COUNTED_EXPENSE_STATUSES);
       for (const e of exp ?? []) {
         const key = e.project_id as string;
         const cur = totals.get(key) ?? { income: 0, expense: 0 };
