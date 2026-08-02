@@ -14,7 +14,7 @@ import {
   matchPayments,
   extractIbans,
   remainingOf,
-  MATCH_WINDOW_DAYS,
+  paymentFetchWindow,
   type MatchCandidate,
   type MatchInvoice,
   type MatchTransaction,
@@ -52,23 +52,38 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
   const [learnedIbans, setLearnedIbans] = useState<LearnedIban[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const matchInvoices = useMemo(() => invoices.map(toMatchInvoice), [invoices]);
+  const fetchWindow = useMemo(
+    () => paymentFetchWindow(matchInvoices, 'out'),
+    [matchInvoices],
+  );
+
+
+
   const load = useCallback(async () => {
     if (!authReady || !user) return;
+    // Prozor dolazi iz motora (`paymentFetchWindow`) — sidren na račune, ne na
+    // današnji dan. Bez nenaplaćenih računa nema ni što spajati.
+    if (!fetchWindow) {
+      setTransactions([]);
+      setLearnedIbans([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const since = new Date(Date.now() - (MATCH_WINDOW_DAYS + 30) * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
 
     let txQuery: any = (supabase
       .from('expenses') as any)
       .select('id, amount, date, description, merchant_name, expense_nature, deleted_at, status')
       .eq('user_id', user.id)
-      .eq('type', 'income')
-      .gte('date', since);
+      .eq('type', 'income');
+    if (fetchWindow.since) txQuery = txQuery.gte('date', fetchWindow.since);
+    if (fetchWindow.until) txQuery = txQuery.lte('date', fetchWindow.until);
     txQuery = applyCountedFilter(txQuery);
     txQuery = activeBusinessProfileId
       ? txQuery.eq('business_profile_id', activeBusinessProfileId)
       : txQuery.is('business_profile_id', null);
+
 
     const [{ data: txRows }, { data: linkRows }, { data: ibanRows }] = await Promise.all([
       txQuery,
@@ -98,11 +113,11 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
       })),
     );
     setLoading(false);
-  }, [user, authReady, activeBusinessProfileId]);
+  }, [user, authReady, activeBusinessProfileId, fetchWindow]);
 
   useEffect(() => { load(); }, [load]);
 
-  const matchInvoices = useMemo(() => invoices.map(toMatchInvoice), [invoices]);
+
 
   const suggestions: PaymentSuggestion[] = useMemo(
     () => matchPayments({ invoices: matchInvoices, transactions, learnedIbans, direction: 'out' }),

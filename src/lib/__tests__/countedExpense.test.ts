@@ -31,18 +31,22 @@ describe('countedExpense', () => {
     expect(filterCountedExpenses(rows).map(r => r.id)).toEqual(['a', 'd']);
   });
 
-  it('applies the status filter to a query builder', () => {
-    const calls: Array<[string, readonly unknown[]]> = [];
+  it('applies the status filter to a query builder, including NULL rows', () => {
+    const calls: string[] = [];
     const query = {
-      in(col: string, values: readonly unknown[]) {
-        calls.push([col, values]);
+      or(filter: string) {
+        calls.push(filter);
         return this;
       },
     };
     applyCountedFilter(query as never);
-    expect(calls).toEqual([['status', COUNTED_EXPENSE_STATUSES]]);
+    // NULL se tretira kao `approved` (motor salda i klijentski predikat rade
+    // isto) — SQL `IN` ga ne bi uhvatio.
+    expect(calls).toEqual(['status.is.null,status.eq.approved']);
+    expect(COUNTED_EXPENSE_STATUSES).toEqual(['approved']);
   });
 });
+
 
 describe('Korak E — member transactions require approval', () => {
   it('member may add, but only as pending', () => {
