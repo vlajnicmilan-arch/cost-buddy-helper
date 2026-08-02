@@ -1,42 +1,55 @@
-# eRačun — izlazni računi iz istog XML-a (priprema za izvode)
+# Spajanje uplata iz izvoda s računima (eRačun ↔ transakcija)
 
-## Provjereno u projektu
+## Provjereno
 
-- `parseUbl.ts` već čita **obje strane** (`supplier` i `customer` s OIB-om), te `iban` i `paymentReference` (`PaymentMeans/PaymentID`, fallback `PaymentTerms/Note`). Ti podaci se trenutno **gube** — `toInsertRow` ih ne prenosi (osim IBAN-a), a `incoming_invoices` nema stupac za poziv na broj ni za kupca.
-- `business_profiles`: Tactura `33941873288` (aktivna), Akrobat `39916265994`. OIB je upisan za obje → automatsko određivanje smjera je izvedivo.
-- `invoices` tablica: **0 redaka** — mrtva.
-- `project_invoices`: 1 redak, status `issued`. To su računi koje app sam generira prema klijentu (ima `items`, `pdf_path`, `estimate_id`, podsjetnike).
-- `incoming_invoices`: 84 retka, `supplier_*` polja, `paid_expense_id`, `paid_at`.
+- `incoming_invoices` ima `direction`, `payment_reference`, `settled_amount`, `paid_at`, `counterparty_name/oib`, `iban`.
+- `expenses` ima `invoice_id` (uuid) — **0 popunjenih redaka**, ostatak od obrisane `invoices` tablice. Iskoristivo kao veza uplata → račun, uz preusmjeravanje na `incoming_invoices`.
+- Nema nijednog modula za spajanje — potvrđeno, ne postoji.
 
-Nisam vidio stvarne XML-ove korisnika, pa **ne mogu tvrditi** koliko su pouzdano popunjeni `PaymentID` i IBAN. To je prvi korak plana, ne pretpostavka.
+## 1. Slojevito spajanje (`src/lib/eracun/matchPayments.ts`, čist modul + testovi)
 
-## Odgovori na pitanja
+Ulaz: nenaplaćeni računi + kandidatske transakcije iz izvoda (isti smjer novca, ista valuta, prozor ±90 dana **u oba smjera** — uplata prije izdavanja je legitimna).
 
-**1. Gdje spremiti.** Ne nova tablica i ne `project_invoices`. Najčišće je **`incoming_invoices` + stupac smjera** (`direction`: `in` | `out`), preimenovano samo u glavi (tablica ostaje ista zbog svega što na nju visi). Razlog: identičan XML, identičan parser, identičan otisak, identična pravila prihvaćanja, isti uvoz. Dvije tablice značile bi dupli parser i dupli duplikat-check.
+Slojevi, prvi koji pogodi pobjeđuje:
 
-`project_invoices` ostaje **izvor za račune koje app izdaje** (PDF, ponude, podsjetnici). Uvezeni izlazni račun je vanjski dokument iz knjigovodstva — nije isto. Veza projekt ↔ uvezeni izlazni račun ide kroz nullable `project_id` na istoj tablici (drugi krug), a ne kroz upis u `project_invoices`.
+1. **Poziv na broj** — normaliziran `payment_reference` s računa (maknuti `HR00`, sve osim znamenki) pronađen kao cjelovit niz u normaliziranom opisu transakcije **i** iznos se poklapa → `confidence: certain`. Jedino ovo smije automatski.
+2. **Naučeni IBAN** (sloj 2, vidi dolje) + točan iznos → `strong`, prijedlog za potvrdu.
+3. **Iznos + naziv** — iznos jednak na cent, naziv prepoznat → `likely`, prijedlog.
+4. Inače nespojeno.
 
-`invoices` (0 redaka) — prijedlog: obrisati u istoj migraciji.
+**Mjerenje sličnosti naziva (bez nagađanja):** oba naziva normaliziraju se — mala slova, dijakritici → ASCII, uklanjanje pravnih/šumnih riječi (`d.o.o.`, `j.d.o.o.`, `obrt`, `vl.`, `građevinski`, gradovi iz fiksnog popisa), pa razbijanje na tokene ≥3 znaka. Podudaranje = **svi tokeni kraćeg naziva sadržani u dužem** (token-subset), a kraći ima **barem 2 tokena**. Primjer: `bami interijer` ⊂ `bami interijer gradevinski obrt osijek` → pogodak. Bez fuzzy udaljenosti, bez pragova sličnosti — deterministično i objašnjivo. Jedan token (`bami`) nije dovoljan.
 
-**2. Što se prati.** Umjesto `supplier_*` uvodi se neutralna druga strana:
-- `direction` (`in`/`out`), `counterparty_name`, `counterparty_oib` (postojeći `supplier_*` se preslika i zadrži kao generirani/legacy izvor dok se kod ne prebaci)
-- stanja: ulazni → `unpaid` / `paid`; izlazni → `unpaid` (klijent duguje) / `paid` (naplaćeno). Isto polje, zrcalno značenje. Postojeći `paid_at` pokriva oboje; `paid_expense_id` ostaje samo za ulazne.
-- `settled_amount` (numeric, default 0) — priprema za djelomične uplate iz izvoda.
+Dvosmislenost: ako jedan račun pogađa više transakcija ili obrnuto na istoj razini, **svi ti prijedlozi padaju na `likely` i traže izbor** — nikad tiho biranje prvog.
 
-**3. Prikaz.** Jedan ekran, dva taba: **„Duguju mi"** / **„Dugujem"**, plus zaglavlje s neto pozicijom (razlika). Dashboard: postojeći blok neplaćenih ulaznih dobiva **drugi red za izlazne** (isti widget, dvije linije) — ne novi widget. Pravilo ostaje tvrdo: **ni ulazni ni izlazni računi ne ulaze u zbrojeve salda niti u `expenses`.**
+## 2. Učenje (nova tablica `eracun_counterparty_iban`)
 
-**4. Priprema za izvode (spremiti odmah).** `payment_reference`, `iban`, `counterparty_oib`, `direction`, `settled_amount`. To je minimum za determinističko spajanje izvoda po pozivu na broj, s IBAN+iznos kao rezervom. Bez toga bi uvoz izvoda tražio novu migraciju.
+`user_id, business_profile_id, iban, counterparty_oib, counterparty_name, confirmed_count, last_seen_at`. Upis pri svakoj **potvrdi** spajanja: izvuče se IBAN iz opisa transakcije (regex `HR\d{19}`) i veže na OIB druge strane s računa. Sljedeći put taj IBAN daje `strong` bez ovisnosti o nazivu. RLS po `user_id`, GRANT authenticated + service_role.
 
-**5. Procjena.** 2–3 dana.
-Drugi krug (svjesno izostavljeno): veza s projektom, djelomične uplate u UI-u, sam uvoz izvoda i motor spajanja, podsjetnici klijentima za izlazne.
+## 3. Djelomične uplate
+
+- Spajanje upisuje `settled_amount = settled_amount + iznos_uplate` (clamp na `total_amount`).
+- `paid_at` se postavlja **samo kad `settled_amount >= total_amount`** (tolerancija 0,01). Do tada račun ostaje na popisu nenaplaćenih s prikazom „plaćeno X od Y".
+- **Jedna uplata → više računa:** veza je M:N, pa nova tablica `eracun_payment_links` (`invoice_id`, `expense_id`, `amount`, `matched_by`, `created_at`) umjesto `expenses.invoice_id`. U prijedlogu se nudi i **skupno podudaranje**: podskup nenaplaćenih računa iste druge strane čiji zbroj = iznos uplate (traži se samo do 4 računa, inače preskače).
+- Preostalo neraspoređeno od uplate ostaje vidljivo; korisnik može dodati još veza.
+
+## 4. Gdje se potvrđuje
+
+Ponovna upotreba postojećeg obrasca `ImportReview`, ne novi mehanizam: nakon uvoza izvoda (i na zahtjev iz `IncomingInvoicesPanel` gumbom „Poveži uplate") otvara se `PaymentMatchReview` — lista prijedloga, po retku: račun, uplata, razlog podudaranja (`poziv na broj` / `naučeni IBAN` / `iznos + naziv`), checkbox, gumb Potvrdi. `certain` redovi predoznačeni, ostali ne.
+
+## 5. Tvrdo pravilo
+
+Spajanje **ne stvara ni prihod ni trošak** i ne dira saldo ni sidro. Piše isključivo `eracun_payment_links` + `settled_amount`/`paid_at` na računu. Isto pravilo kao kod „Naplaćeno" — zapisano u komentaru modula da ga netko ne „popravi".
 
 ## Tehnički koraci
 
-1. **Provjera podataka (prvo, prije koda).** Korisnik dostavi 2–3 izlazna XML-a iz knjigovodstva; provjeriti postoje li `PaymentMeans/PaymentID` i IBAN i u kojem obliku. O rezultatu ovisi je li spajanje s izvodom determinističko ili heuristika.
-2. **Migracija:** `direction` (NOT NULL, default `'in'`), `counterparty_name`, `counterparty_oib`, `payment_reference`, `settled_amount`. Backfill: sve postojeće = `in`, `counterparty_* := supplier_*`. Unique indeksi prošireni s `direction` (isti broj računa može postojati u oba smjera). Drop `invoices`.
-3. **`resolveDirection.ts`** (čist modul + testovi): usporedba OIB-a aktivne tvrtke sa `supplier.oib` / `customer.oib` → `in` | `out` | `foreign`. `foreign` = upozorenje „račun ne pripada ovoj tvrtki", redak isključen po defaultu.
-4. **`intakeBatch.ts`**: `toInsertRow` prenosi smjer, drugu stranu i poziv na broj. Otisak proširen smjerom.
-5. **UI:** `EracunImportDialog` prikazuje stupac smjera po retku; `IncomingInvoicesPanel` dobiva tabove; dashboard widget drugu liniju; i18n hr/en/de.
-6. **Testovi:** `resolveDirection` (in/out/foreign/nedostaje OIB), sažetak po smjeru, regresija da ulazni uvoz radi kao prije.
+1. Migracija: `eracun_payment_links`, `eracun_counterparty_iban` (RLS + GRANT), drop neiskorištenog `expenses.invoice_id`.
+2. `matchPayments.ts` + `normalizeName.ts` + testovi (BAMI slučaj: uplata prije računa, HR99 model, mojibake naziv).
+3. `useEracunPaymentMatch.ts` — dohvat kandidata, potvrda u transakciji, upis naučenog IBAN-a.
+4. `PaymentMatchReview.tsx` + ulaz iz `IncomingInvoicesPanel` i post-import.
+5. i18n hr/en/de; prikaz „plaćeno X od Y" u panelu i widgetu.
 
-Ne dira se: postojeći tok ulaznih računa u ponašanju, `expenses`, motor salda, korak E, zaštite A/D/D2.
+## Procjena
+
+2–3 dana.
+
+**Drugi krug:** automatsko pokretanje spajanja pri svakom uvozu bez pitanja, spajanje ulaznih računa s izlaznim plaćanjima iz izvoda (isti motor, obrnuti smjer), razvezivanje (undo) pojedine veze, podsjetnici klijentima za dospjele nenaplaćene.
