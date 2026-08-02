@@ -28,6 +28,7 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { resolveCategory } from '@/hooks/useResolvedCategory';
 import { ProjectMilestone, ProjectRole, ProjectRoleKey } from '@/types/project';
 import { useProjectPendingTransactions } from '@/hooks/useProjectPendingTransactions';
+import { RejectedTransactionsStrip } from '@/components/projects/RejectedTransactionsStrip';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -97,6 +98,7 @@ export const ProjectTransactionsTab = ({
   const roTitle = isReadOnly ? blockProps.title : undefined;
   const {
     pendingTransactions,
+    rejectedTransactions,
     approveTransaction,
     rejectTransaction,
     refetch: refetchPending,
@@ -595,6 +597,11 @@ export const ProjectTransactionsTab = ({
           onReject={handleReject}
         />
       )}
+
+      <RejectedTransactionsStrip
+        rejectedTransactions={rejectedTransactions}
+        formatAmount={formatAmount}
+      />
 
       {canAddTransaction && (
         <div className="flex justify-between items-center">
