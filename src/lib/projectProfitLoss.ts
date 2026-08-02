@@ -3,21 +3,29 @@
  * Extracted from useProjectProfitLoss so it can be unit-tested without Supabase.
  *
  * Dual view:
- *  - Cash view: actual income vs. actual costs (labor + collaborator paid + material)
+ *  - Cash view: actual income vs. actual costs (labor paid + collaborator paid + material)
  *  - Accrual view: expected profit against contract value (fallback to total_budget)
  *
  * Rules:
  *  - contract value falls back to total_budget when contract_value <= 0
- *  - material = max(0, expenses - labor - collaborator paid) so it never goes negative
- *  - labor cost = per-entry rate_at (historical) with fallback to worker.hourly_rate
- *    (delegated to computeProjectLaborCost). Legacy inputs without work_date /
- *    rateHistory keep working via the fallback path.
+ *  - labor cost is CASH: the sum of payout expense rows (expenses.worker_payout_id
+ *    is not null). Hours never enter the cost total — the money is already in
+ *    `expenses`, so deriving labor from hours would double count it.
+ *  - material = expenses - labor - collaborator paid, WITHOUT a clamp. The identity
+ *    labor + collaborator + material === totalExpenses must always hold. A negative
+ *    material is a real anomaly (a payout that bypassed create_worker_payout) and is
+ *    surfaced via materialCostAnomaly instead of being hidden by max(0, ...).
+ *  - accruedLaborCost = all hours x rate_at (historical, delegated to
+ *    computeProjectLaborCost). It is reported, not costed.
+ *  - unpaidLaborCost = max(0, accrued - paid), unpaidHours = hours on entries with
+ *    no payout_id. Both stay OUTSIDE totalCosts — open liability, not spend.
  *  - workers with 0 hours are omitted from worker details
  *  - collaborator cost uses paid_amount (cash basis)
  *  - margin / expectedMargin / collectedPercentage are 0 when denominator is 0
  *  - collectedPercentage is capped at 100
  *  - remainingToCollect is floored at 0
  */
+
 
 import {
   computeProjectLaborCost,
