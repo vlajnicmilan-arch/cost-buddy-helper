@@ -87,25 +87,43 @@ export const useIncomingInvoices = () => {
     return rows.length;
   }, [fetchInvoices]);
 
-  /** Poništi uvoz serije — briše samo NEplaćene zapise te serije. */
+  /** Poništi uvoz serije — briše samo zapise te serije koji nisu plaćeni ni naplaćeni. */
   const undoBatch = useCallback(async (batchId: string): Promise<number> => {
     const { data, error } = await supabase
       .from('incoming_invoices' as any)
       .delete()
       .eq('import_batch_id', batchId)
-      .is('paid_expense_id', null)
+      .is('paid_at', null)
       .select('id');
     if (error) throw error;
     await fetchInvoices();
     return (data ?? []).length;
   }, [fetchInvoices]);
 
-  /** Poveži ulazni račun s već stvorenim troškom. */
+  /** Poveži ULAZNI račun s već stvorenim troškom. Samo `direction = 'in'`. */
   const markPaid = useCallback(async (invoiceId: string, expenseId: string, paidAtIso: string) => {
     const { error } = await supabase
       .from('incoming_invoices' as any)
       .update({ paid_expense_id: expenseId, paid_at: paidAtIso })
       .eq('id', invoiceId);
+    if (error) throw error;
+    await fetchInvoices();
+  }, [fetchInvoices]);
+
+  /**
+   * Naplata IZLAZNOG računa — bilježi SAMO datum naplate.
+   *
+   * Namjerna asimetrija prema `markPaid`: ovdje se ne stvara zapis u `expenses`
+   * niti bilo gdje drugdje i saldo se ne dira. Prihod ulazi u aplikaciju kroz
+   * uvoz bankovnog izvoda; dvostruko bilježenje bi isti novac uvelo dvaput.
+   * Ne pretvarati ovo u simetriju s ulaznim računima.
+   */
+  const markCollected = useCallback(async (invoiceId: string, collectedAtIso: string) => {
+    const { error } = await supabase
+      .from('incoming_invoices' as any)
+      .update({ paid_at: collectedAtIso })
+      .eq('id', invoiceId)
+      .eq('direction', 'out');
     if (error) throw error;
     await fetchInvoices();
   }, [fetchInvoices]);
