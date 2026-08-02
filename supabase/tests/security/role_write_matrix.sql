@@ -400,6 +400,13 @@ INSERT INTO public.project_workers (id, project_id, user_id, first_name, last_na
 VALUES ((SELECT val FROM _rwm WHERE key='w1'), (SELECT val FROM _rwm WHERE key='p1'),
         (SELECT val FROM _rwm WHERE key='worker'), 'Rad', 'Nik', 'zidar', 20);
 
+-- Korak E: postojeći trošak "na čekanju" koji je upisao voditelj.
+INSERT INTO public.expenses (id, user_id, submitted_by, project_id, amount, description, type, date, status)
+VALUES ((SELECT val FROM _rwm WHERE key='e1'), (SELECT val FROM _rwm WHERE key='member'),
+        (SELECT val FROM _rwm WHERE key='member'), (SELECT val FROM _rwm WHERE key='p1'),
+        50, 'RWM pending trošak', 'expense', now(), 'pending');
+
+
 -- ===========================================================================
 -- MATRICA
 -- ===========================================================================
