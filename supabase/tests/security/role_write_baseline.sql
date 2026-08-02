@@ -39,6 +39,22 @@ CREATE TABLE IF NOT EXISTS public.account_deletion_log (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.account_deletion_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS user_email text,
+  ADD COLUMN IF NOT EXISTS requested_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS scheduled_for timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS completed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS stripe_subscription_cancelled boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS tables_purged jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.activation_nudge_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -46,6 +62,13 @@ CREATE TABLE IF NOT EXISTS public.activation_nudge_log (
   sent_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.activation_nudge_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS day_number integer,
+  ADD COLUMN IF NOT EXISTS sent_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.admin_module_grants (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -63,6 +86,23 @@ CREATE TABLE IF NOT EXISTS public.admin_module_grants (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.admin_module_grants
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS module admin_grant_module,
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS granted_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS reason_code admin_grant_reason_code,
+  ADD COLUMN IF NOT EXISTS reason_note text,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS revoked_by uuid,
+  ADD COLUMN IF NOT EXISTS revoked_actor admin_revoke_actor,
+  ADD COLUMN IF NOT EXISTS revoke_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_action_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -74,6 +114,17 @@ CREATE TABLE IF NOT EXISTS public.ai_action_log (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_action_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS proposal_id uuid,
+  ADD COLUMN IF NOT EXISTS action_type text,
+  ADD COLUMN IF NOT EXISTS decision text,
+  ADD COLUMN IF NOT EXISTS old_value jsonb,
+  ADD COLUMN IF NOT EXISTS new_value jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_cost_monthly (
   month_key date NOT NULL,
   route text NOT NULL,
@@ -82,6 +133,14 @@ CREATE TABLE IF NOT EXISTS public.ai_cost_monthly (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (month_key, route)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_cost_monthly
+  ADD COLUMN IF NOT EXISTS month_key date,
+  ADD COLUMN IF NOT EXISTS route text,
+  ADD COLUMN IF NOT EXISTS call_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_eur numeric(12,4) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_insights_cache (
   user_id uuid NOT NULL,
   generated_on date DEFAULT CURRENT_DATE NOT NULL,
@@ -92,6 +151,16 @@ CREATE TABLE IF NOT EXISTS public.ai_insights_cache (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, generated_on)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_insights_cache
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS generated_on date DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS insights jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS expense_count_at_generation integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'hr'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_proposed_actions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -107,12 +176,33 @@ CREATE TABLE IF NOT EXISTS public.ai_proposed_actions (
   expires_at timestamp with time zone DEFAULT (now() + '24:00:00'::interval) NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_proposed_actions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS action_type text,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'proposed'::text,
+  ADD COLUMN IF NOT EXISTS result jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS confirmed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS rejected_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '24:00:00'::interval);
 CREATE TABLE IF NOT EXISTS public.ai_route_costs (
   route text NOT NULL,
   unit_cost_eur numeric(10,6) NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (route)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_route_costs
+  ADD COLUMN IF NOT EXISTS route text,
+  ADD COLUMN IF NOT EXISTS unit_cost_eur numeric(10,6),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_usage_daily (
   user_id uuid NOT NULL,
   usage_date date DEFAULT ((now() AT TIME ZONE 'UTC'::text))::date NOT NULL,
@@ -121,6 +211,14 @@ CREATE TABLE IF NOT EXISTS public.ai_usage_daily (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, usage_date, route)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_usage_daily
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS usage_date date DEFAULT ((now() AT TIME ZONE 'UTC'::text))::date,
+  ADD COLUMN IF NOT EXISTS route text,
+  ADD COLUMN IF NOT EXISTS count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.ai_usage_monthly (
   user_id uuid NOT NULL,
   usage_month date DEFAULT (date_trunc('month'::text, (now() AT TIME ZONE 'UTC'::text)))::date NOT NULL,
@@ -128,6 +226,13 @@ CREATE TABLE IF NOT EXISTS public.ai_usage_monthly (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, usage_month)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.ai_usage_monthly
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS usage_month date DEFAULT (date_trunc('month'::text, (now() AT TIME ZONE 'UTC'::text)))::date,
+  ADD COLUMN IF NOT EXISTS count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.anchor_audit (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   source_id uuid NOT NULL,
@@ -143,6 +248,21 @@ CREATE TABLE IF NOT EXISTS public.anchor_audit (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.anchor_audit
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS old_anchor_date timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS old_anchor_balance numeric(12,2),
+  ADD COLUMN IF NOT EXISTS old_balance numeric(12,2),
+  ADD COLUMN IF NOT EXISTS new_anchor_date timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS new_anchor_balance numeric(12,2),
+  ADD COLUMN IF NOT EXISTS anchor_source anchor_source_type,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS actor uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.app_diagnostics_logs (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   session_id text NOT NULL,
@@ -156,12 +276,31 @@ CREATE TABLE IF NOT EXISTS public.app_diagnostics_logs (
   severity text DEFAULT 'info'::text NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.app_diagnostics_logs
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS event text,
+  ADD COLUMN IF NOT EXISTS route text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS device_info jsonb,
+  ADD COLUMN IF NOT EXISTS app_version text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info'::text;
 CREATE TABLE IF NOT EXISTS public.app_settings (
   key text NOT NULL,
   value jsonb DEFAULT '{}'::jsonb NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (key)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.app_settings
+  ADD COLUMN IF NOT EXISTS key text,
+  ADD COLUMN IF NOT EXISTS value jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.bank_accounts (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   connection_id uuid NOT NULL,
@@ -182,6 +321,26 @@ CREATE TABLE IF NOT EXISTS public.bank_accounts (
   last_sync_error text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.bank_accounts
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS connection_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS account_uid text,
+  ADD COLUMN IF NOT EXISTS iban text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS product text,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR'::text,
+  ADD COLUMN IF NOT EXISTS balance numeric(18,2),
+  ADD COLUMN IF NOT EXISTS balance_updated_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS linked_payment_source_id uuid,
+  ADD COLUMN IF NOT EXISTS raw_payload jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS last_synced_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS last_sync_error text;
 CREATE TABLE IF NOT EXISTS public.bank_connections (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -201,6 +360,25 @@ CREATE TABLE IF NOT EXISTS public.bank_connections (
   aspsp_name text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.bank_connections
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS bank_name text,
+  ADD COLUMN IF NOT EXISTS account_id text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS last_synced_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS aspsp_country text,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS state_token text,
+  ADD COLUMN IF NOT EXISTS valid_until timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS last_error text,
+  ADD COLUMN IF NOT EXISTS aspsp_name text;
 CREATE TABLE IF NOT EXISTS public.budget_categories (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   budget_id uuid NOT NULL,
@@ -212,6 +390,17 @@ CREATE TABLE IF NOT EXISTS public.budget_categories (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.budget_categories
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS budget_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS limit_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS icon text,
+  ADD COLUMN IF NOT EXISTS color text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.budget_invitations (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   budget_id uuid NOT NULL,
@@ -226,6 +415,20 @@ CREATE TABLE IF NOT EXISTS public.budget_invitations (
   invited_user_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.budget_invitations
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS budget_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS token uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS invited_by uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS used_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS invited_user_id uuid;
 CREATE TABLE IF NOT EXISTS public.budget_members (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   budget_id uuid NOT NULL,
@@ -235,6 +438,15 @@ CREATE TABLE IF NOT EXISTS public.budget_members (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.budget_members
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS budget_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS joined_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.budget_plans (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -253,6 +465,24 @@ CREATE TABLE IF NOT EXISTS public.budget_plans (
   is_recurring boolean DEFAULT true NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.budget_plans
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '💰'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#3b82f6'::text,
+  ADD COLUMN IF NOT EXISTS period_type text DEFAULT 'monthly'::text,
+  ADD COLUMN IF NOT EXISTS start_date date,
+  ADD COLUMN IF NOT EXISTS end_date date,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS total_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS is_recurring boolean DEFAULT true;
 CREATE TABLE IF NOT EXISTS public.bug_reports (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -263,6 +493,16 @@ CREATE TABLE IF NOT EXISTS public.bug_reports (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.bug_reports
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS device_info jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.business_debts (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -279,6 +519,22 @@ CREATE TABLE IF NOT EXISTS public.business_debts (
   source_expense_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.business_debts
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS type text DEFAULT 'receivable'::text,
+  ADD COLUMN IF NOT EXISTS contact_name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS amount numeric,
+  ADD COLUMN IF NOT EXISTS paid_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS source_expense_id uuid;
 CREATE TABLE IF NOT EXISTS public.business_premises (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -295,6 +551,22 @@ CREATE TABLE IF NOT EXISTS public.business_premises (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.business_premises
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text DEFAULT '1'::text,
+  ADD COLUMN IF NOT EXISTS label text,
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS city text,
+  ADD COLUMN IF NOT EXISTS postal_code text,
+  ADD COLUMN IF NOT EXISTS country text DEFAULT 'Hrvatska'::text,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.business_profiles (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -331,6 +603,42 @@ CREATE TABLE IF NOT EXISTS public.business_profiles (
   theme_color text DEFAULT 'ocean-blue'::text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.business_profiles
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS company_name text,
+  ADD COLUMN IF NOT EXISTS oib text,
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS city text,
+  ADD COLUMN IF NOT EXISTS postal_code text,
+  ADD COLUMN IF NOT EXISTS country text DEFAULT 'Hrvatska'::text,
+  ADD COLUMN IF NOT EXISTS iban text,
+  ADD COLUMN IF NOT EXISTS bank_name text,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS website text,
+  ADD COLUMN IF NOT EXISTS logo_url text,
+  ADD COLUMN IF NOT EXISTS is_vat_payer boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS vat_id text,
+  ADD COLUMN IF NOT EXISTS activity_code text,
+  ADD COLUMN IF NOT EXISTS activity_description text,
+  ADD COLUMN IF NOT EXISTS mbs text,
+  ADD COLUMN IF NOT EXISTS court_registry text,
+  ADD COLUMN IF NOT EXISTS legal_form text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS industry_type text DEFAULT 'other'::text,
+  ADD COLUMN IF NOT EXISTS enabled_modules text[] DEFAULT '{}'::text[],
+  ADD COLUMN IF NOT EXISTS vat_obligation_type text DEFAULT 'non_vat'::text,
+  ADD COLUMN IF NOT EXISTS vat_exemption_note text DEFAULT 'Obveznik nije u sustavu PDV-a, PDV nije obračunat temeljem čl. 90 st.1 Zakona o PDV-u.'::text,
+  ADD COLUMN IF NOT EXISTS owner_name text,
+  ADD COLUMN IF NOT EXISTS invoice_payment_days integer DEFAULT 7,
+  ADD COLUMN IF NOT EXISTS invoice_header text,
+  ADD COLUMN IF NOT EXISTS invoice_footer text,
+  ADD COLUMN IF NOT EXISTS theme_color text DEFAULT 'ocean-blue'::text;
 CREATE TABLE IF NOT EXISTS public.cash_registers (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -345,6 +653,20 @@ CREATE TABLE IF NOT EXISTS public.cash_registers (
   balance numeric DEFAULT 0 NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.cash_registers
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS premise_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text DEFAULT '1'::text,
+  ADD COLUMN IF NOT EXISTS label text,
+  ADD COLUMN IF NOT EXISTS device_type text DEFAULT 'mob'::text,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS balance numeric DEFAULT 0;
 CREATE TABLE IF NOT EXISTS public.category_corrections (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -357,6 +679,18 @@ CREATE TABLE IF NOT EXISTS public.category_corrections (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.category_corrections
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS original_category text,
+  ADD COLUMN IF NOT EXISTS original_origin text,
+  ADD COLUMN IF NOT EXISTS corrected_category text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS merchant_name text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.chat_messages (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -367,6 +701,16 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.chat_messages
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS session_id uuid,
+  ADD COLUMN IF NOT EXISTS role text,
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.clients (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -384,6 +728,23 @@ CREATE TABLE IF NOT EXISTS public.clients (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.clients
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS oib text,
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS city text,
+  ADD COLUMN IF NOT EXISTS postal_code text,
+  ADD COLUMN IF NOT EXISTS country text DEFAULT 'Hrvatska'::text,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS contact_person text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.company_lookup_cache (
   query_normalized text NOT NULL,
   payload jsonb NOT NULL,
@@ -392,6 +753,14 @@ CREATE TABLE IF NOT EXISTS public.company_lookup_cache (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (query_normalized)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.company_lookup_cache
+  ADD COLUMN IF NOT EXISTS query_normalized text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS hit_count integer DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.core_scan_usage (
   user_id uuid NOT NULL,
   count integer DEFAULT 0 NOT NULL,
@@ -399,6 +768,13 @@ CREATE TABLE IF NOT EXISTS public.core_scan_usage (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.core_scan_usage
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS window_start timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.custom_categories (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -409,6 +785,16 @@ CREATE TABLE IF NOT EXISTS public.custom_categories (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.custom_categories
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '📁'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#6b7280'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.custom_payment_sources (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -427,12 +813,36 @@ CREATE TABLE IF NOT EXISTS public.custom_payment_sources (
   anchor_source anchor_source_type,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.custom_payment_sources
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '💳'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#6b7280'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS balance numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR'::text,
+  ADD COLUMN IF NOT EXISTS correction_anchor_date timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS correction_anchor_balance numeric(12,2),
+  ADD COLUMN IF NOT EXISTS anchor_source anchor_source_type;
 CREATE TABLE IF NOT EXISTS public.dashboard_hidden_sources (
   user_id uuid NOT NULL,
   source_id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, source_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.dashboard_hidden_sources
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.dashboard_telemetry (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid,
@@ -445,6 +855,18 @@ CREATE TABLE IF NOT EXISTS public.dashboard_telemetry (
   occurred_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.dashboard_telemetry
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS section text,
+  ADD COLUMN IF NOT EXISTS value integer,
+  ADD COLUMN IF NOT EXISTS platform text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS occurred_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.decision_withdrawal_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   decision_id uuid NOT NULL,
@@ -453,6 +875,14 @@ CREATE TABLE IF NOT EXISTS public.decision_withdrawal_log (
   withdrawn_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.decision_withdrawal_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS decision_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS withdrawn_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.email_send_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   message_id text,
@@ -464,6 +894,17 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.email_send_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS message_id text,
+  ADD COLUMN IF NOT EXISTS template_name text,
+  ADD COLUMN IF NOT EXISTS recipient_email text,
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.email_send_state (
   id integer DEFAULT 1 NOT NULL,
   retry_after_until timestamp with time zone,
@@ -474,6 +915,16 @@ CREATE TABLE IF NOT EXISTS public.email_send_state (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.email_send_state
+  ADD COLUMN IF NOT EXISTS id integer DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS retry_after_until timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS batch_size integer DEFAULT 10,
+  ADD COLUMN IF NOT EXISTS send_delay_ms integer DEFAULT 200,
+  ADD COLUMN IF NOT EXISTS auth_email_ttl_minutes integer DEFAULT 15,
+  ADD COLUMN IF NOT EXISTS transactional_email_ttl_minutes integer DEFAULT 60,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   token text NOT NULL,
@@ -482,6 +933,14 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
   used_at timestamp with time zone,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.email_unsubscribe_tokens
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS token text,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS used_at timestamp with time zone;
 CREATE TABLE IF NOT EXISTS public.expenses (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -538,6 +997,62 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   category_origin text DEFAULT 'user'::text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS amount numeric(12,2),
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'other'::text,
+  ADD COLUMN IF NOT EXISTS type text DEFAULT 'expense'::text,
+  ADD COLUMN IF NOT EXISTS date timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS receipt_url text,
+  ADD COLUMN IF NOT EXISTS merchant_name text,
+  ADD COLUMN IF NOT EXISTS ai_extracted boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS payment_source text DEFAULT 'cash'::text,
+  ADD COLUMN IF NOT EXISTS income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS status transaction_status DEFAULT 'approved'::transaction_status,
+  ADD COLUMN IF NOT EXISTS submitted_by uuid,
+  ADD COLUMN IF NOT EXISTS payment_source_card_id uuid,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS budget_id uuid,
+  ADD COLUMN IF NOT EXISTS expense_nature text DEFAULT 'regular'::text,
+  ADD COLUMN IF NOT EXISTS import_batch_id uuid,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS vat_rate numeric,
+  ADD COLUMN IF NOT EXISTS vat_amount numeric,
+  ADD COLUMN IF NOT EXISTS cash_register_id uuid,
+  ADD COLUMN IF NOT EXISTS currency text,
+  ADD COLUMN IF NOT EXISTS location_name text,
+  ADD COLUMN IF NOT EXISTS location_coords text,
+  ADD COLUMN IF NOT EXISTS work_type expense_work_type,
+  ADD COLUMN IF NOT EXISTS bank_transaction_id text,
+  ADD COLUMN IF NOT EXISTS bank_account_id uuid,
+  ADD COLUMN IF NOT EXISTS collaborator_id uuid,
+  ADD COLUMN IF NOT EXISTS is_advance boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS linked_advance_ids uuid[] DEFAULT '{}'::uuid[],
+  ADD COLUMN IF NOT EXISTS invoice_id uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid,
+  ADD COLUMN IF NOT EXISTS bank_match_status text DEFAULT 'manual'::text,
+  ADD COLUMN IF NOT EXISTS possible_duplicate_of uuid,
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS krug_privacy krug_privacy,
+  ADD COLUMN IF NOT EXISTS krug_shared_status krug_shared_status,
+  ADD COLUMN IF NOT EXISTS recurring_transaction_id uuid,
+  ADD COLUMN IF NOT EXISTS event_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS time_confidence text DEFAULT 'C3'::text,
+  ADD COLUMN IF NOT EXISTS user_edited_event_at boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS worker_payout_id uuid,
+  ADD COLUMN IF NOT EXISTS worker_payout_batch_id uuid,
+  ADD COLUMN IF NOT EXISTS balance_after numeric,
+  ADD COLUMN IF NOT EXISTS bank_row_seq integer,
+  ADD COLUMN IF NOT EXISTS category_origin text DEFAULT 'user'::text;
 CREATE TABLE IF NOT EXISTS public.feedback_submissions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid,
@@ -558,6 +1073,26 @@ CREATE TABLE IF NOT EXISTS public.feedback_submissions (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.feedback_submissions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS type text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS rating smallint,
+  ADD COLUMN IF NOT EXISTS route text,
+  ADD COLUMN IF NOT EXISTS app_version text,
+  ADD COLUMN IF NOT EXISTS user_agent text,
+  ADD COLUMN IF NOT EXISTS language text,
+  ADD COLUMN IF NOT EXISTS viewport text,
+  ADD COLUMN IF NOT EXISTS platform text,
+  ADD COLUMN IF NOT EXISTS console_tail jsonb,
+  ADD COLUMN IF NOT EXISTS diagnostics jsonb,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.free_tier_usage_monthly (
   user_id uuid NOT NULL,
   month_key text NOT NULL,
@@ -566,6 +1101,14 @@ CREATE TABLE IF NOT EXISTS public.free_tier_usage_monthly (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, month_key)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.free_tier_usage_monthly
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS month_key text,
+  ADD COLUMN IF NOT EXISTS transactions_created integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.funnel_events (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid,
@@ -577,6 +1120,17 @@ CREATE TABLE IF NOT EXISTS public.funnel_events (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.funnel_events
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS event_name text,
+  ADD COLUMN IF NOT EXISTS platform text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS occurred_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.health_summaries (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   summary_date date DEFAULT ((now() AT TIME ZONE 'utc'::text))::date NOT NULL,
@@ -587,6 +1141,16 @@ CREATE TABLE IF NOT EXISTS public.health_summaries (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.health_summaries
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS summary_date date DEFAULT ((now() AT TIME ZONE 'utc'::text))::date,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'hr'::text,
+  ADD COLUMN IF NOT EXISTS summary_text text,
+  ADD COLUMN IF NOT EXISTS metrics_json jsonb,
+  ADD COLUMN IF NOT EXISTS generated_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.import_transfer_rules (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -599,6 +1163,18 @@ CREATE TABLE IF NOT EXISTS public.import_transfer_rules (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.import_transfer_rules
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS merchant_key text,
+  ADD COLUMN IF NOT EXISTS source_wallet_key text,
+  ADD COLUMN IF NOT EXISTS target_income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS times_used integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_used_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.imported_statements (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -616,6 +1192,23 @@ CREATE TABLE IF NOT EXISTS public.imported_statements (
   reconciliation_meta jsonb,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.imported_statements
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS payment_source_id uuid,
+  ADD COLUMN IF NOT EXISTS file_hash text,
+  ADD COLUMN IF NOT EXISTS content_hash text,
+  ADD COLUMN IF NOT EXISTS file_name text,
+  ADD COLUMN IF NOT EXISTS file_size bigint,
+  ADD COLUMN IF NOT EXISTS mime_type text,
+  ADD COLUMN IF NOT EXISTS transactions_count integer,
+  ADD COLUMN IF NOT EXISTS import_batch_id uuid,
+  ADD COLUMN IF NOT EXISTS imported_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS reconciliation_state reconciliation_state_type,
+  ADD COLUMN IF NOT EXISTS reconciliation_meta jsonb;
 CREATE TABLE IF NOT EXISTS public.income_source_invitations (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   income_source_id uuid NOT NULL,
@@ -627,6 +1220,17 @@ CREATE TABLE IF NOT EXISTS public.income_source_invitations (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.income_source_invitations
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS invited_by uuid,
+  ADD COLUMN IF NOT EXISTS token uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.income_source_members (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   income_source_id uuid NOT NULL,
@@ -636,6 +1240,15 @@ CREATE TABLE IF NOT EXISTS public.income_source_members (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.income_source_members
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role income_source_role DEFAULT 'member'::income_source_role,
+  ADD COLUMN IF NOT EXISTS joined_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.income_sources (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -647,6 +1260,17 @@ CREATE TABLE IF NOT EXISTS public.income_sources (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.income_sources
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '💰'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#22c55e'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.installment_plans (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -662,6 +1286,21 @@ CREATE TABLE IF NOT EXISTS public.installment_plans (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.installment_plans
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS total_amount numeric,
+  ADD COLUMN IF NOT EXISTS installment_count integer,
+  ADD COLUMN IF NOT EXISTS first_payment_date date,
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'other'::text,
+  ADD COLUMN IF NOT EXISTS payment_source text,
+  ADD COLUMN IF NOT EXISTS payment_source_card_id uuid,
+  ADD COLUMN IF NOT EXISTS type text DEFAULT 'expense'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.installments (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   plan_id uuid NOT NULL,
@@ -676,6 +1315,20 @@ CREATE TABLE IF NOT EXISTS public.installments (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.installments
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS installment_number integer,
+  ADD COLUMN IF NOT EXISTS amount numeric,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'planned'::text,
+  ADD COLUMN IF NOT EXISTS paid_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.inventory_items (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -692,6 +1345,22 @@ CREATE TABLE IF NOT EXISTS public.inventory_items (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.inventory_items
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS sku text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS unit text DEFAULT 'kom'::text,
+  ADD COLUMN IF NOT EXISTS purchase_price numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS selling_price numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS min_quantity numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS current_quantity numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.inventory_movements (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   item_id uuid NOT NULL,
@@ -703,6 +1372,17 @@ CREATE TABLE IF NOT EXISTS public.inventory_movements (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.inventory_movements
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS item_id uuid,
+  ADD COLUMN IF NOT EXISTS type text,
+  ADD COLUMN IF NOT EXISTS quantity numeric,
+  ADD COLUMN IF NOT EXISTS price numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.invoice_items (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   invoice_id uuid NOT NULL,
@@ -716,6 +1396,19 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.invoice_items
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS invoice_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS quantity numeric DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS unit text DEFAULT 'kom'::text,
+  ADD COLUMN IF NOT EXISTS unit_price numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS discount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS vat_rate numeric DEFAULT 25,
+  ADD COLUMN IF NOT EXISTS total numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.invoice_reminders (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   invoice_id uuid NOT NULL,
@@ -726,6 +1419,16 @@ CREATE TABLE IF NOT EXISTS public.invoice_reminders (
   message_id text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.invoice_reminders
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS invoice_id uuid,
+  ADD COLUMN IF NOT EXISTS stage integer,
+  ADD COLUMN IF NOT EXISTS trigger text,
+  ADD COLUMN IF NOT EXISTS recipient_email text,
+  ADD COLUMN IF NOT EXISTS sent_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS message_id text;
 CREATE TABLE IF NOT EXISTS public.invoices (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -748,6 +1451,28 @@ CREATE TABLE IF NOT EXISTS public.invoices (
   eracun_sent_at timestamp with time zone,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.invoices
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS client_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS invoice_number text,
+  ADD COLUMN IF NOT EXISTS issue_date date DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft'::text,
+  ADD COLUMN IF NOT EXISTS total_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS vat_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS paid_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS fiscalization_jir text,
+  ADD COLUMN IF NOT EXISTS fiscalization_zki text,
+  ADD COLUMN IF NOT EXISTS fiscalized_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS eracun_sent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS eracun_sent_at timestamp with time zone;
 CREATE TABLE IF NOT EXISTS public.krug (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   name text NOT NULL,
@@ -762,6 +1487,20 @@ CREATE TABLE IF NOT EXISTS public.krug (
   settlement_currency text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS preset krug_preset,
+  ADD COLUMN IF NOT EXISTS lifecycle_state krug_lifecycle_state DEFAULT 'active'::krug_lifecycle_state,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid,
+  ADD COLUMN IF NOT EXISTS split_mode krug_split_mode DEFAULT 'equal'::krug_split_mode,
+  ADD COLUMN IF NOT EXISTS settlement_currency text;
 CREATE TABLE IF NOT EXISTS public.krug_act_dedup (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -772,6 +1511,16 @@ CREATE TABLE IF NOT EXISTS public.krug_act_dedup (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_act_dedup
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS act text,
+  ADD COLUMN IF NOT EXISTS client_request_id text,
+  ADD COLUMN IF NOT EXISTS outcome text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_deletion_request (
   krug_id uuid NOT NULL,
   initiated_by uuid NOT NULL,
@@ -783,6 +1532,17 @@ CREATE TABLE IF NOT EXISTS public.krug_deletion_request (
   member_snapshot uuid[],
   PRIMARY KEY (krug_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_deletion_request
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS initiated_by uuid,
+  ADD COLUMN IF NOT EXISTS initiated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS resolved_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS resolved_by uuid,
+  ADD COLUMN IF NOT EXISTS member_snapshot uuid[];
 CREATE TABLE IF NOT EXISTS public.krug_deletion_vote (
   krug_id uuid NOT NULL,
   user_id uuid NOT NULL,
@@ -790,12 +1550,25 @@ CREATE TABLE IF NOT EXISTS public.krug_deletion_vote (
   voted_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (krug_id, user_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_deletion_vote
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS approve boolean,
+  ADD COLUMN IF NOT EXISTS voted_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_expense_split_confirmation (
   override_id uuid NOT NULL,
   user_id uuid NOT NULL,
   confirmed_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (override_id, user_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_expense_split_confirmation
+  ADD COLUMN IF NOT EXISTS override_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS confirmed_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_expense_split_override (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   expense_id uuid NOT NULL,
@@ -809,6 +1582,19 @@ CREATE TABLE IF NOT EXISTS public.krug_expense_split_override (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_expense_split_override
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS proposed_by uuid,
+  ADD COLUMN IF NOT EXISTS status krug_override_status DEFAULT 'pending'::krug_override_status,
+  ADD COLUMN IF NOT EXISTS activated_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS superseded_by uuid,
+  ADD COLUMN IF NOT EXISTS reject_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_expense_split_share (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   override_id uuid NOT NULL,
@@ -817,6 +1603,14 @@ CREATE TABLE IF NOT EXISTS public.krug_expense_split_share (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_expense_split_share
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS override_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS share_percent numeric,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_income_ratio (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   krug_id uuid NOT NULL,
@@ -827,6 +1621,16 @@ CREATE TABLE IF NOT EXISTS public.krug_income_ratio (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_income_ratio
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS weight numeric(10,4),
+  ADD COLUMN IF NOT EXISTS effective_from date DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_membership (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   krug_id uuid NOT NULL,
@@ -837,6 +1641,16 @@ CREATE TABLE IF NOT EXISTS public.krug_membership (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_membership
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role krug_membership_role,
+  ADD COLUMN IF NOT EXISTS added_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_ownership (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   krug_id uuid NOT NULL,
@@ -845,6 +1659,14 @@ CREATE TABLE IF NOT EXISTS public.krug_ownership (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_ownership
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_settlement_fx_snapshot (
   krug_id uuid NOT NULL,
   period_start date NOT NULL,
@@ -856,6 +1678,17 @@ CREATE TABLE IF NOT EXISTS public.krug_settlement_fx_snapshot (
   notes text,
   PRIMARY KEY (krug_id, period_start, period_end, display_currency)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_settlement_fx_snapshot
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS period_start date,
+  ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS display_currency text,
+  ADD COLUMN IF NOT EXISTS rates jsonb,
+  ADD COLUMN IF NOT EXISTS frozen_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'exchange-rates'::text,
+  ADD COLUMN IF NOT EXISTS notes text;
 CREATE TABLE IF NOT EXISTS public.krug_settlement_ledger (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   krug_id uuid NOT NULL,
@@ -873,6 +1706,23 @@ CREATE TABLE IF NOT EXISTS public.krug_settlement_ledger (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_settlement_ledger
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS from_user uuid,
+  ADD COLUMN IF NOT EXISTS to_user uuid,
+  ADD COLUMN IF NOT EXISTS amount numeric,
+  ADD COLUMN IF NOT EXISTS currency text,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS marked_by uuid,
+  ADD COLUMN IF NOT EXISTS marked_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS voided_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS voided_by uuid,
+  ADD COLUMN IF NOT EXISTS void_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.krug_shared_payment_source (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   krug_id uuid NOT NULL,
@@ -882,6 +1732,15 @@ CREATE TABLE IF NOT EXISTS public.krug_shared_payment_source (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.krug_shared_payment_source
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS krug_id uuid,
+  ADD COLUMN IF NOT EXISTS payment_source_id text,
+  ADD COLUMN IF NOT EXISTS linked_by uuid,
+  ADD COLUMN IF NOT EXISTS linked_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.milestone_budget_alerts (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   milestone_id uuid NOT NULL,
@@ -892,6 +1751,16 @@ CREATE TABLE IF NOT EXISTS public.milestone_budget_alerts (
   sent_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.milestone_budget_alerts
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS threshold integer,
+  ADD COLUMN IF NOT EXISTS usage_pct numeric,
+  ADD COLUMN IF NOT EXISTS sent_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.milestone_budget_revisions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   milestone_id uuid NOT NULL,
@@ -908,6 +1777,22 @@ CREATE TABLE IF NOT EXISTS public.milestone_budget_revisions (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.milestone_budget_revisions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS previous_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS new_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS delta numeric GENERATED ALWAYS AS ((new_amount - previous_amount)) STORED,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS change_type milestone_revision_type,
+  ADD COLUMN IF NOT EXISTS coverage milestone_revision_coverage DEFAULT 'increase_total'::milestone_revision_coverage,
+  ADD COLUMN IF NOT EXISTS linked_milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS linked_revision_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.milestone_checklist_items (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   milestone_id uuid NOT NULL,
@@ -921,6 +1806,19 @@ CREATE TABLE IF NOT EXISTS public.milestone_checklist_items (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.milestone_checklist_items
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS is_done boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS done_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS done_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.monitor_alerts_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   alert_signature text NOT NULL,
@@ -936,6 +1834,21 @@ CREATE TABLE IF NOT EXISTS public.monitor_alerts_log (
   source text DEFAULT 'cron'::text NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.monitor_alerts_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS alert_signature text,
+  ADD COLUMN IF NOT EXISTS triggered_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS error_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS affected_users integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS sample_message text,
+  ADD COLUMN IF NOT EXISTS sample_route text,
+  ADD COLUMN IF NOT EXISTS notified boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS notified_email boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'cron'::text;
 CREATE TABLE IF NOT EXISTS public.notification_preferences (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -964,6 +1877,34 @@ CREATE TABLE IF NOT EXISTS public.notification_preferences (
   krug_settlement_reminder_enabled boolean DEFAULT true NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.notification_preferences
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS chat_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS transactions_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS pending_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS projects_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS budgets_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS reminders_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS trial_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS broadcast_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS daily_summary_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS daily_summary_weekend_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS daily_summary_last_sent_on date,
+  ADD COLUMN IF NOT EXISTS daily_summary_paused_until date,
+  ADD COLUMN IF NOT EXISTS daily_summary_unopened_streak integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS family_override_push boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS family_reactions_push boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS daily_summary_state jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS participant_digest_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS participant_digest_hour smallint DEFAULT 19,
+  ADD COLUMN IF NOT EXISTS krug_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS decisions_enabled boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS krug_settlement_reminder_enabled boolean DEFAULT true;
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -984,6 +1925,26 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   recurrence_count integer DEFAULT 0 NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS type text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS read boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text,
+  ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info'::text,
+  ADD COLUMN IF NOT EXISTS dedup_key text,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS resolved_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS dismissed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS last_seen_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS recurrence_count integer DEFAULT 0;
 CREATE TABLE IF NOT EXISTS public.paddle_price_map (
   price_id text NOT NULL,
   module text NOT NULL,
@@ -994,6 +1955,16 @@ CREATE TABLE IF NOT EXISTS public.paddle_price_map (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (price_id, module)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.paddle_price_map
+  ADD COLUMN IF NOT EXISTS price_id text,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS billing_cycle text,
+  ADD COLUMN IF NOT EXISTS environment text DEFAULT 'live'::text,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.participant_digest_state (
   user_id uuid NOT NULL,
   project_id uuid NOT NULL,
@@ -1004,6 +1975,16 @@ CREATE TABLE IF NOT EXISTS public.participant_digest_state (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, project_id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.participant_digest_state
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS pending_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS pending_summary jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS last_event_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS last_sent_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.payment_source_cards (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   payment_source_id uuid NOT NULL,
@@ -1014,6 +1995,16 @@ CREATE TABLE IF NOT EXISTS public.payment_source_cards (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.payment_source_cards
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS payment_source_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS card_name text DEFAULT 'Kartica'::text,
+  ADD COLUMN IF NOT EXISTS last_four_digits text,
+  ADD COLUMN IF NOT EXISTS card_type text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.payment_source_invitations (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   payment_source_id uuid NOT NULL,
@@ -1028,6 +2019,20 @@ CREATE TABLE IF NOT EXISTS public.payment_source_invitations (
   invited_user_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.payment_source_invitations
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS payment_source_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS invited_by uuid,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS token uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval),
+  ADD COLUMN IF NOT EXISTS used_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS invited_user_id uuid;
 CREATE TABLE IF NOT EXISTS public.payment_source_members (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   payment_source_id uuid NOT NULL,
@@ -1037,6 +2042,15 @@ CREATE TABLE IF NOT EXISTS public.payment_source_members (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.payment_source_members
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS payment_source_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS joined_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.payout_rate_segments (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   payout_id uuid NOT NULL,
@@ -1048,6 +2062,17 @@ CREATE TABLE IF NOT EXISTS public.payout_rate_segments (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.payout_rate_segments
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS payout_id uuid,
+  ADD COLUMN IF NOT EXISTS rate numeric(10,2),
+  ADD COLUMN IF NOT EXISTS segment_start date,
+  ADD COLUMN IF NOT EXISTS segment_end date,
+  ADD COLUMN IF NOT EXISTS hours numeric(10,2),
+  ADD COLUMN IF NOT EXISTS subtotal numeric(12,2),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.pdf_parse_jobs (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1058,6 +2083,16 @@ CREATE TABLE IF NOT EXISTS public.pdf_parse_jobs (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.pdf_parse_jobs
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS result jsonb,
+  ADD COLUMN IF NOT EXISTS error text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1075,6 +2110,23 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   guided_home_exited_at timestamp with time zone,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS multi_currency_enabled boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deletion_scheduled_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS onboarding_completed boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS timezone text DEFAULT 'Europe/Zagreb'::text,
+  ADD COLUMN IF NOT EXISTS preferred_language text DEFAULT 'hr'::text,
+  ADD COLUMN IF NOT EXISTS is_e2e_user boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS guided_home_exited_at timestamp with time zone;
 CREATE TABLE IF NOT EXISTS public.project_activity_log (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1085,6 +2137,16 @@ CREATE TABLE IF NOT EXISTS public.project_activity_log (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_activity_log
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS action_type text,
+  ADD COLUMN IF NOT EXISTS action_description text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_activity_push_throttle (
   user_id uuid NOT NULL,
   project_id uuid NOT NULL,
@@ -1094,6 +2156,15 @@ CREATE TABLE IF NOT EXISTS public.project_activity_push_throttle (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (user_id, project_id, activity_bucket)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_activity_push_throttle
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS activity_bucket text,
+  ADD COLUMN IF NOT EXISTS last_sent_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS pending_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_budget_revisions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1104,6 +2175,16 @@ CREATE TABLE IF NOT EXISTS public.project_budget_revisions (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_budget_revisions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS previous_amount numeric,
+  ADD COLUMN IF NOT EXISTS new_amount numeric,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_collaborators (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1121,6 +2202,23 @@ CREATE TABLE IF NOT EXISTS public.project_collaborators (
   paid_amount numeric DEFAULT 0 NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_collaborators
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS first_name text,
+  ADD COLUMN IF NOT EXISTS last_name text,
+  ADD COLUMN IF NOT EXISTS company_name text,
+  ADD COLUMN IF NOT EXISTS service_description text,
+  ADD COLUMN IF NOT EXISTS total_price numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text,
+  ADD COLUMN IF NOT EXISTS contact_info text,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS paid_amount numeric DEFAULT 0;
 CREATE TABLE IF NOT EXISTS public.project_contract_amendments (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1133,6 +2231,18 @@ CREATE TABLE IF NOT EXISTS public.project_contract_amendments (
   source_decision_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_contract_amendments
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS amendment_amount numeric,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS linked_revision_id uuid,
+  ADD COLUMN IF NOT EXISTS linked_milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS source_decision_id uuid;
 CREATE TABLE IF NOT EXISTS public.project_decision_admin_requests (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   decision_id uuid NOT NULL,
@@ -1147,6 +2257,20 @@ CREATE TABLE IF NOT EXISTS public.project_decision_admin_requests (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_decision_admin_requests
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS decision_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS type text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS resolved_by uuid,
+  ADD COLUMN IF NOT EXISTS resolved_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_decision_attachments (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   decision_id uuid NOT NULL,
@@ -1159,6 +2283,18 @@ CREATE TABLE IF NOT EXISTS public.project_decision_attachments (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_decision_attachments
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS decision_id uuid,
+  ADD COLUMN IF NOT EXISTS step_id uuid,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS file_name text,
+  ADD COLUMN IF NOT EXISTS mime_type text,
+  ADD COLUMN IF NOT EXISTS size_bytes integer,
+  ADD COLUMN IF NOT EXISTS uploaded_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_decision_steps (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   decision_id uuid NOT NULL,
@@ -1171,6 +2307,18 @@ CREATE TABLE IF NOT EXISTS public.project_decision_steps (
   price numeric(14,2),
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_decision_steps
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS decision_id uuid,
+  ADD COLUMN IF NOT EXISTS step_no integer,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_role text,
+  ADD COLUMN IF NOT EXISTS action text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS price numeric(14,2);
 CREATE TABLE IF NOT EXISTS public.project_decisions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1192,6 +2340,27 @@ CREATE TABLE IF NOT EXISTS public.project_decisions (
   annul_compensation_amendment_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_decisions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS initial_description text,
+  ADD COLUMN IF NOT EXISTS initial_price numeric(14,2),
+  ADD COLUMN IF NOT EXISTS current_status text DEFAULT 'awaiting_response'::text,
+  ADD COLUMN IF NOT EXISTS closed_reason text,
+  ADD COLUMN IF NOT EXISTS closed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS contract_amendment_id uuid,
+  ADD COLUMN IF NOT EXISTS overdue boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS last_reminder_sent_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS annulled_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS annulled_by uuid,
+  ADD COLUMN IF NOT EXISTS annul_request_id uuid,
+  ADD COLUMN IF NOT EXISTS annul_compensation_amendment_id uuid;
 CREATE TABLE IF NOT EXISTS public.project_documents (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1211,6 +2380,25 @@ CREATE TABLE IF NOT EXISTS public.project_documents (
   document_kind text DEFAULT 'document'::text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_documents
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS mime_type text DEFAULT 'application/octet-stream'::text,
+  ADD COLUMN IF NOT EXISTS size_bytes bigint DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS storage_mode text DEFAULT 'local'::text,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS ai_analysis jsonb,
+  ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'::text[],
+  ADD COLUMN IF NOT EXISTS uploaded_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS location_coords text,
+  ADD COLUMN IF NOT EXISTS location_name text,
+  ADD COLUMN IF NOT EXISTS captured_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS document_kind text DEFAULT 'document'::text;
 CREATE TABLE IF NOT EXISTS public.project_estimates (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1233,6 +2421,28 @@ CREATE TABLE IF NOT EXISTS public.project_estimates (
   deleted_by uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_estimates
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS estimate_number text,
+  ADD COLUMN IF NOT EXISTS client_name text,
+  ADD COLUMN IF NOT EXISTS client_oib text,
+  ADD COLUMN IF NOT EXISTS client_address text,
+  ADD COLUMN IF NOT EXISTS items jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS subtotal numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS vat_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft'::text,
+  ADD COLUMN IF NOT EXISTS valid_until date,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS accepted_project_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid;
 CREATE TABLE IF NOT EXISTS public.project_funding (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1243,6 +2453,16 @@ CREATE TABLE IF NOT EXISTS public.project_funding (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_funding
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS allocated_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS percentage numeric,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_invitations (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1260,6 +2480,23 @@ CREATE TABLE IF NOT EXISTS public.project_invitations (
   worker_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_invitations
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS token uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS invited_by uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS used_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS invited_user_id uuid,
+  ADD COLUMN IF NOT EXISTS suggested_context text DEFAULT 'personal'::text,
+  ADD COLUMN IF NOT EXISTS default_permissions jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS worker_id uuid;
 CREATE TABLE IF NOT EXISTS public.project_invoices (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1288,6 +2525,34 @@ CREATE TABLE IF NOT EXISTS public.project_invoices (
   deleted_by uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_invoices
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS invoice_number text,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS estimate_id uuid,
+  ADD COLUMN IF NOT EXISTS client_name text,
+  ADD COLUMN IF NOT EXISTS client_oib text,
+  ADD COLUMN IF NOT EXISTS client_address text,
+  ADD COLUMN IF NOT EXISTS items jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS subtotal numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS vat_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR'::text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'issued'::text,
+  ADD COLUMN IF NOT EXISTS issue_date date DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS client_email text,
+  ADD COLUMN IF NOT EXISTS auto_reminders_enabled boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS pdf_path text,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid;
 CREATE TABLE IF NOT EXISTS public.project_member_permissions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1298,6 +2563,16 @@ CREATE TABLE IF NOT EXISTS public.project_member_permissions (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_member_permissions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS tab_key text,
+  ADD COLUMN IF NOT EXISTS visible boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_members (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1311,6 +2586,19 @@ CREATE TABLE IF NOT EXISTS public.project_members (
   can_see_investor_price boolean DEFAULT false NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_members
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role text DEFAULT 'member'::text,
+  ADD COLUMN IF NOT EXISTS joined_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS member_context text DEFAULT 'personal'::text,
+  ADD COLUMN IF NOT EXISTS member_business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS can_see_investor_price boolean DEFAULT false;
 CREATE TABLE IF NOT EXISTS public.project_milestones (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1337,6 +2625,32 @@ CREATE TABLE IF NOT EXISTS public.project_milestones (
   investor_price numeric(14,2),
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_milestones
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS budget numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text,
+  ADD COLUMN IF NOT EXISTS start_date date,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS completed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#3b82f6'::text,
+  ADD COLUMN IF NOT EXISTS depends_on_milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS reminder_days_before integer DEFAULT 3,
+  ADD COLUMN IF NOT EXISTS is_contingency boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid,
+  ADD COLUMN IF NOT EXISTS actual_start_date date,
+  ADD COLUMN IF NOT EXISTS actual_end_date date,
+  ADD COLUMN IF NOT EXISTS is_vtr boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS source_decision_id uuid,
+  ADD COLUMN IF NOT EXISTS investor_price numeric(14,2);
 CREATE TABLE IF NOT EXISTS public.project_share_links (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1353,6 +2667,22 @@ CREATE TABLE IF NOT EXISTS public.project_share_links (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_share_links
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS token uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS show_financials boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS show_photos boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS show_milestones boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS last_viewed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS view_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_templates (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   name text NOT NULL,
@@ -1368,6 +2698,21 @@ CREATE TABLE IF NOT EXISTS public.project_templates (
   is_active boolean DEFAULT true NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_templates
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '📁'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#3b82f6'::text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS default_milestones jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
 CREATE TABLE IF NOT EXISTS public.project_work_entries (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   worker_id uuid NOT NULL,
@@ -1383,6 +2728,21 @@ CREATE TABLE IF NOT EXISTS public.project_work_entries (
   payout_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_work_entries
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS worker_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS work_date date,
+  ADD COLUMN IF NOT EXISTS scheduled_hours numeric DEFAULT 8,
+  ADD COLUMN IF NOT EXISTS actual_hours numeric DEFAULT 8,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS milestone_ids uuid[] DEFAULT '{}'::uuid[],
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS payout_id uuid;
 CREATE TABLE IF NOT EXISTS public.project_work_entry_locks (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   entry_id uuid NOT NULL,
@@ -1395,6 +2755,18 @@ CREATE TABLE IF NOT EXISTS public.project_work_entry_locks (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_work_entry_locks
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS entry_id uuid,
+  ADD COLUMN IF NOT EXISTS payout_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS worker_id uuid,
+  ADD COLUMN IF NOT EXISTS action text,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_work_logs (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1412,6 +2784,23 @@ CREATE TABLE IF NOT EXISTS public.project_work_logs (
   clock_out_time text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_work_logs
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS milestone_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS log_date date DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS weather text,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS hours numeric,
+  ADD COLUMN IF NOT EXISTS day_type text DEFAULT 'work'::text,
+  ADD COLUMN IF NOT EXISTS clock_in_time text,
+  ADD COLUMN IF NOT EXISTS clock_out_time text;
 CREATE TABLE IF NOT EXISTS public.project_worker_payouts (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid NOT NULL,
@@ -1438,6 +2827,32 @@ CREATE TABLE IF NOT EXISTS public.project_worker_payouts (
   batch_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_worker_payouts
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS worker_id uuid,
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS period_start date,
+  ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS hours_covered numeric(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS hourly_rate_snapshot numeric(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS gross_amount numeric(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS paid_amount numeric(12,2),
+  ADD COLUMN IF NOT EXISTS payment_source text,
+  ADD COLUMN IF NOT EXISTS paid_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'paid'::text,
+  ADD COLUMN IF NOT EXISTS linked_advance_expense_ids uuid[] DEFAULT '{}'::uuid[],
+  ADD COLUMN IF NOT EXISTS voided_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS voided_by uuid,
+  ADD COLUMN IF NOT EXISTS void_reason text,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS batch_id uuid;
 CREATE TABLE IF NOT EXISTS public.project_worker_rate_history (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   worker_id uuid NOT NULL,
@@ -1447,6 +2862,15 @@ CREATE TABLE IF NOT EXISTS public.project_worker_rate_history (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_worker_rate_history
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS worker_id uuid,
+  ADD COLUMN IF NOT EXISTS rate numeric(10,2),
+  ADD COLUMN IF NOT EXISTS effective_from date,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.project_workers (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   project_id uuid,
@@ -1463,6 +2887,22 @@ CREATE TABLE IF NOT EXISTS public.project_workers (
   user_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.project_workers
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS first_name text,
+  ADD COLUMN IF NOT EXISTS last_name text,
+  ADD COLUMN IF NOT EXISTS position text,
+  ADD COLUMN IF NOT EXISTS work_hours numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS hourly_rate numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS work_start_time time without time zone DEFAULT '08:00:00'::time without time zone,
+  ADD COLUMN IF NOT EXISTS work_end_time time without time zone DEFAULT '16:00:00'::time without time zone,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid;
 CREATE TABLE IF NOT EXISTS public.projects (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1485,6 +2925,28 @@ CREATE TABLE IF NOT EXISTS public.projects (
   deleted_by uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.projects
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '📁'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#3b82f6'::text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft'::text,
+  ADD COLUMN IF NOT EXISTS total_budget numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS start_date date,
+  ADD COLUMN IF NOT EXISTS end_date date,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS project_type text DEFAULT 'general'::text,
+  ADD COLUMN IF NOT EXISTS label_overrides jsonb,
+  ADD COLUMN IF NOT EXISTS contract_value numeric,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS deleted_by uuid;
 CREATE TABLE IF NOT EXISTS public.push_delivery_logs (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -1506,6 +2968,27 @@ CREATE TABLE IF NOT EXISTS public.push_delivery_logs (
   lifecycle_stage text,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.push_delivery_logs
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS source_function text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS token_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS success_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS failure_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS fcm_error_codes jsonb,
+  ADD COLUMN IF NOT EXISTS request_payload jsonb,
+  ADD COLUMN IF NOT EXISTS response_summary jsonb,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS dispatch_status text,
+  ADD COLUMN IF NOT EXISTS dispatch_error text,
+  ADD COLUMN IF NOT EXISTS send_push_http_status integer,
+  ADD COLUMN IF NOT EXISTS lifecycle_stage text;
 CREATE TABLE IF NOT EXISTS public.push_tokens (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1515,6 +2998,15 @@ CREATE TABLE IF NOT EXISTS public.push_tokens (
   last_used_at timestamp with time zone,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.push_tokens
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS token text,
+  ADD COLUMN IF NOT EXISTS platform text DEFAULT 'android'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS last_used_at timestamp with time zone;
 CREATE TABLE IF NOT EXISTS public.receipt_items (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   expense_id uuid NOT NULL,
@@ -1525,6 +3017,16 @@ CREATE TABLE IF NOT EXISTS public.receipt_items (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.receipt_items
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS quantity numeric DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS unit_price numeric,
+  ADD COLUMN IF NOT EXISTS total_price numeric,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.recurring_transactions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1549,6 +3051,30 @@ CREATE TABLE IF NOT EXISTS public.recurring_transactions (
   business_profile_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.recurring_transactions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS amount numeric,
+  ADD COLUMN IF NOT EXISTS type text DEFAULT 'expense'::text,
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'other'::text,
+  ADD COLUMN IF NOT EXISTS payment_source text,
+  ADD COLUMN IF NOT EXISTS payment_source_card_id uuid,
+  ADD COLUMN IF NOT EXISTS income_source_id uuid,
+  ADD COLUMN IF NOT EXISTS merchant_name text,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS transfer_to_source text,
+  ADD COLUMN IF NOT EXISTS frequency text DEFAULT 'monthly'::text,
+  ADD COLUMN IF NOT EXISTS day_of_month integer,
+  ADD COLUMN IF NOT EXISTS day_of_week integer,
+  ADD COLUMN IF NOT EXISTS next_due_date date,
+  ADD COLUMN IF NOT EXISTS last_generated_date date,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid;
 CREATE TABLE IF NOT EXISTS public.referrals (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   referrer_id uuid NOT NULL,
@@ -1556,6 +3082,13 @@ CREATE TABLE IF NOT EXISTS public.referrals (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.referrals
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS referrer_id uuid,
+  ADD COLUMN IF NOT EXISTS referred_user_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.reminders (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1570,6 +3103,20 @@ CREATE TABLE IF NOT EXISTS public.reminders (
   created_at timestamp with time zone DEFAULT now(),
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.reminders
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS remind_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS type text DEFAULT 'custom'::text,
+  ADD COLUMN IF NOT EXISTS is_completed boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS notified boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS related_entity_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.savings_goals (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   budget_id uuid,
@@ -1587,6 +3134,23 @@ CREATE TABLE IF NOT EXISTS public.savings_goals (
   user_id uuid,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.savings_goals
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS budget_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS icon text DEFAULT '🎯'::text,
+  ADD COLUMN IF NOT EXISTS color text DEFAULT '#22c55e'::text,
+  ADD COLUMN IF NOT EXISTS target_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS current_amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS target_date date,
+  ADD COLUMN IF NOT EXISTS is_completed boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS completed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS user_id uuid;
 CREATE TABLE IF NOT EXISTS public.support_tickets (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid,
@@ -1607,6 +3171,26 @@ CREATE TABLE IF NOT EXISTS public.support_tickets (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.support_tickets
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS subject text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'hr'::text,
+  ADD COLUMN IF NOT EXISTS app_version text,
+  ADD COLUMN IF NOT EXISTS user_agent text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open'::text,
+  ADD COLUMN IF NOT EXISTS auto_responder_sent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS resolved_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS resolved_by uuid,
+  ADD COLUMN IF NOT EXISTS internal_notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.suppressed_emails (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   email text NOT NULL,
@@ -1615,6 +3199,14 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.suppressed_emails
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.transaction_notes (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   expense_id uuid NOT NULL,
@@ -1623,6 +3215,14 @@ CREATE TABLE IF NOT EXISTS public.transaction_notes (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.transaction_notes
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS expense_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.travel_order_expenses (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   travel_order_id uuid NOT NULL,
@@ -1632,6 +3232,15 @@ CREATE TABLE IF NOT EXISTS public.travel_order_expenses (
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.travel_order_expenses
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS travel_order_id uuid,
+  ADD COLUMN IF NOT EXISTS expense_type text,
+  ADD COLUMN IF NOT EXISTS amount numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.travel_orders (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   business_profile_id uuid NOT NULL,
@@ -1650,6 +3259,24 @@ CREATE TABLE IF NOT EXISTS public.travel_orders (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.travel_orders
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS date_from date,
+  ADD COLUMN IF NOT EXISTS date_to date,
+  ADD COLUMN IF NOT EXISTS destination text,
+  ADD COLUMN IF NOT EXISTS purpose text,
+  ADD COLUMN IF NOT EXISTS vehicle text DEFAULT 'personal_car'::text,
+  ADD COLUMN IF NOT EXISTS km_start numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS km_end numeric DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS km_rate numeric DEFAULT 0.40,
+  ADD COLUMN IF NOT EXISTS daily_allowance_type text DEFAULT 'none'::text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft'::text,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.user_entitlements (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1667,6 +3294,23 @@ CREATE TABLE IF NOT EXISTS public.user_entitlements (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.user_entitlements
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS source text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text,
+  ADD COLUMN IF NOT EXISTS period_start timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS period_end timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS billing_cycle text,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS provider_sub_id text,
+  ADD COLUMN IF NOT EXISTS provider_price_id text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.user_login_logs (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1674,6 +3318,13 @@ CREATE TABLE IF NOT EXISTS public.user_login_logs (
   logged_in_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.user_login_logs
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS device_info jsonb DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS logged_in_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.user_memories (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1684,12 +3335,28 @@ CREATE TABLE IF NOT EXISTS public.user_memories (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.user_memories
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'fact'::text,
+  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
   role app_role NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.user_roles
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS role app_role;
 CREATE TABLE IF NOT EXISTS public.user_subscriptions (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   user_id uuid NOT NULL,
@@ -1701,6 +3368,17 @@ CREATE TABLE IF NOT EXISTS public.user_subscriptions (
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.user_subscriptions
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS tier subscription_tier DEFAULT 'free'::subscription_tier,
+  ADD COLUMN IF NOT EXISTS assigned_by uuid,
+  ADD COLUMN IF NOT EXISTS assigned_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 CREATE TABLE IF NOT EXISTS public.webhook_events (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
   provider text NOT NULL,
@@ -1712,6 +3390,17 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
   received_at timestamp with time zone DEFAULT now() NOT NULL,
   PRIMARY KEY (id)
 );
+-- CI: ako je tablica već stvorena užom definicijom (balance baseline),
+-- CREATE IF NOT EXISTS se preskoči — pa stupce poravnaj idempotentno.
+ALTER TABLE public.webhook_events
+  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS event_id text,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS processed_at timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS processing_error text,
+  ADD COLUMN IF NOT EXISTS received_at timestamp with time zone DEFAULT now();
 -- functions (closure of policy/trigger/default dependencies, topologically sorted)
 CREATE OR REPLACE FUNCTION public.rate_at(_worker_id uuid, _d date)
  RETURNS numeric
@@ -2156,63 +3845,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS income_source_invitations_income_source_id_ema
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_pdar_pending_per_decision ON public.project_decision_admin_requests USING btree (decision_id) WHERE (status = 'pending'::text);
 CREATE UNIQUE INDEX IF NOT EXISTS project_decision_steps_decision_id_step_no_key ON public.project_decision_steps USING btree (decision_id, step_no);
 CREATE UNIQUE INDEX IF NOT EXISTS project_member_permissions_project_id_user_id_tab_key_key ON public.project_member_permissions USING btree (project_id, user_id, tab_key);
--- Isti razlog kao kod `notifications`: balance baseline u CI-ju već ima užu
--- verziju `expenses`, pa se gornji CREATE preskoči. Idempotentno poravnaj stupce
--- (NOT NULL se namjerno ne forsira — postojeći redci balance paketa ostaju valjani).
-ALTER TABLE public.expenses
-  ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid(),
-  ADD COLUMN IF NOT EXISTS user_id uuid,
-  ADD COLUMN IF NOT EXISTS amount numeric(12,2),
-  ADD COLUMN IF NOT EXISTS description text,
-  ADD COLUMN IF NOT EXISTS category text DEFAULT 'other'::text,
-  ADD COLUMN IF NOT EXISTS type text DEFAULT 'expense'::text,
-  ADD COLUMN IF NOT EXISTS date timestamp with time zone DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS receipt_url text,
-  ADD COLUMN IF NOT EXISTS merchant_name text,
-  ADD COLUMN IF NOT EXISTS ai_extracted boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
-  ADD COLUMN IF NOT EXISTS payment_source text DEFAULT 'cash'::text,
-  ADD COLUMN IF NOT EXISTS income_source_id uuid,
-  ADD COLUMN IF NOT EXISTS status transaction_status DEFAULT 'approved'::transaction_status,
-  ADD COLUMN IF NOT EXISTS submitted_by uuid,
-  ADD COLUMN IF NOT EXISTS payment_source_card_id uuid,
-  ADD COLUMN IF NOT EXISTS note text,
-  ADD COLUMN IF NOT EXISTS project_id uuid,
-  ADD COLUMN IF NOT EXISTS milestone_id uuid,
-  ADD COLUMN IF NOT EXISTS budget_id uuid,
-  ADD COLUMN IF NOT EXISTS expense_nature text DEFAULT 'regular'::text,
-  ADD COLUMN IF NOT EXISTS import_batch_id uuid,
-  ADD COLUMN IF NOT EXISTS business_profile_id uuid,
-  ADD COLUMN IF NOT EXISTS vat_rate numeric,
-  ADD COLUMN IF NOT EXISTS vat_amount numeric,
-  ADD COLUMN IF NOT EXISTS cash_register_id uuid,
-  ADD COLUMN IF NOT EXISTS currency text,
-  ADD COLUMN IF NOT EXISTS location_name text,
-  ADD COLUMN IF NOT EXISTS location_coords text,
-  ADD COLUMN IF NOT EXISTS work_type expense_work_type,
-  ADD COLUMN IF NOT EXISTS bank_transaction_id text,
-  ADD COLUMN IF NOT EXISTS bank_account_id uuid,
-  ADD COLUMN IF NOT EXISTS collaborator_id uuid,
-  ADD COLUMN IF NOT EXISTS is_advance boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS linked_advance_ids uuid[] DEFAULT '{}'::uuid[],
-  ADD COLUMN IF NOT EXISTS invoice_id uuid,
-  ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone,
-  ADD COLUMN IF NOT EXISTS deleted_by uuid,
-  ADD COLUMN IF NOT EXISTS bank_match_status text DEFAULT 'manual'::text,
-  ADD COLUMN IF NOT EXISTS possible_duplicate_of uuid,
-  ADD COLUMN IF NOT EXISTS krug_id uuid,
-  ADD COLUMN IF NOT EXISTS krug_privacy krug_privacy,
-  ADD COLUMN IF NOT EXISTS krug_shared_status krug_shared_status,
-  ADD COLUMN IF NOT EXISTS recurring_transaction_id uuid,
-  ADD COLUMN IF NOT EXISTS event_at timestamp with time zone,
-  ADD COLUMN IF NOT EXISTS time_confidence text DEFAULT 'C3'::text,
-  ADD COLUMN IF NOT EXISTS user_edited_event_at boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS worker_payout_id uuid,
-  ADD COLUMN IF NOT EXISTS worker_payout_batch_id uuid,
-  ADD COLUMN IF NOT EXISTS balance_after numeric,
-  ADD COLUMN IF NOT EXISTS bank_row_seq integer,
-  ADD COLUMN IF NOT EXISTS category_origin text DEFAULT 'user'::text;
 -- U CI-ju se ovaj baseline primjenjuje NAKON balance baselinea, koji ima stariju,
 -- užu verziju `notifications`. Zbog `CREATE TABLE IF NOT EXISTS` gornja definicija
 -- se tada preskoči, pa parcijalni indeks ispod nema stupce. Idempotentno ih dodaj.
