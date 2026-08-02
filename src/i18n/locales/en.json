@@ -5970,7 +5970,7 @@
       "missing_invoice_number": "Invoice number not found."
     },
     "import": {
-      "title": "Import incoming invoices (e-Invoice)",
+      "title": "Import e-invoices (XML)",
       "pickFiles": "Choose XML files",
       "hint": "Accepted: invoices (380), metered services (82), construction progress invoices (875/876/877), leasing (394), self-billed (389), factoring (393) and credit notes (381, negative amount), EUR only. An unknown type can be imported by explicit decision. Digital signatures are not verified in this version.",
       "save": "Save ({{n}})",
@@ -5991,7 +5991,12 @@
       "willImport": "To import",
       "unknownSupplier": "Unknown supplier",
       "summary": "{{total}} documents · {{importable}} to import · {{duplicates}} duplicates · {{rejected}} rejected",
-      "needsDecision": "Your call"
+      "needsDecision": "Your call",
+      "directionIn": "Incoming",
+      "directionOut": "Outgoing",
+      "directionForeign": "Not for this company",
+      "directionUnknown": "Direction unknown — company has no VAT ID",
+      "foreignHint": "Neither supplier nor customer is this company — the wrong company is probably selected."
     },
     "list": {
       "unpaid": "Unpaid",
@@ -6006,7 +6011,12 @@
       "vat": "VAT",
       "empty": "No incoming invoices imported yet.",
       "emptyUnpaid": "No unpaid incoming invoices.",
-      "deleteFailed": "Delete failed: {{reason}}"
+      "deleteFailed": "Delete failed: {{reason}}",
+      "directionIn": "I owe",
+      "directionOut": "Owed to me",
+      "uncollected": "Uncollected",
+      "collected": "Collected",
+      "emptyUncollected": "No uncollected outgoing invoices."
     },
     "paid": {
       "title": "Mark as paid",
@@ -6022,7 +6032,8 @@
     "caution": {
       "correction": "This is an invoice correction (type {{docType}}). It may duplicate the original invoice — check before importing.",
       "prepayment": "This is a prepayment invoice (type {{docType}}). A final invoice will follow — risk of double booking.",
-      "unknown_doc_type": "Unknown document type (code {{docType}}). Review the document and decide whether to import it."
+      "unknown_doc_type": "Unknown document type (code {{docType}}). Review the document and decide whether to import it.",
+      "due_before_issue": "Due date ({{dueDate}}) precedes the issue date ({{issueDate}}) — issuer error."
     },
     "widget": {
       "title": "Incoming invoices — unpaid",
@@ -6030,7 +6041,9 @@
       "nextDue": "Next due in {{days}} d.",
       "noDueDate": "No due date",
       "obligationNote": "liability, not an expense",
-      "count": "{{count}} invoices"
+      "count": "{{count}} invoices",
+      "titleOut": "Outgoing invoices — uncollected",
+      "sheetTitle": "E-invoices — payables and receivables"
     }
   }
 }

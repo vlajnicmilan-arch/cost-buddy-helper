@@ -5980,7 +5980,7 @@
       "missing_invoice_number": "Broj računa nije pronađen."
     },
     "import": {
-      "title": "Uvoz ulaznih računa (eRačun)",
+      "title": "Uvoz eRačuna (XML)",
       "pickFiles": "Odaberi XML datoteke",
       "hint": "Prolaze računi (380), računi za mjerene usluge (82), građevinske situacije (875/876/877), leasing (394), samoizdani (389), faktoring (393) i odobrenja (381, negativan iznos), samo u EUR. Nepoznat tip možeš uvesti svjesnom odlukom. Digitalni potpis se u ovoj verziji ne provjerava.",
       "save": "Spremi ({{n}})",
@@ -6001,7 +6001,12 @@
       "willImport": "Za uvoz",
       "unknownSupplier": "Nepoznat dobavljač",
       "summary": "{{total}} dokumenata · {{importable}} za uvoz · {{duplicates}} duplikata · {{rejected}} odbijeno",
-      "needsDecision": "Za odluku"
+      "needsDecision": "Za odluku",
+      "directionIn": "Ulazni",
+      "directionOut": "Izlazni",
+      "directionForeign": "Ne pripada ovoj tvrtki",
+      "directionUnknown": "Smjer nepoznat — tvrtka bez OIB-a",
+      "foreignHint": "Ni dobavljač ni kupac nisu ova tvrtka — vjerojatno je odabrana kriva tvrtka."
     },
     "list": {
       "unpaid": "Neplaćeni",
@@ -6016,7 +6021,12 @@
       "vat": "PDV",
       "empty": "Još nema uvezenih ulaznih računa.",
       "emptyUnpaid": "Nema neplaćenih ulaznih računa.",
-      "deleteFailed": "Brisanje nije uspjelo: {{reason}}"
+      "deleteFailed": "Brisanje nije uspjelo: {{reason}}",
+      "directionIn": "Dugujem",
+      "directionOut": "Duguju mi",
+      "uncollected": "Nenaplaćeni",
+      "collected": "Naplaćeni",
+      "emptyUncollected": "Nema nenaplaćenih izlaznih računa."
     },
     "paid": {
       "title": "Označi kao plaćeno",
@@ -6032,7 +6042,8 @@
     "caution": {
       "correction": "Ovo je ispravak računa (tip {{docType}}). Može duplirati izvorni račun — provjeri prije uvoza.",
       "prepayment": "Ovo je avansni račun (tip {{docType}}). Nakon njega slijedi konačni račun — postoji rizik dvostrukog knjiženja.",
-      "unknown_doc_type": "Nepoznat tip dokumenta (šifra {{docType}}). Provjeri dokument i odluči hoćeš li ga uvesti."
+      "unknown_doc_type": "Nepoznat tip dokumenta (šifra {{docType}}). Provjeri dokument i odluči hoćeš li ga uvesti.",
+      "due_before_issue": "Dospijeće ({{dueDate}}) je prije izdavanja ({{issueDate}}) — greška izdavatelja računa."
     },
     "widget": {
       "title": "Ulazni računi — neplaćeno",
@@ -6040,7 +6051,9 @@
       "nextDue": "Najbliže dospijeće za {{days}} d.",
       "noDueDate": "Bez datuma dospijeća",
       "obligationNote": "obveza, nije trošak",
-      "count": "{{count}} računa"
+      "count": "{{count}} računa",
+      "titleOut": "Izlazni računi — nenaplaćeno",
+      "sheetTitle": "eRačuni — obveze i potraživanja"
     }
   }
 }
