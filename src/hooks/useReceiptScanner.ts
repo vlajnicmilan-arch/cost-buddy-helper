@@ -350,10 +350,8 @@ export const useReceiptScanner = () => {
         try {
           await LocalStorage.setJSON(`receipt_cache_${Date.now()}`, result);
 
-          if (compressedImages[0]) {
-            await LocalFileCache.saveReceiptImage(compressedImages[0]);
-          }
           logDiagnostic('receipt_scan_cache_saved', {});
+
         } catch (cacheErr) {
           console.warn('Failed to cache receipt locally:', cacheErr);
           logDiagnostic({
