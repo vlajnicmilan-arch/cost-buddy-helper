@@ -20,6 +20,7 @@ import { BusinessReports } from '@/components/business/BusinessReports';
 import { BusinessMore } from '@/components/business/BusinessMore';
 import { BusinessWallet } from '@/components/business/BusinessWallet';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
+import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
 import { BusinessProjects } from '@/components/business/BusinessProjects';
 import { BusinessProjectsOverview } from '@/components/business/BusinessProjectsOverview';
 import { BusinessDashboardSection } from '@/components/business/BusinessDashboardSection';
@@ -231,6 +232,9 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
 
             {/* 2. Unpaid invoices (empty state instead of vanishing) */}
             <UnpaidInvoicesWidget showEmptyState variant="monarch" />
+
+            {/* 2b. Incoming invoices (liability, never part of any total) */}
+            <IncomingInvoicesWidget variant="monarch" />
 
             {/* Payment Sources (monarch styling driven by titleOverride) */}
             <PaymentSourcesSection

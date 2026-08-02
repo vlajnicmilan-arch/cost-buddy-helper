@@ -6016,6 +6016,14 @@
       "correction": "Dies ist eine Rechnungskorrektur (Typ {{docType}}). Sie kann die Originalrechnung duplizieren — vor dem Import prüfen.",
       "prepayment": "Dies ist eine Anzahlungsrechnung (Typ {{docType}}). Eine Schlussrechnung folgt — Risiko der Doppelbuchung.",
       "unknown_doc_type": "Unbekannter Dokumenttyp (Code {{docType}}). Dokument prüfen und selbst über den Import entscheiden."
+    },
+    "widget": {
+      "title": "Eingangsrechnungen — offen",
+      "overdue": "{{count}} überfällig · {{amount}}",
+      "nextDue": "Nächste Fälligkeit in {{days}} T.",
+      "noDueDate": "Ohne Fälligkeitsdatum",
+      "obligationNote": "Verbindlichkeit, kein Aufwand",
+      "count": "{{count}} Rechnungen"
     }
   }
 }

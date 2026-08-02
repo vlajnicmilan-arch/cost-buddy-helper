@@ -6026,6 +6026,14 @@
       "correction": "Ovo je ispravak računa (tip {{docType}}). Može duplirati izvorni račun — provjeri prije uvoza.",
       "prepayment": "Ovo je avansni račun (tip {{docType}}). Nakon njega slijedi konačni račun — postoji rizik dvostrukog knjiženja.",
       "unknown_doc_type": "Nepoznat tip dokumenta (šifra {{docType}}). Provjeri dokument i odluči hoćeš li ga uvesti."
+    },
+    "widget": {
+      "title": "Ulazni računi — neplaćeno",
+      "overdue": "{{count}} kasni · {{amount}}",
+      "nextDue": "Najbliže dospijeće za {{days}} d.",
+      "noDueDate": "Bez datuma dospijeća",
+      "obligationNote": "obveza, nije trošak",
+      "count": "{{count}} računa"
     }
   }
 }

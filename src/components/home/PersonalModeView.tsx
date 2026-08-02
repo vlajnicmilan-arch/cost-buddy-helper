@@ -36,6 +36,7 @@ import { useBusinessDebts } from '@/hooks/useBusinessDebts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
+import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -471,6 +472,7 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
 
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
+        {isBusinessChip && <IncomingInvoicesWidget />}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6">

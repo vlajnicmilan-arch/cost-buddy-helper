@@ -6016,6 +6016,14 @@
       "correction": "This is an invoice correction (type {{docType}}). It may duplicate the original invoice — check before importing.",
       "prepayment": "This is a prepayment invoice (type {{docType}}). A final invoice will follow — risk of double booking.",
       "unknown_doc_type": "Unknown document type (code {{docType}}). Review the document and decide whether to import it."
+    },
+    "widget": {
+      "title": "Incoming invoices — unpaid",
+      "overdue": "{{count}} overdue · {{amount}}",
+      "nextDue": "Next due in {{days}} d.",
+      "noDueDate": "No due date",
+      "obligationNote": "liability, not an expense",
+      "count": "{{count}} invoices"
     }
   }
 }
