@@ -3,21 +3,16 @@ import { Sparkles } from 'lucide-react';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
 import type { ProjectMilestone } from '@/types/project';
+import { getHealthLevel, type CostBaseline, type RemainderLevel } from '@/lib/projectCostBaseline';
 
 interface Props {
-  totalBudget: number;
+  /** Osnovica iz getCostBaseline — nikad sirovi ugovoreni iznos. */
+  baseline: CostBaseline;
   spent: number;
   milestones: ProjectMilestone[];
 }
 
-type MarginStatus = 'healthy' | 'attention' | 'critical' | 'neutral';
-
-const marginStatus = (pct: number | null): MarginStatus => {
-  if (pct === null || !isFinite(pct)) return 'neutral';
-  if (pct >= 30) return 'healthy';
-  if (pct >= 10) return 'attention';
-  return 'critical';
-};
+type MarginStatus = RemainderLevel;
 
 const statusDot: Record<MarginStatus, string> = {
   healthy: 'bg-income',
@@ -33,7 +28,7 @@ const statusText: Record<MarginStatus, string> = {
   neutral: 'text-muted-foreground',
 };
 
-export const ProjectForecastCard = ({ totalBudget, spent, milestones }: Props) => {
+export const ProjectForecastCard = ({ baseline, spent, milestones }: Props) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
 
@@ -71,9 +66,11 @@ export const ProjectForecastCard = ({ totalBudget, spent, milestones }: Props) =
   }
 
   const eac = spent / (completionPct / 100);
+  const totalBudget = baseline.value;
   const forecastMarginAmount = totalBudget - eac;
   const forecastMarginPct = totalBudget > 0 ? (forecastMarginAmount / totalBudget) * 100 : null;
-  const status = marginStatus(forecastMarginPct);
+  // Prognoza koristi isti prag kao i sve ostalo, samo nad projiciranim troškom.
+  const status = getHealthLevel(eac, baseline);
 
   return renderShell(
     <div className="space-y-2 text-sm">
@@ -85,7 +82,7 @@ export const ProjectForecastCard = ({ totalBudget, spent, milestones }: Props) =
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted-foreground">
-          {t('projects.forecast.predictedMargin', 'Predviđena marža')}
+          {t('projects.forecast.predictedRemainder', 'Predviđeno preostalo')}
         </span>
         <span className="flex items-center gap-2">
           <span className={cn('w-2 h-2 rounded-full', statusDot[status])} />

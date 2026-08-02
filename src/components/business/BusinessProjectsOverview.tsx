@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { FolderKanban, ChevronRight, Plus } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useActiveProjectsSummary } from '@/hooks/useActiveProjectsSummary';
-import { calculateContractValue } from '@/lib/projectCalculations';
+import { getBaselineSummary, type RemainderLevel } from '@/lib/projectCostBaseline';
+import { getRemainderLabels } from '@/lib/projectMetricLabels';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { DEFAULT_PROJECT_COLORS } from '@/types/project';
@@ -20,26 +21,19 @@ interface BusinessProjectsOverviewProps {
 
 const MAX_VISIBLE = 6;
 
-type Health = 'green' | 'yellow' | 'red' | 'neutral';
-
-const healthFromUsage = (usedPct: number | null): Health => {
-  if (usedPct === null) return 'neutral';
-  if (usedPct > 100) return 'red';
-  if (usedPct >= 80) return 'yellow';
-  return 'green';
-};
+type Health = RemainderLevel;
 
 const HEALTH_COLOR: Record<Health, string> = {
-  green: 'hsl(var(--income))',
-  yellow: 'hsl(var(--warning))',
-  red: 'hsl(var(--destructive))',
+  healthy: 'hsl(var(--income))',
+  attention: 'hsl(var(--warning))',
+  critical: 'hsl(var(--destructive))',
   neutral: 'hsl(var(--muted-foreground))',
 };
 
 const HEALTH_TEXT: Record<Health, string> = {
-  green: 'text-income',
-  yellow: 'text-warning',
-  red: 'text-destructive',
+  healthy: 'text-income',
+  attention: 'text-warning',
+  critical: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
 
@@ -71,10 +65,11 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll, variant = 'defa
     () =>
       activeProjects.map((p, idx) => {
         const spent = summary.get(p.id)?.spent ?? 0;
-        const budget = calculateContractValue(p);
-        const hasBudget = budget > 0;
-        const usedPct = hasBudget ? (spent / budget) * 100 : null;
-        const margin = hasBudget ? (budget - spent) / budget : null;
+        const baselineSummary = getBaselineSummary(p, spent);
+        const budget = baselineSummary.baseline.value;
+        const hasBudget = baselineSummary.hasBaseline;
+        const usedPct = baselineSummary.usedPct;
+        const margin = baselineSummary.remainderPct === null ? null : baselineSummary.remainderPct / 100;
         return {
           project: p,
           spent,
@@ -83,7 +78,8 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll, variant = 'defa
           usedPct,
           margin,
           profit: budget - spent,
-          health: healthFromUsage(usedPct),
+          labels: getRemainderLabels(p.status),
+          health: baselineSummary.level,
           color: p.color || DEFAULT_PROJECT_COLORS[idx % DEFAULT_PROJECT_COLORS.length],
         };
       }),
@@ -198,7 +194,7 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll, variant = 'defa
               </p>
               {row.margin !== null && (
                 <span className={cn('text-xs font-semibold shrink-0 tabular-nums', HEALTH_TEXT[row.health])}>
-                  {t('business.dashboard.marginShort', 'Marža')} {Math.round(row.margin * 100)}%
+                  {t(row.labels.pct.key, row.labels.pct.fallback)} {Math.round(row.margin * 100)}%
                 </span>
               )}
             </div>
@@ -229,7 +225,7 @@ export const BusinessProjectsOverview = React.memo(({ onViewAll, variant = 'defa
             {row.hasBudget && (
               <p className="text-[11px] mt-1.5">
                 <span className="text-muted-foreground">
-                  {t('business.dashboard.profit', 'Zarada')}:{' '}
+                  {t(row.labels.amount.key, row.labels.amount.fallback)}:{' '}
                 </span>
                 <span className={row.profit >= 0 ? 'text-income font-medium' : 'text-destructive font-medium'}>
                   {row.profit >= 0 ? '+' : '−'}

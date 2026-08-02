@@ -571,7 +571,7 @@ export const ProjectFullScreenView = ({
               {/* Forecast section — shown whenever funding is visible and a budget exists.
                   Investor NIKAD ne dobiva Forecast (otkriva projekciju finalnog troška). */}
               {!isInvestorViewer && canSeeTab('funding') && budget > 0 && (
-                <ProjectForecastCard totalBudget={budget} spent={totalSpent} milestones={milestones} />
+                <ProjectForecastCard baseline={baselineSummary.baseline} spent={totalSpent} milestones={milestones} />
               )}
 
               {/* Wave 2: unified single tab strip.
