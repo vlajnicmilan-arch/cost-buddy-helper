@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS public.custom_payment_sources (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- ---- transaction_status (Korak E prereq) ---------------------------------
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_status') THEN
+    CREATE TYPE public.transaction_status AS ENUM ('pending','approved','rejected');
+  END IF;
+END $$;
+
 -- ---- public.expenses ------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.expenses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,6 +54,9 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   description text,
   category text,
   note text,
+  project_id uuid,
+  status public.transaction_status NOT NULL DEFAULT 'approved',
+  submitted_by uuid,
 
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -144,6 +154,17 @@ $$;
 CREATE OR REPLACE FUNCTION public.is_project_member(_project_id uuid, _user_id uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT public.is_project_owner(_project_id, _user_id)
+$$;
+
+-- Role helper used by Korak E INSERT policy on expenses
+CREATE OR REPLACE FUNCTION public.get_project_role(_project_id uuid, _user_id uuid)
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT CASE WHEN public.is_project_owner(_project_id, _user_id) THEN 'owner' ELSE NULL END
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_income_source_member(_source_id uuid, _user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT false
 $$;
 
 -- public.notifications (minimal — enough for worker payout notify tests P14-P16)
