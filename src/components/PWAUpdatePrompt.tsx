@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 // We no longer ship a Service Worker (the legacy PWA SW was caching a stale
 // bundle and breaking the Capacitor APK on /setup). The local stub keeps the
 // existing update UI happy without registering anything.
@@ -23,7 +23,9 @@ export { checkForNativeUpdates as checkForUpdates } from '@/components/update/Na
 
 const SHOW_TEST_BUTTON = false;
 
-let webCheckForUpdatesRef: (() => Promise<void>) | null = null;
+// `manual: true` = korisnik je sam pokrenuo provjeru (Postavke → "Provjeri
+// ažuriranja"). Samo tada se prikazuje potvrda "Aplikacija je ažurna".
+let webCheckForUpdatesRef: ((manual?: boolean) => Promise<void>) | null = null;
 
 const PWAUpdatePromptInner = () => {
   const { t } = useTranslation();
@@ -31,13 +33,15 @@ const PWAUpdatePromptInner = () => {
   const [isTestMode, setIsTestMode] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [pendingUpdateCheck, setPendingUpdateCheck] = useState(false);
+  const isManualCheckRef = useRef(false);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
-      webCheckForUpdatesRef = async () => {
+      webCheckForUpdatesRef = async (manual = false) => {
+        isManualCheckRef.current = manual;
         setIsChecking(true);
         setPendingUpdateCheck(true);
 
@@ -56,14 +60,16 @@ const PWAUpdatePromptInner = () => {
         } catch (error) {
           console.error('[UpdateCheck] Web update check failed:', error);
           showError(t('update.checkFailed', 'Provjera nije uspjela'));
+          isManualCheckRef.current = false;
           setPendingUpdateCheck(false);
         } finally {
           setIsChecking(false);
         }
       };
 
+      // Automatske provjere (boot, povratak u prvi plan, interval) — tihe.
       const triggerCheck = () => {
-        webCheckForUpdatesRef?.();
+        webCheckForUpdatesRef?.(false);
       };
 
       setInterval(triggerCheck, 10 * 60 * 1000);
@@ -98,9 +104,11 @@ const PWAUpdatePromptInner = () => {
     if (pendingUpdateCheck && !isChecking) {
       if (needRefresh) {
         performAutoUpdate();
-      } else {
+      } else if (isManualCheckRef.current) {
+        // Samo ručna provjera dobiva potvrdu; automatska šuti.
         showSuccess(t('update.upToDate', 'Aplikacija je ažurna!'));
       }
+      isManualCheckRef.current = false;
       setPendingUpdateCheck(false);
     }
   }, [pendingUpdateCheck, isChecking, needRefresh, t, performAutoUpdate]);
