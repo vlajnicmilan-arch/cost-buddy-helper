@@ -38,12 +38,12 @@ const DUJE = {
   spent: 29348.77,
   // 28 faza: sve imaju cijenu, nijedna nema planirani trošak.
   milestones: [
-    { budget: null, investor_price: 5000 },
+    { budget: null, investor_price: 5020 },
     { budget: null, investor_price: 4778.65 },
     ...Array.from({ length: 26 }, () => ({ budget: null, investor_price: 1230 })),
   ],
 };
-const DUJE_PRICE_SUM = 41778.65; // 5000 + 4778.65 + 26 × 1230
+const DUJE_PRICE_SUM = 41778.65; // 5020 + 4778.65 + 26 × 1230
 
 const LUCIJA = {
   project: { contract_value: 29700, total_budget: 29700 },
@@ -97,7 +97,7 @@ describe('planirana marža — samo faze s OBA iznosa', () => {
   it('prazan trošak se NIKAD ne uzima kao nula', () => {
     const res = computeProjectPlannedMargin([
       { budget: 600, investor_price: 1000 },
-      { budget: null, investor_price: 5000 }, // ispada iz zbroja
+      { budget: null, investor_price: 5020 }, // ispada iz zbroja
     ]);
     expect(res).not.toBeNull();
     expect(res!.plannedCost).toBe(600);
