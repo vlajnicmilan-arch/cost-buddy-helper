@@ -119,7 +119,7 @@ const withinWindow = (invoice: MatchInvoice, tx: MatchTransaction): boolean => {
 
 /** Poziv na broj s računa nađen u opisu uplate. */
 const referenceHit = (invoice: MatchInvoice, tx: MatchTransaction): boolean => {
-  const ref = digitsOnly((invoice as any).paymentReference);
+  const ref = digitsOnly(invoice.paymentReference);
   if (ref.length < 4) return false;
   return digitsOnly(tx.description).includes(ref);
 };
