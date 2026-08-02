@@ -103,9 +103,11 @@ const PWAUpdatePromptInner = () => {
     if (pendingUpdateCheck && !isChecking) {
       if (needRefresh) {
         performAutoUpdate();
-      } else {
+      } else if (isManualCheckRef.current) {
+        // Samo ručna provjera dobiva potvrdu; automatska šuti.
         showSuccess(t('update.upToDate', 'Aplikacija je ažurna!'));
       }
+      isManualCheckRef.current = false;
       setPendingUpdateCheck(false);
     }
   }, [pendingUpdateCheck, isChecking, needRefresh, t, performAutoUpdate]);
