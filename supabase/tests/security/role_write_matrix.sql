@@ -512,8 +512,9 @@ BEGIN
   -- zahvat mora njemu proći, čime je dokazano da stupac i vrijednost postoje.
   PERFORM pg_temp.expect_denied('53 vlasnik BEZ pretplate — odbijen na SVOM projektu (RPC)', u_nosub,
     format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m2));
-  PERFORM pg_temp.expect_blocked_silently('53b vlasnik BEZ pretplate — odbijen i izravno', u_nosub,
-    format('UPDATE public.project_milestones SET status = ''in_progress'' WHERE id = %L', m2), u_owner2);
+  -- Izravni put za nosub-vlasnika NIJE testiran: kontrolni zahvat nije moguć
+  -- (jedini tko bi ga mogao izvesti je isti taj vlasnik, kojem se i testira
+  -- odbijanje), pa provjera ne bi razlikovala zaštitu od promašenog WHERE-a.
   PERFORM pg_temp.expect_ok('54 member BEZ pretplate — prolazi na TUĐEM projektu (RPC)', u_member,
     format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m2));
 
