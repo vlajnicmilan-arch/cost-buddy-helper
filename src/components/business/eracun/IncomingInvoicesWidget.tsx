@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, ChevronRight, FileInput } from 'lucide-react';
+import { AlertTriangle, ChevronRight, FileInput, FileOutput } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useIncomingInvoices } from '@/hooks/useIncomingInvoices';
