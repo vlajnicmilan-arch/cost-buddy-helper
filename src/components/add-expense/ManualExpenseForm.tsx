@@ -21,6 +21,8 @@ import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { AttachmentBar } from './AttachmentBar';
+import { MilestoneSelectRow } from './MilestoneSelectRow';
+
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
