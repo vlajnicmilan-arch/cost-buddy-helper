@@ -628,6 +628,17 @@ export const GlobalPDFImportHost = () => {
         fingerprint: fingerprints[i],
       }));
 
+      // Metapodaci datoteke putuju kroz payload; ImportReview ih zapisuje u
+      // imported_statements nakon commita (tada tek postoji batch).
+      let statementContentHash = contentHashRef.current;
+      if (!statementContentHash) {
+        try {
+          statementContentHash = await computeContentHash(user.id, paymentSourceValue, transactions);
+        } catch {
+          statementContentHash = null;
+        }
+      }
+
       const payload: ImportReviewPayload = {
         jobId,
         sourceId,
@@ -638,7 +649,15 @@ export const GlobalPDFImportHost = () => {
         importedTransactions,
         batchId: (crypto as any)?.randomUUID?.() ?? `batch-${Date.now()}`,
         availableTargets,
+        statement: {
+          fileHash: fileHashRef.current,
+          contentHash: statementContentHash,
+          fileName: fileMetaRef.current?.name ?? null,
+          fileSize: fileMetaRef.current?.size ?? null,
+          mimeType: fileMetaRef.current?.type ?? null,
+        },
       };
+
 
       saveReviewPayload(payload);
       // Reset PDF import phase so returning from review doesn't re-open the preview modal.

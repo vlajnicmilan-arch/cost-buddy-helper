@@ -37,6 +37,10 @@ import {
 import { executeDecisions, type ExecutorResult, type ReconciliationSummaryEntry } from '@/lib/importReview/executor';
 import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reconciliation/queue';
 import { writePendingSnapshot, type ReconciliationPendingSnapshot } from '@/lib/reconciliation/resume';
+import { resolveAsOfIso, isHistoricalWithGap } from '@/lib/reconciliation/historyGate';
+import { recordImportedStatement } from '@/lib/statementFingerprint';
+
+
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
 import { openImportBatch } from '@/lib/importUndo/host';
@@ -168,6 +172,23 @@ const ImportReview = () => {
       clearDraft();
       clearPayload();
       const batchId = result.batchId;
+
+      // Zapis izvoda: vraća zaštitu od dvostrukog uvoza iste datoteke i
+      // "Nastavi" banner. Non-fatal — uvoz je već commitan.
+      if (user?.id && payload.statement) {
+        await recordImportedStatement({
+          userId: user.id,
+          paymentSourceId: payload.sourceId,
+          fileHash: payload.statement.fileHash,
+          contentHash: payload.statement.contentHash,
+          fileName: payload.statement.fileName,
+          fileSize: payload.statement.fileSize,
+          mimeType: payload.statement.mimeType,
+          transactionsCount: result.inserted + result.merged + result.transfersCreated,
+          importBatchId: batchId,
+        });
+      }
+
       toast.success(t('importReview.confirmedSummaryV2', {
         merged: result.merged,
         inserted: result.inserted,
@@ -184,8 +205,16 @@ const ImportReview = () => {
         } : undefined,
       });
 
-      // FAZA 3 — enqueue ReconciliationDialog za sve sourceove s |delta|>0.01.
+      // Povijesni izvod (završava prije sidra) ne traži odluku — samo informacija
+      // da je povijest dopunjena i da će se stanje uskladiti na kraju.
+      const historical = result.reconciliationSummary.filter(isHistoricalWithGap);
+      if (historical.length > 0) {
+        toast.info(t('importReview.historyExtended', { count: historical.length }), { duration: 8000 });
+      }
+
+      // FAZA 3 — enqueue ReconciliationDialog samo za ne-povijesne izvode s |delta|>0.01.
       await enqueueReconciliationForBatch(result.reconciliationSummary, result.batchId, payload);
+
 
       navigate('/app');
     } catch (e) {
@@ -627,6 +656,8 @@ async function enqueueReconciliationForBatch(
   batchId: string,
   payload: ImportReviewPayload,
 ): Promise<void> {
+  // History gate: povijesni izvodi (završavaju na dan sidra ili prije) ne
+  // ulaze u queue — sidro se ne dira i korisnik ne dobiva pitanje.
   const needing = summaries.filter(s => s.needsReconciliation);
   if (needing.length === 0) return;
 
@@ -640,7 +671,7 @@ async function enqueueReconciliationForBatch(
     statementId = (data as any)?.id ?? null;
   } catch { /* noop — banner iz TUR 2 se neće znati vratiti, ali dijalog radi */ }
 
-  const asOfIso = new Date().toISOString();
+  const fallbackAsOfIso = new Date().toISOString();
   const nameFor = (sourceId: string): { name: string; icon?: string | null } => {
     if (sourceId === payload.sourceId) return { name: payload.sourceName };
     const t = payload.availableTargets.find(x => x.id === sourceId);
@@ -654,17 +685,19 @@ async function enqueueReconciliationForBatch(
       sourceName: nm.name,
       sourceIcon: nm.icon,
       batchId,
-      asOfIso,
+      // Sidro dobiva datum zadnjeg retka uvezenog izvoda, ne trenutak klika.
+      asOfIso: resolveAsOfIso(summary, fallbackAsOfIso),
       importedStatementId: statementId,
     };
   });
+
 
   // TUR 2: perzistiraj snapshot da banner može ponuditi "Nastavi" nakon
   // zatvaranja dijaloga. Non-fatal ako write padne — queue u memoriji radi.
   if (statementId) {
     const snapshot: ReconciliationPendingSnapshot = {
       batchId,
-      asOfIso,
+      asOfIso: fallbackAsOfIso,
       entries: entries.map(e => ({
         summary: e.summary,
         sourceName: e.sourceName,

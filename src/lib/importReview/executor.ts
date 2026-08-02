@@ -44,6 +44,8 @@ import type {
   TransferDecision,
 } from './types';
 import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
+import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
+
 
 /**
  * Minimal supabase interface — must satisfy both the expense update/upsert
@@ -89,8 +91,15 @@ export interface ReconciliationSummaryEntry {
   readonly hasBankRow: boolean;
   readonly needsReconciliation: boolean;
   readonly engineMode: 'hybrid';
+  /** Trenutno sidro izvora (ISO) — null ako izvor nema sidro. */
+  readonly anchorDate?: string | null;
+  /** Timestamp zadnjeg retka uvezenog izvoda za ovaj izvor (ISO). */
+  readonly batchLastAt?: string | null;
+  /** Izvod završava na dan sidra ili prije → ne traži odluku. */
+  readonly isHistorical?: boolean;
   readonly error?: string;
 }
+
 
 export interface ExecutorResult {
   readonly batchId: string;
@@ -429,8 +438,6 @@ export function collectTouchedSourceIds(plan: PlannedWork): readonly string[] {
   return [...set];
 }
 
-const RECON_THRESHOLD = 0.01;
-
 async function buildReconciliationSummary(
   supabase: ExecutorSupabaseClient,
   batchId: string,
@@ -462,20 +469,36 @@ async function buildReconciliationSummary(
         bank_balance?: number | null;
         delta?: number | null;
         has_bank_row?: boolean;
+        anchor_date?: string | null;
+        batch_last_at?: string | null;
+        is_historical?: boolean;
       };
       const app = data.app_balance ?? null;
       const bank = data.bank_balance ?? null;
       const delta = data.delta ?? null;
       const hasBankRow = data.has_bank_row === true;
+      const gateInput = {
+        hasBankRow,
+        delta,
+        anchorDate: data.anchor_date ?? null,
+        batchLastAt: data.batch_last_at ?? null,
+        isHistorical: typeof data.is_historical === 'boolean' ? data.is_historical : undefined,
+      };
       out.push({
         sourceId,
         appBalance: app,
         bankBalance: bank,
         delta,
         hasBankRow,
-        needsReconciliation: hasBankRow && delta !== null && Math.abs(delta) > RECON_THRESHOLD,
+        // History gate: povijesni izvod (završava na dan sidra ili prije)
+        // nikad ne traži odluku — razlika je tada očekivana.
+        needsReconciliation: shouldReconcile(gateInput),
         engineMode: 'hybrid',
+        anchorDate: gateInput.anchorDate,
+        batchLastAt: gateInput.batchLastAt,
+        isHistorical: isHistoricalBatch(gateInput),
       });
+
     } catch (e) {
       out.push({
         sourceId,
