@@ -21,7 +21,7 @@ const PUBLIC_TABLES_SNAPSHOT = [
   "email_send_state","email_unsubscribe_tokens","expenses","feedback_submissions",
   "funnel_events","health_summaries","imported_statements","income_source_invitations",
   "income_source_members","income_sources","installment_plans","installments",
-  "inventory_items","inventory_movements","invoice_items","invoice_reminders","invoices",
+  "inventory_items","inventory_movements","invoice_reminders",
   "krug","krug_act_dedup","krug_deletion_request","krug_deletion_vote","krug_membership",
   "krug_ownership","krug_shared_payment_source",
   "milestone_budget_alerts","milestone_budget_revisions","milestone_checklist_items",

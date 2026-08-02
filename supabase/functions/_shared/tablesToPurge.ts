@@ -43,8 +43,7 @@ export const PURGE_DEPENDENT: readonly DependentTable[] = [
   { table: "inventory_movements", via: "expense_id", parentTable: "expenses", column: "expense_id" },
 
   // Invoice children
-  { table: "invoice_items", via: "invoice_id", parentTable: "invoices", column: "invoice_id" },
-  { table: "invoice_reminders", via: "invoice_id", parentTable: "invoices", column: "invoice_id" },
+  { table: "invoice_reminders", via: "invoice_id", parentTable: "project_invoices", column: "invoice_id" },
 
   // Travel order children
   { table: "travel_order_expenses", via: "travel_order_id", parentTable: "travel_orders", column: "travel_order_id" },
@@ -113,7 +112,6 @@ export const PURGE_BY_USER_ID: readonly string[] = [
   "custom_payment_sources",
   "custom_categories",
   "savings_goals",
-  "invoices",                 // after invoice_items + invoice_reminders
   "travel_orders",            // after travel_order_expenses
   "inventory_items",
   "business_debts",
