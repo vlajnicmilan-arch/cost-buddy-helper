@@ -137,6 +137,11 @@ const num = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+/** Cent rounding — keeps float noise out of the identity assertions. */
+const round2 = (v: number): number => Math.round((v + Number.EPSILON) * 100) / 100;
+
+
+
 const isCountedTx = (t: PLTransactionRow): boolean => {
   if (t.type === 'transfer') return false;
   if (t.expense_nature === 'correction') return false;
