@@ -17,8 +17,12 @@ import type { EracunInsertRow } from '@/lib/eracun/intakeBatch';
 
 export interface IncomingInvoice {
   id: string;
+  /** `in` = obveza (dugujem), `out` = potraživanje (duguju mi). */
+  direction: 'in' | 'out';
   supplier_name: string | null;
   supplier_oib: string;
+  counterparty_name: string | null;
+  counterparty_oib: string | null;
   invoice_number: string;
   issue_date: string | null;
   due_date: string | null;
@@ -26,6 +30,8 @@ export interface IncomingInvoice {
   vat_amount: number | null;
   currency: string;
   iban: string | null;
+  payment_reference: string | null;
+  settled_amount: number | null;
   doc_type: string;
   items: unknown;
   fingerprint: string;

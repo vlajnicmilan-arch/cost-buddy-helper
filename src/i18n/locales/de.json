@@ -5970,7 +5970,7 @@
       "missing_invoice_number": "Rechnungsnummer nicht gefunden."
     },
     "import": {
-      "title": "Eingangsrechnungen importieren (E-Rechnung)",
+      "title": "E-Rechnungen importieren (XML)",
       "pickFiles": "XML-Dateien auswählen",
       "hint": "Akzeptiert: Rechnungen (380), Verbrauchsabrechnungen (82), Bauabschlagsrechnungen (875/876/877), Leasing (394), Gutschriftverfahren (389), Factoring (393) und Gutschriften (381, negativer Betrag), nur EUR. Ein unbekannter Typ kann bewusst importiert werden. Digitale Signaturen werden in dieser Version nicht geprüft.",
       "save": "Speichern ({{n}})",
@@ -5991,7 +5991,12 @@
       "willImport": "Zu importieren",
       "unknownSupplier": "Unbekannter Lieferant",
       "summary": "{{total}} Dokumente · {{importable}} zu importieren · {{duplicates}} Duplikate · {{rejected}} abgelehnt",
-      "needsDecision": "Zu entscheiden"
+      "needsDecision": "Zu entscheiden",
+      "directionIn": "Eingang",
+      "directionOut": "Ausgang",
+      "directionForeign": "Gehört nicht zu dieser Firma",
+      "directionUnknown": "Richtung unbekannt — Firma ohne USt-IdNr.",
+      "foreignHint": "Weder Lieferant noch Kunde ist diese Firma — vermutlich ist die falsche Firma gewählt."
     },
     "list": {
       "unpaid": "Unbezahlt",
@@ -6006,7 +6011,12 @@
       "vat": "MwSt.",
       "empty": "Noch keine Eingangsrechnungen importiert.",
       "emptyUnpaid": "Keine unbezahlten Eingangsrechnungen.",
-      "deleteFailed": "Löschen fehlgeschlagen: {{reason}}"
+      "deleteFailed": "Löschen fehlgeschlagen: {{reason}}",
+      "directionIn": "Ich schulde",
+      "directionOut": "Mir geschuldet",
+      "uncollected": "Offen (Ausgang)",
+      "collected": "Bezahlt (Ausgang)",
+      "emptyUncollected": "Keine offenen Ausgangsrechnungen."
     },
     "paid": {
       "title": "Als bezahlt markieren",
@@ -6022,7 +6032,8 @@
     "caution": {
       "correction": "Dies ist eine Rechnungskorrektur (Typ {{docType}}). Sie kann die Originalrechnung duplizieren — vor dem Import prüfen.",
       "prepayment": "Dies ist eine Anzahlungsrechnung (Typ {{docType}}). Eine Schlussrechnung folgt — Risiko der Doppelbuchung.",
-      "unknown_doc_type": "Unbekannter Dokumenttyp (Code {{docType}}). Dokument prüfen und selbst über den Import entscheiden."
+      "unknown_doc_type": "Unbekannter Dokumenttyp (Code {{docType}}). Dokument prüfen und selbst über den Import entscheiden.",
+      "due_before_issue": "Fälligkeit ({{dueDate}}) liegt vor dem Rechnungsdatum ({{issueDate}}) — Fehler des Ausstellers."
     },
     "widget": {
       "title": "Eingangsrechnungen — offen",
@@ -6030,7 +6041,9 @@
       "nextDue": "Nächste Fälligkeit in {{days}} T.",
       "noDueDate": "Ohne Fälligkeitsdatum",
       "obligationNote": "Verbindlichkeit, kein Aufwand",
-      "count": "{{count}} Rechnungen"
+      "count": "{{count}} Rechnungen",
+      "titleOut": "Ausgangsrechnungen — offen",
+      "sheetTitle": "E-Rechnungen — Verbindlichkeiten und Forderungen"
     }
   }
 }

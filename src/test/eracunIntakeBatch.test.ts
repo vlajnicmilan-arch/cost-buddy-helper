@@ -31,6 +31,7 @@ const file = (fingerprint: string, over: Partial<EracunParsedFile> = {}): Eracun
   invoice: invoice(),
   acceptance: { accepted: true, amount: 150, isCreditNote: false, cautions: [], needsDecision: false },
   fingerprint,
+  direction: 'in',
   ...over,
 });
 

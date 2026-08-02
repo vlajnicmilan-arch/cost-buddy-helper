@@ -28,6 +28,8 @@ export type EracunDocType =
   | '383'
   /** Račun za predujam */
   | '386'
+  /** Račun za najam (hire invoice) */
+  | '387'
   /** Samoizdani račun (self-billed) */
   | '389'
   /** Račun po najmu/leasingu i sl. periodični obračun */
@@ -81,7 +83,9 @@ export type EracunWarningCode =
   /** Datum izdavanja nije pronađen. */
   | 'missing_issue_date'
   /** Dobavljač nije pronađen. */
-  | 'missing_supplier';
+  | 'missing_supplier'
+  /** Dospijeće je ranije od izdavanja — greška izdavatelja, ne ispravljamo je. */
+  | 'due_before_issue';
 
 export interface EracunWarning {
   code: EracunWarningCode;

@@ -2169,8 +2169,11 @@ export type Database = {
       incoming_invoices: {
         Row: {
           business_profile_id: string | null
+          counterparty_name: string | null
+          counterparty_oib: string | null
           created_at: string
           currency: string
+          direction: string
           doc_type: string
           due_date: string | null
           fingerprint: string
@@ -2183,6 +2186,8 @@ export type Database = {
           note: string | null
           paid_at: string | null
           paid_expense_id: string | null
+          payment_reference: string | null
+          settled_amount: number
           source_filename: string | null
           supplier_name: string | null
           supplier_oib: string
@@ -2193,8 +2198,11 @@ export type Database = {
         }
         Insert: {
           business_profile_id?: string | null
+          counterparty_name?: string | null
+          counterparty_oib?: string | null
           created_at?: string
           currency?: string
+          direction?: string
           doc_type: string
           due_date?: string | null
           fingerprint: string
@@ -2207,6 +2215,8 @@ export type Database = {
           note?: string | null
           paid_at?: string | null
           paid_expense_id?: string | null
+          payment_reference?: string | null
+          settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
           supplier_oib: string
@@ -2217,8 +2227,11 @@ export type Database = {
         }
         Update: {
           business_profile_id?: string | null
+          counterparty_name?: string | null
+          counterparty_oib?: string | null
           created_at?: string
           currency?: string
+          direction?: string
           doc_type?: string
           due_date?: string | null
           fingerprint?: string
@@ -2231,6 +2244,8 @@ export type Database = {
           note?: string | null
           paid_at?: string | null
           paid_expense_id?: string | null
+          payment_reference?: string | null
+          settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
           supplier_oib?: string
