@@ -132,7 +132,32 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
               </div>
             )}
           </div>
-        </div>
+
+          {/* Unpaid work — OUTSIDE the cost total, right next to the cash balance. */}
+          {(pl.unpaidLaborCost > 0 || pl.unpaidHours > 0) && (
+            <div className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  <Clock className="w-3.5 h-3.5 text-warning" />
+                  {t('projects.unpaidLabor', 'Neisplaćeni rad')}
+                </span>
+                <span className="text-sm font-bold text-warning">
+                  {formatAmount(pl.unpaidLaborCost)}
+                </span>
+              </div>
+              <div className="mt-0.5 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {t('projects.unpaidLaborOutsideTotal', 'Nije uključeno u troškove')}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {t('projects.unpaidLaborHours', '{{hours}} h', {
+                    hours: pl.unpaidHours.toFixed(1),
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+
 
         {/* RIGHT: Expected (contract / accrual) — only when contract value exists */}
         {hasContract && (
