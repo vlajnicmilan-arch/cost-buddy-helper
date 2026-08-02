@@ -69,7 +69,7 @@ export const IncomingInvoicesPanel = () => {
               .catch((err) => {
               console.error('[eRacun] undoBatch failed', err);
               showError(t('eracun.import.undoFailedDetailed', 'Poništavanje nije uspjelo: {{reason}}', {
-                reason: describeDbError(err, t('eracun.error.unknown', 'Nepoznata greška')),
+                reason: describeDbError(err, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
               }));
             }),
         });
@@ -86,7 +86,7 @@ export const IncomingInvoicesPanel = () => {
             .slice(0, 5)
             .join(', ');
           showError(t('eracun.import.failedDetailed', 'Uvoz nije uspio: {{reason}}{{where}}', {
-            reason: describeDbError(err, t('eracun.error.unknown', 'Nepoznata greška')),
+            reason: describeDbError(err, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
             where: numbers ? ` (${numbers})` : '',
           }));
         }
@@ -124,7 +124,7 @@ export const IncomingInvoicesPanel = () => {
           reason: describeInvoiceDbError(err, {
             supplier: payTarget.supplier_name,
             invoiceNumber: payTarget.invoice_number,
-          }, t('eracun.error.unknown', 'Nepoznata greška')),
+          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
         }));
       }
     });
@@ -140,7 +140,7 @@ export const IncomingInvoicesPanel = () => {
         reason: describeInvoiceDbError(err, {
           supplier: invoice.supplier_name,
           invoiceNumber: invoice.invoice_number,
-        }, t('eracun.error.unknown', 'Nepoznata greška')),
+        }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
       }));
     }
   }, [deleteInvoice, t]);
