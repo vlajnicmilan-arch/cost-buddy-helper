@@ -87,9 +87,15 @@ export const EracunImportDialog = ({
       }
     }
 
-    setRows(buildIntakeRows(parsed, existingFingerprints));
+    const nextRows = buildIntakeRows(parsed, existingFingerprints);
+    setRows(nextRows);
     setFailed(failures);
-    setExcluded({});
+    // Nepoznat tip traži svjesnu odluku — ne uvozi se dok ga korisnik sam ne označi.
+    setExcluded(
+      Object.fromEntries(
+        nextRows.filter((r) => r.acceptance.needsDecision).map((r) => [r.index, true]),
+      ),
+    );
     setParsing(false);
   }, [existingFingerprints]);
 
@@ -117,6 +123,14 @@ export const EracunImportDialog = ({
           {row.duplicateOf === 'existing'
             ? t('eracun.review.duplicateExisting', 'Već uvezen')
             : t('eracun.review.duplicateBatch', 'Duplikat u seriji')}
+        </Badge>
+      );
+    }
+    if (row.acceptance.needsDecision) {
+      return (
+        <Badge variant="secondary" className="text-[10px] gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          {t('eracun.review.needsDecision', 'Za odluku')}
         </Badge>
       );
     }
@@ -229,6 +243,15 @@ export const EracunImportDialog = ({
                         {t('eracun.warning.credit_note', { docType: '381' })}
                       </p>
                     )}
+                    {row.acceptance.cautions.map((caution) => (
+                      <p
+                        key={caution.code}
+                        className="text-[11px] text-amber-600 mt-1 flex items-start gap-1"
+                      >
+                        <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                        {t(`eracun.caution.${caution.code}`, caution.params)}
+                      </p>
+                    ))}
                   </div>
                 </div>
               </div>
