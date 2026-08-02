@@ -302,6 +302,12 @@ export const ProjectTransactionsTab = ({
       }
 
       if (needsApproval) {
+        if (inserted) {
+          invokeNotifyFunction({
+            functionName: 'notify-project-expense-review',
+            body: { expense_id: (inserted as any).id, action: 'submitted' },
+          });
+        }
         showSuccess(t('projects.expenseSubmitted', 'Transakcija poslana na odobrenje'));
       } else {
         showSuccess(t('projects.expenseAdded', 'Trošak dodan'));

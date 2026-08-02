@@ -95,6 +95,11 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         });
       }
 
+      invokeNotifyFunction({
+        functionName: 'notify-project-expense-review',
+        body: { expense_id: transactionId, action: 'reviewed', decision: 'approve' },
+      });
+
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
       showSuccess(t('projects.transactionApproved', 'Transakcija odobrena'));
     } catch (error) {
@@ -114,17 +119,15 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
       if (error) throw error;
 
-      if (projectId) {
-        invokeNotifyFunction({
-          functionName: 'notify-project-transaction',
-          body: {
-            expense_id: transactionId,
-            project_id: projectId,
-            action: 'rejected',
-            rejection_reason: reason ?? null,
-          },
-        });
-      }
+      invokeNotifyFunction({
+        functionName: 'notify-project-expense-review',
+        body: {
+          expense_id: transactionId,
+          action: 'reviewed',
+          decision: 'reject',
+          rejection_reason: reason ?? null,
+        },
+      });
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
       showSuccess(t('projects.transactionRejected', 'Transakcija odbijena'));
