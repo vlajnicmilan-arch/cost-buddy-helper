@@ -17,6 +17,8 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import type { KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 import { AttachmentBar } from './AttachmentBar';
+import { MilestoneSelectRow } from './MilestoneSelectRow';
+
 
 interface ScannedData {
   amount: number;
