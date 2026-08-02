@@ -1,4 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+/**
+ * Ovi testovi skeniraju cijeli `src/` (i migracije) sa sinkronim fs pozivima,
+ * pa im default od 5 s zna isteći u punom prolazu na opterećenom stroju.
+ * Timeout je zadan u datoteci da rezultat ne ovisi o načinu pokretanja.
+ */
+vi.setConfig({ testTimeout: 30000, hookTimeout: 30000 });
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { readMilestoneAmount, isAmountHidden, sumVisibleAmounts, computeMilestoneMargin } from '@/lib/milestoneAmounts';
