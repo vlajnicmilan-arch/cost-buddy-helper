@@ -5968,7 +5968,8 @@
     "error": {
       "not_xml": "Datoteka nije valjan XML.",
       "not_ubl": "Datoteka nije UBL 2.1 eRačun.",
-      "empty": "Datoteka je prazna."
+      "empty": "Datoteka je prazna.",
+      "unknownDb": "Nepoznata greška baze"
     },
     "title": "Ulazni računi (eRačun)",
     "menuDesc": "Uvezi XML eRačune i označi ih plaćenima",
@@ -5981,14 +5982,17 @@
     "import": {
       "title": "Uvoz ulaznih računa (eRačun)",
       "pickFiles": "Odaberi XML datoteke",
-      "hint": "Prolaze računi (380), mjerene usluge (82 — struja, plin, voda), građevinske situacije (875/876/877), leasing (394), samoizdani (389) i faktoring (393). Odobrenje (381) ide s negativnim iznosom, a ispravak (384) i avans (386) uz upozorenje. Nepoznat tip možeš uvesti sam, na vlastitu odluku. Samo EUR. Digitalni potpis se u ovoj verziji ne provjerava.",
+      "hint": "Prolaze računi (380), računi za mjerene usluge (82), građevinske situacije (875/876/877), leasing (394), samoizdani (389), faktoring (393) i odobrenja (381, negativan iznos), samo u EUR. Nepoznat tip možeš uvesti svjesnom odlukom. Digitalni potpis se u ovoj verziji ne provjerava.",
       "save": "Spremi ({{n}})",
       "saved": "Uvezeno {{n}} ulaznih računa",
       "undo": "Poništi uvoz",
       "undone": "Poništeno: {{n}}",
       "undoFailed": "Poništavanje nije uspjelo.",
       "failed": "Uvoz nije uspio.",
-      "duplicateServer": "Neki od računa su već uvezeni."
+      "duplicateServer": "Neki od računa su već uvezeni. ({{reason}})",
+      "failedDetailed": "Uvoz nije uspio: {{reason}}{{where}}",
+      "undoFailedDetailed": "Poništavanje nije uspjelo: {{reason}}",
+      "loadFailed": "Učitavanje ulaznih računa nije uspjelo: {{reason}}"
     },
     "review": {
       "duplicateExisting": "Već uvezen",
@@ -6011,7 +6015,8 @@
       "markPaid": "Plaćeno",
       "vat": "PDV",
       "empty": "Još nema uvezenih ulaznih računa.",
-      "emptyUnpaid": "Nema neplaćenih ulaznih računa."
+      "emptyUnpaid": "Nema neplaćenih ulaznih računa.",
+      "deleteFailed": "Brisanje nije uspjelo: {{reason}}"
     },
     "paid": {
       "title": "Označi kao plaćeno",
@@ -6020,7 +6025,9 @@
       "sourceLabel": "Izvor plaćanja",
       "confirm": "Zabilježi plaćanje",
       "expenseDescription": "Ulazni račun {{number}}",
-      "failed": "Bilježenje plaćanja nije uspjelo."
+      "failed": "Bilježenje plaćanja nije uspjelo.",
+      "failedDetailed": "Bilježenje plaćanja nije uspjelo: {{reason}}",
+      "expenseNotCreated": "Trošak nije stvoren — spremanje je odbijeno."
     },
     "caution": {
       "correction": "Ovo je ispravak računa (tip {{docType}}). Može duplirati izvorni račun — provjeri prije uvoza.",
