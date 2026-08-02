@@ -238,17 +238,6 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
 
     setSaving(true);
     try {
-      const isNew = !profile.id;
-      const shouldBeActive = isNew && profiles.length === 0;
-
-      // If this will be active, deactivate others first
-      if (shouldBeActive || profile.is_active) {
-        await supabase
-          .from('business_profiles')
-          .update({ is_active: false })
-          .eq('user_id', user.id);
-      }
-
       const profileData = {
         user_id: user.id,
         company_name: profile.company_name.trim(),
@@ -269,7 +258,9 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         mbs: profile.mbs.trim() || null,
         court_registry: profile.court_registry.trim() || null,
         legal_form: profile.legal_form.trim() || null,
-        is_active: shouldBeActive || profile.is_active,
+        updated_at: new Date().toISOString(),
+      };
+
         updated_at: new Date().toISOString(),
       };
 
