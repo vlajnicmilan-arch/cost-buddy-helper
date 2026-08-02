@@ -287,7 +287,19 @@ export const EracunImportDialog = ({
                       {inv.invoiceNumber} · {inv.issueDate ?? '—'}
                       {inv.dueDate ? ` · ${t('eracun.list.due', 'dospijeće')} ${inv.dueDate}` : ''}
                     </p>
-                    <div className="mt-1 flex flex-wrap gap-1">{rowStatus(row)}</div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {directionBadge(row)}
+                      {rowStatus(row)}
+                    </div>
+                    {row.direction === 'foreign' && (
+                      <p className="text-[11px] text-destructive mt-1 flex items-start gap-1">
+                        <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                        {t(
+                          'eracun.review.foreignHint',
+                          'Ni dobavljač ni kupac nisu ova tvrtka — vjerojatno je odabrana kriva tvrtka.',
+                        )}
+                      </p>
+                    )}
                     {!row.acceptance.accepted && row.acceptance.reason && (
                       <p className="text-[11px] text-destructive mt-1">
                         {t(`eracun.reject.${row.acceptance.reason}`, row.acceptance.params)}
