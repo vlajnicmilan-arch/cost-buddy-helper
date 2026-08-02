@@ -4620,6 +4620,7 @@ export type Database = {
       }
       project_members: {
         Row: {
+          can_see_investor_price: boolean
           created_at: string
           display_name: string | null
           id: string
@@ -4631,6 +4632,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_see_investor_price?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
@@ -4642,6 +4644,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_see_investor_price?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
@@ -6802,6 +6805,10 @@ export type Database = {
         }[]
       }
       mark_guided_home_exited: { Args: never; Returns: string }
+      member_sees_investor_price: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       merge_manual_with_bank: {
         Args: { p_bank_id: string; p_manual_id: string }
         Returns: Json
