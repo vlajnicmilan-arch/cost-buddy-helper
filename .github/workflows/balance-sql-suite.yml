@@ -124,18 +124,21 @@ jobs:
           echo "Balance SQL suite: $(grep -c 'PASS ' /tmp/suite.out) assertions PASS"
 
 
+      - name: Apply role-write security baseline (snapshot of live schema)
+        # Snimka žive sheme (tablice, enumi, RLS politike, trigeri i closure
+        # funkcija) potrebna za matricu prava pisanja po ulogama projekta.
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/role_write_baseline.sql
+
       - name: SECDEF anon CI shim (dynamic revoke)
         # CI-only. The curated baseline doesn't replay production REVOKE
         # migrations, so this shim dynamically revokes anon+PUBLIC EXECUTE on
         # every callable SECDEF function in `public` — same predicate as the
         # invariant test below. Keeps CI honest without a hand-maintained list.
+        # MORA ići NAKON role_write_baseline: baseline dodaje SECDEF funkcije,
+        # pa bi ranije pokretanje ostavilo njih anon-izvršivima.
         # See supabase/tests/security/secdef_anon_shim.sql.
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/secdef_anon_shim.sql
 
-      - name: Apply role-write security baseline (snapshot of live schema)
-        # Snimka žive sheme (tablice, enumi, RLS politike, trigeri i closure
-        # funkcija) potrebna za matricu prava pisanja po ulogama projekta.
-        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security/role_write_baseline.sql
 
       - name: Role write matrix (RLS + trigger, bez ijednog secreta)
         # SQL pandan e2e/security/specs/09-role-writes-matrix.spec.ts, koji
