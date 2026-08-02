@@ -4214,15 +4214,25 @@ CREATE POLICY "projects_readonly_when_downgraded" ON public.projects AS RESTRICT
   USING (((user_id <> auth.uid()) OR is_projects_subscriber(auth.uid())))
   WITH CHECK (((user_id <> auth.uid()) OR is_projects_subscriber(auth.uid())));
 -- triggers
+DROP TRIGGER IF EXISTS trg_checklist_updated ON public.milestone_checklist_items;
 CREATE TRIGGER trg_checklist_updated BEFORE UPDATE ON public.milestone_checklist_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_project_documents_updated_at ON public.project_documents;
 CREATE TRIGGER update_project_documents_updated_at BEFORE UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_guard_milestone_column_writes ON public.project_milestones;
 CREATE TRIGGER trg_guard_milestone_column_writes BEFORE UPDATE ON public.project_milestones FOR EACH ROW EXECUTE FUNCTION guard_milestone_column_writes();
+DROP TRIGGER IF EXISTS trg_log_milestone_activity ON public.project_milestones;
 CREATE TRIGGER trg_log_milestone_activity AFTER INSERT OR DELETE OR UPDATE ON public.project_milestones FOR EACH ROW EXECUTE FUNCTION log_project_activity();
+DROP TRIGGER IF EXISTS update_project_milestones_updated_at ON public.project_milestones;
 CREATE TRIGGER update_project_milestones_updated_at BEFORE UPDATE ON public.project_milestones FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_guard_worker_rate_direct_update ON public.project_workers;
 CREATE TRIGGER trg_guard_worker_rate_direct_update BEFORE UPDATE ON public.project_workers FOR EACH ROW EXECUTE FUNCTION _guard_worker_rate_direct_update();
+DROP TRIGGER IF EXISTS update_project_workers_updated_at ON public.project_workers;
 CREATE TRIGGER update_project_workers_updated_at BEFORE UPDATE ON public.project_workers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trg_cascade_project_soft_delete ON public.projects;
 CREATE TRIGGER trg_cascade_project_soft_delete AFTER UPDATE OF deleted_at ON public.projects FOR EACH ROW EXECUTE FUNCTION cascade_project_soft_delete();
+DROP TRIGGER IF EXISTS trg_guard_contract_value_update ON public.projects;
 CREATE TRIGGER trg_guard_contract_value_update BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION _guard_contract_value_update();
+DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===========================================================================
