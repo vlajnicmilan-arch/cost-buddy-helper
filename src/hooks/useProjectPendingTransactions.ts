@@ -77,10 +77,13 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
   const approveTransaction = async (transactionId: string) => {
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .update({ status: 'approved' })
-        .eq('id', transactionId);
+      // Korak E: stanje se mijenja isključivo kroz namjenski RPC
+      // (trigger `trg_guard_expense_review_writes` je druga brava).
+      const { error } = await (supabase.rpc as any)('review_project_expense', {
+        p_expense_id: transactionId,
+        p_decision: 'approve',
+        p_reason: null,
+      });
 
       if (error) throw error;
 
@@ -100,14 +103,28 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
     }
   };
 
-  const rejectTransaction = async (transactionId: string) => {
+  const rejectTransaction = async (transactionId: string, reason?: string) => {
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', transactionId);
+      // Odbijeni trošak OSTAJE kao zapis (bez učinka na saldo) — nema brisanja.
+      const { error } = await (supabase.rpc as any)('review_project_expense', {
+        p_expense_id: transactionId,
+        p_decision: 'reject',
+        p_reason: reason ?? null,
+      });
 
       if (error) throw error;
+
+      if (projectId) {
+        invokeNotifyFunction({
+          functionName: 'notify-project-transaction',
+          body: {
+            expense_id: transactionId,
+            project_id: projectId,
+            action: 'rejected',
+            rejection_reason: reason ?? null,
+          },
+        });
+      }
 
       setPendingTransactions(prev => prev.filter(t => t.id !== transactionId));
       showSuccess(t('projects.transactionRejected', 'Transakcija odbijena'));
