@@ -14,7 +14,7 @@ import {
   matchPayments,
   extractIbans,
   remainingOf,
-  MATCH_WINDOW_DAYS,
+  paymentFetchWindow,
   type MatchCandidate,
   type MatchInvoice,
   type MatchTransaction,
