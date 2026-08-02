@@ -60,6 +60,7 @@ const PWAUpdatePromptInner = () => {
         } catch (error) {
           console.error('[UpdateCheck] Web update check failed:', error);
           showError(t('update.checkFailed', 'Provjera nije uspjela'));
+          isManualCheckRef.current = false;
           setPendingUpdateCheck(false);
         } finally {
           setIsChecking(false);
