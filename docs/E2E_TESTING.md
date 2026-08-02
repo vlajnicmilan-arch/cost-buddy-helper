@@ -88,13 +88,47 @@ Selektori centralizirani u `e2e/helpers/selectors.ts`. Sprint 2 zahtijeva dodava
 
 ## Aktivacija (kasnije)
 
+### Odakle stvarno dolaze kredencijali
+
+| Varijabla | Je li tajna | Gdje se nalazi |
+| --- | --- | --- |
+| `E2E_SUPABASE_URL` | ne | Već u repozitoriju (`.env`, `security-audit.yml` ima fallback). Ne treba je nigdje tražiti. |
+| `E2E_SUPABASE_ANON_KEY` | ne | Publishable ključ; već u repozitoriju i u `security-audit.yml` fallbacku. |
+| `E2E_USER_PASSWORD` | da, ali je izmišljena | Korisnik je sam smisli (bilo koji jak string). Nema je nigdje za "pronaći". |
+| `E2E_SUPABASE_SERVICE_ROLE_KEY` | DA | **Lovable Cloud ovaj ključ NE prikazuje.** Nema ga u Lovable sučelju, ni u Backend pregledu, ni u postavkama projekta. |
+
+**Ispravak ranije netočne upute:** prethodna verzija ovog dokumenta tvrdila je da
+se service_role ključ nalazi u „Lovable Cloud → Backend → API keys". To nije
+točno i ne treba ga ondje tražiti. Ključ je dostupan isključivo vlasniku
+pravog Supabase projekta (Supabase dashboard → Project Settings → API), a
+projekti na Lovable Cloudu nemaju pristup tom dashboardu.
+
+Dakle: jedini secret koji stvarno nedostaje je `E2E_SUPABASE_SERVICE_ROLE_KEY`.
+
+### Dok tog ključa nema
+
+Sigurnosna provjera prava pisanja po ulogama vozi se kroz **SQL harness**, koji
+ne treba nijedan secret:
+
+- `supabase/tests/security/role_write_baseline.sql` — snimka žive sheme
+- `supabase/tests/security/role_write_matrix.sql` — matrica prava (RLS + trigeri)
+- pokreće se u `.github/workflows/balance-sql-suite.yml` nad praznim Postgresom
+
+Granice te zamjene (JWT/GoTrue, PostgREST sloj, edge funkcije, drift prema
+produkciji) popisane su u zaglavlju `role_write_matrix.sql`.
+
+Playwright specovi u `e2e/security/` ostaju u repozitoriju netaknuti i prorade
+bez ijedne izmjene čim `E2E_SUPABASE_SERVICE_ROLE_KEY` postane dostupan.
+
+### Kad ključ postane dostupan
+
 1. U GitHub repu → **Settings → Secrets and variables → Actions → New repository secret** dodaj:
-   - `E2E_SUPABASE_URL` = `https://fzalxjretvtvokiotvkf.supabase.co`
-   - `E2E_SUPABASE_ANON_KEY` = (anon key iz Lovable Cloud)
-   - `E2E_SUPABASE_SERVICE_ROLE_KEY` = (service_role key iz Lovable Cloud → Backend → API keys)
-   - `E2E_USER_PASSWORD` = bilo koji jak string
+   - `E2E_SUPABASE_SERVICE_ROLE_KEY` = service_role ključ iz Supabase dashboarda
+   - `E2E_USER_PASSWORD` = bilo koji jak string koji sam smisliš
+   - (`E2E_SUPABASE_URL` i `E2E_SUPABASE_ANON_KEY` su neobavezni — postoje fallbacki)
 2. U `.github/workflows/e2e.yml` zamijeni `on: workflow_dispatch:` blok s originalnim trigerima (`pull_request` + `push: main`).
 3. Dodaj `data-testid` atribute za preostale flowove (Flow 2 ih već ima).
 4. Ukloni `test.skip` iz spec fajlova jedan po jedan.
+
 
 - [ ] `mem://features/e2e-test-suite` entry
