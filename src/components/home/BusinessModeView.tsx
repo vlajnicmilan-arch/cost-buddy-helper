@@ -156,11 +156,12 @@ export const BusinessModeView = (props: BusinessModeViewProps) => {
 
   // Portals (Radix dialogs/popovers) mount on document.body — keep the
   // business theme there so they never fall back to the personal theme.
-  useBusinessBodyTheme(businessProfile?.id ?? null, businessProfile?.theme_color);
+  useBusinessBodyTheme(businessProfile?.id ?? null);
 
 
   return (
-    <div className={`business-theme-${businessProfile?.theme_color || 'ocean-blue'} min-h-dvh bg-background pb-20`}>
+    <div className={`business-theme-${FORCED_BUSINESS_THEME} min-h-dvh bg-background pb-20`}>
+
       {/* Accent bar + Business header */}
       <div className="h-1 bg-primary rounded-b-full" />
       <div className="max-w-4xl mx-auto px-3 sm:px-4 pt-4">
