@@ -21,6 +21,7 @@ import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
+import { PaymentMatchReview } from './PaymentMatchReview';
 
 type Filter = 'unpaid' | 'paid' | 'all';
 type Direction = 'in' | 'out';
@@ -49,6 +50,7 @@ export const IncomingInvoicesPanel = () => {
   const [direction, setDirection] = useState<Direction>('in');
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
+  const [matchOpen, setMatchOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
   const [collectTarget, setCollectTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
@@ -242,10 +244,18 @@ export const IncomingInvoicesPanel = () => {
             <TabsTrigger value="all" className="text-xs">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button size="sm" className="min-h-[36px]" onClick={() => setImportOpen(true)}>
-          <Upload className="w-3.5 h-3.5 mr-1" />
-          {t('eracun.importButton', 'Učitaj eRačun (XML)')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {direction === 'out' && (
+            <Button size="sm" variant="outline" className="min-h-[36px]" onClick={() => setMatchOpen(true)}>
+              <Link2 className="w-3.5 h-3.5 mr-1" />
+              {t('eracun.match.open', 'Poveži uplate')}
+            </Button>
+          )}
+          <Button size="sm" className="min-h-[36px]" onClick={() => setImportOpen(true)}>
+            <Upload className="w-3.5 h-3.5 mr-1" />
+            {t('eracun.importButton', 'Učitaj eRačun (XML)')}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
