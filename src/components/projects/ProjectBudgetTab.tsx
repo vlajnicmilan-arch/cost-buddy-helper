@@ -6,6 +6,14 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { ContractAmendmentsBadge } from './ContractAmendmentsBadge';
+import type { RemainderLevel } from '@/lib/projectCostBaseline';
+import type { PlannedMarginResult, UnclassifiedContract } from '@/lib/projectPlannedMargin';
+import {
+  PLANNED_MARGIN_COVERAGE_LABEL,
+  PLANNED_MARGIN_LABEL,
+  UNCLASSIFIED_CONTRACT_LABEL,
+  type RemainderLabels,
+} from '@/lib/projectMetricLabels';
 
 interface ProjectBudgetTabProps {
   project: Project;
@@ -17,8 +25,16 @@ interface ProjectBudgetTabProps {
   totalSpent: number;
   costPct: number;
   collectionPct: number;
-  marginPct: number | null;
-  marginStatusKey: 'healthy' | 'attention' | 'critical' | 'neutral';
+  /** Osnovica za pragove (planirani trošak faza ili ugovoreno). */
+  baseline: number;
+  /** Preostalo u postotku osnovice; null kad osnovice nema. */
+  remainderPct: number | null;
+  remainderLevel: RemainderLevel;
+  /** Natpisi iz projectMetricLabels — komponenta ih ne bira sama. */
+  remainderLabels: RemainderLabels;
+  remainderStatusLabel: string;
+  plannedMargin: PlannedMarginResult | null;
+  unclassified: UnclassifiedContract | null;
   showBudgetAlarm: boolean;
   showCollectionAlarm: boolean;
   canAccessBusinessTabs: boolean;
@@ -42,8 +58,13 @@ export const ProjectBudgetTab = ({
   totalSpent,
   costPct,
   collectionPct,
-  marginPct,
-  marginStatusKey,
+  baseline,
+  remainderPct,
+  remainderLevel,
+  remainderLabels,
+  remainderStatusLabel,
+  plannedMargin,
+  unclassified,
   showBudgetAlarm,
   showCollectionAlarm,
   canAccessBusinessTabs,
@@ -58,29 +79,19 @@ export const ProjectBudgetTab = ({
     attention: 'bg-warning',
     critical: 'bg-destructive',
     neutral: 'bg-muted-foreground',
-  }[marginStatusKey];
+  }[remainderLevel];
   const marginTextClass = {
     healthy: 'text-income',
     attention: 'text-warning',
     critical: 'text-destructive',
     neutral: 'text-muted-foreground',
-  }[marginStatusKey];
+  }[remainderLevel];
   const marginBarClass = {
     healthy: '[&>div]:bg-income',
     attention: '[&>div]:bg-warning',
     critical: '[&>div]:bg-destructive',
     neutral: '',
-  }[marginStatusKey];
-  const marginStatusLabel = t(
-    `projects.marginStatus.${marginStatusKey}`,
-    marginStatusKey === 'healthy'
-      ? 'Zdrav'
-      : marginStatusKey === 'attention'
-      ? 'Pažnja'
-      : marginStatusKey === 'critical'
-      ? 'Kritično'
-      : '—'
-  );
+  }[remainderLevel];
 
   const hasAnyFinancials = budget > 0 || totalReceived > 0 || totalSpent > 0;
 
@@ -162,17 +173,53 @@ export const ProjectBudgetTab = ({
         </div>
         <div className="p-2 sm:p-3 rounded-lg bg-muted text-center">
           <p className={cn('text-base sm:text-xl font-bold tabular-nums truncate', marginTextClass)}>
-            {marginPct !== null ? `${marginPct.toFixed(0)}%` : '—'}
+            {remainderPct !== null ? `${remainderPct.toFixed(0)}%` : '—'}
           </p>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-            {t('projects.margin', 'Marža')}
+            {t(remainderLabels.pct.key, remainderLabels.pct.fallback)}
           </p>
           <div className="flex items-center justify-center gap-1 mt-1">
             <span className={cn('w-1.5 h-1.5 rounded-full', marginDotClass)} />
-            <span className={cn('text-[10px]', marginTextClass)}>{marginStatusLabel}</span>
+            <span className={cn('text-[10px]', marginTextClass)}>{remainderStatusLabel}</span>
           </div>
         </div>
       </div>
+
+      {/* Planirana marža — zbroj po fazama, samo faze s OBA iznosa */}
+      {plannedMargin && (
+        <div className="p-3 rounded-lg bg-muted text-center space-y-1">
+          {plannedMargin.partial && (
+            <p className="text-[10px] text-muted-foreground">
+              {t(PLANNED_MARGIN_COVERAGE_LABEL.key, PLANNED_MARGIN_COVERAGE_LABEL.fallback, {
+                withBoth: plannedMargin.covered.withBoth,
+                total: plannedMargin.covered.total,
+              })}
+            </p>
+          )}
+          <p className="text-base sm:text-xl font-bold tabular-nums">
+            {plannedMargin.plannedMarginPct !== null
+              ? `${plannedMargin.plannedMarginPct.toFixed(0)}%`
+              : '—'}
+            <span className="text-xs font-normal text-muted-foreground ml-2">
+              {formatAmount(plannedMargin.plannedMarginAmount)}
+            </span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            {t(PLANNED_MARGIN_LABEL.key, PLANNED_MARGIN_LABEL.fallback)}
+          </p>
+        </div>
+      )}
+
+      {/* Nerazvrstani iznos — siva rečenica, bez ikone i bez boje */}
+      {unclassified && (
+        <p className="text-[11px] text-muted-foreground">
+          {t(UNCLASSIFIED_CONTRACT_LABEL.key, UNCLASSIFIED_CONTRACT_LABEL.fallback, {
+            contract: formatAmount(unclassified.contractValue),
+            phases: formatAmount(unclassified.phasesTotal),
+            diff: formatAmount(unclassified.diff),
+          })}
+        </p>
+      )}
 
       {/* Dual progress bars */}
       {budget > 0 && (
@@ -183,7 +230,7 @@ export const ProjectBudgetTab = ({
                 {t('projects.progress.cost', 'Trošak')} · {costPct.toFixed(0)}%
               </span>
               <span className="text-muted-foreground tabular-nums">
-                {formatAmount(totalSpent)} / {formatAmount(budget)}
+                {formatAmount(totalSpent)} / {formatAmount(baseline)}
               </span>
             </div>
             <Progress value={Math.min(costPct, 100)} className={cn('h-2', marginBarClass)} />
