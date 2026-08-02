@@ -181,11 +181,20 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     if (t.type === 'income') totalIncome += num(t.amount);
     else if (t.type === 'expense') totalExpenses += netExpenseAmount(t, txs);
   }
+  // Paid labor (CASH). Source of truth: expense rows written by the payout RPCs.
+  // Hours are deliberately NOT used here — that money already sits in `expenses`.
+  let laborCost = 0;
+  for (const t of txs) {
+    if (!isCountedTx(t)) continue;
+    if (t.type !== 'expense') continue;
+    if (!t.worker_payout_id) continue;
+    laborCost += netExpenseAmount(t, txs);
+  }
+  laborCost = round2(laborCost);
 
-
-  // Labor cost — per-day rate_at() with fallback to worker.hourly_rate.
+  // Accrued labor — per-day rate_at() with fallback to worker.hourly_rate.
   // Delegated to the shared helper so useProjectProfitLoss, MyWorkerPayCard,
-  // and any future consumer produce identical numbers.
+  // and any future consumer produce identical numbers. Reported, not costed.
   const labor = computeProjectLaborCost({
     workers: input.workers ?? [],
     workEntries: (input.workEntries ?? []).map((e) => ({
@@ -196,9 +205,16 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     })),
     rateHistory: input.rateHistory ?? [],
   });
-  const laborCost = labor.laborCost;
+  const accruedLaborCost = round2(labor.laborCost);
   const workerDetails: PLWorkerDetail[] = labor.workerDetails;
 
+  const unpaidLaborCost = round2(Math.max(0, accruedLaborCost - laborCost));
+  const unpaidHours = round2(
+    (input.workEntries ?? []).reduce(
+      (s, e) => (e.payout_id ? s : s + num(e.actual_hours)),
+      0,
+    ),
+  );
 
   let collaboratorCost = 0;
   const collabDetails: PLCollaboratorDetail[] = [];
@@ -212,13 +228,16 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
       paidAmount: paid,
     });
   }
+  collaboratorCost = round2(collaboratorCost);
 
-  const materialCost = Math.max(0, totalExpenses - laborCost - collaboratorCost);
-  const totalCosts = laborCost + collaboratorCost + materialCost;
-  const netProfit = totalIncome - totalCosts;
+  // No clamp: labor + collaborator + material must always equal totalExpenses.
+  const materialCost = round2(totalExpenses - laborCost - collaboratorCost);
+  const materialCostAnomaly = materialCost < 0;
+  const totalCosts = round2(laborCost + collaboratorCost + materialCost);
+  const netProfit = round2(totalIncome - totalCosts);
   const margin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
 
-  const expectedProfit = contractValue - totalCosts;
+  const expectedProfit = round2(contractValue - totalCosts);
   const expectedMargin = contractValue > 0 ? (expectedProfit / contractValue) * 100 : 0;
   const collectedPercentage =
     contractValue > 0 ? Math.min((totalIncome / contractValue) * 100, 100) : 0;
@@ -230,6 +249,10 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     laborCost,
     collaboratorCost,
     materialCost,
+    materialCostAnomaly,
+    accruedLaborCost,
+    unpaidLaborCost,
+    unpaidHours,
     netProfit,
     margin,
     workers: workerDetails,
@@ -241,3 +264,4 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     remainingToCollect,
   };
 };
+
