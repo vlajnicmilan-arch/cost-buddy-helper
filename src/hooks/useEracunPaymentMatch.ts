@@ -148,17 +148,22 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
         // Učenje: IBAN platitelja iz opisa → druga strana s računa.
         const iban = extractIbans(transaction.description)[0];
         if (iban) {
-          await supabase.from('eracun_counterparty_iban' as any).upsert(
-            {
-              user_id: user.id,
-              business_profile_id: activeBusinessProfileId,
-              iban,
-              counterparty_oib: invoice.counterparty_oib ?? invoice.supplier_oib,
-              counterparty_name: invoice.counterparty_name ?? invoice.supplier_name,
-              last_seen_at: new Date().toISOString(),
-            } as any,
-            { onConflict: 'user_id,iban,business_profile_id', ignoreDuplicates: true } as any,
-          );
+          // Jedinstvenost je na (user, iban, profil) — ponovljena potvrda
+          // samo osvježava zapis, duplikat nije greška.
+          const { error: ibanError } = await supabase.from('eracun_counterparty_iban' as any).insert({
+            user_id: user.id,
+            business_profile_id: activeBusinessProfileId,
+            iban,
+            counterparty_oib: invoice.counterparty_oib ?? invoice.supplier_oib,
+            counterparty_name: invoice.counterparty_name ?? invoice.supplier_name,
+          } as any);
+          if (ibanError && String((ibanError as any).code) === '23505') {
+            await supabase
+              .from('eracun_counterparty_iban' as any)
+              .update({ last_seen_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .eq('iban', iban);
+          }
         }
       }
     }
