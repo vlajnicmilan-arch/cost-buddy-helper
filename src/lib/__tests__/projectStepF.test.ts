@@ -15,7 +15,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeProjectPlannedMargin,
-  computeUnclassifiedContract,
+  computeContractPhaseNote,
+  getPhasePriceCoverage,
   sumInvestorPrice,
   sumPlannedCost,
 } from '../projectPlannedMargin';
@@ -129,8 +130,10 @@ describe('ZABRANA PRIBRAJANJA — ugovoreno i zbroj faza se nikad ne zbrajaju', 
     const summary = getBaselineSummary(DUJE.project, DUJE.spent, DUJE.milestones);
     outputs.push(summary.baseline.value, summary.remainderAmount ?? 0, summary.usedPct ?? 0);
 
-    const unclassified = computeUnclassifiedContract(42333.52, DUJE.milestones)!;
-    outputs.push(unclassified.contractValue, unclassified.phasesTotal, unclassified.diff);
+    const note = computeContractPhaseNote(42333.52, DUJE.milestones);
+    if (note?.kind === 'unclassified') {
+      outputs.push(note.contractValue, note.phasesTotal, note.diff);
+    }
 
     outputs.push(sumInvestorPrice(DUJE.milestones) ?? 0);
 
@@ -154,25 +157,68 @@ describe('ZABRANA PRIBRAJANJA — ugovoreno i zbroj faza se nikad ne zbrajaju', 
   });
 
   it('napomena o nerazvrstanom je isključivo oduzimanje', () => {
-    const duje = computeUnclassifiedContract(42333.52, DUJE.milestones)!;
+    const duje = computeContractPhaseNote(42333.52, DUJE.milestones)!;
+    expect(duje.kind).toBe('unclassified');
+    if (duje.kind !== 'unclassified') throw new Error('unreachable');
     expect(duje.contractValue).toBeCloseTo(42333.52, 2);
     expect(duje.phasesTotal).toBeCloseTo(DUJE_PRICE_SUM, 2);
     expect(duje.diff).toBeCloseTo(554.87, 2);
 
     // Razlika radi u oba smjera: faze iznad ugovorenog daju negativan diff.
-    const over = computeUnclassifiedContract(1000, [{ budget: null, investor_price: 1500 }])!;
-    expect(over.diff).toBe(-500);
+    const over = computeContractPhaseNote(1000, [{ budget: null, investor_price: 1500 }])!;
+    expect(over.kind === 'unclassified' && over.diff).toBe(-500);
+  });
+});
+
+describe('pokriće cijena po fazama — tvrdnja o nerazvrstanom samo kad je sve razvrstano', () => {
+  it('Duje: 28 od 28 faza ima cijenu → potpuno pokriće', () => {
+    const coverage = getPhasePriceCoverage(DUJE.milestones);
+    expect(coverage).toEqual({ withPrice: 28, total: 28, full: true });
+    const note = computeContractPhaseNote(42333.52, DUJE.milestones)!;
+    expect(note.kind).toBe('unclassified');
+    expect(note.coverage.full).toBe(true);
   });
 
-  it('Lucija: nerazvrstano 26.800,00 uz pokriće 1 od 9 faza', () => {
-    const lucija = computeUnclassifiedContract(29700, LUCIJA.milestones)!;
-    expect(lucija.phasesTotal).toBe(2900);
-    expect(lucija.diff).toBe(26800);
+  it('Lucija: 1 od 9 faza → razlika 26.800,00 se NE spominje', () => {
+    const coverage = getPhasePriceCoverage(LUCIJA.milestones);
+    expect(coverage).toEqual({ withPrice: 1, total: 9, full: false });
+
+    const note = computeContractPhaseNote(29700, LUCIJA.milestones)!;
+    expect(note.kind).toBe('partialCoverage');
+    expect(note.coverage).toEqual({ withPrice: 1, total: 9, full: false });
+    // Nigdje u napomeni nema iznosa — ni ugovorenog, ni zbroja, ni razlike.
+    expect(JSON.stringify(note)).not.toContain('26800');
+    expect(JSON.stringify(note)).not.toContain('29700');
+    expect(JSON.stringify(note)).not.toContain('2900');
+    expect('diff' in note).toBe(false);
   });
 
-  it('nema faza s cijenom → nema napomene', () => {
-    expect(computeUnclassifiedContract(29700, SOLIN.milestones)).toBeNull();
-    expect(computeUnclassifiedContract(null, DUJE.milestones)).toBeNull();
+  it('jedna faza bez cijene ruši potpuno pokriće (granica je stroga)', () => {
+    const almost = [
+      { budget: null, investor_price: 1000 },
+      { budget: null, investor_price: 1000 },
+      { budget: null, investor_price: null },
+    ];
+    expect(getPhasePriceCoverage(almost).full).toBe(false);
+    expect(computeContractPhaseNote(5000, almost)!.kind).toBe('partialCoverage');
+  });
+
+  it('Solin: nijedna faza nema cijenu → ništa se ne prikazuje', () => {
+    expect(getPhasePriceCoverage(SOLIN.milestones)).toEqual({ withPrice: 0, total: 17, full: false });
+    expect(computeContractPhaseNote(29700, SOLIN.milestones)).toBeNull();
+  });
+
+  it('Eda Zg: nema faza → ništa se ne prikazuje', () => {
+    expect(getPhasePriceCoverage(EDA.milestones).full).toBe(false);
+    expect(computeContractPhaseNote(1000, EDA.milestones)).toBeNull();
+  });
+
+  it('potpuno pokriće bez ugovorene vrijednosti → ništa (nema od čega oduzeti)', () => {
+    expect(computeContractPhaseNote(null, DUJE.milestones)).toBeNull();
+  });
+
+  it('potpuno pokriće i razlika ≈ 0 → ništa', () => {
+    expect(computeContractPhaseNote(1000, [{ budget: null, investor_price: 1000 }])).toBeNull();
   });
 });
 
