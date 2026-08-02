@@ -66,8 +66,9 @@ const PWAUpdatePromptInner = () => {
         }
       };
 
+      // Automatske provjere (boot, povratak u prvi plan, interval) — tihe.
       const triggerCheck = () => {
-        webCheckForUpdatesRef?.();
+        webCheckForUpdatesRef?.(false);
       };
 
       setInterval(triggerCheck, 10 * 60 * 1000);
