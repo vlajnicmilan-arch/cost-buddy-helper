@@ -247,7 +247,7 @@ export const exportProfitLossPdf = async (
     startY: yBreakdown + 2,
     head: [['Kategorija', 'Iznos']],
     body: [
-      ['Radna snaga', fmt(data.laborCost, data.currency)],
+      [i18n.t('projects.plLaborPaid', 'Radna snaga (isplaceno)'), fmt(data.laborCost, data.currency)],
       ['Suradnici', fmt(data.collaboratorCost, data.currency)],
       ['Materijalni troskovi', fmt(data.materialCost, data.currency)],
     ],
