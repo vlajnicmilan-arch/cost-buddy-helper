@@ -1,0 +1,261 @@
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Upload, FileX2, CheckCircle2, Copy, Loader2, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { parseUbl } from '@/lib/eracun/parseUbl';
+import { EracunParseError } from '@/lib/eracun/types';
+import { evaluateInvoice } from '@/lib/eracun/acceptance';
+import { invoiceFingerprint } from '@/lib/eracun/fingerprint';
+import {
+  buildIntakeRows,
+  summarizeIntake,
+  toInsertRow,
+  type EracunIntakeRow,
+  type EracunParsedFile,
+} from '@/lib/eracun/intakeBatch';
+
+interface FailedFile {
+  fileName: string;
+  code: 'not_xml' | 'not_ubl' | 'empty' | 'unknown';
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  userId: string;
+  businessProfileId: string | null;
+  existingFingerprints: ReadonlySet<string>;
+  onSave: (rows: ReturnType<typeof toInsertRow>[], batchId: string) => Promise<void>;
+}
+
+/**
+ * Pregled prije spremanja (ista logika kao uvoz izvoda: pregled → serija → poništi),
+ * ali zapisi idu isključivo u `incoming_invoices`. `expenses` ostaje netaknut.
+ */
+export const EracunImportDialog = ({
+  open,
+  onOpenChange,
+  userId,
+  businessProfileId,
+  existingFingerprints,
+  onSave,
+}: Props) => {
+  const { t } = useTranslation();
+  const { formatAmount } = useCurrency();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [parsing, setParsing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [rows, setRows] = useState<EracunIntakeRow[]>([]);
+  const [failed, setFailed] = useState<FailedFile[]>([]);
+  const [excluded, setExcluded] = useState<Record<number, boolean>>({});
+
+  const summary = useMemo(() => summarizeIntake(rows), [rows]);
+  const selectedRows = useMemo(
+    () => rows.filter((r) => r.importable && !excluded[r.index]),
+    [rows, excluded],
+  );
+
+  const reset = useCallback(() => {
+    setRows([]);
+    setFailed([]);
+    setExcluded({});
+  }, []);
+
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    setParsing(true);
+    const parsed: EracunParsedFile[] = [];
+    const failures: FailedFile[] = [];
+
+    for (const file of Array.from(fileList)) {
+      try {
+        const xml = await file.text();
+        const invoice = parseUbl(xml);
+        const acceptance = evaluateInvoice(invoice);
+        const fingerprint = await invoiceFingerprint(invoice.supplier.oib, invoice.invoiceNumber);
+        parsed.push({ fileName: file.name, invoice, acceptance, fingerprint });
+      } catch (err) {
+        failures.push({
+          fileName: file.name,
+          code: err instanceof EracunParseError ? err.code : 'unknown',
+        });
+      }
+    }
+
+    setRows(buildIntakeRows(parsed, existingFingerprints));
+    setFailed(failures);
+    setExcluded({});
+    setParsing(false);
+  }, [existingFingerprints]);
+
+  const handleSave = useCallback(async () => {
+    if (selectedRows.length === 0) return;
+    setSaving(true);
+    try {
+      const batchId = crypto.randomUUID();
+      await onSave(
+        selectedRows.map((r) => toInsertRow(r, { userId, businessProfileId, batchId })),
+        batchId,
+      );
+      reset();
+      onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedRows, onSave, userId, businessProfileId, reset, onOpenChange]);
+
+  const rowStatus = (row: EracunIntakeRow) => {
+    if (row.duplicateOf) {
+      return (
+        <Badge variant="secondary" className="text-[10px] gap-1">
+          <Copy className="w-3 h-3" />
+          {row.duplicateOf === 'existing'
+            ? t('eracun.review.duplicateExisting', 'Već uvezen')
+            : t('eracun.review.duplicateBatch', 'Duplikat u seriji')}
+        </Badge>
+      );
+    }
+    if (!row.acceptance.accepted) {
+      return (
+        <Badge variant="destructive" className="text-[10px] gap-1">
+          <FileX2 className="w-3 h-3" />
+          {t('eracun.review.rejected', 'Odbijeno')}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-[10px] gap-1">
+        <CheckCircle2 className="w-3 h-3" />
+        {t('eracun.review.willImport', 'Za uvoz')}
+      </Badge>
+    );
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('eracun.import.title', 'Uvoz ulaznih računa (eRačun)')}</DialogTitle>
+        </DialogHeader>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xml,text/xml,application/xml"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            void handleFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full min-h-[44px]"
+            onClick={() => inputRef.current?.click()}
+            disabled={parsing || saving}
+          >
+            {parsing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+            {t('eracun.import.pickFiles', 'Odaberi XML datoteke')}
+          </Button>
+
+          <p className="text-[11px] text-muted-foreground">
+            {t(
+              'eracun.import.hint',
+              'Prolaze računi (380), periodični obračuni (394) i odobrenja (381, negativan iznos), samo u EUR. Digitalni potpis se u ovoj verziji ne provjerava.',
+            )}
+          </p>
+
+          {failed.map((f) => (
+            <div key={f.fileName} className="p-2 rounded-lg border border-destructive/40 bg-destructive/5">
+              <p className="text-xs font-medium truncate">{f.fileName}</p>
+              <p className="text-[11px] text-destructive">
+                {f.code === 'unknown'
+                  ? t('eracun.error.unknown', 'Datoteku nije moguće pročitati.')
+                  : t(`eracun.error.${f.code}`)}
+              </p>
+            </div>
+          ))}
+
+          {rows.map((row) => {
+            const inv = row.invoice;
+            const disabled = !row.importable;
+            return (
+              <div key={`${row.index}-${row.fileName}`} className="p-3 rounded-lg border bg-card">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={row.importable && !excluded[row.index]}
+                    disabled={disabled}
+                    onCheckedChange={(checked) =>
+                      setExcluded((prev) => ({ ...prev, [row.index]: !checked }))
+                    }
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium truncate">
+                        {inv.supplier.name || t('eracun.review.unknownSupplier', 'Nepoznat dobavljač')}
+                      </p>
+                      <span className="text-sm font-semibold shrink-0">
+                        {formatAmount(row.acceptance.amount ?? inv.suggestedAmount ?? 0)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {inv.invoiceNumber} · {inv.issueDate ?? '—'}
+                      {inv.dueDate ? ` · ${t('eracun.list.due', 'dospijeće')} ${inv.dueDate}` : ''}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1">{rowStatus(row)}</div>
+                    {!row.acceptance.accepted && row.acceptance.reason && (
+                      <p className="text-[11px] text-destructive mt-1">
+                        {t(`eracun.reject.${row.acceptance.reason}`, row.acceptance.params)}
+                      </p>
+                    )}
+                    {row.acceptance.accepted && row.acceptance.isCreditNote && (
+                      <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        {t('eracun.warning.credit_note', { docType: '381' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {rows.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              {t('eracun.review.summary', '{{total}} dokumenata · {{importable}} za uvoz · {{duplicates}} duplikata · {{rejected}} odbijeno', { ...summary })}
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" className="flex-1 min-h-[44px]" onClick={() => onOpenChange(false)} disabled={saving}>
+            {t('common.cancel', 'Odustani')}
+          </Button>
+          <Button
+            className="flex-1 min-h-[44px]"
+            onClick={handleSave}
+            disabled={saving || selectedRows.length === 0}
+          >
+            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {t('eracun.import.save', 'Spremi ({{n}})', { n: selectedRows.length })}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

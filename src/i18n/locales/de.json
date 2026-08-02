@@ -5959,6 +5959,58 @@
       "not_xml": "Die Datei ist kein gültiges XML.",
       "not_ubl": "Die Datei ist keine UBL-2.1-E-Rechnung.",
       "empty": "Die Datei ist leer."
+    },
+    "title": "Eingangsrechnungen (E-Rechnung)",
+    "menuDesc": "E-Rechnungs-XML importieren und als bezahlt markieren",
+    "reject": {
+      "unsupported_doc_type": "Dokumenttyp {{docType}} wird in dieser Version nicht unterstützt.",
+      "unsupported_currency": "Währung {{currency}} wird nicht unterstützt — nur EUR.",
+      "missing_total": "Gesamtbetrag in der Datei nicht gefunden.",
+      "missing_supplier": "USt-IdNr. des Lieferanten nicht gefunden.",
+      "missing_invoice_number": "Rechnungsnummer nicht gefunden."
+    },
+    "import": {
+      "title": "Eingangsrechnungen importieren (E-Rechnung)",
+      "pickFiles": "XML-Dateien auswählen",
+      "hint": "Rechnungen (380), periodische Abrechnungen (394) und Gutschriften (381, negativer Betrag) werden akzeptiert, nur in EUR. Die digitale Signatur wird in dieser Version nicht geprüft.",
+      "save": "Speichern ({{n}})",
+      "saved": "{{n}} Eingangsrechnungen importiert",
+      "undo": "Import rückgängig",
+      "undone": "Rückgängig gemacht: {{n}}",
+      "undoFailed": "Rückgängig machen fehlgeschlagen.",
+      "failed": "Import fehlgeschlagen.",
+      "duplicateServer": "Einige Rechnungen wurden bereits importiert."
+    },
+    "review": {
+      "duplicateExisting": "Bereits importiert",
+      "duplicateBatch": "Duplikat im Stapel",
+      "rejected": "Abgelehnt",
+      "willImport": "Zu importieren",
+      "unknownSupplier": "Unbekannter Lieferant",
+      "summary": "{{total}} Dokumente · {{importable}} zu importieren · {{duplicates}} Duplikate · {{rejected}} abgelehnt"
+    },
+    "list": {
+      "unpaid": "Unbezahlt",
+      "paid": "Bezahlt",
+      "all": "Alle",
+      "due": "fällig",
+      "noDue": "Kein Fälligkeitsdatum",
+      "overdue": "{{n}} T überfällig",
+      "dueIn": "In {{n}} T",
+      "paidOn": "Bezahlt {{date}}",
+      "markPaid": "Bezahlt",
+      "vat": "MwSt.",
+      "empty": "Noch keine Eingangsrechnungen importiert.",
+      "emptyUnpaid": "Keine unbezahlten Eingangsrechnungen."
+    },
+    "paid": {
+      "title": "Als bezahlt markieren",
+      "dateLabel": "Zahlungsdatum",
+      "dateHint": "Heute ist nur ein Vorschlag — ändere es, wenn früher gezahlt wurde. Dieses Datum fließt in die Ausgabe und den Saldo.",
+      "sourceLabel": "Zahlungsquelle",
+      "confirm": "Zahlung erfassen",
+      "expenseDescription": "Eingangsrechnung {{number}}",
+      "failed": "Erfassen der Zahlung fehlgeschlagen."
     }
   }
 }

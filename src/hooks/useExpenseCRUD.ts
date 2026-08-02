@@ -185,6 +185,9 @@ export const useExpenseCRUD = ({
           emitAvatarEvent('neutral', 'Zapisano! 📝');
         }
         showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
+        // Vraćamo spremljeni zapis — pozivatelji koji ga trebaju povezati
+        // (npr. ulazni račun → „Plaćeno") ne moraju pogađati id naknadnim upitom.
+        return newExpense;
       } else {
         if (!authReady) { console.warn('[ExpenseCRUD] auth not ready yet, ignoring save'); return; }
         if (!user) { showError(t('feedback.mustBeLoggedIn')); return; }
@@ -532,6 +535,7 @@ export const useExpenseCRUD = ({
         } else {
           showSuccess(normalizedExpense.type === 'income' ? t('feedback.incomeAdded') : t('feedback.expenseAdded'));
         }
+        return newExpense;
       }
     } catch (error) {
       console.error('Error adding expense:', error);
