@@ -440,13 +440,23 @@ $$;
 
 DO $$
 DECLARE
-  passed int;
+  v_passed int;
+  v_failed int;
+  f record;
 BEGIN
-  SELECT passed INTO passed FROM _rwm_stats;
+  SELECT passed INTO v_passed FROM _rwm_stats;
+  SELECT count(*) INTO v_failed FROM _rwm_failures;
   RAISE NOTICE '=========================================';
-  RAISE NOTICE 'ROLE WRITE MATRIX — % provjera prošlo', passed;
+  RAISE NOTICE 'ROLE WRITE MATRIX — prošlo %, palo %', v_passed, v_failed;
+  FOR f IN SELECT * FROM _rwm_failures LOOP
+    RAISE NOTICE '  % % — %', f.kind, f.label, f.reason;
+  END LOOP;
   RAISE NOTICE '=========================================';
+  IF v_failed > 0 THEN
+    RAISE EXCEPTION 'ROLE WRITE MATRIX: % provjera nije prošlo', v_failed;
+  END IF;
 END;
 $$;
+
 
 ROLLBACK;
