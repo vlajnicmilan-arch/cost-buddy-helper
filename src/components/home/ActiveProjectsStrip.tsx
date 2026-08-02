@@ -39,37 +39,30 @@ interface ActiveProjectsStripProps {
 
 const MAX_VISIBLE = 5;
 
-type HealthLevel = 'green' | 'yellow' | 'red' | 'neutral';
-
 interface ProjectCardData {
   project: ProjectWithOwnership;
   spent: number;
-  budget: number;
-  margin: number | null; // ratio, e.g. 0.42
-  hasMargin: boolean;
-  health: HealthLevel;
+  baseline: number;
+  /** Preostalo kao udio osnovice (npr. 0.42); null kad osnovice nema. */
+  remainderRatio: number | null;
+  hasBaseline: boolean;
+  level: RemainderLevel;
 }
 
-const healthFromMargin = (margin: number | null): HealthLevel => {
-  if (margin === null) return 'neutral';
-  if (margin >= 0.30) return 'green';
-  if (margin >= 0.10) return 'yellow';
-  return 'red';
-};
-
-const HEALTH_DOT_COLOR: Record<HealthLevel, string> = {
-  green: 'hsl(var(--income))',
-  yellow: 'hsl(var(--warning))',
-  red: 'hsl(var(--destructive))',
+const HEALTH_DOT_COLOR: Record<RemainderLevel, string> = {
+  healthy: 'hsl(var(--income))',
+  attention: 'hsl(var(--warning))',
+  critical: 'hsl(var(--destructive))',
   neutral: 'hsl(var(--muted-foreground))',
 };
 
-const HEALTH_TEXT_CLASS: Record<HealthLevel, string> = {
-  green: 'text-income',
-  yellow: 'text-warning',
-  red: 'text-destructive',
+const HEALTH_TEXT_CLASS: Record<RemainderLevel, string> = {
+  healthy: 'text-income',
+  attention: 'text-warning',
+  critical: 'text-destructive',
   neutral: 'text-muted-foreground',
 };
+
 
 export const ActiveProjectsStrip = React.memo(({
   projects,
