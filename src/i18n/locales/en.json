@@ -310,7 +310,6 @@
       "marginLine": "Cost {{cost}} · To investor {{price}} · Margin {{margin}}%",
       "negativeHint": "— this phase makes no profit.",
       "forbiddenForRole": "Only the project owner can change phase amounts.",
-
       "listLine": "Cost {{cost}} · To investor {{price}}",
       "listLineCostOnly": "Cost {{cost}}",
       "listLinePriceOnly": "To investor {{price}}",
@@ -1051,7 +1050,10 @@
         "annulNote": "Note: this decision was annulled by mutual confirmation.",
         "footerDisclaimer": "Generated from Centar app · {{date}} · ID: {{id}}"
       }
-    }
+    },
+    "investorPriceLabel": "Can see the investor price",
+    "investorPriceHint": "This manager already sees each phase's planned cost. Turn this on and they will also see the investor price — that is, how much you earn on every phase.",
+    "investorPriceSaved": "Price visibility saved"
   },
   "estimates": {
     "title": "Quotes & Estimates",

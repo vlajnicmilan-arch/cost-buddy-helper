@@ -310,7 +310,6 @@
       "marginLine": "Kosten {{cost}} · An Investor {{price}} · Marge {{margin}}%",
       "negativeHint": "— diese Phase bringt keinen Gewinn.",
       "forbiddenForRole": "Nur der Projektinhaber darf Phasenbeträge ändern.",
-
       "listLine": "Kosten {{cost}} · An Investor {{price}}",
       "listLineCostOnly": "Kosten {{cost}}",
       "listLinePriceOnly": "An Investor {{price}}",
@@ -1051,7 +1050,10 @@
         "annulNote": "Hinweis: Diese Entscheidung wurde durch beidseitige Bestätigung aufgehoben.",
         "footerDisclaimer": "Erstellt aus der Centar-App · {{date}} · ID: {{id}}"
       }
-    }
+    },
+    "investorPriceLabel": "Sieht den Investorenpreis",
+    "investorPriceHint": "Diese Projektleitung sieht bereits die geplanten Kosten jeder Phase. Wenn du dies aktivierst, sieht sie auch den Investorenpreis – also wie viel du an jeder Phase verdienst.",
+    "investorPriceSaved": "Preis-Sichtbarkeit gespeichert"
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
