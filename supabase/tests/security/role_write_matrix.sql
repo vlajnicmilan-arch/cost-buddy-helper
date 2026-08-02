@@ -118,9 +118,12 @@ END;
 $$;
 
 -- Kodovi koji znače "test je pogriješio", ne "zaštita je proradila".
-CREATE OR REPLACE FUNCTION pg_temp.is_schema_bug(p_code text)
+CREATE OR REPLACE FUNCTION pg_temp.is_schema_bug(p_code text, p_msg text DEFAULT '')
 RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
-  SELECT p_code IN ('42703','23502','23503','22P02','42P01','42883','42601','42804','23505','22007','42P02');
+  SELECT p_code IN ('42703','23502','23503','22P02','42P01','42883','42601','42804','23505','22007','42P02','42P10')
+      -- 42501 zna doći i iz nedostajućeg GRANT-a u baselineu, ne iz politike.
+      -- To je kvar harnessa i mora rušiti test, ne "potvrditi" zaštitu.
+      OR p_msg LIKE 'permission denied for %';
 $$;
 
 CREATE OR REPLACE FUNCTION pg_temp.pass(p_label text)
@@ -172,7 +175,7 @@ BEGIN
     PERFORM pg_temp.fail('FAIL', p_label, format('očekivano odbijanje (42501), zahvat je PROŠAO (%s redaka)', r.rows_affected));
     RETURN;
   END IF;
-  IF pg_temp.is_schema_bug(r.sqlstate_code) THEN
+  IF pg_temp.is_schema_bug(r.sqlstate_code, r.err_message) THEN
     PERFORM pg_temp.fail('SCHEMA BUG', p_label,
       format('zahvat je pao na %s (%s), a ne na politici — test nikad nije dotaknuo zaštitu', r.sqlstate_code, r.err_message));
     RETURN;
@@ -201,7 +204,7 @@ BEGIN
   -- (1) kontrolni korisnik — isti SQL, isti stupci, iste vrijednosti
   SELECT * INTO c FROM pg_temp.try_as(p_control, p_sql);
   IF c.outcome = 'err' THEN
-    IF pg_temp.is_schema_bug(c.sqlstate_code) THEN
+    IF pg_temp.is_schema_bug(c.sqlstate_code, c.err_message) THEN
       PERFORM pg_temp.fail('SCHEMA BUG', p_label,
         format('kontrolni zahvat je pao na %s (%s) — stupac ili vrijednost ne postoje, pa provjera ograničene uloge ne znači ništa', c.sqlstate_code, c.err_message));
     ELSE
@@ -217,7 +220,7 @@ BEGIN
   -- (2) ograničena uloga
   SELECT * INTO r FROM pg_temp.try_as(p_user, p_sql);
   IF r.outcome = 'err' THEN
-    IF pg_temp.is_schema_bug(r.sqlstate_code) THEN
+    IF pg_temp.is_schema_bug(r.sqlstate_code, r.err_message) THEN
       PERFORM pg_temp.fail('SCHEMA BUG', p_label, format('%s (%s)', r.sqlstate_code, r.err_message));
       RETURN;
     END IF;
