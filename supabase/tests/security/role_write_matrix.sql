@@ -290,6 +290,51 @@ BEGIN
 END;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- expect_view_amount — korak D2 (vidljivost STUPCA, ne prava pisanja).
+-- Čita `project_milestones_scoped` kao zadani korisnik i uspoređuje iznos.
+--   p_expect IS NULL  → stupac MORA biti prazan (skriven za ulogu)
+--   p_expect NOT NULL → stupac MORA imati točno tu vrijednost
+-- Nedostatak REDAKA se prijavljuje posebno: filtar redova nije predmet ovog
+-- testa i ne smije se tiho progutati kao "skriveno".
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.expect_view_amount(
+  p_label text, p_user uuid, p_milestone uuid, p_col text, p_expect numeric
+)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE v numeric; n int;
+BEGIN
+  SET LOCAL ROLE authenticated;
+  PERFORM set_config('request.jwt.claim.sub', p_user::text, true);
+  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
+  EXECUTE format('SELECT count(*) FROM public.project_milestones_scoped WHERE id = %L', p_milestone) INTO n;
+  IF n = 1 THEN
+    EXECUTE format('SELECT %I FROM public.project_milestones_scoped WHERE id = %L', p_col, p_milestone) INTO v;
+  END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
+  IF n <> 1 THEN
+    PERFORM pg_temp.fail('SCHEMA BUG', p_label,
+      format('redak faze nije vidljiv toj ulozi (%s redaka) — filtar REDOVA, a testira se vidljivost STUPCA', n));
+    RETURN;
+  END IF;
+  IF p_expect IS NULL THEN
+    IF v IS NOT NULL THEN
+      PERFORM pg_temp.fail('FAIL', p_label, format('stupac %s je procurio: %s', p_col, v));
+      RETURN;
+    END IF;
+    PERFORM pg_temp.pass(p_label || '  [prazno]');
+    RETURN;
+  END IF;
+  IF v IS DISTINCT FROM p_expect THEN
+    PERFORM pg_temp.fail('FAIL', p_label, format('očekivano %s, dobiveno %s', p_expect, coalesce(v::text, 'NULL')));
+    RETURN;
+  END IF;
+  PERFORM pg_temp.pass(p_label || '  [' || v || ']');
+END;
+$$;
+
 
 -- ===========================================================================
 -- FIXTURE (upisuje se kao postgres → RLS se ne primjenjuje)
@@ -302,6 +347,9 @@ INSERT INTO _rwm VALUES
   ('worker',     '10000000-0000-0000-0000-000000000004'),
   ('investor',   '10000000-0000-0000-0000-000000000005'),
   ('nosub',      '10000000-0000-0000-0000-000000000006'),
+  -- Korak D2: voditelj i radnik sa zastavicom `can_see_investor_price`.
+  ('memberflag', '10000000-0000-0000-0000-000000000007'),
+  ('workerflag', '10000000-0000-0000-0000-000000000008'),
   ('p1',         '20000000-0000-0000-0000-000000000001'),
   ('p2',         '20000000-0000-0000-0000-000000000002'),
   ('m1',         '30000000-0000-0000-0000-000000000001'),
@@ -309,7 +357,7 @@ INSERT INTO _rwm VALUES
   ('w1',         '40000000-0000-0000-0000-000000000001');
 
 INSERT INTO auth.users (id, email)
-SELECT val, key || '@rwm.test' FROM _rwm WHERE key IN ('owner','member','viewer','worker','investor','nosub')
+SELECT val, key || '@rwm.test' FROM _rwm WHERE key IN ('owner','member','viewer','worker','investor','nosub','memberflag','workerflag')
 ON CONFLICT (id) DO NOTHING;
 
 -- Pretplata na modul `projekti`: owner DA, nosub NE.
@@ -327,6 +375,15 @@ VALUES ((SELECT val FROM _rwm WHERE key='p2'), (SELECT val FROM _rwm WHERE key='
 INSERT INTO public.project_members (project_id, user_id, role)
 SELECT (SELECT val FROM _rwm WHERE key='p1'), val, key
 FROM _rwm WHERE key IN ('member','viewer','worker','investor');
+
+-- Korak D2: zastavicu smije upisati samo vlasnik — trigger provjerava
+-- auth.uid(), pa fixture mora "biti" vlasnik dok je upisuje.
+SELECT set_config('request.jwt.claim.sub', (SELECT val FROM _rwm WHERE key='owner')::text, true);
+INSERT INTO public.project_members (project_id, user_id, role, can_see_investor_price)
+SELECT (SELECT val FROM _rwm WHERE key='p1'), val,
+       CASE WHEN key = 'memberflag' THEN 'member' ELSE 'worker' END, true
+FROM _rwm WHERE key IN ('memberflag','workerflag');
+SELECT set_config('request.jwt.claim.sub', '', true);
 
 INSERT INTO public.project_members (project_id, user_id, role)
 VALUES ((SELECT val FROM _rwm WHERE key='p2'), (SELECT val FROM _rwm WHERE key='member'), 'member');
@@ -351,6 +408,8 @@ DECLARE
   u_worker   uuid := (SELECT val FROM _rwm WHERE key='worker');
   u_investor uuid := (SELECT val FROM _rwm WHERE key='investor');
   u_nosub    uuid := (SELECT val FROM _rwm WHERE key='nosub');
+  u_mflag    uuid := (SELECT val FROM _rwm WHERE key='memberflag');
+  u_wflag    uuid := (SELECT val FROM _rwm WHERE key='workerflag');
   p1 uuid := (SELECT val FROM _rwm WHERE key='p1');
   p2 uuid := (SELECT val FROM _rwm WHERE key='p2');
   m1 uuid := (SELECT val FROM _rwm WHERE key='m1');
@@ -517,6 +576,30 @@ BEGIN
   -- odbijanje), pa provjera ne bi razlikovala zaštitu od promašenog WHERE-a.
   PERFORM pg_temp.expect_ok('54 member BEZ pretplate — prolazi na TUĐEM projektu (RPC)', u_member,
     format('SELECT public.update_milestone_progress(%L, ''{"status":"in_progress"}''::jsonb)', m2));
+
+  -- ---- 10. korak D2: zastavica "voditelj vidi cijenu prema investitoru" ----
+  -- Vidljivost STUPCA `investor_price` u pogledu. Fixture m1: budget 1000,
+  -- investor_price 1500.
+  PERFORM pg_temp.expect_view_amount('55 investor_price — vlasnik vidi', u_owner, m1, 'investor_price', 1500);
+  PERFORM pg_temp.expect_view_amount('56 investor_price — investor vidi (regresija)', u_investor, m1, 'investor_price', 1500);
+  PERFORM pg_temp.expect_view_amount('57 investor_price — viewer vidi (regresija)', u_viewer, m1, 'investor_price', 1500);
+  PERFORM pg_temp.expect_view_amount('58 investor_price — member BEZ zastavice: prazno', u_member, m1, 'investor_price', NULL);
+  PERFORM pg_temp.expect_view_amount('59 investor_price — member SA zastavicom: vidi', u_mflag, m1, 'investor_price', 1500);
+  PERFORM pg_temp.expect_view_amount('60 investor_price — worker SA zastavicom: i dalje prazno', u_wflag, m1, 'investor_price', NULL);
+  -- Grana `budget` mora ostati netaknuta.
+  PERFORM pg_temp.expect_view_amount('61 budget — member SA zastavicom vidi (nepromijenjeno)', u_mflag, m1, 'budget', 1000);
+  PERFORM pg_temp.expect_view_amount('62 budget — worker SA zastavicom: prazno', u_wflag, m1, 'budget', NULL);
+  PERFORM pg_temp.expect_view_amount('63 budget — investor: prazno (nepromijenjeno)', u_investor, m1, 'budget', NULL);
+
+  -- Zastavicu smije postaviti samo vlasnik projekta.
+  PERFORM pg_temp.expect_ok('64 zastavica — vlasnik je smije postaviti', u_owner,
+    format('UPDATE public.project_members SET can_see_investor_price = true WHERE project_id = %L AND user_id = %L', p1, u_member));
+  PERFORM pg_temp.expect_denied('65 zastavica — member je NE smije postaviti sebi (trigger)', u_member,
+    format('UPDATE public.project_members SET can_see_investor_price = true WHERE project_id = %L AND user_id = %L', p1, u_member));
+  PERFORM pg_temp.expect_denied('66 zastavica — worker je NE smije postaviti sebi (trigger)', u_worker,
+    format('UPDATE public.project_members SET can_see_investor_price = true WHERE project_id = %L AND user_id = %L', p1, u_worker));
+  PERFORM pg_temp.expect_denied('67 zastavica — viewer je NE smije postaviti sebi (trigger)', u_viewer,
+    format('UPDATE public.project_members SET can_see_investor_price = true WHERE project_id = %L AND user_id = %L', p1, u_viewer));
 
 END;
 $$;
