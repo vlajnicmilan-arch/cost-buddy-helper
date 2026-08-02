@@ -1065,7 +1065,14 @@
     "rejectedTransactions": "Odbijene transakcije",
     "rejectedNoEffect": "Odbijeni zapisi ostaju vidljivi, ali ne ulaze ni u jedan zbroj.",
     "rejectionReason": "Razlog",
-    "autoRejectExpired": "Automatski odbijeno — isteklo bez odluke"
+    "autoRejectExpired": "Automatski odbijeno — isteklo bez odluke",
+    "unpaidLabor": "Neisplaćeni rad",
+    "unpaidLaborOutsideTotal": "Nije uključeno u troškove",
+    "unpaidLaborHours": "{{hours}} h",
+    "unpaidLaborHoursLabel": "Sati",
+    "unpaidLaborExpectedNote": "Neisplaćeni rad ({{amount}}) još nije plaćen i smanjit će profit kad se isplati.",
+    "plLaborPaid": "Radna snaga (isplaćeno)",
+    "materialCostAnomaly": "Materijalni troškovi su negativni — isplata rada vjerojatno je unesena izvan obračuna isplata."
   },
   "estimates": {
     "title": "Ponude i predračuni",
