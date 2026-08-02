@@ -69,11 +69,13 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------------
--- Brojači
+-- Brojači i evidencija padova.
+-- Provjere se NE prekidaju na prvom padu — svaka se izvrši, a na kraju
+-- datoteka pukne ako ijedan pad postoji. Tako jedan nalaz ne sakrije ostale.
 -- ---------------------------------------------------------------------------
 CREATE TEMP TABLE _rwm_stats (passed int NOT NULL DEFAULT 0);
 INSERT INTO _rwm_stats VALUES (0);
-
+CREATE TEMP TABLE _rwm_failures (kind text NOT NULL, label text NOT NULL, reason text NOT NULL);
 
 -- ---------------------------------------------------------------------------
 -- Jezgra: izvrši p_sql kao korisnik p_user i uvijek poništi učinak.
@@ -129,6 +131,14 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION pg_temp.fail(p_kind text, p_label text, p_reason text)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO _rwm_failures VALUES (p_kind, p_label, p_reason);
+  RAISE WARNING '% %  — %', p_kind, p_label, p_reason;
+END;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- expect_ok — zahvat MORA proći i pogoditi barem jedan redak.
 -- ---------------------------------------------------------------------------
@@ -138,10 +148,12 @@ DECLARE r record;
 BEGIN
   SELECT * INTO r FROM pg_temp.try_as(p_user, p_sql);
   IF r.outcome = 'err' THEN
-    RAISE EXCEPTION 'FAIL % — očekivan prolaz, dobiveno %: %', p_label, r.sqlstate_code, r.err_message;
+    PERFORM pg_temp.fail('FAIL', p_label, format('očekivan prolaz, dobiveno %s: %s', r.sqlstate_code, r.err_message));
+    RETURN;
   END IF;
   IF r.rows_affected = 0 THEN
-    RAISE EXCEPTION 'FAIL % — očekivan prolaz, ali 0 redaka (politika je tiho odbila ili WHERE ne pogađa fixture)', p_label;
+    PERFORM pg_temp.fail('FAIL', p_label, 'očekivan prolaz, ali 0 redaka (politika je tiho odbila ili WHERE ne pogađa fixture)');
+    RETURN;
   END IF;
   PERFORM pg_temp.pass(p_label);
 END;
@@ -157,14 +169,17 @@ DECLARE r record;
 BEGIN
   SELECT * INTO r FROM pg_temp.try_as(p_user, p_sql);
   IF r.outcome = 'ok' THEN
-    RAISE EXCEPTION 'FAIL % — očekivano odbijanje (42501), zahvat je PROŠAO (% redaka)', p_label, r.rows_affected;
+    PERFORM pg_temp.fail('FAIL', p_label, format('očekivano odbijanje (42501), zahvat je PROŠAO (%s redaka)', r.rows_affected));
+    RETURN;
   END IF;
   IF pg_temp.is_schema_bug(r.sqlstate_code) THEN
-    RAISE EXCEPTION 'SCHEMA BUG u testu % — zahvat je pao na % (%), a ne na politici. Test nikad nije dotaknuo zaštitu; popravi SQL provjere.',
-      p_label, r.sqlstate_code, r.err_message;
+    PERFORM pg_temp.fail('SCHEMA BUG', p_label,
+      format('zahvat je pao na %s (%s), a ne na politici — test nikad nije dotaknuo zaštitu', r.sqlstate_code, r.err_message));
+    RETURN;
   END IF;
   IF r.sqlstate_code <> '42501' THEN
-    RAISE EXCEPTION 'FAIL % — očekivan 42501, dobiveno % (%)', p_label, r.sqlstate_code, r.err_message;
+    PERFORM pg_temp.fail('FAIL', p_label, format('očekivan 42501, dobiveno %s (%s)', r.sqlstate_code, r.err_message));
+    RETURN;
   END IF;
   PERFORM pg_temp.pass(p_label || '  [42501: ' || left(r.err_message, 60) || ']');
 END;
@@ -173,46 +188,54 @@ $$;
 -- ---------------------------------------------------------------------------
 -- expect_blocked_silently — mehanizam B.
 -- USING filtar ne baca grešku, nego vrati 0 redaka. Zato:
---   1) identičan zahvat mora PROĆI vlasniku (dokaz da stupac/vrijednost postoje)
+--   1) identičan zahvat mora PROĆI kontrolnom korisniku (dokaz da stupac i
+--      vrijednost postoje i da WHERE pogađa fixture)
 --   2) ograničena uloga mora dobiti točno 0 redaka i nijednu grešku sheme
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pg_temp.expect_blocked_silently(
-  p_label text, p_user uuid, p_sql text, p_owner uuid
+  p_label text, p_user uuid, p_sql text, p_control uuid
 )
 RETURNS void LANGUAGE plpgsql AS $$
 DECLARE r record; c record;
 BEGIN
-  -- (1) owner control — isti SQL, isti stupci, iste vrijednosti
-  SELECT * INTO c FROM pg_temp.try_as(p_owner, p_sql);
+  -- (1) kontrolni korisnik — isti SQL, isti stupci, iste vrijednosti
+  SELECT * INTO c FROM pg_temp.try_as(p_control, p_sql);
   IF c.outcome = 'err' THEN
     IF pg_temp.is_schema_bug(c.sqlstate_code) THEN
-      RAISE EXCEPTION 'SCHEMA BUG u testu % — owner control je pao na % (%). Stupac ili vrijednost ne postoje, pa provjera ograničene uloge ne bi značila ništa.',
-        p_label, c.sqlstate_code, c.err_message;
+      PERFORM pg_temp.fail('SCHEMA BUG', p_label,
+        format('kontrolni zahvat je pao na %s (%s) — stupac ili vrijednost ne postoje, pa provjera ograničene uloge ne znači ništa', c.sqlstate_code, c.err_message));
+    ELSE
+      PERFORM pg_temp.fail('FAIL', p_label, format('kontrolni zahvat odbijen (%s: %s)', c.sqlstate_code, c.err_message));
     END IF;
-    RAISE EXCEPTION 'FAIL % — owner control je odbijen (%: %)', p_label, c.sqlstate_code, c.err_message;
+    RETURN;
   END IF;
   IF c.rows_affected = 0 THEN
-    RAISE EXCEPTION 'FAIL % — owner control je pogodio 0 redaka; WHERE ne pogađa fixture, provjera je bezvrijedna', p_label;
+    PERFORM pg_temp.fail('FAIL', p_label, 'kontrolni zahvat je pogodio 0 redaka; provjera bi bila bezvrijedna');
+    RETURN;
   END IF;
 
   -- (2) ograničena uloga
   SELECT * INTO r FROM pg_temp.try_as(p_user, p_sql);
   IF r.outcome = 'err' THEN
     IF pg_temp.is_schema_bug(r.sqlstate_code) THEN
-      RAISE EXCEPTION 'SCHEMA BUG u testu % — % (%)', p_label, r.sqlstate_code, r.err_message;
+      PERFORM pg_temp.fail('SCHEMA BUG', p_label, format('%s (%s)', r.sqlstate_code, r.err_message));
+      RETURN;
     END IF;
     IF r.sqlstate_code = '42501' THEN
       PERFORM pg_temp.pass(p_label || '  [42501 umjesto 0 redaka — jednako dobro]');
       RETURN;
     END IF;
-    RAISE EXCEPTION 'FAIL % — neočekivana greška % (%)', p_label, r.sqlstate_code, r.err_message;
+    PERFORM pg_temp.fail('FAIL', p_label, format('neočekivana greška %s (%s)', r.sqlstate_code, r.err_message));
+    RETURN;
   END IF;
   IF r.rows_affected <> 0 THEN
-    RAISE EXCEPTION 'FAIL % — zahvat je promijenio % redaka; zaštita ne drži', p_label, r.rows_affected;
+    PERFORM pg_temp.fail('FAIL', p_label, format('zahvat je promijenio %s redaka; zaštita ne drži', r.rows_affected));
+    RETURN;
   END IF;
-  PERFORM pg_temp.pass(p_label || '  [0 redaka, owner control prošao]');
+  PERFORM pg_temp.pass(p_label || '  [0 redaka, kontrolni zahvat prošao]');
 END;
 $$;
+
 
 -- ===========================================================================
 -- FIXTURE (upisuje se kao postgres → RLS se ne primjenjuje)
