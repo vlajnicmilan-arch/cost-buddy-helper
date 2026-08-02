@@ -269,12 +269,18 @@ export const IncomingInvoicesPanel = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
-                  {/* Naplata izlaznog računa čeka odluku o knjiženju prihoda —
-                      dok ne dođe, nudi se samo za ulazne (obveze). */}
-                  {(inv.direction ?? 'in') === 'in' && (
+                  {/* Namjerna asimetrija: ulazni račun na „Plaćeno" stvara trošak,
+                      izlazni na „Naplaćeno" bilježi samo datum — prihod dolazi iz
+                      uvoza bankovnog izvoda. Ne izjednačavati ta dva toka. */}
+                  {(inv.direction ?? 'in') === 'in' ? (
                     <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       {t('eracun.list.markPaid', 'Plaćeno')}
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => setCollectTarget(inv)}>
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {t('eracun.list.markCollected', 'Naplaćeno')}
                     </Button>
                   )}
                 </div>
