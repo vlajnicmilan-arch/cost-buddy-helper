@@ -5953,5 +5953,22 @@
     "aiSuggested": "AI prijedlog",
     "aiReceipt": "AI iz računa",
     "habit": "Prepoznato po navici"
+  },
+  "eracun": {
+    "importButton": "Učitaj eRačun (XML)",
+    "warning": {
+      "unusual_doc_type": "Neuobičajen tip dokumenta ({{docType}}). Provjeri je li ovo doista trošak i prilagodi iznos.",
+      "credit_note": "Ovo je odobrenje (tip {{docType}}). Predložen je negativan iznos — provjeri prije spremanja.",
+      "foreign_currency": "Valuta na računu je {{currency}}, ne EUR. Iznos nije preračunat.",
+      "total_mismatch": "Zbroj stavki ({{lines}}) ne odgovara ukupnom iznosu ({{total}}). Provjeri iznos.",
+      "missing_total": "Ukupan iznos nije pronađen u datoteci — unesi ga ručno.",
+      "missing_issue_date": "Datum izdavanja nije pronađen — postavljen je današnji datum.",
+      "missing_supplier": "Dobavljač nije pronađen — unesi ga ručno."
+    },
+    "error": {
+      "not_xml": "Datoteka nije valjan XML.",
+      "not_ubl": "Datoteka nije UBL 2.1 eRačun.",
+      "empty": "Datoteka je prazna."
+    }
   }
 }

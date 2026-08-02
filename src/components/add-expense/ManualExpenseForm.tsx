@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -139,6 +139,8 @@ interface ManualExpenseFormProps {
   onKrugChange?: (next: { krugId: string | null; privacy: 'personal' | 'shared' | null }) => void;
 
   showKrugSelector?: boolean;
+  /** Dodatni ulaz iznad obrasca (biznis mod: „Učitaj eRačun (XML)"). */
+  extraImportSlot?: ReactNode;
   // Submit
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -150,6 +152,8 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
 
   return (
     <form onSubmit={props.onSubmit} className="space-y-5 pb-4">
+      {props.extraImportSlot}
+
       {/* Receipt Scan Buttons */}
       <ReceiptCaptureButtons
         scanning={props.scanning}

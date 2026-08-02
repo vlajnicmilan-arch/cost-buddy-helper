@@ -5943,5 +5943,22 @@
     "aiSuggested": "KI-Vorschlag",
     "aiReceipt": "KI aus Beleg",
     "habit": "Nach Gewohnheit erkannt"
+  },
+  "eracun": {
+    "importButton": "E-Rechnung laden (XML)",
+    "warning": {
+      "unusual_doc_type": "Ungewöhnlicher Dokumenttyp ({{docType}}). Prüfe, ob dies wirklich eine Ausgabe ist, und passe den Betrag an.",
+      "credit_note": "Dies ist eine Gutschrift (Typ {{docType}}). Ein negativer Betrag wurde vorgeschlagen — vor dem Speichern prüfen.",
+      "foreign_currency": "Rechnungswährung ist {{currency}}, nicht EUR. Der Betrag wurde nicht umgerechnet.",
+      "total_mismatch": "Summe der Positionen ({{lines}}) stimmt nicht mit dem Gesamtbetrag ({{total}}) überein. Betrag prüfen.",
+      "missing_total": "Gesamtbetrag nicht gefunden — bitte manuell eingeben.",
+      "missing_issue_date": "Rechnungsdatum nicht gefunden — heutiges Datum verwendet.",
+      "missing_supplier": "Lieferant nicht gefunden — bitte manuell eingeben."
+    },
+    "error": {
+      "not_xml": "Die Datei ist kein gültiges XML.",
+      "not_ubl": "Die Datei ist keine UBL-2.1-E-Rechnung.",
+      "empty": "Die Datei ist leer."
+    }
   }
 }
