@@ -157,6 +157,7 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
               </div>
             </div>
           )}
+        </div>
 
 
         {/* RIGHT: Expected (contract / accrual) — only when contract value exists */}
