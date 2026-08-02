@@ -75,13 +75,24 @@ export const INDUSTRIES: IndustryDefinition[] = [
 export const getIndustry = (id: IndustryType): IndustryDefinition =>
   INDUSTRIES.find(i => i.id === id) || INDUSTRIES[INDUSTRIES.length - 1];
 
+/**
+ * Modul projekata je dostupan svakoj tvrtki, bez obzira na djelatnost.
+ * Ovo je samo vidljivost po tvrtki — pravo pisanja i dalje odlucuje
+ * pretplata (`user_entitlements` / `can_write_module`).
+ */
+export const ALWAYS_ENABLED_MODULES: ModuleId[] = ['projects'];
+
+const withAlwaysEnabled = (modules: ModuleId[]): ModuleId[] =>
+  Array.from(new Set([...ALWAYS_ENABLED_MODULES, ...modules]));
+
 export const getDefaultModules = (industryId: IndustryType): ModuleId[] =>
-  getIndustry(industryId).recommended;
+  withAlwaysEnabled(getIndustry(industryId).recommended);
 
 export const getAvailableModules = (industryId: IndustryType): ModuleId[] => {
   const industry = getIndustry(industryId);
-  return [...industry.recommended, ...industry.optional];
+  return withAlwaysEnabled([...industry.recommended, ...industry.optional]);
 };
 
 export const isModuleEnabled = (enabledModules: string[], moduleId: ModuleId): boolean =>
-  enabledModules.includes(moduleId);
+  ALWAYS_ENABLED_MODULES.includes(moduleId) || enabledModules.includes(moduleId);
+
