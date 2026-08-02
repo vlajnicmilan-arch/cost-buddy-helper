@@ -29,6 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { useBusinessBodyTheme } from '@/hooks/useBusinessBodyTheme';
+import { FORCED_BUSINESS_THEME } from '@/lib/businessBodyTheme';
+
 
 interface BusinessModeViewProps {
   businessTab: BusinessTab;
