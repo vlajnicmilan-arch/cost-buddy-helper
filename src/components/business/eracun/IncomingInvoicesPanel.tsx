@@ -144,6 +144,30 @@ export const IncomingInvoicesPanel = () => {
     setSavingPayment(false);
   }, [payTarget, guard, addExpense, markPaid, activeBusinessProfileId, t]);
 
+  /**
+   * Naplata izlaznog računa: samo datum. Bez zapisa u `expenses`, bez prihoda,
+   * bez dodira sa saldom — prihod ulazi kroz uvoz bankovnog izvoda.
+   */
+  const handleConfirmCollected = useCallback(async ({ collectedDate }: MarkCollectedResult) => {
+    if (!collectTarget) return;
+    setSavingPayment(true);
+    await guard(async () => {
+      try {
+        await markCollected(collectTarget.id, collectedDate.toISOString());
+        setCollectTarget(null);
+      } catch (err) {
+        console.error('[eRacun] markCollected failed', err, { invoiceId: collectTarget.id });
+        showError(t('eracun.collected.failedDetailed', 'Bilježenje naplate nije uspjelo: {{reason}}', {
+          reason: describeInvoiceDbError(err, {
+            supplier: collectTarget.counterparty_name ?? collectTarget.supplier_name,
+            invoiceNumber: collectTarget.invoice_number,
+          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
+        }));
+      }
+    });
+    setSavingPayment(false);
+  }, [collectTarget, guard, markCollected, t]);
+
   const handleDelete = useCallback(async (invoice: IncomingInvoice) => {
     try {
       await deleteInvoice(invoice.id);
