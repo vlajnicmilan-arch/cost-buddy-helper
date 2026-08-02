@@ -190,7 +190,17 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
                   {pl.expectedMargin.toFixed(1)}%
                 </span>
               </div>
+              {pl.unpaidLaborCost > 0 && (
+                <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                  {t(
+                    'projects.unpaidLaborExpectedNote',
+                    'Neisplaćeni rad ({{amount}}) još nije plaćen i smanjit će profit kad se isplati.',
+                    { amount: formatAmount(pl.unpaidLaborCost) },
+                  )}
+                </p>
+              )}
             </div>
+
           </div>
         )}
       </div>
