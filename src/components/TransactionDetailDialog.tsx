@@ -200,7 +200,9 @@ export const TransactionDetailDialog = ({
         return;
       }
 
+      setIsLocalReceipt(false);
       setReceiptMissing(false);
+
 
       
       try {
