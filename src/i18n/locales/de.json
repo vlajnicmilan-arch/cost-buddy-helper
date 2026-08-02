@@ -1061,7 +1061,14 @@
     "rejectedTransactions": "Abgelehnte Buchungen",
     "rejectedNoEffect": "Abgelehnte Einträge bleiben sichtbar, zählen aber in keiner Summe.",
     "rejectionReason": "Grund",
-    "autoRejectExpired": "Automatisch abgelehnt — ohne Entscheidung abgelaufen"
+    "autoRejectExpired": "Automatisch abgelehnt — ohne Entscheidung abgelaufen",
+    "unpaidLabor": "Unbezahlte Arbeit",
+    "unpaidLaborOutsideTotal": "Nicht in den Kosten enthalten",
+    "unpaidLaborHours": "{{hours}} Std.",
+    "unpaidLaborHoursLabel": "Stunden",
+    "unpaidLaborExpectedNote": "Unbezahlte Arbeit ({{amount}}) steht noch aus und mindert den Gewinn bei Auszahlung.",
+    "plLaborPaid": "Arbeitskraft (ausgezahlt)",
+    "materialCostAnomaly": "Die Materialkosten sind negativ — eine Lohnauszahlung wurde vermutlich außerhalb des Auszahlungsprozesses erfasst."
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",

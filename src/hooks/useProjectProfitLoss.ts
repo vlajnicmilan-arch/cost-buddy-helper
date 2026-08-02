@@ -21,6 +21,10 @@ const EMPTY: PLResult = {
   laborCost: 0,
   collaboratorCost: 0,
   materialCost: 0,
+  materialCostAnomaly: false,
+  accruedLaborCost: 0,
+  unpaidLaborCost: 0,
+  unpaidHours: 0,
   netProfit: 0,
   margin: 0,
   workers: [],
@@ -31,6 +35,7 @@ const EMPTY: PLResult = {
   collectedPercentage: 0,
   remainingToCollect: 0,
 };
+
 
 export const useProjectProfitLoss = (projectId: string | null): ProfitLossData => {
   const { user } = useAuth();
@@ -59,12 +64,16 @@ export const useProjectProfitLoss = (projectId: string | null): ProfitLossData =
           .maybeSingle(),
         supabase
           .from('expenses')
-          .select('id, type, amount, status, expense_nature, is_advance, linked_advance_ids')
-          .eq('project_id', projectId),
+          .select(
+            'id, type, amount, status, expense_nature, is_advance, linked_advance_ids, worker_payout_id',
+          )
+          .eq('project_id', projectId)
+          .is('deleted_at', null),
         supabase
           .from('project_work_entries')
-          .select('actual_hours, worker_id, work_date')
+          .select('actual_hours, worker_id, work_date, payout_id')
           .eq('project_id', projectId),
+
         supabase
           .from('project_workers')
           .select('id, first_name, last_name, hourly_rate')

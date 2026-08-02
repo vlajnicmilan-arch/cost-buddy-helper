@@ -3,7 +3,7 @@ import { useProjectProfitLoss } from '@/hooks/useProjectProfitLoss';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature, Download } from 'lucide-react';
+import { TrendingUp, Users, Handshake, Package, Loader2, ChevronDown, ChevronUp, Wallet, FileSignature, Download, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportProfitLossPdf } from '@/lib/projectFinancePdfExport';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -55,6 +55,9 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
         laborCost: pl.laborCost,
         collaboratorCost: pl.collaboratorCost,
         materialCost: pl.materialCost,
+        unpaidLaborCost: pl.unpaidLaborCost,
+        unpaidHours: pl.unpaidHours,
+
         netProfit: pl.netProfit,
         margin: pl.margin,
         contractValue: pl.contractValue,
@@ -132,7 +135,33 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
               </div>
             )}
           </div>
+
+          {/* Unpaid work — OUTSIDE the cost total, right next to the cash balance. */}
+          {(pl.unpaidLaborCost > 0 || pl.unpaidHours > 0) && (
+            <div className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  <Clock className="w-3.5 h-3.5 text-warning" />
+                  {t('projects.unpaidLabor', 'Neisplaćeni rad')}
+                </span>
+                <span className="text-sm font-bold text-warning">
+                  {formatAmount(pl.unpaidLaborCost)}
+                </span>
+              </div>
+              <div className="mt-0.5 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {t('projects.unpaidLaborOutsideTotal', 'Nije uključeno u troškove')}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {t('projects.unpaidLaborHours', '{{hours}} h', {
+                    hours: pl.unpaidHours.toFixed(1),
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* RIGHT: Expected (contract / accrual) — only when contract value exists */}
         {hasContract && (
@@ -164,7 +193,17 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
                   {pl.expectedMargin.toFixed(1)}%
                 </span>
               </div>
+              {pl.unpaidLaborCost > 0 && (
+                <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                  {t(
+                    'projects.unpaidLaborExpectedNote',
+                    'Neisplaćeni rad ({{amount}}) još nije plaćen i smanjit će profit kad se isplati.',
+                    { amount: formatAmount(pl.unpaidLaborCost) },
+                  )}
+                </p>
+              )}
             </div>
+
           </div>
         )}
       </div>
@@ -179,7 +218,7 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted-foreground">
               <Users className="w-3 h-3" />
-              {t('projects.plLabor', 'Radna snaga')}
+              {t('projects.plLaborPaid', 'Radna snaga (isplaćeno)')}
             </span>
             <span className="text-muted-foreground">-{formatAmount(pl.laborCost)}</span>
           </div>
@@ -195,16 +234,29 @@ export const ProjectProfitLossCard = ({ projectId, projectName }: ProjectProfitL
           </div>
         )}
 
-        {pl.materialCost > 0 && (
+        {pl.materialCost !== 0 && (
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted-foreground">
               <Package className="w-3 h-3" />
               {t('projects.plMaterial', 'Materijalni troškovi')}
             </span>
-            <span className="text-muted-foreground">-{formatAmount(pl.materialCost)}</span>
+            <span className={cn(pl.materialCostAnomaly ? 'text-destructive' : 'text-muted-foreground')}>
+              -{formatAmount(pl.materialCost)}
+            </span>
+          </div>
+        )}
+
+        {pl.materialCostAnomaly && (
+          <div className="flex items-start gap-1 text-[11px] leading-snug text-destructive">
+            <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+            {t(
+              'projects.materialCostAnomaly',
+              'Materijalni troškovi su negativni — isplata rada vjerojatno je unesena izvan obračuna isplata.',
+            )}
           </div>
         )}
       </div>
+
 
       {/* Expandable worker/collaborator details */}
       {(pl.workers.length > 0 || pl.collaborators.length > 0) && (

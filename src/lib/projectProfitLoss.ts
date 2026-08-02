@@ -3,21 +3,29 @@
  * Extracted from useProjectProfitLoss so it can be unit-tested without Supabase.
  *
  * Dual view:
- *  - Cash view: actual income vs. actual costs (labor + collaborator paid + material)
+ *  - Cash view: actual income vs. actual costs (labor paid + collaborator paid + material)
  *  - Accrual view: expected profit against contract value (fallback to total_budget)
  *
  * Rules:
  *  - contract value falls back to total_budget when contract_value <= 0
- *  - material = max(0, expenses - labor - collaborator paid) so it never goes negative
- *  - labor cost = per-entry rate_at (historical) with fallback to worker.hourly_rate
- *    (delegated to computeProjectLaborCost). Legacy inputs without work_date /
- *    rateHistory keep working via the fallback path.
+ *  - labor cost is CASH: the sum of payout expense rows (expenses.worker_payout_id
+ *    is not null). Hours never enter the cost total — the money is already in
+ *    `expenses`, so deriving labor from hours would double count it.
+ *  - material = expenses - labor - collaborator paid, WITHOUT a clamp. The identity
+ *    labor + collaborator + material === totalExpenses must always hold. A negative
+ *    material is a real anomaly (a payout that bypassed create_worker_payout) and is
+ *    surfaced via materialCostAnomaly instead of being hidden by max(0, ...).
+ *  - accruedLaborCost = all hours x rate_at (historical, delegated to
+ *    computeProjectLaborCost). It is reported, not costed.
+ *  - unpaidLaborCost = max(0, accrued - paid), unpaidHours = hours on entries with
+ *    no payout_id. Both stay OUTSIDE totalCosts — open liability, not spend.
  *  - workers with 0 hours are omitted from worker details
  *  - collaborator cost uses paid_amount (cash basis)
  *  - margin / expectedMargin / collectedPercentage are 0 when denominator is 0
  *  - collectedPercentage is capped at 100
  *  - remainingToCollect is floored at 0
  */
+
 
 import {
   computeProjectLaborCost,
@@ -38,6 +46,11 @@ export interface PLTransactionRow {
   expense_nature?: string | null;
   is_advance?: boolean | null;
   linked_advance_ids?: string[] | null;
+  /**
+   * Set by create_worker_payout / create_worker_payout_batch on the expense row
+   * it writes for the payout. This is the ONLY source of paid labor cost.
+   */
+  worker_payout_id?: string | null;
 }
 
 export interface PLWorkEntryRow {
@@ -48,7 +61,10 @@ export interface PLWorkEntryRow {
    * (tests without dates fall back to worker.hourly_rate, matching legacy behaviour).
    */
   work_date?: string | null;
+  /** Non-null once the entry is covered by a payout. */
+  payout_id?: string | null;
 }
+
 
 export interface PLWorkerRow {
   id: string;
@@ -91,9 +107,19 @@ export interface PLInput {
 export interface PLResult {
   totalIncome: number;
   totalExpenses: number;
+  /** Cash: payout expense rows only. */
   laborCost: number;
   collaboratorCost: number;
+  /** expenses - labor - collaborator, never clamped. */
   materialCost: number;
+  /** True when materialCost < 0 — a payout bypassed the payout path. */
+  materialCostAnomaly: boolean;
+  /** All hours x historical rate. Reported, never costed. */
+  accruedLaborCost: number;
+  /** max(0, accrued - paid). Open liability, outside totalCosts. */
+  unpaidLaborCost: number;
+  /** Hours on work entries with no payout_id. */
+  unpaidHours: number;
   netProfit: number;
   margin: number;
   workers: PLWorkerDetail[];
@@ -105,10 +131,16 @@ export interface PLResult {
   remainingToCollect: number;
 }
 
+
 const num = (v: unknown): number => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
+
+/** Cent rounding — keeps float noise out of the identity assertions. */
+const round2 = (v: number): number => Math.round((v + Number.EPSILON) * 100) / 100;
+
+
 
 const isCountedTx = (t: PLTransactionRow): boolean => {
   if (t.type === 'transfer') return false;
@@ -154,11 +186,20 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     if (t.type === 'income') totalIncome += num(t.amount);
     else if (t.type === 'expense') totalExpenses += netExpenseAmount(t, txs);
   }
+  // Paid labor (CASH). Source of truth: expense rows written by the payout RPCs.
+  // Hours are deliberately NOT used here — that money already sits in `expenses`.
+  let laborCost = 0;
+  for (const t of txs) {
+    if (!isCountedTx(t)) continue;
+    if (t.type !== 'expense') continue;
+    if (!t.worker_payout_id) continue;
+    laborCost += netExpenseAmount(t, txs);
+  }
+  laborCost = round2(laborCost);
 
-
-  // Labor cost — per-day rate_at() with fallback to worker.hourly_rate.
+  // Accrued labor — per-day rate_at() with fallback to worker.hourly_rate.
   // Delegated to the shared helper so useProjectProfitLoss, MyWorkerPayCard,
-  // and any future consumer produce identical numbers.
+  // and any future consumer produce identical numbers. Reported, not costed.
   const labor = computeProjectLaborCost({
     workers: input.workers ?? [],
     workEntries: (input.workEntries ?? []).map((e) => ({
@@ -169,9 +210,16 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     })),
     rateHistory: input.rateHistory ?? [],
   });
-  const laborCost = labor.laborCost;
+  const accruedLaborCost = round2(labor.laborCost);
   const workerDetails: PLWorkerDetail[] = labor.workerDetails;
 
+  const unpaidLaborCost = round2(Math.max(0, accruedLaborCost - laborCost));
+  const unpaidHours = round2(
+    (input.workEntries ?? []).reduce(
+      (s, e) => (e.payout_id ? s : s + num(e.actual_hours)),
+      0,
+    ),
+  );
 
   let collaboratorCost = 0;
   const collabDetails: PLCollaboratorDetail[] = [];
@@ -185,13 +233,16 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
       paidAmount: paid,
     });
   }
+  collaboratorCost = round2(collaboratorCost);
 
-  const materialCost = Math.max(0, totalExpenses - laborCost - collaboratorCost);
-  const totalCosts = laborCost + collaboratorCost + materialCost;
-  const netProfit = totalIncome - totalCosts;
+  // No clamp: labor + collaborator + material must always equal totalExpenses.
+  const materialCost = round2(totalExpenses - laborCost - collaboratorCost);
+  const materialCostAnomaly = materialCost < 0;
+  const totalCosts = round2(laborCost + collaboratorCost + materialCost);
+  const netProfit = round2(totalIncome - totalCosts);
   const margin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
 
-  const expectedProfit = contractValue - totalCosts;
+  const expectedProfit = round2(contractValue - totalCosts);
   const expectedMargin = contractValue > 0 ? (expectedProfit / contractValue) * 100 : 0;
   const collectedPercentage =
     contractValue > 0 ? Math.min((totalIncome / contractValue) * 100, 100) : 0;
@@ -203,6 +254,10 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     laborCost,
     collaboratorCost,
     materialCost,
+    materialCostAnomaly,
+    accruedLaborCost,
+    unpaidLaborCost,
+    unpaidHours,
     netProfit,
     margin,
     workers: workerDetails,
@@ -214,3 +269,4 @@ export const computeProjectProfitLoss = (input: PLInput): PLResult => {
     remainingToCollect,
   };
 };
+

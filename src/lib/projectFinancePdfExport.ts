@@ -120,6 +120,10 @@ export interface ProfitLossExportData {
   laborCost: number;
   collaboratorCost: number;
   materialCost: number;
+  /** Open labor liability — reported outside the cost total. */
+  unpaidLaborCost?: number;
+  unpaidHours?: number;
+
   netProfit: number;
   margin: number;
   contractValue: number;
@@ -157,6 +161,10 @@ export const exportProfitLossPdf = async (
   doc.setTextColor(15, 23, 42);
   doc.text('Trenutno stanje (gotovina)', REPORT_MARGIN_X, bodyStartY);
 
+  const unpaidLabor = data.unpaidLaborCost ?? 0;
+  const unpaidHours = data.unpaidHours ?? 0;
+  const hasUnpaid = unpaidLabor > 0 || unpaidHours > 0;
+
   brandAutoTable(doc, autoTable, {
     startY: bodyStartY + 2,
     head: [['Stavka', 'Iznos']],
@@ -170,6 +178,24 @@ export const exportProfitLossPdf = async (
     margin: { left: REPORT_MARGIN_X },
     tableWidth: 170,
   });
+
+  // Unpaid work — separate table so it never reads as part of the cost total.
+  if (hasUnpaid) {
+    const yUnpaid = (doc as any).lastAutoTable.finalY + 6;
+    brandAutoTable(doc, autoTable, {
+      startY: yUnpaid,
+      head: [[i18n.t('projects.unpaidLabor', 'Neisplaceni rad'), 'Iznos']],
+      body: [
+        [
+          i18n.t('projects.unpaidLaborOutsideTotal', 'Nije ukljuceno u troskove'),
+          fmt(unpaidLabor, data.currency),
+        ],
+        [i18n.t('projects.unpaidLaborHoursLabel', 'Sati'), `${unpaidHours.toFixed(1)}h`],
+      ],
+      margin: { left: REPORT_MARGIN_X },
+      tableWidth: 170,
+    });
+  }
 
   if (hasContract) {
     const y = (doc as any).lastAutoTable.finalY + 10;
@@ -190,7 +216,26 @@ export const exportProfitLossPdf = async (
       margin: { left: REPORT_MARGIN_X },
       tableWidth: 170,
     });
+
+    if (unpaidLabor > 0) {
+      const yNote = (doc as any).lastAutoTable.finalY + 5;
+      doc.setFontSize(9);
+      doc.setFont('Inter', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        i18n.t('projects.unpaidLaborExpectedNote', {
+          amount: fmt(unpaidLabor, data.currency),
+          defaultValue:
+            'Neisplaceni rad ({{amount}}) jos nije placen i smanjit ce profit kad se isplati.',
+        }),
+        REPORT_MARGIN_X,
+        yNote,
+        { maxWidth: 170 },
+      );
+      doc.setTextColor(15, 23, 42);
+    }
   }
+
 
   // Razrada troskova
   const yBreakdown = (doc as any).lastAutoTable.finalY + 10;
@@ -202,7 +247,7 @@ export const exportProfitLossPdf = async (
     startY: yBreakdown + 2,
     head: [['Kategorija', 'Iznos']],
     body: [
-      ['Radna snaga', fmt(data.laborCost, data.currency)],
+      [i18n.t('projects.plLaborPaid', 'Radna snaga (isplaceno)'), fmt(data.laborCost, data.currency)],
       ['Suradnici', fmt(data.collaboratorCost, data.currency)],
       ['Materijalni troskovi', fmt(data.materialCost, data.currency)],
     ],
