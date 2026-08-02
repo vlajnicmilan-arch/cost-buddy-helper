@@ -330,12 +330,8 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{p.company_name}</p>
-                  {p.is_active && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium shrink-0">
-                      {t('business.active', 'Aktivna')}
-                    </span>
-                  )}
                 </div>
+
                 <p className="text-xs text-muted-foreground truncate">
                   {[p.oib, p.city, p.legal_form].filter(Boolean).join(' · ') || t('business.noDetails', 'Bez detalja')}
                 </p>
