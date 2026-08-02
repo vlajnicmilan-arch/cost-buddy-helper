@@ -2156,6 +2156,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS income_source_invitations_income_source_id_ema
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_pdar_pending_per_decision ON public.project_decision_admin_requests USING btree (decision_id) WHERE (status = 'pending'::text);
 CREATE UNIQUE INDEX IF NOT EXISTS project_decision_steps_decision_id_step_no_key ON public.project_decision_steps USING btree (decision_id, step_no);
 CREATE UNIQUE INDEX IF NOT EXISTS project_member_permissions_project_id_user_id_tab_key_key ON public.project_member_permissions USING btree (project_id, user_id, tab_key);
+-- U CI-ju se ovaj baseline primjenjuje NAKON balance baselinea, koji ima stariju,
+-- užu verziju `notifications`. Zbog `CREATE TABLE IF NOT EXISTS` gornja definicija
+-- se tada preskoči, pa parcijalni indeks ispod nema stupce. Idempotentno ih dodaj.
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text NOT NULL,
+  ADD COLUMN IF NOT EXISTS dedup_key text;
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_notifications_active_dedup ON public.notifications USING btree (user_id, dedup_key) WHERE ((status = 'active'::text) AND (dedup_key IS NOT NULL));
 CREATE UNIQUE INDEX IF NOT EXISTS user_roles_user_id_role_key ON public.user_roles USING btree (user_id, role);
 CREATE UNIQUE INDEX IF NOT EXISTS import_transfer_rules_unique_key ON public.import_transfer_rules USING btree (user_id, merchant_key, source_wallet_key);
