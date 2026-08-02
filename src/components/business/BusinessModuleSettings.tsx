@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Loader2, Check, Palette } from 'lucide-react';
+import { Settings2, Loader2, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -14,29 +14,9 @@ import {
   type IndustryType, type ModuleId,
 } from '@/lib/businessModules';
 
-export type BusinessTheme = 'ocean-blue' | 'emerald' | 'indigo' | 'crimson' | 'amber' | 'slate' | 'teal' | 'premium-dark';
+// Biznis mod ima jedinstven izgled (Onyx) — izbor teme je uklonjen.
+// `business_profiles.theme_color` ostaje u bazi, ali se više ne koristi.
 
-const THEME_DESCRIPTION_KEYS: Record<BusinessTheme, string> = {
-  'ocean-blue': 'businessModules.themeOceanBlue',
-  'emerald': 'businessModules.themeEmerald',
-  'indigo': 'businessModules.themeIndigo',
-  'crimson': 'businessModules.themeCrimson',
-  'amber': 'businessModules.themeAmber',
-  'slate': 'businessModules.themeSlate',
-  'teal': 'businessModules.themeTeal',
-  'premium-dark': 'businessModules.themePremiumDark',
-};
-
-const BUSINESS_THEMES: { id: BusinessTheme; label: string; previewColor: string }[] = [
-  { id: 'ocean-blue', label: 'Ocean Blue', previewColor: 'hsl(220 70% 50%)' },
-  { id: 'emerald', label: 'Emerald', previewColor: 'hsl(160 84% 39%)' },
-  { id: 'indigo', label: 'Indigo', previewColor: 'hsl(239 84% 67%)' },
-  { id: 'crimson', label: 'Crimson', previewColor: 'hsl(0 72% 51%)' },
-  { id: 'amber', label: 'Amber', previewColor: 'hsl(38 92% 50%)' },
-  { id: 'slate', label: 'Slate', previewColor: 'hsl(215 25% 27%)' },
-  { id: 'teal', label: 'Teal', previewColor: 'hsl(174 72% 40%)' },
-  { id: 'premium-dark', label: 'Onyx', previewColor: 'hsl(42 38% 68%)' },
-];
 
 export const BusinessModuleSettings = () => {
   const { t } = useTranslation();
