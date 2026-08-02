@@ -612,23 +612,6 @@ export const AddExpenseDialog = ({
     } catch {}
   };
 
-  /**
-   * eRačun (UBL XML) → popunjava postojeći obrazac za trošak.
-   * Ne sprema ništa: korisnik pregleda, po potrebi mijenja datum i sam sprema
-   * (uključujući postojeću provjeru duplikata na submitu).
-   */
-  const applyEracunDraft = useCallback((draft: EracunExpenseDraft) => {
-    setType('expense');
-    if (draft.amount) setAmount(draft.amount);
-    if (draft.merchantName) handleMerchantChange(draft.merchantName);
-    setDescription(draft.description);
-    setExpenseDate(draft.date);
-    setNote((prev) => (prev.trim() ? `${prev} • ${draft.note}` : draft.note));
-    if (draft.items.length > 0) {
-      setItems(draft.items);
-      setShowItems(true);
-    }
-  }, [handleMerchantChange]);
 
   const [isSaving, setIsSaving] = useState(false);
 
