@@ -1,70 +1,108 @@
-# Odgovori o E2E ključevima + prijedlog jeftinije zamjene
+# Korak E — Trošak voditelja ide na potvrdu (sati ne)
 
-## 1. Jesu li varijable stvarni uvjet? Da.
+## Prvo: što se kosi s tvojom pretpostavkom
 
-Čitaju se kodom (ne samo dokumentacijom):
+Prije rješenja, tri nalaza iz repozitorija koja mijenjaju opseg.
 
-- `e2e/security/helpers/env.ts:8-11` — `E2E_SUPABASE_URL`, `E2E_SUPABASE_ANON_KEY`, `E2E_SUPABASE_SERVICE_ROLE_KEY`, `E2E_USER_PASSWORD`, sve kroz `required()` (`e2e/security/helpers/env.ts:1-5`) koji baca grešku ako varijabla fali.
-- `e2e/helpers/env.ts:13-16` — isto, za funkcijske (ne-sigurnosne) E2E tokove.
+**1. Voditelj VEĆ danas smije upisati trošak — i to odmah kao potvrđen.**
+INSERT politika na `expenses` glasi: kad je `project_id` postavljen, dopušteno je svakom aktivnom sudioniku projekta (`is_project_participant_active`), bez ikakve provjere uloge i bez provjere stanja. Dakle korak D nije zatvorio upis troška; zatvorio je samo faze. Trenutno i `worker` može upisati trošak. Korak E stoga nije "otvaranje prava", nego **sužavanje**: neovlaštenima zabraniti, voditelju dopustiti samo `pending`.
 
-Gdje se koriste:
-- `e2e/security/helpers/clients.ts:7` (service-role admin klijent), `:22-27` (prijava sintetičkog usera anon ključem + lozinkom), `:40-49` (pozivi edge funkcija).
-- `e2e/security/helpers/users.ts:6-34` — kreiranje/reset `security+a@` i `security+b@` korisnika preko admin API-ja (traži service_role).
+**2. Voditelj bi si danas mogao sam potvrditi trošak.**
+UPDATE politika dopušta izmjenu vlastitog retka (`auth.uid() = user_id`) bez ograničenja stupca `status`. Bez zaključavanja, `pending → approved` je jedan klik podnositelja.
 
-Dakle nije nasljeđe: bez ta 4 podatka `global-setup` padne prije prvog testa.
+**3. NAJVAŽNIJE — nepotvrđen trošak DANAS ULAZI U SALDO.**
+Motor salda (`_expenses_recompute_source_balance` i `recompute_custom_source_balance`) filtrira samo `deleted_at` i `expense_nature <> 'correction'`. Stupac `status` se **nigdje ne spominje**. Znači: svaki `pending` trošak već sada pomiče saldo novčanika, a pri odbijanju se saldo vraća samo zato što se zapis fizički briše. Čim odbijanje prestane brisati (tvoja točka 4), saldo ostaje kriv. Ovo je jezgra koraka E, ne sporedni detalj.
 
-## 2. Je li GitHub jedini put? Ne, ali GitHub je najlakši.
+**4. Odgovor na pitanje o satima.**
+Provjereno u `src/lib/projectProfitLoss.ts`:
+- **Trošak po fazi** (`useProjectMilestones`, `useProjectStats`) računa se **isključivo iz `expenses`**. Neisplaćeni sati NE ulaze u trošak faze. Tu je stanje već onakvo kakvo želiš.
+- **P&L projekta** računa `laborCost` iz **svih** radnih unosa (`actual_hours × rate_at`), bez obzira na isplatu, i još `materialCost = max(0, expenses − labor − collab)`. Dakle **u P&L-u neisplaćeni rad ulazi u trošak**, i to na obračunskoj, ne novčanoj osnovi — iako je kartica opisana kao "cash view".
+Ovo je odstupanje od tvog cilja, ali je **promjena izračuna** i u ovom koraku je **ne diram**. Prijavljujem i čekam odluku.
 
-- `.github/workflows/security-audit.yml` — jedini workflow koji pokreće `bun run test:security` (`:44`). Okidač je **samo `workflow_dispatch`** (`:12-13`), tj. ručno iz GitHub → Actions.
-- Bitno: taj workflow **već ima fallback vrijednosti** za URL (`:27`) i anon ključ (`:28`) hardkodirane u datoteci, i fallback lozinku (`:32`). Jedini secret koji *stvarno* mora postojati je **`E2E_SUPABASE_SERVICE_ROLE_KEY`** (`:29`).
-- `.github/workflows/e2e.yml` je funkcijski paket i namjerno je isključen (`:8-9`, komentar `:3-6`).
+---
 
-Lokalna alternativa: `npm run test:security` (`package.json:17`) s izvezenim varijablama — vidi `e2e/security/README.md:8-14`. Nema `.env` učitavanja u toj konfiguraciji (`playwright.security.config.ts` ne poziva dotenv), pa varijable moraju biti u okruženju procesa (`export ...` ili `VAR=... npm run test:security`). I dalje treba isti service_role ključ.
+## 1. Mehanizam stanja — stupac, ne zaseban zapis
 
-Zaključak: GitHub nije jedini put, ali **service_role ključ je neizbježan** u oba puta.
+Ostajemo na `expenses.status` (`pending | approved | rejected`), koji već postoji i koristi se za budžete i prihodne izvore (`usePendingTransactions`, `useProjectPendingTransactions`, `notify-pending-transaction`).
 
-## 3. Odakle ključevi?
+Zašto ne zaseban "prijedlog" zapis: trošak nosi ~50 stupaca (izvor plaćanja, faza, tip rada, predujmovi, sidrenje vremena, uvozni otisak). Duplikat bi značio drugu shemu, drugu RLS matricu i pretvorbu pri potvrdi — nova klasa tihih odstupanja.
 
-- **anon ključ**: nije tajna, već je u repozitoriju — `.env:2` (`VITE_SUPABASE_PUBLISHABLE_KEY`) i hardkodiran u `.github/workflows/security-audit.yml:28`. Korisnik ga ne mora tražiti.
-- **URL**: `.env:3`. Isto, ne mora se tražiti.
-- **E2E_USER_PASSWORD**: bilo koji jak string koji korisnik sam izmisli; odnosi se na sintetičke `security+a/b@vmbalance.com` korisnike, ne na prave.
-- **service_role ključ**: **Lovable Cloud ga ne prikazuje korisniku.** Na Lovable Cloud projektima service_role ključ i lozinka baze nisu dostupni kroz sučelje — nema ekrana „Backend → API keys" s tom vrijednošću. Dokumentacija u repou (`docs/E2E_TESTING.md:94`) tvrdi suprotno i **netočna je**; to je razlog zašto korisnik ništa nije našao. Ključ bi bio vidljiv samo vlasniku pravog Supabase projekta u Supabase dashboardu, čega ovdje nema.
+Cijena tog izbora je poznata i eksplicitno se plaća u točki 3: kad je zapis u `expenses`, **saldo ga vidi po zadanom**, pa izuzeće mora biti u motoru, a ne u pozivateljima.
 
-## 4. Mogu li ja pokrenuti paket? Ne.
+Dodaje se:
+- `expenses.rejection_reason text null`
+- `expenses.reviewed_by uuid null`, `expenses.reviewed_at timestamptz null`
+- CHECK: `rejection_reason` smije biti popunjen samo uz `status = 'rejected'`
 
-Provjereno u ovom okruženju:
-- Nema nijedne `E2E_*` varijable.
-- Nema service_role ključa među projektnim secretima (popis: Paddle, Gemini, FCM, Sudreg, Sentry, Enable Banking, itd. — service_role nije među njima i nije dostupan).
-- Direktna DB veza postoji (`SUPABASE_DB_URL`), ali kao rola `sandbox_exec`, a `SET ROLE authenticated` je odbijen (`permission denied to set role "authenticated"`). SQL alat za čitanje radi kao `supabase_read_only_user`, također bez prava mijenjanja role.
+## 2. Popis SVIH mjesta koja zbrajaju troškove
 
-Zato **ne mogu izvršiti `npm run test:security` ni pojedinačni spec**, ni s kojim skupom kredencijala. Bez zaobilaznice.
+Popis je iz stvarnog stabla; stupac "danas" je izmjereno stanje.
 
-## 5. Jeftinija zamjena — postoji, ali je slabija
+| # | Mjesto | Danas filtrira `status`? | Postupak |
+|---|---|---|---|
+| 1 | `src/lib/projectCalculations.ts` (`isCountedProjectTransaction`) | DA (`status && !== 'approved'` → out) | bez izmjene |
+| 2 | `src/lib/projectProfitLoss.ts` (`isCountedTx`) | DA | bez izmjene |
+| 3 | `useProjectStats.ts` | DA (`.eq('status','approved')` u upitu) | bez izmjene |
+| 4 | `useProjectMilestones.ts` (trošak po fazi) | DA (kroz #1) | bez izmjene |
+| 5 | `useActiveProjectsSummary.ts` | DA | bez izmjene |
+| 6 | `src/pages/Index.tsx` (dashboard) | provjeriti pri gradnji | uskladiti ako fali |
+| 7 | `src/lib/reportTotals.ts` / `reportExport.ts` | **NE spominju `status`** — ovise o ulazu pozivatelja | dodati filtar u samom helperu (obrana u dubinu), ne samo u pozivatelju |
+| 8 | `ProjectReportsDialog.tsx` (PDF) | dolazi iz #3/#4 | provjeriti svaki ulaz; dodati oznaku "N nepotvrđenih, nije uključeno" |
+| 9 | `supabase/functions/check-milestone-budgets` | **NE** — `select amount where milestone_id, type='expense'` | dodati `.neq('status','pending')` |
+| 10 | `supabase/functions/mcp` (`project_summary`, popis projekata, budžet, krug) | **NE** ni u jednom upitu | dodati filtar u svakom |
+| 11 | `supabase/functions/project-insights` | provjeriti | uskladiti |
+| 12 | `supabase/functions/generate-ai-insights`, `financial-assistant` | provjeriti | uskladiti |
+| 13 | `supabase/functions/send-daily-summary` | **NE** | dodati filtar |
+| 14 | `supabase/functions/check-budget-alerts` | DA (`.eq('status','approved')`) | bez izmjene |
+| 15 | Motor salda (DB) | **NE** | vidi točku 3 |
 
-Moguć je SQL harness po uzoru na `supabase/tests/balance/` i `supabase/tests/security/secdef_anon_invariant.sql`, koji se pokreće u CI-u nad praznim Postgresom (`.github/workflows/balance-sql-suite.yml` — postgres:16 servis, bez ijednog secreta). Matrica uloga se glumi s:
+Pravilo koje uvodimo umjesto 15 pojedinačnih obećanja: **jedan zajednički filtar** (`isCountedProjectTransaction` na klijentu, jedan `_shared/countedExpense.ts` na edge strani) i vitest koji prolazi kroz popis i pada ako se pojavi novi upit nad `expenses` bez filtra.
 
-```text
-BEGIN;
-SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claims', '{"sub":"<uuid>","role":"authenticated"}', true);
--- pokušaj UPDATE/INSERT, provjeri SQLSTATE 42501 ili 0 pogođenih redaka
-ROLLBACK;
-```
+## 3. Saldo — ovdje se odluka doista donosi
 
-Što bi dokazalo: RLS politike i triggeri na `project_milestones`, `projects`, revizijama, aneksima, dokumentima, checklistama, radnicima i članstvima — isti stupci i isti razlog odbijanja (42501 vs. greška sheme) kao u specu 09.
+Izmjena je u motoru, ne u pozivateljima:
+- `_expenses_recompute_source_balance`: `pending` se tretira kao nepostojeći (i na strani OLD i na strani NEW). Prijelaz `pending → approved` postaje pozitivna delta, `approved → rejected` negativna, `pending → rejected` nula.
+- `recompute_custom_source_balance`: u oba načina (`day_cut` i `hybrid`) u `WHERE` dolazi `AND COALESCE(e.status,'approved') <> 'pending'`.
+- `rejected` se također isključuje, istim uvjetom (`status NOT IN ('pending','rejected')`), jer odbijeni zapis ostaje u tablici umjesto da se briše.
 
-Čega **ne** bi dokazalo (i zato je slabije):
-- pravi JWT put kroz PostgREST — `set_config` ručno postavlja ono što GoTrue inače potpisuje; propust u izdavanju tokena ili u `auth.uid()` mapiranju ne bi se vidio;
-- PostgREST sloj: `return=representation`, grants na role, izloženost stupaca kroz API;
-- edge funkcije (specovi 06, dio 04) — one se zovu HTTP-om s korisnikovim tokenom;
-- ponašanje na **živoj** bazi s pravim podacima; harness ide nad kuriranom baznom shemom, pa drift između migracija i produkcije ostaje nepokriven.
+**Ovo je promjena semantike motora salda**, pa po pravilu iz memorije aktivira BALANCE DEPLOY GATE:
+- `supabase/tests/balance/` mora biti zelen u cijelosti,
+- `baseline.sql` se osvježava s nove žive definicije funkcija (`pg_get_functiondef`, nikad iz stare migracije),
+- novi slučajevi: insert `pending` → saldo nepromijenjen; `pending → approved` → saldo pomaknut točno jednom; `approved → rejected` → saldo vraćen; sidrena i nesidrena grana odvojeno; `pending` transfer na obje strane.
+- **Migracija zatečenih podataka**: postojeći `pending` troškovi već su ušli u saldo. Migracija mora nakon izmjene funkcija pokrenuti `recompute` za svaki pogođeni izvor, inače stanje ostaje krivo. To je jedina dopuštena promjena podataka u koraku E.
 
-Procjena: pokriva otprilike RLS/trigger dio matrice (najveći dio koraka D), ne pokriva transportni i auth sloj. Kao *dodatni* gate je koristan; kao *zamjena* za `test:security` je djelomičan.
+## 4. Prava u bazi
 
-## Što predlažem da odlučimo
+- **INSERT**: postojeću politiku zamijeniti tako da vlasnik smije upisati bilo koje stanje, `member` smije upisati **samo** `status = 'pending'` i `submitted_by = auth.uid()`, a `worker` i `investor` ne smiju upisati ništa (danas smiju — to je zatvaranje rupe).
+- **UPDATE**: novi guard trigger na `expenses` (druga brava, po uzoru na `guard_milestone_column_writes`): tko nije vlasnik projekta, ne smije mijenjati `status`, `rejection_reason`, `reviewed_by/at`. Podnositelj svoj `pending` zapis smije uređivati sadržajno; nakon `approved` više ne (vidi rizike).
+- **Namjenski put — da, potreban je**, iz istog razloga kao `update_milestone_progress`: `review_project_expense(p_expense_id uuid, p_decision text, p_reason text)`, SECURITY DEFINER, provjerava `is_project_owner`, postavlja stanje + revizora + razlog atomarno, i time izbjegava ovisnost o SELECT-preduvjetu RLS-a koji nas je već ugrizao u koraku D. Trigger ostaje kao druga brava.
+- Ne diramo: čitanje iz koraka A/D2, prava pisanja na fazama, `update_milestone_progress`.
 
-1. **Najjeftinije i najtočnije**: korisnik u GitHubu doda samo jedan secret — `E2E_SUPABASE_SERVICE_ROLE_KEY` — i ručno pokrene „Security Audit (adversarial)". Ostala tri već imaju fallback. Ali ključ mora doći iz Supabase projekta; ako Lovable Cloud njime upravlja, korisnik ga nema i ovaj put je zatvoren.
-2. **Ako ključ nije dostupan**: izgraditi SQL harness `supabase/tests/security/role_write_matrix.sql` + korak u postojećem CI workflowu, uz jasno dokumentirano što ne pokriva.
-3. Neovisno o izboru: ispraviti netočnu uputu u `docs/E2E_TESTING.md:94`.
+## 5. Obavijesti — postoji, koristimo postojeće
 
-Reci koju opciju gradim (1, 2, ili 2+3) i krećem.
+Već postoje `notify-pending-transaction` (koristi ga `useExpenseCRUD`) i `notify-project-transaction`, plus `notification_preferences` i push infrastruktura. Traži se:
+- pri INSERT-u `pending` na projektu: `notify-pending-transaction` → vlasniku,
+- pri odbijanju: nova vrsta poruke voditelju, s razlogom, kroz isti put (`notifications` + push), po uzoru na `transaction_auto_rejected` koji već postoji,
+- ključevi u hr/en/de; bez novog kanala i bez nove tablice.
+
+Napomena: cron `auto-reject-pending` danas **fizički briše** istekle `pending` zapise. Uz točku 4 to postaje nedosljedno — mijenja se u `status='rejected'` s automatskim razlogom.
+
+## 6. Testovi
+
+- **SQL harness** (`supabase/tests/security/role_write_matrix.sql`), uz obavezno zeleno svih **72** postojećih: `member` INSERT `pending` prolazi; `member` INSERT `approved` → 42501; `worker`/`investor` INSERT → 42501; `member` UPDATE `status` → 42501 (i kroz trigger, mehanizmom C); vlasnik kroz RPC prolazi; ne-vlasnik kroz RPC → 42501.
+- **Balance SQL suite**: slučajevi iz točke 3.
+- **Vitest**: `pending` i `rejected` izuzeti u `projectCalculations`, `projectProfitLoss`, `reportTotals`; regresija na trošak po fazi; postojećih 2305 ostaje zeleno.
+
+## 7. Rizici
+
+1. **Saldo (najveći).** Dok motor ne filtrira, svaki `pending` je tiho odstupanje. Ako se promjena funkcija i recompute zatečenih podataka ne dogode u istoj migraciji, ostaje pomak koji nitko ne vidi.
+2. **Nefiltrirani upiti** — MCP, `check-milestone-budgets`, `send-daily-summary` danas broje sve. Nakon koraka E to više nisu bezopasni propusti nego put kojim nepotvrđeno ulazi u brojku.
+3. **Potvrđen pa naknadno izmijenjen.** Prijedlog: nakon `approved` podnositelj gubi pravo izmjene; vlasnik smije mijenjati. Izmjena iznosa od strane vlasnika ide kroz motor salda normalno. Alternativa (vraćanje u `pending` pri izmjeni iznosa) donosi treperenje salda i ne predlažem je.
+4. **Zatečeni podaci** — postoje li `pending` troškovi na projektima, treba prebrojati prije migracije; oni su nakon izmjene prvi kandidati za krivi saldo.
+5. **Sati u P&L-u** (nalaz 4 gore) ostaje otvoren; dok se ne riješi, "marža" i "trošak po fazi" ne govore isto.
+
+## Što trebam od tebe prije gradnje
+
+1. Potvrdi zatvaranje rupe: `worker` i `investor` gube INSERT na troškove.
+2. Potvrdi da `rejected` ne ulazi u saldo (ostaje kao zapis, bez učinka).
+3. Odluči za sate u P&L-u: ostavljam kako jest u ovom koraku (moj prijedlog), ili to postaje zaseban korak F.
