@@ -86,7 +86,7 @@ describe('computeProjectProfitLoss — income & expenses', () => {
   });
 });
 
-describe('computeProjectProfitLoss — labor', () => {
+describe('computeProjectProfitLoss — accrued labor (reported, not costed)', () => {
   it('applies per-worker rates and sums hours across entries', () => {
     const r = computeProjectProfitLoss({
       ...empty,
@@ -100,7 +100,11 @@ describe('computeProjectProfitLoss — labor', () => {
         { worker_id: 'w2', actual_hours: 2 },
       ],
     });
-    expect(r.laborCost).toBe(8 * 20 + 2 * 30); // 160 + 60 = 220
+    expect(r.accruedLaborCost).toBe(8 * 20 + 2 * 30); // 160 + 60 = 220
+    // Cash basis: nothing was paid out, so no labor COST exists.
+    expect(r.laborCost).toBe(0);
+    expect(r.unpaidLaborCost).toBe(220);
+    expect(r.unpaidHours).toBe(10);
     expect(r.workers).toHaveLength(2);
     expect(r.workers.find((w) => w.id === 'w1')).toMatchObject({
       name: 'Ana A',
@@ -121,7 +125,8 @@ describe('computeProjectProfitLoss — labor', () => {
     });
     expect(r.workers).toHaveLength(1);
     expect(r.workers[0].id).toBe('w1');
-    expect(r.laborCost).toBe(80);
+    expect(r.accruedLaborCost).toBe(80);
+    expect(r.laborCost).toBe(0);
   });
 
   it('ignores entries with unknown worker_id', () => {
@@ -133,7 +138,7 @@ describe('computeProjectProfitLoss — labor', () => {
         { worker_id: 'ghost', actual_hours: 99 },
       ],
     });
-    expect(r.laborCost).toBe(40);
+    expect(r.accruedLaborCost).toBe(40);
   });
 
   it('handles string hours and rates', () => {
@@ -142,49 +147,145 @@ describe('computeProjectProfitLoss — labor', () => {
       workers: [{ id: 'w1', first_name: 'Ana', last_name: 'A', hourly_rate: '15.5' as any }],
       workEntries: [{ worker_id: 'w1', actual_hours: '4' as any }],
     });
-    expect(r.laborCost).toBeCloseTo(62);
+    expect(r.accruedLaborCost).toBeCloseTo(62);
   });
 });
 
-describe('computeProjectProfitLoss — collaborators (cash basis)', () => {
-  it('uses paid_amount, not total_price', () => {
+describe('computeProjectProfitLoss — labor is cash (payout rows only)', () => {
+  const worker = { id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 20 };
+
+  it('labor = payout expense rows, hours never add cost', () => {
     const r = computeProjectProfitLoss({
       ...empty,
-      collaborators: [
-        { id: 'c1', first_name: 'Sub', last_name: 'One', total_price: 5000, paid_amount: 2000 },
-        { id: 'c2', first_name: 'Sub', last_name: 'Two', total_price: 1000, paid_amount: 0 },
+      transactions: [
+        { type: 'expense', amount: 1000 },
+        { type: 'expense', amount: 300, worker_payout_id: 'p1' },
+      ],
+      workers: [worker],
+      workEntries: [{ worker_id: 'w1', actual_hours: 30, payout_id: 'p1' }], // accrued 600
+    });
+    expect(r.totalExpenses).toBe(1300);
+    expect(r.laborCost).toBe(300);
+    expect(r.accruedLaborCost).toBe(600);
+    expect(r.unpaidLaborCost).toBe(300);
+    expect(r.unpaidHours).toBe(0); // entry is covered by the payout
+    expect(r.materialCost).toBe(1000);
+  });
+
+  it('advance payout with no hours: cost counted, nothing unpaid', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [{ type: 'expense', amount: 150, worker_payout_id: 'p1' }],
+      workers: [worker],
+      workEntries: [],
+    });
+    expect(r.laborCost).toBe(150);
+    expect(r.unpaidLaborCost).toBe(0);
+    expect(r.materialCost).toBe(0);
+  });
+
+  it('partial payout: paid is cost, remainder stays unpaid', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [{ type: 'expense', amount: 100, worker_payout_id: 'p1' }],
+      workers: [worker],
+      workEntries: [
+        { worker_id: 'w1', actual_hours: 5, payout_id: 'p1' }, // 100 paid
+        { worker_id: 'w1', actual_hours: 10 }, // 200 open
       ],
     });
-    expect(r.collaboratorCost).toBe(2000);
-    expect(r.collaborators).toHaveLength(2);
-    expect(r.collaborators[0]).toMatchObject({ totalPrice: 5000, paidAmount: 2000 });
+    expect(r.laborCost).toBe(100);
+    expect(r.unpaidLaborCost).toBe(200);
+    expect(r.unpaidHours).toBe(10);
+  });
+
+  it('unpaid labor never enters totalCosts', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [{ type: 'income', amount: 1000 }],
+      workers: [worker],
+      workEntries: [{ worker_id: 'w1', actual_hours: 10 }], // 200 accrued, 0 paid
+    });
+    expect(r.netProfit).toBe(1000);
+    expect(r.unpaidLaborCost).toBe(200);
   });
 });
 
 describe('computeProjectProfitLoss — material derivation', () => {
-  it('material = expenses - labor - collaborator paid', () => {
+  it('material = expenses - labor paid - collaborator paid', () => {
     const r = computeProjectProfitLoss({
       ...empty,
-      transactions: [{ type: 'expense', amount: 1000 }],
-      workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 20 }],
-      workEntries: [{ worker_id: 'w1', actual_hours: 10 }], // 200
+      transactions: [
+        { type: 'expense', amount: 1000 },
+        { type: 'expense', amount: 200, worker_payout_id: 'p1' },
+      ],
       collaborators: [
         { id: 'c1', first_name: 'X', last_name: 'Y', total_price: 0, paid_amount: 300 },
       ],
     });
-    expect(r.materialCost).toBe(500);
+    expect(r.materialCost).toBe(700);
   });
 
-  it('material is floored at 0 when labor+collab exceed expenses', () => {
+  it('identity holds: labor + collaborator + material === totalExpenses (no clamp)', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [
+        { type: 'expense', amount: 100 },
+        { type: 'expense', amount: 400, worker_payout_id: 'p1' },
+      ],
+      collaborators: [
+        { id: 'c1', first_name: 'X', last_name: 'Y', total_price: 0, paid_amount: 50 },
+      ],
+    });
+    expect(r.laborCost + r.collaboratorCost + r.materialCost).toBeCloseTo(r.totalExpenses, 2);
+  });
+
+  it('material goes negative and is flagged when collaborator paid is not in expenses', () => {
     const r = computeProjectProfitLoss({
       ...empty,
       transactions: [{ type: 'expense', amount: 100 }],
-      workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 50 }],
-      workEntries: [{ worker_id: 'w1', actual_hours: 10 }], // 500
+      collaborators: [
+        { id: 'c1', first_name: 'X', last_name: 'Y', total_price: 0, paid_amount: 500 },
+      ],
     });
-    expect(r.materialCost).toBe(0);
+    expect(r.materialCost).toBe(-400);
+    expect(r.materialCostAnomaly).toBe(true);
   });
 });
+
+describe('computeProjectProfitLoss — production regressions (cash basis)', () => {
+  it('Solin: hours exceed expenses, material is no longer clamped to 0', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [{ type: 'expense', amount: 159.63 }],
+      workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 14 }],
+      workEntries: [{ worker_id: 'w1', actual_hours: 16 }], // 224 accrued, 0 paid
+    });
+    expect(r.laborCost).toBe(0);
+    expect(r.materialCost).toBe(159.63);
+    expect(r.materialCostAnomaly).toBe(false);
+    expect(r.unpaidLaborCost).toBe(224);
+    expect(r.netProfit).toBe(-159.63);
+  });
+
+  it('Duje i Dunja: paid labor is small, rest is material, cash balance unchanged', () => {
+    const r = computeProjectProfitLoss({
+      ...empty,
+      transactions: [
+        { type: 'expense', amount: 28040.77 },
+        { type: 'expense', amount: 1308, worker_payout_id: 'p1' },
+      ],
+      workers: [{ id: 'w1', first_name: 'A', last_name: 'B', hourly_rate: 1 }],
+      workEntries: [{ worker_id: 'w1', actual_hours: 7642 }], // 7642 accrued
+    });
+    expect(r.totalExpenses).toBeCloseTo(29348.77, 2);
+    expect(r.laborCost).toBe(1308);
+    expect(r.materialCost).toBeCloseTo(28040.77, 2);
+    expect(r.unpaidLaborCost).toBeCloseTo(6334, 2);
+    expect(r.netProfit).toBeCloseTo(-29348.77, 2);
+  });
+});
+
 
 describe('computeProjectProfitLoss — cash view (margin)', () => {
   it('netProfit = income - (labor+collab+material), margin in percent', () => {
