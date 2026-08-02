@@ -10,6 +10,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import {
+import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
   computeObservations,
   pickObservation,
   type DailyState,
@@ -437,7 +438,8 @@ Deno.serve(async (req) => {
         .eq("user_id", c.user_id)
         .eq("type", "expense")
         .gte("date", fromYmd)
-        .lte("date", local.ymd);
+        .lte("date", local.ymd)
+        .in("status", COUNTED_EXPENSE_STATUSES);
 
       const cleaned = (rawExp ?? []).filter(
         (e: any) =>

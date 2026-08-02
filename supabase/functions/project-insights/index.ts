@@ -1,6 +1,7 @@
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { callGemini } from '../_shared/geminiClient.ts';
+import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,6 +85,7 @@ Deno.serve(async (req) => {
       .select('description, amount, date, category, work_type, type')
       .eq('project_id', project_id)
       .gte('date', sevenDaysAgo)
+      .in('status', COUNTED_EXPENSE_STATUSES)
       .order('date', { ascending: false });
     const { data: workEntries } = await supabase.from('project_work_entries')
       .select('hours, work_date, task_description')

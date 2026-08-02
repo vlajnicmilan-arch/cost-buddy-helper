@@ -5,6 +5,7 @@ import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiQuota } from "../_shared/aiQuota.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
+import { COUNTED_EXPENSE_STATUSES } from "../_shared/countedExpense.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,6 +93,7 @@ Deno.serve(async (req) => {
       .select("id, amount, type, category, date, expense_nature, description, business_profile_id, project_id")
       .eq("user_id", user.id)
       .gte("date", since.toISOString().slice(0, 10))
+      .in("status", COUNTED_EXPENSE_STATUSES)
       .order("date", { ascending: false });
 
     if (expErr) throw expErr;
@@ -190,7 +192,8 @@ Deno.serve(async (req) => {
           .from("expenses")
           .select("project_id, type, amount, expense_nature")
           .in("project_id", projectIds)
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .in("status", COUNTED_EXPENSE_STATUSES);
 
         const marginRisks: { id: string; name: string; revenue: number; cost: number; marginPct: number }[] = [];
         const burnRisks: { id: string; name: string; spent: number; budget: number; pctSpent: number; pctTime: number }[] = [];
