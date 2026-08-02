@@ -117,6 +117,44 @@ const withinWindow = (invoice: MatchInvoice, tx: MatchTransaction): boolean => {
   return daysBetween(invoice.issueDate, tx.date) <= MATCH_WINDOW_DAYS;
 };
 
+const shiftDays = (isoDate: string, days: number): string =>
+  new Date(new Date(isoDate).getTime() + days * 86_400_000).toISOString().slice(0, 10);
+
+/** Nenaplaćeni računi traženog smjera — jedina definicija „otvorenog” računa. */
+export const outstandingInvoices = (
+  invoices: readonly MatchInvoice[],
+  direction: 'in' | 'out',
+): MatchInvoice[] =>
+  invoices.filter((i) => i.direction === direction && !i.paidAt && remainingOf(i) > EPS);
+
+/**
+ * Granice dohvata transakcija — JEDINA definicija prozora za obje strane.
+ *
+ * Prozor je sidren na račune (`issue_date ± MATCH_WINDOW_DAYS`), nikad na
+ * današnji dan. Nenaplaćeni računi su po prirodi stari, pa bi prozor oko
+ * `now()` tiho odbacio njihove uplate — točno kvar koji je ovo uveo.
+ *
+ * `null` = nema nenaplaćenih računa, ne dohvaćaj ništa.
+ * `since`/`until` = `null` kad neki račun nema datum izdavanja (tada motor
+ * prihvaća bilo koji datum uplate, pa dohvat ne smije ograničavati).
+ */
+export const paymentFetchWindow = (
+  invoices: readonly MatchInvoice[],
+  direction: 'in' | 'out',
+): { since: string | null; until: string | null } | null => {
+  const pool = outstandingInvoices(invoices, direction);
+  if (pool.length === 0) return null;
+  if (pool.some((i) => !i.issueDate)) return { since: null, until: null };
+  const times = pool.map((i) => new Date(i.issueDate as string).getTime());
+  const min = new Date(Math.min(...times)).toISOString().slice(0, 10);
+  const max = new Date(Math.max(...times)).toISOString().slice(0, 10);
+  return {
+    since: shiftDays(min, -MATCH_WINDOW_DAYS),
+    until: shiftDays(max, MATCH_WINDOW_DAYS),
+  };
+};
+
+
 /** Poziv na broj s računa nađen u opisu uplate. */
 const referenceHit = (invoice: MatchInvoice, tx: MatchTransaction): boolean => {
   const ref = digitsOnly(invoice.paymentReference);
