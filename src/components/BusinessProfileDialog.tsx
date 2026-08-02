@@ -316,9 +316,8 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
               role="button"
               tabIndex={0}
               aria-label={`${t('common.edit', 'Uredi')}: ${p.company_name}`}
-              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                p.is_active ? 'border-primary bg-primary/5' : 'border-border'
-              }`}
+              className="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+
               onClick={() => handleEdit(p)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
