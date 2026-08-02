@@ -59,8 +59,8 @@ export const useEracunPaymentMatch = (invoices: readonly IncomingInvoice[]) => {
       .toISOString()
       .slice(0, 10);
 
-    let txQuery = supabase
-      .from('expenses')
+    let txQuery: any = (supabase
+      .from('expenses') as any)
       .select('id, amount, date, description, merchant_name, expense_nature, deleted_at, status')
       .eq('user_id', user.id)
       .eq('type', 'income')

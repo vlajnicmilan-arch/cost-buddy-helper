@@ -44,7 +44,7 @@ export const IncomingInvoicesPanel = () => {
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, refetch,
   } = useIncomingInvoices();
 
   const [direction, setDirection] = useState<Direction>('in');
