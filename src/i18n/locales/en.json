@@ -317,10 +317,8 @@
     },
     "noPaymentSource": "No source",
     "card": {
-      "margin": "MARGIN",
       "contracted": "Contracted",
       "spent": "Cost",
-      "profit": "Profit",
       "setContracted": "Set contracted amount"
     },
     "onboarding": {
@@ -368,14 +366,7 @@
     "budgetWarning": "Budget almost depleted!",
     "received": "Received",
     "receivedOfContract": "{{pct}}% of contract",
-    "margin": "Margin",
     "currentBalance": "Current balance",
-    "marginStatus": {
-      "healthy": "Healthy",
-      "attention": "Attention",
-      "critical": "Critical",
-      "neutral": "—"
-    },
     "progress": {
       "cost": "Cost",
       "collection": "Collection"
@@ -387,9 +378,9 @@
     "forecast": {
       "title": "🔮 Forecast — at the current pace",
       "eac": "Estimated final cost",
-      "predictedMargin": "Predicted margin",
       "tooEarly": "Forecast available after 10% project completion",
-      "noMilestones": "Add project phases to see the forecast"
+      "noMilestones": "Add project phases to see the forecast",
+      "predictedRemainder": "Forecast remaining"
     },
     "noBudgetSet": "No budget set",
     "startDate": "Start Date",
@@ -656,15 +647,6 @@
       "marginUnknown": "Enter the contract value for accurate analysis",
       "profit": "Profit",
       "noIncomeYet": "No income yet",
-      "trafficLight": {
-        "green": "Healthy: margin above 30%",
-        "yellow": "Caution: margin below 30%",
-        "red": "Critical: margin below 10%"
-      },
-      "aiWarning": {
-        "yellow": "Margin low · {{pct}}% — cut costs",
-        "red": "Margin critical · {{pct}}% — act now"
-      },
       "daysLeft_few": "{{count}} d left",
       "overdueDays_few": "{{count}} d overdue"
     },
@@ -672,8 +654,6 @@
       "title": "Earned Value",
       "contracted": "Contracted",
       "spent": "Spent",
-      "marginAmount": "Margin",
-      "marginPct": "Margin %",
       "eac": "Estimate at completion",
       "eacHint": "Projection based on current spend rate",
       "scoreLabel": "Health",
@@ -1068,7 +1048,46 @@
     "unpaidLaborHoursLabel": "Hours",
     "unpaidLaborExpectedNote": "Unpaid work ({{amount}}) is still outstanding and will reduce profit once paid out.",
     "plLaborPaid": "Labor (paid out)",
-    "materialCostAnomaly": "Material costs are negative — a labor payout was likely entered outside the payout flow."
+    "materialCostAnomaly": "Material costs are negative — a labor payout was likely entered outside the payout flow.",
+    "remainder": {
+      "remainingPct": "Remaining",
+      "remainingPctUpper": "REMAINING",
+      "unspent": "Unspent",
+      "realizedMarginPct": "Realized margin",
+      "realizedMarginPctUpper": "REALIZED MARGIN",
+      "realizedProfit": "Profit",
+      "plannedMargin": "Planned margin",
+      "plannedCoverage": "based on {{withBoth}} of {{total}} phases",
+      "unclassified": "Contracted {{contract}} · assigned to phases {{phases}} · unassigned {{diff}}",
+      "status": {
+        "healthy": "Healthy",
+        "attention": "Attention",
+        "critical": "Critical",
+        "neutral": "—"
+      },
+      "traffic": {
+        "open": {
+          "healthy": "Healthy: spending within plan",
+          "attention": "Attention: spending near the limit",
+          "critical": "Critical: spending exceeds the plan"
+        },
+        "realized": {
+          "healthy": "Healthy: project finished with a margin",
+          "attention": "Attention: low realized margin",
+          "critical": "Critical: project finished at a loss"
+        }
+      },
+      "warning": {
+        "open": {
+          "attention": "Little left · {{pct}}% — cut costs",
+          "critical": "Plan exceeded · {{pct}}% remaining"
+        },
+        "realized": {
+          "attention": "Low realized margin · {{pct}}%",
+          "critical": "Project finished at a loss · {{pct}}%"
+        }
+      }
+    }
   },
   "estimates": {
     "title": "Quotes & Estimates",
@@ -3192,10 +3211,8 @@
       "viewAllProjects": "View all",
       "noActiveProjects": "No active projects",
       "openProjects": "Open projects",
-      "marginShort": "Margin",
       "spentOfBudget": "{{spent}} of {{budget}}",
       "spentNoBudget": "Spent {{spent}}",
-      "profit": "Profit",
       "noActivity": "No activity this month yet",
       "available": "Available",
       "netWorth": "Net worth",
