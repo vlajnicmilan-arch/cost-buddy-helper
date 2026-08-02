@@ -1535,6 +1535,96 @@ export type Database = {
         }
         Relationships: []
       }
+      eracun_counterparty_iban: {
+        Row: {
+          business_profile_id: string | null
+          confirmed_count: number
+          counterparty_name: string | null
+          counterparty_oib: string | null
+          created_at: string
+          iban: string
+          id: string
+          last_seen_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          confirmed_count?: number
+          counterparty_name?: string | null
+          counterparty_oib?: string | null
+          created_at?: string
+          iban: string
+          id?: string
+          last_seen_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          confirmed_count?: number
+          counterparty_name?: string | null
+          counterparty_oib?: string | null
+          created_at?: string
+          iban?: string
+          id?: string
+          last_seen_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      eracun_payment_links: {
+        Row: {
+          amount: number
+          business_profile_id: string | null
+          created_at: string
+          expense_id: string
+          id: string
+          invoice_id: string
+          matched_by: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          business_profile_id?: string | null
+          created_at?: string
+          expense_id: string
+          id?: string
+          invoice_id: string
+          matched_by?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          business_profile_id?: string | null
+          created_at?: string
+          expense_id?: string
+          id?: string
+          invoice_id?: string
+          matched_by?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eracun_payment_links_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eracun_payment_links_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           ai_extracted: boolean | null
@@ -1561,7 +1651,6 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
-          invoice_id: string | null
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
@@ -1621,7 +1710,6 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
-          invoice_id?: string | null
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
@@ -1681,7 +1769,6 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           income_source_id?: string | null
-          invoice_id?: string | null
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
@@ -1750,13 +1837,6 @@ export type Database = {
             columns: ["collaborator_id"]
             isOneToOne: false
             referencedRelation: "project_collaborators"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "expenses_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "project_invoices"
             referencedColumns: ["id"]
           },
           {
@@ -6281,7 +6361,6 @@ export type Database = {
           id: string
           import_batch_id: string | null
           income_source_id: string | null
-          invoice_id: string | null
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
