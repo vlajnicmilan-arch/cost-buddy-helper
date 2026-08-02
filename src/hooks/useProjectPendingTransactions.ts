@@ -16,17 +16,22 @@ export interface ProjectPendingTransaction {
   milestone_id?: string | null;
   submitted_by?: string | null;
   submitter_name?: string;
+  status?: string | null;
+  rejection_reason?: string | null;
 }
 
 export const useProjectPendingTransactions = (projectId: string | null) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [pendingTransactions, setPendingTransactions] = useState<ProjectPendingTransaction[]>([]);
+  // Korak E: odbijeni zapisi ostaju vidljivi (s razlogom), bez učinka na zbrojeve.
+  const [rejectedTransactions, setRejectedTransactions] = useState<ProjectPendingTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPending = useCallback(async () => {
     if (!projectId || !user) {
       setPendingTransactions([]);
+      setRejectedTransactions([]);
       setLoading(false);
       return;
     }
@@ -37,7 +42,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         .from('expenses')
         .select('*') as any)
         .eq('project_id', projectId)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'rejected'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -62,7 +67,8 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
         submitter_name: t.submitted_by ? submitterMap.get(t.submitted_by) || 'Nepoznato' : undefined
       }));
 
-      setPendingTransactions(transactions);
+      setPendingTransactions(transactions.filter((t: any) => t.status === 'pending'));
+      setRejectedTransactions(transactions.filter((t: any) => t.status === 'rejected'));
     } catch (error) {
       console.error('Error fetching pending project transactions:', error);
       showError(t('common.error'));
@@ -139,6 +145,7 @@ export const useProjectPendingTransactions = (projectId: string | null) => {
 
   return {
     pendingTransactions,
+    rejectedTransactions,
     loading,
     approveTransaction,
     rejectTransaction,
