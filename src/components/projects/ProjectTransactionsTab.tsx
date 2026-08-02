@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { isCorrectionInBulkError } from '@/lib/correctionDeleteGuard';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
