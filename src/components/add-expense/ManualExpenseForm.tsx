@@ -21,6 +21,8 @@ import { PaymentSourceSelector } from './PaymentSourceSelector';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import { ExpenseItemsList } from './ExpenseItemsList';
 import { AttachmentBar } from './AttachmentBar';
+import { MilestoneSelectRow } from './MilestoneSelectRow';
+
 import { InstallmentToggle } from '@/components/installments';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 import { useAppState } from '@/contexts/AppStateContext';
@@ -60,6 +62,10 @@ interface ManualExpenseFormProps {
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
+  /** Faza odabranog projekta — uvijek preskočiva (`null` = bez faze). */
+  selectedMilestoneId?: string | null;
+  onSelectedMilestoneIdChange?: (id: string | null) => void;
+
   selectedBudgetId: string | null;
   onSelectedBudgetIdChange: (id: string | null) => void;
   expenseNature: 'regular' | 'extraordinary';
@@ -418,6 +424,17 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
 
             />
           )}
+
+          {/* Faza — nudi se odmah uz projekt, ostaje preskočiva. */}
+          {projectsModuleEnabled && props.onSelectedMilestoneIdChange && props.type !== 'transfer' && (
+            <MilestoneSelectRow
+              projectId={props.selectedProjectId}
+              value={props.selectedMilestoneId ?? null}
+              onChange={props.onSelectedMilestoneIdChange}
+            />
+          )}
+
+
 
 
 

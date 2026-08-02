@@ -57,6 +57,7 @@ import { ProjectTransactionsList } from './project-transactions/ProjectTransacti
 import { ProjectTransactionAddDialog } from './project-transactions/ProjectTransactionAddDialog';
 import { ProjectTransactionEditDialog } from './project-transactions/ProjectTransactionEditDialog';
 import { ProjectTransactionDetailDialog } from './project-transactions/ProjectTransactionDetailDialog';
+import { UnassignedMilestoneDialog, selectUnassignedExpenses } from './project-transactions/UnassignedMilestoneDialog';
 import type { ProjectExpense } from './project-transactions/types';
 
 interface ProjectTransactionsTabProps {
@@ -104,6 +105,9 @@ export const ProjectTransactionsTab = ({
     refetch: refetchPending,
     pendingCount,
   } = useProjectPendingTransactions(projectId);
+
+  const [unassignedDialogOpen, setUnassignedDialogOpen] = useState(false);
+  const unassignedCount = useMemo(() => selectUnassignedExpenses(expenses).length, [expenses]);
 
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [paymentSourceNames, setPaymentSourceNames] = useState<Record<string, string>>({});
@@ -663,6 +667,18 @@ export const ProjectTransactionsTab = ({
         />
       )}
 
+      {milestones.length > 0 && unassignedCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setUnassignedDialogOpen(true)}
+          className="w-full text-left text-xs text-muted-foreground rounded-lg border border-dashed px-3 py-2 hover:bg-muted/50 transition-colors min-h-[44px]"
+        >
+          {t('projects.unassignedMilestone.cta', '{{count}} transakcija bez faze — razvrstaj', {
+            count: unassignedCount,
+          })}
+        </button>
+      )}
+
       <ProjectTransactionsList
         expenses={expenses}
         filteredExpenses={filteredExpenses}
@@ -680,6 +696,18 @@ export const ProjectTransactionsTab = ({
           setDetailDialogOpen(true);
         }}
         onPrint={handlePrintFiltered}
+      />
+
+      <UnassignedMilestoneDialog
+        open={unassignedDialogOpen}
+        onOpenChange={setUnassignedDialogOpen}
+        expenses={expenses}
+        milestones={milestones}
+        formatAmount={formatAmount}
+        isManager={isManager}
+        userId={user?.id}
+        isReadOnly={isReadOnly}
+        onAssigned={onRefetch}
       />
 
       <ProjectTransactionAddDialog

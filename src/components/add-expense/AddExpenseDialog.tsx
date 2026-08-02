@@ -146,6 +146,14 @@ export const AddExpenseDialog = ({
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
   const [totalWithTip, setTotalWithTip] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  // Faza odabranog projekta. Preskočiva; promjena/uklanjanje projekta je poništava,
+  // jer faza pripada isključivo tom projektu.
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+  const handleSelectedProjectIdChange = (id: string | null) => {
+    setSelectedProjectId(id);
+    setSelectedMilestoneId(null);
+  };
+
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null);
   const [expenseNature, setExpenseNature] = useState<'regular' | 'extraordinary'>('regular');
   // Collaborator advance fields (see mem://features/collaborator-advances)
@@ -712,6 +720,7 @@ export const AddExpenseDialog = ({
         ai_extracted: true,
         category_origin: 'ai_receipt' as const,
         project_id: selectedProjectId || undefined,
+        milestone_id: selectedProjectId ? (selectedMilestoneId || null) : null,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         collaborator_id: selectedProjectId ? collaboratorId : null,
@@ -864,6 +873,8 @@ export const AddExpenseDialog = ({
     setShowScannedPreview(false);
     setNote('');
     setSelectedProjectId(null);
+    setSelectedMilestoneId(null);
+
     setSelectedBudgetId(null);
     setExpenseNature('regular');
     setIsAdvance(false);
@@ -1051,6 +1062,7 @@ export const AddExpenseDialog = ({
         category_origin: scannedData !== null ? 'ai_receipt' : (categoryOriginRef.current ?? 'user'),
         note: installmentNote,
         project_id: selectedProjectId || undefined,
+        milestone_id: selectedProjectId ? (selectedMilestoneId || null) : null,
         budget_id: selectedBudgetId || undefined,
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: effectiveBusinessProfileId || null,
@@ -1093,6 +1105,7 @@ export const AddExpenseDialog = ({
       category_origin: scannedData !== null ? 'ai_receipt' : (categoryOriginRef.current ?? 'user'),
       note: note.trim() || undefined,
       project_id: selectedProjectId || undefined,
+      milestone_id: selectedProjectId ? (selectedMilestoneId || null) : null,
       budget_id: selectedBudgetId || undefined,
       expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
       collaborator_id: selectedProjectId ? collaboratorId : null,
@@ -1233,7 +1246,9 @@ export const AddExpenseDialog = ({
                 projects={projects}
                 budgets={budgets}
                 selectedProjectId={selectedProjectId}
-                onSelectedProjectIdChange={setSelectedProjectId}
+                onSelectedProjectIdChange={handleSelectedProjectIdChange}
+                selectedMilestoneId={selectedMilestoneId}
+                onSelectedMilestoneIdChange={setSelectedMilestoneId}
                 selectedBudgetId={selectedBudgetId}
                 onSelectedBudgetIdChange={setSelectedBudgetId}
                 expenseNature={expenseNature}
@@ -1278,7 +1293,9 @@ export const AddExpenseDialog = ({
               projects={projects}
               budgets={budgets}
               selectedProjectId={selectedProjectId}
-              onSelectedProjectIdChange={setSelectedProjectId}
+              onSelectedProjectIdChange={handleSelectedProjectIdChange}
+              selectedMilestoneId={selectedMilestoneId}
+              onSelectedMilestoneIdChange={setSelectedMilestoneId}
               selectedBudgetId={selectedBudgetId}
               onSelectedBudgetIdChange={setSelectedBudgetId}
               expenseNature={expenseNature}

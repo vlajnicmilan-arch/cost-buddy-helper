@@ -17,6 +17,8 @@ import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { PaymentSourceOptions } from './PaymentSourceOptions';
 import type { KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 import { AttachmentBar } from './AttachmentBar';
+import { MilestoneSelectRow } from './MilestoneSelectRow';
+
 
 interface ScannedData {
   amount: number;
@@ -55,8 +57,12 @@ interface ScannedDataPreviewProps {
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
+  /** Faza odabranog projekta — uvijek preskočiva (`null` = bez faze). */
+  selectedMilestoneId?: string | null;
+  onSelectedMilestoneIdChange?: (id: string | null) => void;
   selectedBudgetId: string | null;
   onSelectedBudgetIdChange: (id: string | null) => void;
+
   expenseNature: 'regular' | 'extraordinary';
   onExpenseNatureChange: (nature: 'regular' | 'extraordinary') => void;
   totalWithTip: string;
@@ -97,8 +103,11 @@ export const ScannedDataPreview = ({
   budgets,
   selectedProjectId,
   onSelectedProjectIdChange,
+  selectedMilestoneId = null,
+  onSelectedMilestoneIdChange,
   selectedBudgetId,
   onSelectedBudgetIdChange,
+
   expenseNature,
   onExpenseNatureChange,
   totalWithTip,
@@ -524,6 +533,17 @@ export const ScannedDataPreview = ({
           onKrugChange={onKrugChange}
           mutuallyExclusiveProjectBudget
         />
+
+        {/* Faza — u istom koraku kao projekt, preskočiva. */}
+        {onSelectedMilestoneIdChange && scannedData.transaction_type !== 'transfer' && (
+          <MilestoneSelectRow
+            projectId={selectedProjectId}
+            value={selectedMilestoneId}
+            onChange={onSelectedMilestoneIdChange}
+          />
+        )}
+
+
 
 
         {(selectedProjectId || selectedBudgetId) && (

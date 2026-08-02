@@ -314,6 +314,8 @@ export const useExpenseCRUD = ({
           category_origin: (normalizedExpense as any).category_origin || 'user',
           income_source_id: normalizedExpense.income_source_id,
           project_id: normalizedExpense.project_id || null,
+          // Faza se čuva samo uz projekt; bez projekta nema faze.
+          milestone_id: normalizedExpense.project_id ? ((normalizedExpense as any).milestone_id ?? null) : null,
           budget_id: normalizedExpense.budget_id || null,
           note: normalizedExpense.note || null,
           expense_nature: normalizedExpense.expense_nature || null,

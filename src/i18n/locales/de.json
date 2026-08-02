@@ -1088,6 +1088,13 @@
         }
       },
       "phasePriceCoverage": "Preise auf {{withPrice}} von {{total}} Phasen eingetragen"
+    },
+    "unassignedMilestone": {
+      "title": "Ausgaben ohne Phase",
+      "subtitle": "Nach Betrag sortiert, größte zuerst.",
+      "empty": "Alle Buchungen haben eine Phase.",
+      "summary": "{{count}} Positionen • {{amount}}",
+      "cta": "{{count}} Buchungen ohne Phase — zuordnen"
     }
   },
   "estimates": {
@@ -1587,7 +1594,9 @@
     "attachment": {
       "smjer": "Richtung",
       "assignToSmjer": "Richtung zuweisen"
-    }
+    },
+    "assignToMilestone": "Phase zuordnen",
+    "noMilestone": "Ohne Phase"
   },
   "dashboard": {
     "balance": "Kontostand",

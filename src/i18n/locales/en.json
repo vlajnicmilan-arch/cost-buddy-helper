@@ -1088,6 +1088,13 @@
         }
       },
       "phasePriceCoverage": "Prices entered on {{withPrice}} of {{total}} phases"
+    },
+    "unassignedMilestone": {
+      "title": "Transactions without a phase",
+      "subtitle": "Sorted by amount, largest first.",
+      "empty": "All transactions have a phase.",
+      "summary": "{{count}} items • {{amount}}",
+      "cta": "{{count}} transactions without a phase — assign"
     }
   },
   "estimates": {
@@ -1587,7 +1594,9 @@
     "attachment": {
       "smjer": "Direction",
       "assignToSmjer": "Assign direction"
-    }
+    },
+    "assignToMilestone": "Assign to phase",
+    "noMilestone": "No phase"
   },
   "dashboard": {
     "balance": "Balance",
