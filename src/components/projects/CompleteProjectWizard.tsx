@@ -106,14 +106,16 @@ export const CompleteProjectWizard = ({
         if (!guard()) return;
         try {
           setSubmitting(true);
-          const { error } = await supabase
-            .from('project_milestones')
-            .update({
-              status: 'completed',
-              completed_at: new Date().toISOString(),
-            })
-            .in('id', idsToComplete);
-          if (error) throw error;
+          // Napredak faze ide kroz namjenski RPC (korak D) — jedan put za sve
+          // uloge koje smiju pisati napredak.
+          for (const id of idsToComplete) {
+            const { error } = await supabase.rpc('update_milestone_progress' as any, {
+              p_milestone_id: id,
+              p_patch: { status: 'completed', completed_at: new Date().toISOString() },
+            });
+            if (error) throw error;
+          }
+
           showSuccess(t('projects.complete.milestonesUpdated', 'Faze ažurirane'));
         } catch (e) {
           console.error('Bulk milestone complete error:', e);
