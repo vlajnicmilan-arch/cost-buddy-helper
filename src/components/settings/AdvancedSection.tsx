@@ -114,6 +114,14 @@ export const AdvancedSection = ({
               <p className="text-xs text-muted-foreground">
                 {t('settings.clearReceiptCacheDesc', 'Briše lokalno spremljene slike računa s uređaja. Transakcije ostaju netaknute.')}
               </p>
+              {receiptStats && (
+                <p className="text-xs font-medium text-foreground mt-1">
+                  {t('settings.localReceiptUsage', '{{count}} slika · {{size}}', {
+                    count: receiptStats.count,
+                    size: formatBytes(receiptStats.bytes),
+                  })}
+                </p>
+              )}
             </div>
           </div>
           <Button
@@ -123,6 +131,7 @@ export const AdvancedSection = ({
               try {
                 const { LocalFileCache } = await import('@/hooks/useLocalFileCache');
                 const count = await LocalFileCache.clearAllCachedReceipts();
+                setReceiptStats({ count: 0, bytes: 0 });
                 showSuccess(t('settings.receiptCacheCleared_count', 'Obrisano {{count}} slika računa', { count }));
               } catch (e) {
                 showError(t('settings.receiptCacheClearError', 'Greška pri brisanju slika'));
@@ -133,6 +142,7 @@ export const AdvancedSection = ({
             {t('settings.clearReceiptCacheBtn', 'Obriši sve slike')}
           </Button>
         </div>
+
 
         {/* Runtime diagnostics — admin only */}
         {isAdmin && <RuntimeDiagnostics />}
