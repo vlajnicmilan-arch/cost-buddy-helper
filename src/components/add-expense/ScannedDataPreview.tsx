@@ -532,6 +532,17 @@ export const ScannedDataPreview = ({
           mutuallyExclusiveProjectBudget
         />
 
+        {/* Faza — u istom koraku kao projekt, preskočiva. */}
+        {onSelectedMilestoneIdChange && scannedData.transaction_type !== 'transfer' && (
+          <MilestoneSelectRow
+            projectId={selectedProjectId}
+            value={selectedMilestoneId}
+            onChange={onSelectedMilestoneIdChange}
+          />
+        )}
+
+
+
 
         {(selectedProjectId || selectedBudgetId) && (
           <div className="space-y-2">
