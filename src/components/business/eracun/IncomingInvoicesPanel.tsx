@@ -6,7 +6,7 @@ import { AlertTriangle, CheckCircle2, Loader2, Trash2, Upload } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undoToast';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,16 +59,13 @@ export const IncomingInvoicesPanel = () => {
     await guard(async () => {
       try {
         const count = await saveBatch(rows);
-        toast.success(t('eracun.import.saved', 'Uvezeno {{n}} ulaznih računa', { n: count }), {
-          duration: 10000,
-          action: {
-            label: t('eracun.import.undo', 'Poništi uvoz'),
-            onClick: () => {
-              undoBatch(batchId)
-                .then((removed) => showSuccess(t('eracun.import.undone', 'Poništeno: {{n}}', { n: removed })))
-                .catch(() => showError(t('eracun.import.undoFailed', 'Poništavanje nije uspjelo.')));
-            },
-          },
+        showUndoToast({
+          message: t('eracun.import.saved', 'Uvezeno {{n}} ulaznih računa', { n: count }),
+          undoLabel: t('eracun.import.undo', 'Poništi uvoz'),
+          onUndo: () =>
+            undoBatch(batchId)
+              .then((removed) => showSuccess(t('eracun.import.undone', 'Poništeno: {{n}}', { n: removed })))
+              .catch(() => showError(t('eracun.import.undoFailed', 'Poništavanje nije uspjelo.'))),
         });
       } catch (err: any) {
         if (String(err?.code) === '23505') {
