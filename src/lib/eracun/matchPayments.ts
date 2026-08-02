@@ -257,9 +257,8 @@ export const matchPayments = (input: MatchInput): PaymentSuggestion[] => {
   const direction = input.direction ?? 'out';
   const learned = input.learnedIbans ?? [];
 
-  const outstanding = input.invoices.filter(
-    (i) => i.direction === direction && !i.paidAt && remainingOf(i) > EPS,
-  );
+  const outstanding = outstandingInvoices(input.invoices, direction);
+
 
   const suggestions: PaymentSuggestion[] = [];
 
