@@ -113,9 +113,20 @@ ne treba nijedan secret:
 - `supabase/tests/security/role_write_baseline.sql` — snimka žive sheme
 - `supabase/tests/security/role_write_matrix.sql` — matrica prava (RLS + trigeri)
 - pokreće se u `.github/workflows/balance-sql-suite.yml` nad praznim Postgresom
+- redoslijed koraka je bitan: `role_write_baseline.sql` → `secdef_anon_shim.sql`
+  → `role_write_matrix.sql` → `secdef_anon_invariant.sql` (shim mora doći nakon
+  baselinea, inače njegove SECDEF funkcije ostanu anon-izvršive)
+- trenutni obuhvat: **87 provjera** (koraci D, D2 i E)
+
+Korak E (troškovi na potvrdu) pokriven je provjerama 68–82: tko smije upisati
+`pending`/`approved` trošak, da polja pregleda mijenja isključivo
+`review_project_expense`, i tko smije taj RPC pozvati. Utjecaj `pending`/
+`rejected` troškova na saldo NIJE u ovom paketu — dokazuju ga scenariji E1–E6 u
+`supabase/tests/balance/10_scenarios.sql`.
 
 Granice te zamjene (JWT/GoTrue, PostgREST sloj, edge funkcije, drift prema
 produkciji) popisane su u zaglavlju `role_write_matrix.sql`.
+
 
 Playwright specovi u `e2e/security/` ostaju u repozitoriju netaknuti i prorade
 bez ijedne izmjene čim `E2E_SUPABASE_SERVICE_ROLE_KEY` postane dostupan.
