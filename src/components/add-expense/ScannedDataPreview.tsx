@@ -55,8 +55,12 @@ interface ScannedDataPreviewProps {
   budgets: { id: string; name: string; color?: string | null; icon?: string | null; is_active?: boolean | null }[];
   selectedProjectId: string | null;
   onSelectedProjectIdChange: (id: string | null) => void;
+  /** Faza odabranog projekta — uvijek preskočiva (`null` = bez faze). */
+  selectedMilestoneId?: string | null;
+  onSelectedMilestoneIdChange?: (id: string | null) => void;
   selectedBudgetId: string | null;
   onSelectedBudgetIdChange: (id: string | null) => void;
+
   expenseNature: 'regular' | 'extraordinary';
   onExpenseNatureChange: (nature: 'regular' | 'extraordinary') => void;
   totalWithTip: string;
