@@ -5969,6 +5969,58 @@
       "not_xml": "Datoteka nije valjan XML.",
       "not_ubl": "Datoteka nije UBL 2.1 eRačun.",
       "empty": "Datoteka je prazna."
+    },
+    "title": "Ulazni računi (eRačun)",
+    "menuDesc": "Uvezi XML eRačune i označi ih plaćenima",
+    "reject": {
+      "unsupported_doc_type": "Tip dokumenta {{docType}} nije podržan u ovoj verziji.",
+      "unsupported_currency": "Valuta {{currency}} nije podržana — podržan je samo EUR.",
+      "missing_total": "Ukupan iznos nije pronađen u datoteci.",
+      "missing_supplier": "OIB dobavljača nije pronađen.",
+      "missing_invoice_number": "Broj računa nije pronađen."
+    },
+    "import": {
+      "title": "Uvoz ulaznih računa (eRačun)",
+      "pickFiles": "Odaberi XML datoteke",
+      "hint": "Prolaze računi (380), periodični obračuni (394) i odobrenja (381, negativan iznos), samo u EUR. Digitalni potpis se u ovoj verziji ne provjerava.",
+      "save": "Spremi ({{n}})",
+      "saved": "Uvezeno {{n}} ulaznih računa",
+      "undo": "Poništi uvoz",
+      "undone": "Poništeno: {{n}}",
+      "undoFailed": "Poništavanje nije uspjelo.",
+      "failed": "Uvoz nije uspio.",
+      "duplicateServer": "Neki od računa su već uvezeni."
+    },
+    "review": {
+      "duplicateExisting": "Već uvezen",
+      "duplicateBatch": "Duplikat u seriji",
+      "rejected": "Odbijeno",
+      "willImport": "Za uvoz",
+      "unknownSupplier": "Nepoznat dobavljač",
+      "summary": "{{total}} dokumenata · {{importable}} za uvoz · {{duplicates}} duplikata · {{rejected}} odbijeno"
+    },
+    "list": {
+      "unpaid": "Neplaćeni",
+      "paid": "Plaćeni",
+      "all": "Sve",
+      "due": "dospijeće",
+      "noDue": "Bez dospijeća",
+      "overdue": "Kasni {{n}} d",
+      "dueIn": "Za {{n}} d",
+      "paidOn": "Plaćeno {{date}}",
+      "markPaid": "Plaćeno",
+      "vat": "PDV",
+      "empty": "Još nema uvezenih ulaznih računa.",
+      "emptyUnpaid": "Nema neplaćenih ulaznih računa."
+    },
+    "paid": {
+      "title": "Označi kao plaćeno",
+      "dateLabel": "Datum plaćanja",
+      "dateHint": "Predložen je današnji datum — promijeni ga ako je plaćanje bilo ranije. Taj datum ide u trošak i saldo.",
+      "sourceLabel": "Izvor plaćanja",
+      "confirm": "Zabilježi plaćanje",
+      "expenseDescription": "Ulazni račun {{number}}",
+      "failed": "Bilježenje plaćanja nije uspjelo."
     }
   }
 }

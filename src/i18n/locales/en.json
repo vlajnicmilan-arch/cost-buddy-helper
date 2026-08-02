@@ -5959,6 +5959,58 @@
       "not_xml": "The file is not valid XML.",
       "not_ubl": "The file is not a UBL 2.1 e-invoice.",
       "empty": "The file is empty."
+    },
+    "title": "Incoming invoices (e-Invoice)",
+    "menuDesc": "Import e-Invoice XML files and mark them paid",
+    "reject": {
+      "unsupported_doc_type": "Document type {{docType}} is not supported in this version.",
+      "unsupported_currency": "Currency {{currency}} is not supported — only EUR is.",
+      "missing_total": "Total amount not found in the file.",
+      "missing_supplier": "Supplier VAT ID not found.",
+      "missing_invoice_number": "Invoice number not found."
+    },
+    "import": {
+      "title": "Import incoming invoices (e-Invoice)",
+      "pickFiles": "Choose XML files",
+      "hint": "Invoices (380), periodic statements (394) and credit notes (381, negative amount) are accepted, EUR only. The digital signature is not verified in this version.",
+      "save": "Save ({{n}})",
+      "saved": "Imported {{n}} incoming invoices",
+      "undo": "Undo import",
+      "undone": "Undone: {{n}}",
+      "undoFailed": "Undo failed.",
+      "failed": "Import failed.",
+      "duplicateServer": "Some invoices were already imported."
+    },
+    "review": {
+      "duplicateExisting": "Already imported",
+      "duplicateBatch": "Duplicate in batch",
+      "rejected": "Rejected",
+      "willImport": "To import",
+      "unknownSupplier": "Unknown supplier",
+      "summary": "{{total}} documents · {{importable}} to import · {{duplicates}} duplicates · {{rejected}} rejected"
+    },
+    "list": {
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "all": "All",
+      "due": "due",
+      "noDue": "No due date",
+      "overdue": "{{n}} d overdue",
+      "dueIn": "In {{n}} d",
+      "paidOn": "Paid {{date}}",
+      "markPaid": "Paid",
+      "vat": "VAT",
+      "empty": "No incoming invoices imported yet.",
+      "emptyUnpaid": "No unpaid incoming invoices."
+    },
+    "paid": {
+      "title": "Mark as paid",
+      "dateLabel": "Payment date",
+      "dateHint": "Today is only a suggestion — change it if the payment happened earlier. This date goes into the expense and the balance.",
+      "sourceLabel": "Payment source",
+      "confirm": "Record payment",
+      "expenseDescription": "Incoming invoice {{number}}",
+      "failed": "Recording the payment failed."
     }
   }
 }
