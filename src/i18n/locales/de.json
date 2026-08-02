@@ -1086,7 +1086,8 @@
           "attention": "Niedrige erzielte Marge · {{pct}}%",
           "critical": "Projekt mit Verlust abgeschlossen · {{pct}}%"
         }
-      }
+      },
+      "phasePriceCoverage": "Preise auf {{withPrice}} von {{total}} Phasen eingetragen"
     }
   },
   "estimates": {

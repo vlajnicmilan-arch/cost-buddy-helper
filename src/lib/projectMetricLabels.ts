@@ -134,3 +134,13 @@ export const UNCLASSIFIED_CONTRACT_LABEL: LabelSpec = {
   key: 'projects.remainder.unclassified',
   fallback: 'Ugovoreno {{contract}} · po fazama razvrstano {{phases}} · nerazvrstano {{diff}}',
 };
+
+/**
+ * Djelomično pokriće — namjerno BEZ ijednog iznosa. Razlika
+ * `ugovoreno − Σ faza` u ovom stanju ne govori o ugovoru nego o
+ * neupisanim cijenama, pa se ne prikazuje.
+ */
+export const PHASE_PRICE_COVERAGE_LABEL: LabelSpec = {
+  key: 'projects.remainder.phasePriceCoverage',
+  fallback: 'Cijene upisane na {{withPrice}} od {{total}} faza',
+};
