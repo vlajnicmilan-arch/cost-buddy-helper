@@ -36,6 +36,8 @@ import { validateAmountInput } from '@/lib/amountValidation';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
+import { EracunImportButton } from './EracunImportButton';
+import type { EracunExpenseDraft } from '@/lib/eracun/toExpenseDraft';
 
 interface AddExpenseDialogProps {
   onAdd: (expense: Omit<Expense, 'id' | 'user_id' | 'created_at' | 'updated_at'>, items?: ReceiptItem[], isPendingMemberTransaction?: boolean) => Promise<void> | void;
