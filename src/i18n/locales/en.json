@@ -5943,5 +5943,22 @@
     "aiSuggested": "AI suggestion",
     "aiReceipt": "AI from receipt",
     "habit": "Recognized from habit"
+  },
+  "eracun": {
+    "importButton": "Load e-Invoice (XML)",
+    "warning": {
+      "unusual_doc_type": "Unusual document type ({{docType}}). Check whether this is really an expense and adjust the amount.",
+      "credit_note": "This is a credit note (type {{docType}}). A negative amount was suggested — verify before saving.",
+      "foreign_currency": "Invoice currency is {{currency}}, not EUR. The amount was not converted.",
+      "total_mismatch": "Line total ({{lines}}) does not match the invoice total ({{total}}). Check the amount.",
+      "missing_total": "Total amount not found in the file — enter it manually.",
+      "missing_issue_date": "Issue date not found — today's date was used.",
+      "missing_supplier": "Supplier not found — enter it manually."
+    },
+    "error": {
+      "not_xml": "The file is not valid XML.",
+      "not_ubl": "The file is not a UBL 2.1 e-invoice.",
+      "empty": "The file is empty."
+    }
   }
 }
