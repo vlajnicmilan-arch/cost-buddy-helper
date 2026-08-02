@@ -1064,7 +1064,7 @@
     "autoRejectExpired": "Auto-rejected — expired without a decision",
     "unpaidLabor": "Unpaid work",
     "unpaidLaborOutsideTotal": "Not included in costs",
-    "unpaidLaborHours": "{{hours}} h",
+    "unpaidLaborHours": "{{hours}} hrs",
     "unpaidLaborHoursLabel": "Hours",
     "unpaidLaborExpectedNote": "Unpaid work ({{amount}}) is still outstanding and will reduce profit once paid out.",
     "plLaborPaid": "Labor (paid out)",
