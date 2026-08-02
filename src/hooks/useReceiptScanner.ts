@@ -341,15 +341,17 @@ export const useReceiptScanner = () => {
         });
       } catch {}
 
-      // Cache result locally only after the UI result is already returned.
-      // On Android, Preferences/Filesystem can occasionally stall; that must never block preview.
+      // Cache the parsed result locally only after the UI result is already returned.
+      // NOTE: the image itself is intentionally NOT cached here — the only image copy
+      // that is written to disk is the one bound to a saved transaction
+      // (uploadReceiptImage). Caching here produced orphan files whenever the user
+      // abandoned the entry, and nothing ever deleted them.
       void (async () => {
         try {
           await LocalStorage.setJSON(`receipt_cache_${Date.now()}`, result);
-          if (compressedImages[0]) {
-            await LocalFileCache.saveReceiptImage(compressedImages[0]);
-          }
+
           logDiagnostic('receipt_scan_cache_saved', {});
+
         } catch (cacheErr) {
           console.warn('Failed to cache receipt locally:', cacheErr);
           logDiagnostic({

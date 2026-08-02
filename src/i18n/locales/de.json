@@ -1406,7 +1406,8 @@
     "notifKrug": "Krug",
     "notifKrugDesc": "Genehmigungen, Mitgliedschaft und Löschung des Krug",
     "notifKrugReminder": "Krug-Abrechnungserinnerungen (wöchentlich)",
-    "notifKrugReminderDesc": "Montags 08:00 UTC: Übersicht offener Beträge, die du schuldest."
+    "notifKrugReminderDesc": "Montags 08:00 UTC: Übersicht offener Beträge, die du schuldest.",
+    "localReceiptUsage": "{{count}} Bilder · {{size}}"
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -1596,7 +1597,11 @@
       "assignToSmjer": "Richtung zuweisen"
     },
     "assignToMilestone": "Phase zuordnen",
-    "noMilestone": "Ohne Phase"
+    "noMilestone": "Ohne Phase",
+    "receiptMissingTitle": "Bild auf diesem Gerät nicht verfügbar",
+    "receiptMissingDesc": "Das Bild wurde nur lokal gespeichert und ist wahrscheinlich auf dem vorherigen Gerät geblieben oder bei der Neuinstallation entfernt worden. Die Transaktion bleibt unverändert.",
+    "attachNewReceipt": "Neues Bild anhängen",
+    "receiptReattached": "Neues Bild angehängt"
   },
   "dashboard": {
     "balance": "Kontostand",

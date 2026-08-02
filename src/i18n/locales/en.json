@@ -1406,7 +1406,8 @@
     "notifKrug": "Krug",
     "notifKrugDesc": "Approvals, membership and Krug deletion",
     "notifKrugReminder": "Krug settlement reminders (weekly)",
-    "notifKrugReminderDesc": "Every Monday 08:00 UTC: summary of outstanding items you owe."
+    "notifKrugReminderDesc": "Every Monday 08:00 UTC: summary of outstanding items you owe.",
+    "localReceiptUsage": "{{count}} images · {{size}}"
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
@@ -1596,7 +1597,11 @@
       "assignToSmjer": "Assign direction"
     },
     "assignToMilestone": "Assign to phase",
-    "noMilestone": "No phase"
+    "noMilestone": "No phase",
+    "receiptMissingTitle": "Image not available on this device",
+    "receiptMissingDesc": "The image was stored locally only, so it most likely stayed on your previous device or was removed on reinstall. The transaction itself is intact.",
+    "attachNewReceipt": "Attach a new image",
+    "receiptReattached": "New image attached"
   },
   "dashboard": {
     "balance": "Balance",

@@ -36,7 +36,49 @@ export const LocalFileCache = {
   /**
    * Read a locally cached receipt image as base64.
    */
+  /**
+   * Check whether a locally cached receipt image still exists on disk.
+   * Web returns false (callers use their own LocalStorage fallback).
+   */
+  async receiptImageExists(path: string): Promise<boolean> {
+    if (!isNative) return false;
+
+    try {
+      await Filesystem.stat({ path, directory: Directory.Data });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Count + total byte size of locally cached receipt images.
+   */
+  async getCachedReceiptStats(): Promise<{ count: number; bytes: number }> {
+    if (!isNative) {
+      let count = 0;
+      let bytes = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('receipt_img_')) {
+          count++;
+          bytes += (localStorage.getItem(key)?.length ?? 0) * 0.75;
+        }
+      }
+      return { count, bytes: Math.round(bytes) };
+    }
+
+    try {
+      const result = await Filesystem.readdir({ path: RECEIPT_DIR, directory: Directory.Data });
+      const bytes = result.files.reduce((sum, f) => sum + (typeof f.size === 'number' ? f.size : 0), 0);
+      return { count: result.files.length, bytes };
+    } catch {
+      return { count: 0, bytes: 0 };
+    }
+  },
+
   async readReceiptImage(path: string): Promise<string | null> {
+
     if (!isNative) return null;
 
     try {
