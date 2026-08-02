@@ -12,6 +12,8 @@
  */
 
 import type { EracunAcceptance } from './acceptance';
+import { normalizeOib } from './fingerprint';
+import { storedDirection, type EracunDirectionResult } from './resolveDirection';
 import type { EracunInvoice } from './types';
 
 export type EracunDuplicateKind = 'existing' | 'batch';
@@ -21,6 +23,8 @@ export interface EracunParsedFile {
   readonly invoice: EracunInvoice;
   readonly acceptance: EracunAcceptance;
   readonly fingerprint: string;
+  /** Smjer utvrđen po OIB-u aktivne tvrtke. */
+  readonly direction: EracunDirectionResult;
 }
 
 export interface EracunIntakeRow extends EracunParsedFile {
@@ -57,8 +61,13 @@ export const buildIntakeRows = (
 export interface EracunInsertRow {
   user_id: string;
   business_profile_id: string | null;
+  /** `in` = ulazni (obveza), `out` = izlazni (potraživanje). */
+  direction: 'in' | 'out';
   supplier_name: string | null;
   supplier_oib: string;
+  /** Druga strana: kod ulaznog dobavljač, kod izlaznog kupac. */
+  counterparty_name: string | null;
+  counterparty_oib: string | null;
   invoice_number: string;
   issue_date: string | null;
   due_date: string | null;
@@ -66,6 +75,8 @@ export interface EracunInsertRow {
   vat_amount: number | null;
   currency: string;
   iban: string | null;
+  /** Poziv na broj — ključ za kasnije spajanje s bankovnim izvodom. */
+  payment_reference: string | null;
   doc_type: string;
   items: unknown;
   fingerprint: string;
@@ -78,11 +89,17 @@ export const toInsertRow = (
   ctx: { userId: string; businessProfileId: string | null; batchId: string },
 ): EracunInsertRow => {
   const inv = row.invoice;
+  const direction = storedDirection(row.direction);
+  const counterparty = direction === 'out' ? inv.customer : inv.supplier;
+
   return {
     user_id: ctx.userId,
     business_profile_id: ctx.businessProfileId,
+    direction,
     supplier_name: inv.supplier.name,
-    supplier_oib: (inv.supplier.oib ?? '').trim(),
+    supplier_oib: normalizeOib(inv.supplier.oib),
+    counterparty_name: counterparty.name,
+    counterparty_oib: normalizeOib(counterparty.oib) || null,
     invoice_number: (inv.invoiceNumber ?? '').trim(),
     issue_date: inv.issueDate,
     due_date: inv.dueDate,
@@ -90,6 +107,7 @@ export const toInsertRow = (
     vat_amount: inv.taxAmount,
     currency: 'EUR',
     iban: inv.iban,
+    payment_reference: inv.paymentReference,
     doc_type: inv.docTypeRaw ?? inv.docType,
     items: inv.lines.map((l) => ({
       name: l.name,

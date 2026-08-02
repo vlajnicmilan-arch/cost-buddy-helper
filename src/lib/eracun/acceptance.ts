@@ -30,7 +30,9 @@ export type EracunCautionCode =
   /** 386 — avansni račun, slijedi konačni; rizik dvostrukog knjiženja. */
   | 'prepayment'
   /** Šifra izvan poznatog popisa — korisnik odlučuje. */
-  | 'unknown_doc_type';
+  | 'unknown_doc_type'
+  /** Dospijeće ranije od izdavanja — greška izdavatelja, ne ispravljamo je. */
+  | 'due_before_issue';
 
 export interface EracunCaution {
   code: EracunCautionCode;
@@ -53,7 +55,7 @@ export interface EracunAcceptance {
 }
 
 /** Tipovi koji prolaze kao normalan pozitivan račun. */
-const POSITIVE_DOC_TYPES = new Set(['380', '82', '875', '876', '877', '394', '389', '393']);
+const POSITIVE_DOC_TYPES = new Set(['380', '82', '875', '876', '877', '387', '394', '389', '393']);
 /** Tipovi koji prolaze uz vidljivo upozorenje. */
 const CAUTION_DOC_TYPES = new Map<string, EracunCautionCode>([
   ['384', 'correction'],
@@ -68,6 +70,14 @@ export const evaluateInvoice = (invoice: EracunInvoice): EracunAcceptance => {
   const cautions: EracunCaution[] = [];
   const cautionCode = CAUTION_DOC_TYPES.get(raw);
   if (cautionCode) cautions.push({ code: cautionCode, params: { docType: raw } });
+
+  // Greška izdavatelja: dospijeće prije izdavanja. Ne ispravlja se — samo se vidi.
+  if (invoice.issueDate && invoice.dueDate && invoice.dueDate < invoice.issueDate) {
+    cautions.push({
+      code: 'due_before_issue',
+      params: { issueDate: invoice.issueDate, dueDate: invoice.dueDate },
+    });
+  }
 
   const known = POSITIVE_DOC_TYPES.has(raw) || isCreditNote || cautionCode !== undefined;
   const needsDecision = !known;

@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileX2, CheckCircle2, Copy, Loader2, AlertTriangle } from 'lucide-react';
+import {
+  Upload, FileX2, CheckCircle2, Copy, Loader2, AlertTriangle,
+  ArrowDownLeft, ArrowUpRight, HelpCircle,
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +13,7 @@ import { parseUbl } from '@/lib/eracun/parseUbl';
 import { EracunParseError } from '@/lib/eracun/types';
 import { evaluateInvoice } from '@/lib/eracun/acceptance';
 import { invoiceFingerprint } from '@/lib/eracun/fingerprint';
+import { resolveDirection, storedDirection } from '@/lib/eracun/resolveDirection';
 import {
   buildIntakeRows,
   summarizeIntake,
@@ -30,6 +34,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   userId: string;
   businessProfileId: string | null;
+  /** OIB aktivne tvrtke — određuje smjer računa (ulazni / izlazni). */
+  companyOib: string | null;
   existingFingerprints: ReadonlySet<string>;
   onSave: (rows: ReturnType<typeof toInsertRow>[], batchId: string) => Promise<void>;
 }
@@ -43,6 +49,7 @@ export const EracunImportDialog = ({
   onOpenChange,
   userId,
   businessProfileId,
+  companyOib,
   existingFingerprints,
   onSave,
 }: Props) => {
@@ -80,7 +87,12 @@ export const EracunImportDialog = ({
         const invoice = parseUbl(xml);
         const acceptance = evaluateInvoice(invoice);
         const fingerprint = await invoiceFingerprint(invoice.supplier.oib, invoice.invoiceNumber);
-        parsed.push({ fileName: file.name, invoice, acceptance, fingerprint });
+        const direction = resolveDirection({
+          supplierOib: invoice.supplier.oib,
+          customerOib: invoice.customer.oib,
+          companyOib,
+        });
+        parsed.push({ fileName: file.name, invoice, acceptance, fingerprint, direction });
       } catch (err) {
         console.error('[eRacun] parse failed', file.name, err);
         failures.push({
@@ -94,14 +106,17 @@ export const EracunImportDialog = ({
     const nextRows = buildIntakeRows(parsed, existingFingerprints);
     setRows(nextRows);
     setFailed(failures);
-    // Nepoznat tip traži svjesnu odluku — ne uvozi se dok ga korisnik sam ne označi.
+    // Svjesna odluka korisnika: nepoznat tip i račun koji ne pripada ovoj tvrtki
+    // ne uvoze se dok ih sam ne označi.
     setExcluded(
       Object.fromEntries(
-        nextRows.filter((r) => r.acceptance.needsDecision).map((r) => [r.index, true]),
+        nextRows
+          .filter((r) => r.acceptance.needsDecision || r.direction === 'foreign')
+          .map((r) => [r.index, true]),
       ),
     );
     setParsing(false);
-  }, [existingFingerprints]);
+  }, [existingFingerprints, companyOib]);
 
   const handleSave = useCallback(async () => {
     if (selectedRows.length === 0) return;
@@ -118,6 +133,40 @@ export const EracunImportDialog = ({
       setSaving(false);
     }
   }, [selectedRows, onSave, userId, businessProfileId, reset, onOpenChange]);
+
+  /** Smjer računa — utvrđen po OIB-u aktivne tvrtke. */
+  const directionBadge = (row: EracunIntakeRow) => {
+    if (row.direction === 'out') {
+      return (
+        <Badge variant="outline" className="text-[10px] gap-1">
+          <ArrowUpRight className="w-3 h-3" />
+          {t('eracun.review.directionOut', 'Izlazni')}
+        </Badge>
+      );
+    }
+    if (row.direction === 'in') {
+      return (
+        <Badge variant="outline" className="text-[10px] gap-1">
+          <ArrowDownLeft className="w-3 h-3" />
+          {t('eracun.review.directionIn', 'Ulazni')}
+        </Badge>
+      );
+    }
+    if (row.direction === 'foreign') {
+      return (
+        <Badge variant="destructive" className="text-[10px] gap-1">
+          <AlertTriangle className="w-3 h-3" />
+          {t('eracun.review.directionForeign', 'Ne pripada ovoj tvrtki')}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="text-[10px] gap-1">
+        <HelpCircle className="w-3 h-3" />
+        {t('eracun.review.directionUnknown', 'Smjer nepoznat — tvrtka bez OIB-a')}
+      </Badge>
+    );
+  };
 
   const rowStatus = (row: EracunIntakeRow) => {
     if (row.duplicateOf) {

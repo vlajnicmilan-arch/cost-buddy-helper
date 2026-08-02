@@ -15,40 +15,52 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useWriteGuard } from '@/hooks/useWriteGuard';
 import { useIncomingInvoices, type IncomingInvoice } from '@/hooks/useIncomingInvoices';
+import { useActiveCompanyOib } from '@/hooks/useActiveCompanyOib';
 import { daysUntilDue } from '@/lib/eracun/sortInvoices';
 import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 
 type Filter = 'unpaid' | 'paid' | 'all';
+type Direction = 'in' | 'out';
 
 /**
- * Popis ulaznih računa (eRačun v1).
+ * Popis eRačuna — dvije strane novca.
  *
- * Poredak dolazi iz `sortIncomingInvoices`: neplaćeni prvi, po dospijeću
- * uzlazno; plaćeni iza filtra. Ekran odgovara na pitanje „što me čeka".
+ * „Dugujem" (ulazni, `direction = 'in'`) i „Duguju mi" (izlazni, `direction = 'out'`).
+ * Unutar svake strane poredak dolazi iz `sortIncomingInvoices`: neplaćeni prvi,
+ * po dospijeću uzlazno.
  */
 export const IncomingInvoicesPanel = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const { activeBusinessProfileId } = useAppState();
+  const { companyOib } = useActiveCompanyOib();
   const { addExpense } = useExpenses();
   const { customPaymentSources } = useCustomPaymentSources();
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
   const {
-    invoices, unpaid, paid, loading, existingFingerprints,
+    invoices, loading, existingFingerprints,
     saveBatch, undoBatch, markPaid, deleteInvoice,
   } = useIncomingInvoices();
 
+  const [direction, setDirection] = useState<Direction>('in');
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
 
+  const scoped = useMemo(
+    () => invoices.filter((i) => (i.direction ?? 'in') === direction),
+    [invoices, direction],
+  );
+  const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
+  const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
+
   const visible = useMemo(
-    () => (filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : invoices),
-    [filter, unpaid, paid, invoices],
+    () => (filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped),
+    [filter, unpaid, paid, scoped],
   );
 
   const sourceOptions = useMemo(
@@ -177,14 +189,29 @@ export const IncomingInvoicesPanel = () => {
 
   return (
     <div className="space-y-3">
+      <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)}>
+        <TabsList className="h-9 w-full">
+          <TabsTrigger value="in" className="text-xs flex-1">
+            {t('eracun.list.directionIn', 'Dugujem')}
+          </TabsTrigger>
+          <TabsTrigger value="out" className="text-xs flex-1">
+            {t('eracun.list.directionOut', 'Duguju mi')}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex items-center justify-between gap-2">
         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <TabsList className="h-9">
             <TabsTrigger value="unpaid" className="text-xs">
-              {t('eracun.list.unpaid', 'Neplaćeni')} ({unpaid.length})
+              {direction === 'out'
+                ? t('eracun.list.uncollected', 'Nenaplaćeni')
+                : t('eracun.list.unpaid', 'Neplaćeni')} ({unpaid.length})
             </TabsTrigger>
             <TabsTrigger value="paid" className="text-xs">
-              {t('eracun.list.paid', 'Plaćeni')} ({paid.length})
+              {direction === 'out'
+                ? t('eracun.list.collected', 'Naplaćeni')
+                : t('eracun.list.paid', 'Plaćeni')} ({paid.length})
             </TabsTrigger>
             <TabsTrigger value="all" className="text-xs">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
@@ -202,8 +229,10 @@ export const IncomingInvoicesPanel = () => {
       ) : visible.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">
           {filter === 'unpaid'
-            ? t('eracun.list.emptyUnpaid', 'Nema neplaćenih ulaznih računa.')
-            : t('eracun.list.empty', 'Još nema uvezenih ulaznih računa.')}
+            ? direction === 'out'
+              ? t('eracun.list.emptyUncollected', 'Nema nenaplaćenih izlaznih računa.')
+              : t('eracun.list.emptyUnpaid', 'Nema neplaćenih ulaznih računa.')
+            : t('eracun.list.empty', 'Još nema uvezenih računa.')}
         </p>
       ) : (
         <div className="space-y-2">
@@ -212,7 +241,7 @@ export const IncomingInvoicesPanel = () => {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
-                    {inv.supplier_name || inv.supplier_oib}
+                    {inv.counterparty_name || inv.supplier_name || inv.counterparty_oib || inv.supplier_oib}
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate">
                     {inv.invoice_number}
@@ -240,10 +269,14 @@ export const IncomingInvoicesPanel = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    {t('eracun.list.markPaid', 'Plaćeno')}
-                  </Button>
+                  {/* Naplata izlaznog računa čeka odluku o knjiženju prihoda —
+                      dok ne dođe, nudi se samo za ulazne (obveze). */}
+                  {(inv.direction ?? 'in') === 'in' && (
+                    <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {t('eracun.list.markPaid', 'Plaćeno')}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -257,6 +290,7 @@ export const IncomingInvoicesPanel = () => {
           onOpenChange={setImportOpen}
           userId={user.id}
           businessProfileId={activeBusinessProfileId}
+          companyOib={companyOib}
           existingFingerprints={existingFingerprints}
           onSave={handleSaveBatch}
         />

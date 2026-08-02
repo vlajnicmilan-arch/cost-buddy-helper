@@ -11,6 +11,7 @@
  *   provjera potpisa ostaje za drugi krug.
  */
 
+import { fixMojibake } from './mojibake';
 import {
   EracunDocType,
   EracunInvoice,
@@ -22,10 +23,10 @@ import {
 } from './types';
 
 const KNOWN_DOC_TYPES: EracunDocType[] = [
-  '380', '82', '875', '876', '877', '381', '383', '384', '386', '389', '393', '394',
+  '380', '82', '875', '876', '877', '381', '383', '384', '386', '387', '389', '393', '394',
 ];
-/** Tipovi koje smatramo uobičajenim ulaznim računom. */
-const NORMAL_DOC_TYPES = new Set(['380', '82', '875', '876', '877', '394', '389', '393']);
+/** Tipovi koje smatramo uobičajenim računom. */
+const NORMAL_DOC_TYPES = new Set(['380', '82', '875', '876', '877', '387', '394', '389', '393']);
 
 /** Djeca elementa s traženim `localName` (bez rekurzije). */
 const childrenByName = (parent: Element | null, name: string): Element[] => {
@@ -85,10 +86,11 @@ const extractOib = (raw: string | null): string | null => {
 
 const parseParty = (partyRoot: Element | null): EracunParty => {
   const party = childByName(partyRoot, 'Party');
-  const name =
+  const name = fixMojibake(
     text(path(party, 'PartyName', 'Name')) ??
-    text(path(party, 'PartyLegalEntity', 'RegistrationName')) ??
-    null;
+      text(path(party, 'PartyLegalEntity', 'RegistrationName')) ??
+      null,
+  );
 
   const taxIdRaw =
     text(path(party, 'PartyTaxScheme', 'CompanyID')) ??
@@ -114,7 +116,7 @@ const parseLines = (root: Element): EracunLine[] => {
 
     return {
       lineId: text(childByName(line, 'ID')),
-      name: text(childByName(item, 'Name')) ?? text(childByName(item, 'Description')) ?? '',
+      name: fixMojibake(text(childByName(item, 'Name')) ?? text(childByName(item, 'Description'))) ?? '',
       quantity: safeQuantity,
       unitPrice: unitPrice ?? lineAmount / safeQuantity,
       lineAmount,
@@ -226,6 +228,11 @@ export const parseUbl = (xml: string): EracunInvoice => {
   }
   if (!issueDate) warnings.push({ code: 'missing_issue_date' });
   if (!supplier.name) warnings.push({ code: 'missing_supplier' });
+  // Greška izdavatelja: dospijeće prije izdavanja. Ne ispravlja se tiho —
+  // korisnik mora vidjeti da je podatak neispravan.
+  if (issueDate && dueDate && dueDate < issueDate) {
+    warnings.push({ code: 'due_before_issue', params: { issueDate, dueDate } });
+  }
 
   return {
     invoiceNumber: text(childByName(root, 'ID')),
