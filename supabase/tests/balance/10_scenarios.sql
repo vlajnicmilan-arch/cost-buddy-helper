@@ -1899,15 +1899,6 @@ RELEASE SAVEPOINT s_g5;
 
 
 -- Always roll back the harness transaction.
-ROLLBACK;
-
-
-
-
-
-
-
-
 -- ============================================================
 -- E — Korak E: pending / rejected troškovi ne ulaze u saldo
 -- ============================================================
@@ -2016,3 +2007,5 @@ BEGIN
   END IF;
 END $$;
 RELEASE SAVEPOINT s_e6;
+
+ROLLBACK;
