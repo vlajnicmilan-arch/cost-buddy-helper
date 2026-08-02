@@ -1410,7 +1410,8 @@
     "notifKrug": "Krug",
     "notifKrugDesc": "Odobrenja, članstvo i brisanje Kruga",
     "notifKrugReminder": "Podsjetnici za Krug (tjedno)",
-    "notifKrugReminderDesc": "Ponedjeljkom u 08:00 UTC: sažetak nepodmirenih stavki koje duguješ."
+    "notifKrugReminderDesc": "Ponedjeljkom u 08:00 UTC: sažetak nepodmirenih stavki koje duguješ.",
+    "localReceiptUsage": "{{count}} slika · {{size}}"
   },
   "bankMatch": {
     "pendingBank": "Čeka potvrdu banke",
@@ -1600,7 +1601,11 @@
     },
     "amountHint": "Za decimale koristi točku ili zarez (npr. 150,50)",
     "assignToMilestone": "Pridruži fazi",
-    "noMilestone": "Bez faze"
+    "noMilestone": "Bez faze",
+    "receiptMissingTitle": "Slika nije dostupna na ovom uređaju",
+    "receiptMissingDesc": "Slika je spremljena samo lokalno pa je vjerojatno ostala na prethodnom uređaju ili je uklonjena pri ponovnoj instalaciji. Transakcija je netaknuta.",
+    "attachNewReceipt": "Priloži novu sliku",
+    "receiptReattached": "Nova slika priložena"
   },
   "dashboard": {
     "balance": "Stanje",
