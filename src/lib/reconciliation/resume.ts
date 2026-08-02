@@ -83,9 +83,11 @@ export function reconstructResumableFromMeta(
     sourceName: e.sourceName,
     sourceIcon: e.sourceIcon ?? null,
     batchId: snap.batchId,
-    asOfIso: snap.asOfIso,
+    // Sidro se veže za zadnji redak izvoda tog izvora, ne za trenutak klika.
+    asOfIso: e.summary.batchLastAt ?? snap.asOfIso,
     importedStatementId: statementId,
   }));
+
   return {
     statementId,
     batchId: snap.batchId,

@@ -5817,7 +5817,8 @@
     "cancelRule": "Poništi pravilo",
     "cancelTransfer": "Nije prijenos",
     "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
-    "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}."
+    "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}.",
+    "historyExtended": "Povijest je dopunjena ({{count}} računa). Izvod je stariji od referentne točke salda, pa se stanje ne mijenja — uskladit će se kad uvezete najnoviji izvod."
   },
   "correctionDelete": {
     "title": "Brisanje zapisa o korekciji salda",

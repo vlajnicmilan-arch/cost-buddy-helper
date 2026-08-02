@@ -88,7 +88,20 @@ export interface ImportReviewPayload {
   readonly batchId: string;
   /** Wallets the user can pick as transfer destinations. */
   readonly availableTargets: readonly TransferTargetOption[];
+  /**
+   * Metapodaci uvezene datoteke. Zapisuju se u `imported_statements` tek nakon
+   * commita (tada postoji batch). Bez toga nema zaštite od dvostrukog uvoza
+   * iste datoteke ni "Nastavi" bannera nakon zatvaranja dijaloga.
+   */
+  readonly statement?: {
+    readonly fileHash: string | null;
+    readonly contentHash: string | null;
+    readonly fileName: string | null;
+    readonly fileSize: number | null;
+    readonly mimeType: string | null;
+  };
 }
+
 
 export type QuestionAnswer = { choice: 'merge'; manualId: string } | { choice: 'new' };
 

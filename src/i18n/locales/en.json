@@ -5808,7 +5808,8 @@
     "cancelRule": "Undo rule",
     "cancelTransfer": "Not a transfer",
     "plannedSummaryV2": "{{merges}} merges · {{news}} new · {{transfers}} transfers · {{skipped}} skipped",
-    "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}."
+    "confirmedSummaryV2": "Merged {{merged}}, added {{inserted}}, transfers {{transfers}}, skipped {{skipped}}.",
+    "historyExtended": "History extended ({{count}} account(s)). This statement predates the balance reference point, so the balance is unchanged — it will reconcile once you import the latest statement."
   },
   "correctionDelete": {
     "title": "Delete balance correction record",
