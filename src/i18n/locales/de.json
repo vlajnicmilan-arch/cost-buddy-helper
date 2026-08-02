@@ -1053,7 +1053,15 @@
     },
     "investorPriceLabel": "Sieht den Investorenpreis",
     "investorPriceHint": "Diese Projektleitung sieht bereits die geplanten Kosten jeder Phase. Wenn du dies aktivierst, sieht sie auch den Investorenpreis – also wie viel du an jeder Phase verdienst.",
-    "investorPriceSaved": "Preis-Sichtbarkeit gespeichert"
+    "investorPriceSaved": "Preis-Sichtbarkeit gespeichert",
+    "rejectReasonLabel": "Ablehnungsgrund (optional)",
+    "rejectReasonPlaceholder": "z. B. fehlender Beleg oder nicht zu diesem Projekt gehörig",
+    "rejectTransactionAction": "Ablehnen",
+    "memberApprovalNote": "Ihre Buchungen gehen zur Freigabe an den Eigentümer und wirken sich bis dahin nicht auf den Saldo aus.",
+    "rejectedTransactions": "Abgelehnte Buchungen",
+    "rejectedNoEffect": "Abgelehnte Einträge bleiben sichtbar, zählen aber in keiner Summe.",
+    "rejectionReason": "Grund",
+    "autoRejectExpired": "Automatisch abgelehnt — ohne Entscheidung abgelaufen"
   },
   "estimates": {
     "title": "Angebote & Kostenvoranschläge",
@@ -2798,6 +2806,23 @@
       "daily": {
         "title": "Entscheidung wartet weiterhin auf eine Antwort",
         "body": "„{{title}}\" — bitte antworte."
+      }
+    },
+    "project_expense_review": {
+      "submitted": {
+        "title": "Buchung wartet auf Ihre Freigabe",
+        "message": {
+          "expense": "{{actor}} hat die Ausgabe „{{description}}\" ({{amount}}) im Projekt „{{project}}\" eingereicht. Wartet auf Ihre Freigabe.",
+          "income": "{{actor}} hat die Einnahme „{{description}}\" ({{amount}}) im Projekt „{{project}}\" eingereicht. Wartet auf Ihre Freigabe."
+        }
+      },
+      "approved": {
+        "title": "Buchung freigegeben",
+        "message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" freigegeben."
+      },
+      "rejected": {
+        "title": "Buchung abgelehnt",
+        "message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" abgelehnt. Grund: {{reason}}"
       }
     }
   },
