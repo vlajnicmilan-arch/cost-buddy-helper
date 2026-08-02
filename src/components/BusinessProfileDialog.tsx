@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Save, Loader2, Sparkles, Plus, ArrowLeft, Trash2, Check } from 'lucide-react';
+import { Building2, Save, Loader2, Sparkles, Plus, ArrowLeft, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +33,6 @@ interface BusinessProfile {
   mbs: string;
   court_registry: string;
   legal_form: string;
-  is_active: boolean;
 }
 
 const emptyProfile: BusinessProfile = {
@@ -55,7 +54,6 @@ const emptyProfile: BusinessProfile = {
   mbs: '',
   court_registry: '',
   legal_form: '',
-  is_active: false,
 };
 
 interface BusinessProfileDialogProps {
@@ -90,8 +88,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         .from('business_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .order('is_active', { ascending: false })
-        .order('created_at', { ascending: true });
+        .order('company_name', { ascending: true });
 
       if (error) throw error;
       setProfiles(
@@ -115,36 +112,12 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
           mbs: d.mbs || '',
           court_registry: d.court_registry || '',
           legal_form: d.legal_form || '',
-          is_active: d.is_active ?? false,
         }))
       );
     } catch (error) {
       console.error('Error loading business profiles:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSetActive = async (profileId: string) => {
-    if (!user) return;
-    try {
-      // Deactivate all
-      await supabase
-        .from('business_profiles')
-        .update({ is_active: false })
-        .eq('user_id', user.id);
-
-      // Activate selected
-      await supabase
-        .from('business_profiles')
-        .update({ is_active: true })
-        .eq('id', profileId);
-
-      showSuccess(t('business.activated', 'Tvrtka postavljena kao aktivna'));
-      loadProfiles();
-    } catch (error) {
-      console.error('Error setting active profile:', error);
-      showError(t('errors.generic', 'Došlo je do greške'));
     }
   };
 
@@ -171,7 +144,7 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
   };
 
   const handleNew = () => {
-    setProfile({ ...emptyProfile, is_active: profiles.length === 0 });
+    setProfile({ ...emptyProfile });
     setView('edit');
   };
 
@@ -238,17 +211,6 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
 
     setSaving(true);
     try {
-      const isNew = !profile.id;
-      const shouldBeActive = isNew && profiles.length === 0;
-
-      // If this will be active, deactivate others first
-      if (shouldBeActive || profile.is_active) {
-        await supabase
-          .from('business_profiles')
-          .update({ is_active: false })
-          .eq('user_id', user.id);
-      }
-
       const profileData = {
         user_id: user.id,
         company_name: profile.company_name.trim(),
@@ -269,9 +231,10 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
         mbs: profile.mbs.trim() || null,
         court_registry: profile.court_registry.trim() || null,
         legal_form: profile.legal_form.trim() || null,
-        is_active: shouldBeActive || profile.is_active,
         updated_at: new Date().toISOString(),
       };
+
+
 
       if (profile.id) {
         const { error } = await supabase
@@ -316,9 +279,8 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
               role="button"
               tabIndex={0}
               aria-label={`${t('common.edit', 'Uredi')}: ${p.company_name}`}
-              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                p.is_active ? 'border-primary bg-primary/5' : 'border-border'
-              }`}
+              className="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+
               onClick={() => handleEdit(p)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -330,28 +292,14 @@ export const BusinessProfileDialog = ({ open, onOpenChange }: BusinessProfileDia
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{p.company_name}</p>
-                  {p.is_active && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium shrink-0">
-                      {t('business.active', 'Aktivna')}
-                    </span>
-                  )}
                 </div>
+
                 <p className="text-xs text-muted-foreground truncate">
                   {[p.oib, p.city, p.legal_form].filter(Boolean).join(' · ') || t('business.noDetails', 'Bez detalja')}
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                {!p.is_active && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    onClick={e => { e.stopPropagation(); handleSetActive(p.id!); }}
-                    title={t('business.setActive', 'Postavi kao aktivnu')}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                )}
+
                 <Button
                   variant="ghost"
                   size="icon"

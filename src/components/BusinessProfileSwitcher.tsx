@@ -11,7 +11,6 @@ interface BusinessProfile {
   id: string;
   company_name: string;
   legal_form: string | null;
-  is_active: boolean;
 }
 
 export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
@@ -25,9 +24,9 @@ export const BusinessProfileSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
     if (!user) return;
     supabase
       .from('business_profiles')
-      .select('id, company_name, legal_form, is_active')
+      .select('id, company_name, legal_form')
       .eq('user_id', user.id)
-      .order('is_active', { ascending: false })
+      .order('company_name', { ascending: true })
       .then(({ data }) => {
         if (data) setProfiles(data);
       });
