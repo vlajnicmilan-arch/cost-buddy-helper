@@ -37,6 +37,24 @@ export const AdvancedSection = ({
 }: AdvancedSectionProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [receiptStats, setReceiptStats] = useState<{ count: number; bytes: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { LocalFileCache } = await import('@/hooks/useLocalFileCache');
+        const stats = await LocalFileCache.getCachedReceiptStats();
+        if (!cancelled) setReceiptStats(stats);
+      } catch {
+        // stats are informational only
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="space-y-4">
