@@ -1,6 +1,6 @@
 // supabase/functions/backup-weekly/index.ts
 // Tjedni backup: exportira ključne tablice u CSV.gz, upload u PRIVATNI bucket `backups/YYYY-MM-DD/`.
-// Retencija: briše foldere starije od 8 tjedana.
+// Retencija: briše foldere starije od 30 dana.
 // Poziva se iz pg_cron nedjeljom 03:00 Europe/Zagreb.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { STORAGE_BUCKETS } from "../_shared/tablesToPurge.ts";
