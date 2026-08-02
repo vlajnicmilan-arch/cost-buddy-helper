@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature, FileBarChart } from 'lucide-react';
+import { Receipt, RefreshCw, Building2, ChevronRight, Settings2, FileSignature, FileBarChart, FileInput } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { BusinessDebtTracker } from './BusinessDebtTracker';
 import { BusinessRecurring } from './BusinessRecurring';
@@ -7,12 +7,13 @@ import { BusinessProfileView } from './BusinessProfileView';
 import { BusinessModuleSettings } from './BusinessModuleSettings';
 import { ProjectEstimatesPanel } from '@/components/projects/ProjectEstimatesPanel';
 import { BusinessReports } from './BusinessReports';
+import { IncomingInvoicesPanel } from './eracun/IncomingInvoicesPanel';
 import { Expense } from '@/types/expense';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 import { useTranslation } from 'react-i18next';
 
-type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates' | 'reports';
+type SubView = 'menu' | 'profile' | 'debts' | 'recurring' | 'modules' | 'estimates' | 'reports' | 'incoming';
 
 interface Props {
   expenses: Expense[];
@@ -35,6 +36,7 @@ export const BusinessMore = ({ expenses, companyName }: Props) => {
   if (view === 'debts') return <div>{backButton}<BusinessDebtTracker /></div>;
   if (view === 'recurring') return <div>{backButton}<BusinessRecurring /></div>;
   if (view === 'reports') return <div>{backButton}<BusinessReports expenses={expenses} companyName={companyName ?? ''} /></div>;
+  if (view === 'incoming') return <div>{backButton}<IncomingInvoicesPanel /></div>;
   if (view === 'estimates') return <div>{backButton}<ProjectEstimatesPanel /></div>;
 
   type MenuItem = { id: SubView; icon: any; label: string; desc: string };
@@ -44,6 +46,7 @@ export const BusinessMore = ({ expenses, companyName }: Props) => {
     { id: 'modules', icon: Settings2, label: t('business.more.modulesAndIndustry', 'Djelatnost i moduli'), desc: t('business.more.modulesAndIndustryDesc', 'Odaberite djelatnost i prilagodite module') },
     { id: 'estimates', icon: FileSignature, label: t('estimates.title', 'Ponude i predračuni'), desc: t('estimates.menuDesc', 'Pripremi ponudu i pretvori je u projekt') },
     { id: 'reports', icon: FileBarChart, label: t('business.more.reports', 'Izvještaji'), desc: t('business.more.reportsDesc', 'Mjesečni, kvartalni i godišnji pregled') },
+    { id: 'incoming', icon: FileInput, label: t('eracun.title', 'Ulazni računi (eRačun)'), desc: t('eracun.menuDesc', 'Uvezi XML eRačune i označi ih plaćenima') },
     { id: 'debts', icon: Receipt, label: t('business.more.openInvoices', 'Otvoreni računi'), desc: t('business.more.openInvoicesDesc', 'Praćenje neplaćenih računa i potraživanja') },
     { id: 'recurring', icon: RefreshCw, label: t('business.more.recurringObligations', 'Ponavljajuće obveze'), desc: t('business.more.recurringObligationsDesc', 'Najam, pretplate, leasing i ostalo') },
   ];

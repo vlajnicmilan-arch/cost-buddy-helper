@@ -143,7 +143,7 @@ export const useRecurringTransactions = () => {
   const processingRef = useRef(false);
 
   const processDueTransactions = useCallback(async (
-    addExpense: (expense: any, items?: any, isPending?: any, entrySource?: any) => Promise<void>
+    addExpense: (expense: any, items?: any, isPending?: any, entrySource?: any) => Promise<unknown>
   ) => {
     if (!user || isLocalMode) return 0;
     if (processingRef.current) return 0;
