@@ -61,7 +61,7 @@ export const useProjects = () => {
         // 2. Fetch projects where user is a member (with their per-member context)
         const { data: membershipData, error: membershipError } = await supabase
           .from('project_members')
-          .select('project_id, role, member_context, member_business_profile_id')
+          .select('project_id, role, member_context, member_business_profile_id, can_see_investor_price')
           .eq('user_id', user.id);
 
         if (membershipError) throw membershipError;
@@ -108,6 +108,7 @@ export const useProjects = () => {
               role: m.role as ProjectRole,
               member_context: (m.member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
               member_business_profile_id: m.member_business_profile_id ?? null,
+              can_see_investor_price: (m as any).can_see_investor_price === true,
             },
           ])
         );
@@ -126,6 +127,7 @@ export const useProjects = () => {
             role: memberMetaMap.get(p.id)?.role || 'member' as ProjectRole,
             member_context: memberMetaMap.get(p.id)?.member_context,
             member_business_profile_id: memberMetaMap.get(p.id)?.member_business_profile_id ?? null,
+            can_see_investor_price: memberMetaMap.get(p.id)?.can_see_investor_price === true,
             total_budget: Number(p.total_budget) || 0
           })),
         ];

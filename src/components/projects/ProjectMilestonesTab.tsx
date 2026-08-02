@@ -61,6 +61,8 @@ interface ProjectMilestonesTabProps {
    */
   currentUserRole: MilestoneAmountRole | null;
   isOwner: boolean;
+  /** Korak D2 — zastavica s `project_members`; vrijedi samo za ulogu `member`. */
+  canSeeInvestorPrice?: boolean;
 }
 
 export const ProjectMilestonesTab = ({
@@ -73,6 +75,7 @@ export const ProjectMilestonesTab = ({
   projectBusinessProfileId = null,
   currentUserRole,
   isOwner,
+  canSeeInvestorPrice = false,
 }: ProjectMilestonesTabProps) => {
 
 
@@ -157,7 +160,7 @@ export const ProjectMilestonesTab = ({
    */
   const showCost = canSeeMilestoneCostField(currentUserRole, isOwner);
   const showInvestorPrice =
-    canSeeMilestonePriceField(currentUserRole, isOwner) && investorPriceApplicable;
+    canSeeMilestonePriceField(currentUserRole, isOwner, canSeeInvestorPrice) && investorPriceApplicable;
 
   /** Faza nastala iz odluke — cijena je snimka odluke i ne smije se razmimoići s njom. */
   const investorPriceLocked = !!editingMilestone?.source_decision_id;
@@ -700,6 +703,7 @@ export const ProjectMilestonesTab = ({
               isOwner={isOwner}
               priceApplicable={investorPriceApplicable}
               priceLocked={investorPriceLocked}
+              canSeeInvestorPrice={canSeeInvestorPrice}
               amountsReadOnly={!canEditAmounts}
             />
 
