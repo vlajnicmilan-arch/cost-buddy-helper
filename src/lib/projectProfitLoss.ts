@@ -46,6 +46,11 @@ export interface PLTransactionRow {
   expense_nature?: string | null;
   is_advance?: boolean | null;
   linked_advance_ids?: string[] | null;
+  /**
+   * Set by create_worker_payout / create_worker_payout_batch on the expense row
+   * it writes for the payout. This is the ONLY source of paid labor cost.
+   */
+  worker_payout_id?: string | null;
 }
 
 export interface PLWorkEntryRow {
@@ -56,7 +61,10 @@ export interface PLWorkEntryRow {
    * (tests without dates fall back to worker.hourly_rate, matching legacy behaviour).
    */
   work_date?: string | null;
+  /** Non-null once the entry is covered by a payout. */
+  payout_id?: string | null;
 }
+
 
 export interface PLWorkerRow {
   id: string;
