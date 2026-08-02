@@ -20,6 +20,7 @@ import { daysUntilDue } from '@/lib/eracun/sortInvoices';
 import { describeDbError, describeInvoiceDbError } from '@/lib/eracun/dbError';
 import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
+import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 
 type Filter = 'unpaid' | 'paid' | 'all';
 type Direction = 'in' | 'out';
@@ -42,13 +43,14 @@ export const IncomingInvoicesPanel = () => {
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, deleteInvoice,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice,
   } = useIncomingInvoices();
 
   const [direction, setDirection] = useState<Direction>('in');
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
+  const [collectTarget, setCollectTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
 
   const scoped = useMemo(
@@ -142,6 +144,30 @@ export const IncomingInvoicesPanel = () => {
     });
     setSavingPayment(false);
   }, [payTarget, guard, addExpense, markPaid, activeBusinessProfileId, t]);
+
+  /**
+   * Naplata izlaznog računa: samo datum. Bez zapisa u `expenses`, bez prihoda,
+   * bez dodira sa saldom — prihod ulazi kroz uvoz bankovnog izvoda.
+   */
+  const handleConfirmCollected = useCallback(async ({ collectedDate }: MarkCollectedResult) => {
+    if (!collectTarget) return;
+    setSavingPayment(true);
+    await guard(async () => {
+      try {
+        await markCollected(collectTarget.id, collectedDate.toISOString());
+        setCollectTarget(null);
+      } catch (err) {
+        console.error('[eRacun] markCollected failed', err, { invoiceId: collectTarget.id });
+        showError(t('eracun.collected.failedDetailed', 'Bilježenje naplate nije uspjelo: {{reason}}', {
+          reason: describeInvoiceDbError(err, {
+            supplier: collectTarget.counterparty_name ?? collectTarget.supplier_name,
+            invoiceNumber: collectTarget.invoice_number,
+          }, t('eracun.error.unknownDb', 'Nepoznata greška baze')),
+        }));
+      }
+    });
+    setSavingPayment(false);
+  }, [collectTarget, guard, markCollected, t]);
 
   const handleDelete = useCallback(async (invoice: IncomingInvoice) => {
     try {
@@ -269,12 +295,18 @@ export const IncomingInvoicesPanel = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
-                  {/* Naplata izlaznog računa čeka odluku o knjiženju prihoda —
-                      dok ne dođe, nudi se samo za ulazne (obveze). */}
-                  {(inv.direction ?? 'in') === 'in' && (
+                  {/* Namjerna asimetrija: ulazni račun na „Plaćeno" stvara trošak,
+                      izlazni na „Naplaćeno" bilježi samo datum — prihod dolazi iz
+                      uvoza bankovnog izvoda. Ne izjednačavati ta dva toka. */}
+                  {(inv.direction ?? 'in') === 'in' ? (
                     <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       {t('eracun.list.markPaid', 'Plaćeno')}
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => setCollectTarget(inv)}>
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {t('eracun.list.markCollected', 'Naplaćeno')}
                     </Button>
                   )}
                 </div>
@@ -302,6 +334,13 @@ export const IncomingInvoicesPanel = () => {
         paymentSources={sourceOptions}
         saving={savingPayment}
         onConfirm={handleConfirmPaid}
+      />
+
+      <MarkCollectedDialog
+        invoice={collectTarget}
+        onOpenChange={(open) => !open && setCollectTarget(null)}
+        saving={savingPayment}
+        onConfirm={handleConfirmCollected}
       />
     </div>
   );

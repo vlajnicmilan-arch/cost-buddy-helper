@@ -6016,7 +6016,8 @@
       "directionOut": "Mir geschuldet",
       "uncollected": "Offen (Ausgang)",
       "collected": "Bezahlt (Ausgang)",
-      "emptyUncollected": "Keine offenen Ausgangsrechnungen."
+      "emptyUncollected": "Keine offenen Ausgangsrechnungen.",
+      "markCollected": "Bezahlt erhalten"
     },
     "paid": {
       "title": "Als bezahlt markieren",
@@ -6044,6 +6045,13 @@
       "count": "{{count}} Rechnungen",
       "titleOut": "Ausgangsrechnungen — offen",
       "sheetTitle": "E-Rechnungen — Verbindlichkeiten und Forderungen"
+    },
+    "collected": {
+      "title": "Als eingegangen markieren",
+      "dateLabel": "Zahlungseingangsdatum",
+      "confirm": "Zahlungseingang erfassen",
+      "noRevenueHint": "Es werden weder Einnahmen noch Saldoänderungen gebucht — Einnahmen kommen über den Kontoauszug-Import.",
+      "failedDetailed": "Erfassen des Zahlungseingangs fehlgeschlagen: {{reason}}"
     }
   }
 }

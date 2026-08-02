@@ -6026,7 +6026,8 @@
       "directionOut": "Duguju mi",
       "uncollected": "Nenaplaćeni",
       "collected": "Naplaćeni",
-      "emptyUncollected": "Nema nenaplaćenih izlaznih računa."
+      "emptyUncollected": "Nema nenaplaćenih izlaznih računa.",
+      "markCollected": "Naplaćeno"
     },
     "paid": {
       "title": "Označi kao plaćeno",
@@ -6054,6 +6055,13 @@
       "count": "{{count}} računa",
       "titleOut": "Izlazni računi — nenaplaćeno",
       "sheetTitle": "eRačuni — obveze i potraživanja"
+    },
+    "collected": {
+      "title": "Označi kao naplaćeno",
+      "dateLabel": "Datum naplate",
+      "confirm": "Zabilježi naplatu",
+      "noRevenueHint": "Ovime se ne bilježi prihod ni promjena salda — prihod ulazi kroz uvoz bankovnog izvoda.",
+      "failedDetailed": "Bilježenje naplate nije uspjelo: {{reason}}"
     }
   }
 }

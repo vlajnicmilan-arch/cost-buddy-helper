@@ -6016,7 +6016,8 @@
       "directionOut": "Owed to me",
       "uncollected": "Uncollected",
       "collected": "Collected",
-      "emptyUncollected": "No uncollected outgoing invoices."
+      "emptyUncollected": "No uncollected outgoing invoices.",
+      "markCollected": "Collected"
     },
     "paid": {
       "title": "Mark as paid",
@@ -6044,6 +6045,13 @@
       "count": "{{count}} invoices",
       "titleOut": "Outgoing invoices — uncollected",
       "sheetTitle": "E-invoices — payables and receivables"
+    },
+    "collected": {
+      "title": "Mark as collected",
+      "dateLabel": "Collection date",
+      "confirm": "Record collection",
+      "noRevenueHint": "This records no income and no balance change — income enters through bank statement import.",
+      "failedDetailed": "Recording the collection failed: {{reason}}"
     }
   }
 }
