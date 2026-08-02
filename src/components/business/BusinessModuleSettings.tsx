@@ -67,8 +67,8 @@ export const BusinessModuleSettings = () => {
       .update({
         industry_type: industryType,
         enabled_modules: enabledModules,
-        } as any)
       } as any)
+
       .eq('id', activeBusinessProfileId);
 
     setSaving(false);
