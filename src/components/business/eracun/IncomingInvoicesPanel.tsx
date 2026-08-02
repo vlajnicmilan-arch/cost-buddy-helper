@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { AlertTriangle, CheckCircle2, Loader2, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Link2, Loader2, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
