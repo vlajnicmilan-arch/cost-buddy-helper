@@ -161,14 +161,26 @@ export const TransactionDetailDialog = ({
       if (!expense?.receipt_url || !open) {
         setFreshReceiptUrl(null);
         setIsLocalReceipt(false);
+        setReceiptMissing(false);
         return;
       }
 
       // Handle local receipt images
       if (expense.receipt_url.startsWith('local:')) {
         setIsLocalReceipt(true);
+        setReceiptMissing(false);
         const localPath = expense.receipt_url.replace('local:', '');
-        
+
+        // Native: check existence first so the spinner never appears for a missing file
+        if (Capacitor.isNativePlatform()) {
+          const exists = await LocalFileCache.receiptImageExists(localPath);
+          if (!exists) {
+            setFreshReceiptUrl(null);
+            setReceiptMissing(true);
+            return;
+          }
+        }
+
         // Try native filesystem first
         const nativeImage = await LocalFileCache.readReceiptImage(localPath);
         if (nativeImage) {
@@ -184,10 +196,12 @@ export const TransactionDetailDialog = ({
         }
 
         setFreshReceiptUrl(null);
+        setReceiptMissing(true);
         return;
       }
-      
-      setIsLocalReceipt(false);
+
+      setReceiptMissing(false);
+
       
       try {
         let filePath = expense.receipt_url;
