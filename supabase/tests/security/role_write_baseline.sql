@@ -1308,6 +1308,7 @@ CREATE TABLE IF NOT EXISTS public.project_members (
   display_name text,
   member_context text DEFAULT 'personal'::text NOT NULL,
   member_business_profile_id uuid,
+  can_see_investor_price boolean DEFAULT false NOT NULL,
   PRIMARY KEY (id)
 );
 CREATE TABLE IF NOT EXISTS public.project_milestones (
@@ -2203,6 +2204,46 @@ AS $function$
   SELECT public.is_project_participant_active(_project_id, _user_id)
      AND public.projects_downgrade_ok(_project_id, _user_id);
 $function$;
+CREATE OR REPLACE FUNCTION public.member_sees_investor_price(_project_id uuid, _user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.project_members pm
+    WHERE pm.project_id = _project_id
+      AND pm.user_id = _user_id
+      AND pm.role = 'member'
+      AND pm.can_see_investor_price
+  );
+$function$;
+CREATE OR REPLACE FUNCTION public.guard_member_investor_price_flag()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF TG_OP = 'UPDATE'
+     AND NEW.can_see_investor_price IS DISTINCT FROM OLD.can_see_investor_price
+     AND NOT public.is_project_owner(NEW.project_id, auth.uid()) THEN
+    RAISE EXCEPTION 'only_project_owner_can_set_investor_price_flag'
+      USING ERRCODE = '42501';
+  END IF;
+  IF TG_OP = 'INSERT'
+     AND NEW.can_see_investor_price
+     AND NOT public.is_project_owner(NEW.project_id, auth.uid()) THEN
+    RAISE EXCEPTION 'only_project_owner_can_set_investor_price_flag'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+DROP TRIGGER IF EXISTS trg_guard_member_investor_price_flag ON public.project_members;
+CREATE TRIGGER trg_guard_member_investor_price_flag
+  BEFORE INSERT OR UPDATE ON public.project_members
+  FOR EACH ROW EXECUTE FUNCTION public.guard_member_investor_price_flag();
 CREATE OR REPLACE VIEW public.project_milestones_scoped AS
  SELECT id,
     project_id,
@@ -2230,6 +2271,7 @@ CREATE OR REPLACE VIEW public.project_milestones_scoped AS
         END AS budget,
         CASE
             WHEN get_project_role(project_id, auth.uid()) = ANY (ARRAY['owner'::text, 'viewer'::text, 'investor'::text]) THEN investor_price
+            WHEN member_sees_investor_price(project_id, auth.uid()) THEN investor_price
             ELSE NULL::numeric
         END AS investor_price
    FROM project_milestones m

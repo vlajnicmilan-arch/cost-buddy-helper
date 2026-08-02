@@ -318,6 +318,7 @@ export const ProjectDetailDialog = ({
                 projectBusinessProfileId={project.business_profile_id ?? null}
                 currentUserRole={currentUserRole}
                 isOwner={project.isOwner}
+                canSeeInvestorPrice={project.can_see_investor_price === true}
               />
 
             </TabsContent>

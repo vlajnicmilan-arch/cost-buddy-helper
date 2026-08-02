@@ -71,6 +71,7 @@ export const useProjectMembers = (projectId: string | null) => {
         role: m.role as ProjectRoleKey,
         member_context: ((m as any).member_context === 'business' ? 'business' : 'personal') as 'personal' | 'business',
         member_business_profile_id: (m as any).member_business_profile_id ?? null,
+        can_see_investor_price: (m as any).can_see_investor_price === true,
         display_name: fallbackName(m.user_id),
       }));
 

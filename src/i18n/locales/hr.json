@@ -310,7 +310,6 @@
       "marginLine": "Trošak {{cost}} · Investitoru {{price}} · Marža {{margin}}%",
       "negativeHint": "— faza je bez zarade.",
       "forbiddenForRole": "Iznose faze smije mijenjati samo vlasnik projekta.",
-
       "listLine": "Trošak {{cost}} · Investitoru {{price}}",
       "listLineCostOnly": "Trošak {{cost}}",
       "listLinePriceOnly": "Investitoru {{price}}",
@@ -1055,7 +1054,10 @@
         "annulNote": "Napomena: ova je odluka poništena obostranom potvrdom.",
         "footerDisclaimer": "Generirano iz aplikacije Centar · {{date}} · ID: {{id}}"
       }
-    }
+    },
+    "investorPriceLabel": "Vidi cijenu prema investitoru",
+    "investorPriceHint": "Ovaj voditelj već vidi planirani trošak faze. Uključiš li ovo, vidjet će i cijenu prema investitoru — dakle i koliko zarađuješ na svakoj fazi.",
+    "investorPriceSaved": "Vidljivost cijene spremljena"
   },
   "estimates": {
     "title": "Ponude i predračuni",

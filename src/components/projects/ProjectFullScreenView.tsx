@@ -908,6 +908,7 @@ export const ProjectFullScreenView = ({
                           projectBusinessProfileId={project.business_profile_id ?? null}
                           currentUserRole={currentUserRole}
                           isOwner={isOwner}
+                          canSeeInvestorPrice={(project as any)?.can_see_investor_price === true}
                         />
 
                       )}

@@ -36,6 +36,11 @@ interface MilestoneAmountsSectionProps {
    * (voditelj/member). Polja ostaju vidljiva, ali onemogućena.
    */
   amountsReadOnly?: boolean;
+  /**
+   * Korak D2 — vlasnik je ovom voditelju (`member`) odobrio cijenu prema
+   * investitoru. Za sve ostale uloge nema učinka.
+   */
+  canSeeInvestorPrice?: boolean;
 }
 
 /**
@@ -53,13 +58,14 @@ export const MilestoneAmountsSection = ({
   priceApplicable,
   priceLocked = false,
   amountsReadOnly = false,
+  canSeeInvestorPrice = false,
 }: MilestoneAmountsSectionProps) => {
 
   const { t } = useTranslation();
   const { formatAmount, currency } = useCurrency();
 
   const showCost = canSeeMilestoneCostField(role, isOwner);
-  const showPrice = canSeeMilestonePriceField(role, isOwner) && priceApplicable;
+  const showPrice = canSeeMilestonePriceField(role, isOwner, canSeeInvestorPrice) && priceApplicable;
 
   const costNum = cost.trim() === '' ? null : parseLocaleAmount(cost).value;
   const priceNum = price.trim() === '' ? null : parseLocaleAmount(price).value;

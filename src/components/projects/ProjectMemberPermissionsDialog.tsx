@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Loader2, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { 
   OPTIONAL_TABS, 
@@ -36,12 +37,35 @@ export const ProjectMemberPermissionsDialog = ({
   const [localPerms, setLocalPerms] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const { guard } = useProjectWriteGuard({ isReadOnly });
+  /**
+   * Korak D2 — vidljivost cijene prema investitoru živi na `project_members`,
+   * ne na karticama. Vrijedi ISKLJUČIVO za ulogu `member`.
+   */
+  const [memberRole, setMemberRole] = useState<string | null>(null);
+  const [canSeePrice, setCanSeePrice] = useState(false);
 
   useEffect(() => {
     if (open) {
       refetch();
     }
   }, [open, refetch]);
+
+  useEffect(() => {
+    if (!open || !projectId || !userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('project_members')
+        .select('role, can_see_investor_price')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setMemberRole((data as any).role ?? null);
+      setCanSeePrice((data as any).can_see_investor_price === true);
+    })();
+    return () => { cancelled = true; };
+  }, [open, projectId, userId]);
 
   useEffect(() => {
     const initial: Record<string, boolean> = {};
@@ -55,14 +79,24 @@ export const ProjectMemberPermissionsDialog = ({
     if (!guard()) return;
     setSaving(true);
     const success = await updatePermissions(projectId, userId, localPerms);
+    let priceOk = true;
+    if (memberRole === 'member') {
+      const { error } = await supabase
+        .from('project_members')
+        .update({ can_see_investor_price: canSeePrice } as any)
+        .eq('project_id', projectId)
+        .eq('user_id', userId);
+      priceOk = !error;
+    }
     setSaving(false);
-    if (success) {
+    if (success && priceOk) {
       showSuccess(t('projects.permissionsSaved', 'Dozvole spremljene'));
       onOpenChange(false);
     } else {
       showError(t('common.error'));
     }
   };
+
 
 
   return (
@@ -112,6 +146,22 @@ export const ProjectMemberPermissionsDialog = ({
                 </div>
               ))}
             </div>
+
+            {memberRole === 'member' && (
+              <div className="space-y-1.5 rounded-md border p-3">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="perm-investor-price"
+                    checked={canSeePrice}
+                    onCheckedChange={(checked) => setCanSeePrice(!!checked)}
+                  />
+                  <label htmlFor="perm-investor-price" className="text-sm cursor-pointer">
+                    {t('projects.investorPriceLabel')}
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('projects.investorPriceHint')}</p>
+              </div>
+            )}
 
             <Button onClick={handleSave} disabled={saving || isReadOnly} aria-disabled={saving || isReadOnly} title={isReadOnly ? t('projects.access.readOnlyBlockedToast') : undefined} className="w-full">
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

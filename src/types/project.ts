@@ -54,6 +54,11 @@ export interface ProjectWithOwnership extends Project {
   role: ProjectRoleKey;
   member_context?: 'personal' | 'business';
   member_business_profile_id?: string | null;
+  /**
+   * Korak D2 — vlasnik je ovom voditelju (`member`) odobrio vidljivost cijene
+   * prema investitoru. Bez učinka za ostale uloge.
+   */
+  can_see_investor_price?: boolean;
 }
 
 export interface ProjectMember {
@@ -70,6 +75,8 @@ export interface ProjectMember {
   display_name?: string;
   member_context?: 'personal' | 'business';
   member_business_profile_id?: string | null;
+  /** Korak D2 — vrijedi samo za ulogu `member`. */
+  can_see_investor_price?: boolean;
 }
 
 export interface ProjectMilestone {

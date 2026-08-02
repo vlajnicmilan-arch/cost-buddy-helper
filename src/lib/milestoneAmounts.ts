@@ -116,10 +116,17 @@ export function canSeeMilestoneCostField(
   return role === 'owner' || role === 'viewer' || role === 'member';
 }
 
+/**
+ * Korak D2 — vlasnik može pojedinom VODITELJU (`member`) uključiti zastavicu
+ * `project_members.can_see_investor_price`. Zastavica vrijedi ISKLJUČIVO za
+ * ulogu `member`; na `worker` ili `investor` zapisu nema nikakav učinak.
+ */
 export function canSeeMilestonePriceField(
   role: MilestoneAmountRole | null | undefined,
   isOwner = false,
+  canSeeInvestorPrice = false,
 ): boolean {
   if (isOwner) return true;
+  if (role === 'member') return canSeeInvestorPrice === true;
   return role === 'owner' || role === 'viewer' || role === 'investor';
 }
