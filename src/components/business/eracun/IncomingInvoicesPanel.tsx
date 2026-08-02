@@ -360,6 +360,13 @@ export const IncomingInvoicesPanel = () => {
         saving={savingPayment}
         onConfirm={handleConfirmCollected}
       />
+
+      <PaymentMatchReview
+        open={matchOpen}
+        onOpenChange={setMatchOpen}
+        invoices={invoices}
+        onDone={refetch}
+      />
     </div>
   );
 };
