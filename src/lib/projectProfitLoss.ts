@@ -107,9 +107,19 @@ export interface PLInput {
 export interface PLResult {
   totalIncome: number;
   totalExpenses: number;
+  /** Cash: payout expense rows only. */
   laborCost: number;
   collaboratorCost: number;
+  /** expenses - labor - collaborator, never clamped. */
   materialCost: number;
+  /** True when materialCost < 0 — a payout bypassed the payout path. */
+  materialCostAnomaly: boolean;
+  /** All hours x historical rate. Reported, never costed. */
+  accruedLaborCost: number;
+  /** max(0, accrued - paid). Open liability, outside totalCosts. */
+  unpaidLaborCost: number;
+  /** Hours on work entries with no payout_id. */
+  unpaidHours: number;
   netProfit: number;
   margin: number;
   workers: PLWorkerDetail[];
@@ -120,6 +130,7 @@ export interface PLResult {
   collectedPercentage: number;
   remainingToCollect: number;
 }
+
 
 const num = (v: unknown): number => {
   const n = Number(v);
