@@ -21,6 +21,8 @@ import {
 interface FailedFile {
   fileName: string;
   code: 'not_xml' | 'not_ubl' | 'empty' | 'unknown';
+  /** Stvarni tekst greške — nikad se ne guta, prikazuje se uz datoteku. */
+  detail?: string;
 }
 
 interface Props {
@@ -80,9 +82,11 @@ export const EracunImportDialog = ({
         const fingerprint = await invoiceFingerprint(invoice.supplier.oib, invoice.invoiceNumber);
         parsed.push({ fileName: file.name, invoice, acceptance, fingerprint });
       } catch (err) {
+        console.error('[eRacun] parse failed', file.name, err);
         failures.push({
           fileName: file.name,
           code: err instanceof EracunParseError ? err.code : 'unknown',
+          detail: err instanceof Error ? err.message : String(err),
         });
       }
     }
@@ -189,7 +193,7 @@ export const EracunImportDialog = ({
           <p className="text-[11px] text-muted-foreground">
             {t(
               'eracun.import.hint',
-              'Prolaze računi (380), periodični obračuni (394) i odobrenja (381, negativan iznos), samo u EUR. Digitalni potpis se u ovoj verziji ne provjerava.',
+              'Prolaze računi (380), računi za mjerene usluge (82), građevinske situacije (875/876/877), leasing (394), samoizdani (389), faktoring (393) i odobrenja (381, negativan iznos), samo u EUR. Nepoznat tip možeš uvesti svjesnom odlukom. Digitalni potpis se u ovoj verziji ne provjerava.',
             )}
           </p>
 
@@ -201,6 +205,9 @@ export const EracunImportDialog = ({
                   ? t('eracun.error.unknown', 'Datoteku nije moguće pročitati.')
                   : t(`eracun.error.${f.code}`)}
               </p>
+              {f.detail && (
+                <p className="text-[10px] text-muted-foreground break-words">{f.detail}</p>
+              )}
             </div>
           ))}
 

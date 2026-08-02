@@ -1,0 +1,2 @@
+ALTER TABLE public.incoming_invoices DROP CONSTRAINT IF EXISTS incoming_invoices_doc_type;
+ALTER TABLE public.incoming_invoices ADD CONSTRAINT incoming_invoices_doc_type_present CHECK (length(btrim(doc_type)) > 0);

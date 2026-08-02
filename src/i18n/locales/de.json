@@ -5958,7 +5958,8 @@
     "error": {
       "not_xml": "Die Datei ist kein gültiges XML.",
       "not_ubl": "Die Datei ist keine UBL-2.1-E-Rechnung.",
-      "empty": "Die Datei ist leer."
+      "empty": "Die Datei ist leer.",
+      "unknownDb": "Unbekannter Datenbankfehler"
     },
     "title": "Eingangsrechnungen (E-Rechnung)",
     "menuDesc": "E-Rechnungs-XML importieren und als bezahlt markieren",
@@ -5971,14 +5972,17 @@
     "import": {
       "title": "Eingangsrechnungen importieren (E-Rechnung)",
       "pickFiles": "XML-Dateien auswählen",
-      "hint": "Akzeptiert: Rechnungen (380), verbrauchsabhängige Leistungen (82 — Strom, Gas, Wasser), Bauabrechnungen (875/876/877), Leasing (394), Gutschriftverfahren (389) und Factoring (393). Gutschriften (381) werden negativ gespeichert; Korrekturen (384) und Anzahlungen (386) mit Warnhinweis. Unbekannte Typen entscheidest du selbst. Nur EUR. Die digitale Signatur wird in dieser Version nicht geprüft.",
+      "hint": "Akzeptiert: Rechnungen (380), Verbrauchsabrechnungen (82), Bauabschlagsrechnungen (875/876/877), Leasing (394), Gutschriftverfahren (389), Factoring (393) und Gutschriften (381, negativer Betrag), nur EUR. Ein unbekannter Typ kann bewusst importiert werden. Digitale Signaturen werden in dieser Version nicht geprüft.",
       "save": "Speichern ({{n}})",
       "saved": "{{n}} Eingangsrechnungen importiert",
       "undo": "Import rückgängig",
       "undone": "Rückgängig gemacht: {{n}}",
       "undoFailed": "Rückgängig machen fehlgeschlagen.",
       "failed": "Import fehlgeschlagen.",
-      "duplicateServer": "Einige Rechnungen wurden bereits importiert."
+      "duplicateServer": "Einige Rechnungen wurden bereits importiert. ({{reason}})",
+      "failedDetailed": "Import fehlgeschlagen: {{reason}}{{where}}",
+      "undoFailedDetailed": "Rückgängig machen fehlgeschlagen: {{reason}}",
+      "loadFailed": "Laden der Eingangsrechnungen fehlgeschlagen: {{reason}}"
     },
     "review": {
       "duplicateExisting": "Bereits importiert",
@@ -6001,7 +6005,8 @@
       "markPaid": "Bezahlt",
       "vat": "MwSt.",
       "empty": "Noch keine Eingangsrechnungen importiert.",
-      "emptyUnpaid": "Keine unbezahlten Eingangsrechnungen."
+      "emptyUnpaid": "Keine unbezahlten Eingangsrechnungen.",
+      "deleteFailed": "Löschen fehlgeschlagen: {{reason}}"
     },
     "paid": {
       "title": "Als bezahlt markieren",
@@ -6010,7 +6015,9 @@
       "sourceLabel": "Zahlungsquelle",
       "confirm": "Zahlung erfassen",
       "expenseDescription": "Eingangsrechnung {{number}}",
-      "failed": "Erfassen der Zahlung fehlgeschlagen."
+      "failed": "Erfassen der Zahlung fehlgeschlagen.",
+      "failedDetailed": "Zahlung konnte nicht erfasst werden: {{reason}}",
+      "expenseNotCreated": "Der Aufwand wurde nicht erstellt — Speichern abgelehnt."
     },
     "caution": {
       "correction": "Dies ist eine Rechnungskorrektur (Typ {{docType}}). Sie kann die Originalrechnung duplizieren — vor dem Import prüfen.",

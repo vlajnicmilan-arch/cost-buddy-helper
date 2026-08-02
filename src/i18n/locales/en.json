@@ -5958,7 +5958,8 @@
     "error": {
       "not_xml": "The file is not valid XML.",
       "not_ubl": "The file is not a UBL 2.1 e-invoice.",
-      "empty": "The file is empty."
+      "empty": "The file is empty.",
+      "unknownDb": "Unknown database error"
     },
     "title": "Incoming invoices (e-Invoice)",
     "menuDesc": "Import e-Invoice XML files and mark them paid",
@@ -5971,14 +5972,17 @@
     "import": {
       "title": "Import incoming invoices (e-Invoice)",
       "pickFiles": "Choose XML files",
-      "hint": "Accepted: invoices (380), metered services (82 — electricity, gas, water), construction situations (875/876/877), leasing (394), self-billed (389) and factoring (393). Credit notes (381) are saved as a negative amount; corrections (384) and prepayments (386) pass with a warning. Unknown types are yours to decide on. EUR only. Digital signature is not verified in this version.",
+      "hint": "Accepted: invoices (380), metered services (82), construction progress invoices (875/876/877), leasing (394), self-billed (389), factoring (393) and credit notes (381, negative amount), EUR only. An unknown type can be imported by explicit decision. Digital signatures are not verified in this version.",
       "save": "Save ({{n}})",
       "saved": "Imported {{n}} incoming invoices",
       "undo": "Undo import",
       "undone": "Undone: {{n}}",
       "undoFailed": "Undo failed.",
       "failed": "Import failed.",
-      "duplicateServer": "Some invoices were already imported."
+      "duplicateServer": "Some invoices were already imported. ({{reason}})",
+      "failedDetailed": "Import failed: {{reason}}{{where}}",
+      "undoFailedDetailed": "Undo failed: {{reason}}",
+      "loadFailed": "Loading incoming invoices failed: {{reason}}"
     },
     "review": {
       "duplicateExisting": "Already imported",
@@ -6001,7 +6005,8 @@
       "markPaid": "Paid",
       "vat": "VAT",
       "empty": "No incoming invoices imported yet.",
-      "emptyUnpaid": "No unpaid incoming invoices."
+      "emptyUnpaid": "No unpaid incoming invoices.",
+      "deleteFailed": "Delete failed: {{reason}}"
     },
     "paid": {
       "title": "Mark as paid",
@@ -6010,7 +6015,9 @@
       "sourceLabel": "Payment source",
       "confirm": "Record payment",
       "expenseDescription": "Incoming invoice {{number}}",
-      "failed": "Recording the payment failed."
+      "failed": "Recording the payment failed.",
+      "failedDetailed": "Recording the payment failed: {{reason}}",
+      "expenseNotCreated": "The expense was not created — the save was rejected."
     },
     "caution": {
       "correction": "This is an invoice correction (type {{docType}}). It may duplicate the original invoice — check before importing.",

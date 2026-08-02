@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/contexts/AppStateContext';
 import { sortIncomingInvoices } from '@/lib/eracun/sortInvoices';
+import { describeDbError } from '@/lib/eracun/dbError';
+import { showError } from '@/hooks/useStatusFeedback';
+import i18n from '@/i18n';
 import type { EracunInsertRow } from '@/lib/eracun/intakeBatch';
 
 export interface IncomingInvoice {
@@ -54,6 +57,7 @@ export const useIncomingInvoices = () => {
     const { data, error } = await query;
     if (error) {
       console.error('[IncomingInvoices] fetch failed', error);
+      showError(`${i18n.t('eracun.import.loadFailed', 'Učitavanje ulaznih računa nije uspjelo: {{reason}}', { reason: describeDbError(error) })}`);
       setLoading(false);
       return;
     }
