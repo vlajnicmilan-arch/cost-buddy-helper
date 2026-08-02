@@ -85,6 +85,7 @@ export const ProjectEarnedValueCard = ({ project, spent, milestones, onEnterCont
         spent,
         marginAmount,
         marginPct,
+        remainderLabel: t(remainderLabels.pct.key, remainderLabels.pct.fallback),
         eac,
         healthScore: health.score,
         healthLevel: health.level,
