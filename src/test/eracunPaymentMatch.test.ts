@@ -6,6 +6,7 @@ import { namesMatch, nameTokens } from '@/lib/eracun/normalizeName';
 import {
   matchPayments,
   extractIbans,
+  paymentFetchWindow,
   remainingOf,
   type MatchInvoice,
   type MatchTransaction,
@@ -168,5 +169,45 @@ describe('matchPayments — nespojeno ostaje nespojeno', () => {
       transactions: [{ ...BAMI_TX, id: 'far', date: '2025-06-01' }],
     });
     expect(s).toBeUndefined();
+  });
+});
+
+describe('paymentFetchWindow — prozor je sidren na račune, ne na današnji dan', () => {
+  /**
+   * Regresija: dohvat je koristio `now() − 120 dana`, pa je svaki račun stariji
+   * od ~4 mjeseca ostao bez ijedne uplate u bazenu. Nenaplaćeni računi su po
+   * prirodi stari — testni podaci su bili svježi i kvar nije bio vidljiv.
+   */
+  const OLD_INVOICE = inv({
+    ...BAMI_INVOICE,
+    id: 'old-1',
+    issueDate: '2024-11-05',
+  });
+  const OLD_TX: MatchTransaction = { ...BAMI_TX, id: 'old-tx', date: '2024-10-22' };
+
+  it('dohvat pokriva uplatu uz račun star više od godinu dana', () => {
+    const w = paymentFetchWindow([OLD_INVOICE], 'out');
+    expect(w).not.toBeNull();
+    expect(w!.since).toBe('2024-08-07');
+    expect(w!.until).toBe('2025-02-03');
+    expect(OLD_TX.date >= w!.since!).toBe(true);
+    expect(OLD_TX.date <= w!.until!).toBe(true);
+  });
+
+  it('motor daje `likely` prijedlog za taj isti par', () => {
+    const [s] = matchPayments({ invoices: [OLD_INVOICE], transactions: [OLD_TX] });
+    expect(s.candidates[0].confidence).toBe('likely');
+    expect(s.candidates[0].allocation['old-1']).toBe(2300);
+  });
+
+  it('bez nenaplaćenih računa nema dohvata', () => {
+    expect(paymentFetchWindow([], 'out')).toBeNull();
+    expect(paymentFetchWindow([{ ...OLD_INVOICE, paidAt: '2025-01-01' }], 'out')).toBeNull();
+    expect(paymentFetchWindow([{ ...OLD_INVOICE, direction: 'in' }], 'out')).toBeNull();
+  });
+
+  it('račun bez datuma izdavanja skida granice (motor tada prima sve)', () => {
+    const w = paymentFetchWindow([{ ...OLD_INVOICE, issueDate: null }], 'out');
+    expect(w).toEqual({ since: null, until: null });
   });
 });
