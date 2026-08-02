@@ -63,7 +63,7 @@ import { isProjectsReadonlyError } from '@/lib/softDelete';
 import { ProjectHeaderMenu } from './ProjectHeaderMenu';
 import { ProjectBudgetTab } from './ProjectBudgetTab';
 import { getBaselineSummary } from '@/lib/projectCostBaseline';
-import { computeProjectPlannedMargin, computeUnclassifiedContract } from '@/lib/projectPlannedMargin';
+import { computeProjectPlannedMargin, computeContractPhaseNote } from '@/lib/projectPlannedMargin';
 import { getRemainderLabels, getRemainderStatusLabel } from '@/lib/projectMetricLabels';
 import { ProjectQuickStartCards } from './ProjectQuickStartCards';
 import { LocalStorage } from '@/hooks/useLocalStorage';
@@ -378,7 +378,7 @@ export const ProjectFullScreenView = ({
   // Planirana marža (samo faze koje imaju OBA iznosa) i napomena o
   // nerazvrstanom iznosu. Ugovoreno i zbroj faza se nikad ne zbrajaju.
   const plannedMargin = computeProjectPlannedMargin(milestones);
-  const unclassified = computeUnclassifiedContract(effectiveContract, milestones);
+  const contractPhaseNote = computeContractPhaseNote(effectiveContract, milestones);
 
   const costPct = baseline > 0 ? (totalSpent / baseline) * 100 : 0;
   const collectionPct = budget > 0 ? (totalReceived / budget) * 100 : 0;
@@ -836,7 +836,7 @@ export const ProjectFullScreenView = ({
                     remainderLabels={remainderLabels}
                     remainderStatusLabel={remainderStatusLabel}
                     plannedMargin={plannedMargin}
-                    unclassified={unclassified}
+                    contractPhaseNote={contractPhaseNote}
                     showBudgetAlarm={showBudgetAlarm}
                     showCollectionAlarm={showCollectionAlarm}
                     canAccessBusinessTabs={canAccessBusinessTabs}

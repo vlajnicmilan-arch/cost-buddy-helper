@@ -109,29 +109,73 @@ export function sumInvestorPrice(
   return found > 0 ? sum : null;
 }
 
+export interface PhasePriceCoverage {
+  /** Broj faza s upisanom cijenom prema investitoru. */
+  withPrice: number;
+  /** Ukupan broj faza. */
+  total: number;
+  /** True samo kad SVAKA faza ima cijenu. */
+  full: boolean;
+}
+
+export function getPhasePriceCoverage(
+  milestones: PlannedMarginMilestone[] | null | undefined,
+): PhasePriceCoverage {
+  const list = Array.isArray(milestones) ? milestones : [];
+  let withPrice = 0;
+  for (const m of list) {
+    if (isRealNumber(m?.investor_price)) withPrice += 1;
+  }
+  return { withPrice, total: list.length, full: list.length > 0 && withPrice === list.length };
+}
+
+/** Tvrdnja o nerazvrstanom iznosu — samo kad je SVE ostalo razvrstano. */
 export interface UnclassifiedContract {
+  kind: 'unclassified';
   contractValue: number;
   phasesTotal: number;
   /** contractValue − phasesTotal; može biti negativan. */
   diff: number;
+  coverage: PhasePriceCoverage;
 }
 
+/** Neutralna napomena: cijene su upisane samo na dijelu faza. */
+export interface PartialPriceCoverageNote {
+  kind: 'partialCoverage';
+  coverage: PhasePriceCoverage;
+}
+
+export type ContractPhaseNote = UnclassifiedContract | PartialPriceCoverageNote;
+
 /**
- * Napomena o nerazvrstanom iznosu — ČISTI PRIKAZ.
+ * Napomena ispod ugovorene vrijednosti — ČISTI PRIKAZ.
+ *
+ * Razlika `ugovoreno − Σ faza` je izjava o ugovoru („ostatak nigdje ne
+ * pripada") i ima smisla SAMO kad svaka faza ima upisanu cijenu. Kad ih
+ * pola nema, isti broj znači „cijene još nisu upisane" — točan broj koji
+ * laže. Zato:
+ *
+ *   - potpuno pokriće → napomena o nerazvrstanom iznosu (kao dosad)
+ *   - djelomično pokriće → razlika se NE spominje; samo pokriće
+ *   - nijedna faza s cijenom → ništa
+ *
  * Jedina točka u kojoj se ugovorena vrijednost i zbroj faza pojavljuju
  * zajedno, i to isključivo kao oduzimanje. Nikad zbrajanje.
- *
- * `null` kad nema nijedne faze s cijenom ili kad je razlika zanemariva.
  */
-export function computeUnclassifiedContract(
+export function computeContractPhaseNote(
   contractValue: number | null | undefined,
   milestones: PlannedMarginMilestone[] | null | undefined,
-): UnclassifiedContract | null {
+): ContractPhaseNote | null {
+  const coverage = getPhasePriceCoverage(milestones);
+  if (coverage.withPrice === 0) return null;
+  if (!coverage.full) return { kind: 'partialCoverage', coverage };
+
   const contract = Number(contractValue || 0);
   if (!Number.isFinite(contract) || contract <= 0) return null;
   const phasesTotal = sumInvestorPrice(milestones);
   if (phasesTotal === null) return null;
   const diff = contract - phasesTotal;
   if (Math.abs(diff) <= 0.01) return null;
-  return { contractValue: contract, phasesTotal, diff };
+  return { kind: 'unclassified', contractValue: contract, phasesTotal, diff, coverage };
 }
+

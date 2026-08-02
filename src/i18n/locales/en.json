@@ -1086,7 +1086,8 @@
           "attention": "Low realized margin · {{pct}}%",
           "critical": "Project finished at a loss · {{pct}}%"
         }
-      }
+      },
+      "phasePriceCoverage": "Prices entered on {{withPrice}} of {{total}} phases"
     }
   },
   "estimates": {
