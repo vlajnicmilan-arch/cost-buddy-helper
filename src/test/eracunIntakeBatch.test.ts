@@ -29,7 +29,7 @@ const invoice = (over: Partial<EracunInvoice> = {}): EracunInvoice => ({
 const file = (fingerprint: string, over: Partial<EracunParsedFile> = {}): EracunParsedFile => ({
   fileName: `${fingerprint}.xml`,
   invoice: invoice(),
-  acceptance: { accepted: true, amount: 150, isCreditNote: false },
+  acceptance: { accepted: true, amount: 150, isCreditNote: false, cautions: [], needsDecision: false },
   fingerprint,
   ...over,
 });
@@ -50,7 +50,7 @@ describe('eRačun — priprema serije', () => {
 
   it('odbijeni dokument nije uvoziv i ne troši otisak', () => {
     const rejected = file('bb', {
-      acceptance: { accepted: false, reason: 'unsupported_currency', params: { currency: 'USD' }, isCreditNote: false },
+      acceptance: { accepted: false, reason: 'unsupported_currency', params: { currency: 'USD' }, isCreditNote: false, cautions: [], needsDecision: false },
     });
     const rows = buildIntakeRows([rejected, file('bb')], new Set());
     expect(rows[0].importable).toBe(false);
@@ -80,7 +80,7 @@ describe('eRačun — priprema serije', () => {
   it('odobrenje (381) sprema negativan iznos iz pravila prihvaćanja', () => {
     const credit = file('dd', {
       invoice: invoice({ docType: '381', docTypeRaw: '381', suggestedAmount: -150 }),
-      acceptance: { accepted: true, amount: -150, isCreditNote: true },
+      acceptance: { accepted: true, amount: -150, isCreditNote: true, cautions: [], needsDecision: false },
     });
     const [row] = buildIntakeRows([credit], new Set());
     expect(toInsertRow(row, { userId: 'u1', businessProfileId: null, batchId: 'b' }).total_amount).toBe(-150);

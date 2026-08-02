@@ -21,9 +21,11 @@ import {
   EracunWarning,
 } from './types';
 
-const KNOWN_DOC_TYPES: EracunDocType[] = ['380', '381', '383', '386', '389', '394'];
+const KNOWN_DOC_TYPES: EracunDocType[] = [
+  '380', '82', '875', '876', '877', '381', '383', '384', '386', '389', '393', '394',
+];
 /** Tipovi koje smatramo uobičajenim ulaznim računom. */
-const NORMAL_DOC_TYPES = new Set(['380', '394']);
+const NORMAL_DOC_TYPES = new Set(['380', '82', '875', '876', '877', '394', '389', '393']);
 
 /** Djeca elementa s traženim `localName` (bez rekurzije). */
 const childrenByName = (parent: Element | null, name: string): Element[] => {

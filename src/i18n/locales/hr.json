@@ -5973,7 +5973,6 @@
     "title": "Ulazni računi (eRačun)",
     "menuDesc": "Uvezi XML eRačune i označi ih plaćenima",
     "reject": {
-      "unsupported_doc_type": "Tip dokumenta {{docType}} nije podržan u ovoj verziji.",
       "unsupported_currency": "Valuta {{currency}} nije podržana — podržan je samo EUR.",
       "missing_total": "Ukupan iznos nije pronađen u datoteci.",
       "missing_supplier": "OIB dobavljača nije pronađen.",
@@ -5982,7 +5981,7 @@
     "import": {
       "title": "Uvoz ulaznih računa (eRačun)",
       "pickFiles": "Odaberi XML datoteke",
-      "hint": "Prolaze računi (380), periodični obračuni (394) i odobrenja (381, negativan iznos), samo u EUR. Digitalni potpis se u ovoj verziji ne provjerava.",
+      "hint": "Prolaze računi (380), mjerene usluge (82 — struja, plin, voda), građevinske situacije (875/876/877), leasing (394), samoizdani (389) i faktoring (393). Odobrenje (381) ide s negativnim iznosom, a ispravak (384) i avans (386) uz upozorenje. Nepoznat tip možeš uvesti sam, na vlastitu odluku. Samo EUR. Digitalni potpis se u ovoj verziji ne provjerava.",
       "save": "Spremi ({{n}})",
       "saved": "Uvezeno {{n}} ulaznih računa",
       "undo": "Poništi uvoz",
@@ -5997,7 +5996,8 @@
       "rejected": "Odbijeno",
       "willImport": "Za uvoz",
       "unknownSupplier": "Nepoznat dobavljač",
-      "summary": "{{total}} dokumenata · {{importable}} za uvoz · {{duplicates}} duplikata · {{rejected}} odbijeno"
+      "summary": "{{total}} dokumenata · {{importable}} za uvoz · {{duplicates}} duplikata · {{rejected}} odbijeno",
+      "needsDecision": "Za odluku"
     },
     "list": {
       "unpaid": "Neplaćeni",
@@ -6021,6 +6021,11 @@
       "confirm": "Zabilježi plaćanje",
       "expenseDescription": "Ulazni račun {{number}}",
       "failed": "Bilježenje plaćanja nije uspjelo."
+    },
+    "caution": {
+      "correction": "Ovo je ispravak računa (tip {{docType}}). Može duplirati izvorni račun — provjeri prije uvoza.",
+      "prepayment": "Ovo je avansni račun (tip {{docType}}). Nakon njega slijedi konačni račun — postoji rizik dvostrukog knjiženja.",
+      "unknown_doc_type": "Nepoznat tip dokumenta (šifra {{docType}}). Provjeri dokument i odluči hoćeš li ga uvesti."
     }
   }
 }
