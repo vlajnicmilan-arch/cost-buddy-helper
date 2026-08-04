@@ -3600,7 +3600,7 @@ AS $function$
       AND (period_end IS NULL OR period_end > now())
       AND (
         (module = 'pro_legacy' AND _module IN ('smjer','krug','projekti'))
-        OR (module = 'business_legacy' AND _module IN ('smjer','krug','projekti','biznis'))
+        OR (module = 'business_legacy' AND _module IN ('smjer','krug','projekti'))
       )
   ) OR EXISTS (
     -- Admin module grants (legacy sustav)
