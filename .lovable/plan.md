@@ -1,37 +1,64 @@
-# Provjera je li web objava stvarno legla (ispravljena metoda)
+# Povlačenje prethodnog nalaza — produkcija NIJE stara od 2.8.
 
-## Kriva metoda — ne koristiti
+## Doslovni URL-ovi koje sam dohvatio
 
-Usporedba `public/version.json` sa živom stranicom **ne dokazuje ništa o web objavi**.
-Ta se datoteka mijenja samo pri izradi novog APK-a (`android-build.yml` se okida na njenu
-promjenu, `publish-version-manifest` objavljuje manifest nativne ljuske). Web objava je ne dira.
-Isti tip zabune već je zabilježen u projektu: verzija nativne ljuske ≠ verzija koda.
+- `https://vmbalance.com/` i `https://vmbalance.com/app` — **oba vraćaju isti dokument**
+  (SPA fallback), oba referenciraju `index-DM1jJWs-.js`, `index-vSHNfVh9.css`,
+  `react-vendor-DFQnB1PE.js`, `jspdf-Br8rfnai.js`. `x-deployment-id: 1a7dd7c0…`,
+  `cache-control: no-cache`.
+- Prethodno sam gledao **isto mjesto** (nije bila zamjena landinga za app), ali sam
+  zaključak izveo iz **jednog i18n ključa u ulaznom chunku**, a nisam pretražio lijene
+  chunkove. To je bila greška.
 
-## Ispravna metoda
+## Što sam sada napravio
 
-Vite imenuje izlazne datoteke hashom sadržaja.
+Rekurzivno skinuo **153 JS chunka (6,48 MB)** s produkcije, krenuvši od `index-DM1jJWs-.js`
+i prateći sve `assets/*.js` reference, pa pretražio sadržaj.
 
-1. `curl -s https://vmbalance.com/ | grep -oE '(src|href)="/assets/[^"]+"'`
-2. `npx vite build` pa isto nad `dist/index.html`
-3. Usporediti nazive. Ulazni `index-*.js` je najvažniji.
+## Rezultat pretrage (produkcijski paket)
 
-Dopuna (bitno): hash ulaznog chunka može se razlikovati i kad je izvor isti, jer ovisi o
-hashovima lazy chunkova iz build okoline. Zato je konačan dokaz **usporedba sadržaja**:
-skinuti živi chunk i potražiti u njemu niz koji postoji samo u novom kodu
-(npr. novi i18n ključ). Ako niza nema — živi build je stariji.
+| Niz | Nađeno | Gdje |
+|---|---|---|
+| `eRačun` | DA | `index-DQXSR0oa.js`, `Index-DKrjBiAj.js` |
+| `Ulazni računi` | DA | isto |
+| `Poveži uplate` | DA | isto |
+| `Duguju mi` | DA | isto |
+| `incoming_invoices` | DA | `Index-DKrjBiAj.js` |
+| `eracun_payment_links` | DA | `Index-DKrjBiAj.js` |
+| `Poravnaj s bankom` | DA | `index-DQXSR0oa.js` |
+| `balance_after`, `bank_row_seq` | DA | `App-*`, `ImportReview-*`, `OpenBankingPanel-*` |
+| `undo_import_batch`, `import_transfer_rules`, `activate_module_trial` | DA | `App-DIgpWkqo.js` |
+| `historyExtended` / „Povijest je dopunjena” | NE | nigdje |
 
-## Nalaz 5.8.2026 13:50
+**Korisnikov iskaz stoji.** Svi ekrani koje je koristio jesu u živom paketu.
+Prethodni nalaz („živi bundle stariji od 2.8.”) **povlačim — bio je kriv.**
 
-- Živa stranica (`vmbalance.com`, `www`, `cost-buddy-helper.lovable.app` — svi isti
-  `x-deployment-id: 1a7dd7c0…`) servira `index-DM1jJWs-.js`; lokalni build daje `index-ChbLkdet.js`.
-- HTML se šalje s `cache-control: no-cache` → nije riječ o cacheu.
-- Živi paket **nema** i18n ključ `historyExtended`, dodan commitom `082d9723` (2.8.2026 23:07).
+## Gdje je rez zapravo
 
-**Zaključak: živi web bundle je stariji od 2.8.2026.** Današnje objave nisu legle na produkciju,
-iako je dijalog javio uspjeh i sigurnosni gate je propustio.
+Prijevodi su statički bundlani (`src/i18n/index.ts` importa `hr/en/de.json`), pa
+izostanak ključa jest signal — ali samo za taj jedan commit, ne za tri dana.
 
-## Prijedlog za poslije launcha (ne raditi sada)
+- `eracun_payment_links` → commit `b24c09ca`, 2.8. **22:15** — **JE u produkciji**
+- `paymentFetchWindow` → `f6689bda`, 2.8. **22:35** — **JE u produkciji**
+- `historyExtended` / `historyGate` → `082d9723`, 2.8. **23:07** — **NIJE u produkciji**
 
-Ugraditi commit SHA u build preko Vite `define` i izložiti ga na jednom mjestu (meta tag ili
-ekran s verzijom). Provjera tada postaje usporedba jednog niza, koju korisnik radi sam.
-Ne dirati build konfiguraciju prije launcha.
+Živi build je dakle s **2.8. između 22:35 i 23:07**. Nedostaje **31 commit**:
+2 s 2.8. (kasno navečer), 5 s 4.8., 24 s 5.8.
+
+Praktično nedostaje: historyGate (preskakanje usklađivanja za povijesne izvode),
+sve od 4.8. i sve današnje (uklanjanje `billing_enabled`, `entitlements_mode`,
+suženje biznis modula, XSS popravak `bank-connect-complete`, `ai_route_costs`).
+Baza i edge funkcije **jesu ažurne** — to se deploya odmah; zaostaje samo web bundle.
+
+## Ispravak metode provjere
+
+1. Ne oslanjati se na jedan i18n ključ u ulaznom chunku.
+2. Rekurzivno skinuti sve chunkove i pretražiti sadržaj za više neovisnih markera.
+3. Hash usporedbu ne koristiti kao dokaz (build okolina).
+4. Znati koji commit je uveo marker (`git log -S`) da se rez datira precizno.
+
+## Preporuka (ne izvršavam bez odobrenja)
+
+Web objava sa 5.8. stvarno nije legla, ali zaostatak je ~2,5 dana koda, ne 3+ dana svega,
+i baza je ažurna. Sljedeći korak bi bio ponovna objava pa ista provjera s markerom
+„Povijest je dopunjena”. Ne diram ništa dok ne kažeš.
