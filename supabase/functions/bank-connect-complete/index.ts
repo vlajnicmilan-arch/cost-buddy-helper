@@ -52,10 +52,11 @@ Deno.serve(async (req) => {
     const error = url.searchParams.get("error");
 
     if (error) {
+      // Never reflect the bank-supplied value back into the page; log only.
       console.warn("[bank-connect-complete] bank returned error", error);
       return htmlPage(
         "Spajanje otkazano",
-        `Banka je vratila grešku: ${error}. Možete pokušati ponovno iz aplikacije.`,
+        "Banka je odbila ili otkazala autorizaciju. Pokušajte ponovno iz aplikacije.",
         false
       );
     }
