@@ -16,7 +16,7 @@ function htmlPage(title: string, message: string, ok: boolean): Response {
   const html = `<!DOCTYPE html><html lang="hr"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${title}</title>
+<title>${safeTitle}</title>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Inter,sans-serif;background:#0f172a;color:#f1f5f9;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center}
 .card{max-width:420px;background:#1e293b;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -25,8 +25,8 @@ p{margin:0 0 20px;color:#cbd5e1;line-height:1.5;font-size:14px}
 a{color:hsl(172 66% 50%);text-decoration:none;font-weight:500}
 </style></head><body>
 <div class="card">
-<h1>${title}</h1>
-<p>${message}</p>
+<h1>${safeTitle}</h1>
+<p>${safeMessage}</p>
 <p><a href="/wallet">Otvori novčanik &rarr;</a></p>
 </div>
 <script>
