@@ -210,7 +210,8 @@ Deno.serve(async (req) => {
       true
     );
   } catch (err: any) {
+    // Exception detail stays in the log; the user gets a fixed message.
     console.error("[bank-connect-complete] exception", err);
-    return htmlPage("Greška", err.message ?? String(err), false);
+    return htmlPage("Greška", "Došlo je do greške pri spajanju. Pokušajte ponovno iz aplikacije.", false);
   }
 });
