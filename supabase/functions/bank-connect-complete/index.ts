@@ -3,9 +3,16 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ebFetch } from "../_shared/enableBankingJwt.ts";
+import { escapeHtml } from "../_shared/escapeHtml.ts";
+
+// Target origin for postMessage — never "*", so only the app can read the result.
+const APP_ORIGIN = Deno.env.get("PUBLIC_APP_URL") || "https://vmbalance.com";
 
 function htmlPage(title: string, message: string, ok: boolean): Response {
   // Returns a small HTML that posts a message to opener (web) or just shows status (native).
+  // title/message are always escaped here so no caller can inject markup.
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
   const html = `<!DOCTYPE html><html lang="hr"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
