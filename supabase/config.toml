@@ -33,7 +33,7 @@ project_id = "fzalxjretvtvokiotvkf"
   [functions.analyze-document]
     verify_jwt = true
   [functions.lookup-company]
-    verify_jwt = false
+    verify_jwt = true
   [functions.notify-note-added]
     verify_jwt = false
   [functions.notify-pending-transaction]
