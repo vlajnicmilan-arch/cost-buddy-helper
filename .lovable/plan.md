@@ -1,60 +1,37 @@
-# Rezultat svježeg sigurnosnog skena (13:29)
+# Provjera je li web objava stvarno legla (ispravljena metoda)
 
-Sken je pokrenut, ništa nije označeno kao ignore, objava nije pokrenuta, ništa nije mijenjano.
+## Kriva metoda — ne koristiti
 
-## 1. Nalazi svježeg skena (`security--run_security_scan`, 13:29:22)
+Usporedba `public/version.json` sa živom stranicom **ne dokazuje ništa o web objavi**.
+Ta se datoteka mijenja samo pri izradi novog APK-a (`android-build.yml` se okida na njenu
+promjenu, `publish-version-manifest` objavljuje manifest nativne ljuske). Web objava je ne dira.
+Isti tip zabune već je zabilježen u projektu: verzija nativne ljuske ≠ verzija koda.
 
-Ukupno 7: **1 error, 6 warn**.
+## Ispravna metoda
 
-| Skener | Nalaz (`internal_id`) | Razina | Na što se odnosi |
-|---|---|---|---|
-| supabase | `SUPA_security_definer_view` | **error** | View `project_milestones_scoped` (jedini view u `public` bez `security_invoker`) |
-| supabase | `SUPA_function_search_path_mutable` | warn | Funkcije bez `SET search_path` |
-| supabase | `SUPA_anon_security_definer_function_executable` | warn | SECDEF funkcije izvršive bez prijave |
-| supabase | `SUPA_authenticated_security_definer_function_executable` | warn | SECDEF funkcije izvršive prijavljenima |
-| supabase_lov | `app_settings_public_readable` | warn | `app_settings` — SELECT `USING(true)` |
-| supabase_lov | `ai_route_costs_public_read` | warn | `ai_route_costs` — interni troškovi vidljivi svim prijavljenima |
-| supabase_lov | `paddle_price_map_public_read` | warn | `paddle_price_map` — cjenik vidljiv svim prijavljenima |
+Vite imenuje izlazne datoteke hashom sadržaja.
 
-`app_mcp`: 0. `connector_security_scan`: 0.
+1. `curl -s https://vmbalance.com/ | grep -oE '(src|href)="/assets/[^"]+"'`
+2. `npx vite build` pa isto nad `dist/index.html`
+3. Usporediti nazive. Ulazni `index-*.js` je najvažniji.
 
-## 2. Perzistirano stanje nakon skena (`get_scan_results`, force)
+Dopuna (bitno): hash ulaznog chunka može se razlikovati i kad je izvor isti, jer ovisi o
+hashovima lazy chunkova iz build okoline. Zato je konačan dokaz **usporedba sadržaja**:
+skinuti živi chunk i potražiti u njemu niz koji postoji samo u novom kodu
+(npr. novi i18n ključ). Ako niza nema — živi build je stariji.
 
-Ovo je ono što gate čita pri objavi:
+## Nalaz 5.8.2026 13:50
 
-| Skener | Nalazi | Razina | Svjež? |
-|---|---|---|---|
-| agent_security | `notify_feedback_unauthed`, `unauthed_ai_endpoints` | warn, warn | ne (11.6. / 31.5.) |
-| app_mcp | — | — | da (13:27) |
-| connector_security_scan | — | — | da (13:27) |
-| supabase | `SUPA_function_search_path_mutable` | warn | **da (13:27)** |
-| supabase_lov | `app_settings_anyone_can_read`, `budget_categories_no_owner_check`, `invoice_reminders_public_role`, `public_assets_admin_root_upload_ok` | sve warn | ne (4.8.) |
-| supply_chain | — | — | ne (31.7.) |
+- Živa stranica (`vmbalance.com`, `www`, `cost-buddy-helper.lovable.app` — svi isti
+  `x-deployment-id: 1a7dd7c0…`) servira `index-DM1jJWs-.js`; lokalni build daje `index-ChbLkdet.js`.
+- HTML se šalje s `cache-control: no-cache` → nije riječ o cacheu.
+- Živi paket **nema** i18n ključ `historyExtended`, dodan commitom `082d9723` (2.8.2026 23:07).
 
-**Nula critical u perzistiranom stanju.**
+**Zaključak: živi web bundle je stariji od 2.8.2026.** Današnje objave nisu legle na produkciju,
+iako je dijalog javio uspjeh i sigurnosni gate je propustio.
 
-## 3. Je li se `SUPA_security_definer_view` vratio kao critical
+## Prijedlog za poslije launcha (ne raditi sada)
 
-**Ne.** Živi linter ga i dalje prijavljuje kao ERROR (to je nepromijenjeno stanje baze — view `project_milestones_scoped` je namjerno SECURITY DEFINER), ali u perzistiranom popisu `supabase` skenera on **nije prisutan**, iako je taj skener osvježen u 13:27 i označen `up_to_date: true`.
-
-Zaključak: oznaka ignore je preživjela svjež sken.
-
-## 4. Novi critical nalazi
-
-**Nema ih.** Nijedna izmjena od jučer (escapeHtml, `verify_jwt` za `lookup-company`, uklanjanje `billing_enabled`, `entitlements_mode = entitlements`) nije proizvela novi critical.
-
-Tri `supabase_lov` nalaza iz svježeg skena (`app_settings_public_readable`, `ai_route_costs_public_read`, `paddle_price_map_public_read`) su **preimenovani/reformulirani** u odnosu na perzistirane, ali svi su warn i nisu novi problemi po sadržaju. Nisu dirani.
-
-## 5. Je li oznaka trajna
-
-Da, koliko se vidi iz podataka. Razlog: `internal_id` ovog nalaza je **stabilan i deterministički** — doslovno `SUPA_security_definer_view`, izveden iz šifre linter pravila, a ne iz nasumičnog ID-a po skenu. Zato ga svaki idući sken prijavljuje pod istim ključem i oznaka ga i dalje pokriva.
-
-Razlika prema `agent_security` i `supabase_lov` nalazima, gdje su ID-evi opisni i po skenu se mogu promijeniti (`app_settings_anyone_can_read` → `app_settings_public_readable`): kod tih bi se oznaka mogla izgubiti pri preimenovanju. Kod linter nalaza tipa `SUPA_*` to nije slučaj.
-
-Praktično: ne treba ništa raditi da oznaka postane trajna — već jest, dok god view ostaje isti objekt i dok god ga prijavljuje isto pravilo.
-
-## 6. Što ostaje otvoreno
-
-Uzrok neuspjele objave u 13:18 **nije bio sigurnosni gate** — potvrđeno time što je objava u 13:26 prošla bez ijedne izmjene. Bez doslovnog teksta tadašnje greške ne mogu reći što je bilo; ako se ponovi, treba screenshot ili copy-paste poruke.
-
-Nijedan sljedeći korak nije predložen — čeka se odluka.
+Ugraditi commit SHA u build preko Vite `define` i izložiti ga na jednom mjestu (meta tag ili
+ekran s verzijom). Provjera tada postaje usporedba jednog niza, koju korisnik radi sam.
+Ne dirati build konfiguraciju prije launcha.
