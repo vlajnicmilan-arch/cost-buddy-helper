@@ -63,8 +63,6 @@ const Admin = () => {
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
   const [sendingReply, setSendingReply] = useState<string | null>(null);
-  const [billingEnabled, setBillingEnabled] = useState(false);
-  const [billingLoading, setBillingLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Record<string, string>>({});
   const [subLoading, setSubLoading] = useState<string | null>(null);
   const [pendingUserContext, setPendingUserContext] = useState<DrilldownIntent | null>(null);
@@ -99,30 +97,7 @@ const Admin = () => {
       return;
     }
 
-    await Promise.all([loadReports(), loadUsers(), loadBillingSettings(), loadSubscriptions()]);
-  };
-
-  const loadBillingSettings = async () => {
-    const { data } = await supabase
-      .from('app_settings')
-      .select('value')
-      .eq('key', 'billing_enabled')
-      .single();
-    setBillingEnabled(data?.value === true);
-  };
-
-  const toggleBilling = async (enabled: boolean) => {
-    setBillingLoading(true);
-    const { error } = await supabase
-      .from('app_settings')
-      .upsert({ key: 'billing_enabled', value: enabled as any, updated_at: new Date().toISOString() });
-    if (error) {
-      showError(t('errors.save.setting', 'Greška pri spremanju postavke'));
-    } else {
-      setBillingEnabled(enabled);
-      showSuccess(enabled ? 'Naplata aktivirana' : 'Naplata deaktivirana');
-    }
-    setBillingLoading(false);
+    await Promise.all([loadReports(), loadUsers(), loadSubscriptions()]);
   };
 
   const loadSubscriptions = async () => {
@@ -405,9 +380,6 @@ const Admin = () => {
 
           <TabsContent value="billing">
             <AccessTab
-              billingEnabled={billingEnabled}
-              billingLoading={billingLoading}
-              onToggleBilling={toggleBilling}
               users={users}
               subscriptions={subscriptions}
               onDrilldown={handleDrilldown}
