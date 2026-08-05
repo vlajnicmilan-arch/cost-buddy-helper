@@ -1,80 +1,47 @@
-# Inventar javnih edge funkcija (`verify_jwt = false`)
+# Dijagnostika neuspjele objave (13:18, commit `451bb707`)
 
-Samo popis i procjena. Nijedna izmjena nije predložena niti napravljena.
+Ništa nije mijenjano, ništa nije označeno kao ignore, objava nije pokrenuta.
 
-Napomena o "zadanom": na Lovable Cloudu funkcije bez unosa u `config.toml` deployaju se s `verify_jwt = false`, dakle **jesu javne na razini gatewaya**. Zato su u popisu i one bez unosa.
+## 1. Koji nalaz sada blokira objavu
 
-Legenda: `$` = troši novac (AI/vanjski plaćeni servis, e-mail), `W` = piše u bazu, `D` = vraća podatke o korisnicima.
+Prema perzistiranim rezultatima skenera (`security--get_scan_results`, force) **trenutno nema nijednog critical nalaza**. Popis po skeneru:
 
-## A. Legitimno javne (vanjski pozivatelj bez JWT-a)
+| Skener | Nalazi | Razina |
+|---|---|---|
+| `agent_security` | 2 (`notify_feedback_unauthed`, `unauthed_ai_endpoints`) | warn, warn |
+| `app_mcp` | 0 | — |
+| `connector_security_scan` | 0 | — |
+| `supabase` | 1 (`SUPA_function_search_path_mutable`) | warn |
+| `supabase_lov` | 4 (`app_settings_anyone_can_read`, `budget_categories_no_owner_check`, `invoice_reminders_public_role`, `public_assets_admin_root_upload_ok`) | sve warn |
+| `supply_chain` | 0 | — |
 
-| Funkcija | Tko zove | Mora biti javna? | Unutarnja provjera | Oznake |
-|---|---|---|---|---|
-| `bank-connect-complete` | Enable Banking redirect (browser) | Da — bankovni povratni URL | Nema potpisa; radi samo s važećim `state`/session id; HTML escapan, origin sužen | W |
-| `paddle-webhook` | Paddle | Da — webhook | HMAC-SHA256 + `webhook_events` idempotencija | W, D (interno) |
-| `auth-email-hook` | Supabase Auth | Da — auth hook | Standard Webhooks potpis (`SEND_EMAIL_HOOK_SECRET`) | $ (e-mail), W |
-| `handle-email-suppression` | Resend webhook | Da — webhook | Potpis + provjera timestampa | $, W |
-| `handle-email-unsubscribe` | Klik u e-mailu (bez sesije) | Da — unsubscribe link | Samo token iz linka | W |
-| `get-public-project` | Javni share link | Da — javni pregled | Token + `revoked_at`/`expires_at`; financije uklonjene | D (naziv projekta, faze) |
+Nalaz `SUPA_security_definer_view` **nije na popisu** — oznaka „ignore" od prošlog puta drži se.
 
-## B. Cron (pg_cron), gola na razini gatewaya, ali zove ih baza s service-role headerom
+Dakle: **ne mogu potvrditi da je sigurnosni gate ono što je zaustavilo objavu u 13:18.** Prema podacima koje vidim, gate bi sada prošao.
 
-Sve navedene rade s `SUPABASE_SERVICE_ROLE_KEY` i **nemaju vlastitu provjeru pozivatelja** — tko pogodi URL, može ih pokrenuti (bez podataka natrag, ali s nuspojavama).
+## 2. Isti nalaz ili novi
 
-| Funkcija | Raspored | Nuspojava | Oznake |
-|---|---|---|---|
-| `activation-nudge` | 10:00 dnevno | šalje push/nudge | W |
-| `auto-invoice-reminders` | 09:00 dnevno | podsjetnici | W |
-| `auto-reject-pending` | svaki sat (dry-run) | odbija pending stavke | W |
-| `backup-weekly` | ned 01:00 | generira backup | W |
-| `check-milestone-budgets` | 08:00 | alarmi faza | W |
-| `check-milestone-deadlines` | 08:00 | alarmi rokova | W |
-| `check-reminders` | /15 min | podsjetnici | W |
-| `cleanup-krug-deleted` | 03:20 | **briše podatke** | W |
-| `cleanup-trash` | 03:15 | **briše podatke** | W |
-| `decisions-reminder-tick` | /30 min | podsjetnici | W |
-| `monitor-app-health` | /5 min | admin push + e-mail | $, W |
-| `process-pending-deletions` | 00:30 | **briše korisničke račune** | W |
-| `send-daily-summary` | svaki sat | push + agregacija | W |
-| `trial-reminder` | 09:00 | e-mail/AI tekst | $, W |
+Nijedna od jučerašnjih/današnjih izmjena (escapeHtml u `bank-connect-complete`, `verify_jwt` za `lookup-company`, uklanjanje `billing_enabled`, `entitlements_mode = entitlements`) nije proizvela novi critical nalaz. Dva `agent_security` nalaza su **zastarjela** (`up_to_date: false`, nastali 31.5. i 11.6.) — onaj o `lookup-company`/`parse-standup` opisuje stanje prije jučerašnjeg zatvaranja i sam po sebi je warn, ne blokira.
 
-Iznimke unutar cron skupine koje **imaju** vlastitu provjeru:
-- `krug-freeze-fx-snapshot`, `krug-settlement-reminder` — `KRUG_NOTIFY_INTERNAL_KEY` (Bearer / `x-krug-internal-key` / `apikey`), 401 bez njega.
-- `flush-participant-digest` — validira JWT kad je pozvana iz aplikacije.
+## 3. Što je s live linterom
 
-## C. Zove ih naša aplikacija, `verify_jwt = false`, ali imaju `getClaims`/`requireAuth` u kodu
+Živi Supabase linter (201 stavka) ima **točno jedan ERROR**: `0010_security_definer_view`. Potvrđeno upitom nad `pg_class`: u shemi `public` postoji samo jedan view bez `security_invoker` — `project_milestones_scoped`. To je isti objekt kao prošli put i namjeran je (selektivno maskiranje polja za rolu investitora). Snapshot `supabase` skenera je od 12:40 i `up_to_date: false`, pa postoji mogućnost da se pri objavi pokrene svjež skener i ponovno digne taj ERROR kao critical — ali to je pretpostavka, nemam dokaz.
 
-Efektivno zatvorene; javni unos postoji samo zato što se JWT provjerava u kodu, ne na gatewayu.
+## 4. Što nije uzrok
 
-`check-budget-alerts`, `broadcast-notification`, `notify-note-added`, `notify-pending-transaction`, `notify-project-transaction`, `notify-payment-source-transaction`, `notify-krug-event` (interni ključ), `respond-to-invitation`, `send-member-invitation`, `track-referral`, `parse-receipt` ($, AI), `notify-crash` (JWT opcionalan namjerno + rate-limit po IP hashu).
+- TypeScript: `tsgo --noEmit -p tsconfig.app.json` → exit 0, bez grešaka.
+- `app_mcp` skener je odrađen u 13:18:41 (točno u trenutku pokušaja objave) i vratio je **0 nalaza** — MCP manifest nije prepreka.
+- Status projekta „ready", `error: null` — build nije pao.
 
-## D. Zaštićene tajnom (build/release pipeline)
+## 5. Što mi treba da zatvorim pitanje
 
-`upload-apk-release`, `publish-version-manifest`, `notify-app-update` — svaka traži vlastiti secret, 401 bez njega. `preview-transactional-email` traži `LOVABLE_API_KEY` u Authorization headeru.
+Jedno od sljedećeg, pa mogu točno reći uzrok umjesto nagađati:
 
-## E. Gole i javne, izvan cron liste — ovdje treba odluka
+1. **Puni tekst poruke greške** iz dijaloga objave (screenshot ili copy-paste). Ako piše da je blokirano zbog sigurnosnih nalaza, poruka navodi i koji.
+2. Ako poruka ne spominje sigurnost, uzrok je izvan gatea i tada gledam deploy/hosting stranu.
 
-| Funkcija | Tko zove | Mora li biti javna | Stanje | Oznake |
-|---|---|---|---|---|
-| `notify-feedback-admin` | naša aplikacija nakon slanja feedbacka | Ne | **Gola.** Bilo tko s `feedbackId` (UUID) izaziva slanje e-maila/webhooka adminu s punim sadržajem feedbacka. Ne vraća podatke pozivatelju. | $, W, D (u e-mailu adminu) |
-| `notify-decision-closed` | naša aplikacija / trigger | Ne | Gola, service role, samo push | W |
-| `exchange-rates` | naša aplikacija | Ne (ali bezopasna) | Gola; proxy na frankfurter.app s 1h cacheom, bez ključa, bez baze | — |
-| `get-paddle-config` | naša aplikacija (Paddle.js) | Praktički da | Vraća `PADDLE_CLIENT_TOKEN` koji je po dizajnu javan | — |
-| `mcp` | vanjski MCP klijenti | Da (OAuth resurs) | Auth kroz `@lovable.dev/mcp-js` (`ctx.getToken()`), upiti idu pod korisnikovim JWT-om uz RLS | W, D |
-| `send-push` | interni pozivatelji | Ne | Ima provjeru (401 grana) | W |
+## Prijedlog daljnjih koraka (čeka odluku korisnika)
 
-## F. Potvrda za `lookup-company`
-
-Na popisu je s novim stanjem: `verify_jwt = true` u `config.toml`, uz `getClaims` + kvota u kodu. Više nije javna. Isto vrijedi za `parse-standup` (`verify_jwt = true`, `requireAuth`, sada i pod `checkAiCostCap`).
-
-## Sažetak po traženim oznakama
-
-- **Troše novac:** `auth-email-hook`, `handle-email-suppression`, `monitor-app-health`, `trial-reminder`, `notify-feedback-admin`, `parse-receipt`, `preview-transactional-email`.
-- **Pišu u bazu:** sve iz skupine B, plus `bank-connect-complete`, `paddle-webhook`, `handle-email-unsubscribe`, sve iz skupine C, `notify-decision-closed`, `send-push`, `mcp`.
-- **Vraćaju podatke o korisnicima pozivatelju:** `get-public-project` (ograničeno, bez financija), `mcp` (pod korisnikovim JWT-om + RLS). Ostale vraćaju samo status.
-
-## Najveći stvarni rizici (bez preporuke za akciju, za odluku)
-
-1. `process-pending-deletions`, `cleanup-trash`, `cleanup-krug-deleted` — gole, a **brišu podatke**. Vanjski poziv ubrzava brisanje mimo rasporeda.
-2. `notify-feedback-admin` — gola, troši e-mail kvotu i može spamati admina; sadržaj feedbacka ide u e-mail.
-3. `trial-reminder`, `monitor-app-health`, `activation-nudge`, `send-daily-summary` — gole, mogu generirati val push/e-mail poruka korisnicima.
+- **Opcija A** — pošalji tekst greške; tek onda diramo bilo što.
+- **Opcija B** — ako se potvrdi da je opet `project_milestones_scoped`: umjesto ponovnog „ignore", trajno rješenje je dodati `security_invoker = true` na view i osloniti maskiranje na RLS politike ispod njega. To je promjena baze i traži svoj plan i punu regresiju (balance, matrica, SECDEF invarijanta).
+- **Opcija C** — ostaviti kako jest i ponovno označiti ignore kad se pojavi. Radi, ali se ponavlja pri svakoj objavi.
