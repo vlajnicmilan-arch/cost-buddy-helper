@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "authenticated read ai_route_costs" ON public.ai_route_costs;
