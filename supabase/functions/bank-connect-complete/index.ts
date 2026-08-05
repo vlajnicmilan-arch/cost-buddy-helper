@@ -30,7 +30,7 @@ a{color:hsl(172 66% 50%);text-decoration:none;font-weight:500}
 <p><a href="/wallet">Otvori novčanik &rarr;</a></p>
 </div>
 <script>
-try { window.opener && window.opener.postMessage({ type: 'enable_banking_callback', ok: ${ok} }, '*'); } catch(e){}
+try { window.opener && window.opener.postMessage({ type: 'enable_banking_callback', ok: ${ok} }, ${JSON.stringify(APP_ORIGIN)}); } catch(e){}
 setTimeout(() => { try { window.location.href = '/wallet?bank_connected=${ok ? 1 : 0}'; } catch(e){} }, 2500);
 </script>
 </body></html>`;
