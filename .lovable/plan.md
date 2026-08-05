@@ -1,47 +1,60 @@
-# Dijagnostika neuspjele objave (13:18, commit `451bb707`)
+# Rezultat svježeg sigurnosnog skena (13:29)
 
-Ništa nije mijenjano, ništa nije označeno kao ignore, objava nije pokrenuta.
+Sken je pokrenut, ništa nije označeno kao ignore, objava nije pokrenuta, ništa nije mijenjano.
 
-## 1. Koji nalaz sada blokira objavu
+## 1. Nalazi svježeg skena (`security--run_security_scan`, 13:29:22)
 
-Prema perzistiranim rezultatima skenera (`security--get_scan_results`, force) **trenutno nema nijednog critical nalaza**. Popis po skeneru:
+Ukupno 7: **1 error, 6 warn**.
 
-| Skener | Nalazi | Razina |
-|---|---|---|
-| `agent_security` | 2 (`notify_feedback_unauthed`, `unauthed_ai_endpoints`) | warn, warn |
-| `app_mcp` | 0 | — |
-| `connector_security_scan` | 0 | — |
-| `supabase` | 1 (`SUPA_function_search_path_mutable`) | warn |
-| `supabase_lov` | 4 (`app_settings_anyone_can_read`, `budget_categories_no_owner_check`, `invoice_reminders_public_role`, `public_assets_admin_root_upload_ok`) | sve warn |
-| `supply_chain` | 0 | — |
+| Skener | Nalaz (`internal_id`) | Razina | Na što se odnosi |
+|---|---|---|---|
+| supabase | `SUPA_security_definer_view` | **error** | View `project_milestones_scoped` (jedini view u `public` bez `security_invoker`) |
+| supabase | `SUPA_function_search_path_mutable` | warn | Funkcije bez `SET search_path` |
+| supabase | `SUPA_anon_security_definer_function_executable` | warn | SECDEF funkcije izvršive bez prijave |
+| supabase | `SUPA_authenticated_security_definer_function_executable` | warn | SECDEF funkcije izvršive prijavljenima |
+| supabase_lov | `app_settings_public_readable` | warn | `app_settings` — SELECT `USING(true)` |
+| supabase_lov | `ai_route_costs_public_read` | warn | `ai_route_costs` — interni troškovi vidljivi svim prijavljenima |
+| supabase_lov | `paddle_price_map_public_read` | warn | `paddle_price_map` — cjenik vidljiv svim prijavljenima |
 
-Nalaz `SUPA_security_definer_view` **nije na popisu** — oznaka „ignore" od prošlog puta drži se.
+`app_mcp`: 0. `connector_security_scan`: 0.
 
-Dakle: **ne mogu potvrditi da je sigurnosni gate ono što je zaustavilo objavu u 13:18.** Prema podacima koje vidim, gate bi sada prošao.
+## 2. Perzistirano stanje nakon skena (`get_scan_results`, force)
 
-## 2. Isti nalaz ili novi
+Ovo je ono što gate čita pri objavi:
 
-Nijedna od jučerašnjih/današnjih izmjena (escapeHtml u `bank-connect-complete`, `verify_jwt` za `lookup-company`, uklanjanje `billing_enabled`, `entitlements_mode = entitlements`) nije proizvela novi critical nalaz. Dva `agent_security` nalaza su **zastarjela** (`up_to_date: false`, nastali 31.5. i 11.6.) — onaj o `lookup-company`/`parse-standup` opisuje stanje prije jučerašnjeg zatvaranja i sam po sebi je warn, ne blokira.
+| Skener | Nalazi | Razina | Svjež? |
+|---|---|---|---|
+| agent_security | `notify_feedback_unauthed`, `unauthed_ai_endpoints` | warn, warn | ne (11.6. / 31.5.) |
+| app_mcp | — | — | da (13:27) |
+| connector_security_scan | — | — | da (13:27) |
+| supabase | `SUPA_function_search_path_mutable` | warn | **da (13:27)** |
+| supabase_lov | `app_settings_anyone_can_read`, `budget_categories_no_owner_check`, `invoice_reminders_public_role`, `public_assets_admin_root_upload_ok` | sve warn | ne (4.8.) |
+| supply_chain | — | — | ne (31.7.) |
 
-## 3. Što je s live linterom
+**Nula critical u perzistiranom stanju.**
 
-Živi Supabase linter (201 stavka) ima **točno jedan ERROR**: `0010_security_definer_view`. Potvrđeno upitom nad `pg_class`: u shemi `public` postoji samo jedan view bez `security_invoker` — `project_milestones_scoped`. To je isti objekt kao prošli put i namjeran je (selektivno maskiranje polja za rolu investitora). Snapshot `supabase` skenera je od 12:40 i `up_to_date: false`, pa postoji mogućnost da se pri objavi pokrene svjež skener i ponovno digne taj ERROR kao critical — ali to je pretpostavka, nemam dokaz.
+## 3. Je li se `SUPA_security_definer_view` vratio kao critical
 
-## 4. Što nije uzrok
+**Ne.** Živi linter ga i dalje prijavljuje kao ERROR (to je nepromijenjeno stanje baze — view `project_milestones_scoped` je namjerno SECURITY DEFINER), ali u perzistiranom popisu `supabase` skenera on **nije prisutan**, iako je taj skener osvježen u 13:27 i označen `up_to_date: true`.
 
-- TypeScript: `tsgo --noEmit -p tsconfig.app.json` → exit 0, bez grešaka.
-- `app_mcp` skener je odrađen u 13:18:41 (točno u trenutku pokušaja objave) i vratio je **0 nalaza** — MCP manifest nije prepreka.
-- Status projekta „ready", `error: null` — build nije pao.
+Zaključak: oznaka ignore je preživjela svjež sken.
 
-## 5. Što mi treba da zatvorim pitanje
+## 4. Novi critical nalazi
 
-Jedno od sljedećeg, pa mogu točno reći uzrok umjesto nagađati:
+**Nema ih.** Nijedna izmjena od jučer (escapeHtml, `verify_jwt` za `lookup-company`, uklanjanje `billing_enabled`, `entitlements_mode = entitlements`) nije proizvela novi critical.
 
-1. **Puni tekst poruke greške** iz dijaloga objave (screenshot ili copy-paste). Ako piše da je blokirano zbog sigurnosnih nalaza, poruka navodi i koji.
-2. Ako poruka ne spominje sigurnost, uzrok je izvan gatea i tada gledam deploy/hosting stranu.
+Tri `supabase_lov` nalaza iz svježeg skena (`app_settings_public_readable`, `ai_route_costs_public_read`, `paddle_price_map_public_read`) su **preimenovani/reformulirani** u odnosu na perzistirane, ali svi su warn i nisu novi problemi po sadržaju. Nisu dirani.
 
-## Prijedlog daljnjih koraka (čeka odluku korisnika)
+## 5. Je li oznaka trajna
 
-- **Opcija A** — pošalji tekst greške; tek onda diramo bilo što.
-- **Opcija B** — ako se potvrdi da je opet `project_milestones_scoped`: umjesto ponovnog „ignore", trajno rješenje je dodati `security_invoker = true` na view i osloniti maskiranje na RLS politike ispod njega. To je promjena baze i traži svoj plan i punu regresiju (balance, matrica, SECDEF invarijanta).
-- **Opcija C** — ostaviti kako jest i ponovno označiti ignore kad se pojavi. Radi, ali se ponavlja pri svakoj objavi.
+Da, koliko se vidi iz podataka. Razlog: `internal_id` ovog nalaza je **stabilan i deterministički** — doslovno `SUPA_security_definer_view`, izveden iz šifre linter pravila, a ne iz nasumičnog ID-a po skenu. Zato ga svaki idući sken prijavljuje pod istim ključem i oznaka ga i dalje pokriva.
+
+Razlika prema `agent_security` i `supabase_lov` nalazima, gdje su ID-evi opisni i po skenu se mogu promijeniti (`app_settings_anyone_can_read` → `app_settings_public_readable`): kod tih bi se oznaka mogla izgubiti pri preimenovanju. Kod linter nalaza tipa `SUPA_*` to nije slučaj.
+
+Praktično: ne treba ništa raditi da oznaka postane trajna — već jest, dok god view ostaje isti objekt i dok god ga prijavljuje isto pravilo.
+
+## 6. Što ostaje otvoreno
+
+Uzrok neuspjele objave u 13:18 **nije bio sigurnosni gate** — potvrđeno time što je objava u 13:26 prošla bez ijedne izmjene. Bez doslovnog teksta tadašnje greške ne mogu reći što je bilo; ako se ponovi, treba screenshot ili copy-paste poruke.
+
+Nijedan sljedeći korak nije predložen — čeka se odluka.
