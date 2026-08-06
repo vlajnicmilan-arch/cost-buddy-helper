@@ -1,64 +1,67 @@
-# Povlačenje prethodnog nalaza — produkcija NIJE stara od 2.8.
+# Nalaz: objava ne leže — kod nije uzrok
 
-## Doslovni URL-ovi koje sam dohvatio
+Ne mijenjam kod, konfiguraciju ni bazu. Ovo je samo nalaz i odgovori na šest pitanja.
 
-- `https://vmbalance.com/` i `https://vmbalance.com/app` — **oba vraćaju isti dokument**
-  (SPA fallback), oba referenciraju `index-DM1jJWs-.js`, `index-vSHNfVh9.css`,
-  `react-vendor-DFQnB1PE.js`, `jspdf-Br8rfnai.js`. `x-deployment-id: 1a7dd7c0…`,
-  `cache-control: no-cache`.
-- Prethodno sam gledao **isto mjesto** (nije bila zamjena landinga za app), ali sam
-  zaključak izveo iz **jednog i18n ključa u ulaznom chunku**, a nisam pretražio lijene
-  chunkove. To je bila greška.
+## 1. Build log
 
-## Što sam sada napravio
+Poslao sam internim kanalom pun sažetak s tvojom reprodukcijom (javni repo, HEAD `b302b59`,
+npm i bun, `tsc -b`, sve exit 0, identični nazivi chunkova) i izričito zatražio zapis o
+pokušajima objave 5.–6.8. za ovaj projekt.
 
-Rekurzivno skinuo **153 JS chunka (6,48 MB)** s produkcije, krenuvši od `index-DM1jJWs-.js`
-i prateći sve `assets/*.js` reference, pa pretražio sadržaj.
+**Ja sam nemam alat koji čita build/deploy log niti stanje pipelinea.** Alat za objavu vraća
+samo „scheduled/failed" bez ijednog detalja. To je i formalno prijavljeno kao nedostatak.
+Dok tim ne odgovori, log ostaje jedina rupa u dokazima.
 
-## Rezultat pretrage (produkcijski paket)
+## 2. Čime platforma gradi
 
-| Niz | Nađeno | Gdje |
-|---|---|---|
-| `eRačun` | DA | `index-DQXSR0oa.js`, `Index-DKrjBiAj.js` |
-| `Ulazni računi` | DA | isto |
-| `Poveži uplate` | DA | isto |
-| `Duguju mi` | DA | isto |
-| `incoming_invoices` | DA | `Index-DKrjBiAj.js` |
-| `eracun_payment_links` | DA | `Index-DKrjBiAj.js` |
-| `Poravnaj s bankom` | DA | `index-DQXSR0oa.js` |
-| `balance_after`, `bank_row_seq` | DA | `App-*`, `ImportReview-*`, `OpenBankingPanel-*` |
-| `undo_import_batch`, `import_transfer_rules`, `activate_module_trial` | DA | `App-DIgpWkqo.js` |
-| `historyExtended` / „Povijest je dopunjena” | NE | nigdje |
+Nemam potvrdu iznutra. Ono što se u repozitoriju vidi:
 
-**Korisnikov iskaz stoji.** Svi ekrani koje je koristio jesu u živom paketu.
-Prethodni nalaz („živi bundle stariji od 2.8.”) **povlačim — bio je kriv.**
+- `package.json` → `"build": "vite build"`
+- Sandbox u kojem radim: Node `v22.22.0`, Bun `1.3.3`
 
-## Gdje je rez zapravo
+Je li produkcijski graditelj isti alat i ista verzija — **ne znam**, pitanje je poslano.
 
-Prijevodi su statički bundlani (`src/i18n/index.ts` importa `hr/en/de.json`), pa
-izostanak ključa jest signal — ali samo za taj jedan commit, ne za tri dana.
+## 3. Env varijable pri buildu
 
-- `eracun_payment_links` → commit `b24c09ca`, 2.8. **22:15** — **JE u produkciji**
-- `paymentFetchWindow` → `f6689bda`, 2.8. **22:35** — **JE u produkciji**
-- `historyExtended` / `historyGate` → `082d9723`, 2.8. **23:07** — **NIJE u produkciji**
+U repou je `.env` s tri `VITE_SUPABASE_*` varijable i `vite.config.ts` čita
+`public/version.json`. Tvoj build je prošao samo s tim. Traži li platforma ijednu dodatnu
+varijablu — **nemam uvid**, pitanje je poslano.
 
-Živi build je dakle s **2.8. između 22:35 i 23:07**. Nedostaje **31 commit**:
-2 s 2.8. (kasno navečer), 5 s 4.8., 24 s 5.8.
+## 4. Lovable-specifično u buildu
 
-Praktično nedostaje: historyGate (preskakanje usklađivanja za povijesne izvode),
-sve od 4.8. i sve današnje (uklanjanje `billing_enabled`, `entitlements_mode`,
-suženje biznis modula, XSS popravak `bank-connect-complete`, `ai_route_costs`).
-Baza i edge funkcije **jesu ažurne** — to se deploya odmah; zaostaje samo web bundle.
+Jedna stvarna razlika u odnosu na čisti build postoji i vrijedi je istaknuti podršci:
 
-## Ispravak metode provjere
+- `vite.config.ts` uključuje `mcpPlugin()` iz `@lovable.dev/mcp-js/stacks/supabase/vite`
+- postoji `.lovable/mcp/manifest.json` koji se regenerira na svaki commit
+- postoje `.lovable/memory`, `.lovable/audits`, `.lovable/plan.md`
 
-1. Ne oslanjati se na jedan i18n ključ u ulaznom chunku.
-2. Rekurzivno skinuti sve chunkove i pretražiti sadržaj za više neovisnih markera.
-3. Hash usporedbu ne koristiti kao dokaz (build okolina).
-4. Znati koji commit je uveo marker (`git log -S`) da se rez datira precizno.
+Kod tebe je `mcpPlugin()` prošao (isti `vite.config.ts`), pa sam plugin nije osumnjičen.
+Ali ekstraktor manifesta koji platforma vrti uz commit **guta greške tiho** — to je jedini
+korak u lancu koji postoji kod njih, a ne kod tebe.
 
-## Preporuka (ne izvršavam bez odobrenja)
+## 5. Što „error in your app" znači
 
-Web objava sa 5.8. stvarno nije legla, ali zaostatak je ~2,5 dana koda, ne 3+ dana svega,
-i baza je ažurna. Sljedeći korak bi bio ponovna objava pa ista provjera s markerom
-„Povijest je dopunjena”. Ne diram ništa dok ne kažeš.
+Nemam pristup mapiranju te poruke. Empirijski: prvi put je bila vezana uz sigurnosni nalaz
+`SUPA_security_definer_view` (dakle **ne** build), a kasniji pokušaji su javljali uspjeh i
+svejedno nisu legli. To jako sugerira **općenit tekst za bilo kakav kvar u lancu**, ne
+specifičnu grešku prevoditelja. Traženo je potvrditi.
+
+## 6. Zaključano / pauzirano stanje hostinga
+
+Ne mogu pročitati stanje deploymenta. Jedini vidljivi trag:
+`x-deployment-id: 1a7dd7c0-c4b8-4ef1-91b8-7086b2323d3f` nepromijenjen kroz sve pokušaje —
+što je konzistentno sa zaustavljenim ili zaključanim pipelineom. Pitanje je poslano.
+
+## Što je poslano podršci
+
+- Javni repo + `git clone` → `bun install --frozen-lockfile` → `bun run build` → exit 0 (~50 s)
+- Isto s `npm ci` + `npx vite build`, plus `tsc -b` i `tsc --noEmit -p tsconfig.app.json`
+- Usporedba: moj entry `index-WiTlUQSD.js` sadrži „Povijest je dopunjena" i nema
+  `billing_enabled`; produkcija poslužuje `index-DM1jJWs-.js` s obrnutim sadržajem
+- 31 commit zaostatka, `x-deployment-id` nepromijenjen, HTML se poslužuje s `no-cache`
+
+## Sljedeći korak
+
+Čekamo odgovor. Ne pokrećem objavu, ne diram kod. Kad stigne log, provjera ide istom
+metodom: rekurzivno skidanje chunkova s produkcije i traženje markera
+„Povijest je dopunjena" te odsutnosti `billing_enabled`.
