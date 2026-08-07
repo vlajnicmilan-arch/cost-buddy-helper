@@ -1,11 +1,14 @@
-// Krug add-member edge function.
+// Krug invite edge function (ex "add member").
 //
-// Owner-only invitation of an existing user by email into a Krug.
-// Honest-skeleton scope:
-//   - lookup uses find_user_by_email (service role)
-//   - membership insert respects RLS (owner via krug_membership_insert_owner)
-//   - new users are NOT supported in v1 (returns user_not_found)
-//   - returns HTTP 200 with outcome strings (client reads data.error)
+// Consent model: the owner NEVER creates a membership row. This function only
+// writes a PENDING invitation into `krug_invitations`. Membership is created
+// exclusively by `krug_accept_invitation` (SECURITY DEFINER RPC) which the
+// invitee alone can call. The DB enforces this: `krug_membership` has no
+// client INSERT policy and the `krug_require_consent` trigger rejects any row
+// without an accepted invitation (creator bootstrap excepted).
+//
+// New (unregistered) users are NOT supported — same behaviour as
+// `send-member-invitation` for payment sources: returns `user_not_found`.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -47,10 +50,11 @@ serve(async (req) => {
     if (!krugId || !isEmail(email)) {
       return json({ error: "invalid_input" }, 200);
     }
+    const normalizedEmail = email!.trim().toLowerCase();
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Owner check (defense-in-depth; RLS also enforces it on insert).
+    // Owner check (defense-in-depth; RLS also enforces it on the invitation insert).
     const { data: ownership, error: ownErr } = await admin
       .from("krug_ownership")
       .select("user_id")
@@ -67,7 +71,7 @@ serve(async (req) => {
     // Lookup invited user.
     const { data: invitedUserId, error: lookupErr } = await admin.rpc(
       "find_user_by_email",
-      { p_email: email!.trim().toLowerCase() },
+      { p_email: normalizedEmail },
     );
     if (lookupErr) {
       console.error("[KRUG-ADD-MEMBER] find_user_by_email error", lookupErr);
@@ -80,10 +84,10 @@ serve(async (req) => {
       return json({ error: "cannot_add_self" }, 200);
     }
 
-    // Check existing membership.
+    // Already a member?
     const { data: existing, error: existErr } = await admin
       .from("krug_membership")
-      .select("id, role")
+      .select("id")
       .eq("krug_id", krugId)
       .eq("user_id", invitedUserId)
       .maybeSingle();
@@ -95,40 +99,74 @@ serve(async (req) => {
       return json({ error: "already_member" }, 200);
     }
 
-    // Insert membership (RLS-equivalent via service role; we already verified owner).
-    // BEFORE INSERT trigger `krug_enforce_punopravni_cap` may reject when the
-    // preset's cap is exceeded — surface that as `cap_exceeded`.
-    const { error: insErr } = await admin.from("krug_membership").insert({
-      krug_id: krugId,
-      user_id: invitedUserId,
-      role,
-      added_by: user.id,
-    });
+    // Already invited? One active pending per (krug, email) — DB has a partial
+    // unique index; this check only produces the nicer error string.
+    const { data: pending, error: pendErr } = await admin
+      .from("krug_invitations")
+      .select("id")
+      .eq("krug_id", krugId)
+      .eq("status", "pending")
+      .ilike("email", normalizedEmail)
+      .maybeSingle();
+    if (pendErr) {
+      console.error("[KRUG-ADD-MEMBER] invitation lookup error", pendErr);
+      return json({ error: "lookup_failed" }, 200);
+    }
+    if (pending) {
+      return json({ error: "already_invited" }, 200);
+    }
+
+    const { data: inserted, error: insErr } = await admin
+      .from("krug_invitations")
+      .insert({
+        krug_id: krugId,
+        email: normalizedEmail,
+        invited_user_id: invitedUserId,
+        invited_by: user.id,
+        role,
+        status: "pending",
+      })
+      .select("id")
+      .single();
     if (insErr) {
-      console.error("[KRUG-ADD-MEMBER] insert error", insErr);
-      if ((insErr.message || "").includes("krug_punopravni_cap")) {
-        return json({ error: "cap_exceeded" }, 200);
+      console.error("[KRUG-ADD-MEMBER] invitation insert error", insErr);
+      if ((insErr.code || "") === "23505") {
+        return json({ error: "already_invited" }, 200);
       }
       return json({ error: "insert_failed", detail: insErr.message }, 200);
     }
 
-    // Fire-and-forget notification fan-out. Failure here MUST NOT roll back
-    // the membership insert — logged and swallowed.
+    // Notify the invitee. Failure MUST NOT roll back the invitation — logged.
+    let notified = false;
     try {
-      await admin.functions.invoke("notify-krug-event", {
-        body: {
-          event_type: "krug_member_added",
-          krug_id: krugId,
-          actor_id: user.id,
-          dedup_ref: `krug_member_added:${krugId}:${invitedUserId}`,
-          recipient_override: [invitedUserId],
+      const { data: notifyRes, error: notifyErr } = await admin.functions.invoke(
+        "notify-krug-event",
+        {
+          body: {
+            event_type: "krug_invited",
+            krug_id: krugId,
+            actor_id: user.id,
+            dedup_ref: `krug_invited:${inserted.id}`,
+            recipient_override: [invitedUserId],
+          },
         },
-      });
+      );
+      if (notifyErr) {
+        console.error("[KRUG-ADD-MEMBER] notify error", notifyErr);
+      } else {
+        notified = (notifyRes as { delivered?: number } | null)?.delivered
+          ? true
+          : false;
+        console.log("[KRUG-ADD-MEMBER] notify result", notifyRes);
+      }
     } catch (e) {
       console.error("[KRUG-ADD-MEMBER] notify dispatch failed", e);
     }
 
-    return json({ ok: true, user_id: invitedUserId, role }, 200);
+    return json(
+      { ok: true, invitation_id: inserted.id, user_id: invitedUserId, role, notified },
+      200,
+    );
   } catch (e) {
     console.error("[KRUG-ADD-MEMBER] unexpected", e);
     return json({ error: "unexpected" }, 500);
