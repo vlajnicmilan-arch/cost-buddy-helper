@@ -1,67 +1,86 @@
-# Nalaz: objava ne leže — kod nije uzrok
+# Nalaz: bankovna sinkronizacija kvari saldo
 
-Ne mijenjam kod, konfiguraciju ni bazu. Ovo je samo nalaz i odgovori na šest pitanja.
+Dijagnoza je napravljena čitanjem koda i provjerom stvarnih redaka u bazi. Ništa nije mijenjano.
 
-## 1. Build log
+## 1. Koji kod obavlja sinkronizaciju
 
-Poslao sam internim kanalom pun sažetak s tvojom reprodukcijom (javni repo, HEAD `b302b59`,
-npm i bun, `tsc -b`, sve exit 0, identični nazivi chunkova) i izričito zatražio zapis o
-pokušajima objave 5.–6.8. za ovaj projekt.
+- Edge funkcija: `supabase/functions/bank-sync-transactions/index.ts` (457 linija).
+- Pozivatelji (klijent): `src/components/OpenBankingPanel.tsx` (gumb po računu) i `src/hooks/useSyncAllBankAccounts.ts` (gumb „Sinkroniziraj sve"). Oba rade izravan `fetch` na funkciju.
+- Funkcija koristi **service_role klijent** i piše **izravno u `expenses`** (`admin.from("expenses").insert(row)`), odnosno `update` kad nađe točno jednog kandidata. Nikakav review korak ne postoji — nema UI potvrde, nema staging tablice.
 
-**Ja sam nemam alat koji čita build/deploy log niti stanje pipelinea.** Alat za objavu vraća
-samo „scheduled/failed" bez ijednog detalja. To je i formalno prijavljeno kao nedostatak.
-Dok tim ne odgovori, log ostaje jedina rupa u dokazima.
+## 2. Ima li provjeru duplikata
 
-## 2. Čime platforma gradi
+Ima, ali slabu, i to na dvije razine:
 
-Nemam potvrdu iznutra. Ono što se u repozitoriju vidi:
+- **Tvrda razina:** jedinstveni indeks `(user_id, bank_transaction_id)`. Štiti samo od ponovnog uvoza *istog bankovnog identifikatora*. Kod hvata `23505` i broji ga kao `skipped`.
+- **Meka razina:** `findCandidates()` — traži postojeći redak uz **sve ove uvjete istovremeno**:
+  - isti `payment_source`, isti `type`, iznos ±0,01,
+  - `bank_transaction_id IS NULL`, `bank_match_status IN (manual, pending_bank, bank_only)`,
+  - datumski prozor: **<10 € isti dan, 10–50 € ±1 dan, >50 € ±3 dana**.
 
-- `package.json` → `"build": "vite build"`
-- Sandbox u kojem radim: Node `v22.22.0`, Bun `1.3.3`
+Ono čega **nema**, izričito:
+- ne koristi `src/lib/importFingerprint.ts` (SHA-256 otisak),
+- ne koristi `src/lib/duplicateDetection.ts` (4-razinsko bodovanje, normalizacija trgovca, geo stop-riječi),
+- **ne uspoređuje naziv trgovca uopće** — match je čisti iznos+datum,
+- ne gleda `tx.status` (PENDING vs BOOKED) — vidi točku 5.
 
-Je li produkcijski graditelj isti alat i ista verzija — **ne znam**, pitanje je poslano.
+## 3. Zašto nema `import_batch_id`
 
-## 3. Env varijable pri buildu
+Funkcija u `row` objektu jednostavno ne postavlja `import_batch_id`, `bank_row_seq` ni `balance_after`, i ne upisuje redak u `imported_statements`. Potvrđeno na podacima: svih 14 redaka od sinkronizacije 7.8. ima `import_batch_id` prazan, dok redci iz PDF uvoza od 2.8. uredno imaju batch id.
 
-U repou je `.env` s tri `VITE_SUPABASE_*` varijable i `vite.config.ts` čita
-`public/version.json`. Tvoj build je prošao samo s tim. Traži li platforma ijednu dodatnu
-varijablu — **nemam uvid**, pitanje je poslano.
+Posljedica: `undo_import_batch` (Poništi uvoz) na te retke **ne radi**, ne postoji reconciliation zapis, ne pokreće se sidrenje/`historyGate`, a `ImportReview` se nikad ne otvori.
 
-## 4. Lovable-specifično u buildu
+Procjena: nije namjerno u smislu odluke „sinkronizacija ne treba batch", nego posljedica toga što je sync pisan prije/paralelno s uvoznim slojem i nikad nije spojen na njega. Ima svoju paralelnu logiku (`bank_match_status`, `possible_duplicate_of`, `BankDuplicateSheet`) koja pokriva samo dio onoga što `ImportReview` radi.
 
-Jedna stvarna razlika u odnosu na čisti build postoji i vrijedi je istaknuti podršci:
+## 4. Odakle obrnut predznak
 
-- `vite.config.ts` uključuje `mcpPlugin()` iz `@lovable.dev/mcp-js/stacks/supabase/vite`
-- postoji `.lovable/mcp/manifest.json` koji se regenerira na svaki commit
-- postoje `.lovable/memory`, `.lovable/audits`, `.lovable/plan.md`
+Smjer se određuje jednom linijom:
 
-Kod tebe je `mcpPlugin()` prošao (isti `vite.config.ts`), pa sam plugin nije osumnjičen.
-Ali ekstraktor manifesta koji platforma vrti uz commit **guta greške tiho** — to je jedini
-korak u lancu koji postoji kod njih, a ne kod tebe.
+```
+const isIncome = tx.credit_debit_indicator === "CRDT";
+```
 
-## 5. Što „error in your app" znači
+Nema provjere predznaka `transaction_amount.amount` (uzima se `Math.abs`), nema unakrsne provjere s `creditor`/`debtor` poljem, nema fallbacka ako indikator nedostaje ili je obrnut. Sve što nije doslovno `"CRDT"` završi kao rashod; sve što jest, kao priljev.
 
-Nemam pristup mapiranju te poruke. Empirijski: prvi put je bila vezana uz sigurnosni nalaz
-`SUPA_security_definer_view` (dakle **ne** build), a kasniji pokušaji su javljali uspjeh i
-svejedno nisu legli. To jako sugerira **općenit tekst za bilo kakav kvar u lancu**, ne
-specifičnu grešku prevoditelja. Traženo je potvrditi.
+Dokaz u bazi — dva retka sa sinkronizacije 1.8.2026:
 
-## 6. Zaključano / pauzirano stanje hostinga
+| datum | tip | iznos | opis | bank id |
+|---|---|---|---|---|
+| 31.7. | income | 276,49 | KERA TERM TRGOVINA Split | `G089R005354717D` |
+| 31.7. | income | 59,37 | LUKOIL DRACEVAC MRAVINCE | `G087R005351701D` |
 
-Ne mogu pročitati stanje deploymenta. Jedini vidljivi trag:
-`x-deployment-id: 1a7dd7c0-c4b8-4ef1-91b8-7086b2323d3f` nepromijenjen kroz sve pokušaje —
-što je konzistentno sa zaustavljenim ili zaključanim pipelineom. Pitanje je poslano.
+Trgovački nazivi, a upisani kao priljev — dakle banka je za te stavke vratila `credit_debit_indicator = "CRDT"`. Format identifikatora (`G0…R…D`) razlikuje se od onoga s uvoza 7.8. (`105G40610R418857D`), što upućuje da su to **rezervacije/pending zapisi**, ne knjiženja. Nije potvrđeno bez sirovog API odgovora — to je hipoteza, ne činjenica.
 
-## Što je poslano podršci
+Dodatni efekt: `findCandidates` filtrira po `type`, pa redak s obrnutim predznakom **ne može** biti prepoznat kao duplikat korisnikovog ručnog rashoda. Poništi ga u saldu i tiho nestane iz vidokruga.
 
-- Javni repo + `git clone` → `bun install --frozen-lockfile` → `bun run build` → exit 0 (~50 s)
-- Isto s `npm ci` + `npx vite build`, plus `tsc -b` i `tsc --noEmit -p tsconfig.app.json`
-- Usporedba: moj entry `index-WiTlUQSD.js` sadrži „Povijest je dopunjena" i nema
-  `billing_enabled`; produkcija poslužuje `index-DM1jJWs-.js` s obrnutim sadržajem
-- 31 commit zaostatka, `x-deployment-id` nepromijenjen, HTML se poslužuje s `no-cache`
+## 5. Odgoda knjiženja kartičnih transakcija
+
+Pravila za to **nema**. Postoji samo fiksni datumski prozor iz točke 2, koji je preuzak upravo za kartice:
+
+- 19,25 € — ručni unos 3.8., bankovni redak 6.8. → razmak 3 dana, prozor za 10–50 € je ±1 dan → **promašaj**, umetnut novi redak.
+- 59,37 € — ručni unos 31.7., bankovni redak 5.8. → razmak 5 dana, prozor za >50 € je ±3 dana → **promašaj**.
+
+Uz to, `tx.status` se nigdje ne čita. Ista kartična kupnja stiže dvaput: prvo kao rezervacija (jedan `entry_reference`), pa kao knjiženje (drugi `entry_reference`). Jedinstveni indeks ih vidi kao dvije različite transakcije i obje uđu. To objašnjava par LUKOIL 59,37 (31.7. „income" pending + 5.8. expense booked) — isti novac, dva retka, dva različita smjera.
+
+## Zbirno: četiri kvara
+
+1. Datumski prozor prekratak za kartično knjiženje (dani, ne sati).
+2. Match ignorira naziv trgovca — jedini signal je iznos, pa je prozor morao ostati uzak da izbjegne lažne spojeve. Začarani krug.
+3. Pending i booked zapisi tretiraju se kao dvije transakcije.
+4. Smjer se slijepo preuzima iz `credit_debit_indicator`, bez ijedne kontrole zdravog razuma.
+
+Peti, procesni: sve to zaobilazi `ImportReview`, pa korisnik nikad ne vidi prijedlog spajanja niti može poništiti uvoz.
+
+## Opseg rizika
+
+Za sada je pogođen samo vlasnik računa (jedini s linkanim bankovnim računima — provjereno). Ako se Enable Banking uključi široko, svaki korisnik s karticom dobiva isti obrazac: dvostruko knjižene kupnje i povremeni obrnuti predznak koji tiho poništi rashod.
 
 ## Sljedeći korak
 
-Čekamo odgovor. Ne pokrećem objavu, ne diram kod. Kad stigne log, provjera ide istom
-metodom: rekurzivno skidanje chunkova s produkcije i traženje markera
-„Povijest je dopunjena" te odsutnosti `billing_enabled`.
+Bez izmjena dok se ne odluči opseg. Prijedlog redoslijeda kad se krene:
+1. Obrnut predznak (najopasniji — tiho poništava novac).
+2. Pending/booked deduplikacija.
+3. Prozor + usporedba trgovca (ponovna uporaba `duplicateDetection.ts`).
+4. Batch/`ImportReview` integracija (najveći zahvat).
+
+Prije popravka 1. i 2. potrebno je vidjeti **sirovi Enable Banking odgovor** za sporne transakcije — inače popravljamo po hipotezi.
