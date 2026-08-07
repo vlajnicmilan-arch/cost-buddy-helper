@@ -1,86 +1,96 @@
-# Nalaz: bankovna sinkronizacija kvari saldo
+# Nalaz: pet Aircash nadoplata upisano kao odljev
 
-Dijagnoza je napravljena čitanjem koda i provjerom stvarnih redaka u bazi. Ništa nije mijenjano.
+Dijagnostika, bez izmjena. Sve tvrdnje potvrđene čitanjem koda i redaka u bazi.
 
-## 1. Koji kod obavlja sinkronizaciju
+## 1. Kako motor salda tretira `type='transfer'`
 
-- Edge funkcija: `supabase/functions/bank-sync-transactions/index.ts` (457 linija).
-- Pozivatelji (klijent): `src/components/OpenBankingPanel.tsx` (gumb po računu) i `src/hooks/useSyncAllBankAccounts.ts` (gumb „Sinkroniziraj sve"). Oba rade izravan `fetch` na funkciju.
-- Funkcija koristi **service_role klijent** i piše **izravno u `expenses`** (`admin.from("expenses").insert(row)`), odnosno `update` kad nađe točno jednog kandidata. Nikakav review korak ne postoji — nema UI potvrde, nema staging tablice.
+Smjer je tvrdo kodiran na dva mjesta, oba istovjetna:
 
-## 2. Ima li provjeru duplikata
+- `public._expenses_recompute_source_balance()` (trigger, delta-put kad izvor nema sidro)
+- `public.recompute_custom_source_balance()` (sidreni put — ovaj se koristi za Aircash jer sidro postoji)
 
-Ima, ali slabu, i to na dvije razine:
-
-- **Tvrda razina:** jedinstveni indeks `(user_id, bank_transaction_id)`. Štiti samo od ponovnog uvoza *istog bankovnog identifikatora*. Kod hvata `23505` i broji ga kao `skipped`.
-- **Meka razina:** `findCandidates()` — traži postojeći redak uz **sve ove uvjete istovremeno**:
-  - isti `payment_source`, isti `type`, iznos ±0,01,
-  - `bank_transaction_id IS NULL`, `bank_match_status IN (manual, pending_bank, bank_only)`,
-  - datumski prozor: **<10 € isti dan, 10–50 € ±1 dan, >50 € ±3 dana**.
-
-Ono čega **nema**, izričito:
-- ne koristi `src/lib/importFingerprint.ts` (SHA-256 otisak),
-- ne koristi `src/lib/duplicateDetection.ts` (4-razinsko bodovanje, normalizacija trgovca, geo stop-riječi),
-- **ne uspoređuje naziv trgovca uopće** — match je čisti iznos+datum,
-- ne gleda `tx.status` (PENDING vs BOOKED) — vidi točku 5.
-
-## 3. Zašto nema `import_batch_id`
-
-Funkcija u `row` objektu jednostavno ne postavlja `import_batch_id`, `bank_row_seq` ni `balance_after`, i ne upisuje redak u `imported_statements`. Potvrđeno na podacima: svih 14 redaka od sinkronizacije 7.8. ima `import_batch_id` prazan, dok redci iz PDF uvoza od 2.8. uredno imaju batch id.
-
-Posljedica: `undo_import_batch` (Poništi uvoz) na te retke **ne radi**, ne postoji reconciliation zapis, ne pokreće se sidrenje/`historyGate`, a `ImportReview` se nikad ne otvori.
-
-Procjena: nije namjerno u smislu odluke „sinkronizacija ne treba batch", nego posljedica toga što je sync pisan prije/paralelno s uvoznim slojem i nikad nije spojen na njega. Ima svoju paralelnu logiku (`bank_match_status`, `possible_duplicate_of`, `BankDuplicateSheet`) koja pokriva samo dio onoga što `ImportReview` radi.
-
-## 4. Odakle obrnut predznak
-
-Smjer se određuje jednom linijom:
+Oba imaju isti CASE:
 
 ```
-const isIncome = tx.credit_debit_indicator === "CRDT";
+transfer AND _extract_custom_source_id(payment_source) = izvor  -> -amount
+transfer AND income_source_id = izvor                            -> +amount
 ```
 
-Nema provjere predznaka `transaction_amount.amount` (uzima se `Math.abs`), nema unakrsne provjere s `creditor`/`debtor` poljem, nema fallbacka ako indikator nedostaje ili je obrnut. Sve što nije doslovno `"CRDT"` završi kao rashod; sve što jest, kao priljev.
+Dakle: `payment_source` je **uvijek strana koja plaća**, `income_source_id` **uvijek strana koja prima**. Nema polja koje bi to okrenulo. Klijent (`useBalanceUpdater`) u cloud načinu ne računa ništa — samo refetcha; jedini autoritet je SQL.
 
-Dokaz u bazi — dva retka sa sinkronizacije 1.8.2026:
+## 2. Postoji li pojam smjera
 
-| datum | tip | iznos | opis | bank id |
-|---|---|---|---|---|
-| 31.7. | income | 276,49 | KERA TERM TRGOVINA Split | `G089R005354717D` |
-| 31.7. | income | 59,37 | LUKOIL DRACEVAC MRAVINCE | `G087R005351701D` |
+Postoji, ali implicitno — smjer je *pozicija* izvora u paru, a ne zaseban podatak. Nema `direction` stupca, nema predznaka iznosa (`amount` je uvijek pozitivan), nema parnog retka. Jedan redak = oba kraja prijenosa.
 
-Trgovački nazivi, a upisani kao priljev — dakle banka je za te stavke vratila `credit_debit_indicator = "CRDT"`. Format identifikatora (`G0…R…D`) razlikuje se od onoga s uvoza 7.8. (`105G40610R418857D`), što upućuje da su to **rezervacije/pending zapisi**, ne knjiženja. Nije potvrđeno bez sirovog API odgovora — to je hipoteza, ne činjenica.
+Za tih pet redaka u bazi stoji:
 
-Dodatni efekt: `findCandidates` filtrira po `type`, pa redak s obrnutim predznakom **ne može** biti prepoznat kao duplikat korisnikovog ručnog rashoda. Poništi ga u saldu i tiho nestane iz vidokruga.
+| datum | iznos | payment_source | income_source_id |
+|---|---|---|---|
+| 26.7. | 75,19 | Aircash | Revolut |
+| 27.7. | 50,00 | Aircash | Revolut |
+| 28.7. | 50,00 | Aircash | Revolut |
+| 29.7. | 50,00 | Aircash | Revolut |
+| 30.7. | 58,20 | Aircash | Revolut |
 
-## 5. Odgoda knjiženja kartičnih transakcija
+Zapisano je „Aircash plaća Revolutu". Stvarnost je obrnuta. Polje nije prazno — **popunjeno je naopako**.
 
-Pravila za to **nema**. Postoji samo fiksni datumski prozor iz točke 2, koji je preuzak upravo za kartice:
+Isti obrazac ima i redak od 23.7. (100,00, Aircash → Revolut) i „Uplata gotovine na Aircash Ina" 200,00 (Aircash → Keš). Oni su na dan sidra pa ne ulaze u sumu, ali su jednako krivo okrenuti.
 
-- 19,25 € — ručni unos 3.8., bankovni redak 6.8. → razmak 3 dana, prozor za 10–50 € je ±1 dan → **promašaj**, umetnut novi redak.
-- 59,37 € — ručni unos 31.7., bankovni redak 5.8. → razmak 5 dana, prozor za >50 € je ±3 dana → **promašaj**.
+## 3. Gdje je odlučeno da su transfer i da su odlazni
 
-Uz to, `tx.status` se nigdje ne čita. Ista kartična kupnja stiže dvaput: prvo kao rezervacija (jedan `entry_reference`), pa kao knjiženje (drugi `entry_reference`). Jedinstveni indeks ih vidi kao dvije različite transakcije i obje uđu. To objašnjava par LUKOIL 59,37 (31.7. „income" pending + 5.8. expense booked) — isti novac, dva retka, dva različita smjera.
+Dvije odvojene odluke, obje u putu uvoza izvoda:
 
-## Zbirno: četiri kvara
+**Da je transfer** — `src/lib/csvParsers.ts` → `isInternalTransfer()`, ključna riječ doslovno `'uplata na aircash'`. Safety net `src/lib/pdfPostProcess.ts` isto to potvrđuje nakon AI parsera. Ta funkcija vraća `boolean` — **prepoznaje da je prijenos, ali ne i u kojem smjeru**.
 
-1. Datumski prozor prekratak za kartično knjiženje (dani, ne sati).
-2. Match ignorira naziv trgovca — jedini signal je iznos, pa je prozor morao ostati uzak da izbjegne lažne spojeve. Začarani krug.
-3. Pending i booked zapisi tretiraju se kao dvije transakcije.
-4. Smjer se slijepo preuzima iz `credit_debit_indicator`, bez ijedne kontrole zdravog razuma.
+**Da je odlazan** — `src/lib/importReview/executor.ts`, transfer grana:
 
-Peti, procesni: sve to zaobilazi `ImportReview`, pa korisnik nikad ne vidi prijedlog spajanja niti može poništiti uvoz.
+```
+payment_source: tx.paymentSource,               // novčanik čiji je izvod
+income_source_id: decision.targetIncomeSourceId // ono što je korisnik odabrao
+```
 
-## Opseg rizika
+Uvoženi izvod bio je **Aircashov** (u istoj seriji `3853caad…` su i „POS plaćanje LOVABLE", „Aircash Pay Jadrolinija"). Executor bezuvjetno stavlja novčanik izvoda na stranu koja plaća. Za retke koji na tom izvodu predstavljaju **priljev** to je uvijek pogrešno, i to bez ijedne provjere.
 
-Za sada je pogođen samo vlasnik računa (jedini s linkanim bankovnim računima — provjereno). Ako se Enable Banking uključi široko, svaki korisnik s karticom dobiva isti obrazac: dvostruko knjižene kupnje i povremeni obrnuti predznak koji tiho poništi rashod.
+UI to ne može spasiti: `ImportReview.tsx` nudi samo `importReview.transferTo` — „Prijenos na". Ne postoji „Prijenos s". Korisnik je odabrao Revolut kao drugu stranu; jedino značenje koje je aplikacija znala pridati tom odabiru bilo je „Aircash → Revolut".
 
-## Sljedeći korak
+## 4. Je li krivo naučeno pravilo („Zapamti")
 
-Bez izmjena dok se ne odluči opseg. Prijedlog redoslijeda kad se krene:
-1. Obrnut predznak (najopasniji — tiho poništava novac).
-2. Pending/booked deduplikacija.
-3. Prozor + usporedba trgovca (ponovna uporaba `duplicateDetection.ts`).
-4. Batch/`ImportReview` integracija (najveći zahvat).
+Ne. `import_transfer_rules` je **prazna tablica** (0 redaka, provjereno). Nijedno pravilo nije naučeno ni primijenjeno. Uz to, `matchTransferRule` je i sam bez smjera — ključ je `(user_id, merchant_key, source_wallet_key)`, a rezultat samo `target_income_source_id`, pa bi naučeno pravilo reproduciralo isti krivi smjer. Kvar je u modelu, ne u pravilu.
 
-Prije popravka 1. i 2. potrebno je vidjeti **sirovi Enable Banking odgovor** za sporne transakcije — inače popravljamo po hipotezi.
+## 5. Zajednički korijen — odgovor je: ne postoji
+
+Tri puta, tri neovisne odluke o smjeru novca:
+
+| Put | Čime određuje smjer | Kvar |
+|---|---|---|
+| Bankovna sinkronizacija | `credit_debit_indicator === "CRDT"` | jutrošnji: pending redci vraćeni kao CRDT → kupnja upisana kao priljev |
+| Uvoz izvoda (CSV/PDF) | pozicija u executoru: izvod = uvijek platitelj | ovaj: nadoplata upisana kao odljev |
+| Ručni unos | korisnik bira tip u obrascu | — |
+
+Nema zajedničkog modula. Nema tipa koji bi nosio smjer kroz cijeli lanac. `isInternalTransfer()` je booleanska funkcija koja po dizajnu ne može odgovoriti na pitanje smjera, a jedina strana koja to zna — opis retka („**Uplata na** Aircash" vs. „Aircash Pay …") — nigdje se ne čita u tu svrhu.
+
+To je strukturni problem, veći od oba pojedinačna kvara. Svaki novi put uvoza nasljeđuje istu prazninu.
+
+## 6. Prijedlog popravka postojećih pet redaka
+
+Tri opcije, po rastućem riziku:
+
+**A. Zamijeniti strane (preporučeno).** Za tih pet redaka `payment_source` ↔ `income_source_id`: `payment_source = 'custom:4934f97e…'` (Revolut), `income_source_id = '0716b12f…'` (Aircash). Semantički točno, jedan redak i dalje nosi cijeli prijenos, trigger sam prerarčuna oba salda. Ali **mijenja i Revolutov saldo** za −283,39 — ako je Revolut trenutno točan, to ga kvari, što znači da je Revolut već negdje drugdje pokrio te odljeve. To treba provjeriti prije zahvata.
+
+**B. Promijeniti tip u `income` na Aircashu.** `type='income'`, `income_source_id=NULL`. Aircash odmah točan (+283,39), Revolut netaknut. Gubi se veza para — prijenos postaje „prihod niotkuda". Ispravno ako je Revolutova strana već zabilježena kao zaseban rashod.
+
+**C. Soft delete + ručni ponovni unos.** Najčišći trag, najviše posla.
+
+Odluka između A i B ovisi isključivo o jednome: **je li Revolutova strana tih pet nadoplata već negdje zabilježena.** Rekao si da par ne postoji nigdje — ako to vrijedi i za Revolut, ispravno je **A**. Ako je Revolut točan bez tih redaka, ispravno je **B**.
+
+Prije bilo čega treba provjeriti Revolutov saldo naspram stvarnog. Tu provjeru nisam radio.
+
+## 7. Što bi trebalo popraviti u kodu (ne sada)
+
+1. `isInternalTransfer()` → vratiti smjer, ne boolean (`'in' | 'out' | null`). Opis to nosi: „Uplata **na** X" = ulazni, „Uplata **s**/podizanje" = izlazni.
+2. Executor: prestati pretpostavljati da je izvod uvijek platitelj — posložiti par prema smjeru iz točke 1.
+3. `ImportReview`: ponuditi „Prijenos **s**" uz „Prijenos **na**", s prijedlogom iz opisa.
+4. `import_transfer_rules`: dodati smjer u pravilo, inače naučeno pravilo cementira grešku.
+5. Jedan zajednički modul smjera koji koriste i sinkronizacija i uvoz — inače će treći put uvesti četvrtu varijantu istog kvara.
+
+Ništa od ovoga nije napravljeno. Čekam odluku o opsegu.
