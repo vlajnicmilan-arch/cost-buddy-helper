@@ -19,8 +19,8 @@
  * https URL) + provjeru da je sadržaj alata stvarno ušao u bundle.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { join, relative } from 'path';
 
 const ROOT = process.cwd();
 const BUNDLE = join(ROOT, 'supabase/functions/mcp/index.ts');
@@ -47,6 +47,37 @@ const specifiers = (lines: string[]): Array<{ line: number; spec: string }> => {
 };
 
 const VALID_SPEC = /^(npm:|jsr:|node:|https:\/\/|\.\/|\.\.\/|\/)/;
+
+// ČUVAR 1 (zrcalo ESLint pravila u test ciklusu — GitHub Tests workflow ne
+// pokreće eslint, pa bi inače pravilo iz izvora ostalo izvan CI-ja).
+describe('MCP source guard', () => {
+  it('nijedan `@/` alias import unutar src/lib/mcp/**', () => {
+    const dir = join(ROOT, 'src/lib/mcp');
+    const walk = (d: string, acc: string[] = []): string[] => {
+      for (const e of readdirSync(d)) {
+        const full = join(d, e);
+        if (statSync(full).isDirectory()) walk(full, acc);
+        else if (/\.tsx?$/.test(e)) acc.push(full);
+      }
+      return acc;
+    };
+    const offenders: string[] = [];
+    for (const f of walk(dir)) {
+      readFileSync(f, 'utf8').split('\n').forEach((text, i) => {
+        if (/(from|import\(?)\s*["']@\//.test(text)) {
+          offenders.push(`${relative(ROOT, f).replace(/\\/g, '/')}:${i + 1}: ${text.trim()}`);
+        }
+      });
+    }
+    expect(
+      offenders,
+      offenders.length
+        ? 'MCP ekstraktor prepisuje alias u nevaljani npm:@/ specifikator i ruši publish — koristi relativni import:\n' +
+            offenders.join('\n')
+        : undefined,
+    ).toEqual([]);
+  });
+});
 
 describe('MCP bundle guard', () => {
   it('generirana datoteka postoji', () => {
