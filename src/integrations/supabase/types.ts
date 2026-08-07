@@ -6861,6 +6861,20 @@ export type Database = {
         Args: { _krug: string; _user: string }
         Returns: boolean
       }
+      krug_list_my_invitations: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string
+          inviter_name: string
+          krug_id: string
+          krug_name: string
+          krug_preset: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+        }[]
+      }
       krug_mark_settled: {
         Args: {
           p_amount: number
