@@ -6,6 +6,8 @@
  * of merge/insert is Korak 4.
  */
 
+import type { MoneyDirection } from '@/lib/moneyDirection';
+
 export type QuestionReason = 'merchant_mismatch' | 'no_merchant' | 'ambiguous';
 
 export interface ManualCandidateInfo {
@@ -26,7 +28,17 @@ export type ClassificationKind =
    * insert as `type='transfer'` with income_source_id = targetIncomeSourceId.
    * Balance updater/DB trigger handles both sides of the transfer.
    */
-  | { readonly kind: 'transfer'; readonly targetIncomeSourceId: string; readonly ruleId: string | null };
+  | {
+      readonly kind: 'transfer';
+      readonly targetIncomeSourceId: string;
+      readonly ruleId: string | null;
+      /**
+       * Smjer novca u odnosu na novčanik izvoda ('in' = novac ulazi u njega).
+       * `null` = nije ga moguće izvesti iz opisa → ImportReview MORA pitati
+       * korisnika, izvršenje je blokirano dok ne odgovori.
+       */
+      readonly direction: MoneyDirection | null;
+    };
 
 export interface ImportReviewRow {
   readonly index: number;
@@ -114,7 +126,13 @@ export type QuestionAnswer = { choice: 'merge'; manualId: string } | { choice: '
  */
 export interface TransferDecision {
   readonly enabled: boolean;
+  /**
+   * Druga strana prijenosa (UUID korisnikovog novčanika). NIKAD se ne upisuje
+   * slijepo u `income_source_id` — par slaže `buildTransferPair()` po smjeru.
+   */
   readonly targetIncomeSourceId: string;
+  /** Smjer novca u odnosu na novčanik izvoda; `null` = neodgovoreno pitanje. */
+  readonly direction: MoneyDirection | null;
   readonly rememberRule: boolean;
   /** Merchant key normalized at time of decision (used for rule upsert). */
   readonly merchantKey: string | null;

@@ -20,6 +20,7 @@ import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { loadTransferRules, matchTransferRule } from '@/lib/importReview/transferRules';
+import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import {
   computeFileHash,
@@ -514,12 +515,16 @@ export const GlobalPDFImportHost = () => {
       // rule, we override the classification to `kind: 'transfer'`. Rows that
       // already auto-merged are left alone — a real manual counterpart wins.
       const transferRules = await loadTransferRules(supabase as any, user.id).catch(() => []);
-      const transferOverrides = new Map<number, { targetIncomeSourceId: string; ruleId: string }>();
+      const transferOverrides = new Map<number, { targetIncomeSourceId: string; ruleId: string; direction: MoneyDirection }>();
       if (transferRules.length > 0) {
         for (const tx of transactions) {
           if (tx.type !== 'expense') continue; // rule keyed on outgoing legs only
           const m = matchTransferRule(
-            { merchantName: tx.merchant_name, paymentSource: paymentSourceValue },
+            {
+              merchantName: tx.merchant_name,
+              paymentSource: paymentSourceValue,
+              direction: classifyTransferDescription(tx.description).direction,
+            },
             transferRules,
           );
           if (m) {
@@ -529,6 +534,7 @@ export const GlobalPDFImportHost = () => {
             transferOverrides.set(idx, {
               targetIncomeSourceId: m.rule.targetIncomeSourceId,
               ruleId: m.rule.id,
+              direction: m.rule.direction,
             });
           }
         }
@@ -578,6 +584,7 @@ export const GlobalPDFImportHost = () => {
               kind: 'transfer' as const,
               targetIncomeSourceId: override.targetIncomeSourceId,
               ruleId: override.ruleId,
+              direction: override.direction,
             },
           };
         }
@@ -591,7 +598,13 @@ export const GlobalPDFImportHost = () => {
         if (tx.type === 'transfer') {
           return {
             ...baseRow,
-            classification: { kind: 'transfer' as const, targetIncomeSourceId: '', ruleId: null },
+            classification: {
+              kind: 'transfer' as const,
+              targetIncomeSourceId: '',
+              ruleId: null,
+              // Smjer iz opisa; null → ImportReview pita korisnika.
+              direction: classifyTransferDescription(tx.description).direction,
+            },
           };
         }
         return {

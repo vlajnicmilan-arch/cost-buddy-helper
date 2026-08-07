@@ -37,6 +37,7 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
         transfers[row.index] = {
           enabled: true,
           targetIncomeSourceId: row.classification.targetIncomeSourceId,
+          direction: row.classification.direction,
           rememberRule: false,
           merchantKey: null,
           sourceWalletKey: null,
@@ -111,12 +112,19 @@ export function isTransferActive(
 }
 
 /**
- * A transfer decision is "resolved" only if the user picked a real destination
- * wallet. Empty string is the sentinel for "not yet chosen" — enforced by both
- * summarize() gating and the executor pre-flight check.
+ * A transfer decision is "resolved" only if the user picked BOTH a real
+ * counterpart wallet AND a direction. Empty string / null are the sentinels for
+ * "not yet chosen" — enforced by summarize() gating and the executor pre-flight
+ * check. Bez smjera nema tihe pretpostavke.
  */
 export function isTransferResolved(d: TransferDecision | null | undefined): boolean {
-  return !!d && d.enabled === true && typeof d.targetIncomeSourceId === 'string' && d.targetIncomeSourceId.length > 0;
+  return (
+    !!d &&
+    d.enabled === true &&
+    typeof d.targetIncomeSourceId === 'string' &&
+    d.targetIncomeSourceId.length > 0 &&
+    (d.direction === 'in' || d.direction === 'out')
+  );
 }
 
 export function summarize(

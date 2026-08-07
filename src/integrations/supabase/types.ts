@@ -2050,6 +2050,7 @@ export type Database = {
       import_transfer_rules: {
         Row: {
           created_at: string
+          direction: string
           id: string
           last_used_at: string | null
           merchant_key: string
@@ -2061,6 +2062,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          direction: string
           id?: string
           last_used_at?: string | null
           merchant_key: string
@@ -2072,6 +2074,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          direction?: string
           id?: string
           last_used_at?: string | null
           merchant_key?: string
