@@ -280,13 +280,15 @@ export interface TransferPair {
  * koji nije `custom:` izvor) — pozivatelj tada NE smije pisati.
  */
 export function buildTransferPair(input: TransferPairInput): TransferPair | null {
-  const counterpart = toSourceUuid(input.counterpartSourceId);
+  // Druga strana je uvijek raw id `custom_payment_sources` reda (bez prefiksa).
+  const counterpartRaw = String(input.counterpartSourceId ?? '').trim();
+  const counterpart = (toSourceUuid(counterpartRaw) ?? counterpartRaw.replace(/^custom:/i, '')).toLowerCase();
   if (!counterpart) return null;
 
   if (input.direction === 'out') {
     const statement = String(input.statementSource ?? '').trim();
     if (!statement) return null;
-    if (toSourceUuid(statement) === counterpart) return null; // sam sebi
+    if (statement.replace(/^custom:/i, '').toLowerCase() === counterpart) return null; // sam sebi
     return { paymentSource: statement, incomeSourceId: counterpart };
   }
 

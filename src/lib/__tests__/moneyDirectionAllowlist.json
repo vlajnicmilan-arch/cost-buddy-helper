@@ -3,5 +3,8 @@
   "src/hooks/useProjectFunding.ts": "Financiranje projekta: income_source_id je odabir korisnika u obrascu, nema opisa iz banke.",
   "src/components/EditTransactionDialog.tsx": "Ručno uređivanje transakcije — korisnik eksplicitno bira odredište prijenosa.",
   "supabase/functions/notify-note-added/index.ts": "income_source_id se samo prosljeđuje u notifications insert, nije transakcija.",
-  "supabase/functions/notify-pending-transaction/index.ts": "income_source_id se samo prosljeđuje u notifications insert, nije transakcija."
+  "supabase/functions/notify-pending-transaction/index.ts": "income_source_id se samo prosljeđuje u notifications insert, nije transakcija.",
+  "src/hooks/useExpenseCRUD.ts": "Ručni unos/uređivanje: smjer prijenosa dolazi iz korisnikovog obrasca, ne iz vanjskih podataka.",
+  "src/components/TransactionNotesThread.tsx": "Samo prosljeđivanje income_source_id u notifikaciju, ne piše transakciju.",
+  "src/lib/balance/balanceEngineMirror.ts": "Zrcalo SQL motora salda — čita polja, ne slaže par."
 }

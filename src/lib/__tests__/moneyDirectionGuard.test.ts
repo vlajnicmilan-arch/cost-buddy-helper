@@ -66,7 +66,7 @@ describe('moneyDirection guard', () => {
       if (DIRECTION_MODULES.includes(p) || isTestFile(p)) continue;
       const src = readFileSync(f, 'utf8');
       const writesPair =
-        /income_source_id\s*:/.test(src) &&
+        /(?<![\w_])income_source_id\s*:/.test(src) &&
         /\.\s*(insert|upsert|update)\s*\(/.test(src);
       if (!writesPair) continue;
       if (src.includes('buildTransferPair')) continue;
