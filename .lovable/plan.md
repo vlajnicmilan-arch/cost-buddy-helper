@@ -1,96 +1,86 @@
-# Nalaz: pet Aircash nadoplata upisano kao odljev
+# Krug — ulazak u krug bez pristanka
 
-Dijagnostika, bez izmjena. Sve tvrdnje potvrđene čitanjem koda i redaka u bazi.
+## Nalaz (provjereno u kodu i bazi)
 
-## 1. Kako motor salda tretira `type='transfer'`
+### 1. Gdje se dodavanje događa
 
-Smjer je tvrdo kodiran na dva mjesta, oba istovjetna:
+- UI: `src/components/krug/AddKrugMemberDialog.tsx` → hook `useKrugAddMember` (`src/hooks/useKrugMemberMutations.ts`).
+- Server: edge funkcija `supabase/functions/krug-add-member/index.ts`. Provjeri da je pozivatelj vlasnik (`krug_ownership`), nađe korisnika preko `find_user_by_email` (service role), i **odmah ubaci redak u `krug_membership`** sa `role` koju je vlasnik odabrao i `added_by = vlasnik`. Nema nikakvog međukoraka.
+- RLS (žive politike):
+  - `krug_membership_insert_owner` — INSERT dopušten kad `krug_is_owner(krug_id, auth.uid())`, tj. **i direktan insert iz klijenta prolazi**, edge funkcija nije jedini put.
+  - `krug_membership_select_member` — SELECT za članove kruga.
+  - `krug_membership_update_owner` / `krug_membership_delete_owner_not_self` — vlasnik mijenja ulogu i uklanja druge.
+- Zaključak: potvrđeno — nema tablice pozivnica za Krug; `budget_invitations`, `income_source_invitations`, `payment_source_invitations`, `project_invitations` postoje, Krug ih nema.
 
-- `public._expenses_recompute_source_balance()` (trigger, delta-put kad izvor nema sidro)
-- `public.recompute_custom_source_balance()` (sidreni put — ovaj se koristi za Aircash jer sidro postoji)
+### 2. Što se okine u trenutku upisa
 
-Oba imaju isti CASE:
+- **Podjele:** DB funkcija koja gradi sudionike podjele bira `krug_membership WHERE role = 'punopravni'`. Novi punopravni član **odmah ulazi u prijedloge podjela i u salda „tko kome duguje"**, bez ijedne radnje s njegove strane.
+- **Vidljivost:** `krug_is_member` / `krug_is_full_member` su temelj RLS-a za krug, članstva, dijeljene izvore i krug-troškove — od sekunde upisa novi član vidi krug, popis članova, dijeljene izvore i tijek troškova; krug njega vidi u svakom izračunu.
+- **Uloga:** bira je vlasnik pri dodavanju (`punopravni` = pun glas i ulazak u podjele, `obicni` = ograničeno). Pozvani nema utjecaja.
+- **Obavijest:** kod postoji (`notify-krug-event`, tip `krug_member_added`), ali je fire-and-forget. U bazi ukupno **2 retka tipa `krug_member_added`**, i **nijedan za dodavanja od 7.8.** (Petar, `krug_membership` upisan 18:37:41, 28 s nakon kruga) — dakle u praksi ni obavijest nije stigla. Obavijest ionako nije pristanak.
 
-```
-transfer AND _extract_custom_source_id(payment_source) = izvor  -> -amount
-transfer AND income_source_id = izvor                            -> +amount
-```
+### 3. Prijedlog opsega: `krug_invitations`
 
-Dakle: `payment_source` je **uvijek strana koja plaća**, `income_source_id` **uvijek strana koja prima**. Nema polja koje bi to okrenulo. Klijent (`useBalanceUpdater`) u cloud načinu ne računa ništa — samo refetcha; jedini autoritet je SQL.
+Uzor: **`payment_source_invitations`** — najbliži je jer dijeli isti oblik (pozivnica na dijeljeni financijski entitet, uloga se bira pri pozivu, `invited_user_id` za postojeće korisnike, token za one bez računa) i već ima zajedničku RPC `consume_invitation_token`.
 
-## 2. Postoji li pojam smjera
+Predložena tablica (zrcalo postojeće sheme):
 
-Postoji, ali implicitno — smjer je *pozicija* izvora u paru, a ne zaseban podatak. Nema `direction` stupca, nema predznaka iznosa (`amount` je uvijek pozitivan), nema parnog retka. Jedan redak = oba kraja prijenosa.
+| stupac | uloga |
+|---|---|
+| `krug_id` | krug |
+| `email` | adresa poziva |
+| `invited_user_id` | popunjen kad korisnik postoji |
+| `invited_by` | pozivatelj (vlasnik) |
+| `role` | `punopravni` / `obicni`, bira vlasnik |
+| `status` | `pending` / `accepted` / `declined` / `expired` / `revoked` |
+| `token`, `expires_at` (7 dana), `used_at`, `created_at` | isto kao kod izvora plaćanja |
 
-Za tih pet redaka u bazi stoji:
+Tijek:
 
-| datum | iznos | payment_source | income_source_id |
-|---|---|---|---|
-| 26.7. | 75,19 | Aircash | Revolut |
-| 27.7. | 50,00 | Aircash | Revolut |
-| 28.7. | 50,00 | Aircash | Revolut |
-| 29.7. | 50,00 | Aircash | Revolut |
-| 30.7. | 58,20 | Aircash | Revolut |
-
-Zapisano je „Aircash plaća Revolutu". Stvarnost je obrnuta. Polje nije prazno — **popunjeno je naopako**.
-
-Isti obrazac ima i redak od 23.7. (100,00, Aircash → Revolut) i „Uplata gotovine na Aircash Ina" 200,00 (Aircash → Keš). Oni su na dan sidra pa ne ulaze u sumu, ali su jednako krivo okrenuti.
-
-## 3. Gdje je odlučeno da su transfer i da su odlazni
-
-Dvije odvojene odluke, obje u putu uvoza izvoda:
-
-**Da je transfer** — `src/lib/csvParsers.ts` → `isInternalTransfer()`, ključna riječ doslovno `'uplata na aircash'`. Safety net `src/lib/pdfPostProcess.ts` isto to potvrđuje nakon AI parsera. Ta funkcija vraća `boolean` — **prepoznaje da je prijenos, ali ne i u kojem smjeru**.
-
-**Da je odlazan** — `src/lib/importReview/executor.ts`, transfer grana:
-
-```
-payment_source: tx.paymentSource,               // novčanik čiji je izvod
-income_source_id: decision.targetIncomeSourceId // ono što je korisnik odabrao
+```text
+vlasnik -> krug_invitations (pending)  --prihvat-->  krug_membership (role iz pozivnice)
+                     |                --odbij--->   declined  (ostaje trag, bez članstva)
+                     |                --istek--->   expired
+                     +--povuci------->  revoked
 ```
 
-Uvoženi izvod bio je **Aircashov** (u istoj seriji `3853caad…` su i „POS plaćanje LOVABLE", „Aircash Pay Jadrolinija"). Executor bezuvjetno stavlja novčanik izvoda na stranu koja plaća. Za retke koji na tom izvodu predstavljaju **priljev** to je uvijek pogrešno, i to bez ijedne provjere.
+- `krug-add-member` prestaje pisati u `krug_membership` i piše pozivnicu.
+- Prihvat/odbijanje ide kroz `SECURITY DEFINER` RPC koji smije zvati **samo pozvani** (`auth.uid() = invited_user_id` ili token), s provjerom isteka i preset-capa (`krug_enforce_punopravni_cap`) u trenutku prihvata, ne poziva.
+- Obavijest: novi tip `krug_invited` kroz postojeći `notify-krug-event` + `notifications` (kategorija `krug`), i obavijest vlasniku na prihvat/odbijanje. Ista dedup logika.
+- Do prihvata pozvani **nije član**: `krug_is_member` ga ne vidi, ne ulazi u podjele, salda ni vidljivost. Jedino što vidi je sama pozivnica.
+- RLS: pozivnicu vidi vlasnik kruga i pozvani; briše/povlači samo vlasnik.
+- **Nužno uz to:** `krug_membership_insert_owner` mora se suziti (samo RPC prihvata smije stvoriti članstvo), inače pozivnica ostaje kozmetika jer klijent može direktno insertati.
 
-UI to ne može spasiti: `ImportReview.tsx` nudi samo `importReview.transferTo` — „Prijenos na". Ne postoji „Prijenos s". Korisnik je odabrao Revolut kao drugu stranu; jedino značenje koje je aplikacija znala pridati tom odabiru bilo je „Aircash → Revolut".
+### 4. Rubni slučajevi
 
-## 4. Je li krivo naučeno pravilo („Zapamti")
+- **Nema račun:** pozivnica po e-mailu s tokenom, kao kod izvora plaćanja; prihvat nakon registracije preko `consume_invitation_token`. Ako je e-mail slanje izvan opsega, poziv se ograniči na postojeće korisnike (današnji `user_not_found`) — treba odluka.
+- **Odbijena:** `declined`, bez članstva; ponovni poziv dopušten (nova pozivnica), uz zaštitu od spama (npr. jedna aktivna `pending` po paru krug+e-mail).
+- **Istekla:** `expired` nakon 7 dana; prihvat nakon isteka odbijen.
+- **Povlačenje:** vlasnik može `revoked` dok je `pending`.
+- **Uloga:** bira se pri pozivu i zapisuje u pozivnicu; kod prihvata se preslikava u članstvo. Cap se provjerava pri prihvatu (dvije pozivnice mogu premašiti cap ako se obje prihvate).
+- **Već član / poziv sebi:** postojeće provjere ostaju, samo se pomiču na pozivnicu.
 
-Ne. `import_transfer_rules` je **prazna tablica** (0 redaka, provjereno). Nijedno pravilo nije naučeno ni primijenjeno. Uz to, `matchTransferRule` je i sam bez smjera — ključ je `(user_id, merchant_key, source_wallet_key)`, a rezultat samo `target_income_source_id`, pa bi naučeno pravilo reproduciralo isti krivi smjer. Kvar je u modelu, ne u pravilu.
+### 5. Postojeća članstva bez pristanka (bez odluke)
 
-## 5. Zajednički korijen — odgovor je: ne postoji
+**A. Ostaviti kako jest + retroaktivna obavijest „u ovom krugu si od …, možeš izaći".**
+Za: nula rizika za podatke, nijedan izračun se ne mijenja, najmanje posla.
+Protiv: pristanak nikad nije dan; za plaćeni modul ostaje pravna/etička rupa.
 
-Tri puta, tri neovisne odluke o smjeru novca:
+**B. Pretvoriti u pozivnice na čekanju** (članstvo se makne, pozivnica `pending`).
+Za: čisto stanje, svi članovi su pristali.
+Protiv: postojeći krugovi se raspadaju do prihvata — podjele, salda i povijest troškova pozvanih ostaju bez sudionika; potreban je odgovor što s već zabilježenim podjelama na koje je osoba upisana.
 
-| Put | Čime određuje smjer | Kvar |
-|---|---|---|
-| Bankovna sinkronizacija | `credit_debit_indicator === "CRDT"` | jutrošnji: pending redci vraćeni kao CRDT → kupnja upisana kao priljev |
-| Uvoz izvoda (CSV/PDF) | pozicija u executoru: izvod = uvijek platitelj | ovaj: nadoplata upisana kao odljev |
-| Ručni unos | korisnik bira tip u obrascu | — |
+**C. Međukorak:** članstvo ostaje, ali dobiva `consent_state = grandfathered` i traži se potvrda pri prvom otvaranju Kruga; do potvrde nema pisanja u njegovo ime.
+Za: bez razaranja podataka, pristanak se ipak prikuplja.
+Protiv: dodatno stanje u modelu i UI-u.
 
-Nema zajedničkog modula. Nema tipa koji bi nosio smjer kroz cijeli lanac. `isInternalTransfer()` je booleanska funkcija koja po dizajnu ne može odgovoriti na pitanje smjera, a jedina strana koja to zna — opis retka („**Uplata na** Aircash" vs. „Aircash Pay …") — nigdje se ne čita u tu svrhu.
+### 6. Procjena za 28.8.
 
-To je strukturni problem, veći od oba pojedinačna kvara. Svaki novi put uvoza nasljeđuje istu prazninu.
+- **Puna verzija** (tablica, RPC-i, sužena RLS, UI za pozivnicu i inbox, obavijesti, token za neregistrirane, istek, povlačenje, i18n hr/en/de, testovi + SQL suite): realno **4–6 radnih dana**.
+- **Sužena, sigurna verzija za launch** (dovoljna da kvar ne postoji): tablica + `pending/accepted/declined/revoked`, poziv samo postojećim korisnicima, prihvat/odbijanje RPC, **suženi RLS insert**, obavijest kroz postojeći sustav, mali UI (dijalog vlasnika + kartica „Pozvan si u krug" na `/krug`). Bez istekâ, bez tokena za neregistrirane, bez e-maila: **1,5–2,5 dana**. Istek i e-mail se dodaju kasnije bez migracije podataka ako se stupci `token`/`expires_at` odmah stave u shemu.
 
-## 6. Prijedlog popravka postojećih pet redaka
+## Tehnički dodatak
 
-Tri opcije, po rastućem riziku:
+Datoteke koje bi zahvat dirao: `supabase/functions/krug-add-member/index.ts`, nova migracija (`krug_invitations`, RPC-i, sužen `krug_membership_insert_owner`), `src/hooks/useKrugMemberMutations.ts`, `src/components/krug/AddKrugMemberDialog.tsx`, nova komponenta inboxa u `src/components/krug/`, `notify-krug-event` (novi tipovi), i18n hr/en/de, `supabase/tests/krug/*` (test da insert u `krug_membership` bez prihvaćene pozivnice padne).
 
-**A. Zamijeniti strane (preporučeno).** Za tih pet redaka `payment_source` ↔ `income_source_id`: `payment_source = 'custom:4934f97e…'` (Revolut), `income_source_id = '0716b12f…'` (Aircash). Semantički točno, jedan redak i dalje nosi cijeli prijenos, trigger sam prerarčuna oba salda. Ali **mijenja i Revolutov saldo** za −283,39 — ako je Revolut trenutno točan, to ga kvari, što znači da je Revolut već negdje drugdje pokrio te odljeve. To treba provjeriti prije zahvata.
-
-**B. Promijeniti tip u `income` na Aircashu.** `type='income'`, `income_source_id=NULL`. Aircash odmah točan (+283,39), Revolut netaknut. Gubi se veza para — prijenos postaje „prihod niotkuda". Ispravno ako je Revolutova strana već zabilježena kao zaseban rashod.
-
-**C. Soft delete + ručni ponovni unos.** Najčišći trag, najviše posla.
-
-Odluka između A i B ovisi isključivo o jednome: **je li Revolutova strana tih pet nadoplata već negdje zabilježena.** Rekao si da par ne postoji nigdje — ako to vrijedi i za Revolut, ispravno je **A**. Ako je Revolut točan bez tih redaka, ispravno je **B**.
-
-Prije bilo čega treba provjeriti Revolutov saldo naspram stvarnog. Tu provjeru nisam radio.
-
-## 7. Što bi trebalo popraviti u kodu (ne sada)
-
-1. `isInternalTransfer()` → vratiti smjer, ne boolean (`'in' | 'out' | null`). Opis to nosi: „Uplata **na** X" = ulazni, „Uplata **s**/podizanje" = izlazni.
-2. Executor: prestati pretpostavljati da je izvod uvijek platitelj — posložiti par prema smjeru iz točke 1.
-3. `ImportReview`: ponuditi „Prijenos **s**" uz „Prijenos **na**", s prijedlogom iz opisa.
-4. `import_transfer_rules`: dodati smjer u pravilo, inače naučeno pravilo cementira grešku.
-5. Jedan zajednički modul smjera koji koriste i sinkronizacija i uvoz — inače će treći put uvesti četvrtu varijantu istog kvara.
-
-Ništa od ovoga nije napravljeno. Čekam odluku o opsegu.
+Ne dira: motor salda, podjele, dijeljene izvore, brisanje kruga.
