@@ -5491,7 +5491,7 @@
         "roleLabel": "Role",
         "roleHint": "With decision rights: approves shared expenses and votes on Krug changes. Without: sees and adds expenses, but doesn't decide.",
         "submit": "Send invitation",
-        "success": "Invitation sent",
+        "success": "Invitation sent\nThey become a member only after accepting.",
         "punopravniCapReached": "Maximum members with decision rights reached for this Krug type.",
         "errors": {
           "user_not_found": "No user with that email yet.",

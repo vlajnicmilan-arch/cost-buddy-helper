@@ -58,7 +58,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
     if (!trimmed) return;
     const res = await addMember.mutateAsync({ krugId, email: trimmed, role: effectiveRole });
     if (res.ok) {
-      showSuccess(t('krug.member.add.success', 'Pozivnica poslana'));
+      showSuccess(t('krug.member.add.success', 'Pozivnica poslana\nOsoba postaje član tek kad prihvati poziv.'));
       handleClose(false);
     } else {
       showError(translateAddError((res as { error: KrugAddError }).error, t));

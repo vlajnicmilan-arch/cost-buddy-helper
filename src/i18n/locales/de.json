@@ -5491,7 +5491,7 @@
         "roleLabel": "Rolle",
         "roleHint": "Mit Entscheidungsrecht: bestätigt gemeinsame Ausgaben und stimmt über Krug-Änderungen ab. Ohne: sieht und fügt Ausgaben hinzu, entscheidet aber nicht.",
         "submit": "Einladung senden",
-        "success": "Einladung gesendet",
+        "success": "Einladung gesendet\nMitglied wird die Person erst nach der Annahme.",
         "punopravniCapReached": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
         "errors": {
           "user_not_found": "Kein Nutzer mit dieser E-Mail vorhanden.",
