@@ -88,6 +88,7 @@ describe('importReview/state', () => {
     d = answerQuestion(d, 1, { choice: 'new' }); // clear questions
     d = setTransferDecision(d, 2, {
       enabled: true,
+      direction: 'out' as const,
       targetIncomeSourceId: '', // user clicked "Ovo je prijenos" but hasn't picked
       rememberRule: false,
       merchantKey: null,
@@ -104,6 +105,7 @@ describe('importReview/state', () => {
     d = answerQuestion(d, 1, { choice: 'new' });
     d = setTransferDecision(d, 2, {
       enabled: true,
+      direction: 'out' as const,
       targetIncomeSourceId: 'wallet-abc',
       rememberRule: false,
       merchantKey: null,

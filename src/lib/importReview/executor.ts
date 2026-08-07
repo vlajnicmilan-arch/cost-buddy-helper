@@ -43,6 +43,7 @@ import type {
   SerializedImportedTx,
   TransferDecision,
 } from './types';
+import { buildTransferPair } from '@/lib/moneyDirection';
 import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
 
@@ -228,9 +229,23 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // missing a target wallet. This is the executor-side gate that matches the
   // UI's summarize() check — belt AND suspenders so a stale summary or a
   // programmatic caller cannot leak an income_source_id=NULL transfer.
-  const badTransfers = plan.transfers.filter(
-    t => !t.decision.targetIncomeSourceId || t.decision.targetIncomeSourceId.length === 0,
-  );
+  const badTransfers = plan.transfers
+    .map(t => {
+      if (!t.decision.targetIncomeSourceId || t.decision.targetIncomeSourceId.length === 0) {
+        return { rowIndex: t.rowIndex, reason: 'missing_target' };
+      }
+      if (t.decision.direction !== 'in' && t.decision.direction !== 'out') {
+        return { rowIndex: t.rowIndex, reason: 'missing_direction' };
+      }
+      const pair = buildTransferPair({
+        statementSource: t.tx.paymentSource,
+        counterpartSourceId: t.decision.targetIncomeSourceId,
+        direction: t.decision.direction,
+      });
+      if (!pair) return { rowIndex: t.rowIndex, reason: 'invalid_pair' };
+      return null;
+    })
+    .filter((x): x is { rowIndex: number; reason: string } => x !== null);
   if (badTransfers.length > 0) {
     return {
       batchId,
@@ -243,7 +258,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       skippedMerged: 0,
       skippedDuplicate: 0,
       durationMs: now() - start,
-      errors: badTransfers.map(t => `transfer:${t.rowIndex}:missing_target`),
+      errors: badTransfers.map(t => `transfer:${t.rowIndex}:${t.reason}`),
       reconciliationSummary: [],
     };
 
@@ -265,6 +280,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         merchantKey: t.decision.merchantKey,
         sourceWalletKey: t.decision.sourceWalletKey,
         targetIncomeSourceId: t.decision.targetIncomeSourceId,
+        direction: t.decision.direction as 'in' | 'out',
       });
     }
   }
@@ -352,7 +368,14 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
   let transfersCreated = 0;
   if (plan.transfers.length > 0) {
-    const rows = plan.transfers.map(({ tx, decision }) => ({
+    const rows = plan.transfers.map(({ tx, decision }) => {
+      // JEDINO mjesto koje slaže strane prijenosa — nikad ručno.
+      const pair = buildTransferPair({
+        statementSource: tx.paymentSource,
+        counterpartSourceId: decision.targetIncomeSourceId,
+        direction: decision.direction as 'in' | 'out',
+      })!;
+      return {
       user_id: input.userId,
       amount: tx.amount,
       // Description kept; helpful audit trail (bank line survives).
@@ -360,8 +383,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       category: 'transfer',
       type: 'transfer',
       date: tx.dateIso,
-      payment_source: tx.paymentSource,
-      income_source_id: decision.targetIncomeSourceId,
+      payment_source: pair.paymentSource,
+      income_source_id: pair.incomeSourceId,
       merchant_name: tx.merchantName,
       ai_extracted: false,
       category_origin: 'rule',
@@ -371,7 +394,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_match_status: 'bank_only',
       balance_after: tx.balanceAfter,
       bank_row_seq: tx.bankRowSeq,
-    }));
+      };
+    });
     try {
       const res = await input.supabase
         .from('expenses')

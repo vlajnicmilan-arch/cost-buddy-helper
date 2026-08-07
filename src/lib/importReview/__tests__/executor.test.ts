@@ -202,7 +202,7 @@ describe('importReview/executor', () => {
       ],
     });
     const d = baseDecisions({
-      transfers: { 0: { enabled: true, targetIncomeSourceId: '', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+      transfers: { 0: { enabled: true, direction: 'out' as const, targetIncomeSourceId: '', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
       newRows: { 1: true },
     });
     const { client, calls } = makeFakeClient();
@@ -244,7 +244,7 @@ describe('importReview/executor', () => {
       ],
     });
     const d = baseDecisions({
-      transfers: { 0: { enabled: true, targetIncomeSourceId: 'wallet-a', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+      transfers: { 0: { enabled: true, direction: 'out' as const, targetIncomeSourceId: 'wallet-a', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
     });
     const { client, calls } = makeFakeClient();
     await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });

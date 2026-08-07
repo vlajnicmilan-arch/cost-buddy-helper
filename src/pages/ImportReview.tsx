@@ -43,6 +43,7 @@ import { recordImportedStatement } from '@/lib/statementFingerprint';
 
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
+import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
 import type {
@@ -263,7 +264,12 @@ const ImportReview = () => {
    * offer "Zapamti" (rule already exists) — the checkbox is only shown for
    * user-flagged transfers on new/question rows.
    */
-  const buildDecision = (row: ImportReviewRow, targetId: string, remember: boolean): TransferDecision => {
+  const buildDecision = (
+    row: ImportReviewRow,
+    targetId: string,
+    remember: boolean,
+    direction: MoneyDirection | null,
+  ): TransferDecision => {
     const tx = payload.importedTransactions.find(t => t.index === row.index);
     const key = buildTransferRuleKey({
       merchantName: row.merchantName ?? null,
@@ -272,6 +278,7 @@ const ImportReview = () => {
     return {
       enabled: true,
       targetIncomeSourceId: targetId,
+      direction,
       rememberRule: remember,
       merchantKey: key?.merchantKey ?? null,
       sourceWalletKey: key?.sourceWalletKey ?? null,
@@ -289,8 +296,16 @@ const ImportReview = () => {
     const currentTargetId = td?.enabled
       ? td.targetIncomeSourceId
       : (isRuleHit ? row.classification.targetIncomeSourceId : '');
+    // Predodabir smjera: odluka → klasifikacija (pravilo/opis) → izvedeno iz opisa.
+    const suggestedDirection: MoneyDirection | null = isRuleHit
+      ? row.classification.direction
+      : classifyTransferDescription(row.description).direction;
+    const currentDirection: MoneyDirection | null = td?.enabled
+      ? td.direction
+      : suggestedDirection;
     const showControls = !!td?.enabled || isRuleHit;
     const missingTarget = showControls && !currentTargetId;
+    const missingDirection = showControls && currentDirection !== 'in' && currentDirection !== 'out';
 
     if (!showControls) {
       // Compact CTA for new/question rows. Clicking creates an ENABLED
@@ -304,7 +319,10 @@ const ImportReview = () => {
           variant="outline"
           className="mt-2 h-9 rounded-lg"
           onClick={() => {
-            updateTransfer(row.index, buildDecision(row, '', false));
+            updateTransfer(
+              row.index,
+              buildDecision(row, '', false, classifyTransferDescription(row.description).direction),
+            );
           }}
         >
           <ArrowRightLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -317,12 +335,12 @@ const ImportReview = () => {
     // the picker binds to a real value.
     const activeDecision = td?.enabled
       ? td
-      : buildDecision(row, currentTargetId, false);
+      : buildDecision(row, currentTargetId, false, currentDirection);
 
     return (
       <div className={cn(
         'mt-2 space-y-2 rounded-lg border p-2',
-        missingTarget ? 'border-destructive/60 bg-destructive/5' : 'border-primary/30 bg-primary/5',
+        missingTarget || missingDirection ? 'border-destructive/60 bg-destructive/5' : 'border-primary/30 bg-primary/5',
       )}>
         {isRuleHit && (
           <Badge variant="secondary" className="text-[10px]">
@@ -330,14 +348,45 @@ const ImportReview = () => {
             {t('importReview.badges.fromRule')}
           </Badge>
         )}
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            {t('importReview.transferDirection.label')}
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['in', 'out'] as const).map(dir => (
+              <Button
+                key={dir}
+                type="button"
+                size="sm"
+                variant={currentDirection === dir ? 'default' : 'outline'}
+                className={cn('h-11 rounded-lg text-xs', missingDirection && 'border-destructive')}
+                onClick={() =>
+                  updateTransfer(
+                    row.index,
+                    buildDecision(row, currentTargetId, activeDecision.rememberRule, dir),
+                  )
+                }
+              >
+                {t(`importReview.transferDirection.${dir}`)}
+              </Button>
+            ))}
+          </div>
+          {missingDirection && (
+            <p className="text-[11px] text-destructive flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              {t('importReview.transferDirectionRequired')}
+            </p>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           <Label className="text-xs text-muted-foreground shrink-0">
-            {t('importReview.transferTo')}
+            {currentDirection === 'in' ? t('importReview.transferFrom') : t('importReview.transferTo')}
           </Label>
           <Select
             value={currentTargetId || undefined}
             onValueChange={(v) => {
-              updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule));
+              updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule, currentDirection));
             }}
           >
             <SelectTrigger className={cn('h-9 rounded-lg text-sm', missingTarget && 'border-destructive')}>
@@ -355,7 +404,9 @@ const ImportReview = () => {
         {missingTarget && (
           <p className="text-[11px] text-destructive flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
-            {t('importReview.transferTargetRequired')}
+            {currentDirection === 'in'
+              ? t('importReview.transferSourceRequired')
+              : t('importReview.transferTargetRequired')}
           </p>
         )}
 
@@ -367,7 +418,7 @@ const ImportReview = () => {
               id={`ir-t-rem-${row.index}`}
               checked={activeDecision.rememberRule}
               onCheckedChange={(v) =>
-                updateTransfer(row.index, buildDecision(row, currentTargetId, v === true))
+                updateTransfer(row.index, buildDecision(row, currentTargetId, v === true, currentDirection))
               }
             />
             <span className="text-xs">{t('importReview.rememberRule')}</span>

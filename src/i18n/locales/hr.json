@@ -5818,7 +5818,15 @@
     "cancelTransfer": "Nije prijenos",
     "plannedSummaryV2": "{{merges}} spajanja · {{news}} novih · {{transfers}} prijenosa · {{skipped}} preskočeno",
     "confirmedSummaryV2": "Spojeno {{merged}}, dodano {{inserted}}, prijenosa {{transfers}}, preskočeno {{skipped}}.",
-    "historyExtended": "Povijest je dopunjena ({{count}} računa). Izvod je stariji od referentne točke salda, pa se stanje ne mijenja — uskladit će se kad uvezete najnoviji izvod."
+    "historyExtended": "Povijest je dopunjena ({{count}} računa). Izvod je stariji od referentne točke salda, pa se stanje ne mijenja — uskladit će se kad uvezete najnoviji izvod.",
+    "transferFrom": "S kojeg izvora",
+    "transferSourceRequired": "Odaberi izvor s kojeg je novac došao",
+    "transferDirectionRequired": "Odaberi smjer novca da nastaviš",
+    "transferDirection": {
+      "label": "Smjer novca",
+      "in": "Novac je ušao",
+      "out": "Novac je izašao"
+    }
   },
   "correctionDelete": {
     "title": "Brisanje zapisa o korekciji salda",

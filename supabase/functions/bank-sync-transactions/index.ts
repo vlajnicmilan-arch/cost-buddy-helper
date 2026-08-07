@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { ebFetch } from "../_shared/enableBankingJwt.ts";
 import { callGemini } from "../_shared/geminiClient.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
+import { resolveBankTxDirection } from "../_shared/moneyDirection.ts";
 
 interface Body {
   bank_account_id: string;
@@ -29,6 +30,20 @@ interface EBTransaction {
   status?: string;
 }
 
+/**
+ * Smjer novca — ISKLJUČIVO kroz zajednički modul. Ova funkcija ne smije sama
+ * tumačiti `credit_debit_indicator` (to je bio uzrok kupnji upisanih kao priljev).
+ */
+function directionOf(tx: EBTransaction): { isIncome: boolean; confidence: string; reason: string } {
+  const res = resolveBankTxDirection({
+    creditDebitIndicator: tx.credit_debit_indicator,
+    amount: tx.transaction_amount?.amount,
+    creditorName: tx.creditor?.name,
+    debtorName: tx.debtor?.name,
+  });
+  return { isIncome: res.direction === 'in', confidence: res.confidence, reason: res.reason };
+}
+
 function extractRemittance(tx: EBTransaction): string {
   const ri = tx.remittance_information;
   if (Array.isArray(ri) && ri.length > 0) {
@@ -41,7 +56,7 @@ function extractRemittance(tx: EBTransaction): string {
 }
 
 function pickDescription(tx: EBTransaction): string {
-  const isIncome = tx.credit_debit_indicator === "CRDT";
+  const { isIncome } = directionOf(tx);
   const counterparty = isIncome ? tx.debtor?.name : tx.creditor?.name;
   const remittance = extractRemittance(tx);
 
@@ -349,7 +364,14 @@ Deno.serve(async (req) => {
       const txDate = tx.booking_date || tx.value_date;
       if (!txDate) { skipped += 1; continue; }
 
-      const isIncome = tx.credit_debit_indicator === "CRDT";
+      const dir = directionOf(tx);
+      const isIncome = dir.isIncome;
+      if (dir.confidence !== "high") {
+        console.warn(
+          "[bank-sync-transactions] low-confidence direction",
+          JSON.stringify({ stableId, confidence: dir.confidence, reason: dir.reason }),
+        );
+      }
       const description = pickDescription(tx);
       const type = isIncome ? "income" : "expense";
 

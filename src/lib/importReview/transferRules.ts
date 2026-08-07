@@ -24,6 +24,7 @@
 
 import { normalizeMerchant } from '../duplicateDetection';
 import { resolvePaymentSourceKey } from '../paymentSource/resolve';
+import type { MoneyDirection } from '../moneyDirection';
 
 export interface TransferRule {
   readonly id: string;
@@ -31,11 +32,18 @@ export interface TransferRule {
   readonly merchantKey: string;
   readonly sourceWalletKey: string;
   readonly targetIncomeSourceId: string;
+  /** Smjer novca u odnosu na novčanik izvoda — dio ključa pravila. */
+  readonly direction: MoneyDirection;
 }
 
 export interface TransferRuleMatchInput {
   readonly merchantName?: string | null;
   readonly paymentSource?: string | null;
+  /**
+   * Smjer izveden iz opisa retka (`classifyTransferDescription`). Kad je poznat,
+   * mora se poklopiti s pravilom; kad nije, uzima se smjer iz pravila.
+   */
+  readonly direction?: MoneyDirection | null;
 }
 
 export interface TransferRuleMatch {
@@ -57,9 +65,12 @@ export function matchTransferRule(
   const sourceWalletKey = resolvePaymentSourceKey(input.paymentSource);
   if (sourceWalletKey === '__unknown__') return null;
 
-  const rule = rules.find(
+  const sameKey = rules.filter(
     (r) => r.merchantKey === merchantKey && r.sourceWalletKey === sourceWalletKey,
   );
+  const rule = input.direction
+    ? sameKey.find((r) => r.direction === input.direction)
+    : sameKey[0];
   if (!rule) return null;
 
   return { rule, merchantKey, sourceWalletKey };
@@ -87,6 +98,7 @@ interface RuleRow {
   merchant_key: string;
   source_wallet_key: string;
   target_income_source_id: string;
+  direction: MoneyDirection;
 }
 
 /** Minimal supabase surface — makes IO helpers unit-testable. */
@@ -110,7 +122,7 @@ export async function loadTransferRules(
 ): Promise<TransferRule[]> {
   const res = await supabase
     .from('import_transfer_rules')
-    .select('id,user_id,merchant_key,source_wallet_key,target_income_source_id')
+    .select('id,user_id,merchant_key,source_wallet_key,target_income_source_id,direction')
     .eq('user_id', userId);
   if (res.error || !res.data) return [];
   return res.data.map((r) => ({
@@ -119,6 +131,7 @@ export async function loadTransferRules(
     merchantKey: r.merchant_key,
     sourceWalletKey: r.source_wallet_key,
     targetIncomeSourceId: r.target_income_source_id,
+    direction: r.direction === 'in' ? 'in' : 'out',
   }));
 }
 
@@ -127,10 +140,11 @@ export interface UpsertRuleInput {
   readonly merchantKey: string;
   readonly sourceWalletKey: string;
   readonly targetIncomeSourceId: string;
+  readonly direction: MoneyDirection;
 }
 
 /**
- * Idempotent upsert on (user_id, merchant_key, source_wallet_key). Called
+ * Idempotent upsert on (user_id, merchant_key, source_wallet_key, direction). Called
  * from the executor BEFORE inserting expense rows so a mid-flight retry
  * doesn't insert twice AND doesn't lose the rule.
  */
@@ -142,7 +156,7 @@ export async function upsertTransferRules(
   // Dedupe on the composite key — same batch may cover multiple rows for one rule.
   const byKey = new Map<string, UpsertRuleInput>();
   for (const r of rules) {
-    const k = `${r.userId}::${r.merchantKey}::${r.sourceWalletKey}`;
+    const k = `${r.userId}::${r.merchantKey}::${r.sourceWalletKey}::${r.direction}`;
     byKey.set(k, r);
   }
   const rows = Array.from(byKey.values()).map((r) => ({
@@ -150,12 +164,13 @@ export async function upsertTransferRules(
     merchant_key: r.merchantKey,
     source_wallet_key: r.sourceWalletKey,
     target_income_source_id: r.targetIncomeSourceId,
+    direction: r.direction,
     last_used_at: new Date().toISOString(),
   }));
   try {
     const res = await supabase
       .from('import_transfer_rules')
-      .upsert(rows, { onConflict: 'user_id,merchant_key,source_wallet_key' })
+      .upsert(rows, { onConflict: 'user_id,merchant_key,source_wallet_key,direction' })
       .select('id');
     if (res.error) return { savedCount: 0, errors: [res.error.message] };
     return { savedCount: res.data?.length ?? 0, errors: [] };
