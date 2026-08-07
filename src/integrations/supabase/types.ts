@@ -2908,6 +2908,59 @@ export type Database = {
           },
         ]
       }
+      krug_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          invited_user_id: string | null
+          krug_id: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+          status: string
+          token: string
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          invited_user_id?: string | null
+          krug_id: string
+          role?: Database["public"]["Enums"]["krug_membership_role"]
+          status?: string
+          token?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string | null
+          krug_id?: string
+          role?: Database["public"]["Enums"]["krug_membership_role"]
+          status?: string
+          token?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_invitations_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       krug_membership: {
         Row: {
           added_by: string | null
@@ -6751,6 +6804,10 @@ export type Database = {
         Returns: boolean
       }
       iso_week_label: { Args: { p_ts: string }; Returns: string }
+      krug_accept_invitation: {
+        Args: { p_invitation_id?: string; p_token?: string }
+        Returns: Json
+      }
       krug_apply_act: {
         Args: {
           p_act: string
@@ -6770,6 +6827,10 @@ export type Database = {
       krug_cancel_deletion: { Args: { p_krug_id: string }; Returns: Json }
       krug_cleanup_act_dedup: { Args: never; Returns: Json }
       krug_cron_freeze_fx_snapshots: { Args: never; Returns: number }
+      krug_decline_invitation: {
+        Args: { p_invitation_id?: string; p_token?: string }
+        Returns: Json
+      }
       krug_emit_notification: {
         Args: {
           p_actor_id: string
@@ -6782,6 +6843,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      krug_expire_invitations: { Args: never; Returns: number }
       krug_expire_predlozena: { Args: never; Returns: Json }
       krug_govern_to_personal: {
         Args: { p_client_request_id: string; p_expense_id: string }
@@ -6798,6 +6860,20 @@ export type Database = {
       krug_is_owner: {
         Args: { _krug: string; _user: string }
         Returns: boolean
+      }
+      krug_list_my_invitations: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string
+          inviter_name: string
+          krug_id: string
+          krug_name: string
+          krug_preset: string
+          role: Database["public"]["Enums"]["krug_membership_role"]
+        }[]
       }
       krug_mark_settled: {
         Args: {
@@ -6838,6 +6914,10 @@ export type Database = {
       }
       krug_retract: {
         Args: { p_client_request_id: string; p_expense_id: string }
+        Returns: Json
+      }
+      krug_revoke_invitation: {
+        Args: { p_invitation_id: string }
         Returns: Json
       }
       krug_set_privacy: {

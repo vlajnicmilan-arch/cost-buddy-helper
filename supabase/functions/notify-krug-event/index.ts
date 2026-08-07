@@ -42,6 +42,9 @@ const corsHeaders = {
 
 type EventType =
   | "krug_member_added"
+  | "krug_invited"
+  | "krug_invitation_accepted"
+  | "krug_invitation_declined"
   | "krug_expense_proposed"
   | "krug_expense_confirmed"
   | "krug_expense_rejected"
@@ -62,6 +65,9 @@ interface Payload {
 
 const VALID: readonly EventType[] = [
   "krug_member_added",
+  "krug_invited",
+  "krug_invitation_accepted",
+  "krug_invitation_declined",
   "krug_expense_proposed",
   "krug_expense_confirmed",
   "krug_expense_rejected",
@@ -326,6 +332,12 @@ function event_type_shortKey(t: EventType): string {
   switch (t) {
     case "krug_member_added":
       return "member_added";
+    case "krug_invited":
+      return "invited";
+    case "krug_invitation_accepted":
+      return "invitation_accepted";
+    case "krug_invitation_declined":
+      return "invitation_declined";
     case "krug_expense_proposed":
       return "expense_proposed";
     case "krug_expense_confirmed":

@@ -33,6 +33,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { AddKrugMemberDialog } from './AddKrugMemberDialog';
+import { KrugPendingInvitationsList } from './KrugPendingInvitationsList';
 import { KrugApprovalQueue } from './KrugApprovalQueue';
 import { KrugDecidedSection } from './KrugDecidedSection';
 import { KrugLifecycleBadge } from './KrugLifecycleBadge';
@@ -209,7 +210,7 @@ export function KrugDetailScreen({ krugId }: Props) {
               className="h-8"
             >
               <UserPlus className="w-4 h-4 mr-1" />
-              {t('krug.member.add.cta', 'Dodaj člana')}
+              {t('krug.member.add.cta', 'Pozovi člana')}
             </Button>
           )}
         </div>
@@ -217,7 +218,7 @@ export function KrugDetailScreen({ krugId }: Props) {
         {members.length <= 1 && (
           <Card className="p-4 text-xs text-muted-foreground">
             {isOwner
-              ? t('krug.member.empty.owner', 'Krug još nema drugih članova. Pozovi nekoga preko “Dodaj člana”.')
+              ? t('krug.member.empty.owner', 'Krug još nema drugih članova. Pozovi nekoga preko “Pozovi člana”.')
               : t('krug.member.empty.member', 'Krug još nema drugih članova.')}
           </Card>
         )}
@@ -316,6 +317,8 @@ export function KrugDetailScreen({ krugId }: Props) {
           })}
         </Card>
       </section>
+
+      <KrugPendingInvitationsList krugId={krugId} isOwner={isOwner} />
 
       <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
 

@@ -2682,6 +2682,18 @@
       "settlement_reminder": {
         "title": "Offene Posten im Krug",
         "message": "Du hast {{count}} offene Posten in Höhe von {{total}} {{currency}}."
+      },
+      "invited": {
+        "title": "Du wurdest in einen Krug eingeladen",
+        "message": "Jemand hat dich in seinen Krug eingeladen. Nimm an oder lehne ab."
+      },
+      "invitation_accepted": {
+        "title": "Einladung angenommen",
+        "message": "Die eingeladene Person hat die Krug-Einladung angenommen."
+      },
+      "invitation_declined": {
+        "title": "Einladung abgelehnt",
+        "message": "Die eingeladene Person hat die Krug-Einladung abgelehnt."
       }
     },
     "payment_source_transaction": {
@@ -5472,14 +5484,14 @@
       "you": "du",
       "unknown": "Unbekanntes Mitglied",
       "add": {
-        "cta": "Mitglied hinzufügen",
-        "title": "Mitglied hinzufügen",
+        "cta": "Mitglied einladen",
+        "title": "Mitglied einladen",
         "emailLabel": "E-Mail",
-        "emailHint": "Lädt einen bestehenden App-Nutzer ein. Einladungen für neue Nutzer folgen in der nächsten Welle.",
+        "emailHint": "Wir senden eine Einladung an eine bestehende Nutzerin oder einen Nutzer. Mitglied wird sie oder er erst nach der Annahme.",
         "roleLabel": "Rolle",
         "roleHint": "Mit Entscheidungsrecht: bestätigt gemeinsame Ausgaben und stimmt über Krug-Änderungen ab. Ohne: sieht und fügt Ausgaben hinzu, entscheidet aber nicht.",
-        "submit": "Hinzufügen",
-        "success": "Jetzt im Krug\nAb sofort sieht das Mitglied gemeinsame Ausgaben.",
+        "submit": "Einladung senden",
+        "success": "Einladung gesendet\nMitglied wird die Person erst nach der Annahme.",
         "punopravniCapReached": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
         "errors": {
           "user_not_found": "Kein Nutzer mit dieser E-Mail vorhanden.",
@@ -5488,11 +5500,12 @@
           "not_owner": "Nur der Krug-Eigentümer kann Mitglieder hinzufügen.",
           "invalid_input": "Ungültige E-Mail.",
           "cap_exceeded": "Max. Anzahl Mitglieder mit Entscheidungsrecht für diesen Krug-Typ erreicht.",
-          "generic": "Fehler beim Hinzufügen."
+          "generic": "Fehler beim Hinzufügen.",
+          "already_invited": "Für diese E-Mail ist bereits eine Einladung offen."
         }
       },
       "empty": {
-        "owner": "Der Krug hat noch keine weiteren Mitglieder. Lade jemanden über „Mitglied hinzufügen“ ein.",
+        "owner": "Dieser Krug hat noch keine weiteren Mitglieder. Lade jemanden über „Mitglied einladen“ ein.",
         "member": "Der Krug hat noch keine weiteren Mitglieder."
       },
       "role": {
@@ -5695,6 +5708,32 @@
         "confirmed": "Bestätigung erfasst.",
         "rejected": "Vorschlag abgelehnt.",
         "withdrawn": "Vorschlag zurückgezogen."
+      }
+    },
+    "invite": {
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "revoke": "Zurückziehen",
+      "accepted": "Du bist dem Krug beigetreten",
+      "declined": "Einladung abgelehnt",
+      "revoked": "Einladung zurückgezogen",
+      "inbox": {
+        "title": "Du wurdest in einen Krug eingeladen",
+        "byline": "{{inviter}} lädt dich in diesen Krug ein.",
+        "consentHint": "Bis zur Annahme bist du kein Mitglied und siehst keine Ausgaben dieses Krug."
+      },
+      "pending": {
+        "title": "Gesendete Einladungen",
+        "expires": "Gültig bis {{date}}"
+      },
+      "errors": {
+        "expired": "Die Einladung ist abgelaufen.",
+        "not_pending": "Die Einladung ist nicht mehr aktiv.",
+        "not_found": "Einladung nicht gefunden.",
+        "not_invitee": "Diese Einladung ist nicht für dich.",
+        "not_owner": "Nur die Eigentümerin oder der Eigentümer kann die Einladung zurückziehen.",
+        "cap_exceeded": "Dieser Krug ist für Mitglieder mit Entscheidungsrecht voll.",
+        "unexpected": "Die Aktion ist fehlgeschlagen. Bitte erneut versuchen."
       }
     }
   },

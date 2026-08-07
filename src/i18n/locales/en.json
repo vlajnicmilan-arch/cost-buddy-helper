@@ -2682,6 +2682,18 @@
       "settlement_reminder": {
         "title": "Outstanding items in Krug",
         "message": "You have {{count}} outstanding items totalling {{total}} {{currency}}."
+      },
+      "invited": {
+        "title": "You were invited to a Krug",
+        "message": "Someone invited you to their Krug. Accept or decline in the app."
+      },
+      "invitation_accepted": {
+        "title": "Invitation accepted",
+        "message": "The invited person accepted the Krug invitation."
+      },
+      "invitation_declined": {
+        "title": "Invitation declined",
+        "message": "The invited person declined the Krug invitation."
       }
     },
     "payment_source_transaction": {
@@ -5472,14 +5484,14 @@
       "you": "you",
       "unknown": "Unknown member",
       "add": {
-        "cta": "Add member",
-        "title": "Add member",
+        "cta": "Invite member",
+        "title": "Invite member",
         "emailLabel": "Email",
-        "emailHint": "Invites an existing app user. Invites for new users will arrive in the next wave.",
+        "emailHint": "We send an invitation to an existing app user. They join only after accepting.",
         "roleLabel": "Role",
         "roleHint": "With decision rights: approves shared expenses and votes on Krug changes. Without: sees and adds expenses, but doesn't decide.",
-        "submit": "Add",
-        "success": "They're in the Krug\nFrom now on they see shared expenses.",
+        "submit": "Send invitation",
+        "success": "Invitation sent\nThey become a member only after accepting.",
         "punopravniCapReached": "Maximum members with decision rights reached for this Krug type.",
         "errors": {
           "user_not_found": "No user with that email yet.",
@@ -5488,11 +5500,12 @@
           "not_owner": "Only the Krug owner can add members.",
           "invalid_input": "Invalid email.",
           "cap_exceeded": "Maximum members with decision rights reached for this Krug type.",
-          "generic": "Failed to add member."
+          "generic": "Failed to add member.",
+          "already_invited": "An invitation for that email is already pending."
         }
       },
       "empty": {
-        "owner": "Krug has no other members yet. Invite someone via “Add member”.",
+        "owner": "This Krug has no other members yet. Invite someone via “Invite member”.",
         "member": "Krug has no other members yet."
       },
       "role": {
@@ -5695,6 +5708,32 @@
         "confirmed": "Confirmation recorded.",
         "rejected": "Proposal rejected.",
         "withdrawn": "Proposal withdrawn."
+      }
+    },
+    "invite": {
+      "accept": "Accept",
+      "decline": "Decline",
+      "revoke": "Revoke",
+      "accepted": "You joined the Krug",
+      "declined": "Invitation declined",
+      "revoked": "Invitation revoked",
+      "inbox": {
+        "title": "You were invited to a Krug",
+        "byline": "{{inviter}} invites you to this Krug.",
+        "consentHint": "Until you accept you are not a member and you see none of its expenses."
+      },
+      "pending": {
+        "title": "Sent invitations",
+        "expires": "Valid until {{date}}"
+      },
+      "errors": {
+        "expired": "The invitation has expired.",
+        "not_pending": "The invitation is no longer active.",
+        "not_found": "Invitation not found.",
+        "not_invitee": "This invitation is not for you.",
+        "not_owner": "Only the Krug owner can revoke an invitation.",
+        "cap_exceeded": "This Krug is full for members with decision rights.",
+        "unexpected": "The action failed. Please try again."
       }
     }
   },

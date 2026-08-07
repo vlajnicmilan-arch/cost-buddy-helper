@@ -22,7 +22,20 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
     if (kerr) throw kerr;
     krugId = k!.id;
     // owner bootstrap trigger (krug_bootstrap_creator) postavlja A kao punopravnog.
-    // Dodajemo B kao 'obicni'.
+    // B ulazi kao 'obicni' — od uvođenja pozivnica članstvo NE nastaje izravnim
+    // insertom (trigger `krug_require_consent`), nego iz prihvaćene pozivnice.
+    const { error: iErr } = await admin()
+      .from('krug_invitations')
+      .insert({
+        krug_id: krugId,
+        email: `b-${bId}@example.test`,
+        invited_user_id: bId,
+        invited_by: aId,
+        role: 'obicni',
+        status: 'accepted',
+        used_at: new Date().toISOString(),
+      });
+    if (iErr) throw iErr;
     const { error: mErr } = await admin()
       .from('krug_membership')
       .insert({ krug_id: krugId, user_id: bId, role: 'obicni' });
@@ -32,6 +45,7 @@ test.describe('07 — krug membership (obicni vs punopravni)', () => {
   test.afterAll(async () => {
     await admin().from('krug_shared_payment_source').delete().eq('krug_id', krugId);
     await admin().from('krug_membership').delete().eq('krug_id', krugId);
+    await admin().from('krug_invitations').delete().eq('krug_id', krugId);
     await admin().from('krug').delete().eq('id', krugId);
   });
 
