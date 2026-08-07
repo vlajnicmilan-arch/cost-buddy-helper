@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { KrugListScreen } from '@/components/krug/KrugListScreen';
+import { KrugInvitationsInbox } from '@/components/krug/KrugInvitationsInbox';
 import { KrugDetailScreen } from '@/components/krug/KrugDetailScreen';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
