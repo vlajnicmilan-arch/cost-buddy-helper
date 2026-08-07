@@ -26,7 +26,7 @@ if [ "$SKIP_MIGRATIONS" != "1" ]; then
   done < "$HERE/KRUG_INVITE_MIGRATIONS.txt"
 fi
 
-KRUG=$(psql -tA -c "insert into public.krug (name, preset, created_by) values ('harness','partner','00000000-0000-0000-0000-0000000000a1') returning id")
+KRUG=$(psql -tA -q -c "insert into public.krug (name, preset, created_by) values ('harness','partner','00000000-0000-0000-0000-0000000000a1') returning id" | head -1)
 psql -q -c "insert into public.krug_ownership (krug_id, user_id) values ('$KRUG','00000000-0000-0000-0000-0000000000a1')"
 psql -q -c "insert into public.krug_membership (krug_id, user_id, role, added_by) values ('$KRUG','00000000-0000-0000-0000-0000000000a1','punopravni','00000000-0000-0000-0000-0000000000a1')" >/dev/null 2>&1 || true
 psql -q -c "insert into auth.users (id, email) values
