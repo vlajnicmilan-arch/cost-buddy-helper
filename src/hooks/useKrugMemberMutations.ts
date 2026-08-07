@@ -1,7 +1,9 @@
 /**
  * Krug member management hookovi.
  *
- * - addMember: poziva edge function `krug-add-member` (email lookup + insert)
+ * - addMember: poziva edge function `krug-add-member` — stvara POZIVNICU
+ *   (`krug_invitations`), NE članstvo. Članstvo nastaje samo kroz
+ *   `krug_accept_invitation` RPC koji poziva pozvani (vidi useKrugInvitations).
  * - changeRole: direct UPDATE na krug_membership (RLS: krug_membership_update_owner)
  * - removeMember: direct DELETE (RLS: krug_membership_delete_owner_not_self;
  *   owner self-remove blokiran na bazi)
@@ -15,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 export type KrugAddRole = 'punopravni' | 'obicni';
 
 export type KrugAddOutcome =
-  | { ok: true; user_id: string; role: KrugAddRole }
+  | { ok: true; user_id: string; role: KrugAddRole; invitation_id?: string }
   | { ok: false; error: KrugAddError };
 
 export type KrugAddError =
@@ -25,6 +27,7 @@ export type KrugAddError =
   | 'user_not_found'
   | 'cannot_add_self'
   | 'already_member'
+  | 'already_invited'
   | 'cap_exceeded'
   | 'lookup_failed'
   | 'insert_failed'
@@ -56,12 +59,14 @@ export function useKrugAddMember() {
         return { ok: false, error: 'unexpected' };
       }
       if (data?.ok) {
-        return { ok: true, user_id: data.user_id, role: data.role };
+        return { ok: true, user_id: data.user_id, role: data.role, invitation_id: data.invitation_id };
       }
       return { ok: false, error: (data?.error as KrugAddError) ?? 'unexpected' };
     },
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ['krug', 'members', vars.krugId] });
+      // Poziv više ne stvara članstvo nego pozivnicu — osvježi pending listu.
+      qc.invalidateQueries({ queryKey: ['krug', 'invitations', vars.krugId] });
     },
   });
 }

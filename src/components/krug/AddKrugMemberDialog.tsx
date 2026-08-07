@@ -1,11 +1,13 @@
 /**
- * AddKrugMemberDialog — vlasnik dodaje postojećeg korisnika u Krug po emailu.
+ * AddKrugMemberDialog — vlasnik POZIVA postojećeg korisnika u Krug po emailu.
  *
- * Honest Skeleton v1:
+ * Pristanak: ovaj dijalog NE stvara članstvo, nego pozivnicu. Pozvani je
+ * vidi na /krug i sam odlučuje (Prihvati/Odbij). Uloga se bira pri pozivu i
+ * primjenjuje tek u trenutku prihvata (tada se provjerava i cap).
+ *
  * - lookup ide kroz edge function `krug-add-member` (service-role find_user_by_email)
- * - poziva novog (još neregistriranog) korisnika nije podržano — vraća user_not_found
- *   poruku; flow za email pozive čeka idući val
- * - cap za `punopravni` enforcan kao UX disable (KRUG_PRESETS.maxPunopravni)
+ * - poziv još neregistriranog korisnika nije podržan — vraća user_not_found,
+ *   identično obrascu kod izvora plaćanja
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,7 +58,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
     if (!trimmed) return;
     const res = await addMember.mutateAsync({ krugId, email: trimmed, role: effectiveRole });
     if (res.ok) {
-      showSuccess(t('krug.member.add.success', 'Član dodan'));
+      showSuccess(t('krug.member.add.success', 'Pozivnica poslana'));
       handleClose(false);
     } else {
       showError(translateAddError((res as { error: KrugAddError }).error, t));
@@ -67,7 +69,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('krug.member.add.title', 'Dodaj člana')}</DialogTitle>
+          <DialogTitle>{t('krug.member.add.title', 'Pozovi člana')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -89,7 +91,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
             <p className="text-xs text-muted-foreground">
               {t(
                 'krug.member.add.emailHint',
-                'Pozivamo postojećeg korisnika aplikacije. Pozivi novim korisnicima dolaze u sljedećem valu.',
+                'Šaljemo pozivnicu postojećem korisniku aplikacije. Član postaje tek kad prihvati.',
               )}
             </p>
           </div>
@@ -137,7 +139,7 @@ export function AddKrugMemberDialog({ open, onOpenChange, krugId, preset, punopr
               disabled={!email.trim() || addMember.isPending}
             >
               {addMember.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('krug.member.add.submit', 'Dodaj')}
+              {t('krug.member.add.submit', 'Pošalji pozivnicu')}
             </Button>
           </div>
         </div>
@@ -150,6 +152,8 @@ function translateAddError(err: KrugAddError, t: TFunction): string {
   switch (err) {
     case 'user_not_found':
       return t('krug.member.add.errors.user_not_found', 'Korisnik s tim emailom još nema račun.');
+    case 'already_invited':
+      return t('krug.member.add.errors.already_invited', 'Pozivnica za taj email već čeka odgovor.');
     case 'already_member':
       return t('krug.member.add.errors.already_member', 'Korisnik je već član ovog Kruga.');
     case 'cannot_add_self':
