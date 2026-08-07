@@ -31,10 +31,10 @@ SELECT set_config('test.krug_id', :'krug_id', false),
 
 DO $$
 DECLARE
-  v_krug uuid := current_setting('test.krug_id')::uuid;
-  v_owner uuid := current_setting('test.owner_id')::uuid;
-  v_invitee uuid := current_setting('test.invitee_id')::uuid;
-  v_other uuid := current_setting('test.other_id')::uuid;   -- treca osoba, nije pozvana
+  v_krug uuid := trim(both '''' from current_setting('test.krug_id'))::uuid;
+  v_owner uuid := trim(both '''' from current_setting('test.owner_id'))::uuid;
+  v_invitee uuid := trim(both '''' from current_setting('test.invitee_id'))::uuid;
+  v_other uuid := trim(both '''' from current_setting('test.other_id'))::uuid;   -- treca osoba, nije pozvana
   v_inv uuid;
   v_res jsonb;
 BEGIN
