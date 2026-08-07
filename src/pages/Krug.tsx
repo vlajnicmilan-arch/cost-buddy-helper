@@ -124,8 +124,12 @@ export default function Krug() {
             <KrugDetailScreen krugId={selectedKrugId} />
           </>
         ) : (
-          <KrugListScreen onSelect={setSelectedKrugId} />
+          <>
+            <KrugInvitationsInbox />
+            <KrugListScreen onSelect={setSelectedKrugId} />
+          </>
         )}
+
       </main>
       <BottomNav />
     </div>
