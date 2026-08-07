@@ -22,12 +22,19 @@
 
 BEGIN;
 
+-- psql varijable se NE interpoliraju unutar dollar-quoted bloka, pa ih
+-- prenosimo kroz session settingse.
+SELECT set_config('test.krug_id', :'krug_id', false),
+       set_config('test.owner_id', :'owner_id', false),
+       set_config('test.invitee_id', :'invitee_id', false),
+       set_config('test.other_id', :'other_id', false);
+
 DO $$
 DECLARE
-  v_krug uuid := :'krug_id';
-  v_owner uuid := :'owner_id';
-  v_invitee uuid := :'invitee_id';
-  v_other uuid := :'other_id';   -- treca osoba, nije pozvana
+  v_krug uuid := current_setting('test.krug_id')::uuid;
+  v_owner uuid := current_setting('test.owner_id')::uuid;
+  v_invitee uuid := current_setting('test.invitee_id')::uuid;
+  v_other uuid := current_setting('test.other_id')::uuid;   -- treca osoba, nije pozvana
   v_inv uuid;
   v_res jsonb;
 BEGIN
