@@ -6872,32 +6872,19 @@ export type Database = {
         Args: { p_invitation_id?: string; p_token?: string }
         Returns: Json
       }
-      krug_emit_notification:
-        | {
-            Args: {
-              p_actor_id: string
-              p_dedup_ref?: string
-              p_deletion_request_id?: string
-              p_event_type: string
-              p_expense_id?: string
-              p_krug_id: string
-              p_recipient_override?: string[]
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_actor_id: string
-              p_dedup_ref?: string
-              p_deletion_request_id?: string
-              p_event_type: string
-              p_expense_id?: string
-              p_krug_id: string
-              p_recipient_override?: string[]
-              p_vars?: Json
-            }
-            Returns: undefined
-          }
+      krug_emit_notification: {
+        Args: {
+          p_actor_id: string
+          p_dedup_ref?: string
+          p_deletion_request_id?: string
+          p_event_type: string
+          p_expense_id?: string
+          p_krug_id: string
+          p_recipient_override?: string[]
+          p_vars?: Json
+        }
+        Returns: undefined
+      }
       krug_expire_invitations: { Args: never; Returns: number }
       krug_expire_predlozena: { Args: never; Returns: Json }
       krug_govern_to_personal: {
