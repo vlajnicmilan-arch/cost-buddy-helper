@@ -228,6 +228,57 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
         </Card>
       )}
 
+      {/* Pending prijedlozi ručne podjele — samo link-stavke. Akcija (Potvrdi /
+          Odbij) živi u pregledu transakcije, u KrugExpenseSplitPanelGate. */}
+      {pendingOverrides.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <h4 className="text-xs font-medium flex items-center gap-2 text-module-muted">
+            <Percent className="w-3.5 h-3.5" />
+            {t('krug.queue.overrides.title', 'Prijedlozi podjele')}
+            <Badge
+              variant="secondary"
+              className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400"
+            >
+              {pendingOverrides.length}
+            </Badge>
+          </h4>
+          <Card className="divide-y divide-border">
+            {pendingOverrides.map((item) => {
+              const proposerName = getMemberDisplayName(
+                overrideProfiles.get(item.proposedBy),
+                item.proposedBy,
+                t('krug.member.unknown', 'Nepoznat član'),
+              );
+              return (
+                <div
+                  key={item.overrideId}
+                  className="px-4 py-3 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  {...clickableProps(() => openDetail(item.expense))}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate">
+                        {item.expense.description || t('krug.queue.noDescription', '(bez opisa)')}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {t('krug.queue.overrides.row', 'Prijedlog podjele · {{name}}', {
+                          name: proposerName,
+                        })}
+                      </div>
+                    </div>
+                    <div className="text-sm font-mono tabular-nums shrink-0">
+                      {formatAmount(Number(item.expense.amount), (item.expense.currency ?? undefined) as any)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </div>
+      )}
+
+
+
 
       <TransactionDetailDialog
         expense={selected}
