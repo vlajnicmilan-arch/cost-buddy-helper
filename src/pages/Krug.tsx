@@ -39,6 +39,9 @@ export default function Krug() {
   const hasKrugAccess = hasModuleAccess('krug');
   const isReadOnly = !hasKrugAccess;
   const [selectedKrugId, setSelectedKrugId] = useState<string | null>(null);
+  // Deep-link fokus iz obavijesti: konkretna transakcija ili zapis podmirenja.
+  const [focusExpenseId, setFocusExpenseId] = useState<string | null>(null);
+  const [focusSettlementId, setFocusSettlementId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Direktan ulaz na /krug bez prava: ako korisnik nema NI tier NI članstvo
@@ -64,12 +67,17 @@ export default function Krug() {
   // listu ne re-triggera otvaranje.
   useEffect(() => {
     const idParam = searchParams.get('id');
-    if (idParam && idParam !== selectedKrugId) {
-      setSelectedKrugId(idParam);
-      const next = new URLSearchParams(searchParams);
-      next.delete('id');
-      setSearchParams(next, { replace: true });
-    }
+    const expenseParam = searchParams.get('expense');
+    const settlementParam = searchParams.get('settlement');
+    if (!idParam && !expenseParam && !settlementParam) return;
+    if (idParam && idParam !== selectedKrugId) setSelectedKrugId(idParam);
+    if (expenseParam) setFocusExpenseId(expenseParam);
+    if (settlementParam) setFocusSettlementId(settlementParam);
+    const next = new URLSearchParams(searchParams);
+    next.delete('id');
+    next.delete('expense');
+    next.delete('settlement');
+    setSearchParams(next, { replace: true });
   }, [searchParams, selectedKrugId, setSearchParams]);
 
   // Page-level broadcast — hvata `krug_deleted` iz DB trigera
@@ -115,13 +123,26 @@ export default function Krug() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setSelectedKrugId(null)}
+              onClick={() => {
+                setSelectedKrugId(null);
+                setFocusExpenseId(null);
+                setFocusSettlementId(null);
+              }}
               className="-ml-2"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               {t('krug.backToList', 'Natrag na popis')}
             </Button>
-            <KrugDetailScreen krugId={selectedKrugId} onLeft={() => setSelectedKrugId(null)} />
+            <KrugDetailScreen
+              krugId={selectedKrugId}
+              onLeft={() => setSelectedKrugId(null)}
+              focusExpenseId={focusExpenseId}
+              focusSettlementId={focusSettlementId}
+              onFocusConsumed={() => {
+                setFocusExpenseId(null);
+                setFocusSettlementId(null);
+              }}
+            />
           </>
         ) : (
           <>
