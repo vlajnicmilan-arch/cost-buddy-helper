@@ -378,25 +378,26 @@ const App = () => (
                             <Sonner />
                             <BrowserRouter>
                               <BackButtonProvider>
-                                <ExitConfirmDialog />
-                                <ScrollToTop />
-                                <DeepLinkInit />
-                                <PushAutoRegister />
-                                <DiagnosticRouteTracker />
-                                <BusinessModeGuard />
-                                <RouteAwareGlobalOverlays />
-                                <GlobalReceiptScanHost />
-                                <GlobalPDFImportHost />
-                                <GlobalDecisionCaptureHost />
-                                <CorrectionDeleteConfirmHost />
-                                <ReconciliationDialogHost />
-                                <ImportBatchDialogHost />
-
-                                <CrispChat />
                                 <ModuleGateProvider>
+                                  <ExitConfirmDialog />
+                                  <ScrollToTop />
+                                  <DeepLinkInit />
+                                  <PushAutoRegister />
+                                  <DiagnosticRouteTracker />
+                                  <BusinessModeGuard />
+                                  <RouteAwareGlobalOverlays />
+                                  <GlobalReceiptScanHost />
+                                  <GlobalPDFImportHost />
+                                  <GlobalDecisionCaptureHost />
+                                  <CorrectionDeleteConfirmHost />
+                                  <ReconciliationDialogHost />
+                                  <ImportBatchDialogHost />
+
+                                  <CrispChat />
                                   <AppRoutes />
                                 </ModuleGateProvider>
                               </BackButtonProvider>
+
                             </BrowserRouter>
                           </DecisionScanProvider>
                         </PdfImportProvider>
