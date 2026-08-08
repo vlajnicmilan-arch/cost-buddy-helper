@@ -54,9 +54,30 @@ SELECT set_config('test.krug_id', :'krug_id', false),
        set_config('test.creditor_id', :'creditor_id', false),
        set_config('test.third_id', :'third_id', false);
 
+-- Fixture: vlastiti Krug (preset 'klub' → bez cap-a) + 3 punopravna člana.
+-- Rollback-safe; consent trigger se privremeno gasi (fixture, ne test).
+DO $fx$
+DECLARE
+  v_k uuid;
+  v_debtor uuid := trim(both '''' from current_setting('test.debtor_id'))::uuid;
+  v_creditor uuid := trim(both '''' from current_setting('test.creditor_id'))::uuid;
+  v_third uuid := trim(both '''' from current_setting('test.third_id'))::uuid;
+BEGIN
+  INSERT INTO public.krug (name, preset, created_by)
+  VALUES ('settle-harness', 'klub', v_creditor) RETURNING id INTO v_k;
+  INSERT INTO public.krug_ownership (krug_id, user_id) VALUES (v_k, v_creditor);
+  ALTER TABLE public.krug_membership DISABLE TRIGGER USER;
+  INSERT INTO public.krug_membership (krug_id, user_id, role, added_by) VALUES
+    (v_k, v_creditor, 'punopravni', v_creditor),
+    (v_k, v_debtor,   'punopravni', v_creditor),
+    (v_k, v_third,    'punopravni', v_creditor);
+  ALTER TABLE public.krug_membership ENABLE TRIGGER USER;
+  PERFORM set_config('test.krug_id', v_k::text, false);
+END $fx$;
+
 DO $$
 DECLARE
-  v_krug uuid := trim(both '''' from current_setting('test.krug_id'))::uuid;
+  v_krug uuid := current_setting('test.krug_id')::uuid;
   v_debtor uuid := trim(both '''' from current_setting('test.debtor_id'))::uuid;
   v_creditor uuid := trim(both '''' from current_setting('test.creditor_id'))::uuid;
   v_third uuid := trim(both '''' from current_setting('test.third_id'))::uuid;
