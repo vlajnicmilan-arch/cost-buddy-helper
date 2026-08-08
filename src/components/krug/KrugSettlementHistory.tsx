@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, History, ArrowRight, X, Loader2 } from 'lucide-react';
+import { History, ArrowRight, X, Loader2 } from 'lucide-react';
+import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugSettlementMutations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
@@ -27,7 +28,9 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<string | null>(null);
-  const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember && open);
+  // Brojka u naslovu mora biti točna i dok je sekcija zatvorena, pa se ledger
+  // dohvaća čim je korisnik punopravan član (ne tek na otvaranje).
+  const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember);
   const { visible, hasMore, remaining, showMore } = useShowMore(data);
 
   // Obavijest o podmirenju vodi ravno ovdje — sekcija se sama otvori.
@@ -53,20 +56,15 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
 
 
   return (
-    <section className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 text-sm font-medium text-module-muted"
+    <>
+      <CollapsibleSection
+        title={t('krug.settle.history.title', 'Povijest podmirenja')}
+        count={data.length}
+        icon={History}
+        open={open}
+        onOpenChange={setOpen}
+        testId="krug-settlement-history"
       >
-        <span className="flex items-center gap-2">
-          <History className="w-4 h-4" />
-          {t('krug.settle.history.title', 'Povijest podmirenja')}
-        </span>
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-
-      {open && (
         <Card className="divide-y divide-border">
           {isLoading && (
             <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
@@ -121,7 +119,8 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
           })}
           <ShowMoreButton hasMore={hasMore} remaining={remaining} onClick={showMore} />
         </Card>
-      )}
+      </CollapsibleSection>
+
 
       <ConfirmActionDialog
         open={!!voidTarget}
@@ -138,6 +137,6 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
         pending={voidMut.isPending}
         onConfirm={handleVoid}
       />
-    </section>
+    </>
   );
 }
