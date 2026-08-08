@@ -208,6 +208,8 @@ export default {
   "notifications.krug.settlement_reminder.message": "Imaš {{count}} nepodmirenih stavki, ukupno {{total}} {{currency}}.",
   "notifications.krug.settlement_settled.title": "Poravnanje potvrđeno",
   "notifications.krug.settlement_settled.message": "Član Kruga je označio transfer podmirenim.",
+  "notifications.krug.settlement_voided.title": "Podmirenje poništeno",
+  "notifications.krug.settlement_voided.message": "Član Kruga je poništio zabilježeno podmirenje ({{amount}} {{currency}}). Razlog: {{reason}}",
   "notifications.project_expense_review.submitted.title": "Trošak čeka vašu potvrdu",
   "notifications.project_expense_review.submitted.message.expense": "{{actor}} je poslao trošak „{{description}}\" ({{amount}}) u projektu „{{project}}\". Čeka vašu potvrdu.",
   "notifications.project_expense_review.submitted.message.income": "{{actor}} je poslao prihod „{{description}}\" ({{amount}}) u projektu „{{project}}\". Čeka vašu potvrdu.",

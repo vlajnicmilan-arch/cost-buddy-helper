@@ -2708,6 +2708,10 @@
       "membership_notice": {
         "title": "Članstvo u Krugu „{{krug}}\"",
         "message": "Član si Kruga „{{krug}}\" od {{date}}. Ako ne želiš biti član, možeš napustiti Krug u postavkama Kruga."
+      },
+      "settlement_voided": {
+        "title": "Podmirenje poništeno",
+        "message": "Član Kruga je poništio zabilježeno podmirenje ({{amount}} {{currency}}). Razlog: {{reason}}"
       }
     },
     "payment_source_transaction": {
@@ -5115,7 +5119,14 @@
     "sendBroadcast": "Pošalji obavijest",
     "broadcastSuccess": "Obavijest poslana za {{count}} korisnika",
     "broadcastMissingHr": "HR verzija (naslov i poruka) je obavezna",
-    "broadcastFooter": "Obavijest će biti poslana svim registriranim korisnicima na njihovom preferiranom jeziku (HR fallback za prazna polja)."
+    "broadcastFooter": "Obavijest će biti poslana svim registriranim korisnicima na njihovom preferiranom jeziku (HR fallback za prazna polja).",
+    "feedback": {
+      "deleteDialog": {
+        "title": "Obriši povratnu informaciju",
+        "description": "Ova radnja je nepovratna.",
+        "confirm": "Obriši"
+      }
+    }
   },
   "adminRetention": {
     "title": "Cohort Retention",
@@ -5306,6 +5317,11 @@
       "durationHm": "{{h}} h {{m}} min",
       "durationM": "{{m}} min",
       "durationLtMinute": "manje od minute"
+    },
+    "disconnectDialog": {
+      "title": "Odspoji banku",
+      "description": "Sinkronizacija transakcija s ovom bankom prestaje. Postojeće transakcije ostaju.",
+      "confirm": "Odspoji"
     }
   },
   "trash": {
@@ -5407,7 +5423,12 @@
         "confirm": "Odvojiti izvor od Kruga?",
         "success": "Izvor odvojen",
         "denied": "Nemaš ovlasti odvojiti ovaj izvor.",
-        "error": "Odvajanje nije uspjelo"
+        "error": "Odvajanje nije uspjelo",
+        "dialog": {
+          "title": "Odvoji izvor",
+          "description": "Izvor plaćanja više neće biti dostupan članovima Kruga.",
+          "confirm": "Odvoji"
+        }
       },
       "unknown": "Izvor"
     },
@@ -5533,7 +5554,12 @@
       "remove": {
         "confirm": "Ukloniti člana iz Kruga?",
         "success": "Član uklonjen\nViše nema pristup zajedničkim podacima.",
-        "error": "Greška pri uklanjanju člana"
+        "error": "Greška pri uklanjanju člana",
+        "dialog": {
+          "title": "Ukloni člana",
+          "description": "Član gubi pristup Krugu i njegovim podacima.",
+          "confirm": "Ukloni"
+        }
       },
       "actions": {
         "promote": "Daj pravo odluke",
@@ -5689,7 +5715,14 @@
         "noNote": "bez napomene",
         "voidedLabel": "Poništeno",
         "void": "Poništi",
-        "voidPrompt": "Razlog poništenja:"
+        "voidPrompt": "Razlog poništenja:",
+        "voidDialog": {
+          "title": "Poništi podmirenje",
+          "description": "Poništavaš zabilježeno podmirenje. Druga strana dobiva obavijest s razlogom.",
+          "reasonLabel": "Razlog poništenja (obavezno)",
+          "reasonPlaceholder": "npr. novac nije stigao",
+          "confirm": "Poništi podmirenje"
+        }
       }
     },
     "override": {
@@ -5730,6 +5763,13 @@
         "confirmed": "Potvrda zabilježena.",
         "rejected": "Prijedlog odbijen.",
         "withdrawn": "Prijedlog povučen."
+      },
+      "rejectDialog": {
+        "title": "Odbij podjelu",
+        "description": "Odbijaš predloženu podjelu troška.",
+        "reasonLabel": "Razlog (opcionalno)",
+        "reasonPlaceholder": "npr. iznos nije točan",
+        "confirm": "Odbij"
       }
     },
     "invite": {
