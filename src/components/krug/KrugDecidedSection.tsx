@@ -59,15 +59,12 @@ export function KrugDecidedSection({ krugId }: Props) {
   };
 
   return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-medium flex items-center gap-2 text-module-muted">
-        <History className="w-4 h-4 text-module-muted" />
-        {t('krug.decided.title', 'Odlučeno')}
-        {decided.length > 0 && (
-          <span className="text-xs text-muted-foreground">({decided.length})</span>
-        )}
-      </h3>
-
+    <CollapsibleSection
+      title={t('krug.decided.title', 'Odlučeno')}
+      count={decided.length}
+      icon={History}
+      testId="krug-decided-section"
+    >
       {isLoading ? (
         <Card className="p-4 text-xs text-muted-foreground flex items-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
