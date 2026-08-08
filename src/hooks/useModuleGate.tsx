@@ -88,11 +88,21 @@ export function useModuleGate(): Ctx {
   const ctx = useContext(ModuleGateContext);
   if (!ctx) {
     // Fallback: tiho no-op umjesto crasha ako ProviderHost nije mountan
-    // (npr. u testovima). Nikad ne otvara dijalog i nikad ne baca grešku.
+    // (npr. u testovima). Nikad ne otvara dijalog i nikad ne baca grešku,
+    // ali se VIŠE ne ponaša nijemo — inače mrtvi gate ulazi izgledaju kao
+    // "ništa se ne dogodi" (v. Krug chip u AddExpenseDialog, 8.8.2026).
+    const warn = (module: GateModule) => {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[useModuleGate] Nema ModuleGateProvider u stablu — zahtjev za modul "${module}" je ignoriran (no-op). ` +
+        'Komponenta je vjerojatno montirana izvan ModuleGateProvider-a.',
+      );
+    };
     return {
-      requestModule: (_m, opts) => opts?.onDismiss?.(),
-      openUpgrade: (_m, opts) => opts?.onDismiss?.(),
+      requestModule: (m, opts) => { warn(m); opts?.onDismiss?.(); },
+      openUpgrade: (m, opts) => { warn(m); opts?.onDismiss?.(); },
     };
   }
   return ctx;
 }
+
