@@ -490,7 +490,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               isLocalMode={isLocalMode}
             />
 
+            <MailImportSection />
+
             <Separator />
+
+
 
             <NotificationsSection
               soundEnabled={soundEnabled}
