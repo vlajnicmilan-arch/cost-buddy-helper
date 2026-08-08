@@ -13,7 +13,7 @@
   "src/components/settings/SettingsDialog.tsx": 2,
   "src/hooks/useActivationFunnel.ts": 1,
   "src/hooks/useCalendarEvents.ts": 1,
-  "src/hooks/useExpenseCRUD.ts": 4,
+  "src/hooks/useExpenseCRUD.ts": 5,
   "src/hooks/useExpenseFetch.ts": 2,
   "src/hooks/useIncomingPayoutAttribution.ts": 1,
   "src/hooks/useInstallments.ts": 1,
