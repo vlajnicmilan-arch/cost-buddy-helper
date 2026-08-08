@@ -6237,6 +6237,76 @@
     "empty": "Još nema primljenih poruka.",
     "noSubject": "(bez naslova)",
     "status": "Status",
-    "attachments": "Privitci"
+    "attachments": "Privitci",
+    "retry": "Pokušaj ponovno",
+    "runManually": "Pokreni ručno",
+    "retryQueued": "Poruka je vraćena u obradu",
+    "retryFailed": "Ponovno pokretanje nije uspjelo",
+    "state": {
+      "primljena": "Primljena",
+      "u_obradi": "U obradi",
+      "zavrsena": "Obrađena",
+      "ceka_kvotu": "Čeka kvotu",
+      "istekla": "Istekla",
+      "zaustavljena_branom": "Zaustavljena branom",
+      "obrisana": "Obrisana",
+      "neuspjela": "Neuspjela",
+      "neuspjela_konacno": "Neuspjela konačno"
+    }
+  },
+  "mailReview": {
+    "open": "Na pregled",
+    "title": "Na pregled",
+    "description": "Dokumenti primljeni e-poštom. Ništa se ne sprema dok ne potvrdiš.",
+    "empty": "Nema dokumenata koji čekaju pregled.",
+    "confirm": "Potvrdi",
+    "edit": "Uredi",
+    "discard": "Odbaci",
+    "confirmed": "Dokument je spremljen",
+    "confirmFailed": "Spremanje nije uspjelo",
+    "discarded": "Stavka je odbačena",
+    "discardFailed": "Odbacivanje nije uspjelo",
+    "classification": {
+      "racun": "Račun",
+      "ponuda": "Ponuda",
+      "verifikacija_prosljedjivanja": "Potvrda prosljeđivanja",
+      "nije_za_nas": "Nije za nas",
+      "nepoznato": "Nepoznato",
+      "duplikat_privitka": "Duplikat privitka"
+    },
+    "confidence": {
+      "visoka": "Visoka pouzdanost",
+      "srednja": "Srednja pouzdanost",
+      "niska": "Niska pouzdanost"
+    },
+    "warning": {
+      "iban_ne_odgovara_povijesti": "IBAN se ne poklapa s dosad potvrđenima za taj OIB",
+      "iban_prvi_put_vidjen": "IBAN se prvi put pojavljuje",
+      "mime_nesklad": "Deklarirani tip datoteke ne odgovara sadržaju",
+      "pdf_nepotpun": "PDF je duži od 30 stranica — obrađen je samo početak",
+      "posiljatelj_neprovjeren": "Pošiljatelj nije provjeren",
+      "posiljatelj_djelomicno_provjeren": "Pošiljatelj je samo djelomično provjeren",
+      "arc_bez_urednog_izvornika": "Proslijeđena poruka bez urednog izvornog rezultata provjere",
+      "verifikacija_nije_autenticirana": "Poruka nije potvrđena kao Googleova",
+      "verifikacija_link_nije_googleov": "Link nije na Googleovoj domeni — prikazan je samo kod",
+      "verifikacija_bez_koda": "Kod nije pronađen",
+      "duplikat_privitka": "Isti privitak je već obrađen",
+      "ai_nedostupan": "Automatska analiza trenutno nije dostupna"
+    },
+    "field": {
+      "supplierName": "Dobavljač",
+      "supplierOib": "OIB",
+      "invoiceNumber": "Broj dokumenta",
+      "issueDate": "Datum izdavanja",
+      "dueDate": "Datum dospijeća",
+      "totalAmount": "Ukupno",
+      "iban": "IBAN"
+    },
+    "collision": {
+      "title": "Možda već postoji",
+      "description": "Već postoji zapis s istim brojem i dobavljačem. Ništa nije promijenjeno — odluči što želiš.",
+      "replace": "Zamijeni postojeći",
+      "discard": "Odbaci novi"
+    }
   }
 }
