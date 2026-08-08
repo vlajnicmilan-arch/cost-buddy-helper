@@ -20,9 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2, LogOut } from 'lucide-react';
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import { KrugDeleteDialog } from './KrugDeleteDialog';
+import { KrugLeaveDialog } from './KrugLeaveDialog';
 import { KrugDeletionVotePanel } from './KrugDeletionVotePanel';
 import {
   useKrugChangeMemberRole,
@@ -48,9 +49,11 @@ import { useModuleGate } from '@/hooks/useModuleGate';
 
 interface Props {
   krugId: string;
+  /** Pozvano nakon uspješnog samoizlaska — roditelj se vraća na listu. */
+  onLeft?: () => void;
 }
 
-export function KrugDetailScreen({ krugId }: Props) {
+export function KrugDetailScreen({ krugId, onLeft }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
@@ -61,6 +64,7 @@ export function KrugDetailScreen({ krugId }: Props) {
   const removeMember = useKrugRemoveMember();
   const [addOpen, setAddOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
   const isFullMember = isOwner || detail?.myMembership?.role === 'punopravni';
@@ -159,6 +163,21 @@ export function KrugDetailScreen({ krugId }: Props) {
           </p>
         )}
       </Card>
+
+      {/* Asimetrični samoizlazak: ne-vlasnik uvijek smije izaći, bez pristanka. */}
+      {!isOwner && !!detail.myMembership && krug.lifecycle_state !== 'deleted' && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+            onClick={() => setLeaveOpen(true)}
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            {t('krug.leave.cta', 'Napusti Krug')}
+          </Button>
+        </div>
+      )}
 
       {isOwner && krug.lifecycle_state !== 'deleted' && (
         <div className="flex justify-end">
@@ -340,6 +359,13 @@ export function KrugDetailScreen({ krugId }: Props) {
         krugId={krugId}
         krugName={krug.name}
         fullMemberCount={punopravniCount}
+      />
+
+      <KrugLeaveDialog
+        krugId={krugId}
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        onLeft={onLeft}
       />
     </div>
   );

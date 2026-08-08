@@ -2999,6 +2999,47 @@ export type Database = {
           },
         ]
       }
+      krug_membership_audit: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event: string
+          id: string
+          krug_id: string
+          metadata: Json
+          role_at_event: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          krug_id: string
+          metadata?: Json
+          role_at_event?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          krug_id?: string
+          metadata?: Json
+          role_at_event?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "krug_membership_audit_krug_id_fkey"
+            columns: ["krug_id"]
+            isOneToOne: false
+            referencedRelation: "krug"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       krug_ownership: {
         Row: {
           created_at: string
@@ -6861,6 +6902,7 @@ export type Database = {
         Args: { _krug: string; _user: string }
         Returns: boolean
       }
+      krug_leave: { Args: { p_krug_id: string }; Returns: Json }
       krug_list_my_invitations: {
         Args: never
         Returns: {
