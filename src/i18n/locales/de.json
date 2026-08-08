@@ -6210,5 +6210,23 @@
       "noRevenueHint": "Es werden weder Einnahmen noch Saldoänderungen gebucht — Einnahmen kommen über den Kontoauszug-Import.",
       "failedDetailed": "Erfassen des Zahlungseingangs fehlgeschlagen: {{reason}}"
     }
+  },
+  "mailImport": {
+    "title": "E-Mail-Import",
+    "yourAddress": "Deine Empfangsadresse",
+    "description": "Sende oder leite E-Mails an diese Adresse weiter. In diesem Schritt werden Nachrichten nur empfangen und angezeigt.",
+    "copy": "Kopieren",
+    "copied": "Adresse kopiert",
+    "copyFailed": "Kopieren fehlgeschlagen",
+    "regenerate": "Adresse neu erzeugen",
+    "regenerateTitle": "Adresse neu erzeugen?",
+    "regenerateWarning": "Die alte Adresse funktioniert sofort nicht mehr. Dorthin gesendete E-Mails werden nicht mehr empfangen.",
+    "regenerated": "Neue Adresse erstellt",
+    "regenerateFailed": "Neue Adresse konnte nicht erstellt werden",
+    "recent": "Letzte 20 empfangene Nachrichten",
+    "empty": "Noch keine Nachrichten empfangen.",
+    "noSubject": "(kein Betreff)",
+    "status": "Status",
+    "attachments": "Anhänge"
   }
 }

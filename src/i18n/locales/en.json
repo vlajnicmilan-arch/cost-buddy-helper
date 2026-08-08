@@ -6210,5 +6210,23 @@
       "noRevenueHint": "This records no income and no balance change — income enters through bank statement import.",
       "failedDetailed": "Recording the collection failed: {{reason}}"
     }
+  },
+  "mailImport": {
+    "title": "Email import",
+    "yourAddress": "Your receiving address",
+    "description": "Send or forward mail to this address. In this step messages are only received and listed.",
+    "copy": "Copy",
+    "copied": "Address copied",
+    "copyFailed": "Copy failed",
+    "regenerate": "Regenerate address",
+    "regenerateTitle": "Regenerate address?",
+    "regenerateWarning": "The old address stops working immediately. Mail sent to it will no longer be received.",
+    "regenerated": "New address created",
+    "regenerateFailed": "Could not create a new address",
+    "recent": "Last 20 received messages",
+    "empty": "No messages received yet.",
+    "noSubject": "(no subject)",
+    "status": "Status",
+    "attachments": "Attachments"
   }
 }
