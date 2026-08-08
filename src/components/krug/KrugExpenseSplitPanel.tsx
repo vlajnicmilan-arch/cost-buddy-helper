@@ -31,9 +31,11 @@ interface Props {
   krugId: string;
   expenseId: string;
   isFullMember: boolean;
+  /** Read-only kontekst (pregled transakcije) ne nudi kreiranje prijedloga. */
+  allowPropose?: boolean;
 }
 
-export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props) {
+export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPropose = true }: Props) {
   const { t } = useTranslation();
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const { user } = useAuth();
