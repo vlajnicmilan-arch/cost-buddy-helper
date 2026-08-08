@@ -120,7 +120,9 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
+    "mailImport.status": "Same word in DE",
     "subscription.badge.admin": "Admin terminology",
+
     "subscription.module.smjer": "Module brand name",
     "subscription.module.krug": "Module brand name",
     "subscription.module.projekti": "Module brand name",
