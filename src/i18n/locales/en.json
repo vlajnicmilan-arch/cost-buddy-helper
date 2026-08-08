@@ -2664,7 +2664,7 @@
       },
       "expense_rejected": {
         "title": "Your proposal was rejected",
-        "message": "A Krug member rejected your proposal.",
+        "message": "A Krug member rejected your proposal. Reason: {{reason}}",
         "toast": "Your Krug proposal was rejected."
       },
       "deletion_requested": {
@@ -5399,7 +5399,8 @@
       "status": {
         "confirmed": "Approved",
         "rejected": "Rejected"
-      }
+      },
+      "reasonLine": "Reason: {{reason}}"
     },
     "sharedSource": {
       "attach": {
@@ -5506,7 +5507,15 @@
         "not_author": "Only the author of this expense can do that.",
         "wrong_state": "This expense is no longer in a state that allows this action. Refresh the list.",
         "unknown": "Unknown error. Please try again.",
-        "network": "Action failed right now. Check your connection and try again."
+        "network": "Action failed right now. Check your connection and try again.",
+        "reason_required": "A reason for rejection is required."
+      },
+      "rejectDialog": {
+        "title": "Reject expense",
+        "description": "Rejecting is a message to the author about shared money. Write a short reason — the author sees it on the expense.",
+        "reasonLabel": "Reason for rejection",
+        "reasonPlaceholder": "e.g. not a shared expense",
+        "confirm": "Reject expense"
       }
     },
     "member": {

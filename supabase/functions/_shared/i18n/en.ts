@@ -183,7 +183,7 @@ export default {
   "notifications.krug.expense_confirmed.title": "Your proposal was confirmed",
   "notifications.krug.expense_confirmed.message": "A Krug member confirmed your proposal.",
   "notifications.krug.expense_rejected.title": "Your proposal was rejected",
-  "notifications.krug.expense_rejected.message": "A Krug member rejected your proposal.",
+  "notifications.krug.expense_rejected.message": "A Krug member rejected your proposal. Reason: {{reason}}",
   "notifications.krug.deletion_requested.title": "Krug deletion started",
   "notifications.krug.deletion_requested.message": "The owner requested Krug deletion.",
   "notifications.krug.deleted.title": "Krug was deleted",

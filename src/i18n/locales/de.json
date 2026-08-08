@@ -2664,7 +2664,7 @@
       },
       "expense_rejected": {
         "title": "Dein Vorschlag wurde abgelehnt",
-        "message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt.",
+        "message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt. Grund: {{reason}}",
         "toast": "Krug-Vorschlag wurde abgelehnt."
       },
       "deletion_requested": {
@@ -5399,7 +5399,8 @@
       "status": {
         "confirmed": "Bestätigt",
         "rejected": "Abgelehnt"
-      }
+      },
+      "reasonLine": "Grund: {{reason}}"
     },
     "sharedSource": {
       "attach": {
@@ -5506,7 +5507,15 @@
         "not_author": "Nur der Autor dieser Ausgabe kann das tun.",
         "wrong_state": "Diese Ausgabe ist nicht mehr in einem Zustand, der diese Aktion erlaubt. Liste aktualisieren.",
         "unknown": "Unbekannter Fehler. Bitte erneut versuchen.",
-        "network": "Aktion aktuell nicht möglich. Verbindung prüfen und erneut versuchen."
+        "network": "Aktion aktuell nicht möglich. Verbindung prüfen und erneut versuchen.",
+        "reason_required": "Ein Grund für die Ablehnung ist erforderlich."
+      },
+      "rejectDialog": {
+        "title": "Ausgabe ablehnen",
+        "description": "Eine Ablehnung ist eine Nachricht an den Autor über gemeinsames Geld. Schreibe einen kurzen Grund — der Autor sieht ihn bei der Ausgabe.",
+        "reasonLabel": "Grund der Ablehnung",
+        "reasonPlaceholder": "z. B. keine gemeinsame Ausgabe",
+        "confirm": "Ausgabe ablehnen"
       }
     },
     "member": {
