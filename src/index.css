@@ -585,13 +585,22 @@
 /* Notification highlight pulse — used by HighlightTarget after navigating
    from a bell click or native push tap. ~2s teal ring + scroll into view. */
 @keyframes notification-highlight-pulse {
-  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55); }
-  50%  { box-shadow: 0 0 0 8px hsl(var(--primary) / 0.18); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  0%   { background-color: hsl(var(--primary) / 0); box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  25%  { background-color: hsl(var(--primary) / 0.14); box-shadow: 0 0 0 4px hsl(var(--primary) / 0.10); }
+  60%  { background-color: hsl(var(--primary) / 0.12); box-shadow: 0 0 0 4px hsl(var(--primary) / 0.08); }
+  100% { background-color: hsl(var(--primary) / 0); box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
 }
 .highlight-pulse {
-  animation: notification-highlight-pulse 1s ease-out 2;
+  /* Nježno: jedan glatki prijelaz kroz ~1.8s, bez treptanja. */
+  animation: notification-highlight-pulse 1800ms cubic-bezier(0.4, 0, 0.2, 1) 1;
   border-radius: 0.5rem;
   position: relative;
   z-index: 1;
+}
+
+/* Korisnik je isključio animacije — samo scroll, bez pulsiranja. */
+@media (prefers-reduced-motion: reduce) {
+  .highlight-pulse {
+    animation: none;
+  }
 }

@@ -19,6 +19,8 @@ const LONG_TTL_TYPES = new Set<HighlightType>([
   'milestone',
   'invoice',
   'expense',
+  'settlement',
+  'krug',
 ]);
 
 export interface PendingHighlight {
