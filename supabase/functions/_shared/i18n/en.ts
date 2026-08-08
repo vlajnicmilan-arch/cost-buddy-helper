@@ -223,4 +223,6 @@ export default {
   "notifications.project_expense_review.approved.message": "{{actor}} approved „{{description}}\" ({{amount}}) in project „{{project}}\".",
   "notifications.project_expense_review.rejected.title": "Expense rejected",
   "notifications.project_expense_review.rejected.message": "{{actor}} rejected „{{description}}\" ({{amount}}) in project „{{project}}\". Reason: {{reason}}",
+  "notifications.mail.pending.title": "A new document is waiting for review",
+  "notifications.mail.pending.body": "A document arrived by e-mail. Open the review and confirm.",
 } as const;

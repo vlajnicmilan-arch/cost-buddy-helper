@@ -223,4 +223,6 @@ export default {
   "notifications.project_expense_review.approved.message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" freigegeben.",
   "notifications.project_expense_review.rejected.title": "Buchung abgelehnt",
   "notifications.project_expense_review.rejected.message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" abgelehnt. Grund: {{reason}}",
+  "notifications.mail.pending.title": "Ein neues Dokument wartet auf Prüfung",
+  "notifications.mail.pending.body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige.",
 } as const;

@@ -2901,6 +2901,12 @@
         "title": "Buchung abgelehnt",
         "message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" abgelehnt. Grund: {{reason}}"
       }
+    },
+    "mail": {
+      "pending": {
+        "title": "Ein neues Dokument wartet auf Prüfung",
+        "body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige."
+      }
     }
   },
   "installments": {
@@ -6227,6 +6233,76 @@
     "empty": "Noch keine Nachrichten empfangen.",
     "noSubject": "(kein Betreff)",
     "status": "Status",
-    "attachments": "Anhänge"
+    "attachments": "Anhänge",
+    "retry": "Erneut versuchen",
+    "runManually": "Manuell starten",
+    "retryQueued": "Nachricht zur Verarbeitung eingereiht",
+    "retryFailed": "Neustart der Verarbeitung fehlgeschlagen",
+    "state": {
+      "primljena": "Empfangen",
+      "u_obradi": "In Bearbeitung",
+      "zavrsena": "Verarbeitet",
+      "ceka_kvotu": "Wartet auf Kontingent",
+      "istekla": "Abgelaufen",
+      "zaustavljena_branom": "Durch Limit gestoppt",
+      "obrisana": "Gelöscht",
+      "neuspjela": "Fehlgeschlagen",
+      "neuspjela_konacno": "Endgültig fehlgeschlagen"
+    }
+  },
+  "mailReview": {
+    "open": "Zur Prüfung",
+    "title": "Zur Prüfung",
+    "description": "Per E-Mail empfangene Dokumente. Es wird nichts gespeichert, bis du bestätigst.",
+    "empty": "Keine Dokumente zur Prüfung.",
+    "confirm": "Bestätigen",
+    "edit": "Bearbeiten",
+    "discard": "Verwerfen",
+    "confirmed": "Dokument gespeichert",
+    "confirmFailed": "Speichern fehlgeschlagen",
+    "discarded": "Eintrag verworfen",
+    "discardFailed": "Verwerfen fehlgeschlagen",
+    "classification": {
+      "racun": "Rechnung",
+      "ponuda": "Angebot",
+      "verifikacija_prosljedjivanja": "Weiterleitungsbestätigung",
+      "nije_za_nas": "Nicht relevant",
+      "nepoznato": "Unbekannt",
+      "duplikat_privitka": "Doppelter Anhang"
+    },
+    "confidence": {
+      "visoka": "Hohe Zuverlässigkeit",
+      "srednja": "Mittlere Zuverlässigkeit",
+      "niska": "Geringe Zuverlässigkeit"
+    },
+    "warning": {
+      "iban_ne_odgovara_povijesti": "IBAN stimmt mit keiner bisher bestätigten für diese Steuernummer überein",
+      "iban_prvi_put_vidjen": "IBAN zum ersten Mal gesehen",
+      "mime_nesklad": "Deklarierter Dateityp stimmt nicht mit dem Inhalt überein",
+      "pdf_nepotpun": "PDF länger als 30 Seiten — nur der Anfang wurde verarbeitet",
+      "posiljatelj_neprovjeren": "Absender nicht verifiziert",
+      "posiljatelj_djelomicno_provjeren": "Absender nur teilweise verifiziert",
+      "arc_bez_urednog_izvornika": "Weitergeleitete Nachricht ohne sauberes ursprüngliches Prüfergebnis",
+      "verifikacija_nije_autenticirana": "Nachricht nicht als von Google stammend authentifiziert",
+      "verifikacija_link_nije_googleov": "Link liegt nicht auf einer Google-Domain — nur der Code wird angezeigt",
+      "verifikacija_bez_koda": "Code nicht gefunden",
+      "duplikat_privitka": "Dieser Anhang wurde bereits verarbeitet",
+      "ai_nedostupan": "Automatische Analyse derzeit nicht verfügbar"
+    },
+    "field": {
+      "supplierName": "Lieferant",
+      "supplierOib": "Steuernummer",
+      "invoiceNumber": "Belegnummer",
+      "issueDate": "Ausstellungsdatum",
+      "dueDate": "Fälligkeitsdatum",
+      "totalAmount": "Gesamt",
+      "iban": "IBAN"
+    },
+    "collision": {
+      "title": "Existiert möglicherweise bereits",
+      "description": "Ein Eintrag mit gleicher Nummer und gleichem Lieferanten existiert bereits. Nichts wurde geändert — du entscheidest.",
+      "replace": "Vorhandenen ersetzen",
+      "discard": "Neuen verwerfen"
+    }
   }
 }

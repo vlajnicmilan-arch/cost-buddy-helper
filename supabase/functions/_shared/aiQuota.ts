@@ -32,6 +32,11 @@ const QUOTAS: Record<string, Record<Tier, number>> = {
   "detect-loans":          { free: 5,  trial: 10, pro: 30,  business: 100 },
   "match-recurring":       { free: 5,  trial: 10, pro: 30,  business: 100 },
   "parse-standup":         { free: 5,  trial: 10, pro: 30,  business: 100 },
+  // MAIL UVOZ: dnevna ruta postoji radi cjelovitosti, ali `increment_ai_usage_v2`
+  // čita auth.uid(), a worker radi service klijentom bez sjednice. Mjerodavna
+  // brana za mail uvoz je MJESEČNA kvota (mail_import_consume_quota, eksplicitni
+  // user_id) + globalni cost cap. Vidi supabase/functions/mail-process/index.ts.
+  "mail-import":           { free: 5,  trial: 10, pro: 100, business: 100 },
 };
 
 // Mjesečni ukupni cap po korisniku (kroz sve rute). null = neograničeno.

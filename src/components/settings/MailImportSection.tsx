@@ -11,11 +11,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Mail, Copy, RotateCcw, Loader2 } from 'lucide-react';
+import { Mail, Copy, RotateCcw, Loader2, Inbox, RefreshCw } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailInbox } from '@/hooks/useMailInbox';
+import { MailReviewDialog } from '@/components/mail/MailReviewDialog';
+import { supabase } from '@/integrations/supabase/client';
 import { aliasToAddress } from '@/lib/mailAlias';
+
+/** Stanja iz kojih korisnik smije ručno pokrenuti obradu. */
+const RETRYABLE = ['neuspjela_konacno', 'zaustavljena_branom', 'ceka_kvotu'];
 
 /**
  * Settings → "Uvoz iz e-maila" (korak 1).
@@ -25,8 +30,29 @@ import { aliasToAddress } from '@/lib/mailAlias';
 export const MailImportSection = () => {
   const { t } = useTranslation();
   const { hasAccess, loading: accessLoading } = useMailImportAccess();
-  const { alias, messages, loading, working, ensureAlias, regenerateAlias } = useMailInbox(hasAccess);
+  const { alias, messages, loading, working, ensureAlias, regenerateAlias, refetch } =
+    useMailInbox(hasAccess);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  /** Ručno vraćanje poruke u red obrade (neuspjeh, brana ili čekanje kvote). */
+  const handleRetry = async (messageId: string) => {
+    setRetrying(messageId);
+    try {
+      const { error } = await supabase.rpc('mail_ingest_retry_message', {
+        p_message_id: messageId,
+      });
+      if (error) throw error;
+      showSuccess(t('mailImport.retryQueued', 'Poruka je vraćena u obradu'));
+      await refetch();
+    } catch (e) {
+      console.warn('[MailImportSection] retry failed:', (e as Error).message);
+      showError(t('mailImport.retryFailed', 'Ponovno pokretanje nije uspjelo'));
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   useEffect(() => {
     if (hasAccess && !loading && !alias) {
@@ -101,7 +127,18 @@ export const MailImportSection = () => {
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">{t('mailImport.recent', 'Zadnjih 20 primljenih poruka')}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium">{t('mailImport.recent', 'Zadnjih 20 primljenih poruka')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setReviewOpen(true)}
+          >
+            <Inbox className="h-4 w-4 mr-2" />
+            {t('mailReview.open', 'Na pregled')}
+          </Button>
+        </div>
         {loading ? (
           <p className="text-xs text-muted-foreground">{t('common.loading', 'Učitavanje...')}</p>
         ) : messages.length === 0 ? (
@@ -114,14 +151,36 @@ export const MailImportSection = () => {
                 <div className="text-muted-foreground break-all">{m.from_header || '—'}</div>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
                   <span>{new Date(m.received_at).toLocaleString()}</span>
-                  <span>{t('mailImport.status', 'Status')}: {m.status}</span>
+                  <span>
+                    {t('mailImport.status', 'Status')}: {t(`mailImport.state.${m.status}`, m.status)}
+                  </span>
                   <span>{t('mailImport.attachments', 'Privitci')}: {m.attachment_count}</span>
                 </div>
+                {RETRYABLE.includes(m.status) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 min-h-[44px]"
+                    disabled={retrying === m.id}
+                    onClick={() => handleRetry(m.id)}
+                  >
+                    {retrying === m.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    {m.status === 'zaustavljena_branom'
+                      ? t('mailImport.runManually', 'Pokreni ručno')
+                      : t('mailImport.retry', 'Pokušaj ponovno')}
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <MailReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} />
 
       <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>

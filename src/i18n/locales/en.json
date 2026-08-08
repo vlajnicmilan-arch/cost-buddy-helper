@@ -2901,6 +2901,12 @@
         "title": "Expense rejected",
         "message": "{{actor}} rejected „{{description}}\" ({{amount}}) in project „{{project}}\". Reason: {{reason}}"
       }
+    },
+    "mail": {
+      "pending": {
+        "title": "A new document is waiting for review",
+        "body": "A document arrived by e-mail. Open the review and confirm."
+      }
     }
   },
   "installments": {
@@ -6227,6 +6233,76 @@
     "empty": "No messages received yet.",
     "noSubject": "(no subject)",
     "status": "Status",
-    "attachments": "Attachments"
+    "attachments": "Attachments",
+    "retry": "Try again",
+    "runManually": "Run manually",
+    "retryQueued": "Message queued for processing",
+    "retryFailed": "Could not restart processing",
+    "state": {
+      "primljena": "Received",
+      "u_obradi": "Processing",
+      "zavrsena": "Processed",
+      "ceka_kvotu": "Waiting for quota",
+      "istekla": "Expired",
+      "zaustavljena_branom": "Held by rate limit",
+      "obrisana": "Deleted",
+      "neuspjela": "Failed",
+      "neuspjela_konacno": "Failed permanently"
+    }
+  },
+  "mailReview": {
+    "open": "To review",
+    "title": "To review",
+    "description": "Documents received by e-mail. Nothing is saved until you confirm.",
+    "empty": "No documents waiting for review.",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "discard": "Discard",
+    "confirmed": "Document saved",
+    "confirmFailed": "Saving failed",
+    "discarded": "Item discarded",
+    "discardFailed": "Discarding failed",
+    "classification": {
+      "racun": "Invoice",
+      "ponuda": "Quote",
+      "verifikacija_prosljedjivanja": "Forwarding confirmation",
+      "nije_za_nas": "Not for us",
+      "nepoznato": "Unknown",
+      "duplikat_privitka": "Duplicate attachment"
+    },
+    "confidence": {
+      "visoka": "High confidence",
+      "srednja": "Medium confidence",
+      "niska": "Low confidence"
+    },
+    "warning": {
+      "iban_ne_odgovara_povijesti": "IBAN does not match any previously confirmed for this tax ID",
+      "iban_prvi_put_vidjen": "IBAN seen for the first time",
+      "mime_nesklad": "Declared file type does not match its content",
+      "pdf_nepotpun": "PDF longer than 30 pages — only the beginning was processed",
+      "posiljatelj_neprovjeren": "Sender not verified",
+      "posiljatelj_djelomicno_provjeren": "Sender only partially verified",
+      "arc_bez_urednog_izvornika": "Forwarded message without a clean original authentication result",
+      "verifikacija_nije_autenticirana": "Message not authenticated as coming from Google",
+      "verifikacija_link_nije_googleov": "Link is not on a Google domain — only the code is shown",
+      "verifikacija_bez_koda": "Code not found",
+      "duplikat_privitka": "This attachment was already processed",
+      "ai_nedostupan": "Automatic analysis is currently unavailable"
+    },
+    "field": {
+      "supplierName": "Supplier",
+      "supplierOib": "Tax ID",
+      "invoiceNumber": "Document number",
+      "issueDate": "Issue date",
+      "dueDate": "Due date",
+      "totalAmount": "Total",
+      "iban": "IBAN"
+    },
+    "collision": {
+      "title": "May already exist",
+      "description": "A record with the same number and supplier already exists. Nothing was changed — you decide.",
+      "replace": "Replace existing",
+      "discard": "Discard new"
+    }
   }
 }

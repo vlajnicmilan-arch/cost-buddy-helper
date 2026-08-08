@@ -16,6 +16,9 @@ const corsHeaders = {
 
 const MAX_TOTAL_BYTES = 15 * 1024 * 1024;
 const TIMESTAMP_TOLERANCE_S = 300;
+// Brane po aliasu — iznad ovoga poruka se sprema sirova, bez posla u redu.
+const MAX_PER_HOUR = 30;
+const MAX_PER_DAY = 100;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -171,9 +174,15 @@ Deno.serve(async (req) => {
       totalBytes += value.size;
       if (totalBytes > MAX_TOTAL_BYTES) return json({ error: "payload_too_large" }, 413);
       const attPath = `${basePath}/att-${index}-${value.name || "privitak"}`;
+      // Transportni otisak — isti privitak istog vlasnika nikad se ne obrađuje dvaput.
+      const attBytes = new Uint8Array(await value.arrayBuffer());
+      const digest = await crypto.subtle.digest("SHA-256", attBytes);
+      const sha256 = Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
       const { error: attErr } = await supabase.storage
         .from("inbound-mail")
-        .upload(attPath, value, {
+        .upload(attPath, attBytes, {
           contentType: value.type || "application/octet-stream",
           upsert: true,
         });
@@ -185,7 +194,23 @@ Deno.serve(async (req) => {
         storage_path: attPath,
         mime_declared: value.type || "application/octet-stream",
         size_bytes: String(value.size),
+        content_sha256: sha256,
       });
+    }
+
+    // Brana: preko granice poruka se SPREMA, ali posao NE ulazi u red.
+    const { data: counts } = await supabase.rpc("mail_ingest_rate_counts", {
+      p_alias_id: aliasRow.id,
+    });
+    const lastHour = Number((counts as Record<string, unknown> | null)?.last_hour ?? 0);
+    const lastDay = Number((counts as Record<string, unknown> | null)?.last_day ?? 0);
+    const damReason = lastHour >= MAX_PER_HOUR
+      ? "brana_sat"
+      : lastDay >= MAX_PER_DAY
+        ? "brana_dan"
+        : null;
+    if (damReason) {
+      console.warn(`[mail-ingest] brana aktivna (${damReason}) za alias ${aliasRow.id}`);
     }
 
     // Transakcijski outbox: poruka + privitci + posao ili NIŠTA.
@@ -204,6 +229,7 @@ Deno.serve(async (req) => {
       p_body_storage_path: bodyPath,
       p_size_bytes: totalBytes,
       p_attachments: attachments,
+      p_dam_reason: damReason,
     });
 
     if (rpcErr) {

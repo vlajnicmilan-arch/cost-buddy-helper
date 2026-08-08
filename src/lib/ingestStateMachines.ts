@@ -50,7 +50,9 @@ export const ATTACHMENT_TRANSITIONS: Record<AttachmentState, readonly Attachment
 export const DOCUMENT_TRANSITIONS: Record<DocumentState, readonly DocumentState[]> = {
   klasificiran: ['izvucen', 'nije_za_nas', 'odbaceno'],
   izvucen: ['na_pregledu', 'nije_za_nas', 'odbaceno'],
-  na_pregledu: ['potvrdjen', 'odbacio_korisnik', 'odbaceno'],
+  // Potvrda je JEDNA transakcija (upis + poveznica), pa je izravan prijelaz
+  // 'na_pregledu' -> 'povezan' legitiman; 'potvrdjen' ostaje za dvokoračne tokove.
+  na_pregledu: ['potvrdjen', 'povezan', 'odbacio_korisnik', 'odbaceno'],
   potvrdjen: ['povezan'],
   povezan: [],
   nije_za_nas: [],
