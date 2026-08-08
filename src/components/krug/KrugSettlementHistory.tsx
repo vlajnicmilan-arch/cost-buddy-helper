@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, History, ArrowRight, X, Loader2 } from 'lucide-react';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugSettlementMutations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
@@ -21,6 +22,7 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [voidTarget, setVoidTarget] = useState<string | null>(null);
   const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember && open);
   const voidMut = useKrugVoidSettlement(krugId);
 
@@ -31,13 +33,14 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
 
   if (!isFullMember) return null;
 
-  const handleVoid = async (id: string) => {
-    const reason = window.prompt(t('krug.settle.history.voidPrompt', 'Razlog poništenja:'));
-    if (!reason || !reason.trim()) return;
+  const handleVoid = async (reason?: string) => {
+    if (!voidTarget || !reason?.trim()) return;
     try {
-      await voidMut.mutateAsync({ ledgerId: id, reason: reason.trim() });
+      await voidMut.mutateAsync({ ledgerId: voidTarget, reason: reason.trim() });
+      setVoidTarget(null);
     } catch { /* handled */ }
   };
+
 
   return (
     <section className="space-y-2">
@@ -93,7 +96,7 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
                   <Button
                     size="icon" variant="ghost" className="h-8 w-8 shrink-0"
                     disabled={voidMut.isPending}
-                    onClick={() => handleVoid(r.id)}
+                    onClick={() => setVoidTarget(r.id)}
                     aria-label={t('krug.settle.history.void', 'Poništi')}
                   >
                     <X className="w-4 h-4" />
@@ -104,6 +107,22 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
           })}
         </Card>
       )}
+
+      <ConfirmActionDialog
+        open={!!voidTarget}
+        onOpenChange={(v) => { if (!v) setVoidTarget(null); }}
+        title={t('krug.settle.history.voidDialog.title', 'Poništi podmirenje')}
+        description={t('krug.settle.history.voidDialog.description', 'Poništavaš zabilježeno podmirenje. Druga strana dobiva obavijest s razlogom.')}
+        reason={{
+          label: t('krug.settle.history.voidDialog.reasonLabel', 'Razlog poništenja (obavezno)'),
+          placeholder: t('krug.settle.history.voidDialog.reasonPlaceholder', 'npr. novac nije stigao'),
+          required: true,
+        }}
+        confirmLabel={t('krug.settle.history.voidDialog.confirm', 'Poništi podmirenje')}
+        destructive
+        pending={voidMut.isPending}
+        onConfirm={handleVoid}
+      />
     </section>
   );
 }

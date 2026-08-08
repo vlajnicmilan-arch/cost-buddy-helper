@@ -24,6 +24,7 @@ import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2, Log
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import { KrugDeleteDialog } from './KrugDeleteDialog';
 import { KrugLeaveDialog } from './KrugLeaveDialog';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { KrugDeletionVotePanel } from './KrugDeletionVotePanel';
 import {
   useKrugChangeMemberRole,
@@ -55,6 +56,7 @@ interface Props {
 
 export function KrugDetailScreen({ krugId, onLeft }: Props) {
   const { t } = useTranslation();
+  const [removeTarget, setRemoveTarget] = useState<KrugMemberView | null>(null);
   const { user } = useAuth();
   const { data: detail, isLoading } = useKrug(krugId);
   const { data: members = [] } = useKrugMembers(krugId);
@@ -129,15 +131,19 @@ export function KrugDetailScreen({ krugId, onLeft }: Props) {
     }
   };
 
-  const handleRemove = async (m: KrugMemberView) => {
+  const handleRemove = (m: KrugMemberView) => {
     let granted = false;
     requestModule('krug', { onGranted: () => { granted = true; } });
     if (!granted) return;
     if (!m.membership_id) return;
-    const ok = window.confirm(t('krug.member.remove.confirm', 'Ukloniti člana iz Kruga?'));
-    if (!ok) return;
+    setRemoveTarget(m);
+  };
+
+  const confirmRemove = async () => {
+    if (!removeTarget?.membership_id) return;
     try {
-      await removeMember.mutateAsync({ krugId, membershipId: m.membership_id });
+      await removeMember.mutateAsync({ krugId, membershipId: removeTarget.membership_id });
+      setRemoveTarget(null);
       showSuccess(t('krug.member.remove.success', 'Član uklonjen'));
     } catch (e) {
       showError(t('krug.member.remove.error', 'Greška pri uklanjanju člana'));
@@ -366,6 +372,17 @@ export function KrugDetailScreen({ krugId, onLeft }: Props) {
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
         onLeft={onLeft}
+      />
+
+      <ConfirmActionDialog
+        open={!!removeTarget}
+        onOpenChange={(v) => { if (!v) setRemoveTarget(null); }}
+        title={t('krug.member.remove.dialog.title', 'Ukloni člana')}
+        description={t('krug.member.remove.dialog.description', 'Član gubi pristup Krugu i njegovim podacima.')}
+        confirmLabel={t('krug.member.remove.dialog.confirm', 'Ukloni')}
+        destructive
+        pending={removeMember.isPending}
+        onConfirm={confirmRemove}
       />
     </div>
   );

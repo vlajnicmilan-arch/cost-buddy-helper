@@ -208,6 +208,8 @@ export default {
   "notifications.krug.settlement_reminder.message": "You have {{count}} outstanding items totalling {{total}} {{currency}}.",
   "notifications.krug.settlement_settled.title": "Settlement confirmed",
   "notifications.krug.settlement_settled.message": "A Krug member marked a transfer as settled.",
+  "notifications.krug.settlement_voided.title": "Settlement voided",
+  "notifications.krug.settlement_voided.message": "A Krug member voided a recorded settlement ({{amount}} {{currency}}). Reason: {{reason}}",
   "notifications.project_expense_review.submitted.title": "Expense awaits your approval",
   "notifications.project_expense_review.submitted.message.expense": "{{actor}} submitted expense „{{description}}\" ({{amount}}) in project „{{project}}\". Awaiting your approval.",
   "notifications.project_expense_review.submitted.message.income": "{{actor}} submitted income „{{description}}\" ({{amount}}) in project „{{project}}\". Awaiting your approval.",

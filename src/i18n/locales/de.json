@@ -2702,6 +2702,10 @@
       "membership_notice": {
         "title": "Mitgliedschaft im Krug „{{krug}}\"",
         "message": "Du bist seit {{date}} Mitglied des Krug „{{krug}}\". Wenn du kein Mitglied sein möchtest, kannst du den Krug in den Einstellungen verlassen."
+      },
+      "settlement_voided": {
+        "title": "Abrechnung storniert",
+        "message": "Ein Krug-Mitglied hat eine erfasste Abrechnung storniert ({{amount}} {{currency}}). Grund: {{reason}}"
       }
     },
     "payment_source_transaction": {
@@ -5106,7 +5110,14 @@
     "sendBroadcast": "Benachrichtigung senden",
     "broadcastSuccess": "Benachrichtigung an {{count}} Nutzer gesendet",
     "broadcastMissingHr": "HR-Variante (Titel und Nachricht) ist erforderlich",
-    "broadcastFooter": "Die Benachrichtigung wird jedem registrierten Nutzer in seiner bevorzugten Sprache zugestellt (HR-Fallback für leere Felder)."
+    "broadcastFooter": "Die Benachrichtigung wird jedem registrierten Nutzer in seiner bevorzugten Sprache zugestellt (HR-Fallback für leere Felder).",
+    "feedback": {
+      "deleteDialog": {
+        "title": "Feedback löschen",
+        "description": "Diese Aktion kann nicht rückgängig gemacht werden.",
+        "confirm": "Löschen"
+      }
+    }
   },
   "adminRetention": {
     "title": "Cohort Retention",
@@ -5297,6 +5308,11 @@
       "durationHm": "{{h}} h {{m}} min",
       "durationM": "{{m}} min",
       "durationLtMinute": "weniger als eine Minute"
+    },
+    "disconnectDialog": {
+      "title": "Bank trennen",
+      "description": "Die Synchronisierung mit dieser Bank endet. Bestehende Transaktionen bleiben erhalten.",
+      "confirm": "Trennen"
     }
   },
   "trash": {
@@ -5398,7 +5414,12 @@
         "confirm": "Quelle vom Krug trennen?",
         "success": "Quelle getrennt",
         "denied": "Du darfst diese Quelle nicht trennen.",
-        "error": "Trennen fehlgeschlagen"
+        "error": "Trennen fehlgeschlagen",
+        "dialog": {
+          "title": "Quelle trennen",
+          "description": "Diese Zahlungsquelle steht den Krug-Mitgliedern nicht mehr zur Verfügung.",
+          "confirm": "Trennen"
+        }
       },
       "unknown": "Quelle"
     },
@@ -5524,7 +5545,12 @@
       "remove": {
         "confirm": "Mitglied aus dem Krug entfernen?",
         "success": "Mitglied entfernt\nEs hat keinen Zugriff mehr auf gemeinsame Daten.",
-        "error": "Entfernen fehlgeschlagen"
+        "error": "Entfernen fehlgeschlagen",
+        "dialog": {
+          "title": "Mitglied entfernen",
+          "description": "Das Mitglied verliert den Zugriff auf diesen Krug und dessen Daten.",
+          "confirm": "Entfernen"
+        }
       },
       "actions": {
         "promote": "Entscheidungsrecht erteilen",
@@ -5680,7 +5706,14 @@
         "noNote": "keine Notiz",
         "voidedLabel": "Storniert",
         "void": "Stornieren",
-        "voidPrompt": "Grund der Stornierung:"
+        "voidPrompt": "Grund der Stornierung:",
+        "voidDialog": {
+          "title": "Abrechnung stornieren",
+          "description": "Du stornierst eine erfasste Abrechnung. Die Gegenseite wird mit deiner Begründung benachrichtigt.",
+          "reasonLabel": "Grund (erforderlich)",
+          "reasonPlaceholder": "z. B. Geld nie erhalten",
+          "confirm": "Stornieren"
+        }
       }
     },
     "override": {
@@ -5721,6 +5754,13 @@
         "confirmed": "Bestätigung erfasst.",
         "rejected": "Vorschlag abgelehnt.",
         "withdrawn": "Vorschlag zurückgezogen."
+      },
+      "rejectDialog": {
+        "title": "Aufteilung ablehnen",
+        "description": "Du lehnst die vorgeschlagene Aufteilung ab.",
+        "reasonLabel": "Grund (optional)",
+        "reasonPlaceholder": "z. B. Betrag stimmt nicht",
+        "confirm": "Ablehnen"
       }
     },
     "invite": {

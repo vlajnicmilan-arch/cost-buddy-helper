@@ -23,6 +23,7 @@ import {
   type OverrideShare,
 } from '@/hooks/useKrugExpenseOverride';
 import { showError } from '@/hooks/useStatusFeedback';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 
 interface Props {
   krugId: string;
@@ -32,6 +33,7 @@ interface Props {
 
 export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props) {
   const { t } = useTranslation();
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const { user } = useAuth();
   const { data: members = [] } = useKrugMembers(krugId);
   const { data, isLoading } = useKrugExpenseOverride(expenseId, isFullMember);
@@ -173,10 +175,7 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
                 <Button
                   size="sm" variant="outline" className="h-8"
                   disabled={rejectMut.isPending}
-                  onClick={() => {
-                    const reason = window.prompt(t('krug.override.rejectPrompt', 'Razlog odbijanja (opcionalno):')) ?? undefined;
-                    rejectMut.mutate({ overrideId: pending.id, expenseId, reason: reason || undefined });
-                  }}
+                  onClick={() => setRejectTarget(pending.id)}
                 >
                   <X className="w-3.5 h-3.5 mr-1" />
                   {t('krug.override.actions.reject', 'Odbij')}
@@ -225,6 +224,24 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
           </div>
         </div>
       )}
+      <ConfirmActionDialog
+        open={!!rejectTarget}
+        onOpenChange={(v) => { if (!v) setRejectTarget(null); }}
+        title={t('krug.override.rejectDialog.title', 'Odbij podjelu')}
+        description={t('krug.override.rejectDialog.description', 'Odbijaš predloženu podjelu troška.')}
+        reason={{
+          label: t('krug.override.rejectDialog.reasonLabel', 'Razlog (opcionalno)'),
+          placeholder: t('krug.override.rejectDialog.reasonPlaceholder', 'npr. iznos nije točan'),
+        }}
+        confirmLabel={t('krug.override.rejectDialog.confirm', 'Odbij')}
+        destructive
+        pending={rejectMut.isPending}
+        onConfirm={(reason) => {
+          if (!rejectTarget) return;
+          rejectMut.mutate({ overrideId: rejectTarget, expenseId, reason });
+          setRejectTarget(null);
+        }}
+      />
     </Card>
   );
 }

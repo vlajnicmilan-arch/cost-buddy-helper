@@ -2702,6 +2702,10 @@
       "membership_notice": {
         "title": "Membership in Krug \"{{krug}}\"",
         "message": "You have been a member of Krug \"{{krug}}\" since {{date}}. If you don't want to be a member, you can leave the Krug in its settings."
+      },
+      "settlement_voided": {
+        "title": "Settlement voided",
+        "message": "A Krug member voided a recorded settlement ({{amount}} {{currency}}). Reason: {{reason}}"
       }
     },
     "payment_source_transaction": {
@@ -5106,7 +5110,14 @@
     "sendBroadcast": "Send notification",
     "broadcastSuccess": "Notification sent to {{count}} users",
     "broadcastMissingHr": "HR variant (title and message) is required",
-    "broadcastFooter": "The notification is delivered to every registered user in their preferred language (HR fallback for empty fields)."
+    "broadcastFooter": "The notification is delivered to every registered user in their preferred language (HR fallback for empty fields).",
+    "feedback": {
+      "deleteDialog": {
+        "title": "Delete feedback",
+        "description": "This action cannot be undone.",
+        "confirm": "Delete"
+      }
+    }
   },
   "adminRetention": {
     "title": "Cohort Retention",
@@ -5297,6 +5308,11 @@
       "durationHm": "{{h}} h {{m}} min",
       "durationM": "{{m}} min",
       "durationLtMinute": "less than a minute"
+    },
+    "disconnectDialog": {
+      "title": "Disconnect bank",
+      "description": "Transaction syncing with this bank stops. Existing transactions stay.",
+      "confirm": "Disconnect"
     }
   },
   "trash": {
@@ -5398,7 +5414,12 @@
         "confirm": "Detach source from Krug?",
         "success": "Source detached",
         "denied": "You are not allowed to detach this source.",
-        "error": "Failed to detach source"
+        "error": "Failed to detach source",
+        "dialog": {
+          "title": "Detach source",
+          "description": "This payment source will no longer be available to Krug members.",
+          "confirm": "Detach"
+        }
       },
       "unknown": "Source"
     },
@@ -5524,7 +5545,12 @@
       "remove": {
         "confirm": "Remove member from Krug?",
         "success": "Member removed\nThey no longer have access to shared data.",
-        "error": "Failed to remove member"
+        "error": "Failed to remove member",
+        "dialog": {
+          "title": "Remove member",
+          "description": "The member loses access to this Krug and its data.",
+          "confirm": "Remove"
+        }
       },
       "actions": {
         "promote": "Grant decision rights",
@@ -5680,7 +5706,14 @@
         "noNote": "no note",
         "voidedLabel": "Voided",
         "void": "Void",
-        "voidPrompt": "Reason for voiding:"
+        "voidPrompt": "Reason for voiding:",
+        "voidDialog": {
+          "title": "Void settlement",
+          "description": "You are voiding a recorded settlement. The other party is notified with your reason.",
+          "reasonLabel": "Reason (required)",
+          "reasonPlaceholder": "e.g. money never arrived",
+          "confirm": "Void settlement"
+        }
       }
     },
     "override": {
@@ -5721,6 +5754,13 @@
         "confirmed": "Confirmation recorded.",
         "rejected": "Proposal rejected.",
         "withdrawn": "Proposal withdrawn."
+      },
+      "rejectDialog": {
+        "title": "Reject split",
+        "description": "You are rejecting the proposed expense split.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. the amount is wrong",
+        "confirm": "Reject"
       }
     },
     "invite": {

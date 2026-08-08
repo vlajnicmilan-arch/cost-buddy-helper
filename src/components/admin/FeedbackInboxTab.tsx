@@ -10,6 +10,7 @@ import { Loader2, RefreshCw, Bug, Lightbulb, HelpCircle, MessageSquare, Search, 
 import { format } from 'date-fns';
 import { hr as hrLocale } from 'date-fns/locale';
 import { friendlyError } from '@/lib/errorMessages';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 
 type FeedbackType = 'bug' | 'idea' | 'question' | 'all';
 type FeedbackStatus = 'new' | 'triaged' | 'in_progress' | 'resolved' | 'closed';
@@ -70,6 +71,7 @@ const statusLabels: Record<string, string> = {
 
 export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) => {
   const { t } = useTranslation();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [items, setItems] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<FeedbackType>('all');
@@ -165,12 +167,14 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
     }
   };
 
-  const deleteItem = async (id: string) => {
-    if (!window.confirm('Obrisati ovu povratnu informaciju? Ova radnja je nepovratna.')) return;
+  const deleteItem = async () => {
+    const id = deleteTarget;
+    if (!id) return;
     try {
       const { error } = await supabase.from('feedback_submissions').delete().eq('id', id);
       if (error) throw error;
       setItems((prev) => prev.filter((r) => r.id !== id));
+      setDeleteTarget(null);
       showSuccess(t('toasts.deleted'));
     } catch (err: any) {
       showError(friendlyError(err));
@@ -347,7 +351,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => deleteItem(r.id)}
+                        onClick={() => setDeleteTarget(r.id)}
                         aria-label={t('common.delete')}
                         className="text-destructive hover:text-destructive"
                       >
@@ -361,6 +365,16 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
           })}
         </div>
       )}
+
+      <ConfirmActionDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title={t('admin.feedback.deleteDialog.title', 'Obriši povratnu informaciju')}
+        description={t('admin.feedback.deleteDialog.description', 'Ova radnja je nepovratna.')}
+        confirmLabel={t('admin.feedback.deleteDialog.confirm', 'Obriši')}
+        destructive
+        onConfirm={deleteItem}
+      />
     </div>
   );
 };

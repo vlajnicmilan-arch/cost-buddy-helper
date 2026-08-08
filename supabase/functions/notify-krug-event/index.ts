@@ -54,6 +54,7 @@ type EventType =
   | "krug_deletion_requested"
   | "krug_deleted"
   | "krug_settlement_marked_settled"
+  | "krug_settlement_voided"
   | "krug_settlement_reminder";
 
 interface Payload {
@@ -83,6 +84,7 @@ const VALID: readonly EventType[] = [
   "krug_deletion_requested",
   "krug_deleted",
   "krug_settlement_marked_settled",
+  "krug_settlement_voided",
   "krug_settlement_reminder",
 ];
 
@@ -369,6 +371,8 @@ function event_type_shortKey(t: EventType): string {
       return "deleted";
     case "krug_settlement_marked_settled":
       return "settlement_settled";
+    case "krug_settlement_voided":
+      return "settlement_voided";
     case "krug_settlement_reminder":
       return "settlement_reminder";
   }

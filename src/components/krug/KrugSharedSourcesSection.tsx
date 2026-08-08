@@ -15,7 +15,7 @@
  * — to su jedini koje owner može honestly attachati. Built-in slugove izostavljamo
  * iz UI-a u v1; backend ih i dalje dopušta ako se ručno proslijede.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CreditCard, Trash2, Loader2 } from 'lucide-react';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { useKrugSharedPaymentSources } from '@/hooks/useKrugSharedPaymentSources';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +46,7 @@ interface Props {
 export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Props) {
 
   const { t } = useTranslation();
+  const [detachTarget, setDetachTarget] = useState<string | null>(null);
   const { requestModule } = useModuleGate();
   const { user } = useAuth();
   const {
@@ -117,10 +119,9 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
   };
 
   const performDetach = async (rowId: string) => {
-    const ok = window.confirm(t('krug.sharedSource.detach.confirm', 'Odvojiti izvor od Kruga?'));
-    if (!ok) return;
     try {
       await unlinkPaymentSource(rowId);
+      setDetachTarget(null);
       showSuccess(t('krug.sharedSource.detach.success', 'Izvor odvojen'));
     } catch (e: any) {
       showError(
@@ -131,8 +132,9 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
     }
   };
 
-  const handleDetach = (rowId: string) => {
-    requestModule('krug', { onGranted: () => void performDetach(rowId) });
+  const confirmDetach = () => {
+    if (!detachTarget) return;
+    requestModule('krug', { onGranted: () => void performDetach(detachTarget) });
   };
 
   return (
@@ -195,7 +197,7 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
                     size="icon"
                     className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
                     disabled={isUnlinking}
-                    onClick={() => handleDetach(s.id)}
+                    onClick={() => setDetachTarget(s.id)}
                     aria-label={t('krug.sharedSource.detach.cta', 'Odvoji izvor')}
                   >
                     {isUnlinking ? (
@@ -211,6 +213,17 @@ export function KrugSharedSourcesSection({ krugId, isOwner, isFullMember }: Prop
           })}
         </Card>
       )}
+
+      <ConfirmActionDialog
+        open={!!detachTarget}
+        onOpenChange={(v) => { if (!v) setDetachTarget(null); }}
+        title={t('krug.sharedSource.detach.dialog.title', 'Odvoji izvor')}
+        description={t('krug.sharedSource.detach.dialog.description', 'Izvor plaćanja više neće biti dostupan članovima Kruga.')}
+        confirmLabel={t('krug.sharedSource.detach.dialog.confirm', 'Odvoji')}
+        destructive
+        pending={isUnlinking}
+        onConfirm={confirmDetach}
+      />
     </section>
   );
 }

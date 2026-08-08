@@ -208,6 +208,8 @@ export default {
   "notifications.krug.settlement_reminder.message": "Du hast {{count}} offene Posten in Höhe von {{total}} {{currency}}.",
   "notifications.krug.settlement_settled.title": "Abrechnung bestätigt",
   "notifications.krug.settlement_settled.message": "Ein Krug-Mitglied hat einen Transfer als beglichen markiert.",
+  "notifications.krug.settlement_voided.title": "Abrechnung storniert",
+  "notifications.krug.settlement_voided.message": "Ein Krug-Mitglied hat eine erfasste Abrechnung storniert ({{amount}} {{currency}}). Grund: {{reason}}",
   "notifications.project_expense_review.submitted.title": "Buchung wartet auf Ihre Freigabe",
   "notifications.project_expense_review.submitted.message.expense": "{{actor}} hat die Ausgabe „{{description}}\" ({{amount}}) im Projekt „{{project}}\" eingereicht. Wartet auf Ihre Freigabe.",
   "notifications.project_expense_review.submitted.message.income": "{{actor}} hat die Einnahme „{{description}}\" ({{amount}}) im Projekt „{{project}}\" eingereicht. Wartet auf Ihre Freigabe.",
