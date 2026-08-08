@@ -30,8 +30,29 @@ const RETRYABLE = ['neuspjela_konacno', 'zaustavljena_branom', 'ceka_kvotu'];
 export const MailImportSection = () => {
   const { t } = useTranslation();
   const { hasAccess, loading: accessLoading } = useMailImportAccess();
-  const { alias, messages, loading, working, ensureAlias, regenerateAlias } = useMailInbox(hasAccess);
+  const { alias, messages, loading, working, ensureAlias, regenerateAlias, refetch } =
+    useMailInbox(hasAccess);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [retrying, setRetrying] = useState<string | null>(null);
+
+  /** Ručno vraćanje poruke u red obrade (neuspjeh, brana ili čekanje kvote). */
+  const handleRetry = async (messageId: string) => {
+    setRetrying(messageId);
+    try {
+      const { error } = await supabase.rpc('mail_ingest_retry_message', {
+        p_message_id: messageId,
+      });
+      if (error) throw error;
+      showSuccess(t('mailImport.retryQueued', 'Poruka je vraćena u obradu'));
+      await refetch();
+    } catch (e) {
+      console.warn('[MailImportSection] retry failed:', (e as Error).message);
+      showError(t('mailImport.retryFailed', 'Ponovno pokretanje nije uspjelo'));
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   useEffect(() => {
     if (hasAccess && !loading && !alias) {
