@@ -56,6 +56,12 @@ export function useKrugAddMember() {
         body: { krug_id: krugId, email, role },
       });
       if (error) {
+        // FunctionsHttpError nosi status; 401 = istekla sesija. Bez ovog
+        // mapiranja korisnik je dobivao generičku „Greška pri dodavanju člana."
+        // iako je jedini potreban potez ponovna prijava (incident 08.08.2026).
+        const status = (error as { context?: { status?: number }; status?: number }).context?.status
+          ?? (error as { status?: number }).status;
+        if (status === 401) return { ok: false, error: 'unauthorized' };
         return { ok: false, error: 'unexpected' };
       }
       if (data?.ok) {
