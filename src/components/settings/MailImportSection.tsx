@@ -11,11 +11,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Mail, Copy, RotateCcw, Loader2 } from 'lucide-react';
+import { Mail, Copy, RotateCcw, Loader2, Inbox, RefreshCw } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailInbox } from '@/hooks/useMailInbox';
+import { MailReviewDialog } from '@/components/mail/MailReviewDialog';
+import { supabase } from '@/integrations/supabase/client';
 import { aliasToAddress } from '@/lib/mailAlias';
+
+/** Stanja iz kojih korisnik smije ručno pokrenuti obradu. */
+const RETRYABLE = ['neuspjela_konacno', 'zaustavljena_branom', 'ceka_kvotu'];
 
 /**
  * Settings → "Uvoz iz e-maila" (korak 1).
