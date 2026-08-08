@@ -5655,7 +5655,9 @@
         "already_voided": "This settlement has already been voided.",
         "reason_required": "A reason is required.",
         "not_found": "Record not found.",
-        "generic": "Could not save the settlement."
+        "generic": "Could not save the settlement.",
+        "only_debtor_can_settle": "Only the person who owes can mark a settlement.",
+        "only_party_can_void": "Only the two parties of this debt can void the settlement."
       },
       "success": {
         "marked": "Settlement recorded.",
@@ -5667,7 +5669,10 @@
         "noteLabel": "Note (optional)",
         "notePlaceholder": "e.g. cash on Jul 25",
         "confirm": "Confirm settlement",
-        "confirmCountdown": "Confirm ({{s}}s)"
+        "confirmCountdown": "Confirm ({{s}}s)",
+        "titleSelf": "Mark as paid",
+        "bodySelf": "You are marking that you paid {{to}} the amount of {{amount}} {{currency}}.",
+        "confirmSelf": "Confirm I paid"
       },
       "history": {
         "title": "Settlement history",

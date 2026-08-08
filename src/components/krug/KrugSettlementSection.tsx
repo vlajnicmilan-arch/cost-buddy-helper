@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ChevronLeft, ChevronRight, Scale, ArrowRight, Info, Loader2, Settings2, Download } from 'lucide-react';
 import { useKrugSettlement, currentMonthRange, shiftMonth } from '@/hooks/useKrugSettlement';
 import { useKrug } from '@/hooks/useKrug';
+import { useAuth } from '@/hooks/useAuth';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName, getInitials } from '@/lib/krugDisplay';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
@@ -33,6 +34,7 @@ const fmt = (n: number, currency: string) =>
 export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
 
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [range, setRange] = useState(() => currentMonthRange());
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -354,16 +356,19 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
                     <div className="text-sm font-semibold tabular-nums shrink-0">
                       {fmt(tr.amount, tr.currency)}
                     </div>
-                    <Button
-                      size="sm" variant="outline" className="h-8 shrink-0"
-                      onClick={() => setSettleTransfer({
-                        fromUser: tr.from_user, toUser: tr.to_user,
-                        amount: tr.amount, currency: tr.currency,
-                        fromName: nameFor(tr.from_user), toName: nameFor(tr.to_user),
-                      })}
-                    >
-                      {t('krug.settlement.markSettled', 'Podmiri')}
-                    </Button>
+                    {/* Samo dužnik smije zabilježiti podmirenje. */}
+                    {user?.id === tr.from_user && (
+                      <Button
+                        size="sm" variant="outline" className="h-8 shrink-0"
+                        onClick={() => setSettleTransfer({
+                          fromUser: tr.from_user, toUser: tr.to_user,
+                          amount: tr.amount, currency: tr.currency,
+                          fromName: nameFor(tr.from_user), toName: nameFor(tr.to_user),
+                        })}
+                      >
+                        {t('krug.settlement.markSettled', 'Podmiri')}
+                      </Button>
+                    )}
                   </div>
                 ))}
               </Card>

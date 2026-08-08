@@ -65,12 +65,12 @@ export function KrugSettleTransferDialog({ krugId, open, onOpenChange, transfer 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="z-[60] max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('krug.settle.dialog.title', 'Označi podmireno')}</DialogTitle>
+          <DialogTitle>{t('krug.settle.dialog.titleSelf', 'Označi da si platio')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="text-sm">
-            {t('krug.settle.dialog.body', '{{from}} plaća {{to}} iznos {{amount}} {{currency}}.', {
-              from: transfer.fromName, to: transfer.toName,
+            {t('krug.settle.dialog.bodySelf', 'Označavaš da si platio {{to}} iznos {{amount}} {{currency}}.', {
+              to: transfer.toName,
               amount: transfer.amount.toFixed(2), currency: transfer.currency,
             })}
           </div>
@@ -95,7 +95,7 @@ export function KrugSettleTransferDialog({ krugId, open, onOpenChange, transfer 
             {mut.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
             {debounceLeft > 0
               ? t('krug.settle.dialog.confirmCountdown', 'Potvrdi ({{s}}s)', { s: Math.ceil(debounceLeft / 1000) })
-              : t('krug.settle.dialog.confirm', 'Potvrdi podmirenje')}
+              : t('krug.settle.dialog.confirmSelf', 'Potvrdi da sam platio')}
           </Button>
         </DialogFooter>
       </DialogContent>
