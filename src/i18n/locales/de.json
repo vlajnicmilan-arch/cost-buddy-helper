@@ -2698,6 +2698,10 @@
       "member_left": {
         "title": "Ein Mitglied hat den Krug verlassen",
         "message": "Ein Mitglied hat diesen Krug verlassen."
+      },
+      "membership_notice": {
+        "title": "Mitgliedschaft im Krug „{{krug}}\"",
+        "message": "Du bist seit {{date}} Mitglied des Krug „{{krug}}\". Wenn du kein Mitglied sein möchtest, kannst du den Krug in den Einstellungen verlassen."
       }
     },
     "payment_source_transaction": {

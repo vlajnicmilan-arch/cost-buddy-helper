@@ -47,6 +47,7 @@ type EventType =
   | "krug_invitation_accepted"
   | "krug_invitation_declined"
   | "krug_member_left"
+  | "krug_membership_notice"
   | "krug_expense_proposed"
   | "krug_expense_confirmed"
   | "krug_expense_rejected"
@@ -63,6 +64,10 @@ interface Payload {
   deletion_request_id?: string | null;
   dedup_ref: string;
   recipient_override?: string[] | null;
+  // Optional interpolation vars for the i18n title/message keys. Used by
+  // events whose copy is not static (e.g. krug_membership_notice needs the
+  // krug name and the join date).
+  vars?: Record<string, unknown> | null;
 }
 
 const VALID: readonly EventType[] = [
@@ -71,6 +76,7 @@ const VALID: readonly EventType[] = [
   "krug_invitation_accepted",
   "krug_invitation_declined",
   "krug_member_left",
+  "krug_membership_notice",
   "krug_expense_proposed",
   "krug_expense_confirmed",
   "krug_expense_rejected",
@@ -149,6 +155,7 @@ Deno.serve(async (req) => {
     deletion_request_id = null,
     dedup_ref,
     recipient_override = null,
+    vars = null,
   } = payload ?? {};
 
   if (!VALID.includes(event_type)) return json({ error: "invalid_event_type" }, 400);
@@ -221,8 +228,8 @@ Deno.serve(async (req) => {
     fallback_route: highlightRoute,
     i18n_title_key: titleKey,
     i18n_body_key: bodyKey,
-    title_vars: {},
-    message_vars: {},
+    title_vars: vars && typeof vars === "object" ? vars : {},
+    message_vars: vars && typeof vars === "object" ? vars : {},
   };
 
   let delivered = 0;
@@ -348,6 +355,8 @@ function event_type_shortKey(t: EventType): string {
       return "invitation_declined";
     case "krug_member_left":
       return "member_left";
+    case "krug_membership_notice":
+      return "membership_notice";
     case "krug_expense_proposed":
       return "expense_proposed";
     case "krug_expense_confirmed":
