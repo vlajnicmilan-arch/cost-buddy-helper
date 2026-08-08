@@ -1,0 +1,1 @@
+select public.krug_emit_notification('krug_invitation_accepted', 'f9360c4d-1495-4163-9d73-9fc88b505c12'::uuid, null::uuid, null::uuid, null::uuid, 'catalogfix-verify-' || gen_random_uuid()::text, array['d4d31ee6-5f6b-4059-8c87-b595b394f56b']::uuid[]);

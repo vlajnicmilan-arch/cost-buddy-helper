@@ -46,9 +46,22 @@ export function translate(
   vars?: Record<string, unknown>,
 ): string {
   const l = resolveLang(lang);
-  const tmpl = CATALOGS[l][key] ?? CATALOGS.hr[key] ?? key;
-  return interpolate(tmpl, vars);
+  const exact = CATALOGS[l][key];
+  if (exact !== undefined) return interpolate(exact, vars);
+
+  const hrFallback = CATALOGS.hr[key];
+  if (hrFallback !== undefined) {
+    // Key exists in HR but not in the requested language — the catalogs drifted.
+    console.warn(`[i18n] missing key in catalog lang=${l} key=${key} (HR fallback used)`);
+    return interpolate(hrFallback, vars);
+  }
+
+  // Key missing everywhere: returning it raw would leak "notifications.x.y"
+  // into a push notification. Log loudly so the gap diagnoses itself.
+  console.warn(`[i18n] MISSING KEY in all server catalogs lang=${l} key=${key} — raw key returned`);
+  return key;
 }
+
 
 // Exported for the sync-guard test.
 export function _catalogsForTests() {
