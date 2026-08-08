@@ -1,44 +1,43 @@
-# Nalaz: pozivnice u Krug padaju — stara verzija edge funkcije
+# Nalaz: pozivnica u Krug se zapiše, ali obavijest ne nastane
 
-## Potvrđeno iz logova (bez izmjena)
+## Što logovi točno pokazuju
 
-Runtime log `krug-add-member`, danas 8.8. u 09:04:36, 09:04:42, 09:05:38 i 09:09:06 UTC (11:04–11:09 lokalno) — četiri pokušaja, sva četiri ista greška:
+`krug-add-member`, 2026-08-08 09:16:12 UTC:
 
-```text
-[KRUG-ADD-MEMBER] insert error {
-  code: "23514",
-  message: "krug_membership_requires_invitation: clanstvo u krugu moze nastati samo iz prihvacene pozivnice"
-}
+```
+[KRUG-ADD-MEMBER] notify error FunctionsHttpError: Edge Function returned a non-2xx status code
+  status: 401, statusText: "Unauthorized",
+  url: https://<projekt>.supabase.co/functions/v1/notify-krug-event
 ```
 
-Što ovo dokazuje:
+Prije toga u istom pozivu nema `invitation insert error` — pozivnica je uredno upisana (poklapa se s pending retkom u 09:16). Nakon greške funkcija vraća `ok: true, notified: false`, pa UI ne prijavljuje ništa.
 
-1. Poruka `[KRUG-ADD-MEMBER] insert error` postoji samo u STAROJ verziji funkcije. Nova verzija u izvoru loga `ownership error`, `find_user_by_email error`, `membership lookup error`, `invitation lookup error`, `invitation insert error`, `notify result` — nijedna od tih poruka nije u logu.
-2. Greška 23514 je CHECK/okidač `krug_require_consent` nad `krug_membership`. Znači funkcija je pokušala upisati ČLANSTVO, a ne pozivnicu.
-3. `krug_invitations` ima 0 redaka — potvrda da nova grana koda nikad nije izvršena.
-4. `notify-krug-event` za isto vrijeme ima samo `shutdown` zapise — nikad nije pozvan, jer stara verzija pada prije notifikacije.
+`notify-krug-event`, isto vrijeme: samo `booted (time: 31ms)`. Nijedan `console` zapis iz tijela funkcije.
 
-Sumnja je dakle potvrđena: **frontend je nov, baza je nova, deployana edge funkcija je stara.** Čuvar na bazi radi točno ono za što je napisan — blokira upis članstva bez pristanka. Generička poruka „Greška pri dodavanju člana." dolazi jer stara funkcija vraća `insert_failed`, kod koji UI mapira u generičku poruku.
+## Interpretacija (s ogradom)
 
-## Što nije uzrok
+- Funkcija je **bootala** u 09:16:12 — dakle zahtjev je prošao platformski edge (`verify_jwt = false` za `notify-krug-event` u `config.toml`, potvrđeno). 401 dolazi iz **vlastitog internog guarda** funkcije, koji vraća `{"error":"unauthorized"}` bez ijednog log zapisa — što točno objašnjava prazan log.
+- Guard prihvaća `Authorization: Bearer <token>` ako je jednak `SUPABASE_SERVICE_ROLE_KEY` **ili** `KRUG_NOTIFY_INTERNAL_KEY`. `krug-add-member` zove preko `admin.functions.invoke(...)`, tj. šalje service role key.
+- Komentar u samoj funkciji (linije 105–111) dokumentira da je taj mehanizam **već jednom puknuo**: „SUPABASE_SERVICE_ROLE_KEY drifted from the vault-stored value after a platform key rotation, causing 401". Zbog toga je i uveden dedicirani `KRUG_NOTIFY_INTERNAL_KEY`.
+- Potvrda iz produkcije: obavijest `krug_deleted` u 09:04 **je** nastala — a taj put ide iz baze (`krug_emit_notification` → `net.http_post` s vault ključem `krug_notify_internal_key`). Dakle **interni-ključ put radi, service-key put ne radi.**
 
-- Nije `find_user_by_email` — funkcija je došla do inserta, dakle lookup je prošao.
-- Nije RLS na `krug_invitations` — do te tablice se uopće nije došlo.
-- Nije `krug_ownership` — owner check je prošao.
-- Nije bug u novom kodu — novi kod nije izvršen.
+Ograda: ne mogu pročitati vrijednosti tajni pa ne mogu dokazati da su ključevi različiti; mogu dokazati da guard odbija upravo taj poziv, a da paralelni put s internim ključem prolazi.
 
-## Što bi popravak zahtijevao (NIJE izvedeno)
+## Prijedlog popravka (jedan od dva; preporuka A)
 
-Jedini korak: **redeploy funkcije `krug-add-member`** iz aktualnog izvora (`supabase/functions/krug-add-member/index.ts`), koji već piše u `krug_invitations`. Bez izmjene koda, sheme ni konfiguracije.
+**A. `krug-add-member` prestaje ovisiti o service keyu za poziv obavijesti**
+Poziv `notify-krug-event` ide s eksplicitnim `Authorization: Bearer ${KRUG_NOTIFY_INTERNAL_KEY}` (isti ključ koji već koristi baza i koji dokazano prolazi), uz fallback na service key ako varijabla nije postavljena. Jedna izmjena u jednoj datoteci, koristi kanal koji je danas dokazano ispravan.
 
-Provjera nakon redeploya:
-1. Ponoviti poziv iz UI-a na krug „Test".
-2. U logu očekivati odsutnost `insert error` i prisutnost `notify result`.
-3. `select count(*) from krug_invitations` → 1 redak, status `pending`.
-4. Kod pozvanog korisnika inbox pozivnica prikazuje poziv; prihvat stvara članstvo.
+**B. Ukloniti edge-to-edge poziv**
+`krug-add-member` umjesto HTTP poziva zove postojeći DB put (`krug_emit_notification`) preko admin klijenta. Arhitektonski čišće (jedan kanal umjesto dva), ali dira SQL sloj i traži provjeru potpisa funkcije.
 
-Ako se nakon redeploya i dalje pojavi `[KRUG-ADD-MEMBER] insert error` (točno taj tekst), znači da deploy nije uhvatio novu verziju i to je platformski problem, ne kod.
+## Verifikacija nakon popravka
 
-## Odluka
+1. Nova pozivnica iz aplikacije.
+2. Log `krug-add-member` mora sadržavati `[KRUG-ADD-MEMBER] notify result { delivered: 1 }` i **ne** `notify error`.
+3. `notifications`: 1 redak `krug_invited` za pozvanog, s `data->>'dedup_ref' = krug_invited:<invitation_id>`.
+4. Ponovljena pozivnica iste osobe ne smije stvoriti drugi redak (dedup).
 
-Reci „redeploy" i pokrećem samo taj korak, ništa drugo.
+## Napomena (nije u opsegu)
+
+Pozvani trenutno vidi poziv tek ulaskom u modul Krug — dok obavijest ne radi, nema aktivnog kanala koji ga dovede.
