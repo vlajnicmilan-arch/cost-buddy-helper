@@ -10,6 +10,12 @@
  * Legacy obavijesti bez `route` rade kroz `legacyResolve`.
  */
 
+import {
+  isKrugNotificationType,
+  isGenericKrugRoute,
+  resolveKrugNotification,
+} from './krugNotificationRoutes';
+
 export type HighlightType =
   | 'expense'
   | 'milestone'
@@ -21,7 +27,9 @@ export type HighlightType =
   | 'pending_transaction'
   | 'app_update'
   | 'note'
-  | 'decision';
+  | 'decision'
+  | 'settlement'
+  | 'krug';
 
 export interface NormalizedHighlight {
   type: HighlightType;
@@ -56,6 +64,9 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
   highlight: NormalizedHighlight | null;
 } {
   if (!type) return { route: null, fallback_route: null, highlight: null };
+
+  const krug = resolveKrugNotification(type, d);
+  if (krug) return krug;
 
   const projectId = pickStr(d.project_id, d.projectId);
   const expenseId = pickStr(d.expense_id, d.expenseId);
@@ -176,21 +187,7 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
           ? { type: 'decision', id: decisionId, tab: 'decisions' }
           : null,
       };
-    // Krug Notifications MVP — svih 6 tipova vodi na /krug listu.
-    // Per-krug highlight namjerno izostavljen za MVP: /krug list još nema
-    // stabilan HighlightTarget marker po id-u, a dubinski link na obrisan
-    // Krug ionako mora spustiti korisnika na listu.
-    case 'krug_member_added':
-    case 'krug_expense_proposed':
-    case 'krug_expense_confirmed':
-    case 'krug_expense_rejected':
-    case 'krug_deletion_requested':
-    case 'krug_deleted':
-      return {
-        route: '/krug',
-        fallback_route: '/krug',
-        highlight: null,
-      };
+    // Krug: odredišta žive u eksplicitnoj tablici `krugNotificationRoutes`.
     default:
       return { route: null, fallback_route: null, highlight: null };
   }
@@ -224,6 +221,25 @@ export function normalizePayload(
     const hid = pickStr(d.highlight_id);
     const htab = pickStr(d.highlight_tab) ?? undefined;
     if (ht && hid) highlight = htab ? { type: ht, id: hid, tab: htab } : { type: ht, id: hid };
+  }
+
+  // Krug obavijesti: server upisuje MVP rutu `/krug` (ili `/krug?id=`) koja
+  // ne vodi na sam događaj. Kad je ruta generička, prepuštamo je eksplicitnoj
+  // tablici odredišta; ručno postavljena ruta se i dalje poštuje doslovno.
+  if (isKrugNotificationType(resolvedType) && !highlight) {
+    const krugId = pickStr(d.krug_id, (d as Record<string, unknown>).krugId);
+    if (isGenericKrugRoute(directRoute, krugId)) {
+      const krug = resolveKrugNotification(resolvedType, d);
+      if (krug) {
+        return {
+          type: resolvedType,
+          route: krug.route,
+          fallback_route: krug.fallback_route,
+          highlight: krug.highlight,
+          raw: d,
+        };
+      }
+    }
   }
 
   if (directRoute || highlight) {
