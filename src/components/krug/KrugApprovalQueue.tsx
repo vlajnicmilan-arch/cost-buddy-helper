@@ -14,10 +14,11 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Inbox, Check, X, Loader2 } from 'lucide-react';
+import { Inbox, Check, X, Loader2, Percent } from 'lucide-react';
 import { Expense } from '@/types/expense';
 import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
 import { useKrugPendingExpenses } from '@/hooks/useKrugPendingExpenses';
+import { useKrugPendingOverrides } from '@/hooks/useKrugPendingOverrides';
 import { useKrugApplyAct } from '@/hooks/useKrugAct';
 import { decideApplyAct } from '@/lib/krugDecisions';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -53,6 +54,16 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
     [pending],
   );
   const profiles = useUserProfiles(authorIds);
+
+  // Faza B — pending prijedlozi ručne podjele. Vidljivi samo punopravnima.
+  const { data: pendingOverrides = [] } = useKrugPendingOverrides(
+    viewerIsFullMember ? krugId : null,
+  );
+  const proposerIds = useMemo(
+    () => Array.from(new Set(pendingOverrides.map((o) => o.proposedBy).filter(Boolean))),
+    [pendingOverrides],
+  );
+  const overrideProfiles = useUserProfiles(proposerIds);
 
   const openDetail = (e: Expense) => {
     setSelected(e);
