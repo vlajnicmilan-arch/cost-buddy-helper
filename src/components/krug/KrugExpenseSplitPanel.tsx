@@ -53,15 +53,42 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
     getMemberDisplayName(profiles.get(uid), uid, t('krug.member.unknown', 'Nepoznat član'));
 
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<string[]>([]);
+  const [rebalanceError, setRebalanceError] = useState<'touched_over_100' | null>(null);
   const initDraft = () => {
-    const equal = fullMemberIds.length > 0
-      ? +(100 / fullMemberIds.length).toFixed(2)
-      : 0;
+    const values = rebalanceShares(
+      Object.fromEntries(fullMemberIds.map((id) => [id, 0])),
+      fullMemberIds,
+      [],
+    ).values;
     const d: Record<string, string> = {};
-    for (const id of fullMemberIds) d[id] = equal.toString();
+    for (const id of fullMemberIds) d[id] = formatShare(values[id]);
     setDraft(d);
+    setTouched([]);
+    setRebalanceError(null);
     setEditing(true);
   };
+
+  /** Live raspodjela: dirnuto polje ostaje, ostatak ide po nedirnutima. */
+  const handleShareChange = (id: string, raw: string) => {
+    const nextTouched = touched.includes(id) ? touched : [...touched, id];
+    setTouched(nextTouched);
+    const numeric: Record<string, number> = {};
+    for (const mid of fullMemberIds) {
+      numeric[mid] = mid === id ? Number(raw) || 0 : Number(draft[mid] ?? 0) || 0;
+    }
+    const { values, error } = rebalanceShares(numeric, fullMemberIds, nextTouched);
+    setRebalanceError(error);
+    setDraft((d) => {
+      const next = { ...d, [id]: raw };
+      for (const mid of fullMemberIds) {
+        if (mid === id || nextTouched.includes(mid)) continue;
+        next[mid] = formatShare(values[mid]);
+      }
+      return next;
+    });
+  };
+
 
   if (!isFullMember) return null;
   if (isLoading) {
