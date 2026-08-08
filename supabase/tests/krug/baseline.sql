@@ -117,3 +117,44 @@ CREATE OR REPLACE FUNCTION public.krug_emit_notification(
   p_expense_id uuid DEFAULT NULL, p_deletion_request_id uuid DEFAULT NULL,
   p_dedup_ref text DEFAULT NULL, p_recipient_override uuid[] DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql AS $$ BEGIN RETURN; END $$;
+
+-- ---------------------------------------------------------------------
+-- Self-leave harness additions (krug_leave).
+-- Iste definicije kao u produkciji: `krug_is_member` + SELECT politika +
+-- DELETE politika koja SAMOIZLAZAK BRANI (owner_not_self). Dokaz da izlazak
+-- moze ici iskljucivo kroz SECURITY DEFINER RPC.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.krug_is_member(_krug uuid, _user uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.krug_ownership WHERE krug_id = _krug AND user_id = _user)
+      OR EXISTS (
+        SELECT 1 FROM public.krug_membership m
+        JOIN public.krug k ON k.id = m.krug_id
+        WHERE m.krug_id = _krug AND m.user_id = _user AND k.deleted_at IS NULL
+      );
+$$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='krug_membership' AND policyname='krug_membership_select_member') THEN
+    EXECUTE $p$CREATE POLICY "krug_membership_select_member" ON public.krug_membership
+      FOR SELECT TO authenticated USING (public.krug_is_member(krug_id, auth.uid()))$p$;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='krug_membership' AND policyname='krug_membership_delete_owner_not_self') THEN
+    EXECUTE $p$CREATE POLICY "krug_membership_delete_owner_not_self" ON public.krug_membership
+      FOR DELETE TO authenticated
+      USING (public.krug_is_owner(krug_id, auth.uid()) AND user_id <> auth.uid())$p$;
+  END IF;
+END $$;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.krug_membership TO authenticated;
+GRANT SELECT ON public.krug, public.krug_ownership TO authenticated;
+
+-- Stub razracunavanja: dokazujemo da izlazak NE dira postojece zapise.
+CREATE TABLE IF NOT EXISTS public.krug_settlement_ledger (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  krug_id uuid NOT NULL REFERENCES public.krug(id) ON DELETE CASCADE,
+  from_user uuid NOT NULL,
+  to_user uuid NOT NULL,
+  amount numeric NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
