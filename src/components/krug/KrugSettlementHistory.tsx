@@ -31,13 +31,14 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
 
   if (!isFullMember) return null;
 
-  const handleVoid = async (id: string) => {
-    const reason = window.prompt(t('krug.settle.history.voidPrompt', 'Razlog poništenja:'));
-    if (!reason || !reason.trim()) return;
+  const handleVoid = async (reason?: string) => {
+    if (!voidTarget || !reason?.trim()) return;
     try {
-      await voidMut.mutateAsync({ ledgerId: id, reason: reason.trim() });
+      await voidMut.mutateAsync({ ledgerId: voidTarget, reason: reason.trim() });
+      setVoidTarget(null);
     } catch { /* handled */ }
   };
+
 
   return (
     <section className="space-y-2">
