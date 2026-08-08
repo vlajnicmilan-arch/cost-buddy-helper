@@ -351,7 +351,7 @@ export const FeedbackInboxTab = ({ initialId }: { initialId?: string | null }) =
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => deleteItem(r.id)}
+                        onClick={() => setDeleteTarget(r.id)}
                         aria-label={t('common.delete')}
                         className="text-destructive hover:text-destructive"
                       >
