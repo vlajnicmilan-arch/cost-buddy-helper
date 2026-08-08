@@ -101,7 +101,18 @@ export const MailImportSection = () => {
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">{t('mailImport.recent', 'Zadnjih 20 primljenih poruka')}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium">{t('mailImport.recent', 'Zadnjih 20 primljenih poruka')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setReviewOpen(true)}
+          >
+            <Inbox className="h-4 w-4 mr-2" />
+            {t('mailReview.open', 'Na pregled')}
+          </Button>
+        </div>
         {loading ? (
           <p className="text-xs text-muted-foreground">{t('common.loading', 'Učitavanje...')}</p>
         ) : messages.length === 0 ? (
@@ -114,14 +125,36 @@ export const MailImportSection = () => {
                 <div className="text-muted-foreground break-all">{m.from_header || '—'}</div>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
                   <span>{new Date(m.received_at).toLocaleString()}</span>
-                  <span>{t('mailImport.status', 'Status')}: {m.status}</span>
+                  <span>
+                    {t('mailImport.status', 'Status')}: {t(`mailImport.state.${m.status}`, m.status)}
+                  </span>
                   <span>{t('mailImport.attachments', 'Privitci')}: {m.attachment_count}</span>
                 </div>
+                {RETRYABLE.includes(m.status) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 min-h-[44px]"
+                    disabled={retrying === m.id}
+                    onClick={() => handleRetry(m.id)}
+                  >
+                    {retrying === m.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    {m.status === 'zaustavljena_branom'
+                      ? t('mailImport.runManually', 'Pokreni ručno')
+                      : t('mailImport.retry', 'Pokušaj ponovno')}
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <MailReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} />
 
       <AlertDialog open={confirmRegen} onOpenChange={setConfirmRegen}>
         <AlertDialogContent>
