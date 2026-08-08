@@ -5403,6 +5403,10 @@
         "status": "Zur Teilung vorgeschlagen",
         "confirm": "Bestätigen",
         "reject": "Ablehnen"
+      },
+      "overrides": {
+        "title": "Aufteilungsvorschläge",
+        "row": "Aufteilungsvorschlag · {{name}}"
       }
     },
     "decided": {

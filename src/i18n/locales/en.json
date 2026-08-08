@@ -5403,6 +5403,10 @@
         "status": "Proposed for sharing",
         "confirm": "Approve",
         "reject": "Reject"
+      },
+      "overrides": {
+        "title": "Split proposals",
+        "row": "Split proposal · {{name}}"
       }
     },
     "decided": {
