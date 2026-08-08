@@ -25,6 +25,8 @@ export interface KrugSettlementLedgerRow {
 function reportError(err: any, fallbackKey: string, fallback: string) {
   const msg = err?.message || '';
   const map: Record<string, string> = {
+    only_debtor_can_settle: i18n.t('krug.settle.error.only_debtor_can_settle', 'Samo onaj tko duguje može označiti podmirenje.'),
+    only_party_can_void: i18n.t('krug.settle.error.only_party_can_void', 'Podmirenje mogu poništiti samo strane tog duga.'),
     not_full_member: i18n.t('krug.settle.error.not_full_member', 'Nemaš pravo označiti podmirenje u ovom Krugu.'),
     from_equals_to: i18n.t('krug.settle.error.from_equals_to', 'Isti član ne može biti pošiljatelj i primatelj.'),
     party_not_full_member: i18n.t('krug.settle.error.party_not_full_member', 'Odabrani član nije punopravni.'),

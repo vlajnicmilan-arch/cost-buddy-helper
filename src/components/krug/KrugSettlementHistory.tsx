@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, History, ArrowRight, X, Loader2 } from 'lucide-
 import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugSettlementMutations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Props {
   krugId: string;
@@ -18,6 +19,7 @@ interface Props {
 
 export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember && open);
   const voidMut = useKrugVoidSettlement(krugId);
@@ -86,7 +88,8 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
                 <div className={`text-sm font-semibold tabular-nums shrink-0 ${voided ? 'line-through opacity-60' : ''}`}>
                   {Number(r.amount).toFixed(2)} {r.currency}
                 </div>
-                {!voided && (
+                {/* Poništenje je zaštita obiju strana duga. */}
+                {!voided && (user?.id === r.from_user || user?.id === r.to_user) && (
                   <Button
                     size="icon" variant="ghost" className="h-8 w-8 shrink-0"
                     disabled={voidMut.isPending}

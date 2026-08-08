@@ -5655,7 +5655,9 @@
         "already_voided": "Dieser Ausgleich wurde bereits storniert.",
         "reason_required": "Ein Grund ist erforderlich.",
         "not_found": "Datensatz nicht gefunden.",
-        "generic": "Ausgleich konnte nicht gespeichert werden."
+        "generic": "Ausgleich konnte nicht gespeichert werden.",
+        "only_debtor_can_settle": "Nur wer schuldet, kann eine Zahlung vermerken.",
+        "only_party_can_void": "Nur die beiden Parteien dieser Schuld können die Zahlung stornieren."
       },
       "success": {
         "marked": "Ausgleich erfasst.",
@@ -5667,7 +5669,10 @@
         "noteLabel": "Notiz (optional)",
         "notePlaceholder": "z. B. Bar am 25.7.",
         "confirm": "Ausgleich bestätigen",
-        "confirmCountdown": "Bestätigen ({{s}}s)"
+        "confirmCountdown": "Bestätigen ({{s}}s)",
+        "titleSelf": "Als bezahlt markieren",
+        "bodySelf": "Du markierst, dass du {{to}} den Betrag {{amount}} {{currency}} bezahlt hast.",
+        "confirmSelf": "Bestätigen, dass ich bezahlt habe"
       },
       "history": {
         "title": "Ausgleichs-Historie",

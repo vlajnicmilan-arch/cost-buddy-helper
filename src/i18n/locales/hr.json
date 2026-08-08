@@ -5664,7 +5664,9 @@
         "already_voided": "Podmirenje je već poništeno.",
         "reason_required": "Razlog je obavezan.",
         "not_found": "Zapis ne postoji.",
-        "generic": "Nije moguće spremiti podmirenje."
+        "generic": "Nije moguće spremiti podmirenje.",
+        "only_debtor_can_settle": "Samo onaj tko duguje može označiti podmirenje.",
+        "only_party_can_void": "Podmirenje mogu poništiti samo strane tog duga."
       },
       "success": {
         "marked": "Podmirenje zabilježeno.",
@@ -5676,7 +5678,10 @@
         "noteLabel": "Napomena (opcionalno)",
         "notePlaceholder": "npr. gotovina 25.7.",
         "confirm": "Potvrdi podmirenje",
-        "confirmCountdown": "Potvrdi ({{s}}s)"
+        "confirmCountdown": "Potvrdi ({{s}}s)",
+        "titleSelf": "Označi da si platio",
+        "bodySelf": "Označavaš da si platio {{to}} iznos {{amount}} {{currency}}.",
+        "confirmSelf": "Potvrdi da sam platio"
       },
       "history": {
         "title": "Povijest podmirenja",

@@ -64,3 +64,22 @@ psql -v ON_ERROR_STOP=1 \
   -v owner_id="'00000000-0000-0000-0000-0000000000a1'" \
   -v invitee_id="'00000000-0000-0000-0000-0000000000b2'" \
   -f "$HERE/function_overloads.sql"
+
+# --- Faza B: settlement flow (izvrsni test, ne samo struktura) ----------
+if [ "$SKIP_MIGRATIONS" != "1" ]; then
+  while read -r m; do
+    [ -z "$m" ] && continue
+    case "$m" in \#*) continue ;; esac
+    echo "-- applying $m"
+    psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/$m"
+  done < "$HERE/KRUG_SETTLE_MIGRATIONS.txt"
+fi
+
+psql -q -c "insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000d4','third@example.test') on conflict do nothing"
+psql -v ON_ERROR_STOP=1 \
+  -v krug_id="'$KRUG'" \
+  -v debtor_id="'00000000-0000-0000-0000-0000000000c3'" \
+  -v creditor_id="'00000000-0000-0000-0000-0000000000a1'" \
+  -v third_id="'00000000-0000-0000-0000-0000000000d4'" \
+  -f "$HERE/settlement_flow.sql"
