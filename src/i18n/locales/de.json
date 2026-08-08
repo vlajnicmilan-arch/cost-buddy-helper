@@ -5756,7 +5756,8 @@
         "only_proposer_withdraw": "Nur der Vorschlagende kann den Vorschlag zurückziehen.",
         "not_found": "Vorschlag nicht gefunden.",
         "generic": "Fehler bei der Verarbeitung des Vorschlags.",
-        "negative": "Prozentsatz darf nicht negativ sein."
+        "negative": "Prozentsatz darf nicht negativ sein.",
+        "touched_over_100": "Die eingegebenen Prozentwerte überschreiten bereits 100%."
       },
       "success": {
         "activated": "Manuelle Aufteilung aktiviert.",
