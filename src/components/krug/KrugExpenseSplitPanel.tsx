@@ -24,6 +24,8 @@ import {
 } from '@/hooks/useKrugExpenseOverride';
 import { showError } from '@/hooks/useStatusFeedback';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { rebalanceShares, formatShare } from '@/lib/krugSplitRebalance';
+
 
 interface Props {
   krugId: string;
