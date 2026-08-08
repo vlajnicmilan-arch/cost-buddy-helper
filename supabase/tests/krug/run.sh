@@ -57,3 +57,10 @@ psql -v ON_ERROR_STOP=1 \
   -v owner_id="'00000000-0000-0000-0000-0000000000a1'" \
   -v member_id="'00000000-0000-0000-0000-0000000000b2'" \
   -f "$HERE/member_leave.sql"
+
+# --- Cuvar: nema duplih overloada + accept smoke -----------------------
+psql -v ON_ERROR_STOP=1 \
+  -v krug_id="'$KRUG'" \
+  -v owner_id="'00000000-0000-0000-0000-0000000000a1'" \
+  -v invitee_id="'00000000-0000-0000-0000-0000000000b2'" \
+  -f "$HERE/function_overloads.sql"
