@@ -2712,6 +2712,18 @@
       "settlement_voided": {
         "title": "Podmirenje poništeno",
         "message": "Član Kruga je poništio zabilježeno podmirenje ({{amount}} {{currency}}). Razlog: {{reason}}"
+      },
+      "override_proposed": {
+        "title": "Prijedlog podjele troška",
+        "message": "Član Kruga je predložio ručnu podjelu zajedničkog troška. Otvori trošak i potvrdi ili odbij prijedlog."
+      },
+      "override_confirmed": {
+        "title": "Podjela potvrđena",
+        "message": "Tvoj prijedlog ručne podjele troška je potvrđen i sada je aktivan."
+      },
+      "override_rejected": {
+        "title": "Prijedlog podjele odbijen",
+        "message": "Tvoj prijedlog ručne podjele troška je odbijen. Razlog: {{reason}}"
       }
     },
     "payment_source_transaction": {
