@@ -182,7 +182,7 @@ export const exportKrugSettlementPdf = async (
   const fullBrand = await resolveBrand(krugName, periodLabel, { ...brand, language });
 
   const bodyStartY = drawReportHeader(doc, {
-    title: t('krug.settlement.pdf.title', 'Krug settlement izvještaj'),
+    title: t('krug.settlement.pdf.title', 'Tko kome — izvještaj'),
     brand: fullBrand,
     confidentialityLabel: confidentialityLabel(),
   });

@@ -5647,7 +5647,7 @@
         "manual": "Manual"
       },
       "pdf": {
-        "title": "Krug settlement report",
+        "title": "Who owes whom — report",
         "exportButton": "Export PDF",
         "exportSuccess": "Your PDF is ready\nYou can share it with your Krug.",
         "exportError": "Could not export PDF.",

@@ -5656,7 +5656,7 @@
         "manual": "Ručno"
       },
       "pdf": {
-        "title": "Krug settlement izvještaj",
+        "title": "Tko kome — izvještaj",
         "exportButton": "Izvezi PDF",
         "exportSuccess": "PDF je spreman\nMožeš ga podijeliti s članovima Kruga.",
         "exportError": "Nije moguće izvesti PDF.",
