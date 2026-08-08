@@ -137,11 +137,28 @@ serve(async (req) => {
     }
 
     // Notify the invitee. Failure MUST NOT roll back the invitation — logged.
+    //
+    // Auth: `notify-krug-event` accepts EITHER `KRUG_NOTIFY_INTERNAL_KEY` or the
+    // current service role key. We send the internal key explicitly because the
+    // service role key has drifted from the value the notifier sees after a
+    // platform key rotation before (2026-08-08: every invite notify returned 401).
+    // The DB path (`krug_emit_notification` → net.http_post) uses the same
+    // internal key and is proven to work. Service key is a last-resort fallback
+    // and is loudly warned about so the drift can never be silent again.
     let notified = false;
     try {
+      const internalKey = Deno.env.get("KRUG_NOTIFY_INTERNAL_KEY") ?? "";
+      if (!internalKey) {
+        console.warn(
+          "[KRUG-ADD-MEMBER] KRUG_NOTIFY_INTERNAL_KEY missing — falling back to service role key for notify auth",
+        );
+      }
+      const notifyToken = internalKey || serviceKey;
+
       const { data: notifyRes, error: notifyErr } = await admin.functions.invoke(
         "notify-krug-event",
         {
+          headers: { Authorization: `Bearer ${notifyToken}` },
           body: {
             event_type: "krug_invited",
             krug_id: krugId,
@@ -162,6 +179,7 @@ serve(async (req) => {
     } catch (e) {
       console.error("[KRUG-ADD-MEMBER] notify dispatch failed", e);
     }
+
 
     return json(
       { ok: true, invitation_id: inserted.id, user_id: invitedUserId, role, notified },
