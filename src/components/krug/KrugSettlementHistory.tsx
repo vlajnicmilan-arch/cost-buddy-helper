@@ -118,7 +118,8 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
           })}
           <ShowMoreButton hasMore={hasMore} remaining={remaining} onClick={showMore} />
         </Card>
-      )}
+      </CollapsibleSection>
+
 
       <ConfirmActionDialog
         open={!!voidTarget}
