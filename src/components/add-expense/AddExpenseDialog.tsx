@@ -957,10 +957,20 @@ export const AddExpenseDialog = ({
   };
 
   const handleDuplicateConfirm = async () => {
+    if (isSavingRef.current) return;
     if (pendingTransaction) {
-      await executeAdd(pendingTransaction.expense, pendingTransaction.items);
-      setPendingTransaction(null);
-      setDuplicateOf(null);
+      isSavingRef.current = true;
+      setIsSaving(true);
+      try {
+        await executeAdd(pendingTransaction.expense, pendingTransaction.items);
+        setPendingTransaction(null);
+        setDuplicateOf(null);
+      } catch {
+        /* executeAdd već prikazuje grešku */
+      } finally {
+        isSavingRef.current = false;
+        setIsSaving(false);
+      }
     }
     setDuplicateWarningOpen(false);
   };
@@ -971,9 +981,27 @@ export const AddExpenseDialog = ({
     setDuplicateWarningOpen(false);
   };
 
+  /**
+   * Jedini ulaz za ručni/installment submit. Zaključava od PRVOG klika
+   * (sinkroni ref, ne state) — inače brzi uzastopni klikovi stvore N redaka
+   * (incident 08.08.2026: 9 duplikata u istoj sekundi).
+   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e?.preventDefault?.();
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      await performSubmit(e);
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
+  const performSubmit = async (e: React.FormEvent) => {
     if (!amount) return;
+
 
     // Krug attach — bez skrivenog defaulta. Ako je Krug odabran, korisnik
     // MORA eksplicitno odabrati Moje / Za Krug. Submit se ne smije tiho
