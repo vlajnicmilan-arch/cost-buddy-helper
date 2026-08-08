@@ -1448,6 +1448,94 @@ export type Database = {
         }
         Relationships: []
       }
+      document_ingest_items: {
+        Row: {
+          attachment_id: string | null
+          classification: string | null
+          confidence: string | null
+          created_at: string
+          dedup_identity: string | null
+          extraction: Json | null
+          id: string
+          reason: string | null
+          scope_id: string
+          scope_type: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_id?: string | null
+          classification?: string | null
+          confidence?: string | null
+          created_at?: string
+          dedup_identity?: string | null
+          extraction?: Json | null
+          id?: string
+          reason?: string | null
+          scope_id: string
+          scope_type: string
+          source: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_id?: string | null
+          classification?: string | null
+          confidence?: string | null
+          created_at?: string
+          dedup_identity?: string | null
+          extraction?: Json | null
+          id?: string
+          reason?: string | null
+          scope_id?: string
+          scope_type?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_ingest_items_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_attachments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_links: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_links_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: true
+            referencedRelation: "document_ingest_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -2149,6 +2237,121 @@ export type Database = {
         }
         Relationships: []
       }
+      inbound_attachments: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          mime_declared: string | null
+          mime_sniffed: string | null
+          page_count: number | null
+          scan_status: string
+          size_bytes: number | null
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          mime_declared?: string | null
+          mime_sniffed?: string | null
+          page_count?: number | null
+          scan_status?: string
+          size_bytes?: number | null
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          mime_declared?: string | null
+          mime_sniffed?: string | null
+          page_count?: number | null
+          scan_status?: string
+          size_bytes?: number | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbound_messages: {
+        Row: {
+          alias_id: string
+          arc_result: string | null
+          body_storage_path: string | null
+          created_at: string
+          dkim_result: string | null
+          dmarc_result: string | null
+          from_header: string | null
+          id: string
+          owner_user_id: string
+          provider: string
+          provider_event_id: string
+          received_at: string
+          size_bytes: number | null
+          spf_result: string | null
+          status: string
+          subject: string | null
+          trust_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          alias_id: string
+          arc_result?: string | null
+          body_storage_path?: string | null
+          created_at?: string
+          dkim_result?: string | null
+          dmarc_result?: string | null
+          from_header?: string | null
+          id?: string
+          owner_user_id: string
+          provider: string
+          provider_event_id: string
+          received_at?: string
+          size_bytes?: number | null
+          spf_result?: string | null
+          status?: string
+          subject?: string | null
+          trust_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alias_id?: string
+          arc_result?: string | null
+          body_storage_path?: string | null
+          created_at?: string
+          dkim_result?: string | null
+          dmarc_result?: string | null
+          from_header?: string | null
+          id?: string
+          owner_user_id?: string
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+          size_bytes?: number | null
+          spf_result?: string | null
+          status?: string
+          subject?: string | null
+          trust_level?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_messages_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: false
+            referencedRelation: "mail_aliases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       income_source_invitations: {
         Row: {
           created_at: string
@@ -2359,6 +2562,44 @@ export type Database = {
             columns: ["paid_expense_id"]
             isOneToOne: false
             referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingest_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          message_id: string
+          next_run_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          message_id: string
+          next_run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          message_id?: string
+          next_run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingest_jobs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -3212,6 +3453,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mail_aliases: {
+        Row: {
+          alias_local: string
+          created_at: string
+          disabled_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          alias_local: string
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          alias_local?: string
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       milestone_budget_alerts: {
         Row: {
@@ -7020,6 +7285,25 @@ export type Database = {
           project_id: string
           title: string
         }[]
+      }
+      mail_ingest_store_message: {
+        Args: {
+          p_alias_id: string
+          p_arc_result: string
+          p_attachments?: Json
+          p_body_storage_path: string
+          p_dkim_result: string
+          p_dmarc_result: string
+          p_from_header: string
+          p_owner_user_id: string
+          p_provider: string
+          p_provider_event_id: string
+          p_received_at: string
+          p_size_bytes: number
+          p_spf_result: string
+          p_subject: string
+        }
+        Returns: Json
       }
       mark_guided_home_exited: { Args: never; Returns: string }
       member_sees_investor_price: {

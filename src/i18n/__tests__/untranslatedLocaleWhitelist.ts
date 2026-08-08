@@ -3,7 +3,9 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "mailImport.status": "Same word in EN",
     "subscription.badge.trial": "Same word in EN",
+
     "subscription.badge.admin": "Admin terminology",
     "subscription.module.smjer": "Module brand name",
     "subscription.module.krug": "Module brand name",
@@ -118,7 +120,9 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
+    "mailImport.status": "Same word in DE",
     "subscription.badge.admin": "Admin terminology",
+
     "subscription.module.smjer": "Module brand name",
     "subscription.module.krug": "Module brand name",
     "subscription.module.projekti": "Module brand name",

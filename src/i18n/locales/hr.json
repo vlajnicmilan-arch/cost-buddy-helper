@@ -6220,5 +6220,23 @@
       "noRevenueHint": "Ovime se ne bilježi prihod ni promjena salda — prihod ulazi kroz uvoz bankovnog izvoda.",
       "failedDetailed": "Bilježenje naplate nije uspjelo: {{reason}}"
     }
+  },
+  "mailImport": {
+    "title": "Uvoz iz e-maila",
+    "yourAddress": "Tvoja adresa za primanje",
+    "description": "Pošalji ili proslijedi poštu na ovu adresu. U ovom koraku poruke se samo primaju i prikazuju.",
+    "copy": "Kopiraj",
+    "copied": "Adresa kopirana",
+    "copyFailed": "Kopiranje nije uspjelo",
+    "regenerate": "Regeneriraj adresu",
+    "regenerateTitle": "Regeneriraj adresu?",
+    "regenerateWarning": "Stara adresa prestaje raditi odmah. Pošta poslana na nju više neće biti primljena.",
+    "regenerated": "Nova adresa je stvorena",
+    "regenerateFailed": "Stvaranje nove adrese nije uspjelo",
+    "recent": "Zadnjih 20 primljenih poruka",
+    "empty": "Još nema primljenih poruka.",
+    "noSubject": "(bez naslova)",
+    "status": "Status",
+    "attachments": "Privitci"
   }
 }

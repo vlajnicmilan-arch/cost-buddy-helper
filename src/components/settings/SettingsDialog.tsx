@@ -39,6 +39,8 @@ import { AppearanceSection } from './AppearanceSection';
 import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { ModulesSection } from './ModulesSection';
+import { MailImportSection } from './MailImportSection';
+
 import { DataSection } from './DataSection';
 import { AdvancedSection } from './AdvancedSection';
 import { DangerZoneSection } from './DangerZoneSection';
@@ -490,7 +492,11 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
               isLocalMode={isLocalMode}
             />
 
+            <MailImportSection />
+
             <Separator />
+
+
 
             <NotificationsSection
               soundEnabled={soundEnabled}
