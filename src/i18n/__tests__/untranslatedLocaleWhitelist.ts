@@ -3,7 +3,9 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "mailImport.status": "Same word in EN",
     "subscription.badge.trial": "Same word in EN",
+
     "subscription.badge.admin": "Admin terminology",
     "subscription.module.smjer": "Module brand name",
     "subscription.module.krug": "Module brand name",
