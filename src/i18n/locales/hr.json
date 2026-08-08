@@ -5765,7 +5765,8 @@
         "only_proposer_withdraw": "Samo predlagatelj može povući prijedlog.",
         "not_found": "Prijedlog ne postoji.",
         "generic": "Greška pri obradi prijedloga.",
-        "negative": "Postotak ne smije biti negativan."
+        "negative": "Postotak ne smije biti negativan.",
+        "touched_over_100": "Ručno uneseni postoci već premašuju 100%."
       },
       "success": {
         "activated": "Ručna podjela aktivirana.",

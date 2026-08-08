@@ -5756,7 +5756,8 @@
         "only_proposer_withdraw": "Only the proposer can withdraw the proposal.",
         "not_found": "Proposal not found.",
         "generic": "Failed to process the proposal.",
-        "negative": "Percentage cannot be negative."
+        "negative": "Percentage cannot be negative.",
+        "touched_over_100": "The percentages you entered already exceed 100%."
       },
       "success": {
         "activated": "Manual split activated.",
