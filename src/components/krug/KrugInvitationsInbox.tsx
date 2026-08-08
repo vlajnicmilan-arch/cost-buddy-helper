@@ -44,6 +44,7 @@ export function KrugInvitationsInbox() {
   const { data: invitations = [], isLoading } = useMyKrugInvitations();
   const accept = useAcceptKrugInvitation();
   const decline = useDeclineKrugInvitation();
+  const inboxList = useShowMore(invitations);
 
   if (isLoading || invitations.length === 0) return null;
 

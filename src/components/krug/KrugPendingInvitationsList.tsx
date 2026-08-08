@@ -22,6 +22,7 @@ export function KrugPendingInvitationsList({ krugId, isOwner }: Props) {
   const { t } = useTranslation();
   const { data: invitations = [] } = useKrugPendingInvitations(krugId, isOwner);
   const revoke = useRevokeKrugInvitation();
+  const invList = useShowMore(invitations);
 
   if (!isOwner || invitations.length === 0) return null;
 

@@ -30,6 +30,7 @@ export function KrugListScreen({ onSelect }: Props) {
   const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
   const canCreate = hasModuleAccess('krug');
+  const krugList = useShowMore(krugs);
 
   // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni
   // gate. Za korisnike bez prava — otvori upgrade dijalog, NIKAD ne otvaraj
