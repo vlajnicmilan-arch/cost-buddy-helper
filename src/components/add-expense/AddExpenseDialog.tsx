@@ -631,7 +631,7 @@ export const AddExpenseDialog = ({
   useBackButton(open, handleBackClose, 10);
 
   const acceptScannedData = async () => {
-    if (!scannedData || isSaving) return;
+    if (!scannedData || isSaving || isSavingRef.current) return;
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
     if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
@@ -668,6 +668,7 @@ export const AddExpenseDialog = ({
         route: typeof window !== 'undefined' ? window.location.pathname : null,
       });
     } catch {}
+    isSavingRef.current = true;
     setIsSaving(true);
     try {
       const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
@@ -819,6 +820,7 @@ export const AddExpenseDialog = ({
       } catch {}
       showError(t('transactions.saveError'));
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -1423,7 +1425,7 @@ export const AddExpenseDialog = ({
               data-testid="manual-expense-submit"
               onClick={handleSubmit}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={scanning || !amount}
+              disabled={scanning || isSaving || !amount}
             >
               {t('common.save')}
             </Button>
