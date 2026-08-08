@@ -29,6 +29,7 @@ import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
 import { useShowMore } from '@/hooks/useShowMore';
 import { ShowMoreButton } from '@/components/common/ShowMoreButton';
+import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 
 interface Props {
   krugId: string;
