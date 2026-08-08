@@ -896,6 +896,8 @@ export const AddExpenseDialog = ({
     setLocationCoords(null);
     setKrugId(null);
     setKrugPrivacy(null);
+    // Novi logički unos → novi idempotency ključ.
+    clientRequestIdRef.current = newClientRequestId();
 
   };
 
@@ -906,9 +908,10 @@ export const AddExpenseDialog = ({
     try {
       const expenseWithLocation = {
         ...expense,
+        client_request_id: clientRequestIdRef.current,
         ...(locationName ? { location_name: locationName, location_coords: locationCoords } : {}),
       };
-      await onAdd(expenseWithLocation, validItems);
+      await onAdd(expenseWithLocation as typeof expense, validItems);
       successVibration();
       maybeRequestReview();
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
