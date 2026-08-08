@@ -233,15 +233,21 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
               <Input
                 type="number" step="0.01" min="0" max="100"
                 value={draft[id] ?? ''}
-                onChange={(e) => setDraft((d) => ({ ...d, [id]: e.target.value }))}
+                onChange={(e) => handleShareChange(id, e.target.value)}
                 className="h-8 w-24 text-right tabular-nums"
               />
               <span className="text-muted-foreground">%</span>
             </div>
           ))}
+          {rebalanceError === 'touched_over_100' && (
+            <div className="text-[11px] text-destructive text-right">
+              {t('krug.override.error.touched_over_100', 'Ručno uneseni postoci već premašuju 100%.')}
+            </div>
+          )}
           <div className="text-[11px] text-muted-foreground text-right">
             {t('krug.override.sumLabel', 'Zbroj')}: {fullMemberIds.reduce((a, id) => a + Number(draft[id] ?? 0), 0).toFixed(2)}%
           </div>
+
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)}>
               {t('common.cancel', 'Odustani')}
