@@ -1450,49 +1450,70 @@ export type Database = {
       }
       document_ingest_items: {
         Row: {
+          ai_calls: number
           attachment_id: string | null
           classification: string | null
           confidence: string | null
           created_at: string
           dedup_identity: string | null
+          doc_type: string | null
+          duplicate_of_item_id: string | null
           extraction: Json | null
           id: string
+          message_id: string | null
+          owner_user_id: string | null
           reason: string | null
           scope_id: string
           scope_type: string
           source: string
           status: string
+          trust_level: string | null
           updated_at: string
+          warnings: Json
         }
         Insert: {
+          ai_calls?: number
           attachment_id?: string | null
           classification?: string | null
           confidence?: string | null
           created_at?: string
           dedup_identity?: string | null
+          doc_type?: string | null
+          duplicate_of_item_id?: string | null
           extraction?: Json | null
           id?: string
+          message_id?: string | null
+          owner_user_id?: string | null
           reason?: string | null
           scope_id: string
           scope_type: string
           source: string
           status?: string
+          trust_level?: string | null
           updated_at?: string
+          warnings?: Json
         }
         Update: {
+          ai_calls?: number
           attachment_id?: string | null
           classification?: string | null
           confidence?: string | null
           created_at?: string
           dedup_identity?: string | null
+          doc_type?: string | null
+          duplicate_of_item_id?: string | null
           extraction?: Json | null
           id?: string
+          message_id?: string | null
+          owner_user_id?: string | null
           reason?: string | null
           scope_id?: string
           scope_type?: string
           source?: string
           status?: string
+          trust_level?: string | null
           updated_at?: string
+          warnings?: Json
         }
         Relationships: [
           {
@@ -1500,6 +1521,20 @@ export type Database = {
             columns: ["attachment_id"]
             isOneToOne: false
             referencedRelation: "inbound_attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_ingest_items_duplicate_of_item_id_fkey"
+            columns: ["duplicate_of_item_id"]
+            isOneToOne: false
+            referencedRelation: "document_ingest_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_ingest_items_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -2239,34 +2274,43 @@ export type Database = {
       }
       inbound_attachments: {
         Row: {
+          content_sha256: string | null
           created_at: string
           id: string
+          incomplete: boolean
           message_id: string
           mime_declared: string | null
           mime_sniffed: string | null
           page_count: number | null
+          quarantine_reason: string | null
           scan_status: string
           size_bytes: number | null
           storage_path: string
         }
         Insert: {
+          content_sha256?: string | null
           created_at?: string
           id?: string
+          incomplete?: boolean
           message_id: string
           mime_declared?: string | null
           mime_sniffed?: string | null
           page_count?: number | null
+          quarantine_reason?: string | null
           scan_status?: string
           size_bytes?: number | null
           storage_path: string
         }
         Update: {
+          content_sha256?: string | null
           created_at?: string
           id?: string
+          incomplete?: boolean
           message_id?: string
           mime_declared?: string | null
           mime_sniffed?: string | null
           page_count?: number | null
+          quarantine_reason?: string | null
           scan_status?: string
           size_bytes?: number | null
           storage_path?: string
@@ -2291,7 +2335,9 @@ export type Database = {
           dmarc_result: string | null
           from_header: string | null
           id: string
+          last_error: string | null
           owner_user_id: string
+          processed_at: string | null
           provider: string
           provider_event_id: string
           received_at: string
@@ -2311,7 +2357,9 @@ export type Database = {
           dmarc_result?: string | null
           from_header?: string | null
           id?: string
+          last_error?: string | null
           owner_user_id: string
+          processed_at?: string | null
           provider: string
           provider_event_id: string
           received_at?: string
@@ -2331,7 +2379,9 @@ export type Database = {
           dmarc_result?: string | null
           from_header?: string | null
           id?: string
+          last_error?: string | null
           owner_user_id?: string
+          processed_at?: string | null
           provider?: string
           provider_event_id?: string
           received_at?: string
@@ -2571,6 +2621,8 @@ export type Database = {
           attempts: number
           created_at: string
           id: string
+          last_error: string | null
+          locked_at: string | null
           message_id: string
           next_run_at: string
           status: string
@@ -2580,6 +2632,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           id?: string
+          last_error?: string | null
+          locked_at?: string | null
           message_id: string
           next_run_at?: string
           status?: string
@@ -2589,6 +2643,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           id?: string
+          last_error?: string | null
+          locked_at?: string | null
           message_id?: string
           next_run_at?: string
           status?: string
@@ -3474,6 +3530,27 @@ export type Database = {
           created_at?: string
           disabled_at?: string | null
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mail_import_usage_monthly: {
+        Row: {
+          period_month: string
+          processed_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          period_month: string
+          processed_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          period_month?: string
+          processed_count?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -7286,12 +7363,36 @@ export type Database = {
           title: string
         }[]
       }
+      mail_import_consume_quota: {
+        Args: { p_count?: number; p_user_id: string }
+        Returns: Json
+      }
+      mail_import_quota_status: { Args: { p_user_id: string }; Returns: Json }
+      mail_ingest_claim_jobs: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          job_id: string
+          message_id: string
+        }[]
+      }
+      mail_ingest_cleanup_dammed: { Args: never; Returns: number }
+      mail_ingest_finish_job: {
+        Args: { p_error?: string; p_job_id: string; p_ok: boolean }
+        Returns: string
+      }
+      mail_ingest_rate_counts: { Args: { p_alias_id: string }; Returns: Json }
+      mail_ingest_retry_message: {
+        Args: { p_message_id: string }
+        Returns: Json
+      }
       mail_ingest_store_message: {
         Args: {
           p_alias_id: string
           p_arc_result: string
           p_attachments?: Json
           p_body_storage_path: string
+          p_dam_reason?: string
           p_dkim_result: string
           p_dmarc_result: string
           p_from_header: string
@@ -7302,6 +7403,14 @@ export type Database = {
           p_size_bytes: number
           p_spf_result: string
           p_subject: string
+        }
+        Returns: Json
+      }
+      mail_item_confirm: {
+        Args: {
+          p_item_id: string
+          p_payload: Json
+          p_replace_existing_id?: string
         }
         Returns: Json
       }
