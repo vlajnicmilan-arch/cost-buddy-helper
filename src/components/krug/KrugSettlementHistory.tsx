@@ -136,6 +136,6 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
         pending={voidMut.isPending}
         onConfirm={handleVoid}
       />
-    </section>
+    </>
   );
 }
