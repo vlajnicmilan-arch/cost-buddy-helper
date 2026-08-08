@@ -436,6 +436,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
           )}
         </div>
       )}
+      {rejectOpen && (
       <ConfirmActionDialog
         open={rejectOpen}
         onOpenChange={setRejectOpen}
@@ -459,6 +460,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
           applyAct.mutate({ expenseId, act: 'A2', reason });
         }}
       />
+      )}
     </div>
   );
 }
