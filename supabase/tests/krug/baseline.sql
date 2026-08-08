@@ -111,12 +111,43 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Notifikacijski emitter je no-op u harnessu (net.http_post ne postoji).
+-- Notifikacijski emitter u harnessu ne radi HTTP (net.http_post ne postoji),
+-- ali MORA ostaviti zapis kako bi testovi mogli provjeriti da je obavijest
+-- emitirana (npr. settlement_flow S6). Primatelji = svi članovi osim aktera.
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  type text NOT NULL,
+  dedup_ref text,
+  vars jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE OR REPLACE FUNCTION public.krug_emit_notification(
   p_event_type text, p_krug_id uuid, p_actor_id uuid,
   p_expense_id uuid DEFAULT NULL, p_deletion_request_id uuid DEFAULT NULL,
-  p_dedup_ref text DEFAULT NULL, p_recipient_override uuid[] DEFAULT NULL)
-RETURNS void LANGUAGE plpgsql AS $$ BEGIN RETURN; END $$;
+  p_dedup_ref text DEFAULT NULL, p_recipient_override uuid[] DEFAULT NULL,
+  p_vars jsonb DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  INSERT INTO public.notifications (user_id, type, dedup_ref, vars)
+  SELECT u, p_event_type, p_dedup_ref, p_vars
+    FROM (
+      SELECT unnest(p_recipient_override) AS u
+      UNION
+      SELECT m.user_id FROM public.krug_membership m
+       WHERE p_recipient_override IS NULL AND m.krug_id = p_krug_id
+      UNION
+      SELECT o.user_id FROM public.krug_ownership o
+       WHERE p_recipient_override IS NULL AND o.krug_id = p_krug_id
+    ) s
+   WHERE u IS NOT NULL AND u <> p_actor_id
+     AND NOT EXISTS (
+       SELECT 1 FROM public.notifications n
+        WHERE n.user_id = s.u AND p_dedup_ref IS NOT NULL AND n.dedup_ref = p_dedup_ref
+     );
+END $$;
+
 
 -- ---------------------------------------------------------------------
 -- Self-leave harness additions (krug_leave).
