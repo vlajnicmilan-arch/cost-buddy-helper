@@ -30,6 +30,7 @@ import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
+import { KrugExpenseSplitPanelGate } from './krug/KrugExpenseSplitPanelGate';
 
 
 interface TransactionDetailDialogProps {
