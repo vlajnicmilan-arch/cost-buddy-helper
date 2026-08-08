@@ -537,12 +537,21 @@ export const useExpenseCRUD = ({
         });
 
         const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
-        await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
-        if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
-          await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income').catch(e =>
-            console.error('Destination balance update failed:', e)
-          );
-        }
+        // Preračun salda NE blokira zatvaranje dijaloga (Simptom A: 7 s čekanja
+        // uz aktivan gumb → 9 duplikata). Fire-and-forget + `onBalanceUpdated`
+        // invalidacija; prikaz se osvježi kad podaci stignu.
+        void (async () => {
+          try {
+            await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
+            if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
+              await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income');
+            }
+          } catch (e) {
+            console.error('Balance update failed (non-blocking):', e);
+          } finally {
+            onBalanceUpdated?.();
+          }
+        })();
         if (normalizedExpense.type === 'expense') {
           checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
           emitAvatarEvent('neutral', 'Zapisano! 📝');
