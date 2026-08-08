@@ -394,7 +394,7 @@ export const OpenBankingPanel = () => {
                   size="icon"
                   variant="ghost"
                   className="shrink-0 min-h-11 min-w-11 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDisconnect(conn.id)}
+                  onClick={() => setDisconnectTarget(conn.id)}
                   aria-label={t('openBanking.disconnect')}
                 >
                   <Trash2 className="w-4 h-4" />
