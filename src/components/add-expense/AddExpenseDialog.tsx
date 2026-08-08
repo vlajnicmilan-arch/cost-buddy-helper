@@ -614,6 +614,11 @@ export const AddExpenseDialog = ({
 
 
   const [isSaving, setIsSaving] = useState(false);
+  // Sinkroni lock — `isSaving` state se ažurira tek u sljedećem renderu, pa
+  // brzi uzastopni klikovi prođu kroz njega. Ref zaključava od PRVOG klika.
+  const isSavingRef = useRef(false);
+  // Idempotency ključ vrijedi za jedan logički unos; resetira se tek u resetForm.
+  const clientRequestIdRef = useRef<string>(newClientRequestId());
 
   // Register with global back-button system so Android popstate (e.g. when the
   // native camera activity returns) does NOT navigate the app to /home and
