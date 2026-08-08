@@ -2694,6 +2694,10 @@
       "invitation_declined": {
         "title": "Invitation declined",
         "message": "The invited person declined the Krug invitation."
+      },
+      "member_left": {
+        "title": "A member left the Krug",
+        "message": "A member has left this Krug."
       }
     },
     "payment_source_transaction": {
@@ -5734,6 +5738,20 @@
         "not_owner": "Only the Krug owner can revoke an invitation.",
         "cap_exceeded": "This Krug is full for members with decision rights.",
         "unexpected": "The action failed. Please try again."
+      }
+    },
+    "leave": {
+      "cta": "Leave Krug",
+      "title": "Leave this Krug?",
+      "body": "You will lose access to this Krug’s shared data. Your personal transactions stay yours.",
+      "confirm": "Leave Krug",
+      "cancel": "Cancel",
+      "success": "You left the Krug",
+      "errors": {
+        "owner_cannot_leave": "The owner cannot leave the Krug. Transfer ownership first.",
+        "krug_not_found": "Krug not found.",
+        "unauthorized": "Please sign in again.",
+        "generic": "Error leaving the Krug"
       }
     }
   },

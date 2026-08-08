@@ -121,7 +121,7 @@ export default function Krug() {
               <ChevronLeft className="w-4 h-4 mr-1" />
               {t('krug.backToList', 'Natrag na popis')}
             </Button>
-            <KrugDetailScreen krugId={selectedKrugId} />
+            <KrugDetailScreen krugId={selectedKrugId} onLeft={() => setSelectedKrugId(null)} />
           </>
         ) : (
           <>

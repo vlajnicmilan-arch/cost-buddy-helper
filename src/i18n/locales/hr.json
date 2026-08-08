@@ -2700,6 +2700,10 @@
       "invitation_declined": {
         "title": "Pozivnica odbijena",
         "message": "Pozvana osoba je odbila poziv u Krug."
+      },
+      "member_left": {
+        "title": "Član je napustio Krug",
+        "message": "Jedan član je sam napustio ovaj Krug."
       }
     },
     "payment_source_transaction": {
@@ -5743,6 +5747,20 @@
         "not_owner": "Samo vlasnik Kruga može povući pozivnicu.",
         "cap_exceeded": "Krug je popunjen članovima s pravom odluke.",
         "unexpected": "Radnja nije uspjela. Pokušaj ponovno."
+      }
+    },
+    "leave": {
+      "cta": "Napusti Krug",
+      "title": "Napustiti Krug?",
+      "body": "Izgubit ćeš pristup dijeljenim podacima ovog Kruga. Tvoje osobne transakcije ostaju tvoje.",
+      "confirm": "Napusti Krug",
+      "cancel": "Odustani",
+      "success": "Napustio si Krug",
+      "errors": {
+        "owner_cannot_leave": "Vlasnik ne može napustiti Krug. Najprije prenesi vlasništvo.",
+        "krug_not_found": "Krug ne postoji.",
+        "unauthorized": "Prijavi se ponovno.",
+        "generic": "Greška pri napuštanju Kruga"
       }
     }
   },

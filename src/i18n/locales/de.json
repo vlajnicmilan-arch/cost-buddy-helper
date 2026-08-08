@@ -2694,6 +2694,10 @@
       "invitation_declined": {
         "title": "Einladung abgelehnt",
         "message": "Die eingeladene Person hat die Krug-Einladung abgelehnt."
+      },
+      "member_left": {
+        "title": "Ein Mitglied hat den Krug verlassen",
+        "message": "Ein Mitglied hat diesen Krug verlassen."
       }
     },
     "payment_source_transaction": {
@@ -5734,6 +5738,20 @@
         "not_owner": "Nur die Eigentümerin oder der Eigentümer kann die Einladung zurückziehen.",
         "cap_exceeded": "Dieser Krug ist für Mitglieder mit Entscheidungsrecht voll.",
         "unexpected": "Die Aktion ist fehlgeschlagen. Bitte erneut versuchen."
+      }
+    },
+    "leave": {
+      "cta": "Krug verlassen",
+      "title": "Krug verlassen?",
+      "body": "Du verlierst den Zugriff auf die geteilten Daten dieses Krugs. Deine persönlichen Transaktionen bleiben deine.",
+      "confirm": "Krug verlassen",
+      "cancel": "Abbrechen",
+      "success": "Du hast den Krug verlassen",
+      "errors": {
+        "owner_cannot_leave": "Der Eigentümer kann den Krug nicht verlassen. Übertrage zuerst die Eigentümerschaft.",
+        "krug_not_found": "Krug nicht gefunden.",
+        "unauthorized": "Bitte melde dich erneut an.",
+        "generic": "Fehler beim Verlassen des Krugs"
       }
     }
   },

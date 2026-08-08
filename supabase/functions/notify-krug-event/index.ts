@@ -2,6 +2,7 @@
 //
 // Server-side canonical fan-out for MVP Krug events:
 //   - krug_member_added
+//   - krug_member_left
 //   - krug_expense_proposed
 //   - krug_expense_confirmed
 //   - krug_expense_rejected
@@ -45,6 +46,7 @@ type EventType =
   | "krug_invited"
   | "krug_invitation_accepted"
   | "krug_invitation_declined"
+  | "krug_member_left"
   | "krug_expense_proposed"
   | "krug_expense_confirmed"
   | "krug_expense_rejected"
@@ -68,6 +70,7 @@ const VALID: readonly EventType[] = [
   "krug_invited",
   "krug_invitation_accepted",
   "krug_invitation_declined",
+  "krug_member_left",
   "krug_expense_proposed",
   "krug_expense_confirmed",
   "krug_expense_rejected",
@@ -343,6 +346,8 @@ function event_type_shortKey(t: EventType): string {
       return "invitation_accepted";
     case "krug_invitation_declined":
       return "invitation_declined";
+    case "krug_member_left":
+      return "member_left";
     case "krug_expense_proposed":
       return "expense_proposed";
     case "krug_expense_confirmed":
