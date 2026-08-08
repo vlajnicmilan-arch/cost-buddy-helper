@@ -1,43 +1,75 @@
-# Nalaz: pozivnica u Krug se zapiše, ali obavijest ne nastane
+# Nalaz: sirovi i18n ključevi u sistemskim (push) obavijestima
 
-## Što logovi točno pokazuju
+## 1. Koji put je opalio danas — dokazano
 
-`krug-add-member`, 2026-08-08 09:16:12 UTC:
+Oba slučaja su **server push** (send-push → FCM), ne klijentski `showNotification`.
+Iz `push_delivery_logs`:
 
 ```
-[KRUG-ADD-MEMBER] notify error FunctionsHttpError: Edge Function returned a non-2xx status code
-  status: 401, statusText: "Unauthorized",
-  url: https://<projekt>.supabase.co/functions/v1/notify-krug-event
+2026-08-08 09:37:17 UTC  notify-krug-event  fcm  fcm_success  title=notifications.krug.invitation_accepted.title
+2026-08-08 15:15:15 UTC  notify-krug-event  fcm  fcm_success  title=notifications.krug.member_left.title
 ```
 
-Prije toga u istom pozivu nema `invitation insert error` — pozivnica je uredno upisana (poklapa se s pending retkom u 09:16). Nakon greške funkcija vraća `ok: true, notified: false`, pa UI ne prijavljuje ništa.
+Kontrola iz istog dana, isti put, isti izvor:
 
-`notify-krug-event`, isto vrijeme: samo `booted (time: 31ms)`. Nijedan `console` zapis iz tijela funkcije.
+```
+2026-08-08 09:04:13 UTC  notify-krug-event  fcm  fcm_success  title=Krug je obrisan
+```
 
-## Interpretacija (s ogradom)
+Dakle put radi i prevodi — ali ne za sve ključeve.
 
-- Funkcija je **bootala** u 09:16:12 — dakle zahtjev je prošao platformski edge (`verify_jwt = false` za `notify-krug-event` u `config.toml`, potvrđeno). 401 dolazi iz **vlastitog internog guarda** funkcije, koji vraća `{"error":"unauthorized"}` bez ijednog log zapisa — što točno objašnjava prazan log.
-- Guard prihvaća `Authorization: Bearer <token>` ako je jednak `SUPABASE_SERVICE_ROLE_KEY` **ili** `KRUG_NOTIFY_INTERNAL_KEY`. `krug-add-member` zove preko `admin.functions.invoke(...)`, tj. šalje service role key.
-- Komentar u samoj funkciji (linije 105–111) dokumentira da je taj mehanizam **već jednom puknuo**: „SUPABASE_SERVICE_ROLE_KEY drifted from the vault-stored value after a platform key rotation, causing 401". Zbog toga je i uveden dedicirani `KRUG_NOTIFY_INTERNAL_KEY`.
-- Potvrda iz produkcije: obavijest `krug_deleted` u 09:04 **je** nastala — a taj put ide iz baze (`krug_emit_notification` → `net.http_post` s vault ključem `krug_notify_internal_key`). Dakle **interni-ključ put radi, service-key put ne radi.**
+## 2. Gdje se gubi prijevod
 
-Ograda: ne mogu pročitati vrijednosti tajni pa ne mogu dokazati da su ključevi različiti; mogu dokazati da guard odbija upravo taj poziv, a da paralelni put s internim ključem prolazi.
+Lanac je već dizajniran za prijevod na serveru:
 
-## Prijedlog popravka (jedan od dva; preporuka A)
+- `notify-krug-event` u payload stavlja `data.i18n_title_key` / `i18n_body_key` + `title_vars` / `message_vars` (a u `notifications` redak sprema ključ — namjerno).
+- `send-push` (linije 333–354) čita `profiles.preferred_language`, pa zove `translate(lang, key, vars)` iz `supabase/functions/_shared/i18n`.
+- `translate()` ima fallback: `CATALOGS[lang][key] ?? CATALOGS.hr[key] ?? key` — **ako ključ ne postoji, vraća sam ključ**, tiho, bez logiranja.
 
-**A. `krug-add-member` prestaje ovisiti o service keyu za poziv obavijesti**
-Poziv `notify-krug-event` ide s eksplicitnim `Authorization: Bearer ${KRUG_NOTIFY_INTERNAL_KEY}` (isti ključ koji već koristi baza i koji dokazano prolazi), uz fallback na service key ako varijabla nije postavljena. Jedna izmjena u jednoj datoteci, koristi kanal koji je danas dokazano ispravan.
+Serverski katalog (`_shared/i18n/hr.ts`, 111 ključeva) sadrži samo dio krug ključeva:
 
-**B. Ukloniti edge-to-edge poziv**
-`krug-add-member` umjesto HTTP poziva zove postojeći DB put (`krug_emit_notification`) preko admin klijenta. Arhitektonski čišće (jedan kanal umjesto dva), ali dira SQL sloj i traži provjeru potpisa funkcije.
+| ključ | u serverskom katalogu |
+| --- | --- |
+| `notifications.krug.member_added.*` | da |
+| `notifications.krug.expense_proposed/confirmed/rejected.*` | da |
+| `notifications.krug.deletion_requested.*` | da |
+| `notifications.krug.deleted.*` | da |
+| `notifications.krug.invited.*` | **ne** |
+| `notifications.krug.invitation_accepted.*` | **ne** |
+| `notifications.krug.invitation_declined.*` | **ne** |
+| `notifications.krug.member_left.*` | **ne** |
+
+Uzrok je time potvrđen bez hipoteze: ključevi uvedeni s pozivnicama (jučer) i samoizlaskom (danas) dodani su u `src/i18n/locales/*.json`, ali **ne** i u serverski katalog.
+
+Popravak od 22.7. pokrivao je isključivo in-app/browser render (`resolveNotificationText`); serverski push put je odvojen i ne dijeli te prijevode.
+
+**Zašto čuvar nije uhvatio:** `src/i18n/__tests__/serverCatalogSync.test.ts` provjerava samo smjer *server ⊆ master* (svaki serverski ključ mora postojati u lokaleima). Ključ koji postoji u masteru a fali na serveru — nikad ne pada.
+
+## 3. Jezik primatelja
+
+Postoji i koristi se: `profiles.preferred_language`, popunjen za **13/13** profila. `send-push` ga čita i normalizira (`resolveLang`, fallback `hr`). Ova komponenta radi ispravno.
+
+## 4. Opcije popravka (ne izvodim)
+
+**Opcija A — dopuniti serverski katalog + dvosmjerni čuvar (preporuka)**
+- Dodati 8 nedostajućih krug ključeva u hr/en/de serverskog kataloga (kopija iz mastera).
+- Novi test: za **svaki** `i18n_*_key` literal koji se pojavljuje u `supabase/functions/**` (uklj. dinamički sastavljene `notifications.krug.<shortKey>.*` iz mape tipova) mora postojati ključ u sva tri serverska kataloga. Time popravak vrijedi za sve tipove, ne po tipu.
+- Dodati `console.warn` u `translate()` kad ključ nedostaje, da se sljedeći put vidi u logu umjesto tihog prolaza.
+- Opseg: 3 kataloga + 1 test + 1 warn. Rizik: nizak, nema promjene puta ni sheme.
+
+**Opcija B — prijevod u service workeru iz key+vars**
+- Payload nosi ključ, SW prevodi.
+- Ne rješava Android nativni Capacitor push (FCM notification payload prikazuje OS, SW nije u lancu), traži učitavanje kataloga u SW-u dok je app ugašen. Ne pokriva današnji dokazani put. **Ne preporučam.**
+
+**Opcija C — prevoditi u pozivatelju (`notify-krug-event`) umjesto u `send-push`**
+- Duplicira logiku koju `send-push` već ima i razbija jedinstveno mjesto rezolucije. Ne preporučam.
+
+## 5. Utjecaj na retroaktivnu obavijest
+
+Opcija A pokriva i budući tip `krug_membership_notice` **pod uvjetom** da se njegovi ključevi dodaju u serverski katalog — što novi dvosmjerni čuvar iz A onda i prisiljava (test pada ako ključ postoji samo u masteru). Preporuka: retroaktivnu obavijest slati tek nakon što A prođe i nakon jednog živog push testa s prevedenim tekstom.
 
 ## Verifikacija nakon popravka
 
-1. Nova pozivnica iz aplikacije.
-2. Log `krug-add-member` mora sadržavati `[KRUG-ADD-MEMBER] notify result { delivered: 1 }` i **ne** `notify error`.
-3. `notifications`: 1 redak `krug_invited` za pozvanog, s `data->>'dedup_ref' = krug_invited:<invitation_id>`.
-4. Ponovljena pozivnica iste osobe ne smije stvoriti drugi redak (dedup).
-
-## Napomena (nije u opsegu)
-
-Pozvani trenutno vidi poziv tek ulaskom u modul Krug — dok obavijest ne radi, nema aktivnog kanala koji ga dovede.
+1. Novi krug event (npr. pozivnica) → `push_delivery_logs` redak `lifecycle_stage=fcm` mora imati **prevedeni** `title`, ne ključ.
+2. `notifications` redak i dalje sadrži ključ (in-app render se ne mijenja).
+3. Test pada na namjerno uklonjenom ključu iz serverskog kataloga.
