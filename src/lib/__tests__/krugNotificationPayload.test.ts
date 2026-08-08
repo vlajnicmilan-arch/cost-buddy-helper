@@ -1,11 +1,11 @@
 /**
- * Krug Notifications MVP — client navigation mapping.
+ * Krug Notifications — client navigation mapping.
  *
- * Provjerava da svih 6 MVP tipova (`krug_member_added`, `krug_expense_*`,
- * `krug_deletion_requested`, `krug_deleted`) rezolvira u rutu `/krug`
- * kroz `normalizePayload.legacyResolve` bez oslanjanja na `route` polje u
- * `data` (server writer namjerno ne postavlja `route` na strani baze —
- * legacy resolver je jedini izvor navigacije).
+ * Svih 6 MVP tipova rezolvira preko tablice odredišta
+ * (`krugNotificationRoutes.ts`), bez oslanjanja na `route` polje u `data`.
+ * Kad payload nosi samo `krug_id`, odredište je ekran tog Kruga
+ * (`/krug?id=<uuid>`) — nikad generični popis. Iznimka je `krug_deleted`,
+ * gdje Krug više ne postoji pa se ide na popis.
  */
 import { describe, it, expect } from 'vitest';
 import { normalizePayload } from '@/lib/notificationPayload';
@@ -21,13 +21,18 @@ const KRUG_TYPES = [
 
 describe('Krug notification payload mapping (MVP)', () => {
   for (const type of KRUG_TYPES) {
-    it(`${type} → /krug`, () => {
-      const p = normalizePayload(type, { krug_id: '00000000-0000-0000-0000-000000000000' });
+    it(`${type} → ekran Kruga`, () => {
+      const krugId = '00000000-0000-0000-0000-000000000000';
+      const p = normalizePayload(type, { krug_id: krugId });
       expect(p.type).toBe(type);
-      expect(p.route).toBe('/krug');
+      if (type === 'krug_deleted') {
+        expect(p.route).toBe('/krug');
+        expect(p.highlight).toBeNull();
+      } else {
+        expect(p.route).toBe(`/krug?id=${krugId}`);
+        expect(p.highlight).toEqual({ type: 'krug', id: krugId });
+      }
       expect(p.fallback_route).toBe('/krug');
-      // MVP namjerno nema highlight — /krug lista još ne rendera per-id marker.
-      expect(p.highlight).toBeNull();
     });
   }
 

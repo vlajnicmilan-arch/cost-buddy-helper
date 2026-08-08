@@ -26,12 +26,19 @@ interface Props {
   krugId: string;
   isFullMember: boolean;
   isOwner?: boolean;
+  /** Deep-link iz obavijesti o podmirenju — otvori povijest i istakni zapis. */
+  focusSettlementId?: string | null;
 }
 
 const fmt = (n: number, currency: string) =>
   new Intl.NumberFormat('hr-HR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
 
-export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }: Props) {
+export function KrugSettlementSection({
+  krugId,
+  isFullMember,
+  isOwner = false,
+  focusSettlementId = null,
+}: Props) {
 
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -379,7 +386,11 @@ export function KrugSettlementSection({ krugId, isFullMember, isOwner = false }:
             {t('krug.settlement.fxNotice', 'FX snapshot')}: {data.fx.snapshot_date} · {data.fx.source}
           </div>
 
-          <KrugSettlementHistory krugId={krugId} isFullMember={isFullMember} />
+          <KrugSettlementHistory
+            krugId={krugId}
+            isFullMember={isFullMember}
+            focusSettlementId={focusSettlementId}
+          />
         </>
       )}
 

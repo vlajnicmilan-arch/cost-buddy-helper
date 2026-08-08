@@ -15,6 +15,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import {
+  KRUG_NOTIFICATION_TYPES,
+  resolveKrugNotification,
+} from '@/lib/krugNotificationRoutes';
 
 const read = (rel: string) => readFileSync(resolve(__dirname, '..', '..', rel), 'utf8');
 
@@ -59,8 +63,8 @@ describe('Krug Resume/Reconnect Sync Patch', () => {
       expect(src).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[\s*['"]krug['"]\s*\]\s*\}\)/);
     });
 
-    it('svih 6 krug_* tipova mapira se na `/krug` — sync pokrit prefix-match check-om', () => {
-      const src = read('src/lib/notificationPayload.ts');
+    it('svaki krug_* tip rezolvira na rutu unutar /krug — sync pokrit prefix-matchom', () => {
+      const src = read('src/lib/krugNotificationRoutes.ts');
       const types = [
         'krug_member_added',
         'krug_expense_proposed',
@@ -69,10 +73,19 @@ describe('Krug Resume/Reconnect Sync Patch', () => {
         'krug_deletion_requested',
         'krug_deleted',
       ];
-      for (const t of types) expect(src).toContain(`case '${t}':`);
-      // svi vode na /krug (jedan zajednički switch case s route: '/krug')
-      expect(src).toMatch(/route:\s*['"]\/krug['"]/);
-    });
+      for (const t of types) expect(src).toContain(`${t}:`);
+      // Sve rute u tablici odredišta počinju s `/krug`, pa prefix-match u
+      // useNotificationNavigation i dalje pokriva sync invalidaciju.
+      for (const type of KRUG_NOTIFICATION_TYPES) {
+        const r = resolveKrugNotification(type, {
+          krug_id: '11111111-1111-1111-1111-111111111111',
+          expense_id: '22222222-2222-2222-2222-222222222222',
+          dedup_ref: 'settled:33333333-3333-3333-3333-333333333333',
+        });
+        expect(r?.route.startsWith('/krug')).toBe(true);
+      }
+  });
+
   });
 
   describe('N7 — useNotifications resync na visibility/online', () => {

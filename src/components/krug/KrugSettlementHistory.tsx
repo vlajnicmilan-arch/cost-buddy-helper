@@ -2,7 +2,7 @@
  * Collapsed povijest podmirenja. Voidani zapisi prekriženi.
  * Poništi otvara prompt za razlog.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,18 +12,28 @@ import { useKrugSettlementLedger, useKrugVoidSettlement } from '@/hooks/useKrugS
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { useAuth } from '@/hooks/useAuth';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 
 interface Props {
   krugId: string;
   isFullMember: boolean;
+  /** Deep-link iz obavijesti — otvori povijest da HighlightTarget nađe zapis. */
+  focusSettlementId?: string | null;
 }
 
-export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
+export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId = null }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<string | null>(null);
   const { data = [], isLoading } = useKrugSettlementLedger(krugId, isFullMember && open);
+  const { visible, hasMore, remaining, showMore } = useShowMore(data);
+
+  // Obavijest o podmirenju vodi ravno ovdje — sekcija se sama otvori.
+  useEffect(() => {
+    if (focusSettlementId) setOpen(true);
+  }, [focusSettlementId]);
   const voidMut = useKrugVoidSettlement(krugId);
 
   const uids = Array.from(new Set(data.flatMap((r) => [r.from_user, r.to_user])));
@@ -69,10 +79,14 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
               {t('krug.settle.history.empty', 'Još nema zabilježenih podmirenja.')}
             </div>
           )}
-          {data.map((r) => {
+          {visible.map((r) => {
             const voided = !!r.voided_at;
             return (
-              <div key={r.id} className="px-4 py-2.5 flex items-center justify-between gap-2 text-sm">
+              <div
+                key={r.id}
+                data-highlight-id={`settlement:${r.id}`}
+                className="px-4 py-2.5 flex items-center justify-between gap-2 text-sm"
+              >
                 <div className={`min-w-0 flex-1 ${voided ? 'line-through opacity-60' : ''}`}>
                   <div className="flex items-center gap-1.5 text-sm">
                     <span className="truncate">{nameFor(r.from_user)}</span>
@@ -105,6 +119,7 @@ export function KrugSettlementHistory({ krugId, isFullMember }: Props) {
               </div>
             );
           })}
+          <ShowMoreButton hasMore={hasMore} remaining={remaining} onClick={showMore} />
         </Card>
       )}
 

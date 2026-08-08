@@ -29,6 +29,8 @@ import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 
 interface Props {
   krugId: string;
@@ -64,6 +66,9 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
     [pendingOverrides],
   );
   const overrideProfiles = useUserProfiles(proposerIds);
+
+  const pendingList = useShowMore(pending);
+  const overrideList = useShowMore(pendingOverrides);
 
   const openDetail = (e: Expense) => {
     setSelected(e);
@@ -164,7 +169,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
         </Card>
       ) : (
         <Card className="divide-y divide-border">
-          {pending.map((e) => {
+          {pendingList.visible.map((e) => {
             const { canConfirm, canNegate } = canActOn(e);
             const busy = actingId === e.id && applyAct.isPending;
             const amountFormatted = formatAmount(Number(e.amount), (e.currency ?? undefined) as any);
@@ -178,6 +183,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
             return (
               <div
                 key={e.id}
+                data-highlight-id={`expense:${e.id}`}
                 className="px-4 py-3 space-y-2 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 {...clickableProps(() => openDetail(e))}
               >
@@ -236,6 +242,11 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
               </div>
             );
           })}
+          <ShowMoreButton
+            hasMore={pendingList.hasMore}
+            remaining={pendingList.remaining}
+            onClick={pendingList.showMore}
+          />
         </Card>
       )}
 
@@ -254,7 +265,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
             </Badge>
           </h4>
           <Card className="divide-y divide-border">
-            {pendingOverrides.map((item) => {
+            {overrideList.visible.map((item) => {
               const proposerName = getMemberDisplayName(
                 overrideProfiles.get(item.proposedBy),
                 item.proposedBy,
@@ -263,6 +274,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
               return (
                 <div
                   key={item.overrideId}
+                  data-highlight-id={`expense:${item.expense.id}`}
                   className="px-4 py-3 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                   {...clickableProps(() => openDetail(item.expense))}
                 >
@@ -284,6 +296,11 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
                 </div>
               );
             })}
+            <ShowMoreButton
+              hasMore={overrideList.hasMore}
+              remaining={overrideList.remaining}
+              onClick={overrideList.showMore}
+            />
           </Card>
         </div>
       )}

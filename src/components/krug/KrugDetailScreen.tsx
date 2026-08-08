@@ -8,7 +8,7 @@
  *
  * Owner se NE prikazuje kao membership row — vodi se kroz `krug_ownership`.
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,9 @@ import { KrugLifecycleBadge } from './KrugLifecycleBadge';
 
 import { KrugSharedSourcesSection } from './KrugSharedSourcesSection';
 import { KrugSettlementSection } from './KrugSettlementSection';
+import { TransactionDetailDialog } from '@/components/TransactionDetailDialog';
+import { useKrugExpenseById } from '@/hooks/useKrugExpenseById';
+import { clearPendingHighlight } from '@/lib/pendingHighlight';
 
 import { canAddPunopravni } from '@/lib/krugPresets';
 import { showSuccess, showError } from '@/hooks/useStatusFeedback';
@@ -52,9 +55,20 @@ interface Props {
   krugId: string;
   /** Pozvano nakon uspješnog samoizlaska — roditelj se vraća na listu. */
   onLeft?: () => void;
+  /** Deep-link iz obavijesti: otvori pregled ove transakcije. */
+  focusExpenseId?: string | null;
+  /** Deep-link iz obavijesti: otkrij i istakni ovaj zapis podmirenja. */
+  focusSettlementId?: string | null;
+  onFocusConsumed?: () => void;
 }
 
-export function KrugDetailScreen({ krugId, onLeft }: Props) {
+export function KrugDetailScreen({
+  krugId,
+  onLeft,
+  focusExpenseId = null,
+  focusSettlementId = null,
+  onFocusConsumed,
+}: Props) {
   const { t } = useTranslation();
   const [removeTarget, setRemoveTarget] = useState<KrugMemberView | null>(null);
   const { user } = useAuth();
@@ -67,6 +81,22 @@ export function KrugDetailScreen({ krugId, onLeft }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [focusDialogOpen, setFocusDialogOpen] = useState(false);
+
+  // Deep link na transakciju iz obavijesti. Ako je trošak obrisan ili nije
+  // vidljiv (RLS), tiho ostajemo na ekranu Kruga — bez greške i bez lažne
+  // poruke iz HighlightTarget timeouta.
+  const { data: focusExpense, isFetched: focusFetched } = useKrugExpenseById(focusExpenseId);
+  useEffect(() => {
+    if (!focusExpenseId) return;
+    if (!focusFetched) return;
+    if (focusExpense) {
+      setFocusDialogOpen(true);
+    } else {
+      clearPendingHighlight();
+      onFocusConsumed?.();
+    }
+  }, [focusExpenseId, focusFetched, focusExpense, onFocusConsumed]);
 
   const isOwner = !!(detail?.ownership && user && detail.ownership.user_id === user.id);
   const isFullMember = isOwner || detail?.myMembership?.role === 'punopravni';
@@ -152,7 +182,7 @@ export function KrugDetailScreen({ krugId, onLeft }: Props) {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4 space-y-2">
+      <Card className="p-4 space-y-2" data-highlight-id={`krug:${krugId}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-xl font-semibold truncate">{krug.name}</h2>
@@ -347,7 +377,26 @@ export function KrugDetailScreen({ krugId, onLeft }: Props) {
 
       <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
 
-      <KrugSettlementSection krugId={krugId} isFullMember={!!isFullMember} isOwner={isOwner} />
+      <KrugSettlementSection
+        krugId={krugId}
+        isFullMember={!!isFullMember}
+        isOwner={isOwner}
+        focusSettlementId={focusSettlementId}
+      />
+
+      <TransactionDetailDialog
+        expense={focusExpense ?? null}
+        open={focusDialogOpen && !!focusExpense}
+        onOpenChange={(open) => {
+          setFocusDialogOpen(open);
+          if (!open) onFocusConsumed?.();
+        }}
+        onEdit={() => { /* read-only ulaz iz obavijesti */ }}
+        onDelete={() => {
+          setFocusDialogOpen(false);
+          onFocusConsumed?.();
+        }}
+      />
 
 
 

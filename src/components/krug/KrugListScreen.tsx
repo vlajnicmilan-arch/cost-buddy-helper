@@ -6,6 +6,8 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 import { Plus, AlertCircle, Sparkles } from 'lucide-react';
 import { KrugBrandIcon } from './KrugBrandIcon';
 import { Card } from '@/components/ui/card';
@@ -28,6 +30,7 @@ export function KrugListScreen({ onSelect }: Props) {
   const { hasModuleAccess } = useFeatureAccess();
   const { requestModule } = useModuleGate();
   const canCreate = hasModuleAccess('krug');
+  const krugList = useShowMore(krugs);
 
   // Svaki entry (header CTA, empty state CTA) mora ići kroz jedinstveni
   // gate. Za korisnike bez prava — otvori upgrade dijalog, NIKAD ne otvaraj
@@ -89,7 +92,7 @@ export function KrugListScreen({ onSelect }: Props) {
         </Card>
       ) : (
         <div className="space-y-2">
-          {krugs.map((k) => (
+          {krugList.visible.map((k) => (
             <Card
               key={k.id}
               {...clickableProps(() => onSelect(k.id))}
@@ -106,6 +109,11 @@ export function KrugListScreen({ onSelect }: Props) {
               </div>
             </Card>
           ))}
+          <ShowMoreButton
+            hasMore={krugList.hasMore}
+            remaining={krugList.remaining}
+            onClick={krugList.showMore}
+          />
         </div>
       )}
 

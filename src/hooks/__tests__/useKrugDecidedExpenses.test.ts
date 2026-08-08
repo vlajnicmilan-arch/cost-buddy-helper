@@ -4,7 +4,7 @@
  * Cilj:
  *   1. hook dovlači SAMO decided shared redove za točan krug_id
  *      (privacy='shared', status IN potvrdjena/nepotvrdjena, deleted_at IS NULL,
- *      order updated_at desc, limit 10);
+ *      order updated_at desc, limit 100);
  *   2. `predlozena` NIKAD ne curi u decided path;
  *   3. uspješan A1/A2 invalidira i decided queryKey, ne samo pending.
  */
@@ -107,7 +107,7 @@ beforeEach(() => {
 });
 
 describe('useKrugDecidedExpenses — filter shape', () => {
-  it('queries expenses with krug_id, shared, potvrdjena|nepotvrdjena, deleted_at IS NULL, order updated_at desc, limit 10', async () => {
+  it('queries expenses with krug_id, shared, potvrdjena|nepotvrdjena, deleted_at IS NULL, order updated_at desc, limit 100', async () => {
     const { wrapper } = makeWrapper();
     const { result } = renderHook(() => useKrugDecidedExpenses('krug-x'), { wrapper });
 
@@ -134,7 +134,7 @@ describe('useKrugDecidedExpenses — filter shape', () => {
     expect(hoisted.captured.order[0][0]).toBe('updated_at');
     expect((hoisted.captured.order[0][1] as any).ascending).toBe(false);
 
-    expect(hoisted.captured.limit).toBe(10);
+    expect(hoisted.captured.limit).toBe(100);
   });
 
   it('is disabled without krugId (no supabase call)', async () => {

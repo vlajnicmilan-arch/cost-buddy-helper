@@ -5,6 +5,8 @@
  * Kruga, uloge i tko ga poziva (RPC `krug_list_my_invitations`).
  */
 import { useTranslation } from 'react-i18next';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +44,7 @@ export function KrugInvitationsInbox() {
   const { data: invitations = [], isLoading } = useMyKrugInvitations();
   const accept = useAcceptKrugInvitation();
   const decline = useDeclineKrugInvitation();
+  const inboxList = useShowMore(invitations);
 
   if (isLoading || invitations.length === 0) return null;
 
@@ -64,7 +67,7 @@ export function KrugInvitationsInbox() {
         {t('krug.invite.inbox.title', 'Pozvan si u Krug')}
       </h3>
 
-      {invitations.map((inv) => {
+      {inboxList.visible.map((inv) => {
         const busy =
           (accept.isPending && accept.variables?.invitationId === inv.id) ||
           (decline.isPending && decline.variables?.invitationId === inv.id);
@@ -113,6 +116,7 @@ export function KrugInvitationsInbox() {
           </Card>
         );
       })}
+      <ShowMoreButton hasMore={inboxList.hasMore} remaining={inboxList.remaining} onClick={inboxList.showMore} />
     </section>
   );
 }

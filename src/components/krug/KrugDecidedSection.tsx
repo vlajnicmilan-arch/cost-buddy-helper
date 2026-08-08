@@ -27,6 +27,8 @@ import { getMemberDisplayName } from '@/lib/krugDisplay';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 
 interface Props {
   krugId: string;
@@ -45,6 +47,7 @@ export function KrugDecidedSection({ krugId }: Props) {
     [decided],
   );
   const profiles = useUserProfiles(authorIds);
+  const { visible, hasMore, remaining, showMore } = useShowMore(decided);
 
   const openDetail = (e: Expense) => {
     setSelected(e);
@@ -76,7 +79,7 @@ export function KrugDecidedSection({ krugId }: Props) {
         </Card>
       ) : (
         <Card className="divide-y divide-border">
-          {decided.map((e) => {
+          {visible.map((e) => {
             const confirmed = e.krug_shared_status === 'potvrdjena';
             const amountFormatted = formatAmount(
               Number(e.amount),
@@ -94,6 +97,7 @@ export function KrugDecidedSection({ krugId }: Props) {
             return (
               <div
                 key={e.id}
+                data-highlight-id={`expense:${e.id}`}
                 className="px-4 py-3 space-y-1 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 {...clickableProps(() => openDetail(e))}
               >
@@ -139,6 +143,7 @@ export function KrugDecidedSection({ krugId }: Props) {
               </div>
             );
           })}
+          <ShowMoreButton hasMore={hasMore} remaining={remaining} onClick={showMore} />
         </Card>
       )}
 

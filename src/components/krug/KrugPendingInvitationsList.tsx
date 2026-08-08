@@ -3,6 +3,8 @@
  * Povlačenje ide kroz `krug_revoke_invitation` RPC (samo vlasnik, samo pending).
  */
 import { useTranslation } from 'react-i18next';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +22,7 @@ export function KrugPendingInvitationsList({ krugId, isOwner }: Props) {
   const { t } = useTranslation();
   const { data: invitations = [] } = useKrugPendingInvitations(krugId, isOwner);
   const revoke = useRevokeKrugInvitation();
+  const invList = useShowMore(invitations);
 
   if (!isOwner || invitations.length === 0) return null;
 
@@ -37,7 +40,7 @@ export function KrugPendingInvitationsList({ krugId, isOwner }: Props) {
         <span className="text-xs text-muted-foreground">({invitations.length})</span>
       </h3>
       <Card className="divide-y divide-border">
-        {invitations.map((inv) => {
+        {invList.visible.map((inv) => {
           const busy = revoke.isPending && revoke.variables?.invitationId === inv.id;
           return (
             <div key={inv.id} className="px-4 py-3 flex items-center justify-between gap-2">
@@ -73,6 +76,7 @@ export function KrugPendingInvitationsList({ krugId, isOwner }: Props) {
             </div>
           );
         })}
+        <ShowMoreButton hasMore={invList.hasMore} remaining={invList.remaining} onClick={invList.showMore} />
       </Card>
     </section>
   );
