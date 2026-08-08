@@ -5627,7 +5627,7 @@
       }
     },
     "settlement": {
-      "title": "Settlement",
+      "title": "Who owes whom",
       "previous": "Previous month",
       "next": "Next month",
       "paid": "Paid",

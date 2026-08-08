@@ -5627,7 +5627,7 @@
       }
     },
     "settlement": {
-      "title": "Abrechnung",
+      "title": "Wer schuldet wem",
       "previous": "Vorheriger Monat",
       "next": "Nächster Monat",
       "paid": "Bezahlt",
