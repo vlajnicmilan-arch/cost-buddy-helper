@@ -6,6 +6,8 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShowMore } from '@/hooks/useShowMore';
+import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 import { Plus, AlertCircle, Sparkles } from 'lucide-react';
 import { KrugBrandIcon } from './KrugBrandIcon';
 import { Card } from '@/components/ui/card';
@@ -89,7 +91,7 @@ export function KrugListScreen({ onSelect }: Props) {
         </Card>
       ) : (
         <div className="space-y-2">
-          {krugs.map((k) => (
+          {krugList.visible.map((k) => (
             <Card
               key={k.id}
               {...clickableProps(() => onSelect(k.id))}
@@ -106,6 +108,11 @@ export function KrugListScreen({ onSelect }: Props) {
               </div>
             </Card>
           ))}
+          <ShowMoreButton
+            hasMore={krugList.hasMore}
+            remaining={krugList.remaining}
+            onClick={krugList.showMore}
+          />
         </div>
       )}
 
