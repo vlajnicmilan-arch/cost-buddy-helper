@@ -15,6 +15,10 @@
 
 BEGIN;
 
+SELECT set_config('test.krug_id', :'krug_id', false),
+       set_config('test.owner_id', :'owner_id', false),
+       set_config('test.invitee_id', :'invitee_id', false);
+
 DO $$
 DECLARE
   v_name text;
@@ -72,9 +76,9 @@ END $$;
 -- Smoke: prihvat pozivnice mora proci end-to-end (dvosmislen poziv bi ovdje pukao).
 DO $$
 DECLARE
-  v_krug    uuid := :krug_id;
-  v_owner   uuid := :owner_id;
-  v_invitee uuid := :invitee_id;
+  v_krug    uuid := trim(both '''' from current_setting('test.krug_id'))::uuid;
+  v_owner   uuid := trim(both '''' from current_setting('test.owner_id'))::uuid;
+  v_invitee uuid := trim(both '''' from current_setting('test.invitee_id'))::uuid;
   v_inv     uuid;
   v_res     jsonb;
 BEGIN
