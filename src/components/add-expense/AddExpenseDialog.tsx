@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type RefObject } from 'react';
+import { newClientRequestId } from '@/lib/clientRequestId';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ScanLine } from 'lucide-react';
