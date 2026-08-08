@@ -8,6 +8,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const hoisted = vi.hoisted(() => ({
   mutateAsync: vi.fn().mockResolvedValue({ act: 'A2', result: { outcome: 'ok_negated' } }),
@@ -61,6 +62,12 @@ vi.mock('@/components/TransactionDetailDialog', () => ({
   TransactionDetailDialog: () => null,
 }));
 
+// Queue od nedavno lista i pending prijedloge podjele (useKrugPendingOverrides),
+// pa render treba QueryClientProvider.
+vi.mock('@/hooks/useKrugPendingOverrides', () => ({
+  useKrugPendingOverrides: () => ({ data: [], isLoading: false }),
+}));
+
 import { KrugApprovalQueue } from './KrugApprovalQueue';
 
 describe('KrugApprovalQueue — obavezan razlog pri odbijanju', () => {
@@ -68,10 +75,14 @@ describe('KrugApprovalQueue — obavezan razlog pri odbijanju', () => {
     hoisted.mutateAsync.mockClear();
   });
 
-  const renderQueue = () =>
-    render(
-      <KrugApprovalQueue krugId="k1" viewerUserId="viewer-1" viewerIsFullMember />,
+  const renderQueue = () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={qc}>
+        <KrugApprovalQueue krugId="k1" viewerUserId="viewer-1" viewerIsFullMember />
+      </QueryClientProvider>,
     );
+  };
 
   it('klik na Odbij ne šalje RPC odmah, nego otvara dijalog s razlogom', async () => {
     renderQueue();
