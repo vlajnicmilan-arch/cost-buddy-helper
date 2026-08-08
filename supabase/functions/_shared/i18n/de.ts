@@ -202,6 +202,8 @@ export default {
   "notifications.krug.invitation_declined.message": "Die eingeladene Person hat die Krug-Einladung abgelehnt.",
   "notifications.krug.member_left.title": "Ein Mitglied hat den Krug verlassen",
   "notifications.krug.member_left.message": "Ein Mitglied hat diesen Krug verlassen.",
+  "notifications.krug.membership_notice.title": "Mitgliedschaft im Krug „{{krug}}\"",
+  "notifications.krug.membership_notice.message": "Du bist seit {{date}} Mitglied des Krug „{{krug}}\". Wenn du kein Mitglied sein möchtest, kannst du den Krug in den Einstellungen verlassen.",
   "notifications.krug.settlement_reminder.title": "Offene Posten im Krug",
   "notifications.krug.settlement_reminder.message": "Du hast {{count}} offene Posten in Höhe von {{total}} {{currency}}.",
   "notifications.krug.settlement_settled.title": "Abrechnung bestätigt",

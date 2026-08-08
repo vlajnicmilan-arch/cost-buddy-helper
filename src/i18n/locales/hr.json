@@ -2704,6 +2704,10 @@
       "member_left": {
         "title": "Član je napustio Krug",
         "message": "Jedan član je sam napustio ovaj Krug."
+      },
+      "membership_notice": {
+        "title": "Članstvo u Krugu „{{krug}}\"",
+        "message": "Član si Kruga „{{krug}}\" od {{date}}. Ako ne želiš biti član, možeš napustiti Krug u postavkama Kruga."
       }
     },
     "payment_source_transaction": {

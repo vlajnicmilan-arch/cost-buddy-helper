@@ -202,6 +202,8 @@ export default {
   "notifications.krug.invitation_declined.message": "Pozvana osoba je odbila poziv u Krug.",
   "notifications.krug.member_left.title": "Član je napustio Krug",
   "notifications.krug.member_left.message": "Jedan član je sam napustio ovaj Krug.",
+  "notifications.krug.membership_notice.title": "Članstvo u Krugu „{{krug}}\"",
+  "notifications.krug.membership_notice.message": "Član si Kruga „{{krug}}\" od {{date}}. Ako ne želiš biti član, možeš napustiti Krug u postavkama Kruga.",
   "notifications.krug.settlement_reminder.title": "Nepodmirene stavke u Krugu",
   "notifications.krug.settlement_reminder.message": "Imaš {{count}} nepodmirenih stavki, ukupno {{total}} {{currency}}.",
   "notifications.krug.settlement_settled.title": "Poravnanje potvrđeno",
