@@ -48,7 +48,8 @@ describe('KrugTransactionPanel — onReassignSuccess wiring', () => {
   it('voting akti (A1/A2/A4/A5) NE trigeriraju onReassignSuccess', () => {
     // applyAct + withdraw se pozivaju bez onSuccess opcije
     expect(src).toMatch(/applyAct\.mutate\(\{\s*expenseId,\s*act:\s*'A1'\s*\}\)/);
-    expect(src).toMatch(/applyAct\.mutate\(\{\s*expenseId,\s*act:\s*'A2'\s*\}\)/);
+    // A2 ide kroz dijalog s obaveznim razlogom, ali i dalje bez onSuccess opcije.
+    expect(src).toMatch(/applyAct\.mutate\(\{\s*expenseId,\s*act:\s*'A2',\s*reason\s*\}\)/);
     expect(src).toMatch(/applyAct\.mutate\(\{\s*expenseId,\s*act:\s*'A5'\s*\}\)/);
     expect(src).toMatch(/withdraw\.mutate\(\{\s*expenseId\s*\}\)/);
     // Broj mjesta gdje se onReassignSuccess poziva mora biti točno 3
