@@ -84,8 +84,8 @@ describe('Krug Resume/Reconnect Sync Patch', () => {
         });
         expect(r?.route.startsWith('/krug')).toBe(true);
       }
-    });
   });
+
   });
 
   describe('N7 — useNotifications resync na visibility/online', () => {
