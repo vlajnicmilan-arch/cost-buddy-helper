@@ -5647,7 +5647,7 @@
         "manual": "Manuell"
       },
       "pdf": {
-        "title": "Krug-Abrechnungsbericht",
+        "title": "Wer schuldet wem — Bericht",
         "exportButton": "PDF exportieren",
         "exportSuccess": "Dein PDF ist fertig\nDu kannst es mit deinem Krug teilen.",
         "exportError": "PDF-Export nicht möglich.",
