@@ -30,6 +30,7 @@ import { useNativeCamera } from '@/hooks/useNativeCamera';
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
+import { KrugExpenseSplitPanelGate } from './krug/KrugExpenseSplitPanelGate';
 
 
 interface TransactionDetailDialogProps {
@@ -455,6 +456,22 @@ export const TransactionDetailDialog = ({
               onReassignSuccess={() => onOpenChange(false)}
             />
           )}
+
+          {/* Krug Faza B — odluka o prijedlogu ručne podjele. Pregled je JEDINO
+              mjesto gdje ne-autor punopravni član može odlučiti (Uredi je
+              rezerviran autoru). Read-only kontekst: bez kreiranja prijedloga. */}
+          {expense.type === 'expense' &&
+            !readOnlyKrug &&
+            expense.krug_id &&
+            expense.krug_privacy === 'shared' && (
+              <KrugExpenseSplitPanelGate
+                krugId={expense.krug_id}
+                expenseId={expense.id}
+                allowPropose={false}
+              />
+            )}
+
+
 
 
           {/* Payment Source — for transfer: show From → To, otherwise single source */}

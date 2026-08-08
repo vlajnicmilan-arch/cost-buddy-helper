@@ -30,7 +30,11 @@ BEGIN
     'krug_decline_invitation',
     'krug_revoke_invitation',
     'krug_leave',
-    'krug_apply_act'
+    'krug_apply_act',
+    'krug_override_propose',
+    'krug_override_confirm',
+    'krug_override_reject',
+    'krug_override_withdraw'
   ] LOOP
     SELECT count(*) INTO v_cnt
       FROM pg_proc p

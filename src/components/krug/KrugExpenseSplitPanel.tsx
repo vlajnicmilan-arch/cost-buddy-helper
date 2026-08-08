@@ -31,9 +31,11 @@ interface Props {
   krugId: string;
   expenseId: string;
   isFullMember: boolean;
+  /** Read-only kontekst (pregled transakcije) ne nudi kreiranje prijedloga. */
+  allowPropose?: boolean;
 }
 
-export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props) {
+export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPropose = true }: Props) {
   const { t } = useTranslation();
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const { user } = useAuth();
@@ -108,6 +110,11 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
   const awaiting = fullMemberIds.filter((id) => !confirmedIds.has(id));
   const isProposer = pending?.proposed_by === user?.id;
   const myConfirmed = !!user && confirmedIds.has(user.id);
+
+  // Read-only kontekst bez ičega za prikazati ne uvodi prazan blok u pregled.
+  if (!allowPropose && !active && !pending) return null;
+
+
 
   const submit = async () => {
     const shares: OverrideShare[] = fullMemberIds.map((id) => ({
@@ -215,8 +222,8 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember }: Props
         </div>
       )}
 
-      {/* Nema aktivnog ni pending → CTA */}
-      {!editing && !pending && (
+      {/* Nema aktivnog ni pending → CTA (samo u edit sloju) */}
+      {allowPropose && !editing && !pending && (
         <Button size="sm" variant="outline" className="h-8 w-full" onClick={initDraft}>
           {active
             ? t('krug.override.actions.propose_new', 'Predloži novu podjelu')

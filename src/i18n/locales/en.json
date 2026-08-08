@@ -2706,6 +2706,18 @@
       "settlement_voided": {
         "title": "Settlement voided",
         "message": "A Krug member voided a recorded settlement ({{amount}} {{currency}}). Reason: {{reason}}"
+      },
+      "override_proposed": {
+        "title": "Split proposal",
+        "message": "A Krug member proposed a manual split of a shared expense. Open the expense to confirm or reject."
+      },
+      "override_confirmed": {
+        "title": "Split confirmed",
+        "message": "Your manual split proposal was confirmed and is now active."
+      },
+      "override_rejected": {
+        "title": "Split proposal rejected",
+        "message": "Your manual split proposal was rejected. Reason: {{reason}}"
       }
     },
     "payment_source_transaction": {
@@ -5391,6 +5403,10 @@
         "status": "Proposed for sharing",
         "confirm": "Approve",
         "reject": "Reject"
+      },
+      "overrides": {
+        "title": "Split proposals",
+        "row": "Split proposal · {{name}}"
       }
     },
     "decided": {

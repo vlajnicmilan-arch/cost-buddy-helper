@@ -2706,6 +2706,18 @@
       "settlement_voided": {
         "title": "Abrechnung storniert",
         "message": "Ein Krug-Mitglied hat eine erfasste Abrechnung storniert ({{amount}} {{currency}}). Grund: {{reason}}"
+      },
+      "override_proposed": {
+        "title": "Aufteilungsvorschlag",
+        "message": "Ein Krug-Mitglied hat eine manuelle Aufteilung einer gemeinsamen Ausgabe vorgeschlagen. Öffne die Ausgabe zum Bestätigen oder Ablehnen."
+      },
+      "override_confirmed": {
+        "title": "Aufteilung bestätigt",
+        "message": "Dein Vorschlag für die manuelle Aufteilung wurde bestätigt und ist jetzt aktiv."
+      },
+      "override_rejected": {
+        "title": "Aufteilungsvorschlag abgelehnt",
+        "message": "Dein Vorschlag für die manuelle Aufteilung wurde abgelehnt. Grund: {{reason}}"
       }
     },
     "payment_source_transaction": {
@@ -5391,6 +5403,10 @@
         "status": "Zur Teilung vorgeschlagen",
         "confirm": "Bestätigen",
         "reject": "Ablehnen"
+      },
+      "overrides": {
+        "title": "Aufteilungsvorschläge",
+        "row": "Aufteilungsvorschlag · {{name}}"
       }
     },
     "decided": {
