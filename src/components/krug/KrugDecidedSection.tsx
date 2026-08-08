@@ -157,6 +157,6 @@ export function KrugDecidedSection({ krugId }: Props) {
         }}
       />
 
-    </section>
+    </CollapsibleSection>
   );
 }
