@@ -120,7 +120,12 @@ Deno.serve(async (req) => {
   const okService = !!SERVICE_KEY && !!presented && timingSafeEqual(presented, SERVICE_KEY);
   const okInternal = !!INTERNAL_KEY && !!presented && timingSafeEqual(presented, INTERNAL_KEY);
   if (!okService && !okInternal) {
+    // Diagnose key drift from the log alone — never print any key material.
+    console.warn(
+      `[notify-krug-event] auth rejected: presented token matches neither internal key nor service role key (presented_len=${presented.length}, has_bearer=${authHeader.startsWith("Bearer ")}, internal_key_set=${!!INTERNAL_KEY}, service_key_set=${!!SERVICE_KEY})`,
+    );
     return json({ error: "unauthorized" }, 401);
+
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
