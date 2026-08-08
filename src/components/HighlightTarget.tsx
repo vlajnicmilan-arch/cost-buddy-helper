@@ -23,16 +23,28 @@ function tryFind(type: string, id: string): HTMLElement | null {
   );
 }
 
-function pulse(el: HTMLElement) {
+function prefersReducedMotion(): boolean {
   try {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  } catch {
+    return false;
+  }
+}
+
+function pulse(el: HTMLElement) {
+  const reduced = prefersReducedMotion();
+  try {
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
   } catch {
     /* ignore */
   }
-  el.classList.add('highlight-pulse');
-  window.setTimeout(() => {
-    el.classList.remove('highlight-pulse');
-  }, PULSE_MS);
+  // prefers-reduced-motion: samo scroll, bez isticanja.
+  if (!reduced) {
+    el.classList.add('highlight-pulse');
+    window.setTimeout(() => {
+      el.classList.remove('highlight-pulse');
+    }, PULSE_MS);
+  }
   // Korisno za testove i tracking.
   window.dispatchEvent(
     new CustomEvent('notification:highlight', {
