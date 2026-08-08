@@ -83,3 +83,9 @@ psql -v ON_ERROR_STOP=1 \
   -v creditor_id="'00000000-0000-0000-0000-0000000000a1'" \
   -v third_id="'00000000-0000-0000-0000-0000000000d4'" \
   -f "$HERE/settlement_flow.sql"
+
+# --- A2 obavezan razlog (reject_reason) --------------------------------
+# Zahtijeva dev cluster s USAGE na auth shemi (kao governance_flow.sql).
+if [ "${SKIP_REJECT_REASON:-0}" != "1" ]; then
+  psql -v ON_ERROR_STOP=1 -f "$HERE/reject_reason.sql"
+fi
