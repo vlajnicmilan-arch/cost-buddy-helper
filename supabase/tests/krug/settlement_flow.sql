@@ -148,6 +148,17 @@ BEGIN
   IF v_cnt <> 1 THEN RAISE EXCEPTION 'FAIL S4: poništenje nije zabilježeno'; END IF;
   RAISE NOTICE 'PASS S4: vjerovnik poništio podmirenje';
 
+  -- S6: poništenje emitira krug_settlement_voided obavijest dužniku, s razlogom
+  SELECT count(*) INTO v_cnt
+    FROM public.notifications
+   WHERE user_id = v_debtor
+     AND type = 'krug_settlement_voided'
+     AND dedup_ref = 'voided:' || v_ledger::text;
+  IF v_cnt <> 1 THEN
+    RAISE EXCEPTION 'FAIL S6: obavijest o poništenju nije nastala (cnt=%)', v_cnt;
+  END IF;
+  RAISE NOTICE 'PASS S6: obavijest o poništenju emitirana';
+
   RAISE NOTICE '--- SETTLEMENT FLOW: ALL PASS ---';
 END $$;
 
