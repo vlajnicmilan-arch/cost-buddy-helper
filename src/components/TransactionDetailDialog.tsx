@@ -456,6 +456,22 @@ export const TransactionDetailDialog = ({
             />
           )}
 
+          {/* Krug Faza B — odluka o prijedlogu ručne podjele. Pregled je JEDINO
+              mjesto gdje ne-autor punopravni član može odlučiti (Uredi je
+              rezerviran autoru). Read-only kontekst: bez kreiranja prijedloga. */}
+          {expense.type === 'expense' &&
+            !readOnlyKrug &&
+            expense.krug_id &&
+            expense.krug_privacy === 'shared' && (
+              <KrugExpenseSplitPanelGate
+                krugId={expense.krug_id}
+                expenseId={expense.id}
+                allowPropose={false}
+              />
+            )}
+
+
+
 
           {/* Payment Source — for transfer: show From → To, otherwise single source */}
           {expense.type === 'transfer' ? (
