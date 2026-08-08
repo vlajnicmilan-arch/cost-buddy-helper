@@ -21,7 +21,9 @@ import { KRUG_SYNC_QUERY_OPTIONS } from '@/hooks/useKrugQueryOptions';
 import { Expense } from '@/types/expense';
 
 const STALE = 60 * 1000;
-export const KRUG_DECIDED_LIMIT = 10;
+// Lista se u UI-ju prikazuje kroz "Prikaži više" (20 po koraku), pa dovlačimo
+// dublji rep nego prije (10).
+export const KRUG_DECIDED_LIMIT = 100;
 
 export function useKrugDecidedExpenses(krugId: string | null | undefined) {
   return useQuery({
