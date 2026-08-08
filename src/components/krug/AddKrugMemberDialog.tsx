@@ -164,9 +164,13 @@ function translateAddError(err: KrugAddError, t: TFunction): string {
       return t('krug.member.add.errors.invalid_input', 'Neispravan email.');
     case 'cap_exceeded':
       return t('krug.member.add.errors.cap_exceeded', 'Dosegnut je maks. broj punopravnih članova za ovaj preset.');
+    case 'unauthorized':
+      return t(
+        'krug.member.add.errors.unauthorized',
+        'Sesija je istekla. Prijavi se ponovno pa pošalji pozivnicu.',
+      );
     case 'lookup_failed':
     case 'insert_failed':
-    case 'unauthorized':
     case 'unexpected':
     default:
       return t('krug.member.add.errors.generic', 'Greška pri dodavanju člana.');

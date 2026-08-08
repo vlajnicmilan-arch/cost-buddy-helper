@@ -29,6 +29,8 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      // Nikad ne logiramo token — samo činjenicu da poziv nije autentificiran.
+      console.warn("[KRUG-ADD-MEMBER] unauthorized: missing Authorization header");
       return json({ error: "unauthorized" }, 401);
     }
 
@@ -40,7 +42,16 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json({ error: "unauthorized" }, 401);
+    if (userErr || !user) {
+      // Istekla/nevažeća sesija. Bez ovog traga 401 grana je bila nevidljiva u
+      // logovima (incident 08.08.2026: „Greška pri dodavanju člana." bez ijednog
+      // zapisa). Logiramo samo kod greške, nikad token.
+      console.warn("[KRUG-ADD-MEMBER] unauthorized: session invalid or expired", {
+        code: userErr?.status ?? null,
+        message: userErr?.message ?? "no user in session",
+      });
+      return json({ error: "unauthorized" }, 401);
+    }
 
     const body = await req.json().catch(() => ({}));
     const krugId: string | undefined = body?.krug_id;

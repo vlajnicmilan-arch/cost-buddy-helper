@@ -359,6 +359,10 @@ export const useExpenseCRUD = ({
             (normalizedExpense as any).krug_privacy === 'shared'
               ? 'predlozena'
               : null,
+          // Idempotencija: klijent generira stabilan ključ po pokušaju spremanja.
+          // Parcijalni unique indeks `uniq_expenses_client_request` (user_id,
+          // client_request_id) pretvara dupli klik / mrežni retry u no-op.
+          client_request_id: (normalizedExpense as any).client_request_id ?? null,
           ...(precision ? { event_at: precision.event_at, time_confidence: precision.time_confidence } : {}),
         };
         const insertPayload = normalizeExpensePayload(basePayload, writerIntent);
@@ -378,6 +382,21 @@ export const useExpenseCRUD = ({
               date: normalizedExpense.date,
             });
             return;
+          }
+          // Idempotency: isti client_request_id je već upisan (dupli klik ili
+          // retry). Vrati POSTOJEĆI redak umjesto da stvaraš drugi.
+          if (error.code === '23505' && (normalizedExpense as any).client_request_id) {
+            const { data: existing } = await supabase
+              .from('expenses')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('client_request_id', (normalizedExpense as any).client_request_id)
+              .maybeSingle();
+            console.warn('[ExpenseCRUD] duplicate client_request_id — vraćam postojeći zapis', {
+              client_request_id: (normalizedExpense as any).client_request_id,
+              expense_id: existing?.id ?? null,
+            });
+            return existing ? ({ ...existing, date: new Date(existing.date) } as unknown as Expense) : undefined;
           }
           console.error('Supabase insert error details:', { error, code: error.code, message: error.message, details: error.details });
           throw error;
@@ -518,12 +537,21 @@ export const useExpenseCRUD = ({
         });
 
         const savedIncomeSourceId = data.income_source_id || normalizedExpense.income_source_id;
-        await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
-        if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
-          await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income').catch(e =>
-            console.error('Destination balance update failed:', e)
-          );
-        }
+        // Preračun salda NE blokira zatvaranje dijaloga (Simptom A: 7 s čekanja
+        // uz aktivan gumb → 9 duplikata). Fire-and-forget + `onBalanceUpdated`
+        // invalidacija; prikaz se osvježi kad podaci stignu.
+        void (async () => {
+          try {
+            await updateBalance(canonicalPaymentSource, normalizedExpense.amount, normalizedExpense.type);
+            if (normalizedExpense.type === 'transfer' && savedIncomeSourceId) {
+              await updateBalance(savedIncomeSourceId, normalizedExpense.amount, 'income');
+            }
+          } catch (e) {
+            console.error('Balance update failed (non-blocking):', e);
+          } finally {
+            onBalanceUpdated?.();
+          }
+        })();
         if (normalizedExpense.type === 'expense') {
           checkBudgetAlerts(normalizedExpense.category, normalizedExpense.amount, normalizedExpense.date);
           emitAvatarEvent('neutral', 'Zapisano! 📝');

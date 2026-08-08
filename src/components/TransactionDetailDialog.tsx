@@ -363,7 +363,15 @@ export const TransactionDetailDialog = ({
 
   if (!expense) return null;
 
+  // Uređivanje smije SAMO autor zapisa. Prije je dijalog svakome otvarao edit
+  // formu, a RLS je tek na spremanju odbijao promjenu — korisnik je vidio
+  // funkcionalan put koji ne postoji. U lokalnom modu svi zapisi su vlastiti.
+  const authorId = expense.submitted_by || expense.user_id;
+  const canEdit =
+    isLocalMode || !expense.user_id || authorId === user?.id || expense.user_id === user?.id;
+
   const handleEdit = (e?: React.MouseEvent) => {
+    if (!canEdit) return;
     e?.stopPropagation();
     // Close detail dialog first, then open edit after a tick
     // to prevent Radix Dialog close animation from interfering
@@ -905,14 +913,17 @@ export const TransactionDetailDialog = ({
 
         {/* Actions */}
         <div className="flex gap-2 pt-2 shrink-0">
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={(e) => handleEdit(e)}
-          >
-            <Pencil className="w-4 h-4 mr-2" />
-            {t('common.edit')}
-          </Button>
+          {canEdit && (
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              data-testid="transaction-edit"
+              onClick={(e) => handleEdit(e)}
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              {t('common.edit')}
+            </Button>
+          )}
           <Button 
             variant="outline"
             size="icon"

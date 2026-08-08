@@ -5548,7 +5548,8 @@
           "invalid_input": "Neispravan email.",
           "cap_exceeded": "Dosegnut je maksimum članova s pravom odluke za ovaj tip Kruga.",
           "generic": "Greška pri dodavanju člana.",
-          "already_invited": "Pozivnica za taj email već čeka odgovor."
+          "already_invited": "Pozivnica za taj email već čeka odgovor.",
+          "unauthorized": "Sesija je istekla. Prijavi se ponovno pa pošalji pozivnicu."
         }
       },
       "empty": {

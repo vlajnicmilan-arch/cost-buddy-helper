@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type RefObject } from 'react';
+import { newClientRequestId } from '@/lib/clientRequestId';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ScanLine } from 'lucide-react';
@@ -614,6 +615,11 @@ export const AddExpenseDialog = ({
 
 
   const [isSaving, setIsSaving] = useState(false);
+  // Sinkroni lock — `isSaving` state se ažurira tek u sljedećem renderu, pa
+  // brzi uzastopni klikovi prođu kroz njega. Ref zaključava od PRVOG klika.
+  const isSavingRef = useRef(false);
+  // Idempotency ključ vrijedi za jedan logički unos; resetira se tek u resetForm.
+  const clientRequestIdRef = useRef<string>(newClientRequestId());
 
   // Register with global back-button system so Android popstate (e.g. when the
   // native camera activity returns) does NOT navigate the app to /home and
@@ -625,7 +631,7 @@ export const AddExpenseDialog = ({
   useBackButton(open, handleBackClose, 10);
 
   const acceptScannedData = async () => {
-    if (!scannedData || isSaving) return;
+    if (!scannedData || isSaving || isSavingRef.current) return;
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
     if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
@@ -662,6 +668,7 @@ export const AddExpenseDialog = ({
         route: typeof window !== 'undefined' ? window.location.pathname : null,
       });
     } catch {}
+    isSavingRef.current = true;
     setIsSaving(true);
     try {
       const validItems = scannedData.items.filter(item => item.name && item.total_price > 0);
@@ -813,6 +820,7 @@ export const AddExpenseDialog = ({
       } catch {}
       showError(t('transactions.saveError'));
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -890,6 +898,8 @@ export const AddExpenseDialog = ({
     setLocationCoords(null);
     setKrugId(null);
     setKrugPrivacy(null);
+    // Novi logički unos → novi idempotency ključ.
+    clientRequestIdRef.current = newClientRequestId();
 
   };
 
@@ -900,9 +910,10 @@ export const AddExpenseDialog = ({
     try {
       const expenseWithLocation = {
         ...expense,
+        client_request_id: clientRequestIdRef.current,
         ...(locationName ? { location_name: locationName, location_coords: locationCoords } : {}),
       };
-      await onAdd(expenseWithLocation, validItems);
+      await onAdd(expenseWithLocation as typeof expense, validItems);
       successVibration();
       maybeRequestReview();
       if (expense.merchant_name && expense.category && expense.type !== 'transfer') {
@@ -948,10 +959,20 @@ export const AddExpenseDialog = ({
   };
 
   const handleDuplicateConfirm = async () => {
+    if (isSavingRef.current) return;
     if (pendingTransaction) {
-      await executeAdd(pendingTransaction.expense, pendingTransaction.items);
-      setPendingTransaction(null);
-      setDuplicateOf(null);
+      isSavingRef.current = true;
+      setIsSaving(true);
+      try {
+        await executeAdd(pendingTransaction.expense, pendingTransaction.items);
+        setPendingTransaction(null);
+        setDuplicateOf(null);
+      } catch {
+        /* executeAdd već prikazuje grešku */
+      } finally {
+        isSavingRef.current = false;
+        setIsSaving(false);
+      }
     }
     setDuplicateWarningOpen(false);
   };
@@ -962,9 +983,27 @@ export const AddExpenseDialog = ({
     setDuplicateWarningOpen(false);
   };
 
+  /**
+   * Jedini ulaz za ručni/installment submit. Zaključava od PRVOG klika
+   * (sinkroni ref, ne state) — inače brzi uzastopni klikovi stvore N redaka
+   * (incident 08.08.2026: 9 duplikata u istoj sekundi).
+   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e?.preventDefault?.();
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      await performSubmit(e);
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
+  const performSubmit = async (e: React.FormEvent) => {
     if (!amount) return;
+
 
     // Krug attach — bez skrivenog defaulta. Ako je Krug odabran, korisnik
     // MORA eksplicitno odabrati Moje / Za Krug. Submit se ne smije tiho
@@ -1386,7 +1425,7 @@ export const AddExpenseDialog = ({
               data-testid="manual-expense-submit"
               onClick={handleSubmit}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={scanning || !amount}
+              disabled={scanning || isSaving || !amount}
             >
               {t('common.save')}
             </Button>

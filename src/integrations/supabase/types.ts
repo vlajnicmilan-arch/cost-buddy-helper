@@ -1639,6 +1639,7 @@ export type Database = {
           cash_register_id: string | null
           category: string
           category_origin: string | null
+          client_request_id: string | null
           collaborator_id: string | null
           created_at: string
           currency: string | null
@@ -1700,6 +1701,7 @@ export type Database = {
           cash_register_id?: string | null
           category?: string
           category_origin?: string | null
+          client_request_id?: string | null
           collaborator_id?: string | null
           created_at?: string
           currency?: string | null
@@ -1761,6 +1763,7 @@ export type Database = {
           cash_register_id?: string | null
           category?: string
           category_origin?: string | null
+          client_request_id?: string | null
           collaborator_id?: string | null
           created_at?: string
           currency?: string | null
@@ -6452,6 +6455,7 @@ export type Database = {
           cash_register_id: string | null
           category: string
           category_origin: string | null
+          client_request_id: string | null
           collaborator_id: string | null
           created_at: string
           currency: string | null
