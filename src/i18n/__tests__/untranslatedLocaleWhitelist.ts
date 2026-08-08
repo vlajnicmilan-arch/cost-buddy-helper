@@ -3,6 +3,7 @@
 // labels, or externally-known proper nouns.
 export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, string>> = {
   en: {
+    "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
     "mailImport.status": "Same word in EN",
     "subscription.badge.trial": "Same word in EN",
 
@@ -120,6 +121,7 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
+    "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
     "mailImport.status": "Same word in DE",
     "subscription.badge.admin": "Admin terminology",
 
