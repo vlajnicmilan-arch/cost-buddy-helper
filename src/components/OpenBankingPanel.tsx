@@ -17,6 +17,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 
 interface Aspsp {
   name: string;
@@ -86,6 +87,7 @@ function computeThrottle(acc: BankAccount, nowMs: number): ThrottleInfo | null {
 
 export const OpenBankingPanel = () => {
   const { t } = useTranslation();
+  const [disconnectTarget, setDisconnectTarget] = useState<string | null>(null);
   const { connections, accounts, isLoading, refetch, disconnect, activeBusinessProfileId } = useBankConnections();
   const { profiles } = useBusinessProfiles();
   const { customPaymentSources } = useCustomPaymentSources();
@@ -202,10 +204,11 @@ export const OpenBankingPanel = () => {
     }
   };
 
-  const handleDisconnect = async (id: string) => {
-    if (!window.confirm(t('openBanking.disconnectConfirm'))) return;
+  const handleDisconnect = async () => {
+    if (!disconnectTarget) return;
     try {
-      await disconnect(id);
+      await disconnect(disconnectTarget);
+      setDisconnectTarget(null);
     } catch (e: any) {
       showError(e.message ?? String(e));
     }
@@ -661,6 +664,16 @@ export const OpenBankingPanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmActionDialog
+        open={!!disconnectTarget}
+        onOpenChange={(v) => { if (!v) setDisconnectTarget(null); }}
+        title={t('openBanking.disconnectDialog.title', 'Odspoji banku')}
+        description={t('openBanking.disconnectDialog.description', 'Sinkronizacija transakcija s ovom bankom prestaje. Postojeće transakcije ostaju.')}
+        confirmLabel={t('openBanking.disconnectDialog.confirm', 'Odspoji')}
+        destructive
+        onConfirm={handleDisconnect}
+      />
     </motion.div>
   );
 };
