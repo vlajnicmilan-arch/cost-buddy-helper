@@ -111,6 +111,11 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
   const isProposer = pending?.proposed_by === user?.id;
   const myConfirmed = !!user && confirmedIds.has(user.id);
 
+  // Read-only kontekst bez ičega za prikazati ne uvodi prazan blok u pregled.
+  if (!allowPropose && !active && !pending) return null;
+
+
+
   const submit = async () => {
     const shares: OverrideShare[] = fullMemberIds.map((id) => ({
       user_id: id,
