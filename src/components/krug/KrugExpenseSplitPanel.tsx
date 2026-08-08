@@ -217,8 +217,8 @@ export function KrugExpenseSplitPanel({ krugId, expenseId, isFullMember, allowPr
         </div>
       )}
 
-      {/* Nema aktivnog ni pending → CTA */}
-      {!editing && !pending && (
+      {/* Nema aktivnog ni pending → CTA (samo u edit sloju) */}
+      {allowPropose && !editing && !pending && (
         <Button size="sm" variant="outline" className="h-8 w-full" onClick={initDraft}>
           {active
             ? t('krug.override.actions.propose_new', 'Predloži novu podjelu')
