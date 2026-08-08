@@ -9,8 +9,7 @@
  *  - bez providera → picker se NE otvori (dokaz padanja / staro stablo)
  */
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AttachmentBar } from '@/components/add-expense/AttachmentBar';
 import { ModuleGateProvider } from '@/hooks/useModuleGate';
@@ -33,7 +32,6 @@ vi.mock('@/components/modules/ModuleUpgradeDialog', () => ({
 
 describe('AttachmentBar — Krug chip unutar ModuleGateProvider-a', () => {
   it('klik na Krug chip s pravom otvara picker', async () => {
-    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <ModuleGateProvider>
@@ -42,21 +40,20 @@ describe('AttachmentBar — Krug chip unutar ModuleGateProvider-a', () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByTestId('attachment-chip-krug'));
+    fireEvent.click(screen.getByTestId('attachment-chip-krug'));
 
     expect(await screen.findByText('Test')).toBeInTheDocument();
   });
 
   it('dokaz padanja — bez providera picker ostaje zatvoren (staro stablo)', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <AttachmentBar showKrug onKrugChange={vi.fn()} />
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByTestId('attachment-chip-krug'));
+    fireEvent.click(screen.getByTestId('attachment-chip-krug'));
 
     expect(screen.queryByText('Test')).not.toBeInTheDocument();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('ModuleGateProvider'));
