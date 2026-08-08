@@ -2670,7 +2670,7 @@
       },
       "expense_rejected": {
         "title": "Tvoj prijedlog je odbijen",
-        "message": "Član Kruga je odbio tvoj prijedlog.",
+        "message": "Član Kruga je odbio tvoj prijedlog. Razlog: {{reason}}",
         "toast": "Prijedlog za Krug je odbijen."
       },
       "deletion_requested": {
@@ -5408,7 +5408,8 @@
       "status": {
         "confirmed": "Potvrđeno",
         "rejected": "Odbijeno"
-      }
+      },
+      "reasonLine": "Razlog: {{reason}}"
     },
     "sharedSource": {
       "attach": {
@@ -5515,7 +5516,15 @@
         "not_author": "Samo autor troška može ovo napraviti.",
         "wrong_state": "Trošak više nije u stanju koje dozvoljava ovu akciju. Osvježi popis.",
         "unknown": "Nepoznata greška. Pokušaj ponovo.",
-        "network": "Trenutno nije moguće odraditi akciju. Provjeri vezu i pokušaj ponovo."
+        "network": "Trenutno nije moguće odraditi akciju. Provjeri vezu i pokušaj ponovo.",
+        "reason_required": "Razlog odbijanja je obavezan."
+      },
+      "rejectDialog": {
+        "title": "Odbij trošak",
+        "description": "Odbijanje je poruka autoru o zajedničkom novcu. Napiši kratak razlog — autor ga vidi uz trošak.",
+        "reasonLabel": "Razlog odbijanja",
+        "reasonPlaceholder": "npr. nije zajednički trošak",
+        "confirm": "Odbij trošak"
       }
     },
     "member": {

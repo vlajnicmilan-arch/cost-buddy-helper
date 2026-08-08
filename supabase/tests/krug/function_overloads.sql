@@ -29,7 +29,8 @@ BEGIN
     'krug_accept_invitation',
     'krug_decline_invitation',
     'krug_revoke_invitation',
-    'krug_leave'
+    'krug_leave',
+    'krug_apply_act'
   ] LOOP
     SELECT count(*) INTO v_cnt
       FROM pg_proc p

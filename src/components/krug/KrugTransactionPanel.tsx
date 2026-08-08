@@ -14,7 +14,7 @@
  *
  * Wizard kreiranja Kruga i prikaz po kontekstu nisu dio ovog panela.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, User, Check, X, RotateCcw, Undo2, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 
 interface Props {
   expenseId: string;
@@ -64,6 +65,7 @@ interface KrugExpenseRow {
   krug_id: string | null;
   krug_privacy: KrugPrivacy | null;
   krug_shared_status: KrugSharedStatus | null;
+  krug_reject_reason: string | null;
   deleted_at: string | null;
 }
 
@@ -73,6 +75,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
   const { t } = useTranslation();
   const { user } = useAuth();
   const { requestModule } = useModuleGate();
+  const [rejectOpen, setRejectOpen] = useState(false);
   const runWrite = (action: () => void) => requestModule('krug', { onGranted: action });
 
   const expQuery = useQuery({
@@ -81,7 +84,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
     queryFn: async (): Promise<KrugExpenseRow | null> => {
       const { data, error } = await supabase
         .from('expenses')
-        .select('krug_id, krug_privacy, krug_shared_status, deleted_at')
+        .select('krug_id, krug_privacy, krug_shared_status, krug_reject_reason, deleted_at')
         .eq('id', expenseId)
         .maybeSingle();
       if (error) throw error;
@@ -330,6 +333,14 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
         </div>
       )}
 
+      {expQuery.data?.krug_shared_status === 'nepotvrdjena' && expQuery.data?.krug_reject_reason && (
+        <p className="text-[11px] text-rose-600 dark:text-rose-400 leading-relaxed">
+          {t('krug.decided.reasonLine', 'Razlog: {{reason}}', {
+            reason: expQuery.data.krug_reject_reason,
+          })}
+        </p>
+      )}
+
       {/* A-akti */}
       {(a1 || a2 || a4 || a5 || a3 || a7) && (
         <div className="flex gap-1.5 flex-wrap pt-1 border-t border-border/40">
@@ -350,7 +361,7 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
               size="sm"
               variant="outline"
               disabled={pending}
-              onClick={() => runWrite(() => applyAct.mutate({ expenseId, act: 'A2' }))}
+              onClick={() => runWrite(() => setRejectOpen(true))}
               className="h-8 px-2.5 text-xs gap-1.5"
             >
               <X className="w-3.5 h-3.5" />
@@ -424,6 +435,31 @@ export function KrugTransactionPanel({ expenseId, expenseAuthorId, onReassignSuc
             </Button>
           )}
         </div>
+      )}
+      {rejectOpen && (
+      <ConfirmActionDialog
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+        title={t('krug.act.rejectDialog.title', 'Odbij trošak')}
+        description={t(
+          'krug.act.rejectDialog.description',
+          'Odbijanje je poruka autoru o zajedničkom novcu. Napiši kratak razlog — autor ga vidi uz trošak.',
+        )}
+        reason={{
+          label: t('krug.act.rejectDialog.reasonLabel', 'Razlog odbijanja'),
+          placeholder: t('krug.act.rejectDialog.reasonPlaceholder', 'npr. nije zajednički trošak'),
+          required: true,
+          maxLength: 200,
+        }}
+        confirmLabel={t('krug.act.rejectDialog.confirm', 'Odbij trošak')}
+        destructive
+        pending={applyAct.isPending}
+        onConfirm={(reason) => {
+          if (!reason) return;
+          setRejectOpen(false);
+          applyAct.mutate({ expenseId, act: 'A2', reason });
+        }}
+      />
       )}
     </div>
   );

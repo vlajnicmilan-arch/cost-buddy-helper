@@ -73,6 +73,7 @@ function errorMessageForOutcome(outcome: string): string {
     unauthenticated: 'Prijava je istekla. Prijavi se ponovo.',
     invalid_act: 'Nepoznata akcija.',
     missing_client_request_id: 'Interna greška: nedostaje ID zahtjeva.',
+    reason_required: 'Razlog odbijanja je obavezan.',
     not_found: 'Trošak više ne postoji.',
     not_in_shared_flow: 'Trošak nije u zajedničkom toku Kruga.',
     author_cannot_govern: 'Autor troška ne može sam odlučivati o njemu.',
@@ -132,11 +133,14 @@ export function useKrugApplyAct() {
       act: KrugGovernanceAct;
       /** Opcionalno; ako nije zadan, generira se novi UUID po pozivu. */
       clientRequestId?: string;
+      /** OBAVEZAN za A2 — server odbija prazan razlog (`reason_required`). */
+      reason?: string;
     }) => {
       const { data, error } = await supabase.rpc('krug_apply_act', {
         p_expense_id: vars.expenseId,
         p_act: vars.act,
         p_client_request_id: vars.clientRequestId ?? newRequestId(),
+        p_reason: vars.reason ?? null,
       });
       if (error) throw error;
       return {

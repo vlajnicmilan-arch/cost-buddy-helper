@@ -183,7 +183,7 @@ export default {
   "notifications.krug.expense_confirmed.title": "Dein Vorschlag wurde bestätigt",
   "notifications.krug.expense_confirmed.message": "Ein Krug-Mitglied hat deinen Vorschlag bestätigt.",
   "notifications.krug.expense_rejected.title": "Dein Vorschlag wurde abgelehnt",
-  "notifications.krug.expense_rejected.message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt.",
+  "notifications.krug.expense_rejected.message": "Ein Krug-Mitglied hat deinen Vorschlag abgelehnt. Grund: {{reason}}",
   "notifications.krug.deletion_requested.title": "Krug-Löschung gestartet",
   "notifications.krug.deletion_requested.message": "Der Eigentümer hat die Löschung des Krug angefordert.",
   "notifications.krug.deleted.title": "Krug wurde gelöscht",

@@ -126,6 +126,13 @@ export function KrugDecidedSection({ krugId }: Props) {
                       {format(decidedAt, 'd. MMM yyyy.', { locale })}
                       {authorName ? ` · ${authorName}` : ''}
                     </div>
+                    {!confirmed && (e as any).krug_reject_reason && (
+                      <div className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">
+                        {t('krug.decided.reasonLine', 'Razlog: {{reason}}', {
+                          reason: (e as any).krug_reject_reason as string,
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm font-mono tabular-nums shrink-0">{amountFormatted}</div>
                 </div>

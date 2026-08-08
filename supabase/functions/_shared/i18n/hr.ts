@@ -183,7 +183,7 @@ export default {
   "notifications.krug.expense_confirmed.title": "Tvoj prijedlog je potvrđen",
   "notifications.krug.expense_confirmed.message": "Član Kruga je potvrdio tvoj prijedlog.",
   "notifications.krug.expense_rejected.title": "Tvoj prijedlog je odbijen",
-  "notifications.krug.expense_rejected.message": "Član Kruga je odbio tvoj prijedlog.",
+  "notifications.krug.expense_rejected.message": "Član Kruga je odbio tvoj prijedlog. Razlog: {{reason}}",
   "notifications.krug.deletion_requested.title": "Pokrenuto brisanje Kruga",
   "notifications.krug.deletion_requested.message": "Vlasnik je zatražio brisanje Kruga.",
   "notifications.krug.deleted.title": "Krug je obrisan",

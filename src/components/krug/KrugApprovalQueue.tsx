@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { clickableProps } from '@/lib/a11y';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 
 interface Props {
   krugId: string;
@@ -44,6 +45,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
   const [selected, setSelected] = useState<Expense | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Expense | null>(null);
 
   const locale = i18n.language === 'en' ? enUS : i18n.language === 'de' ? de : hr;
   const authorIds = useMemo(
@@ -91,17 +93,29 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
     };
   }, [viewerUserId, viewerIsFullMember]);
 
-  const performAct = async (e: Expense, act: 'A1' | 'A2') => {
+  const performAct = async (e: Expense, act: 'A1' | 'A2', reason?: string) => {
     setActingId(e.id);
     try {
-      await applyAct.mutateAsync({ expenseId: e.id, act });
+      await applyAct.mutateAsync({ expenseId: e.id, act, reason });
     } finally {
       setActingId(null);
     }
   };
 
-  const handleAct = (e: Expense, act: 'A1' | 'A2') => {
-    requestModule('krug', { onGranted: () => void performAct(e, act) });
+  const handleConfirm = (e: Expense) => {
+    requestModule('krug', { onGranted: () => void performAct(e, 'A1') });
+  };
+
+  /** A2 nikad nije jedan klik — razlog je obavezan (server ga također traži). */
+  const handleRejectClick = (e: Expense) => {
+    requestModule('krug', { onGranted: () => setRejectTarget(e) });
+  };
+
+  const submitReject = async (reason?: string) => {
+    if (!rejectTarget || !reason) return;
+    const target = rejectTarget;
+    setRejectTarget(null);
+    await performAct(target, 'A2', reason);
   };
 
   return (
@@ -187,7 +201,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
                         className="h-8 px-2.5 text-xs gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
                         disabled={busy}
                         aria-label={t('krug.queue.row.confirm', 'Potvrdi')}
-                        onClick={() => handleAct(e, 'A1')}
+                        onClick={() => handleConfirm(e)}
                       >
                         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                         {t('krug.queue.row.confirm', 'Potvrdi')}
@@ -200,7 +214,7 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
                         className="h-8 px-2.5 text-xs gap-1 text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
                         disabled={busy}
                         aria-label={t('krug.queue.row.reject', 'Odbij')}
-                        onClick={() => handleAct(e, 'A2')}
+                        onClick={() => handleRejectClick(e)}
                       >
                         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                         {t('krug.queue.row.reject', 'Odbij')}
@@ -225,6 +239,26 @@ export function KrugApprovalQueue({ krugId, viewerUserId, viewerIsFullMember }: 
         onDelete={() => {
           closeDetail(false);
         }}
+      />
+
+      <ConfirmActionDialog
+        open={!!rejectTarget}
+        onOpenChange={(v) => !v && setRejectTarget(null)}
+        title={t('krug.act.rejectDialog.title', 'Odbij trošak')}
+        description={t(
+          'krug.act.rejectDialog.description',
+          'Odbijanje je poruka autoru o zajedničkom novcu. Napiši kratak razlog — autor ga vidi uz trošak.',
+        )}
+        reason={{
+          label: t('krug.act.rejectDialog.reasonLabel', 'Razlog odbijanja'),
+          placeholder: t('krug.act.rejectDialog.reasonPlaceholder', 'npr. nije zajednički trošak'),
+          required: true,
+          maxLength: 200,
+        }}
+        confirmLabel={t('krug.act.rejectDialog.confirm', 'Odbij trošak')}
+        destructive
+        pending={applyAct.isPending}
+        onConfirm={submitReject}
       />
     </section>
   );

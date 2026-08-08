@@ -1655,6 +1655,7 @@ export type Database = {
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_reject_reason: string | null
           krug_shared_status:
             | Database["public"]["Enums"]["krug_shared_status"]
             | null
@@ -1715,6 +1716,7 @@ export type Database = {
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_reject_reason?: string | null
           krug_shared_status?:
             | Database["public"]["Enums"]["krug_shared_status"]
             | null
@@ -1775,6 +1777,7 @@ export type Database = {
           is_advance?: boolean
           krug_id?: string | null
           krug_privacy?: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_reject_reason?: string | null
           krug_shared_status?:
             | Database["public"]["Enums"]["krug_shared_status"]
             | null
@@ -6465,6 +6468,7 @@ export type Database = {
           is_advance: boolean
           krug_id: string | null
           krug_privacy: Database["public"]["Enums"]["krug_privacy"] | null
+          krug_reject_reason: string | null
           krug_shared_status:
             | Database["public"]["Enums"]["krug_shared_status"]
             | null
@@ -6854,6 +6858,7 @@ export type Database = {
           p_act: string
           p_client_request_id: string
           p_expense_id: string
+          p_reason?: string
         }
         Returns: Json
       }
