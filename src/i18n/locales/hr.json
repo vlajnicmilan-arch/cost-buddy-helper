@@ -2907,6 +2907,12 @@
         "title": "Trošak odbijen",
         "message": "{{actor}} je odbio „{{description}}\" ({{amount}}) u projektu „{{project}}\". Razlog: {{reason}}"
       }
+    },
+    "mail": {
+      "pending": {
+        "title": "Novi dokument čeka pregled",
+        "body": "Stigao je dokument e-poštom. Otvori pregled i potvrdi."
+      }
     }
   },
   "installments": {

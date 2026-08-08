@@ -223,4 +223,6 @@ export default {
   "notifications.project_expense_review.approved.message": "{{actor}} je odobrio „{{description}}\" ({{amount}}) u projektu „{{project}}\".",
   "notifications.project_expense_review.rejected.title": "Trošak odbijen",
   "notifications.project_expense_review.rejected.message": "{{actor}} je odbio „{{description}}\" ({{amount}}) u projektu „{{project}}\". Razlog: {{reason}}",
+  "notifications.mail.pending.title": "Novi dokument čeka pregled",
+  "notifications.mail.pending.body": "Stigao je dokument e-poštom. Otvori pregled i potvrdi.",
 } as const;

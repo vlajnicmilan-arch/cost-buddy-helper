@@ -2901,6 +2901,12 @@
         "title": "Expense rejected",
         "message": "{{actor}} rejected „{{description}}\" ({{amount}}) in project „{{project}}\". Reason: {{reason}}"
       }
+    },
+    "mail": {
+      "pending": {
+        "title": "A new document is waiting for review",
+        "body": "A document arrived by e-mail. Open the review and confirm."
+      }
     }
   },
   "installments": {

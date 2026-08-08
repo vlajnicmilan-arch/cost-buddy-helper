@@ -2901,6 +2901,12 @@
         "title": "Buchung abgelehnt",
         "message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" abgelehnt. Grund: {{reason}}"
       }
+    },
+    "mail": {
+      "pending": {
+        "title": "Ein neues Dokument wartet auf Prüfung",
+        "body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige."
+      }
     }
   },
   "installments": {
