@@ -124,7 +124,10 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
 
   /** Normalizacija PRIJE slanja: datum → ISO, iznos → decimalna točka. */
   const payloadFor = (item: MailReviewItem): Record<string, unknown> => {
-    const base = { ...(item.extraction ?? {}) } as Record<string, unknown>;
+    // Datumi iz AI dopune znaju biti u hrvatskom obliku — u payload ide SAMO ISO.
+    const base = normalizeExtractionDates(
+      { ...(item.extraction ?? {}) } as Record<string, unknown>,
+    );
     if (editingId === item.id) {
       for (const f of FIELDS) {
         const raw = (draft[f.key] ?? '').trim();
@@ -148,8 +151,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     base.direction = 'in';
     // Učenje pamćenja se događa SAMO uz uključenu kvačicu — nikad tiho.
     base.remember_issuer = rememberOff[item.id] !== true;
-    return base;
+    return normalizeExtractionDates(base);
   };
+
 
   const handleConfirm = async (item: MailReviewItem, replaceExistingId?: string) => {
     try {
