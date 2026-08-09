@@ -7543,6 +7543,7 @@ export type Database = {
         Args: { p_item_id: string; p_scope_id: string; p_scope_type: string }
         Returns: Json
       }
+      mail_norm_date: { Args: { p_value: string }; Returns: string }
       mark_guided_home_exited: { Args: never; Returns: string }
       member_sees_investor_price: {
         Args: { _project_id: string; _user_id: string }
