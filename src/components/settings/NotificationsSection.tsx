@@ -175,6 +175,7 @@ export const NotificationsSection = ({
                         </div>
                       </div>
                       <Switch
+                        className="ml-3 shrink-0"
                         checked={item.enabled}
                         onCheckedChange={(v) => setCategory(item.key, v)}
                       />
@@ -190,6 +191,7 @@ export const NotificationsSection = ({
                           </p>
                         </div>
                         <Switch
+                          className="ml-3 shrink-0"
                           id="krug-settlement-reminder"
                           checked={prefs.krug_settlement_reminder_enabled}
                           onCheckedChange={(v) => setFlag('krug_settlement_reminder_enabled', v)}

@@ -224,16 +224,16 @@
     /* Card surface sits a clearly visible step above the background so the
        panel reads as a body, not just an outline floating on the backdrop.
        Calibrated for OLED: decisive jump — small steps are invisible on deep
-       black, so the card is lifted to a four-times multiplier over the 4%
-       background. */
-    --card: 30 7% 16%;
+       black, so the card is lifted to a five-times multiplier over the 4%
+       background (fourth calibration: third still read as "only the edge"). */
+    --card: 30 7% 20%;
     --card-foreground: 40 12% 92%;
-    --popover: 30 7% 18%;
+    --popover: 30 7% 22%;
     --popover-foreground: 40 12% 92%;
     --foreground: 40 12% 92%;
-    --secondary: 30 6% 20%;
+    --secondary: 30 6% 24%;
     --secondary-foreground: 40 12% 92%;
-    --muted: 30 6% 20%;
+    --muted: 30 6% 24%;
     --muted-foreground: 38 10% 64%;
     --primary: 40 55% 48%;
     --primary-foreground: 30 10% 6%;
@@ -242,8 +242,8 @@
     /* Border: lifted and gently warmed toward the champagne primary hue —
        a hint of warmth framing the panel, not a gold frame. Kept clearly
        above the brighter card surface for OLED contrast. */
-    --border: 40 18% 38%;
-    --input: 40 18% 38%;
+    --border: 40 18% 44%;
+    --input: 40 18% 44%;
 
     --ring: 40 55% 48%;
     --radius: 0.5rem;
