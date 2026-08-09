@@ -113,6 +113,10 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Zadnji korisnik za kojeg je onboarding STVARNO razriješen. Sprječava puni
+  // reset (appStateReady=false → PageLoader → unmount cijelog stabla) na svaki
+  // 'SIGNED_IN' koji supabase-js emitira pri povratku fokusa / token refreshu.
+  const lastResolvedUserRef = useRef<string | null>(null);
 
   // Auto-select for invitation-acceptance flow runs only WITHIN the session
   // (acceptance code calls the setters directly). On cold start we never
@@ -120,6 +124,8 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const resolveOnboarding = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      lastResolvedUserRef.current = session?.user?.id ?? null;
+
       
       if (!session?.user) {
         // No user — ready immediately, onboarding state from localStorage is fine
