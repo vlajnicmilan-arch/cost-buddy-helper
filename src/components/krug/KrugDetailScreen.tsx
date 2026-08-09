@@ -291,7 +291,7 @@ export function KrugDetailScreen({
             {t('krug.members', 'Članovi')}
             <span className="text-xs text-muted-foreground">({members.length})</span>
           </h3>
-          {isOwner && (
+          {isOwner && !isArchived && (
             <Button
               size="sm"
               onClick={() => requestModule('krug', { onGranted: () => setAddOpen(true) })}
