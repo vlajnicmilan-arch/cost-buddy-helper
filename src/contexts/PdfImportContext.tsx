@@ -36,6 +36,10 @@ interface StartPdfImportOptions {
   source: CustomPaymentSource;
   releaseGuard?: () => void;
   forceImport?: boolean;
+  /** Završni saldo ispisan na izvodu (mail ekstrakcija) — bankovna istina bez Open Bankinga. */
+  statementClosingBalance?: number | null;
+  /** Datum na koji taj saldo vrijedi (ISO ili YYYY-MM-DD). */
+  statementDate?: string | null;
 }
 
 interface StartHtmlImportOptions {
@@ -45,6 +49,11 @@ interface StartHtmlImportOptions {
   forceImport?: boolean;
 }
 
+export interface StatementBalanceHint {
+  readonly closingBalance: number | null;
+  readonly statementDate: string | null;
+}
+
 interface PdfImportContextValue {
   phase: PdfImportPhase;
   isBusy: boolean;
@@ -52,6 +61,8 @@ interface PdfImportContextValue {
   jobId: string | null;
   result: PDFParseResult | null;
   hasHandlers: boolean;
+  /** Saldo s papira za tekući uvoz; null kad ga nema (ručni upload). */
+  statementBalanceHint: StatementBalanceHint | null;
   startPdfImport: (options: StartPdfImportOptions) => Promise<void>;
   startHtmlImport: (options: StartHtmlImportOptions) => Promise<void>;
   registerHandlers: (handlers: PdfImportHandlers) => () => void;
@@ -77,12 +88,18 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [result, setResult] = useState<PDFParseResult | null>(null);
   const [hasHandlers, setHasHandlers] = useState(false);
+  const [statementBalanceHint, setStatementBalanceHint] = useState<StatementBalanceHint | null>(null);
   const handlersRef = useRef<PdfImportHandlers | null>(null);
   const pendingPdfRef = useRef<StartPdfImportOptions | null>(null);
   const pendingHtmlRef = useRef<StartHtmlImportOptions | null>(null);
 
   const startPdfImport = useCallback(async (options: StartPdfImportOptions) => {
     pendingPdfRef.current = options;
+    setStatementBalanceHint(
+      typeof options.statementClosingBalance === 'number'
+        ? { closingBalance: options.statementClosingBalance, statementDate: options.statementDate ?? null }
+        : null,
+    );
     pendingHtmlRef.current = null;
     setSource(options.source);
     setResult(null);
@@ -93,6 +110,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
 
   const startHtmlImport = useCallback(async (options: StartHtmlImportOptions) => {
     pendingHtmlRef.current = options;
+    setStatementBalanceHint(null);
     pendingPdfRef.current = null;
     setSource(options.source);
     setResult(null);
@@ -134,6 +152,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     pendingPdfRef.current = null;
     pendingHtmlRef.current = null;
     setPhase('idle');
+    setStatementBalanceHint(null);
     setSource(null);
     setJobId(null);
     setResult(null);
@@ -167,6 +186,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     jobId,
     result,
     hasHandlers,
+    statementBalanceHint,
     startPdfImport,
     startHtmlImport,
     registerHandlers,
@@ -179,7 +199,7 @@ export const PdfImportProvider = ({ children }: { children: ReactNode }) => {
     _runFindDuplicates,
     _pendingPdfRef: pendingPdfRef,
     _pendingHtmlRef: pendingHtmlRef,
-  }), [phase, source, jobId, result, hasHandlers, startPdfImport, startHtmlImport, registerHandlers, _setProcessing, _setPreview, _setDuplicates, _setIdle, _setImporting, _runImport, _runFindDuplicates]);
+  }), [phase, source, jobId, result, hasHandlers, statementBalanceHint, startPdfImport, startHtmlImport, registerHandlers, _setProcessing, _setPreview, _setDuplicates, _setIdle, _setImporting, _runImport, _runFindDuplicates]);
 
   return <PdfImportContext.Provider value={value}>{children}</PdfImportContext.Provider>;
 };
@@ -194,6 +214,7 @@ export const usePdfImport = (): PdfImportContextValue => {
       jobId: null,
       result: null,
       hasHandlers: false,
+      statementBalanceHint: null,
       startPdfImport: async () => {},
       startHtmlImport: async () => {},
       registerHandlers: () => noop,

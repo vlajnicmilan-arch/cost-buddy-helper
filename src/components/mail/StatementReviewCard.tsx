@@ -132,6 +132,9 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       storagePath: item.storage_path,
       source: selectedSource,
       force,
+      closingBalance:
+        typeof extraction.closing_balance === 'number' ? extraction.closing_balance : null,
+      statementDate: (extraction.period_to as string | null) ?? null,
     });
     if (result.kind === 'duplicate') {
       setDuplicate(result.existing);

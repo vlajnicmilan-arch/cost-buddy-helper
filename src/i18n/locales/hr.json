@@ -6068,7 +6068,11 @@
       "discardConfirm": "Da, odbaci",
       "discardedToast": "Sve pending reconciliacije su odbačene.",
       "undoImportLink": "Nešto ne valja? Poništi cijeli uvoz"
-    }
+    },
+    "statementBalance": "Izvod (papir)",
+    "descriptionFromStatement": "Prema stanju s izvoda ({{balance}}) razlika iznosi {{delta}}. Potvrđuješ broj s papira, ne sinkronizaciju s bankom.",
+    "statementSourceNote": "Ovaj novčanik nije povezan s bankom, pa je izvor istine završno stanje ispisano na samom izvodu.",
+    "alignToStatement": "Poravnaj sa stanjem s izvoda"
   },
   "anchor": {
     "sectionTitle": "Sidro salda",

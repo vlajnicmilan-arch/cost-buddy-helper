@@ -6058,7 +6058,11 @@
       "discardConfirm": "Yes, discard",
       "discardedToast": "All pending reconciliations discarded.",
       "undoImportLink": "Something wrong? Undo the whole import"
-    }
+    },
+    "statementBalance": "Statement (paper)",
+    "descriptionFromStatement": "Against the statement balance ({{balance}}) the difference is {{delta}}. You are confirming the printed figure, not a bank sync.",
+    "statementSourceNote": "This wallet is not linked to a bank, so the closing balance printed on the statement is the source of truth.",
+    "alignToStatement": "Align with statement balance"
   },
   "anchor": {
     "sectionTitle": "Balance anchor",

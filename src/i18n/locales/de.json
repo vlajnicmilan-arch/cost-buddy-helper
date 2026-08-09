@@ -6058,7 +6058,11 @@
       "discardConfirm": "Ja, verwerfen",
       "discardedToast": "Alle ausstehenden Abgleiche verworfen.",
       "undoImportLink": "Etwas stimmt nicht? Kompletten Import rückgängig"
-    }
+    },
+    "statementBalance": "Kontoauszug (Papier)",
+    "descriptionFromStatement": "Gegenüber dem Auszugssaldo ({{balance}}) beträgt die Differenz {{delta}}. Du bestätigst den gedruckten Wert, keine Banksynchronisation.",
+    "statementSourceNote": "Diese Geldbörse ist nicht mit einer Bank verbunden, daher gilt der auf dem Auszug gedruckte Schlusssaldo als Wahrheit.",
+    "alignToStatement": "Mit Auszugssaldo abgleichen"
   },
   "anchor": {
     "sectionTitle": "Saldo-Anker",
