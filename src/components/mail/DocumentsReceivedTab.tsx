@@ -8,8 +8,12 @@ import { useMailInbox } from '@/hooks/useMailInbox';
 import { useMailDiscardedItems } from '@/hooks/useMailDiscardedItems';
 import { formatHrAmount } from '@/lib/money';
 
-/** Stanja iz kojih korisnik smije ručno pokrenuti obradu. */
-const RETRYABLE = ['neuspjela_konacno', 'zaustavljena_branom', 'ceka_kvotu'];
+/**
+ * Stanja iz kojih korisnik smije ručno pokrenuti obradu.
+ * 'zavrsena' je namjerno unutra: ponovna obrada OSVJEŽAVA postojeću stavku
+ * (upsert po poruci+privitku), nikad ne stvara duplikat.
+ */
+const RETRYABLE = ['neuspjela', 'neuspjela_konacno', 'zaustavljena_branom', 'ceka_kvotu', 'zavrsena'];
 
 /**
  * Ekran Dokumenti → tab „Primljeno" (arhiva).
@@ -143,7 +147,9 @@ export const DocumentsReceivedTab = ({
                     )}
                     {m.status === 'zaustavljena_branom'
                       ? t('mailImport.runManually', 'Pokreni ručno')
-                      : t('mailImport.retry', 'Pokušaj ponovno')}
+                      : m.status === 'zavrsena'
+                        ? t('mailImport.reprocess', 'Ponovno obradi')
+                        : t('mailImport.retry', 'Pokušaj ponovno')}
                   </Button>
                 )}
               </li>

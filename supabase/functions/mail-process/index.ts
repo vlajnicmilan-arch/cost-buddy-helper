@@ -30,6 +30,11 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
+import { resolveScope, type OwnOibEntry } from "../_shared/mailImport/scopeRouting.ts";
+import {
+  findProbableDuplicate,
+  PROBABLE_DUPLICATE_WARNING,
+} from "../_shared/mailImport/softDuplicate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,15 +102,19 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
   };
 }
 
-/** OIB-i vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj. */
-async function ownOibsFor(supabase: Supa, userId: string): Promise<string[]> {
+/**
+ * OIB-i vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj.
+ * JEDAN izvor istine: vraca par (oib, profileId); goli popis OIB-ova se IZVODI
+ * iz njega (`ownOibs`), pa se usmjeravanje i filtriranje ne mogu raziici.
+ */
+async function ownOibsFor(supabase: Supa, userId: string): Promise<OwnOibEntry[]> {
   const { data } = await supabase
     .from("business_profiles")
-    .select("oib")
+    .select("id, oib")
     .eq("user_id", userId);
-  return ((data ?? []) as Array<{ oib: string | null }>)
-    .map((r) => (r.oib ?? "").replace(/[^0-9]/g, ""))
-    .filter((o) => o.length === 11);
+  return ((data ?? []) as Array<{ id: string; oib: string | null }>)
+    .map((r) => ({ profileId: r.id, oib: (r.oib ?? "").replace(/[^0-9]/g, "") }))
+    .filter((e) => e.oib.length === 11);
 }
 
 async function knownCounterparties(supabase: Supa, userId: string) {
@@ -162,7 +171,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   }
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
-  const ownOibs = await ownOibsFor(supabase, ownerId);
+  const ownOibEntries = await ownOibsFor(supabase, ownerId);
+  const ownOibs = ownOibEntries.map((e) => e.oib);
 
   const { data: atts } = await supabase
     .from("inbound_attachments")
@@ -208,42 +218,6 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         continue;
       }
 
-      // Transportni dedup — isti sadržaj istog vlasnika se NE obrađuje ponovno.
-      const sha = unit.att.content_sha256 as string | null;
-      if (sha) {
-        const { data: dup } = await supabase
-          .from("document_ingest_items")
-          .select("id")
-          .eq("owner_user_id", ownerId)
-          .eq("dedup_identity", `sha256:${sha}`)
-          .limit(1)
-          .maybeSingle();
-        if (dup) {
-          await upsertIngestItem(supabase, {
-            messageId,
-            attachmentId: unit.attachmentId,
-            row: {
-              source: "mail",
-              scope_type: "user",
-              scope_id: ownerId,
-              owner_user_id: ownerId,
-              classification: "duplikat_privitka",
-              status: "odbaceno",
-              reason: "duplikat_privitka",
-              duplicate_of_item_id: dup.id,
-              dedup_identity: `sha256:${sha}`,
-              warnings: ["duplikat_privitka"],
-              ai_calls: 0,
-            },
-          });
-
-          await supabase
-            .from("inbound_attachments")
-            .update({ scan_status: "siguran", mime_sniffed: verdict.sniffed })
-            .eq("id", unit.attachmentId as string);
-          continue;
-        }
-      }
 
       if (verdict.sniffed === "pdf") {
         const pages = evaluatePdfPages(unit.bytes);
@@ -297,6 +271,51 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           .eq("id", unit.attachmentId as string);
       }
       sniffed = verdict.sniffed as ClassifyInput["sniffed"];
+    }
+
+    // USMJERAVANJE — jednom po jedinici, nad cijelim poznatim tekstom.
+    // Nas OIB u dokumentu = dokument pripada toj tvrtki. Atribucija
+    // (owner_user_id, kvota, obavijesti) ostaje na vlasniku aliasa.
+    const unitScope = resolveScope({
+      text: [bodyText ?? "", pdfText ?? "", xml ?? ""].join("\n"),
+      ownOibs: ownOibEntries,
+      ownerId,
+    });
+    warnings.push(...unitScope.warnings);
+
+    // Transportni dedup — isti sadrzaj istog vlasnika se NE obraduje ponovno.
+    const sha = (unit.att?.content_sha256 as string | null) ?? null;
+    if (sha) {
+      // Ponovna obrada NE smije pogoditi samu sebe: stavka iste poruke se
+      // OSVJEZAVA, nikad ne proglasava vlastitim duplikatom.
+      const { data: dupRows } = await supabase
+        .from("document_ingest_items")
+        .select("id")
+        .eq("owner_user_id", ownerId)
+        .eq("dedup_identity", `sha256:${sha}`)
+        .neq("message_id", messageId)
+        .limit(1);
+      const dup = (Array.isArray(dupRows) ? dupRows[0] : dupRows) as { id: string } | null;
+      if (dup) {
+        await upsertIngestItem(supabase, {
+          messageId,
+          attachmentId: unit.attachmentId,
+          row: {
+            source: "mail",
+            scope_type: unitScope.scopeType,
+            scope_id: unitScope.scopeId,
+            owner_user_id: ownerId,
+            classification: "duplikat_privitka",
+            status: "odbaceno",
+            reason: "duplikat_privitka",
+            duplicate_of_item_id: dup.id,
+            dedup_identity: `sha256:${sha}`,
+            warnings: ["duplikat_privitka"],
+            ai_calls: 0,
+          },
+        });
+        continue;
+      }
     }
 
     const input: ClassifyInput = {
@@ -367,6 +386,20 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       warnings.push(...ibanCheck.warnings);
     }
 
+    // MEKA DEDUP NAJAVA — samo upozorenje, nista se ne odbacuje.
+    if (
+      await findProbableDuplicate(supabase, {
+        supplierOib: extraction.supplier_oib as string | null,
+        invoiceNumber: extraction.invoice_number as string | null,
+        docType: result.docType as string | null,
+        scopeType: unitScope.scopeType,
+        scopeId: unitScope.scopeId,
+        ownerUserId: ownerId,
+      })
+    ) {
+      warnings.push(PROBABLE_DUPLICATE_WARNING);
+    }
+
     const confidence = lowerConfidence(result.confidence, forcedConfidence);
     const status =
       result.classification === "nije_za_nas" || result.classification === "nepoznato"
@@ -378,8 +411,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       attachmentId: unit.attachmentId,
       row: {
         source: "mail",
-        scope_type: "user",
-        scope_id: ownerId,
+        scope_type: unitScope.scopeType,
+        scope_id: unitScope.scopeId,
         owner_user_id: ownerId,
         classification: result.classification,
         extraction: result.extraction,
