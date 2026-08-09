@@ -39,7 +39,10 @@ export interface IncomingInvoice {
   paid_at: string | null;
   import_batch_id: string | null;
   source_filename: string | null;
+  /** Korisnikova oznaka mjesta (npr. „Split"/„Solin") — uči se iz potvrde. */
+  place_label: string | null;
   created_at: string;
+
 }
 
 export const useIncomingInvoices = () => {
