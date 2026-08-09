@@ -96,7 +96,8 @@ Deno.serve(async (req) => {
     }
 
     const declaredSize = Number(req.headers.get("content-length") ?? "0");
-    if (declaredSize > MAX_TOTAL_BYTES) return json({ error: "payload_too_large" }, 413);
+    if (declaredSize > HARD_MAX_BYTES) return json({ error: "payload_too_large" }, 413);
+
 
     const form = await req.formData();
     const field = (name: string): string => {
