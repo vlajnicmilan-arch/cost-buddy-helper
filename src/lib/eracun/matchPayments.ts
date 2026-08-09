@@ -11,6 +11,7 @@
  *   2. naučeni IBAN platitelja + iznos                      → `strong`
  *   3. iznos + token-subset naziva                          → `likely`
  *   4. skupno podudaranje (do 4 računa iste druge strane)   → `likely`
+ *   5. samo iznos + blizina datuma (`allowAmountOnly`)      → `possible`
  *
  * Poziv na broj nije pouzdan sam za sebe: platitelji redovito koriste model
  * HR99 s vlastitom oznakom, pa je sloj 1 koristan kad postoji, ali nikad
@@ -23,8 +24,8 @@
 
 import { namesMatch } from './normalizeName';
 
-export type MatchConfidence = 'certain' | 'strong' | 'likely';
-export type MatchReason = 'payment_reference' | 'learned_iban' | 'amount_name';
+export type MatchConfidence = 'certain' | 'strong' | 'likely' | 'possible';
+export type MatchReason = 'payment_reference' | 'learned_iban' | 'amount_name' | 'amount_only';
 
 export const MATCH_WINDOW_DAYS = 90;
 const EPS = 0.005;
@@ -87,6 +88,13 @@ export interface MatchInput {
   readonly learnedIbans?: readonly LearnedIban[];
   /** Smjer računa koji se zatvara; uplate = izlazni računi. */
   readonly direction?: 'in' | 'out';
+  /**
+   * Ulazna strana (`direction = 'in'`): trošak s bankovnog izvoda rijetko nosi
+   * naziv dobavljača u opisu (LIDL, KEKS PAY, „Kartično plaćanje"), pa se
+   * dopušta i sloj „samo iznos + blizina datuma". Taj sloj NIKAD ne izlazi
+   * iznad razreda `possible` — korisnik ga mora potvrditi pogledom.
+   */
+  readonly allowAmountOnly?: boolean;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -296,7 +304,30 @@ export const matchPayments = (input: MatchInput): PaymentSuggestion[] => {
     const namePool = pool.filter((inv) => nameHit(inv, tx));
     const active = ibanPool.length > 0 ? ibanPool : namePool;
     const reason: MatchReason = ibanPool.length > 0 ? 'learned_iban' : 'amount_name';
-    if (active.length === 0) continue;
+    if (active.length === 0) {
+      // Sloj 4 — samo iznos + blizina datuma. Dopušten isključivo na ulaznoj
+      // strani i uvijek u razredu `possible`: bez naziva ili reference motor
+      // nema pravo tvrditi ništa jače, korisnik odlučuje pogledom na opis.
+      if (!input.allowAmountOnly) continue;
+      const amountOnly = pool
+        .filter((inv) => Math.abs(remainingOf(inv) - tx.amount) <= EPS)
+        .sort((a, b) => {
+          const da = a.issueDate ? daysBetween(a.issueDate, tx.date) : Number.MAX_SAFE_INTEGER;
+          const db = b.issueDate ? daysBetween(b.issueDate, tx.date) : Number.MAX_SAFE_INTEGER;
+          if (da !== db) return da - db;
+          return byOldest(a, b);
+        });
+      if (amountOnly.length === 0) continue;
+      suggestions.push({
+        transactionId: tx.id,
+        candidates: amountOnly.map((inv) =>
+          singleCandidate(inv, tx.amount, 'possible', 'amount_only', false),
+        ),
+        autoSelect: false,
+        ambiguous: amountOnly.length > 1,
+      });
+      continue;
+    }
 
     const exact = [...active]
       .filter((inv) => Math.abs(remainingOf(inv) - tx.amount) <= EPS)

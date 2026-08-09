@@ -6297,6 +6297,32 @@
       "confirm": "Zabilježi naplatu",
       "noRevenueHint": "Ovime se ne bilježi prihod ni promjena salda — prihod ulazi kroz uvoz bankovnog izvoda.",
       "failedDetailed": "Bilježenje naplate nije uspjelo: {{reason}}"
+    },
+    "linkExpense": {
+      "open": "Poveži s troškom",
+      "title": "Poveži s postojećim troškom",
+      "subtitle": "Povezivanje ne stvara novi trošak i ne mijenja saldo — bilježi se samo da je ovaj račun plaćen postojećom transakcijom.",
+      "precheckTitle": "Ovakav trošak već postoji",
+      "precheckSubtitle": "Pronađen je trošak koji odgovara ovom računu. Poveži ga umjesto stvaranja novog — inače će isti novac biti zabilježen dvaput.",
+      "createAnyway": "Ipak stvori novi trošak",
+      "suggestionsTitle": "Prijedlozi",
+      "noSuggestions": "Nema prijedloga za ovaj račun. Potraži trošak ručno.",
+      "searchTitle": "Ručna pretraga",
+      "searchPlaceholder": "Iznos, datum ili opis",
+      "searchEmpty": "Nema troška koji odgovara pretrazi.",
+      "link": "Poveži",
+      "linked": "Trošak je povezan s računom",
+      "failed": "Povezivanje nije uspjelo: {{reason}}",
+      "unlink": "Odveži",
+      "unlinked": "Veza je uklonjena",
+      "unlinkFailed": "Odvezivanje nije uspjelo: {{reason}}",
+      "linkedTitle": "Povezani troškovi",
+      "linkedCount": "Povezano ({{n}})",
+      "remaining": "preostalo {{amount}}",
+      "confidenceCertain": "Siguran",
+      "confidenceStrong": "Jak",
+      "confidenceLikely": "Vjerojatan",
+      "confidencePossible": "Moguć"
     }
   },
   "mailImport": {

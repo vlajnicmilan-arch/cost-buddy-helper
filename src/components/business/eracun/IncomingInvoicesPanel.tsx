@@ -40,6 +40,8 @@ import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 import { PaymentMatchReview } from './PaymentMatchReview';
+import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
+import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'paid' | 'all';
 type Direction = 'in' | 'out';
@@ -76,12 +78,20 @@ export const IncomingInvoicesPanel = () => {
   const [placeFilter, setPlaceFilter] = useState<string>('all');
   const [placeTarget, setPlaceTarget] = useState<IncomingInvoice | null>(null);
   const [placeDraft, setPlaceDraft] = useState('');
+  /** Povezivanje ulaznog računa s postojećim troškom (i pretprovjera na „Plaćeno"). */
+  const [linkTarget, setLinkTarget] = useState<IncomingInvoice | null>(null);
+  const [linkPrecheck, setLinkPrecheck] = useState(false);
 
 
   const scoped = useMemo(
     () => invoices.filter((i) => (i.direction ?? 'in') === direction),
     [invoices, direction],
   );
+  const incoming = useMemo(
+    () => invoices.filter((i) => (i.direction ?? 'in') === 'in'),
+    [invoices],
+  );
+  const expenseMatch = useEracunExpenseMatch(incoming);
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
 
@@ -390,8 +400,25 @@ export const IncomingInvoicesPanel = () => {
                 </div>
               </div>
 
+              {/* Odvezivanje mora biti dostupno i na plaćenom računu. */}
+              {(inv.direction ?? 'in') === 'in' && expenseMatch.linksForInvoice(inv.id).length > 0 && (
+                <div className="flex justify-end mt-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground"
+                    onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
+                  >
+                    <Link2 className="w-3.5 h-3.5 mr-1" />
+                    {t('eracun.linkExpense.linkedCount', 'Povezano ({{n}})', {
+                      n: expenseMatch.linksForInvoice(inv.id).length,
+                    })}
+                  </Button>
+                </div>
+              )}
+
               {!inv.paid_at && (
-                <div className="flex justify-end gap-2 mt-2">
+                <div className="flex flex-wrap justify-end gap-2 mt-2">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -404,10 +431,33 @@ export const IncomingInvoicesPanel = () => {
                       izlazni na „Naplaćeno" bilježi samo datum — prihod dolazi iz
                       uvoza bankovnog izvoda. Ne izjednačavati ta dva toka. */}
                   {(inv.direction ?? 'in') === 'in' ? (
-                    <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {t('eracun.list.markPaid', 'Plaćeno')}
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
+                      >
+                        <Link2 className="w-3.5 h-3.5 mr-1" />
+                        {t('eracun.linkExpense.open', 'Poveži s troškom')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // Pretprovjera: ako postoji kandidat, prvo ponudi povezivanje —
+                          // stvaranje novog troška ovdje bi isti novac zapisalo dvaput.
+                          if (expenseMatch.suggestionsForInvoice(inv.id).length > 0) {
+                            setLinkPrecheck(true);
+                            setLinkTarget(inv);
+                            return;
+                          }
+                          setPayTarget(inv);
+                        }}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        {t('eracun.list.markPaid', 'Plaćeno')}
+                      </Button>
+                    </>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => setCollectTarget(inv)}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -453,6 +503,21 @@ export const IncomingInvoicesPanel = () => {
         onOpenChange={setMatchOpen}
         invoices={invoices}
         onDone={refetch}
+      />
+
+      <LinkExistingExpenseDialog
+        invoice={linkTarget}
+        open={!!linkTarget}
+        onOpenChange={(open) => { if (!open) { setLinkTarget(null); setLinkPrecheck(false); } }}
+        suggestions={linkTarget ? expenseMatch.suggestionsForInvoice(linkTarget.id) : []}
+        links={linkTarget ? expenseMatch.linksForInvoice(linkTarget.id) : []}
+        loading={expenseMatch.loading}
+        search={expenseMatch.searchExpenses}
+        onLink={expenseMatch.linkExpense}
+        onUnlink={expenseMatch.unlinkExpense}
+        onDone={refetch}
+        precheck={linkPrecheck}
+        onCreateAnyway={() => { if (linkTarget) setPayTarget(linkTarget); }}
       />
 
       <Dialog open={!!placeTarget} onOpenChange={(open) => !open && setPlaceTarget(null)}>
