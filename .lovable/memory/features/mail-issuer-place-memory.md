@@ -11,3 +11,11 @@ type: feature
 - Forwarder brana (`issuerKeyDomain`): javne domene + korisnikove `business_profiles.email` domene ne postaju ključ → pada se na OIB.
 - Upozorenje `dopunjeno_iz_zapamcenog` (hr/en/de). Čuvar: `src/test/mailIssuerMemory.test.ts`.
 - UI: `MailReviewList` polje `place_label`; `IncomingInvoicesPanel` chip u retku + Select filtar tek kad postoje ≥2 oznake (u zasebnom retku da ne slomi `eracunPanelNoHorizontalOverflow`).
+
+## Paket „povjerenje u izdavatelje" (kolovoz 2026)
+- DOKUMENT-KLJUČ: javne domene (`publicMailDomains.ts::isPublicMailDomain`) se NE spremaju kao `from_domain` (sprema se `''`) i ne koriste kao ključ — simetrično na upisu i čitanju.
+- Više OIB kandidata iz teksta razrješava se PRESJEKOM sa zapamćenim OIB-ima; točno jedan pogodak = dopuna, inače ništa.
+- Pamćenje nastaje SAMO uz `remember_issuer: true` u payloadu `mail_item_confirm` (kvačica u `MailReviewList`, nuđena samo za nepoznatog izdavatelja s OIB-om). Nikad tiho.
+- `mail_issuer_memory.known_ibans` + `confirmed_count`; povijest IBAN-a = potvrđeni računi ∪ `known_ibans` → `iban_ne_odgovara_povijesti` je CRVENI ALARM u zasebnom okviru.
+- Poznat izdavatelj (`extraction.issuer_confirmed_count > 0`) ublažava prikaz T-razine — ALI nikad uz IBAN alarm (`softensTrust`).
+- Postavke → Uvoz iz e-maila → `MyIssuersSection` (`useIssuerMemory`): popis pravila + zaborav. Čuvar: `src/test/issuerTrustPackage.test.ts`.
