@@ -28,7 +28,7 @@ export const DocumentsPendingCard = ({ count }: { count: number }) => {
           {t('documents.pendingCard.title', 'Dokumenti na pregled')}
         </span>
         <span className="block text-xs text-muted-foreground">
-          {t('documents.pendingCard.subtitle', '{{count}} dokumenata čeka tvoju potvrdu', { count })}
+          {t('documents.pendingCard.subtitle', { count })}
         </span>
       </span>
       <span className="shrink-0 rounded-full bg-document-pending px-2.5 py-1 text-xs font-bold text-document-pending-foreground">

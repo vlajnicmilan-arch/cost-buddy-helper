@@ -6381,7 +6381,9 @@
     },
     "pendingCard": {
       "title": "Dokumenti na pregled",
-      "subtitle": "{{count}} dokumenata čeka tvoju potvrdu"
+      "subtitle_one": "{{count}} dokument čeka tvoju potvrdu",
+      "subtitle_few": "{{count}} dokumenta čekaju tvoju potvrdu",
+      "subtitle_other": "{{count}} dokumenata čeka tvoju potvrdu"
     }
   }
 }

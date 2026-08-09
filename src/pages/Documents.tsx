@@ -8,6 +8,7 @@ import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { MailReviewList } from '@/components/mail/MailReviewList';
 import { DocumentsReceivedTab } from '@/components/mail/DocumentsReceivedTab';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 /**
  * DOM ZA DOKUMENTE (`/dokumenti`).
@@ -35,21 +36,23 @@ export default function Documents() {
 
   return (
     <div className="min-h-dvh bg-background pb-24">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background/95 p-3 backdrop-blur">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="min-h-[44px] min-w-[44px]"
-          aria-label={t('common.back', 'Natrag')}
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <FileClock className="h-5 w-5 text-document-pending" />
-        <h1 className="text-base font-semibold">{t('documents.title', 'Dokumenti')}</h1>
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+        <PageContainer noVerticalPadding className="flex items-center gap-2 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-h-[44px] min-w-[44px]"
+            aria-label={t('common.back', 'Natrag')}
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <FileClock className="h-5 w-5 text-document-pending" />
+          <h1 className="text-base font-semibold">{t('documents.title', 'Dokumenti')}</h1>
+        </PageContainer>
       </header>
 
-      <main className="p-4">
+      <PageContainer as="main">
         <Tabs value={tab} onValueChange={(v) => setTab(v as 'pending' | 'received')}>
           <TabsList className="w-full">
             <TabsTrigger value="pending" className="flex-1 min-h-[44px]">
@@ -73,7 +76,7 @@ export default function Documents() {
             <DocumentsReceivedTab active={tab === 'received'} onCountChange={refetch} />
           </TabsContent>
         </Tabs>
-      </main>
+      </PageContainer>
     </div>
   );
 }

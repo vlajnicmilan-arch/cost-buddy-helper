@@ -7,6 +7,7 @@ import { useIncomingInvoices } from '@/hooks/useIncomingInvoices';
 import { summarizeIncomingInvoices } from '@/lib/eracun/incomingSummary';
 import { clickableProps } from '@/lib/a11y';
 import { IncomingInvoicesPanel } from './IncomingInvoicesPanel';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 interface IncomingInvoicesWidgetProps {
   /** Visual variant, mirrors UnpaidInvoicesWidget. */
@@ -118,15 +119,17 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <FileInput className="w-5 h-5 text-primary" />
-              {t('eracun.widget.sheetTitle', 'eRačuni — obveze i potraživanja')}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-4">
-            <IncomingInvoicesPanel />
-          </div>
+          <PageContainer noVerticalPadding className="pt-2">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <FileInput className="w-5 h-5 text-primary" />
+                {t('eracun.widget.sheetTitle', 'eRačuni — obveze i potraživanja')}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              <IncomingInvoicesPanel />
+            </div>
+          </PageContainer>
         </SheetContent>
       </Sheet>
     </>
