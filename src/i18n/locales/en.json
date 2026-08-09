@@ -6279,7 +6279,8 @@
       "obligationNote": "liability, not an expense",
       "count": "{{count}} invoices",
       "titleOut": "Outgoing invoices — uncollected",
-      "sheetTitle": "E-invoices — payables and receivables"
+      "sheetTitle": "E-invoices — payables and receivables",
+      "sheetTitlePersonal": "Incoming invoices"
     },
     "collected": {
       "title": "Mark as collected",

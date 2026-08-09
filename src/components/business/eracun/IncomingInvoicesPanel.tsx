@@ -67,7 +67,15 @@ export const IncomingInvoicesPanel = () => {
     saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
   } = useIncomingInvoices();
 
-  const [direction, setDirection] = useState<Direction>('in');
+  /**
+   * OSOBNI KONTEKST: privatna osoba ne izdaje račune i ne naplaćuje, pa polica
+   * prikazuje samo ULAZNE račune. Biznis alati ("Duguju mi", "Poveži uplate",
+   * uvoz XML-a koji ovisi o OIB-u tvrtke) se ne renderiraju.
+   */
+  const isPersonal = !activeBusinessProfileId;
+  const [directionState, setDirection] = useState<Direction>('in');
+  const direction: Direction = isPersonal ? 'in' : directionState;
+
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
@@ -275,16 +283,19 @@ export const IncomingInvoicesPanel = () => {
 
   return (
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
-      <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)} className="w-full min-w-0">
-        <TabsList className="h-9 w-full">
-          <TabsTrigger value="in" className="text-xs flex-1 min-w-0">
-            {t('eracun.list.directionIn', 'Dugujem')}
-          </TabsTrigger>
-          <TabsTrigger value="out" className="text-xs flex-1 min-w-0">
-            {t('eracun.list.directionOut', 'Duguju mi')}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {!isPersonal && (
+        <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)} className="w-full min-w-0">
+          <TabsList className="h-9 w-full">
+            <TabsTrigger value="in" className="text-xs flex-1 min-w-0">
+              {t('eracun.list.directionIn', 'Dugujem')}
+            </TabsTrigger>
+            <TabsTrigger value="out" className="text-xs flex-1 min-w-0">
+              {t('eracun.list.directionOut', 'Duguju mi')}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 w-full min-w-0">
         <Tabs
@@ -306,19 +317,25 @@ export const IncomingInvoicesPanel = () => {
             <TabsTrigger value="all" className="text-xs flex-1 min-w-0 truncate">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
-          {direction === 'out' && (
-            <Button size="sm" variant="outline" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setMatchOpen(true)}>
-              <Link2 className="w-3.5 h-3.5 mr-1 shrink-0" />
-              <span className="truncate">{t('eracun.match.open', 'Poveži uplate')}</span>
+        {/* Biznis alati. U osobnom kontekstu nema izlaznih računa (nema
+            uparivanja naplata), a uvoz XML-a bez OIB-a tvrtke ne može pouzdano
+            odrediti smjer — zato se cijeli blok skriva. */}
+        {!isPersonal && (
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
+            {direction === 'out' && (
+              <Button size="sm" variant="outline" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setMatchOpen(true)}>
+                <Link2 className="w-3.5 h-3.5 mr-1 shrink-0" />
+                <span className="truncate">{t('eracun.match.open', 'Poveži uplate')}</span>
+              </Button>
+            )}
+            <Button size="sm" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setImportOpen(true)}>
+              <Upload className="w-3.5 h-3.5 mr-1 shrink-0" />
+              <span className="truncate">{t('eracun.importButton', 'Učitaj eRačun (XML)')}</span>
             </Button>
-          )}
-          <Button size="sm" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setImportOpen(true)}>
-            <Upload className="w-3.5 h-3.5 mr-1 shrink-0" />
-            <span className="truncate">{t('eracun.importButton', 'Učitaj eRačun (XML)')}</span>
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
+
 
       {/* Filtar po oznaci mjesta — vlastiti redak, da alatni redak ostane
           onakav kakvim ga brani `eracunPanelNoHorizontalOverflow`. */}
@@ -471,7 +488,7 @@ export const IncomingInvoicesPanel = () => {
         </div>
       )}
 
-      {user && (
+      {user && !isPersonal && (
         <EracunImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}
@@ -491,19 +508,23 @@ export const IncomingInvoicesPanel = () => {
         onConfirm={handleConfirmPaid}
       />
 
-      <MarkCollectedDialog
-        invoice={collectTarget}
-        onOpenChange={(open) => !open && setCollectTarget(null)}
-        saving={savingPayment}
-        onConfirm={handleConfirmCollected}
-      />
+      {!isPersonal && (
+        <MarkCollectedDialog
+          invoice={collectTarget}
+          onOpenChange={(open) => !open && setCollectTarget(null)}
+          saving={savingPayment}
+          onConfirm={handleConfirmCollected}
+        />
+      )}
 
-      <PaymentMatchReview
-        open={matchOpen}
-        onOpenChange={setMatchOpen}
-        invoices={invoices}
-        onDone={refetch}
-      />
+      {!isPersonal && (
+        <PaymentMatchReview
+          open={matchOpen}
+          onOpenChange={setMatchOpen}
+          invoices={invoices}
+          onDone={refetch}
+        />
+      )}
 
       <LinkExistingExpenseDialog
         invoice={linkTarget}

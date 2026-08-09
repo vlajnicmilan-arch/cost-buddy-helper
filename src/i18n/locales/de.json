@@ -6279,7 +6279,8 @@
       "obligationNote": "Verbindlichkeit, kein Aufwand",
       "count": "{{count}} Rechnungen",
       "titleOut": "Ausgangsrechnungen — offen",
-      "sheetTitle": "E-Rechnungen — Verbindlichkeiten und Forderungen"
+      "sheetTitle": "E-Rechnungen — Verbindlichkeiten und Forderungen",
+      "sheetTitlePersonal": "Eingangsrechnungen"
     },
     "collected": {
       "title": "Als eingegangen markieren",

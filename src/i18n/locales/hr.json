@@ -6289,7 +6289,8 @@
       "obligationNote": "obveza, nije trošak",
       "count": "{{count}} računa",
       "titleOut": "Izlazni računi — nenaplaćeno",
-      "sheetTitle": "eRačuni — obveze i potraživanja"
+      "sheetTitle": "eRačuni — obveze i potraživanja",
+      "sheetTitlePersonal": "Ulazni računi"
     },
     "collected": {
       "title": "Označi kao naplaćeno",
