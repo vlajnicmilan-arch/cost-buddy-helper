@@ -406,16 +406,21 @@ export function KrugDetailScreen({
         </Card>
       </section>
 
-      <KrugPendingInvitationsList krugId={krugId} isOwner={isOwner} />
+      <KrugPendingInvitationsList krugId={krugId} isOwner={isOwner && !isArchived} />
 
-      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
+      <KrugSharedSourcesSection
+        krugId={krugId}
+        isOwner={isOwner && !isArchived}
+        isFullMember={isFullMember && !isArchived}
+      />
 
       <KrugSettlementSection
         krugId={krugId}
         isFullMember={!!isFullMember}
-        isOwner={isOwner}
+        isOwner={isOwner && !isArchived}
         focusSettlementId={focusSettlementId}
       />
+
 
       <TransactionDetailDialog
         expense={focusExpense ?? null}
