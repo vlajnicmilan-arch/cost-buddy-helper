@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { AlertTriangle, Check, Loader2, Pencil, ShieldAlert, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertTriangle, BadgeCheck, Check, Loader2, Pencil, ShieldAlert, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { showUndoToast } from '@/lib/undoToast';
 import { restoreIngestItem } from '@/lib/mailReviewStatus';
@@ -79,6 +80,18 @@ const trustVariant = (level: string | null): 'default' | 'secondary' | 'destruct
   return 'destructive';
 };
 
+/** Jak alarm: ključni podatak poznatog izdavatelja se PROMIJENIO. */
+export const IBAN_ALARM_WARNING = 'iban_ne_odgovara_povijesti';
+
+/**
+ * Poznat izdavatelj (u pamćenju, podaci se poklapaju) smije dobiti blažu
+ * prezentaciju tehničke neprovjerljivosti pošiljatelja — ALI nikad kad je
+ * ključni podatak (IBAN) drukčiji od dosad viđenih.
+ */
+export const softensTrust = (knownCount: number, warnings: readonly string[]): boolean =>
+  knownCount > 0 && !warnings.includes(IBAN_ALARM_WARNING);
+
+
 export const MailReviewList = ({ active, onCountChange }: Props) => {
   const { t } = useTranslation();
   const { items, loading, working, confirmItem, discardItem, setScope, refetch } =
@@ -87,6 +100,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [collision, setCollision] = useState<{ item: MailReviewItem; existing: Record<string, unknown> } | null>(null);
+  // IZRIČITA PRIVOLA: red je UKLJUČEN; korisnik ga smije isključiti po stavci.
+  const [rememberOff, setRememberOff] = useState<Record<string, boolean>>({});
 
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
@@ -124,6 +139,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     }
     base.doc_type = item.doc_type ?? '380';
     base.direction = 'in';
+    // Učenje pamćenja se događa SAMO uz uključenu kvačicu — nikad tiho.
+    base.remember_issuer = rememberOff[item.id] !== true;
     return base;
   };
 
@@ -217,6 +234,12 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         const extraction = (item.extraction ?? {}) as Record<string, unknown>;
         const isEditing = editingId === item.id;
         const mediumConfidence = item.confidence === 'srednja';
+        const knownCount = Number(extraction.issuer_confirmed_count ?? 0);
+        const ibanAlarm = item.warnings.includes(IBAN_ALARM_WARNING);
+        const soften = softensTrust(knownCount, item.warnings);
+        const supplierOib = String(extraction.supplier_oib ?? '').trim();
+        // Kvačica se nudi SAMO za novog izdavatelja — poznatog se ne pita opet.
+        const offerRemember = supplierOib !== '' && knownCount === 0;
         return (
           <div
             key={item.id}
@@ -227,7 +250,24 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               <Badge variant="secondary">
                 {t(`mailReview.classification.${item.classification}`, item.classification ?? '—')}
               </Badge>
-              <Badge variant={trustVariant(item.trust_level)}>{item.trust_level ?? 'T4'}</Badge>
+              {knownCount > 0 && (
+                <Badge variant="secondary" data-testid="known-issuer-badge" className="gap-1">
+                  <BadgeCheck className="h-3 w-3" />
+                  {t('mailReview.knownIssuer', 'Poznat izdavatelj · potvrđen {{count}}×', {
+                    count: knownCount,
+                  })}
+                </Badge>
+              )}
+              <Badge
+                variant={soften ? 'outline' : trustVariant(item.trust_level)}
+                data-testid="trust-badge"
+                title={t(
+                  'mailReview.trustHint',
+                  'Tehnička provjerljivost pošiljatelja e-maila',
+                )}
+              >
+                {item.trust_level ?? 'T4'}
+              </Badge>
               <Badge variant="outline">
                 {t(`mailReview.confidence.${item.confidence}`, item.confidence ?? '—')}
               </Badge>
@@ -244,20 +284,34 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               {item.subject || t('mailImport.noSubject', '(bez naslova)')} · {item.from_header || '—'}
             </div>
 
-            {item.warnings.length > 0 && (
+            {ibanAlarm && (
+              <div
+                data-testid="iban-alarm"
+                className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-2 text-xs font-medium text-destructive"
+              >
+                <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  {t(
+                    'mailReview.alarm.ibanChanged',
+                    'IBAN se razlikuje od dosadašnjih — provjeri prije plaćanja.',
+                  )}
+                </span>
+              </div>
+            )}
+
+            {item.warnings.filter((w) => w !== IBAN_ALARM_WARNING).length > 0 && (
               <ul className="space-y-1">
-                {item.warnings.map((w) => (
-                  <li key={w} className="flex items-start gap-2 text-xs text-destructive">
-                    {w === 'iban_ne_odgovara_povijesti' ? (
-                      <ShieldAlert className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    ) : (
+                {item.warnings
+                  .filter((w) => w !== IBAN_ALARM_WARNING)
+                  .map((w) => (
+                    <li key={w} className="flex items-start gap-2 text-xs text-destructive">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    )}
-                    <span>{t(`mailReview.warning.${w}`, w)}</span>
-                  </li>
-                ))}
+                      <span>{t(`mailReview.warning.${w}`, w)}</span>
+                    </li>
+                  ))}
               </ul>
             )}
+
 
             {isEditing ? (
               <div className="grid gap-2 sm:grid-cols-2">
@@ -285,7 +339,30 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </dl>
             )}
 
+            {offerRemember && (
+              <label
+                data-testid="remember-issuer"
+                className="flex items-start gap-2 pt-1 text-xs cursor-pointer"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={rememberOff[item.id] !== true}
+                  onCheckedChange={(v) =>
+                    setRememberOff((s) => ({ ...s, [item.id]: v !== true }))
+                  }
+                />
+                <span>
+                  {t('mailReview.rememberIssuer', 'Zapamti {{name}} (OIB {{oib}}) kao mog izdavatelja', {
+                    name: String(extraction.supplier_name ?? '').trim() ||
+                      t('issuers.unnamed', '(bez naziva)'),
+                    oib: supplierOib,
+                  })}
+                </span>
+              </label>
+            )}
+
             <div className="flex flex-wrap gap-2 pt-1">
+
               <Button
                 size="sm"
                 className="min-h-[44px]"

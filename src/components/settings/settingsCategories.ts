@@ -19,6 +19,7 @@ export type SettingsSectionKey =
   | 'advanced'
   | 'danger'
   | 'mailImport'
+  | 'myIssuers'
   | 'help'
   | 'feedback';
 
@@ -98,8 +99,8 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     titleKey: 'settings.categories.mail.title',
     titleFallback: 'Uvoz iz e-maila',
     descKey: 'settings.categories.mail.desc',
-    descFallback: 'Adresa za primanje dokumenata',
-    sections: ['mailImport'],
+    descFallback: 'Adresa za primanje i zapamćeni izdavatelji',
+    sections: ['mailImport', 'myIssuers'],
     requiresMailAccess: true,
   },
   {

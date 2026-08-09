@@ -3574,6 +3574,7 @@ export type Database = {
           created_at: string
           from_domain: string
           id: string
+          known_ibans: string[]
           last_seen_at: string
           place_code: string
           place_label: string | null
@@ -3588,6 +3589,7 @@ export type Database = {
           created_at?: string
           from_domain?: string
           id?: string
+          known_ibans?: string[]
           last_seen_at?: string
           place_code?: string
           place_label?: string | null
@@ -3602,6 +3604,7 @@ export type Database = {
           created_at?: string
           from_domain?: string
           id?: string
+          known_ibans?: string[]
           last_seen_at?: string
           place_code?: string
           place_label?: string | null
@@ -7514,10 +7517,12 @@ export type Database = {
         }
         Returns: Json
       }
+      mail_is_public_domain: { Args: { p_domain: string }; Returns: boolean }
       mail_issuer_memory_upsert: {
         Args: {
           p_business_profile_id: string
           p_from_domain: string
+          p_iban?: string
           p_place_code: string
           p_place_label: string
           p_supplier_name: string

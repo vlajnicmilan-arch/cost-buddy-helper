@@ -6432,7 +6432,13 @@
     },
     "invalidDate": "Invalid date — e.g. 15.08.2026.",
     "invalidAmount": "Invalid amount — e.g. 1,660.36",
-    "pickDate": "Pick a date"
+    "pickDate": "Pick a date",
+    "knownIssuer": "Known issuer · confirmed {{count}}×",
+    "trustHint": "Technical verifiability of the email sender",
+    "rememberIssuer": "Remember {{name}} (VAT ID {{oib}}) as my issuer",
+    "alarm": {
+      "ibanChanged": "IBAN differs from previous ones — verify before paying."
+    }
   },
   "documents": {
     "title": "Documents",
@@ -6459,5 +6465,18 @@
       "changeFailed": "Changing the destination failed"
     },
     "liveNotice": "A document arrived for review"
+  },
+  "issuers": {
+    "title": "My issuers",
+    "description": "Rules created by your confirmations. Future invoices from these issuers arrive pre-filled.",
+    "empty": "No remembered issuers yet.",
+    "unnamed": "(no name)",
+    "confirmedCount": "Confirmed {{count}}×",
+    "lastSeen": "Last seen",
+    "forget": "Forget",
+    "forgetTitle": "Forget this issuer?",
+    "forgetWarning": "New invoices from this issuer will no longer arrive pre-filled. Existing documents stay untouched.",
+    "forgotten": "Rule deleted",
+    "forgetFailed": "Deletion failed"
   }
 }
