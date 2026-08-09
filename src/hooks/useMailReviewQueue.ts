@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { describeDbError } from '@/lib/eracun/dbError';
 
 /**
  * MAIL UVOZ (korak 2) — red "Na pregled".
@@ -9,6 +10,10 @@ import { useAuth } from '@/hooks/useAuth';
  * slika. Potvrda je JEDAN RPC u JEDNOJ transakciji (`mail_item_confirm`), a
  * kolizija na jedinstvenom ključu NIKAD ne radi tihu zamjenu — vraća postojeći
  * zapis i pušta korisnika da odluči.
+ *
+ * NIJEMA GREŠKA (popravak, kolovoz 2026): `confirmItem` više NE baca iznimku i
+ * ne gubi `reason`. Vraća strukturirani ishod, pa dijalog može pokazati
+ * konkretan razlog umjesto generičkog „spremanje nije uspjelo".
  */
 
 export interface MailReviewItem {
@@ -29,8 +34,14 @@ export interface ConfirmCollision {
   existing: Record<string, unknown>;
 }
 
+export type ConfirmResult =
+  | { ok: true; invoiceId: string | null; already: boolean }
+  | { ok: false; reason: 'mozda_vec_postoji'; existing: Record<string, unknown>; detail?: string }
+  | { ok: false; reason: string; existing?: undefined; detail?: string };
+
 const asWarnings = (value: unknown): string[] =>
   Array.isArray(value) ? value.map((v) => String(v)) : [];
+
 
 export function useMailReviewQueue(enabled: boolean) {
   const { user } = useAuth();
