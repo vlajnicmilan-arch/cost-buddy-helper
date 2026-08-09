@@ -63,13 +63,12 @@ export interface AiRequestPlan {
 }
 
 export function buildAiRequest(input: AiRequestInput): AiRequestPlan {
-  const hasText =
-    (input.bodyText ?? '').trim().length > 0 || (input.pdfText ?? '').trim().length > 0;
-
+  const pdfText = (input.pdfText ?? '').trim();
   const content: AiContentBlock[] = [{ type: 'text', text: buildAiPrompt(input) }];
 
-  const needsScan = (input.pdfText ?? '').trim().length === 0 && !!input.pdfBase64;
-  if (needsScan) {
+  // Multimodalno SAMO kad PDF nema tekstualni sloj (sken).
+  const multimodal = pdfText.length === 0 && !!input.pdfBase64;
+  if (multimodal) {
     content.push({
       type: 'file',
       file: {
@@ -79,10 +78,5 @@ export function buildAiRequest(input: AiRequestInput): AiRequestPlan {
     });
   }
 
-  return { content, multimodal: needsScan && !((input.pdfText ?? '').trim().length > 0) && !hasTextOnlyOverride(hasText, input) };
-}
-
-/** PDF s tekstualnim slojem NIKAD ne ide multimodalno, ni uz tijelo maila. */
-function hasTextOnlyOverride(_hasText: boolean, input: AiRequestInput): boolean {
-  return (input.pdfText ?? '').trim().length > 0;
+  return { content, multimodal };
 }
