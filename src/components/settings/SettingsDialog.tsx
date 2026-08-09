@@ -574,6 +574,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         );
       case 'mailImport':
         return <MailImportSection key="mailImport" />;
+      case 'myIssuers':
+        return <MyIssuersSection key="myIssuers" />;
       case 'feedback':
         return <MyFeedbackSection key="feedback" />;
       case 'help':
