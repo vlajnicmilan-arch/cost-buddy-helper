@@ -315,7 +315,7 @@ export function KrugDetailScreen({
 
           {members.map((m) => {
             const isMe = user?.id === m.user_id;
-            const canManage = isOwner && m.kind !== 'owner';
+            const canManage = isOwner && !isArchived && m.kind !== 'owner';
             const busy =
               (changeRole.isPending && changeRole.variables?.membershipId === m.membership_id) ||
               (removeMember.isPending && removeMember.variables?.membershipId === m.membership_id);
