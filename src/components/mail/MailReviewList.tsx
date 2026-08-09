@@ -100,6 +100,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [collision, setCollision] = useState<{ item: MailReviewItem; existing: Record<string, unknown> } | null>(null);
+  // IZRIČITA PRIVOLA: red je UKLJUČEN; korisnik ga smije isključiti po stavci.
+  const [rememberOff, setRememberOff] = useState<Record<string, boolean>>({});
 
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
