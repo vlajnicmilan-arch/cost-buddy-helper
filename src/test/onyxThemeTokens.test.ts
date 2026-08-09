@@ -68,10 +68,12 @@ describe('Onyx theme tokens', () => {
   });
 
   it('does not leak surface overrides into :root or .dark', () => {
-    const rootBlock = css.slice(css.indexOf(':root {'), css.indexOf('.dark {'));
-    expect(rootBlock).not.toContain('30 7% 9%');
-    const darkStart = css.indexOf('\n  .dark {');
-    const darkBlock = css.slice(darkStart, darkStart + 4000);
-    expect(darkBlock).not.toContain('40 18% 26%');
+    const onyxStart = css.indexOf(ONYX_SELECTOR);
+    const before = css.slice(0, onyxStart);
+    const after = css.slice(css.indexOf('}', css.indexOf('--shadow-premium-accent:', onyxStart)));
+    expect(before).not.toContain('30 7% 9%');
+    expect(before).not.toContain('40 18% 26%');
+    expect(after).not.toContain('30 7% 9%');
+    expect(after).not.toContain('40 18% 26%');
   });
 });
