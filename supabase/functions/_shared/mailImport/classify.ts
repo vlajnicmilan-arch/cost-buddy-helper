@@ -13,6 +13,9 @@
 
 import { assertXmlSafe } from './xmlSafety.ts';
 import { detectGmailVerification, type GmailVerificationResult } from './gmailVerification.ts';
+import { isValidOib } from './oib.ts';
+import { deterministicExtract } from './deterministicExtract.ts';
+import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
 
 export type Classification =
   | 'racun'
@@ -31,11 +34,15 @@ export interface ClassifyInput {
   fromHeader?: string | null;
   subject?: string | null;
   bodyText?: string;
+  /** Tekstualni sloj PDF privitka (prvih 10 stranica), prazno kod skena. */
+  pdfText?: string | null;
   links?: readonly string[];
   googleAuthenticated?: boolean;
   /** OIB-i i adrese pošiljatelja koje smo već potvrdili u prošlosti. */
   knownSenders?: readonly string[];
   knownOibs?: readonly string[];
+  /** OIB-i vlasnika aliasa — na dokumentu su kao KUPAC, ne kao izdavatelj. */
+  ownOibs?: readonly string[];
   /** Tekst iz kojeg heuristika traži poznati OIB (tijelo ili ime datoteke). */
   searchText?: string;
 }
@@ -70,11 +77,13 @@ export interface ClassifyResult {
 
 const OIB_RE = /\b(\d{11})\b/g;
 
+/** Kandidat mora proći ISO 7064 kontrolnu znamenku — gola regex nije dokaz. */
 const findKnownOib = (text: string, knownOibs: readonly string[]): string | null => {
   if (knownOibs.length === 0) return null;
-  const set = new Set(knownOibs.map((o) => o.trim()));
+  const set = new Set(knownOibs.map((o) => o.trim()).filter(isValidOib));
+  if (set.size === 0) return null;
   const matches = (text ?? '').match(OIB_RE) ?? [];
-  return matches.find((m) => set.has(m)) ?? null;
+  return matches.find((m) => isValidOib(m) && set.has(m)) ?? null;
 };
 
 const senderKnown = (from: string | null | undefined, known: readonly string[]): boolean => {
@@ -100,7 +109,8 @@ export async function classifyDocument(
     return {
       classification: 'racun',
       docType: String(docType),
-      extraction: parsed,
+      // PLOSNATI oblik — `mail_item_confirm` i UI čitaju `supplier_oib`, ne `supplier.oib`.
+      extraction: flattenUblExtraction(parsed),
       confidence: 'visoka',
       route: 'ubl',
       aiCalls: 0,
@@ -138,16 +148,33 @@ export async function classifyDocument(
     };
   }
 
-  // ---- 3. Heuristika — poznat OIB ili pošiljatelj, bez AI -----------------
-  const haystack = `${input.searchText ?? ''}\n${input.bodyText ?? ''}\n${input.subject ?? ''}`;
+  // ---- 3. Deterministički ulov iz teksta — nula troška, prije AI-ja ------
+  const deterministic = deterministicExtract({
+    text: [input.bodyText, input.pdfText].filter((p) => (p ?? '').length > 0).join('\n'),
+    ownOibs: input.ownOibs ?? [],
+  });
+  warnings.push(...deterministic.warnings);
+  const deterministicFields: Record<string, unknown> = {
+    supplier_oib: deterministic.supplier_oib,
+    iban: deterministic.iban,
+    due_date: deterministic.due_date,
+  };
+
+  // ---- 3b. Heuristika — poznat OIB ili pošiljatelj, bez AI -----------------
+  const haystack = [input.searchText, input.bodyText, input.pdfText, input.subject]
+    .filter((part) => (part ?? '').length > 0)
+    .join('\n');
   const knownOib = findKnownOib(haystack, input.knownOibs ?? []);
   const knownFrom = senderKnown(input.fromHeader, input.knownSenders ?? []);
   if (knownOib || knownFrom) {
     return {
       classification: 'racun',
       docType: '380',
-      extraction: knownOib ? { supplier_oib: knownOib } : null,
-      confidence: 'srednja',
+      extraction: mergeDeterministic(
+        knownOib ? { supplier_oib: knownOib } : null,
+        deterministicFields,
+      ),
+      confidence: deterministic.ambiguous ? 'niska' : 'srednja',
       route: 'heuristika',
       aiCalls: 0,
       consumesQuota: true,
@@ -162,7 +189,7 @@ export async function classifyDocument(
     return {
       classification: 'nepoznato',
       docType: null,
-      extraction: null,
+      extraction: mergeDeterministic(null, deterministicFields),
       confidence: 'niska',
       route: 'nepoznato',
       aiCalls: 0,
@@ -194,8 +221,9 @@ export async function classifyDocument(
   return {
     classification: ai.classification,
     docType: ai.classification === 'racun' ? '380' : null,
-    extraction: ai.extraction,
-    confidence: ai.confidence,
+    // '' → null + determinizam pobjeđuje AI nagađanje.
+    extraction: mergeDeterministic(ai.extraction, deterministicFields),
+    confidence: deterministic.ambiguous ? 'niska' : ai.confidence,
     route: 'ai',
     aiCalls,
     consumesQuota: true,
