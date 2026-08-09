@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Settings, Loader2, Download, Check, AlertCircle, FileJson, HelpCircle, ChevronRight, User, Trash2, RotateCcw, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Upload } from 'lucide-react';
+import { ArrowLeft, Settings, Loader2, Download, Check, AlertCircle, FileJson, HelpCircle, ChevronRight, User, Trash2, RotateCcw, Users, Bug, Shield, Share2, Mail, Copy, MessageCircle, Upload } from 'lucide-react';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { BusinessProfileDialog } from '@/components/BusinessProfileDialog';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +50,10 @@ import { DangerZoneSection } from './DangerZoneSection';
 import { HelpDialogContent } from './HelpDialogContent';
 import { MyFeedbackSection } from '@/components/feedback/MyFeedbackSection';
 import { ContactSupportDialog } from '@/components/support/ContactSupportDialog';
+import { SettingsCategoryMenu } from './SettingsCategoryMenu';
+import { SETTINGS_CATEGORIES, type SettingsCategoryId, type SettingsSectionKey } from './settingsCategories';
+import { useBackButton } from '@/hooks/useBackButton';
+import { BACK_PRIORITY } from '@/contexts/BackButtonContext';
 
 interface SettingsDialogProps {
   onDataImported?: () => void;
@@ -59,6 +63,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<SettingsCategoryId | null>(null);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showSupportDialog, setShowSupportDialog] = useState(false);
 
@@ -692,7 +697,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) setActiveCategory(null); }}>
+      <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) setActiveCategoryId(null); }}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9">
             <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -709,7 +714,7 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
                     size="icon"
                     aria-label={t('common.back', 'Natrag')}
                     className="rounded-xl h-8 w-8 -ml-1"
-                    onClick={() => setActiveCategory(null)}
+                    onClick={() => setActiveCategoryId(null)}
                     data-testid="settings-subscreen-back"
                   >
                     <ArrowLeft className="w-4 h-4" />
