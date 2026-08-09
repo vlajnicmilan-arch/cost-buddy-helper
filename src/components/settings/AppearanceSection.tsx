@@ -82,6 +82,8 @@ export const AppearanceSection = ({
           </SelectContent>
         </Select>
       </div>
+      )}
     </div>
+
   );
 };
