@@ -193,21 +193,24 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           .limit(1)
           .maybeSingle();
         if (dup) {
-          await supabase.from("document_ingest_items").insert({
-            source: "mail",
-            scope_type: "user",
-            scope_id: ownerId,
-            owner_user_id: ownerId,
-            message_id: messageId,
-            attachment_id: unit.attachmentId,
-            classification: "duplikat_privitka",
-            status: "odbaceno",
-            reason: "duplikat_privitka",
-            duplicate_of_item_id: dup.id,
-            dedup_identity: `sha256:${sha}`,
-            warnings: ["duplikat_privitka"],
-            ai_calls: 0,
+          await upsertIngestItem(supabase, {
+            messageId,
+            attachmentId: unit.attachmentId,
+            row: {
+              source: "mail",
+              scope_type: "user",
+              scope_id: ownerId,
+              owner_user_id: ownerId,
+              classification: "duplikat_privitka",
+              status: "odbaceno",
+              reason: "duplikat_privitka",
+              duplicate_of_item_id: dup.id,
+              dedup_identity: `sha256:${sha}`,
+              warnings: ["duplikat_privitka"],
+              ai_calls: 0,
+            },
           });
+
           await supabase
             .from("inbound_attachments")
             .update({ scan_status: "siguran", mime_sniffed: verdict.sniffed })
