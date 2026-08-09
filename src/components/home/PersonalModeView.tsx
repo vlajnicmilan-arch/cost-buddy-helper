@@ -37,6 +37,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
+import { DocumentsPendingCard } from '@/components/mail/DocumentsPendingCard';
+import { useMailImportAccess } from '@/hooks/useMailImportAccess';
+import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -152,6 +155,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const { formatAmount } = useCurrency();
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
+
+  // MAIL UVOZ — sve iza prava `mail_uvoz`. Bez prava: nema kartice ni pregleda.
+  const { hasAccess: hasMailAccess } = useMailImportAccess();
+  const { count: mailPendingCount } = useMailPendingCount(hasMailAccess);
 
   // Guided home — server-side per-user signal + broj stvarnih unosa.
   // Standardni layout zamjenjuje se jedinstvenim `GuidedEntryView`-om kroz
@@ -470,9 +477,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
+        {/* Dokumenti na pregled — samo uz pravo `mail_uvoz` i kad ima što čekati */}
+        {hasMailAccess && mailPendingCount > 0 && (
+          <DocumentsPendingCard count={mailPendingCount} />
+        )}
+
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
-        {isBusinessChip && <IncomingInvoicesWidget />}
+        {/* Ulazni računi: biznis kao i dosad + osobni pregled uz pravo `mail_uvoz`.
+            Write-guard ostaje u panelu; prikaz ga NE smije uvjetovati. */}
+        {(isBusinessChip || hasMailAccess) && <IncomingInvoicesWidget />}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6">

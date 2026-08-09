@@ -96,6 +96,36 @@ const senderKnown = (from: string | null | undefined, known: readonly string[]):
   return known.some((k) => k.trim().length > 0 && addr.includes(k.toLowerCase().trim()));
 };
 
+/** Polja bez kojih dokument nije upotrebljiv jednim dodirom. */
+export const ENRICHMENT_FIELDS = ['total_amount', 'invoice_number', 'supplier_name'] as const;
+
+const isBlank = (v: unknown): boolean => v === null || v === undefined || v === '';
+
+/** Vrijednosti koje vec imamo — ne smiju biti pregazene AI nagadanjem. */
+const stripNulls = (source: Record<string, unknown>): Record<string, unknown> => {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(source)) if (!isBlank(v)) out[k] = v;
+  return out;
+};
+
+/** Ima li uopce teksta na kojem AI moze raditi (bez teksta nema dopune). */
+export function hasExtractableText(input: ClassifyInput): boolean {
+  return [input.bodyText, input.pdfText].some((p) => (p ?? '').trim().length > 0);
+}
+
+/**
+ * CUVAR TROSKA: dopuna se trazi SAMO ako nedostaje barem jedno kljucno polje
+ * i postoji tekst. Potpuna jeftina stavka NIKAD ne trosi AI poziv.
+ */
+export function needsAiEnrichment(
+  extraction: Record<string, unknown> | null,
+  hasText: boolean,
+): boolean {
+  if (!hasText) return false;
+  const e = extraction ?? {};
+  return ENRICHMENT_FIELDS.some((k) => isBlank(e[k]));
+}
+
 export async function classifyDocument(
   input: ClassifyInput,
   deps: ClassifyDeps,
@@ -173,16 +203,32 @@ export async function classifyDocument(
   const knownOib = findKnownOib(haystack, input.knownOibs ?? []);
   const knownFrom = senderKnown(input.fromHeader, input.knownSenders ?? []);
   if (knownOib || knownFrom) {
+    let extraction = mergeDeterministic(
+      knownOib ? { supplier_oib: knownOib } : null,
+      deterministicFields,
+    );
+    let enrichCalls = 0;
+
+    // PAMETNA DOPUNA: jeftina grana je odlucila STO je dokument, ali kljucna
+    // polja (iznos/broj/dobavljac) znaju ostati prazna. Tek tada — i samo kad
+    // postoji tekst — AI dopunjuje RUPE. Determinizam i dalje pobjeduje.
+    if (deps.analyzeWithAi && needsAiEnrichment(extraction, hasExtractableText(input))) {
+      const ai = await deps.analyzeWithAi(input);
+      enrichCalls = 1;
+      extraction = mergeDeterministic(
+        { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
+        deterministicFields,
+      );
+      warnings.push('ai_dopuna');
+    }
+
     return {
       classification: 'racun',
       docType: '380',
-      extraction: mergeDeterministic(
-        knownOib ? { supplier_oib: knownOib } : null,
-        deterministicFields,
-      ),
+      extraction,
       confidence: deterministic.ambiguous ? 'niska' : 'srednja',
       route: 'heuristika',
-      aiCalls: 0,
+      aiCalls: enrichCalls,
       consumesQuota: true,
       priority: false,
       warnings,

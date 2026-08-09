@@ -6344,7 +6344,8 @@
       "vise_kandidata_oib": "Dokument navodi više OIB-ova — provjeri dobavljača",
       "vise_kandidata_dospijece": "Dokument navodi više datuma dospijeća — provjeri odabrani",
       "vise_kandidata_broj": "Dokument navodi više brojeva — provjeri broj dokumenta",
-      "pdf_bez_teksta": "PDF nema tekstualni sloj (sken) — podaci su pročitani sa slike"
+      "pdf_bez_teksta": "PDF nema tekstualni sloj (sken) — podaci su pročitani sa slike",
+      "ai_dopuna": "Podatke je dopunila umjetna inteligencija — provjeri iznos i broj dokumenta."
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6364,5 +6365,23 @@
     "invalidDate": "Nevaljan datum — npr. 15.08.2026.",
     "invalidAmount": "Nevaljan iznos — npr. 1.660,36",
     "pickDate": "Odaberi datum"
+  },
+  "documents": {
+    "title": "Dokumenti",
+    "open": "Otvori Dokumente",
+    "tab": {
+      "received": "Primljeno"
+    },
+    "restore": "Vrati",
+    "restored": "Dokument je vraćen na pregled",
+    "restoreFailed": "Vraćanje nije uspjelo",
+    "discarded": {
+      "title": "Odbačeno (zadnjih 30 dana)",
+      "empty": "Nema odbačenih dokumenata."
+    },
+    "pendingCard": {
+      "title": "Dokumenti na pregled",
+      "subtitle": "{{count}} dokumenata čeka tvoju potvrdu"
+    }
   }
 }

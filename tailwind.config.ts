@@ -74,6 +74,11 @@ export default {
           DEFAULT: "hsl(var(--ai))",
           foreground: "hsl(var(--ai-foreground))",
         },
+        "document-pending": {
+          DEFAULT: "hsl(var(--document-pending))",
+          foreground: "hsl(var(--document-pending-foreground))",
+          surface: "hsl(var(--document-pending-surface))",
+        },
         module: {
           DEFAULT: "hsl(var(--module-accent))",
           foreground: "hsl(var(--module-accent-foreground))",

@@ -6334,7 +6334,8 @@
       "vise_kandidata_oib": "Das Dokument nennt mehrere OIBs — prüfe den Lieferanten",
       "vise_kandidata_dospijece": "Das Dokument nennt mehrere Fälligkeitsdaten — prüfe das ausgewählte",
       "vise_kandidata_broj": "Das Dokument nennt mehrere Nummern — prüfe die Dokumentnummer",
-      "pdf_bez_teksta": "Das PDF hat keine Textebene (Scan) — Daten wurden aus dem Bild gelesen"
+      "pdf_bez_teksta": "Das PDF hat keine Textebene (Scan) — Daten wurden aus dem Bild gelesen",
+      "ai_dopuna": "Felder wurden von der KI ergänzt — Betrag und Belegnummer prüfen."
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6354,5 +6355,23 @@
     "invalidDate": "Ungültiges Datum — z. B. 15.08.2026.",
     "invalidAmount": "Ungültiger Betrag — z. B. 1.660,36",
     "pickDate": "Datum wählen"
+  },
+  "documents": {
+    "title": "Dokumente",
+    "open": "Dokumente öffnen",
+    "tab": {
+      "received": "Empfangen"
+    },
+    "restore": "Wiederherstellen",
+    "restored": "Dokument zurück zur Prüfung",
+    "restoreFailed": "Wiederherstellen fehlgeschlagen",
+    "discarded": {
+      "title": "Verworfen (letzte 30 Tage)",
+      "empty": "Keine verworfenen Dokumente."
+    },
+    "pendingCard": {
+      "title": "Dokumente zur Prüfung",
+      "subtitle": "{{count}} Dokumente warten auf Ihre Bestätigung"
+    }
   }
 }
