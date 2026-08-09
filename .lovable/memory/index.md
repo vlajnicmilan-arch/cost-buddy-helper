@@ -1,1 +1,2 @@
 - [Mail: ključ pohrane i jedan alias](mem://features/mail-storage-key-and-single-alias) — ASCII storage ključ, prevelik privitak vidljiv, get-or-create alias
+- [Pamćenje izdavatelja i mjesta](mem://features/mail-issuer-place-memory) — mail_issuer_memory, šifra obračunskog mjesta, place_label, forwarder brana, Solin≠Split
