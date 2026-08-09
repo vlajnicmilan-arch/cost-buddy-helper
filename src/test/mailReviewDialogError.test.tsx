@@ -50,12 +50,15 @@ vi.mock('@/hooks/useMailReviewQueue', () => ({
 
 import { MailReviewDialog } from '@/components/mail/MailReviewDialog';
 import { BackButtonProvider } from '@/contexts/BackButtonContext';
+import { MemoryRouter } from 'react-router-dom';
 
 const renderDialog = () =>
   render(
-    <BackButtonProvider>
-      <MailReviewDialog open onOpenChange={() => {}} />
-    </BackButtonProvider>,
+    <MemoryRouter>
+      <BackButtonProvider>
+        <MailReviewDialog open onOpenChange={() => {}} />
+      </BackButtonProvider>
+    </MemoryRouter>,
   );
 
 describe('MailReviewDialog — razlog greške', () => {
