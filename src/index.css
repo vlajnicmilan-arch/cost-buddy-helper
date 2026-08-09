@@ -222,24 +222,27 @@
   .dark .business-theme-premium-dark {
     --background: 30 8% 4%;
     /* Card surface sits a clearly visible step above the background so the
-       panel reads as a body, not just an outline floating on the backdrop. */
-    --card: 30 7% 9%;
+       panel reads as a body, not just an outline floating on the backdrop.
+       Calibrated for OLED: the step is doubled so deep black backgrounds do
+       not swallow the card. */
+    --card: 30 7% 12%;
     --card-foreground: 40 12% 92%;
-    --popover: 30 7% 11%;
+    --popover: 30 7% 14%;
     --popover-foreground: 40 12% 92%;
     --foreground: 40 12% 92%;
-    --secondary: 30 6% 13%;
+    --secondary: 30 6% 16%;
     --secondary-foreground: 40 12% 92%;
-    --muted: 30 6% 13%;
+    --muted: 30 6% 16%;
     --muted-foreground: 38 10% 64%;
     --primary: 40 55% 48%;
     --primary-foreground: 30 10% 6%;
     --accent: 40 55% 32%;
     --accent-foreground: 40 12% 92%;
     /* Border: lifted and gently warmed toward the champagne primary hue —
-       a hint of warmth framing the panel, not a gold frame. */
-    --border: 40 18% 26%;
-    --input: 40 18% 26%;
+       a hint of warmth framing the panel, not a gold frame. Kept clearly
+       above the brighter card surface for OLED contrast. */
+    --border: 40 18% 32%;
+    --input: 40 18% 32%;
 
     --ring: 40 55% 48%;
     --radius: 0.5rem;
