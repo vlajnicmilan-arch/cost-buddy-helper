@@ -25,6 +25,8 @@ import {
 } from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
+import { resolveTransportDedup } from "../_shared/mailImport/transportDedup.ts";
+
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
