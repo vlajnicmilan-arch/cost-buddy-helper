@@ -27,6 +27,8 @@ import type { DateContext } from '@/lib/dateValidation';
 import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
 import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
+import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
+
 
 /**
  * MAIL UVOZ — red „Na pregled" kao SADRŽAJ (bez vlastitog okvira).
