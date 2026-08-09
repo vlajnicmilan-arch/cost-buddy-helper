@@ -91,3 +91,29 @@ export function memoryFill(input: MemoryFillInput): MemoryFillResult {
 
   return { extraction: out, applied, warnings: applied ? [MEMORY_FILL_WARNING] : [] };
 }
+
+/**
+ * FORWARDER BRANA. Kad korisnik račun PROSLIJEDI sa svoje adrese (gmail,
+ * outlook, vlastita domena…), `from` više ne identificira IZDAVATELJA. Takvu
+ * domenu ne smijemo koristiti kao ključ pamćenja — ključ pada na OIB.
+ */
+const FORWARDER_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com',
+  'msn.com', 'yahoo.com', 'ymail.com', 'icloud.com', 'me.com', 'mac.com',
+  'proton.me', 'protonmail.com', 'pm.me', 'tutanota.com', 'aol.com',
+  'mail.com', 'gmx.com', 'gmx.net', 'zoho.com', 'yandex.com',
+  'net.hr', 'inet.hr', 'vip.hr', 'tel.hr', 'email.t-com.hr',
+]);
+
+/** `"Ime <a@b.hr>"` → `b.hr`; prazno kad je forwarder ili vlastita domena. */
+export function issuerKeyDomain(
+  fromHeader: string | null | undefined,
+  ownDomains: readonly string[] = [],
+): string {
+  const raw = String(fromHeader ?? '').replace(/^.*<|>.*$/g, '');
+  const domain = (raw.split('@')[1] ?? '').trim().toLowerCase();
+  if (!domain) return '';
+  if (FORWARDER_DOMAINS.has(domain)) return '';
+  if (ownDomains.some((d) => (d ?? '').trim().toLowerCase() === domain)) return '';
+  return domain;
+}
