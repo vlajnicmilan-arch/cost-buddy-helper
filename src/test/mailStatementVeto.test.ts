@@ -24,7 +24,7 @@ Novo stanje 900,00`;
 const ERSTE_IZVOD = `Erste&Steiermärkische Bank d.d.
 IZVOD BROJ 8/2026 za dan 12.08.2026.
 Stanje računa na dan 12.08.2026.
-HR23 2402 0061 1000 0000 0
+HR73 2402 0061 1010 8616 3
 Promet duguje: 12,00 potražuje: 0,00
 Novo stanje: 3.011,45`;
 
@@ -45,7 +45,7 @@ describe('veto klasifikacije — bankovni izvod', () => {
   it('Erste izvod: prepoznat i s razmaknutim IBAN-om', () => {
     const verdict = classifyAsStatement(ERSTE_IZVOD);
     expect(verdict.isStatement).toBe(true);
-    expect(verdict.extraction.account_iban).toBe('HR2324020061100000000');
+    expect(verdict.extraction.account_iban).toBe('HR7324020061101086163');
   });
 
   it('izvod nosi SAMO izvod-polja (banka, IBAN, broj, razdoblje, stanje)', () => {
@@ -104,5 +104,45 @@ describe('veto je ugrađen u lanac klasifikacije', () => {
     expect(worker).toContain(
       'needsAiEnrichment(result.extraction, hasExtractableText(input), result.classification)',
     );
+  });
+});
+
+describe('tri kvara s pravog Erste izvoda', () => {
+  const ERSTE = [
+    'Erste&Steiermärkische Bank d.d.',
+    'Izvod br. 152',
+    'IBAN: HR7324020061101086163',
+    'Broj računa: 1101086163',
+    'Prethodno stanje 461,94',
+    'Promet duguje 300,00 potražuje 82,91',
+    'Konačno stanje: 244,85',
+  ].join('\n');
+
+  it('IBAN se reže na HR + 19 znamenki (bez „BROJRA" iz sljedećeg retka)', () => {
+    const v = classifyAsStatement(ERSTE);
+    expect(v.extraction.account_iban).toBe('HR7324020061101086163');
+  });
+
+  it('„Konačno stanje: 244,85" → 244.85', () => {
+    expect(classifyAsStatement(ERSTE).extraction.closing_balance).toBe(244.85);
+  });
+
+  it('sanitizeIban odbacuje prljav ključ pravila', async () => {
+    const { sanitizeIban } = await import('@/lib/mailImport/iban');
+    expect(sanitizeIban('HR7324020061101086163BROJRA')).toBe('HR7324020061101086163');
+    expect(sanitizeIban('HR12')).toBe('');
+    expect(sanitizeIban('smeće')).toBe('');
+  });
+});
+
+describe('izvor-picker sluša scope stavke', () => {
+  it('kartica traži izvore profila na koji stavka glasi', async () => {
+    const { readFileSync } = await import('node:fs');
+    const card = readFileSync('src/components/mail/StatementReviewCard.tsx', 'utf8');
+    expect(card).toContain("item.scope_type === 'business_profile'");
+    expect(card).toContain('businessProfileIdOverride: scopeProfileId');
+    const hook = readFileSync('src/hooks/useCustomPaymentSources.ts', 'utf8');
+    expect(hook).toContain('businessProfileIdOverride');
+    expect(hook).toContain('readProfileId');
   });
 });

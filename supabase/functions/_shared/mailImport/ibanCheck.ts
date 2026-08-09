@@ -50,6 +50,35 @@ export function findValidIbans(text: string | null | undefined): string[] {
   return out;
 }
 
+/**
+ * Hrvatski IBAN je STROGO `HR` + 19 znamenki (21 znak). Bez ove tvrde granice
+ * parser zalijepi početak sljedećeg retka („Broj računa") na IBAN.
+ */
+export const HR_IBAN_RE = /HR\d{19}/;
+
+/** Prvi hrvatski IBAN iz teksta — nikad duži od 21 znaka. */
+export function findHrIban(text: string | null | undefined): string | null {
+  const compact = normalizeIban(text);
+  const match = compact.match(new RegExp(HR_IBAN_RE.source, 'g'));
+  if (!match) return null;
+  const hit = match.find((c) => isValidIban(c));
+  return hit ?? null;
+}
+
+/**
+ * Očisti IBAN: vraća normaliziran oblik SAMO ako je mod-97 valjan (a za HR i
+ * točno 21 znak). Sve ostalo je smeće i vraća se prazan niz.
+ */
+export function sanitizeIban(value: string | null | undefined): string {
+  const normalized = normalizeIban(value);
+  if (normalized.startsWith('HR')) {
+    const hr = findHrIban(normalized);
+    return hr ?? '';
+  }
+  return isValidIban(normalized) ? normalized : '';
+}
+
+
 export interface IbanCheckResult {
   /** Novi IBAN uz postojeću povijest za taj OIB. */
   mismatch: boolean;
