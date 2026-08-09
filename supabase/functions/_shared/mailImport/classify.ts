@@ -16,9 +16,11 @@ import { detectGmailVerification, type GmailVerificationResult } from './gmailVe
 import { isValidOib } from './oib.ts';
 import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
+import { classifyAsStatement } from './statementSignals.ts';
 
 export type Classification =
   | 'racun'
+  | 'izvod'
   | 'ponuda'
   | 'verifikacija_prosljedjivanja'
   | 'nije_za_nas'
@@ -67,7 +69,9 @@ export interface ClassifyResult {
   extraction: Record<string, unknown> | null;
   confidence: Confidence;
   /** Koji je korak hijerarhije donio odluku. */
-  route: 'ubl' | 'verifikacija' | 'heuristika' | 'ai' | 'nepoznato';
+  route: 'ubl' | 'verifikacija' | 'izvod' | 'heuristika' | 'ai' | 'nepoznato';
+  /** Sumnja na izvod (1 sidreni signal) — čovjek bira, nikad tiho `racun`. */
+  needsHumanChoice?: boolean;
   /** Broj AI poziva potrošenih za ovu stavku. */
   aiCalls: number;
   /** Verifikacijske poruke NIKAD ne troše kvotu. */
@@ -120,7 +124,10 @@ export function hasExtractableText(input: ClassifyInput): boolean {
 export function needsAiEnrichment(
   extraction: Record<string, unknown> | null,
   hasText: boolean,
+  classification?: Classification | string | null,
 ): boolean {
+  // IZVOD nikad ne ide na dopunu — AI bi „iznos računa" izmislio iz salda.
+  if (classification === 'izvod') return false;
   if (!hasText) return false;
   const e = extraction ?? {};
   return ENRICHMENT_FIELDS.some((k) => isBlank(e[k]));
@@ -180,6 +187,45 @@ export async function classifyDocument(
       priority: true,
       warnings: [...warnings, ...verification.warnings],
       verification,
+    };
+  }
+
+  // ---- 2b. VETO: bankovni izvod (PRIJE heuristike „poznat pošiljatelj") ---
+  // Bez ovog koraka izvod poznate banke tvrdo postaje `racun` i saldo se knjiži
+  // kao iznos računa. Ovdje se čita tekstualni sloj privitka.
+  const statementText = [input.pdfText, input.bodyText]
+    .filter((p) => (p ?? '').trim().length > 0)
+    .join('\n');
+  const statement = classifyAsStatement(statementText);
+  if (statement.isStatement) {
+    return {
+      classification: 'izvod',
+      docType: null,
+      extraction: { ...statement.extraction, statement_signals: statement.signals },
+      confidence: 'visoka',
+      route: 'izvod',
+      needsHumanChoice: false,
+      aiCalls: 0,
+      consumesQuota: true,
+      priority: false,
+      warnings,
+      verification: null,
+    };
+  }
+  if (statement.needsHumanChoice) {
+    // Sumnja: jedan sidreni signal. Ne smije tiho pasti u `racun`.
+    return {
+      classification: 'nepoznato',
+      docType: null,
+      extraction: null,
+      confidence: 'niska',
+      route: 'nepoznato',
+      needsHumanChoice: true,
+      aiCalls: 0,
+      consumesQuota: false,
+      priority: false,
+      warnings: [...warnings, 'mozda_izvod'],
+      verification: null,
     };
   }
 
