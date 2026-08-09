@@ -19,7 +19,10 @@ vi.mock('@/hooks/useUserProfiles', () => ({
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     rpc: vi.fn(),
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+    },
   },
 }));
 
