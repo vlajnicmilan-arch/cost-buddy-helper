@@ -3623,6 +3623,60 @@ export type Database = {
           },
         ]
       }
+      mail_statement_source_map: {
+        Row: {
+          account_iban: string
+          bank_name: string | null
+          business_profile_id: string | null
+          confirmed_count: number
+          created_at: string
+          id: string
+          last_used_at: string
+          payment_source_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_iban: string
+          bank_name?: string | null
+          business_profile_id?: string | null
+          confirmed_count?: number
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          payment_source_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_iban?: string
+          bank_name?: string | null
+          business_profile_id?: string | null
+          confirmed_count?: number
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          payment_source_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_statement_source_map_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_statement_source_map_payment_source_id_fkey"
+            columns: ["payment_source_id"]
+            isOneToOne: false
+            referencedRelation: "custom_payment_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestone_budget_alerts: {
         Row: {
           id: string
