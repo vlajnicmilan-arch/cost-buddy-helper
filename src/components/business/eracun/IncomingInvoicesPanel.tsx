@@ -508,19 +508,23 @@ export const IncomingInvoicesPanel = () => {
         onConfirm={handleConfirmPaid}
       />
 
-      <MarkCollectedDialog
-        invoice={collectTarget}
-        onOpenChange={(open) => !open && setCollectTarget(null)}
-        saving={savingPayment}
-        onConfirm={handleConfirmCollected}
-      />
+      {!isPersonal && (
+        <MarkCollectedDialog
+          invoice={collectTarget}
+          onOpenChange={(open) => !open && setCollectTarget(null)}
+          saving={savingPayment}
+          onConfirm={handleConfirmCollected}
+        />
+      )}
 
-      <PaymentMatchReview
-        open={matchOpen}
-        onOpenChange={setMatchOpen}
-        invoices={invoices}
-        onDone={refetch}
-      />
+      {!isPersonal && (
+        <PaymentMatchReview
+          open={matchOpen}
+          onOpenChange={setMatchOpen}
+          invoices={invoices}
+          onDone={refetch}
+        />
+      )}
 
       <LinkExistingExpenseDialog
         invoice={linkTarget}
