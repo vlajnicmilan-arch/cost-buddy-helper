@@ -93,15 +93,15 @@ export function useMailReviewQueue(enabled: boolean) {
   }, [fetchItems]);
 
   /**
-   * Potvrda stavke. Vraća `null` kad je sve prošlo, ili podatke o koliziji kad
-   * već postoji zapis s istim ključem — tada odluku donosi korisnik.
+   * Potvrda stavke. NIKAD ne baca — vraća strukturirani ishod s razlogom, da
+   * dijalog može reći ŠTO je pošlo po zlu (uklj. koliziju i greške baze).
    */
   const confirmItem = useCallback(
     async (
       itemId: string,
       payload: Record<string, unknown>,
       replaceExistingId?: string
-    ): Promise<ConfirmCollision | null> => {
+    ): Promise<ConfirmResult> => {
       setWorking(true);
       try {
         const { data, error } = await supabase.rpc('mail_item_confirm', {
@@ -109,20 +109,36 @@ export function useMailReviewQueue(enabled: boolean) {
           p_payload: payload as never,
           p_replace_existing_id: replaceExistingId ?? null,
         });
-        if (error) throw error;
-        const result = data as unknown as Record<string, unknown>;
+        if (error) {
+          const detail = describeDbError(error, 'mail_item_confirm');
+          console.warn('[useMailReviewQueue] confirm db error:', detail);
+          const raw = String(error.message ?? '');
+          const known = ['nije_prijavljen', 'stavka_ne_postoji', 'nije_dopusteno'].find((r) =>
+            raw.includes(r)
+          );
+          return { ok: false, reason: known ?? 'baza', detail };
+        }
+        const result = (data ?? {}) as unknown as Record<string, unknown>;
         if (result?.ok === false && result.reason === 'mozda_vec_postoji') {
           return {
+            ok: false,
             reason: 'mozda_vec_postoji',
             existing: (result.existing ?? {}) as Record<string, unknown>,
           };
         }
-        if (result?.ok === false) throw new Error(String(result.reason));
+        if (result?.ok === false) {
+          return { ok: false, reason: String(result.reason ?? 'baza') };
+        }
         await fetchItems();
-        return null;
+        return {
+          ok: true,
+          invoiceId: (result.invoice_id as string | null) ?? null,
+          already: result.already === true,
+        };
       } finally {
         setWorking(false);
       }
+
     },
     [fetchItems]
   );
