@@ -164,5 +164,7 @@ export const useIncomingInvoices = () => {
     markPaid,
     markCollected,
     deleteInvoice,
+    setPlaceLabel,
+
   };
 };
