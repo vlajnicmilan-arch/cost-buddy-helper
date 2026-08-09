@@ -2541,6 +2541,7 @@ export type Database = {
           paid_at: string | null
           paid_expense_id: string | null
           payment_reference: string | null
+          place_label: string | null
           settled_amount: number
           source_filename: string | null
           supplier_name: string | null
@@ -2570,6 +2571,7 @@ export type Database = {
           paid_at?: string | null
           paid_expense_id?: string | null
           payment_reference?: string | null
+          place_label?: string | null
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
@@ -2599,6 +2601,7 @@ export type Database = {
           paid_at?: string | null
           paid_expense_id?: string | null
           payment_reference?: string | null
+          place_label?: string | null
           settled_amount?: number
           source_filename?: string | null
           supplier_name?: string | null
@@ -3563,6 +3566,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      mail_issuer_memory: {
+        Row: {
+          business_profile_id: string | null
+          confirmed_count: number
+          created_at: string
+          from_domain: string
+          id: string
+          last_seen_at: string
+          place_code: string
+          place_label: string | null
+          supplier_name: string | null
+          supplier_oib: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          confirmed_count?: number
+          created_at?: string
+          from_domain?: string
+          id?: string
+          last_seen_at?: string
+          place_code?: string
+          place_label?: string | null
+          supplier_name?: string | null
+          supplier_oib?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          confirmed_count?: number
+          created_at?: string
+          from_domain?: string
+          id?: string
+          last_seen_at?: string
+          place_code?: string
+          place_label?: string | null
+          supplier_name?: string | null
+          supplier_oib?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_issuer_memory_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       milestone_budget_alerts: {
         Row: {
@@ -7122,6 +7178,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      incoming_invoice_set_place: {
+        Args: { p_invoice_id: string; p_label: string }
+        Returns: Json
+      }
       increment_ai_usage: {
         Args: { p_limit: number; p_route: string }
         Returns: {
@@ -7398,6 +7458,7 @@ export type Database = {
           id: string
         }[]
       }
+      mail_from_domain: { Args: { p_from: string }; Returns: string }
       mail_import_consume_quota: {
         Args: { p_count?: number; p_user_id: string }
         Returns: Json
@@ -7444,6 +7505,18 @@ export type Database = {
           p_subject: string
         }
         Returns: Json
+      }
+      mail_issuer_memory_upsert: {
+        Args: {
+          p_business_profile_id: string
+          p_from_domain: string
+          p_place_code: string
+          p_place_label: string
+          p_supplier_name: string
+          p_supplier_oib: string
+          p_user_id: string
+        }
+        Returns: string
       }
       mail_item_confirm: {
         Args: {
