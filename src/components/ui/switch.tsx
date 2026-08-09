@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  *  - isključena staza koristi `bg-muted` (odvojena od pozadine kartice),
  *  - klizač je `bg-muted-foreground` kad je isključen i `bg-primary-foreground`
  *    kad je uključen — u obje teme kontrastan prema svojoj stazi.
- * Ne koristi `bg-background`/`bg-input` ni `border-transparent` — čuvar
+ * Ne koristi `bg-background`/`bg-input` ni proziran rub — čuvar
  * `src/test/switchVisibility.test.ts` brani povratak uzroka.
  */
 const Switch = React.forwardRef<
