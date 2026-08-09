@@ -6287,6 +6287,32 @@
       "confirm": "Zahlungseingang erfassen",
       "noRevenueHint": "Es werden weder Einnahmen noch Saldoänderungen gebucht — Einnahmen kommen über den Kontoauszug-Import.",
       "failedDetailed": "Erfassen des Zahlungseingangs fehlgeschlagen: {{reason}}"
+    },
+    "linkExpense": {
+      "open": "Mit Ausgabe verknüpfen",
+      "title": "Bestehende Ausgabe verknüpfen",
+      "subtitle": "Das Verknüpfen erzeugt keine neue Ausgabe und ändert den Saldo nicht — es wird nur festgehalten, dass diese Rechnung durch eine bestehende Buchung bezahlt wurde.",
+      "precheckTitle": "Eine passende Ausgabe existiert bereits",
+      "precheckSubtitle": "Es wurde eine zu dieser Rechnung passende Ausgabe gefunden. Verknüpfe sie, statt eine neue zu erstellen — sonst wird dasselbe Geld doppelt erfasst.",
+      "createAnyway": "Trotzdem neue Ausgabe erstellen",
+      "suggestionsTitle": "Vorschläge",
+      "noSuggestions": "Keine Vorschläge für diese Rechnung. Suche die Ausgabe manuell.",
+      "searchTitle": "Manuelle Suche",
+      "searchPlaceholder": "Betrag, Datum oder Beschreibung",
+      "searchEmpty": "Keine Ausgabe passt zur Suche.",
+      "link": "Verknüpfen",
+      "linked": "Ausgabe mit der Rechnung verknüpft",
+      "failed": "Verknüpfen fehlgeschlagen: {{reason}}",
+      "unlink": "Trennen",
+      "unlinked": "Verknüpfung entfernt",
+      "unlinkFailed": "Trennen fehlgeschlagen: {{reason}}",
+      "linkedTitle": "Verknüpfte Ausgaben",
+      "linkedCount": "Verknüpft ({{n}})",
+      "remaining": "{{amount}} offen",
+      "confidenceCertain": "Sicher",
+      "confidenceStrong": "Stark",
+      "confidenceLikely": "Wahrscheinlich",
+      "confidencePossible": "Möglich"
     }
   },
   "mailImport": {

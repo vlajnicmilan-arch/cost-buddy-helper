@@ -6287,6 +6287,32 @@
       "confirm": "Record collection",
       "noRevenueHint": "This records no income and no balance change — income enters through bank statement import.",
       "failedDetailed": "Recording the collection failed: {{reason}}"
+    },
+    "linkExpense": {
+      "open": "Link to expense",
+      "title": "Link an existing expense",
+      "subtitle": "Linking creates no new expense and does not change your balance — it only records that this invoice was paid by an existing transaction.",
+      "precheckTitle": "A matching expense already exists",
+      "precheckSubtitle": "An expense matching this invoice was found. Link it instead of creating a new one — otherwise the same money is recorded twice.",
+      "createAnyway": "Create a new expense anyway",
+      "suggestionsTitle": "Suggestions",
+      "noSuggestions": "No suggestions for this invoice. Search for the expense manually.",
+      "searchTitle": "Manual search",
+      "searchPlaceholder": "Amount, date or description",
+      "searchEmpty": "No expense matches the search.",
+      "link": "Link",
+      "linked": "Expense linked to the invoice",
+      "failed": "Linking failed: {{reason}}",
+      "unlink": "Unlink",
+      "unlinked": "Link removed",
+      "unlinkFailed": "Unlinking failed: {{reason}}",
+      "linkedTitle": "Linked expenses",
+      "linkedCount": "Linked ({{n}})",
+      "remaining": "{{amount}} remaining",
+      "confidenceCertain": "Certain",
+      "confidenceStrong": "Strong",
+      "confidenceLikely": "Likely",
+      "confidencePossible": "Possible"
     }
   },
   "mailImport": {
