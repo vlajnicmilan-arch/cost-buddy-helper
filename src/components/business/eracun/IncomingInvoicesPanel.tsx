@@ -67,7 +67,15 @@ export const IncomingInvoicesPanel = () => {
     saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
   } = useIncomingInvoices();
 
-  const [direction, setDirection] = useState<Direction>('in');
+  /**
+   * OSOBNI KONTEKST: privatna osoba ne izdaje račune i ne naplaćuje, pa polica
+   * prikazuje samo ULAZNE račune. Biznis alati ("Duguju mi", "Poveži uplate",
+   * uvoz XML-a koji ovisi o OIB-u tvrtke) se ne renderiraju.
+   */
+  const isPersonal = !activeBusinessProfileId;
+  const [directionState, setDirection] = useState<Direction>('in');
+  const direction: Direction = isPersonal ? 'in' : directionState;
+
   const [filter, setFilter] = useState<Filter>('unpaid');
   const [importOpen, setImportOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
