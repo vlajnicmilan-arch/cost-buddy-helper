@@ -24,16 +24,24 @@ interface UseCustomPaymentSourcesOptions {
    * business expense can be paid from a personal account.
    */
   includePersonal?: boolean;
+  /**
+   * Prisilni poslovni profil za ČITANJE (npr. kartica izvoda iz maila mora
+   * nuditi izvore profila na koji stavka glasi, a ne aktivnog konteksta).
+   * `null` = osobni izvori. Nedefinirano = aktivni kontekst.
+   */
+  businessProfileIdOverride?: string | null;
 }
 
 export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions = {}) => {
   const { t } = useTranslation();
-  const { includePersonal = false } = options;
+  const { includePersonal = false, businessProfileIdOverride } = options;
   const { user, authReady } = useAuth();
   const { storageMode } = useStorage();
   const { onPaymentSourcesReordered, emitPaymentSourcesReordered, activeBusinessProfileId } = useAppState();
+  const hasOverride = 'businessProfileIdOverride' in options;
+  const readProfileId = hasOverride ? businessProfileIdOverride ?? null : activeBusinessProfileId;
   const { hasAccess } = useFeatureAccess();
-  const initialKey = paymentSourcesCacheKey(user?.id, activeBusinessProfileId, includePersonal);
+  const initialKey = paymentSourcesCacheKey(user?.id, readProfileId, includePersonal);
   const initialCached = user ? instantCache.read<CustomPaymentSource[]>(initialKey) : null;
   const [customPaymentSources, setCustomPaymentSources] = useState<CustomPaymentSource[]>(initialCached || []);
   const [loading, setLoading] = useState(!initialCached || initialCached.length === 0);
@@ -84,12 +92,12 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
         .eq('user_id', user.id)
         .order('sort_order', { ascending: true });
 
-      if (activeBusinessProfileId) {
+      if (readProfileId) {
         if (includePersonal) {
           // Business mode + cross-mode flow: include both business + personal sources
-          ownQuery = ownQuery.or(`business_profile_id.eq.${activeBusinessProfileId},business_profile_id.is.null`);
+          ownQuery = ownQuery.or(`business_profile_id.eq.${readProfileId},business_profile_id.is.null`);
         } else {
-          ownQuery = ownQuery.eq('business_profile_id', activeBusinessProfileId);
+          ownQuery = ownQuery.eq('business_profile_id', readProfileId);
         }
       } else {
         ownQuery = ownQuery.is('business_profile_id', null);
@@ -200,10 +208,10 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
       setCustomPaymentSources(finalSources);
       if (!isLocalMode && user) {
         instantCache.write(
-          paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal),
+          paymentSourcesCacheKey(user.id, readProfileId, includePersonal),
           finalSources,
         );
-        hydratedKeyRef.current = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+        hydratedKeyRef.current = paymentSourcesCacheKey(user.id, readProfileId, includePersonal);
       }
     } catch (error) {
       // A stale fetch (deps changed mid-flight) is not an error — silently skip.
@@ -253,12 +261,12 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } finally {
       if (!isStale()) setLoading(false);
     }
-  }, [user, isLocalMode, activeBusinessProfileId, includePersonal, authReady]);
+  }, [user, isLocalMode, readProfileId, includePersonal, authReady]);
 
   // Hydrate from cache instantly when context changes
   useEffect(() => {
     if (isLocalMode || !user) return;
-    const key = paymentSourcesCacheKey(user.id, activeBusinessProfileId, includePersonal);
+    const key = paymentSourcesCacheKey(user.id, readProfileId, includePersonal);
     const cached = instantCache.read<CustomPaymentSource[]>(key);
     if (cached && cached.length > 0) {
       setCustomPaymentSources(cached);
@@ -267,7 +275,7 @@ export const useCustomPaymentSources = (options: UseCustomPaymentSourcesOptions 
     } else {
       hydratedKeyRef.current = null;
     }
-  }, [user?.id, activeBusinessProfileId, includePersonal, isLocalMode, user]);
+  }, [user?.id, readProfileId, includePersonal, isLocalMode, user]);
 
   useEffect(() => {
     fetchCustomPaymentSources();
