@@ -477,9 +477,16 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
           </div>
         )}
 
+        {/* Dokumenti na pregled — samo uz pravo `mail_uvoz` i kad ima što čekati */}
+        {hasMailAccess && mailPendingCount > 0 && (
+          <DocumentsPendingCard count={mailPendingCount} />
+        )}
+
         {/* Unpaid invoices widget — business chip only */}
         {isBusinessChip && <UnpaidInvoicesWidget />}
-        {isBusinessChip && <IncomingInvoicesWidget />}
+        {/* Ulazni računi: biznis kao i dosad + osobni pregled uz pravo `mail_uvoz`.
+            Write-guard ostaje u panelu; prikaz ga NE smije uvjetovati. */}
+        {(isBusinessChip || hasMailAccess) && <IncomingInvoicesWidget />}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6">
