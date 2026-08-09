@@ -389,8 +389,12 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         return;
       }
       await supabase.rpc("mail_import_consume_quota", { p_user_id: ownerId, p_count: 1 });
-      result = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
+      const withAi = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
+      const aiMemory = applyMemory(withAi);
+      warnings.push(...aiMemory.warnings);
+      result = { ...withAi, extraction: aiMemory.extraction };
       if (result.aiCalls > 0) await recordAiCost(supabase, AI_ROUTE);
+
     }
 
     const extraction = (result.extraction ?? {}) as Record<string, unknown>;
