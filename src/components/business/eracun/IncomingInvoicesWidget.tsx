@@ -7,6 +7,7 @@ import { useIncomingInvoices } from '@/hooks/useIncomingInvoices';
 import { summarizeIncomingInvoices } from '@/lib/eracun/incomingSummary';
 import { clickableProps } from '@/lib/a11y';
 import { IncomingInvoicesPanel } from './IncomingInvoicesPanel';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 interface IncomingInvoicesWidgetProps {
   /** Visual variant, mirrors UnpaidInvoicesWidget. */
