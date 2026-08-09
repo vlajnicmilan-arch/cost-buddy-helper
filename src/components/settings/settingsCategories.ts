@@ -19,6 +19,7 @@ export type SettingsSectionKey =
   | 'advanced'
   | 'danger'
   | 'mailImport'
+  | 'myIssuers'
   | 'help'
   | 'feedback';
 
