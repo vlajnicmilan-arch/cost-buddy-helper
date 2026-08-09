@@ -488,7 +488,7 @@ export const IncomingInvoicesPanel = () => {
         </div>
       )}
 
-      {user && (
+      {user && !isPersonal && (
         <EracunImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}
