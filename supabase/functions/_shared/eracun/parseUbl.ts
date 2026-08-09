@@ -12,6 +12,7 @@
  */
 
 import { fixMojibake } from './mojibake.ts';
+import { normalizeOib } from '../mailImport/oib.ts';
 import {
   EracunDocType,
   EracunInvoice,
