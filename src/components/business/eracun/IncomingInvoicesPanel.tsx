@@ -198,7 +198,24 @@ export const IncomingInvoicesPanel = () => {
     }
   }, [deleteInvoice, t]);
 
+  /**
+   * Korekcija oznake mjesta — jedan RPC upisuje oznaku na račun I u pamćenje
+   * izdavatelja/mjesta, pa se idući račun istog obračunskog mjesta sam označi.
+   */
+  const handleSavePlace = useCallback(async () => {
+    if (!placeTarget) return;
+    try {
+      await setPlaceLabel(placeTarget.id, placeDraft.trim());
+      setPlaceTarget(null);
+      showSuccess(t('eracun.list.placeSaved', 'Oznaka mjesta je spremljena'));
+    } catch (err) {
+      console.error('[eRacun] setPlaceLabel failed', err, { invoiceId: placeTarget.id });
+      showError(t('eracun.list.placeFailed', 'Spremanje oznake mjesta nije uspjelo'));
+    }
+  }, [placeTarget, placeDraft, setPlaceLabel, t]);
+
   const dueBadge = (invoice: IncomingInvoice) => {
+
     if (invoice.paid_at) {
       return (
         <Badge variant="outline" className="text-[10px] gap-1">
