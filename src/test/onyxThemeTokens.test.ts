@@ -37,7 +37,7 @@ describe('Onyx theme tokens', () => {
   const block = extractOnyxBlock();
 
   it('card surface sits a visible step above the background', () => {
-    const [, , bgL] = hsl(block, '--card-foreground|--background'.split('|')[1]);
+    const [, , bgL] = hsl(block, '--background');
     const [, , cardL] = hsl(block, '--card');
     expect(cardL - bgL).toBeGreaterThanOrEqual(3);
     expect(cardL).toBeLessThanOrEqual(12);
