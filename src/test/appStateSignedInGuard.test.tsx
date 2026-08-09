@@ -90,12 +90,14 @@ describe('AppStateContext — SIGNED_IN ref-guard', () => {
     renderApp();
     await waitFor(() => expect(screen.getByTestId('marker')).toBeInTheDocument());
     const mountsBefore = markerMounts;
+    readySnapshots.length = 0; // gledamo samo što se dogodi NAKON boota
 
     await act(async () => {
       state.cb?.('SIGNED_IN', { user: { id: 'user-1' } });
     });
 
     expect(readySnapshots.includes(false)).toBe(false);
+
     expect(screen.getByTestId('marker')).toBeInTheDocument();
     expect(markerMounts).toBe(mountsBefore);
   });
