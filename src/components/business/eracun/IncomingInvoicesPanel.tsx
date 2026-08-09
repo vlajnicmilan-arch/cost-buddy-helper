@@ -54,6 +54,11 @@ export const IncomingInvoicesPanel = () => {
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
   const [collectTarget, setCollectTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
+  /** Filtar po oznaci mjesta — `all` dok korisnik ne odabere. */
+  const [placeFilter, setPlaceFilter] = useState<string>('all');
+  const [placeTarget, setPlaceTarget] = useState<IncomingInvoice | null>(null);
+  const [placeDraft, setPlaceDraft] = useState('');
+
 
   const scoped = useMemo(
     () => invoices.filter((i) => (i.direction ?? 'in') === direction),
