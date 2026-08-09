@@ -80,6 +80,18 @@ const trustVariant = (level: string | null): 'default' | 'secondary' | 'destruct
   return 'destructive';
 };
 
+/** Jak alarm: ključni podatak poznatog izdavatelja se PROMIJENIO. */
+export const IBAN_ALARM_WARNING = 'iban_ne_odgovara_povijesti';
+
+/**
+ * Poznat izdavatelj (u pamćenju, podaci se poklapaju) smije dobiti blažu
+ * prezentaciju tehničke neprovjerljivosti pošiljatelja — ALI nikad kad je
+ * ključni podatak (IBAN) drukčiji od dosad viđenih.
+ */
+export const softensTrust = (knownCount: number, warnings: readonly string[]): boolean =>
+  knownCount > 0 && !warnings.includes(IBAN_ALARM_WARNING);
+
+
 export const MailReviewList = ({ active, onCountChange }: Props) => {
   const { t } = useTranslation();
   const { items, loading, working, confirmItem, discardItem, setScope, refetch } =
