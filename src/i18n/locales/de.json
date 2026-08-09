@@ -6262,6 +6262,16 @@
     "confirmFailed": "Speichern fehlgeschlagen",
     "discarded": "Eintrag verworfen",
     "discardFailed": "Verwerfen fehlgeschlagen",
+    "alreadySaved": "Dokument war bereits gespeichert",
+    "error": {
+      "nedostaju_polja": "Pflichtangaben fehlen — USt-IdNr. des Lieferanten und Belegnummer.",
+      "stanje_ne_dopusta": "Der Eintrag ist nicht mehr zur Prüfung (bereits bearbeitet).",
+      "mozda_vec_postoji": "Ein Eintrag mit gleicher Nummer und gleichem Lieferanten existiert bereits.",
+      "nije_dopusteno": "Du darfst diesen Eintrag nicht bearbeiten.",
+      "stavka_ne_postoji": "Der Eintrag existiert nicht mehr.",
+      "nije_prijavljen": "Sitzung abgelaufen — bitte erneut anmelden.",
+      "baza": "Die Datenbank hat das Speichern abgelehnt. Erneut versuchen oder Support kontaktieren."
+    },
     "classification": {
       "racun": "Rechnung",
       "ponuda": "Angebot",
