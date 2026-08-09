@@ -418,7 +418,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     const wantsAi =
       result.route === "nepoznato" ||
       (result.route === "heuristika" &&
-        needsAiEnrichment(result.extraction, hasExtractableText(input)));
+        needsAiEnrichment(result.extraction, hasExtractableText(input), result.classification));
 
     if (wantsAi) {
       const { data: quota } = await supabase.rpc("mail_import_quota_status", {

@@ -34,6 +34,10 @@ export interface MailReviewItem {
   scope_id: string | null;
   /** Korisnik je ručno odabrao odredište — reprocess ga ne smije pregaziti. */
   scope_set_by_user: boolean;
+  /** Privitak u pohrani — most prema uvozu izvoda. */
+  attachment_id: string | null;
+  storage_path: string | null;
+  file_name: string | null;
 }
 
 export interface ConfirmCollision {
@@ -66,7 +70,7 @@ export function useMailReviewQueue(enabled: boolean) {
     const { data, error } = await supabase
       .from('document_ingest_items')
       .select(
-        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, inbound_messages(subject, from_header)'
+        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, attachment_id, inbound_messages(subject, from_header), inbound_attachments(storage_path)'
       )
       .eq('owner_user_id', user.id)
       .eq('status', 'na_pregledu')
@@ -92,6 +96,9 @@ export function useMailReviewQueue(enabled: boolean) {
           scope_type: row.scope_type ?? null,
           scope_id: row.scope_id ?? null,
           scope_set_by_user: row.scope_set_by_user === true,
+          attachment_id: row.attachment_id ?? null,
+          storage_path: row.inbound_attachments?.storage_path ?? null,
+          file_name: String(row.inbound_attachments?.storage_path ?? '').split('/').pop() || null,
         }))
       );
     }

@@ -40,6 +40,7 @@ import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { ModulesSection } from './ModulesSection';
 import { MailImportSection } from './MailImportSection';
+import { StatementSourcesSection } from '@/components/settings/StatementSourcesSection';
 import { MyIssuersSection } from './MyIssuersSection';
 
 import { DataSection } from './DataSection';
@@ -577,6 +578,8 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         return <MailImportSection key="mailImport" />;
       case 'myIssuers':
         return <MyIssuersSection key="myIssuers" />;
+      case 'statementSources':
+        return <StatementSourcesSection key="statementSources" />;
       case 'feedback':
         return <MyFeedbackSection key="feedback" />;
       case 'help':

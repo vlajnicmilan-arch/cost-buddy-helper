@@ -6383,7 +6383,8 @@
       "verifikacija_prosljedjivanja": "Weiterleitungsbestätigung",
       "nije_za_nas": "Nicht relevant",
       "nepoznato": "Unbekannt",
-      "duplikat_privitka": "Doppelter Anhang"
+      "duplikat_privitka": "Doppelter Anhang",
+      "izvod": "Kontoauszug"
     },
     "confidence": {
       "visoka": "Hohe Zuverlässigkeit",
@@ -6493,5 +6494,32 @@
     "forgetWarning": "Neue Rechnungen dieses Ausstellers kommen nicht mehr vorausgefüllt an. Bestehende Dokumente bleiben unberührt.",
     "forgotten": "Regel gelöscht",
     "forgetFailed": "Löschen fehlgeschlagen"
+  },
+  "statements": {
+    "field": {
+      "bank": "Bank",
+      "iban": "IBAN des Kontos",
+      "number": "Auszugsnummer",
+      "period": "Zeitraum",
+      "closingBalance": "Neuer Saldo"
+    },
+    "sourceLabel": "In Geldbörse importieren",
+    "sourcePlaceholder": "Geldbörse wählen",
+    "rememberSource": "Merken: Auszüge für {{iban}} gehen in diese Geldbörse",
+    "import": "Auszug importieren",
+    "importAnyway": "Trotzdem importieren",
+    "importFailed": "Import konnte nicht geöffnet werden",
+    "imported": "Auszug importiert",
+    "duplicate": "Dieser Auszug wurde bereits am {{date}} importiert.",
+    "rulesTitle": "Konten aus Auszügen",
+    "rulesDescription": "Gemerkt wird, in welche Geldbörse ein Auszug für eine IBAN gehört. Der nächste Auszug kommt mit vorausgewählter Geldbörse.",
+    "rulesEmpty": "Noch keine gemerkten Konten aus Auszügen.",
+    "unknownBank": "(unbekannte Bank)",
+    "sourceMissing": "(Geldbörse gelöscht)",
+    "ruleTarget": "Geldbörse: {{name}}",
+    "forgetRule": "Regel vergessen",
+    "forgetRuleConfirm": "Der nächste Auszug für diese IBAN hat keine vorausgewählte Geldbörse mehr.",
+    "ruleForgotten": "Regel gelöscht",
+    "ruleForgetFailed": "Löschen fehlgeschlagen"
   }
 }

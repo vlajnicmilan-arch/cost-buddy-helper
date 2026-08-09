@@ -9,7 +9,7 @@ import {
 
 const ALL_SECTIONS: SettingsSectionKey[] = [
   'profile', 'language', 'theme', 'modules', 'notifications', 'subscription',
-  'security', 'data', 'advanced', 'danger', 'mailImport', 'myIssuers', 'help', 'feedback',
+  'security', 'data', 'advanced', 'danger', 'mailImport', 'myIssuers', 'statementSources', 'help', 'feedback',
 ];
 
 describe('settings categories (predvorje)', () => {

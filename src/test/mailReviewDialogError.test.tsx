@@ -24,6 +24,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Kartica izvoda vuče cijeli uvoz (i18n init) — ovdje testiramo samo račun.
+vi.mock('@/components/mail/StatementReviewCard', () => ({
+  StatementReviewCard: () => null,
+}));
+
 // Chip odredišta traži profile (useAuth) — u ovom testu nas zanima samo greška.
 vi.mock('@/hooks/useBusinessProfiles', () => ({
   useBusinessProfiles: () => ({ profiles: [], loading: false, refetch: vi.fn() }),

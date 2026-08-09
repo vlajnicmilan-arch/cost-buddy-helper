@@ -6383,7 +6383,8 @@
       "verifikacija_prosljedjivanja": "Forwarding confirmation",
       "nije_za_nas": "Not for us",
       "nepoznato": "Unknown",
-      "duplikat_privitka": "Duplicate attachment"
+      "duplikat_privitka": "Duplicate attachment",
+      "izvod": "Bank statement"
     },
     "confidence": {
       "visoka": "High confidence",
@@ -6493,5 +6494,32 @@
     "forgetWarning": "New invoices from this issuer will no longer arrive pre-filled. Existing documents stay untouched.",
     "forgotten": "Rule deleted",
     "forgetFailed": "Deletion failed"
+  },
+  "statements": {
+    "field": {
+      "bank": "Bank",
+      "iban": "Account IBAN",
+      "number": "Statement number",
+      "period": "Period",
+      "closingBalance": "Closing balance"
+    },
+    "sourceLabel": "Import into wallet",
+    "sourcePlaceholder": "Choose a wallet",
+    "rememberSource": "Remember: statements for {{iban}} go to this wallet",
+    "import": "Import statement",
+    "importAnyway": "Import anyway",
+    "importFailed": "Could not open the import",
+    "imported": "Statement imported",
+    "duplicate": "This statement was already imported on {{date}}.",
+    "rulesTitle": "Statement accounts",
+    "rulesDescription": "We remember which wallet a statement for a given IBAN belongs to. The next statement arrives with the wallet preselected.",
+    "rulesEmpty": "No remembered statement accounts yet.",
+    "unknownBank": "(unknown bank)",
+    "sourceMissing": "(wallet deleted)",
+    "ruleTarget": "Wallet: {{name}}",
+    "forgetRule": "Forget rule",
+    "forgetRuleConfirm": "The next statement for this IBAN will no longer have a preselected wallet.",
+    "ruleForgotten": "Rule deleted",
+    "ruleForgetFailed": "Deleting failed"
   }
 }

@@ -28,6 +28,7 @@ import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
 import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
+import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
 
 
 /**
@@ -251,6 +252,21 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       )}
 
       {items.map((item) => {
+        // BANKOVNI IZVOD ima svoju karticu — polja računa ovdje ne postoje.
+        if (item.classification === 'izvod') {
+          return (
+            <StatementReviewCard
+              key={item.id}
+              item={item}
+              disabled={working}
+              onDiscard={() => handleDiscard(item)}
+              onLinked={() => {
+                void refetch();
+                onCountChange?.();
+              }}
+            />
+          );
+        }
         const extraction = (item.extraction ?? {}) as Record<string, unknown>;
         const isEditing = editingId === item.id;
         const mediumConfidence = item.confidence === 'srednja';
