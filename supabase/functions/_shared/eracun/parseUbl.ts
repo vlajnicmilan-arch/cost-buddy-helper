@@ -77,12 +77,8 @@ const isoDate = (el: Element | null): string | null => {
   return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
 };
 
-/** `HR12345678901` → `12345678901`. */
-const extractOib = (raw: string | null): string | null => {
-  if (!raw) return null;
-  const digits = raw.replace(/[^0-9]/g, '');
-  return digits.length === 11 ? digits : null;
-};
+/** `HR12345678901` → `12345678901`, ali SAMO ako prođe ISO 7064 kontrolu. */
+const extractOib = (raw: string | null): string | null => normalizeOib(raw);
 
 const parseParty = (partyRoot: Element | null): EracunParty => {
   const party = childByName(partyRoot, 'Party');
