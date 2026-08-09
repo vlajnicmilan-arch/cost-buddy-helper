@@ -42,28 +42,57 @@ interface Options {
   onNewPending?: (itemId: string | null) => void;
 }
 
+const PENDING = 'na_pregledu';
+
+/**
+ * Odluka: emitiramo SAMO na PRIJELAZU u `na_pregledu`.
+ * Stavka se rađa u među-statusu (obrada) i tek kasnijim UPDATE-om postaje
+ * „na pregledu" — zato slušamo i INSERT i UPDATE. `REPLICA IDENTITY FULL` daje
+ * stari redak, pa UPDATE bez promjene statusa preskačemo.
+ */
+export const isPendingTransition = (
+  oldRow: { status?: string | null } | null | undefined,
+  newRow: { status?: string | null } | null | undefined
+): boolean => {
+  if (newRow?.status !== PENDING) return false;
+  // Nema starog retka (INSERT ili bez replica identity) → prijelaz je nov.
+  if (!oldRow || oldRow.status === undefined || oldRow.status === null) return true;
+  return oldRow.status !== PENDING;
+};
+
 export function useMailRealtime({ enabled, onNewPending }: Options) {
   const { user } = useAuth();
 
   useEffect(() => {
     if (!enabled || !user?.id) return;
 
+    // Dedup: ista stavka može stići i kroz INSERT i kroz UPDATE.
+    const seen = new Set<string>();
+    const handle = (payload: { new?: unknown; old?: unknown }) => {
+      const row = (payload.new ?? null) as { id?: string; status?: string } | null;
+      const prev = (payload.old ?? null) as { status?: string } | null;
+      if (!isPendingTransition(prev, row)) return;
+      const id = row?.id ?? null;
+      if (id) {
+        if (seen.has(id)) return;
+        seen.add(id);
+      }
+      emitMailPendingChanged({ itemId: id });
+      onNewPending?.(id);
+    };
+
+    const filter = `owner_user_id=eq.${user.id}`;
     const channel = supabase
       .channel(`mail-ingest-${user.id}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'document_ingest_items',
-          filter: `owner_user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const row = payload.new as { id?: string; status?: string };
-          if (row?.status !== 'na_pregledu') return;
-          emitMailPendingChanged({ itemId: row.id ?? null });
-          onNewPending?.(row.id ?? null);
-        }
+        { event: 'INSERT', schema: 'public', table: 'document_ingest_items', filter },
+        handle
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'document_ingest_items', filter },
+        handle
       )
       .subscribe();
 
@@ -75,3 +104,4 @@ export function useMailRealtime({ enabled, onNewPending }: Options) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, user?.id]);
 }
+
