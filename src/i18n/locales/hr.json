@@ -6393,7 +6393,8 @@
       "verifikacija_prosljedjivanja": "Potvrda prosljeđivanja",
       "nije_za_nas": "Nije za nas",
       "nepoznato": "Nepoznato",
-      "duplikat_privitka": "Duplikat privitka"
+      "duplikat_privitka": "Duplikat privitka",
+      "izvod": "Bankovni izvod"
     },
     "confidence": {
       "visoka": "Visoka pouzdanost",
@@ -6504,5 +6505,32 @@
     "forgetWarning": "Novi računi tog izdavatelja više neće stizati popunjeni. Postojeći dokumenti ostaju netaknuti.",
     "forgotten": "Pravilo je obrisano",
     "forgetFailed": "Brisanje nije uspjelo"
+  },
+  "statements": {
+    "field": {
+      "bank": "Banka",
+      "iban": "IBAN računa",
+      "number": "Broj izvoda",
+      "period": "Razdoblje",
+      "closingBalance": "Novo stanje"
+    },
+    "sourceLabel": "Uvezi u novčanik",
+    "sourcePlaceholder": "Odaberi novčanik",
+    "rememberSource": "Zapamti: izvodi za {{iban}} idu u ovaj novčanik",
+    "import": "Uvezi izvod",
+    "importAnyway": "Uvezi ipak",
+    "importFailed": "Otvaranje uvoza nije uspjelo",
+    "imported": "Izvod je uvezen",
+    "duplicate": "Ovaj izvod je već uvezen {{date}}.",
+    "rulesTitle": "Računi s izvoda",
+    "rulesDescription": "Zapamćeno je u koji novčanik ide izvod za pojedini IBAN. Sljedeći izvod stiže s već odabranim novčanikom.",
+    "rulesEmpty": "Još nema zapamćenih računa s izvoda.",
+    "unknownBank": "(nepoznata banka)",
+    "sourceMissing": "(novčanik obrisan)",
+    "ruleTarget": "Novčanik: {{name}}",
+    "forgetRule": "Zaboravi pravilo",
+    "forgetRuleConfirm": "Sljedeći izvod za ovaj IBAN više neće imati unaprijed odabran novčanik.",
+    "ruleForgotten": "Pravilo je obrisano",
+    "ruleForgetFailed": "Brisanje nije uspjelo"
   }
 }
