@@ -75,7 +75,7 @@ export default function Documents() {
             <DocumentsReceivedTab active={tab === 'received'} onCountChange={refetch} />
           </TabsContent>
         </Tabs>
-      </main>
+      </PageContainer>
     </div>
   );
 }
