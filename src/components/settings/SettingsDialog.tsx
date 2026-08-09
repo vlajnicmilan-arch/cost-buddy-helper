@@ -40,6 +40,7 @@ import { SecuritySection } from './SecuritySection';
 import { NotificationsSection } from './NotificationsSection';
 import { ModulesSection } from './ModulesSection';
 import { MailImportSection } from './MailImportSection';
+import { MyIssuersSection } from './MyIssuersSection';
 
 import { DataSection } from './DataSection';
 import { AdvancedSection } from './AdvancedSection';
