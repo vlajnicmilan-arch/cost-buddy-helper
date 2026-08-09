@@ -23,8 +23,8 @@
 
 import { namesMatch } from './normalizeName';
 
-export type MatchConfidence = 'certain' | 'strong' | 'likely';
-export type MatchReason = 'payment_reference' | 'learned_iban' | 'amount_name';
+export type MatchConfidence = 'certain' | 'strong' | 'likely' | 'possible';
+export type MatchReason = 'payment_reference' | 'learned_iban' | 'amount_name' | 'amount_only';
 
 export const MATCH_WINDOW_DAYS = 90;
 const EPS = 0.005;
