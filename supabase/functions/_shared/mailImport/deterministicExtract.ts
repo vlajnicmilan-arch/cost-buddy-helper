@@ -90,11 +90,15 @@ export function deterministicExtract(input: DeterministicInput): DeterministicRe
   const due = findDueDate(input.text);
   if (due.ambiguous) warnings.push(DUE_DATE_AMBIGUOUS_WARNING);
 
+  const number = findInvoiceNumber(input.text);
+  if (number.ambiguous) warnings.push(INVOICE_NUMBER_AMBIGUOUS_WARNING);
+
   return {
     supplier_oib: oibPick.oib,
     iban,
     due_date: due.dueDate,
+    invoice_number: number.invoiceNumber,
     warnings,
-    ambiguous: oibPick.ambiguous || ibans.length > 1 || due.ambiguous,
+    ambiguous: oibPick.ambiguous || ibans.length > 1 || due.ambiguous || number.ambiguous,
   };
 }
