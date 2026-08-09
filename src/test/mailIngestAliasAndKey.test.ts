@@ -51,7 +51,9 @@ describe('KVAR A — ključ pohrane je ASCII-siguran', () => {
 
 describe('KVAR A — prevelik privitak je VIDLJIV, nikad tih', () => {
   it('petlja ne prekida obradu s 413 nego bilježi razlog', () => {
-    expect(INGEST).toContain(ATTACHMENT_TOO_LARGE);
+    expect(INGEST).toContain('ATTACHMENT_TOO_LARGE');
+    expect(ATTACHMENT_TOO_LARGE).toBe('privitak_prevelik');
+
     expect(INGEST).toContain('quarantine_reason: ATTACHMENT_TOO_LARGE');
     expect(INGEST).toContain('incomplete: "true"');
     expect(INGEST).not.toMatch(/totalBytes > MAX_TOTAL_BYTES\) return json/);
