@@ -36,7 +36,7 @@ export async function upsertIngestItem(
 ): Promise<UpsertResult> {
   let query = client
     .from('document_ingest_items')
-    .select('id, status')
+    .select('id, status, scope_set_by_user')
     .eq('message_id', messageId);
 
   query = attachmentId
@@ -45,7 +45,7 @@ export async function upsertIngestItem(
 
   const { data: existingRows } = await query.order('created_at', { ascending: true }).limit(1);
   const existing = (Array.isArray(existingRows) ? existingRows[0] : existingRows) as
-    | { id: string; status: string | null }
+    | { id: string; status: string | null; scope_set_by_user?: boolean | null }
     | null
     | undefined;
 
@@ -53,9 +53,16 @@ export async function upsertIngestItem(
     if (USER_DECIDED_STATUSES.includes(String(existing.status) as never)) {
       return { id: existing.id, action: 'skipped', status: existing.status ?? null };
     }
+    // Korisnikova korekcija odredišta je ODLUKA — ponovna obrada osvježava
+    // ekstrakciju, ali NIKAD ne vraća scope na strojni izračun.
+    const patch = { ...row };
+    if (existing.scope_set_by_user === true) {
+      delete patch.scope_type;
+      delete patch.scope_id;
+    }
     await client
       .from('document_ingest_items')
-      .update({ ...row, updated_at: new Date().toISOString() })
+      .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
     return { id: existing.id, action: 'updated', status: String(row.status ?? existing.status ?? '') };
   }
