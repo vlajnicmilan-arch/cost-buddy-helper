@@ -9,6 +9,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { BackButtonProvider } from '@/contexts/BackButtonContext';
 import { KrugOwnerLeaveDialog } from '@/components/krug/KrugOwnerLeaveDialog';
 import type { KrugMemberView } from '@/hooks/useKrug';
@@ -31,6 +32,7 @@ function renderDialog(members: KrugMemberView[]) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
+      <MemoryRouter>
       <BackButtonProvider>
         <KrugOwnerLeaveDialog
           krugId="k1"
@@ -39,6 +41,7 @@ function renderDialog(members: KrugMemberView[]) {
           onOpenChange={() => {}}
         />
       </BackButtonProvider>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
