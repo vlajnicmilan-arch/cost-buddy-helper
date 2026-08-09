@@ -6453,7 +6453,7 @@
       "876": "Vorläufige Schlussrechnung",
       "877": "Schlussrechnung Bau"
     },
-    "errorDetail": "{{base}} ({{reason}})"
+    "errorDetail": "{{base}} — Grund: {{reason}}"
   },
   "documents": {
     "title": "Dokumente",

@@ -6453,7 +6453,7 @@
       "876": "Interim final statement",
       "877": "Final construction statement"
     },
-    "errorDetail": "{{base}} ({{reason}})"
+    "errorDetail": "{{base}} — reason: {{reason}}"
   },
   "documents": {
     "title": "Documents",
