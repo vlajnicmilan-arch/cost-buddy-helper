@@ -39,8 +39,8 @@ describe('Onyx theme tokens', () => {
   it('card surface sits a visible step above the background', () => {
     const [, , bgL] = hsl(block, '--background');
     const [, , cardL] = hsl(block, '--card');
-    // OLED-calibrated step: the 4% background must not swallow the card.
-    expect(cardL - bgL).toBeGreaterThanOrEqual(7);
+    // Decisive OLED jump: 4% background vs 16% card — small steps vanish.
+    expect(cardL - bgL).toBeGreaterThanOrEqual(12);
     expect(cardL).toBeLessThanOrEqual(16);
   });
 
@@ -72,9 +72,9 @@ describe('Onyx theme tokens', () => {
     const onyxStart = css.indexOf(ONYX_SELECTOR);
     const before = css.slice(0, onyxStart);
     const after = css.slice(css.indexOf('}', css.indexOf('--shadow-premium-accent:', onyxStart)));
-    expect(before).not.toContain('30 7% 12%');
-    expect(before).not.toContain('40 18% 32%');
-    expect(after).not.toContain('30 7% 12%');
-    expect(after).not.toContain('40 18% 32%');
+    expect(before).not.toContain('30 7% 16%');
+    expect(before).not.toContain('40 18% 38%');
+    expect(after).not.toContain('30 7% 16%');
+    expect(after).not.toContain('40 18% 38%');
   });
 });
