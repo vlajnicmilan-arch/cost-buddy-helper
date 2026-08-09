@@ -179,12 +179,26 @@ Deno.serve(async (req) => {
     let totalBytes = bodyBytes.byteLength;
     const attachments: Array<Record<string, string>> = [];
     let index = 0;
+    let oversize = false;
     for (const [, value] of form.entries()) {
       if (!(value instanceof File)) continue;
       index += 1;
+      const safeName = sanitizeStorageSegment(value.name);
+      // Prevelik privitak se NE guta: bilježi se kao nepotpun, s razlogom.
+      if (totalBytes + value.size > MAX_TOTAL_BYTES) {
+        oversize = true;
+        console.warn(`[mail-ingest] privitak prevelik (${value.size} B): ${safeName}`);
+        attachments.push({
+          storage_path: `${basePath}/att-${index}-${safeName}`,
+          mime_declared: value.type || "application/octet-stream",
+          size_bytes: String(value.size),
+          incomplete: "true",
+          quarantine_reason: ATTACHMENT_TOO_LARGE,
+        });
+        continue;
+      }
       totalBytes += value.size;
-      if (totalBytes > MAX_TOTAL_BYTES) return json({ error: "payload_too_large" }, 413);
-      const attPath = `${basePath}/att-${index}-${value.name || "privitak"}`;
+      const attPath = `${basePath}/att-${index}-${safeName}`;
       // Transportni otisak — isti privitak istog vlasnika nikad se ne obrađuje dvaput.
       const attBytes = new Uint8Array(await value.arrayBuffer());
       const digest = await crypto.subtle.digest("SHA-256", attBytes);
@@ -215,14 +229,17 @@ Deno.serve(async (req) => {
     });
     const lastHour = Number((counts as Record<string, unknown> | null)?.last_hour ?? 0);
     const lastDay = Number((counts as Record<string, unknown> | null)?.last_day ?? 0);
-    const damReason = lastHour >= MAX_PER_HOUR
-      ? "brana_sat"
-      : lastDay >= MAX_PER_DAY
-        ? "brana_dan"
-        : null;
+    const damReason = oversize
+      ? ATTACHMENT_TOO_LARGE
+      : lastHour >= MAX_PER_HOUR
+        ? "brana_sat"
+        : lastDay >= MAX_PER_DAY
+          ? "brana_dan"
+          : null;
     if (damReason) {
       console.warn(`[mail-ingest] brana aktivna (${damReason}) za alias ${aliasRow.id}`);
     }
+
 
     // Transakcijski outbox: poruka + privitci + posao ili NIŠTA.
     const { data: stored, error: rpcErr } = await supabase.rpc("mail_ingest_store_message", {
