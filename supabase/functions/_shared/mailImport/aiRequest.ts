@@ -45,6 +45,8 @@ export function buildAiPrompt(input: AiRequestInput): string {
     'Klasificiraj dokument iz e-pošte. Vrati ISKLJUČIVO JSON:',
     AI_JSON_TEMPLATE,
     'Polje koje ne možeš pouzdano pročitati postavi na null. NIKAD ne vraćaj prazan string.',
+    'Datume vraćaj ISKLJUČIVO u obliku YYYY-MM-DD (nikad 28.02.2026.).',
+
     known.length > 0 ? `Već provjereno (ne mijenjaj): ${known.join(', ')}` : '',
     '',
     `Predmet: ${input.subject ?? ''}`,
