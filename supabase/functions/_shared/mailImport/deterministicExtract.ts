@@ -58,6 +58,7 @@ export interface DeterministicResult {
   supplier_oib: string | null;
   iban: string | null;
   due_date: string | null;
+  invoice_number: string | null;
   warnings: string[];
   /** Bar jedno polje je bilo višeznačno — pouzdanost se obara. */
   ambiguous: boolean;
