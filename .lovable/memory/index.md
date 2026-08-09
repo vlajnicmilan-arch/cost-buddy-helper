@@ -1,0 +1,1 @@
+- [Mail: ključ pohrane i jedan alias](mem://features/mail-storage-key-and-single-alias) — ASCII storage ključ, prevelik privitak vidljiv, get-or-create alias
