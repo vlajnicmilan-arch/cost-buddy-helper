@@ -303,7 +303,30 @@ export const matchPayments = (input: MatchInput): PaymentSuggestion[] => {
     const namePool = pool.filter((inv) => nameHit(inv, tx));
     const active = ibanPool.length > 0 ? ibanPool : namePool;
     const reason: MatchReason = ibanPool.length > 0 ? 'learned_iban' : 'amount_name';
-    if (active.length === 0) continue;
+    if (active.length === 0) {
+      // Sloj 4 — samo iznos + blizina datuma. Dopušten isključivo na ulaznoj
+      // strani i uvijek u razredu `possible`: bez naziva ili reference motor
+      // nema pravo tvrditi ništa jače, korisnik odlučuje pogledom na opis.
+      if (!input.allowAmountOnly) continue;
+      const amountOnly = pool
+        .filter((inv) => Math.abs(remainingOf(inv) - tx.amount) <= EPS)
+        .sort((a, b) => {
+          const da = a.issueDate ? daysBetween(a.issueDate, tx.date) : Number.MAX_SAFE_INTEGER;
+          const db = b.issueDate ? daysBetween(b.issueDate, tx.date) : Number.MAX_SAFE_INTEGER;
+          if (da !== db) return da - db;
+          return byOldest(a, b);
+        });
+      if (amountOnly.length === 0) continue;
+      suggestions.push({
+        transactionId: tx.id,
+        candidates: amountOnly.map((inv) =>
+          singleCandidate(inv, tx.amount, 'possible', 'amount_only', false),
+        ),
+        autoSelect: false,
+        ambiguous: amountOnly.length > 1,
+      });
+      continue;
+    }
 
     const exact = [...active]
       .filter((inv) => Math.abs(remainingOf(inv) - tx.amount) <= EPS)
