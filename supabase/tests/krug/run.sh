@@ -58,6 +58,23 @@ psql -v ON_ERROR_STOP=1 \
   -v member_id="'00000000-0000-0000-0000-0000000000b2'" \
   -f "$HERE/member_leave.sql"
 
+# --- Faza C: vlasnikov izlazak (krug_owner_leave) ----------------------
+if [ "$SKIP_MIGRATIONS" != "1" ]; then
+  while read -r m; do
+    [ -z "$m" ] && continue
+    case "$m" in \#*) continue ;; esac
+    echo "-- applying $m"
+    psql -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/migrations/$m"
+  done < "$HERE/KRUG_OWNER_LEAVE_MIGRATIONS.txt"
+fi
+
+psql -v ON_ERROR_STOP=1 \
+  -v krug_id="'$KRUG'" \
+  -v owner_id="'00000000-0000-0000-0000-0000000000a1'" \
+  -v member_id="'00000000-0000-0000-0000-0000000000b2'" \
+  -v other_id="'00000000-0000-0000-0000-0000000000c3'" \
+  -f "$HERE/owner_leave.sql"
+
 # --- Cuvar: nema duplih overloada + accept smoke -----------------------
 psql -v ON_ERROR_STOP=1 \
   -v krug_id="'$KRUG'" \
