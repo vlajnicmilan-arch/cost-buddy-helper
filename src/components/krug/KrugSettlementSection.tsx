@@ -26,6 +26,8 @@ interface Props {
   krugId: string;
   isFullMember: boolean;
   isOwner?: boolean;
+  /** Arhivirani Krug: povijest se čita, akcije pisanja se ne prikazuju. */
+  readOnly?: boolean;
   /** Deep-link iz obavijesti o podmirenju — otvori povijest i istakni zapis. */
   focusSettlementId?: string | null;
 }
@@ -37,6 +39,7 @@ export function KrugSettlementSection({
   krugId,
   isFullMember,
   isOwner = false,
+  readOnly = false,
   focusSettlementId = null,
 }: Props) {
 
@@ -364,7 +367,7 @@ export function KrugSettlementSection({
                       {fmt(tr.amount, tr.currency)}
                     </div>
                     {/* Samo dužnik smije zabilježiti podmirenje. */}
-                    {user?.id === tr.from_user && (
+                    {!readOnly && user?.id === tr.from_user && (
                       <Button
                         size="sm" variant="outline" className="h-8 shrink-0"
                         onClick={() => setSettleTransfer({
@@ -389,6 +392,7 @@ export function KrugSettlementSection({
           <KrugSettlementHistory
             krugId={krugId}
             isFullMember={isFullMember}
+            readOnly={readOnly}
             focusSettlementId={focusSettlementId}
           />
         </>
