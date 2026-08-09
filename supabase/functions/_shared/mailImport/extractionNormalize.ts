@@ -82,6 +82,7 @@ export function mergeDeterministic(
   const base = emptyToNull(aiExtraction ?? {});
   for (const [key, value] of Object.entries(deterministic)) {
     if (value !== null && value !== undefined && value !== '') base[key] = value;
+    else if (base[key] === undefined) base[key] = null;
   }
   return base;
 }

@@ -62,13 +62,25 @@ export interface DeterministicResult {
   ambiguous: boolean;
 }
 
+/** Uklanja pojavu IBAN-a iz teksta, tolerirajuci razmake u ispisu. */
+const stripIban = (text: string, iban: string): string => {
+  const spaced = iban.split('').join('[\\s-]*');
+  return text.replace(new RegExp(spaced, 'gi'), ' ');
+};
+
 export function deterministicExtract(input: DeterministicInput): DeterministicResult {
   const warnings: string[] = [];
 
-  const oibPick = pickSupplierOib(input.text, input.ownOibs ?? []);
+  const ibans = findValidIbans(input.text);
+
+  // IBAN nosi niz znamenki iz kojeg bi lako ispao lazni "valjani OIB" —
+  // zato se IBAN-i uklone iz teksta prije trazenja OIB-a.
+  let oibHaystack = input.text ?? '';
+  for (const found of ibans) oibHaystack = stripIban(oibHaystack, found);
+
+  const oibPick = pickSupplierOib(oibHaystack, input.ownOibs ?? []);
   if (oibPick.ambiguous) warnings.push(OIB_AMBIGUOUS_WARNING);
 
-  const ibans = findValidIbans(input.text);
   let iban: string | null = null;
   if (ibans.length === 1) iban = ibans[0];
   else if (ibans.length > 1) warnings.push(IBAN_AMBIGUOUS_WARNING);
