@@ -20,6 +20,10 @@ import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_share
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
+import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
+import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,24 +49,24 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("missing_lovable_api_key");
 
-  const prompt = [
-    "Klasificiraj dokument iz e-pošte. Vrati ISKLJUČIVO JSON:",
-    '{"classification":"racun|ponuda|nije_za_nas","confidence":"visoka|srednja|niska",',
-    '"supplier_oib":"","supplier_name":"","invoice_number":"","issue_date":"YYYY-MM-DD",',
-    '"due_date":"YYYY-MM-DD","total_amount":0,"vat_amount":0,"currency":"EUR","iban":""}',
-    "",
-    `Predmet: ${input.subject ?? ""}`,
-    `Pošiljatelj: ${input.fromHeader ?? ""}`,
-    "Tekst:",
-    (input.bodyText ?? "").slice(0, 12000),
-  ].join("\n");
+  // TEKST prvi: multimodalni (file) blok nastaje SAMO za sken bez teksta.
+  const plan = buildAiRequest({
+    subject: input.subject,
+    fromHeader: input.fromHeader,
+    bodyText: input.bodyText,
+    pdfText: input.pdfText,
+    pdfBase64: input.pdfBase64,
+    pdfFilename: input.pdfFilename,
+  });
+  if (plan.multimodal) console.warn("[mail-process] skupi put: multimodalni PDF (sken bez teksta)");
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: plan.content }],
+      response_format: { type: "json_object" },
     }),
   });
   if (!res.ok) throw new Error(`ai_gateway_${res.status}`);
@@ -79,11 +83,23 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
   return {
     classification: (["racun", "ponuda", "nije_za_nas"].includes(cls) ? cls : "nije_za_nas") as
       "racun" | "ponuda" | "nije_za_nas",
-    extraction: parsed,
+    // '' -> null: model prepisuje prazan predlozak i tako laze da polje postoji.
+    extraction: emptyToNull(parsed),
     confidence: (["visoka", "srednja", "niska"].includes(String(parsed.confidence))
       ? String(parsed.confidence)
       : "srednja") as "visoka" | "srednja" | "niska",
   };
+}
+
+/** OIB-i vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj. */
+async function ownOibsFor(supabase: Supa, userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("oib")
+    .eq("user_id", userId);
+  return ((data ?? []) as Array<{ oib: string | null }>)
+    .map((r) => (r.oib ?? "").replace(/[^0-9]/g, ""))
+    .filter((o) => o.length === 11);
 }
 
 async function knownCounterparties(supabase: Supa, userId: string) {
@@ -140,6 +156,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   }
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
+  const ownOibs = await ownOibsFor(supabase, ownerId);
 
   const { data: atts } = await supabase
     .from("inbound_attachments")
@@ -163,6 +180,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   for (const unit of units) {
     let sniffed: ClassifyInput["sniffed"] = "unknown";
     let xml: string | null = null;
+    let pdfText = "";
+    let pdfBase64: string | null = null;
+    let pdfFilename: string | null = null;
     let forcedConfidence: "niska" | null = trust.forcedConfidence;
     const warnings: string[] = [...trust.warnings];
 
@@ -225,6 +245,15 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           warnings.push("pdf_nepotpun");
           forcedConfidence = "niska";
         }
+        // BESPLATNO prije AI-ja: tekstualni sloj PDF-a (prvih 10 stranica).
+        const pdf = await extractPdfText(unit.bytes);
+        pdfText = pdf.text;
+        if (pdf.isScan) {
+          warnings.push("pdf_bez_teksta");
+          // Sken je jedini put koji smije ici multimodalno.
+          pdfBase64 = encodeBase64(unit.bytes);
+          pdfFilename = String(unit.att.storage_path ?? "dokument.pdf").split("/").pop() ?? "dokument.pdf";
+        }
         await supabase
           .from("inbound_attachments")
           .update({
@@ -232,6 +261,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
             mime_sniffed: "pdf",
             page_count: pages.pageCount,
             incomplete: pages.incomplete,
+            extracted_text: pdfText.slice(0, 200000) || null,
+            has_text_layer: !pdf.isScan,
           })
           .eq("id", unit.attachmentId as string);
       } else if (verdict.sniffed === "xml") {
@@ -268,6 +299,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       fromHeader: msg.from_header as string | null,
       subject: msg.subject as string | null,
       bodyText,
+      pdfText,
+      pdfBase64,
+      pdfFilename,
       links,
       googleAuthenticated: isAuthenticatedGoogle({
         spf: msg.spf_result,
@@ -275,6 +309,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         fromHeader: msg.from_header as string | null,
       }),
       knownOibs: oibs,
+      ownOibs,
       knownSenders: [],
       searchText: String(unit.att?.storage_path ?? ""),
     };

@@ -9,9 +9,46 @@
 
 export const IBAN_MISMATCH_WARNING = 'iban_ne_odgovara_povijesti';
 export const IBAN_FIRST_SEEN_NOTICE = 'iban_prvi_put_vidjen';
+export const IBAN_AMBIGUOUS_WARNING = 'vise_kandidata_iban';
 
 export const normalizeIban = (value: string | null | undefined): string =>
   (value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/** ISO 13616 mod-97 — JEDINA implementacija provjere IBAN-a. */
+export function isValidIban(value: string | null | undefined): boolean {
+  const iban = normalizeIban(value);
+  if (iban.length < 15 || iban.length > 34) return false;
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(iban)) return false;
+
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  let remainder = 0;
+  for (const char of rearranged) {
+    const value = char >= 'A' && char <= 'Z' ? String(char.charCodeAt(0) - 55) : char;
+    for (const digit of value) remainder = (remainder * 10 + Number(digit)) % 97;
+  }
+  return remainder === 1;
+}
+
+/** Svi VALJANI IBAN-i iz slobodnog teksta (bez duplikata, normalizirani). */
+export function findValidIbans(text: string | null | undefined): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const re = /\b[A-Z]{2}\d{2}[A-Z0-9 ]{11,40}/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text ?? '')) !== null) {
+    // Skraćuj s desna dok ne padne na valjan IBAN (razmaci u ispisu računa).
+    let candidate = normalizeIban(match[0]);
+    while (candidate.length >= 15) {
+      if (isValidIban(candidate)) break;
+      candidate = candidate.slice(0, -1);
+    }
+    if (candidate.length >= 15 && isValidIban(candidate) && !seen.has(candidate)) {
+      seen.add(candidate);
+      out.push(candidate);
+    }
+  }
+  return out;
+}
 
 export interface IbanCheckResult {
   /** Novi IBAN uz postojeću povijest za taj OIB. */

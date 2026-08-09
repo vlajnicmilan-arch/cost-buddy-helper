@@ -12,6 +12,7 @@
  */
 
 import { fixMojibake } from './mojibake.ts';
+import { normalizeOib } from '../mailImport/oib.ts';
 import {
   EracunDocType,
   EracunInvoice,
@@ -77,11 +78,16 @@ const isoDate = (el: Element | null): string | null => {
   return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
 };
 
-/** `HR12345678901` → `12345678901`. */
+/**
+ * `HR12345678901` → `12345678901`.
+ *
+ * U UBL-u je OIB DEKLARIRANO polje, pa se prihvaća svaki 11-znamenkasti zapis;
+ * ISO 7064 kontrola ovdje bi tiho gutala podatak. Kontrola se primjenjuje tamo
+ * gdje je nužna — pri traženju kandidata u slobodnom tekstu (`pickSupplierOib`).
+ */
 const extractOib = (raw: string | null): string | null => {
-  if (!raw) return null;
-  const digits = raw.replace(/[^0-9]/g, '');
-  return digits.length === 11 ? digits : null;
+  const digits = (raw ?? '').replace(/[^0-9]/g, '');
+  return digits.length === 11 ? digits : normalizeOib(raw);
 };
 
 const parseParty = (partyRoot: Element | null): EracunParty => {

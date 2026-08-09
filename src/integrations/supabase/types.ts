@@ -2276,6 +2276,8 @@ export type Database = {
         Row: {
           content_sha256: string | null
           created_at: string
+          extracted_text: string | null
+          has_text_layer: boolean | null
           id: string
           incomplete: boolean
           message_id: string
@@ -2290,6 +2292,8 @@ export type Database = {
         Insert: {
           content_sha256?: string | null
           created_at?: string
+          extracted_text?: string | null
+          has_text_layer?: boolean | null
           id?: string
           incomplete?: boolean
           message_id: string
@@ -2304,6 +2308,8 @@ export type Database = {
         Update: {
           content_sha256?: string | null
           created_at?: string
+          extracted_text?: string | null
+          has_text_layer?: boolean | null
           id?: string
           incomplete?: boolean
           message_id?: string
