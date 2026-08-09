@@ -18,6 +18,7 @@ import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trus
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
 import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
+import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 
 const corsHeaders = {
