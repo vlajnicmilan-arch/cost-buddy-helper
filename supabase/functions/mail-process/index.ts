@@ -218,45 +218,6 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         continue;
       }
 
-      // Transportni dedup — isti sadržaj istog vlasnika se NE obrađuje ponovno.
-      const sha = unit.att.content_sha256 as string | null;
-      if (sha) {
-        // Ponovna obrada NE smije pogoditi samu sebe: stavka iste poruke se
-        // OSVJEZAVA, nikad ne proglasava vlastitim duplikatom.
-        const { data: dupRows } = await supabase
-          .from("document_ingest_items")
-          .select("id")
-          .eq("owner_user_id", ownerId)
-          .eq("dedup_identity", `sha256:${sha}`)
-          .neq("message_id", messageId)
-          .limit(1);
-        const dup = (Array.isArray(dupRows) ? dupRows[0] : dupRows) as { id: string } | null;
-        if (dup) {
-          await upsertIngestItem(supabase, {
-            messageId,
-            attachmentId: unit.attachmentId,
-            row: {
-              source: "mail",
-              scope_type: unitScope.scopeType,
-              scope_id: unitScope.scopeId,
-              owner_user_id: ownerId,
-              classification: "duplikat_privitka",
-              status: "odbaceno",
-              reason: "duplikat_privitka",
-              duplicate_of_item_id: dup.id,
-              dedup_identity: `sha256:${sha}`,
-              warnings: ["duplikat_privitka"],
-              ai_calls: 0,
-            },
-          });
-
-          await supabase
-            .from("inbound_attachments")
-            .update({ scan_status: "siguran", mime_sniffed: verdict.sniffed })
-            .eq("id", unit.attachmentId as string);
-          continue;
-        }
-      }
 
       if (verdict.sniffed === "pdf") {
         const pages = evaluatePdfPages(unit.bytes);
@@ -310,6 +271,51 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           .eq("id", unit.attachmentId as string);
       }
       sniffed = verdict.sniffed as ClassifyInput["sniffed"];
+    }
+
+    // USMJERAVANJE — jednom po jedinici, nad cijelim poznatim tekstom.
+    // Nas OIB u dokumentu = dokument pripada toj tvrtki. Atribucija
+    // (owner_user_id, kvota, obavijesti) ostaje na vlasniku aliasa.
+    const unitScope = resolveScope({
+      text: [bodyText ?? "", pdfText ?? "", xml ?? ""].join("\n"),
+      ownOibs: ownOibEntries,
+      ownerId,
+    });
+    warnings.push(...unitScope.warnings);
+
+    // Transportni dedup — isti sadrzaj istog vlasnika se NE obraduje ponovno.
+    const sha = (unit.att?.content_sha256 as string | null) ?? null;
+    if (sha) {
+      // Ponovna obrada NE smije pogoditi samu sebe: stavka iste poruke se
+      // OSVJEZAVA, nikad ne proglasava vlastitim duplikatom.
+      const { data: dupRows } = await supabase
+        .from("document_ingest_items")
+        .select("id")
+        .eq("owner_user_id", ownerId)
+        .eq("dedup_identity", `sha256:${sha}`)
+        .neq("message_id", messageId)
+        .limit(1);
+      const dup = (Array.isArray(dupRows) ? dupRows[0] : dupRows) as { id: string } | null;
+      if (dup) {
+        await upsertIngestItem(supabase, {
+          messageId,
+          attachmentId: unit.attachmentId,
+          row: {
+            source: "mail",
+            scope_type: unitScope.scopeType,
+            scope_id: unitScope.scopeId,
+            owner_user_id: ownerId,
+            classification: "duplikat_privitka",
+            status: "odbaceno",
+            reason: "duplikat_privitka",
+            duplicate_of_item_id: dup.id,
+            dedup_identity: `sha256:${sha}`,
+            warnings: ["duplikat_privitka"],
+            ai_calls: 0,
+          },
+        });
+        continue;
+      }
     }
 
     const input: ClassifyInput = {
@@ -378,6 +384,20 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         byOib.get(oib) ?? [],
       );
       warnings.push(...ibanCheck.warnings);
+    }
+
+    // MEKA DEDUP NAJAVA — samo upozorenje, nista se ne odbacuje.
+    if (
+      await findProbableDuplicate(supabase, {
+        supplierOib: extraction.supplier_oib as string | null,
+        invoiceNumber: extraction.invoice_number as string | null,
+        docType: result.docType as string | null,
+        scopeType: unitScope.scopeType,
+        scopeId: unitScope.scopeId,
+        ownerUserId: ownerId,
+      })
+    ) {
+      warnings.push(PROBABLE_DUPLICATE_WARNING);
     }
 
     const confidence = lowerConfidence(result.confidence, forcedConfidence);
