@@ -6231,7 +6231,13 @@
       "uncollected": "Offen (Ausgang)",
       "collected": "Bezahlt (Ausgang)",
       "emptyUncollected": "Keine offenen Ausgangsrechnungen.",
-      "markCollected": "Bezahlt erhalten"
+      "markCollected": "Bezahlt erhalten",
+      "place": "Ort",
+      "placeAll": "Alle Orte",
+      "placeNone": "Ohne Bezeichnung",
+      "placeEdit": "Ortsbezeichnung bearbeiten",
+      "placeSaved": "Ortsbezeichnung gespeichert",
+      "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen"
     },
     "match": {
       "open": "Zahlungen zuordnen",
@@ -6377,7 +6383,9 @@
       "pdf_bez_teksta": "Das PDF hat keine Textebene (Scan) — Daten wurden aus dem Bild gelesen",
       "ai_dopuna": "Felder wurden von der KI ergänzt — Betrag und Belegnummer prüfen.",
       "vise_vlastitih_oib": "Das Dokument enthält OIBs mehrerer deiner Firmen — persönlich zugeordnet",
-      "vjerojatno_duplikat": "Eine Rechnung mit dieser Nummer und diesem Lieferanten existiert vermutlich bereits"
+      "vjerojatno_duplikat": "Eine Rechnung mit dieser Nummer und diesem Lieferanten existiert vermutlich bereits",
+      "dopunjeno_iz_zapamcenog": "Aus gemerktem Aussteller ergänzt — bitte prüfen",
+      "vise_kandidata_sifra_mjesta": "Mehrere mögliche Abrechnungsstellen-Codes — keiner übernommen"
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6386,7 +6394,8 @@
       "issueDate": "Ausstellungsdatum",
       "dueDate": "Fälligkeitsdatum",
       "totalAmount": "Gesamt",
-      "iban": "IBAN"
+      "iban": "IBAN",
+      "placeLabel": "Ortsbezeichnung"
     },
     "collision": {
       "title": "Existiert möglicherweise bereits",

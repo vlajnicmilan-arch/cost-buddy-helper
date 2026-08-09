@@ -39,7 +39,10 @@ export interface IncomingInvoice {
   paid_at: string | null;
   import_batch_id: string | null;
   source_filename: string | null;
+  /** Korisnikova oznaka mjesta (npr. „Split"/„Solin") — uči se iz potvrde. */
+  place_label: string | null;
   created_at: string;
+
 }
 
 export const useIncomingInvoices = () => {
@@ -134,6 +137,21 @@ export const useIncomingInvoices = () => {
     await fetchInvoices();
   }, [fetchInvoices]);
 
+  /**
+   * Korekcija oznake mjesta s police. Ide kroz RPC jer isti poziv upisuje
+   * oznaku NA RAČUN i ažurira pamćenje izdavatelja/mjesta.
+   */
+  const setPlaceLabel = useCallback(async (invoiceId: string, label: string) => {
+    const { error } = await supabase.rpc('incoming_invoice_set_place' as any, {
+      p_invoice_id: invoiceId,
+      p_label: label,
+    } as any);
+    if (error) throw error;
+    await fetchInvoices();
+  }, [fetchInvoices]);
+
+
+
   return {
     invoices,
     unpaid: useMemo(() => invoices.filter((i) => !i.paid_at), [invoices]),
@@ -146,5 +164,7 @@ export const useIncomingInvoices = () => {
     markPaid,
     markCollected,
     deleteInvoice,
+    setPlaceLabel,
+
   };
 };

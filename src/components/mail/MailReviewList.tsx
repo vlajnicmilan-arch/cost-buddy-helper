@@ -59,6 +59,10 @@ const FIELDS: FieldDef[] = [
   { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća', kind: 'date', dateContext: 'debt' },
   { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno', kind: 'amount' },
   { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN', kind: 'text' },
+  // Oznaka mjesta (npr. „Split"/„Solin") — pamćenje je predlaže, korisnik je
+  // smije prepisati PRIJE potvrde; potvrda je uči po šifri obračunskog mjesta.
+  { key: 'place_label', labelKey: 'mailReview.field.placeLabel', fallback: 'Oznaka mjesta', kind: 'text' },
+
 ];
 
 /** Prikaz: ISO → dd.mm.gggg., broj → 1.660,36. Baza ostaje ISO/decimalna točka. */

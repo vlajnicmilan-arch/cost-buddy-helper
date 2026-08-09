@@ -37,6 +37,13 @@ import {
   findProbableDuplicate,
   PROBABLE_DUPLICATE_WARNING,
 } from "../_shared/mailImport/softDuplicate.ts";
+import { findPlaceCode } from "../_shared/mailImport/paymentReference.ts";
+import {
+  memoryFill,
+  issuerKeyDomain,
+  type IssuerMemoryRow,
+} from "../_shared/mailImport/issuerMemory.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,6 +126,36 @@ async function ownOibsFor(supabase: Supa, userId: string): Promise<OwnOibEntry[]
     .filter((e) => e.oib.length === 11);
 }
 
+/**
+ * Domene VLASNIKA (adrese njegovih tvrtki) — forwarder brana ih izbacuje iz
+ * ključa pamćenja: proslijeđena poruta ne identificira izdavatelja.
+ */
+async function ownDomainsFor(supabase: Supa, userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("email")
+    .eq("user_id", userId);
+  return ((data ?? []) as Array<{ email: string | null }>)
+    .map((r) => (r.email ?? "").split("@")[1]?.trim().toLowerCase() ?? "")
+    .filter((d) => d.length > 0);
+}
+
+/** Pamćenje izdavatelja i mjesta — SAMO redci vlasnika (service role klijent). */
+async function issuerMemoryFor(supabase: Supa, userId: string): Promise<IssuerMemoryRow[]> {
+  const { data, error } = await supabase
+    .from("mail_issuer_memory")
+    .select("from_domain, supplier_oib, place_code, supplier_name, place_label")
+    .eq("user_id", userId)
+    .limit(500);
+  if (error) {
+    console.warn("[mail-process] pamćenje izdavatelja nedostupno", error.message);
+    return [];
+  }
+  return (data ?? []) as unknown as IssuerMemoryRow[];
+}
+
+
+
 async function knownCounterparties(supabase: Supa, userId: string) {
   const [{ data: ibanRows }, { data: invRows }] = await Promise.all([
     supabase.from("eracun_counterparty_iban").select("oib, iban").eq("user_id", userId),
@@ -175,6 +212,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownOibEntries = await ownOibsFor(supabase, ownerId);
   const ownOibs = ownOibEntries.map((e) => e.oib);
+  const ownDomains = await ownDomainsFor(supabase, ownerId);
+  const memoryRows = await issuerMemoryFor(supabase, ownerId);
+
 
   const { data: atts } = await supabase
     .from("inbound_attachments")
@@ -343,13 +383,31 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     // determinističkim koracima, a AI se ubacuje tek nakon provjere kvote.
     const cheap = await classifyDocument(input, { parseUbl, analyzeWithAi: undefined });
 
-    let result = cheap;
+    // PAMĆENJE IZDAVATELJA I MJESTA — sloj dopune IZMEĐU jeftine klasifikacije
+    // i odluke o AI pozivu. Pogodak popunjava rupe pa `needsAiEnrichment`
+    // često ugasi AI poziv. Pouzdanost se NE diže; stavka ostaje na pregledu.
+    const placeCode = findPlaceCode([bodyText, pdfText].filter(Boolean).join("\n")).placeCode;
+    const applyMemory = (r: typeof cheap) =>
+      memoryFill({
+        extraction: r.extraction,
+        placeCode,
+        fromDomain: issuerKeyDomain(msg.from_header as string | null, ownDomains),
+        rows: memoryRows,
+        // UBL je već deterministički potpun — smije dobiti SAMO oznaku mjesta.
+        onlyPlaceLabel: r.route === "ubl",
+      });
+
+    const cheapMemory = applyMemory(cheap);
+    warnings.push(...cheapMemory.warnings);
+
+    let result = { ...cheap, extraction: cheapMemory.extraction };
     // AI se trazi kad jeftina grana nije odlucila ILI kad je odlucila, ali su
     // kljucna polja ostala prazna (pametna dopuna). Potpuna stavka = 0 poziva.
     const wantsAi =
-      cheap.route === "nepoznato" ||
-      (cheap.route === "heuristika" &&
-        needsAiEnrichment(cheap.extraction, hasExtractableText(input)));
+      result.route === "nepoznato" ||
+      (result.route === "heuristika" &&
+        needsAiEnrichment(result.extraction, hasExtractableText(input)));
+
     if (wantsAi) {
       const { data: quota } = await supabase.rpc("mail_import_quota_status", {
         p_user_id: ownerId,
@@ -371,8 +429,12 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         return;
       }
       await supabase.rpc("mail_import_consume_quota", { p_user_id: ownerId, p_count: 1 });
-      result = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
+      const withAi = await classifyDocument(input, { parseUbl, analyzeWithAi: aiAnalyze });
+      const aiMemory = applyMemory(withAi);
+      warnings.push(...aiMemory.warnings);
+      result = { ...withAi, extraction: aiMemory.extraction };
       if (result.aiCalls > 0) await recordAiCost(supabase, AI_ROUTE);
+
     }
 
     const extraction = (result.extraction ?? {}) as Record<string, unknown>;

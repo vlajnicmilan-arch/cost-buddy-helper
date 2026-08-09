@@ -2,10 +2,28 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { hr } from 'date-fns/locale';
-import { AlertTriangle, CheckCircle2, Link2, Loader2, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Link2, Loader2, MapPin, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { showUndoToast } from '@/lib/undoToast';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -44,7 +62,7 @@ export const IncomingInvoicesPanel = () => {
   const { guard } = useWriteGuard({ kind: 'module', feature: 'business_module' });
   const {
     invoices, loading, existingFingerprints,
-    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, refetch,
+    saveBatch, undoBatch, markPaid, markCollected, deleteInvoice, setPlaceLabel, refetch,
   } = useIncomingInvoices();
 
   const [direction, setDirection] = useState<Direction>('in');
@@ -54,6 +72,11 @@ export const IncomingInvoicesPanel = () => {
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
   const [collectTarget, setCollectTarget] = useState<IncomingInvoice | null>(null);
   const [savingPayment, setSavingPayment] = useState(false);
+  /** Filtar po oznaci mjesta — `all` dok korisnik ne odabere. */
+  const [placeFilter, setPlaceFilter] = useState<string>('all');
+  const [placeTarget, setPlaceTarget] = useState<IncomingInvoice | null>(null);
+  const [placeDraft, setPlaceDraft] = useState('');
+
 
   const scoped = useMemo(
     () => invoices.filter((i) => (i.direction ?? 'in') === direction),
@@ -62,10 +85,18 @@ export const IncomingInvoicesPanel = () => {
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
 
-  const visible = useMemo(
-    () => (filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped),
-    [filter, unpaid, paid, scoped],
+  /** Oznake mjesta koje stvarno postoje — filtar se nudi TEK kad ih ima ≥2. */
+  const places = useMemo(
+    () => [...new Set(scoped.map((i) => (i.place_label ?? '').trim()).filter(Boolean))].sort(),
+    [scoped],
   );
+
+  const visible = useMemo(() => {
+    const byStatus = filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped;
+    if (placeFilter === 'all' || places.length < 2) return byStatus;
+    return byStatus.filter((i) => (i.place_label ?? '').trim() === placeFilter);
+  }, [filter, unpaid, paid, scoped, placeFilter, places.length]);
+
 
   const sourceOptions = useMemo(
     () => customPaymentSources.map((s: any) => ({ id: s.id as string, name: s.name as string })),
@@ -185,7 +216,24 @@ export const IncomingInvoicesPanel = () => {
     }
   }, [deleteInvoice, t]);
 
+  /**
+   * Korekcija oznake mjesta — jedan RPC upisuje oznaku na račun I u pamćenje
+   * izdavatelja/mjesta, pa se idući račun istog obračunskog mjesta sam označi.
+   */
+  const handleSavePlace = useCallback(async () => {
+    if (!placeTarget) return;
+    try {
+      await setPlaceLabel(placeTarget.id, placeDraft.trim());
+      setPlaceTarget(null);
+      showSuccess(t('eracun.list.placeSaved', 'Oznaka mjesta je spremljena'));
+    } catch (err) {
+      console.error('[eRacun] setPlaceLabel failed', err, { invoiceId: placeTarget.id });
+      showError(t('eracun.list.placeFailed', 'Spremanje oznake mjesta nije uspjelo'));
+    }
+  }, [placeTarget, placeDraft, setPlaceLabel, t]);
+
   const dueBadge = (invoice: IncomingInvoice) => {
+
     if (invoice.paid_at) {
       return (
         <Badge variant="outline" className="text-[10px] gap-1">
@@ -262,6 +310,27 @@ export const IncomingInvoicesPanel = () => {
         </div>
       </div>
 
+      {/* Filtar po oznaci mjesta — vlastiti redak, da alatni redak ostane
+          onakav kakvim ga brani `eracunPanelNoHorizontalOverflow`. */}
+      {places.length >= 2 && (
+        <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
+          <MapPin className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+          <Select value={placeFilter} onValueChange={setPlaceFilter}>
+            <SelectTrigger className="h-9 w-full sm:w-56 min-w-0">
+              <SelectValue placeholder={t('eracun.list.placeAll', 'Sva mjesta')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('eracun.list.placeAll', 'Sva mjesta')}</SelectItem>
+              {places.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+
+
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -287,7 +356,21 @@ export const IncomingInvoicesPanel = () => {
                     {inv.invoice_number}
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
-                  <div className="mt-1">{dueBadge(inv)}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    {dueBadge(inv)}
+                    <button
+                      type="button"
+                      onClick={() => { setPlaceTarget(inv); setPlaceDraft(inv.place_label ?? ''); }}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground min-h-[24px] max-w-full"
+                      aria-label={t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}
+                    >
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {inv.place_label?.trim() || t('eracun.list.placeNone', 'Bez oznake')}
+                      </span>
+                    </button>
+                  </div>
+
                   {!inv.paid_at && Number(inv.settled_amount ?? 0) > 0 && (
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {t('eracun.match.settledOf', 'Plaćeno {{paid}} od {{total}}', {
@@ -371,6 +454,32 @@ export const IncomingInvoicesPanel = () => {
         invoices={invoices}
         onDone={refetch}
       />
+
+      <Dialog open={!!placeTarget} onOpenChange={(open) => !open && setPlaceTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}</DialogTitle>
+            <DialogDescription>
+              {placeTarget?.supplier_name || placeTarget?.counterparty_name || placeTarget?.invoice_number}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">{t('eracun.list.place', 'Mjesto')}</Label>
+            <Input
+              value={placeDraft}
+              onChange={(e) => setPlaceDraft(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlaceTarget(null)}>
+              {t('common.cancel', 'Odustani')}
+            </Button>
+            <Button onClick={handleSavePlace}>{t('common.save', 'Spremi')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
