@@ -48,8 +48,11 @@ export const AppearanceSection = ({
         </div>
         <Switch id="theme-toggle" checked={isDark} onCheckedChange={onToggleTheme} />
       </div>
+      )}
 
+      {sections.includes('language') && (
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Globe className="w-4 h-4 text-primary" />
