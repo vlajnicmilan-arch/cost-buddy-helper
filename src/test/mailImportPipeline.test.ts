@@ -243,11 +243,31 @@ describe('Hijerarhija klasifikacije — ČUVAR AI poziva', () => {
     expect(result.extraction?.confirmUrl).toBe('https://mail-settings.google.com/mail/vf-abc');
   });
 
-  it('heuristika: poznat OIB odlučuje bez AI-a', async () => {
-    const analyzeWithAi = vi.fn();
+  it('heuristika: poznat OIB odlučuje bez AI klasifikacije', async () => {
+    // Klasifikaciju donosi heuristika. AI se od naloga #5 smije pojaviti samo
+    // kao DOPUNA praznih ključnih polja — ruta i dalje ostaje 'heuristika'.
+    const analyzeWithAi = vi.fn(async () => ({
+      classification: 'racun' as const,
+      extraction: { total_amount: 12.5, supplier_name: 'ACME' },
+      confidence: 'srednja' as const,
+    }));
     const result = await classifyDocument(
       { sniffed: 'pdf', bodyText: 'OIB 12345678901, račun 5/1/1', knownOibs: ['12345678901'] },
       { parseUbl, analyzeWithAi },
+    );
+    expect(result.route).toBe('heuristika');
+    expect(result.extraction?.supplier_oib).toBe('12345678901');
+  });
+
+  it('heuristika s potpunim poljima NE troši AI poziv', async () => {
+    const analyzeWithAi = vi.fn();
+    const result = await classifyDocument(
+      {
+        sniffed: 'pdf',
+        bodyText: 'OIB 12345678901, račun 5/1/1, ukupno 10,00 EUR',
+        knownOibs: ['12345678901'],
+      },
+      { parseUbl, analyzeWithAi: undefined },
     );
     expect(analyzeWithAi).not.toHaveBeenCalled();
     expect(result.route).toBe('heuristika');

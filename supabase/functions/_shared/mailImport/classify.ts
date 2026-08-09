@@ -216,7 +216,7 @@ export async function classifyDocument(
       const ai = await deps.analyzeWithAi(input);
       enrichCalls = 1;
       extraction = mergeDeterministic(
-        { ...(ai.extraction ?? {}), ...stripNulls(extraction) },
+        { ...(ai?.extraction ?? {}), ...stripNulls(extraction) },
         deterministicFields,
       );
       warnings.push('ai_dopuna');
