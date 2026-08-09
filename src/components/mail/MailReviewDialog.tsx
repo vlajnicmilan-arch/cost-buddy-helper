@@ -230,14 +230,14 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                 {isEditing ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     {FIELDS.map((f) => (
-                      <div key={f.key} className="space-y-1">
-                        <Label className="text-xs">{t(f.labelKey, f.fallback)}</Label>
-                        <Input
-                          value={draft[f.key] ?? ''}
-                          onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className="h-11"
-                        />
-                      </div>
+                      <MailReviewFieldInput
+                        key={f.key}
+                        label={t(f.labelKey, f.fallback)}
+                        kind={f.kind}
+                        dateContext={f.dateContext}
+                        value={draft[f.key] ?? ''}
+                        onChange={(next) => setDraft((d) => ({ ...d, [f.key]: next }))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -246,9 +246,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                       <div key={f.key} className="flex justify-between gap-2">
                         <dt className="text-muted-foreground">{t(f.labelKey, f.fallback)}</dt>
                         <dd className={mediumConfidence ? 'text-amber-600 dark:text-amber-500' : ''}>
-                          {extraction[f.key] == null || extraction[f.key] === ''
-                            ? '—'
-                            : String(extraction[f.key])}
+                          {displayFieldValue(f, extraction[f.key])}
                         </dd>
                       </div>
                     ))}
@@ -259,7 +257,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                   <Button
                     size="sm"
                     className="min-h-[44px]"
-                    disabled={working}
+                    disabled={working || (isEditing && draftHasError)}
                     onClick={() => handleConfirm(item)}
                   >
                     <Check className="h-4 w-4 mr-2" />
