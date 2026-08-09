@@ -1,11 +1,13 @@
 /**
- * ČUVAR VIDLJIVOSTI PREKIDAČA (Switch).
+ * ČUVAR VIDLJIVOSTI PREKIDAČA (Switch) — v2 NAČELO.
  *
- * Uzrok kvara koji se NE smije vratiti: u tamnim temama staza je bila
- * `bg-input` uz `border-transparent` (utopljena u pozadinu), a klizač
- * `bg-background` (crn na crnom) — prekidači kategorija obavijesti bili su
- * nevidljivi na mobitelu. Statički obrazac, isti rod kao
- * `eracunPanelNoHorizontalOverflow`.
+ * v0 (nevidljivo): staza `bg-input` + proziran rub, klizač `bg-background`.
+ * v1 (i dalje nevidljivo u osobnoj tamnoj temi): `bg-muted` + `border-border` —
+ * oba AMBIJENTALNA tokena, razlika prema pozadini je matematička, ne vidljiva.
+ * v2: isključena staza i rub izvedeni iz FOREGROUND tokena (`muted-foreground`),
+ * koji je po definiciji na suprotnom kraju ljestvice od pozadine u SVAKOJ temi.
+ *
+ * Test pada i na v0 i na v1 stilu.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -13,20 +15,25 @@ import { readFileSync } from 'node:fs';
 const switchSrc = readFileSync('src/components/ui/switch.tsx', 'utf8');
 const notifSrc = readFileSync('src/components/settings/NotificationsSection.tsx', 'utf8');
 
-describe('Switch — vidljiv u oba stanja', () => {
-  it('staza ima vidljiv rub, nikad border-transparent', () => {
-    expect(switchSrc).toContain('border-border');
+describe('Switch — vidljiv u oba stanja, neovisno o temi', () => {
+  it('isključena staza je foreground-bazirana, nikad ambijentalna', () => {
+    expect(switchSrc).toMatch(/data-\[state=unchecked\]:bg-muted-foreground\//);
+    for (const banned of [
+      'data-[state=unchecked]:bg-input',
+      'data-[state=unchecked]:bg-muted ',
+      'data-[state=unchecked]:bg-muted"',
+    ]) {
+      expect(switchSrc).not.toContain(banned);
+    }
+  });
+
+  it('rub isključene staze je također foreground-baziran', () => {
+    expect(switchSrc).toMatch(/data-\[state=unchecked\]:border-muted-foreground\//);
     expect(switchSrc).not.toContain('border-transparent');
   });
 
-  it('isključena staza ne koristi bg-input (nevidljiv u tamnom)', () => {
-    expect(switchSrc).not.toContain('data-[state=unchecked]:bg-input');
-    expect(switchSrc).toContain('data-[state=unchecked]:bg-muted');
-  });
-
-  it('klizač ima vlastitu boju u oba stanja, nikad bg-background', () => {
-    expect(switchSrc).not.toContain('bg-background shadow-lg');
-    expect(switchSrc).toContain('data-[state=unchecked]:bg-muted-foreground');
+  it('klizač ima suprotnost prema stazi u oba stanja', () => {
+    expect(switchSrc).toContain('data-[state=unchecked]:bg-background');
     expect(switchSrc).toContain('data-[state=checked]:bg-primary-foreground');
   });
 
@@ -36,11 +43,9 @@ describe('Switch — vidljiv u oba stanja', () => {
 });
 
 describe('Prekidači kategorija obavijesti — uzak ekran', () => {
-  it('prekidač se ne smije stisnuti ni zalijepiti za tekst', () => {
-    const rows = notifSrc.match(/<Switch\b[^]*?\/>/g) ?? [];
-    expect(rows.length).toBeGreaterThan(0);
-    const categoryRows = notifSrc.match(/className="ml-3 shrink-0"/g) ?? [];
-    expect(categoryRows.length).toBeGreaterThanOrEqual(2);
+  it('prekidači se ne stišću', () => {
+    const categoryRows = notifSrc.match(/shrink-0/g) ?? [];
+    expect(categoryRows.length).toBeGreaterThanOrEqual(6);
   });
 
   it('tekst retka je skraćiv (min-w-0 + truncate), pa ne gura prekidač van', () => {

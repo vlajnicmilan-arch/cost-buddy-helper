@@ -7,8 +7,15 @@ const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">{children}</ScrollAreaPrimitive.Viewport>
+  /**
+   * ŠIRINSKI ČUVAR: Radix Viewportu ubacuje unutarnji `div` sa `display:table`
+   * (inline stil). Tablica se širi na `max-content`, pa sadržaj postaje ŠIRI od
+   * dijaloga; Root ima `overflow-hidden`, a vodoravne trake nema → desni rub se
+   * AMPUTIRA bez ikakvog scrolla (prekidači u Postavkama nestali na mobitelu).
+   * Zato taj div nasilno vraćamo na `block` + punu širinu.
+   */
+  <ScrollAreaPrimitive.Root ref={ref} className={cn("relative overflow-hidden w-full min-w-0", className)} {...props}>
+    <ScrollAreaPrimitive.Viewport className="h-full w-full min-w-0 rounded-[inherit] [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0">{children}</ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>

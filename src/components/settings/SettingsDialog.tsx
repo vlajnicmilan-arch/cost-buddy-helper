@@ -745,8 +745,9 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[70vh]">
-            <div className="space-y-6 py-4 pr-4">
+          <ScrollArea className="max-h-[70vh] w-full min-w-0 overflow-x-hidden">
+            <div className="space-y-6 py-4 pr-2 w-full min-w-0">
+
               {activeCategory ? (
                 activeCategory.sections.map((sectionKey, index) => (
                   <div key={sectionKey} className="space-y-6">
