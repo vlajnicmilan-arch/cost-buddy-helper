@@ -14,6 +14,7 @@ import {
 import { AlertTriangle, Check, Loader2, Pencil, ShieldAlert, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailReviewQueue, type MailReviewItem } from '@/hooks/useMailReviewQueue';
+import { describeDbError } from '@/lib/eracun/dbError';
 
 /**
  * MAIL UVOZ — red "Na pregled" (sestrinski EracunImportDialogu).
