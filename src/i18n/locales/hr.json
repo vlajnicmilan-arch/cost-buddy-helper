@@ -6442,7 +6442,13 @@
     },
     "invalidDate": "Nevaljan datum — npr. 15.08.2026.",
     "invalidAmount": "Nevaljan iznos — npr. 1.660,36",
-    "pickDate": "Odaberi datum"
+    "pickDate": "Odaberi datum",
+    "knownIssuer": "Poznat izdavatelj · potvrđen {{count}}×",
+    "trustHint": "Tehnička provjerljivost pošiljatelja e-maila",
+    "rememberIssuer": "Zapamti {{name}} (OIB {{oib}}) kao mog izdavatelja",
+    "alarm": {
+      "ibanChanged": "IBAN se razlikuje od dosadašnjih — provjeri prije plaćanja."
+    }
   },
   "documents": {
     "title": "Dokumenti",
@@ -6470,5 +6476,18 @@
       "changeFailed": "Promjena odredišta nije uspjela"
     },
     "liveNotice": "Stigao dokument na pregled"
+  },
+  "issuers": {
+    "title": "Moji izdavatelji",
+    "description": "Pravila nastala tvojim potvrdama. Sljedeći računi tih izdavatelja stižu popunjeni.",
+    "empty": "Još nema zapamćenih izdavatelja.",
+    "unnamed": "(bez naziva)",
+    "confirmedCount": "Potvrđen {{count}}×",
+    "lastSeen": "Zadnji put viđen",
+    "forget": "Zaboravi",
+    "forgetTitle": "Zaboraviti izdavatelja?",
+    "forgetWarning": "Novi računi tog izdavatelja više neće stizati popunjeni. Postojeći dokumenti ostaju netaknuti.",
+    "forgotten": "Pravilo je obrisano",
+    "forgetFailed": "Brisanje nije uspjelo"
   }
 }

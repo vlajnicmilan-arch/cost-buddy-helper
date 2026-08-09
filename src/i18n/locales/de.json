@@ -6432,7 +6432,13 @@
     },
     "invalidDate": "Ungültiges Datum — z. B. 15.08.2026.",
     "invalidAmount": "Ungültiger Betrag — z. B. 1.660,36",
-    "pickDate": "Datum wählen"
+    "pickDate": "Datum wählen",
+    "knownIssuer": "Bekannter Aussteller · {{count}}× bestätigt",
+    "trustHint": "Technische Überprüfbarkeit des E-Mail-Absenders",
+    "rememberIssuer": "{{name}} (USt-IdNr. {{oib}}) als meinen Aussteller merken",
+    "alarm": {
+      "ibanChanged": "IBAN weicht von den bisherigen ab — vor der Zahlung prüfen."
+    }
   },
   "documents": {
     "title": "Dokumente",
@@ -6459,5 +6465,18 @@
       "changeFailed": "Ändern des Ziels fehlgeschlagen"
     },
     "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen"
+  },
+  "issuers": {
+    "title": "Meine Aussteller",
+    "description": "Regeln aus deinen Bestätigungen. Künftige Rechnungen dieser Aussteller kommen vorausgefüllt an.",
+    "empty": "Noch keine gemerkten Aussteller.",
+    "unnamed": "(ohne Namen)",
+    "confirmedCount": "{{count}}× bestätigt",
+    "lastSeen": "Zuletzt gesehen",
+    "forget": "Vergessen",
+    "forgetTitle": "Aussteller vergessen?",
+    "forgetWarning": "Neue Rechnungen dieses Ausstellers kommen nicht mehr vorausgefüllt an. Bestehende Dokumente bleiben unberührt.",
+    "forgotten": "Regel gelöscht",
+    "forgetFailed": "Löschen fehlgeschlagen"
   }
 }
