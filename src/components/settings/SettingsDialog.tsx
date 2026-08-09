@@ -447,9 +447,252 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
   };
 
+  const renderSection = (key: SettingsSectionKey) => {
+    switch (key) {
+      case 'profile':
+        return (
+          <ProfileSection
+            key="profile"
+            displayName={displayName}
+            editingName={editingName}
+            setEditingName={setEditingName}
+            tempName={tempName}
+            setTempName={setTempName}
+            savingName={savingName}
+            onSaveName={handleSaveName}
+            onCancelEditName={handleCancelEditName}
+          />
+        );
+      case 'language':
+        return (
+          <AppearanceSection
+            key="language"
+            isDark={isDark}
+            onToggleTheme={toggleTheme}
+            languageCode={i18n.language}
+            onLanguageChange={handleLanguageChange}
+            sections={['language']}
+            hideHeading
+          />
+        );
+      case 'theme':
+        return (
+          <AppearanceSection
+            key="theme"
+            isDark={isDark}
+            onToggleTheme={toggleTheme}
+            languageCode={i18n.language}
+            onLanguageChange={handleLanguageChange}
+            sections={['theme']}
+            hideHeading
+          />
+        );
+      case 'modules':
+        return (
+          <ModulesSection
+            key="modules"
+            onShowBusinessProfile={() => setShowBusinessProfile(true)}
+            isLocalMode={isLocalMode}
+          />
+        );
+      case 'subscription':
+        return <SubscriptionSection key="subscription" />;
+      case 'notifications':
+        return (
+          <NotificationsSection
+            key="notifications"
+            soundEnabled={soundEnabled}
+            onSoundToggle={handleSoundToggle}
+            pushEnabled={pushEnabled}
+            onPushToggle={handlePushToggle}
+            isLocalMode={isLocalMode}
+            isAdmin={isAdminUser}
+          />
+        );
+      case 'security':
+        return (
+          <SecuritySection
+            key="security"
+            appLock={appLock}
+            onShowSetPin={() => setShowSetPin(true)}
+          />
+        );
+      case 'data':
+        return (
+          <DataSection
+            key="data"
+            isLocalMode={isLocalMode}
+            onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
+            currencyCode={currency.code}
+            onCurrencyChange={(code) => setCurrency(code)}
+            onExportZip={handleExportZip}
+            isExportingZip={isExportingZip}
+            onShowImportDialog={() => setShowImportDialog(true)}
+          />
+        );
+      case 'advanced':
+        return (
+          <AdvancedSection
+            key="advanced"
+            onCheckForUpdates={handleCheckForUpdates}
+            isCheckingUpdate={isCheckingUpdate}
+            multiCurrencyEnabled={multiCurrencyEnabled}
+            onMultiCurrencyChange={setMultiCurrencyEnabled}
+            onExport={handleExport}
+            isExporting={isExporting}
+            isAdmin={isAdminUser}
+          />
+        );
+      case 'danger':
+        return (
+          <DangerZoneSection
+            key="danger"
+            onShowResetConfirm={() => setShowResetConfirm(true)}
+            onShowDeleteConfirm={() => setShowDeleteConfirm1(true)}
+            user={user}
+            onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
+            onNavigateToTerms={() => { setOpen(false); navigate('/terms-of-service'); }}
+            onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
+          />
+        );
+      case 'mailImport':
+        return <MailImportSection key="mailImport" />;
+      case 'feedback':
+        return <MyFeedbackSection key="feedback" />;
+      case 'help':
+        return (
+          <div className="space-y-4" key="help">
+            <button
+              onClick={() => { setOpen(false); setShowHelpDialog(true); }}
+              className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <HelpCircle className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">{t('settings.userGuide', 'Upute za korištenje')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.userGuideDesc', 'Naučite koristiti aplikaciju')}</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            <button
+              onClick={() => { setOpen(false); setShowSupportDialog(true); }}
+              className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">{t('settings.contactSupport', 'Kontakt podrška')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.contactSupportDesc', 'Odgovor unutar 24h • support@vmbalance.com')}</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            {!isLocalMode && user && (
+              <>
+                <button
+                  onClick={() => setShowShareDialog(true)}
+                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Share2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{t('settings.inviteFriend', 'Pozovi prijatelja')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.inviteFriendDesc', 'Podijeli link za preuzimanje aplikacije')}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+
+                <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+                  <DialogContent className="max-w-sm rounded-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-center">{t('settings.shareWithFriend', 'Podijeli s prijateljem')}</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-3 py-4">
+                      {(() => {
+                        const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
+                        const shareText = t('settings.shareText', 'Preuzmi Centar aplikaciju za jednostavno praćenje troškova!');
+                        return (
+                          <>
+                            <button onClick={() => { window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`; setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center"><MessageCircle className="w-6 h-6 text-[#25D366]" /></div>
+                              <span className="text-sm font-medium">WhatsApp</span>
+                            </button>
+                            <button onClick={() => { window.open(`viber://forward?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-[#7360F2]/10 flex items-center justify-center"><MessageCircle className="w-6 h-6 text-[#7360F2]" /></div>
+                              <span className="text-sm font-medium">Viber</span>
+                            </button>
+                            <button onClick={() => { window.open(`mailto:?subject=${encodeURIComponent('Centar')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"><Mail className="w-6 h-6 text-primary" /></div>
+                              <span className="text-sm font-medium">Email</span>
+                            </button>
+                            <button onClick={async () => { try { await navigator.clipboard.writeText(referralUrl); showSuccess(t('settings.linkCopied', 'Link kopiran!')); } catch { showError(t('settings.copyError', 'Greška pri kopiranju')); } setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center"><Copy className="w-6 h-6 text-muted-foreground" /></div>
+                              <span className="text-sm font-medium">{t('settings.copyLink', 'Kopiraj link')}</span>
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
+
+            {!isLocalMode && (
+              <button
+                onClick={() => { setOpen(false); setShowBugReport(true); }}
+                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                    <Bug className="w-4 h-4 text-destructive" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{t('settings.reportProblem', 'Prijavi problem')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.reportProblemDesc', 'Prijavite grešku ili nejasnoću')}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
+
+            {isAdminUser && (
+              <button
+                onClick={() => { setOpen(false); navigate('/admin'); }}
+                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{t('settings.adminPanel', 'Admin panel')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.adminPanelDesc', 'Pregledaj prijave problema')}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) setActiveCategory(null); }}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9">
             <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -458,236 +701,47 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              {t('settings.title', 'Postavke')}
+              {activeCategory ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('common.back', 'Natrag')}
+                    className="rounded-xl h-8 w-8 -ml-1"
+                    onClick={() => setActiveCategory(null)}
+                    data-testid="settings-subscreen-back"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  {t(activeCategory.titleKey, activeCategory.titleFallback)}
+                </>
+              ) : (
+                <>
+                  <Settings className="w-5 h-5" />
+                  {t('settings.title', 'Postavke')}
+                </>
+              )}
             </DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="max-h-[70vh]">
-          <div className="space-y-6 py-4 pr-4">
-            <ProfileSection
-              displayName={displayName}
-              editingName={editingName}
-              setEditingName={setEditingName}
-              tempName={tempName}
-              setTempName={setTempName}
-              savingName={savingName}
-              onSaveName={handleSaveName}
-              onCancelEditName={handleCancelEditName}
-            />
-
-            <SubscriptionSection />
-
-            <AppearanceSection
-              isDark={isDark}
-              onToggleTheme={toggleTheme}
-              languageCode={i18n.language}
-              onLanguageChange={handleLanguageChange}
-            />
-
-            <Separator />
-
-            <ModulesSection
-              onShowBusinessProfile={() => setShowBusinessProfile(true)}
-              isLocalMode={isLocalMode}
-            />
-
-            <MailImportSection />
-
-            <Separator />
-
-
-
-            <NotificationsSection
-              soundEnabled={soundEnabled}
-              onSoundToggle={handleSoundToggle}
-              pushEnabled={pushEnabled}
-              onPushToggle={handlePushToggle}
-              isLocalMode={isLocalMode}
-              isAdmin={isAdminUser}
-            />
-
-            <Separator />
-
-            <SecuritySection
-              appLock={appLock}
-              onShowSetPin={() => setShowSetPin(true)}
-            />
-
-            <Separator />
-
-            <DataSection
-              isLocalMode={isLocalMode}
-              onNavigateToSetup={() => { setOpen(false); navigate('/setup'); }}
-              currencyCode={currency.code}
-              onCurrencyChange={(code) => setCurrency(code)}
-              onExportZip={handleExportZip}
-              isExportingZip={isExportingZip}
-              onShowImportDialog={() => setShowImportDialog(true)}
-            />
-
-            <Separator />
-
-            {/* Help Section */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('settings.help', 'Pomoć')}
-              </h3>
-
-              <button
-                onClick={() => { setOpen(false); setShowHelpDialog(true); }}
-                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <HelpCircle className="w-4 h-4 text-primary" />
+            <div className="space-y-6 py-4 pr-4">
+              {activeCategory ? (
+                activeCategory.sections.map((sectionKey, index) => (
+                  <div key={sectionKey} className="space-y-6">
+                    {index > 0 && <Separator />}
+                    {renderSection(sectionKey)}
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium">{t('settings.userGuide', 'Upute za korištenje')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings.userGuideDesc', 'Naučite koristiti aplikaciju')}</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
-
-              <button
-                onClick={() => { setOpen(false); setShowSupportDialog(true); }}
-                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium">{t('settings.contactSupport', 'Kontakt podrška')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings.contactSupportDesc', 'Odgovor unutar 24h • support@vmbalance.com')}</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
-
-              {!isLocalMode && user && (
-                <>
-                  <button
-                    onClick={() => setShowShareDialog(true)}
-                    className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Share2 className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-medium">{t('settings.inviteFriend', 'Pozovi prijatelja')}</p>
-                        <p className="text-xs text-muted-foreground">{t('settings.inviteFriendDesc', 'Podijeli link za preuzimanje aplikacije')}</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </button>
-
-                  <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-                    <DialogContent className="max-w-sm rounded-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="text-center">{t('settings.shareWithFriend', 'Podijeli s prijateljem')}</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid grid-cols-2 gap-3 py-4">
-                        {(() => {
-                          const referralUrl = `${window.location.origin}/install?ref=${user.id}`;
-                          const shareText = t('settings.shareText', 'Preuzmi Centar aplikaciju za jednostavno praćenje troškova!');
-                          return (
-                            <>
-                              <button onClick={() => { window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`; setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center"><MessageCircle className="w-6 h-6 text-[#25D366]" /></div>
-                                <span className="text-sm font-medium">WhatsApp</span>
-                              </button>
-                              <button onClick={() => { window.open(`viber://forward?text=${encodeURIComponent(shareText + ' ' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="w-12 h-12 rounded-full bg-[#7360F2]/10 flex items-center justify-center"><MessageCircle className="w-6 h-6 text-[#7360F2]" /></div>
-                                <span className="text-sm font-medium">Viber</span>
-                              </button>
-                              <button onClick={() => { window.open(`mailto:?subject=${encodeURIComponent('Centar')}&body=${encodeURIComponent(shareText + '\n\n' + referralUrl)}`, '_blank'); setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"><Mail className="w-6 h-6 text-primary" /></div>
-                                <span className="text-sm font-medium">Email</span>
-                              </button>
-                              <button onClick={async () => { try { await navigator.clipboard.writeText(referralUrl); showSuccess(t('settings.linkCopied', 'Link kopiran!')); } catch { showError(t('settings.copyError', 'Greška pri kopiranju')); } setShowShareDialog(false); }} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center"><Copy className="w-6 h-6 text-muted-foreground" /></div>
-                                <span className="text-sm font-medium">{t('settings.copyLink', 'Kopiraj link')}</span>
-                              </button>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </>
-              )}
-
-              {!isLocalMode && (
-                <button
-                  onClick={() => { setOpen(false); setShowBugReport(true); }}
-                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
-                      <Bug className="w-4 h-4 text-destructive" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">{t('settings.reportProblem', 'Prijavi problem')}</p>
-                      <p className="text-xs text-muted-foreground">{t('settings.reportProblemDesc', 'Prijavite grešku ili nejasnoću')}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
-              )}
-
-              {isAdminUser && (
-                <button
-                  onClick={() => { setOpen(false); navigate('/admin'); }}
-                  className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">{t('settings.adminPanel', 'Admin panel')}</p>
-                      <p className="text-xs text-muted-foreground">{t('settings.adminPanelDesc', 'Pregledaj prijave problema')}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </button>
+                ))
+              ) : (
+                <SettingsCategoryMenu onSelect={(id) => setActiveCategoryId(id)} />
               )}
             </div>
-
-            <Separator />
-
-            <MyFeedbackSection />
-
-            <Separator />
-
-            <AdvancedSection
-              onCheckForUpdates={handleCheckForUpdates}
-              isCheckingUpdate={isCheckingUpdate}
-              multiCurrencyEnabled={multiCurrencyEnabled}
-              onMultiCurrencyChange={setMultiCurrencyEnabled}
-              onExport={handleExport}
-              isExporting={isExporting}
-              isAdmin={isAdminUser}
-            />
-
-            <Separator />
-
-            <DangerZoneSection
-              onShowResetConfirm={() => setShowResetConfirm(true)}
-              onShowDeleteConfirm={() => setShowDeleteConfirm1(true)}
-              user={user}
-              onNavigateToPrivacy={() => { setOpen(false); navigate('/privacy-policy'); }}
-              onNavigateToTerms={() => { setOpen(false); navigate('/terms-of-service'); }}
-              onNavigateToTrash={() => { setOpen(false); navigate('/trash'); }}
-            />
-
-          </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
 
 
 
