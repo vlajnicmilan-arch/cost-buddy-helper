@@ -126,6 +126,36 @@ async function ownOibsFor(supabase: Supa, userId: string): Promise<OwnOibEntry[]
     .filter((e) => e.oib.length === 11);
 }
 
+/**
+ * Domene VLASNIKA (adrese njegovih tvrtki) — forwarder brana ih izbacuje iz
+ * ključa pamćenja: proslijeđena poruta ne identificira izdavatelja.
+ */
+async function ownDomainsFor(supabase: Supa, userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("email")
+    .eq("user_id", userId);
+  return ((data ?? []) as Array<{ email: string | null }>)
+    .map((r) => (r.email ?? "").split("@")[1]?.trim().toLowerCase() ?? "")
+    .filter((d) => d.length > 0);
+}
+
+/** Pamćenje izdavatelja i mjesta — SAMO redci vlasnika (service role klijent). */
+async function issuerMemoryFor(supabase: Supa, userId: string): Promise<IssuerMemoryRow[]> {
+  const { data, error } = await supabase
+    .from("mail_issuer_memory")
+    .select("from_domain, supplier_oib, place_code, supplier_name, place_label")
+    .eq("user_id", userId)
+    .limit(500);
+  if (error) {
+    console.warn("[mail-process] pamćenje izdavatelja nedostupno", error.message);
+    return [];
+  }
+  return (data ?? []) as unknown as IssuerMemoryRow[];
+}
+
+
+
 async function knownCounterparties(supabase: Supa, userId: string) {
   const [{ data: ibanRows }, { data: invRows }] = await Promise.all([
     supabase.from("eracun_counterparty_iban").select("oib, iban").eq("user_id", userId),
