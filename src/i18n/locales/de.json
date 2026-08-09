@@ -6280,7 +6280,8 @@
       "obrisana": "Gelöscht",
       "neuspjela": "Fehlgeschlagen",
       "neuspjela_konacno": "Endgültig fehlgeschlagen"
-    }
+    },
+    "reprocess": "Erneut verarbeiten"
   },
   "mailReview": {
     "open": "Zur Prüfung",
@@ -6335,7 +6336,9 @@
       "vise_kandidata_dospijece": "Das Dokument nennt mehrere Fälligkeitsdaten — prüfe das ausgewählte",
       "vise_kandidata_broj": "Das Dokument nennt mehrere Nummern — prüfe die Dokumentnummer",
       "pdf_bez_teksta": "Das PDF hat keine Textebene (Scan) — Daten wurden aus dem Bild gelesen",
-      "ai_dopuna": "Felder wurden von der KI ergänzt — Betrag und Belegnummer prüfen."
+      "ai_dopuna": "Felder wurden von der KI ergänzt — Betrag und Belegnummer prüfen.",
+      "vise_vlastitih_oib": "Das Dokument enthält OIBs mehrerer deiner Firmen — persönlich zugeordnet",
+      "vjerojatno_duplikat": "Eine Rechnung mit dieser Nummer und diesem Lieferanten existiert vermutlich bereits"
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6373,6 +6376,12 @@
       "title": "Dokumente zur Prüfung",
       "subtitle_one": "{{count}} Dokument wartet auf Ihre Bestätigung",
       "subtitle_other": "{{count}} Dokumente warten auf Ihre Bestätigung"
+    },
+    "scope": {
+      "label": "Dokumentziel",
+      "personal": "Persönlich",
+      "changed": "Ziel geändert",
+      "changeFailed": "Ändern des Ziels fehlgeschlagen"
     }
   }
 }

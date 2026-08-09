@@ -6280,7 +6280,8 @@
       "obrisana": "Deleted",
       "neuspjela": "Failed",
       "neuspjela_konacno": "Failed permanently"
-    }
+    },
+    "reprocess": "Reprocess"
   },
   "mailReview": {
     "open": "To review",
@@ -6335,7 +6336,9 @@
       "vise_kandidata_dospijece": "The document lists several due dates — check the selected one",
       "vise_kandidata_broj": "The document lists several numbers — check the document number",
       "pdf_bez_teksta": "The PDF has no text layer (scan) — data was read from the image",
-      "ai_dopuna": "Fields were completed by AI — check the amount and document number."
+      "ai_dopuna": "Fields were completed by AI — check the amount and document number.",
+      "vise_vlastitih_oib": "Document contains OIBs of several of your companies — routed to personal",
+      "vjerojatno_duplikat": "An invoice with this number and supplier probably already exists"
     },
     "field": {
       "supplierName": "Supplier",
@@ -6373,6 +6376,12 @@
       "title": "Documents to review",
       "subtitle_one": "{{count}} document awaiting your confirmation",
       "subtitle_other": "{{count}} documents awaiting your confirmation"
+    },
+    "scope": {
+      "label": "Document destination",
+      "personal": "Personal",
+      "changed": "Destination changed",
+      "changeFailed": "Changing the destination failed"
     }
   }
 }

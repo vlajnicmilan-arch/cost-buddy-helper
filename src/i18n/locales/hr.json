@@ -6290,7 +6290,8 @@
       "obrisana": "Obrisana",
       "neuspjela": "Neuspjela",
       "neuspjela_konacno": "Neuspjela konačno"
-    }
+    },
+    "reprocess": "Ponovno obradi"
   },
   "mailReview": {
     "open": "Na pregled",
@@ -6345,7 +6346,9 @@
       "vise_kandidata_dospijece": "Dokument navodi više datuma dospijeća — provjeri odabrani",
       "vise_kandidata_broj": "Dokument navodi više brojeva — provjeri broj dokumenta",
       "pdf_bez_teksta": "PDF nema tekstualni sloj (sken) — podaci su pročitani sa slike",
-      "ai_dopuna": "Podatke je dopunila umjetna inteligencija — provjeri iznos i broj dokumenta."
+      "ai_dopuna": "Podatke je dopunila umjetna inteligencija — provjeri iznos i broj dokumenta.",
+      "vise_vlastitih_oib": "Dokument sadrži OIB-e više tvojih tvrtki — usmjeren je na osobno",
+      "vjerojatno_duplikat": "Račun s tim brojem i dobavljačem vjerojatno već postoji"
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6384,6 +6387,12 @@
       "subtitle_one": "{{count}} dokument čeka tvoju potvrdu",
       "subtitle_few": "{{count}} dokumenta čekaju tvoju potvrdu",
       "subtitle_other": "{{count}} dokumenata čeka tvoju potvrdu"
+    },
+    "scope": {
+      "label": "Odredište dokumenta",
+      "personal": "Osobno",
+      "changed": "Odredište je promijenjeno",
+      "changeFailed": "Promjena odredišta nije uspjela"
     }
   }
 }
