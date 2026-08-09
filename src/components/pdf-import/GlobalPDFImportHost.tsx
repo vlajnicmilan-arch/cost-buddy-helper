@@ -383,6 +383,19 @@ export const GlobalPDFImportHost = () => {
       transactionsCount: count,
       importBatchId,
     });
+    // Signal za pozivatelje izvan uvoza (npr. most „izvod iz maila") — uvoz je
+    // stvarno zapisan, pa stavka reda pregleda smije postati `povezan`.
+    try {
+      window.dispatchEvent(
+        new CustomEvent('vm:pdf-import-completed', {
+          detail: {
+            fileName: fileMetaRef.current?.name ?? null,
+            sourceId: pdfImport.source.id,
+            count,
+          },
+        }),
+      );
+    } catch {}
   }, [user?.id, pdfImport.source, pdfImport.result]);
 
   // Korak 3b — detect a resumable import review on mount / focus / visibility.
