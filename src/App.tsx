@@ -82,6 +82,7 @@ const Trash = lazy(() => import("./pages/Trash"));
 const PaywallAuthRedirect = lazy(() => import("./pages/PaywallAuthRedirect"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ImportReview = lazy(() => import("./pages/ImportReview"));
+const Documents = lazy(() => import("./pages/Documents"));
 
 
 
