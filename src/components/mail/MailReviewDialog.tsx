@@ -90,16 +90,19 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
         return;
       }
 
-      if (result.reason === 'mozda_vec_postoji') {
-        setCollision({ item, existing: result.existing ?? {} });
+      const failure = result as { reason: string; existing?: Record<string, unknown>; detail?: string };
+
+      if (failure.reason === 'mozda_vec_postoji') {
+        setCollision({ item, existing: failure.existing ?? {} });
         return;
       }
 
       // Konkretan razlog umjesto generičkog teksta (popravak nijeme greške).
       showError(
-        t(`mailReview.error.${result.reason}`, t('mailReview.confirmFailed', 'Spremanje nije uspjelo')),
+        t(`mailReview.error.${failure.reason}`, t('mailReview.confirmFailed', 'Spremanje nije uspjelo')),
       );
-      console.warn('[MailReviewDialog] confirm failed:', result.reason, result.detail ?? '');
+      console.warn('[MailReviewDialog] confirm failed:', failure.reason, failure.detail ?? '');
+
     } catch (e) {
       showError(t('mailReview.confirmFailed', 'Spremanje nije uspjelo'));
       console.warn('[MailReviewDialog] confirm threw:', describeDbError(e));
