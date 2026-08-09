@@ -132,6 +132,12 @@ export const DocumentsReceivedTab = ({
                     {t('mailImport.attachments', 'Privitci')}: {m.attachment_count}
                   </span>
                 </div>
+                {m.last_error && (
+                  <div className="mt-1 text-document-pending">
+                    {t(`mailImport.reason.${m.last_error}`, m.last_error)}
+                  </div>
+                )}
+
                 {RETRYABLE.includes(m.status) && (
                   <Button
                     variant="outline"
