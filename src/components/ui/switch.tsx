@@ -33,7 +33,7 @@ const Switch = React.forwardRef<
         "pointer-events-none block h-5 w-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=checked]:bg-primary-foreground data-[state=unchecked]:translate-x-0 data-[state=unchecked]:bg-muted-foreground",
       )}
     />
-  </SwitchPrimitives.Thumb>
+
   </SwitchPrimitives.Root>
 ));
 Switch.displayName = SwitchPrimitives.Root.displayName;
