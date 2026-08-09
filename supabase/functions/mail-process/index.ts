@@ -20,6 +20,7 @@ import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_share
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
 import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
 import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
@@ -155,6 +156,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   }
 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
+  const ownOibs = await ownOibsFor(supabase, ownerId);
 
   const { data: atts } = await supabase
     .from("inbound_attachments")
@@ -178,6 +180,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   for (const unit of units) {
     let sniffed: ClassifyInput["sniffed"] = "unknown";
     let xml: string | null = null;
+    let pdfText = "";
+    let pdfBase64: string | null = null;
+    let pdfFilename: string | null = null;
     let forcedConfidence: "niska" | null = trust.forcedConfidence;
     const warnings: string[] = [...trust.warnings];
 
@@ -240,6 +245,15 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           warnings.push("pdf_nepotpun");
           forcedConfidence = "niska";
         }
+        // BESPLATNO prije AI-ja: tekstualni sloj PDF-a (prvih 10 stranica).
+        const pdf = await extractPdfText(unit.bytes);
+        pdfText = pdf.text;
+        if (pdf.isScan) {
+          warnings.push("pdf_bez_teksta");
+          // Sken je jedini put koji smije ici multimodalno.
+          pdfBase64 = encodeBase64(unit.bytes);
+          pdfFilename = String(unit.att.storage_path ?? "dokument.pdf").split("/").pop() ?? "dokument.pdf";
+        }
         await supabase
           .from("inbound_attachments")
           .update({
@@ -247,6 +261,8 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
             mime_sniffed: "pdf",
             page_count: pages.pageCount,
             incomplete: pages.incomplete,
+            extracted_text: pdfText.slice(0, 200000) || null,
+            has_text_layer: !pdf.isScan,
           })
           .eq("id", unit.attachmentId as string);
       } else if (verdict.sniffed === "xml") {
@@ -283,6 +299,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       fromHeader: msg.from_header as string | null,
       subject: msg.subject as string | null,
       bodyText,
+      pdfText,
+      pdfBase64,
+      pdfFilename,
       links,
       googleAuthenticated: isAuthenticatedGoogle({
         spf: msg.spf_result,
@@ -290,6 +309,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         fromHeader: msg.from_header as string | null,
       }),
       knownOibs: oibs,
+      ownOibs,
       knownSenders: [],
       searchText: String(unit.att?.storage_path ?? ""),
     };

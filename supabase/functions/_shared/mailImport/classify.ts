@@ -36,6 +36,9 @@ export interface ClassifyInput {
   bodyText?: string;
   /** Tekstualni sloj PDF privitka (prvih 10 stranica), prazno kod skena. */
   pdfText?: string | null;
+  /** Base64 PDF-a — prosljeđuje se AI-ju SAMO kad tekstualnog sloja nema. */
+  pdfBase64?: string | null;
+  pdfFilename?: string | null;
   links?: readonly string[];
   googleAuthenticated?: boolean;
   /** OIB-i i adrese pošiljatelja koje smo već potvrdili u prošlosti. */
