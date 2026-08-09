@@ -40,6 +40,8 @@ import { EracunImportDialog } from './EracunImportDialog';
 import { MarkPaidDialog, type MarkPaidResult } from './MarkPaidDialog';
 import { MarkCollectedDialog, type MarkCollectedResult } from './MarkCollectedDialog';
 import { PaymentMatchReview } from './PaymentMatchReview';
+import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
+import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
 type Filter = 'unpaid' | 'paid' | 'all';
 type Direction = 'in' | 'out';
