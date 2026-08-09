@@ -179,6 +179,13 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         fallback_route: '/install',
         highlight: null,
       };
+    // Mail uvoz: dom dokumenata je ekran `/dokumenti`, tab „Na pregled".
+    case 'mail_document_pending':
+      return {
+        route: '/dokumenti',
+        fallback_route: '/dokumenti',
+        highlight: null,
+      };
     case 'decision_step':
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
