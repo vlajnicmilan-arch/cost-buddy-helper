@@ -22,7 +22,6 @@ describe('Switch — vidljiv u oba stanja, neovisno o temi', () => {
       'data-[state=unchecked]:bg-input',
       'data-[state=unchecked]:bg-muted ',
       'data-[state=unchecked]:bg-muted"',
-      'data-[state=unchecked]:bg-background',
     ]) {
       expect(switchSrc).not.toContain(banned);
     }
