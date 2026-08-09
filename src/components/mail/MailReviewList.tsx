@@ -339,7 +339,30 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </dl>
             )}
 
+            {offerRemember && (
+              <label
+                data-testid="remember-issuer"
+                className="flex items-start gap-2 pt-1 text-xs cursor-pointer"
+              >
+                <Checkbox
+                  className="mt-0.5"
+                  checked={rememberOff[item.id] !== true}
+                  onCheckedChange={(v) =>
+                    setRememberOff((s) => ({ ...s, [item.id]: v !== true }))
+                  }
+                />
+                <span>
+                  {t('mailReview.rememberIssuer', 'Zapamti {{name}} (OIB {{oib}}) kao mog izdavatelja', {
+                    name: String(extraction.supplier_name ?? '').trim() ||
+                      t('issuers.unnamed', '(bez naziva)'),
+                    oib: supplierOib,
+                  })}
+                </span>
+              </label>
+            )}
+
             <div className="flex flex-wrap gap-2 pt-1">
+
               <Button
                 size="sm"
                 className="min-h-[44px]"
