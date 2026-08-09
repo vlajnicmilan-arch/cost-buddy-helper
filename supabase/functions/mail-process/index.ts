@@ -377,6 +377,13 @@ Deno.serve(async (req) => {
   );
 
   try {
+    // 1) Zombiji prvo: posao 'u_obradi' stariji od 15 min tretira se kao pao.
+    //    Bez ovoga zaglavljeni posao visi zauvijek (kvar iz kolovoza 2026).
+    const { data: reaped, error: reapErr } = await supabase.rpc("mail_ingest_reap_stuck_jobs", {
+      p_older_minutes: 15,
+    });
+    if (reapErr) console.warn("[mail-process] reaper nije uspio", reapErr.message);
+
     const { data: jobs, error } = await supabase.rpc("mail_ingest_claim_jobs", { p_limit: 5 });
     if (error) {
       console.error("[mail-process] preuzimanje poslova nije uspjelo", error);
@@ -388,9 +395,13 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const job of claimed) {
+      // Posao MORA završiti u terminalnom stanju. `settled` + finally jamče da
+      // ni iznimka ni rani return ne ostave posao u 'u_obradi'.
+      let settled = false;
       try {
         await processMessage(supabase, job.message_id);
         await supabase.rpc("mail_ingest_finish_job", { p_job_id: job.job_id, p_ok: true });
+        settled = true;
         ok += 1;
       } catch (e) {
         const message = (e as Error)?.message ?? "unknown";
@@ -400,11 +411,22 @@ Deno.serve(async (req) => {
           p_ok: false,
           p_error: message,
         });
+        settled = true;
         failed += 1;
+      } finally {
+        if (!settled) {
+          console.error("[mail-process] posao nije zatvoren — prisilno neuspjeo", job.job_id);
+          await supabase.rpc("mail_ingest_finish_job", {
+            p_job_id: job.job_id,
+            p_ok: false,
+            p_error: "worker_prekinut",
+          });
+        }
       }
     }
 
-    return json({ ok: true, claimed: claimed.length, processed: ok, failed });
+    return json({ ok: true, reaped: reaped ?? 0, claimed: claimed.length, processed: ok, failed });
+
   } catch (e) {
     console.error("[mail-process] unhandled", e);
     return json({ error: (e as Error)?.message ?? "unknown" }, 500);
