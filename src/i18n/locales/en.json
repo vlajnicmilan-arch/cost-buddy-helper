@@ -6329,7 +6329,12 @@
       "verifikacija_link_nije_googleov": "Link is not on a Google domain — only the code is shown",
       "verifikacija_bez_koda": "Code not found",
       "duplikat_privitka": "This attachment was already processed",
-      "ai_nedostupan": "Automatic analysis is currently unavailable"
+      "ai_nedostupan": "Automatic analysis is currently unavailable",
+      "vise_kandidata_iban": "The document lists several IBANs — check the selected one",
+      "vise_kandidata_oib": "The document lists several OIBs — check the supplier",
+      "vise_kandidata_dospijece": "The document lists several due dates — check the selected one",
+      "vise_kandidata_broj": "The document lists several numbers — check the document number",
+      "pdf_bez_teksta": "The PDF has no text layer (scan) — data was read from the image"
     },
     "field": {
       "supplierName": "Supplier",
@@ -6345,6 +6350,9 @@
       "description": "A record with the same number and supplier already exists. Nothing was changed — you decide.",
       "replace": "Replace existing",
       "discard": "Discard new"
-    }
+    },
+    "invalidDate": "Invalid date — e.g. 15.08.2026.",
+    "invalidAmount": "Invalid amount — e.g. 1,660.36",
+    "pickDate": "Pick a date"
   }
 }

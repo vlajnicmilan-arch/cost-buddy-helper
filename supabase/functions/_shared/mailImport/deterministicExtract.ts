@@ -8,6 +8,7 @@
 
 import { pickSupplierOib, OIB_AMBIGUOUS_WARNING } from './oib.ts';
 import { findValidIbans, IBAN_AMBIGUOUS_WARNING } from './ibanCheck.ts';
+import { findInvoiceNumber, INVOICE_NUMBER_AMBIGUOUS_WARNING } from './invoiceNumber.ts';
 
 export const DUE_DATE_AMBIGUOUS_WARNING = 'vise_kandidata_dospijece';
 
@@ -57,6 +58,7 @@ export interface DeterministicResult {
   supplier_oib: string | null;
   iban: string | null;
   due_date: string | null;
+  invoice_number: string | null;
   warnings: string[];
   /** Bar jedno polje je bilo višeznačno — pouzdanost se obara. */
   ambiguous: boolean;
@@ -88,11 +90,15 @@ export function deterministicExtract(input: DeterministicInput): DeterministicRe
   const due = findDueDate(input.text);
   if (due.ambiguous) warnings.push(DUE_DATE_AMBIGUOUS_WARNING);
 
+  const number = findInvoiceNumber(input.text);
+  if (number.ambiguous) warnings.push(INVOICE_NUMBER_AMBIGUOUS_WARNING);
+
   return {
     supplier_oib: oibPick.oib,
     iban,
     due_date: due.dueDate,
+    invoice_number: number.invoiceNumber,
     warnings,
-    ambiguous: oibPick.ambiguous || ibans.length > 1 || due.ambiguous,
+    ambiguous: oibPick.ambiguous || ibans.length > 1 || due.ambiguous || number.ambiguous,
   };
 }

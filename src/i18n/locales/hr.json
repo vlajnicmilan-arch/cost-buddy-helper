@@ -6339,7 +6339,12 @@
       "verifikacija_link_nije_googleov": "Link nije na Googleovoj domeni — prikazan je samo kod",
       "verifikacija_bez_koda": "Kod nije pronađen",
       "duplikat_privitka": "Isti privitak je već obrađen",
-      "ai_nedostupan": "Automatska analiza trenutno nije dostupna"
+      "ai_nedostupan": "Automatska analiza trenutno nije dostupna",
+      "vise_kandidata_iban": "Dokument navodi više IBAN-ova — provjeri odabrani",
+      "vise_kandidata_oib": "Dokument navodi više OIB-ova — provjeri dobavljača",
+      "vise_kandidata_dospijece": "Dokument navodi više datuma dospijeća — provjeri odabrani",
+      "vise_kandidata_broj": "Dokument navodi više brojeva — provjeri broj dokumenta",
+      "pdf_bez_teksta": "PDF nema tekstualni sloj (sken) — podaci su pročitani sa slike"
     },
     "field": {
       "supplierName": "Dobavljač",
@@ -6355,6 +6360,9 @@
       "description": "Već postoji zapis s istim brojem i dobavljačem. Ništa nije promijenjeno — odluči što želiš.",
       "replace": "Zamijeni postojeći",
       "discard": "Odbaci novi"
-    }
+    },
+    "invalidDate": "Nevaljan datum — npr. 15.08.2026.",
+    "invalidAmount": "Nevaljan iznos — npr. 1.660,36",
+    "pickDate": "Odaberi datum"
   }
 }

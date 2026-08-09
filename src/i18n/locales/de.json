@@ -6329,7 +6329,12 @@
       "verifikacija_link_nije_googleov": "Link liegt nicht auf einer Google-Domain — nur der Code wird angezeigt",
       "verifikacija_bez_koda": "Code nicht gefunden",
       "duplikat_privitka": "Dieser Anhang wurde bereits verarbeitet",
-      "ai_nedostupan": "Automatische Analyse derzeit nicht verfügbar"
+      "ai_nedostupan": "Automatische Analyse derzeit nicht verfügbar",
+      "vise_kandidata_iban": "Das Dokument nennt mehrere IBANs — prüfe die ausgewählte",
+      "vise_kandidata_oib": "Das Dokument nennt mehrere OIBs — prüfe den Lieferanten",
+      "vise_kandidata_dospijece": "Das Dokument nennt mehrere Fälligkeitsdaten — prüfe das ausgewählte",
+      "vise_kandidata_broj": "Das Dokument nennt mehrere Nummern — prüfe die Dokumentnummer",
+      "pdf_bez_teksta": "Das PDF hat keine Textebene (Scan) — Daten wurden aus dem Bild gelesen"
     },
     "field": {
       "supplierName": "Lieferant",
@@ -6345,6 +6350,9 @@
       "description": "Ein Eintrag mit gleicher Nummer und gleichem Lieferanten existiert bereits. Nichts wurde geändert — du entscheidest.",
       "replace": "Vorhandenen ersetzen",
       "discard": "Neuen verwerfen"
-    }
+    },
+    "invalidDate": "Ungültiges Datum — z. B. 15.08.2026.",
+    "invalidAmount": "Ungültiger Betrag — z. B. 1.660,36",
+    "pickDate": "Datum wählen"
   }
 }

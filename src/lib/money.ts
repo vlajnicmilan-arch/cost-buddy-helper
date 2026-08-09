@@ -162,3 +162,25 @@ export const sanitizeMoneyKeystroke = (raw: string): string => {
   out = out.replace(/-/g, '');
   return (negative ? '-' : '') + out;
 };
+
+/**
+ * Hrvatski prikaz iznosa: `1.660,36`. Bez valute — pozivatelj je dodaje.
+ */
+export const formatHrAmount = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined || value === '') return '';
+  const n = typeof value === 'number' ? value : parseLocaleAmount(value).value;
+  if (!Number.isFinite(n)) return '';
+  return new Intl.NumberFormat('hr-HR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+};
+
+/**
+ * Tolerantan unos iznosa (`1.660,36`, `1660,36`, `1660.36`) → broj ili `null`.
+ * Tanki omotač oko `parseLocaleAmount` — jedan parser za cijelu aplikaciju.
+ */
+export const parseHrAmount = (text: string | null | undefined): number | null => {
+  const r = parseLocaleAmount(text);
+  return r.valid ? r.value : null;
+};

@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +13,14 @@ import { AlertTriangle, Check, Loader2, Pencil, ShieldAlert, X } from 'lucide-re
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailReviewQueue, type MailReviewItem } from '@/hooks/useMailReviewQueue';
 import { describeDbError } from '@/lib/eracun/dbError';
+import {
+  MailReviewFieldInput,
+  isMailFieldInvalid,
+  type MailFieldKind,
+} from '@/components/mail/MailReviewFieldInput';
+import type { DateContext } from '@/lib/dateValidation';
+import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
+import { formatHrAmount, parseHrAmount } from '@/lib/money';
 
 /**
  * MAIL UVOZ — red "Na pregled" (sestrinski EracunImportDialogu).
@@ -29,15 +35,31 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const FIELDS: Array<{ key: string; labelKey: string; fallback: string }> = [
-  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač' },
-  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB' },
-  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta' },
-  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja' },
-  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća' },
-  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno' },
-  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN' },
+type FieldDef = {
+  key: string;
+  labelKey: string;
+  fallback: string;
+  kind: MailFieldKind;
+  dateContext?: DateContext;
+};
+
+const FIELDS: FieldDef[] = [
+  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač', kind: 'text' },
+  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB', kind: 'text' },
+  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta', kind: 'text' },
+  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja', kind: 'date', dateContext: 'expense' },
+  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća', kind: 'date', dateContext: 'debt' },
+  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno', kind: 'amount' },
+  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN', kind: 'text' },
 ];
+
+/** Prikaz: ISO → dd.mm.gggg., broj → 1.660,36. Baza ostaje ISO/decimalna točka. */
+export const displayFieldValue = (field: FieldDef, raw: unknown): string => {
+  if (raw === null || raw === undefined || raw === '') return '—';
+  if (field.kind === 'date') return formatDateHr(String(raw)) || String(raw);
+  if (field.kind === 'amount') return formatHrAmount(raw as string | number) || String(raw);
+  return String(raw);
+};
 
 const trustVariant = (level: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
   if (level === 'T1' || level === 'T2') return 'secondary';
@@ -62,14 +84,37 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
     const next: Record<string, string> = {};
-    for (const f of FIELDS) next[f.key] = source[f.key] == null ? '' : String(source[f.key]);
+    for (const f of FIELDS) {
+      const raw = source[f.key];
+      if (raw === null || raw === undefined || raw === '') next[f.key] = '';
+      else if (f.kind === 'date') next[f.key] = formatDateHr(String(raw)) || String(raw);
+      else if (f.kind === 'amount') next[f.key] = formatHrAmount(raw as string | number) || String(raw);
+      else next[f.key] = String(raw);
+    }
     setDraft(next);
     setEditingId(item.id);
   };
 
+  const draftHasError = FIELDS.some((f) => isMailFieldInvalid(f.kind, draft[f.key] ?? ''));
+
+  /** Normalizacija PRIJE slanja: datum → ISO, iznos → decimalna točka. */
   const payloadFor = (item: MailReviewItem): Record<string, unknown> => {
     const base = { ...(item.extraction ?? {}) } as Record<string, unknown>;
-    if (editingId === item.id) Object.assign(base, draft);
+    if (editingId === item.id) {
+      for (const f of FIELDS) {
+        const raw = (draft[f.key] ?? '').trim();
+        if (raw === '') {
+          base[f.key] = null;
+        } else if (f.kind === 'date') {
+          base[f.key] = parseHrDate(raw);
+        } else if (f.kind === 'amount') {
+          const n = parseHrAmount(raw);
+          base[f.key] = n === null ? null : n;
+        } else {
+          base[f.key] = raw;
+        }
+      }
+    }
     base.doc_type = item.doc_type ?? '380';
     base.direction = 'in';
     return base;
@@ -183,14 +228,14 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                 {isEditing ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     {FIELDS.map((f) => (
-                      <div key={f.key} className="space-y-1">
-                        <Label className="text-xs">{t(f.labelKey, f.fallback)}</Label>
-                        <Input
-                          value={draft[f.key] ?? ''}
-                          onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                          className="h-11"
-                        />
-                      </div>
+                      <MailReviewFieldInput
+                        key={f.key}
+                        label={t(f.labelKey, f.fallback)}
+                        kind={f.kind}
+                        dateContext={f.dateContext}
+                        value={draft[f.key] ?? ''}
+                        onChange={(next) => setDraft((d) => ({ ...d, [f.key]: next }))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -199,9 +244,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                       <div key={f.key} className="flex justify-between gap-2">
                         <dt className="text-muted-foreground">{t(f.labelKey, f.fallback)}</dt>
                         <dd className={mediumConfidence ? 'text-amber-600 dark:text-amber-500' : ''}>
-                          {extraction[f.key] == null || extraction[f.key] === ''
-                            ? '—'
-                            : String(extraction[f.key])}
+                          {displayFieldValue(f, extraction[f.key])}
                         </dd>
                       </div>
                     ))}
@@ -212,7 +255,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
                   <Button
                     size="sm"
                     className="min-h-[44px]"
-                    disabled={working}
+                    disabled={working || (isEditing && draftHasError)}
                     onClick={() => handleConfirm(item)}
                   >
                     <Check className="h-4 w-4 mr-2" />
@@ -258,7 +301,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
             <div className="rounded-md border p-3 text-xs space-y-1">
               <div>{String(collision?.existing?.supplier_name ?? '—')}</div>
               <div>{String(collision?.existing?.invoice_number ?? '—')}</div>
-              <div>{String(collision?.existing?.total_amount ?? '—')}</div>
+              <div>{formatHrAmount(collision?.existing?.total_amount as number | string) || '—'}</div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
