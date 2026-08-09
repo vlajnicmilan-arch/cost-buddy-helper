@@ -343,13 +343,31 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     // determinističkim koracima, a AI se ubacuje tek nakon provjere kvote.
     const cheap = await classifyDocument(input, { parseUbl, analyzeWithAi: undefined });
 
-    let result = cheap;
+    // PAMĆENJE IZDAVATELJA I MJESTA — sloj dopune IZMEĐU jeftine klasifikacije
+    // i odluke o AI pozivu. Pogodak popunjava rupe pa `needsAiEnrichment`
+    // često ugasi AI poziv. Pouzdanost se NE diže; stavka ostaje na pregledu.
+    const placeCode = findPlaceCode([bodyText, pdfText].filter(Boolean).join("\n")).placeCode;
+    const applyMemory = (r: typeof cheap) =>
+      memoryFill({
+        extraction: r.extraction,
+        placeCode,
+        fromDomain: issuerKeyDomain(msg.from_header as string | null, ownDomains),
+        rows: memoryRows,
+        // UBL je već deterministički potpun — smije dobiti SAMO oznaku mjesta.
+        onlyPlaceLabel: r.route === "ubl",
+      });
+
+    const cheapMemory = applyMemory(cheap);
+    warnings.push(...cheapMemory.warnings);
+
+    let result = { ...cheap, extraction: cheapMemory.extraction };
     // AI se trazi kad jeftina grana nije odlucila ILI kad je odlucila, ali su
     // kljucna polja ostala prazna (pametna dopuna). Potpuna stavka = 0 poziva.
     const wantsAi =
-      cheap.route === "nepoznato" ||
-      (cheap.route === "heuristika" &&
-        needsAiEnrichment(cheap.extraction, hasExtractableText(input)));
+      result.route === "nepoznato" ||
+      (result.route === "heuristika" &&
+        needsAiEnrichment(result.extraction, hasExtractableText(input)));
+
     if (wantsAi) {
       const { data: quota } = await supabase.rpc("mail_import_quota_status", {
         p_user_id: ownerId,
