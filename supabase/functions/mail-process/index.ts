@@ -20,6 +20,9 @@ import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_share
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
+import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
+import { buildAiRequest } from "../_shared/mailImport/aiRequest.ts";
+import { emptyToNull } from "../_shared/mailImport/extractionNormalize.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,24 +48,24 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("missing_lovable_api_key");
 
-  const prompt = [
-    "Klasificiraj dokument iz e-pošte. Vrati ISKLJUČIVO JSON:",
-    '{"classification":"racun|ponuda|nije_za_nas","confidence":"visoka|srednja|niska",',
-    '"supplier_oib":"","supplier_name":"","invoice_number":"","issue_date":"YYYY-MM-DD",',
-    '"due_date":"YYYY-MM-DD","total_amount":0,"vat_amount":0,"currency":"EUR","iban":""}',
-    "",
-    `Predmet: ${input.subject ?? ""}`,
-    `Pošiljatelj: ${input.fromHeader ?? ""}`,
-    "Tekst:",
-    (input.bodyText ?? "").slice(0, 12000),
-  ].join("\n");
+  // TEKST prvi: multimodalni (file) blok nastaje SAMO za sken bez teksta.
+  const plan = buildAiRequest({
+    subject: input.subject,
+    fromHeader: input.fromHeader,
+    bodyText: input.bodyText,
+    pdfText: input.pdfText,
+    pdfBase64: input.pdfBase64,
+    pdfFilename: input.pdfFilename,
+  });
+  if (plan.multimodal) console.warn("[mail-process] skupi put: multimodalni PDF (sken bez teksta)");
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: plan.content }],
+      response_format: { type: "json_object" },
     }),
   });
   if (!res.ok) throw new Error(`ai_gateway_${res.status}`);
@@ -79,11 +82,23 @@ async function aiAnalyze(input: ClassifyInput): Promise<{
   return {
     classification: (["racun", "ponuda", "nije_za_nas"].includes(cls) ? cls : "nije_za_nas") as
       "racun" | "ponuda" | "nije_za_nas",
-    extraction: parsed,
+    // '' -> null: model prepisuje prazan predlozak i tako laze da polje postoji.
+    extraction: emptyToNull(parsed),
     confidence: (["visoka", "srednja", "niska"].includes(String(parsed.confidence))
       ? String(parsed.confidence)
       : "srednja") as "visoka" | "srednja" | "niska",
   };
+}
+
+/** OIB-i vlasnika aliasa — na tudjem racunu smo KUPAC, ne izdavatelj. */
+async function ownOibsFor(supabase: Supa, userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("oib")
+    .eq("user_id", userId);
+  return ((data ?? []) as Array<{ oib: string | null }>)
+    .map((r) => (r.oib ?? "").replace(/[^0-9]/g, ""))
+    .filter((o) => o.length === 11);
 }
 
 async function knownCounterparties(supabase: Supa, userId: string) {
