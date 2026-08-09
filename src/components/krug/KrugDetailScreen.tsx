@@ -272,8 +272,9 @@ export function KrugDetailScreen({
         krugId={krugId}
         viewerUserId={user?.id ?? null}
         viewerIsFullMember={
-          isOwner || detail.myMembership?.role === 'punopravni'
+          !isArchived && (isOwner || detail.myMembership?.role === 'punopravni')
         }
+
       />
 
       <KrugDecidedSection krugId={krugId} />
