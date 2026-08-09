@@ -5835,6 +5835,30 @@
         "unauthorized": "Please sign in again.",
         "generic": "Error leaving the Krug"
       }
+    },
+    "ownerLeave": {
+      "cta": "Transfer ownership and leave",
+      "title": "Transfer ownership and leave?",
+      "body": "Pick a full member who becomes the Krug owner. You leave the Krug and lose access to its shared data. Your personal transactions and existing settlements stay untouched.",
+      "selectLabel": "New owner",
+      "selectPlaceholder": "Select a member",
+      "consequence": "{{name}} becomes the owner; you leave and lose access.",
+      "confirm": "Transfer and leave",
+      "cancel": "Cancel",
+      "success": "Ownership transferred, you left the Krug",
+      "noSuccessorTitle": "No successor",
+      "noSuccessor": "Leaving without a successor is coming soon — Krug archiving.",
+      "errors": {
+        "not_owner": "You are not the owner of this Krug.",
+        "noop_not_owner": "You already left this Krug.",
+        "successor_invalid": "Pick a different member as successor.",
+        "successor_not_full_member": "The successor must be a full member.",
+        "successor_gone": "The selected member is no longer in the Krug.",
+        "no_successor_available": "Leaving without a successor is coming soon — Krug archiving.",
+        "krug_not_found": "Krug does not exist.",
+        "unauthorized": "Please sign in again.",
+        "generic": "Ownership transfer failed"
+      }
     }
   },
   "attribution": {

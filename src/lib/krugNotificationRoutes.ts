@@ -24,6 +24,8 @@ export type KrugNotificationType =
   | 'krug_invitation_accepted'
   | 'krug_invitation_declined'
   | 'krug_member_left'
+  | 'krug_owner_left'
+  | 'krug_ownership_received'
   | 'krug_membership_notice'
   | 'krug_expense_proposed'
   | 'krug_expense_confirmed'
@@ -59,6 +61,8 @@ export const KRUG_NOTIFICATION_DESTINATIONS: Record<KrugNotificationType, KrugDe
   krug_invitation_accepted: 'krug',
   krug_invitation_declined: 'krug',
   krug_member_left: 'krug',
+  krug_owner_left: 'krug',
+  krug_ownership_received: 'krug',
   krug_membership_notice: 'krug',
   krug_deletion_requested: 'krug',
   // Krug više ne postoji — deep link na njega bi bio slijepa ulica.
