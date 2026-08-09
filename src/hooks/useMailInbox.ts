@@ -16,8 +16,10 @@ export interface InboundMessageRow {
   subject: string | null;
   received_at: string;
   status: string;
+  last_error: string | null;
   attachment_count: number;
 }
+
 
 /**
  * MAIL UVOZ (korak 1) — aktivni alias korisnika + sirovi popis zadnjih 20 poruka.
