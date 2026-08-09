@@ -344,6 +344,7 @@ const AppRoutes = () => {
       <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
       <Route path="/trash" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Trash />)}</Suspense>} />
       <Route path="/import/review" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<ImportReview />)}</Suspense>} />
+      <Route path="/dokumenti" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Documents />)}</Suspense>} />
       
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
       <Route path="/admin/security-audit" element={<Suspense fallback={<PageLoader />}><AdminSecurityAudit /></Suspense>} />
