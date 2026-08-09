@@ -43,6 +43,8 @@ const IBAN_RE = /\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b/g;
 const AMOUNT = String.raw`-?\d{1,3}(?:[.\s]\d{3})*,\d{2}`;
 const DATE_RE = /\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\.?/g;
 
+import { findHrIban, findValidIbans } from './ibanCheck.ts';
+
 const normalizeSpace = (s: string): string => s.replace(/[\u00a0\t]+/g, ' ');
 
 /** ISO iz hrvatskog oblika; nikad ne izmišlja. */
@@ -97,23 +99,29 @@ function detectPeriod(text: string): { from: string | null; to: string | null } 
 }
 
 function detectClosingBalance(lines: readonly string[]): number | null {
+  // „Konačno stanje", „Novo stanje", „Završno stanje", „Stanje na dan/kraju".
+  const CLOSING_RE =
+    /kona[cč]no\s+stanje|novo\s+stanje|zavr[sš]no\s+stanje|stanje\s+na\s+(dan|kraju)|saldo\s+na\s+kraju/i;
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     const line = lines[i];
-    if (!/novo\s+stanje|zavr[sš]no\s+stanje|stanje\s+na\s+kraju|saldo\s+na\s+kraju/i.test(line)) {
-      continue;
-    }
+    if (!CLOSING_RE.test(line)) continue;
     const amounts = line.match(new RegExp(AMOUNT, 'g'));
     if (amounts && amounts.length > 0) return parseHrNumber(amounts[amounts.length - 1]);
   }
   return null;
 }
 
-/** IBAN iz zaglavlja (prvih ~25 redaka) — vlasnikov račun, ne banka u podnožju. */
+/**
+ * IBAN iz zaglavlja (prvih ~25 redaka) — vlasnikov račun, ne banka u podnožju.
+ * Hrvatski IBAN se reže na točno HR+19 znamenki: bez toga se zalijepi početak
+ * sljedećeg retka („Broj računa" → `...BROJRA`).
+ */
 function detectHeaderIban(lines: readonly string[]): string | null {
-  const head = lines.slice(0, 25).join('\n').toUpperCase().replace(/\s+/g, ' ');
-  const compact = head.replace(/(?<=[A-Z0-9]) (?=[A-Z0-9]{1,4}\b)/g, '');
-  const match = compact.match(IBAN_RE);
-  return match && match.length > 0 ? match[0] : null;
+  const head = lines.slice(0, 25).join('\n');
+  const hr = findHrIban(head);
+  if (hr) return hr;
+  const foreign = findValidIbans(head);
+  return foreign.length > 0 ? foreign[0] : null;
 }
 
 /**
