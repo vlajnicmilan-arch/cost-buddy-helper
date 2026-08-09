@@ -400,8 +400,25 @@ export const IncomingInvoicesPanel = () => {
                 </div>
               </div>
 
+              {/* Odvezivanje mora biti dostupno i na plaćenom računu. */}
+              {(inv.direction ?? 'in') === 'in' && expenseMatch.linksForInvoice(inv.id).length > 0 && (
+                <div className="flex justify-end mt-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground"
+                    onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
+                  >
+                    <Link2 className="w-3.5 h-3.5 mr-1" />
+                    {t('eracun.linkExpense.linkedCount', 'Povezano ({{n}})', {
+                      n: expenseMatch.linksForInvoice(inv.id).length,
+                    })}
+                  </Button>
+                </div>
+              )}
+
               {!inv.paid_at && (
-                <div className="flex justify-end gap-2 mt-2">
+                <div className="flex flex-wrap justify-end gap-2 mt-2">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -414,10 +431,33 @@ export const IncomingInvoicesPanel = () => {
                       izlazni na „Naplaćeno" bilježi samo datum — prihod dolazi iz
                       uvoza bankovnog izvoda. Ne izjednačavati ta dva toka. */}
                   {(inv.direction ?? 'in') === 'in' ? (
-                    <Button size="sm" variant="outline" onClick={() => setPayTarget(inv)}>
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {t('eracun.list.markPaid', 'Plaćeno')}
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setLinkPrecheck(false); setLinkTarget(inv); }}
+                      >
+                        <Link2 className="w-3.5 h-3.5 mr-1" />
+                        {t('eracun.linkExpense.open', 'Poveži s troškom')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // Pretprovjera: ako postoji kandidat, prvo ponudi povezivanje —
+                          // stvaranje novog troška ovdje bi isti novac zapisalo dvaput.
+                          if (expenseMatch.suggestionsForInvoice(inv.id).length > 0) {
+                            setLinkPrecheck(true);
+                            setLinkTarget(inv);
+                            return;
+                          }
+                          setPayTarget(inv);
+                        }}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        {t('eracun.list.markPaid', 'Plaćeno')}
+                      </Button>
+                    </>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => setCollectTarget(inv)}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
