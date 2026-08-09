@@ -292,6 +292,27 @@ export const IncomingInvoicesPanel = () => {
         </div>
       </div>
 
+      {/* Filtar po oznaci mjesta — vlastiti redak, da alatni redak ostane
+          onakav kakvim ga brani `eracunPanelNoHorizontalOverflow`. */}
+      {places.length >= 2 && (
+        <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
+          <MapPin className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+          <Select value={placeFilter} onValueChange={setPlaceFilter}>
+            <SelectTrigger className="h-9 w-full sm:w-56 min-w-0">
+              <SelectValue placeholder={t('eracun.list.placeAll', 'Sva mjesta')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('eracun.list.placeAll', 'Sva mjesta')}</SelectItem>
+              {places.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+
+
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
