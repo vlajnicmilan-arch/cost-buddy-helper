@@ -67,10 +67,18 @@ export const IncomingInvoicesPanel = () => {
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
 
-  const visible = useMemo(
-    () => (filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped),
-    [filter, unpaid, paid, scoped],
+  /** Oznake mjesta koje stvarno postoje — filtar se nudi TEK kad ih ima ≥2. */
+  const places = useMemo(
+    () => [...new Set(scoped.map((i) => (i.place_label ?? '').trim()).filter(Boolean))].sort(),
+    [scoped],
   );
+
+  const visible = useMemo(() => {
+    const byStatus = filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped;
+    if (placeFilter === 'all' || places.length < 2) return byStatus;
+    return byStatus.filter((i) => (i.place_label ?? '').trim() === placeFilter);
+  }, [filter, unpaid, paid, scoped, placeFilter, places.length]);
+
 
   const sourceOptions = useMemo(
     () => customPaymentSources.map((s: any) => ({ id: s.id as string, name: s.name as string })),
