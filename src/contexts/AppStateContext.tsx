@@ -248,18 +248,27 @@ export const AppStateProvider = ({ children }: { children: ReactNode }) => {
 
     resolveOnboarding();
 
-    // Also listen for auth changes (e.g., sign in after page load)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Also listen for auth changes (e.g., sign in after page load).
+    // VAŽNO: supabase-js emitira 'SIGNED_IN' i pri povratku fokusa prozora te
+    // pri token refreshu. Puni reset radimo SAMO kad se korisnik stvarno
+    // promijenio; inače osvježavamo u pozadini bez skidanja appStateReady
+    // (bez PageLoadera → dijalozi i ekran ostaju otvoreni).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
-        // Re-resolve when user signs in
-        setAppStateReady(false);
+        const nextUserId = session?.user?.id ?? null;
+        const isSameUser = nextUserId !== null && nextUserId === lastResolvedUserRef.current;
+        if (!isSameUser) {
+          setAppStateReady(false);
+        }
         resolveOnboarding();
       } else if (event === 'SIGNED_OUT') {
+        lastResolvedUserRef.current = null;
         setOnboardingCompletedState(false);
         setDisplayNameState('');
         setAppStateReady(true);
       }
     });
+
 
     return () => subscription.unsubscribe();
   }, []);
