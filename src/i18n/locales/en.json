@@ -1227,13 +1227,34 @@
   },
   "settings": {
     "categories": {
-      "profile": { "title": "Profile", "desc": "Name and app language" },
-      "appearance": { "title": "Appearance", "desc": "Theme and module display" },
-      "notifications": { "title": "Notifications", "desc": "Sound, push and daily summary" },
-      "subscription": { "title": "Subscription", "desc": "Plan, billing and features" },
-      "data": { "title": "Data & security", "desc": "Storage, export, lock and deletion" },
-      "mail": { "title": "Email import", "desc": "Address for receiving documents" },
-      "help": { "title": "Help & support", "desc": "Guides, contact and reports" }
+      "profile": {
+        "title": "Profile",
+        "desc": "Name and app language"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Theme and module display"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Sound, push and daily summary"
+      },
+      "subscription": {
+        "title": "Subscription",
+        "desc": "Plan, billing and features"
+      },
+      "data": {
+        "title": "Data & security",
+        "desc": "Storage, export, lock and deletion"
+      },
+      "mail": {
+        "title": "Email import",
+        "desc": "Address for receiving documents"
+      },
+      "help": {
+        "title": "Help & support",
+        "desc": "Guides, contact and reports"
+      }
     },
     "title": "Settings",
     "language": "Language",
@@ -5876,6 +5897,10 @@
         "unauthorized": "Please sign in again.",
         "generic": "Ownership transfer failed"
       }
+    },
+    "archive": {
+      "note": "This Krug is archived. History stays readable and exportable, but nothing can be changed. Remaining full members can delete the whole archive.",
+      "deleteCta": "Delete archive"
     }
   },
   "attribution": {

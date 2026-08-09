@@ -1227,13 +1227,34 @@
   },
   "settings": {
     "categories": {
-      "profile": { "title": "Profil", "desc": "Name und App-Sprache" },
-      "appearance": { "title": "Darstellung", "desc": "Design und Modulanzeige" },
-      "notifications": { "title": "Benachrichtigungen", "desc": "Ton, Push und Tageszusammenfassung" },
-      "subscription": { "title": "Abonnement", "desc": "Tarif, Abrechnung und Funktionen" },
-      "data": { "title": "Daten & Sicherheit", "desc": "Speicher, Export, Sperre und Löschung" },
-      "mail": { "title": "E-Mail-Import", "desc": "Adresse für den Dokumentenempfang" },
-      "help": { "title": "Hilfe & Support", "desc": "Anleitungen, Kontakt und Meldungen" }
+      "profile": {
+        "title": "Profil",
+        "desc": "Name und App-Sprache"
+      },
+      "appearance": {
+        "title": "Darstellung",
+        "desc": "Design und Modulanzeige"
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "desc": "Ton, Push und Tageszusammenfassung"
+      },
+      "subscription": {
+        "title": "Abonnement",
+        "desc": "Tarif, Abrechnung und Funktionen"
+      },
+      "data": {
+        "title": "Daten & Sicherheit",
+        "desc": "Speicher, Export, Sperre und Löschung"
+      },
+      "mail": {
+        "title": "E-Mail-Import",
+        "desc": "Adresse für den Dokumentenempfang"
+      },
+      "help": {
+        "title": "Hilfe & Support",
+        "desc": "Anleitungen, Kontakt und Meldungen"
+      }
     },
     "title": "Einstellungen",
     "language": "Sprache",
@@ -5876,6 +5897,10 @@
         "unauthorized": "Bitte melde dich erneut an.",
         "generic": "Eigentumsübergabe fehlgeschlagen"
       }
+    },
+    "archive": {
+      "note": "Dieser Krug ist archiviert. Der Verlauf bleibt lesbar und exportierbar, es kann aber nichts mehr geändert werden. Verbleibende vollwertige Mitglieder können das gesamte Archiv löschen.",
+      "deleteCta": "Archiv löschen"
     }
   },
   "attribution": {
