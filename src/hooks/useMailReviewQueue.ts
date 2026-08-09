@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { describeDbError } from '@/lib/eracun/dbError';
+import { useMailPendingEvent } from '@/hooks/useMailRealtime';
+
 
 /**
  * MAIL UVOZ (korak 2) — red "Na pregled".
@@ -99,6 +101,10 @@ export function useMailReviewQueue(enabled: boolean) {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Živi kanal (vidi useMailRealtime) — red se puni sam dok je app otvoren.
+  useMailPendingEvent(fetchItems);
+
 
   /**
    * Potvrda stavke. NIKAD ne baca — vraća strukturirani ishod s razlogom, da
