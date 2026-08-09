@@ -29,6 +29,16 @@ export interface StatementVerdict {
 /** Prag: dva neovisna sidra su dokaz, jedno je samo sumnja. */
 export const STATEMENT_SIGNAL_THRESHOLD = 2;
 
+/**
+ * SLABI signal: sam za sebe ne znači ništa. IBAN u zaglavlju ima i svaki
+ * običan račun („IBAN za uplatu") — bez ovog razlikovanja bi svaki račun
+ * završio kao „možda izvod".
+ */
+export const WEAK_STATEMENT_SIGNALS: readonly string[] = ['iban_zaglavlje'];
+
+const strongCount = (signals: readonly string[]): number =>
+  signals.filter((s) => !WEAK_STATEMENT_SIGNALS.includes(s)).length;
+
 const IBAN_RE = /\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b/g;
 const AMOUNT = String.raw`-?\d{1,3}(?:[.\s]\d{3})*,\d{2}`;
 const DATE_RE = /\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\.?/g;
@@ -101,7 +111,7 @@ function detectClosingBalance(lines: readonly string[]): number | null {
 /** IBAN iz zaglavlja (prvih ~25 redaka) — vlasnikov račun, ne banka u podnožju. */
 function detectHeaderIban(lines: readonly string[]): string | null {
   const head = lines.slice(0, 25).join('\n').toUpperCase().replace(/\s+/g, ' ');
-  const compact = head.replace(/(?<=[A-Z0-9]) (?=[A-Z0-9]{2,4}\b)/g, '');
+  const compact = head.replace(/(?<=[A-Z0-9]) (?=[A-Z0-9]{1,4}\b)/g, '');
   const match = compact.match(IBAN_RE);
   return match && match.length > 0 ? match[0] : null;
 }
@@ -146,12 +156,15 @@ export function classifyAsStatement(rawText: string | null | undefined): Stateme
   const text = normalizeSpace(rawText ?? '');
   const signals = statementSignals(text);
   const lines = text.split(/\r?\n/);
-  const isStatement = signals.length >= STATEMENT_SIGNAL_THRESHOLD;
+  const strong = strongCount(signals);
+  // Dokaz = dva sidra od kojih barem jedno nije slabo.
+  const isStatement = signals.length >= STATEMENT_SIGNAL_THRESHOLD && strong >= 1;
 
   if (!isStatement) {
     return {
       isStatement: false,
-      needsHumanChoice: signals.length === 1,
+      // Sumnja postoji samo uz TOČNO jedan jak signal; sam IBAN nije sumnja.
+      needsHumanChoice: strong === 1,
       signals,
       extraction: {
         bank_name: null,

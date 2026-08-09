@@ -59,15 +59,16 @@ describe('veto klasifikacije — bankovni izvod', () => {
     expect(Object.keys(extraction)).not.toContain('total_amount');
   });
 
-  it('običan račun nije izvod i ne traži čovjekov izbor', () => {
+  it('običan račun nije izvod i ne traži čovjekov izbor (IBAN sam nije sumnja)', () => {
     const verdict = classifyAsStatement(RACUN);
+    expect(verdict.signals).toEqual(['iban_zaglavlje']);
     expect(verdict.isStatement).toBe(false);
     expect(verdict.needsHumanChoice).toBe(false);
   });
 
   it('jedan sidreni signal = sumnja, nikad tiho racun', () => {
     const verdict = classifyAsStatement('Neki dokument\nNovo stanje 10,00');
-    expect(verdict.signals).toHaveLength(1);
+    expect(verdict.signals).toEqual(['stanje']);
     expect(verdict.isStatement).toBe(false);
     expect(verdict.needsHumanChoice).toBe(true);
   });
