@@ -6272,6 +6272,16 @@
     "confirmFailed": "Spremanje nije uspjelo",
     "discarded": "Stavka je odbačena",
     "discardFailed": "Odbacivanje nije uspjelo",
+    "alreadySaved": "Dokument je već bio spremljen",
+    "error": {
+      "nedostaju_polja": "Nedostaju obavezni podaci — OIB dobavljača i broj dokumenta.",
+      "stanje_ne_dopusta": "Stavka više nije na pregledu (netko ju je već obradio).",
+      "mozda_vec_postoji": "Već postoji zapis s istim brojem i dobavljačem.",
+      "nije_dopusteno": "Nemaš pravo na ovu stavku.",
+      "stavka_ne_postoji": "Stavka više ne postoji.",
+      "nije_prijavljen": "Sesija je istekla — prijavi se ponovno.",
+      "baza": "Baza je odbila spremanje. Pokušaj ponovno ili javi podršci."
+    },
     "classification": {
       "racun": "Račun",
       "ponuda": "Ponuda",

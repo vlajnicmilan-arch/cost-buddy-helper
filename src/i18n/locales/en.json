@@ -6262,6 +6262,16 @@
     "confirmFailed": "Saving failed",
     "discarded": "Item discarded",
     "discardFailed": "Discarding failed",
+    "alreadySaved": "Document was already saved",
+    "error": {
+      "nedostaju_polja": "Required data is missing — supplier VAT ID and document number.",
+      "stanje_ne_dopusta": "This item is no longer under review (it was already processed).",
+      "mozda_vec_postoji": "A record with the same number and supplier already exists.",
+      "nije_dopusteno": "You are not allowed to act on this item.",
+      "stavka_ne_postoji": "This item no longer exists.",
+      "nije_prijavljen": "Your session expired — please sign in again.",
+      "baza": "The database rejected the save. Try again or contact support."
+    },
     "classification": {
       "racun": "Invoice",
       "ponuda": "Quote",

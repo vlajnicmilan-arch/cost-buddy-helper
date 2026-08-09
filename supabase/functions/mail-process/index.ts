@@ -18,6 +18,7 @@ import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trus
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
 import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
+import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 
 const corsHeaders = {
@@ -192,21 +193,24 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
           .limit(1)
           .maybeSingle();
         if (dup) {
-          await supabase.from("document_ingest_items").insert({
-            source: "mail",
-            scope_type: "user",
-            scope_id: ownerId,
-            owner_user_id: ownerId,
-            message_id: messageId,
-            attachment_id: unit.attachmentId,
-            classification: "duplikat_privitka",
-            status: "odbaceno",
-            reason: "duplikat_privitka",
-            duplicate_of_item_id: dup.id,
-            dedup_identity: `sha256:${sha}`,
-            warnings: ["duplikat_privitka"],
-            ai_calls: 0,
+          await upsertIngestItem(supabase, {
+            messageId,
+            attachmentId: unit.attachmentId,
+            row: {
+              source: "mail",
+              scope_type: "user",
+              scope_id: ownerId,
+              owner_user_id: ownerId,
+              classification: "duplikat_privitka",
+              status: "odbaceno",
+              reason: "duplikat_privitka",
+              duplicate_of_item_id: dup.id,
+              dedup_identity: `sha256:${sha}`,
+              warnings: ["duplikat_privitka"],
+              ai_calls: 0,
+            },
           });
+
           await supabase
             .from("inbound_attachments")
             .update({ scan_status: "siguran", mime_sniffed: verdict.sniffed })
@@ -322,15 +326,14 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         ? "nije_za_nas"
         : "na_pregledu";
 
-    const { data: item } = await supabase
-      .from("document_ingest_items")
-      .insert({
+    const upserted = await upsertIngestItem(supabase, {
+      messageId,
+      attachmentId: unit.attachmentId,
+      row: {
         source: "mail",
         scope_type: "user",
         scope_id: ownerId,
         owner_user_id: ownerId,
-        message_id: messageId,
-        attachment_id: unit.attachmentId,
         classification: result.classification,
         extraction: result.extraction,
         confidence,
@@ -342,20 +345,21 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         dedup_identity: unit.att?.content_sha256
           ? `sha256:${unit.att.content_sha256}`
           : null,
-      })
-      .select("id")
-      .single();
+      },
+    });
 
-    if (item && status === "na_pregledu") {
+    // Obavijest samo za STVARNO novu stavku — ponovna obrada ne zvoni opet.
+    if (upserted.id && upserted.action === "inserted" && status === "na_pregledu") {
       await supabase.from("notifications").insert({
         user_id: ownerId,
         type: "mail_document_pending",
         title_key: "notifications.mail.pending.title",
         body_key: "notifications.mail.pending.body",
-        dedup_ref: `mail_item:${item.id}`,
-        data: { item_id: item.id, priority: result.priority },
+        dedup_ref: `mail_item:${upserted.id}`,
+        data: { item_id: upserted.id, priority: result.priority },
       });
     }
+
   }
 
   await supabase
@@ -373,6 +377,13 @@ Deno.serve(async (req) => {
   );
 
   try {
+    // 1) Zombiji prvo: posao 'u_obradi' stariji od 15 min tretira se kao pao.
+    //    Bez ovoga zaglavljeni posao visi zauvijek (kvar iz kolovoza 2026).
+    const { data: reaped, error: reapErr } = await supabase.rpc("mail_ingest_reap_stuck_jobs", {
+      p_older_minutes: 15,
+    });
+    if (reapErr) console.warn("[mail-process] reaper nije uspio", reapErr.message);
+
     const { data: jobs, error } = await supabase.rpc("mail_ingest_claim_jobs", { p_limit: 5 });
     if (error) {
       console.error("[mail-process] preuzimanje poslova nije uspjelo", error);
@@ -384,9 +395,13 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const job of claimed) {
+      // Posao MORA završiti u terminalnom stanju. `settled` + finally jamče da
+      // ni iznimka ni rani return ne ostave posao u 'u_obradi'.
+      let settled = false;
       try {
         await processMessage(supabase, job.message_id);
         await supabase.rpc("mail_ingest_finish_job", { p_job_id: job.job_id, p_ok: true });
+        settled = true;
         ok += 1;
       } catch (e) {
         const message = (e as Error)?.message ?? "unknown";
@@ -396,11 +411,22 @@ Deno.serve(async (req) => {
           p_ok: false,
           p_error: message,
         });
+        settled = true;
         failed += 1;
+      } finally {
+        if (!settled) {
+          console.error("[mail-process] posao nije zatvoren — prisilno neuspjeo", job.job_id);
+          await supabase.rpc("mail_ingest_finish_job", {
+            p_job_id: job.job_id,
+            p_ok: false,
+            p_error: "worker_prekinut",
+          });
+        }
       }
     }
 
-    return json({ ok: true, claimed: claimed.length, processed: ok, failed });
+    return json({ ok: true, reaped: reaped ?? 0, claimed: claimed.length, processed: ok, failed });
+
   } catch (e) {
     console.error("[mail-process] unhandled", e);
     return json({ error: (e as Error)?.message ?? "unknown" }, 500);

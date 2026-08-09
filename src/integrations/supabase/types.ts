@@ -7382,6 +7382,10 @@ export type Database = {
         Returns: string
       }
       mail_ingest_rate_counts: { Args: { p_alias_id: string }; Returns: Json }
+      mail_ingest_reap_stuck_jobs: {
+        Args: { p_older_minutes?: number }
+        Returns: number
+      }
       mail_ingest_retry_message: {
         Args: { p_message_id: string }
         Returns: Json
