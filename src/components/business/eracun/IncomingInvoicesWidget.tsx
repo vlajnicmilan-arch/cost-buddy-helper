@@ -118,8 +118,9 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-          <PageContainer noVerticalPadding className="pt-2">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto overflow-x-hidden max-w-full">
+          <PageContainer noVerticalPadding className="pt-2 min-w-0">
+
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <FileInput className="w-5 h-5 text-primary" />
