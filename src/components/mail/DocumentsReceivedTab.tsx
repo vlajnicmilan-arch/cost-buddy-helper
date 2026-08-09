@@ -147,7 +147,9 @@ export const DocumentsReceivedTab = ({
                     )}
                     {m.status === 'zaustavljena_branom'
                       ? t('mailImport.runManually', 'Pokreni ručno')
-                      : t('mailImport.retry', 'Pokušaj ponovno')}
+                      : m.status === 'zavrsena'
+                        ? t('mailImport.reprocess', 'Ponovno obradi')
+                        : t('mailImport.retry', 'Pokušaj ponovno')}
                   </Button>
                 )}
               </li>
