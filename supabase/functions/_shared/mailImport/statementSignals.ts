@@ -7,6 +7,8 @@
 // Načelo: ≥2 sidrena signala = `izvod`. 0–1 signal = `nepoznato` s
 // `needsHumanChoice` — NIKAD tiho `racun`.
 
+import { findHrIban, findValidIbans } from './ibanCheck.ts';
+
 export interface StatementExtraction {
   bank_name: string | null;
   account_iban: string | null;
@@ -39,11 +41,8 @@ export const WEAK_STATEMENT_SIGNALS: readonly string[] = ['iban_zaglavlje'];
 const strongCount = (signals: readonly string[]): number =>
   signals.filter((s) => !WEAK_STATEMENT_SIGNALS.includes(s)).length;
 
-const IBAN_RE = /\b([A-Z]{2}\d{2}[A-Z0-9]{11,30})\b/g;
 const AMOUNT = String.raw`-?\d{1,3}(?:[.\s]\d{3})*,\d{2}`;
 const DATE_RE = /\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\.?/g;
-
-import { findHrIban, findValidIbans } from './ibanCheck.ts';
 
 const normalizeSpace = (s: string): string => s.replace(/[\u00a0\t]+/g, ' ');
 
