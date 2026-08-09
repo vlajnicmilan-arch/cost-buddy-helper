@@ -301,7 +301,7 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
             <div className="rounded-md border p-3 text-xs space-y-1">
               <div>{String(collision?.existing?.supplier_name ?? '—')}</div>
               <div>{String(collision?.existing?.invoice_number ?? '—')}</div>
-              <div>{String(collision?.existing?.total_amount ?? '—')}</div>
+              <div>{formatHrAmount(collision?.existing?.total_amount as number | string) || '—'}</div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
