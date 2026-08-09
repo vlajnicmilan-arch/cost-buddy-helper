@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.eracun_recalc_invoice_on_link_delete() FROM PUBLIC, anon, authenticated;
