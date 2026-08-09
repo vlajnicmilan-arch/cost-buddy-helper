@@ -49,6 +49,14 @@ vi.mock('@/hooks/useMailReviewQueue', () => ({
 }));
 
 import { MailReviewDialog } from '@/components/mail/MailReviewDialog';
+import { BackButtonProvider } from '@/contexts/BackButtonContext';
+
+const renderDialog = () =>
+  render(
+    <BackButtonProvider>
+      <MailReviewDialog open onOpenChange={() => {}} />
+    </BackButtonProvider>,
+  );
 
 describe('MailReviewDialog — razlog greške', () => {
   beforeEach(() => {
@@ -60,7 +68,7 @@ describe('MailReviewDialog — razlog greške', () => {
   it('prikazuje konkretan razlog umjesto generičkog teksta', async () => {
     confirmItem.mockResolvedValue({ ok: false, reason: 'nedostaju_polja' });
 
-    render(<MailReviewDialog open onOpenChange={() => {}} />);
+    renderDialog();
     fireEvent.click(screen.getAllByText('Potvrdi')[0]);
 
     await waitFor(() => expect(showError).toHaveBeenCalled());
@@ -71,7 +79,7 @@ describe('MailReviewDialog — razlog greške', () => {
   it('ponovljena potvrda (already) javlja da je dokument već spremljen', async () => {
     confirmItem.mockResolvedValue({ ok: true, invoiceId: 'inv-1', already: true });
 
-    render(<MailReviewDialog open onOpenChange={() => {}} />);
+    renderDialog();
     fireEvent.click(screen.getAllByText('Potvrdi')[0]);
 
     await waitFor(() => expect(showSuccess).toHaveBeenCalled());
