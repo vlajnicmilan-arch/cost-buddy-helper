@@ -505,6 +505,21 @@ export const IncomingInvoicesPanel = () => {
         onDone={refetch}
       />
 
+      <LinkExistingExpenseDialog
+        invoice={linkTarget}
+        open={!!linkTarget}
+        onOpenChange={(open) => { if (!open) { setLinkTarget(null); setLinkPrecheck(false); } }}
+        suggestions={linkTarget ? expenseMatch.suggestionsForInvoice(linkTarget.id) : []}
+        links={linkTarget ? expenseMatch.linksForInvoice(linkTarget.id) : []}
+        loading={expenseMatch.loading}
+        search={expenseMatch.searchExpenses}
+        onLink={expenseMatch.linkExpense}
+        onUnlink={expenseMatch.unlinkExpense}
+        onDone={refetch}
+        precheck={linkPrecheck}
+        onCreateAnyway={() => { if (linkTarget) setPayTarget(linkTarget); }}
+      />
+
       <Dialog open={!!placeTarget} onOpenChange={(open) => !open && setPlaceTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
