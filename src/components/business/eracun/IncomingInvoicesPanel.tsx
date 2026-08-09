@@ -356,7 +356,21 @@ export const IncomingInvoicesPanel = () => {
                     {inv.invoice_number}
                     {inv.due_date ? ` · ${t('eracun.list.due', 'dospijeće')} ${format(new Date(inv.due_date), 'd. MMM yyyy', { locale: hr })}` : ''}
                   </p>
-                  <div className="mt-1">{dueBadge(inv)}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    {dueBadge(inv)}
+                    <button
+                      type="button"
+                      onClick={() => { setPlaceTarget(inv); setPlaceDraft(inv.place_label ?? ''); }}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground min-h-[24px] max-w-full"
+                      aria-label={t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}
+                    >
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {inv.place_label?.trim() || t('eracun.list.placeNone', 'Bez oznake')}
+                      </span>
+                    </button>
+                  </div>
+
                   {!inv.paid_at && Number(inv.settled_amount ?? 0) > 0 && (
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {t('eracun.match.settledOf', 'Plaćeno {{paid}} od {{total}}', {
