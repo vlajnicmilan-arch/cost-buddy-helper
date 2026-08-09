@@ -87,6 +87,13 @@ export interface MatchInput {
   readonly learnedIbans?: readonly LearnedIban[];
   /** Smjer računa koji se zatvara; uplate = izlazni računi. */
   readonly direction?: 'in' | 'out';
+  /**
+   * Ulazna strana (`direction = 'in'`): trošak s bankovnog izvoda rijetko nosi
+   * naziv dobavljača u opisu (LIDL, KEKS PAY, „Kartično plaćanje"), pa se
+   * dopušta i sloj „samo iznos + blizina datuma". Taj sloj NIKAD ne izlazi
+   * iznad razreda `possible` — korisnik ga mora potvrditi pogledom.
+   */
+  readonly allowAmountOnly?: boolean;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
