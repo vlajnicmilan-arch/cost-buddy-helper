@@ -83,10 +83,12 @@ const OIB_RE = /\b(\d{11})\b/g;
 /** Kandidat mora proći ISO 7064 kontrolnu znamenku — gola regex nije dokaz. */
 const findKnownOib = (text: string, knownOibs: readonly string[]): string | null => {
   if (knownOibs.length === 0) return null;
-  const set = new Set(knownOibs.map((o) => o.trim()).filter(isValidOib));
+  // Poznati OIB dolazi iz nase baze partnera — podudarnost je jaci dokaz od
+  // kontrolne znamenke, pa se ovdje checksum NE primjenjuje kao filtar.
+  const set = new Set(knownOibs.map((o) => o.replace(/[^0-9]/g, '')).filter((o) => o.length === 11));
   if (set.size === 0) return null;
   const matches = (text ?? '').match(OIB_RE) ?? [];
-  return matches.find((m) => isValidOib(m) && set.has(m)) ?? null;
+  return matches.find((m) => set.has(m)) ?? null;
 };
 
 const senderKnown = (from: string | null | undefined, known: readonly string[]): boolean => {
