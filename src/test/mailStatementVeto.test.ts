@@ -24,7 +24,7 @@ Novo stanje 900,00`;
 const ERSTE_IZVOD = `Erste&Steiermärkische Bank d.d.
 IZVOD BROJ 8/2026 za dan 12.08.2026.
 Stanje računa na dan 12.08.2026.
-HR23 2402 0061 1000 0000 0
+HR73 2402 0061 1010 8616 3
 Promet duguje: 12,00 potražuje: 0,00
 Novo stanje: 3.011,45`;
 
@@ -45,7 +45,7 @@ describe('veto klasifikacije — bankovni izvod', () => {
   it('Erste izvod: prepoznat i s razmaknutim IBAN-om', () => {
     const verdict = classifyAsStatement(ERSTE_IZVOD);
     expect(verdict.isStatement).toBe(true);
-    expect(verdict.extraction.account_iban).toBe('HR2324020061100000000');
+    expect(verdict.extraction.account_iban).toBe('HR7324020061101086163');
   });
 
   it('izvod nosi SAMO izvod-polja (banka, IBAN, broj, razdoblje, stanje)', () => {
