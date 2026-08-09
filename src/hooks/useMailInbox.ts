@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { generateAliasLocal } from '@/lib/mailAlias';
+
 
 export interface MailAliasRow {
   id: string;

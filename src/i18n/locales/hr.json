@@ -6325,7 +6325,12 @@
       "neuspjela": "Neuspjela",
       "neuspjela_konacno": "Neuspjela konačno"
     },
-    "reprocess": "Ponovno obradi"
+    "reprocess": "Ponovno obradi",
+    "reason": {
+      "privitak_prevelik": "Privitak prevelik",
+      "brana_sat": "Previše poruka u sat vremena",
+      "brana_dan": "Previše poruka u danu"
+    }
   },
   "mailReview": {
     "open": "Na pregled",
