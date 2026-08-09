@@ -45,7 +45,10 @@ export const KrugSelector = ({
   legacyPrivate = false,
 }: KrugSelectorProps) => {
   const { t } = useTranslation();
-  const { data: krugs = [], isLoading } = useMyKrugs();
+  const { data: allKrugs = [], isLoading } = useMyKrugs();
+  // Arhivirani (`read_only`) Krugovi ne primaju nove troškove — DB brana bi
+  // ionako odbila upis, pa ih ne nudimo u odabiru.
+  const krugs = allKrugs.filter((k) => k.lifecycle_state !== 'read_only');
   const { requestModule } = useModuleGate();
   const [open, setOpen] = useState(false);
 
