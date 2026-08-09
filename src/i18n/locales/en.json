@@ -6334,7 +6334,8 @@
       "vise_kandidata_oib": "The document lists several OIBs — check the supplier",
       "vise_kandidata_dospijece": "The document lists several due dates — check the selected one",
       "vise_kandidata_broj": "The document lists several numbers — check the document number",
-      "pdf_bez_teksta": "The PDF has no text layer (scan) — data was read from the image"
+      "pdf_bez_teksta": "The PDF has no text layer (scan) — data was read from the image",
+      "ai_dopuna": "Fields were completed by AI — check the amount and document number."
     },
     "field": {
       "supplierName": "Supplier",
@@ -6354,5 +6355,23 @@
     "invalidDate": "Invalid date — e.g. 15.08.2026.",
     "invalidAmount": "Invalid amount — e.g. 1,660.36",
     "pickDate": "Pick a date"
+  },
+  "documents": {
+    "title": "Documents",
+    "open": "Open Documents",
+    "tab": {
+      "received": "Received"
+    },
+    "restore": "Restore",
+    "restored": "Document returned to review",
+    "restoreFailed": "Restore failed",
+    "discarded": {
+      "title": "Discarded (last 30 days)",
+      "empty": "No discarded documents."
+    },
+    "pendingCard": {
+      "title": "Documents to review",
+      "subtitle": "{{count}} documents awaiting your confirmation"
+    }
   }
 }
