@@ -37,6 +37,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { BusinessDebtTracker } from '@/components/business/BusinessDebtTracker';
 import { UnpaidInvoicesWidget } from '@/components/business/UnpaidInvoicesWidget';
 import { IncomingInvoicesWidget } from '@/components/business/eracun/IncomingInvoicesWidget';
+import { DocumentsPendingCard } from '@/components/mail/DocumentsPendingCard';
+import { useMailImportAccess } from '@/hooks/useMailImportAccess';
+import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
