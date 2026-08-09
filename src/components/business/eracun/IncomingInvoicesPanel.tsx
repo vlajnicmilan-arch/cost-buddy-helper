@@ -454,6 +454,32 @@ export const IncomingInvoicesPanel = () => {
         invoices={invoices}
         onDone={refetch}
       />
+
+      <Dialog open={!!placeTarget} onOpenChange={(open) => !open && setPlaceTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('eracun.list.placeEdit', 'Uredi oznaku mjesta')}</DialogTitle>
+            <DialogDescription>
+              {placeTarget?.supplier_name || placeTarget?.counterparty_name || placeTarget?.invoice_number}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">{t('eracun.list.place', 'Mjesto')}</Label>
+            <Input
+              value={placeDraft}
+              onChange={(e) => setPlaceDraft(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlaceTarget(null)}>
+              {t('common.cancel', 'Odustani')}
+            </Button>
+            <Button onClick={handleSavePlace}>{t('common.save', 'Spremi')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
