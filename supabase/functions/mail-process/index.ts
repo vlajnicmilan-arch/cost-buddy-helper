@@ -25,6 +25,8 @@ import {
 } from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
+import { resolveTransportDedup } from "../_shared/mailImport/transportDedup.ts";
+
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
@@ -283,40 +285,37 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     });
     warnings.push(...unitScope.warnings);
 
-    // Transportni dedup — isti sadrzaj istog vlasnika se NE obraduje ponovno.
+    // Transportni dedup — vrata SAMO za privitke koji se prvi put vide.
+    // Reprocess (stavka za (message_id, attachment_id) već postoji) je
+    // OSVJEŽENJE i preskače dedup u cijelosti; odbačena kopija ne sudi originalu.
     const sha = (unit.att?.content_sha256 as string | null) ?? null;
-    if (sha) {
-      // Ponovna obrada NE smije pogoditi samu sebe: stavka iste poruke se
-      // OSVJEZAVA, nikad ne proglasava vlastitim duplikatom.
-      const { data: dupRows } = await supabase
-        .from("document_ingest_items")
-        .select("id")
-        .eq("owner_user_id", ownerId)
-        .eq("dedup_identity", `sha256:${sha}`)
-        .neq("message_id", messageId)
-        .limit(1);
-      const dup = (Array.isArray(dupRows) ? dupRows[0] : dupRows) as { id: string } | null;
-      if (dup) {
-        await upsertIngestItem(supabase, {
-          messageId,
-          attachmentId: unit.attachmentId,
-          row: {
-            source: "mail",
-            scope_type: unitScope.scopeType,
-            scope_id: unitScope.scopeId,
-            owner_user_id: ownerId,
-            classification: "duplikat_privitka",
-            status: "odbaceno",
-            reason: "duplikat_privitka",
-            duplicate_of_item_id: dup.id,
-            dedup_identity: `sha256:${sha}`,
-            warnings: ["duplikat_privitka"],
-            ai_calls: 0,
-          },
-        });
-        continue;
-      }
+    const dedup = await resolveTransportDedup(supabase, {
+      ownerId,
+      messageId,
+      attachmentId: unit.attachmentId,
+      sha,
+    });
+    if (dedup.kind === "duplicate") {
+      await upsertIngestItem(supabase, {
+        messageId,
+        attachmentId: unit.attachmentId,
+        row: {
+          source: "mail",
+          scope_type: unitScope.scopeType,
+          scope_id: unitScope.scopeId,
+          owner_user_id: ownerId,
+          classification: "duplikat_privitka",
+          status: "odbaceno",
+          reason: "duplikat_privitka",
+          duplicate_of_item_id: dedup.anchorId,
+          dedup_identity: `sha256:${sha}`,
+          warnings: ["duplikat_privitka"],
+          ai_calls: 0,
+        },
+      });
+      continue;
     }
+
 
     const input: ClassifyInput = {
       sniffed,
