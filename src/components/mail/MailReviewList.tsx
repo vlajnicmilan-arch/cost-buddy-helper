@@ -14,6 +14,8 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { showUndoToast } from '@/lib/undoToast';
 import { restoreIngestItem } from '@/lib/mailReviewStatus';
 import { useMailReviewQueue, type MailReviewItem } from '@/hooks/useMailReviewQueue';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { MailScopeChip } from '@/components/mail/MailScopeChip';
 import { describeDbError } from '@/lib/eracun/dbError';
 import {
   MailReviewFieldInput,
@@ -75,7 +77,9 @@ const trustVariant = (level: string | null): 'default' | 'secondary' | 'destruct
 
 export const MailReviewList = ({ active, onCountChange }: Props) => {
   const { t } = useTranslation();
-  const { items, loading, working, confirmItem, discardItem, refetch } = useMailReviewQueue(active);
+  const { items, loading, working, confirmItem, discardItem, setScope, refetch } =
+    useMailReviewQueue(active);
+  const { profiles } = useBusinessProfiles();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [collision, setCollision] = useState<{ item: MailReviewItem; existing: Record<string, unknown> } | null>(null);
@@ -178,6 +182,16 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     }
   };
 
+  const handleScopeChange = async (
+    item: MailReviewItem,
+    scopeType: 'user' | 'business_profile',
+    scopeId: string | null,
+  ) => {
+    const ok = await setScope(item.id, scopeType, scopeId);
+    if (ok) showSuccess(t('documents.scope.changed', 'Odredište je promijenjeno'));
+    else showError(t('documents.scope.changeFailed', 'Promjena odredišta nije uspjela'));
+  };
+
   const empty = useMemo(() => !loading && items.length === 0, [loading, items.length]);
 
   return (
@@ -213,6 +227,13 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               <Badge variant="outline">
                 {t(`mailReview.confidence.${item.confidence}`, item.confidence ?? '—')}
               </Badge>
+              <MailScopeChip
+                scopeType={item.scope_type}
+                scopeId={item.scope_id}
+                profiles={profiles}
+                disabled={working}
+                onChange={(type, id) => handleScopeChange(item, type, id)}
+              />
             </div>
 
             <div className="text-xs text-muted-foreground break-all">
