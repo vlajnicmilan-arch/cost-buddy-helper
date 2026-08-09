@@ -131,7 +131,12 @@ export function KrugDetailScreen({
   }
 
   const { krug } = detail;
+  // Arhiva (`read_only`): povijest se čita, ništa se ne piše. Jedina dopuštena
+  // radnja je brisanje cijele arhive — DB brana (`krug_assert_writable`) je
+  // tvrda granica, ovdje samo sakrivamo akcije koje bi ionako pale.
+  const isArchived = krug.lifecycle_state === 'read_only';
   const canPromoteToPunopravni = canAddPunopravni(krug.preset, punopravniCount);
+
 
   const handlePromote = async (m: KrugMemberView) => {
     let granted = false;
