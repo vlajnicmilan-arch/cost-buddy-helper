@@ -216,44 +216,48 @@ export const IncomingInvoicesPanel = () => {
   };
 
   return (
-    <div className="space-y-3">
-      <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)}>
+    <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
+      <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)} className="w-full min-w-0">
         <TabsList className="h-9 w-full">
-          <TabsTrigger value="in" className="text-xs flex-1">
+          <TabsTrigger value="in" className="text-xs flex-1 min-w-0">
             {t('eracun.list.directionIn', 'Dugujem')}
           </TabsTrigger>
-          <TabsTrigger value="out" className="text-xs flex-1">
+          <TabsTrigger value="out" className="text-xs flex-1 min-w-0">
             {t('eracun.list.directionOut', 'Duguju mi')}
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <div className="flex items-center justify-between gap-2">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList className="h-9">
-            <TabsTrigger value="unpaid" className="text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full min-w-0">
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v as Filter)}
+          className="min-w-0 max-w-full flex-1 basis-full sm:basis-auto"
+        >
+          <TabsList className="h-9 w-full sm:w-auto">
+            <TabsTrigger value="unpaid" className="text-xs flex-1 min-w-0 truncate">
               {direction === 'out'
                 ? t('eracun.list.uncollected', 'Nenaplaćeni')
                 : t('eracun.list.unpaid', 'Neplaćeni')} ({unpaid.length})
             </TabsTrigger>
-            <TabsTrigger value="paid" className="text-xs">
+            <TabsTrigger value="paid" className="text-xs flex-1 min-w-0 truncate">
               {direction === 'out'
                 ? t('eracun.list.collected', 'Naplaćeni')
                 : t('eracun.list.paid', 'Plaćeni')} ({paid.length})
             </TabsTrigger>
-            <TabsTrigger value="all" className="text-xs">{t('eracun.list.all', 'Sve')}</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs flex-1 min-w-0 truncate">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
           {direction === 'out' && (
-            <Button size="sm" variant="outline" className="min-h-[36px]" onClick={() => setMatchOpen(true)}>
-              <Link2 className="w-3.5 h-3.5 mr-1" />
-              {t('eracun.match.open', 'Poveži uplate')}
+            <Button size="sm" variant="outline" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setMatchOpen(true)}>
+              <Link2 className="w-3.5 h-3.5 mr-1 shrink-0" />
+              <span className="truncate">{t('eracun.match.open', 'Poveži uplate')}</span>
             </Button>
           )}
-          <Button size="sm" className="min-h-[36px]" onClick={() => setImportOpen(true)}>
-            <Upload className="w-3.5 h-3.5 mr-1" />
-            {t('eracun.importButton', 'Učitaj eRačun (XML)')}
+          <Button size="sm" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setImportOpen(true)}>
+            <Upload className="w-3.5 h-3.5 mr-1 shrink-0" />
+            <span className="truncate">{t('eracun.importButton', 'Učitaj eRačun (XML)')}</span>
           </Button>
         </div>
       </div>
