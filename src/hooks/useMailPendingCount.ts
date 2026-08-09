@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useMailPendingEvent } from '@/hooks/useMailRealtime';
+
 
 /**
  * MAIL UVOZ — broj dokumenata koji čekaju pregled.
@@ -38,6 +40,10 @@ export function useMailPendingCount(enabled: boolean) {
   useEffect(() => {
     fetchCount();
   }, [fetchCount]);
+
+  // Živi kanal: nova stavka „na pregledu" osvježi brojač bez izlaska iz appa.
+  useMailPendingEvent(fetchCount);
+
 
   return { count, loading, refetch: fetchCount };
 }

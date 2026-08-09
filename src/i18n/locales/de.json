@@ -6430,6 +6430,7 @@
       "personal": "Persönlich",
       "changed": "Ziel geändert",
       "changeFailed": "Ändern des Ziels fehlgeschlagen"
-    }
+    },
+    "liveNotice": "Ein Dokument ist zur Prüfung eingetroffen"
   }
 }

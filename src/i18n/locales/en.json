@@ -6430,6 +6430,7 @@
       "personal": "Personal",
       "changed": "Destination changed",
       "changeFailed": "Changing the destination failed"
-    }
+    },
+    "liveNotice": "A document arrived for review"
   }
 }

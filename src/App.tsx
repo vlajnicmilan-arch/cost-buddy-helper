@@ -19,6 +19,8 @@ import { ImportBatchDialogHost } from "@/components/ImportBatchDialogHost";
 
 import { DecisionScanProvider } from "@/contexts/DecisionScanContext";
 import { GlobalDecisionCaptureHost } from "@/components/projects/GlobalDecisionCaptureHost";
+import { MailRealtimeHost } from "@/components/mail/MailRealtimeHost";
+
 import { WalletViewModeProvider } from "@/contexts/WalletViewModeContext";
 import { AppLockProvider } from "@/contexts/AppLockContext";
 import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
@@ -391,6 +393,8 @@ const App = () => (
                                   <GlobalReceiptScanHost />
                                   <GlobalPDFImportHost />
                                   <GlobalDecisionCaptureHost />
+                                  <MailRealtimeHost />
+
                                   <CorrectionDeleteConfirmHost />
                                   <ReconciliationDialogHost />
                                   <ImportBatchDialogHost />

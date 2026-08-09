@@ -26,6 +26,8 @@ import {
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { resolveTransportDedup } from "../_shared/mailImport/transportDedup.ts";
+import { sendPushNotification } from "../_shared/sendPushNotification.ts";
+
 
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
@@ -491,15 +493,49 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
 
     // Obavijest samo za STVARNO novu stavku — ponovna obrada ne zvoni opet.
     if (upserted.id && upserted.action === "inserted" && status === "na_pregledu") {
-      await supabase.from("notifications").insert({
+      // Shema `notifications` NEMA title_key/body_key. Konvencija ostalih
+      // notify-* funkcija: i18n ključ ide u title/message, varijable i ruta u data.
+      const notifData = {
+        item_id: upserted.id,
+        priority: result.priority,
+        route: "/dokumenti",
+        fallback_route: "/dokumenti",
+        title_vars: {},
+        message_vars: {},
+      };
+      const { error: notifError } = await supabase.from("notifications").insert({
         user_id: ownerId,
         type: "mail_document_pending",
-        title_key: "notifications.mail.pending.title",
-        body_key: "notifications.mail.pending.body",
-        dedup_ref: `mail_item:${upserted.id}`,
-        data: { item_id: upserted.id, priority: result.priority },
+        title: "notifications.mail.pending.title",
+        message: "notifications.mail.pending.body",
+        data: notifData,
       });
+      // Greška se NE guta — kvar je preživio mjesece jer nitko nije gledao.
+      if (notifError) {
+        console.error("[mail-process] upis obavijesti nije uspio", notifError.message, notifError);
+      }
+
+      // Push kroz POSTOJEĆI sustav (send-push + kategorija 'pending').
+      try {
+        await sendPushNotification({
+          user_id: ownerId,
+          title: "notifications.mail.pending.title",
+          body: "notifications.mail.pending.body",
+          data: {
+            type: "mail_document_pending",
+            category: "pending",
+            route: "/dokumenti",
+            item_id: upserted.id,
+            i18n_title_key: "notifications.mail.pending.title",
+            i18n_body_key: "notifications.mail.pending.body",
+          },
+          source: "mail-process",
+        });
+      } catch (pushErr) {
+        console.error("[mail-process] push nije poslan", pushErr);
+      }
     }
+
 
   }
 

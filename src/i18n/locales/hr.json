@@ -6441,6 +6441,7 @@
       "personal": "Osobno",
       "changed": "Odredište je promijenjeno",
       "changeFailed": "Promjena odredišta nije uspjela"
-    }
+    },
+    "liveNotice": "Stigao dokument na pregled"
   }
 }
