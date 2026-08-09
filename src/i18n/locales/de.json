@@ -6371,7 +6371,8 @@
     },
     "pendingCard": {
       "title": "Dokumente zur Prüfung",
-      "subtitle": "{{count}} Dokumente warten auf Ihre Bestätigung"
+      "subtitle_one": "{{count}} Dokument wartet auf Ihre Bestätigung",
+      "subtitle_other": "{{count}} Dokumente warten auf Ihre Bestätigung"
     }
   }
 }

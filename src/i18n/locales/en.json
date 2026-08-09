@@ -6371,7 +6371,8 @@
     },
     "pendingCard": {
       "title": "Documents to review",
-      "subtitle": "{{count}} documents awaiting your confirmation"
+      "subtitle_one": "{{count}} document awaiting your confirmation",
+      "subtitle_other": "{{count}} documents awaiting your confirmation"
     }
   }
 }
