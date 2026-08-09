@@ -7217,6 +7217,7 @@ export type Database = {
         }
         Returns: Json
       }
+      krug_assert_writable: { Args: { _krug: string }; Returns: undefined }
       krug_can_manage_shared_source: {
         Args: { _krug: string; _source_id: string; _user: string }
         Returns: boolean
@@ -7247,6 +7248,7 @@ export type Database = {
       }
       krug_expire_invitations: { Args: never; Returns: number }
       krug_expire_predlozena: { Args: never; Returns: Json }
+      krug_full_member_count: { Args: { _krug: string }; Returns: number }
       krug_govern_to_personal: {
         Args: { p_client_request_id: string; p_expense_id: string }
         Returns: Json

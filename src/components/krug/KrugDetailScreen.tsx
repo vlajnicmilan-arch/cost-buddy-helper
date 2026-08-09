@@ -131,7 +131,12 @@ export function KrugDetailScreen({
   }
 
   const { krug } = detail;
+  // Arhiva (`read_only`): povijest se čita, ništa se ne piše. Jedina dopuštena
+  // radnja je brisanje cijele arhive — DB brana (`krug_assert_writable`) je
+  // tvrda granica, ovdje samo sakrivamo akcije koje bi ionako pale.
+  const isArchived = krug.lifecycle_state === 'read_only';
   const canPromoteToPunopravni = canAddPunopravni(krug.preset, punopravniCount);
+
 
   const handlePromote = async (m: KrugMemberView) => {
     let granted = false;
@@ -200,10 +205,20 @@ export function KrugDetailScreen({
             {t(`krug.lifecycleNote.${krug.lifecycle_state}`, { defaultValue: '' })}
           </p>
         )}
+
+        {isArchived && (
+          <p className="text-[11px] text-muted-foreground">
+            {t(
+              'krug.archive.note',
+              'Ovaj Krug je arhiviran. Povijest se može čitati i izvesti, ali se više ništa ne može mijenjati. Preostali punopravni članovi mogu obrisati cijelu arhivu.',
+            )}
+          </p>
+        )}
       </Card>
 
-      {/* Asimetrični samoizlazak: ne-vlasnik uvijek smije izaći, bez pristanka. */}
-      {!isOwner && !!detail.myMembership && krug.lifecycle_state !== 'deleted' && (
+      {/* Asimetrični samoizlazak: ne-vlasnik uvijek smije izaći, bez pristanka.
+          U arhivi nema izlaska — članstva su zamrznuta. */}
+      {!isOwner && !!detail.myMembership && !isArchived && krug.lifecycle_state !== 'deleted' && (
         <div className="flex justify-end">
           <Button
             size="sm"
@@ -217,18 +232,20 @@ export function KrugDetailScreen({
         </div>
       )}
 
-      {isOwner && krug.lifecycle_state !== 'deleted' && (
+      {(isOwner || (isArchived && isFullMember)) && krug.lifecycle_state !== 'deleted' && (
         <div className="flex flex-wrap justify-end gap-2">
           {/* Vlasnik ne može samo izaći — izlazak ide uz prijenos vlasništva. */}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
-            onClick={() => setOwnerLeaveOpen(true)}
-          >
-            <LogOut className="w-4 h-4 mr-1" />
-            {t('krug.ownerLeave.cta', 'Predaj vlasništvo i izađi')}
-          </Button>
+          {isOwner && !isArchived && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+              onClick={() => setOwnerLeaveOpen(true)}
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              {t('krug.ownerLeave.cta', 'Predaj vlasništvo i izađi')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"
@@ -236,10 +253,13 @@ export function KrugDetailScreen({
             onClick={() => requestModule('krug', { onGranted: () => setDeleteOpen(true) })}
           >
             <Trash2 className="w-4 h-4 mr-1" />
-            {t('krug.delete.cta', 'Obriši Krug')}
+            {isArchived
+              ? t('krug.archive.deleteCta', 'Obriši arhivu')
+              : t('krug.delete.cta', 'Obriši Krug')}
           </Button>
         </div>
       )}
+
 
       <KrugDeletionVotePanel
         krugId={krugId}
@@ -252,8 +272,9 @@ export function KrugDetailScreen({
         krugId={krugId}
         viewerUserId={user?.id ?? null}
         viewerIsFullMember={
-          isOwner || detail.myMembership?.role === 'punopravni'
+          !isArchived && (isOwner || detail.myMembership?.role === 'punopravni')
         }
+
       />
 
       <KrugDecidedSection krugId={krugId} />
@@ -270,7 +291,7 @@ export function KrugDetailScreen({
             {t('krug.members', 'Članovi')}
             <span className="text-xs text-muted-foreground">({members.length})</span>
           </h3>
-          {isOwner && (
+          {isOwner && !isArchived && (
             <Button
               size="sm"
               onClick={() => requestModule('krug', { onGranted: () => setAddOpen(true) })}
@@ -294,7 +315,7 @@ export function KrugDetailScreen({
 
           {members.map((m) => {
             const isMe = user?.id === m.user_id;
-            const canManage = isOwner && m.kind !== 'owner';
+            const canManage = isOwner && !isArchived && m.kind !== 'owner';
             const busy =
               (changeRole.isPending && changeRole.variables?.membershipId === m.membership_id) ||
               (removeMember.isPending && removeMember.variables?.membershipId === m.membership_id);
@@ -385,16 +406,22 @@ export function KrugDetailScreen({
         </Card>
       </section>
 
-      <KrugPendingInvitationsList krugId={krugId} isOwner={isOwner} />
+      <KrugPendingInvitationsList krugId={krugId} isOwner={isOwner && !isArchived} />
 
-      <KrugSharedSourcesSection krugId={krugId} isOwner={isOwner} isFullMember={isFullMember} />
+      <KrugSharedSourcesSection
+        krugId={krugId}
+        isOwner={isOwner && !isArchived}
+        isFullMember={isFullMember && !isArchived}
+      />
 
       <KrugSettlementSection
         krugId={krugId}
         isFullMember={!!isFullMember}
-        isOwner={isOwner}
+        isOwner={isOwner && !isArchived}
+        readOnly={isArchived}
         focusSettlementId={focusSettlementId}
       />
+
 
       <TransactionDetailDialog
         expense={focusExpense ?? null}

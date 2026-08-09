@@ -19,11 +19,13 @@ import { ShowMoreButton } from '@/components/common/ShowMoreButton';
 interface Props {
   krugId: string;
   isFullMember: boolean;
+  /** Arhivirani Krug: zapisi se čitaju, poništavanje nije moguće. */
+  readOnly?: boolean;
   /** Deep-link iz obavijesti — otvori povijest da HighlightTarget nađe zapis. */
   focusSettlementId?: string | null;
 }
 
-export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId = null }: Props) {
+export function KrugSettlementHistory({ krugId, isFullMember, readOnly = false, focusSettlementId = null }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -104,7 +106,7 @@ export function KrugSettlementHistory({ krugId, isFullMember, focusSettlementId 
                   {Number(r.amount).toFixed(2)} {r.currency}
                 </div>
                 {/* Poništenje je zaštita obiju strana duga. */}
-                {!voided && (user?.id === r.from_user || user?.id === r.to_user) && (
+                {!readOnly && !voided && (user?.id === r.from_user || user?.id === r.to_user) && (
                   <Button
                     size="icon" variant="ghost" className="h-8 w-8 shrink-0"
                     disabled={voidMut.isPending}
