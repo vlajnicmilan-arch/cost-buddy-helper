@@ -7,6 +7,10 @@
 //   MAILGUN_WEBHOOK_SIGNING_KEY    — HMAC potpis (dok nije postavljen: sve 401)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  ATTACHMENT_TOO_LARGE,
+  sanitizeStorageSegment,
+} from "../_shared/mailImport/storageKey.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,10 +19,13 @@ const corsHeaders = {
 };
 
 const MAX_TOTAL_BYTES = 15 * 1024 * 1024;
+// Iznad ovoga zahtjev se uopće ne parsira (zaštita memorije runtimea).
+const HARD_MAX_BYTES = 40 * 1024 * 1024;
 const TIMESTAMP_TOLERANCE_S = 300;
 // Brane po aliasu — iznad ovoga poruka se sprema sirova, bez posla u redu.
 const MAX_PER_HOUR = 30;
 const MAX_PER_DAY = 100;
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
