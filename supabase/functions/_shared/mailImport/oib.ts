@@ -36,7 +36,7 @@ export function findValidOibs(text: string | null | undefined): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const re = /\d{11}/g;
-  const haystack = (text ?? '').replace(/[.\s-]/g, (m) => (m === '-' ? '' : m));
+  const haystack = text ?? '';
   let match: RegExpExecArray | null;
   while ((match = re.exec(haystack)) !== null) {
     const candidate = match[0];
