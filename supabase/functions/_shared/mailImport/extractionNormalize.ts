@@ -7,7 +7,13 @@
  *  2) UBL grana daje UGNIJEŽĐEN rezultat (`supplier.oib`), a `mail_item_confirm`
  *     i UI čitaju PLOSNATE ključeve (`supplier_oib`). Mapiranje je ovdje, na
  *     jednom mjestu.
+ *  3) Datumi: hrvatski oblik ("28.02.2026.") iz AI dopune pucao je na INSERT-u.
+ *     Svaki izlaz ide kroz `normalizeExtractionDates` — u redu su samo ISO datumi.
  */
+
+import { normalizeExtractionDates } from './dateNormalize.ts';
+
+
 
 /** Prazni stringovi (i sami razmaci) postaju `null`, rekurzivno po objektu. */
 export function emptyToNull<T extends Record<string, unknown>>(source: T | null | undefined): Record<string, unknown> {
