@@ -18,8 +18,8 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import {
   useStatementSourceMemory,
   suggestSourceFromBankAccounts,
-  normalizeIban,
 } from '@/hooks/useStatementSourceMemory';
+import { sanitizeIban } from '@/lib/mailImport/iban';
 import { useStatementImport, markIngestItemLinked } from '@/hooks/useStatementImport';
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
@@ -45,10 +45,17 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const { t } = useTranslation();
   const { user } = useAuth();
   const extraction = (item.extraction ?? {}) as Record<string, unknown>;
-  const iban = normalizeIban(extraction.account_iban as string | null);
+  // Prljav IBAN (zalijepljen sljedeći redak) NE smije postati ključ pravila.
+  const iban = sanitizeIban(extraction.account_iban as string | null);
   const bankName = (extraction.bank_name as string | null) ?? null;
 
-  const { customPaymentSources } = useCustomPaymentSources({ includePersonal: true });
+  // Picker mora nuditi izvore PROFILA NA KOJI STAVKA GLASI, ne aktivnog konteksta.
+  const scopeProfileId =
+    item.scope_type === 'business_profile' && item.scope_id ? item.scope_id : null;
+  const { customPaymentSources } = useCustomPaymentSources({
+    includePersonal: true,
+    businessProfileIdOverride: scopeProfileId,
+  });
   const { suggestSourceId, rememberRule } = useStatementSourceMemory(true);
   const { busy, startImport } = useStatementImport();
 
