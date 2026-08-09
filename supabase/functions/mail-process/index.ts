@@ -326,15 +326,14 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         ? "nije_za_nas"
         : "na_pregledu";
 
-    const { data: item } = await supabase
-      .from("document_ingest_items")
-      .insert({
+    const upserted = await upsertIngestItem(supabase, {
+      messageId,
+      attachmentId: unit.attachmentId,
+      row: {
         source: "mail",
         scope_type: "user",
         scope_id: ownerId,
         owner_user_id: ownerId,
-        message_id: messageId,
-        attachment_id: unit.attachmentId,
         classification: result.classification,
         extraction: result.extraction,
         confidence,
@@ -346,20 +345,21 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         dedup_identity: unit.att?.content_sha256
           ? `sha256:${unit.att.content_sha256}`
           : null,
-      })
-      .select("id")
-      .single();
+      },
+    });
 
-    if (item && status === "na_pregledu") {
+    // Obavijest samo za STVARNO novu stavku — ponovna obrada ne zvoni opet.
+    if (upserted.id && upserted.action === "inserted" && status === "na_pregledu") {
       await supabase.from("notifications").insert({
         user_id: ownerId,
         type: "mail_document_pending",
         title_key: "notifications.mail.pending.title",
         body_key: "notifications.mail.pending.body",
-        dedup_ref: `mail_item:${item.id}`,
-        data: { item_id: item.id, priority: result.priority },
+        dedup_ref: `mail_item:${upserted.id}`,
+        data: { item_id: upserted.id, priority: result.priority },
       });
     }
+
   }
 
   await supabase
