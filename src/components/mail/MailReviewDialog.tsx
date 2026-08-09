@@ -77,18 +77,34 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
   const handleConfirm = async (item: MailReviewItem, replaceExistingId?: string) => {
     try {
       const result = await confirmItem(item.id, payloadFor(item), replaceExistingId);
-      if (result) {
-        setCollision({ item, existing: result.existing });
+
+      if (result.ok) {
+        setCollision(null);
+        setEditingId(null);
+        showSuccess(
+          result.already
+            ? t('mailReview.alreadySaved', 'Dokument je već bio spremljen')
+            : t('mailReview.confirmed', 'Dokument je spremljen'),
+        );
         return;
       }
-      setCollision(null);
-      setEditingId(null);
-      showSuccess(t('mailReview.confirmed', 'Dokument je spremljen'));
+
+      if (result.reason === 'mozda_vec_postoji') {
+        setCollision({ item, existing: result.existing ?? {} });
+        return;
+      }
+
+      // Konkretan razlog umjesto generičkog teksta (popravak nijeme greške).
+      showError(
+        t(`mailReview.error.${result.reason}`, t('mailReview.confirmFailed', 'Spremanje nije uspjelo')),
+      );
+      console.warn('[MailReviewDialog] confirm failed:', result.reason, result.detail ?? '');
     } catch (e) {
       showError(t('mailReview.confirmFailed', 'Spremanje nije uspjelo'));
-      console.warn('[MailReviewDialog] confirm failed:', (e as Error).message);
+      console.warn('[MailReviewDialog] confirm threw:', describeDbError(e));
     }
   };
+
 
   const handleDiscard = async (item: MailReviewItem) => {
     try {
