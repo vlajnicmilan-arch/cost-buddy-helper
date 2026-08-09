@@ -11,6 +11,7 @@
  *   2. naučeni IBAN platitelja + iznos                      → `strong`
  *   3. iznos + token-subset naziva                          → `likely`
  *   4. skupno podudaranje (do 4 računa iste druge strane)   → `likely`
+ *   5. samo iznos + blizina datuma (`allowAmountOnly`)      → `possible`
  *
  * Poziv na broj nije pouzdan sam za sebe: platitelji redovito koriste model
  * HR99 s vlastitom oznakom, pa je sloj 1 koristan kad postoji, ali nikad
