@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.mail_ingest_reap_stuck_jobs(integer) FROM authenticated;
