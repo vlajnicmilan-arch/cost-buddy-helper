@@ -7,9 +7,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const showError = vi.fn();
-const showSuccess = vi.fn();
-const confirmItem = vi.fn();
+const { showError, showSuccess, confirmItem } = vi.hoisted(() => ({
+  showError: vi.fn(),
+  showSuccess: vi.fn(),
+  confirmItem: vi.fn(),
+}));
 
 vi.mock('@/hooks/useStatusFeedback', () => ({ showError, showSuccess }));
 
