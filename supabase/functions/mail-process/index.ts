@@ -37,6 +37,13 @@ import {
   findProbableDuplicate,
   PROBABLE_DUPLICATE_WARNING,
 } from "../_shared/mailImport/softDuplicate.ts";
+import { findPlaceCode } from "../_shared/mailImport/paymentReference.ts";
+import {
+  memoryFill,
+  issuerKeyDomain,
+  type IssuerMemoryRow,
+} from "../_shared/mailImport/issuerMemory.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
