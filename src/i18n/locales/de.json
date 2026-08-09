@@ -6375,7 +6375,7 @@
       "nije_dopusteno": "Du darfst diesen Eintrag nicht bearbeiten.",
       "stavka_ne_postoji": "Der Eintrag existiert nicht mehr.",
       "nije_prijavljen": "Sitzung abgelaufen — bitte erneut anmelden.",
-      "baza": "Die Datenbank hat das Speichern abgelehnt. Erneut versuchen oder Support kontaktieren."
+      "baza": "Die Datenbank hat das Speichern abgelehnt."
     },
     "classification": {
       "racun": "Rechnung",
@@ -6422,7 +6422,8 @@
       "dueDate": "Fälligkeitsdatum",
       "totalAmount": "Gesamt",
       "iban": "IBAN",
-      "placeLabel": "Ortsbezeichnung"
+      "placeLabel": "Ortsbezeichnung",
+      "docType": "Dokumenttyp"
     },
     "collision": {
       "title": "Existiert möglicherweise bereits",
@@ -6438,7 +6439,21 @@
     "rememberIssuer": "{{name}} (USt-IdNr. {{oib}}) als meinen Aussteller merken",
     "alarm": {
       "ibanChanged": "IBAN weicht von den bisherigen ab — vor der Zahlung prüfen."
-    }
+    },
+    "docType": {
+      "380": "Handelsrechnung",
+      "82": "Rechnung für gemessene Leistungen",
+      "381": "Gutschrift",
+      "384": "Rechnungskorrektur",
+      "386": "Anzahlungsrechnung",
+      "394": "Leasingrechnung",
+      "389": "Selbstfakturierte Rechnung",
+      "393": "Factoring-Rechnung",
+      "875": "Abschlagsrechnung Bau",
+      "876": "Vorläufige Schlussrechnung",
+      "877": "Schlussrechnung Bau"
+    },
+    "errorDetail": "{{base}} — Grund: {{reason}}"
   },
   "documents": {
     "title": "Dokumente",

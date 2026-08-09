@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { getDateRange, makeCalendarDisabled, type DateContext } from '@/lib/dateValidation';
 import { dateToIso, formatDateHr, isoToDate, parseHrDate } from '@/lib/dateFormat';
 import { parseHrAmount } from '@/lib/money';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { KNOWN_DOC_TYPES, docTypeLabelKey } from '@/lib/mail/docType';
 
 /**
  * MAIL UVOZ — polje za uređivanje u pregledu.
@@ -19,7 +21,7 @@ import { parseHrAmount } from '@/lib/money';
  * Nevaljan unos NIKAD ne pada tiho — inline poruka s primjerom.
  */
 
-export type MailFieldKind = 'text' | 'date' | 'amount';
+export type MailFieldKind = 'text' | 'date' | 'amount' | 'docType';
 
 interface Props {
   label: string;
@@ -41,6 +43,27 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
   const [calendarOpen, setCalendarOpen] = useState(false);
   const invalid = isMailFieldInvalid(kind, value);
   const range = getDateRange(dateContext ?? 'expense');
+
+  // Tip dokumenta je zatvoren skup — bira se, ne tipka (i uvijek ima vrijednost).
+  if (kind === 'docType') {
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs">{label}</Label>
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="h-11" data-testid="mail-doc-type-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-[80] bg-popover">
+            {KNOWN_DOC_TYPES.map((code) => (
+              <SelectItem key={code} value={code}>
+                {`${code} · ${t(docTypeLabelKey(code), code)}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1">
