@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronRight, FileInput, FileOutput } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAppState } from '@/contexts/AppStateContext';
 import { useIncomingInvoices } from '@/hooks/useIncomingInvoices';
 import { summarizeIncomingInvoices } from '@/lib/eracun/incomingSummary';
 import { clickableProps } from '@/lib/a11y';
@@ -27,6 +28,9 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { invoices, loading } = useIncomingInvoices();
+  const { activeBusinessProfileId } = useAppState();
+  /** Osobni kontekst: privatna osoba ne izdaje račune — nema strane „Duguju mi". */
+  const isPersonal = !activeBusinessProfileId;
   const [open, setOpen] = useState(false);
 
   const payable = useMemo(
@@ -41,9 +45,9 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
   const monarch = variant === 'monarch';
   const wrapperSpacing = monarch ? 'mb-6 sm:mb-8' : 'mb-4';
 
-  if (loading || (payable.count === 0 && receivable.count === 0)) return null;
+  if (loading || (payable.count === 0 && (isPersonal || receivable.count === 0))) return null;
 
-  const hasOverdue = payable.overdueCount > 0 || receivable.overdueCount > 0;
+  const hasOverdue = payable.overdueCount > 0 || (!isPersonal && receivable.overdueCount > 0);
 
   const row = (
     summary: typeof payable,
@@ -107,7 +111,7 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 space-y-2">
             {row(payable, t('eracun.widget.title', 'Ulazni računi — neplaćeno'), FileInput)}
-            {row(receivable, t('eracun.widget.titleOut', 'Izlazni računi — nenaplaćeno'), FileOutput)}
+            {!isPersonal && row(receivable, t('eracun.widget.titleOut', 'Izlazni računi — nenaplaćeno'), FileOutput)}
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
         </div>
@@ -124,7 +128,9 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <FileInput className="w-5 h-5 text-primary" />
-                {t('eracun.widget.sheetTitle', 'eRačuni — obveze i potraživanja')}
+                {isPersonal
+                  ? t('eracun.widget.sheetTitlePersonal', 'Ulazni računi')
+                  : t('eracun.widget.sheetTitle', 'eRačuni — obveze i potraživanja')}
               </SheetTitle>
             </SheetHeader>
             <div className="mt-4">
