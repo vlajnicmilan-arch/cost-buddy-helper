@@ -212,6 +212,9 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   const { byOib, oibs } = await knownCounterparties(supabase, ownerId);
   const ownOibEntries = await ownOibsFor(supabase, ownerId);
   const ownOibs = ownOibEntries.map((e) => e.oib);
+  const ownDomains = await ownDomainsFor(supabase, ownerId);
+  const memoryRows = await issuerMemoryFor(supabase, ownerId);
+
 
   const { data: atts } = await supabase
     .from("inbound_attachments")
