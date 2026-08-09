@@ -39,18 +39,19 @@ describe('Onyx theme tokens', () => {
   it('card surface sits a visible step above the background', () => {
     const [, , bgL] = hsl(block, '--background');
     const [, , cardL] = hsl(block, '--card');
-    expect(cardL - bgL).toBeGreaterThanOrEqual(3);
-    expect(cardL).toBeLessThanOrEqual(12);
+    // OLED-calibrated step: the 4% background must not swallow the card.
+    expect(cardL - bgL).toBeGreaterThanOrEqual(7);
+    expect(cardL).toBeLessThanOrEqual(16);
   });
 
   it('popover stays at or above the card surface', () => {
-    expect(hsl(block, '--popover')[2]).toBeGreaterThanOrEqual(hsl(block, '--card')[2]);
+    expect(hsl(block, '--popover')[2]).toBeGreaterThanOrEqual(hsl(block, '--card')[2] + 1);
   });
 
   it('border is lifted above the card and warmed toward the primary hue', () => {
     const [borderH, borderS, borderL] = hsl(block, '--border');
     const [primaryH] = hsl(block, '--primary');
-    expect(borderL).toBeGreaterThanOrEqual(hsl(block, '--card')[2] + 10);
+    expect(borderL).toBeGreaterThanOrEqual(hsl(block, '--card')[2] + 18);
     expect(Math.abs(borderH - primaryH)).toBeLessThanOrEqual(10);
     // warmth only — never a gold frame
     expect(borderS).toBeLessThanOrEqual(30);
@@ -71,9 +72,9 @@ describe('Onyx theme tokens', () => {
     const onyxStart = css.indexOf(ONYX_SELECTOR);
     const before = css.slice(0, onyxStart);
     const after = css.slice(css.indexOf('}', css.indexOf('--shadow-premium-accent:', onyxStart)));
-    expect(before).not.toContain('30 7% 9%');
-    expect(before).not.toContain('40 18% 26%');
-    expect(after).not.toContain('30 7% 9%');
-    expect(after).not.toContain('40 18% 26%');
+    expect(before).not.toContain('30 7% 12%');
+    expect(before).not.toContain('40 18% 32%');
+    expect(after).not.toContain('30 7% 12%');
+    expect(after).not.toContain('40 18% 32%');
   });
 });
