@@ -2718,6 +2718,14 @@
       "override_rejected": {
         "title": "Aufteilungsvorschlag abgelehnt",
         "message": "Dein Vorschlag für die manuelle Aufteilung wurde abgelehnt. Grund: {{reason}}"
+      },
+      "owner_left": {
+        "title": "Der Eigentümer hat den Krug verlassen",
+        "message": "Der bisherige Eigentümer hat den Krug verlassen. Das Eigentum wurde an ein anderes vollwertiges Mitglied übertragen."
+      },
+      "ownership_received": {
+        "title": "Du bist jetzt Eigentümer des Krug",
+        "message": "Der bisherige Eigentümer hat den Krug verlassen und das Eigentum an dich übertragen. Du verwaltest diesen Krug jetzt."
       }
     },
     "payment_source_transaction": {
@@ -5834,6 +5842,30 @@
         "krug_not_found": "Krug nicht gefunden.",
         "unauthorized": "Bitte melde dich erneut an.",
         "generic": "Fehler beim Verlassen des Krugs"
+      }
+    },
+    "ownerLeave": {
+      "cta": "Eigentum übergeben und verlassen",
+      "title": "Eigentum übergeben und verlassen?",
+      "body": "Wähle ein vollwertiges Mitglied, das Eigentümer des Krug wird. Du verlässt den Krug und verlierst den Zugriff auf die geteilten Daten. Deine persönlichen Transaktionen und bestehenden Abrechnungen bleiben unberührt.",
+      "selectLabel": "Neuer Eigentümer",
+      "selectPlaceholder": "Mitglied auswählen",
+      "consequence": "{{name}} wird Eigentümer; du verlässt den Krug und verlierst den Zugriff.",
+      "confirm": "Übergeben und verlassen",
+      "cancel": "Abbrechen",
+      "success": "Eigentum übertragen, du hast den Krug verlassen",
+      "noSuccessorTitle": "Kein Nachfolger",
+      "noSuccessor": "Verlassen ohne Nachfolger kommt bald — Archivierung des Krug.",
+      "errors": {
+        "not_owner": "Du bist nicht Eigentümer dieses Krug.",
+        "noop_not_owner": "Du hast diesen Krug bereits verlassen.",
+        "successor_invalid": "Wähle ein anderes Mitglied als Nachfolger.",
+        "successor_not_full_member": "Der Nachfolger muss ein vollwertiges Mitglied sein.",
+        "successor_gone": "Das gewählte Mitglied ist nicht mehr im Krug.",
+        "no_successor_available": "Verlassen ohne Nachfolger kommt bald — Archivierung des Krug.",
+        "krug_not_found": "Der Krug existiert nicht.",
+        "unauthorized": "Bitte melde dich erneut an.",
+        "generic": "Eigentumsübergabe fehlgeschlagen"
       }
     }
   },

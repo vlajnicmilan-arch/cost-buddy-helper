@@ -7242,6 +7242,7 @@ export type Database = {
         Args: { p_client_request_id: string; p_expense_id: string }
         Returns: Json
       }
+      krug_has_owner: { Args: { _krug: string }; Returns: boolean }
       krug_is_full_member: {
         Args: { _krug: string; _user: string }
         Returns: boolean
@@ -7298,6 +7299,10 @@ export type Database = {
         Returns: Json
       }
       krug_override_withdraw: { Args: { p_override_id: string }; Returns: Json }
+      krug_owner_leave: {
+        Args: { p_krug_id: string; p_successor_id: string }
+        Returns: Json
+      }
       krug_purge_deleted: {
         Args: { p_older_than_days?: number }
         Returns: number

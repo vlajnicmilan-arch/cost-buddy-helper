@@ -24,6 +24,7 @@ import { Crown, Users, UserPlus, MoreVertical, Loader2, AlertCircle, Trash2, Log
 import { useKrug, useKrugMembers, type KrugMemberView } from '@/hooks/useKrug';
 import { KrugDeleteDialog } from './KrugDeleteDialog';
 import { KrugLeaveDialog } from './KrugLeaveDialog';
+import { KrugOwnerLeaveDialog } from './KrugOwnerLeaveDialog';
 import { ConfirmActionDialog } from '@/components/common/ConfirmActionDialog';
 import { KrugDeletionVotePanel } from './KrugDeletionVotePanel';
 import {
@@ -81,6 +82,7 @@ export function KrugDetailScreen({
   const [addOpen, setAddOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [ownerLeaveOpen, setOwnerLeaveOpen] = useState(false);
   const [focusDialogOpen, setFocusDialogOpen] = useState(false);
 
   // Deep link na transakciju iz obavijesti. Ako je trošak obrisan ili nije
@@ -216,7 +218,17 @@ export function KrugDetailScreen({
       )}
 
       {isOwner && krug.lifecycle_state !== 'deleted' && (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          {/* Vlasnik ne može samo izaći — izlazak ide uz prijenos vlasništva. */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+            onClick={() => setOwnerLeaveOpen(true)}
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            {t('krug.ownerLeave.cta', 'Predaj vlasništvo i izađi')}
+          </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -420,6 +432,14 @@ export function KrugDetailScreen({
         krugId={krugId}
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
+        onLeft={onLeft}
+      />
+
+      <KrugOwnerLeaveDialog
+        krugId={krugId}
+        members={members}
+        open={ownerLeaveOpen}
+        onOpenChange={setOwnerLeaveOpen}
         onLeft={onLeft}
       />
 

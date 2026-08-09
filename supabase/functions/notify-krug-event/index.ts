@@ -47,6 +47,8 @@ type EventType =
   | "krug_invitation_accepted"
   | "krug_invitation_declined"
   | "krug_member_left"
+  | "krug_owner_left"
+  | "krug_ownership_received"
   | "krug_membership_notice"
   | "krug_expense_proposed"
   | "krug_expense_confirmed"
@@ -80,6 +82,8 @@ const VALID: readonly EventType[] = [
   "krug_invitation_accepted",
   "krug_invitation_declined",
   "krug_member_left",
+  "krug_owner_left",
+  "krug_ownership_received",
   "krug_membership_notice",
   "krug_expense_proposed",
   "krug_expense_confirmed",
@@ -363,6 +367,10 @@ function event_type_shortKey(t: EventType): string {
       return "invitation_declined";
     case "krug_member_left":
       return "member_left";
+    case "krug_owner_left":
+      return "owner_left";
+    case "krug_ownership_received":
+      return "ownership_received";
     case "krug_membership_notice":
       return "membership_notice";
     case "krug_expense_proposed":

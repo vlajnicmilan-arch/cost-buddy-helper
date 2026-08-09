@@ -2724,6 +2724,14 @@
       "override_rejected": {
         "title": "Prijedlog podjele odbijen",
         "message": "Tvoj prijedlog ručne podjele troška je odbijen. Razlog: {{reason}}"
+      },
+      "owner_left": {
+        "title": "Vlasnik je napustio Krug",
+        "message": "Dosadašnji vlasnik je napustio Krug. Vlasništvo je preneseno na drugog punopravnog člana."
+      },
+      "ownership_received": {
+        "title": "Postao si vlasnik Kruga",
+        "message": "Dosadašnji vlasnik je izašao i prenio vlasništvo na tebe. Sada ti upravljaš ovim Krugom."
       }
     },
     "payment_source_transaction": {
@@ -5843,6 +5851,30 @@
         "krug_not_found": "Krug ne postoji.",
         "unauthorized": "Prijavi se ponovno.",
         "generic": "Greška pri napuštanju Kruga"
+      }
+    },
+    "ownerLeave": {
+      "cta": "Predaj vlasništvo i izađi",
+      "title": "Predati vlasništvo i izaći?",
+      "body": "Odaberi punopravnog člana koji postaje vlasnik Kruga. Ti izlaziš iz Kruga i gubiš pristup njegovim dijeljenim podacima. Tvoje osobne transakcije i postojeća razračunavanja ostaju netaknuta.",
+      "selectLabel": "Novi vlasnik",
+      "selectPlaceholder": "Odaberi člana",
+      "consequence": "{{name}} postaje vlasnik; ti izlaziš i gubiš pristup.",
+      "confirm": "Predaj i izađi",
+      "cancel": "Odustani",
+      "success": "Vlasništvo je preneseno, izašao si iz Kruga",
+      "noSuccessorTitle": "Nema nasljednika",
+      "noSuccessor": "Izlazak bez nasljednika stiže uskoro — arhiviranje kruga.",
+      "errors": {
+        "not_owner": "Nisi vlasnik ovog Kruga.",
+        "noop_not_owner": "Već si izašao iz ovog Kruga.",
+        "successor_invalid": "Odaberi drugog člana kao nasljednika.",
+        "successor_not_full_member": "Nasljednik mora biti punopravni član.",
+        "successor_gone": "Odabrani član više nije u Krugu.",
+        "no_successor_available": "Izlazak bez nasljednika stiže uskoro — arhiviranje kruga.",
+        "krug_not_found": "Krug ne postoji.",
+        "unauthorized": "Prijavi se ponovno.",
+        "generic": "Greška pri predaji vlasništva"
       }
     }
   },
