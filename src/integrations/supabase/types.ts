@@ -7379,6 +7379,25 @@ export type Database = {
           title: string
         }[]
       }
+      mail_alias_generate_local: { Args: never; Returns: string }
+      mail_alias_get_or_create: {
+        Args: never
+        Returns: {
+          alias_local: string
+          created_at: string
+          disabled_at: string
+          id: string
+        }[]
+      }
+      mail_alias_regenerate: {
+        Args: never
+        Returns: {
+          alias_local: string
+          created_at: string
+          disabled_at: string
+          id: string
+        }[]
+      }
       mail_import_consume_quota: {
         Args: { p_count?: number; p_user_id: string }
         Returns: Json

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { generateAliasLocal } from '@/lib/mailAlias';
+
 
 export interface MailAliasRow {
   id: string;
@@ -16,8 +16,10 @@ export interface InboundMessageRow {
   subject: string | null;
   received_at: string;
   status: string;
+  last_error: string | null;
   attachment_count: number;
 }
+
 
 /**
  * MAIL UVOZ (korak 1) — aktivni alias korisnika + sirovi popis zadnjih 20 poruka.
@@ -43,7 +45,7 @@ export function useMailInbox(enabled: boolean) {
       .select('id, alias_local, created_at, disabled_at')
       .eq('user_id', user.id)
       .is('disabled_at', null)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .limit(1);
 
     if (aliasErr) console.warn('[useMailInbox] alias fetch error:', aliasErr.message);
@@ -52,7 +54,7 @@ export function useMailInbox(enabled: boolean) {
 
     const { data: msgRows, error: msgErr } = await supabase
       .from('inbound_messages')
-      .select('id, from_header, subject, received_at, status, inbound_attachments(id)')
+      .select('id, from_header, subject, received_at, status, last_error, inbound_attachments(id)')
       .eq('owner_user_id', user.id)
       .order('received_at', { ascending: false })
       .limit(20);
@@ -68,6 +70,7 @@ export function useMailInbox(enabled: boolean) {
           subject: r.subject,
           received_at: r.received_at,
           status: r.status,
+          last_error: r.last_error ?? null,
           attachment_count: Array.isArray(r.inbound_attachments) ? r.inbound_attachments.length : 0,
         }))
       );
@@ -79,45 +82,40 @@ export function useMailInbox(enabled: boolean) {
     fetchAll();
   }, [fetchAll]);
 
-  /** Stvara alias ako ga korisnik još nema (poziva se pri prvom otvaranju kartice). */
+  /**
+   * GET-OR-CREATE. Baza je jedini arbitar: RPC vraća postojeći AKTIVNI alias,
+   * a novi stvara samo ako korisnik nema nijedan (parcijalni unique indeks
+   * jamči najviše jedan aktivan po korisniku).
+   */
   const ensureAlias = useCallback(async () => {
     if (!user?.id || alias || working) return;
     setWorking(true);
-    const { data, error } = await supabase
-      .from('mail_aliases')
-      .insert({ user_id: user.id, alias_local: generateAliasLocal() })
-      .select('id, alias_local, created_at, disabled_at')
-      .single();
-    if (error) console.warn('[useMailInbox] alias create error:', error.message);
-    else setAlias(data);
+    const { data, error } = await supabase.rpc('mail_alias_get_or_create');
+    if (error) console.warn('[useMailInbox] alias get-or-create error:', error.message);
+    else {
+      const row = (data as MailAliasRow[] | null)?.[0] ?? null;
+      if (row) setAlias(row);
+    }
     setWorking(false);
   }, [user?.id, alias, working]);
 
-  /** Gasi staru adresu ODMAH i stvara novu. */
+  /** Gasi staru adresu i stvara novu — atomarno, u jednoj transakciji. */
   const regenerateAlias = useCallback(async () => {
     if (!user?.id) return;
     setWorking(true);
     try {
-      if (alias) {
-        await supabase
-          .from('mail_aliases')
-          .update({ disabled_at: new Date().toISOString() })
-          .eq('id', alias.id);
-      }
-      const { data, error } = await supabase
-        .from('mail_aliases')
-        .insert({ user_id: user.id, alias_local: generateAliasLocal() })
-        .select('id, alias_local, created_at, disabled_at')
-        .single();
+      const { data, error } = await supabase.rpc('mail_alias_regenerate');
       if (error) throw error;
-      setAlias(data);
+      const row = (data as MailAliasRow[] | null)?.[0] ?? null;
+      if (row) setAlias(row);
     } catch (e) {
       console.warn('[useMailInbox] regenerate error:', (e as Error).message);
       throw e;
     } finally {
       setWorking(false);
     }
-  }, [user?.id, alias]);
+  }, [user?.id]);
+
 
   return { alias, messages, loading, working, ensureAlias, regenerateAlias, refetch: fetchAll };
 }
