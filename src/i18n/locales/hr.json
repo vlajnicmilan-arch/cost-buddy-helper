@@ -2724,6 +2724,14 @@
       "override_rejected": {
         "title": "Prijedlog podjele odbijen",
         "message": "Tvoj prijedlog ručne podjele troška je odbijen. Razlog: {{reason}}"
+      },
+      "owner_left": {
+        "title": "Vlasnik je napustio Krug",
+        "message": "Dosadašnji vlasnik je napustio Krug. Vlasništvo je preneseno na drugog punopravnog člana."
+      },
+      "ownership_received": {
+        "title": "Postao si vlasnik Kruga",
+        "message": "Dosadašnji vlasnik je izašao i prenio vlasništvo na tebe. Sada ti upravljaš ovim Krugom."
       }
     },
     "payment_source_transaction": {

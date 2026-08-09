@@ -2718,6 +2718,14 @@
       "override_rejected": {
         "title": "Aufteilungsvorschlag abgelehnt",
         "message": "Dein Vorschlag für die manuelle Aufteilung wurde abgelehnt. Grund: {{reason}}"
+      },
+      "owner_left": {
+        "title": "Der Eigentümer hat den Krug verlassen",
+        "message": "Der bisherige Eigentümer hat den Krug verlassen. Das Eigentum wurde an ein anderes vollwertiges Mitglied übertragen."
+      },
+      "ownership_received": {
+        "title": "Du bist jetzt Eigentümer des Krug",
+        "message": "Der bisherige Eigentümer hat den Krug verlassen und das Eigentum an dich übertragen. Du verwaltest diesen Krug jetzt."
       }
     },
     "payment_source_transaction": {

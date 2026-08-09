@@ -2718,6 +2718,14 @@
       "override_rejected": {
         "title": "Split proposal rejected",
         "message": "Your manual split proposal was rejected. Reason: {{reason}}"
+      },
+      "owner_left": {
+        "title": "The owner left the Krug",
+        "message": "The previous owner left the Krug. Ownership was transferred to another full member."
+      },
+      "ownership_received": {
+        "title": "You are now the Krug owner",
+        "message": "The previous owner left and transferred ownership to you. You now manage this Krug."
       }
     },
     "payment_source_transaction": {
