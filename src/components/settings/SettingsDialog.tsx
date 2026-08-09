@@ -452,6 +452,18 @@ export const SettingsDialog = ({ onDataImported }: SettingsDialogProps = {}) => 
     }
   };
 
+  const activeCategory = activeCategoryId
+    ? SETTINGS_CATEGORIES.find((c) => c.id === activeCategoryId) ?? null
+    : null;
+
+  // Podekran → izbornik kroz postojeći BackButton sustav (Android back / gumb).
+  useBackButton(
+    open && activeCategory !== null,
+    () => setActiveCategoryId(null),
+    BACK_PRIORITY.DETAIL,
+    'SETTINGS:subscreen',
+  );
+
   const renderSection = (key: SettingsSectionKey) => {
     switch (key) {
       case 'profile':
