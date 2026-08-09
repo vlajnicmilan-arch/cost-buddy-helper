@@ -27,6 +27,11 @@ export interface MailReviewItem {
   created_at: string;
   subject: string | null;
   from_header: string | null;
+  /** Odredište: 'user' (osobno) ili 'business_profile'. */
+  scope_type: string | null;
+  scope_id: string | null;
+  /** Korisnik je ručno odabrao odredište — reprocess ga ne smije pregaziti. */
+  scope_set_by_user: boolean;
 }
 
 export interface ConfirmCollision {
@@ -59,7 +64,7 @@ export function useMailReviewQueue(enabled: boolean) {
     const { data, error } = await supabase
       .from('document_ingest_items')
       .select(
-        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, inbound_messages(subject, from_header)'
+        'id, classification, extraction, confidence, trust_level, warnings, doc_type, created_at, scope_type, scope_id, scope_set_by_user, inbound_messages(subject, from_header)'
       )
       .eq('owner_user_id', user.id)
       .eq('status', 'na_pregledu')
@@ -82,6 +87,9 @@ export function useMailReviewQueue(enabled: boolean) {
           created_at: row.created_at,
           subject: row.inbound_messages?.subject ?? null,
           from_header: row.inbound_messages?.from_header ?? null,
+          scope_type: row.scope_type ?? null,
+          scope_id: row.scope_id ?? null,
+          scope_set_by_user: row.scope_set_by_user === true,
         }))
       );
     }
@@ -143,6 +151,34 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
+  /**
+   * Ručna korekcija odredišta (osobno ↔ tvrtka) PRIJE potvrde.
+   * Ide kroz RPC jer je odluka: RPC ujedno postavlja `scope_set_by_user`.
+   */
+  const setScope = useCallback(
+    async (itemId: string, scopeType: 'user' | 'business_profile', scopeId: string | null) => {
+      setWorking(true);
+      try {
+        const { data, error } = await supabase.rpc('mail_item_set_scope', {
+          p_item_id: itemId,
+          p_scope_type: scopeType,
+          p_scope_id: scopeId,
+        });
+        if (error) {
+          console.warn('[useMailReviewQueue] setScope error:', describeDbError(error, 'mail_item_set_scope'));
+          return false;
+        }
+        const result = (data ?? {}) as Record<string, unknown>;
+        if (result?.ok === false) return false;
+        await fetchItems();
+        return true;
+      } finally {
+        setWorking(false);
+      }
+    },
+    [fetchItems]
+  );
+
   const discardItem = useCallback(
     async (itemId: string) => {
       setWorking(true);
@@ -160,5 +196,5 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
-  return { items, loading, working, confirmItem, discardItem, refetch: fetchItems };
+  return { items, loading, working, confirmItem, discardItem, setScope, refetch: fetchItems };
 }
