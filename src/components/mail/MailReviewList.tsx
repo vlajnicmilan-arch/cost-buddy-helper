@@ -139,6 +139,8 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     }
     base.doc_type = item.doc_type ?? '380';
     base.direction = 'in';
+    // Učenje pamćenja se događa SAMO uz uključenu kvačicu — nikad tiho.
+    base.remember_issuer = rememberOff[item.id] !== true;
     return base;
   };
 
