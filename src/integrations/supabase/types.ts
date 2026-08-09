@@ -7047,6 +7047,14 @@ export type Database = {
         }
         Returns: number
       }
+      eracun_link_existing_expense: {
+        Args: { p_amount: number; p_expense_id: string; p_invoice_id: string }
+        Returns: Json
+      }
+      eracun_unlink_expense: {
+        Args: { p_expense_id: string; p_invoice_id: string }
+        Returns: Json
+      }
       filter_projects_subscribers: {
         Args: { p_user_ids: string[] }
         Returns: string[]
