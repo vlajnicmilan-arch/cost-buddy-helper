@@ -163,6 +163,7 @@ export async function classifyDocument(
     supplier_oib: deterministic.supplier_oib,
     iban: deterministic.iban,
     due_date: deterministic.due_date,
+    invoice_number: deterministic.invoice_number,
   };
 
   // ---- 3b. Heuristika — poznat OIB ili pošiljatelj, bez AI -----------------
