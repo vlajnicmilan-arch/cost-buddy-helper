@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * VIDLJIVOST U OBA STANJA JE TVRDO PRAVILO.
  *
- * Raniji stil je bio nevidljiv na tamnim temama: staza `bg-input` (u tamnom
- * gotovo boja pozadine) uz `border-transparent`, a klizač `bg-background`
+ * Raniji stil je bio nevidljiv na tamnim temama: staza u boji polja za unos
+ * (u tamnom gotovo boja pozadine) uz proziran rub, a klizač u boji pozadine
  * (crn na crnom). Zato:
  *  - staza uvijek ima vidljiv rub (`border-border`),
  *  - isključena staza koristi `bg-muted` (odvojena od pozadine kartice),
