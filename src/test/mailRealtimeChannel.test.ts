@@ -7,17 +7,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 const handlers: Array<{ event: string; cb: (p: unknown) => void }> = [];
-const removeChannel = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => {
-  const channel = {
+  const channel: Record<string, unknown> = {
     on: (_type: string, cfg: { event: string }, cb: (p: unknown) => void) => {
       handlers.push({ event: cfg.event, cb });
       return channel;
     },
     subscribe: () => channel,
   };
-  return { supabase: { channel: () => channel, removeChannel } };
+  return { supabase: { channel: () => channel, removeChannel: () => undefined } };
 });
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'U1' } }) }));
@@ -32,7 +31,6 @@ import {
 
 beforeEach(() => {
   handlers.length = 0;
-  removeChannel.mockClear();
 });
 
 describe('useMailRealtime — interni event', () => {
