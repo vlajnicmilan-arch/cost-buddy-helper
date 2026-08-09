@@ -6385,7 +6385,7 @@
       "nije_dopusteno": "Nemaš pravo na ovu stavku.",
       "stavka_ne_postoji": "Stavka više ne postoji.",
       "nije_prijavljen": "Sesija je istekla — prijavi se ponovno.",
-      "baza": "Baza je odbila spremanje. Pokušaj ponovno ili javi podršci."
+      "baza": "Baza je odbila spremanje."
     },
     "classification": {
       "racun": "Račun",
@@ -6432,7 +6432,8 @@
       "dueDate": "Datum dospijeća",
       "totalAmount": "Ukupno",
       "iban": "IBAN",
-      "placeLabel": "Oznaka mjesta"
+      "placeLabel": "Oznaka mjesta",
+      "docType": "Tip dokumenta"
     },
     "collision": {
       "title": "Možda već postoji",
@@ -6448,7 +6449,21 @@
     "rememberIssuer": "Zapamti {{name}} (OIB {{oib}}) kao mog izdavatelja",
     "alarm": {
       "ibanChanged": "IBAN se razlikuje od dosadašnjih — provjeri prije plaćanja."
-    }
+    },
+    "docType": {
+      "380": "Račun",
+      "82": "Račun za mjerene usluge",
+      "381": "Odobrenje",
+      "384": "Ispravak računa",
+      "386": "Račun za predujam",
+      "394": "Račun po najmu/leasingu",
+      "389": "Samoizdani račun",
+      "393": "Faktoring račun",
+      "875": "Privremena situacija",
+      "876": "Privremena okončana situacija",
+      "877": "Okončana situacija"
+    },
+    "errorDetail": "{{base}} ({{reason}})"
   },
   "documents": {
     "title": "Dokumenti",

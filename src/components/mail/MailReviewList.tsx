@@ -26,6 +26,7 @@ import {
 import type { DateContext } from '@/lib/dateValidation';
 import { formatDateHr, parseHrDate } from '@/lib/dateFormat';
 import { formatHrAmount, parseHrAmount } from '@/lib/money';
+import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
 
 /**
  * MAIL UVOZ — red „Na pregled" kao SADRŽAJ (bez vlastitog okvira).
@@ -63,6 +64,8 @@ const FIELDS: FieldDef[] = [
   // Oznaka mjesta (npr. „Split"/„Solin") — pamćenje je predlaže, korisnik je
   // smije prepisati PRIJE potvrde; potvrda je uči po šifri obračunskog mjesta.
   { key: 'place_label', labelKey: 'mailReview.field.placeLabel', fallback: 'Oznaka mjesta', kind: 'text' },
+  // Tip dokumenta: vidljiv i promjenjiv PRIJE potvrde (default 380, vidi docType.ts).
+  { key: 'doc_type', labelKey: 'mailReview.field.docType', fallback: 'Tip dokumenta', kind: 'docType' },
 
 ];
 
@@ -107,7 +110,7 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
     const next: Record<string, string> = {};
     for (const f of FIELDS) {
-      const raw = source[f.key];
+      const raw = f.kind === 'docType' ? resolveConfirmDocType(item.doc_type) : source[f.key];
       if (raw === null || raw === undefined || raw === '') next[f.key] = '';
       else if (f.kind === 'date') next[f.key] = formatDateHr(String(raw)) || String(raw);
       else if (f.kind === 'amount') next[f.key] = formatHrAmount(raw as string | number) || String(raw);
@@ -137,7 +140,11 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         }
       }
     }
-    base.doc_type = item.doc_type ?? '380';
+    // Default 380 kad tip nedostaje; korisnikov izbor iz uređivanja ima prednost.
+    base.doc_type = resolveConfirmDocType(
+      item.doc_type,
+      editingId === item.id ? draft.doc_type : undefined,
+    );
     base.direction = 'in';
     // Učenje pamćenja se događa SAMO uz uključenu kvačicu — nikad tiho.
     base.remember_issuer = rememberOff[item.id] !== true;
@@ -167,9 +174,16 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         return;
       }
 
-      // Konkretan razlog umjesto generičkog teksta (popravak nijeme greške).
+      // POŠTENA GREŠKA: kad je pao DB (reason 'baza'), poruka nosi STVARNI
+      // razlog s baze — nikad samo „javi podršci".
+      const base = t(
+        `mailReview.error.${failure.reason}`,
+        t('mailReview.confirmFailed', 'Spremanje nije uspjelo'),
+      );
       showError(
-        t(`mailReview.error.${failure.reason}`, t('mailReview.confirmFailed', 'Spremanje nije uspjelo')),
+        failure.detail
+          ? t('mailReview.errorDetail', '{{base}} ({{reason}})', { base, reason: failure.detail })
+          : base,
       );
       console.warn('[MailReviewList] confirm failed:', failure.reason, failure.detail ?? '');
     } catch (e) {
@@ -332,7 +346,12 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                   <div key={f.key} className="flex justify-between gap-2">
                     <dt className="text-muted-foreground">{t(f.labelKey, f.fallback)}</dt>
                     <dd className={mediumConfidence ? 'text-document-pending' : ''}>
-                      {displayFieldValue(f, extraction[f.key])}
+                      {f.kind === 'docType'
+                        ? `${resolveConfirmDocType(item.doc_type)} · ${t(
+                            docTypeLabelKey(resolveConfirmDocType(item.doc_type)),
+                            resolveConfirmDocType(item.doc_type),
+                          )}`
+                        : displayFieldValue(f, extraction[f.key])}
                     </dd>
                   </div>
                 ))}

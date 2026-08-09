@@ -6375,7 +6375,7 @@
       "nije_dopusteno": "You are not allowed to act on this item.",
       "stavka_ne_postoji": "This item no longer exists.",
       "nije_prijavljen": "Your session expired — please sign in again.",
-      "baza": "The database rejected the save. Try again or contact support."
+      "baza": "The database rejected the save."
     },
     "classification": {
       "racun": "Invoice",
@@ -6422,7 +6422,8 @@
       "dueDate": "Due date",
       "totalAmount": "Total",
       "iban": "IBAN",
-      "placeLabel": "Place label"
+      "placeLabel": "Place label",
+      "docType": "Document type"
     },
     "collision": {
       "title": "May already exist",
@@ -6438,7 +6439,21 @@
     "rememberIssuer": "Remember {{name}} (VAT ID {{oib}}) as my issuer",
     "alarm": {
       "ibanChanged": "IBAN differs from previous ones — verify before paying."
-    }
+    },
+    "docType": {
+      "380": "Commercial invoice",
+      "82": "Metered services invoice",
+      "381": "Credit note",
+      "384": "Corrected invoice",
+      "386": "Prepayment invoice",
+      "394": "Lease invoice",
+      "389": "Self-billed invoice",
+      "393": "Factored invoice",
+      "875": "Interim construction statement",
+      "876": "Interim final statement",
+      "877": "Final construction statement"
+    },
+    "errorDetail": "{{base}} ({{reason}})"
   },
   "documents": {
     "title": "Documents",

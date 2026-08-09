@@ -37,7 +37,9 @@ export async function findProbableDuplicate(
     .eq('direction', p.direction ?? 'in')
     .eq('supplier_oib', oib)
     .eq('invoice_number', number)
-    .eq('doc_type', p.docType ?? '380');
+    // Isti default kao na potvrdi (mail_item_confirm / docType.ts): prazan tip
+    // je 380, inače bi najava i potvrda gledale različite ključeve.
+    .eq('doc_type', (p.docType ?? '').toString().trim() || '380');
 
   query = p.scopeType === 'business_profile'
     ? query.eq('business_profile_id', p.scopeId)
