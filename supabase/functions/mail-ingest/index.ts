@@ -142,12 +142,15 @@ Deno.serve(async (req) => {
     );
     if (locals.length === 0) return json({ ok: true, ignored: "no_recipient" });
 
-    const { data: aliasRow } = await supabase
+    const { data: aliasRows } = await supabase
       .from("mail_aliases")
-      .select("id, user_id")
+      .select("id, user_id, created_at")
       .in("alias_local", locals)
       .is("disabled_at", null)
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const aliasRow = (aliasRows ?? [])[0] ?? null;
+
 
     if (!aliasRow) {
       console.warn("[mail-ingest] nepoznat ili ugašen alias — odbacujem bez zapisa");
