@@ -36,6 +36,7 @@ export const isMailFieldInvalid = (kind: MailFieldKind, value: string): boolean 
 
 export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange }: Props) => {
   const { t } = useTranslation();
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const invalid = isMailFieldInvalid(kind, value);
   const range = getDateRange(dateContext ?? 'expense');
 
@@ -51,7 +52,7 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
           aria-invalid={invalid}
         />
         {kind === 'date' && (
-          <Popover>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 type="button"
@@ -68,7 +69,11 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
                 mode="single"
                 selected={isoToDate(value)}
                 disabled={makeCalendarDisabled(range)}
-                onSelect={(d) => d && onChange(formatDateHr(dateToIso(d)))}
+                onSelect={(d) => {
+                  if (!d) return;
+                  onChange(formatDateHr(dateToIso(d)));
+                  setCalendarOpen(false);
+                }}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
@@ -76,6 +81,7 @@ export const MailReviewFieldInput = ({ label, kind, value, dateContext, onChange
           </Popover>
         )}
       </div>
+
       {invalid && (
         <p className="text-xs text-destructive">
           {kind === 'date'
