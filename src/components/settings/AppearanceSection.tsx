@@ -10,20 +10,29 @@ interface AppearanceSectionProps {
   onToggleTheme: () => void;
   languageCode: string;
   onLanguageChange: (code: string) => void;
+  /** Koje retke prikazati; prema zadanom oba (nepromijenjeno ponašanje). */
+  sections?: Array<'theme' | 'language'>;
+  /** Sakrij naslov sekcije (kad podekran već ima naslov). */
+  hideHeading?: boolean;
 }
 
 export const AppearanceSection = ({
-  isDark, onToggleTheme, languageCode, onLanguageChange
+  isDark, onToggleTheme, languageCode, onLanguageChange,
+  sections = ['theme', 'language'], hideHeading = false,
 }: AppearanceSectionProps) => {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        {t('settings.appearance', 'Izgled')}
-      </h3>
-      
+      {!hideHeading && (
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          {t('settings.appearance', 'Izgled')}
+        </h3>
+      )}
+
+      {sections.includes('theme') && (
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
             {isDark ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
@@ -39,8 +48,11 @@ export const AppearanceSection = ({
         </div>
         <Switch id="theme-toggle" checked={isDark} onCheckedChange={onToggleTheme} />
       </div>
+      )}
 
+      {sections.includes('language') && (
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Globe className="w-4 h-4 text-primary" />
@@ -70,6 +82,8 @@ export const AppearanceSection = ({
           </SelectContent>
         </Select>
       </div>
+      )}
     </div>
+
   );
 };

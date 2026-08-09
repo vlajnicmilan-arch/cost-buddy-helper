@@ -1230,6 +1230,15 @@
     }
   },
   "settings": {
+    "categories": {
+      "profile": { "title": "Profil", "desc": "Ime i jezik aplikacije" },
+      "appearance": { "title": "Izgled", "desc": "Tema i prikaz modula u aplikaciji" },
+      "notifications": { "title": "Obavijesti", "desc": "Zvuk, push i dnevni sažetak" },
+      "subscription": { "title": "Pretplata", "desc": "Plan, naplata i mogućnosti" },
+      "data": { "title": "Podaci i sigurnost", "desc": "Pohrana, izvoz, zaključavanje i brisanje" },
+      "mail": { "title": "Uvoz iz e-maila", "desc": "Adresa za primanje dokumenata" },
+      "help": { "title": "Pomoć i podrška", "desc": "Upute, kontakt i prijave" }
+    },
     "title": "Postavke",
     "language": "Jezik",
     "theme": "Tema",

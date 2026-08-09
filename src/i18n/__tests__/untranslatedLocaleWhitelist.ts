@@ -121,7 +121,9 @@ export const UNTRANSLATED_LOCALE_WHITELIST: Record<"en" | "de", Record<string, s
     "openBanking.throttle.durationM": "Numeric duration format identical across locales",
   },
   de: {
+    "settings.categories.profile.title": "Profil is the same word in DE",
     "mailReview.field.iban": "IBAN je međunarodna kratica — identična na svim jezicima",
+
     "mailImport.status": "Same word in DE",
     "subscription.badge.admin": "Admin terminology",
 

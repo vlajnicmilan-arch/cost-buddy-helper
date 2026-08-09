@@ -1226,6 +1226,15 @@
     }
   },
   "settings": {
+    "categories": {
+      "profile": { "title": "Profil", "desc": "Name und App-Sprache" },
+      "appearance": { "title": "Darstellung", "desc": "Design und Modulanzeige" },
+      "notifications": { "title": "Benachrichtigungen", "desc": "Ton, Push und Tageszusammenfassung" },
+      "subscription": { "title": "Abonnement", "desc": "Tarif, Abrechnung und Funktionen" },
+      "data": { "title": "Daten & Sicherheit", "desc": "Speicher, Export, Sperre und Löschung" },
+      "mail": { "title": "E-Mail-Import", "desc": "Adresse für den Dokumentenempfang" },
+      "help": { "title": "Hilfe & Support", "desc": "Anleitungen, Kontakt und Meldungen" }
+    },
     "title": "Einstellungen",
     "language": "Sprache",
     "theme": "Design",
