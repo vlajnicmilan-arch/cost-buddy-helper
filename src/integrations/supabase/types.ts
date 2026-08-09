@@ -1464,6 +1464,7 @@ export type Database = {
           owner_user_id: string | null
           reason: string | null
           scope_id: string
+          scope_set_by_user: boolean
           scope_type: string
           source: string
           status: string
@@ -1486,6 +1487,7 @@ export type Database = {
           owner_user_id?: string | null
           reason?: string | null
           scope_id: string
+          scope_set_by_user?: boolean
           scope_type: string
           source: string
           status?: string
@@ -1508,6 +1510,7 @@ export type Database = {
           owner_user_id?: string | null
           reason?: string | null
           scope_id?: string
+          scope_set_by_user?: boolean
           scope_type?: string
           source?: string
           status?: string
@@ -7427,6 +7430,10 @@ export type Database = {
           p_payload: Json
           p_replace_existing_id?: string
         }
+        Returns: Json
+      }
+      mail_item_set_scope: {
+        Args: { p_item_id: string; p_scope_id: string; p_scope_type: string }
         Returns: Json
       }
       mark_guided_home_exited: { Args: never; Returns: string }
