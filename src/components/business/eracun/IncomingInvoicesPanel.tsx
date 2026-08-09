@@ -78,12 +78,20 @@ export const IncomingInvoicesPanel = () => {
   const [placeFilter, setPlaceFilter] = useState<string>('all');
   const [placeTarget, setPlaceTarget] = useState<IncomingInvoice | null>(null);
   const [placeDraft, setPlaceDraft] = useState('');
+  /** Povezivanje ulaznog računa s postojećim troškom (i pretprovjera na „Plaćeno"). */
+  const [linkTarget, setLinkTarget] = useState<IncomingInvoice | null>(null);
+  const [linkPrecheck, setLinkPrecheck] = useState(false);
 
 
   const scoped = useMemo(
     () => invoices.filter((i) => (i.direction ?? 'in') === direction),
     [invoices, direction],
   );
+  const incoming = useMemo(
+    () => invoices.filter((i) => (i.direction ?? 'in') === 'in'),
+    [invoices],
+  );
+  const expenseMatch = useEracunExpenseMatch(incoming);
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
 
