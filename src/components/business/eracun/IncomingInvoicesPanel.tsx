@@ -283,16 +283,19 @@ export const IncomingInvoicesPanel = () => {
 
   return (
     <div className="space-y-3 w-full min-w-0 overflow-x-hidden">
-      <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)} className="w-full min-w-0">
-        <TabsList className="h-9 w-full">
-          <TabsTrigger value="in" className="text-xs flex-1 min-w-0">
-            {t('eracun.list.directionIn', 'Dugujem')}
-          </TabsTrigger>
-          <TabsTrigger value="out" className="text-xs flex-1 min-w-0">
-            {t('eracun.list.directionOut', 'Duguju mi')}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {!isPersonal && (
+        <Tabs value={direction} onValueChange={(v) => setDirection(v as Direction)} className="w-full min-w-0">
+          <TabsList className="h-9 w-full">
+            <TabsTrigger value="in" className="text-xs flex-1 min-w-0">
+              {t('eracun.list.directionIn', 'Dugujem')}
+            </TabsTrigger>
+            <TabsTrigger value="out" className="text-xs flex-1 min-w-0">
+              {t('eracun.list.directionOut', 'Duguju mi')}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 w-full min-w-0">
         <Tabs
