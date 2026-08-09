@@ -8,6 +8,7 @@
 
 import { pickSupplierOib, OIB_AMBIGUOUS_WARNING } from './oib.ts';
 import { findValidIbans, IBAN_AMBIGUOUS_WARNING } from './ibanCheck.ts';
+import { findInvoiceNumber, INVOICE_NUMBER_AMBIGUOUS_WARNING } from './invoiceNumber.ts';
 
 export const DUE_DATE_AMBIGUOUS_WARNING = 'vise_kandidata_dospijece';
 
