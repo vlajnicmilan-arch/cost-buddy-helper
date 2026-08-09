@@ -24,6 +24,11 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Chip odredišta traži profile (useAuth) — u ovom testu nas zanima samo greška.
+vi.mock('@/hooks/useBusinessProfiles', () => ({
+  useBusinessProfiles: () => ({ profiles: [], loading: false, refetch: vi.fn() }),
+}));
+
 vi.mock('@/hooks/useMailReviewQueue', () => ({
   useMailReviewQueue: () => ({
     items: [
@@ -44,6 +49,7 @@ vi.mock('@/hooks/useMailReviewQueue', () => ({
     working: false,
     confirmItem,
     discardItem: vi.fn(),
+    setScope: vi.fn(),
     refresh: vi.fn(),
   }),
 }));
