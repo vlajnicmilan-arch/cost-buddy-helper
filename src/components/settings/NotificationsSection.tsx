@@ -101,9 +101,9 @@ export const NotificationsSection = ({
         {t('settings.notifications', 'Obavijesti')}
       </h3>
 
-      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <Volume2 className="w-4 h-4 text-primary" />
           </div>
           <div>
@@ -115,13 +115,13 @@ export const NotificationsSection = ({
             </p>
           </div>
         </div>
-        <Switch id="sound-notifications" checked={soundEnabled} onCheckedChange={onSoundToggle} />
+        <Switch className="shrink-0" id="sound-notifications" checked={soundEnabled} onCheckedChange={onSoundToggle} />
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <Bell className="w-4 h-4 text-primary" />
             </div>
             <div>
@@ -133,7 +133,7 @@ export const NotificationsSection = ({
               </p>
             </div>
           </div>
-          <Switch id="push-notifications" checked={pushEnabled} onCheckedChange={onPushToggle} />
+          <Switch className="shrink-0" id="push-notifications" checked={pushEnabled} onCheckedChange={onPushToggle} />
         </div>
         {!isNative && (
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 px-3">
@@ -160,7 +160,7 @@ export const NotificationsSection = ({
                 const Icon = item.icon;
                 return (
                   <div key={item.key}>
-                    <div className="flex items-center justify-between p-2.5 bg-muted/20 rounded-lg">
+                    <div className="flex items-center justify-between gap-3 min-w-0 p-2.5 bg-muted/20 rounded-lg">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                           <Icon className="w-3.5 h-3.5 text-primary" />
@@ -181,7 +181,7 @@ export const NotificationsSection = ({
                       />
                     </div>
                     {item.key === 'krug' && prefs.krug_enabled && (
-                      <div className="flex items-center justify-between p-2.5 ml-9 mr-1 mt-1 bg-muted/10 rounded-lg">
+                      <div className="flex items-center justify-between gap-3 min-w-0 p-2.5 ml-9 mr-1 mt-1 bg-muted/10 rounded-lg">
                         <div className="min-w-0 pr-2">
                           <Label htmlFor="krug-settlement-reminder" className="text-xs font-medium cursor-pointer block truncate">
                             {t('settings.notifKrugReminder', 'Podsjetnici za Krug (tjedno)')}
@@ -208,7 +208,7 @@ export const NotificationsSection = ({
 
       {/* Dnevni sažetak */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+        <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <Sunrise className="w-4 h-4 text-primary" />
@@ -223,6 +223,7 @@ export const NotificationsSection = ({
             </div>
           </div>
           <Switch
+            className="shrink-0"
             id="daily-summary"
             checked={prefs.daily_summary_enabled}
             onCheckedChange={(v) => setCategory('daily_summary', v)}
@@ -231,11 +232,12 @@ export const NotificationsSection = ({
 
         {prefs.daily_summary_enabled && (
           <>
-            <div className="flex items-center justify-between p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg">
+            <div className="flex items-center justify-between gap-3 min-w-0 p-2.5 ml-12 mr-1 bg-muted/20 rounded-lg">
               <Label htmlFor="daily-summary-weekend" className="text-xs font-medium cursor-pointer">
                 {t('settings.dailySummaryWeekend', 'Šalji i vikendom')}
               </Label>
               <Switch
+                className="shrink-0"
                 id="daily-summary-weekend"
                 checked={prefs.daily_summary_weekend_enabled}
                 onCheckedChange={setWeekendEnabled}
@@ -261,7 +263,7 @@ export const NotificationsSection = ({
 
       {!isLocalMode && hasAccess('projects') && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <FolderKanban className="w-4 h-4 text-primary" />
@@ -276,6 +278,7 @@ export const NotificationsSection = ({
               </div>
             </div>
             <Switch
+              className="shrink-0"
               id="participant-digest"
               checked={prefs.participant_digest_enabled}
               onCheckedChange={(v) => setFlag('participant_digest_enabled', v)}
