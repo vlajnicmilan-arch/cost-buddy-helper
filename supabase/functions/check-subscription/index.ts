@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
+import {
+  MODULES,
+  isAdminSubscriptionActive,
+  projectAdminSubscription,
+  type Module,
+  type ModuleStatus,
+} from "./resolve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,15 +17,6 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
-
-const MODULES = ['smjer', 'krug', 'projekti', 'biznis'] as const;
-type Module = typeof MODULES[number];
-
-interface ModuleStatus {
-  active: boolean;
-  source: string | null;
-  period_end: string | null;
-}
 
 async function loadEntitlements(
   supabase: SupabaseClient,
@@ -112,17 +110,19 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (adminSub && adminSub.tier !== "free") {
-      if (!adminSub.expires_at || new Date(adminSub.expires_at) > new Date()) {
-        logStep("Admin-assigned subscription found", { tier: adminSub.tier });
-        return jsonResponse({
-          subscribed: true,
-          tier: adminSub.tier,
-          subscription_end: adminSub.expires_at,
-          source: "admin",
-          entitlements,
-        });
-      }
+    if (isAdminSubscriptionActive(adminSub)) {
+      // Klijent u 'entitlements' modu gleda SAMO entitlements, pa admin
+      // pretplatu moramo projicirati u njih — inače write gate blokira
+      // korisnika unatoč subscribed=true.
+      const projected = projectAdminSubscription(entitlements, adminSub);
+      logStep("Admin-assigned subscription found", { tier: adminSub.tier });
+      return jsonResponse({
+        subscribed: true,
+        tier: adminSub.tier,
+        subscription_end: adminSub.expires_at,
+        source: "admin",
+        entitlements: projected,
+      });
     }
 
     // Paddle entitlements — derived tier for backward-compat with tier consumers
