@@ -74,7 +74,7 @@ export function flattenUblExtraction(parsed: Record<string, unknown>): Record<st
     ubl: parsed,
   };
 
-  return emptyToNull(flat);
+  return normalizeExtractionDates(emptyToNull(flat));
 }
 
 /**
@@ -90,5 +90,6 @@ export function mergeDeterministic(
     if (value !== null && value !== undefined && value !== '') base[key] = value;
     else if (base[key] === undefined) base[key] = null;
   }
-  return base;
+  return normalizeExtractionDates(base);
 }
+
