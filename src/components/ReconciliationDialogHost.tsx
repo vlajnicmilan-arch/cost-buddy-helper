@@ -144,6 +144,8 @@ export function ReconciliationDialogHost() {
   const app = active.summary.appBalance;
   const bank = active.summary.bankBalance;
   const delta = active.summary.delta ?? 0;
+  // Izvor bankovne istine: papir (izvod) ili bankovni redak (Open Banking).
+  const fromStatement = active.summary.bankSource === 'statement';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -154,7 +156,12 @@ export function ReconciliationDialogHost() {
             {t('reconciliation.title')}
           </DialogTitle>
           <DialogDescription>
-            {t('reconciliation.description', { delta: formatAmount(Math.abs(delta)) })}
+            {fromStatement && bank !== null
+              ? t('reconciliation.descriptionFromStatement', {
+                  delta: formatAmount(Math.abs(delta)),
+                  balance: formatAmount(bank),
+                })
+              : t('reconciliation.description', { delta: formatAmount(Math.abs(delta)) })}
           </DialogDescription>
         </DialogHeader>
 
@@ -170,7 +177,9 @@ export function ReconciliationDialogHost() {
               <span className="font-mono font-semibold">{app !== null ? formatAmount(app) : '—'}</span>
             </div>
             <div className="flex items-center justify-between p-3">
-              <span className="text-sm text-muted-foreground">{t('reconciliation.bankBalance')}</span>
+              <span className="text-sm text-muted-foreground">
+                {fromStatement ? t('reconciliation.statementBalance') : t('reconciliation.bankBalance')}
+              </span>
               <span className="font-mono font-semibold">{bank !== null ? formatAmount(bank) : '—'}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-amber-500/5">
@@ -183,6 +192,13 @@ export function ReconciliationDialogHost() {
               </span>
             </div>
           </div>
+
+          {fromStatement && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground/80 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <span>{t('reconciliation.statementSourceNote')}</span>
+            </div>
+          )}
 
           {anchorNewerThanBank && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground/80 flex gap-2">
@@ -214,7 +230,7 @@ export function ReconciliationDialogHost() {
         <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
           <Button className="w-full min-h-11" onClick={handleAlign} disabled={busy !== null || bank === null}>
             {busy === 'align' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            {t('reconciliation.alignToBank')}
+            {fromStatement ? t('reconciliation.alignToStatement') : t('reconciliation.alignToBank')}
           </Button>
           <Button className="w-full min-h-11" variant="outline" onClick={handleKeep} disabled={busy !== null}>
             {busy === 'keep' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}

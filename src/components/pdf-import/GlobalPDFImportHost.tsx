@@ -675,6 +675,10 @@ export const GlobalPDFImportHost = () => {
         importedTransactions,
         batchId: (crypto as any)?.randomUUID?.() ?? `batch-${Date.now()}`,
         availableTargets,
+        // Saldo s papira (mail izvod) — jedina bankovna istina kad izvor nema
+        // redak u bank_accounts. Executor ga koristi samo tada.
+        statementClosingBalance: pdfImport.statementBalanceHint?.closingBalance ?? null,
+        statementDate: pdfImport.statementBalanceHint?.statementDate ?? null,
         statement: {
           fileHash: fileHashRef.current,
           contentHash: statementContentHash,

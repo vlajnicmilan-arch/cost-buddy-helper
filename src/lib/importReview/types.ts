@@ -112,6 +112,14 @@ export interface ImportReviewPayload {
     readonly fileSize: number | null;
     readonly mimeType: string | null;
   };
+  /**
+   * Završni saldo ISPISAN NA SAMOM IZVODU (mail ekstrakcija, `detectClosingBalance`).
+   * Jedina bankovna istina za izvore bez Open Bankinga (nema retka u `bank_accounts`).
+   * Koristi se SAMO kad `has_bank_row = false` — bankovni redak uvijek ima prednost.
+   */
+  readonly statementClosingBalance?: number | null;
+  /** Datum (ISO) na koji taj saldo vrijedi — kraj razdoblja izvoda. */
+  readonly statementDate?: string | null;
 }
 
 

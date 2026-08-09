@@ -98,7 +98,20 @@ export interface ReconciliationSummaryEntry {
   readonly batchLastAt?: string | null;
   /** Izvod završava na dan sidra ili prije → ne traži odluku. */
   readonly isHistorical?: boolean;
+  /**
+   * Odakle dolazi `bankBalance`:
+   *  - 'bank_row'  — redak iz bank_accounts (Open Banking), uvijek ima prednost
+   *  - 'statement' — završni saldo ispisan na samom izvodu (jedina istina bez OB)
+   */
+  readonly bankSource?: 'bank_row' | 'statement';
   readonly error?: string;
+}
+
+/** Saldo s papira za točno jedan izvor — koristi se samo bez bankovnog retka. */
+export interface StatementBalanceFallback {
+  readonly sourceId: string;
+  readonly closingBalance: number;
+  readonly statementDate: string | null;
 }
 
 
@@ -422,6 +435,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     input.supabase,
     batchId,
     touchedSourceIds,
+    resolveStatementFallback(input.payload),
   );
 
   return {
@@ -444,6 +458,17 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
 // FAZA 2 helpers
 // -----------------------------------------------------------------------------
 
+/** Datum izvoda (YYYY-MM-DD) → kraj tog dana u ISO obliku; ISO ulaz ostaje. */
+export function toStatementIso(raw: string | null): string | null {
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return `${raw}T23:59:59.000Z`;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** Centi — izbjegava plutajući rep tipa 209.91999999999999. */
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
 const CUSTOM_SOURCE_RE = /^custom:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 /** Extract unique source UUIDs the batch touched (both sides of transfers). */
@@ -462,10 +487,28 @@ export function collectTouchedSourceIds(plan: PlannedWork): readonly string[] {
   return [...set];
 }
 
+/**
+ * Saldo s izvoda vrijedi samo za novčanik u koji se izvod uvozi (payload.sourceId).
+ * Bez broja ili bez izvora — nema fallbacka (ponašanje kao dosad).
+ */
+export function resolveStatementFallback(
+  payload: ImportReviewPayload,
+): StatementBalanceFallback | null {
+  const closing = payload.statementClosingBalance;
+  if (typeof closing !== 'number' || !Number.isFinite(closing)) return null;
+  if (!payload.sourceId) return null;
+  return {
+    sourceId: payload.sourceId.toLowerCase(),
+    closingBalance: closing,
+    statementDate: toStatementIso(payload.statementDate ?? null),
+  };
+}
+
 async function buildReconciliationSummary(
   supabase: ExecutorSupabaseClient,
   batchId: string,
   sourceIds: readonly string[],
+  statementFallback: StatementBalanceFallback | null = null,
 ): Promise<readonly ReconciliationSummaryEntry[]> {
   if (sourceIds.length === 0 || typeof supabase.rpc !== 'function') return [];
   const out: ReconciliationSummaryEntry[] = [];
@@ -508,6 +551,31 @@ async function buildReconciliationSummary(
         batchLastAt: data.batch_last_at ?? null,
         isHistorical: typeof data.is_historical === 'boolean' ? data.is_historical : undefined,
       };
+      // Bez bankovnog retka (izvor bez Open Bankinga) saldo s papira postaje
+      // bankovna istina. S bankovnim retkom ponašanje je NEPROMIJENJENO.
+      if (!hasBankRow && statementFallback && statementFallback.sourceId === sourceId.toLowerCase() && app !== null) {
+        const stmtDelta = round2(statementFallback.closingBalance - app);
+        const stmtGate = {
+          hasBankRow: true,
+          delta: stmtDelta,
+          anchorDate: gateInput.anchorDate,
+          batchLastAt: gateInput.batchLastAt ?? statementFallback.statementDate,
+        };
+        out.push({
+          sourceId,
+          appBalance: app,
+          bankBalance: statementFallback.closingBalance,
+          delta: stmtDelta,
+          hasBankRow: false,
+          needsReconciliation: shouldReconcile(stmtGate),
+          engineMode: 'hybrid',
+          anchorDate: stmtGate.anchorDate,
+          batchLastAt: stmtGate.batchLastAt ?? null,
+          isHistorical: isHistoricalBatch(stmtGate),
+          bankSource: 'statement',
+        });
+        continue;
+      }
       out.push({
         sourceId,
         appBalance: app,
@@ -521,6 +589,7 @@ async function buildReconciliationSummary(
         anchorDate: gateInput.anchorDate,
         batchLastAt: gateInput.batchLastAt,
         isHistorical: isHistoricalBatch(gateInput),
+        bankSource: 'bank_row',
       });
 
     } catch (e) {

@@ -44,6 +44,10 @@ export function useStatementImport() {
       storagePath: string;
       source: CustomPaymentSource;
       force?: boolean;
+      /** Završni saldo s papira (extraction.closing_balance) — nosi se do executora. */
+      closingBalance?: number | null;
+      /** Datum na koji saldo vrijedi (extraction.period_to). */
+      statementDate?: string | null;
     }): Promise<StatementImportStart> => {
       setBusy(true);
       try {
@@ -64,6 +68,9 @@ export function useStatementImport() {
           file,
           source: params.source,
           forceImport: params.force === true,
+          statementClosingBalance:
+            typeof params.closingBalance === 'number' ? params.closingBalance : null,
+          statementDate: params.statementDate ?? null,
         });
         return { kind: 'started' };
       } finally {
