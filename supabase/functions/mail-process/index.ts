@@ -40,6 +40,7 @@ import {
   PROBABLE_DUPLICATE_WARNING,
 } from "../_shared/mailImport/softDuplicate.ts";
 import { findPlaceCode } from "../_shared/mailImport/paymentReference.ts";
+import { pickSupplierOib } from "../_shared/mailImport/oib.ts";
 import {
   memoryFill,
   issuerKeyDomain,
@@ -146,7 +147,7 @@ async function ownDomainsFor(supabase: Supa, userId: string): Promise<string[]> 
 async function issuerMemoryFor(supabase: Supa, userId: string): Promise<IssuerMemoryRow[]> {
   const { data, error } = await supabase
     .from("mail_issuer_memory")
-    .select("from_domain, supplier_oib, place_code, supplier_name, place_label")
+    .select("from_domain, supplier_oib, place_code, supplier_name, place_label, confirmed_count, known_ibans")
     .eq("user_id", userId)
     .limit(500);
   if (error) {
@@ -388,16 +389,25 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     // PAMĆENJE IZDAVATELJA I MJESTA — sloj dopune IZMEĐU jeftine klasifikacije
     // i odluke o AI pozivu. Pogodak popunjava rupe pa `needsAiEnrichment`
     // često ugasi AI poziv. Pouzdanost se NE diže; stavka ostaje na pregledu.
-    const placeCode = findPlaceCode([bodyText, pdfText].filter(Boolean).join("\n")).placeCode;
-    const applyMemory = (r: typeof cheap) =>
-      memoryFill({
+    const memoryText = [bodyText, pdfText].filter(Boolean).join("\n");
+    const placeCode = findPlaceCode(memoryText).placeCode;
+    // Kandidati za razrješenje iz pamćenja — kandidat MORA doslovno postojati
+    // u dokumentu, pa je presjek s pamćenjem siguran po konstrukciji.
+    const oibCandidates = pickSupplierOib(memoryText, ownOibs).candidates;
+    let memoryKnownIbans: string[] = [];
+    const applyMemory = (r: typeof cheap) => {
+      const filled = memoryFill({
         extraction: r.extraction,
         placeCode,
         fromDomain: issuerKeyDomain(msg.from_header as string | null, ownDomains),
         rows: memoryRows,
         // UBL je već deterministički potpun — smije dobiti SAMO oznaku mjesta.
         onlyPlaceLabel: r.route === "ubl",
+        oibCandidates,
       });
+      if (filled.knownIbans.length > 0) memoryKnownIbans = filled.knownIbans;
+      return filled;
+    };
 
     const cheapMemory = applyMemory(cheap);
     warnings.push(...cheapMemory.warnings);
@@ -442,9 +452,11 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     const extraction = (result.extraction ?? {}) as Record<string, unknown>;
     const oib = String(extraction.supplier_oib ?? "");
     if (oib && extraction.iban) {
+      // JEDAN MOZAK: povijest IBAN-a = potvrđeni računi + IBAN-i zapamćeni uz
+      // TOG izdavatelja. Novi IBAN poznatog izdavatelja = jak alarm.
       const ibanCheck = checkIbanAgainstHistory(
         String(extraction.iban),
-        byOib.get(oib) ?? [],
+        [...(byOib.get(oib) ?? []), ...memoryKnownIbans],
       );
       warnings.push(...ibanCheck.warnings);
     }
