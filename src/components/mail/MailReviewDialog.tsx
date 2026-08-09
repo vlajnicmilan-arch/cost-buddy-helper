@@ -29,15 +29,31 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const FIELDS: Array<{ key: string; labelKey: string; fallback: string }> = [
-  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač' },
-  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB' },
-  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta' },
-  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja' },
-  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća' },
-  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno' },
-  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN' },
+type FieldDef = {
+  key: string;
+  labelKey: string;
+  fallback: string;
+  kind: MailFieldKind;
+  dateContext?: DateContext;
+};
+
+const FIELDS: FieldDef[] = [
+  { key: 'supplier_name', labelKey: 'mailReview.field.supplierName', fallback: 'Dobavljač', kind: 'text' },
+  { key: 'supplier_oib', labelKey: 'mailReview.field.supplierOib', fallback: 'OIB', kind: 'text' },
+  { key: 'invoice_number', labelKey: 'mailReview.field.invoiceNumber', fallback: 'Broj dokumenta', kind: 'text' },
+  { key: 'issue_date', labelKey: 'mailReview.field.issueDate', fallback: 'Datum izdavanja', kind: 'date', dateContext: 'expense' },
+  { key: 'due_date', labelKey: 'mailReview.field.dueDate', fallback: 'Datum dospijeća', kind: 'date', dateContext: 'debt' },
+  { key: 'total_amount', labelKey: 'mailReview.field.totalAmount', fallback: 'Ukupno', kind: 'amount' },
+  { key: 'iban', labelKey: 'mailReview.field.iban', fallback: 'IBAN', kind: 'text' },
 ];
+
+/** Prikaz: ISO → dd.mm.gggg., broj → 1.660,36. Baza ostaje ISO/decimalna točka. */
+export const displayFieldValue = (field: FieldDef, raw: unknown): string => {
+  if (raw === null || raw === undefined || raw === '') return '—';
+  if (field.kind === 'date') return formatDateHr(String(raw)) || String(raw);
+  if (field.kind === 'amount') return formatHrAmount(raw as string | number) || String(raw);
+  return String(raw);
+};
 
 const trustVariant = (level: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
   if (level === 'T1' || level === 'T2') return 'secondary';
@@ -62,14 +78,37 @@ export const MailReviewDialog = ({ open, onOpenChange }: Props) => {
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
     const next: Record<string, string> = {};
-    for (const f of FIELDS) next[f.key] = source[f.key] == null ? '' : String(source[f.key]);
+    for (const f of FIELDS) {
+      const raw = source[f.key];
+      if (raw === null || raw === undefined || raw === '') next[f.key] = '';
+      else if (f.kind === 'date') next[f.key] = formatDateHr(String(raw)) || String(raw);
+      else if (f.kind === 'amount') next[f.key] = formatHrAmount(raw as string | number) || String(raw);
+      else next[f.key] = String(raw);
+    }
     setDraft(next);
     setEditingId(item.id);
   };
 
+  const draftHasError = FIELDS.some((f) => isMailFieldInvalid(f.kind, draft[f.key] ?? ''));
+
+  /** Normalizacija PRIJE slanja: datum → ISO, iznos → decimalna točka. */
   const payloadFor = (item: MailReviewItem): Record<string, unknown> => {
     const base = { ...(item.extraction ?? {}) } as Record<string, unknown>;
-    if (editingId === item.id) Object.assign(base, draft);
+    if (editingId === item.id) {
+      for (const f of FIELDS) {
+        const raw = (draft[f.key] ?? '').trim();
+        if (raw === '') {
+          base[f.key] = null;
+        } else if (f.kind === 'date') {
+          base[f.key] = parseHrDate(raw);
+        } else if (f.kind === 'amount') {
+          const n = parseHrAmount(raw);
+          base[f.key] = n === null ? null : n;
+        } else {
+          base[f.key] = raw;
+        }
+      }
+    }
     base.doc_type = item.doc_type ?? '380';
     base.direction = 'in';
     return base;
