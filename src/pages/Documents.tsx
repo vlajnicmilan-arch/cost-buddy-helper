@@ -8,6 +8,7 @@ import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { MailReviewList } from '@/components/mail/MailReviewList';
 import { DocumentsReceivedTab } from '@/components/mail/DocumentsReceivedTab';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 /**
  * DOM ZA DOKUMENTE (`/dokumenti`).
