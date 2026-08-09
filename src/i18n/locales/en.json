@@ -6231,7 +6231,13 @@
       "uncollected": "Uncollected",
       "collected": "Collected",
       "emptyUncollected": "No uncollected outgoing invoices.",
-      "markCollected": "Collected"
+      "markCollected": "Collected",
+      "place": "Place",
+      "placeAll": "All places",
+      "placeNone": "No label",
+      "placeEdit": "Edit place label",
+      "placeSaved": "Place label saved",
+      "placeFailed": "Saving the place label failed"
     },
     "match": {
       "open": "Match payments",
@@ -6377,7 +6383,9 @@
       "pdf_bez_teksta": "The PDF has no text layer (scan) — data was read from the image",
       "ai_dopuna": "Fields were completed by AI — check the amount and document number.",
       "vise_vlastitih_oib": "Document contains OIBs of several of your companies — routed to personal",
-      "vjerojatno_duplikat": "An invoice with this number and supplier probably already exists"
+      "vjerojatno_duplikat": "An invoice with this number and supplier probably already exists",
+      "dopunjeno_iz_zapamcenog": "Filled in from a remembered issuer — please check",
+      "vise_kandidata_sifra_mjesta": "Several possible billing point codes — none was used"
     },
     "field": {
       "supplierName": "Supplier",
@@ -6386,7 +6394,8 @@
       "issueDate": "Issue date",
       "dueDate": "Due date",
       "totalAmount": "Total",
-      "iban": "IBAN"
+      "iban": "IBAN",
+      "placeLabel": "Place label"
     },
     "collision": {
       "title": "May already exist",
