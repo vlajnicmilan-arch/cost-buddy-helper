@@ -97,6 +97,12 @@
     --category-investments: 158 80% 35%;
     --category-charity: 0 72% 51%;
     --category-other: 170 15% 45%;
+
+    /* Dokumenti na pregled — JANTARNI identitet ("papir koji čeka").
+       Ne dijeli token s --warning: upozorenje je stanje, ovo je identitet. */
+    --document-pending: 38 92% 48%;
+    --document-pending-foreground: 30 60% 14%;
+    --document-pending-surface: 40 90% 96%;
   }
 
   /* Business mode theme overrides */
@@ -233,6 +239,11 @@
     --ring: 40 55% 48%;
     --radius: 0.5rem;
 
+    /* Dokumenti na pregled — u Onyxu jantar sjeda na šampanjac. */
+    --document-pending: 40 55% 52%;
+    --document-pending-foreground: 30 10% 6%;
+    --document-pending-surface: 38 20% 10%;
+
     color: hsl(var(--foreground));
     --premium-hairline: linear-gradient(
       90deg,
@@ -332,6 +343,12 @@
     /* Deep near-black background (~5% L, subtle cool tint).
        Not pure #000 — shadows and depth need a floor above black. */
     --background: 220 14% 5%;
+
+    /* Dokumenti na pregled — topliji jantar na crnom. */
+    --document-pending: 43 96% 58%;
+    --document-pending-foreground: 30 40% 10%;
+    --document-pending-surface: 38 40% 12%;
+
 
     /* Category colors - adjusted for dark mode (more vibrant, higher lightness) */
     --category-food: 24 95% 60%;
