@@ -123,9 +123,11 @@ export const useEracunExpenseMatch = (invoices: readonly IncomingInvoice[]) => {
     // Povezani troškovi (za odvezivanje) — dohvat opisa po id-evima.
     const linkedList = (linkRows ?? []) as any[];
     if (linkedList.length > 0) {
-      const { data: linkedExpenses } = await (supabase.from('expenses') as any)
-        .select('id, description, date')
-        .in('id', linkedList.map((l) => l.expense_id));
+      const { data: linkedExpenses } = await applyCountedFilter(
+        (supabase.from('expenses') as any)
+          .select('id, description, date, status')
+          .in('id', linkedList.map((l) => l.expense_id)),
+      );
       const byId = new Map(((linkedExpenses ?? []) as any[]).map((e) => [e.id, e]));
       setLinks(
         linkedList.map((l) => ({
