@@ -156,6 +156,10 @@ export const PersonalModeView = (props: PersonalModeViewProps) => {
   const [debtsOpen, setDebtsOpen] = useState(false);
   const isBusinessChip = !!activeBusinessProfileId;
 
+  // MAIL UVOZ — sve iza prava `mail_uvoz`. Bez prava: nema kartice ni pregleda.
+  const { hasAccess: hasMailAccess } = useMailImportAccess();
+  const { count: mailPendingCount } = useMailPendingCount(hasMailAccess);
+
   // Guided home — server-side per-user signal + broj stvarnih unosa.
   // Standardni layout zamjenjuje se jedinstvenim `GuidedEntryView`-om kroz
   // cijelu guided fazu (0..THRESHOLD-1). Auto-exit (>= THRESHOLD) prebacuje
