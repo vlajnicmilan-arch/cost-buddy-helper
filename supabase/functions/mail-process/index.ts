@@ -16,7 +16,13 @@ import { inspectXml } from "../_shared/mailImport/xmlSafety.ts";
 import { htmlToText, extractLinks } from "../_shared/mailImport/htmlToText.ts";
 import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trustLevel.ts";
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
-import { classifyDocument, lowerConfidence, type ClassifyInput } from "../_shared/mailImport/classify.ts";
+import {
+  classifyDocument,
+  lowerConfidence,
+  needsAiEnrichment,
+  hasExtractableText,
+  type ClassifyInput,
+} from "../_shared/mailImport/classify.ts";
 import { parseUbl } from "../_shared/mailImport/parseUblBridge.ts";
 import { upsertIngestItem } from "../_shared/mailImport/ingestItemUpsert.ts";
 import { checkAiCostCap, recordAiCost } from "../_shared/aiCostCap.ts";
@@ -320,7 +326,13 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     const cheap = await classifyDocument(input, { parseUbl, analyzeWithAi: undefined });
 
     let result = cheap;
-    if (cheap.route === "nepoznato") {
+    // AI se trazi kad jeftina grana nije odlucila ILI kad je odlucila, ali su
+    // kljucna polja ostala prazna (pametna dopuna). Potpuna stavka = 0 poziva.
+    const wantsAi =
+      cheap.route === "nepoznato" ||
+      (cheap.route === "heuristika" &&
+        needsAiEnrichment(cheap.extraction, hasExtractableText(input)));
+    if (wantsAi) {
       const { data: quota } = await supabase.rpc("mail_import_quota_status", {
         p_user_id: ownerId,
       });
