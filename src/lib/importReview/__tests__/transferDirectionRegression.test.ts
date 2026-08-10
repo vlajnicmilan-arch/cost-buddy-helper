@@ -59,6 +59,9 @@ const payload: ImportReviewPayload = {
         targetIncomeSourceId: '',
         ruleId: null,
         direction: classifyTransferDescription(DESC).direction,
+        origin: 'keyword',
+        directionSource: 'description',
+        directionConflict: false,
       },
     },
   ],
@@ -125,14 +128,13 @@ describe('regresija — nadoplata Aircasha mora biti Revolut → Aircash', () =>
       sourceWalletKey: null,
     });
     const { client, upserts } = fakeClient();
-    const res = await executeDecisions({
+    await expect(executeDecisions({
       supabase: client,
       userId: 'u1',
       activeBusinessProfileId: null,
       payload,
       decisions,
-    });
+    })).rejects.toMatchObject({ executionErrors: ['transfer:0:missing_direction'] });
     expect(upserts).toEqual([]);
-    expect(res.errors).toEqual(['transfer:0:missing_direction']);
   });
 });

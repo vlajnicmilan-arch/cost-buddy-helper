@@ -135,6 +135,20 @@ export interface ExecutorResult {
   readonly reconciliationSummary: readonly ReconciliationSummaryEntry[];
 }
 
+export class ImportExecutionIncompleteError extends Error {
+  readonly expectedOutcomes: number;
+  readonly actualOutcomes: number;
+  readonly executionErrors: readonly string[];
+
+  constructor(expectedOutcomes: number, actualOutcomes: number, executionErrors: readonly string[]) {
+    super(`import_execution_incomplete:${actualOutcomes}/${expectedOutcomes}`);
+    this.name = 'ImportExecutionIncompleteError';
+    this.expectedOutcomes = expectedOutcomes;
+    this.actualOutcomes = actualOutcomes;
+    this.executionErrors = executionErrors;
+  }
+}
+
 
 type MergePlan = {
   readonly rowIndex: number;
@@ -260,20 +274,11 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     })
     .filter((x): x is { rowIndex: number; reason: string } => x !== null);
   if (badTransfers.length > 0) {
-    return {
-      batchId,
-      merged: 0,
-      inserted: 0,
-      transfersCreated: 0,
-      rulesSaved: 0,
-      skippedByUser: plan.skippedByUser,
-      skippedFingerprint: plan.skippedFingerprint,
-      skippedMerged: 0,
-      skippedDuplicate: 0,
-      durationMs: now() - start,
-      errors: badTransfers.map(t => `transfer:${t.rowIndex}:${t.reason}`),
-      reconciliationSummary: [],
-    };
+    throw new ImportExecutionIncompleteError(
+      plan.merges.length + plan.inserts.length + plan.transfers.length,
+      0,
+      badTransfers.map(t => `transfer:${t.rowIndex}:${t.reason}`),
+    );
 
   }
 
@@ -424,6 +429,15 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     } catch (e) {
       errors.push(`transfer:${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // ŽELJEZNA POSTKONDICIJA: potvrđeni posao ne smije tiho završiti s manje
+  // ishoda od odluka. Conflict, RLS ili bilo koja greška znače NEUSPJEH cijelog
+  // pokušaja; pozivatelj tada čuva draft i ne zapisuje imported_statements.
+  const expectedOutcomes = plan.merges.length + plan.inserts.length + plan.transfers.length;
+  const actualOutcomes = merged + inserted + transfersCreated;
+  if (errors.length > 0 || actualOutcomes !== expectedOutcomes) {
+    throw new ImportExecutionIncompleteError(expectedOutcomes, actualOutcomes, errors);
   }
 
   // --- FAZA 2: post-commit reconciliation snapshot per touched source_id.

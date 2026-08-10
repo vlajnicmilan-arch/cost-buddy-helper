@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { executeDecisions, planExecution, type ExecutorSupabaseClient } from '../executor';
+import {
+  executeDecisions,
+  ImportExecutionIncompleteError,
+  planExecution,
+  type ExecutorSupabaseClient,
+} from '../executor';
 import type { ImportReviewDecisions, ImportReviewPayload, SerializedImportedTx } from '../types';
 
 function tx(i: number, over: Partial<SerializedImportedTx> = {}): SerializedImportedTx {
@@ -134,7 +139,7 @@ describe('importReview/executor', () => {
     }
   });
 
-  it('MERGE race-guard: 0 affected → skippedMerged (second-run idempotent)', async () => {
+  it('MERGE race-guard: 0 affected → glasna nepotpuna izvedba', async () => {
     const p = payload({
       importedTransactions: [tx(0)],
       rows: [
@@ -144,13 +149,11 @@ describe('importReview/executor', () => {
     });
     const d = baseDecisions({ autoMerge: { 0: true } });
     const { client } = makeFakeClient({ updateAffected: () => 0 });
-    const res = await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
-    expect(res.merged).toBe(0);
-    expect(res.skippedMerged).toBe(1);
-    expect(res.errors).toHaveLength(0);
+    await expect(executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
+      .rejects.toMatchObject({ expectedOutcomes: 1, actualOutcomes: 0 });
   });
 
-  it('NEW: idempotent re-run — 2nd time all skipped as duplicate', async () => {
+  it('NEW: konflikt ne smije biti lažni uspjeh', async () => {
     const p = payload({
       importedTransactions: [tx(0), tx(1)],
       rows: [
@@ -166,10 +169,8 @@ describe('importReview/executor', () => {
 
     // Second run: ignoreDuplicates returns 0 rows.
     const second = makeFakeClient({ insertedCount: () => 0 });
-    const r2 = await executeDecisions({ supabase: second.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
-    expect(r2.inserted).toBe(0);
-    expect(r2.skippedDuplicate).toBe(2);
-    expect(r2.batchId).toBe('batch-1'); // same batchId across retries
+    await expect(executeDecisions({ supabase: second.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
+      .rejects.toBeInstanceOf(ImportExecutionIncompleteError);
   });
 
   it('question=new inserts; question=merge merges', async () => {
@@ -206,12 +207,8 @@ describe('importReview/executor', () => {
       newRows: { 1: true },
     });
     const { client, calls } = makeFakeClient();
-    const res = await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
-    expect(res.errors.length).toBeGreaterThan(0);
-    expect(res.errors[0]).toContain('missing_target');
-    expect(res.merged).toBe(0);
-    expect(res.inserted).toBe(0);
-    expect(res.transfersCreated).toBe(0);
+    await expect(executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
+      .rejects.toMatchObject({ executionErrors: ['transfer:0:missing_target'] });
     // Absolutely no writes were issued.
     expect(calls).toHaveLength(0);
   });
@@ -253,5 +250,42 @@ describe('importReview/executor', () => {
     expect(upsert.rows[0].balance_after).toBe(100);
     expect(upsert.rows[0].bank_row_seq).toBe(3);
     expect(upsert.rows[0].type).toBe('transfer');
+  });
+
+  it('2 popunjena prijenosa proizvode točno 2 ishoda', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { type: 'transfer' }), tx(1, { type: 'transfer' })],
+      rows: [0, 1].map(index => ({
+        index, date: '2026-07-01', amount: 100, type: 'transfer', merchantName: 'Aircash',
+        classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null },
+      })) as any,
+    });
+    const decision = (targetIncomeSourceId: string) => ({
+      enabled: true, direction: 'out' as const, targetIncomeSourceId,
+      rememberRule: false, merchantKey: null, sourceWalletKey: null,
+    });
+    const d = baseDecisions({ transfers: { 0: decision('wallet-a'), 1: decision('wallet-b') } });
+    const { client } = makeFakeClient();
+    const result = await executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    expect(result.transfersCreated).toBe(2);
+    expect(result.inserted + result.merged + result.transfersCreated).toBe(2);
+  });
+
+  it('pad jednog od 2 transfer ishoda baca glasnu grešku', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { type: 'transfer' }), tx(1, { type: 'transfer' })],
+      rows: [0, 1].map(index => ({
+        index, date: '2026-07-01', amount: 100, type: 'transfer', merchantName: 'Aircash',
+        classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null },
+      })) as any,
+    });
+    const decision = (targetIncomeSourceId: string) => ({
+      enabled: true, direction: 'out' as const, targetIncomeSourceId,
+      rememberRule: false, merchantKey: null, sourceWalletKey: null,
+    });
+    const d = baseDecisions({ transfers: { 0: decision('wallet-a'), 1: decision('wallet-b') } });
+    const { client } = makeFakeClient({ insertedCount: () => 1 });
+    await expect(executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
+      .rejects.toMatchObject({ expectedOutcomes: 2, actualOutcomes: 1 });
   });
 });
