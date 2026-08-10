@@ -7,7 +7,7 @@ import {
   resolveTransferDirection,
   statementDirectionFromType,
 } from '@/lib/importReview/transferDirection';
-import { reclassifyInternalTransfers } from '@/lib/pdfPostProcess';
+import { reclassifyInternalTransfers, type ReclassifiableTransaction } from '@/lib/pdfPostProcess';
 
 describe('resolveTransferDirection', () => {
   it('predznak s izvoda pobjeđuje i ne pita korisnika', () => {
@@ -58,7 +58,7 @@ describe('statementDirectionFromType', () => {
 
 describe('reclassifyInternalTransfers čuva predznak', () => {
   it('odljev reklasificiran u prijenos nosi statement_direction=out', () => {
-    const [row] = reclassifyInternalTransfers([
+    const [row] = reclassifyInternalTransfers<ReclassifiableTransaction>([
       { type: 'expense', description: 'Prijenos na Revolut' },
     ]);
     expect(row.type).toBe('transfer');
@@ -66,7 +66,7 @@ describe('reclassifyInternalTransfers čuva predznak', () => {
   });
 
   it('priljev reklasificiran u prijenos nosi statement_direction=in', () => {
-    const [row] = reclassifyInternalTransfers([
+    const [row] = reclassifyInternalTransfers<ReclassifiableTransaction>([
       { type: 'income', description: 'Prijenos s Revoluta' },
     ]);
     expect(row.type).toBe('transfer');
