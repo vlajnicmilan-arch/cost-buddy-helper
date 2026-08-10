@@ -6468,7 +6468,12 @@
       "876": "Privremena okončana situacija",
       "877": "Okončana situacija"
     },
-    "errorDetail": "{{base}} — razlog: {{reason}}"
+    "errorDetail": "{{base}} — razlog: {{reason}}",
+    "duplicate": {
+      "warning": "Moguć duplikat: već postoji račun {{number}} istog izdavatelja na isti iznos ({{amount}}, dospijeće {{due}})",
+      "acknowledge": "Svejedno unesi",
+      "confirmAnyway": "Svejedno unesi"
+    }
   },
   "documents": {
     "title": "Dokumenti",
