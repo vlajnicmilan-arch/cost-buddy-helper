@@ -331,22 +331,33 @@ const ImportReview = () => {
    */
   const renderTransferControls = (row: ImportReviewRow) => {
     const td = decisions.transfers[row.index] ?? null;
-    const isRuleHit = row.classification.kind === 'transfer';
+    const isTransferClass = row.classification.kind === 'transfer';
+    // Bedž "Iz pravila" smije se prikazati SAMO za stvaran pogodak iz baze.
+    const isRuleHit = isTransferClass && row.classification.origin === 'rule';
+    /**
+     * Predznak je odgovor: kad smjer dolazi s izvoda, UI ne pita — samo javlja.
+     * Odluka korisnika (`td`) ne može ga promijeniti jer se gumbi ni ne nude.
+     */
+    const derivedDirection: MoneyDirection | null =
+      isTransferClass && row.classification.directionSource === 'amount'
+        ? row.classification.direction
+        : null;
+    const directionConflict = isTransferClass && row.classification.directionConflict;
     const currentTargetId = td?.enabled
       ? td.targetIncomeSourceId
-      : (isRuleHit ? row.classification.targetIncomeSourceId : '');
-    // Predodabir smjera: odluka → klasifikacija (pravilo/opis) → izvedeno iz opisa.
-    const suggestedDirection: MoneyDirection | null = isRuleHit
+      : (isTransferClass ? row.classification.targetIncomeSourceId : '');
+    // Predodabir smjera: izvod → odluka → klasifikacija → opis.
+    const suggestedDirection: MoneyDirection | null = isTransferClass
       ? row.classification.direction
       : classifyTransferDescription(row.description).direction;
-    const currentDirection: MoneyDirection | null = td?.enabled
-      ? td.direction
-      : suggestedDirection;
-    const showControls = !!td?.enabled || isRuleHit;
+    const currentDirection: MoneyDirection | null =
+      derivedDirection ?? (td?.enabled ? td.direction : suggestedDirection);
+    const showControls = !!td?.enabled || isTransferClass;
     const showValidation = attemptedConfirm || touchedRows[row.index] === true;
     const missingTarget = showControls && !currentTargetId && showValidation;
     const missingDirection =
-      showControls && currentDirection !== 'in' && currentDirection !== 'out' && showValidation;
+      showControls && !derivedDirection && currentDirection !== 'in'
+      && currentDirection !== 'out' && showValidation;
 
     if (!showControls) {
       // Compact CTA for new/question rows. Clicking creates an ENABLED
@@ -375,7 +386,9 @@ const ImportReview = () => {
     // Rule-hit rows without an explicit override → hydrate the decision so
     // the picker binds to a real value.
     const activeDecision = td?.enabled
-      ? td
+      ? (derivedDirection && td.direction !== derivedDirection
+          ? { ...td, direction: derivedDirection }
+          : td)
       : buildDecision(row, currentTargetId, false, currentDirection);
 
     return (
@@ -383,43 +396,59 @@ const ImportReview = () => {
         'mt-2 space-y-2 rounded-lg border p-2',
         missingTarget || missingDirection ? 'border-destructive/60 bg-destructive/5' : 'border-primary/30 bg-primary/5',
       )}>
-        {isRuleHit && (
+        {isTransferClass && (
           <Badge variant="secondary" className="text-[10px]">
             <ArrowRightLeft className="w-3 h-3 mr-1" />
-            {t('importReview.badges.fromRule')}
+            {isRuleHit
+              ? t('importReview.badges.fromRule')
+              : t('importReview.badges.recognizedTransfer')}
           </Badge>
         )}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">
-            {t('importReview.transferDirection.label')}
-          </Label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['in', 'out'] as const).map(dir => (
-              <Button
-                key={dir}
-                type="button"
-                size="sm"
-                variant={currentDirection === dir ? 'default' : 'outline'}
-                className={cn('h-11 rounded-lg text-xs', missingDirection && 'border-destructive')}
-                onClick={() => {
-                  markTouched(row.index);
-                  updateTransfer(
-                    row.index,
-                    buildDecision(row, currentTargetId, activeDecision.rememberRule, dir),
-                  );
-                }}
-              >
-                {t(`importReview.transferDirection.${dir}`)}
-              </Button>
-            ))}
-          </div>
-          {missingDirection && (
-            <p className="text-[11px] text-destructive flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              {t('importReview.transferDirectionRequired')}
+        {derivedDirection ? (
+          <div className="space-y-1">
+            <p className="text-xs text-foreground flex items-center gap-1.5">
+              <ArrowRightLeft className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              {t(`importReview.transferDirection.fromStatement.${derivedDirection}`)}
             </p>
-          )}
-        </div>
+            {directionConflict && (
+              <p className="text-[11px] text-muted-foreground">
+                {t('importReview.transferDirection.conflictNote')}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              {t('importReview.transferDirection.label')}
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['in', 'out'] as const).map(dir => (
+                <Button
+                  key={dir}
+                  type="button"
+                  size="sm"
+                  variant={currentDirection === dir ? 'default' : 'outline'}
+                  className={cn('h-11 rounded-lg text-xs', missingDirection && 'border-destructive')}
+                  onClick={() => {
+                    markTouched(row.index);
+                    updateTransfer(
+                      row.index,
+                      buildDecision(row, currentTargetId, activeDecision.rememberRule, dir),
+                    );
+                  }}
+                >
+                  {t(`importReview.transferDirection.${dir}`)}
+                </Button>
+              ))}
+            </div>
+            {missingDirection && (
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {t('importReview.transferDirectionRequired')}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <Label className="text-xs text-muted-foreground shrink-0">
@@ -453,8 +482,9 @@ const ImportReview = () => {
           </p>
         )}
 
-        {/* "Zapamti" checkbox — only offered on user-flagged transfers (rule
-            already exists for rule-hit rows). */}
+        {/* "Zapamti" — nudi se uvijek osim kad pravilo VEĆ postoji u bazi.
+            Prepoznati (keyword) prijenosi nemaju pravilo, pa se bez ovoga
+            aplikacija nikad ne bi ničemu naučila. */}
         {!isRuleHit && (
           <label htmlFor={`ir-t-rem-${row.index}`} className="flex items-center gap-2 min-h-9 cursor-pointer">
             <Checkbox
@@ -474,7 +504,7 @@ const ImportReview = () => {
           variant="ghost"
           className="h-8 px-2 text-xs"
           onClick={() => {
-            if (isRuleHit) {
+            if (isTransferClass) {
               // "Poništi pravilo" — mark decision disabled so executor + summary
               // skip the row entirely. Rule row is NOT deleted here (would need
               // an explicit "Obriši pravilo" affordance elsewhere).
@@ -485,7 +515,7 @@ const ImportReview = () => {
           }}
         >
           <X className="w-3 h-3 mr-1" />
-          {isRuleHit ? t('importReview.cancelRule') : t('importReview.cancelTransfer')}
+          {isTransferClass ? t('importReview.cancelRule') : t('importReview.cancelTransfer')}
         </Button>
       </div>
     );

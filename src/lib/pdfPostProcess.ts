@@ -20,6 +20,12 @@ import { isInternalTransfer } from './csvParsers';
 export interface ReclassifiableTransaction {
   type: string;
   description?: string | null;
+  /**
+   * Smjer novca IZ PREDZNAKA retka na izvodu ('out' = bio odljev, 'in' = priljev)
+   * — zapisuje se kad `income`/`expense` redak postane `transfer`, jer bi se
+   * inače predznak izgubio i UI bi kasnije pitao ono što na izvodu piše.
+   */
+  statement_direction?: 'in' | 'out' | null;
 }
 
 /**
@@ -58,6 +64,10 @@ export function reclassifyInternalTransfers<T extends ReclassifiableTransaction>
     // Sigurnosni izlaz: ako keyword (npr. "uplata gotovine") slučajno upadne
     // u "Aircash Pay ..." red, vanjsko plaćanje uvijek pobjeđuje.
     if (isExternalPayment(desc)) return tx;
-    return { ...tx, type: 'transfer' as T['type'] };
+    return {
+      ...tx,
+      type: 'transfer' as T['type'],
+      statement_direction: tx.type === 'income' ? 'in' : 'out',
+    };
   });
 }

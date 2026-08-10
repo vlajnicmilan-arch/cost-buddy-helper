@@ -7,6 +7,7 @@
  */
 
 import type { MoneyDirection } from '@/lib/moneyDirection';
+import type { DirectionSource } from './transferDirection';
 
 export type QuestionReason = 'merchant_mismatch' | 'no_merchant' | 'ambiguous';
 
@@ -34,10 +35,21 @@ export type ClassificationKind =
       readonly ruleId: string | null;
       /**
        * Smjer novca u odnosu na novčanik izvoda ('in' = novac ulazi u njega).
-       * `null` = nije ga moguće izvesti iz opisa → ImportReview MORA pitati
-       * korisnika, izvršenje je blokirano dok ne odgovori.
+       * `null` = nije ga moguće izvesti ni iz predznaka ni iz opisa →
+       * ImportReview MORA pitati korisnika, izvršenje je blokirano.
        */
       readonly direction: MoneyDirection | null;
+      /**
+       * Odakle prijenos dolazi: `rule` = pogodak naučenog pravila iz
+       * `import_transfer_rules`, `keyword` = deterministički safety-net iz
+       * opisa (pdfPostProcess). Bedž "Iz pravila" smije se prikazati SAMO za
+       * `rule` — inače laže.
+       */
+      readonly origin: 'rule' | 'keyword';
+      /** Odakle je smjer izveden — `amount` znači "piše na izvodu". */
+      readonly directionSource: DirectionSource;
+      /** Opis se kosio s predznakom; predznak je pobijedio. */
+      readonly directionConflict: boolean;
     };
 
 export interface ImportReviewRow {

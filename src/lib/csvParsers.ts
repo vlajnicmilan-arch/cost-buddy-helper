@@ -33,6 +33,12 @@ export interface ParsedTransaction {
    * rows on the same day. Absent → fingerprint stays backward-compatible.
    */
   balance_after?: number | null;
+  /**
+   * Predznak retka s izvoda sačuvan kad je redak reklasificiran u `transfer`
+   * (`pdfPostProcess`). 'out' = novac je izašao, 'in' = ušao. Import Review ga
+   * koristi kao ODGOVOR na smjer prijenosa umjesto da pita korisnika.
+   */
+  statement_direction?: 'in' | 'out' | null;
   /** Pending / "Na čekanju" rows — filtered out before import. */
   is_pending?: boolean;
 }

@@ -3,3 +3,4 @@
 - [Bankovni izvodi mailom](mem://features/mail-bank-statements) — veto `izvod`, kartica, most na postojeći uvoz, IBAN → novčanik
 - [Meka brana duplikata računa](mem://features/invoice-soft-duplicate-guard) — normalizacija broja (afiks ≤2), širi uvjet, svjesna potvrda
 - [KEKS Pay dijalekt izvoda](mem://features/mail-bank-statements-keks) — naslov IZVOD PROMETA kao jak signal, account_identifier bez IBAN-a
+- [Import prijenosi: predznak = smjer](mem://features/import-transfer-direction-from-sign) — statement_direction, pošten bedž origin, times_used

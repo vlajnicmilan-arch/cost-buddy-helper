@@ -29,6 +29,11 @@ export interface ParsedPDFTransaction {
   balance_after?: number | null;
   // True if row is in a "Pending / Na čekanju / U obradi" section.
   is_pending?: boolean;
+  /**
+   * Predznak retka s izvoda sačuvan kad je redak reklasificiran u `transfer`
+   * (vidi `pdfPostProcess`). 'out' = novac je izašao, 'in' = ušao.
+   */
+  statement_direction?: 'in' | 'out' | null;
 }
 
 export interface PDFParseResult {
@@ -97,6 +102,9 @@ const toParseResult = (data: any): PDFParseResult => ({
         is_statement_total: tx.is_statement_total === true,
         balance_after: typeof tx.balance_after === 'number' && Number.isFinite(tx.balance_after) ? tx.balance_after : null,
         is_pending: tx.is_pending === true,
+        statement_direction: tx.statement_direction === 'in' || tx.statement_direction === 'out'
+          ? tx.statement_direction
+          : null,
       };
     })
     .filter((tx: ParsedPDFTransaction | null): tx is ParsedPDFTransaction => tx !== null),

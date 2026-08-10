@@ -90,6 +90,39 @@ export function buildTransferRuleKey(
   return { merchantKey, sourceWalletKey };
 }
 
+/**
+ * Zabilježi da je pravilo iskorišteno u ovom uvozu (times_used + last_used_at).
+ * Best-effort: greška NE smije srušiti pripremu pregleda uvoza.
+ */
+export async function markTransferRulesUsed(
+  supabase: {
+    from(table: string): any;
+  },
+  ruleIds: readonly (string | null)[],
+): Promise<number> {
+  const ids = ruleIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
+  if (ids.length === 0) return 0;
+  try {
+    const { data } = await supabase
+      .from('import_transfer_rules')
+      .select('id,times_used')
+      .in('id', ids);
+    const rows = (data ?? []) as Array<{ id: string; times_used: number | null }>;
+    const nowIso = new Date().toISOString();
+    let updated = 0;
+    for (const row of rows) {
+      const { error } = await supabase
+        .from('import_transfer_rules')
+        .update({ times_used: (row.times_used ?? 0) + 1, last_used_at: nowIso })
+        .eq('id', row.id);
+      if (!error) updated += 1;
+    }
+    return updated;
+  } catch {
+    return 0;
+  }
+}
+
 // ------------------------------- Supabase IO ---------------------------------
 
 interface RuleRow {
