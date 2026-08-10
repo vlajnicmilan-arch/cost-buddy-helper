@@ -20,7 +20,7 @@ describe('resolveTransferDirection', () => {
   it('predznak pobjeđuje i kad ga opis proturječi (konflikt se samo javlja)', () => {
     const r = resolveTransferDirection({
       statementDirection: 'out',
-      description: 'Uplata na račun',
+      description: 'Uplata gotovine na Aircash Tisak',
     });
     expect(r.direction).toBe('out');
     expect(r.conflict).toBe(true);
