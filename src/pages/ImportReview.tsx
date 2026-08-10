@@ -18,6 +18,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { splitRowDescription } from '@/lib/importReview/describeRow';
 import {
   clearDraft,
   clearPayload,
@@ -56,6 +58,26 @@ import type {
 
 const SAVE_DEBOUNCE_MS = 300;
 
+/**
+ * Opis retka: ljudski dio u primarnom retku, tehnički identifikatori
+ * (maskirana kartica, UUID, reference) u JEDNOM prigušenom retku. Ništa se ne
+ * briše — samo se stišava.
+ */
+const RowDescription = ({ description }: { description?: string | null }) => {
+  const { primary, technical } = splitRowDescription(description);
+  if (!primary && technical.length === 0) return null;
+  return (
+    <>
+      {primary && <p className="text-sm text-muted-foreground truncate">{primary}</p>}
+      {technical.length > 0 && (
+        <p className="text-xs text-muted-foreground/70 font-mono truncate" title={technical.join(', ')}>
+          {technical.join(' · ')}
+        </p>
+      )}
+    </>
+  );
+};
+
 const ImportReview = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -64,6 +86,17 @@ const ImportReview = () => {
   const [payload, setPayload] = useState<ImportReviewPayload | null>(null);
   const [decisions, setDecisions] = useState<ImportReviewDecisions | null>(null);
   const [confirming, setConfirming] = useState(false);
+  /**
+   * TIHA VALIDACIJA: crvena upozorenja se NE prikazuju preventivno. Pale se tek
+   * kad korisnik pokuša nastaviti (`attemptedConfirm`) ili kad je konkretan
+   * redak dirao pa ostavio prazno (`touchedRows`). Sama pravila obaveznih polja
+   * su nepromijenjena — gate i dalje živi u `summarize()`/`handleConfirm`.
+   */
+  const [attemptedConfirm, setAttemptedConfirm] = useState(false);
+  const [touchedRows, setTouchedRows] = useState<Record<number, boolean>>({});
+  const markTouched = useCallback((idx: number) => {
+    setTouchedRows(prev => (prev[idx] ? prev : { ...prev, [idx]: true }));
+  }, []);
 
   // Load payload + optional draft on mount.
   useEffect(() => {
@@ -129,7 +162,13 @@ const ImportReview = () => {
   const { activeBusinessProfileId } = useAppState();
 
   const handleConfirm = useCallback(async () => {
-    if (!payload || !decisions || !summary?.canConfirm) return;
+    if (!payload || !decisions || !summary) return;
+    if (!summary.canConfirm) {
+      // Gate je isti kao prije (nastavak nije moguć) — mijenja se samo trenutak
+      // kad upozorenja postanu vidljiva.
+      setAttemptedConfirm(true);
+      return;
+    }
     if (!user) {
       showError(t('common.notAuthenticated'), { module: 'wallet' });
       return;
@@ -304,8 +343,10 @@ const ImportReview = () => {
       ? td.direction
       : suggestedDirection;
     const showControls = !!td?.enabled || isRuleHit;
-    const missingTarget = showControls && !currentTargetId;
-    const missingDirection = showControls && currentDirection !== 'in' && currentDirection !== 'out';
+    const showValidation = attemptedConfirm || touchedRows[row.index] === true;
+    const missingTarget = showControls && !currentTargetId && showValidation;
+    const missingDirection =
+      showControls && currentDirection !== 'in' && currentDirection !== 'out' && showValidation;
 
     if (!showControls) {
       // Compact CTA for new/question rows. Clicking creates an ENABLED
@@ -360,12 +401,13 @@ const ImportReview = () => {
                 size="sm"
                 variant={currentDirection === dir ? 'default' : 'outline'}
                 className={cn('h-11 rounded-lg text-xs', missingDirection && 'border-destructive')}
-                onClick={() =>
+                onClick={() => {
+                  markTouched(row.index);
                   updateTransfer(
                     row.index,
                     buildDecision(row, currentTargetId, activeDecision.rememberRule, dir),
-                  )
-                }
+                  );
+                }}
               >
                 {t(`importReview.transferDirection.${dir}`)}
               </Button>
@@ -386,6 +428,7 @@ const ImportReview = () => {
           <Select
             value={currentTargetId || undefined}
             onValueChange={(v) => {
+              markTouched(row.index);
               updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule, currentDirection));
             }}
           >
@@ -451,7 +494,7 @@ const ImportReview = () => {
   return (
     <div className="min-h-dvh flex flex-col bg-background">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/60">
-        <div className="flex items-center gap-2 p-3">
+        <PageContainer noVerticalPadding className="flex items-center gap-2 py-3">
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={handleCancel} aria-label={t('common.back')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -461,10 +504,11 @@ const ImportReview = () => {
               {payload.sourceName} · {t('importReview.answeredCounter', { answered: summary.answeredQuestions, total: summary.totalQuestions })}
             </p>
           </div>
-        </div>
+        </PageContainer>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-3 pb-32 space-y-6">
+      <main className="flex-1 overflow-y-auto pb-32">
+        <PageContainer className="space-y-6">
 
         {/* Auto-merge section */}
         {grouped.auto.length > 0 && (
@@ -535,9 +579,7 @@ const ImportReview = () => {
                         <span className="text-muted-foreground">{t('importReview.bank')}: </span>
                         <span className="font-medium">{row.merchantName || '—'}</span>
                       </p>
-                      {row.description && (
-                        <p className="text-xs text-muted-foreground truncate">{row.description}</p>
-                      )}
+                      <RowDescription description={row.description} />
                       {renderTransferControls(row)}
                     </div>
                   </div>
@@ -648,9 +690,7 @@ const ImportReview = () => {
                         <p className="text-sm truncate">
                           <span className="font-medium">{row.merchantName || '—'}</span>
                         </p>
-                        {row.description && (
-                          <p className="text-xs text-muted-foreground truncate">{row.description}</p>
-                        )}
+                        <RowDescription description={row.description} />
                         {locked && (
                           <Badge variant="outline" className="text-[10px] mt-1 border-amber-500/60 text-amber-700 dark:text-amber-300">
                             <AlertTriangle className="w-3 h-3 mr-1" />
@@ -666,11 +706,12 @@ const ImportReview = () => {
             </ul>
           </section>
         )}
+        </PageContainer>
       </main>
 
       {/* Sticky CTA */}
-      <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-border/60 bg-background/95 backdrop-blur p-3 safe-area-pb">
-        <div className="max-w-lg mx-auto space-y-2">
+      <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-border/60 bg-background/95 backdrop-blur py-3 safe-area-pb">
+        <PageContainer noVerticalPadding className="space-y-2">
           <p className="text-xs text-muted-foreground text-center">
             {t('importReview.plannedSummaryV2', {
               merges: summary.plannedMerges,
@@ -682,14 +723,15 @@ const ImportReview = () => {
           <Button
             className="w-full min-h-12 rounded-xl"
             onClick={handleConfirm}
-            disabled={!summary.canConfirm || confirming}
+            disabled={confirming}
+            aria-disabled={!summary.canConfirm}
           >
             {confirming ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {summary.canConfirm
               ? t('importReview.confirm')
               : t('importReview.confirmDisabled', { count: summary.unansweredQuestions })}
           </Button>
-        </div>
+        </PageContainer>
       </footer>
     </div>
   );
