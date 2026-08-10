@@ -12,7 +12,9 @@ describe('PageContainer usage on full-screen views', () => {
   const files = [
     'src/pages/Documents.tsx',
     'src/components/business/eracun/IncomingInvoicesWidget.tsx',
+    'src/pages/ImportReview.tsx',
   ];
+
 
   it.each(files)('%s imports and renders PageContainer', (file) => {
     const src = read(file);
