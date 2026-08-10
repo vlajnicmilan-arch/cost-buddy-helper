@@ -6510,7 +6510,8 @@
       "iban": "IBAN des Kontos",
       "number": "Auszugsnummer",
       "period": "Zeitraum",
-      "closingBalance": "Neuer Saldo"
+      "closingBalance": "Neuer Saldo",
+      "accountNumber": "Kontonummer"
     },
     "sourceLabel": "In Geldbörse importieren",
     "sourcePlaceholder": "Geldbörse wählen",

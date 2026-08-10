@@ -146,3 +146,49 @@ describe('izvor-picker sluša scope stavke', () => {
     expect(hook).toContain('readProfileId');
   });
 });
+
+describe('KEKS Pay dijalekt — izvod bez IBAN-a', () => {
+  const KEKS = [
+    'IZVOD PROMETA PO RAČUNU',
+    'Klijent Milan Vlajnić',
+    'Broj računa 42323975',
+    'Razdoblje 01.06.2026. - 30.06.2026.',
+    'Početno stanje 0,02',
+    'Završno stanje 0,02',
+    'Redni broj Datum Iznos Opis Stanje',
+    '1 05.06.2026. -10,00 Placanje 0,02',
+    '2 06.06.2026. 10,00 Uplata 10,02',
+    '3 07.06.2026. -5,00 Placanje 5,02',
+    '4 08.06.2026. -1,00 Placanje 4,02',
+    '5 09.06.2026. -4,00 Placanje 0,02',
+  ].join('\n');
+
+  it('klasificira se kao izvod (naslov je jak signal)', () => {
+    const v = classifyAsStatement(KEKS);
+    expect(v.signals).toContain('izvod_prometa');
+    expect(v.isStatement).toBe(true);
+  });
+
+  it('identitet je broj računa kad IBAN-a nema', () => {
+    const v = classifyAsStatement(KEKS);
+    expect(v.extraction.account_iban).toBeNull();
+    expect(v.extraction.account_number).toBe('42323975');
+  });
+
+  it('završno stanje se čita', () => {
+    expect(classifyAsStatement(KEKS).extraction.closing_balance).toBe(0.02);
+  });
+
+  it('FINA/Telemach račun ostaje račun', () => {
+    const FINA = [
+      'Fina - Financijska agencija',
+      'Račun broj I08-0626-390029',
+      'Datum izdavanja: 01.06.2026.',
+      'Ukupno za platiti: 64,70 EUR',
+      'IBAN za uplatu: HR1723600001101234565',
+    ].join('\n');
+    const v = classifyAsStatement(FINA);
+    expect(v.isStatement).toBe(false);
+    expect(v.needsHumanChoice).toBe(false);
+  });
+});

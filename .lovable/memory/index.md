@@ -2,3 +2,4 @@
 - [Pamćenje izdavatelja i mjesta](mem://features/mail-issuer-place-memory) — mail_issuer_memory, šifra obračunskog mjesta, place_label, forwarder brana, Solin≠Split
 - [Bankovni izvodi mailom](mem://features/mail-bank-statements) — veto `izvod`, kartica, most na postojeći uvoz, IBAN → novčanik
 - [Meka brana duplikata računa](mem://features/invoice-soft-duplicate-guard) — normalizacija broja (afiks ≤2), širi uvjet, svjesna potvrda
+- [KEKS Pay dijalekt izvoda](mem://features/mail-bank-statements-keks) — naslov IZVOD PROMETA kao jak signal, account_identifier bez IBAN-a

@@ -12,6 +12,8 @@ import { findHrIban, findValidIbans } from './ibanCheck.ts';
 export interface StatementExtraction {
   bank_name: string | null;
   account_iban: string | null;
+  /** Identitet e-novčanika/računa kad IBAN ne postoji (npr. KEKS Pay). */
+  account_number: string | null;
   statement_number: string | null;
   period_from: string | null;
   period_to: string | null;
@@ -36,7 +38,11 @@ export const STATEMENT_SIGNAL_THRESHOLD = 2;
  * običan račun („IBAN za uplatu") — bez ovog razlikovanja bi svaki račun
  * završio kao „možda izvod".
  */
-export const WEAK_STATEMENT_SIGNALS: readonly string[] = ['iban_zaglavlje'];
+export const WEAK_STATEMENT_SIGNALS: readonly string[] = [
+  'iban_zaglavlje',
+  'broj_racuna',
+  'razdoblje_zaglavlje',
+];
 
 const strongCount = (signals: readonly string[]): number =>
   signals.filter((s) => !WEAK_STATEMENT_SIGNALS.includes(s)).length;
@@ -111,6 +117,21 @@ function detectClosingBalance(lines: readonly string[]): number | null {
 }
 
 /**
+ * IDENTITET BEZ IBAN-A: e-novčanici (KEKS Pay) nose samo „Broj računa".
+ * Uzima se iz zaglavlja i služi kao ključ pravila kad IBAN-a nema.
+ */
+function detectAccountNumber(lines: readonly string[]): string | null {
+  for (const line of lines.slice(0, 25)) {
+    const m = line.match(/broj\s+ra[cč]una\s*:?\s*([0-9][0-9\s-]{3,})/i);
+    if (m) {
+      const digits = m[1].replace(/[^0-9]/g, '');
+      if (digits.length >= 4) return digits;
+    }
+  }
+  return null;
+}
+
+/**
  * IBAN iz zaglavlja (prvih ~25 redaka) — vlasnikov račun, ne banka u podnožju.
  * Hrvatski IBAN se reže na točno HR+19 znamenki: bez toga se zalijepi početak
  * sljedećeg retka („Broj računa" → `...BROJRA`).
@@ -132,10 +153,15 @@ export function statementSignals(rawText: string): string[] {
   const lines = text.split(/\r?\n/);
   const hits: string[] = [];
 
+  // Naslov „IZVOD PROMETA (PO RAČUNU)" je sam po sebi dokaz — nosi ga KEKS Pay
+  // i druge e-novčanik izvatke bez IBAN-a i bez duguje/potražuje stupaca.
+  if (/izvod\s+prometa/i.test(text)) {
+    hits.push('izvod_prometa');
+  }
   if (lines.some((l) => /izvod/i.test(l) && /\bbr\.?\b|\bbroj\b/i.test(l))) {
     hits.push('izvod_broj');
   }
-  if (/(prethodno|novo)\s+stanje|stanje\s+ra[cč]una/i.test(text)) {
+  if (/(prethodno|novo|po[cč]etno|zavr[sš]no|kona[cč]no)\s+stanje|stanje\s+ra[cč]una/i.test(text)) {
     hits.push('stanje');
   }
   if (/promet.{0,40}duguje/is.test(text) || /potra[zž]uje/i.test(text)) {
@@ -147,8 +173,20 @@ export function statementSignals(rawText: string): string[] {
   if (/za\s+(dan|razdoblje|period)/i.test(text)) {
     hits.push('razdoblje');
   }
+  if (detectAccountNumber(lines)) {
+    hits.push('broj_racuna');
+  }
+  if (lines.slice(0, 25).some((l) => /^\s*razdoblje\b/i.test(l))) {
+    hits.push('razdoblje_zaglavlje');
+  }
+  // Tablica prometa: ili tri iznosa u retku (klasična banka), ili
+  // datum + iznos + tekuće stanje (KEKS oblik, bez duguje/potražuje).
   const tripleRe = new RegExp(`${AMOUNT}\\D{1,20}${AMOUNT}\\D{1,20}${AMOUNT}`);
-  if (lines.filter((l) => tripleRe.test(l)).length >= 5) {
+  const dateAmountRe = new RegExp(
+    String.raw`\d{1,2}\.\s?\d{1,2}\.\s?\d{4}\.?.{0,80}?${AMOUNT}\D{1,30}${AMOUNT}`,
+  );
+  const tableRows = lines.filter((l) => tripleRe.test(l) || dateAmountRe.test(l)).length;
+  if (tableRows >= 5) {
     hits.push('retci_sa_saldom');
   }
 
@@ -176,6 +214,7 @@ export function classifyAsStatement(rawText: string | null | undefined): Stateme
       extraction: {
         bank_name: null,
         account_iban: null,
+        account_number: null,
         statement_number: null,
         period_from: null,
         period_to: null,
@@ -192,6 +231,7 @@ export function classifyAsStatement(rawText: string | null | undefined): Stateme
     extraction: {
       bank_name: detectBankName(text),
       account_iban: detectHeaderIban(lines),
+      account_number: detectAccountNumber(lines),
       statement_number: detectStatementNumber(lines),
       period_from: period.from,
       period_to: period.to,

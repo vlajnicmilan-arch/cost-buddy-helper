@@ -80,7 +80,7 @@ export const StatementSourcesSection = () => {
                   <Landmark className="h-4 w-4 shrink-0 text-muted-foreground" />
                   {r.bank_name || t('statements.unknownBank', '(nepoznata banka)')}
                 </p>
-                <p className="text-xs text-muted-foreground font-mono break-all">{r.account_iban}</p>
+                <p className="text-xs text-muted-foreground font-mono break-all">{r.account_identifier}</p>
                 <p className="text-xs text-muted-foreground">
                   {t('statements.ruleTarget', 'Novčanik: {{name}}', {
                     name: sourceName(r.payment_source_id),

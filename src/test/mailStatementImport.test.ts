@@ -62,13 +62,13 @@ describe('pamćenje pripadnosti izvoru', () => {
   });
 
   it('pravilo nastaje samo uz izričitu kvačicu', () => {
-    expect(card).toContain('remember && iban');
+    expect(card).toContain('remember && accountIdentifier');
     expect(card).toContain('data-testid="remember-statement-source"');
   });
 
   it('povezani bankovni račun ima prednost nad ručnim pamćenjem', () => {
     const card2 = card.replace(/\s+/g, ' ');
-    expect(card2).toContain('const next = fromBank ?? suggestSourceId(iban)');
+    expect(card2).toContain('const next = fromBank ?? suggestSourceId(accountIdentifier)');
     expect(memory).toContain('suggestSourceFromBankAccounts');
   });
 

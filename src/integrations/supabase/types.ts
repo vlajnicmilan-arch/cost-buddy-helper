@@ -3625,7 +3625,8 @@ export type Database = {
       }
       mail_statement_source_map: {
         Row: {
-          account_iban: string
+          account_iban: string | null
+          account_identifier: string
           bank_name: string | null
           business_profile_id: string | null
           confirmed_count: number
@@ -3637,7 +3638,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          account_iban: string
+          account_iban?: string | null
+          account_identifier: string
           bank_name?: string | null
           business_profile_id?: string | null
           confirmed_count?: number
@@ -3649,7 +3651,8 @@ export type Database = {
           user_id: string
         }
         Update: {
-          account_iban?: string
+          account_iban?: string | null
+          account_identifier?: string
           bank_name?: string | null
           business_profile_id?: string | null
           confirmed_count?: number

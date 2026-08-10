@@ -47,6 +47,9 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const extraction = (item.extraction ?? {}) as Record<string, unknown>;
   // Prljav IBAN (zalijepljen sljedeći redak) NE smije postati ključ pravila.
   const iban = sanitizeIban(extraction.account_iban as string | null);
+  // E-novčanici (KEKS Pay) nemaju IBAN — identitet nosi „Broj računa".
+  const accountNumber = String(extraction.account_number ?? '').replace(/[^0-9]/g, '') || null;
+  const accountIdentifier = iban || accountNumber;
   const bankName = (extraction.bank_name as string | null) ?? null;
 
   // Picker mora nuditi izvore PROFILA NA KOJI STAVKA GLASI, ne aktivnog konteksta.
@@ -68,16 +71,16 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   useEffect(() => {
     let cancelled = false;
     const suggest = async () => {
-      if (!iban || sourceId) return;
-      const fromBank = user?.id ? await suggestSourceFromBankAccounts(user.id, iban) : null;
-      const next = fromBank ?? suggestSourceId(iban);
+      if (!accountIdentifier || sourceId) return;
+      const fromBank = iban && user?.id ? await suggestSourceFromBankAccounts(user.id, iban) : null;
+      const next = fromBank ?? suggestSourceId(accountIdentifier);
       if (!cancelled && next) setSourceId(next);
     };
     void suggest();
     return () => {
       cancelled = true;
     };
-  }, [iban, sourceId, suggestSourceId, user?.id]);
+  }, [accountIdentifier, iban, sourceId, suggestSourceId, user?.id]);
 
   // Uvoz je stvarno zapisan (događaj iz globalnog uvoza) → stavka je `povezan`.
   useEffect(() => {
@@ -102,7 +105,9 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
 
   const rows: { label: string; value: string }[] = [
     { label: t('statements.field.bank', 'Banka'), value: bankName || '—' },
-    { label: t('statements.field.iban', 'IBAN računa'), value: iban || '—' },
+    iban || !accountNumber
+      ? { label: t('statements.field.iban', 'IBAN računa'), value: iban || '—' }
+      : { label: t('statements.field.accountNumber', 'Broj računa'), value: accountNumber },
     {
       label: t('statements.field.number', 'Broj izvoda'),
       value: String(extraction.statement_number ?? '') || '—',
@@ -145,9 +150,10 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       return;
     }
     setAwaitingImport(true);
-    if (remember && iban) {
+    if (remember && accountIdentifier) {
       await rememberRule({
-        iban,
+        identifier: accountIdentifier,
+        iban: iban || null,
         bankName,
         paymentSourceId: selectedSource.id,
         businessProfileId: selectedSource.business_profile_id ?? null,
@@ -201,7 +207,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           </SelectContent>
         </Select>
 
-        {iban && (
+        {accountIdentifier && (
           <label
             data-testid="remember-statement-source"
             className="flex items-start gap-2 text-xs cursor-pointer"
@@ -213,7 +219,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
             />
             <span>
               {t('statements.rememberSource', 'Zapamti: izvodi za {{iban}} idu u ovaj novčanik', {
-                iban,
+                iban: accountIdentifier,
               })}
             </span>
           </label>
