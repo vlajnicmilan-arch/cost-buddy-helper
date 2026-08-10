@@ -58,6 +58,26 @@ import type {
 
 const SAVE_DEBOUNCE_MS = 300;
 
+/**
+ * Opis retka: ljudski dio u primarnom retku, tehnički identifikatori
+ * (maskirana kartica, UUID, reference) u JEDNOM prigušenom retku. Ništa se ne
+ * briše — samo se stišava.
+ */
+const RowDescription = ({ description }: { description?: string | null }) => {
+  const { primary, technical } = splitRowDescription(description);
+  if (!primary && technical.length === 0) return null;
+  return (
+    <>
+      {primary && <p className="text-sm text-muted-foreground truncate">{primary}</p>}
+      {technical.length > 0 && (
+        <p className="text-xs text-muted-foreground/70 font-mono truncate" title={technical.join(', ')}>
+          {technical.join(' · ')}
+        </p>
+      )}
+    </>
+  );
+};
+
 const ImportReview = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -474,7 +494,7 @@ const ImportReview = () => {
   return (
     <div className="min-h-dvh flex flex-col bg-background">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border/60">
-        <div className="flex items-center gap-2 p-3">
+        <PageContainer noVerticalPadding className="flex items-center gap-2 py-3">
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={handleCancel} aria-label={t('common.back')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -484,10 +504,11 @@ const ImportReview = () => {
               {payload.sourceName} · {t('importReview.answeredCounter', { answered: summary.answeredQuestions, total: summary.totalQuestions })}
             </p>
           </div>
-        </div>
+        </PageContainer>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-3 pb-32 space-y-6">
+      <main className="flex-1 overflow-y-auto pb-32">
+        <PageContainer className="space-y-6">
 
         {/* Auto-merge section */}
         {grouped.auto.length > 0 && (
@@ -558,9 +579,7 @@ const ImportReview = () => {
                         <span className="text-muted-foreground">{t('importReview.bank')}: </span>
                         <span className="font-medium">{row.merchantName || '—'}</span>
                       </p>
-                      {row.description && (
-                        <p className="text-xs text-muted-foreground truncate">{row.description}</p>
-                      )}
+                      <RowDescription description={row.description} />
                       {renderTransferControls(row)}
                     </div>
                   </div>
@@ -671,9 +690,7 @@ const ImportReview = () => {
                         <p className="text-sm truncate">
                           <span className="font-medium">{row.merchantName || '—'}</span>
                         </p>
-                        {row.description && (
-                          <p className="text-xs text-muted-foreground truncate">{row.description}</p>
-                        )}
+                        <RowDescription description={row.description} />
                         {locked && (
                           <Badge variant="outline" className="text-[10px] mt-1 border-amber-500/60 text-amber-700 dark:text-amber-300">
                             <AlertTriangle className="w-3 h-3 mr-1" />
@@ -689,11 +706,12 @@ const ImportReview = () => {
             </ul>
           </section>
         )}
+        </PageContainer>
       </main>
 
       {/* Sticky CTA */}
-      <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-border/60 bg-background/95 backdrop-blur p-3 safe-area-pb">
-        <div className="max-w-lg mx-auto space-y-2">
+      <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-border/60 bg-background/95 backdrop-blur py-3 safe-area-pb">
+        <PageContainer noVerticalPadding className="space-y-2">
           <p className="text-xs text-muted-foreground text-center">
             {t('importReview.plannedSummaryV2', {
               merges: summary.plannedMerges,
@@ -705,14 +723,15 @@ const ImportReview = () => {
           <Button
             className="w-full min-h-12 rounded-xl"
             onClick={handleConfirm}
-            disabled={!summary.canConfirm || confirming}
+            disabled={confirming}
+            aria-disabled={!summary.canConfirm}
           >
             {confirming ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {summary.canConfirm
               ? t('importReview.confirm')
               : t('importReview.confirmDisabled', { count: summary.unansweredQuestions })}
           </Button>
-        </div>
+        </PageContainer>
       </footer>
     </div>
   );
