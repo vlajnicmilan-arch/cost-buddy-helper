@@ -59,7 +59,7 @@ describe('statementDirectionFromType', () => {
 describe('reclassifyInternalTransfers čuva predznak', () => {
   it('odljev reklasificiran u prijenos nosi statement_direction=out', () => {
     const [row] = reclassifyInternalTransfers<ReclassifiableTransaction>([
-      { type: 'expense', description: 'Prijenos na Revolut' },
+      { type: 'expense', description: 'Revolut top up' },
     ]);
     expect(row.type).toBe('transfer');
     expect(row.statement_direction).toBe('out');
@@ -67,7 +67,7 @@ describe('reclassifyInternalTransfers čuva predznak', () => {
 
   it('priljev reklasificiran u prijenos nosi statement_direction=in', () => {
     const [row] = reclassifyInternalTransfers<ReclassifiableTransaction>([
-      { type: 'income', description: 'Prijenos s Revoluta' },
+      { type: 'income', description: 'Uplata gotovine na Aircash Tisak' },
     ]);
     expect(row.type).toBe('transfer');
     expect(row.statement_direction).toBe('in');
