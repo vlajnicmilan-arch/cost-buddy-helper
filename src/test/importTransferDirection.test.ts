@@ -72,4 +72,25 @@ describe('reclassifyInternalTransfers čuva predznak', () => {
     expect(row.type).toBe('transfer');
     expect(row.statement_direction).toBe('in');
   });
+
+  it('dva KEKS odljeva −50 prolaze kao expense pa postaju transfer/out', () => {
+    const rows = reclassifyInternalTransfers<ReclassifiableTransaction>([
+      { type: 'expense', description: 'Uplata gotovine na Aircash Tisak' },
+      { type: 'expense', description: 'Uplata na Aircash - Visa *** 7262' },
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows.every(row => row.type === 'transfer')).toBe(true);
+    expect(rows.every(row => row.statement_direction === 'out')).toBe(true);
+    expect(rows.map(row => resolveTransferDirection({
+      statementDirection: row.statement_direction,
+      description: row.description,
+    }).source)).toEqual(['amount', 'amount']);
+  });
+
+  it('AI čitač ne smije vratiti type=transfer', async () => {
+    const { readFileSync } = await import('node:fs');
+    const parser = readFileSync('supabase/functions/parse-pdf-statement/index.ts', 'utf8');
+    expect(parser).toContain("enum: ['income', 'expense']");
+    expect(parser).not.toContain("enum: ['income', 'expense', 'transfer']");
+  });
 });

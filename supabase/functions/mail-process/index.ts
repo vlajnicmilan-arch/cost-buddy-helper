@@ -479,8 +479,10 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
     }
 
     const confidence = lowerConfidence(result.confidence, forcedConfidence);
-    const status =
-      result.classification === "nije_za_nas" || result.classification === "nepoznato"
+    // Nesigurno nikad ne nestaje: `mozda_izvod` ostaje u ljudskom redu odluke.
+    const status = result.needsHumanChoice === true
+      ? "na_pregledu"
+      : result.classification === "nije_za_nas" || result.classification === "nepoznato"
         ? "nije_za_nas"
         : "na_pregledu";
 

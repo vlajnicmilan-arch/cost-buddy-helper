@@ -225,11 +225,11 @@ CILJ: Vrati SVAKI redak iz dostavljene tablice transakcija. Ako u ROWS ima 47 re
 4. "Stanje na dan ..." (dnevni saldo)
 5. Naslovi sekcija bez iznosa ("Specifikacija troškova usluga", "Datum", "ID1", "ID2")
 
-ODREĐIVANJE TIPA (gledaj kolonu, ne opis):
+ODREĐIVANJE TIPA (gledaj ISKLJUČIVO kolonu/predznak, ne opis):
 - Iznos u koloni "Uplata" / "Potražuje" / "Korist" / "Credit" / "Haben" / "U korist" → type = "income"
 - Iznos u koloni "Isplata" / "Duguje" / "Teret" / "Debit" / "Soll" / "Na teret" → type = "expense"
-- Vidljivi interni prijenos između vlastitih računa / ATM podizanje → type = "transfer"
-- CASH / WALLET TOP-UP (UVIJEK transfer, bez obzira na kolonu):
+- type = "transfer" NIJE DOPUŠTEN izlaz čitača. Prijenos određuje aplikacija NAKON čitanja, tako se ne gubi predznak izvoda.
+- CASH / WALLET TOP-UP i ATM podizanje također klasificiraj po koloni/predznaku kao income ili expense:
   • "Uplata gotovine na Aircash/Revolut/PayPal/KeksPay/Wise/Bunq/N26" (npr. "Uplata gotovine na Aircash Tisak")
   • "Uplata na Aircash/Revolut/..." (čak i kad u opisu piše Visa/Mastercard kartica)
   • "Nadoplata Aircash/Revolut/kartice", "Top up", "Top-up", "Added money"
@@ -347,8 +347,8 @@ PENDING / NA ČEKANJU:
                         },
                         type: { 
                           type: 'string', 
-                          enum: ['income', 'expense', 'transfer'],
-                          description: 'Transaction type: income for real income, expense for real costs, transfer for internal transfers between own accounts' 
+                          enum: ['income', 'expense'],
+                          description: 'Direction from statement column/sign only: income enters this account, expense leaves it. Transfer is not allowed here.' 
                         },
                         category: { 
                           type: 'string', 

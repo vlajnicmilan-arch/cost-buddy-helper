@@ -158,6 +158,11 @@ export function statementSignals(rawText: string): string[] {
   if (/izvod\s+prometa/i.test(text)) {
     hits.push('izvod_prometa');
   }
+  // Revolut HR koristi „Izvadak za EUR". Pretražuje se CIJELI tekst jer se
+  // naslov ponavlja po stranicama, a pravni boilerplate može doći prije tablice.
+  if (/\bizvadak(?:\s+za\s+[A-Z]{3})?\b/i.test(text)) {
+    hits.push('izvadak_naslov');
+  }
   if (lines.some((l) => /izvod/i.test(l) && /\bbr\.?\b|\bbroj\b/i.test(l))) {
     hits.push('izvod_broj');
   }
@@ -166,6 +171,13 @@ export function statementSignals(rawText: string): string[] {
   }
   if (/promet.{0,40}duguje/is.test(text) || /potra[zž]uje/i.test(text)) {
     hits.push('promet');
+  }
+  if (
+    /datum\s+(?:po[cč]etka|dovr[sš]etka).{0,100}(?:poslani|primljeni|iza[sš]ao|u[sš]ao)\s+novac/is.test(text)
+    || /date\s+(?:started|completed).{0,100}money\s+(?:out|in)|money\s+out.{0,60}money\s+in/is.test(text)
+    || /datum\s+opis\s+poslani\s+novac\s+primljeni\s+novac\s+saldo/i.test(text)
+  ) {
+    hits.push('revolut_retci');
   }
   if (detectHeaderIban(lines)) {
     hits.push('iban_zaglavlje');

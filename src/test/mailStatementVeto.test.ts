@@ -192,3 +192,30 @@ describe('KEKS Pay dijalekt — izvod bez IBAN-a', () => {
     expect(v.needsHumanChoice).toBe(false);
   });
 });
+
+describe('Revolut HR — izvadak iza boilerplatea', () => {
+  const REVOLUT = [
+    'Revolut Bank UAB je banka licencirana u Republici Litvi.',
+    'Stranica od1 14',
+    'Izvadak za EUR',
+    'Sažetak salda',
+    'Proizvod Početni saldo Poslani novac Primljeni novac Završni saldo',
+    'Transakcije po računu od 2. srpnja 2025. do 10. kolovoza 2026.',
+    'Datum Opis Poslani novac Primljeni novac Saldo',
+    '2. srp 2025. nadoplata od Google Pay do *7262 50,00€ 50,00€',
+  ].join('\n');
+
+  it('„Izvadak za EUR" + Revolut stupci daju izvod, nikad nevidljivu stavku', () => {
+    const verdict = classifyAsStatement(REVOLUT);
+    expect(verdict.signals).toContain('izvadak_naslov');
+    expect(verdict.signals).toContain('revolut_retci');
+    expect(verdict.isStatement).toBe(true);
+    expect(verdict.needsHumanChoice).toBe(false);
+  });
+
+  it('mail worker drži svaku sumnju vidljivom u redu na pregled', () => {
+    const worker = readFileSync('supabase/functions/mail-process/index.ts', 'utf8');
+    expect(worker).toContain('result.needsHumanChoice === true');
+    expect(worker).toContain('? "na_pregledu"');
+  });
+});

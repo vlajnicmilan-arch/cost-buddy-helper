@@ -209,5 +209,37 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
-  return { items, loading, working, confirmItem, discardItem, setScope, refetch: fetchItems };
+  /** Korisnik potvrđuje da je sumnjiva stavka izvod; ostaje isti ingest red. */
+  const confirmAsStatement = useCallback(
+    async (itemId: string) => {
+      setWorking(true);
+      try {
+        const { error } = await supabase
+          .from('document_ingest_items')
+          .update({ classification: 'izvod', status: 'na_pregledu' })
+          .eq('id', itemId)
+          .eq('owner_user_id', user?.id ?? '');
+        if (error) {
+          console.warn('[useMailReviewQueue] confirmAsStatement error:', error.message);
+          return false;
+        }
+        await fetchItems();
+        return true;
+      } finally {
+        setWorking(false);
+      }
+    },
+    [fetchItems, user?.id]
+  );
+
+  return {
+    items,
+    loading,
+    working,
+    confirmItem,
+    discardItem,
+    confirmAsStatement,
+    setScope,
+    refetch: fetchItems,
+  };
 }

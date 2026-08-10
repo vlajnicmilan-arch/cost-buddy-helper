@@ -102,7 +102,7 @@ export const softensTrust = (knownCount: number, warnings: readonly string[]): b
 
 export const MailReviewList = ({ active, onCountChange }: Props) => {
   const { t } = useTranslation();
-  const { items, loading, working, confirmItem, discardItem, setScope, refetch } =
+  const { items, loading, working, confirmItem, discardItem, confirmAsStatement, setScope, refetch } =
     useMailReviewQueue(active);
   const { profiles } = useBusinessProfiles();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -229,6 +229,13 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
     }
   };
 
+  const handleConfirmAsStatement = async (item: MailReviewItem) => {
+    const ok = await confirmAsStatement(item.id);
+    if (!ok) {
+      showError(t('statements.choiceFailed'));
+    }
+  };
+
   const handleScopeChange = async (
     item: MailReviewItem,
     scopeType: 'user' | 'business_profile',
@@ -270,6 +277,46 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
                 onCountChange?.();
               }}
             />
+          );
+        }
+        if (item.warnings.includes('mozda_izvod')) {
+          return (
+            <div
+              key={item.id}
+              data-testid="mail-maybe-statement-item"
+              className="rounded-lg border border-l-4 border-l-document-pending bg-document-pending-surface/40 p-3 space-y-3"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-document-pending-foreground" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">{t('statements.choiceQuestion')}</p>
+                  <p className="text-xs text-muted-foreground break-all">
+                    {item.subject || t('mailImport.noSubject')} · {item.from_header || '—'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="min-h-[44px]"
+                  disabled={working}
+                  onClick={() => handleConfirmAsStatement(item)}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {t('statements.choiceYes')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-h-[44px]"
+                  disabled={working}
+                  onClick={() => handleDiscard(item)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {t('statements.choiceNo')}
+                </Button>
+              </div>
+            </div>
           );
         }
         const extraction = (item.extraction ?? {}) as Record<string, unknown>;

@@ -200,15 +200,6 @@ const ImportReview = () => {
         });
       } catch { /* noop */ }
 
-      if (result.errors.length > 0) {
-        showError(t('importReview.confirmedWithErrors', {
-          merged: result.merged,
-          inserted: result.inserted,
-          errors: result.errors.length,
-        }), { module: 'wallet' });
-        return;
-      }
-
       clearDraft();
       clearPayload();
       const batchId = result.batchId;
