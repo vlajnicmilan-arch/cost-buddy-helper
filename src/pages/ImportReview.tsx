@@ -386,7 +386,9 @@ const ImportReview = () => {
     // Rule-hit rows without an explicit override → hydrate the decision so
     // the picker binds to a real value.
     const activeDecision = td?.enabled
-      ? td
+      ? (derivedDirection && td.direction !== derivedDirection
+          ? { ...td, direction: derivedDirection }
+          : td)
       : buildDecision(row, currentTargetId, false, currentDirection);
 
     return (
