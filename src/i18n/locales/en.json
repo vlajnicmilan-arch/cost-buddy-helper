@@ -6510,7 +6510,8 @@
       "iban": "Account IBAN",
       "number": "Statement number",
       "period": "Period",
-      "closingBalance": "Closing balance"
+      "closingBalance": "Closing balance",
+      "accountNumber": "Account number"
     },
     "sourceLabel": "Import into wallet",
     "sourcePlaceholder": "Choose a wallet",

@@ -6521,7 +6521,8 @@
       "iban": "IBAN računa",
       "number": "Broj izvoda",
       "period": "Razdoblje",
-      "closingBalance": "Novo stanje"
+      "closingBalance": "Novo stanje",
+      "accountNumber": "Broj računa"
     },
     "sourceLabel": "Uvezi u novčanik",
     "sourcePlaceholder": "Odaberi novčanik",

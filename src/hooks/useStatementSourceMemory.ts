@@ -13,7 +13,9 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface StatementSourceRule {
   id: string;
-  account_iban: string;
+  /** Identitet pravila: IBAN kad postoji, inače broj računa (e-novčanici). */
+  account_identifier: string;
+  account_iban: string | null;
   bank_name: string | null;
   payment_source_id: string | null;
   business_profile_id: string | null;
@@ -24,6 +26,9 @@ export interface StatementSourceRule {
 /** Usporedba IBAN-a bez razmaka i velikih/malih slova. */
 export const normalizeIban = (raw: string | null | undefined): string =>
   String(raw ?? '').replace(/\s+/g, '').toUpperCase();
+
+/** Ključ pravila — isti postupak za IBAN i za goli broj računa. */
+export const normalizeAccountIdentifier = normalizeIban;
 
 export function useStatementSourceMemory(enabled: boolean) {
   const { user } = useAuth();
@@ -40,7 +45,7 @@ export function useStatementSourceMemory(enabled: boolean) {
     setLoading(true);
     const { data, error } = await supabase
       .from('mail_statement_source_map')
-      .select('id, account_iban, bank_name, payment_source_id, business_profile_id, confirmed_count, last_used_at')
+      .select('id, account_identifier, account_iban, bank_name, payment_source_id, business_profile_id, confirmed_count, last_used_at')
       .eq('user_id', user.id)
       .order('confirmed_count', { ascending: false })
       .limit(200);
@@ -52,7 +57,8 @@ export function useStatementSourceMemory(enabled: boolean) {
       setRules(
         (data ?? []).map((row: Record<string, unknown>) => ({
           id: String(row.id),
-          account_iban: String(row.account_iban ?? ''),
+          account_identifier: String(row.account_identifier ?? row.account_iban ?? ''),
+          account_iban: (row.account_iban as string | null) ?? null,
           bank_name: (row.bank_name as string | null) ?? null,
           payment_source_id: (row.payment_source_id as string | null) ?? null,
           business_profile_id: (row.business_profile_id as string | null) ?? null,
@@ -68,12 +74,12 @@ export function useStatementSourceMemory(enabled: boolean) {
     fetchRules();
   }, [fetchRules]);
 
-  /** Prijedlog izvora za IBAN s izvoda — samo iz zapamćenih pravila. */
+  /** Prijedlog izvora za identitet računa s izvoda — samo iz zapamćenih pravila. */
   const suggestSourceId = useCallback(
-    (iban: string | null | undefined): string | null => {
-      const key = normalizeIban(iban);
+    (identifier: string | null | undefined): string | null => {
+      const key = normalizeAccountIdentifier(identifier);
       if (!key) return null;
-      const hit = rules.find((r) => normalizeIban(r.account_iban) === key);
+      const hit = rules.find((r) => normalizeAccountIdentifier(r.account_identifier) === key);
       return hit?.payment_source_id ?? null;
     },
     [rules],
@@ -82,13 +88,15 @@ export function useStatementSourceMemory(enabled: boolean) {
   /** Zapamti izbor. Poziva se ISKLJUČIVO uz uključenu kvačicu. */
   const rememberRule = useCallback(
     async (params: {
-      iban: string;
+      /** IBAN ili broj računa — što god dokument nosi. */
+      identifier: string;
+      iban?: string | null;
       bankName?: string | null;
       paymentSourceId: string;
       businessProfileId?: string | null;
     }) => {
       if (!user?.id) return false;
-      const key = normalizeIban(params.iban);
+      const key = normalizeAccountIdentifier(params.identifier);
       if (!key) return false;
       setWorking(true);
       try {
@@ -97,13 +105,14 @@ export function useStatementSourceMemory(enabled: boolean) {
           .upsert(
             {
               user_id: user.id,
-              account_iban: key,
+              account_identifier: key,
+              account_iban: params.iban ? normalizeIban(params.iban) : null,
               bank_name: params.bankName ?? null,
               payment_source_id: params.paymentSourceId,
               business_profile_id: params.businessProfileId ?? null,
               last_used_at: new Date().toISOString(),
             },
-            { onConflict: 'user_id,account_iban' },
+            { onConflict: 'user_id,account_identifier' },
           );
         if (error) {
           console.warn('[useStatementSourceMemory] upsert error:', error.message);
