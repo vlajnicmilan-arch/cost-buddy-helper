@@ -6003,7 +6003,8 @@
     },
     "badges": {
       "fingerprintExists": "Bereits in der App — wird übersprungen",
-      "fromRule": "Aus Regel"
+      "fromRule": "Aus Regel",
+      "recognizedTransfer": "Erkannte Umbuchung"
     },
     "markAsTransfer": "Dies ist eine Überweisung",
     "transferTo": "Zu Wallet",
@@ -6021,7 +6022,12 @@
     "transferDirection": {
       "label": "Geldrichtung",
       "in": "Geld ist eingegangen",
-      "out": "Geld ist ausgegangen"
+      "out": "Geld ist ausgegangen",
+      "fromStatement": {
+        "in": "Laut Kontoauszug: Geld ist eingegangen",
+        "out": "Laut Kontoauszug: Geld ist abgegangen"
+      },
+      "conflictNote": "Die Beschreibung deutete das Gegenteil an — das Vorzeichen im Auszug zählt."
     }
   },
   "correctionDelete": {

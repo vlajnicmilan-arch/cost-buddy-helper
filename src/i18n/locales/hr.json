@@ -6012,7 +6012,8 @@
     },
     "badges": {
       "fingerprintExists": "Već u aplikaciji — bit će preskočeno",
-      "fromRule": "Iz pravila"
+      "fromRule": "Iz pravila",
+      "recognizedTransfer": "Prepoznat prijenos"
     },
     "markAsTransfer": "Ovo je prijenos",
     "transferTo": "Na novčanik",
@@ -6030,7 +6031,12 @@
     "transferDirection": {
       "label": "Smjer novca",
       "in": "Novac je ušao",
-      "out": "Novac je izašao"
+      "out": "Novac je izašao",
+      "fromStatement": {
+        "in": "Na izvodu piše: novac je ušao",
+        "out": "Na izvodu piše: novac je izašao"
+      },
+      "conflictNote": "Opis je sugerirao suprotno — vrijedi predznak s izvoda."
     }
   },
   "correctionDelete": {

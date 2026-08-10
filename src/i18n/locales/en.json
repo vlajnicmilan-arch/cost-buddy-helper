@@ -6003,7 +6003,8 @@
     },
     "badges": {
       "fingerprintExists": "Already in app — will be skipped",
-      "fromRule": "From rule"
+      "fromRule": "From rule",
+      "recognizedTransfer": "Recognised transfer"
     },
     "markAsTransfer": "This is a transfer",
     "transferTo": "To wallet",
@@ -6021,7 +6022,12 @@
     "transferDirection": {
       "label": "Money direction",
       "in": "Money came in",
-      "out": "Money went out"
+      "out": "Money went out",
+      "fromStatement": {
+        "in": "The statement says: money came in",
+        "out": "The statement says: money went out"
+      },
+      "conflictNote": "The description suggested the opposite — the statement sign wins."
     }
   },
   "correctionDelete": {
