@@ -6458,7 +6458,12 @@
       "876": "Interim final statement",
       "877": "Final construction statement"
     },
-    "errorDetail": "{{base}} — reason: {{reason}}"
+    "errorDetail": "{{base}} — reason: {{reason}}",
+    "duplicate": {
+      "warning": "Possible duplicate: an invoice {{number}} from the same issuer for the same amount already exists ({{amount}}, due {{due}})",
+      "acknowledge": "Add anyway",
+      "confirmAnyway": "Add anyway"
+    }
   },
   "documents": {
     "title": "Documents",

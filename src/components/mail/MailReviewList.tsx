@@ -29,6 +29,8 @@ import { formatHrAmount, parseHrAmount } from '@/lib/money';
 import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
+import { useMailDuplicateCandidates } from '@/hooks/useMailDuplicateCandidates';
+import { PROBABLE_DUPLICATE_WARNING } from '@/lib/mail/invoiceNumberMatch';
 
 
 /**
@@ -108,6 +110,9 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   const [collision, setCollision] = useState<{ item: MailReviewItem; existing: Record<string, unknown> } | null>(null);
   // IZRIČITA PRIVOLA: red je UKLJUČEN; korisnik ga smije isključiti po stavci.
   const [rememberOff, setRememberOff] = useState<Record<string, boolean>>({});
+  // MEKA BRANA DUPLIKATA: svjesna potvrda po stavci (nikad tvrdo blokiranje).
+  const [dupAck, setDupAck] = useState<Record<string, boolean>>({});
+  const duplicateCandidates = useMailDuplicateCandidates(items);
 
   const startEdit = (item: MailReviewItem) => {
     const source = (item.extraction ?? {}) as Record<string, unknown>;
@@ -276,6 +281,12 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
         const supplierOib = String(extraction.supplier_oib ?? '').trim();
         // Kvačica se nudi SAMO za novog izdavatelja — poznatog se ne pita opet.
         const offerRemember = supplierOib !== '' && knownCount === 0;
+        // MEKA BRANA: kandidat duplikata (isti OIB + broj/iznos+datum).
+        const dupMatch = duplicateCandidates.get(item.id);
+        const dupAcked = dupAck[item.id] === true;
+        const visibleWarnings = item.warnings.filter(
+          (w) => w !== IBAN_ALARM_WARNING && !(dupMatch && w === PROBABLE_DUPLICATE_WARNING),
+        );
         return (
           <div
             key={item.id}
@@ -335,16 +346,45 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               </div>
             )}
 
-            {item.warnings.filter((w) => w !== IBAN_ALARM_WARNING).length > 0 && (
+            {dupMatch && (
+              <div
+                data-testid="duplicate-warning"
+                className="space-y-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs text-document-pending-foreground"
+              >
+                <div className="flex items-start gap-2 font-medium">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    {t(
+                      'mailReview.duplicate.warning',
+                      'Moguć duplikat: već postoji račun {{number}} istog izdavatelja na isti iznos ({{amount}}, dospijeće {{due}})',
+                      {
+                        number: String(dupMatch.candidate.invoice_number ?? '—'),
+                        amount:
+                          formatHrAmount(dupMatch.candidate.total_amount as number | string) || '—',
+                        due: formatDateHr(String(dupMatch.candidate.due_date ?? '')) || '—',
+                      },
+                    )}
+                  </span>
+                </div>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={dupAcked}
+                    onCheckedChange={(v) => setDupAck((s) => ({ ...s, [item.id]: v === true }))}
+                  />
+                  <span>{t('mailReview.duplicate.acknowledge', 'Svejedno unesi')}</span>
+                </label>
+              </div>
+            )}
+
+            {visibleWarnings.length > 0 && (
               <ul className="space-y-1">
-                {item.warnings
-                  .filter((w) => w !== IBAN_ALARM_WARNING)
-                  .map((w) => (
-                    <li key={w} className="flex items-start gap-2 text-xs text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      <span>{t(`mailReview.warning.${w}`, w)}</span>
-                    </li>
-                  ))}
+                {visibleWarnings.map((w) => (
+                  <li key={w} className="flex items-start gap-2 text-xs text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>{String(t(`mailReview.warning.${w}`, w))}</span>
+                  </li>
+                ))}
               </ul>
             )}
 
@@ -407,11 +447,15 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
               <Button
                 size="sm"
                 className="min-h-[44px]"
-                disabled={working || (isEditing && draftHasError)}
+                disabled={
+                  working || (isEditing && draftHasError) || (dupMatch !== undefined && !dupAcked)
+                }
                 onClick={() => handleConfirm(item)}
               >
                 <Check className="h-4 w-4 mr-2" />
-                {t('mailReview.confirm', 'Potvrdi')}
+                {dupMatch && dupAcked
+                  ? t('mailReview.duplicate.confirmAnyway', 'Svejedno unesi')
+                  : t('mailReview.confirm', 'Potvrdi')}
               </Button>
               <Button
                 size="sm"
