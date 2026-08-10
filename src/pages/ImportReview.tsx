@@ -18,6 +18,8 @@ import { useAppState } from '@/contexts/AppStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { splitRowDescription } from '@/lib/importReview/describeRow';
 import {
   clearDraft,
   clearPayload,
@@ -64,6 +66,17 @@ const ImportReview = () => {
   const [payload, setPayload] = useState<ImportReviewPayload | null>(null);
   const [decisions, setDecisions] = useState<ImportReviewDecisions | null>(null);
   const [confirming, setConfirming] = useState(false);
+  /**
+   * TIHA VALIDACIJA: crvena upozorenja se NE prikazuju preventivno. Pale se tek
+   * kad korisnik pokuša nastaviti (`attemptedConfirm`) ili kad je konkretan
+   * redak dirao pa ostavio prazno (`touchedRows`). Sama pravila obaveznih polja
+   * su nepromijenjena — gate i dalje živi u `summarize()`/`handleConfirm`.
+   */
+  const [attemptedConfirm, setAttemptedConfirm] = useState(false);
+  const [touchedRows, setTouchedRows] = useState<Record<number, boolean>>({});
+  const markTouched = useCallback((idx: number) => {
+    setTouchedRows(prev => (prev[idx] ? prev : { ...prev, [idx]: true }));
+  }, []);
 
   // Load payload + optional draft on mount.
   useEffect(() => {
@@ -129,7 +142,13 @@ const ImportReview = () => {
   const { activeBusinessProfileId } = useAppState();
 
   const handleConfirm = useCallback(async () => {
-    if (!payload || !decisions || !summary?.canConfirm) return;
+    if (!payload || !decisions || !summary) return;
+    if (!summary.canConfirm) {
+      // Gate je isti kao prije (nastavak nije moguć) — mijenja se samo trenutak
+      // kad upozorenja postanu vidljiva.
+      setAttemptedConfirm(true);
+      return;
+    }
     if (!user) {
       showError(t('common.notAuthenticated'), { module: 'wallet' });
       return;
@@ -304,8 +323,10 @@ const ImportReview = () => {
       ? td.direction
       : suggestedDirection;
     const showControls = !!td?.enabled || isRuleHit;
-    const missingTarget = showControls && !currentTargetId;
-    const missingDirection = showControls && currentDirection !== 'in' && currentDirection !== 'out';
+    const showValidation = attemptedConfirm || touchedRows[row.index] === true;
+    const missingTarget = showControls && !currentTargetId && showValidation;
+    const missingDirection =
+      showControls && currentDirection !== 'in' && currentDirection !== 'out' && showValidation;
 
     if (!showControls) {
       // Compact CTA for new/question rows. Clicking creates an ENABLED
@@ -360,12 +381,13 @@ const ImportReview = () => {
                 size="sm"
                 variant={currentDirection === dir ? 'default' : 'outline'}
                 className={cn('h-11 rounded-lg text-xs', missingDirection && 'border-destructive')}
-                onClick={() =>
+                onClick={() => {
+                  markTouched(row.index);
                   updateTransfer(
                     row.index,
                     buildDecision(row, currentTargetId, activeDecision.rememberRule, dir),
-                  )
-                }
+                  );
+                }}
               >
                 {t(`importReview.transferDirection.${dir}`)}
               </Button>
@@ -386,6 +408,7 @@ const ImportReview = () => {
           <Select
             value={currentTargetId || undefined}
             onValueChange={(v) => {
+              markTouched(row.index);
               updateTransfer(row.index, buildDecision(row, v, activeDecision.rememberRule, currentDirection));
             }}
           >
