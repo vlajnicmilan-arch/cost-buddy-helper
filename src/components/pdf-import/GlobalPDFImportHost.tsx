@@ -19,7 +19,8 @@ import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandid
 import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
-import { loadTransferRules, matchTransferRule } from '@/lib/importReview/transferRules';
+import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
+import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import {
@@ -536,7 +537,10 @@ export const GlobalPDFImportHost = () => {
             {
               merchantName: tx.merchant_name,
               paymentSource: paymentSourceValue,
-              direction: classifyTransferDescription(tx.description).direction,
+              direction: resolveTransferDirection({
+                statementDirection: tx.statement_direction ?? statementDirectionFromType(tx.type),
+                description: tx.description,
+              }).direction,
             },
             transferRules,
           );
@@ -551,6 +555,14 @@ export const GlobalPDFImportHost = () => {
             });
           }
         }
+      }
+
+      // Pravilo koje je pogodilo dobiva trag korištenja (times_used/last_used_at).
+      if (transferOverrides.size > 0) {
+        void markTransferRulesUsed(
+          supabase as any,
+          Array.from(new Set(Array.from(transferOverrides.values()).map(o => o.ruleId))),
+        );
       }
 
       // --- Load user's wallets as transfer destinations ---------------------
@@ -589,15 +601,28 @@ export const GlobalPDFImportHost = () => {
         };
         // Rule override wins over new/question (never over auto_merge — that's
         // a real manual counterpart the user already made).
+        const rowDirection = resolveTransferDirection({
+          statementDirection: tx.statement_direction ?? null,
+          description: tx.description,
+        });
         const override = transferOverrides.get(i);
         if (override && !autoByIdx.has(i)) {
+          const ruleDir = resolveTransferDirection({
+            statementDirection: tx.statement_direction ?? statementDirectionFromType(tx.type),
+            description: tx.description,
+            ruleDirection: override.direction,
+          });
           return {
             ...baseRow,
             classification: {
               kind: 'transfer' as const,
               targetIncomeSourceId: override.targetIncomeSourceId,
               ruleId: override.ruleId,
-              direction: override.direction,
+              // Predznak izvoda je jači i od pravila — pravilo daje samo cilj.
+              direction: ruleDir.direction ?? override.direction,
+              origin: 'rule' as const,
+              directionSource: ruleDir.source ?? 'rule',
+              directionConflict: ruleDir.conflict,
             },
           };
         }
@@ -615,8 +640,11 @@ export const GlobalPDFImportHost = () => {
               kind: 'transfer' as const,
               targetIncomeSourceId: '',
               ruleId: null,
-              // Smjer iz opisa; null → ImportReview pita korisnika.
-              direction: classifyTransferDescription(tx.description).direction,
+              // Predznak s izvoda (sačuvan u pdfPostProcess) → opis → null.
+              direction: rowDirection.direction,
+              origin: 'keyword' as const,
+              directionSource: rowDirection.source,
+              directionConflict: rowDirection.conflict,
             },
           };
         }
