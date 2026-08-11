@@ -4,8 +4,15 @@
  */
 export {
   STATEMENT_SIGNAL_THRESHOLD,
+  ISSUER_ZONE_FALLBACK,
   classifyAsStatement,
+  detectBankName,
+  detectPeriodRange,
+  issuerZone,
+  issuerZoneEnd,
+  parseCroatianWordDate,
   statementSignals,
   type StatementExtraction,
   type StatementVerdict,
 } from '../../../supabase/functions/_shared/mailImport/statementSignals.ts';
+

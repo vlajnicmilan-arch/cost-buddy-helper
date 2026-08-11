@@ -62,29 +62,109 @@ const parseHrNumber = (raw: string): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-const KNOWN_BANKS: readonly string[] = [
-  'Zagrebačka banka',
-  'Erste',
-  'Privredna banka Zagreb',
-  'PBZ',
-  'OTP banka',
-  'Raiffeisenbank',
-  'RBA',
-  'Hrvatska poštanska banka',
-  'HPB',
-  'Addiko',
-  'Agram banka',
-  'KentBank',
-  'Partner banka',
-  'Istarska kreditna banka',
+/**
+ * ZONA IZDAVATELJA — jedina zona iz koje smije doći IDENTITET dokumenta
+ * (ime banke, IBAN, broj računa, razdoblje, završni saldo).
+ *
+ * Definicija (namjerno konzervativna): zona počinje na prvom retku i završava
+ * PRIJE prvog retka prometa. Redak prometa je ili zaglavlje tablice
+ * („Datum … Opis …"), ili redak koji nosi datum i iznos. Ako tablice nema,
+ * zona je prvih `ISSUER_ZONE_FALLBACK` redaka.
+ *
+ * Nema donje granice: kad tablica počne odmah, zona je kratka i polja ostaju
+ * prazna. Kriva banka pokupljena iz retka prometa („Primatelj: Pbz7bauhaus")
+ * je otrov; prazna crtica je poštena.
+ *
+ * Iznimka su OZNAČENI blokovi identiteta („IBAN" / „BIC" u zasebnom retku, s
+ * vrijednošću u sljedećim recima) — Revolut ih tiska ispod tablice. Iz njih se
+ * čita SAMO IBAN, nikad ime banke.
+ */
+export const ISSUER_ZONE_FALLBACK = 25;
+const ISSUER_ZONE_MAX = 60;
+const IDENTITY_BLOCK_SPAN = 4;
+
+const TABLE_HEADER_RE = /\bdatum\b.{0,40}\bopis\b|\bopis\b.{0,40}\bdatum\b/i;
+const AMOUNT_RE = new RegExp(AMOUNT);
+const ANY_DATE_RE =
+  /\b\d{1,2}\.\s?\d{1,2}\.\s?\d{4}|\b\d{1,2}\.\s?[a-zčćžšđ]{3,12}\.?\s+\d{4}/i;
+
+const isTransactionRow = (line: string): boolean =>
+  TABLE_HEADER_RE.test(line) || (ANY_DATE_RE.test(line) && AMOUNT_RE.test(line));
+
+/** Indeks prvog retka prometa; `ISSUER_ZONE_FALLBACK` kad ga nema. */
+export function issuerZoneEnd(lines: readonly string[]): number {
+  const cut = lines.findIndex(isTransactionRow);
+  if (cut < 0) return Math.min(lines.length, ISSUER_ZONE_FALLBACK);
+  return Math.min(cut, ISSUER_ZONE_MAX);
+}
+
+/** Redci zaglavlja — bez ijednog retka prometa. */
+export function issuerZone(lines: readonly string[]): string[] {
+  return lines.slice(0, issuerZoneEnd(lines));
+}
+
+/** Označeni blokovi identiteta bilo gdje u dokumentu (samo za IBAN). */
+function identityBlockLines(lines: readonly string[]): string[] {
+  const out: string[] = [];
+  lines.forEach((line, i) => {
+    if (!/^\s*(iban|bic|swift)\b\s*:?\s*$/i.test(line) && !/^\s*iban\s*:/i.test(line)) return;
+    for (let j = i; j < Math.min(lines.length, i + IDENTITY_BLOCK_SPAN + 1); j += 1) {
+      if (isTransactionRow(lines[j])) break;
+      out.push(lines[j]);
+    }
+  });
+  return out;
+}
+
+interface BankPattern {
+  /** Kanonsko ime koje ide u ekstrakciju. */
+  name: string;
+  re: RegExp;
+}
+
+/**
+ * Imenik banaka i e-novčanika. Redoslijed je bitan: specifičnije (višerječno)
+ * ime mora doći prije kratice iste kuće.
+ */
+const KNOWN_BANKS: readonly BankPattern[] = [
+  { name: 'Zagrebačka banka', re: /zagreba[cč]ka\s+banka|\bzaba\b/i },
+  { name: 'Privredna banka Zagreb', re: /privredna\s+banka\s+zagreb/i },
+  { name: 'PBZ', re: /\bpbz\b/i },
+  { name: 'Erste', re: /\berste\b/i },
+  { name: 'OTP banka', re: /\botp\b/i },
+  { name: 'Raiffeisenbank', re: /raiffeisen/i },
+  { name: 'RBA', re: /\brba\b/i },
+  { name: 'Hrvatska poštanska banka', re: /hrvatska\s+po[sš]tanska\s+banka/i },
+  { name: 'HPB', re: /\bhpb\b/i },
+  { name: 'Addiko', re: /\baddiko\b/i },
+  { name: 'Agram banka', re: /agram\s+banka/i },
+  { name: 'KentBank', re: /\bkentbank\b/i },
+  { name: 'Partner banka', re: /partner\s+banka/i },
+  { name: 'Istarska kreditna banka', re: /istarska\s+kreditna\s+banka/i },
+  // Neobanke i e-novčanici koje već srećemo u pošti.
+  { name: 'Revolut', re: /\brevolut\b/i },
+  { name: 'KEKS Pay', re: /\bkeks\s*pay\b/i },
+  { name: 'Aircash', re: /\baircash\b/i },
+  { name: 'Wise', re: /\btransferwise\b|\bwise\s+(europe|payments)\b/i },
+  { name: 'N26', re: /\bn26\b/i },
 ];
 
-function detectBankName(text: string): string | null {
-  const lower = text.toLowerCase();
-  for (const bank of KNOWN_BANKS) {
-    if (lower.includes(bank.toLowerCase())) return bank;
+/**
+ * Ime banke ISKLJUČIVO iz zone izdavatelja. Naslov e-maila je POMOĆNI signal:
+ * koristi se samo za razrješenje kad zona nudi više kandidata — nikad kao
+ * samostalan izvor.
+ */
+export function detectBankName(
+  zoneText: string,
+  subjectHint?: string | null,
+): string | null {
+  const hits = KNOWN_BANKS.filter((b) => b.re.test(zoneText));
+  if (hits.length === 0) return null;
+  if (hits.length > 1 && (subjectHint ?? '').trim().length > 0) {
+    const confirmed = hits.find((b) => b.re.test(subjectHint as string));
+    if (confirmed) return confirmed.name;
   }
-  return null;
+  return hits[0].name;
 }
 
 function detectStatementNumber(lines: readonly string[]): string | null {
@@ -94,6 +174,67 @@ function detectStatementNumber(lines: readonly string[]): string | null {
   }
   return null;
 }
+
+/** Hrvatski nazivi mjeseci (puni genitiv i kratice s Revolut izvatka). */
+const HR_MONTHS: readonly (readonly string[])[] = [
+  ['sij', 'siječnja', 'sijecnja'],
+  ['velj', 'veljače', 'veljace'],
+  ['ožu', 'ozu', 'ožujka', 'ozujka'],
+  ['tra', 'travnja'],
+  ['svi', 'svibnja'],
+  ['lip', 'lipnja'],
+  ['srp', 'srpnja'],
+  ['kol', 'kolovoza'],
+  ['ruj', 'rujna'],
+  ['lis', 'listopada'],
+  ['stu', 'studenog', 'studenoga'],
+  ['pro', 'prosinca'],
+];
+
+const monthFromName = (raw: string): number | null => {
+  const w = raw.toLowerCase().replace(/\.$/, '');
+  const idx = HR_MONTHS.findIndex((names) => names.includes(w));
+  return idx < 0 ? null : idx + 1;
+};
+
+const isoFromNumeric = (raw: string): string | null => {
+  const m = raw.match(/(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})/);
+  return m ? isoFrom(m[1], m[2], m[3]) : null;
+};
+
+/** „2. srpnja 2025." / „10. kol 2026." → ISO. Nikad ne izmišlja. */
+export function parseCroatianWordDate(raw: string): string | null {
+  const m = raw.match(/(\d{1,2})\.\s*([A-Za-zčćžšđČĆŽŠĐ]{3,12})\.?\s+(\d{4})/);
+  if (!m) return null;
+  const month = monthFromName(m[2]);
+  if (month === null) return null;
+  return isoFrom(m[1], String(month), m[3]);
+}
+
+const oneDate = (raw: string): string | null =>
+  parseCroatianWordDate(raw) ?? isoFromNumeric(raw);
+
+/**
+ * Izričito napisano razdoblje: „… od 2. srpnja 2025. do 10. kolovoza 2026."
+ * ili „Razdoblje 01.06.2026. - 30.06.2026.". Jače je od raspona svih datuma.
+ */
+export function detectPeriodRange(text: string): { from: string; to: string } | null {
+  const RANGE = /\bod\s+([^\n]{6,30}?\d{4})\.?\s+do\s+([^\n]{6,30}?\d{4})\.?/gi;
+  for (const m of text.matchAll(RANGE)) {
+    const from = oneDate(m[1]);
+    const to = oneDate(m[2]);
+    if (from && to) return { from, to };
+  }
+  const DASH = /(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})\.?\s*[-–]\s*(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/;
+  const d = text.match(DASH);
+  if (d) {
+    const from = isoFromNumeric(d[1]);
+    const to = isoFromNumeric(d[2]);
+    if (from && to) return { from, to };
+  }
+  return null;
+}
+
 
 function detectPeriod(text: string): { from: string | null; to: string | null } {
   const dates: string[] = [];
@@ -117,11 +258,26 @@ function detectClosingBalance(lines: readonly string[]): number | null {
 }
 
 /**
- * IDENTITET BEZ IBAN-A: e-novčanici (KEKS Pay) nose samo „Broj računa".
- * Uzima se iz zaglavlja i služi kao ključ pravila kad IBAN-a nema.
+ * Revolut „Sažetak salda": zaglavlje sa stupcem „Završni saldo", pa redak
+ * „Ukupno …" u kojem je zadnji iznos završni saldo.
  */
-function detectAccountNumber(lines: readonly string[]): string | null {
-  for (const line of lines.slice(0, 25)) {
+function detectSummaryClosingBalance(zone: readonly string[]): number | null {
+  const headerIdx = zone.findIndex((l) => /zavr[sš]ni\s+saldo/i.test(l));
+  if (headerIdx < 0) return null;
+  for (let i = headerIdx + 1; i < Math.min(zone.length, headerIdx + 8); i += 1) {
+    if (!/^\s*ukupno\b/i.test(zone[i])) continue;
+    const amounts = zone[i].match(new RegExp(AMOUNT, 'g'));
+    if (amounts && amounts.length > 0) return parseHrNumber(amounts[amounts.length - 1]);
+  }
+  return null;
+}
+
+/**
+ * IDENTITET BEZ IBAN-A: e-novčanici (KEKS Pay) nose samo „Broj računa".
+ * Traži se SAMO u zoni izdavatelja.
+ */
+function detectAccountNumber(zone: readonly string[]): string | null {
+  for (const line of zone) {
     const m = line.match(/broj\s+ra[cč]una\s*:?\s*([0-9][0-9\s-]{3,})/i);
     if (m) {
       const digits = m[1].replace(/[^0-9]/g, '');
@@ -132,17 +288,18 @@ function detectAccountNumber(lines: readonly string[]): string | null {
 }
 
 /**
- * IBAN iz zaglavlja (prvih ~25 redaka) — vlasnikov račun, ne banka u podnožju.
- * Hrvatski IBAN se reže na točno HR+19 znamenki: bez toga se zalijepi početak
- * sljedećeg retka („Broj računa" → `...BROJRA`).
+ * IBAN BILO KOJE ZEMLJE, ali samo iz zone izdavatelja (+ označenih blokova
+ * identiteta). Hrvatski IBAN je poseban slučaj istog puta (tvrdih HR+19).
+ * Protustrane iz retka prometa nikad ne ulaze ovamo.
  */
 function detectHeaderIban(lines: readonly string[]): string | null {
-  const head = lines.slice(0, 25).join('\n');
+  const head = [...issuerZone(lines), ...identityBlockLines(lines)].join('\n');
   const hr = findHrIban(head);
   if (hr) return hr;
   const foreign = findValidIbans(head);
   return foreign.length > 0 ? foreign[0] : null;
 }
+
 
 /**
  * Sidreni signali (case-insensitive). Traži se ≥2 različita.
@@ -208,8 +365,14 @@ export function statementSignals(rawText: string): string[] {
 /**
  * Odluka. Pogodak nosi SAMO izvod-polja — nikakva račun-ekstrakcija, nikakva
  * AI dopuna (inače AI „dopuni" iznos računa iz salda).
+ *
+ * `subject` (naslov e-maila) je POMOĆNI signal za ime banke: razrješava
+ * višeznačnost u zoni izdavatelja, ali sam ne može stvoriti ime.
  */
-export function classifyAsStatement(rawText: string | null | undefined): StatementVerdict {
+export function classifyAsStatement(
+  rawText: string | null | undefined,
+  subject?: string | null,
+): StatementVerdict {
   const text = normalizeSpace(rawText ?? '');
   const signals = statementSignals(text);
   const lines = text.split(/\r?\n/);
@@ -235,19 +398,26 @@ export function classifyAsStatement(rawText: string | null | undefined): Stateme
     };
   }
 
-  const period = detectPeriod(text);
+  const zone = issuerZone(lines);
+  const zoneText = zone.join('\n');
+  // Razdoblje: izričito napisan raspon (zona → cijeli tekst) pobjeđuje raspon
+  // svih datuma, koji je zadnja linija obrane.
+  const period =
+    detectPeriodRange(zoneText) ?? detectPeriodRange(text) ?? detectPeriod(text);
   return {
     isStatement: true,
     needsHumanChoice: false,
     signals,
     extraction: {
-      bank_name: detectBankName(text),
+      bank_name: detectBankName(zoneText, subject),
       account_iban: detectHeaderIban(lines),
-      account_number: detectAccountNumber(lines),
-      statement_number: detectStatementNumber(lines),
+      account_number: detectAccountNumber(zone),
+      statement_number: detectStatementNumber(zone),
       period_from: period.from,
       period_to: period.to,
-      closing_balance: detectClosingBalance(lines),
+      closing_balance: detectSummaryClosingBalance(zone) ?? detectClosingBalance(lines),
     },
   };
 }
+
+

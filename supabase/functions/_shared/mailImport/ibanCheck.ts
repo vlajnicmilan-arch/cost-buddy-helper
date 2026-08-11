@@ -33,7 +33,12 @@ export function isValidIban(value: string | null | undefined): boolean {
 export function findValidIbans(text: string | null | undefined): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
-  const re = /\b[A-Z]{2}\d{2}[A-Z0-9 ]{11,40}/gi;
+  // IBAN BILO KOJE ZEMLJE: 2 slova + 2 kontrolne + 10–30 znakova. Mod-97 niže
+  // je jedini sudac — ovaj ulov samo skuplja kandidate. Namjerno BEZ `i`:
+  // IBAN se tiska velikim slovima, a mala slova su rečenica oko njega.
+  const re = /\b[A-Z]{2}\d{2}[A-Z0-9 ]{10,40}/g;
+
+
   let match: RegExpExecArray | null;
   while ((match = re.exec(text ?? '')) !== null) {
     // Skraćuj s desna dok ne padne na valjan IBAN (razmaci u ispisu računa).
