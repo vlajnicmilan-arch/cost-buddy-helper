@@ -3928,7 +3928,8 @@
     "transactionApproved": "Transaktion genehmigt",
     "roleUpdated": "Rolle aktualisiert",
     "verificationEmailSent": "Bestätigungs-E-Mail gesendet!",
-    "memberRemoved": "Mitglied entfernt"
+    "memberRemoved": "Mitglied entfernt",
+    "pdfParseIncomplete": "Verarbeitung nicht abgeschlossen — bitte erneut versuchen"
   },
   "placeholders": {
     "selectDestinationAccount": "Zielkonto auswählen",

@@ -3928,7 +3928,8 @@
     "transactionApproved": "Transaction approved",
     "roleUpdated": "Role updated",
     "verificationEmailSent": "Verification email sent!",
-    "memberRemoved": "Member removed"
+    "memberRemoved": "Member removed",
+    "pdfParseIncomplete": "Processing was not completed — please try again"
   },
   "placeholders": {
     "selectDestinationAccount": "Select destination account",
