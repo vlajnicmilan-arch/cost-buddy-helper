@@ -6040,6 +6040,13 @@
         "out": "Laut Kontoauszug: Geld ist abgegangen"
       },
       "conflictNote": "Die Beschreibung deutete das Gegenteil an — das Vorzeichen im Auszug zählt."
+    },
+    "lateMatch": {
+      "title": "Möglicherweise dieselbe Zahlung (Karte bucht später) — Zusammenführen nur auf Tippen",
+      "manualSide": "Deine Buchung",
+      "bankSide": "Kontoauszugszeile",
+      "keepSeparate": "Getrennt lassen",
+      "merge": "Zusammenführen"
     }
   },
   "correctionDelete": {
