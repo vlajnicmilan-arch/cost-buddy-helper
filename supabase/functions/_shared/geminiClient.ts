@@ -81,6 +81,42 @@ export interface OpenAIChatBody {
   max_tokens?: number;
   stream?: boolean;
   response_format?: { type: string };
+  /**
+   * THINKING ODVOJEN OD IZLAZA.
+   *
+   * Gemini troši `maxOutputTokens` i na reasoning. Kod dugih tool-call
+   * argumenata (bankovni izvod, 100+ redaka) reasoning pojede budžet i odgovor
+   * se odsiječe (`finish_reason=length`). Ovime pozivatelj eksplicitno
+   * ograničava razmišljanje za taj poziv.
+   *
+   * 'none'|'low' → thinkingLevel 'low' (Gemini 3 nema potpuni off),
+   * 'medium'|'high' → istoimena razina. Nepostavljeno = model odlučuje.
+   */
+  reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
+}
+
+/** Mapiranje na Gemini `thinkingConfig.thinkingLevel`. */
+function toThinkingLevel(effort: OpenAIChatBody['reasoning_effort']): string | null {
+  switch (effort) {
+    case 'none':
+    case 'low':
+      return 'low';
+    case 'medium':
+      return 'medium';
+    case 'high':
+      return 'high';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Google odbija nepoznata `generationConfig` polja s 400. Ako neki model ne
+ * poznaje `thinkingConfig`, poziv se ponavlja BEZ njega umjesto da padne.
+ */
+export function isThinkingConfigRejection(status: number, errText: string): boolean {
+  if (status !== 400) return false;
+  return /thinking(_?config|level|budget)/i.test(errText);
 }
 
 export class GeminiTimeoutError extends Error {
