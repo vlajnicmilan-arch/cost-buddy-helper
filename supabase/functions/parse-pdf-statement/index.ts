@@ -212,7 +212,7 @@ serve(async (req) => {
 
     const __cap = await checkAiCostCap(supabase);
     if (__cap) return __cap;
-    const aiResponse = await callGemini({
+    const aiRequestBody = {
         model: modelId,
         messages: [
           {
