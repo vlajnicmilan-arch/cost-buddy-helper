@@ -66,9 +66,10 @@ describe('pamćenje pripadnosti izvoru', () => {
     expect(card).toContain('data-testid="remember-statement-source"');
   });
 
-  it('povezani bankovni račun ima prednost nad ručnim pamćenjem', () => {
+  it('predodabir ide kroz slojeviti matcher (pravilo > IBAN > ime banke)', () => {
     const card2 = card.replace(/\s+/g, ' ');
-    expect(card2).toContain('const next = fromBank ?? suggestSourceId(accountIdentifier)');
+    expect(card2).toContain('pickStatementSource({');
+    expect(card2).toContain('bankAccountSourceId: fromBank');
     expect(memory).toContain('suggestSourceFromBankAccounts');
   });
 
