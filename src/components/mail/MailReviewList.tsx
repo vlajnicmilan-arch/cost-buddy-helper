@@ -230,11 +230,18 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
   };
 
   const handleConfirmAsStatement = async (item: MailReviewItem) => {
-    const ok = await confirmAsStatement(item.id);
-    if (!ok) {
-      showError(t('statements.choiceFailed'));
+    const result = await confirmAsStatement(item.id);
+    if (result.ok) {
+      showSuccess(t('statements.reprocessQueued', 'Dokument je vraćen u obradu kao izvod'));
+      return;
     }
+    showError(
+      result.reason
+        ? `${t('statements.choiceFailed')} (${result.reason})`
+        : t('statements.choiceFailed'),
+    );
   };
+
 
   const handleScopeChange = async (
     item: MailReviewItem,

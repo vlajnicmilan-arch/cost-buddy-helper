@@ -37,10 +37,20 @@ export const DocumentsReceivedTab = ({
   const handleRetry = async (messageId: string) => {
     setRetrying(messageId);
     try {
-      const { error } = await supabase.rpc('mail_ingest_retry_message', {
+      const { data, error } = await supabase.rpc('mail_ingest_retry_message', {
         p_message_id: messageId,
       });
       if (error) throw error;
+      // RPC vraća `ok:false` bez greške (npr. 'stanje_ne_dopusta') — tiho
+      // gutanje tog odgovora bilo je uzrok „ništa se ne dogodi" kvara.
+      const result = (data ?? {}) as { ok?: boolean; reason?: string };
+      if (result.ok === false) {
+        console.warn('[DocumentsReceivedTab] retry refused:', result.reason);
+        showError(
+          `${t('mailImport.retryFailed', 'Ponovno pokretanje nije uspjelo')} (${result.reason ?? '?'})`,
+        );
+        return;
+      }
       showSuccess(t('mailImport.retryQueued', 'Poruka je vraćena u obradu'));
       await refetch();
     } catch (e) {
@@ -50,6 +60,7 @@ export const DocumentsReceivedTab = ({
       setRetrying(null);
     }
   };
+
 
   const handleRestore = async (itemId: string) => {
     const ok = await restoreItem(itemId);

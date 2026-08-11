@@ -4797,7 +4797,9 @@
       "owner": "Source owner",
       "ownerPersonal": "Personal",
       "ownerHint": "Choose whether this source belongs to you personally or to exactly one company. The \"All / Personal / Company\" filter uses this link.",
-      "addCompany": "+ New company"
+      "addCompany": "+ New company",
+      "accountIdentifier": "IBAN / account number",
+      "accountIdentifierHint": "Optional. Used only to recognise bank statements on import."
     },
     "viewMode": {
       "all": "All",
@@ -6545,8 +6547,11 @@
     "matchReason": {
       "rule": "Remembered rule for this account",
       "bankAccount": "Linked bank account (IBAN)",
-      "bankName": "Wallet name matches the bank on the statement"
+      "bankName": "Wallet name matches the bank on the statement",
+      "walletIdentifier": "IBAN / account number saved on the wallet"
     },
-    "createSource": "Create new wallet “{{name}}”"
+    "createSource": "Create new wallet “{{name}}”",
+    "reprocessQueued": "Document was re-queued as a bank statement",
+    "saveIdentifierToWallet": "Save this IBAN to wallet “{{name}}”"
   }
 }

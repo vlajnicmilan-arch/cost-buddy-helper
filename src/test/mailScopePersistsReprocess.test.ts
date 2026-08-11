@@ -72,3 +72,28 @@ describe('upsertIngestItem — scope_set_by_user', () => {
     expect(updates).toHaveLength(0);
   });
 });
+
+describe('upsertIngestItem — classification_set_by_user', () => {
+  const classified = { ...row, classification: 'racun' };
+
+  it('ne vraća strojnu klasifikaciju kad je korisnik rekao „ovo je izvod"', async () => {
+    const { client, updates } = makeClient({
+      id: 'i1',
+      status: 'na_pregledu',
+      classification_set_by_user: true,
+    });
+    await upsertIngestItem(client, { messageId: 'm1', attachmentId: 'a1', row: classified });
+    expect(updates[0]).not.toHaveProperty('classification');
+    expect(updates[0].extraction).toEqual({ total_amount: 10 });
+  });
+
+  it('strojna klasifikacija prolazi kad korisnik nije odlučio', async () => {
+    const { client, updates } = makeClient({
+      id: 'i1',
+      status: 'na_pregledu',
+      classification_set_by_user: false,
+    });
+    await upsertIngestItem(client, { messageId: 'm1', attachmentId: 'a1', row: classified });
+    expect(updates[0].classification).toBe('racun');
+  });
+});

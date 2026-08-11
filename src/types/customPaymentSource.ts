@@ -17,6 +17,9 @@ export interface CustomPaymentSource {
   balance: number;
   currency?: string;
   description?: string | null;
+  /** IBAN ili broj računa novčanika — služi prepoznavanju bankovnog izvoda. */
+  account_identifier?: string | null;
+
   sort_order?: number;
   business_profile_id?: string | null;
   created_at: string;

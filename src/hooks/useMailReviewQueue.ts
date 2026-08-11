@@ -209,28 +209,42 @@ export function useMailReviewQueue(enabled: boolean) {
     [fetchItems]
   );
 
-  /** Korisnik potvrđuje da je sumnjiva stavka izvod; ostaje isti ingest red. */
+  /**
+   * Korisnik potvrđuje da je sumnjiva stavka izvod.
+   *
+   * Sama promjena oznake NIJE dovoljna: ekstrakcija izvoda (banka, IBAN,
+   * razdoblje, novo stanje) radi se tek u obradi poruke. Zato ovdje ide RPC
+   * koji upiše korisnikovu odluku I vrati poruku u red za ponovnu obradu.
+   */
   const confirmAsStatement = useCallback(
-    async (itemId: string) => {
+    async (itemId: string): Promise<{ ok: boolean; reason?: string }> => {
       setWorking(true);
       try {
-        const { error } = await supabase
-          .from('document_ingest_items')
-          .update({ classification: 'izvod', status: 'na_pregledu' })
-          .eq('id', itemId)
-          .eq('owner_user_id', user?.id ?? '');
+        const { data, error } = await supabase.rpc('mail_item_reprocess', {
+          p_item_id: itemId,
+          p_classification: 'izvod',
+        });
         if (error) {
-          console.warn('[useMailReviewQueue] confirmAsStatement error:', error.message);
-          return false;
+          console.warn(
+            '[useMailReviewQueue] confirmAsStatement error:',
+            describeDbError(error, 'mail_item_reprocess'),
+          );
+          return { ok: false, reason: error.message };
+        }
+        const result = (data ?? {}) as { ok?: boolean; reason?: string };
+        if (result.ok === false) {
+          console.warn('[useMailReviewQueue] confirmAsStatement refused:', result.reason);
+          return { ok: false, reason: result.reason };
         }
         await fetchItems();
-        return true;
+        return { ok: true };
       } finally {
         setWorking(false);
       }
     },
-    [fetchItems, user?.id]
+    [fetchItems],
   );
+
 
   return {
     items,

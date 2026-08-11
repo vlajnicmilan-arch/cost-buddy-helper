@@ -32,6 +32,7 @@ interface PaymentSourceData {
   balance?: number;
   currency?: string;
   description?: string;
+  account_identifier?: string | null;
   business_profile_id?: string | null;
   cards?: CardInput[];
 }
@@ -64,6 +65,7 @@ export const CustomPaymentSourceDialog = ({
   const [color, setColor] = useState('#6b7280');
   const [balance, setBalance] = useState('0');
   const [description, setDescription] = useState('');
+  const [accountIdentifier, setAccountIdentifier] = useState('');
   const [sourceCurrency, setSourceCurrency] = useState<CurrencyCode>('EUR');
   const [cards, setCards] = useState<CardInput[]>([]);
   const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
@@ -83,6 +85,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(source.color);
         setBalance(source.balance?.toString() || '0');
         setDescription(source.description || '');
+        setAccountIdentifier(source.account_identifier || '');
         setSourceCurrency((source.currency as CurrencyCode) || currency.code);
         setBusinessProfileId(source.business_profile_id || null);
         setCards((source.cards || []).map(c => ({
@@ -97,6 +100,7 @@ export const CustomPaymentSourceDialog = ({
         setColor(initialData.color || '#6b7280');
         setBalance(initialData.balance?.toString() || '0');
         setDescription(initialData.description || '');
+        setAccountIdentifier(initialData.account_identifier || '');
         setSourceCurrency(currency.code);
         setBusinessProfileId(initialData.business_profile_id || null);
         setCards(initialData.cards || []);
@@ -106,6 +110,7 @@ export const CustomPaymentSourceDialog = ({
         setColor('#6b7280');
         setBalance('0');
         setDescription('');
+        setAccountIdentifier('');
         setSourceCurrency(currency.code);
         setBusinessProfileId(null);
         setCards([]);
@@ -135,6 +140,7 @@ export const CustomPaymentSourceDialog = ({
         balance: isEdit ? (source!.balance || 0) : (parseLocaleAmount(balance).value || 0),
         currency: multiCurrencyEnabled ? sourceCurrency : undefined,
         description: description.trim() || undefined,
+        account_identifier: accountIdentifier.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || null,
         business_profile_id: businessProfileId,
       };
       if (isEdit) {
@@ -322,6 +328,30 @@ export const CustomPaymentSourceDialog = ({
               />
             </div>
           </div>
+
+          {/* IBAN / broj računa — ključ za automatsko prepoznavanje izvoda iz e-pošte */}
+          <div className="space-y-2">
+            <Label htmlFor="account-identifier">
+              {t('wallet.source.accountIdentifier', 'IBAN / broj računa')}
+            </Label>
+            <Input
+              id="account-identifier"
+              value={accountIdentifier}
+              onChange={(e) => setAccountIdentifier(e.target.value.toUpperCase())}
+              disabled={source?.isOwned === false}
+              placeholder="HR12 3456 7890 1234 5678 9"
+              autoComplete="off"
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'wallet.source.accountIdentifierHint',
+                'Neobavezno. Koristi se samo za prepoznavanje bankovnog izvoda pri uvozu.',
+              )}
+            </p>
+          </div>
+
+
 
           {/* Owner / company assignment */}
           <div className="space-y-2 p-3 rounded-lg border bg-muted/30">

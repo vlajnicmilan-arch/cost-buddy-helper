@@ -36,7 +36,7 @@ export async function upsertIngestItem(
 ): Promise<UpsertResult> {
   let query = client
     .from('document_ingest_items')
-    .select('id, status, scope_set_by_user')
+    .select('id, status, scope_set_by_user, classification_set_by_user')
     .eq('message_id', messageId);
 
   query = attachmentId
@@ -45,7 +45,12 @@ export async function upsertIngestItem(
 
   const { data: existingRows } = await query.order('created_at', { ascending: true }).limit(1);
   const existing = (Array.isArray(existingRows) ? existingRows[0] : existingRows) as
-    | { id: string; status: string | null; scope_set_by_user?: boolean | null }
+    | {
+        id: string;
+        status: string | null;
+        scope_set_by_user?: boolean | null;
+        classification_set_by_user?: boolean | null;
+      }
     | null
     | undefined;
 
@@ -59,6 +64,10 @@ export async function upsertIngestItem(
     if (existing.scope_set_by_user === true) {
       delete patch.scope_type;
       delete patch.scope_id;
+    }
+    // Korisnik je rekao „ovo JE izvod" — strojna klasifikacija to ne smije vratiti.
+    if (existing.classification_set_by_user === true) {
+      delete patch.classification;
     }
     await client
       .from('document_ingest_items')

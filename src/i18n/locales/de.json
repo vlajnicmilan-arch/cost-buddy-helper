@@ -4797,7 +4797,9 @@
       "owner": "Inhaber der Quelle",
       "ownerPersonal": "Privat",
       "ownerHint": "Wählen Sie, ob diese Quelle persönlich oder genau einem Unternehmen gehört. Der Filter \"Alle / Privat / Unternehmen\" nutzt diese Verknüpfung.",
-      "addCompany": "+ Neue Firma"
+      "addCompany": "+ Neue Firma",
+      "accountIdentifier": "IBAN / Kontonummer",
+      "accountIdentifierHint": "Optional. Wird nur zur Erkennung von Kontoauszügen beim Import verwendet."
     },
     "viewMode": {
       "all": "Alle",
@@ -6545,8 +6547,11 @@
     "matchReason": {
       "rule": "Gespeicherte Regel für dieses Konto",
       "bankAccount": "Verknüpftes Bankkonto (IBAN)",
-      "bankName": "Wallet-Name entspricht der Bank im Auszug"
+      "bankName": "Wallet-Name entspricht der Bank im Auszug",
+      "walletIdentifier": "IBAN / Kontonummer im Wallet hinterlegt"
     },
-    "createSource": "Neues Wallet „{{name}}“ erstellen"
+    "createSource": "Neues Wallet „{{name}}“ erstellen",
+    "reprocessQueued": "Dokument wurde erneut als Kontoauszug eingereiht",
+    "saveIdentifierToWallet": "Diese IBAN im Wallet „{{name}}“ speichern"
   }
 }
