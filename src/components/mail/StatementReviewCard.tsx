@@ -59,16 +59,12 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   // Picker mora nuditi izvore PROFILA NA KOJI STAVKA GLASI, ne aktivnog konteksta.
   const scopeProfileId =
     item.scope_type === 'business_profile' && item.scope_id ? item.scope_id : null;
-  const { customPaymentSources } = useCustomPaymentSources({
+  const { customPaymentSources, addCustomPaymentSource } = useCustomPaymentSources({
     includePersonal: true,
     businessProfileIdOverride: scopeProfileId,
   });
   const { suggestSourceId, rememberRule } = useStatementSourceMemory(true);
   const { busy, startImport } = useStatementImport();
-  const { addCustomPaymentSource } = useCustomPaymentSources({
-    includePersonal: true,
-    businessProfileIdOverride: scopeProfileId,
-  });
 
   const [sourceId, setSourceId] = useState<string>('');
   const [matchReason, setMatchReason] = useState<StatementSourceMatchReason | null>(null);
