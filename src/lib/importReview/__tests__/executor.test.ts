@@ -45,11 +45,29 @@ function payload(over: Partial<ImportReviewPayload> = {}): ImportReviewPayload {
 function makeFakeClient(opts: {
   updateAffected?: (manualId: string) => number;
   insertedCount?: (rows: any[]) => number;
+  existingFingerprints?: string[];
 } = {}) {
   const calls: any[] = [];
+  const persisted = new Set(opts.existingFingerprints ?? []);
   const client: ExecutorSupabaseClient = {
     from() {
       return {
+        select() {
+          return {
+            eq() {
+              return {
+                async in(_column: string, fingerprints: string[]) {
+                  return {
+                    data: fingerprints
+                      .filter(fingerprint => persisted.has(fingerprint))
+                      .map(bank_transaction_id => ({ bank_transaction_id, status: null })),
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
+        },
         update(patch: any) {
           return {
             eq(_c: string, id: any) {
@@ -61,6 +79,7 @@ function makeFakeClient(opts: {
                         async select() {
                           calls.push({ op: 'update', id, patch });
                           const n = opts.updateAffected ? opts.updateAffected(id) : 1;
+                          if (n > 0 && typeof patch.bank_transaction_id === 'string') persisted.add(patch.bank_transaction_id);
                           return { data: Array.from({ length: n }, () => ({ id })), error: null };
                         },
                       };
@@ -76,6 +95,7 @@ function makeFakeClient(opts: {
             async select() {
               calls.push({ op: 'upsert', rows });
               const n = opts.insertedCount ? opts.insertedCount(rows) : rows.length;
+              for (const row of rows.slice(0, n)) persisted.add(row.bank_transaction_id);
               return { data: Array.from({ length: n }, (_, i) => ({ id: rows[i]?.bank_transaction_id })), error: null };
             },
           };
@@ -83,7 +103,7 @@ function makeFakeClient(opts: {
       };
     },
   };
-  return { client, calls };
+  return { client, calls, persisted };
 }
 
 const baseDecisions = (over: Partial<ImportReviewDecisions> = {}): ImportReviewDecisions => ({
@@ -153,7 +173,7 @@ describe('importReview/executor', () => {
       .rejects.toMatchObject({ expectedOutcomes: 1, actualOutcomes: 0 });
   });
 
-  it('NEW: konflikt ne smije biti lažni uspjeh', async () => {
+  it('partial fail pa retry priznaje postojeće ishode i ne stvara duplikate', async () => {
     const p = payload({
       importedTransactions: [tx(0), tx(1)],
       rows: [
@@ -162,15 +182,13 @@ describe('importReview/executor', () => {
       ],
     });
     const d = baseDecisions({ newRows: { 0: true, 1: true } });
-    const first = makeFakeClient(); // inserts all
-    const r1 = await executeDecisions({ supabase: first.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
-    expect(r1.inserted).toBe(2);
-    expect(r1.skippedDuplicate).toBe(0);
-
-    // Second run: ignoreDuplicates returns 0 rows.
-    const second = makeFakeClient({ insertedCount: () => 0 });
-    await expect(executeDecisions({ supabase: second.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
-      .rejects.toBeInstanceOf(ImportExecutionIncompleteError);
+    const retry = makeFakeClient({ existingFingerprints: ['fp-0'] });
+    const result = await executeDecisions({ supabase: retry.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    expect(result.fulfilledExisting).toBe(1);
+    expect(result.inserted).toBe(1);
+    expect(result.completedOutcomes).toBe(2);
+    const upsert = retry.calls.find(call => call.op === 'upsert');
+    expect(upsert.rows.map((row: any) => row.bank_transaction_id)).toEqual(['fp-1']);
   });
 
   it('question=new inserts; question=merge merges', async () => {
@@ -208,7 +226,16 @@ describe('importReview/executor', () => {
     });
     const { client, calls } = makeFakeClient();
     await expect(executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
-      .rejects.toMatchObject({ executionErrors: ['transfer:0:missing_target'] });
+      .rejects.toMatchObject({
+        executionErrors: ['transfer:0:missing_transfer_target'],
+        failedOutcomes: [expect.objectContaining({
+          rowIndex: 0,
+          description: 'desc',
+          amount: 100,
+          type: 'transfer',
+          reason: 'missing_transfer_target',
+        })],
+      });
     // Absolutely no writes were issued.
     expect(calls).toHaveLength(0);
   });
@@ -287,5 +314,54 @@ describe('importReview/executor', () => {
     const { client } = makeFakeClient({ insertedCount: () => 1 });
     await expect(executeDecisions({ supabase: client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
       .rejects.toMatchObject({ expectedOutcomes: 2, actualOutcomes: 1 });
+  });
+
+  it('retry gdje krivac ostaje vraća imenovani redak', async () => {
+    const p = payload({
+      importedTransactions: [tx(0), tx(1, {
+        type: 'transfer',
+        dateIso: '2026-07-11T00:00:00.000Z',
+        amount: 88.85,
+        description: 'Na investicijski račun',
+      })],
+      rows: [
+        { index: 0, classification: { kind: 'new', existsByFingerprint: false } } as any,
+        { index: 1, classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null } } as any,
+      ],
+    });
+    const d = baseDecisions({
+      newRows: { 0: true },
+      transfers: { 1: { enabled: true, direction: 'out', targetIncomeSourceId: '', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+    });
+    const retry = makeFakeClient({ existingFingerprints: ['fp-0'] });
+    await expect(executeDecisions({ supabase: retry.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d }))
+      .rejects.toMatchObject({
+        expectedOutcomes: 2,
+        actualOutcomes: 1,
+        failedOutcomes: [expect.objectContaining({
+          dateIso: '2026-07-11T00:00:00.000Z',
+          description: 'Na investicijski račun',
+          amount: 88.85,
+          type: 'transfer',
+          reason: 'missing_transfer_target',
+        })],
+      });
+    expect(retry.calls).toHaveLength(0);
+  });
+
+  it('Poništi pravilo uvozi redak kao običan prihod/rashod po predznaku', async () => {
+    const p = payload({
+      importedTransactions: [tx(0, { type: 'expense', amount: 88.85 })],
+      rows: [{ index: 0, classification: { kind: 'transfer', targetIncomeSourceId: '', ruleId: null } }] as any,
+    });
+    const d = baseDecisions({
+      transfers: { 0: { enabled: false, direction: 'out', targetIncomeSourceId: '', rememberRule: false, merchantKey: null, sourceWalletKey: null } },
+    });
+    const fake = makeFakeClient();
+    const result = await executeDecisions({ supabase: fake.client, userId: 'u1', activeBusinessProfileId: null, payload: p, decisions: d });
+    expect(result.inserted).toBe(1);
+    const row = fake.calls.find(call => call.op === 'upsert').rows[0];
+    expect(row.type).toBe('expense');
+    expect(row.category).not.toBe('transfer');
   });
 });

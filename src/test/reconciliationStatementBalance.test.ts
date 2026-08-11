@@ -58,12 +58,28 @@ const decisions: ImportReviewDecisions = {
 } as ImportReviewDecisions;
 
 function mkSupabase(rpcResult: Record<string, unknown>): ExecutorSupabaseClient {
+  const persisted = new Set<string>();
   const chain: any = {
-    upsert: () => chain,
+    upsert: (rows: any[]) => {
+      rows.forEach(row => persisted.add(row.bank_transaction_id));
+      return chain;
+    },
     update: () => chain,
     eq: () => chain,
     is: () => chain,
-    select: async () => ({ data: [{ id: 'x' }], error: null }),
+    select: (columns?: string) => {
+      if (columns === 'bank_transaction_id,status') {
+        return {
+          eq: () => ({
+            in: async (_column: string, fingerprints: string[]) => ({
+              data: fingerprints.filter(fp => persisted.has(fp)).map(bank_transaction_id => ({ bank_transaction_id, status: null })),
+              error: null,
+            }),
+          }),
+        };
+      }
+      return Promise.resolve({ data: [{ id: 'x' }], error: null });
+    },
   };
   return {
     from: () => chain,

@@ -20,13 +20,29 @@ const DESC = 'Uplata na Aircash Google Pay';
 
 function fakeClient() {
   const upserts: any[][] = [];
+  const persisted = new Set<string>();
   const client: ExecutorSupabaseClient = {
     from() {
       return {
+        select() {
+          return {
+            eq() {
+              return {
+                async in(_column: string, fingerprints: string[]) {
+                  return {
+                    data: fingerprints.filter(fp => persisted.has(fp)).map(bank_transaction_id => ({ bank_transaction_id, status: null })),
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
+        },
         upsert(rows: any[]) {
           return {
             async select() {
               upserts.push(rows);
+              rows.forEach(row => persisted.add(row.bank_transaction_id));
               return { data: rows.map(r => ({ id: r.bank_transaction_id })), error: null };
             },
           };
@@ -134,7 +150,7 @@ describe('regresija — nadoplata Aircasha mora biti Revolut → Aircash', () =>
       activeBusinessProfileId: null,
       payload,
       decisions,
-    })).rejects.toMatchObject({ executionErrors: ['transfer:0:missing_direction'] });
+    })).rejects.toMatchObject({ executionErrors: ['transfer:0:missing_transfer_direction'] });
     expect(upserts).toEqual([]);
   });
 });
