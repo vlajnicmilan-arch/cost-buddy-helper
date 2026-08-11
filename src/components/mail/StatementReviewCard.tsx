@@ -20,6 +20,10 @@ import {
   suggestSourceFromBankAccounts,
 } from '@/hooks/useStatementSourceMemory';
 import { sanitizeIban } from '@/lib/mailImport/iban';
+import {
+  pickStatementSource,
+  type StatementSourceMatchReason,
+} from '@/lib/mail/statementSourceMatch';
 import { useStatementImport, markIngestItemLinked } from '@/hooks/useStatementImport';
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
