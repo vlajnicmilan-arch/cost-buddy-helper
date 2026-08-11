@@ -6541,6 +6541,12 @@
     "forgetRule": "Forget rule",
     "forgetRuleConfirm": "The next statement for this IBAN will no longer have a preselected wallet.",
     "ruleForgotten": "Rule deleted",
-    "ruleForgetFailed": "Deleting failed"
+    "ruleForgetFailed": "Deleting failed",
+    "matchReason": {
+      "rule": "Remembered rule for this account",
+      "bankAccount": "Linked bank account (IBAN)",
+      "bankName": "Wallet name matches the bank on the statement"
+    },
+    "createSource": "Create new wallet “{{name}}”"
   }
 }

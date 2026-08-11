@@ -6541,6 +6541,12 @@
     "forgetRule": "Regel vergessen",
     "forgetRuleConfirm": "Der nächste Auszug für diese IBAN hat keine vorausgewählte Geldbörse mehr.",
     "ruleForgotten": "Regel gelöscht",
-    "ruleForgetFailed": "Löschen fehlgeschlagen"
+    "ruleForgetFailed": "Löschen fehlgeschlagen",
+    "matchReason": {
+      "rule": "Gespeicherte Regel für dieses Konto",
+      "bankAccount": "Verknüpftes Bankkonto (IBAN)",
+      "bankName": "Wallet-Name entspricht der Bank im Auszug"
+    },
+    "createSource": "Neues Wallet „{{name}}“ erstellen"
   }
 }

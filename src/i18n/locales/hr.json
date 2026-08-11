@@ -6552,6 +6552,12 @@
     "forgetRule": "Zaboravi pravilo",
     "forgetRuleConfirm": "Sljedeći izvod za ovaj IBAN više neće imati unaprijed odabran novčanik.",
     "ruleForgotten": "Pravilo je obrisano",
-    "ruleForgetFailed": "Brisanje nije uspjelo"
+    "ruleForgetFailed": "Brisanje nije uspjelo",
+    "matchReason": {
+      "rule": "Zapamćeno pravilo za ovaj račun",
+      "bankAccount": "Povezani bankovni račun (IBAN)",
+      "bankName": "Ime novčanika odgovara banci s izvoda"
+    },
+    "createSource": "Stvori novi novčanik „{{name}}\""
   }
 }
