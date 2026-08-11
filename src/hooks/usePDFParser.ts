@@ -318,12 +318,17 @@ export const usePDFParser = () => {
       showSuccess(`Pronađeno ${result.transactions.length} transakcija${bankInfo}${cardInfo}`);
       return result;
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error('Error parsing statement:', error);
       logDiagnostic('pdf_parse_failed', {
-        message: error instanceof Error ? error.message : String(error),
+        message,
         is_image: !!isImage,
       });
-      showError(t('errors.pdf.parseFailed', 'Greška pri analizi izvoda'));
+      showError(
+        message.includes('parse_incomplete')
+          ? t('toasts.pdfParseIncomplete', 'Obrada nije dovršena — pokušaj ponovno')
+          : t('errors.pdf.parseFailed', 'Greška pri analizi izvoda'),
+      );
       return null;
     } finally {
       setParsing(false);
