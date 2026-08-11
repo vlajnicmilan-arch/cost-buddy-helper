@@ -262,6 +262,15 @@ export function planExecution(
 
     if (row.classification.kind === 'new') {
       if (row.classification.existsByFingerprint) { skippedFingerprint += 1; continue; }
+      // PONUDA SPAJANJA (kartično kašnjenje): korisnikov dodir upisan je kao
+      // odgovor 'merge' na tom retku. Spojeni par = JEDAN ishod (merge), pa
+      // idempotentna postkondicija ostaje netaknuta.
+      const offer = decisions.questions[row.index];
+      if (offer && offer.choice === 'merge') {
+        const manual = payload.manualCandidates[offer.manualId];
+        merges.push({ rowIndex: row.index, manualId: offer.manualId, tx, writeMerchant: !manual?.merchantName });
+        continue;
+      }
       const on = decisions.newRows[row.index] === true;
       if (!on) { skippedByUser += 1; continue; }
       inserts.push({ rowIndex: row.index, tx });
