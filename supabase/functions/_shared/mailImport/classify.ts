@@ -196,7 +196,7 @@ export async function classifyDocument(
   const statementText = [input.pdfText, input.bodyText]
     .filter((p) => (p ?? '').trim().length > 0)
     .join('\n');
-  const statement = classifyAsStatement(statementText);
+  const statement = classifyAsStatement(statementText, input.subject);
   if (statement.isStatement) {
     return {
       classification: 'izvod',
