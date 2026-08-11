@@ -36,7 +36,13 @@ import {
   setTransferDecision,
   summarize,
 } from '@/lib/importReview/state';
-import { executeDecisions, type ExecutorResult, type ReconciliationSummaryEntry } from '@/lib/importReview/executor';
+import {
+  executeDecisions,
+  ImportExecutionIncompleteError,
+  type ExecutorResult,
+  type ImportOutcomeFailure,
+  type ReconciliationSummaryEntry,
+} from '@/lib/importReview/executor';
 import { enqueueReconciliation, type ReconciliationQueueEntry } from '@/lib/reconciliation/queue';
 import { writePendingSnapshot, type ReconciliationPendingSnapshot } from '@/lib/reconciliation/resume';
 import { resolveAsOfIso, isHistoricalWithGap } from '@/lib/reconciliation/historyGate';
@@ -57,6 +63,20 @@ import type {
 } from '@/lib/importReview/types';
 
 const SAVE_DEBOUNCE_MS = 300;
+
+function formatFailedOutcome(
+  item: ImportOutcomeFailure,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  formatAmount: (amount: number) => string,
+): string {
+  const date = new Date(item.dateIso).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' });
+  return t('importReview.failedOutcomeRow', {
+    date,
+    description: item.description,
+    amount: formatAmount(item.amount),
+    reason: t(`importReview.failureReasons.${item.reason}`),
+  });
+}
 
 /**
  * Opis retka: ljudski dio u primarnom retku, tehnički identifikatori
@@ -195,6 +215,8 @@ const ImportReview = () => {
           skipped_fingerprint: result.skippedFingerprint,
           skipped_merged: result.skippedMerged,
           skipped_duplicate: result.skippedDuplicate,
+          fulfilled_existing: result.fulfilledExisting,
+          completed_outcomes: result.completedOutcomes,
           duration_ms: result.durationMs,
           errors: result.errors.length,
         });
@@ -215,7 +237,7 @@ const ImportReview = () => {
           fileName: payload.statement.fileName,
           fileSize: payload.statement.fileSize,
           mimeType: payload.statement.mimeType,
-          transactionsCount: result.inserted + result.merged + result.transfersCreated,
+          transactionsCount: result.completedOutcomes,
           importBatchId: batchId,
         });
       }
@@ -250,16 +272,24 @@ const ImportReview = () => {
       navigate('/app');
     } catch (e) {
       try {
+        const failedOutcomes = e instanceof ImportExecutionIncompleteError ? e.failedOutcomes : [];
         logDiagnostic('import_execute_failed', {
           job_id: payload.jobId,
           message: e instanceof Error ? e.message : String(e),
+          failed_outcomes: failedOutcomes,
         });
       } catch { /* noop */ }
-      showError(t('importReview.confirmFailed'), { module: 'wallet' });
+      if (e instanceof ImportExecutionIncompleteError && e.failedOutcomes.length > 0) {
+        showError(t('importReview.incompleteNamed', {
+          rows: e.failedOutcomes.map(item => formatFailedOutcome(item, t, formatAmount)).join('\n'),
+        }), { module: 'wallet' });
+      } else {
+        showError(t('importReview.confirmFailed'), { module: 'wallet' });
+      }
     } finally {
       setConfirming(false);
     }
-  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId]);
+  }, [payload, decisions, summary, navigate, t, user, activeBusinessProfileId, formatAmount]);
 
   const updateAuto = useCallback((idx: number, value: boolean) => {
     setDecisions(prev => (prev ? setAutoMerge(prev, idx, value) : prev));
@@ -496,9 +526,8 @@ const ImportReview = () => {
           className="h-8 px-2 text-xs"
           onClick={() => {
             if (isTransferClass) {
-              // "Poništi pravilo" — mark decision disabled so executor + summary
-              // skip the row entirely. Rule row is NOT deleted here (would need
-              // an explicit "Obriši pravilo" affordance elsewhere).
+              // "Poništi pravilo" — izvršava se kao običan prihod/rashod po
+              // predznaku izvoda. Samo se transfer override gasi.
               updateTransfer(row.index, { ...activeDecision, enabled: false, rememberRule: false });
             } else {
               updateTransfer(row.index, null);

@@ -46,6 +46,7 @@ import type {
 import { buildTransferPair } from '@/lib/moneyDirection';
 import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
+import { isCountedExpenseRow } from '@/lib/countedExpense';
 
 
 /**
@@ -129,23 +130,52 @@ export interface ExecutorResult {
   readonly skippedMerged: number;
   /** INSERT conflict on (user_id, bank_transaction_id) — already inserted earlier. */
   readonly skippedDuplicate: number;
+  /** Planned outcomes already present before this attempt (idempotent retry). */
+  readonly fulfilledExisting: number;
+  /** All planned outcomes present after execution, regardless of when written. */
+  readonly completedOutcomes: number;
   readonly durationMs: number;
   readonly errors: readonly string[];
   /** Faza 2 — post-commit reconciliation snapshot per unique source_id. */
   readonly reconciliationSummary: readonly ReconciliationSummaryEntry[];
 }
 
+export type ImportOutcomeFailureReason =
+  | 'missing_transfer_target'
+  | 'missing_transfer_direction'
+  | 'invalid_transfer_pair'
+  | 'database_error'
+  | 'not_persisted';
+
+export interface ImportOutcomeFailure {
+  readonly rowIndex: number;
+  readonly dateIso: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly type: string;
+  readonly fingerprint: string;
+  readonly reason: ImportOutcomeFailureReason;
+  readonly detail?: string;
+}
+
 export class ImportExecutionIncompleteError extends Error {
   readonly expectedOutcomes: number;
   readonly actualOutcomes: number;
   readonly executionErrors: readonly string[];
+  readonly failedOutcomes: readonly ImportOutcomeFailure[];
 
-  constructor(expectedOutcomes: number, actualOutcomes: number, executionErrors: readonly string[]) {
+  constructor(
+    expectedOutcomes: number,
+    actualOutcomes: number,
+    executionErrors: readonly string[],
+    failedOutcomes: readonly ImportOutcomeFailure[],
+  ) {
     super(`import_execution_incomplete:${actualOutcomes}/${expectedOutcomes}`);
     this.name = 'ImportExecutionIncompleteError';
     this.expectedOutcomes = expectedOutcomes;
     this.actualOutcomes = actualOutcomes;
     this.executionErrors = executionErrors;
+    this.failedOutcomes = failedOutcomes;
   }
 }
 
@@ -238,7 +268,14 @@ export function planExecution(
       continue;
     }
 
-    // classification.kind === 'transfer' but user un-toggled → skipped.
+    // "Poništi pravilo" vraća redak u običan prihod/rashod po izvornom
+    // predznaku; nije pošteno tiho ga izostaviti iz uvoza.
+    if (row.classification.kind === 'transfer' && td?.enabled === false) {
+      inserts.push({ rowIndex: row.index, tx });
+      continue;
+    }
+
+    // Neodgovoreni transfer ostaje blokiran korisničkom odlukom.
     skippedByUser += 1;
   }
 
@@ -252,32 +289,43 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   const plan = planExecution(input.payload, input.decisions);
   const errors: string[] = [];
 
+  const allPlans = [...plan.merges, ...plan.inserts, ...plan.transfers];
+  const existingBefore = await findPersistedFingerprints(
+    input.supabase,
+    input.userId,
+    allPlans.map(item => item.tx.fingerprint),
+  );
+  const pendingMerges = plan.merges.filter(item => !existingBefore.has(item.tx.fingerprint));
+  const pendingInserts = plan.inserts.filter(item => !existingBefore.has(item.tx.fingerprint));
+  const pendingTransfers = plan.transfers.filter(item => !existingBefore.has(item.tx.fingerprint));
+
   // --- PRE-FLIGHT VALIDATION: no writes at all if any transfer decision is
   // missing a target wallet. This is the executor-side gate that matches the
   // UI's summarize() check — belt AND suspenders so a stale summary or a
   // programmatic caller cannot leak an income_source_id=NULL transfer.
-  const badTransfers = plan.transfers
+  const badTransfers = pendingTransfers
     .map(t => {
       if (!t.decision.targetIncomeSourceId || t.decision.targetIncomeSourceId.length === 0) {
-        return { rowIndex: t.rowIndex, reason: 'missing_target' };
+        return failureFromPlan(t, 'missing_transfer_target');
       }
       if (t.decision.direction !== 'in' && t.decision.direction !== 'out') {
-        return { rowIndex: t.rowIndex, reason: 'missing_direction' };
+        return failureFromPlan(t, 'missing_transfer_direction');
       }
       const pair = buildTransferPair({
         statementSource: t.tx.paymentSource,
         counterpartSourceId: t.decision.targetIncomeSourceId,
         direction: t.decision.direction,
       });
-      if (!pair) return { rowIndex: t.rowIndex, reason: 'invalid_pair' };
+      if (!pair) return failureFromPlan(t, 'invalid_transfer_pair');
       return null;
     })
-    .filter((x): x is { rowIndex: number; reason: string } => x !== null);
+    .filter((x): x is ImportOutcomeFailure => x !== null);
   if (badTransfers.length > 0) {
     throw new ImportExecutionIncompleteError(
       plan.merges.length + plan.inserts.length + plan.transfers.length,
-      0,
-      badTransfers.map(t => `transfer:${t.rowIndex}:${t.reason}`),
+      existingBefore.size,
+      badTransfers.map(item => `transfer:${item.rowIndex}:${item.reason}`),
+      badTransfers,
     );
 
   }
@@ -286,7 +334,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // BEFORE inserts so a mid-flight retry keeps the rule and skips the row.
   let rulesSaved = 0;
   const rulesToSave: UpsertRuleInput[] = [];
-  for (const t of plan.transfers) {
+  for (const t of pendingTransfers) {
     if (
       t.decision.rememberRule &&
       t.decision.merchantKey &&
@@ -310,9 +358,10 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
 
   let merged = 0;
   let skippedMerged = 0;
+  const writeErrorsByFingerprint = new Map<string, string>();
 
   // --- MERGE branch ---
-  for (const m of plan.merges) {
+  for (const m of pendingMerges) {
     const patch: Record<string, unknown> = {
       bank_transaction_id: m.tx.fingerprint,
       bank_match_status: 'confirmed',
@@ -331,6 +380,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         .select('id');
       if (res.error) {
         errors.push(`merge:${m.manualId}:${res.error.message}`);
+        writeErrorsByFingerprint.set(m.tx.fingerprint, res.error.message);
         skippedMerged += 1;
         continue;
       }
@@ -338,7 +388,9 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       if (affected > 0) merged += 1;
       else skippedMerged += 1;
     } catch (e) {
-      errors.push(`merge:${m.manualId}:${e instanceof Error ? e.message : String(e)}`);
+      const detail = e instanceof Error ? e.message : String(e);
+      errors.push(`merge:${m.manualId}:${detail}`);
+      writeErrorsByFingerprint.set(m.tx.fingerprint, detail);
       skippedMerged += 1;
     }
   }
@@ -346,8 +398,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
   // --- INSERT branch (bulk upsert, ignoreDuplicates) ---
   let inserted = 0;
   let skippedDuplicate = 0;
-  if (plan.inserts.length > 0) {
-    const rows = plan.inserts.map(({ tx }) => ({
+  if (pendingInserts.length > 0) {
+    const rows = pendingInserts.map(({ tx }) => ({
       user_id: input.userId,
       amount: tx.amount,
       description: tx.description,
@@ -374,19 +426,22 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         .select('id');
       if (res.error) {
         errors.push(`insert:${res.error.message}`);
+        for (const item of pendingInserts) writeErrorsByFingerprint.set(item.tx.fingerprint, res.error.message);
       } else {
         inserted = res.data?.length ?? 0;
         skippedDuplicate = rows.length - inserted;
       }
     } catch (e) {
-      errors.push(`insert:${e instanceof Error ? e.message : String(e)}`);
+      const detail = e instanceof Error ? e.message : String(e);
+      errors.push(`insert:${detail}`);
+      for (const item of pendingInserts) writeErrorsByFingerprint.set(item.tx.fingerprint, detail);
     }
   }
 
   // --- TRANSFER branch (bulk upsert, ignoreDuplicates) ---
   let transfersCreated = 0;
-  if (plan.transfers.length > 0) {
-    const rows = plan.transfers.map(({ tx, decision }) => {
+  if (pendingTransfers.length > 0) {
+    const rows = pendingTransfers.map(({ tx, decision }) => {
       // JEDINO mjesto koje slaže strane prijenosa — nikad ručno.
       const pair = buildTransferPair({
         statementSource: tx.paymentSource,
@@ -421,23 +476,38 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
         .select('id');
       if (res.error) {
         errors.push(`transfer:${res.error.message}`);
+        for (const item of pendingTransfers) writeErrorsByFingerprint.set(item.tx.fingerprint, res.error.message);
       } else {
         transfersCreated = res.data?.length ?? 0;
         // Duplicates on retry counted as skippedDuplicate.
         skippedDuplicate += rows.length - transfersCreated;
       }
     } catch (e) {
-      errors.push(`transfer:${e instanceof Error ? e.message : String(e)}`);
+      const detail = e instanceof Error ? e.message : String(e);
+      errors.push(`transfer:${detail}`);
+      for (const item of pendingTransfers) writeErrorsByFingerprint.set(item.tx.fingerprint, detail);
     }
   }
 
   // ŽELJEZNA POSTKONDICIJA: potvrđeni posao ne smije tiho završiti s manje
   // ishoda od odluka. Conflict, RLS ili bilo koja greška znače NEUSPJEH cijelog
   // pokušaja; pozivatelj tada čuva draft i ne zapisuje imported_statements.
-  const expectedOutcomes = plan.merges.length + plan.inserts.length + plan.transfers.length;
-  const actualOutcomes = merged + inserted + transfersCreated;
-  if (errors.length > 0 || actualOutcomes !== expectedOutcomes) {
-    throw new ImportExecutionIncompleteError(expectedOutcomes, actualOutcomes, errors);
+  const expectedOutcomes = allPlans.length;
+  const persistedAfter = await findPersistedFingerprints(
+    input.supabase,
+    input.userId,
+    allPlans.map(item => item.tx.fingerprint),
+  );
+  const failedOutcomes = allPlans
+    .filter(item => !persistedAfter.has(item.tx.fingerprint))
+    .map(item => failureFromPlan(
+      item,
+      writeErrorsByFingerprint.has(item.tx.fingerprint) ? 'database_error' : 'not_persisted',
+      writeErrorsByFingerprint.get(item.tx.fingerprint),
+    ));
+  const actualOutcomes = expectedOutcomes - failedOutcomes.length;
+  if (failedOutcomes.length > 0) {
+    throw new ImportExecutionIncompleteError(expectedOutcomes, actualOutcomes, errors, failedOutcomes);
   }
 
   // --- FAZA 2: post-commit reconciliation snapshot per touched source_id.
@@ -462,10 +532,55 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     skippedFingerprint: plan.skippedFingerprint,
     skippedMerged,
     skippedDuplicate,
+    fulfilledExisting: existingBefore.size,
+    completedOutcomes: actualOutcomes,
     durationMs: now() - start,
     errors,
     reconciliationSummary,
   };
+}
+
+type OutcomePlan = MergePlan | InsertPlan | TransferPlan;
+
+function failureFromPlan(
+  item: OutcomePlan,
+  reason: ImportOutcomeFailureReason,
+  detail?: string,
+): ImportOutcomeFailure {
+  return {
+    rowIndex: item.rowIndex,
+    dateIso: item.tx.dateIso,
+    description: item.tx.description,
+    amount: item.tx.amount,
+    type: item instanceof Object && 'decision' in item ? 'transfer' : item.tx.type,
+    fingerprint: item.tx.fingerprint,
+    reason,
+    ...(detail ? { detail } : {}),
+  };
+}
+
+async function findPersistedFingerprints(
+  supabase: ExecutorSupabaseClient,
+  userId: string,
+  fingerprints: readonly string[],
+): Promise<Set<string>> {
+  const unique = [...new Set(fingerprints.filter(Boolean))];
+  const found = new Set<string>();
+  for (let offset = 0; offset < unique.length; offset += 200) {
+    const chunk = unique.slice(offset, offset + 200);
+    const res = await supabase
+      .from('expenses')
+      .select('bank_transaction_id,status')
+      .eq('user_id', userId)
+      .in('bank_transaction_id', chunk);
+    if (res.error) throw new Error(`import_postcondition_query_failed:${res.error.message}`);
+    for (const row of res.data ?? []) {
+      if (!isCountedExpenseRow(row)) continue;
+      const fingerprint = row?.bank_transaction_id;
+      if (typeof fingerprint === 'string') found.add(fingerprint);
+    }
+  }
+  return found;
 }
 
 // -----------------------------------------------------------------------------

@@ -182,8 +182,9 @@ export function summarize(
         break;
       }
       case 'transfer': {
-        // Rule-suggested but user disabled it (enabled === false) → skipped.
-        plannedSkipped += 1;
+        // "Nije prijenos" vraća redak na običan prihod/rashod po predznaku.
+        if (decisions.transfers[row.index]?.enabled === false) plannedNew += 1;
+        else plannedSkipped += 1;
         break;
       }
     }
