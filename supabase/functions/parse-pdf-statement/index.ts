@@ -436,10 +436,15 @@ PENDING / NA ČEKANJU:
           }
         ],
         tool_choice: { type: 'function', function: { name: 'extract_transactions' } },
+        // THINKING ODVOJEN OD IZLAZA: reasoning ne smije jesti izlazni budžet.
+        // Bez ovoga je model potrošio ~31.5k tokena na razmišljanje i odsjekao
+        // tool-call argumente usred niza (finish_reason=length).
+        reasoning_effort: 'low' as const,
         // Bankovni izvodi znaju imati 50-150+ transakcija; 8192 default nije dovoljan
         // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
-        max_tokens: 16384,
-    }, { timeoutMs: PDF_AI_TIMEOUT_MS });
+        max_tokens: 32768,
+    };
+    const aiResponse = await callGemini(aiRequestBody, { timeoutMs: PDF_AI_TIMEOUT_MS });
 
     if (!aiResponse.ok) {
       if (!skipQuota) await refundCoreScanQuota(supabase);
