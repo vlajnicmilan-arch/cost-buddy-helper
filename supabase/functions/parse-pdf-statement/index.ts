@@ -204,8 +204,11 @@ serve(async (req) => {
       }
     }
 
-    // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
-    const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
+    // PRIKVAČEN MODEL (2026-08-11): PDF/foto izvod ide na `google/gemini-3.5-flash`
+    // — izravan ključ, bez aliasa koji bi gateway/mapa mogli preusmjeriti na
+    // varijantu s agresivnim thinkingom (log 2026-08-10: 31.5k reasoning tokena,
+    // finish_reason=length nakon 135 s).
+    const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-3.5-flash';
 
     const __cap = await checkAiCostCap(supabase);
     if (__cap) return __cap;
