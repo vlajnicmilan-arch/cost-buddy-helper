@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Landmark, Download, Loader2, X } from 'lucide-react';
+import { Landmark, Download, Loader2, Plus, X } from 'lucide-react';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { formatDateHr } from '@/lib/dateFormat';
 import { formatHrAmount } from '@/lib/money';
@@ -20,6 +20,10 @@ import {
   suggestSourceFromBankAccounts,
 } from '@/hooks/useStatementSourceMemory';
 import { sanitizeIban } from '@/lib/mailImport/iban';
+import {
+  pickStatementSource,
+  type StatementSourceMatchReason,
+} from '@/lib/mail/statementSourceMatch';
 import { useStatementImport, markIngestItemLinked } from '@/hooks/useStatementImport';
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
@@ -55,7 +59,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   // Picker mora nuditi izvore PROFILA NA KOJI STAVKA GLASI, ne aktivnog konteksta.
   const scopeProfileId =
     item.scope_type === 'business_profile' && item.scope_id ? item.scope_id : null;
-  const { customPaymentSources } = useCustomPaymentSources({
+  const { customPaymentSources, addCustomPaymentSource } = useCustomPaymentSources({
     includePersonal: true,
     businessProfileIdOverride: scopeProfileId,
   });
@@ -63,24 +67,69 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const { busy, startImport } = useStatementImport();
 
   const [sourceId, setSourceId] = useState<string>('');
+  const [matchReason, setMatchReason] = useState<StatementSourceMatchReason | null>(null);
+  const [creatingSource, setCreatingSource] = useState(false);
   const [remember, setRemember] = useState(true);
   const [duplicate, setDuplicate] = useState<ExistingStatement | null>(null);
   const [awaitingImport, setAwaitingImport] = useState(false);
 
-  // Prijedlog: povezani bankovni račun ima prednost nad ručnim pamćenjem.
+  // PREDODABIR: pravilo > IBAN mapiranje > ime banke ↔ ime novčanika.
+  // Razlog se prikazuje ispod pickera da izbor nikad ne bude neobjašnjen.
   useEffect(() => {
     let cancelled = false;
     const suggest = async () => {
-      if (!accountIdentifier || sourceId) return;
+      if (sourceId || customPaymentSources.length === 0) return;
       const fromBank = iban && user?.id ? await suggestSourceFromBankAccounts(user.id, iban) : null;
-      const next = fromBank ?? suggestSourceId(accountIdentifier);
-      if (!cancelled && next) setSourceId(next);
+      const match = pickStatementSource({
+        ruleSourceId: accountIdentifier ? suggestSourceId(accountIdentifier) : null,
+        bankAccountSourceId: fromBank,
+        bankName,
+        sources: customPaymentSources,
+      });
+      if (!cancelled && match) {
+        setSourceId(match.sourceId);
+        setMatchReason(match.reason);
+      }
     };
     void suggest();
     return () => {
       cancelled = true;
     };
-  }, [accountIdentifier, iban, sourceId, suggestSourceId, user?.id]);
+  }, [accountIdentifier, bankName, customPaymentSources, iban, sourceId, suggestSourceId, user?.id]);
+
+  const matchReasonText =
+    matchReason === 'rule'
+      ? t('statements.matchReason.rule', 'Zapamćeno pravilo za ovaj račun')
+      : matchReason === 'bank_account'
+        ? t('statements.matchReason.bankAccount', 'Povezani bankovni račun (IBAN)')
+        : matchReason === 'bank_name'
+          ? t('statements.matchReason.bankName', 'Ime novčanika odgovara banci s izvoda')
+          : null;
+
+  // Bez pogotka nudimo jedan dodir: stvori novčanik s imenom banke i odaberi ga.
+  const canCreateFromBank = !sourceId && !!bankName?.trim();
+
+  const createSourceFromBank = async () => {
+    if (!bankName?.trim() || creatingSource) return;
+    setCreatingSource(true);
+    try {
+      const created = await addCustomPaymentSource({
+        name: bankName.trim(),
+        icon: '🏦',
+        color: 'hsl(172 66% 40%)',
+        balance: 0,
+        currency: (extraction.currency as string | null) || 'EUR',
+        business_profile_id: scopeProfileId,
+      });
+      if (created?.id) {
+        setSourceId(created.id);
+        setMatchReason(null);
+      }
+    } finally {
+      setCreatingSource(false);
+    }
+  };
+
 
   // Uvoz je stvarno zapisan (događaj iz globalnog uvoza) → stavka je `povezan`.
   useEffect(() => {
@@ -191,7 +240,14 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
         <label className="text-xs text-muted-foreground">
           {t('statements.sourceLabel', 'Uvezi u novčanik')}
         </label>
-        <Select value={sourceId} onValueChange={setSourceId} disabled={disabled || busy}>
+        <Select
+          value={sourceId}
+          onValueChange={(v) => {
+            setSourceId(v);
+            setMatchReason(null);
+          }}
+          disabled={disabled || busy}
+        >
           <SelectTrigger
             className="min-h-[44px]"
             aria-label={t('statements.sourceLabel', 'Uvezi u novčanik')}
@@ -206,6 +262,34 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
             ))}
           </SelectContent>
         </Select>
+
+        {matchReasonText && (
+          <p data-testid="statement-source-reason" className="text-xs text-muted-foreground">
+            {matchReasonText}
+          </p>
+        )}
+
+        {canCreateFromBank && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-testid="statement-create-source"
+            className="min-h-[44px] w-full justify-start"
+            disabled={disabled || busy || creatingSource}
+            onClick={() => void createSourceFromBank()}
+          >
+            {creatingSource ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {t('statements.createSource', 'Stvori novi novčanik „{{name}}"', {
+              name: bankName?.trim() ?? '',
+            })}
+          </Button>
+        )}
+
 
         {accountIdentifier && (
           <label

@@ -3934,7 +3934,8 @@
     "transactionApproved": "Transakcija odobrena",
     "roleUpdated": "Uloga ažurirana",
     "verificationEmailSent": "Verifikacijski email je poslan!",
-    "memberRemoved": "Član uklonjen"
+    "memberRemoved": "Član uklonjen",
+    "pdfParseIncomplete": "Obrada nije dovršena — pokušaj ponovno"
   },
   "placeholders": {
     "selectDestinationAccount": "Odaberi odredišni račun",
@@ -6551,6 +6552,12 @@
     "forgetRule": "Zaboravi pravilo",
     "forgetRuleConfirm": "Sljedeći izvod za ovaj IBAN više neće imati unaprijed odabran novčanik.",
     "ruleForgotten": "Pravilo je obrisano",
-    "ruleForgetFailed": "Brisanje nije uspjelo"
+    "ruleForgetFailed": "Brisanje nije uspjelo",
+    "matchReason": {
+      "rule": "Zapamćeno pravilo za ovaj račun",
+      "bankAccount": "Povezani bankovni račun (IBAN)",
+      "bankName": "Ime novčanika odgovara banci s izvoda"
+    },
+    "createSource": "Stvori novi novčanik „{{name}}\""
   }
 }

@@ -42,6 +42,11 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
   'google/gemini-2.5-flash': 'gemini-3.5-flash',            // stable
+  // PRIKVAČEN MODEL: pozivatelj koji ne smije ovisiti o aliasu (npr. čitač
+  // bankovnih izvoda) traži izravno ovaj ključ — nema tihe zamjene varijantom
+  // s agresivnim thinkingom.
+  'google/gemini-3.5-flash': 'gemini-3.5-flash',            // stable, pinned
+
   'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',  // stable
   'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',        // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
   // HOTFIX 23.7.2026: privremeno preusmjereno s `gemini-3-flash-preview` na
@@ -81,6 +86,42 @@ export interface OpenAIChatBody {
   max_tokens?: number;
   stream?: boolean;
   response_format?: { type: string };
+  /**
+   * THINKING ODVOJEN OD IZLAZA.
+   *
+   * Gemini troši `maxOutputTokens` i na reasoning. Kod dugih tool-call
+   * argumenata (bankovni izvod, 100+ redaka) reasoning pojede budžet i odgovor
+   * se odsiječe (`finish_reason=length`). Ovime pozivatelj eksplicitno
+   * ograničava razmišljanje za taj poziv.
+   *
+   * 'none'|'low' → thinkingLevel 'low' (Gemini 3 nema potpuni off),
+   * 'medium'|'high' → istoimena razina. Nepostavljeno = model odlučuje.
+   */
+  reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
+}
+
+/** Mapiranje na Gemini `thinkingConfig.thinkingLevel`. */
+function toThinkingLevel(effort: OpenAIChatBody['reasoning_effort']): string | null {
+  switch (effort) {
+    case 'none':
+    case 'low':
+      return 'low';
+    case 'medium':
+      return 'medium';
+    case 'high':
+      return 'high';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Google odbija nepoznata `generationConfig` polja s 400. Ako neki model ne
+ * poznaje `thinkingConfig`, poziv se ponavlja BEZ njega umjesto da padne.
+ */
+export function isThinkingConfigRejection(status: number, errText: string): boolean {
+  if (status !== 400) return false;
+  return /thinking(_?config|level|budget)/i.test(errText);
 }
 
 export class GeminiTimeoutError extends Error {
@@ -169,7 +210,7 @@ async function callViaGateway(body: OpenAIChatBody, timeoutMs = 60_000): Promise
 // -----------------------------------------------------------------------------
 
 async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs = 60_000): Promise<Response> {
-  const geminiBody = openAIToGemini(body);
+  let geminiBody = openAIToGemini(body);
   const isStream = body.stream === true;
   const endpoint = isStream ? 'streamGenerateContent?alt=sse' : 'generateContent';
 
@@ -190,6 +231,19 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
 
   let upstream = await doFetch(model);
   let effectiveModel = model;
+
+  // `thinkingConfig` nije univerzalno podržan — ako ga model odbije, ponovi
+  // poziv bez njega umjesto da cijela obrada padne.
+  if (!upstream.ok && geminiBody?.generationConfig?.thinkingConfig) {
+    const errText = await upstream.clone().text();
+    if (isThinkingConfigRejection(upstream.status, errText)) {
+      console.warn(`[geminiClient] model "${model}" odbio thinkingConfig, ponavljam bez njega.`);
+      const { thinkingConfig: _drop, ...restCfg } = geminiBody.generationConfig;
+      geminiBody = { ...geminiBody, generationConfig: restCfg };
+      upstream = await doFetch(model);
+    }
+  }
+
 
   // Automatski fallback SAMO kad je primarni model odbijen (404/not available).
   // Ne aktiviraj na 429, 400, 5xx. Retry se izvede najviše jednom.
@@ -324,6 +378,8 @@ function openAIToGemini(body: OpenAIChatBody): any {
   if (typeof body.temperature === 'number') genCfg.temperature = body.temperature;
   if (typeof body.max_tokens === 'number') genCfg.maxOutputTokens = body.max_tokens;
   if (body.response_format?.type === 'json_object') genCfg.responseMimeType = 'application/json';
+  const thinkingLevel = toThinkingLevel(body.reasoning_effort);
+  if (thinkingLevel) genCfg.thinkingConfig = { thinkingLevel };
   if (Object.keys(genCfg).length) req.generationConfig = genCfg;
 
   if (Array.isArray(body.tools) && body.tools.length) {

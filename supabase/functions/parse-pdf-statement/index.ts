@@ -204,12 +204,15 @@ serve(async (req) => {
       }
     }
 
-    // Use Pro model for HTML statements (better table comprehension), Flash for images/PDF
-    const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash';
+    // PRIKVAČEN MODEL (2026-08-11): PDF/foto izvod ide na `google/gemini-3.5-flash`
+    // — izravan ključ, bez aliasa koji bi gateway/mapa mogli preusmjeriti na
+    // varijantu s agresivnim thinkingom (log 2026-08-10: 31.5k reasoning tokena,
+    // finish_reason=length nakon 135 s).
+    const modelId = isHTML ? 'google/gemini-2.5-pro' : 'google/gemini-3.5-flash';
 
     const __cap = await checkAiCostCap(supabase);
     if (__cap) return __cap;
-    const aiResponse = await callGemini({
+    const aiRequestBody = {
         model: modelId,
         messages: [
           {
@@ -433,10 +436,15 @@ PENDING / NA ČEKANJU:
           }
         ],
         tool_choice: { type: 'function', function: { name: 'extract_transactions' } },
+        // THINKING ODVOJEN OD IZLAZA: reasoning ne smije jesti izlazni budžet.
+        // Bez ovoga je model potrošio ~31.5k tokena na razmišljanje i odsjekao
+        // tool-call argumente usred niza (finish_reason=length).
+        reasoning_effort: 'low' as const,
         // Bankovni izvodi znaju imati 50-150+ transakcija; 8192 default nije dovoljan
         // za tool-call argumente pa ih Google odsiječe usred niza (regresija 2026-08-25).
-        max_tokens: 16384,
-    }, { timeoutMs: PDF_AI_TIMEOUT_MS });
+        max_tokens: 32768,
+    };
+    const aiResponse = await callGemini(aiRequestBody, { timeoutMs: PDF_AI_TIMEOUT_MS });
 
     if (!aiResponse.ok) {
       if (!skipQuota) await refundCoreScanQuota(supabase);
@@ -480,32 +488,35 @@ PENDING / NA ČEKANJU:
     } = { transactions: [], total_income: 0, total_expenses: 0, detected_bank: null, account_iban: null };
     
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    const finishReason = aiData.choices?.[0]?.finish_reason || null;
+    let finishReason: string | null = aiData.choices?.[0]?.finish_reason || null;
     let parseMode: string | null = null;
     let parseError: unknown = null;
+    let truncated = finishReason === 'length';
 
     if (toolCall?.function?.arguments) {
       const rawArgs: string = toolCall.function.arguments;
-      // (a) clean parse
-      try {
-        statementData = JSON.parse(rawArgs);
-        parseMode = 'clean';
-      } catch (e) { parseError = e; }
-      // (b) salvage truncated tool-call arguments (finish_reason=length)
-      if (!parseMode) {
-        const salvaged = attemptJsonSalvage(rawArgs.trim());
-        if (salvaged) {
-          try {
-            statementData = JSON.parse(salvaged);
-            parseMode = 'salvage-truncated';
-            console.warn('parse-pdf-statement: tool-call arguments salvaged after truncation, finish_reason:', finishReason);
-          } catch (e) { parseError = e; }
+      // Odsječen odgovor NIKAD ne spašavamo tiho — pola izvoda je gubitak
+      // podataka, a ne rezultat. Salvage se koristi samo kad odgovor nije
+      // odsječen (npr. višak proze oko JSON-a).
+      if (!truncated) {
+        try {
+          statementData = JSON.parse(rawArgs);
+          parseMode = 'clean';
+        } catch (e) { parseError = e; }
+        if (!parseMode) {
+          const salvaged = attemptJsonSalvage(rawArgs.trim());
+          if (salvaged) {
+            try {
+              statementData = JSON.parse(salvaged);
+              parseMode = 'salvage';
+            } catch (e) { parseError = e; }
+          }
         }
       }
       if (!parseMode) {
         console.error('Failed to parse tool call arguments:', parseError, 'finish_reason:', finishReason);
         void logParseFailure('parse_pdf_failed', userId, {
-          cause: finishReason === 'length' ? 'truncated' : 'schema-miss',
+          cause: truncated ? 'truncated' : 'schema-miss',
           finish_reason: finishReason,
           content_length: rawArgs.length,
           error_message: parseError instanceof Error ? parseError.message : String(parseError),
@@ -513,26 +524,62 @@ PENDING / NA ČEKANJU:
         });
       }
     } else {
-      // Fallback: parse from content (defensive against Gemini dropping tool_calls)
-      const content = aiData.choices?.[0]?.message?.content || '';
-      console.log('No tool call found, trying content, length:', content.length, 'finish_reason:', finishReason);
-      const parsed = robustParseJson<typeof statementData>(content, 'object');
-      if (parsed) {
-        statementData = parsed.value;
-        parseMode = parsed.mode;
-        if (parseMode !== 'clean') {
-          console.warn('parse-pdf-statement: content fallback parsed via', parseMode);
+      // Model nije ni pokušao pozvati alat. Ne pretpostavljamo JSON u prozi —
+      // ponavljamo poziv s izričitim strukturiranim izlazom (json_object).
+      console.warn('parse-pdf-statement: no tool call, retrying with response_format=json_object');
+      const retryResponse = await callGemini({
+        ...aiRequestBody,
+        tools: undefined,
+        tool_choice: undefined,
+        response_format: { type: 'json_object' },
+      }, { timeoutMs: PDF_AI_TIMEOUT_MS });
+
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        finishReason = retryData.choices?.[0]?.finish_reason || finishReason;
+        truncated = finishReason === 'length';
+        const content = retryData.choices?.[0]?.message?.content || '';
+        if (!truncated) {
+          const parsed = robustParseJson<typeof statementData>(content, 'object');
+          if (parsed) {
+            statementData = parsed.value;
+            parseMode = `json_object:${parsed.mode}`;
+          }
+        }
+        if (!parseMode) {
+          console.error('json_object retry failed, finish_reason:', finishReason);
+          void logParseFailure('parse_pdf_failed', userId, {
+            cause: truncated ? 'truncated' : 'no-json',
+            stage: 'json_object_retry',
+            finish_reason: finishReason,
+            content_length: content.length,
+            tail: content.slice(-200),
+          });
         }
       } else {
-        console.error('Failed to parse content, finish_reason:', finishReason);
+        console.error('json_object retry HTTP error:', retryResponse.status);
         void logParseFailure('parse_pdf_failed', userId, {
-          cause: finishReason === 'length' ? 'truncated' : 'no-json',
-          finish_reason: finishReason,
-          content_length: content.length,
-          tail: content.slice(-200),
+          cause: 'retry-http-error',
+          stage: 'json_object_retry',
+          status: retryResponse.status,
         });
       }
     }
+
+    // GLASNA GREŠKA: odsječen ili neparsiran odgovor NIKAD ne završava kao
+    // "nisu pronađene transakcije". Klijent na `parse_incomplete` prikazuje
+    // "Obrada nije dovršena — pokušaj ponovno".
+    if (!parseMode) {
+      return new Response(
+        JSON.stringify({
+          error: 'parse_incomplete',
+          reason: truncated ? 'truncated' : 'no_json',
+          finish_reason: finishReason,
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
 
     // Sanitize text: remove garbled/binary characters
     function sanitizeText(text: string | null | undefined): string | null {

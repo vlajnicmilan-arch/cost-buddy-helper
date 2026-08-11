@@ -65,3 +65,23 @@ describe('GeminiTimeoutError', () => {
     expect(isGeminiTimeoutError(new Error('The signal has been aborted'))).toBe(false);
   });
 });
+
+describe('isThinkingConfigRejection', () => {
+  it('detects a 400 that names thinkingConfig', async () => {
+    const { isThinkingConfigRejection } = await import(
+      '../../supabase/functions/_shared/geminiClient.ts'
+    );
+    expect(
+      isThinkingConfigRejection(400, 'Invalid JSON payload: Unknown name "thinkingConfig"'),
+    ).toBe(true);
+    expect(isThinkingConfigRejection(400, 'thinkingLevel is not supported')).toBe(true);
+  });
+
+  it('does not swallow unrelated 400s or other statuses', async () => {
+    const { isThinkingConfigRejection } = await import(
+      '../../supabase/functions/_shared/geminiClient.ts'
+    );
+    expect(isThinkingConfigRejection(400, 'invalid argument')).toBe(false);
+    expect(isThinkingConfigRejection(429, 'thinkingConfig')).toBe(false);
+  });
+});

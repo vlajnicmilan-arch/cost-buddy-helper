@@ -297,7 +297,13 @@ export const GlobalPDFImportHost = () => {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         try { logDiagnostic('global_pdf_import_failed', { source_id: source.id, message }); } catch {}
-        showError(t(pendingHtml ? 'toasts.htmlAnalysisError' : 'toasts.pdfAnalysisError'));
+        // Odsječen/neparsiran AI odgovor ima vlastitu, iskrenu poruku —
+        // nikad "nisu pronađene transakcije" i nikad generička greška.
+        showError(
+          message.includes('parse_incomplete')
+            ? t('toasts.pdfParseIncomplete')
+            : t(pendingHtml ? 'toasts.htmlAnalysisError' : 'toasts.pdfAnalysisError'),
+        );
         resetAll();
       } finally {
         pendingPdf?.releaseGuard?.();
