@@ -59,7 +59,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   // Picker mora nuditi izvore PROFILA NA KOJI STAVKA GLASI, ne aktivnog konteksta.
   const scopeProfileId =
     item.scope_type === 'business_profile' && item.scope_id ? item.scope_id : null;
-  const { customPaymentSources, addCustomPaymentSource } = useCustomPaymentSources({
+  const { customPaymentSources, addCustomPaymentSource, updateCustomPaymentSource } = useCustomPaymentSources({
     includePersonal: true,
     businessProfileIdOverride: scopeProfileId,
   });
@@ -70,6 +70,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const [matchReason, setMatchReason] = useState<StatementSourceMatchReason | null>(null);
   const [creatingSource, setCreatingSource] = useState(false);
   const [remember, setRemember] = useState(true);
+  // Prvi uvoz nudi da IBAN ostane zapisan NA NOVČANIKU (ne samo kao pravilo).
+  const [saveToWallet, setSaveToWallet] = useState(true);
   const [duplicate, setDuplicate] = useState<ExistingStatement | null>(null);
   const [awaitingImport, setAwaitingImport] = useState(false);
 
@@ -82,6 +84,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       const fromBank = iban && user?.id ? await suggestSourceFromBankAccounts(user.id, iban) : null;
       const match = pickStatementSource({
         ruleSourceId: accountIdentifier ? suggestSourceId(accountIdentifier) : null,
+        accountIdentifier,
         bankAccountSourceId: fromBank,
         bankName,
         sources: customPaymentSources,
@@ -100,6 +103,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   const matchReasonText =
     matchReason === 'rule'
       ? t('statements.matchReason.rule', 'Zapamćeno pravilo za ovaj račun')
+      : matchReason === 'wallet_identifier'
+        ? t('statements.matchReason.walletIdentifier', 'IBAN / broj računa upisan na novčaniku')
       : matchReason === 'bank_account'
         ? t('statements.matchReason.bankAccount', 'Povezani bankovni račun (IBAN)')
         : matchReason === 'bank_name'
@@ -152,6 +157,14 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     [customPaymentSources, sourceId],
   );
 
+  // Ponuda spremanja: samo kad izvod nosi identitet, a odabrani novčanik ga
+  // još nema i korisnik je njegov vlasnik (tuđi novčanik se ne dira).
+  const offerSaveToWallet =
+    !!accountIdentifier &&
+    !!selectedSource &&
+    selectedSource.isOwned !== false &&
+    !String(selectedSource.account_identifier ?? '').trim();
+
   const rows: { label: string; value: string }[] = [
     { label: t('statements.field.bank', 'Banka'), value: bankName || '—' },
     iban || !accountNumber
@@ -199,6 +212,11 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       return;
     }
     setAwaitingImport(true);
+    if (saveToWallet && offerSaveToWallet && accountIdentifier) {
+      await updateCustomPaymentSource(selectedSource.id, {
+        account_identifier: accountIdentifier,
+      });
+    }
     if (remember && accountIdentifier) {
       await rememberRule({
         identifier: accountIdentifier,
@@ -290,6 +308,24 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           </Button>
         )}
 
+
+        {offerSaveToWallet && (
+          <label
+            data-testid="save-identifier-to-wallet"
+            className="flex items-start gap-2 text-xs cursor-pointer"
+          >
+            <Checkbox
+              className="mt-0.5"
+              checked={saveToWallet}
+              onCheckedChange={(v) => setSaveToWallet(v === true)}
+            />
+            <span>
+              {t('statements.saveIdentifierToWallet', 'Spremi ovaj IBAN na novčanik „{{name}}"', {
+                name: selectedSource?.name ?? '',
+              })}
+            </span>
+          </label>
+        )}
 
         {accountIdentifier && (
           <label

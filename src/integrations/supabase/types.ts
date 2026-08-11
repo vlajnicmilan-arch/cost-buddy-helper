@@ -1304,6 +1304,7 @@ export type Database = {
       }
       custom_payment_sources: {
         Row: {
+          account_identifier: string | null
           anchor_source:
             | Database["public"]["Enums"]["anchor_source_type"]
             | null
@@ -1323,6 +1324,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_identifier?: string | null
           anchor_source?:
             | Database["public"]["Enums"]["anchor_source_type"]
             | null
@@ -1342,6 +1344,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_identifier?: string | null
           anchor_source?:
             | Database["public"]["Enums"]["anchor_source_type"]
             | null
@@ -1453,6 +1456,7 @@ export type Database = {
           ai_calls: number
           attachment_id: string | null
           classification: string | null
+          classification_set_by_user: boolean
           confidence: string | null
           created_at: string
           dedup_identity: string | null
@@ -1476,6 +1480,7 @@ export type Database = {
           ai_calls?: number
           attachment_id?: string | null
           classification?: string | null
+          classification_set_by_user?: boolean
           confidence?: string | null
           created_at?: string
           dedup_identity?: string | null
@@ -1499,6 +1504,7 @@ export type Database = {
           ai_calls?: number
           attachment_id?: string | null
           classification?: string | null
+          classification_set_by_user?: boolean
           confidence?: string | null
           created_at?: string
           dedup_identity?: string | null
@@ -7594,6 +7600,10 @@ export type Database = {
           p_payload: Json
           p_replace_existing_id?: string
         }
+        Returns: Json
+      }
+      mail_item_reprocess: {
+        Args: { p_classification?: string; p_item_id: string }
         Returns: Json
       }
       mail_item_set_scope: {

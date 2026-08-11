@@ -4803,7 +4803,9 @@
       "owner": "Vlasnik izvora",
       "ownerPersonal": "Osobno",
       "ownerHint": "Odredi pripada li ovaj izvor osobi ili točno jednoj tvrtki. Filter \"Sve / Osobno / Tvrtka\" koristi ovu vezu.",
-      "addCompany": "+ Nova tvrtka"
+      "addCompany": "+ Nova tvrtka",
+      "accountIdentifier": "IBAN / broj računa",
+      "accountIdentifierHint": "Neobavezno. Koristi se samo za prepoznavanje bankovnog izvoda pri uvozu."
     },
     "viewMode": {
       "all": "Sve",
@@ -6556,8 +6558,11 @@
     "matchReason": {
       "rule": "Zapamćeno pravilo za ovaj račun",
       "bankAccount": "Povezani bankovni račun (IBAN)",
-      "bankName": "Ime novčanika odgovara banci s izvoda"
+      "bankName": "Ime novčanika odgovara banci s izvoda",
+      "walletIdentifier": "IBAN / broj računa upisan na novčaniku"
     },
-    "createSource": "Stvori novi novčanik „{{name}}\""
+    "createSource": "Stvori novi novčanik „{{name}}\"",
+    "reprocessQueued": "Dokument je vraćen u obradu kao izvod",
+    "saveIdentifierToWallet": "Spremi ovaj IBAN na novčanik „{{name}}\""
   }
 }

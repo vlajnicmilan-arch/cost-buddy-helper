@@ -12,17 +12,39 @@
  * Bez pogotka → pozivatelj nudi stvaranje novog novčanika s imenom banke.
  */
 
-export type StatementSourceMatchReason = 'rule' | 'bank_account' | 'bank_name';
+export type StatementSourceMatchReason =
+  | 'rule'
+  | 'wallet_identifier'
+  | 'bank_account'
+  | 'bank_name';
 
 export interface MatchableSource {
   id: string;
   name: string;
+  /** IBAN ili broj računa upisan na samom novčaniku (neobavezno). */
+  account_identifier?: string | null;
 }
 
 export interface StatementSourceMatch {
   sourceId: string;
   reason: StatementSourceMatchReason;
 }
+
+/** Usporedni oblik identiteta računa — bez razmaka i interpunkcije, velika slova. */
+export function normalizeAccountKey(value: string | null | undefined): string {
+  return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/** Novčanik čiji upisani IBAN/broj računa odgovara identitetu s izvoda. */
+export function matchSourceByAccountIdentifier<T extends MatchableSource>(
+  identifier: string | null | undefined,
+  sources: readonly T[],
+): T | null {
+  const key = normalizeAccountKey(identifier);
+  if (key.length < 6) return null;
+  return sources.find((s) => normalizeAccountKey(s.account_identifier) === key) ?? null;
+}
+
 
 /** Najkraći niz koji smije biti temelj podudaranja imena (izbjegava "AB", "N"). */
 export const MIN_NAME_MATCH_CHARS = 4;
@@ -82,6 +104,8 @@ export function matchSourceByBankName<T extends MatchableSource>(
 export interface PickStatementSourceInput<T extends MatchableSource> {
   /** Izvor iz zapamćenog pravila (najjači dokaz). */
   ruleSourceId?: string | null;
+  /** IBAN ili broj računa s izvoda — uspoređuje se s poljem na novčaniku. */
+  accountIdentifier?: string | null;
   /** Izvor dobiven IBAN mapiranjem iz bank_accounts. */
   bankAccountSourceId?: string | null;
   bankName?: string | null;
@@ -91,6 +115,7 @@ export interface PickStatementSourceInput<T extends MatchableSource> {
 /** Vraća predodabrani izvor i razlog, ili `null` kad ništa ne pogađa. */
 export function pickStatementSource<T extends MatchableSource>({
   ruleSourceId,
+  accountIdentifier,
   bankAccountSourceId,
   bankName,
   sources,
@@ -99,9 +124,12 @@ export function pickStatementSource<T extends MatchableSource>({
     !!id && sources.some((s) => s.id === id);
 
   if (exists(ruleSourceId)) return { sourceId: ruleSourceId as string, reason: 'rule' };
+  const byIdentifier = matchSourceByAccountIdentifier(accountIdentifier, sources);
+  if (byIdentifier) return { sourceId: byIdentifier.id, reason: 'wallet_identifier' };
   if (exists(bankAccountSourceId)) {
     return { sourceId: bankAccountSourceId as string, reason: 'bank_account' };
   }
   const byName = matchSourceByBankName(bankName, sources);
   return byName ? { sourceId: byName.id, reason: 'bank_name' } : null;
+
 }

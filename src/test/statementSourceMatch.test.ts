@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  matchSourceByAccountIdentifier,
   matchSourceByBankName,
   normalizeInstitutionName,
   pickStatementSource,
@@ -75,5 +76,42 @@ describe('pickStatementSource', () => {
 
   it('returns null when nothing matches', () => {
     expect(pickStatementSource({ bankName: 'Wise Europe SA', sources })).toBeNull();
+  });
+});
+
+describe('matchSourceByAccountIdentifier', () => {
+  const withIban = [
+    { id: 'cash', name: 'Gotovina' },
+    { id: 'erste', name: 'Erste račun', account_identifier: 'HR1723600001101234565' },
+  ];
+
+  it('matches the wallet whose stored identifier equals the statement account', () => {
+    expect(
+      matchSourceByAccountIdentifier('HR17 2360 0001 1012 34565', withIban)?.id,
+    ).toBe('erste');
+  });
+
+  it('ignores empty, short or unknown identifiers', () => {
+    expect(matchSourceByAccountIdentifier('12345', withIban)).toBeNull();
+    expect(matchSourceByAccountIdentifier(null, withIban)).toBeNull();
+    expect(matchSourceByAccountIdentifier('HR9999999999999999999', withIban)).toBeNull();
+  });
+
+  it('is preferred over bank name but loses to a remembered rule', () => {
+    const all = [...withIban, { id: 'rev', name: 'Revolut' }];
+    expect(
+      pickStatementSource({
+        accountIdentifier: 'HR1723600001101234565',
+        bankName: 'Revolut Bank UAB',
+        sources: all,
+      }),
+    ).toEqual({ sourceId: 'erste', reason: 'wallet_identifier' });
+    expect(
+      pickStatementSource({
+        ruleSourceId: 'rev',
+        accountIdentifier: 'HR1723600001101234565',
+        sources: all,
+      }),
+    ).toEqual({ sourceId: 'rev', reason: 'rule' });
   });
 });
