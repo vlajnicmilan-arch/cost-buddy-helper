@@ -61,6 +61,12 @@ export interface ImportReviewRow {
   readonly description?: string | null;
   readonly fingerprint?: string | null;
   readonly classification: ClassificationKind;
+  /**
+   * PONUDA SPAJANJA (kartično kašnjenje) — id ručnog/skeniranog unosa koji je
+   * prošao sve četiri ograde iz `lateCardMatch.ts`. Samo PONUDA: zadano stanje
+   * je razdvojeno, spaja se isključivo korisnikovim dodirom.
+   */
+  readonly lateMatchOffer?: string | null;
 }
 
 /**
