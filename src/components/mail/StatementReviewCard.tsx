@@ -240,7 +240,14 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
         <label className="text-xs text-muted-foreground">
           {t('statements.sourceLabel', 'Uvezi u novčanik')}
         </label>
-        <Select value={sourceId} onValueChange={setSourceId} disabled={disabled || busy}>
+        <Select
+          value={sourceId}
+          onValueChange={(v) => {
+            setSourceId(v);
+            setMatchReason(null);
+          }}
+          disabled={disabled || busy}
+        >
           <SelectTrigger
             className="min-h-[44px]"
             aria-label={t('statements.sourceLabel', 'Uvezi u novčanik')}
@@ -255,6 +262,34 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
             ))}
           </SelectContent>
         </Select>
+
+        {matchReasonText && (
+          <p data-testid="statement-source-reason" className="text-xs text-muted-foreground">
+            {matchReasonText}
+          </p>
+        )}
+
+        {canCreateFromBank && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-testid="statement-create-source"
+            className="min-h-[44px] w-full justify-start"
+            disabled={disabled || busy || creatingSource}
+            onClick={() => void createSourceFromBank()}
+          >
+            {creatingSource ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {t('statements.createSource', 'Stvori novi novčanik „{{name}}"', {
+              name: bankName?.trim() ?? '',
+            })}
+          </Button>
+        )}
+
 
         {accountIdentifier && (
           <label
