@@ -17,7 +17,8 @@ import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
-import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload } from '@/lib/importReview/draft';
+import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
+import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
 import type { ImportReviewPayload, ImportReviewRow, ManualCandidateInfo, TransferTargetOption } from '@/lib/importReview/types';
 import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/lib/importReview/transferRules';
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
@@ -475,7 +476,10 @@ export const GlobalPDFImportHost = () => {
 
       // SELECT (b) manual candidates on this source (no bank_transaction_id).
       const dates = transactions.map(tx => tx.date.getTime());
-      const minMs = dates.length ? Math.min(...dates) - 24 * 60 * 60 * 1000 : Date.now();
+      // Donja granica je šira (−3 dana): ručni/skenirani unos prethodi
+      // kartičnom retku izvoda, pa mora ući u dohvat da ponuda spajanja
+      // uopće ima što ponuditi.
+      const minMs = dates.length ? Math.min(...dates) - 4 * 24 * 60 * 60 * 1000 : Date.now();
       const maxMs = dates.length ? Math.max(...dates) + 24 * 60 * 60 * 1000 : Date.now();
       const isoFrom = new Date(minMs).toISOString().slice(0, 10);
       const isoTo = new Date(maxMs).toISOString().slice(0, 10);
@@ -519,6 +523,21 @@ export const GlobalPDFImportHost = () => {
         imported: importedForClassifier,
         manualCandidates: manualCandidatesForClassifier,
       });
+
+      // PONUDA SPAJANJA (kartično kašnjenje) — samo za retke koje je
+      // klasifikator ostavio kao "novi" i za ručne unose koje nitko drugi
+      // ne traži. Nikad automatsko spajanje: ovo je samo ponuda na pregledu.
+      const claimedManualIds = new Set<string>([
+        ...classified.autoMerge.map(p => p.manualId),
+        ...classified.questions.flatMap(q => q.candidateIds),
+      ]);
+      const newRowSet = new Set(classified.newRows);
+      const lateOffers = findLateCardMatches({
+        imported: importedForClassifier.filter(r => newRowSet.has(r.index)),
+        manualCandidates: manualCandidatesForClassifier.filter(c => !claimedManualIds.has(c.id)),
+      });
+      const lateOfferByIdx = new Map<number, string>();
+      lateOffers.forEach(o => lateOfferByIdx.set(o.importedIndex, o.manualId));
 
       // Merge classifier output → lookup maps (used by rule pre-pass + row builder).
       const autoByIdx = new Map<number, string>();
@@ -657,6 +676,7 @@ export const GlobalPDFImportHost = () => {
         return {
           ...baseRow,
           classification: { kind: 'new' as const, existsByFingerprint: existingFpSet.has(fp) },
+          lateMatchOffer: existingFpSet.has(fp) ? null : (lateOfferByIdx.get(baseRow.index) ?? null),
         };
       });
 
@@ -724,6 +744,18 @@ export const GlobalPDFImportHost = () => {
 
 
       saveReviewPayload(payload);
+      // Saldo-mig mora preživjeti pad/restart — sessionStorage payload ne
+      // preživi ubijanje aplikacije, pa mig ide u localStorage uz jobId.
+      if (typeof payload.statementClosingBalance === 'number') {
+        saveStatementHint({
+          jobId,
+          savedAt: Date.now(),
+          closingBalance: payload.statementClosingBalance,
+          statementDate: payload.statementDate ?? null,
+        });
+      } else {
+        clearStatementHint();
+      }
       // Reset PDF import phase so returning from review doesn't re-open the preview modal.
       pdfImport._setIdle();
       try {

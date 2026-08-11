@@ -6049,6 +6049,13 @@
         "out": "Na izvodu piše: novac je izašao"
       },
       "conflictNote": "Opis je sugerirao suprotno — vrijedi predznak s izvoda."
+    },
+    "lateMatch": {
+      "title": "Moguće isto plaćanje (kartica kasni) — spajanje samo na tvoj dodir",
+      "manualSide": "Tvoj unos",
+      "bankSide": "Redak izvoda",
+      "keepSeparate": "Ostavi razdvojeno",
+      "merge": "Spoji"
     }
   },
   "correctionDelete": {

@@ -126,3 +126,91 @@ export function hasResumableReview(now?: number, storage?: StorageLike | null): 
   if (!payload) return false;
   return payload.jobId === draft.jobId;
 }
+
+/* ------------------------------------------------------------------------ *
+ * SALDO-MIG (statementClosingBalance) — preživljava skicu, pad i restart.
+ *
+ * `statementBalanceHint` živi u memoriji PdfImportContexta i briše se čim
+ * uvoz izađe iz faze. Payload ga nosi, ali payload sjedi u sessionStorage —
+ * nakon zatvaranja/ubijanja aplikacije nestane, pa nastavak skice ostane bez
+ * bankovne istine i dijalog "Poravnaj sa stanjem s izvoda" nikad ne dođe.
+ * Zato mig zapisujemo u localStorage vezan uz jobId (TTL 24 h) i pri učitavanju
+ * njime dopunimo payload ako ga nema.
+ * ------------------------------------------------------------------------ */
+
+export const IMPORT_REVIEW_STATEMENT_HINT_KEY = 'vmb-import-review-statement-hint:v1';
+export const IMPORT_REVIEW_STATEMENT_HINT_TTL_MS = 24 * 60 * 60 * 1000;
+
+export interface StoredStatementHint {
+  readonly jobId: string;
+  readonly savedAt: number;
+  readonly closingBalance: number | null;
+  readonly statementDate: string | null;
+}
+
+function getLocalStorage(override?: StorageLike | null): StorageLike | null {
+  if (override) return override;
+  try {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function saveStatementHint(
+  hint: StoredStatementHint,
+  storage?: StorageLike | null,
+): void {
+  const s = getLocalStorage(storage);
+  if (!s) return;
+  if (hint.closingBalance === null || hint.closingBalance === undefined) return;
+  try { s.setItem(IMPORT_REVIEW_STATEMENT_HINT_KEY, JSON.stringify(hint)); } catch { /* noop */ }
+}
+
+export function loadStatementHint(
+  jobId: string,
+  opts: { now?: number; storage?: StorageLike | null } = {},
+): StoredStatementHint | null {
+  const s = getLocalStorage(opts.storage);
+  if (!s) return null;
+  const now = opts.now ?? Date.now();
+  try {
+    const raw = s.getItem(IMPORT_REVIEW_STATEMENT_HINT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredStatementHint;
+    if (!parsed?.jobId || parsed.jobId !== jobId) return null;
+    if (typeof parsed.closingBalance !== 'number') return null;
+    if (now - (parsed.savedAt ?? 0) > IMPORT_REVIEW_STATEMENT_HINT_TTL_MS) {
+      s.removeItem(IMPORT_REVIEW_STATEMENT_HINT_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStatementHint(storage?: StorageLike | null): void {
+  const s = getLocalStorage(storage);
+  if (!s) return;
+  try { s.removeItem(IMPORT_REVIEW_STATEMENT_HINT_KEY); } catch { /* noop */ }
+}
+
+/**
+ * Dopuni payload spremljenim migom kad ga payload nema (nastavak skice nakon
+ * pada). Payload koji već nosi saldo NIKAD se ne pregazi.
+ */
+export function hydrateStatementHint(
+  payload: ImportReviewPayload,
+  opts: { now?: number; storage?: StorageLike | null } = {},
+): ImportReviewPayload {
+  if (typeof payload.statementClosingBalance === 'number') return payload;
+  const hint = loadStatementHint(payload.jobId, opts);
+  if (!hint) return payload;
+  return {
+    ...payload,
+    statementClosingBalance: hint.closingBalance,
+    statementDate: payload.statementDate ?? hint.statementDate,
+  };
+}

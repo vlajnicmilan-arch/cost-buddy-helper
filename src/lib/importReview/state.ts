@@ -172,8 +172,12 @@ export function summarize(
         break;
       }
       case 'new': {
+        const offer = decisions.questions[row.index];
         if (row.classification.existsByFingerprint) {
           plannedSkipped += 1;
+        } else if (offer && offer.choice === 'merge') {
+          // Prihvaćena ponuda spajanja (kartično kašnjenje) — jedan ishod.
+          plannedMerges += 1;
         } else if (decisions.newRows[row.index]) {
           plannedNew += 1;
         } else {

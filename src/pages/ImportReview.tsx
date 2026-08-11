@@ -23,6 +23,8 @@ import { splitRowDescription } from '@/lib/importReview/describeRow';
 import {
   clearDraft,
   clearPayload,
+  clearStatementHint,
+  hydrateStatementHint,
   loadDraft,
   loadPayload,
   saveDraft,
@@ -120,11 +122,14 @@ const ImportReview = () => {
 
   // Load payload + optional draft on mount.
   useEffect(() => {
-    const p = loadPayload();
-    if (!p) {
+    const raw = loadPayload();
+    if (!raw) {
       navigate('/app', { replace: true });
       return;
     }
+    // Saldo-mig preživljava pad/nastavak: ako payload nema završni saldo
+    // izvoda, dopuni ga iz trajne pohrane vezane uz isti jobId.
+    const p = hydrateStatementHint(raw);
     setPayload(p);
     const draft = loadDraft({ jobId: p.jobId });
     if (draft) {
@@ -224,6 +229,7 @@ const ImportReview = () => {
 
       clearDraft();
       clearPayload();
+      clearStatementHint();
       const batchId = result.batchId;
 
       // Zapis izvoda: vraća zaštitu od dvostrukog uvoza iste datoteke i
@@ -343,6 +349,61 @@ const ImportReview = () => {
       merchantKey: key?.merchantKey ?? null,
       sourceWalletKey: key?.sourceWalletKey ?? null,
     };
+  };
+
+  /**
+   * PONUDA SPAJANJA (kartično kašnjenje). Prikazuje OBA retka jedan kraj
+   * drugog; zadano stanje je RAZDVOJENO (uvoz kao novi redak). Korisnikov
+   * dodir spaja, šutnja ne radi ništa.
+   */
+  const renderLateMatchOffer = (row: ImportReviewRow) => {
+    const manualId = row.lateMatchOffer;
+    if (!manualId) return null;
+    const cand = payload.manualCandidates[manualId];
+    if (!cand) return null;
+    const merged = decisions.questions[row.index]?.choice === 'merge';
+    return (
+      <div className={cn(
+        'mt-3 rounded-lg border p-2 space-y-2',
+        merged ? 'border-primary/50 bg-primary/5' : 'border-border/50 bg-muted/30',
+      )}>
+        <p className="text-xs text-muted-foreground">{t('importReview.lateMatch.title')}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="min-w-0 rounded-md border border-border/40 p-2">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.manualSide')}</span>
+            <span className="text-xs text-muted-foreground block">{fmtDate(cand.date)}</span>
+            <span className="text-sm block truncate">{cand.merchantName || cand.description || '—'}</span>
+            <span className="font-mono text-sm block">{formatAmount(cand.amount)}</span>
+          </div>
+          <div className="min-w-0 rounded-md border border-border/40 p-2">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{t('importReview.lateMatch.bankSide')}</span>
+            <span className="text-xs text-muted-foreground block">{fmtDate(row.date)}</span>
+            <span className="text-sm block truncate">{row.merchantName || row.description || '—'}</span>
+            <span className="font-mono text-sm block">{formatAmount(row.amount)}</span>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={merged ? 'outline' : 'secondary'}
+            className="flex-1 min-h-11"
+            onClick={() => updateQuestion(row.index, { choice: 'new' })}
+          >
+            {t('importReview.lateMatch.keepSeparate')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={merged ? 'default' : 'outline'}
+            className="flex-1 min-h-11"
+            onClick={() => updateQuestion(row.index, { choice: 'merge', manualId })}
+          >
+            {t('importReview.lateMatch.merge')}
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   /**
@@ -749,6 +810,7 @@ const ImportReview = () => {
                         )}
                       </div>
                     </label>
+                    {!locked && renderLateMatchOffer(row)}
                     {!locked && renderTransferControls(row)}
                   </li>
                 );

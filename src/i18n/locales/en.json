@@ -6040,6 +6040,13 @@
         "out": "The statement says: money went out"
       },
       "conflictNote": "The description suggested the opposite — the statement sign wins."
+    },
+    "lateMatch": {
+      "title": "Possibly the same payment (card settles later) — merges only on your tap",
+      "manualSide": "Your entry",
+      "bankSide": "Statement row",
+      "keepSeparate": "Keep separate",
+      "merge": "Merge"
     }
   },
   "correctionDelete": {
