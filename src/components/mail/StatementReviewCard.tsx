@@ -61,26 +61,75 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   });
   const { suggestSourceId, rememberRule } = useStatementSourceMemory(true);
   const { busy, startImport } = useStatementImport();
+  const { addCustomPaymentSource } = useCustomPaymentSources({
+    includePersonal: true,
+    businessProfileIdOverride: scopeProfileId,
+  });
 
   const [sourceId, setSourceId] = useState<string>('');
+  const [matchReason, setMatchReason] = useState<StatementSourceMatchReason | null>(null);
+  const [creatingSource, setCreatingSource] = useState(false);
   const [remember, setRemember] = useState(true);
   const [duplicate, setDuplicate] = useState<ExistingStatement | null>(null);
   const [awaitingImport, setAwaitingImport] = useState(false);
 
-  // Prijedlog: povezani bankovni račun ima prednost nad ručnim pamćenjem.
+  // PREDODABIR: pravilo > IBAN mapiranje > ime banke ↔ ime novčanika.
+  // Razlog se prikazuje ispod pickera da izbor nikad ne bude neobjašnjen.
   useEffect(() => {
     let cancelled = false;
     const suggest = async () => {
-      if (!accountIdentifier || sourceId) return;
+      if (sourceId || customPaymentSources.length === 0) return;
       const fromBank = iban && user?.id ? await suggestSourceFromBankAccounts(user.id, iban) : null;
-      const next = fromBank ?? suggestSourceId(accountIdentifier);
-      if (!cancelled && next) setSourceId(next);
+      const match = pickStatementSource({
+        ruleSourceId: accountIdentifier ? suggestSourceId(accountIdentifier) : null,
+        bankAccountSourceId: fromBank,
+        bankName,
+        sources: customPaymentSources,
+      });
+      if (!cancelled && match) {
+        setSourceId(match.sourceId);
+        setMatchReason(match.reason);
+      }
     };
     void suggest();
     return () => {
       cancelled = true;
     };
-  }, [accountIdentifier, iban, sourceId, suggestSourceId, user?.id]);
+  }, [accountIdentifier, bankName, customPaymentSources, iban, sourceId, suggestSourceId, user?.id]);
+
+  const matchReasonText =
+    matchReason === 'rule'
+      ? t('statements.matchReason.rule', 'Zapamćeno pravilo za ovaj račun')
+      : matchReason === 'bank_account'
+        ? t('statements.matchReason.bankAccount', 'Povezani bankovni račun (IBAN)')
+        : matchReason === 'bank_name'
+          ? t('statements.matchReason.bankName', 'Ime novčanika odgovara banci s izvoda')
+          : null;
+
+  // Bez pogotka nudimo jedan dodir: stvori novčanik s imenom banke i odaberi ga.
+  const canCreateFromBank = !sourceId && !!bankName?.trim();
+
+  const createSourceFromBank = async () => {
+    if (!bankName?.trim() || creatingSource) return;
+    setCreatingSource(true);
+    try {
+      const created = await addCustomPaymentSource({
+        name: bankName.trim(),
+        icon: '🏦',
+        color: 'hsl(172 66% 40%)',
+        balance: 0,
+        currency: (extraction.currency as string | null) || 'EUR',
+        business_profile_id: scopeProfileId,
+      });
+      if (created?.id) {
+        setSourceId(created.id);
+        setMatchReason(null);
+      }
+    } finally {
+      setCreatingSource(false);
+    }
+  };
+
 
   // Uvoz je stvarno zapisan (događaj iz globalnog uvoza) → stavka je `povezan`.
   useEffect(() => {
