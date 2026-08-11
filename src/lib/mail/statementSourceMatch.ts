@@ -55,7 +55,8 @@ export function normalizeInstitutionName(value: string | null | undefined): stri
   if (!base) return '';
   const kept = base
     .split(' ')
-    .filter((word) => word.length > 0 && !NAME_STOPWORDS.includes(word));
+    // Jednoslovni ostaci pravnih oznaka ('d.d.' → 'd','d') nisu identitet banke.
+    .filter((word) => word.length > 1 && !NAME_STOPWORDS.includes(word));
   return (kept.length > 0 ? kept : base.split(' ')).join('');
 }
 
