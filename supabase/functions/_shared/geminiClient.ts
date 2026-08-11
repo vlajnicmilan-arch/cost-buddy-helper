@@ -360,6 +360,8 @@ function openAIToGemini(body: OpenAIChatBody): any {
   if (typeof body.temperature === 'number') genCfg.temperature = body.temperature;
   if (typeof body.max_tokens === 'number') genCfg.maxOutputTokens = body.max_tokens;
   if (body.response_format?.type === 'json_object') genCfg.responseMimeType = 'application/json';
+  const thinkingLevel = toThinkingLevel(body.reasoning_effort);
+  if (thinkingLevel) genCfg.thinkingConfig = { thinkingLevel };
   if (Object.keys(genCfg).length) req.generationConfig = genCfg;
 
   if (Array.isArray(body.tools) && body.tools.length) {
