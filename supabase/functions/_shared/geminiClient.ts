@@ -42,6 +42,11 @@ const GOOGLE_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
  */
 const DIRECT_MODEL_MAP: Record<string, string> = {
   'google/gemini-2.5-flash': 'gemini-3.5-flash',            // stable
+  // PRIKVAČEN MODEL: pozivatelj koji ne smije ovisiti o aliasu (npr. čitač
+  // bankovnih izvoda) traži izravno ovaj ključ — nema tihe zamjene varijantom
+  // s agresivnim thinkingom.
+  'google/gemini-3.5-flash': 'gemini-3.5-flash',            // stable, pinned
+
   'google/gemini-2.5-flash-lite': 'gemini-3.1-flash-lite',  // stable
   'google/gemini-2.5-pro': 'gemini-3.1-pro-preview',        // ⚠️ PREVIEW — pratiti deprecation, zamijeniti stabilnom verzijom čim izađe
   // HOTFIX 23.7.2026: privremeno preusmjereno s `gemini-3-flash-preview` na
