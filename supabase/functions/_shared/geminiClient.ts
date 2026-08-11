@@ -205,7 +205,7 @@ async function callViaGateway(body: OpenAIChatBody, timeoutMs = 60_000): Promise
 // -----------------------------------------------------------------------------
 
 async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs = 60_000): Promise<Response> {
-  const geminiBody = openAIToGemini(body);
+  let geminiBody = openAIToGemini(body);
   const isStream = body.stream === true;
   const endpoint = isStream ? 'streamGenerateContent?alt=sse' : 'generateContent';
 
@@ -226,6 +226,19 @@ async function callDirectGemini(body: OpenAIChatBody, model: string, timeoutMs =
 
   let upstream = await doFetch(model);
   let effectiveModel = model;
+
+  // `thinkingConfig` nije univerzalno podržan — ako ga model odbije, ponovi
+  // poziv bez njega umjesto da cijela obrada padne.
+  if (!upstream.ok && geminiBody?.generationConfig?.thinkingConfig) {
+    const errText = await upstream.clone().text();
+    if (isThinkingConfigRejection(upstream.status, errText)) {
+      console.warn(`[geminiClient] model "${model}" odbio thinkingConfig, ponavljam bez njega.`);
+      const { thinkingConfig: _drop, ...restCfg } = geminiBody.generationConfig;
+      geminiBody = { ...geminiBody, generationConfig: restCfg };
+      upstream = await doFetch(model);
+    }
+  }
+
 
   // Automatski fallback SAMO kad je primarni model odbijen (404/not available).
   // Ne aktiviraj na 429, 400, 5xx. Retry se izvede najviše jednom.
