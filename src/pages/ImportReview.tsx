@@ -23,6 +23,8 @@ import { splitRowDescription } from '@/lib/importReview/describeRow';
 import {
   clearDraft,
   clearPayload,
+  clearStatementHint,
+  hydrateStatementHint,
   loadDraft,
   loadPayload,
   saveDraft,
@@ -120,11 +122,14 @@ const ImportReview = () => {
 
   // Load payload + optional draft on mount.
   useEffect(() => {
-    const p = loadPayload();
-    if (!p) {
+    const raw = loadPayload();
+    if (!raw) {
       navigate('/app', { replace: true });
       return;
     }
+    // Saldo-mig preživljava pad/nastavak: ako payload nema završni saldo
+    // izvoda, dopuni ga iz trajne pohrane vezane uz isti jobId.
+    const p = hydrateStatementHint(raw);
     setPayload(p);
     const draft = loadDraft({ jobId: p.jobId });
     if (draft) {
@@ -224,6 +229,7 @@ const ImportReview = () => {
 
       clearDraft();
       clearPayload();
+      clearStatementHint();
       const batchId = result.batchId;
 
       // Zapis izvoda: vraća zaštitu od dvostrukog uvoza iste datoteke i
@@ -749,6 +755,7 @@ const ImportReview = () => {
                         )}
                       </div>
                     </label>
+                    {!locked && renderLateMatchOffer(row)}
                     {!locked && renderTransferControls(row)}
                   </li>
                 );
