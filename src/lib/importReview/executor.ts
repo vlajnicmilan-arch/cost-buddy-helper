@@ -47,6 +47,7 @@ import { buildTransferPair } from '@/lib/moneyDirection';
 import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
 import { isCountedExpenseRow } from '@/lib/countedExpense';
+import { isNeedsExplanation } from './state';
 
 
 /**
