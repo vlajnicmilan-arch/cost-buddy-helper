@@ -6573,5 +6573,16 @@
   "rawLine": {
     "toggle": "So steht es im Kontoauszug",
     "aiNote": "vom Leser übertragen"
+  },
+  "needsExplanation": {
+    "checkbox": "Ich weiß noch nicht, was das ist",
+    "badge": "Ohne Erklärung",
+    "filter": "Ohne Erklärung",
+    "detailTitle": "Ohne Erklärung",
+    "detailHint": "Als ungeklärt markiert. Der Saldo stimmt — es fehlt nur die Erklärung.",
+    "clarify": "Klären",
+    "dismiss": "Keine Erklärung nötig",
+    "cleared": "Markierung entfernt",
+    "clearFailed": "Markierung konnte nicht entfernt werden"
   }
 }

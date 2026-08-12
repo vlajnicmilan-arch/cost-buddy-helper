@@ -6584,5 +6584,16 @@
   "rawLine": {
     "toggle": "Kako piše na izvodu",
     "aiNote": "prepisano čitačem"
+  },
+  "needsExplanation": {
+    "checkbox": "Ne znam još što je ovo",
+    "badge": "Bez objašnjenja",
+    "filter": "Bez objašnjenja",
+    "detailTitle": "Bez objašnjenja",
+    "detailHint": "Označeno kao nerazjašnjeno. Saldo je točan — nedostaje samo objašnjenje.",
+    "clarify": "Razjasni",
+    "dismiss": "Ne treba objašnjenje",
+    "cleared": "Oznaka uklonjena",
+    "clearFailed": "Uklanjanje oznake nije uspjelo"
   }
 }
