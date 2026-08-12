@@ -319,6 +319,16 @@ const ImportReview = () => {
     );
   }
 
+  /**
+   * CITAT S IZVODA — doslovni redak stiže u payloadu uz svaku uvezenu stavku.
+   * Prikazuje se zatvoreno; ne dira širinu kartice.
+   */
+  const renderRawLine = (rowIndex: number) => {
+    const tx = payload.importedTransactions.find(it => it.index === rowIndex);
+    if (!tx?.bankRawLine) return null;
+    return <RawLineDisclosure rawLine={tx.bankRawLine} source={tx.bankRawLineSource ?? null} />;
+  };
+
   const fmtDate = (iso: string) => {
     try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
   };
@@ -381,6 +391,7 @@ const ImportReview = () => {
             <span className="text-xs text-muted-foreground block">{fmtDate(row.date)}</span>
             <span className="text-sm block truncate">{row.merchantName || row.description || '—'}</span>
             <span className="font-mono text-sm block">{formatAmount(row.amount)}</span>
+            {renderRawLine(row.index)}
           </div>
         </div>
         <div className="flex gap-2">
@@ -663,6 +674,7 @@ const ImportReview = () => {
                         )}
                       </div>
                     </label>
+                    {renderRawLine(row.index)}
                   </li>
                 );
               })}
@@ -692,6 +704,7 @@ const ImportReview = () => {
                         <span className="font-medium">{row.merchantName || '—'}</span>
                       </p>
                       <RowDescription description={row.description} />
+                      {renderRawLine(row.index)}
                       {renderTransferControls(row)}
                     </div>
                   </div>
@@ -760,6 +773,7 @@ const ImportReview = () => {
                         </Label>
                       </div>
                     </RadioGroup>
+                    {renderRawLine(row.index)}
                     {renderTransferControls(row)}
                   </li>
                 );
@@ -811,6 +825,7 @@ const ImportReview = () => {
                         )}
                       </div>
                     </label>
+                    {renderRawLine(row.index)}
                     {!locked && renderLateMatchOffer(row)}
                     {!locked && renderTransferControls(row)}
                   </li>
