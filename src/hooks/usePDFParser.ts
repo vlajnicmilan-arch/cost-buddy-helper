@@ -34,6 +34,10 @@ export interface ParsedPDFTransaction {
    * (vidi `pdfPostProcess`). 'out' = novac je izašao, 'in' = ušao.
    */
   statement_direction?: 'in' | 'out' | null;
+  /** DOSLOVAN redak s izvoda (citat). Puni ga isključivo čitač. */
+  raw_line?: string | null;
+  /** Porijeklo citata: tekstualni sloj, HTML tablica ili AI prepis. */
+  raw_line_source?: 'text' | 'html' | 'ai' | null;
 }
 
 export interface PDFParseResult {
