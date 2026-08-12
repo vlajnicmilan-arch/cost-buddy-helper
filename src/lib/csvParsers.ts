@@ -41,6 +41,9 @@ export interface ParsedTransaction {
   statement_direction?: 'in' | 'out' | null;
   /** Pending / "Na čekanju" rows — filtered out before import. */
   is_pending?: boolean;
+  /** DOSLOVAN redak s izvoda (citat). NE ulazi u otisak. */
+  raw_line?: string | null;
+  raw_line_source?: 'text' | 'html' | 'ai' | null;
 }
 
 // Detect if transaction is an internal transfer between own accounts

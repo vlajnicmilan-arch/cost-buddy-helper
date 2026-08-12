@@ -93,9 +93,9 @@ export interface SerializedImportedTx {
    * DOSLOVAN redak s izvoda (citat). NIKAD ne ulazi u `computeImportFingerprint`
    * — inače bi pao dedup nad već uvezenim redcima.
    */
-  readonly bankRawLine: string | null;
+  readonly bankRawLine?: string | null;
   /** Porijeklo citata: 'text' (PDF sloj), 'html' (tablica), 'ai' (prepis čitačem). */
-  readonly bankRawLineSource: 'text' | 'html' | 'ai' | null;
+  readonly bankRawLineSource?: 'text' | 'html' | 'ai' | null;
   readonly fingerprint: string;
 }
 
