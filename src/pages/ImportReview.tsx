@@ -33,8 +33,10 @@ import {
 import {
   answerQuestion,
   buildInitialDecisions,
+  isNeedsExplanation,
   isNewRowLocked,
   setAutoMerge,
+  setNeedsExplanation,
   setNewRow,
   setTransferDecision,
   summarize,
@@ -323,6 +325,29 @@ const ImportReview = () => {
    * CITAT S IZVODA — doslovni redak stiže u payloadu uz svaku uvezenu stavku.
    * Prikazuje se zatvoreno; ne dira širinu kartice.
    */
+  /**
+   * KVAČICA "Ne znam još što je ovo" — jedini ulaz za oznaku "Bez objašnjenja".
+   * Ne dira uvoz: redak se upisuje normalno, saldo ostaje točan.
+   */
+  const renderNeedsExplanation = (rowIndex: number) => {
+    const id = `ir-nx-${rowIndex}`;
+    return (
+      <label htmlFor={id} className="mt-2 flex items-center gap-2 min-h-9 cursor-pointer">
+        <Checkbox
+          id={id}
+          data-testid={`needs-explanation-${rowIndex}`}
+          checked={isNeedsExplanation(decisions, rowIndex)}
+          onCheckedChange={(v) =>
+            setDecisions(prev => (prev ? setNeedsExplanation(prev, rowIndex, v === true) : prev))
+          }
+        />
+        <span className="text-xs text-muted-foreground">
+          {t('needsExplanation.checkbox', 'Ne znam još što je ovo')}
+        </span>
+      </label>
+    );
+  };
+
   const renderRawLine = (rowIndex: number) => {
     const tx = payload.importedTransactions.find(it => it.index === rowIndex);
     if (!tx?.bankRawLine) return null;
@@ -826,6 +851,7 @@ const ImportReview = () => {
                       </div>
                     </label>
                     {renderRawLine(row.index)}
+                    {!locked && renderNeedsExplanation(row.index)}
                     {!locked && renderLateMatchOffer(row)}
                     {!locked && renderTransferControls(row)}
                   </li>
