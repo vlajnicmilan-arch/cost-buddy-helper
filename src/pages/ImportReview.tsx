@@ -645,6 +645,15 @@ const ImportReview = () => {
               : t('importReview.badges.recognizedTransfer')}
           </Badge>
         )}
+        {autoFilled[row.index] && (
+          <Badge
+            variant="outline"
+            className="text-[10px]"
+            data-testid={`pattern-filled-${row.index}`}
+          >
+            {t('importReview.patternFill.badge')}
+          </Badge>
+        )}
         {derivedDirection ? (
           <div className="space-y-1">
             <p className="text-xs text-foreground flex items-center gap-1.5">
