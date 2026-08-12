@@ -23,6 +23,9 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
       case 'auto_merge':
         // Default ON — spec §4 "Auto-spojevi checkbox default ON".
         autoMerge[row.index] = true;
+        // "Razdvoji" put: automatski upareni nerazlučivi kandidati mogu se
+        // prebaciti u "novi redak" prije potvrde.
+        if (row.classification.origin === 'indistinguishable') newRows[row.index] = false;
         break;
       case 'question':
         // No default — blocking gate.
@@ -180,6 +183,7 @@ export function summarize(
     switch (row.classification.kind) {
       case 'auto_merge': {
         if (decisions.autoMerge[row.index]) plannedMerges += 1;
+        else if (decisions.newRows[row.index] === true) plannedNew += 1;
         else plannedSkipped += 1;
         break;
       }

@@ -26,7 +26,7 @@
  * so "ALE-HOP" ≡ "Ale Hop" ≡ "ale hop" collapse to the same key.
  */
 
-import { areMerchantsSimilar, normalizeMerchant } from './duplicateDetection';
+import { areMerchantsSimilar } from './duplicateDetection';
 import { deriveComparableName, hasSignificantWord } from './importReview/comparableName';
 import { resolvePaymentSourceKey } from './paymentSource/resolve';
 
@@ -55,7 +55,15 @@ export interface ClassifierManualCandidate {
 export interface AutoMergePair {
   readonly importedIndex: number;
   readonly manualId: string;
+  /**
+   * `merchant` — klasično slaganje izvedenog imena uz TOČNO JEDNOG kandidata.
+   * `indistinguishable` — deterministički 1:1 par unutar skupine međusobno
+   * nerazlučivih kandidata (isti iznos/novčanik/tip, slična imena). Mora biti
+   * vidljivo označen u UI-ju i razdvojiv prije potvrde.
+   */
+  readonly origin: 'merchant' | 'indistinguishable';
 }
+
 
 export interface QuestionEntry {
   readonly importedIndex: number;
@@ -136,15 +144,98 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     return { row, candidates };
   });
 
+  /**
+   * FAZA 1.5 — AUTOMATSKO UPARIVANJE MEĐUSOBNO NERAZLUČIVIH KANDIDATA.
+   *
+   * Kad više uvezenih redaka i više ručnih kandidata dijele isti tip, isti
+   * novčanik i isti iznos DO CENTA, a njihova izvedena imena su međusobno
+   * slična, tada su kandidati nerazlučivi: koji god korisnik odabrao, ishod je
+   * identičan. Pitanje u toj situaciji nema odgovor bolji od bacanja novčića,
+   * pa se pari deterministički 1:1 (po datumu, pa po id/indeksu).
+   *
+   * Tvrde ograde:
+   *  - svaka strana MORA imati izvedeno ime sa značajnom riječi;
+   *  - SVI parovi kandidata (i redaka) moraju biti međusobno slični — jedan
+   *    nesličan par gasi cijelu skupinu (Kristina Cerina vs Ana Milanovic);
+   *  - iznos identičan do centa, datumski prozor ostaje `maxDayDiff`;
+   *  - nijedan kandidat ne smije se iskoristiti dvaput.
+   */
+  const pairedManualIds = new Set<string>();
+  const indistinguishablePairs = new Map<number, string>();
+  {
+    const groups = new Map<string, Bucket[]>();
+    for (const b of buckets) {
+      if (!isMatchableType(b.row.type)) continue;
+      if (b.candidates.length < 2) continue;
+      const key = `${resolvePaymentSourceKey(b.row.paymentSource)}|${b.row.type}|${roundAmount(b.row.amount)}`;
+      const list = groups.get(key) ?? [];
+      list.push(b);
+      groups.set(key, list);
+    }
+
+    const namesAllSimilar = (names: readonly string[]): boolean => {
+      for (let i = 0; i < names.length; i += 1) {
+        for (let j = i + 1; j < names.length; j += 1) {
+          if (!areMerchantsSimilar(names[i], names[j])) return false;
+        }
+      }
+      return true;
+    };
+
+    for (const [, groupBuckets] of groups) {
+      if (groupBuckets.length < 2) continue;
+
+      const candidateById = new Map<string, ClassifierManualCandidate>();
+      for (const b of groupBuckets) for (const c of b.candidates) candidateById.set(c.id, c);
+      const candidates = Array.from(candidateById.values());
+      if (candidates.length < 2) continue;
+
+      const rowNames = groupBuckets.map((b) => deriveComparableName(b.row));
+      const candNames = candidates.map((c) => deriveComparableName(c));
+      const allNames = [...rowNames, ...candNames];
+      if (allNames.some((n) => !n || !hasSignificantWord(n))) continue;
+      if (!namesAllSimilar(allNames)) continue;
+
+      const sortedRows = groupBuckets.slice().sort((a, b) => {
+        const d = toDayStart(a.row.date) - toDayStart(b.row.date);
+        return d !== 0 ? d : a.row.index - b.row.index;
+      });
+      const sortedCands = candidates.slice().sort((a, b) => {
+        const d = toDayStart(a.date) - toDayStart(b.date);
+        return d !== 0 ? d : a.id.localeCompare(b.id);
+      });
+
+      for (const b of sortedRows) {
+        const pick = sortedCands.find(
+          (c) => !pairedManualIds.has(c.id) && dayDiff(c.date, b.row.date) <= maxDayDiff,
+        );
+        if (!pick) continue;
+        pairedManualIds.add(pick.id);
+        indistinguishablePairs.set(b.row.index, pick.id);
+      }
+    }
+
+    // Iskorišteni kandidati ispadaju iz svih preostalih skupova.
+    if (pairedManualIds.size > 0) {
+      for (const b of buckets) {
+        if (indistinguishablePairs.has(b.row.index)) continue;
+        b.candidates = b.candidates.filter((c) => !pairedManualIds.has(c.id));
+      }
+    }
+  }
+
   // Phase 2: detect candidates wanted by >=2 imported rows → ambiguous both sides.
+
   const candidateWantedBy = new Map<string, number[]>();
   for (const b of buckets) {
+    if (indistinguishablePairs.has(b.row.index)) continue;
     for (const c of b.candidates) {
       const list = candidateWantedBy.get(c.id) ?? [];
       list.push(b.row.index);
       candidateWantedBy.set(c.id, list);
     }
   }
+
   const crossAmbiguousIndices = new Set<number>();
   for (const [, importedIdxs] of candidateWantedBy) {
     if (importedIdxs.length >= 2) {
@@ -187,6 +278,12 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
   for (const b of buckets) {
     const idx = b.row.index;
 
+    const paired = indistinguishablePairs.get(idx);
+    if (paired) {
+      autoMerge.push({ importedIndex: idx, manualId: paired, origin: 'indistinguishable' });
+      continue;
+    }
+
     if (!isMatchableType(b.row.type)) {
       // Transferi i nepoznati tipovi ne mogu se auto-mergat — idu kroz "new"
       // put (kasnije se posebno rješavaju kao transfer par).
@@ -217,13 +314,13 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       continue;
     }
 
-    // Exactly one candidate → merchant compare decides.
+    // Exactly one candidate → izvedeno ime (merchant → opis) odlučuje.
     const cand = b.candidates[0];
-    const bankMerchant = normalizeMerchant(b.row.merchantName ?? '');
-    const manualMerchant = normalizeMerchant(cand.merchantName ?? '');
+    const bankName = deriveComparableName(b.row);
+    const manualName = deriveComparableName(cand);
 
-    if (!manualMerchant) {
-      // Ručni red nema merchant_name → pitanje. Description je SAMO hint u UI-ju.
+    if (!manualName || !hasSignificantWord(manualName)) {
+      // Ručni red nema nikakvo upotrebljivo ime → pitanje.
       questions.push({
         importedIndex: idx,
         reason: 'no_merchant',
@@ -232,9 +329,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       continue;
     }
 
-    if (!bankMerchant) {
-      // Bank red nema merchant (npr. čist transfer/kartično bez merchant polja) —
-      // ne možemo dokazati slaganje. Tretiraj kao no_merchant (isti UI put).
+    if (!bankName || !hasSignificantWord(bankName)) {
       questions.push({
         importedIndex: idx,
         reason: 'no_merchant',
@@ -243,14 +338,8 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       continue;
     }
 
-    // Oba imaju merchant — provjera slaganja.
-    const merchantsMatch =
-      bankMerchant === manualMerchant ||
-      bankMerchant.includes(manualMerchant) ||
-      manualMerchant.includes(bankMerchant);
-
-    if (merchantsMatch) {
-      autoMerge.push({ importedIndex: idx, manualId: cand.id });
+    if (areMerchantsSimilar(bankName, manualName)) {
+      autoMerge.push({ importedIndex: idx, manualId: cand.id, origin: 'merchant' });
     } else {
       questions.push({
         importedIndex: idx,
@@ -259,6 +348,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       });
     }
   }
+
 
   return { autoMerge, questions, newRows };
 }

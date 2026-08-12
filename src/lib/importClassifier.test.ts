@@ -11,7 +11,7 @@ describe('classifyImport — 4 grane', () => {
       imported: [{ index: 0, paymentSource: SRC, type: 'expense', amount: 11, date: day('2026-06-10'), merchantName: 'ALE-HOP' }],
       manualCandidates: [{ id: 'm1', paymentSource: SRC, type: 'expense', amount: 11, date: day('2026-06-10'), merchantName: 'Ale Hop' }],
     });
-    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1' }]);
+    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
     expect(out.questions).toEqual([]);
     expect(out.newRows).toEqual([]);
   });
@@ -26,13 +26,13 @@ describe('classifyImport — 4 grane', () => {
     expect(out.newRows).toEqual([]);
   });
 
-  it('ručni bez merchant_name → question(no_merchant), description NIJE odluka', () => {
+  it('ručni bez merchant_name ali s podudarnim opisom → autoMerge (opis ulazi u odluku)', () => {
     const out = classifyImport({
       imported: [{ index: 0, paymentSource: SRC, type: 'expense', amount: 100, date: day('2026-06-10'), merchantName: 'Konzum' }],
       manualCandidates: [{ id: 'm1', paymentSource: SRC, type: 'expense', amount: 100, date: day('2026-06-10'), merchantName: null, description: 'Konzum kupovina' }],
     });
-    expect(out.autoMerge).toEqual([]);
-    expect(out.questions).toEqual([{ importedIndex: 0, reason: 'no_merchant', candidateIds: ['m1'] }]);
+    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
+    expect(out.questions).toEqual([]);
   });
 
   it('više kandidata za jedan bank red → question(ambiguous)', () => {
@@ -86,7 +86,7 @@ describe('classifyImport — rubni slučajevi', () => {
       imported: [{ index: 0, paymentSource: SRC, type: 'expense', amount: 12.92, date: day('2026-06-15'), merchantName: 'RIBOLA PR 34, SPLIT, 000, HR' }],
       manualCandidates: [{ id: 'm1', paymentSource: SRC, type: 'expense', amount: 12.92, date: day('2026-06-15'), merchantName: 'Ribola' }],
     });
-    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1' }]);
+    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
   });
 
   it('±1 dan granica se poštuje; 2 dana → nema kandidata', () => {

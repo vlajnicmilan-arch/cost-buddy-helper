@@ -240,7 +240,13 @@ export function planExecution(
 
     if (row.classification.kind === 'auto_merge') {
       const on = decisions.autoMerge[row.index] === true;
-      if (!on) { skippedByUser += 1; continue; }
+      if (!on) {
+        // "Razdvoji" na automatski uparenom retku: umjesto spajanja, redak se
+        // uvozi kao novi. Bez te odluke redak se preskače (staro ponašanje).
+        if (decisions.newRows[row.index] === true) { inserts.push({ rowIndex: row.index, tx }); continue; }
+        skippedByUser += 1;
+        continue;
+      }
       const manualId = row.classification.manualId;
       const manual = payload.manualCandidates[manualId];
       const writeMerchant = !manual?.merchantName;
