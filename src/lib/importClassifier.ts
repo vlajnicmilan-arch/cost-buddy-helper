@@ -82,6 +82,8 @@ export interface ClassifierInput {
   readonly imported: readonly ClassifierImportedRow[];
   readonly manualCandidates: readonly ClassifierManualCandidate[];
   readonly maxDayDiff?: number;
+  /** Ime izdavatelja izvoda; u merchantName se tretira kao prazna stop-vrijednost. */
+  readonly statementBankName?: string | null;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -190,8 +192,8 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       const candidates = Array.from(candidateById.values());
       if (candidates.length < 2) continue;
 
-      const rowNames = groupBuckets.map((b) => deriveComparableName(b.row));
-      const candNames = candidates.map((c) => deriveComparableName(c));
+      const rowNames = groupBuckets.map((b) => deriveComparableName({ ...b.row, statementBankName: input.statementBankName }));
+      const candNames = candidates.map((c) => deriveComparableName({ ...c, statementBankName: input.statementBankName }));
       const allNames = [...rowNames, ...candNames];
       if (allNames.some((n) => !n || !hasSignificantWord(n))) continue;
       if (!namesAllSimilar(allNames)) continue;
@@ -264,10 +266,10 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
   ): ClassifierManualCandidate[] => {
     const all = candidates.slice();
     if (all.length < 2) return all;
-    const rowName = deriveComparableName(row);
+    const rowName = deriveComparableName({ ...row, statementBankName: input.statementBankName });
     if (!rowName || !hasSignificantWord(rowName)) return all;
     const kept = all.filter((c) => {
-      const candName = deriveComparableName(c);
+      const candName = deriveComparableName({ ...c, statementBankName: input.statementBankName });
       if (!candName || !hasSignificantWord(candName)) return true;
       return areMerchantsSimilar(rowName, candName);
     });
@@ -316,8 +318,8 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
 
     // Exactly one candidate → izvedeno ime (merchant → opis) odlučuje.
     const cand = b.candidates[0];
-    const bankName = deriveComparableName(b.row);
-    const manualName = deriveComparableName(cand);
+    const bankName = deriveComparableName({ ...b.row, statementBankName: input.statementBankName });
+    const manualName = deriveComparableName({ ...cand, statementBankName: input.statementBankName });
 
     if (!manualName || !hasSignificantWord(manualName)) {
       // Ručni red nema nikakvo upotrebljivo ime → pitanje.

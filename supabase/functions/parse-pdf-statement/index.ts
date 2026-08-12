@@ -755,6 +755,24 @@ DOSLOVAN REDAK (raw_line):
     }
 
     const detectedBank = sanitizeText(statementData.detected_bank) || null;
+    // Model ponekad kopira izdavatelja izvoda u merchant_name za bankovne
+    // naknade. Izdavatelj nije protustrana retka: ukloni ga na samom izvoru.
+    if (detectedBank) {
+      const normalizeInstitution = (value: string): string => value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\b(banka|bank|d\.?d\.?)\b/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      const issuerKey = normalizeInstitution(detectedBank);
+      transactions.forEach((transaction: any) => {
+        const merchantKey = normalizeInstitution(transaction.merchant_name ?? '');
+        if (merchantKey && issuerKey && (merchantKey === issuerKey || merchantKey.includes(issuerKey) || issuerKey.includes(merchantKey))) {
+          transaction.merchant_name = null;
+        }
+      });
+    }
     const accountIban = sanitizeText(statementData.account_iban) || null;
     const holderName = sanitizeText((statementData as any).holder_name) || null;
     const statementDueDate = normalizeDate((statementData as any).statement_due_date);

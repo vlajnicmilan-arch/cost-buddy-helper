@@ -24,6 +24,7 @@ import { loadTransferRules, matchTransferRule, markTransferRulesUsed } from '@/l
 import { resolveTransferDirection, statementDirectionFromType } from '@/lib/importReview/transferDirection';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
+import { areMerchantsSimilar } from '@/lib/duplicateDetection';
 import {
   computeFileHash,
   computeContentHash,
@@ -134,7 +135,12 @@ export const GlobalPDFImportHost = () => {
         amount: tx.amount,
         type: tx.type,
         category: tx.category,
-        merchant_name: tx.merchant_name || undefined,
+        // Izdavatelj izvoda nije trgovac retka. Čista se već na serveru, a ova
+        // obrana pokriva i već spremljene parse poslove nastale prije popravka.
+        merchant_name: tx.merchant_name && pdfImport.result?.detected_bank
+          && areMerchantsSimilar(tx.merchant_name, pdfImport.result.detected_bank)
+          ? undefined
+          : tx.merchant_name || undefined,
         source: 'pdf' as const,
         payment_source: paymentSourceValue as any,
         is_installment: tx.is_installment === true,
@@ -525,6 +531,7 @@ export const GlobalPDFImportHost = () => {
       const classified = classifyImport({
         imported: importedForClassifier,
         manualCandidates: manualCandidatesForClassifier,
+        statementBankName: pdfImport.result.detected_bank,
       });
 
       // PONUDA SPAJANJA (kartično kašnjenje) — samo za retke koje je
