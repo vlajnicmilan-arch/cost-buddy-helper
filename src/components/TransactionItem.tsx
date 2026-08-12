@@ -305,6 +305,23 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* OZNAKA "BEZ OBJAŠNJENJA" — prigušeni uskličnik, ista obitelj kao
+                sitni sekundarni podaci u retku. Nikad crveno/jantarno: ništa
+                nije u kvaru, saldo je točan. */}
+            {expense.needs_explanation === true && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertCircle
+                    className="w-3 h-3 text-muted-foreground shrink-0"
+                    aria-label={t('needsExplanation.badge', 'Bez objašnjenja')}
+                    data-testid="needs-explanation-mark"
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p className="text-xs">{t('needsExplanation.badge', 'Bez objašnjenja')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {expense.bank_match_status === 'pending_bank' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -503,6 +520,7 @@ export const TransactionItem = React.memo((props: TransactionItemProps) => {
     prev.expense.date.getTime() === next.expense.date.getTime() &&
     prev.expense.bank_match_status === next.expense.bank_match_status &&
     prev.expense.possible_duplicate_of === next.expense.possible_duplicate_of &&
+    prev.expense.needs_explanation === next.expense.needs_explanation &&
     prev.contextLookup === next.contextLookup &&
     prev.onDelete === next.onDelete &&
     prev.onClick === next.onClick
