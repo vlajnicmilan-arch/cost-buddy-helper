@@ -338,6 +338,9 @@ export const useExpenseCRUD = ({
           // AttributionSheet postavlja worker_payout_id (single) ili
           // worker_payout_batch_id (batch). Unique indexi na (user_id, *)
           // sprječavaju dvostruki pripis; caller mora ručno hendlati 23505.
+          // OZNAKA "BEZ OBJAŠNJENJA" — samo ako je korisnik sam kvačio kućicu
+          // "Ne znam još što je ovo". Nikad iz heuristike/neodabrane kategorije.
+          needs_explanation: (normalizedExpense as any).needs_explanation === true,
           worker_payout_id: (normalizedExpense as any).worker_payout_id ?? null,
           worker_payout_batch_id: (normalizedExpense as any).worker_payout_batch_id ?? null,
           // Krug WS1 — Semantics Lock v1: krug_id primarno; ako je privacy='shared',
@@ -669,6 +672,14 @@ export const useExpenseCRUD = ({
           note: expense.note || null,
           currency: expense.currency || null,
           category_origin: nextCategoryOrigin,
+          // OZNAKA "BEZ OBJAŠNJENJA": eksplicitna vrijednost s pozivatelja ima
+          // prednost; inače korisnikova promjena kategorije (origin='user')
+          // JEST objašnjenje pa oznaka pada. Bez promjene → ostaje kakva je.
+          ...(typeof (expense as any).needs_explanation === 'boolean'
+            ? { needs_explanation: (expense as any).needs_explanation }
+            : categoryChanged && nextCategoryOrigin === 'user'
+              ? { needs_explanation: false }
+              : {}),
           // Collaborator advances — održi paritet s insert putem.
           is_advance: (expense as any).is_advance ?? false,
           collaborator_id: (expense as any).collaborator_id ?? null,
