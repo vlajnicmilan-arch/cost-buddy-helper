@@ -149,6 +149,9 @@ const KNOWN_BANKS: readonly BankPattern[] = [
   { name: 'N26', re: /\bn26\b/i },
 ];
 
+/** Kanonska imena izdavatelja za klijentske stop-vrijednosti trgovca. */
+export const KNOWN_BANK_NAMES: readonly string[] = KNOWN_BANKS.map((bank) => bank.name);
+
 /**
  * Ime banke ISKLJUČIVO iz zone izdavatelja. Naslov e-maila je POMOĆNI signal:
  * koristi se samo za razrješenje kad zona nudi više kandidata — nikad kao

@@ -12,12 +12,15 @@
  * Čisti modul — bez Reacta i IO-a.
  */
 
-import { normalizeMerchant } from '@/lib/duplicateDetection';
+import { areMerchantsSimilar, normalizeMerchant } from '@/lib/duplicateDetection';
+import { KNOWN_BANK_NAMES } from '@/lib/mail/statementSignals';
 import { isTechnicalToken } from './describeRow';
 
 export interface ComparableNameInput {
   readonly merchantName?: string | null;
   readonly description?: string | null;
+  /** Izdavatelj izvoda; njegovo ime nije protustrana transakcije. */
+  readonly statementBankName?: string | null;
 }
 
 /** Minimalna duljina riječi koja se smatra značajnom pri usporedbi imena. */
@@ -34,7 +37,13 @@ function cleanTechnical(raw: string): string {
 
 /** `''` = redak nema upotrebljivo ime. */
 export function deriveComparableName(input: ComparableNameInput): string {
-  const fromMerchant = normalizeMerchant(cleanTechnical(input.merchantName ?? ''));
+  const merchant = cleanTechnical(input.merchantName ?? '');
+  const issuerNames = input.statementBankName
+    ? [input.statementBankName]
+    : KNOWN_BANK_NAMES;
+  const isStatementIssuer = merchant.length > 0
+    && issuerNames.some((issuer) => areMerchantsSimilar(merchant, issuer));
+  const fromMerchant = isStatementIssuer ? '' : normalizeMerchant(merchant);
   if (fromMerchant) return fromMerchant;
   return normalizeMerchant(cleanTechnical(input.description ?? ''));
 }

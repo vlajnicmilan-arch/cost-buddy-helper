@@ -5,6 +5,7 @@
 export {
   STATEMENT_SIGNAL_THRESHOLD,
   ISSUER_ZONE_FALLBACK,
+  KNOWN_BANK_NAMES,
   classifyAsStatement,
   detectBankName,
   detectPeriodRange,

@@ -80,6 +80,50 @@ describe('automatsko uparivanje nerazlučivih kandidata', () => {
 });
 
 describe('opis ulazi u odluku o spajanju', () => {
+  it('OTP banka je stop-vrijednost: stvarni paket i 4 naknade idu u 5 autoMerge parova bez pitanja', () => {
+    const imported = [
+      { index: 0, amount: 8, date: '2026-02-09', description: '1609, Naknada za paket' },
+      { index: 1, amount: 0.21, date: '2026-02-09', description: '1612, Naknada za plaćanje' },
+      { index: 2, amount: 0.21, date: '2026-02-09', description: '1615, Naknada' },
+      { index: 3, amount: 0.21, date: '2026-02-10', description: '1624, Naknada za plaćanje' },
+      { index: 4, amount: 0.21, date: '2026-02-10', description: '1627, Naknada' },
+    ].map((row) => ({ ...row, paymentSource: SRC, type: 'expense', merchantName: 'OTP banka' }));
+    const manualCandidates = [
+      { id: 'paket', amount: 8, date: '2026-02-09', description: 'Naknada za paket' },
+      { id: 'm1', amount: 0.21, date: '2026-02-09', description: 'Naknada za plaćanje' },
+      { id: 'm2', amount: 0.21, date: '2026-02-09', description: 'Naknada' },
+      { id: 'm3', amount: 0.21, date: '2026-02-10', description: 'Naknada za plaćanje' },
+      { id: 'm4', amount: 0.21, date: '2026-02-10', description: 'Naknada' },
+    ].map((row) => ({ ...row, paymentSource: SRC, type: 'expense', merchantName: null }));
+
+    const out = classifyImport({ imported, manualCandidates, statementBankName: 'OTP banka' });
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toHaveLength(5);
+    expect(new Set(out.autoMerge.map((pair) => pair.manualId)).size).toBe(5);
+  });
+
+  it('stop-vrijednost vrijedi i na ručnom kandidatu, ali Kristina/Ana ostaju pitanje', () => {
+    expect(deriveComparableName({
+      merchantName: 'OTP banka',
+      description: 'Naknada za paket',
+      statementBankName: 'OTP',
+    })).toBe('naknada za paket');
+
+    const out = classifyImport({
+      statementBankName: 'OTP banka',
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
+        { index: 1, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
+        { id: 'm2', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
+      ],
+    });
+    expect(out.autoMerge).toEqual([]);
+    expect(out.questions).toHaveLength(2);
+  });
+
   it('"Naknada za paket" samo u opisu s obje strane, 1 kandidat → autoMerge', () => {
     const out = classifyImport({
       imported: [{
