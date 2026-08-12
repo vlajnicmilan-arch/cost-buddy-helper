@@ -63,6 +63,9 @@ export const TransactionDetailDialog = ({
   const [loadingItems, setLoadingItems] = useState(false);
   const [submitterName, setSubmitterName] = useState<string | null>(null);
   const [showReceiptImage, setShowReceiptImage] = useState(false);
+  // Lokalno gašenje oznake "Bez objašnjenja" — red nestaje odmah po uspjehu.
+  const [clearingExplanation, setClearingExplanation] = useState(false);
+  const [explanationCleared, setExplanationCleared] = useState(false);
   const [imageZoom, setImageZoom] = useState(1);
   const [freshReceiptUrl, setFreshReceiptUrl] = useState<string | null>(null);
   const [isLocalReceipt, setIsLocalReceipt] = useState(false);
