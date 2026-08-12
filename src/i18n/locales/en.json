@@ -6569,5 +6569,9 @@
     "createSource": "Create new wallet “{{name}}”",
     "reprocessQueued": "Document was re-queued as a bank statement",
     "saveIdentifierToWallet": "Save this IBAN to wallet “{{name}}”"
+  },
+  "rawLine": {
+    "toggle": "As printed on the statement",
+    "aiNote": "transcribed by the reader"
   }
 }

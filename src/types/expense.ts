@@ -217,6 +217,9 @@ export interface Expense {
   bank_match_status?: string | null;
   bank_transaction_id?: string | null;
   bank_account_id?: string | null;
+  /** DOSLOVAN redak s bankovnog izvoda — puni ISKLJUČIVO uvoz, nikad korisnik. */
+  bank_raw_line?: string | null;
+  bank_raw_line_source?: 'text' | 'html' | 'ai' | null;
   possible_duplicate_of?: string | null;
   // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
   recurring_transaction_id?: string | null;

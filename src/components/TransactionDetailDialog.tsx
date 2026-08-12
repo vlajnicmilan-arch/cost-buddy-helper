@@ -636,11 +636,11 @@ export const TransactionDetailDialog = ({
             )}
 
             {/* CITAT S IZVODA — doslovni redak, zatvoreno po zadanom */}
-            {(expense as { bank_raw_line?: string | null }).bank_raw_line && (
+            {expense.bank_raw_line && (
               <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                 <RawLineDisclosure
-                  rawLine={(expense as { bank_raw_line?: string | null }).bank_raw_line}
-                  source={(expense as { bank_raw_line_source?: string | null }).bank_raw_line_source ?? null}
+                  rawLine={expense.bank_raw_line}
+                  source={expense.bank_raw_line_source ?? null}
                   className="mt-0"
                 />
               </div>
