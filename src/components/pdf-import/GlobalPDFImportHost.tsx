@@ -143,6 +143,9 @@ export const GlobalPDFImportHost = () => {
         installment_base_description: tx.installment_base_description ?? null,
         balance_after: tx.balance_after ?? null,
         is_pending: false,
+        // CITAT S IZVODA — putuje netaknut do executora; ne ulazi u otisak.
+        raw_line: tx.raw_line ?? null,
+        raw_line_source: tx.raw_line_source ?? null,
       }));
   }, [pdfImport.result, pdfImport.source]);
 
@@ -705,6 +708,8 @@ export const GlobalPDFImportHost = () => {
         // Bank-statement row order (parser output index). Written onto
         // expenses.bank_row_seq so same-day rows stay in bank order.
         bankRowSeq: i,
+        bankRawLine: tx.raw_line ?? null,
+        bankRawLineSource: tx.raw_line_source ?? null,
         fingerprint: fingerprints[i],
       }));
 
