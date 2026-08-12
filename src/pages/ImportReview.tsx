@@ -172,6 +172,83 @@ const ImportReview = () => {
   }, [payload, decisions]);
 
   /**
+   * OBRAZAC SERIJE: dvije istovjetne korisnikove odluke na istom ključu
+   * (trgovac + izvorni novčanik + smjer) popunjavaju preostale NEODLUČENE
+   * retke istog ključa. Iznos nije dio ključa. Ništa se ne upisuje — samo se
+   * predlaže odluka koju "Potvrdi uvoz" i dalje mora proći.
+   */
+  useEffect(() => {
+    if (!payload || !decisions || patternDisabled) return;
+    const txByIndex = new Map(payload.importedTransactions.map(tx => [tx.index, tx]));
+    const manual: PatternManualDecision[] = [];
+    const candidates: PatternCandidateRow[] = [];
+
+    for (const row of payload.rows) {
+      const tx = txByIndex.get(row.index);
+      const key = buildTransferRuleKey({
+        merchantName: row.merchantName ?? null,
+        paymentSource: tx?.paymentSource ?? null,
+      });
+      const td = decisions.transfers[row.index];
+
+      if (td) {
+        if (!td.enabled) continue;              // korisnik je rekao "nije prijenos"
+        if (autoFilled[row.index]) continue;    // auto-popunjeno se NE broji u prag
+        if (!td.targetIncomeSourceId || !td.direction) continue;
+        manual.push({
+          index: row.index,
+          merchantKey: td.merchantKey ?? key?.merchantKey ?? null,
+          sourceWalletKey: td.sourceWalletKey ?? key?.sourceWalletKey ?? null,
+          direction: td.direction,
+          targetIncomeSourceId: td.targetIncomeSourceId,
+        });
+        continue;
+      }
+
+      // Podobni su SAMO čisti novi redci: bez fingerprint pogotka, bez ponude
+      // kasne kartice, bez odgovorenog pitanja i bez pogotka pravila.
+      if (row.classification.kind !== 'new') continue;
+      if (row.classification.existsByFingerprint) continue;
+      if (row.lateMatchOffer) continue;
+      if (decisions.questions[row.index]) continue;
+
+      const type = tx?.type ?? row.type;
+      const direction: MoneyDirection | null =
+        type === 'income' ? 'in' : type === 'expense' ? 'out' : null;
+      candidates.push({
+        index: row.index,
+        merchantKey: key?.merchantKey ?? null,
+        sourceWalletKey: key?.sourceWalletKey ?? null,
+        direction,
+      });
+    }
+
+    const fills = computePatternFill({ manual, candidates, excluded: patternOptOut });
+    if (fills.length === 0) return;
+
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const f of fills) {
+        next = setTransferDecision(next, f.index, {
+          enabled: true,
+          targetIncomeSourceId: f.targetIncomeSourceId,
+          direction: f.direction,
+          rememberRule: false,
+          merchantKey: f.merchantKey,
+          sourceWalletKey: f.sourceWalletKey,
+        });
+      }
+      return next;
+    });
+    setAutoFilled(prev => {
+      const next = { ...prev };
+      for (const f of fills) next[f.index] = true;
+      return next;
+    });
+  }, [payload, decisions, autoFilled, patternOptOut, patternDisabled]);
+
+  /**
    * Grouping honours transfer overrides — a row currently marked as transfer
    * (either from a matched rule or from the user's "Ovo je prijenos" action)
    * moves to the Prijenosi section, regardless of its underlying classifier
