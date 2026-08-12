@@ -432,8 +432,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       // "Banka: X €" chip in the wallet list.
       balance_after: tx.balanceAfter,
       bank_row_seq: tx.bankRowSeq,
-      bank_raw_line: tx.bankRawLine,
-      bank_raw_line_source: tx.bankRawLineSource,
+      bank_raw_line: tx.bankRawLine ?? null,
+      bank_raw_line_source: tx.bankRawLineSource ?? null,
     }));
     try {
       const res = await input.supabase
@@ -483,8 +483,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_match_status: 'bank_only',
       balance_after: tx.balanceAfter,
       bank_row_seq: tx.bankRowSeq,
-      bank_raw_line: tx.bankRawLine,
-      bank_raw_line_source: tx.bankRawLineSource,
+      bank_raw_line: tx.bankRawLine ?? null,
+      bank_raw_line_source: tx.bankRawLineSource ?? null,
       };
     });
     try {
