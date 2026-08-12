@@ -6569,5 +6569,9 @@
     "createSource": "Neues Wallet „{{name}}“ erstellen",
     "reprocessQueued": "Dokument wurde erneut als Kontoauszug eingereiht",
     "saveIdentifierToWallet": "Diese IBAN im Wallet „{{name}}“ speichern"
+  },
+  "rawLine": {
+    "toggle": "So steht es im Kontoauszug",
+    "aiNote": "vom Leser übertragen"
   }
 }

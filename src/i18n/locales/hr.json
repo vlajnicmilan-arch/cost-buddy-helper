@@ -6580,5 +6580,9 @@
     "createSource": "Stvori novi novčanik „{{name}}\"",
     "reprocessQueued": "Dokument je vraćen u obradu kao izvod",
     "saveIdentifierToWallet": "Spremi ovaj IBAN na novčanik „{{name}}\""
+  },
+  "rawLine": {
+    "toggle": "Kako piše na izvodu",
+    "aiNote": "prepisano čitačem"
   }
 }

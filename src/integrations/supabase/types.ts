@@ -1764,6 +1764,8 @@ export type Database = {
           balance_after: number | null
           bank_account_id: string | null
           bank_match_status: string
+          bank_raw_line: string | null
+          bank_raw_line_source: string | null
           bank_row_seq: number | null
           bank_transaction_id: string | null
           budget_id: string | null
@@ -1826,6 +1828,8 @@ export type Database = {
           balance_after?: number | null
           bank_account_id?: string | null
           bank_match_status?: string
+          bank_raw_line?: string | null
+          bank_raw_line_source?: string | null
           bank_row_seq?: number | null
           bank_transaction_id?: string | null
           budget_id?: string | null
@@ -1888,6 +1892,8 @@ export type Database = {
           balance_after?: number | null
           bank_account_id?: string | null
           bank_match_status?: string
+          bank_raw_line?: string | null
+          bank_raw_line_source?: string | null
           bank_row_seq?: number | null
           bank_transaction_id?: string | null
           budget_id?: string | null
@@ -6921,6 +6927,8 @@ export type Database = {
           balance_after: number | null
           bank_account_id: string | null
           bank_match_status: string
+          bank_raw_line: string | null
+          bank_raw_line_source: string | null
           bank_row_seq: number | null
           bank_transaction_id: string | null
           budget_id: string | null

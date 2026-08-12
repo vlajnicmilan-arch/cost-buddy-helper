@@ -4,6 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiQuota, consumeCoreScanQuota, refundCoreScanQuota, isInternalSkipQuota, internalSkipQuotaHeader } from "../_shared/aiQuota.ts";
 import { callGemini, isGeminiTimeoutError } from "../_shared/geminiClient.ts";
 import { attemptJsonSalvage, stripFences, robustParseJson, logParseFailure } from "../_shared/jsonSalvage.ts";
+import { extractPdfText } from "../_shared/mailImport/pdfText.ts";
+import {
+  capRawLine,
+  matchRawLines,
+  splitStatementLines,
+  type RawLineSource,
+} from "../_shared/statement/rawLineMatch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -191,6 +198,13 @@ serve(async (req) => {
     // Pre-extract HTML table rows deterministically (avoids AI summarization)
     let htmlTablePayload: string | null = null;
     let htmlRowCount = 0;
+    /**
+     * CITAT S IZVODA — doslovni redci iz kojih se kasnije izvlači `raw_line`.
+     * HTML: redak tablice kakav jest. PDF: tekstualni sloj (unpdf).
+     * Sken bez sloja ostaje prazan → citat pada na AI prepis.
+     */
+    let sourceLines: string[] = [];
+    let rawLineSource: RawLineSource = 'ai';
     if (isHTML) {
       const extracted = extractLargestTableRows(htmlContent);
       if (extracted && extracted.rows.length > 0) {
@@ -198,11 +212,29 @@ serve(async (req) => {
         const headerLine = extracted.header.join(' | ');
         const lines = extracted.rows.map((r, i) => `${i + 1}. ${r.join(' | ')}`);
         htmlTablePayload = `HEADER: ${headerLine}\nROWS (${htmlRowCount}):\n${lines.join('\n')}`;
+        sourceLines = extracted.rows.map((r) => r.join(' | '));
+        rawLineSource = 'html';
         console.log(`HTML pre-parse: largest table has ${htmlRowCount} rows, header: ${headerLine.substring(0, 200)}`);
       } else {
         console.warn('HTML pre-parse: no table with rows found, falling back to raw HTML');
       }
+    } else if (pdfBase64 && !isImage) {
+      try {
+        const b64 = pdfBase64.includes(',') ? pdfBase64.slice(pdfBase64.indexOf(',') + 1) : pdfBase64;
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+        const textLayer = await extractPdfText(bytes);
+        if (!textLayer.isScan) {
+          sourceLines = splitStatementLines(textLayer.text);
+          rawLineSource = 'text';
+        }
+        console.log(`raw_line izvor: ${rawLineSource}, redaka teksta: ${sourceLines.length}`);
+      } catch (e) {
+        console.warn('raw_line: tekstualni sloj nije pročitan', (e as Error)?.message);
+      }
     }
+
 
     // PRIKVAČEN MODEL (2026-08-11): PDF/foto izvod ide na `google/gemini-3.5-flash`
     // — izravan ključ, bez aliasa koji bi gateway/mapa mogli preusmjeriti na
@@ -279,7 +311,11 @@ SALDO NAKON TRANSAKCIJE (VAŽNO za Revolut i sve banke s "running balance"):
 
 PENDING / NA ČEKANJU:
 - Ako je transakcija u sekciji "Na čekanju" / "Pending" / "U obradi" (Revolut ih odvaja u zasebnu sekciju) → is_pending = true, balance_after = null.
-- Sve settled/proknjižene transakcije → is_pending = false.`
+- Sve settled/proknjižene transakcije → is_pending = false.
+
+DOSLOVAN REDAK (raw_line):
+- U raw_line prepiši redak TOČNO kako piše na izvodu (isti brojevi, iste kratice, isti razmaci). NE prevodi, NE sređuj, NE dopunjuj.
+- Najviše 300 znakova. Ako redak nije čitljiv → raw_line = null.`
 
           },
           {
@@ -410,6 +446,11 @@ PENDING / NA ČEKANJU:
                         is_pending: {
                           type: 'boolean',
                           description: 'True if the row is in a "Pending" / "Na čekanju" / "U obradi" section (no balance_after available). Default false.'
+                        },
+                        raw_line: {
+                          type: 'string',
+                          description: 'Literal, verbatim text of the statement row as printed (no rewording, no cleanup). Max 300 chars. Null if not readable.',
+                          nullable: true
                         }
 
                       },
@@ -661,6 +702,28 @@ PENDING / NA ČEKANJU:
     if (droppedInvalidDate > 0) {
       console.warn(`WARN: dropped ${droppedInvalidDate} transaction(s) with invalid/unrecognised date format`);
     }
+
+    // CITAT S IZVODA: deterministički redak ima prednost pred AI prepisom.
+    {
+      const matches = sourceLines.length > 0
+        ? matchRawLines(sourceLines, transactions.map((t: any) => ({ date: t.date, amount: t.amount })))
+        : transactions.map(() => null);
+      let determinstic = 0;
+      transactions.forEach((t: any, i: number) => {
+        const literal = matches[i];
+        if (literal) {
+          t.raw_line = capRawLine(literal);
+          t.raw_line_source = rawLineSource;
+          determinstic += 1;
+        } else {
+          const ai = capRawLine(t.raw_line);
+          t.raw_line = ai;
+          t.raw_line_source = ai ? 'ai' : null;
+        }
+      });
+      console.log(`raw_line: ${determinstic}/${transactions.length} doslovno (${rawLineSource}), ostatak AI prepis`);
+    }
+
 
     // Chain-validation: for consecutive settled rows with balance_after,
     // verify balance[i-1] ± amount[i] === balance[i]. Flag mismatches; do NOT drop.

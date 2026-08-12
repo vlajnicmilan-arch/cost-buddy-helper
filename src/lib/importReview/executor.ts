@@ -379,6 +379,11 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
     if (m.writeMerchant && m.tx.merchantName) {
       patch.merchant_name = m.tx.merchantName;
     }
+    // Citat se DOPISUJE uz spojeni redak — korisnikov opis ostaje netaknut.
+    if (m.tx.bankRawLine) {
+      patch.bank_raw_line = m.tx.bankRawLine;
+      patch.bank_raw_line_source = m.tx.bankRawLineSource;
+    }
     try {
       const res = await input.supabase
         .from('expenses')
@@ -427,6 +432,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       // "Banka: X €" chip in the wallet list.
       balance_after: tx.balanceAfter,
       bank_row_seq: tx.bankRowSeq,
+      bank_raw_line: tx.bankRawLine ?? null,
+      bank_raw_line_source: tx.bankRawLineSource ?? null,
     }));
     try {
       const res = await input.supabase
@@ -476,6 +483,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_match_status: 'bank_only',
       balance_after: tx.balanceAfter,
       bank_row_seq: tx.bankRowSeq,
+      bank_raw_line: tx.bankRawLine ?? null,
+      bank_raw_line_source: tx.bankRawLineSource ?? null,
       };
     });
     try {

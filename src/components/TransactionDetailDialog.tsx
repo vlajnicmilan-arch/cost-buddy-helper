@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
 import { Capacitor } from '@capacitor/core';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { RawLineDisclosure } from '@/components/statement/RawLineDisclosure';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -631,6 +632,17 @@ export const TransactionDetailDialog = ({
                   <span className="text-xs">{t('common.merchant')}</span>
                 </div>
                 <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
+              </div>
+            )}
+
+            {/* CITAT S IZVODA — doslovni redak, zatvoreno po zadanom */}
+            {expense.bank_raw_line && (
+              <div className="p-3 rounded-lg bg-muted/50 col-span-2">
+                <RawLineDisclosure
+                  rawLine={expense.bank_raw_line}
+                  source={expense.bank_raw_line_source ?? null}
+                  className="mt-0"
+                />
               </div>
             )}
           </div>
