@@ -401,9 +401,39 @@ const ImportReview = () => {
   const updateQuestion = useCallback((idx: number, answer: QuestionAnswer) => {
     setDecisions(prev => (prev ? answerQuestion(prev, idx, answer) : prev));
   }, []);
+  /**
+   * KORISNIKOV put — svaka ručna izmjena gasi oznaku "popunjeno po tvom
+   * obrascu" na tom retku. Vraćanje u neodlučeno stanje ga ujedno trajno
+   * izuzima iz ponovnog popunjavanja.
+   */
   const updateTransfer = useCallback((idx: number, decision: TransferDecision | null) => {
     setDecisions(prev => (prev ? setTransferDecision(prev, idx, decision) : prev));
+    setAutoFilled(prev => {
+      if (!prev[idx]) return prev;
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+    if (!decision || decision.enabled === false) {
+      setPatternOptOut(prev => (prev.includes(idx) ? prev : [...prev, idx]));
+    }
   }, []);
+
+  /** "Poništi za sve" — vraća SAMO automatski popunjene retke u neodlučeno. */
+  const undoAllPatternFills = useCallback(() => {
+    const indices = Object.keys(autoFilled).map(Number);
+    if (indices.length === 0) return;
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const idx of indices) next = setTransferDecision(next, idx, null);
+      return next;
+    });
+    setAutoFilled({});
+    setPatternDisabled(true);
+  }, [autoFilled]);
+
+  const autoFilledCount = useMemo(() => Object.keys(autoFilled).length, [autoFilled]);
 
   if (!payload || !decisions || !summary) {
     return (
