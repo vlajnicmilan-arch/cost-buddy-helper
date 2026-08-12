@@ -6047,6 +6047,11 @@
       "bankSide": "Statement row",
       "keepSeparate": "Keep separate",
       "merge": "Merge"
+    },
+    "patternFill": {
+      "badge": "Filled from your pattern",
+      "undoAll": "Undo all",
+      "notice": "Filled from your pattern: {{count}}"
     }
   },
   "correctionDelete": {
