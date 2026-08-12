@@ -8,7 +8,7 @@ import { Expense, getCategoryInfo, getPaymentSourceInfo, ReceiptItem } from '@/t
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
-import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone, Cloud, Upload, ArrowRight, ArrowLeftRight, CheckCircle2, Clock, Landmark } from 'lucide-react';
+import { Pencil, Trash2, Sparkles, CreditCard, Calendar, Tag, FileText, ShoppingCart, Loader2, MessageCircle, User, Receipt, X, ZoomIn, ZoomOut, Eye, Briefcase, FolderOpen, Share2, Download, MapPin, Smartphone, Cloud, Upload, ArrowRight, ArrowLeftRight, CheckCircle2, Clock, Landmark, AlertCircle } from 'lucide-react';
 import { resolveTransferEndpoints } from '@/lib/transferMatching';
 import { Badge } from '@/components/ui/badge';
 import { exportFile } from '@/lib/fileExport';
@@ -388,6 +388,25 @@ export const TransactionDetailDialog = ({
     onOpenChange(false);
   };
 
+  /**
+   * "Ne treba objašnjenje" — jedini izlaz koji samo gasi oznaku, bez diranja
+   * kategorije, opisa ili salda.
+   */
+  const handleDismissExplanation = async () => {
+    setClearingExplanation(true);
+    const { error } = await supabase
+      .from('expenses')
+      .update({ needs_explanation: false })
+      .eq('id', expense.id);
+    setClearingExplanation(false);
+    if (error) {
+      showError(t('needsExplanation.clearFailed', 'Uklanjanje oznake nije uspjelo'));
+      return;
+    }
+    setExplanationCleared(true);
+    showSuccess(t('needsExplanation.cleared', 'Oznaka uklonjena'));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden", contentClassName)}>
@@ -632,6 +651,36 @@ export const TransactionDetailDialog = ({
                   <span className="text-xs">{t('common.merchant')}</span>
                 </div>
                 <p className="font-medium break-words whitespace-normal">{expense.merchant_name}</p>
+              </div>
+            )}
+
+            {/* OZNAKA "BEZ OBJAŠNJENJA" — dva izlaza: razjasni ili odbaci oznaku. */}
+            {expense.needs_explanation === true && !explanationCleared && (
+              <div className="p-3 rounded-lg bg-muted/50 col-span-2" data-testid="needs-explanation-row">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-xs">{t('needsExplanation.detailTitle', 'Bez objašnjenja')}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t('needsExplanation.detailHint', 'Označeno kao nerazjašnjeno. Saldo je točan — nedostaje samo objašnjenje.')}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {canEdit && (
+                    <Button type="button" variant="outline" size="sm" className="h-9" onClick={handleEdit}>
+                      {t('needsExplanation.clarify', 'Razjasni')}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 text-muted-foreground"
+                    disabled={clearingExplanation}
+                    onClick={handleDismissExplanation}
+                  >
+                    {t('needsExplanation.dismiss', 'Ne treba objašnjenje')}
+                  </Button>
+                </div>
               </div>
             )}
 
