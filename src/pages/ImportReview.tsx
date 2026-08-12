@@ -56,6 +56,11 @@ import { recordImportedStatement } from '@/lib/statementFingerprint';
 
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
+import {
+  computePatternFill,
+  type PatternCandidateRow,
+  type PatternManualDecision,
+} from '@/lib/importReview/patternFill';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
@@ -123,6 +128,16 @@ const ImportReview = () => {
     setTouchedRows(prev => (prev[idx] ? prev : { ...prev, [idx]: true }));
   }, []);
 
+  /**
+   * UČENJE UNUTAR ISTE SERIJE — redci popunjeni po korisnikovom obrascu.
+   * `autoFilled` nosi vidljivu oznaku; `patternOptOut` pamti retke koje je
+   * korisnik izričito vratio u neodlučeno; `patternDisabled` gasi obrazac za
+   * cijelu seriju nakon "Poništi za sve".
+   */
+  const [autoFilled, setAutoFilled] = useState<Record<number, boolean>>({});
+  const [patternOptOut, setPatternOptOut] = useState<number[]>([]);
+  const [patternDisabled, setPatternDisabled] = useState(false);
+
   // Load payload + optional draft on mount.
   useEffect(() => {
     const raw = loadPayload();
@@ -155,6 +170,83 @@ const ImportReview = () => {
     if (!payload || !decisions) return null;
     return summarize(payload, decisions);
   }, [payload, decisions]);
+
+  /**
+   * OBRAZAC SERIJE: dvije istovjetne korisnikove odluke na istom ključu
+   * (trgovac + izvorni novčanik + smjer) popunjavaju preostale NEODLUČENE
+   * retke istog ključa. Iznos nije dio ključa. Ništa se ne upisuje — samo se
+   * predlaže odluka koju "Potvrdi uvoz" i dalje mora proći.
+   */
+  useEffect(() => {
+    if (!payload || !decisions || patternDisabled) return;
+    const txByIndex = new Map(payload.importedTransactions.map(tx => [tx.index, tx]));
+    const manual: PatternManualDecision[] = [];
+    const candidates: PatternCandidateRow[] = [];
+
+    for (const row of payload.rows) {
+      const tx = txByIndex.get(row.index);
+      const key = buildTransferRuleKey({
+        merchantName: row.merchantName ?? null,
+        paymentSource: tx?.paymentSource ?? null,
+      });
+      const td = decisions.transfers[row.index];
+
+      if (td) {
+        if (!td.enabled) continue;              // korisnik je rekao "nije prijenos"
+        if (autoFilled[row.index]) continue;    // auto-popunjeno se NE broji u prag
+        if (!td.targetIncomeSourceId || !td.direction) continue;
+        manual.push({
+          index: row.index,
+          merchantKey: td.merchantKey ?? key?.merchantKey ?? null,
+          sourceWalletKey: td.sourceWalletKey ?? key?.sourceWalletKey ?? null,
+          direction: td.direction,
+          targetIncomeSourceId: td.targetIncomeSourceId,
+        });
+        continue;
+      }
+
+      // Podobni su SAMO čisti novi redci: bez fingerprint pogotka, bez ponude
+      // kasne kartice, bez odgovorenog pitanja i bez pogotka pravila.
+      if (row.classification.kind !== 'new') continue;
+      if (row.classification.existsByFingerprint) continue;
+      if (row.lateMatchOffer) continue;
+      if (decisions.questions[row.index]) continue;
+
+      const type = tx?.type ?? row.type;
+      const direction: MoneyDirection | null =
+        type === 'income' ? 'in' : type === 'expense' ? 'out' : null;
+      candidates.push({
+        index: row.index,
+        merchantKey: key?.merchantKey ?? null,
+        sourceWalletKey: key?.sourceWalletKey ?? null,
+        direction,
+      });
+    }
+
+    const fills = computePatternFill({ manual, candidates, excluded: patternOptOut });
+    if (fills.length === 0) return;
+
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const f of fills) {
+        next = setTransferDecision(next, f.index, {
+          enabled: true,
+          targetIncomeSourceId: f.targetIncomeSourceId,
+          direction: f.direction,
+          rememberRule: false,
+          merchantKey: f.merchantKey,
+          sourceWalletKey: f.sourceWalletKey,
+        });
+      }
+      return next;
+    });
+    setAutoFilled(prev => {
+      const next = { ...prev };
+      for (const f of fills) next[f.index] = true;
+      return next;
+    });
+  }, [payload, decisions, autoFilled, patternOptOut, patternDisabled]);
 
   /**
    * Grouping honours transfer overrides — a row currently marked as transfer
@@ -309,9 +401,39 @@ const ImportReview = () => {
   const updateQuestion = useCallback((idx: number, answer: QuestionAnswer) => {
     setDecisions(prev => (prev ? answerQuestion(prev, idx, answer) : prev));
   }, []);
+  /**
+   * KORISNIKOV put — svaka ručna izmjena gasi oznaku "popunjeno po tvom
+   * obrascu" na tom retku. Vraćanje u neodlučeno stanje ga ujedno trajno
+   * izuzima iz ponovnog popunjavanja.
+   */
   const updateTransfer = useCallback((idx: number, decision: TransferDecision | null) => {
     setDecisions(prev => (prev ? setTransferDecision(prev, idx, decision) : prev));
+    setAutoFilled(prev => {
+      if (!prev[idx]) return prev;
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+    if (!decision || decision.enabled === false) {
+      setPatternOptOut(prev => (prev.includes(idx) ? prev : [...prev, idx]));
+    }
   }, []);
+
+  /** "Poništi za sve" — vraća SAMO automatski popunjene retke u neodlučeno. */
+  const undoAllPatternFills = useCallback(() => {
+    const indices = Object.keys(autoFilled).map(Number);
+    if (indices.length === 0) return;
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const idx of indices) next = setTransferDecision(next, idx, null);
+      return next;
+    });
+    setAutoFilled({});
+    setPatternDisabled(true);
+  }, [autoFilled]);
+
+  const autoFilledCount = useMemo(() => Object.keys(autoFilled).length, [autoFilled]);
 
   if (!payload || !decisions || !summary) {
     return (
@@ -523,6 +645,15 @@ const ImportReview = () => {
               : t('importReview.badges.recognizedTransfer')}
           </Badge>
         )}
+        {autoFilled[row.index] && (
+          <Badge
+            variant="outline"
+            className="text-[10px]"
+            data-testid={`pattern-filled-${row.index}`}
+          >
+            {t('importReview.patternFill.badge')}
+          </Badge>
+        )}
         {derivedDirection ? (
           <div className="space-y-1">
             <p className="text-xs text-foreground flex items-center gap-1.5">
@@ -715,6 +846,24 @@ const ImportReview = () => {
               {t('importReview.sections.transfers')}
               <span className="text-xs font-normal text-muted-foreground">({grouped.transfers.length})</span>
             </h2>
+            {autoFilledCount > 0 && (
+              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/40 p-2">
+                <span className="text-xs text-muted-foreground">
+                  {t('importReview.patternFill.notice', { count: autoFilledCount })}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs shrink-0"
+                  data-testid="pattern-fill-undo-all"
+                  onClick={undoAllPatternFills}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  {t('importReview.patternFill.undoAll')}
+                </Button>
+              </div>
+            )}
             <ul className="space-y-2">
               {grouped.transfers.map((row) => (
                 <li key={row.index} className="rounded-xl border border-primary/40 bg-primary/5 p-3">

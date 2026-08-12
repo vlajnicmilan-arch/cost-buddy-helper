@@ -6047,6 +6047,11 @@
       "bankSide": "Kontoauszugszeile",
       "keepSeparate": "Getrennt lassen",
       "merge": "Zusammenführen"
+    },
+    "patternFill": {
+      "badge": "Nach deinem Muster ausgefüllt",
+      "undoAll": "Alle zurücksetzen",
+      "notice": "Nach deinem Muster ausgefüllt: {{count}}"
     }
   },
   "correctionDelete": {

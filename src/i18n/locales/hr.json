@@ -6056,6 +6056,11 @@
       "bankSide": "Redak izvoda",
       "keepSeparate": "Ostavi razdvojeno",
       "merge": "Spoji"
+    },
+    "patternFill": {
+      "badge": "Popunjeno po tvom obrascu",
+      "undoAll": "Poništi za sve",
+      "notice": "Popunjeno po tvom obrascu: {{count}}"
     }
   },
   "correctionDelete": {
