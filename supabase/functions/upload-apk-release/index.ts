@@ -31,6 +31,11 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid or missing x-apk-version header" }, 400);
     }
 
+    // force=true (body ili query) je jedini način da se postojeće izdanje pregazi.
+    const url = new URL(req.url);
+    const bodyJson = await req.json().catch(() => null) as { force?: boolean } | null;
+    const force = bodyJson?.force === true || url.searchParams.get("force") === "true";
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -38,8 +43,26 @@ Deno.serve(async (req) => {
 
     const objectPath = `releases/centar-${version}.apk`;
 
-    // Best-effort cleanup pa createSignedUploadUrl (upsert nije podržan na ovoj API ruti)
-    await supabase.storage.from("public-assets").remove([objectPath]).catch(() => {});
+    // Nepromjenjivost izdanja: ako objekt postoji, odbij bez brisanja.
+    const { data: existing } = await supabase.storage
+      .from("public-assets")
+      .list("releases", { search: `centar-${version}.apk`, limit: 100 });
+    const alreadyPublished = (existing ?? []).some((o: any) => o.name === `centar-${version}.apk`);
+
+    if (alreadyPublished && !force) {
+      return json({
+        error: `Izdanje ${version} već postoji — podigni verziju ili pošalji force=true`,
+        code: "release_exists",
+        version,
+        path: objectPath,
+      }, 409);
+    }
+
+    // Samo uz eksplicitni force brišemo prethodni binarij (upsert nije podržan na ovoj ruti).
+    if (alreadyPublished && force) {
+      console.warn(`[upload-apk-release] FORCE overwrite of ${objectPath}`);
+      await supabase.storage.from("public-assets").remove([objectPath]).catch(() => {});
+    }
 
     const { data, error } = await supabase.storage
       .from("public-assets")
