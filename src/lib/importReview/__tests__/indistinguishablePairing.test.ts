@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { classifyImport } from '@/lib/importClassifier';
+import { deriveComparableName } from '../comparableName';
 
 const SRC = 'custom:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const day = (s: string) => new Date(`${s}T12:00:00.000Z`);
