@@ -435,6 +435,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_row_seq: tx.bankRowSeq,
       bank_raw_line: tx.bankRawLine ?? null,
       bank_raw_line_source: tx.bankRawLineSource ?? null,
+      // OZNAKA "BEZ OBJAŠNJENJA" — samo ako je korisnik sam kvačio taj redak.
+      needs_explanation: isNeedsExplanation(input.decisions, tx.index),
     }));
     try {
       const res = await input.supabase
