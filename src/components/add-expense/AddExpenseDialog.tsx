@@ -883,6 +883,7 @@ export const AddExpenseDialog = ({
     setScannedData(null);
     setShowScannedPreview(false);
     setNote('');
+    setNeedsExplanation(false);
     setSelectedProjectId(null);
     setSelectedMilestoneId(null);
 
