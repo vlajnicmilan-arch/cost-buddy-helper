@@ -26,7 +26,8 @@
  * so "ALE-HOP" ≡ "Ale Hop" ≡ "ale hop" collapse to the same key.
  */
 
-import { normalizeMerchant } from './duplicateDetection';
+import { areMerchantsSimilar, normalizeMerchant } from './duplicateDetection';
+import { deriveComparableName, hasSignificantWord } from './importReview/comparableName';
 import { resolvePaymentSourceKey } from './paymentSource/resolve';
 
 export type QuestionReason = 'merchant_mismatch' | 'no_merchant' | 'ambiguous';
@@ -151,6 +152,37 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     }
   }
 
+  /**
+   * FAZA 2.5 — SUŽAVANJE KANDIDATA IMENOM.
+   *
+   * Ime SAMO IZBACUJE očito krive kandidate iz već postojećeg skupa
+   * (iznos + datum + izvor). NIKAD ne stvara nove kandidate i NIKAD ne pretvara
+   * pitanje u autoMerge — skup autoMergea je nakon ovoga identičan kao prije.
+   *
+   * Ograde:
+   *  - primjenjuje se SAMO kad ima >= 2 kandidata (jedan kandidat s drugim
+   *    imenom je kartično kašnjenje: MAPEI <-> Kera Term — ne dira se);
+   *  - izbacuje se samo kad OBA izvedena imena postoje, oba imaju barem jednu
+   *    značajnu riječ i `areMerchantsSimilar` kaže "ne";
+   *  - ako sužavanje isprazni skup, vraća se PUNI skup (pitanje nikad ne smije
+   *    postati "novi redak").
+   */
+  const narrowByName = (
+    row: ClassifierImportedRow,
+    candidates: readonly ClassifierManualCandidate[],
+  ): ClassifierManualCandidate[] => {
+    const all = candidates.slice();
+    if (all.length < 2) return all;
+    const rowName = deriveComparableName(row);
+    if (!rowName || !hasSignificantWord(rowName)) return all;
+    const kept = all.filter((c) => {
+      const candName = deriveComparableName(c);
+      if (!candName || !hasSignificantWord(candName)) return true;
+      return areMerchantsSimilar(rowName, candName);
+    });
+    return kept.length === 0 ? all : kept;
+  };
+
   // Phase 3: classify.
   for (const b of buckets) {
     const idx = b.row.index;
@@ -171,7 +203,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       questions.push({
         importedIndex: idx,
         reason: 'ambiguous',
-        candidateIds: b.candidates.map((c) => c.id),
+        candidateIds: narrowByName(b.row, b.candidates).map((c) => c.id),
       });
       continue;
     }
@@ -180,7 +212,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       questions.push({
         importedIndex: idx,
         reason: 'ambiguous',
-        candidateIds: b.candidates.map((c) => c.id),
+        candidateIds: narrowByName(b.row, b.candidates).map((c) => c.id),
       });
       continue;
     }
