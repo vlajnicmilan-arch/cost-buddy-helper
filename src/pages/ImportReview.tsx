@@ -846,6 +846,24 @@ const ImportReview = () => {
               {t('importReview.sections.transfers')}
               <span className="text-xs font-normal text-muted-foreground">({grouped.transfers.length})</span>
             </h2>
+            {autoFilledCount > 0 && (
+              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/40 p-2">
+                <span className="text-xs text-muted-foreground">
+                  {t('importReview.patternFill.notice', { count: autoFilledCount })}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs shrink-0"
+                  data-testid="pattern-fill-undo-all"
+                  onClick={undoAllPatternFills}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  {t('importReview.patternFill.undoAll')}
+                </Button>
+              </div>
+            )}
             <ul className="space-y-2">
               {grouped.transfers.map((row) => (
                 <li key={row.index} className="rounded-xl border border-primary/40 bg-primary/5 p-3">
