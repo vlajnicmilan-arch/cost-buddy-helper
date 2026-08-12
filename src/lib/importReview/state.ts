@@ -90,7 +90,7 @@ export function isNeedsExplanation(
 export function answerQuestion(
   decisions: ImportReviewDecisions,
   index: number,
-  answer: QuestionAnswer,
+  answer: QuestionAnswer | null,
 ): ImportReviewDecisions {
   return { ...decisions, questions: { ...decisions.questions, [index]: answer } };
 }
