@@ -27,12 +27,14 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => null) as
-      | { version?: string; minSupportedVersion?: string | null; sha256?: string | null; apkUrl?: string | null }
+      | { version?: string; minSupportedVersion?: string | null; sha256?: string | null; apkUrl?: string | null; force?: boolean }
       | null;
 
     if (!body || typeof body.version !== "string" || !/^[0-9.]+$/.test(body.version)) {
       return json({ error: "Invalid or missing version" }, 400);
     }
+
+    const force = body.force === true;
 
     const manifest = {
       version: body.version,
@@ -48,8 +50,38 @@ Deno.serve(async (req) => {
     );
 
     const objectPath = "releases/version.json";
+    const snapshotPath = `releases/manifests/version-${body.version}.json`;
     const bytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + "\n");
 
+    // Nepromjenjivost izdanja: po-izdanju snapshot smije nastati samo jednom.
+    // Ako snapshot za tu verziju postoji, manifest se NE prepisuje bez force=true.
+    const { data: snapList } = await supabase.storage
+      .from("public-assets")
+      .list("releases/manifests", { search: `version-${body.version}.json`, limit: 100 });
+    const snapshotExists = (snapList ?? []).some((o: any) => o.name === `version-${body.version}.json`);
+
+    if (snapshotExists && !force) {
+      return json({
+        error: `Manifest izdanja ${body.version} već postoji — podigni verziju ili pošalji force=true`,
+        code: "manifest_exists",
+        version: body.version,
+        path: snapshotPath,
+      }, 409);
+    }
+
+    const { error: snapError } = await supabase.storage
+      .from("public-assets")
+      .upload(snapshotPath, bytes, {
+        contentType: "application/json",
+        cacheControl: "3600",
+        upsert: force,
+      });
+    if (snapError && !force) {
+      console.error("upload release snapshot failed", snapError);
+      return json({ error: snapError.message }, 500);
+    }
+
+    // Pokazivač na najnovije izdanje ostaje upsert (mora pratiti zadnji release).
     const { error } = await supabase.storage
       .from("public-assets")
       .upload(objectPath, bytes, {
