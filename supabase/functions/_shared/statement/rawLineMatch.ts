@@ -90,6 +90,8 @@ function lineHasDate(line: string, tokens: readonly string[]): boolean {
 
 function isContinuation(line: string): boolean {
   const lower = line.toLowerCase();
+  // OTP prelama redak: nastavak počinje zagradom "(31.01.,ACode:...,Kart:0214) -53,87 ..."
+  if (lower.startsWith('(')) return true;
   return CONTINUATION_PREFIXES.some((p) => lower.startsWith(p));
 }
 
