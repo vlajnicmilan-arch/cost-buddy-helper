@@ -88,6 +88,7 @@ export const TransactionDetailDialog = ({
     if (!open) {
       setShowReceiptImage(false);
       setImageZoom(1);
+      setExplanationCleared(false);
     }
   }, [open, expense?.id]);
   const { storageMode } = useStorage();
