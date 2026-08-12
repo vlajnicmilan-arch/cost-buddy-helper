@@ -906,6 +906,8 @@ const ImportReview = () => {
                 const manual = row.classification.kind === 'auto_merge'
                   ? payload.manualCandidates[row.classification.manualId]
                   : undefined;
+                const isIndistinguishable = row.classification.kind === 'auto_merge'
+                  && row.classification.origin === 'indistinguishable';
                 const checked = decisions.autoMerge[row.index] === true;
                 const rowId = `ir-auto-${row.index}`;
                 return (
@@ -932,12 +934,41 @@ const ImportReview = () => {
                             <span>{manual.merchantName || manual.description || '—'}</span>
                           </p>
                         )}
+                        {isIndistinguishable && (
+                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {t('importReview.indistinguishable.badge')}
+                          </span>
+                        )}
                       </div>
                     </label>
+                    {isIndistinguishable && (
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-11"
+                          onClick={() => {
+                            if (checked) {
+                              updateAuto(row.index, false);
+                              updateNew(row.index, true);
+                            } else {
+                              updateAuto(row.index, true);
+                              updateNew(row.index, false);
+                            }
+                          }}
+                        >
+                          {checked
+                            ? t('importReview.indistinguishable.split')
+                            : t('importReview.indistinguishable.rejoin')}
+                        </Button>
+                      </div>
+                    )}
                     {renderRawLine(row.index)}
                   </li>
                 );
               })}
+
             </ul>
           </section>
         )}

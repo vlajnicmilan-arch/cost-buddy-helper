@@ -6052,6 +6052,11 @@
       "badge": "Nach deinem Muster ausgefüllt",
       "undoAll": "Alle zurücksetzen",
       "notice": "Nach deinem Muster ausgefüllt: {{count}}"
+    },
+    "indistinguishable": {
+      "badge": "Automatisch zugeordnet — nicht unterscheidbare Kandidaten",
+      "split": "Trennen",
+      "rejoin": "Zusammenführung wiederherstellen"
     }
   },
   "correctionDelete": {

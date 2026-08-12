@@ -6061,6 +6061,11 @@
       "badge": "Popunjeno po tvom obrascu",
       "undoAll": "Poništi za sve",
       "notice": "Popunjeno po tvom obrascu: {{count}}"
+    },
+    "indistinguishable": {
+      "badge": "Automatski upareno — nerazlučivi kandidati",
+      "split": "Razdvoji",
+      "rejoin": "Vrati spajanje"
     }
   },
   "correctionDelete": {

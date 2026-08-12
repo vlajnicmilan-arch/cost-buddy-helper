@@ -110,6 +110,6 @@ describe('sužavanje kandidata imenom (faza 2.5)', () => {
     ];
     const out = classifyImport({ imported, manualCandidates });
     // Jedini autoMerge je onaj koji je i prije postojao: 1 kandidat + isti trgovac.
-    expect(out.autoMerge).toEqual([{ importedIndex: 2, manualId: 'm3' }]);
+    expect(out.autoMerge).toEqual([{ importedIndex: 2, manualId: 'm3', origin: 'merchant' }]);
   });
 });

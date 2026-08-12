@@ -6052,6 +6052,11 @@
       "badge": "Filled from your pattern",
       "undoAll": "Undo all",
       "notice": "Filled from your pattern: {{count}}"
+    },
+    "indistinguishable": {
+      "badge": "Auto-paired — indistinguishable candidates",
+      "split": "Split",
+      "rejoin": "Restore merge"
     }
   },
   "correctionDelete": {

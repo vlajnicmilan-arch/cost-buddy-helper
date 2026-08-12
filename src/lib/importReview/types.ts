@@ -21,7 +21,17 @@ export interface ManualCandidateInfo {
 }
 
 export type ClassificationKind =
-  | { readonly kind: 'auto_merge'; readonly manualId: string }
+  | {
+      readonly kind: 'auto_merge';
+      readonly manualId: string;
+      /**
+       * `indistinguishable` = par nastao automatskim uparivanjem međusobno
+       * nerazlučivih kandidata (isti iznos/novčanik, slična imena). UI ga MORA
+       * označiti i ponuditi "Razdvoji". Nedostatak = 'merchant' (staro).
+       */
+      readonly origin?: 'merchant' | 'indistinguishable';
+    }
+
   | { readonly kind: 'question'; readonly reason: QuestionReason; readonly candidateIds: readonly string[] }
   | { readonly kind: 'new'; readonly existsByFingerprint: boolean }
   /**

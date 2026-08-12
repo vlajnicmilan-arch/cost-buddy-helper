@@ -543,8 +543,9 @@ export const GlobalPDFImportHost = () => {
       lateOffers.forEach(o => lateOfferByIdx.set(o.importedIndex, o.manualId));
 
       // Merge classifier output → lookup maps (used by rule pre-pass + row builder).
-      const autoByIdx = new Map<number, string>();
-      classified.autoMerge.forEach(p => autoByIdx.set(p.importedIndex, p.manualId));
+      const autoByIdx = new Map<number, { manualId: string; origin: 'merchant' | 'indistinguishable' }>();
+      classified.autoMerge.forEach(p => autoByIdx.set(p.importedIndex, { manualId: p.manualId, origin: p.origin }));
+
       const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
       classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
 
@@ -655,7 +656,8 @@ export const GlobalPDFImportHost = () => {
           };
         }
         const auto = autoByIdx.get(i);
-        if (auto) return { ...baseRow, classification: { kind: 'auto_merge' as const, manualId: auto } };
+        if (auto) return { ...baseRow, classification: { kind: 'auto_merge' as const, manualId: auto.manualId, origin: auto.origin } };
+
         const q = qByIdx.get(i);
         if (q) return { ...baseRow, classification: { kind: 'question' as const, reason: q.reason, candidateIds: q.candidateIds } };
         // AI/pdfPostProcess flagged this row as a transfer but no rule matched
