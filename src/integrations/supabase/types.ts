@@ -1799,6 +1799,7 @@ export type Database = {
           location_name: string | null
           merchant_name: string | null
           milestone_id: string | null
+          needs_explanation: boolean
           note: string | null
           payment_source: string | null
           payment_source_card_id: string | null
@@ -1863,6 +1864,7 @@ export type Database = {
           location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
+          needs_explanation?: boolean
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
@@ -1927,6 +1929,7 @@ export type Database = {
           location_name?: string | null
           merchant_name?: string | null
           milestone_id?: string | null
+          needs_explanation?: boolean
           note?: string | null
           payment_source?: string | null
           payment_source_card_id?: string | null
@@ -6962,6 +6965,7 @@ export type Database = {
           location_name: string | null
           merchant_name: string | null
           milestone_id: string | null
+          needs_explanation: boolean
           note: string | null
           payment_source: string | null
           payment_source_card_id: string | null
