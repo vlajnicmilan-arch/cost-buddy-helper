@@ -799,6 +799,7 @@ const ImportReview = () => {
                       </div>
                     </RadioGroup>
                     {renderRawLine(row.index)}
+                    {answer?.choice === 'new' && renderNeedsExplanation(row.index)}
                     {renderTransferControls(row)}
                   </li>
                 );
