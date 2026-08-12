@@ -56,6 +56,11 @@ import { recordImportedStatement } from '@/lib/statementFingerprint';
 
 import type { ReconciliationSupabaseClient } from '@/lib/reconciliation/actions';
 import { buildTransferRuleKey } from '@/lib/importReview/transferRules';
+import {
+  computePatternFill,
+  type PatternCandidateRow,
+  type PatternManualDecision,
+} from '@/lib/importReview/patternFill';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
