@@ -34,12 +34,12 @@ describe('odluke uvoza — oznaka po retku', () => {
   const rows = [0, 1, 2];
 
   const makeDecisions = () =>
-    buildInitialDecisions(
-      rows.map(index => ({
+    buildInitialDecisions({
+      rows: rows.map(index => ({
         index,
         classification: { kind: 'new' as const, candidateIds: [] as string[] },
-      })) as never,
-    );
+      })),
+    } as never);
 
   it('nijedan redak ne dolazi označen', () => {
     const d = makeDecisions();
