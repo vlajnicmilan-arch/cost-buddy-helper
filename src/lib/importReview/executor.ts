@@ -47,6 +47,7 @@ import { buildTransferPair } from '@/lib/moneyDirection';
 import { upsertTransferRules, type TransferRulesSupabaseClient, type UpsertRuleInput } from './transferRules';
 import { shouldReconcile, isHistoricalBatch } from '@/lib/reconciliation/historyGate';
 import { isCountedExpenseRow } from '@/lib/countedExpense';
+import { isNeedsExplanation } from './state';
 
 
 /**
@@ -434,6 +435,8 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_row_seq: tx.bankRowSeq,
       bank_raw_line: tx.bankRawLine ?? null,
       bank_raw_line_source: tx.bankRawLineSource ?? null,
+      // OZNAKA "BEZ OBJAŠNJENJA" — samo ako je korisnik sam kvačio taj redak.
+      needs_explanation: isNeedsExplanation(input.decisions, tx.index),
     }));
     try {
       const res = await input.supabase
@@ -485,6 +488,7 @@ export async function executeDecisions(input: ExecutorInput): Promise<ExecutorRe
       bank_row_seq: tx.bankRowSeq,
       bank_raw_line: tx.bankRawLine ?? null,
       bank_raw_line_source: tx.bankRawLineSource ?? null,
+      needs_explanation: isNeedsExplanation(input.decisions, tx.index),
       };
     });
     try {

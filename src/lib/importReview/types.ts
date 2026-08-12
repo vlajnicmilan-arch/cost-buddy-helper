@@ -178,6 +178,14 @@ export interface ImportReviewDecisions {
   readonly questions: Readonly<Record<number, QuestionAnswer | null>>;
   readonly newRows: Readonly<Record<number, boolean>>;
   readonly transfers: Readonly<Record<number, TransferDecision | null>>;
+  /**
+   * OZNAKA "BEZ OBJAŠNJENJA" po retku ("Ne znam još što je ovo"). Isključivo
+   * korisnikova kvačica — nema nijednog puta koji je pali sam. Ne mijenja
+   * ništa u upisu, saldu ni fingerprintu; samo popuni
+   * `expenses.needs_explanation`. Opcionalno zbog starih nacrta iz
+   * sessionStoragea.
+   */
+  readonly needsExplanation?: Readonly<Record<number, boolean>>;
 }
 
 export interface ImportReviewDraft {

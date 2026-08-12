@@ -6573,5 +6573,16 @@
   "rawLine": {
     "toggle": "As printed on the statement",
     "aiNote": "transcribed by the reader"
+  },
+  "needsExplanation": {
+    "checkbox": "I don't know what this is yet",
+    "badge": "No explanation",
+    "filter": "No explanation",
+    "detailTitle": "No explanation",
+    "detailHint": "Marked as unexplained. The balance is correct — only the explanation is missing.",
+    "clarify": "Clarify",
+    "dismiss": "No explanation needed",
+    "cleared": "Mark removed",
+    "clearFailed": "Could not remove the mark"
   }
 }

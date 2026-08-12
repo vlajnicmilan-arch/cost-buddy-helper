@@ -144,6 +144,8 @@ export const AddExpenseDialog = ({
   const [showMultiImageCollector, setShowMultiImageCollector] = useState(false);
   
   const [note, setNote] = useState('');
+  // OZNAKA "BEZ OBJAŠNJENJA" — pali je isključivo korisnik kvačicom u formi.
+  const [needsExplanation, setNeedsExplanation] = useState(false);
   const [transferDestination, setTransferDestination] = useState<string | null>(null);
   const [totalWithTip, setTotalWithTip] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -881,6 +883,7 @@ export const AddExpenseDialog = ({
     setScannedData(null);
     setShowScannedPreview(false);
     setNote('');
+    setNeedsExplanation(false);
     setSelectedProjectId(null);
     setSelectedMilestoneId(null);
 
@@ -1113,6 +1116,7 @@ export const AddExpenseDialog = ({
         // ostaje bez vlastite Krug semantike (nema novog modela).
         krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
         krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+        needs_explanation: needsExplanation,
       };
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
       resetForm();
@@ -1157,6 +1161,7 @@ export const AddExpenseDialog = ({
       // Krug WS1 — personal-only kontekst.
       krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
       krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+      needs_explanation: needsExplanation,
     };
 
     if (checkDuplicate && type !== 'transfer') {
@@ -1389,6 +1394,8 @@ export const AddExpenseDialog = ({
                 }
                 return null;
               }}
+              needsExplanation={needsExplanation}
+              onNeedsExplanationChange={setNeedsExplanation}
               note={note}
               onNoteChange={setNote}
               receiptImage={receiptImage}

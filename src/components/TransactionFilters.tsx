@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark, Wallet } from 'lucide-react';
+import { Search, X, CalendarIcon, Filter, Users, CreditCard, FolderKanban, User, Tag, Landmark, Wallet, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { hr, enUS, de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,8 @@ export interface FilterState {
   scope: TransactionScope;
   bankMatchStatus: string | undefined;
   paymentSource: string | undefined;
+  /** Prikaži samo transakcije koje je korisnik označio s "Ne znam još što je ovo". */
+  needsExplanationOnly: boolean;
 }
 
 interface TransactionFiltersProps {
@@ -115,7 +117,8 @@ export const TransactionFilters = ({
     filters.categoryId !== undefined ||
     filters.scope !== 'all' ||
     filters.bankMatchStatus !== undefined ||
-    filters.paymentSource !== undefined;
+    filters.paymentSource !== undefined ||
+    filters.needsExplanationOnly;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -129,6 +132,7 @@ export const TransactionFilters = ({
       scope: 'all',
       bankMatchStatus: undefined,
       paymentSource: undefined,
+      needsExplanationOnly: false,
     });
   };
 
@@ -217,6 +221,22 @@ export const TransactionFilters = ({
             )}
           </div>
         )}
+
+        {/* "Bez objašnjenja" chip — prigušen, ne vrišti; ne lomi mobilni red. */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-pressed={filters.needsExplanationOnly}
+          className={cn(
+            'h-8 text-xs gap-1.5',
+            filters.needsExplanationOnly && 'bg-muted border-foreground/30',
+          )}
+          onClick={() => updateFilter('needsExplanationOnly', !filters.needsExplanationOnly)}
+        >
+          <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
+          {t('needsExplanation.filter', 'Bez objašnjenja')}
+        </Button>
 
         {/* Preset Date Buttons */}
         {presetRanges.map((preset) => (
@@ -431,7 +451,7 @@ export const TransactionFilters = ({
 };
 
 // Helper function to apply filters to expenses
-export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null; payment_source?: string | null }>(
+export const applyFilters = <T extends { description: string; date: Date; amount: number; merchant_name?: string | null; user_id?: string; submitted_by?: string | null; payment_source_card_id?: string | null; project_id?: string | null; category?: string; bank_match_status?: string | null; payment_source?: string | null; needs_explanation?: boolean | null }>(
   items: T[],
   filters: FilterState,
   currentUserId?: string
@@ -496,6 +516,8 @@ export const applyFilters = <T extends { description: string; date: Date; amount
       if ((item.payment_source ?? null) !== filters.paymentSource) return false;
     }
 
+    if (filters.needsExplanationOnly && item.needs_explanation !== true) return false;
+
     return true;
   });
 };
@@ -512,4 +534,5 @@ export const defaultFilters: FilterState = {
   scope: 'all',
   bankMatchStatus: undefined,
   paymentSource: undefined,
+  needsExplanationOnly: false,
 };

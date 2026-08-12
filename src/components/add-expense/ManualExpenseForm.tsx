@@ -110,6 +110,9 @@ interface ManualExpenseFormProps {
     mode: 'expense' | 'income',
     data: { name: string; icon: string; color: string }
   ) => Promise<string | null>;
+  /** OZNAKA "BEZ OBJAŠNJENJA" — korisnikova kvačica, nikad automatika. */
+  needsExplanation?: boolean;
+  onNeedsExplanationChange?: (value: boolean) => void;
   // Note
   note: string;
   onNoteChange: (value: string) => void;
@@ -763,6 +766,21 @@ export const ManualExpenseForm = (props: ManualExpenseFormProps) => {
           className="h-12 rounded-xl"
         />
       </div>
+
+      {/* OZNAKA "BEZ OBJAŠNJENJA" — samo izričita korisnikova kvačica. */}
+      {props.onNeedsExplanationChange && (
+        <div className="flex items-center space-x-2 min-h-11">
+          <Checkbox
+            id="needs-explanation"
+            data-testid="needs-explanation-checkbox"
+            checked={props.needsExplanation === true}
+            onCheckedChange={(checked) => props.onNeedsExplanationChange?.(checked === true)}
+          />
+          <label htmlFor="needs-explanation" className="text-sm text-muted-foreground cursor-pointer">
+            {t('needsExplanation.checkbox', 'Ne znam još što je ovo')}
+          </label>
+        </div>
+      )}
 
       {/* Save Receipt Option */}
       {props.receiptImage && (

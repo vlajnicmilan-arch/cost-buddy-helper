@@ -221,6 +221,12 @@ export interface Expense {
   bank_raw_line?: string | null;
   bank_raw_line_source?: string | null;
   possible_duplicate_of?: string | null;
+  /**
+   * OZNAKA "BEZ OBJAŠNJENJA" — pali se ISKLJUČIVO izričitom korisnikovom
+   * radnjom (kvačica na /import-review ili u ručnom unosu). Nikad heuristikom,
+   * nikad zbog neodabrane kategorije. Ne utječe na upis ni na saldo.
+   */
+  needs_explanation?: boolean | null;
   // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
   recurring_transaction_id?: string | null;
   // Krug WS1 — vidi Krug Semantics Lock v1.

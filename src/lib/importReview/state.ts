@@ -46,7 +46,9 @@ export function buildInitialDecisions(payload: ImportReviewPayload): ImportRevie
     }
   }
 
-  return { autoMerge, questions, newRows, transfers };
+  // ZADANO PRAZNO — nijedan redak ne dolazi označen. Oznaka "Bez objašnjenja"
+  // postoji samo ako je korisnik sam klikne.
+  return { autoMerge, questions, newRows, transfers, needsExplanation: {} };
 }
 
 export function setAutoMerge(
@@ -63,6 +65,26 @@ export function setNewRow(
   value: boolean,
 ): ImportReviewDecisions {
   return { ...decisions, newRows: { ...decisions.newRows, [index]: value } };
+}
+
+/** Korisnikova kvačica "Ne znam još što je ovo" na jednom retku uvoza. */
+export function setNeedsExplanation(
+  decisions: ImportReviewDecisions,
+  index: number,
+  value: boolean,
+): ImportReviewDecisions {
+  return {
+    ...decisions,
+    needsExplanation: { ...(decisions.needsExplanation ?? {}), [index]: value },
+  };
+}
+
+/** Jedini čitač oznake — starim nacrtima bez polja vraća false. */
+export function isNeedsExplanation(
+  decisions: ImportReviewDecisions,
+  index: number,
+): boolean {
+  return decisions.needsExplanation?.[index] === true;
 }
 
 export function answerQuestion(
