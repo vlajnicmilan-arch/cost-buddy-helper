@@ -6,7 +6,7 @@ import {
   isNeedsExplanation,
   setNeedsExplanation,
 } from '@/lib/importReview/state';
-import { applyFilters, DEFAULT_FILTERS } from '@/components/TransactionFilters';
+import { applyFilters, defaultFilters } from '@/components/TransactionFilters';
 
 /**
  * OZNAKA "BEZ OBJAŠNJENJA".
@@ -79,18 +79,18 @@ describe('odluke uvoza — oznaka po retku', () => {
 
 describe('filter "Bez objašnjenja"', () => {
   const items = [
-    { id: 'a', date: '2026-08-01', amount: 10, type: 'expense', needs_explanation: true },
-    { id: 'b', date: '2026-08-02', amount: 20, type: 'expense', needs_explanation: false },
-    { id: 'c', date: '2026-08-03', amount: 30, type: 'expense' },
+    { description: 'a', date: new Date('2026-08-01'), amount: 10, needs_explanation: true },
+    { description: 'b', date: new Date('2026-08-02'), amount: 20, needs_explanation: false },
+    { description: 'c', date: new Date('2026-08-03'), amount: 30 },
   ];
 
   it('ugašen filter ne mijenja popis', () => {
-    expect(applyFilters(items, DEFAULT_FILTERS)).toHaveLength(3);
+    expect(applyFilters(items, defaultFilters)).toHaveLength(3);
   });
 
   it('upaljen filter vraća točno označene retke', () => {
-    const res = applyFilters(items, { ...DEFAULT_FILTERS, needsExplanationOnly: true });
-    expect(res.map(r => r.id)).toEqual(['a']);
+    const res = applyFilters(items, { ...defaultFilters, needsExplanationOnly: true });
+    expect(res.map(r => r.description)).toEqual(['a']);
   });
 });
 
