@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { cn } from '@/lib/utils';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { RawLineDisclosure } from '@/components/statement/RawLineDisclosure';
 import { splitRowDescription } from '@/lib/importReview/describeRow';
 import {
   clearDraft,
