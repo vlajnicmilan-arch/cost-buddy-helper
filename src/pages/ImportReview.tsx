@@ -61,6 +61,13 @@ import {
   type PatternCandidateRow,
   type PatternManualDecision,
 } from '@/lib/importReview/patternFill';
+import {
+  computeQuestionPatternFill,
+  type QuestionCandidateRow,
+  type QuestionManualDecision,
+} from '@/lib/importReview/questionPatternFill';
+import { deriveComparableName } from '@/lib/importReview/comparableName';
+import { resolvePaymentSourceKey } from '@/lib/paymentSource/resolve';
 import { classifyTransferDescription, type MoneyDirection } from '@/lib/moneyDirection';
 import { openImportBatch } from '@/lib/importUndo/host';
 import { clearReconciliationQueue } from '@/lib/reconciliation/queue';
@@ -137,6 +144,9 @@ const ImportReview = () => {
   const [autoFilled, setAutoFilled] = useState<Record<number, boolean>>({});
   const [patternOptOut, setPatternOptOut] = useState<number[]>([]);
   const [patternDisabled, setPatternDisabled] = useState(false);
+  /** Isti obrazac, ali za ODGOVORE NA PITANJA (npr. 14x "Naknada za plaćanje"). */
+  const [autoFilledQuestions, setAutoFilledQuestions] = useState<Record<number, boolean>>({});
+  const [questionPatternDisabled, setQuestionPatternDisabled] = useState(false);
 
   // Load payload + optional draft on mount.
   useEffect(() => {
@@ -247,6 +257,74 @@ const ImportReview = () => {
       return next;
     });
   }, [payload, decisions, autoFilled, patternOptOut, patternDisabled]);
+
+  /**
+   * OBRAZAC SERIJE — PITANJA. Dvije istovjetne korisnikove odluke na istom
+   * ključu (izvedeno ime retka + novčanik) popunjavaju preostala NEODGOVORENA
+   * pitanja istog ključa. Iznos nije dio ključa. Nije autoMerge: odluka je
+   * vidljivo popunjena i "Potvrdi uvoz" je i dalje mora proći.
+   */
+  useEffect(() => {
+    if (!payload || !decisions || questionPatternDisabled) return;
+    const txByIndex = new Map(payload.importedTransactions.map(tx => [tx.index, tx]));
+    const nameOfCandidate = (id: string): string | null => {
+      const cand = payload.manualCandidates[id];
+      if (!cand) return null;
+      return deriveComparableName({ merchantName: cand.merchantName, description: cand.description }) || null;
+    };
+
+    const manual: QuestionManualDecision[] = [];
+    const candidates: QuestionCandidateRow[] = [];
+
+    for (const row of payload.rows) {
+      if (row.classification.kind !== 'question') continue;
+      if (decisions.transfers[row.index]?.enabled) continue;
+      const tx = txByIndex.get(row.index);
+      const nameKey =
+        deriveComparableName({ merchantName: row.merchantName, description: row.description }) || null;
+      const sourceWalletKey = resolvePaymentSourceKey(tx?.paymentSource ?? `custom:${payload.sourceId}`);
+      const answer = decisions.questions[row.index];
+
+      if (answer) {
+        if (autoFilledQuestions[row.index]) continue; // auto-popunjeno se NE broji u prag
+        if (answer.choice === 'new') {
+          manual.push({ index: row.index, nameKey, sourceWalletKey, answer: { choice: 'new' } });
+        } else {
+          const candidateNameKey = nameOfCandidate(answer.manualId);
+          if (!candidateNameKey) continue;
+          manual.push({
+            index: row.index,
+            nameKey,
+            sourceWalletKey,
+            answer: { choice: 'merge', candidateNameKey },
+          });
+        }
+        continue;
+      }
+
+      candidates.push({
+        index: row.index,
+        nameKey,
+        sourceWalletKey,
+        candidates: row.classification.candidateIds.map(id => ({ id, nameKey: nameOfCandidate(id) })),
+      });
+    }
+
+    const fills = computeQuestionPatternFill({ manual, candidates });
+    if (fills.length === 0) return;
+
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const f of fills) next = answerQuestion(next, f.index, f.answer);
+      return next;
+    });
+    setAutoFilledQuestions(prev => {
+      const next = { ...prev };
+      for (const f of fills) next[f.index] = true;
+      return next;
+    });
+  }, [payload, decisions, autoFilledQuestions, questionPatternDisabled]);
 
   /**
    * Grouping honours transfer overrides — a row currently marked as transfer
@@ -400,6 +478,13 @@ const ImportReview = () => {
   }, []);
   const updateQuestion = useCallback((idx: number, answer: QuestionAnswer) => {
     setDecisions(prev => (prev ? answerQuestion(prev, idx, answer) : prev));
+    // Ručna izmjena gasi oznaku "popunjeno po tvom obrascu" na tom retku.
+    setAutoFilledQuestions(prev => {
+      if (!prev[idx]) return prev;
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
   }, []);
   /**
    * KORISNIKOV put — svaka ručna izmjena gasi oznaku "popunjeno po tvom
@@ -432,6 +517,25 @@ const ImportReview = () => {
     setAutoFilled({});
     setPatternDisabled(true);
   }, [autoFilled]);
+
+  /** "Poništi za sve" (pitanja) — vraća SAMO auto-popunjene odgovore u neodgovoreno. */
+  const undoAllQuestionFills = useCallback(() => {
+    const indices = Object.keys(autoFilledQuestions).map(Number);
+    if (indices.length === 0) return;
+    setDecisions(prev => {
+      if (!prev) return prev;
+      let next = prev;
+      for (const idx of indices) next = answerQuestion(next, idx, null);
+      return next;
+    });
+    setAutoFilledQuestions({});
+    setQuestionPatternDisabled(true);
+  }, [autoFilledQuestions]);
+
+  const autoFilledQuestionCount = useMemo(
+    () => Object.keys(autoFilledQuestions).length,
+    [autoFilledQuestions],
+  );
 
   const autoFilledCount = useMemo(() => Object.keys(autoFilled).length, [autoFilled]);
 
@@ -898,6 +1002,24 @@ const ImportReview = () => {
                 ({summary.answeredQuestions}/{summary.totalQuestions})
               </span>
             </h2>
+            {autoFilledQuestionCount > 0 && (
+              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/40 p-2">
+                <span className="text-xs text-muted-foreground">
+                  {t('importReview.patternFill.notice', { count: autoFilledQuestionCount })}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs shrink-0"
+                  data-testid="question-pattern-fill-undo-all"
+                  onClick={undoAllQuestionFills}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  {t('importReview.patternFill.undoAll')}
+                </Button>
+              </div>
+            )}
             <ul className="space-y-2">
               {grouped.questions.map((row) => {
                 if (row.classification.kind !== 'question') return null;
@@ -912,7 +1034,18 @@ const ImportReview = () => {
                       <span className="text-xs text-muted-foreground">{fmtDate(row.date)}</span>
                       <span className="font-mono font-semibold text-sm">{formatAmount(row.amount)}</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{t(reasonKey)}</Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px]">{t(reasonKey)}</Badge>
+                      {autoFilledQuestions[row.index] && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px]"
+                          data-testid={`question-pattern-filled-${row.index}`}
+                        >
+                          {t('importReview.patternFill.badge')}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm">
                       <span className="text-muted-foreground">{t('importReview.bank')}: </span>
                       <span className="font-medium">{row.merchantName || '—'}</span>
