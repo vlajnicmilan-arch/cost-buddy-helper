@@ -128,6 +128,16 @@ const ImportReview = () => {
     setTouchedRows(prev => (prev[idx] ? prev : { ...prev, [idx]: true }));
   }, []);
 
+  /**
+   * UČENJE UNUTAR ISTE SERIJE — redci popunjeni po korisnikovom obrascu.
+   * `autoFilled` nosi vidljivu oznaku; `patternOptOut` pamti retke koje je
+   * korisnik izričito vratio u neodlučeno; `patternDisabled` gasi obrazac za
+   * cijelu seriju nakon "Poništi za sve".
+   */
+  const [autoFilled, setAutoFilled] = useState<Record<number, boolean>>({});
+  const [patternOptOut, setPatternOptOut] = useState<number[]>([]);
+  const [patternDisabled, setPatternDisabled] = useState(false);
+
   // Load payload + optional draft on mount.
   useEffect(() => {
     const raw = loadPayload();
