@@ -15,7 +15,9 @@ const commitSha =
   process.env.COMMIT_SHA ??
   process.env.VERCEL_GIT_COMMIT_SHA ??
   process.env.GITHUB_SHA ??
-  "dev";
+  // No VCS SHA in the hosting build env — fall back to a build timestamp so the
+  // marker still changes on every publish and stays verifiable with one curl.
+  `dev-${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`;
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
