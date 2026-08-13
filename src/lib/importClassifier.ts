@@ -321,7 +321,10 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       continue;
     }
 
-    if (available.length >= 2 || crossAmbiguousIndices.has(idx)) {
+    // Pozitivna potvrda dolazi u obzir SAMO ondje gdje je sužavanje imalo što
+    // suziti (izvorno >= 2 kandidata). Kolizija oko jedinog zajedničkog
+    // kandidata ostaje pitanje kao i prije.
+    if (b.candidates.length >= 2) {
       const narrowed = narrowByName(b.row, available);
       if (narrowed.length === 1 && positiveMatch(b.row, narrowed[0])) {
         positivelyUsedIds.add(narrowed[0].id);
@@ -335,6 +338,16 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       });
       continue;
     }
+
+    if (crossAmbiguousIndices.has(idx)) {
+      questions.push({
+        importedIndex: idx,
+        reason: 'ambiguous',
+        candidateIds: available.map((c) => c.id),
+      });
+      continue;
+    }
+
 
 
     // Exactly one candidate → izvedeno ime (merchant → opis) odlučuje.
