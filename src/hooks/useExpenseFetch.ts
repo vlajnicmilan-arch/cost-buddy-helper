@@ -279,7 +279,29 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
-      showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
+      // Honest failure message: name the cause (network vs everything else)
+      // only after the transient retries are exhausted. Cached rows stay
+      // visible — we never clear `expenses` here.
+      const info = classifyFetchFailure(error);
+      const isNetwork = info.kind === 'network' || info.kind === 'timeout';
+      showError(
+        isNetwork
+          ? tr('errors.fetch.expensesNetwork', 'Nema veze s internetom — transakcije nisu osvježene')
+          : tr('errors.fetch.expenses', 'Greška pri učitavanju transakcija'),
+      );
+      logDiagnostic({
+        event: 'expense_fetch_failed',
+        severity: 'error',
+        details: {
+          cause: info.kind,
+          http_status: info.status ?? null,
+          attempts: info.retryable ? 3 : 1,
+          rows_so_far: fetchRowsRef.current,
+          duration_ms: fetchStartedAtRef.current ? Date.now() - fetchStartedAtRef.current : null,
+          message: info.message.slice(0, 200),
+        },
+      });
+
     } finally {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
