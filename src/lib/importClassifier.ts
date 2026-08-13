@@ -276,6 +276,27 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     return kept.length === 0 ? all : kept;
   };
 
+  /**
+   * POZITIVNA POTVRDA IMENOM — uzak rez ranije ograde.
+   *
+   * Spaja se JER SE IME SLAŽE, nikad "jer je ostao jedini". Zato se traži da
+   * OBJE strane imaju izvedeno ime sa značajnom riječi i da
+   * `areMerchantsSimilar` kaže "da". Ostane li nakon sužavanja jedan kandidat
+   * čije se ime NE slaže (MAPEI SILIKON ↔ Kera Term) → i dalje pitanje.
+   */
+  const positivelyUsedIds = new Set<string>();
+  const positiveMatch = (
+    row: ClassifierImportedRow,
+    cand: ClassifierManualCandidate,
+  ): boolean => {
+    if (positivelyUsedIds.has(cand.id)) return false;
+    const rowName = deriveComparableName({ ...row, statementBankName: input.statementBankName });
+    const candName = deriveComparableName({ ...cand, statementBankName: input.statementBankName });
+    if (!rowName || !hasSignificantWord(rowName)) return false;
+    if (!candName || !hasSignificantWord(candName)) return false;
+    return areMerchantsSimilar(rowName, candName);
+  };
+
   // Phase 3: classify.
   for (const b of buckets) {
     const idx = b.row.index;
@@ -293,28 +314,28 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
       continue;
     }
 
-    if (b.candidates.length === 0) {
+    const available = b.candidates.filter((c) => !positivelyUsedIds.has(c.id));
+
+    if (available.length === 0) {
       newRows.push(idx);
       continue;
     }
 
-    if (crossAmbiguousIndices.has(idx)) {
+    if (available.length >= 2 || crossAmbiguousIndices.has(idx)) {
+      const narrowed = narrowByName(b.row, available);
+      if (narrowed.length === 1 && positiveMatch(b.row, narrowed[0])) {
+        positivelyUsedIds.add(narrowed[0].id);
+        autoMerge.push({ importedIndex: idx, manualId: narrowed[0].id, origin: 'merchant' });
+        continue;
+      }
       questions.push({
         importedIndex: idx,
         reason: 'ambiguous',
-        candidateIds: narrowByName(b.row, b.candidates).map((c) => c.id),
+        candidateIds: narrowed.map((c) => c.id),
       });
       continue;
     }
 
-    if (b.candidates.length >= 2) {
-      questions.push({
-        importedIndex: idx,
-        reason: 'ambiguous',
-        candidateIds: narrowByName(b.row, b.candidates).map((c) => c.id),
-      });
-      continue;
-    }
 
     // Exactly one candidate → izvedeno ime (merchant → opis) odlučuje.
     const cand = b.candidates[0];
