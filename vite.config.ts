@@ -10,10 +10,18 @@ import fs from "fs";
 const versionData = JSON.parse(fs.readFileSync('./public/version.json', 'utf-8'));
 const appVersion = versionData.version;
 
+// Commit SHA of the build, injected by CI/hosting when available.
+const commitSha =
+  process.env.COMMIT_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA ??
+  "dev";
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __COMMIT_SHA__: JSON.stringify(commitSha),
   },
   server: {
     host: "::",
