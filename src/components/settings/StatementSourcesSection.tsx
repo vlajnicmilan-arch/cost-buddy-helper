@@ -17,6 +17,7 @@ import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useStatementSourceMemory, type StatementSourceRule } from '@/hooks/useStatementSourceMemory';
 import { formatDateHr } from '@/lib/dateFormat';
+import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 
 /**
  * Settings → „Uvoz iz e-maila" → RAČUNI S IZVODA.
@@ -46,11 +47,12 @@ export const StatementSourcesSection = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        {t('statements.rulesTitle', 'Računi s izvoda')}
-      </h3>
-
+    <CollapsibleSection
+      title={t('statements.rulesTitle', 'Računi s izvoda')}
+      count={rules.length}
+      testId="statement-sources-section"
+    >
+      <div className="space-y-4 pt-1">
       <p className="text-xs text-muted-foreground">
         {t(
           'statements.rulesDescription',
@@ -122,6 +124,7 @@ export const StatementSourcesSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </CollapsibleSection>
   );
 };

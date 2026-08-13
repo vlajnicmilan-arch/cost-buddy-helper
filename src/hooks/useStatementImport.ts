@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePdfImport } from '@/contexts/PdfImportContext';
 import { computeFileHash, findExistingStatement, type ExistingStatement } from '@/lib/statementFingerprint';
+import { savePendingStatementLink } from '@/lib/mail/statementImportLink';
 import type { CustomPaymentSource } from '@/types/customPaymentSource';
 
 /**
@@ -48,6 +49,8 @@ export function useStatementImport() {
       closingBalance?: number | null;
       /** Datum na koji saldo vrijedi (extraction.period_to). */
       statementDate?: string | null;
+      /** Stavka reda pregleda iz koje je uvoz pokrenut (veza preživi skicu/pad). */
+      mailItemId?: string | null;
     }): Promise<StatementImportStart> => {
       setBusy(true);
       try {
@@ -72,6 +75,16 @@ export function useStatementImport() {
             typeof params.closingBalance === 'number' ? params.closingBalance : null,
           statementDate: params.statementDate ?? null,
         });
+        // Tek kad je uvoz stvarno otvoren pamtimo vezu; pad prije ovoga ne
+        // ostavlja trag, pa se stavka ne može lažno označiti obrađenom.
+        if (params.mailItemId) {
+          savePendingStatementLink({
+            itemId: params.mailItemId,
+            sourceId: params.source.id,
+            fileName: file.name || null,
+            savedAt: Date.now(),
+          });
+        }
         return { kind: 'started' };
       } finally {
         setBusy(false);

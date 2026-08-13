@@ -24,7 +24,7 @@ import {
   pickStatementSource,
   type StatementSourceMatchReason,
 } from '@/lib/mail/statementSourceMatch';
-import { useStatementImport, markIngestItemLinked } from '@/hooks/useStatementImport';
+import { useStatementImport } from '@/hooks/useStatementImport';
 import { useAuth } from '@/hooks/useAuth';
 import type { MailReviewItem } from '@/hooks/useMailReviewQueue';
 import type { ExistingStatement } from '@/lib/statementFingerprint';
@@ -136,20 +136,18 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
   };
 
 
-  // Uvoz je stvarno zapisan (događaj iz globalnog uvoza) → stavka je `povezan`.
+  // Uvoz je stvarno zapisan — globalni razrješitelj je stavku već označio.
   useEffect(() => {
     if (!awaitingImport) return;
-    const onDone = () => {
+    const onLinkedEvent = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { itemId?: string } | undefined;
+      if (detail?.itemId !== item.id) return;
       setAwaitingImport(false);
-      void markIngestItemLinked(item.id).then((ok) => {
-        if (ok) {
-          showSuccess(t('statements.imported', 'Izvod je uvezen'));
-          onLinked();
-        }
-      });
+      showSuccess(t('statements.imported', 'Izvod je uvezen'));
+      onLinked();
     };
-    window.addEventListener('vm:pdf-import-completed', onDone);
-    return () => window.removeEventListener('vm:pdf-import-completed', onDone);
+    window.addEventListener('vm:mail-statement-linked', onLinkedEvent);
+    return () => window.removeEventListener('vm:mail-statement-linked', onLinkedEvent);
   }, [awaitingImport, item.id, onLinked, t]);
 
   const selectedSource = useMemo(
@@ -202,6 +200,7 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
       closingBalance:
         typeof extraction.closing_balance === 'number' ? extraction.closing_balance : null,
       statementDate: (extraction.period_to as string | null) ?? null,
+      mailItemId: item.id,
     });
     if (result.kind === 'duplicate') {
       setDuplicate(result.existing);

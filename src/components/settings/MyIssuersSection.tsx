@@ -17,6 +17,7 @@ import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useIssuerMemory, type IssuerMemoryEntry } from '@/hooks/useIssuerMemory';
 import { formatDateHr } from '@/lib/dateFormat';
+import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 
 /**
  * Settings → „Uvoz iz e-maila" → MOJI IZDAVATELJI.
@@ -42,11 +43,12 @@ export const MyIssuersSection = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-        {t('issuers.title', 'Moji izdavatelji')}
-      </h3>
-
+    <CollapsibleSection
+      title={t('issuers.title', 'Moji izdavatelji')}
+      count={entries.length}
+      testId="my-issuers-section"
+    >
+      <div className="space-y-4 pt-1">
       <p className="text-xs text-muted-foreground">
         {t(
           'issuers.description',
@@ -128,6 +130,7 @@ export const MyIssuersSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </CollapsibleSection>
   );
 };
