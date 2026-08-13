@@ -1631,7 +1631,11 @@
     "receiptMissingTitle": "Image not available on this device",
     "receiptMissingDesc": "The image was stored locally only, so it most likely stayed on your previous device or was removed on reinstall. The transaction itself is intact.",
     "attachNewReceipt": "Attach a new image",
-    "receiptReattached": "New image attached"
+    "receiptReattached": "New image attached",
+    "materialExpenseBadge": "Material expense",
+    "materialExpenseTooltip": "Business expense paid from a personal account — no owner loan",
+    "fundingChoiceTitle": "Paid from a personal source",
+    "fundingChoiceSaved": "Booking updated"
   },
   "dashboard": {
     "balance": "Balance",
@@ -1936,6 +1940,20 @@
       "cta": "Upgrade for unlimited",
       "close": "OK",
       "remaining": "Scans remaining: {{remaining}}"
+    },
+    "routing": {
+      "autoNotice": "The receipt is issued to {{company}} — saving to the business profile.",
+      "undo": "No, personal",
+      "offerQuestion": "The buyer looks like {{company}} — save to the business profile?",
+      "offerAccept": "Yes, business",
+      "offerDecline": "No, personal",
+      "fundingTitle": "Business receipt paid from a personal source — how do we book it?",
+      "choiceOwnerLoan": "Owner loan",
+      "choiceOwnerLoanHint": "The company owes you the amount.",
+      "choiceMaterial": "Material expense",
+      "choiceMaterialHint": "Company expense without a loan.",
+      "choicePersonal": "No, this is personal",
+      "choicePersonalHint": "Stays in the personal profile."
     }
   },
   "summary": {
