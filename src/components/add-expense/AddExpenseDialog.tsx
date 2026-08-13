@@ -36,6 +36,7 @@ import { COMMIT_SHA } from '@/lib/version';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { validateAmountInput } from '@/lib/amountValidation';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import { useScanBusinessRouting } from '@/hooks/useScanBusinessRouting';
 import {
   resolveReceiptBusinessRouting,
   isPersonalSourceForProfile,
@@ -219,14 +220,42 @@ export const AddExpenseDialog = ({
   const { profiles: ownBusinessProfiles } = useBusinessProfiles();
 
   // SKEN → POSLOVNI PROFIL (samo scan put; ručni unos ostaje netaknut).
-  const [scanRouting, setScanRouting] = useState<{
-    mode: 'auto' | 'offer';
-    profileId: string;
-    profileName: string;
+  // Hook drži profile u refu i ponovno računa routing ako popis stigne kasno.
+  const scanRoutingDiagnosticRef = useRef<{
+    has_recipient_name: boolean;
+    has_recipient_oib: boolean;
+    recipient_oib_len: number;
   } | null>(null);
-  /** Potvrđeni poslovni cilj iz skena (auto ili prihvaćena ponuda). */
-  const [scanTargetProfileId, setScanTargetProfileId] = useState<string | null>(null);
-  const [fundingChoice, setFundingChoice] = useState<OwnerFundingChoice>('owner_loan');
+  const {
+    routing: scanRouting,
+    targetProfileId: scanTargetProfileId,
+    fundingChoice,
+    setFundingChoice,
+    applyScanResult: applyScanRouting,
+    undo: undoScanRouting,
+    acceptOffer: acceptScanRoutingOffer,
+    declineOffer: declineScanRoutingOffer,
+    reset: resetScanRouting,
+  } = useScanBusinessRouting({
+    profiles: ownBusinessProfiles,
+    activeBusinessProfileId: effectiveBusinessProfileId,
+    onDiagnostic: useCallback((info) => {
+      const meta = scanRoutingDiagnosticRef.current;
+      if (!meta) return;
+      try {
+        logDiagnostic('receipt_scan_fields', {
+          build: COMMIT_SHA,
+          has_recipient_name: meta.has_recipient_name,
+          has_recipient_oib: meta.has_recipient_oib,
+          recipient_oib_len: meta.recipient_oib_len,
+          routing_kind: info.routing_kind,
+          profiles_count: info.profiles_count,
+          recomputed: info.recomputed,
+          effective_business_profile: !!effectiveBusinessProfileId,
+        });
+      } catch { }
+    }, [effectiveBusinessProfileId]),
+  });
 
   // Pick a sensible default payment source.
   // In business mode: prefer a source that belongs to the active business profile.
@@ -600,35 +629,12 @@ export const AddExpenseDialog = ({
     });
     // OIB/ime kupca → poslovni profil. Nikad iz poslovnog u osobno.
     const scannedRecipientOib = (result as any).recipient_oib ?? null;
-    const routing = resolveReceiptBusinessRouting({
-      recipientOib: scannedRecipientOib,
-      recipientName: result.recipient_name,
-      profiles: ownBusinessProfiles,
-      activeBusinessProfileId: effectiveBusinessProfileId,
-    });
-    // Privremena instrumentacija (skida se nakon dijagnostike) — bez osobnih podataka.
-    try {
-      logDiagnostic('receipt_scan_fields', {
-        build: COMMIT_SHA,
-        has_recipient_name: !!(result.recipient_name && String(result.recipient_name).trim()),
-        has_recipient_oib: !!(scannedRecipientOib && String(scannedRecipientOib).trim()),
-        recipient_oib_len: String(scannedRecipientOib ?? '').replace(/[^0-9]/g, '').length,
-        routing_kind: routing.kind,
-        profiles_count: ownBusinessProfiles.length,
-        effective_business_profile: !!effectiveBusinessProfileId,
-      });
-    } catch { }
-    setFundingChoice('owner_loan');
-    if (routing.kind === 'auto') {
-      setScanRouting({ mode: 'auto', profileId: routing.profileId, profileName: routing.profileName });
-      setScanTargetProfileId(routing.profileId);
-    } else if (routing.kind === 'offer') {
-      setScanRouting({ mode: 'offer', profileId: routing.profileId, profileName: routing.profileName });
-      setScanTargetProfileId(null);
-    } else {
-      setScanRouting(null);
-      setScanTargetProfileId(null);
-    }
+    scanRoutingDiagnosticRef.current = {
+      has_recipient_name: !!(result.recipient_name && String(result.recipient_name).trim()),
+      has_recipient_oib: !!(scannedRecipientOib && String(scannedRecipientOib).trim()),
+      recipient_oib_len: String(scannedRecipientOib ?? '').replace(/[^0-9]/g, '').length,
+    };
+    applyScanRouting({ recipientOib: scannedRecipientOib, recipientName: result.recipient_name });
 
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
@@ -969,9 +975,8 @@ export const AddExpenseDialog = ({
     setLocationCoords(null);
     setKrugId(null);
     setKrugPrivacy(null);
-    setScanRouting(null);
-    setScanTargetProfileId(null);
-    setFundingChoice('owner_loan');
+    resetScanRouting();
+    scanRoutingDiagnosticRef.current = null;
     // Novi logički unos → novi idempotency ključ.
     clientRequestIdRef.current = newClientRequestId();
 
@@ -1380,9 +1385,9 @@ export const AddExpenseDialog = ({
                 onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
                 routingMode={effectiveBusinessProfileId ? null : (scanTargetProfileId ? 'auto' : (scanRouting?.mode === 'offer' ? 'offer' : null))}
                 routingProfileName={scanRouting?.profileName ?? null}
-                onRoutingUndo={() => { setScanTargetProfileId(null); setScanRouting(null); setFundingChoice('owner_loan'); }}
-                onRoutingAcceptOffer={() => { if (scanRouting) setScanTargetProfileId(scanRouting.profileId); }}
-                onRoutingDeclineOffer={() => { setScanRouting(null); setScanTargetProfileId(null); }}
+                onRoutingUndo={undoScanRouting}
+                onRoutingAcceptOffer={acceptScanRoutingOffer}
+                onRoutingDeclineOffer={declineScanRoutingOffer}
                 showFundingChoice={
                   !effectiveBusinessProfileId &&
                   !!scanTargetProfileId &&
@@ -1396,8 +1401,7 @@ export const AddExpenseDialog = ({
                 onFundingChoiceChange={(choice) => {
                   setFundingChoice(choice);
                   if (choice === 'personal') {
-                    setScanTargetProfileId(null);
-                    setScanRouting(null);
+                    undoScanRouting();
                   }
                 }}
               />
