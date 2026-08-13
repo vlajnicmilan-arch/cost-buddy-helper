@@ -32,6 +32,7 @@ import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { OwnerFundingChoiceRow } from './business/OwnerFundingChoiceRow';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 import { KrugExpenseSplitPanelGate } from './krug/KrugExpenseSplitPanelGate';
 
@@ -693,6 +694,19 @@ export const TransactionDetailDialog = ({
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* POSLOVNI TROŠAK IZ OSOBNOG IZVORA — izbor knjiženja */}
+            {canEdit && (expense as any).business_profile_id && paymentSourceInfo?.isPersonalSource && (
+              <OwnerFundingChoiceRow
+                expenseId={expense.id}
+                userId={user?.id}
+                businessProfileId={(expense as any).business_profile_id}
+                paymentSource={expense.payment_source}
+                amount={expense.amount}
+                description={expense.description || ''}
+                value={(expense as any).owner_funding_choice ?? null}
+              />
             )}
 
             {/* CITAT S IZVODA — doslovni redak, zatvoreno po zadanom */}
