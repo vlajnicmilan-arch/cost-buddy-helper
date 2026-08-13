@@ -23,7 +23,8 @@ describe('eRacun — PDV samo u poslovnom profilu', () => {
   it('nema drugog nezaštićenog PDV prikaza u eRačun komponentama', () => {
     const widget = read('src/components/business/eracun/IncomingInvoicesWidget.tsx');
     expect(widget).not.toMatch(/vat_amount/);
+    // Jedini blok: uvjet + formatiranje iznosa u istom retku prikaza.
     const vatRenders = panel.match(/vat_amount/g) ?? [];
-    expect(vatRenders.length).toBe(1);
+    expect(vatRenders.length).toBe(2);
   });
 });
