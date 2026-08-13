@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, RotateCcw, Shield, ChevronRight, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { APP_VERSION } from '@/lib/version';
+import { APP_VERSION, SHORT_COMMIT_SHA } from '@/lib/version';
 
 interface DangerZoneSectionProps {
   onShowResetConfirm: () => void;
@@ -134,7 +134,7 @@ export const DangerZoneSection = ({
       {/* App Info */}
       <div className="text-center text-xs text-muted-foreground space-y-1">
         <p>Centar</p>
-        <p>{t('settings.version', 'Verzija')} {APP_VERSION}</p>
+        <p>{t('settings.version', 'Verzija')} {APP_VERSION} ({SHORT_COMMIT_SHA})</p>
       </div>
     </>
   );
