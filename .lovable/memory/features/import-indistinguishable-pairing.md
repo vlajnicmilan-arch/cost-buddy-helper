@@ -15,3 +15,7 @@ type: feature
 **UI:** oznaka „Automatski upareno — nerazlučivi kandidati" + tipka „Razdvoji" (`importReview.indistinguishable.*`). Razdvoji = `autoMerge=false` + `newRows=true` → executor umeće redak kao novi (inače preskače). Ništa ne ulazi u knjige do „Potvrdi uvoz".
 
 Testovi: `src/lib/importReview/__tests__/indistinguishablePairing.test.ts`.
+
+**Pozitivna potvrda imenom (13.8.2026, korisnikov uzak rez):** ako je redak imao ≥2 kandidata i `narrowByName` ostavi TOČNO JEDNOG, a obje strane imaju izvedeno ime sa značajnom riječi i `areMerchantsSimilar === true` → autoMerge (`origin: 'merchant'`). Spaja se JER SE IME SLAŽE, ne "jer je ostao jedini": 1 kandidat s nepodudarnim imenom (MAPEI ↔ Kera Term) i dalje je `merchant_mismatch` pitanje; kolizija oko jedinog zajedničkog kandidata ostaje `ambiguous`. Nijedan kandidat ne može biti iskorišten dvaput (`positivelyUsedIds`).
+
+**Vodeći bankovni glagoli** (`stripLeadingBankVerbs` u `comparableName.ts`) uklanjaju se SAMO s početka izvedenog imena: plaćanje/uplata/isplata/prijenos/naplata/transakcija/pos kup./kup./dc/trajni nalog/sepa. Pojava u sredini ostaje ("Naknada za plaćanje" nepromijenjeno); ako bi ostatak bio prazan, vraća se original.
