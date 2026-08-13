@@ -232,7 +232,7 @@ export interface Expense {
    * 'owner_loan' (stvara pozajmicu) ili 'material' (trošak firme bez pozajmice).
    * NULL = odluka nije tražena (staro ponašanje).
    */
-  owner_funding_choice?: 'owner_loan' | 'material' | null;
+  owner_funding_choice?: string | null;
   // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
   recurring_transaction_id?: string | null;
   // Krug WS1 — vidi Krug Semantics Lock v1.
