@@ -362,6 +362,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
     }
 
     if (areMerchantsSimilar(bankName, manualName)) {
+      positivelyUsedIds.add(cand.id);
       autoMerge.push({ importedIndex: idx, manualId: cand.id, origin: 'merchant' });
     } else {
       questions.push({
