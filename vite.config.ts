@@ -53,6 +53,20 @@ export default defineConfig(({ mode }) => ({
         });
       },
     },
+    // Inject the build's commit SHA into index.html so a published build can be
+    // verified with a single curl, without grepping hashed chunks.
+    {
+      name: "inject-build-sha",
+      transformIndexHtml() {
+        return [
+          {
+            tag: "meta",
+            attrs: { name: "build-sha", content: commitSha },
+            injectTo: "head" as const,
+          },
+        ];
+      },
+    },
     react(),
     mcpPlugin(),
     mode === "development" && componentTagger(),
