@@ -128,19 +128,3 @@ describe('čuvar — oznaka se nigdje ne pali sama', () => {
     expect(src).not.toMatch(/needs_explanation:\s*!category/);
   });
 });
-
-describe('biljeg u popisu — prigušen, nikad crven ni jantaran', () => {
-  const src = readFileSync(resolve(ROOT, 'src/components/TransactionItem.tsx'), 'utf8');
-
-  it('uskličnik je vezan uz oznaku i nosi text-muted-foreground', () => {
-    const block = src.slice(src.indexOf("expense.needs_explanation === true"));
-    expect(block).toContain('AlertCircle');
-    expect(block.slice(0, 600)).toContain('text-muted-foreground');
-  });
-
-  it('biljeg ne koristi destructive ni amber boju', () => {
-    const start = src.indexOf('expense.needs_explanation === true');
-    const block = src.slice(start, start + 600);
-    expect(block).not.toMatch(/destructive|text-red|amber/);
-  });
-});

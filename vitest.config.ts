@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify("0.0.0-test"),
+    __COMMIT_SHA__: JSON.stringify("dev"),
   },
   test: {
     environment: "jsdom",

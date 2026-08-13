@@ -3,7 +3,7 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { cn } from '@/lib/utils';
-import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle, AlertCircle, Landmark } from 'lucide-react';
+import { Trash2, Sparkles, MessageCircle, CreditCard, Camera, Clock, CheckCircle2, AlertTriangle, Landmark } from 'lucide-react';
 import { KrugBrandIcon } from '@/components/krug/KrugBrandIcon';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import React, { useMemo, useRef, useState } from 'react';
@@ -302,23 +302,6 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p className="text-xs">{t('transactions.hasReceipt', 'Slika računa')}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {/* OZNAKA "BEZ OBJAŠNJENJA" — prigušeni uskličnik, ista obitelj kao
-                sitni sekundarni podaci u retku. Nikad crveno/jantarno: ništa
-                nije u kvaru, saldo je točan. */}
-            {expense.needs_explanation === true && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AlertCircle
-                    className="w-3 h-3 text-muted-foreground shrink-0"
-                    aria-label={t('needsExplanation.badge', 'Bez objašnjenja')}
-                    data-testid="needs-explanation-mark"
-                  />
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">{t('needsExplanation.badge', 'Bez objašnjenja')}</p>
                 </TooltipContent>
               </Tooltip>
             )}

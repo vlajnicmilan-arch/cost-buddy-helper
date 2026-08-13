@@ -10,10 +10,20 @@ import fs from "fs";
 const versionData = JSON.parse(fs.readFileSync('./public/version.json', 'utf-8'));
 const appVersion = versionData.version;
 
+// Commit SHA of the build, injected by CI/hosting when available.
+const commitSha =
+  process.env.COMMIT_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA ??
+  // No VCS SHA in the hosting build env — fall back to a build timestamp so the
+  // marker still changes on every publish and stays verifiable with one curl.
+  `dev-${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __COMMIT_SHA__: JSON.stringify(commitSha),
   },
   server: {
     host: "::",
@@ -43,6 +53,20 @@ export default defineConfig(({ mode }) => ({
           }
           next();
         });
+      },
+    },
+    // Inject the build's commit SHA into index.html so a published build can be
+    // verified with a single curl, without grepping hashed chunks.
+    {
+      name: "inject-build-sha",
+      transformIndexHtml() {
+        return [
+          {
+            tag: "meta",
+            attrs: { name: "build-sha", content: commitSha },
+            injectTo: "head" as const,
+          },
+        ];
       },
     },
     react(),
