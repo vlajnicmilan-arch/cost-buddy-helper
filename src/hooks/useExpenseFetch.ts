@@ -4,7 +4,10 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 
-import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
+
 import i18n from '@/i18n';
 import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
 import { tr } from '@/lib/errorMessages';
