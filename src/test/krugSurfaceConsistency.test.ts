@@ -62,8 +62,8 @@ describe('Krug entry surface guards', () => {
   it('AddExpenseDialog gasi Krug u business kontekstu', () => {
     const src = read('src/components/add-expense/AddExpenseDialog.tsx');
     expect(src).toMatch(/showKrugSelector=\{!effectiveBusinessProfileId\}/);
-    // Payload put mora nulirati krug u business modu
-    expect(src).toMatch(/!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/);
+    // Payload put mora nulirati krug u business modu (kroz zajednički helper)
+    expect(src).toMatch(/buildKrugFields\(\s*effectiveBusinessProfileId/);
   });
 
   it('KrugSelector state u AddExpenseDialog je tri-state personal | shared | null (bez skrivenog defaulta)', () => {
@@ -105,19 +105,22 @@ describe('WS2a — Scan create surface parity with manual create', () => {
     const matches = src.match(/showKrugSelector=\{!effectiveBusinessProfileId\}/g) ?? [];
     // Jedan za ManualExpenseForm, jedan za ScannedDataPreview
     expect(matches.length).toBeGreaterThanOrEqual(2);
-    // Scan accept payload šalje krug (write parity s manual)
-    expect(src).toMatch(/krug_id:\s*!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/);
+    // Scan accept payload šalje krug kroz isti helper, ali s EFEKTIVNIM profilom
+    // nakon routinga (sken usmjeren u poslovni profil ne smije nositi Krug polja).
+    expect(src).toMatch(/buildKrugFields\(\s*saveBusinessProfileId,\s*krugId,\s*krugPrivacy\s*\)/);
   });
 });
 
 describe('WS2b — Installment create path parity with manual create', () => {
   it('AddExpenseDialog installment grana veže krug_id i krug_privacy istim guard-om kao manual/scan put', () => {
     const src = read('src/components/add-expense/AddExpenseDialog.tsx');
-    // Occurrences moraju postojati barem 3 puta: manual newExpense, scan accept, installment grana.
-    const krugIdWrites = src.match(/krug_id:\s*!effectiveBusinessProfileId\s*\?\s*\(krugId\s*\|\|\s*null\)\s*:\s*null/g) ?? [];
-    expect(krugIdWrites.length).toBeGreaterThanOrEqual(3);
-    const krugPrivacyWrites = src.match(/krug_privacy:\s*!effectiveBusinessProfileId\s*&&\s*krugId\s*\?\s*krugPrivacy\s*:\s*null/g) ?? [];
-    expect(krugPrivacyWrites.length).toBeGreaterThanOrEqual(3);
+    // Sva tri create puta (manual, scan, installment) moraju ići kroz zajednički
+    // helper — nijedan ne smije ručno slagati krug_id/krug_privacy.
+    const helperCalls = src.match(/\.\.\.buildKrugFields\(\s*(?:effectiveBusinessProfileId|saveBusinessProfileId),\s*krugId,\s*krugPrivacy\s*\)/g) ?? [];
+    expect(helperCalls.length).toBeGreaterThanOrEqual(3);
+    // Ako netko zaobiđe helper i ručno upiše polja — čuvar pada.
+    expect(src).not.toMatch(/krug_id:\s*(?!null)/);
+    expect(src).not.toMatch(/krug_privacy:\s*(?!null)/);
   });
 
   it('Installment grana ostaje unutar non-transfer guard-a (transfer se ne installmentira)', () => {
