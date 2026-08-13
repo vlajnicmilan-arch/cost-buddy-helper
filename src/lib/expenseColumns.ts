@@ -77,6 +77,7 @@ export const EXPENSE_LIST_COLUMNS = [
   'category_origin',
   'invoice_id',
   'needs_explanation',
+  'owner_funding_choice',
 ] as const;
 
 /** Teška polja koja se dohvaćaju tek u detalju transakcije, po id-u. */
