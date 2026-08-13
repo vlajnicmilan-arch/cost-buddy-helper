@@ -34,6 +34,12 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { validateAmountInput } from '@/lib/amountValidation';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import {
+  resolveReceiptBusinessRouting,
+  isPersonalSourceForProfile,
+  type OwnerFundingChoice,
+} from '@/lib/receiptBusinessRouting';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -90,6 +96,7 @@ interface ScannedData {
   transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
   recipient_name?: string | null;
+  recipient_oib?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
   issued_at_iso?: string | null;
@@ -207,6 +214,17 @@ export const AddExpenseDialog = ({
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
   const effectiveBusinessProfileId = businessProfileId ?? activeBusinessProfileId;
+  const { profiles: ownBusinessProfiles } = useBusinessProfiles();
+
+  // SKEN → POSLOVNI PROFIL (samo scan put; ručni unos ostaje netaknut).
+  const [scanRouting, setScanRouting] = useState<{
+    mode: 'auto' | 'offer';
+    profileId: string;
+    profileName: string;
+  } | null>(null);
+  /** Potvrđeni poslovni cilj iz skena (auto ili prihvaćena ponuda). */
+  const [scanTargetProfileId, setScanTargetProfileId] = useState<string | null>(null);
+  const [fundingChoice, setFundingChoice] = useState<OwnerFundingChoice>('owner_loan');
 
   // Pick a sensible default payment source.
   // In business mode: prefer a source that belongs to the active business profile.
@@ -573,10 +591,30 @@ export const AddExpenseDialog = ({
       transaction_type: result.transaction_type,
       transfer_destination_name: result.transfer_destination_name,
       recipient_name: result.recipient_name,
+      recipient_oib: (result as any).recipient_oib ?? null,
       issuer_name: result.issuer_name,
       issuer_oib: result.issuer_oib,
       issued_at_iso: result.issued_at_iso ?? null,
     });
+    // OIB/ime kupca → poslovni profil. Nikad iz poslovnog u osobno.
+    const routing = resolveReceiptBusinessRouting({
+      recipientOib: (result as any).recipient_oib ?? null,
+      recipientName: result.recipient_name,
+      profiles: ownBusinessProfiles,
+      activeBusinessProfileId: effectiveBusinessProfileId,
+    });
+    setFundingChoice('owner_loan');
+    if (routing.kind === 'auto') {
+      setScanRouting({ mode: 'auto', profileId: routing.profileId, profileName: routing.profileName });
+      setScanTargetProfileId(routing.profileId);
+    } else if (routing.kind === 'offer') {
+      setScanRouting({ mode: 'offer', profileId: routing.profileId, profileName: routing.profileName });
+      setScanTargetProfileId(null);
+    } else {
+      setScanRouting(null);
+      setScanTargetProfileId(null);
+    }
+
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
       setInstallmentCount(result.installment_count);
