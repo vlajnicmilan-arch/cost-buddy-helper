@@ -2229,7 +2229,9 @@
       "sources": "Failed to load payment sources",
       "installments": "Failed to load installment plans",
       "pending": "Failed to load pending transactions",
-      "logs": "Failed to load logs"
+      "logs": "Failed to load logs",
+      "retrying": "No internet connection — retrying",
+      "expensesNetwork": "No internet connection — transactions were not refreshed"
     },
     "save": {
       "generic": "Failed to save",

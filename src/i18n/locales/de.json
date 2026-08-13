@@ -2229,7 +2229,9 @@
       "sources": "Zahlungsquellen konnten nicht geladen werden",
       "installments": "Ratenpläne konnten nicht geladen werden",
       "pending": "Ausstehende Transaktionen konnten nicht geladen werden",
-      "logs": "Logs konnten nicht geladen werden"
+      "logs": "Logs konnten nicht geladen werden",
+      "retrying": "Keine Internetverbindung — neuer Versuch",
+      "expensesNetwork": "Keine Internetverbindung — Transaktionen wurden nicht aktualisiert"
     },
     "save": {
       "generic": "Speichern fehlgeschlagen",

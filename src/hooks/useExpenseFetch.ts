@@ -4,7 +4,10 @@ import { Expense, Category, PaymentSource, TransactionType } from '@/types/expen
 import { useAuth } from './useAuth';
 import { useStorage } from '@/contexts/StorageContext';
 
-import { showError, showSuccess } from '@/hooks/useStatusFeedback';
+import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
+import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { runWithTransientRetry, classifyFetchFailure } from '@/lib/expenseFetchRetry';
+
 import i18n from '@/i18n';
 import { detectAuthorOutcome } from '@/lib/krugAuthorOutcome';
 import { tr } from '@/lib/errorMessages';
@@ -46,6 +49,11 @@ export const useExpenseFetch = () => {
   // Kept in a ref so the realtime handler always sees the current shared set
   // without re-subscribing the channel on every shared-source change.
   const sharedIdsRef = useRef<Set<string>>(new Set());
+  // Fetch instrumentation — read by the failure branch so diagnostics can
+  // report how far the paginated fetch got and how long it took.
+  const fetchStartedAtRef = useRef<number>(0);
+  const fetchRowsRef = useRef<number>(0);
+
 
   const isLocalMode = storageMode === 'local' && !user;
 
@@ -132,27 +140,72 @@ export const useExpenseFetch = () => {
         };
         const orFilter = buildExpenseScopeFilter(scopeCtx);
 
-        // Paginated fetch to bypass Supabase 1000-row limit
-        let allData: any[] = [];
-        let from = 0;
+        // Paginated fetch to bypass Supabase 1000-row limit.
+        // Wrapped in a transient-failure retry: a dropped page (mobile
+        // network hiccup, 5xx) must not surface as a red error before we
+        // have actually tried again.
         const pageSize = 1000;
+        const startedAt = Date.now();
+        fetchStartedAtRef.current = startedAt;
+        fetchRowsRef.current = 0;
+        let rowsSoFar = 0;
 
-        while (true) {
-          let query = supabase
-            .from('expenses')
-            .select('*')
-            .order('date', { ascending: false })
-            .range(from, from + pageSize - 1);
+        const loadAllPages = async (): Promise<any[]> => {
+          const collected: any[] = [];
+          let from = 0;
+          while (true) {
+            let query = supabase
+              .from('expenses')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(from, from + pageSize - 1);
 
-          if (orFilter) query = query.or(orFilter);
+            if (orFilter) query = query.or(orFilter);
 
-          const { data, error } = await query;
+            const { data, error } = await query;
 
-          if (error) throw error;
-          if (!data || data.length === 0) break;
-          allData = allData.concat(data);
-          if (data.length < pageSize) break;
-          from += pageSize;
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            collected.push(...data);
+            rowsSoFar = collected.length;
+            fetchRowsRef.current = rowsSoFar;
+
+            if (data.length < pageSize) break;
+            from += pageSize;
+          }
+          return collected;
+        };
+
+        const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
+          onRetry: (info, attempt) => {
+            if (info.kind === 'network' || info.kind === 'timeout') {
+              showWarning(tr('errors.fetch.retrying', 'Nema veze s internetom — pokušavam ponovno'));
+            }
+            logDiagnostic({
+              event: 'expense_fetch_retried',
+              severity: 'warning',
+              details: {
+                cause: info.kind,
+                http_status: info.status ?? null,
+                attempt,
+                rows_so_far: rowsSoFar,
+                duration_ms: Date.now() - startedAt,
+              },
+            });
+          },
+        });
+
+        if (attempts > 1) {
+          logDiagnostic({
+            event: 'expense_fetch_retried',
+            severity: 'info',
+            details: {
+              cause: 'recovered',
+              attempts,
+              rows_so_far: allData.length,
+              duration_ms: Date.now() - startedAt,
+            },
+          });
         }
 
         const mapped = allData.map(e => ({
@@ -169,6 +222,7 @@ export const useExpenseFetch = () => {
         }));
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
+
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
@@ -223,7 +277,29 @@ export const useExpenseFetch = () => {
         }
       }
       console.error('Error fetching expenses:', error);
-      showError(tr('errors.fetch.expenses', 'Greška pri učitavanju troškova'));
+      // Honest failure message: name the cause (network vs everything else)
+      // only after the transient retries are exhausted. Cached rows stay
+      // visible — we never clear `expenses` here.
+      const info = classifyFetchFailure(error);
+      const isNetwork = info.kind === 'network' || info.kind === 'timeout';
+      showError(
+        isNetwork
+          ? tr('errors.fetch.expensesNetwork', 'Nema veze s internetom — transakcije nisu osvježene')
+          : tr('errors.fetch.expenses', 'Greška pri učitavanju transakcija'),
+      );
+      logDiagnostic({
+        event: 'expense_fetch_failed',
+        severity: 'error',
+        details: {
+          cause: info.kind,
+          http_status: info.status ?? null,
+          attempts: info.retryable ? 3 : 1,
+          rows_so_far: fetchRowsRef.current,
+          duration_ms: fetchStartedAtRef.current ? Date.now() - fetchStartedAtRef.current : null,
+          message: info.message.slice(0, 200),
+        },
+      });
+
     } finally {
       hydratedKeyRef.current = cacheKey;
       setLoading(false);
