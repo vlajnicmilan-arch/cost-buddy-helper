@@ -32,6 +32,7 @@ import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 import { LocalFileCache } from '@/hooks/useLocalFileCache';
 import { LocalStorage } from '@/hooks/useLocalStorage';
+import { OwnerFundingChoiceRow } from './business/OwnerFundingChoiceRow';
 import { KrugTransactionPanel } from './krug/KrugTransactionPanel';
 import { KrugExpenseSplitPanelGate } from './krug/KrugExpenseSplitPanelGate';
 
@@ -306,6 +307,15 @@ export const TransactionDetailDialog = ({
       setLoadingItems(false);
     }
   };
+
+  /** Osobni izvor = custom izvor koji ne pripada nijednom poslovnom profilu. */
+  const isPersonalPaymentSource = useMemo(() => {
+    const raw = expense?.payment_source;
+    if (!raw) return false;
+    const id = raw.startsWith('custom:') ? raw.replace('custom:', '') : raw;
+    const src = customPaymentSources.find((s) => s.id === id);
+    return !!src && !(src as any).business_profile_id;
+  }, [expense?.payment_source, customPaymentSources]);
 
   // Resolve payment source info - check for custom payment source first
   const paymentInfo = useMemo(() => {
@@ -693,6 +703,19 @@ export const TransactionDetailDialog = ({
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* POSLOVNI TROŠAK IZ OSOBNOG IZVORA — izbor knjiženja */}
+            {canEdit && (expense as any).business_profile_id && isPersonalPaymentSource && (
+              <OwnerFundingChoiceRow
+                expenseId={expense.id}
+                userId={user?.id}
+                businessProfileId={(expense as any).business_profile_id}
+                paymentSource={expense.payment_source}
+                amount={expense.amount}
+                description={expense.description || ''}
+                value={(expense as any).owner_funding_choice ?? null}
+              />
             )}
 
             {/* CITAT S IZVODA — doslovni redak, zatvoreno po zadanom */}

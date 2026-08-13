@@ -27,6 +27,7 @@ interface ParsedReceipt {
   transaction_type: 'expense' | 'transfer' | 'income';
   transfer_destination_name: string | null;
   recipient_name: string | null;
+  recipient_oib: string | null;
   issuer_name: string | null;
   issuer_oib: string | null;
   // Val 4 — strukturirani signali za scan-C1. Tier odluku NE radi ovaj hook;
@@ -300,6 +301,7 @@ export const useReceiptScanner = () => {
         transaction_type: data.transaction_type || 'expense',
         transfer_destination_name: data.transfer_destination_name || null,
         recipient_name: data.recipient_name || null,
+        recipient_oib: data.recipient_oib || null,
         issuer_name: data.issuer_name || merchantName || null,
         issuer_oib: data.issuer_oib || null,
         issued_at_iso: typeof data.issued_at_iso === 'string' ? data.issued_at_iso : null,

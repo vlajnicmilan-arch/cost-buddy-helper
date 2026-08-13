@@ -1631,7 +1631,11 @@
     "receiptMissingTitle": "Bild auf diesem Gerät nicht verfügbar",
     "receiptMissingDesc": "Das Bild wurde nur lokal gespeichert und ist wahrscheinlich auf dem vorherigen Gerät geblieben oder bei der Neuinstallation entfernt worden. Die Transaktion bleibt unverändert.",
     "attachNewReceipt": "Neues Bild anhängen",
-    "receiptReattached": "Neues Bild angehängt"
+    "receiptReattached": "Neues Bild angehängt",
+    "materialExpenseBadge": "Materialaufwand",
+    "materialExpenseTooltip": "Geschäftsausgabe privat bezahlt — kein Gesellschafterdarlehen",
+    "fundingChoiceTitle": "Privat bezahlt",
+    "fundingChoiceSaved": "Verbuchung aktualisiert"
   },
   "dashboard": {
     "balance": "Kontostand",
@@ -1936,6 +1940,20 @@
       "cta": "Upgrade für unbegrenzt",
       "close": "OK",
       "remaining": "Verbleibende Scans: {{remaining}}"
+    },
+    "routing": {
+      "autoNotice": "Die Rechnung lautet auf {{company}} — wird im Geschäftsprofil gespeichert.",
+      "undo": "Nein, privat",
+      "offerQuestion": "Der Käufer sieht aus wie {{company}} — im Geschäftsprofil speichern?",
+      "offerAccept": "Ja, geschäftlich",
+      "offerDecline": "Nein, privat",
+      "fundingTitle": "Geschäftsrechnung privat bezahlt — wie verbuchen wir das?",
+      "choiceOwnerLoan": "Gesellschafterdarlehen",
+      "choiceOwnerLoanHint": "Die Firma schuldet dir den Betrag.",
+      "choiceMaterial": "Materialaufwand",
+      "choiceMaterialHint": "Firmenausgabe ohne Darlehen.",
+      "choicePersonal": "Nein, das ist privat",
+      "choicePersonalHint": "Bleibt im privaten Profil."
     }
   },
   "summary": {

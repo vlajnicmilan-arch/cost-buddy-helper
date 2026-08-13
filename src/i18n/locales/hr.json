@@ -1635,7 +1635,11 @@
     "receiptMissingTitle": "Slika nije dostupna na ovom uređaju",
     "receiptMissingDesc": "Slika je spremljena samo lokalno pa je vjerojatno ostala na prethodnom uređaju ili je uklonjena pri ponovnoj instalaciji. Transakcija je netaknuta.",
     "attachNewReceipt": "Priloži novu sliku",
-    "receiptReattached": "Nova slika priložena"
+    "receiptReattached": "Nova slika priložena",
+    "materialExpenseBadge": "Materijalni trošak",
+    "materialExpenseTooltip": "Poslovni trošak plaćen iz osobnog računa — bez pozajmice vlasnika",
+    "fundingChoiceTitle": "Plaćeno osobnim izvorom",
+    "fundingChoiceSaved": "Knjiženje ažurirano"
   },
   "dashboard": {
     "balance": "Stanje",
@@ -1941,6 +1945,20 @@
       "cta": "Nadogradi za neograničeno",
       "close": "U redu",
       "remaining": "Preostalo skenova: {{remaining}}"
+    },
+    "routing": {
+      "autoNotice": "Račun glasi na {{company}} — spremam u poslovni profil.",
+      "undo": "Ne, osobno",
+      "offerQuestion": "Kupac izgleda kao {{company}} — spremiti u poslovni profil?",
+      "offerAccept": "Da, poslovno",
+      "offerDecline": "Ne, osobno",
+      "fundingTitle": "Poslovni račun plaćen osobnim izvorom — kako knjižimo?",
+      "choiceOwnerLoan": "Pozajmica vlasnika",
+      "choiceOwnerLoanHint": "Tvrtka ti ostaje dužna iznos.",
+      "choiceMaterial": "Materijalni trošak",
+      "choiceMaterialHint": "Trošak firme bez pozajmice.",
+      "choicePersonal": "Ne, ovo je osobno",
+      "choicePersonalHint": "Ostaje u osobnom profilu."
     }
   },
   "summary": {

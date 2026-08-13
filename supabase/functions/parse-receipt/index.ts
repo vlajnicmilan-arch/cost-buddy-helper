@@ -397,6 +397,10 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
     - recipient_name: Tvrtka/osoba koja je PRIMILA račun (kupac)
       - Traži: "Kupac:", "Račun za:", "Customer:", ili podatke kupca (naziv firme, OIB kupca)
       - Ako nema podataka o kupcu → recipient_name: null
+    - recipient_oib: OIB KUPCA (11 znamenki) ako je naveden uz podatke kupca
+      - Traži OIB koji stoji UZ kupca ("Kupac:", "Račun za:", "OIB kupca:") — NIKAD OIB izdavatelja
+      - Vrati SAMO 11 znamenki, bez prefiksa "HR" i bez razmaka
+      - Ako nema OIB-a kupca → recipient_oib: null
     - VAŽNO: merchant polje = issuer_name (naziv izdavatelja, skraćeni oblik za prikaz)
 
 === FORMAT ODGOVORA (SAMO JSON) ===
@@ -415,6 +419,7 @@ ${paymentSourcesContext}${cardMatchingRules}${customCategoriesContext}
   "transaction_type": "expense",
   "transfer_destination_name": null,
   "recipient_name": null,
+  "recipient_oib": null,
   "issuer_name": "KONZUM PLUS d.o.o.",
   "issuer_oib": "62226620908",
   "custom_payment_source_id": null,
@@ -725,6 +730,10 @@ Vrati SAMO JSON bez dodatnog teksta.`;
         transaction_type: receiptData.transaction_type || 'expense',
         transfer_destination_name: receiptData.transfer_destination_name || null,
         recipient_name: receiptData.recipient_name || null,
+        recipient_oib: (() => {
+          const digits = String(receiptData.recipient_oib ?? '').replace(/[^0-9]/g, '');
+          return digits.length === 11 ? digits : null;
+        })(),
         issuer_name: receiptData.issuer_name || receiptData.merchant || null,
         issuer_oib: receiptData.issuer_oib || null,
         custom_payment_source_id: receiptData.custom_payment_source_id || null,

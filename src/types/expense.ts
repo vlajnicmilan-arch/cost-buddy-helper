@@ -227,6 +227,12 @@ export interface Expense {
    * nikad zbog neodabrane kategorije. Ne utječe na upis ni na saldo.
    */
   needs_explanation?: boolean | null;
+  /**
+   * Izbor knjiženja kad je poslovni trošak plaćen osobnim izvorom:
+   * 'owner_loan' (stvara pozajmicu) ili 'material' (trošak firme bez pozajmice).
+   * NULL = odluka nije tražena (staro ponašanje).
+   */
+  owner_funding_choice?: string | null;
   // Veza na recurring pravilo iz kojeg je generiran (auto-gen idempotencija).
   recurring_transaction_id?: string | null;
   // Krug WS1 — vidi Krug Semantics Lock v1.

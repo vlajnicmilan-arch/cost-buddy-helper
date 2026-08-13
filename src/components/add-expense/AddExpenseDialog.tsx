@@ -34,6 +34,12 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { validateAmountInput } from '@/lib/amountValidation';
+import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
+import {
+  resolveReceiptBusinessRouting,
+  isPersonalSourceForProfile,
+  type OwnerFundingChoice,
+} from '@/lib/receiptBusinessRouting';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -90,6 +96,7 @@ interface ScannedData {
   transaction_type?: 'expense' | 'transfer' | 'income';
   transfer_destination_name?: string | null;
   recipient_name?: string | null;
+  recipient_oib?: string | null;
   issuer_name?: string | null;
   issuer_oib?: string | null;
   issued_at_iso?: string | null;
@@ -207,6 +214,17 @@ export const AddExpenseDialog = ({
   const { categorize: aiCategorize, cancel: cancelAICategorize } = useAICategorization();
   const { activeBusinessProfileId } = useAppState();
   const effectiveBusinessProfileId = businessProfileId ?? activeBusinessProfileId;
+  const { profiles: ownBusinessProfiles } = useBusinessProfiles();
+
+  // SKEN → POSLOVNI PROFIL (samo scan put; ručni unos ostaje netaknut).
+  const [scanRouting, setScanRouting] = useState<{
+    mode: 'auto' | 'offer';
+    profileId: string;
+    profileName: string;
+  } | null>(null);
+  /** Potvrđeni poslovni cilj iz skena (auto ili prihvaćena ponuda). */
+  const [scanTargetProfileId, setScanTargetProfileId] = useState<string | null>(null);
+  const [fundingChoice, setFundingChoice] = useState<OwnerFundingChoice>('owner_loan');
 
   // Pick a sensible default payment source.
   // In business mode: prefer a source that belongs to the active business profile.
@@ -573,10 +591,30 @@ export const AddExpenseDialog = ({
       transaction_type: result.transaction_type,
       transfer_destination_name: result.transfer_destination_name,
       recipient_name: result.recipient_name,
+      recipient_oib: (result as any).recipient_oib ?? null,
       issuer_name: result.issuer_name,
       issuer_oib: result.issuer_oib,
       issued_at_iso: result.issued_at_iso ?? null,
     });
+    // OIB/ime kupca → poslovni profil. Nikad iz poslovnog u osobno.
+    const routing = resolveReceiptBusinessRouting({
+      recipientOib: (result as any).recipient_oib ?? null,
+      recipientName: result.recipient_name,
+      profiles: ownBusinessProfiles,
+      activeBusinessProfileId: effectiveBusinessProfileId,
+    });
+    setFundingChoice('owner_loan');
+    if (routing.kind === 'auto') {
+      setScanRouting({ mode: 'auto', profileId: routing.profileId, profileName: routing.profileName });
+      setScanTargetProfileId(routing.profileId);
+    } else if (routing.kind === 'offer') {
+      setScanRouting({ mode: 'offer', profileId: routing.profileId, profileName: routing.profileName });
+      setScanTargetProfileId(null);
+    } else {
+      setScanRouting(null);
+      setScanTargetProfileId(null);
+    }
+
     if (result.is_installment && result.installment_count) {
       setIsInstallment(true);
       setInstallmentCount(result.installment_count);
@@ -634,6 +672,9 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving || isSavingRef.current) return;
+    // Cilj spremanja: aktivni poslovni profil, ili profil prepoznat sa skena
+    // (OIB kupca / potvrđena ponuda po imenu). Nikad obrnuto.
+    const saveBusinessProfileId = effectiveBusinessProfileId || scanTargetProfileId;
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
     if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
@@ -694,7 +735,7 @@ export const AddExpenseDialog = ({
       // Business mode validation: require an explicit custom payment source.
       // Generic 'cash'/'bank' would silently lose the personal-vs-business
       // distinction and bypass the owner-loan auto-creation in useExpenseCRUD.
-      if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
+      if (saveBusinessProfileId && !isTransfer && !isIncome) {
         const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
         if (!isCustom) {
           showError(t('business.payment.requirePaymentSource', 'Odaberi konkretan izvor plaćanja prije spremanja (poslovni ili osobni).'));
@@ -717,6 +758,17 @@ export const AddExpenseDialog = ({
       const finalAmount = totalWithTip ? validateAmountInput(totalWithTip).value : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
       const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
+      // Izbor knjiženja bilježimo SAMO kad je trošak stvarno poslovni i plaćen
+      // osobnim izvorom; inače polje ostaje prazno (staro ponašanje).
+      const personalSourceForTarget = isPersonalSourceForProfile({
+        customPaymentSourceId: scannedData.custom_payment_source_id,
+        sources: customPaymentSources,
+        targetBusinessProfileId: saveBusinessProfileId,
+      });
+      const scanFundingChoiceForSave =
+        saveBusinessProfileId && personalSourceForTarget && !isTransfer && !isIncome
+          ? (fundingChoice === 'material' ? 'material' : 'owner_loan')
+          : null;
       const newExpense = {
         amount: finalAmount,
         description: scannedData.description,
@@ -736,12 +788,13 @@ export const AddExpenseDialog = ({
         collaborator_id: selectedProjectId ? collaboratorId : null,
         is_advance: selectedProjectId ? isAdvance : false,
         linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
-        business_profile_id: effectiveBusinessProfileId || null,
+        business_profile_id: saveBusinessProfileId || null,
+        owner_funding_choice: scanFundingChoiceForSave,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
         // Krug WS1 — personal-only kontekst; ne šalji krug u business modu.
-        krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
-        krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+        krug_id: !saveBusinessProfileId ? (krugId || null) : null,
+        krug_privacy: !saveBusinessProfileId && krugId ? krugPrivacy : null,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
@@ -901,6 +954,9 @@ export const AddExpenseDialog = ({
     setLocationCoords(null);
     setKrugId(null);
     setKrugPrivacy(null);
+    setScanRouting(null);
+    setScanTargetProfileId(null);
+    setFundingChoice('owner_loan');
     // Novi logički unos → novi idempotency ključ.
     clientRequestIdRef.current = newClientRequestId();
 
@@ -1310,6 +1366,28 @@ export const AddExpenseDialog = ({
                 krugId={krugId}
                 krugPrivacy={krugPrivacy}
                 onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
+                routingMode={effectiveBusinessProfileId ? null : (scanTargetProfileId ? 'auto' : (scanRouting?.mode === 'offer' ? 'offer' : null))}
+                routingProfileName={scanRouting?.profileName ?? null}
+                onRoutingUndo={() => { setScanTargetProfileId(null); setScanRouting(null); setFundingChoice('owner_loan'); }}
+                onRoutingAcceptOffer={() => { if (scanRouting) setScanTargetProfileId(scanRouting.profileId); }}
+                onRoutingDeclineOffer={() => { setScanRouting(null); setScanTargetProfileId(null); }}
+                showFundingChoice={
+                  !effectiveBusinessProfileId &&
+                  !!scanTargetProfileId &&
+                  isPersonalSourceForProfile({
+                    customPaymentSourceId: scannedData.custom_payment_source_id,
+                    sources: customPaymentSources,
+                    targetBusinessProfileId: scanTargetProfileId,
+                  })
+                }
+                fundingChoice={fundingChoice}
+                onFundingChoiceChange={(choice) => {
+                  setFundingChoice(choice);
+                  if (choice === 'personal') {
+                    setScanTargetProfileId(null);
+                    setScanRouting(null);
+                  }
+                }}
               />
             </div>
           )}

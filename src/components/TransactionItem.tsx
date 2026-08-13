@@ -122,12 +122,16 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
 
   // Owner-loan: business expense paid from a personal source
   const isOwnerLoan = useMemo(() => {
+    if ((expense as any).owner_funding_choice === 'material') return false;
     return Boolean(
       (expense as any).business_profile_id &&
       customSource &&
       !(customSource as any).business_profile_id
     );
   }, [expense, customSource]);
+
+  /** Poslovni trošak iz osobnog izvora koji je korisnik proglasio materijalnim. */
+  const isMaterialFunding = (expense as any).owner_funding_choice === 'material';
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('hr-HR', {
@@ -280,6 +284,18 @@ const TransactionItemInner = ({ expense, onDelete, onClick, contextLookup }: Tra
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
                   <p className="text-xs">{t('transactions.ownerLoanTooltip', 'Poslovni trošak plaćen iz osobnog računa — kreirana pozajmica vlasnika')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {isMaterialFunding && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-[9px] py-0 px-1 h-4 border-primary/40 text-primary shrink-0">
+                    🧾 {t('transactions.materialExpenseBadge', 'Materijalni trošak')}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{t('transactions.materialExpenseTooltip', 'Poslovni trošak plaćen iz osobnog računa — bez pozajmice vlasnika')}</p>
                 </TooltipContent>
               </Tooltip>
             )}

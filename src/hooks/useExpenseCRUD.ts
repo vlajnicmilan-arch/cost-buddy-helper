@@ -341,6 +341,10 @@ export const useExpenseCRUD = ({
           // OZNAKA "BEZ OBJAŠNJENJA" — samo ako je korisnik sam kvačio kućicu
           // "Ne znam još što je ovo". Nikad iz heuristike/neodabrane kategorije.
           needs_explanation: (normalizedExpense as any).needs_explanation === true,
+          // SKEN → POSLOVNI PROFIL: izbor knjiženja kad je poslovni trošak
+          // plaćen osobnim izvorom ('owner_loan' | 'material'). NULL = staro
+          // ponašanje (odluka nije tražena).
+          owner_funding_choice: (normalizedExpense as any).owner_funding_choice ?? null,
           worker_payout_id: (normalizedExpense as any).worker_payout_id ?? null,
           worker_payout_batch_id: (normalizedExpense as any).worker_payout_batch_id ?? null,
           // Krug WS1 — Semantics Lock v1: krug_id primarno; ako je privacy='shared',
@@ -484,7 +488,9 @@ export const useExpenseCRUD = ({
         // Awaited so the debt entry exists before the UI refetches & closes the dialog —
         // otherwise the company view appears empty even though the expense was saved.
         const expenseBpId = (normalizedExpense as any).business_profile_id || activeBusinessProfileId || null;
-        if (expenseBpId && data && !isPendingMemberTransaction) {
+        // 'material' = korisnik je izričito rekao da ovo NIJE pozajmica.
+        const skipOwnerLoan = (normalizedExpense as any).owner_funding_choice === 'material';
+        if (expenseBpId && data && !isPendingMemberTransaction && !skipOwnerLoan) {
           try {
             await createOwnerLoanIfCrossMode({
               expenseId: data.id,
