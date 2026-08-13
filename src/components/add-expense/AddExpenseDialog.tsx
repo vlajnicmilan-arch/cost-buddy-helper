@@ -598,12 +598,25 @@ export const AddExpenseDialog = ({
       issued_at_iso: result.issued_at_iso ?? null,
     });
     // OIB/ime kupca → poslovni profil. Nikad iz poslovnog u osobno.
+    const scannedRecipientOib = (result as any).recipient_oib ?? null;
     const routing = resolveReceiptBusinessRouting({
-      recipientOib: (result as any).recipient_oib ?? null,
+      recipientOib: scannedRecipientOib,
       recipientName: result.recipient_name,
       profiles: ownBusinessProfiles,
       activeBusinessProfileId: effectiveBusinessProfileId,
     });
+    // Privremena instrumentacija (skida se nakon dijagnostike) — bez osobnih podataka.
+    try {
+      logDiagnostic('receipt_scan_fields', {
+        build: COMMIT_SHA,
+        has_recipient_name: !!(result.recipient_name && String(result.recipient_name).trim()),
+        has_recipient_oib: !!(scannedRecipientOib && String(scannedRecipientOib).trim()),
+        recipient_oib_len: String(scannedRecipientOib ?? '').replace(/[^0-9]/g, '').length,
+        routing_kind: routing.kind,
+        profiles_count: ownBusinessProfiles.length,
+        effective_business_profile: !!effectiveBusinessProfileId,
+      });
+    } catch { }
     setFundingChoice('owner_loan');
     if (routing.kind === 'auto') {
       setScanRouting({ mode: 'auto', profileId: routing.profileId, profileName: routing.profileName });
