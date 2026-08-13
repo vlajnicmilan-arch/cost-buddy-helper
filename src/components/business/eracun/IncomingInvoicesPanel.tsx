@@ -409,7 +409,9 @@ export const IncomingInvoicesPanel = () => {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-semibold text-sm">{formatAmount(Number(inv.total_amount))}</p>
-                  {inv.vat_amount != null && (
+                  {/* PDV je poslovni podatak: u osobnom kontekstu se ne prikazuje
+                      (podatak se i dalje sprema, samo se ne renderira). */}
+                  {!isPersonal && inv.vat_amount != null && (
                     <p className="text-[10px] text-muted-foreground">
                       {t('eracun.list.vat', 'PDV')} {formatAmount(Number(inv.vat_amount))}
                     </p>
