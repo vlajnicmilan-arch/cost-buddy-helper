@@ -132,27 +132,68 @@ export const useExpenseFetch = () => {
         };
         const orFilter = buildExpenseScopeFilter(scopeCtx);
 
-        // Paginated fetch to bypass Supabase 1000-row limit
-        let allData: any[] = [];
-        let from = 0;
+        // Paginated fetch to bypass Supabase 1000-row limit.
+        // Wrapped in a transient-failure retry: a dropped page (mobile
+        // network hiccup, 5xx) must not surface as a red error before we
+        // have actually tried again.
         const pageSize = 1000;
+        const startedAt = Date.now();
+        let rowsSoFar = 0;
 
-        while (true) {
-          let query = supabase
-            .from('expenses')
-            .select('*')
-            .order('date', { ascending: false })
-            .range(from, from + pageSize - 1);
+        const loadAllPages = async (): Promise<any[]> => {
+          const collected: any[] = [];
+          let from = 0;
+          while (true) {
+            let query = supabase
+              .from('expenses')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(from, from + pageSize - 1);
 
-          if (orFilter) query = query.or(orFilter);
+            if (orFilter) query = query.or(orFilter);
 
-          const { data, error } = await query;
+            const { data, error } = await query;
 
-          if (error) throw error;
-          if (!data || data.length === 0) break;
-          allData = allData.concat(data);
-          if (data.length < pageSize) break;
-          from += pageSize;
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            collected.push(...data);
+            rowsSoFar = collected.length;
+            if (data.length < pageSize) break;
+            from += pageSize;
+          }
+          return collected;
+        };
+
+        const { result: allData, attempts } = await runWithTransientRetry(loadAllPages, {
+          onRetry: (info, attempt) => {
+            if (info.kind === 'network' || info.kind === 'timeout') {
+              showWarning(tr('errors.fetch.retrying', 'Nema veze s internetom — pokušavam ponovno'));
+            }
+            logDiagnostic({
+              event: 'expense_fetch_retried',
+              severity: 'warning',
+              details: {
+                cause: info.kind,
+                http_status: info.status ?? null,
+                attempt,
+                rows_so_far: rowsSoFar,
+                duration_ms: Date.now() - startedAt,
+              },
+            });
+          },
+        });
+
+        if (attempts > 1) {
+          logDiagnostic({
+            event: 'expense_fetch_retried',
+            severity: 'info',
+            details: {
+              cause: 'recovered',
+              attempts,
+              rows_so_far: allData.length,
+              duration_ms: Date.now() - startedAt,
+            },
+          });
         }
 
         const mapped = allData.map(e => ({
@@ -169,6 +210,8 @@ export const useExpenseFetch = () => {
         }));
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
+        fetchStatsRef.current = { rows: mapped.length, durationMs: Date.now() - startedAt };
+
       }
     } catch (error) {
       const errMsg = String((error as any)?.message || error);
