@@ -672,6 +672,9 @@ export const AddExpenseDialog = ({
 
   const acceptScannedData = async () => {
     if (!scannedData || isSaving || isSavingRef.current) return;
+    // Cilj spremanja: aktivni poslovni profil, ili profil prepoznat sa skena
+    // (OIB kupca / potvrđena ponuda po imenu). Nikad obrnuto.
+    const saveBusinessProfileId = effectiveBusinessProfileId || scanTargetProfileId;
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
     if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
@@ -732,7 +735,7 @@ export const AddExpenseDialog = ({
       // Business mode validation: require an explicit custom payment source.
       // Generic 'cash'/'bank' would silently lose the personal-vs-business
       // distinction and bypass the owner-loan auto-creation in useExpenseCRUD.
-      if (effectiveBusinessProfileId && !isTransfer && !isIncome) {
+      if (saveBusinessProfileId && !isTransfer && !isIncome) {
         const isCustom = typeof finalPaymentSource === 'string' && finalPaymentSource.startsWith('custom:');
         if (!isCustom) {
           showError(t('business.payment.requirePaymentSource', 'Odaberi konkretan izvor plaćanja prije spremanja (poslovni ili osobni).'));
@@ -755,6 +758,17 @@ export const AddExpenseDialog = ({
       const finalAmount = totalWithTip ? validateAmountInput(totalWithTip).value : scannedData.amount;
       const tipNote = tipAmount > 0 ? `Napojnica: €${tipAmount.toFixed(2)}` : '';
       const finalType: TransactionType = isTransfer ? 'transfer' : (isIncome ? 'income' : 'expense');
+      // Izbor knjiženja bilježimo SAMO kad je trošak stvarno poslovni i plaćen
+      // osobnim izvorom; inače polje ostaje prazno (staro ponašanje).
+      const personalSourceForTarget = isPersonalSourceForProfile({
+        customPaymentSourceId: scannedData.custom_payment_source_id,
+        sources: customPaymentSources,
+        targetBusinessProfileId: saveBusinessProfileId,
+      });
+      const scanFundingChoiceForSave =
+        saveBusinessProfileId && personalSourceForTarget && !isTransfer && !isIncome
+          ? (fundingChoice === 'material' ? 'material' : 'owner_loan')
+          : null;
       const newExpense = {
         amount: finalAmount,
         description: scannedData.description,
@@ -774,11 +788,12 @@ export const AddExpenseDialog = ({
         collaborator_id: selectedProjectId ? collaboratorId : null,
         is_advance: selectedProjectId ? isAdvance : false,
         linked_advance_ids: (selectedProjectId && !isAdvance && linkedAdvanceIds.length > 0) ? linkedAdvanceIds : [],
-        business_profile_id: effectiveBusinessProfileId || null,
+        business_profile_id: saveBusinessProfileId || null,
+        owner_funding_choice: scanFundingChoiceForSave,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
         // Krug WS1 — personal-only kontekst; ne šalji krug u business modu.
-        krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
+        krug_id: !saveBusinessProfileId ? (krugId || null) : null,
         krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
