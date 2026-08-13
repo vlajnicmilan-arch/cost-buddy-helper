@@ -32,6 +32,7 @@ import { useInAppReview } from '@/hooks/useInAppReview';
 import { useLocation } from '@/hooks/useLocation';
 import { useBackButton } from '@/hooks/useBackButton';
 import { logDiagnostic } from '@/lib/diagnosticLogger';
+import { COMMIT_SHA } from '@/lib/version';
 import { setNativeFlowActive } from '@/lib/nativeFlowGuard';
 import { validateAmountInput } from '@/lib/amountValidation';
 import { useBusinessProfiles } from '@/hooks/useBusinessProfiles';
