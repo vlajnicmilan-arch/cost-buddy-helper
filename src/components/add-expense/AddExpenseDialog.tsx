@@ -794,7 +794,7 @@ export const AddExpenseDialog = ({
         income_source_id: transferDestinationId || undefined,
         // Krug WS1 — personal-only kontekst; ne šalji krug u business modu.
         krug_id: !saveBusinessProfileId ? (krugId || null) : null,
-        krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+        krug_privacy: !saveBusinessProfileId && krugId ? krugPrivacy : null,
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
@@ -954,6 +954,9 @@ export const AddExpenseDialog = ({
     setLocationCoords(null);
     setKrugId(null);
     setKrugPrivacy(null);
+    setScanRouting(null);
+    setScanTargetProfileId(null);
+    setFundingChoice('owner_loan');
     // Novi logički unos → novi idempotency ključ.
     clientRequestIdRef.current = newClientRequestId();
 
@@ -1363,6 +1366,28 @@ export const AddExpenseDialog = ({
                 krugId={krugId}
                 krugPrivacy={krugPrivacy}
                 onKrugChange={({ krugId: nextId, privacy }) => { setKrugId(nextId); setKrugPrivacy(privacy); }}
+                routingMode={effectiveBusinessProfileId ? null : (scanTargetProfileId ? 'auto' : (scanRouting?.mode === 'offer' ? 'offer' : null))}
+                routingProfileName={scanRouting?.profileName ?? null}
+                onRoutingUndo={() => { setScanTargetProfileId(null); setScanRouting(null); setFundingChoice('owner_loan'); }}
+                onRoutingAcceptOffer={() => { if (scanRouting) setScanTargetProfileId(scanRouting.profileId); }}
+                onRoutingDeclineOffer={() => { setScanRouting(null); setScanTargetProfileId(null); }}
+                showFundingChoice={
+                  !effectiveBusinessProfileId &&
+                  !!scanTargetProfileId &&
+                  isPersonalSourceForProfile({
+                    customPaymentSourceId: scannedData.custom_payment_source_id,
+                    sources: customPaymentSources,
+                    targetBusinessProfileId: scanTargetProfileId,
+                  })
+                }
+                fundingChoice={fundingChoice}
+                onFundingChoiceChange={(choice) => {
+                  setFundingChoice(choice);
+                  if (choice === 'personal') {
+                    setScanTargetProfileId(null);
+                    setScanRouting(null);
+                  }
+                }}
               />
             </div>
           )}
