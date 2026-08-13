@@ -40,6 +40,7 @@ import {
   isPersonalSourceForProfile,
   type OwnerFundingChoice,
 } from '@/lib/receiptBusinessRouting';
+import { buildKrugFields } from '@/lib/krugExpenseFields';
 
 import { ScannedDataPreview } from './ScannedDataPreview';
 import { ManualExpenseForm } from './ManualExpenseForm';
@@ -676,7 +677,7 @@ export const AddExpenseDialog = ({
     // (OIB kupca / potvrđena ponuda po imenu). Nikad obrnuto.
     const saveBusinessProfileId = effectiveBusinessProfileId || scanTargetProfileId;
     // Krug attach guard — parity s manual putom: nema skrivenog defaulta.
-    if (!effectiveBusinessProfileId && krugId && krugPrivacy == null) {
+    if (!saveBusinessProfileId && krugId && krugPrivacy == null) {
       showError(
         t('krug.selector.pickPrivacyHint', 'Odaberi Moje ili Za Krug prije spremanja.')
       );
@@ -792,9 +793,9 @@ export const AddExpenseDialog = ({
         owner_funding_choice: scanFundingChoiceForSave,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
         income_source_id: transferDestinationId || undefined,
-        // Krug WS1 — personal-only kontekst; ne šalji krug u business modu.
-        krug_id: !saveBusinessProfileId ? (krugId || null) : null,
-        krug_privacy: !saveBusinessProfileId && krugId ? krugPrivacy : null,
+        // Krug WS1 — personal-only kontekst; efektivni profil NAKON routinga.
+        ...buildKrugFields(saveBusinessProfileId, krugId, krugPrivacy),
+
         note: (isInstallment && scannedData.installment_count) 
           ? `${scannedData.installment_count}x rata${tipNote ? ' • ' + tipNote : ''}`
           : (tipNote || undefined),
@@ -1166,12 +1167,9 @@ export const AddExpenseDialog = ({
         expense_nature: (selectedProjectId || selectedBudgetId) ? expenseNature : undefined,
         business_profile_id: effectiveBusinessProfileId || null,
         currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
-        // WS2b — Krug parity za installment create granu. Isti guard kao u manual/scan
-        // putu: personal-only, transfer je već isključen (this branch = non-transfer),
-        // `private` nije izbor. Krug se veže na inicijalni expense zapis; plan rata
-        // ostaje bez vlastite Krug semantike (nema novog modela).
-        krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
-        krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+        // WS2b — Krug parity za installment create granu (isti helper kao manual/scan).
+        ...buildKrugFields(effectiveBusinessProfileId, krugId, krugPrivacy),
+
         needs_explanation: needsExplanation,
       };
       await onAdd(installmentExpense, validItems.length > 0 ? validItems : undefined);
@@ -1215,8 +1213,8 @@ export const AddExpenseDialog = ({
       currency: selectedSourceCurrencyCode !== primaryCurrency.code ? selectedSourceCurrencyCode : null,
       income_source_id: type === 'transfer' ? (transferDestination || undefined) : undefined,
       // Krug WS1 — personal-only kontekst.
-      krug_id: !effectiveBusinessProfileId ? (krugId || null) : null,
-      krug_privacy: !effectiveBusinessProfileId && krugId ? krugPrivacy : null,
+      ...buildKrugFields(effectiveBusinessProfileId, krugId, krugPrivacy),
+
       needs_explanation: needsExplanation,
     };
 
