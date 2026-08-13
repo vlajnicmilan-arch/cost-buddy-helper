@@ -15,6 +15,8 @@ import { exportFile } from '@/lib/fileExport';
 import { Capacitor } from '@capacitor/core';
 import { showError, showSuccess } from '@/hooks/useStatusFeedback';
 import { RawLineDisclosure } from '@/components/statement/RawLineDisclosure';
+import { useExpenseDetailFields } from '@/hooks/useExpenseDetailFields';
+import { mergeHeavyFields } from '@/lib/expenseHeavyFields';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { getLocalReceiptItems } from '@/lib/storage/indexedDB';
@@ -49,7 +51,7 @@ interface TransactionDetailDialogProps {
 }
 
 export const TransactionDetailDialog = ({
-  expense,
+  expense: expenseRow,
   open,
   onOpenChange,
   onEdit,
@@ -57,6 +59,11 @@ export const TransactionDetailDialog = ({
   contentClassName,
   readOnlyKrug = false,
 }: TransactionDetailDialogProps) => {
+
+  // Teška polja (bank_raw_line, location_name) više nisu dio liste — detalj ih
+  // dohvaća lijeno, po id-u, tek pri otvaranju.
+  const heavyFields = useExpenseDetailFields(expenseRow?.id, open);
+  const expense = useMemo(() => mergeHeavyFields(expenseRow, heavyFields), [expenseRow, heavyFields]);
 
   
   const [items, setItems] = useState<ReceiptItem[]>([]);

@@ -16,13 +16,16 @@ import { withAuthRetry } from '@/lib/supabaseRetry';
 import { useHiddenPaymentSources } from './useHiddenPaymentSources';
 import { useWalletViewMode } from '@/contexts/WalletViewModeContext';
 import { instantCache } from '@/lib/instantCache';
+import { EXPENSE_LIST_SELECT } from '@/lib/expenseColumns';
 import { buildExpenseScopeFilter, belongsToMyScope, type ScopeContext } from '@/lib/expenseScope';
 
+// v3: bumped after the explicit-column select (lista više ne nosi teška
+// polja poput bank_raw_line) — stari v2 snapshot se jednostavno ignorira.
 // v2: bumped after P0 Core Financial Contamination fix — invalidates any
 // cached datasets that may have leaked foreign project transactions via
 // the is_project_member RLS branch.
 const expensesCacheKey = (userId: string | undefined) =>
-  `expenses:v2:${userId || 'anon'}`;
+  `expenses:v3:${userId || 'anon'}`;
 
 export const useExpenseFetch = () => {
   const { user } = useAuth();
@@ -156,7 +159,7 @@ export const useExpenseFetch = () => {
           while (true) {
             let query = supabase
               .from('expenses')
-              .select('*')
+              .select(EXPENSE_LIST_SELECT)
               .order('date', { ascending: false })
               .range(from, from + pageSize - 1);
 
@@ -243,7 +246,7 @@ export const useExpenseFetch = () => {
           while (true) {
             let q = supabase
               .from('expenses')
-              .select('*')
+              .select(EXPENSE_LIST_SELECT)
               .order('date', { ascending: false })
               .range(retryFrom, retryFrom + 999);
             if (orFilter) q = q.or(orFilter);
