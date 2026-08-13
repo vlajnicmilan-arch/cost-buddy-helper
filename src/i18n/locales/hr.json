@@ -2234,7 +2234,9 @@
       "sources": "Greška pri dohvaćanju izvora plaćanja",
       "installments": "Greška pri učitavanju planova rata",
       "pending": "Greška pri učitavanju transakcija na čekanju",
-      "logs": "Greška pri učitavanju logova"
+      "logs": "Greška pri učitavanju logova",
+      "retrying": "Nema veze s internetom — pokušavam ponovno",
+      "expensesNetwork": "Nema veze s internetom — transakcije nisu osvježene"
     },
     "save": {
       "generic": "Greška pri spremanju",

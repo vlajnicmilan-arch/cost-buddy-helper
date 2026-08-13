@@ -53,7 +53,6 @@ export const useExpenseFetch = () => {
   // report how far the paginated fetch got and how long it took.
   const fetchStartedAtRef = useRef<number>(0);
   const fetchRowsRef = useRef<number>(0);
-  const fetchStatsRef = useRef<{ rows: number; durationMs: number } | null>(null);
 
 
   const isLocalMode = storageMode === 'local' && !user;
@@ -223,7 +222,6 @@ export const useExpenseFetch = () => {
         }));
         setExpenses(mapped);
         instantCache.write(cacheKey, mapped);
-        fetchStatsRef.current = { rows: mapped.length, durationMs: Date.now() - startedAt };
 
       }
     } catch (error) {
