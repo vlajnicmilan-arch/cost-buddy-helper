@@ -338,7 +338,7 @@ export function classifyImport(input: ClassifierInput): ClassifierOutput {
 
 
     // Exactly one candidate → izvedeno ime (merchant → opis) odlučuje.
-    const cand = b.candidates[0];
+    const cand = available[0];
     const bankName = deriveComparableName({ ...b.row, statementBankName: input.statementBankName });
     const manualName = deriveComparableName({ ...cand, statementBankName: input.statementBankName });
 
