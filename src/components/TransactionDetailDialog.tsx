@@ -308,6 +308,15 @@ export const TransactionDetailDialog = ({
     }
   };
 
+  /** Osobni izvor = custom izvor koji ne pripada nijednom poslovnom profilu. */
+  const isPersonalPaymentSource = useMemo(() => {
+    const raw = expense?.payment_source;
+    if (!raw) return false;
+    const id = raw.startsWith('custom:') ? raw.replace('custom:', '') : raw;
+    const src = customPaymentSources.find((s) => s.id === id);
+    return !!src && !(src as any).business_profile_id;
+  }, [expense?.payment_source, customPaymentSources]);
+
   // Resolve payment source info - check for custom payment source first
   const paymentInfo = useMemo(() => {
     if (!expense) {
@@ -697,7 +706,7 @@ export const TransactionDetailDialog = ({
             )}
 
             {/* POSLOVNI TROŠAK IZ OSOBNOG IZVORA — izbor knjiženja */}
-            {canEdit && (expense as any).business_profile_id && paymentSourceInfo?.isPersonalSource && (
+            {canEdit && (expense as any).business_profile_id && isPersonalPaymentSource && (
               <OwnerFundingChoiceRow
                 expenseId={expense.id}
                 userId={user?.id}
