@@ -147,6 +147,8 @@ export const useExpenseFetch = () => {
         // have actually tried again.
         const pageSize = 1000;
         const startedAt = Date.now();
+        fetchStartedAtRef.current = startedAt;
+        fetchRowsRef.current = 0;
         let rowsSoFar = 0;
 
         const loadAllPages = async (): Promise<any[]> => {
@@ -167,6 +169,8 @@ export const useExpenseFetch = () => {
             if (!data || data.length === 0) break;
             collected.push(...data);
             rowsSoFar = collected.length;
+            fetchRowsRef.current = rowsSoFar;
+
             if (data.length < pageSize) break;
             from += pageSize;
           }
