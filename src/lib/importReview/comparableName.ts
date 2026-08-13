@@ -26,6 +26,47 @@ export interface ComparableNameInput {
 /** Minimalna duljina riječi koja se smatra značajnom pri usporedbi imena. */
 export const SIGNIFICANT_WORD_MIN_LENGTH = 3;
 
+/**
+ * VODEĆI BANKOVNI GLAGOLI — "Plaćanje", "Uplata", "POS kup." i sl. nisu dio
+ * imena protustrane, nego opis radnje banke. Uklanjaju se SAMO s početka
+ * imena; pojava u sredini/kraju ostaje netaknuta da "Naknada za plaćanje"
+ * ostane "naknada za placanje" i dalje se poklapa s ostalim naknadama.
+ * Vrijednosti su već normalizirane (mala slova, bez dijakritike/interpunkcije).
+ */
+const LEADING_BANK_VERBS: readonly (readonly string[])[] = [
+  ['trajni', 'nalog'],
+  ['pos', 'kup'],
+  ['placanje'],
+  ['uplata'],
+  ['isplata'],
+  ['prijenos'],
+  ['naplata'],
+  ['transakcija'],
+  ['kup'],
+  ['dc'],
+  ['sepa'],
+];
+
+/** Uklanja vodeći glagolski prefiks; nikad ne vraća prazno (tada original). */
+export function stripLeadingBankVerbs(normalized: string): string {
+  if (!normalized) return normalized;
+  let tokens = normalized.split(/\s+/).filter(Boolean);
+  let changed = true;
+  while (changed && tokens.length > 0) {
+    changed = false;
+    for (const verb of LEADING_BANK_VERBS) {
+      if (tokens.length <= verb.length) continue;
+      if (verb.every((w, i) => tokens[i] === w)) {
+        tokens = tokens.slice(verb.length);
+        changed = true;
+        break;
+      }
+    }
+  }
+  const stripped = tokens.join(' ');
+  return stripped || normalized;
+}
+
 function cleanTechnical(raw: string): string {
   return raw
     .split(/[,;]+/)
@@ -44,9 +85,10 @@ export function deriveComparableName(input: ComparableNameInput): string {
   const isStatementIssuer = merchant.length > 0
     && issuerNames.some((issuer) => areMerchantsSimilar(merchant, issuer));
   const fromMerchant = isStatementIssuer ? '' : normalizeMerchant(merchant);
-  if (fromMerchant) return fromMerchant;
-  return normalizeMerchant(cleanTechnical(input.description ?? ''));
+  if (fromMerchant) return stripLeadingBankVerbs(fromMerchant);
+  return stripLeadingBankVerbs(normalizeMerchant(cleanTechnical(input.description ?? '')));
 }
+
 
 /** Ima li ime barem jednu značajnu riječ (>= 3 znaka)? */
 export function hasSignificantWord(name: string): boolean {
