@@ -26,7 +26,7 @@ describe('deriveComparableName', () => {
 });
 
 describe('sužavanje kandidata imenom (faza 2.5)', () => {
-  it('Kristina Cerina ↔ Ana Milanovic — razdvaja se, pitanje ostaje s jednim kandidatom', () => {
+  it('Kristina Cerina ↔ Ana Milanovic — sužavanje ostavlja po jednog kandidata i ime ga pozitivno potvrđuje', () => {
     const out = classifyImport({
       imported: [
         { index: 0, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
@@ -37,10 +37,11 @@ describe('sužavanje kandidata imenom (faza 2.5)', () => {
         { id: 'm2', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
       ],
     });
-    expect(out.autoMerge).toEqual([]); // ograda (c): nula novih tihih spajanja
-    expect(out.questions).toHaveLength(2);
-    expect(out.questions[0].candidateIds).toEqual(['m1']);
-    expect(out.questions[1].candidateIds).toEqual(['m2']);
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([
+      { importedIndex: 0, manualId: 'm1', origin: 'merchant' },
+      { importedIndex: 1, manualId: 'm2', origin: 'merchant' },
+    ]);
   });
 
   it('Naknada ↔ Naknada za plaćanje — NE razdvaja', () => {
@@ -97,7 +98,7 @@ describe('sužavanje kandidata imenom (faza 2.5)', () => {
     expect(out.questions[0].candidateIds.sort()).toEqual(['m1', 'm2']);
   });
 
-  it('INVARIJANTA: sužavanje ne stvara nijedan novi autoMerge par', () => {
+  it('sužavanje spaja SAMO uz pozitivnu potvrdu imena (svaki par ima podudarno ime)', () => {
     const imported = [
       { index: 0, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
       { index: 1, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
@@ -109,8 +110,12 @@ describe('sužavanje kandidata imenom (faza 2.5)', () => {
       { id: 'm3', paymentSource: SRC, type: 'expense', amount: 11, date: day('2026-02-10'), merchantName: 'Ale Hop' },
     ];
     const out = classifyImport({ imported, manualCandidates });
-    // Jedini autoMerge je onaj koji je i prije postojao: 1 kandidat + isti trgovac.
-    expect(out.autoMerge).toEqual([{ importedIndex: 2, manualId: 'm3', origin: 'merchant' }]);
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([
+      { importedIndex: 0, manualId: 'm1', origin: 'merchant' },
+      { importedIndex: 1, manualId: 'm2', origin: 'merchant' },
+      { importedIndex: 2, manualId: 'm3', origin: 'merchant' },
+    ]);
   });
 });
 

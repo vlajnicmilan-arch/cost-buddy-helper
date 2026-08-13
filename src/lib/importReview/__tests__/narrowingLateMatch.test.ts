@@ -22,8 +22,9 @@ const manualCandidates: ClassifierManualCandidate[] = [
 describe('sužavanje ↔ ponuda kasne kartice', () => {
   it('izbačeni kandidat postaje slobodan za PONUDU (ne za spajanje)', () => {
     const classified = classifyImport({ imported, manualCandidates });
-    expect(classified.autoMerge).toEqual([]);
-    expect(classified.questions[0].candidateIds).toEqual(['m1']); // m2 izbačen imenom
+    // Sužavanje ostavlja m1, a ime ga pozitivno potvrđuje → spajanje.
+    expect(classified.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
+    expect(classified.questions).toEqual([]); // m2 izbačen imenom
 
     const claimed = new Set<string>([
       ...classified.autoMerge.map(p => p.manualId),
