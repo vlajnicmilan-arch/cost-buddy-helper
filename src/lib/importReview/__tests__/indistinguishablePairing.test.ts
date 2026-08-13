@@ -31,7 +31,7 @@ describe('automatsko uparivanje nerazlučivih kandidata', () => {
     expect(used).toEqual(['m1', 'm2', 'm3', 'm4']);
   });
 
-  it('imena se razlikuju (Kristina Cerina / Ana Milanovic) → nema uparivanja', () => {
+  it('imena se razlikuju (Kristina Cerina / Ana Milanovic) → nema NERAZLUČIVOG uparivanja, ali svako ime pozitivno potvrđuje svog kandidata', () => {
     const out = classifyImport({
       imported: [
         { index: 0, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
@@ -42,10 +42,11 @@ describe('automatsko uparivanje nerazlučivih kandidata', () => {
         { id: 'm2', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
       ],
     });
-    expect(out.autoMerge).toEqual([]);
-    expect(out.questions).toHaveLength(2);
-    expect(out.questions[0].candidateIds).toEqual(['m1']);
-    expect(out.questions[1].candidateIds).toEqual(['m2']);
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([
+      { importedIndex: 0, manualId: 'm1', origin: 'merchant' },
+      { importedIndex: 1, manualId: 'm2', origin: 'merchant' },
+    ]);
   });
 
   it('jedna strana bez imena → pitanje, nema uparivanja', () => {
@@ -103,7 +104,7 @@ describe('opis ulazi u odluku o spajanju', () => {
     expect(new Set(out.autoMerge.map((pair) => pair.manualId)).size).toBe(5);
   });
 
-  it('stop-vrijednost vrijedi i na ručnom kandidatu, ali Kristina/Ana ostaju pitanje', () => {
+  it('stop-vrijednost na ručnom kandidatu; Kristina/Ana se sužavaju pa pozitivno potvrde imenom', () => {
     expect(deriveComparableName({
       merchantName: 'OTP banka',
       description: 'Naknada za paket',
@@ -121,8 +122,11 @@ describe('opis ulazi u odluku o spajanju', () => {
         { id: 'm2', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
       ],
     });
-    expect(out.autoMerge).toEqual([]);
-    expect(out.questions).toHaveLength(2);
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([
+      { importedIndex: 0, manualId: 'm1', origin: 'merchant' },
+      { importedIndex: 1, manualId: 'm2', origin: 'merchant' },
+    ]);
   });
 
   it('"Naknada za paket" samo u opisu s obje strane, 1 kandidat → autoMerge', () => {
