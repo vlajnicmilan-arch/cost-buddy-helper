@@ -49,6 +49,12 @@ export const useExpenseFetch = () => {
   // Kept in a ref so the realtime handler always sees the current shared set
   // without re-subscribing the channel on every shared-source change.
   const sharedIdsRef = useRef<Set<string>>(new Set());
+  // Fetch instrumentation — read by the failure branch so diagnostics can
+  // report how far the paginated fetch got and how long it took.
+  const fetchStartedAtRef = useRef<number>(0);
+  const fetchRowsRef = useRef<number>(0);
+  const fetchStatsRef = useRef<{ rows: number; durationMs: number } | null>(null);
+
 
   const isLocalMode = storageMode === 'local' && !user;
 
