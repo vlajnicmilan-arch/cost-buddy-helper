@@ -18,6 +18,8 @@ import { PaymentSourceOptions } from './PaymentSourceOptions';
 import type { KrugSelectorPrivacy } from '@/components/krug/KrugSelector';
 import { AttachmentBar } from './AttachmentBar';
 import { MilestoneSelectRow } from './MilestoneSelectRow';
+import { ReceiptBusinessRoutingPanel } from './ReceiptBusinessRoutingPanel';
+import type { OwnerFundingChoice } from '@/lib/receiptBusinessRouting';
 
 
 interface ScannedData {
@@ -90,6 +92,18 @@ interface ScannedDataPreviewProps {
   krugPrivacy?: KrugSelectorPrivacy | null;
   onKrugChange?: (next: { krugId: string | null; privacy: KrugSelectorPrivacy | null }) => void;
 
+  /**
+   * SKEN → POSLOVNI PROFIL. `routingMode` je 'auto' (prepoznat OIB kupca),
+   * 'offer' (poklopilo se samo ime) ili null (nema prijedloga).
+   */
+  routingMode?: 'auto' | 'offer' | null;
+  routingProfileName?: string | null;
+  onRoutingUndo?: () => void;
+  onRoutingAcceptOffer?: () => void;
+  onRoutingDeclineOffer?: () => void;
+  showFundingChoice?: boolean;
+  fundingChoice?: OwnerFundingChoice;
+  onFundingChoiceChange?: (choice: OwnerFundingChoice) => void;
 }
 
 export const ScannedDataPreview = ({
@@ -123,6 +137,14 @@ export const ScannedDataPreview = ({
   krugPrivacy = null,
 
   onKrugChange,
+  routingMode = null,
+  routingProfileName = null,
+  onRoutingUndo,
+  onRoutingAcceptOffer,
+  onRoutingDeclineOffer,
+  showFundingChoice = false,
+  fundingChoice = 'owner_loan',
+  onFundingChoiceChange,
 }: ScannedDataPreviewProps) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
@@ -396,6 +418,17 @@ export const ScannedDataPreview = ({
             </p>
           </div>
         )}
+
+        <ReceiptBusinessRoutingPanel
+          mode={routingMode}
+          profileName={routingProfileName}
+          onUndo={() => onRoutingUndo?.()}
+          onAcceptOffer={() => onRoutingAcceptOffer?.()}
+          onDeclineOffer={() => onRoutingDeclineOffer?.()}
+          showFundingChoice={showFundingChoice}
+          fundingChoice={fundingChoice}
+          onFundingChoiceChange={(c) => onFundingChoiceChange?.(c)}
+        />
 
         {/* Payment source selector */}
         <div className="space-y-2">
