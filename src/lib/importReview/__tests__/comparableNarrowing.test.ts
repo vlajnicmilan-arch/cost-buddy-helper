@@ -113,3 +113,75 @@ describe('sužavanje kandidata imenom (faza 2.5)', () => {
     expect(out.autoMerge).toEqual([{ importedIndex: 2, manualId: 'm3', origin: 'merchant' }]);
   });
 });
+
+describe('pozitivna potvrda imenom spaja (uzak rez)', () => {
+  it('"Plaćanje Kristina Cerina" + jedini kandidat "Kristina Cerina" → autoMerge', () => {
+    const out = classifyImport({
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 10, date: day('2026-02-10'), merchantName: 'Plaćanje Kristina Cerina' },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 10, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
+      ],
+    });
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
+  });
+
+  it('dva kandidata prije sužavanja → nakon sužavanja 1 → autoMerge, Ana netaknuta', () => {
+    const out = classifyImport({
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Plaćanje Kristina Cerina' },
+        { index: 1, paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Plaćanje Ana Milanovic' },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Kristina Cerina' },
+        { id: 'm2', paymentSource: SRC, type: 'expense', amount: 50, date: day('2026-02-10'), merchantName: 'Ana Milanovic' },
+      ],
+    });
+    expect(out.questions).toEqual([]);
+    expect(out.autoMerge).toEqual([
+      { importedIndex: 0, manualId: 'm1', origin: 'merchant' },
+      { importedIndex: 1, manualId: 'm2', origin: 'merchant' },
+    ]);
+  });
+
+  it('MAPEI SILIKON s jednim kandidatom "Kera Term" → I DALJE pitanje', () => {
+    const out = classifyImport({
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 39.9, date: day('2026-02-13'), merchantName: 'Plaćanje MAPEI SILIKON' },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 39.9, date: day('2026-02-13'), merchantName: 'Kera Term Trgovina, Zadar' },
+      ],
+    });
+    expect(out.autoMerge).toEqual([]);
+    expect(out.questions).toEqual([{ importedIndex: 0, reason: 'merchant_mismatch', candidateIds: ['m1'] }]);
+  });
+
+  it('jedna strana bez imena → pitanje', () => {
+    const out = classifyImport({
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 7, date: day('2026-02-10'), merchantName: null },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 7, date: day('2026-02-10'), merchantName: 'Kafic' },
+      ],
+    });
+    expect(out.autoMerge).toEqual([]);
+    expect(out.questions[0].reason).toBe('no_merchant');
+  });
+
+  it('"Naknada za plaćanje" ↔ "Naknada" i dalje se poklapaju', () => {
+    expect(deriveComparableName({ merchantName: 'Naknada za plaćanje' })).toBe('naknada za placanje');
+    const out = classifyImport({
+      imported: [
+        { index: 0, paymentSource: SRC, type: 'expense', amount: 1.5, date: day('2026-02-11'), merchantName: 'Naknada za plaćanje' },
+      ],
+      manualCandidates: [
+        { id: 'm1', paymentSource: SRC, type: 'expense', amount: 1.5, date: day('2026-02-11'), merchantName: 'Naknada' },
+      ],
+    });
+    expect(out.autoMerge).toEqual([{ importedIndex: 0, manualId: 'm1', origin: 'merchant' }]);
+  });
+});
