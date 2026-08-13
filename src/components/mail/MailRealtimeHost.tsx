@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMailImportAccess } from '@/hooks/useMailImportAccess';
 import { useMailRealtime } from '@/hooks/useMailRealtime';
+import { useStatementLinkResolver } from '@/hooks/useStatementLinkResolver';
 import { showSuccess } from '@/hooks/useStatusFeedback';
 
 /**
@@ -26,6 +27,8 @@ export const MailRealtimeHost = () => {
   }, [t, navigate]);
 
   useMailRealtime({ enabled: hasAccess, onNewPending });
+  // Veza kartica izvoda -> zabiljezeni uvoz zivi globalno (prezivi navigaciju/skicu).
+  useStatementLinkResolver();
 
   return null;
 };

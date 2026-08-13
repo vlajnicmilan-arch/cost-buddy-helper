@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { useHiddenPaymentSources } from '@/hooks/useHiddenPaymentSources';
 import { CustomPaymentSourceDialog } from './CustomPaymentSourceDialog';
+import { WalletAccountIdentifier } from './WalletAccountIdentifier';
 import { BalanceCorrectionDialog } from './BalanceCorrectionDialog';
 import { PaymentSourceMembersDialog } from './PaymentSourceMembersDialog';
 import { CustomPaymentSource, SUGGESTED_PAYMENT_SOURCES } from '@/types/customPaymentSource';
@@ -403,6 +404,7 @@ export const CustomPaymentSourcesPanel = ({ hideHeader = false, onSourceClick, o
                   {source.description && (
                     <p className="text-xs text-muted-foreground">{source.description}</p>
                   )}
+                  <WalletAccountIdentifier identifier={source.account_identifier} />
                 </div>
               </div>
               {/* Row 2: Balance + Action buttons */}
