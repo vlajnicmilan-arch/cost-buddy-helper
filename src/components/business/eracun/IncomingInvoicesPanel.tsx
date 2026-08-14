@@ -323,12 +323,12 @@ export const IncomingInvoicesPanel = () => {
         {!isPersonal && (
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
             {direction === 'out' && (
-              <Button size="sm" variant="outline" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setMatchOpen(true)}>
+              <Button size="sm" variant="outline" className="min-h-[36px] basis-full sm:basis-auto sm:flex-none min-w-0" onClick={() => setMatchOpen(true)}>
                 <Link2 className="w-3.5 h-3.5 mr-1 shrink-0" />
                 <span className="truncate">{t('eracun.match.open', 'Poveži uplate')}</span>
               </Button>
             )}
-            <Button size="sm" className="min-h-[36px] flex-1 sm:flex-none min-w-0" onClick={() => setImportOpen(true)}>
+            <Button size="sm" className="min-h-[36px] basis-full sm:basis-auto sm:flex-none min-w-0" onClick={() => setImportOpen(true)}>
               <Upload className="w-3.5 h-3.5 mr-1 shrink-0" />
               <span className="truncate">{t('eracun.importButton', 'Učitaj eRačun (XML)')}</span>
             </Button>

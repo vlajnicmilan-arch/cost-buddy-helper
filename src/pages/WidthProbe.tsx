@@ -13,7 +13,7 @@ const WidthProbe = () => {
     <div>
       <button onClick={() => setOpen(true)}>open</button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto overflow-x-hidden max-w-full">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto overflow-x-hidden max-w-full p-4 sm:p-6">
           <PageContainer noVerticalPadding className="pt-2 min-w-0 w-full">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
@@ -39,11 +39,11 @@ const WidthProbe = () => {
                     </TabsList>
                   </Tabs>
                   <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
-                    <Button size="sm" variant="outline" className="min-h-[36px] flex-1 sm:flex-none min-w-0">
+                    <Button size="sm" variant="outline" className="min-h-[36px] basis-full sm:basis-auto sm:flex-none min-w-0">
                       <Link2 className="w-3.5 h-3.5 mr-1 shrink-0" />
                       <span className="truncate">Poveži uplate</span>
                     </Button>
-                    <Button size="sm" className="min-h-[36px] flex-1 sm:flex-none min-w-0">
+                    <Button size="sm" className="min-h-[36px] basis-full sm:basis-auto sm:flex-none min-w-0">
                       <Upload className="w-3.5 h-3.5 mr-1 shrink-0" />
                       <span className="truncate">Učitaj eRačun (XML)</span>
                     </Button>
