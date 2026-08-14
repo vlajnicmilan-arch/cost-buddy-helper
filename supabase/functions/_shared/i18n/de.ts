@@ -229,4 +229,8 @@ export default {
   "notifications.project_expense_review.rejected.message": "{{actor}} hat „{{description}}\" ({{amount}}) im Projekt „{{project}}\" abgelehnt. Grund: {{reason}}",
   "notifications.mail.pending.title": "Ein neues Dokument wartet auf Prüfung",
   "notifications.mail.pending.body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige.",
+  "notifications.invoice_due.upcoming.title": "Rechnung in 3 Tagen fällig",
+  "notifications.invoice_due.upcoming.message": "{{supplier}} — {{amount}}, fällig am {{date}}",
+  "notifications.invoice_due.today.title": "Rechnung heute fällig",
+  "notifications.invoice_due.today.message": "{{supplier}} — {{amount}}, fällig am {{date}}",
 } as const;

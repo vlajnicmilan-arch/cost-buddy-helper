@@ -229,4 +229,8 @@ export default {
   "notifications.project_expense_review.rejected.message": "{{actor}} rejected „{{description}}\" ({{amount}}) in project „{{project}}\". Reason: {{reason}}",
   "notifications.mail.pending.title": "A new document is waiting for review",
   "notifications.mail.pending.body": "A document arrived by e-mail. Open the review and confirm.",
+  "notifications.invoice_due.upcoming.title": "Invoice due in 3 days",
+  "notifications.invoice_due.upcoming.message": "{{supplier}} — {{amount}}, due {{date}}",
+  "notifications.invoice_due.today.title": "Invoice due today",
+  "notifications.invoice_due.today.message": "{{supplier}} — {{amount}}, due {{date}}",
 } as const;
