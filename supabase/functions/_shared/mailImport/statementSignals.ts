@@ -25,6 +25,8 @@ export interface StatementVerdict {
   isStatement: boolean;
   /** Točno 1 signal — sumnja, čovjek bira. */
   needsHumanChoice: boolean;
+  /** Mjesečni izvod charge/kreditne kartice (tablica troškova, ne bankovni promet). */
+  isCardStatement: boolean;
   /** Imena pogođenih signala (za dijagnostiku i testove). */
   signals: string[];
   extraction: StatementExtraction;
