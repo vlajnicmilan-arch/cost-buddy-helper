@@ -472,3 +472,22 @@ export function classifyAsStatement(
 }
 
 
+/**
+ * PRAVILO TIŠINE — „nesigurno nikad ne nestaje".
+ *
+ * Dokument koji nosi financijsku supstancu (broj računa u IBAN obliku + više
+ * iznosa / tablicu) ne smije tiho pasti u `nije_za_nas` kad je pouzdanost
+ * NISKA. Namjerno LABAV IBAN uzorak: ovdje se ne presuđuje o točnosti broja,
+ * nego samo o tome zaslužuje li dokument ljudsko oko.
+ */
+const LOOSE_IBAN_RE = /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/;
+const MIN_AMOUNTS_FOR_SUBSTANCE = 3;
+
+export function carriesFinancialSubstance(rawText: string | null | undefined): boolean {
+  const text = normalizeSpace(rawText ?? '');
+  if (text.trim().length === 0) return false;
+  const hasIban = LOOSE_IBAN_RE.test(text) || findValidIbans(text).length > 0;
+  if (!hasIban) return false;
+  const amounts = text.match(new RegExp(AMOUNT, 'g')) ?? [];
+  return amounts.length >= MIN_AMOUNTS_FOR_SUBSTANCE;
+}
