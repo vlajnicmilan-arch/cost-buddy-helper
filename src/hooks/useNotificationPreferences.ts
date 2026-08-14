@@ -31,6 +31,7 @@ export interface NotificationPreferences {
   krug_enabled: boolean;
   krug_settlement_reminder_enabled: boolean;
   decisions_enabled: boolean;
+  invoice_due_enabled: boolean;
 }
 
 
@@ -50,6 +51,7 @@ const DEFAULT_PREFS: NotificationPreferences = {
   krug_enabled: true,
   krug_settlement_reminder_enabled: true,
   decisions_enabled: true,
+  invoice_due_enabled: true,
 };
 
 const COL_BY_CATEGORY: Record<PushCategory, keyof NotificationPreferences> = {
@@ -101,6 +103,7 @@ export const useNotificationPreferences = () => {
           krug_enabled: (data as any).krug_enabled ?? true,
           krug_settlement_reminder_enabled: (data as any).krug_settlement_reminder_enabled ?? true,
           decisions_enabled: (data as any).decisions_enabled ?? true,
+          invoice_due_enabled: (data as any).invoice_due_enabled ?? true,
         });
       } else {
         setPrefs(DEFAULT_PREFS);
