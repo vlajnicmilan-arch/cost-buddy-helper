@@ -307,13 +307,55 @@ function detectHeaderIban(lines: readonly string[]): string | null {
 
 
 /**
+ * MJESEČNI IZVOD CHARGE/KREDITNE KARTICE.
+ *
+ * Banka ga NASLOVLJAVA „obavijest", pa nema ni „izvod", ni „stanje", ni
+ * duguje/potražuje — klasični sidreni signali ga ne vide i propadao je u tihi
+ * `nije_za_nas`.
+ *
+ * TVRDA OGRADA PROTIV PROMIDŽBE: signali zaglavlja („Odobreni limit",
+ * „Datum terećenja", „Broj računa namirenja", naslov obavijesti) broje se
+ * ISKLJUČIVO ako dokument nosi TABLICU TRANSAKCIJA. Promidžbena ili
+ * informativna kartična poruka nema retke prometa i ostaje van lijevka.
+ */
+const CARD_TXN_ROW_RE = new RegExp(
+  // „…,SPLIT.HRV/12.02/EUR/44,57…" — mjesto/datum/valuta/iznos u retku troška.
+  String.raw`\/\d{1,2}\.\d{1,2}\/[A-Z]{3}\/${AMOUNT}`,
+);
+const CARD_TXN_ROWS_THRESHOLD = 3;
+
+const CARD_HEADER_PATTERNS: readonly { name: string; re: RegExp }[] = [
+  {
+    name: 'kartica_obavijest_naslov',
+    re: /obavijest\s+o\s+u[cč]injenim\s+tro[sš]kovima[^\n]{0,40}kartic/i,
+  },
+  { name: 'datum_terecenja', re: /datum\s+tere[cć]enja/i },
+  { name: 'odobreni_limit', re: /odobreni\s+limit/i },
+  { name: 'racun_namirenja', re: /broj\s+ra[cč]una\s+namirenja/i },
+  { name: 'broj_kartice', re: /za\s+karticu\s+broj/i },
+];
+
+/** Signali kartičnog izvoda; prazno kad nema tablice troškova. */
+export function cardStatementSignals(lines: readonly string[]): string[] {
+  const rows = lines.filter((l) => CARD_TXN_ROW_RE.test(l)).length;
+  if (rows < CARD_TXN_ROWS_THRESHOLD) return [];
+  const text = lines.join('\n');
+  const hits = CARD_HEADER_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+  // Sama tablica bez ijednog zaglavlja nije dokaz kartičnog izvoda.
+  return hits.length === 0 ? [] : ['karticni_retci', ...hits];
+}
+
+export const CARD_STATEMENT_SIGNAL = 'karticni_retci';
+
+/**
  * Sidreni signali (case-insensitive). Traži se ≥2 različita.
  */
 export function statementSignals(rawText: string): string[] {
   const text = normalizeSpace(rawText ?? '');
   if (text.trim().length === 0) return [];
   const lines = text.split(/\r?\n/);
-  const hits: string[] = [];
+  const hits: string[] = [...cardStatementSignals(lines)];
+
 
   // Naslov „IZVOD PROMETA (PO RAČUNU)" je sam po sebi dokaz — nosi ga KEKS Pay
   // i druge e-novčanik izvatke bez IBAN-a i bez duguje/potražuje stupaca.
