@@ -59,8 +59,21 @@ describe('ImportReview — tiha validacija', () => {
   });
 
   it('gate obaveznih polja ostaje — potvrda bez canConfirm ne izvršava uvoz', () => {
-    expect(SRC).toMatch(/if \(!summary\.canConfirm\) \{[\s\S]{0,240}setAttemptedConfirm\(true\);[\s\S]{0,40}return;/);
+    expect(SRC).toMatch(/if \(!summary\.canConfirm\) \{[\s\S]{0,600}setAttemptedConfirm\(true\);[\s\S]{0,600}return;/);
   });
+
+  it('potvrda govori što koči — poruka s brojkama i skok na prvi sporni redak', () => {
+    expect(SRC).toContain('setBlockerMessages(buildBlockerMessages(summary, t));');
+    expect(SRC).toContain('firstBlockingRowIndex(payload, decisions)');
+    expect(SRC).toContain('data-testid="confirm-blockers"');
+  });
+
+  it('vidljiv izlaz "izvan mojih računa" koristi postojeći enabled:false put', () => {
+    expect(SRC).toContain("t('importReview.outsideAccounts.button')");
+    expect(SRC).toMatch(/data-testid=\{`transfer-outside-\$\{row\.index\}`\}/);
+    expect(SRC).toMatch(/enabled: false, rememberRule: false/);
+  });
+
 
   it('polja se označavaju dirnutima pri odabiru smjera i novčanika', () => {
     expect(SRC.match(/markTouched\(row\.index\);/g)?.length).toBeGreaterThanOrEqual(2);

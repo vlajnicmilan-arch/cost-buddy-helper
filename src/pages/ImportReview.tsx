@@ -41,6 +41,7 @@ import {
   setTransferDecision,
   summarize,
 } from '@/lib/importReview/state';
+import { buildBlockerMessages, firstBlockingRowIndex } from '@/lib/importReview/confirmBlockers';
 import {
   executeDecisions,
   ImportExecutionIncompleteError,
@@ -130,6 +131,8 @@ const ImportReview = () => {
    * su nepromijenjena — gate i dalje živi u `summarize()`/`handleConfirm`.
    */
   const [attemptedConfirm, setAttemptedConfirm] = useState(false);
+  /** Riječi uz crvene okvire: ŠTO točno koči potvrdu (brojke iz summarizea). */
+  const [blockerMessages, setBlockerMessages] = useState<string[]>([]);
   const [touchedRows, setTouchedRows] = useState<Record<number, boolean>>({});
   const markTouched = useCallback((idx: number) => {
     setTouchedRows(prev => (prev[idx] ? prev : { ...prev, [idx]: true }));
@@ -365,12 +368,18 @@ const ImportReview = () => {
       // Gate je isti kao prije (nastavak nije moguć) — mijenja se samo trenutak
       // kad upozorenja postanu vidljiva.
       setAttemptedConfirm(true);
+      setBlockerMessages(buildBlockerMessages(summary, t));
+      const firstIdx = firstBlockingRowIndex(payload, decisions);
+      if (firstIdx !== null && typeof document !== 'undefined') {
+        document.getElementById(`ir-row-${firstIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     if (!user) {
       showError(t('common.notAuthenticated'), { module: 'wallet' });
       return;
     }
+    setBlockerMessages([]);
     setConfirming(true);
     saveDraft(payload.jobId, decisions);
     let result: ExecutorResult | null = null;
@@ -697,12 +706,46 @@ const ImportReview = () => {
       : classifyTransferDescription(row.description).direction;
     const currentDirection: MoneyDirection | null =
       derivedDirection ?? (td?.enabled ? td.direction : suggestedDirection);
-    const showControls = !!td?.enabled || isTransferClass;
+    /**
+     * Korisnik je izričito rekao "novac je otišao izvan mojih računa" —
+     * postojeći `enabled:false` put (redak se uvozi po predznaku). Ovdje je
+     * samo VIDLJIVO stanje te odluke, bez ikakve promjene logike.
+     */
+    const optedOut = isTransferClass && td?.enabled === false;
+    const showControls = (!!td?.enabled || isTransferClass) && !optedOut;
     const showValidation = attemptedConfirm || touchedRows[row.index] === true;
     const missingTarget = showControls && !currentTargetId && showValidation;
     const missingDirection =
       showControls && !derivedDirection && currentDirection !== 'in'
       && currentDirection !== 'out' && showValidation;
+
+    if (optedOut) {
+      return (
+        <div
+          className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/40 p-2"
+          data-testid={`transfer-opted-out-${row.index}`}
+        >
+          <span className="text-xs text-foreground">
+            {currentDirection === 'in'
+              ? t('importReview.outsideAccounts.appliedIn')
+              : t('importReview.outsideAccounts.appliedOut')}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs shrink-0"
+            onClick={() => updateTransfer(
+              row.index,
+              buildDecision(row, currentTargetId, false, currentDirection),
+            )}
+          >
+            {t('importReview.outsideAccounts.undo')}
+          </Button>
+        </div>
+      );
+    }
+
 
     if (!showControls) {
       // Compact CTA for new/question rows. Clicking creates an ENABLED
@@ -835,6 +878,29 @@ const ImportReview = () => {
               : t('importReview.transferTargetRequired')}
           </p>
         )}
+
+        {/* TREĆI ODGOVOR, RAVNOPRAVAN: novac je otišao izvan korisnikovih
+            računa — odredišni novčanik ne postoji. Isti put kao ghost
+            "Nije prijenos" (enabled:false), samo vidljiv. */}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="w-full min-h-11 rounded-lg text-xs"
+          data-testid={`transfer-outside-${row.index}`}
+          onClick={() => {
+            if (isTransferClass) {
+              updateTransfer(row.index, { ...activeDecision, enabled: false, rememberRule: false });
+            } else {
+              updateTransfer(row.index, null);
+            }
+          }}
+        >
+          <X className="w-3.5 h-3.5 mr-1.5" />
+          {t('importReview.outsideAccounts.button')}
+        </Button>
+
+
 
         {/* "Zapamti" — nudi se uvijek osim kad pravilo VEĆ postoji u bazi.
             Prepoznati (keyword) prijenosi nemaju pravilo, pa se bez ovoga
@@ -1001,7 +1067,7 @@ const ImportReview = () => {
             )}
             <ul className="space-y-2">
               {grouped.transfers.map((row) => (
-                <li key={row.index} className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+                <li key={row.index} id={`ir-row-${row.index}`} className="rounded-xl border border-primary/40 bg-primary/5 p-3">
                   <div className="flex items-start gap-3 min-h-11">
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between gap-2">
@@ -1057,7 +1123,7 @@ const ImportReview = () => {
                 const answer = decisions.questions[row.index];
                 const reasonKey = `importReview.reasons.${row.classification.reason}` as const;
                 return (
-                  <li key={row.index} className={cn(
+                  <li key={row.index} id={`ir-row-${row.index}`} className={cn(
                     'rounded-xl border p-3 space-y-3',
                     answer ? 'border-border/60 bg-card' : 'border-amber-500/50 bg-amber-500/5',
                   )}>
@@ -1188,6 +1254,20 @@ const ImportReview = () => {
               skipped: summary.plannedSkipped,
             })}
           </p>
+          {blockerMessages.length > 0 && !summary.canConfirm && (
+            <div
+              className="rounded-lg border border-destructive/60 bg-destructive/5 p-2 space-y-1"
+              role="alert"
+              data-testid="confirm-blockers"
+            >
+              {blockerMessages.map(msg => (
+                <p key={msg} className="text-[11px] text-destructive flex items-start gap-1">
+                  <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                  <span>{msg}</span>
+                </p>
+              ))}
+            </div>
+          )}
           <Button
             className="w-full min-h-12 rounded-xl"
             onClick={handleConfirm}
