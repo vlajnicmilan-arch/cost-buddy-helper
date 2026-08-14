@@ -13,6 +13,7 @@ export type IssueSeverity = "info" | "warning" | "critical";
 export type IssueType =
   | "project_loss_zone"
   | "overdue_invoice"
+  | "overdue_incoming_invoice"
   | "budget_burn"
   | "cashflow_risk";
 
