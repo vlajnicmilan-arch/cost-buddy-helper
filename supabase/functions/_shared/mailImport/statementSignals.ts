@@ -427,11 +427,14 @@ export function classifyAsStatement(
   // Dokaz = dva sidra od kojih barem jedno nije slabo.
   const isStatement = signals.length >= STATEMENT_SIGNAL_THRESHOLD && strong >= 1;
 
+  const isCardStatement = signals.includes(CARD_STATEMENT_SIGNAL);
+
   if (!isStatement) {
     return {
       isStatement: false,
       // Sumnja postoji samo uz TOČNO jedan jak signal; sam IBAN nije sumnja.
       needsHumanChoice: strong === 1,
+      isCardStatement: false,
       signals,
       extraction: {
         bank_name: null,
@@ -454,6 +457,7 @@ export function classifyAsStatement(
   return {
     isStatement: true,
     needsHumanChoice: false,
+    isCardStatement,
     signals,
     extraction: {
       bank_name: detectBankName(zoneText, subject),
