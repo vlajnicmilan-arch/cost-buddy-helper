@@ -3962,6 +3962,7 @@ export type Database = {
           family_override_push: boolean
           family_reactions_push: boolean
           id: string
+          invoice_due_enabled: boolean
           krug_enabled: boolean
           krug_settlement_reminder_enabled: boolean
           participant_digest_enabled: boolean
@@ -3989,6 +3990,7 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          invoice_due_enabled?: boolean
           krug_enabled?: boolean
           krug_settlement_reminder_enabled?: boolean
           participant_digest_enabled?: boolean
@@ -4016,6 +4018,7 @@ export type Database = {
           family_override_push?: boolean
           family_reactions_push?: boolean
           id?: string
+          invoice_due_enabled?: boolean
           krug_enabled?: boolean
           krug_settlement_reminder_enabled?: boolean
           participant_digest_enabled?: boolean
