@@ -182,7 +182,11 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
           : '—',
     },
     {
-      label: t('statements.field.closingBalance', 'Novo stanje'),
+      // Charge kartica nema „stanje" — ono što piše je ukupni iznos terećenja.
+      label: isCardStatement
+        ? t('statements.field.cardCharge', 'Iznos terećenja')
+        : t('statements.field.closingBalance', 'Novo stanje'),
+
       value:
         extraction.closing_balance === null || extraction.closing_balance === undefined
           ? '—'
