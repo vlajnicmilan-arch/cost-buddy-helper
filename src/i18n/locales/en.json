@@ -6077,6 +6077,16 @@
       "badge": "Auto-paired — indistinguishable candidates",
       "split": "Split",
       "rejoin": "Restore merge"
+    },
+    "outsideAccounts": {
+      "button": "Went outside my accounts",
+      "appliedOut": "Imported as an expense by sign",
+      "appliedIn": "Imported as income by sign",
+      "undo": "Undo"
+    },
+    "blockers": {
+      "transfers": "{{count}} transfers without a destination — pick a wallet or \"Went outside my accounts\"",
+      "questions": "{{count}} questions unanswered"
     }
   },
   "correctionDelete": {

@@ -6077,6 +6077,16 @@
       "badge": "Automatisch zugeordnet — nicht unterscheidbare Kandidaten",
       "split": "Trennen",
       "rejoin": "Zusammenführung wiederherstellen"
+    },
+    "outsideAccounts": {
+      "button": "Ging außerhalb meiner Konten",
+      "appliedOut": "Wird als Ausgabe nach Vorzeichen importiert",
+      "appliedIn": "Wird als Einnahme nach Vorzeichen importiert",
+      "undo": "Zurück"
+    },
+    "blockers": {
+      "transfers": "{{count}} Überweisungen ohne Ziel — Wallet wählen oder „Ging außerhalb meiner Konten“",
+      "questions": "{{count}} unbeantwortete Fragen"
     }
   },
   "correctionDelete": {

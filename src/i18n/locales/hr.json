@@ -6086,6 +6086,16 @@
       "badge": "Automatski upareno — nerazlučivi kandidati",
       "split": "Razdvoji",
       "rejoin": "Vrati spajanje"
+    },
+    "outsideAccounts": {
+      "button": "Otišlo izvan mojih računa",
+      "appliedOut": "Uvozi se kao rashod po predznaku",
+      "appliedIn": "Uvozi se kao prihod po predznaku",
+      "undo": "Vrati"
+    },
+    "blockers": {
+      "transfers": "{{count}} prijenosa bez odredišta — odaberi novčanik ili „Otišlo izvan mojih računa”",
+      "questions": "{{count}} pitanja bez odgovora"
     }
   },
   "correctionDelete": {
