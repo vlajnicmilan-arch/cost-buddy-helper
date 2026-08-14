@@ -14,7 +14,7 @@ const WidthProbe = () => {
       <button onClick={() => setOpen(true)}>open</button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="h-[85vh] overflow-y-auto overflow-x-hidden max-w-full">
-          <PageContainer noVerticalPadding className="pt-2 min-w-0">
+          <PageContainer noVerticalPadding className="pt-2 min-w-0 w-full">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <FileInput className="w-5 h-5 text-primary" />
