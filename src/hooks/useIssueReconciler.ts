@@ -14,12 +14,14 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   detectProjectLossZone,
   detectOverdueInvoices,
+  detectOverdueIncomingInvoices,
   detectBudgetBurn,
   reconcileIssues,
   type IssueType,
   type IssueCandidate,
 } from "@/lib/issueDetection";
 import { useUnpaidInvoices } from "@/hooks/useUnpaidInvoices";
+import { useOverdueIncomingInvoices } from "@/hooks/useOverdueIncomingInvoices";
 import { useBudgets } from "@/hooks/useBudgets";
 import type { Expense } from "@/types/expense";
 import type { ProjectWithOwnership } from "@/types/project";
