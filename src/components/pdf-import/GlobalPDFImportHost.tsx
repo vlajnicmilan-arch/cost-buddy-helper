@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
+import { emitQuestionTraces } from '@/lib/importReview/questionTrace';
+import { COMMIT_SHA } from '@/lib/version';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
@@ -555,6 +557,22 @@ export const GlobalPDFImportHost = () => {
 
       const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
       classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
+
+      // SLJEDIVOST — jedan dijagnostički trag po pitanju (bez iznosa, samo
+      // izvedena imena). Ne dira klasifikaciju ni UI.
+      try {
+        emitQuestionTraces(
+          {
+            build: COMMIT_SHA,
+            questions: classified.questions,
+            imported: importedForClassifier,
+            manualCandidates: manualCandidatesForClassifier,
+            statementBankName: pdfImport.result.detected_bank,
+          },
+          (event, details) => logDiagnostic(event, details),
+        );
+      } catch { /* dijagnostika nikad ne smije srušiti uvoz */ }
+
 
 
       // --- Transfer rules pre-pass (KORAK 3 rule engine) --------------------
