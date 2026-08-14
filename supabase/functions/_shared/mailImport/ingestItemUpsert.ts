@@ -18,6 +18,8 @@ export interface UpsertResult {
   id: string | null;
   action: UpsertAction;
   status: string | null;
+  /** Status PRIJE pisanja — obavijest se šalje i na prijelaz u „na_pregledu". */
+  previousStatus: string | null;
 }
 
 /** Minimalno sučelje Supabase klijenta koje ovaj modul koristi (radi testabilnosti). */
@@ -56,7 +58,12 @@ export async function upsertIngestItem(
 
   if (existing?.id) {
     if (USER_DECIDED_STATUSES.includes(String(existing.status) as never)) {
-      return { id: existing.id, action: 'skipped', status: existing.status ?? null };
+      return {
+        id: existing.id,
+        action: 'skipped',
+        status: existing.status ?? null,
+        previousStatus: existing.status ?? null,
+      };
     }
     // Korisnikova korekcija odredišta je ODLUKA — ponovna obrada osvježava
     // ekstrakciju, ali NIKAD ne vraća scope na strojni izračun.
@@ -73,7 +80,12 @@ export async function upsertIngestItem(
       .from('document_ingest_items')
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
-    return { id: existing.id, action: 'updated', status: String(row.status ?? existing.status ?? '') };
+    return {
+      id: existing.id,
+      action: 'updated',
+      status: String(row.status ?? existing.status ?? ''),
+      previousStatus: existing.status ?? null,
+    };
   }
 
   const { data: inserted } = await client
@@ -83,5 +95,5 @@ export async function upsertIngestItem(
     .single();
 
   const id = (inserted as { id?: string } | null)?.id ?? null;
-  return { id, action: 'inserted', status: String(row.status ?? '') };
+  return { id, action: 'inserted', status: String(row.status ?? ''), previousStatus: null };
 }

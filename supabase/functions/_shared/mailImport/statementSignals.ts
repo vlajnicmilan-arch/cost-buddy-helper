@@ -25,6 +25,8 @@ export interface StatementVerdict {
   isStatement: boolean;
   /** Točno 1 signal — sumnja, čovjek bira. */
   needsHumanChoice: boolean;
+  /** Mjesečni izvod charge/kreditne kartice (tablica troškova, ne bankovni promet). */
+  isCardStatement: boolean;
   /** Imena pogođenih signala (za dijagnostiku i testove). */
   signals: string[];
   extraction: StatementExtraction;
@@ -305,13 +307,55 @@ function detectHeaderIban(lines: readonly string[]): string | null {
 
 
 /**
+ * MJESEČNI IZVOD CHARGE/KREDITNE KARTICE.
+ *
+ * Banka ga NASLOVLJAVA „obavijest", pa nema ni „izvod", ni „stanje", ni
+ * duguje/potražuje — klasični sidreni signali ga ne vide i propadao je u tihi
+ * `nije_za_nas`.
+ *
+ * TVRDA OGRADA PROTIV PROMIDŽBE: signali zaglavlja („Odobreni limit",
+ * „Datum terećenja", „Broj računa namirenja", naslov obavijesti) broje se
+ * ISKLJUČIVO ako dokument nosi TABLICU TRANSAKCIJA. Promidžbena ili
+ * informativna kartična poruka nema retke prometa i ostaje van lijevka.
+ */
+const CARD_TXN_ROW_RE = new RegExp(
+  // „…,SPLIT.HRV/12.02/EUR/44,57…" — mjesto/datum/valuta/iznos u retku troška.
+  String.raw`\/\d{1,2}\.\d{1,2}\/[A-Z]{3}\/${AMOUNT}`,
+);
+const CARD_TXN_ROWS_THRESHOLD = 3;
+
+const CARD_HEADER_PATTERNS: readonly { name: string; re: RegExp }[] = [
+  {
+    name: 'kartica_obavijest_naslov',
+    re: /obavijest\s+o\s+u[cč]injenim\s+tro[sš]kovima[^\n]{0,40}kartic/i,
+  },
+  { name: 'datum_terecenja', re: /datum\s+tere[cć]enja/i },
+  { name: 'odobreni_limit', re: /odobreni\s+limit/i },
+  { name: 'racun_namirenja', re: /broj\s+ra[cč]una\s+namirenja/i },
+  { name: 'broj_kartice', re: /za\s+karticu\s+broj/i },
+];
+
+/** Signali kartičnog izvoda; prazno kad nema tablice troškova. */
+export function cardStatementSignals(lines: readonly string[]): string[] {
+  const rows = lines.filter((l) => CARD_TXN_ROW_RE.test(l)).length;
+  if (rows < CARD_TXN_ROWS_THRESHOLD) return [];
+  const text = lines.join('\n');
+  const hits = CARD_HEADER_PATTERNS.filter((p) => p.re.test(text)).map((p) => p.name);
+  // Sama tablica bez ijednog zaglavlja nije dokaz kartičnog izvoda.
+  return hits.length === 0 ? [] : ['karticni_retci', ...hits];
+}
+
+export const CARD_STATEMENT_SIGNAL = 'karticni_retci';
+
+/**
  * Sidreni signali (case-insensitive). Traži se ≥2 različita.
  */
 export function statementSignals(rawText: string): string[] {
   const text = normalizeSpace(rawText ?? '');
   if (text.trim().length === 0) return [];
   const lines = text.split(/\r?\n/);
-  const hits: string[] = [];
+  const hits: string[] = [...cardStatementSignals(lines)];
+
 
   // Naslov „IZVOD PROMETA (PO RAČUNU)" je sam po sebi dokaz — nosi ga KEKS Pay
   // i druge e-novčanik izvatke bez IBAN-a i bez duguje/potražuje stupaca.
@@ -383,11 +427,14 @@ export function classifyAsStatement(
   // Dokaz = dva sidra od kojih barem jedno nije slabo.
   const isStatement = signals.length >= STATEMENT_SIGNAL_THRESHOLD && strong >= 1;
 
+  const isCardStatement = signals.includes(CARD_STATEMENT_SIGNAL);
+
   if (!isStatement) {
     return {
       isStatement: false,
       // Sumnja postoji samo uz TOČNO jedan jak signal; sam IBAN nije sumnja.
       needsHumanChoice: strong === 1,
+      isCardStatement: false,
       signals,
       extraction: {
         bank_name: null,
@@ -410,6 +457,7 @@ export function classifyAsStatement(
   return {
     isStatement: true,
     needsHumanChoice: false,
+    isCardStatement,
     signals,
     extraction: {
       bank_name: detectBankName(zoneText, subject),
@@ -424,3 +472,22 @@ export function classifyAsStatement(
 }
 
 
+/**
+ * PRAVILO TIŠINE — „nesigurno nikad ne nestaje".
+ *
+ * Dokument koji nosi financijsku supstancu (broj računa u IBAN obliku + više
+ * iznosa / tablicu) ne smije tiho pasti u `nije_za_nas` kad je pouzdanost
+ * NISKA. Namjerno LABAV IBAN uzorak: ovdje se ne presuđuje o točnosti broja,
+ * nego samo o tome zaslužuje li dokument ljudsko oko.
+ */
+const LOOSE_IBAN_RE = /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/;
+const MIN_AMOUNTS_FOR_SUBSTANCE = 3;
+
+export function carriesFinancialSubstance(rawText: string | null | undefined): boolean {
+  const text = normalizeSpace(rawText ?? '');
+  if (text.trim().length === 0) return false;
+  const hasIban = LOOSE_IBAN_RE.test(text) || findValidIbans(text).length > 0;
+  if (!hasIban) return false;
+  const amounts = text.match(new RegExp(AMOUNT, 'g')) ?? [];
+  return amounts.length >= MIN_AMOUNTS_FOR_SUBSTANCE;
+}

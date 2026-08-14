@@ -6,3 +6,4 @@
 - [Import prijenosi: predznak = smjer](mem://features/import-transfer-direction-from-sign) — statement_direction, pošten bedž origin, times_used
 - [Zona izdavatelja na izvodima](mem://features/mail-statement-issuer-zone) — banka/IBAN/razdoblje samo iz zaglavlja, prazno umjesto krivog, IBAN svih zemalja
 - [Import nerazlučivi kandidati](mem://features/import-indistinguishable-pairing) — 1:1 automatsko uparivanje + opis ulazi u odluku o spajanju
+- [Kartični izvod + pravilo tišine](mem://features/mail-card-statement-and-silence-rule) — charge-kartični izvod prolazi lijevak; niska sigurnost s IBAN+iznosima nikad ne završi u tihom nije_za_nas

@@ -508,8 +508,15 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       },
     });
 
-    // Obavijest samo za STVARNO novu stavku — ponovna obrada ne zvoni opet.
-    if (upserted.id && upserted.action === "inserted" && status === "na_pregledu") {
+    // Obavijest za STVARNO novu stavku i za PRIJELAZ u ljudski red: stavka koja
+    // je nakon popravka lijevka iz tihog `nije_za_nas` došla na pregled mora
+    // zazvoniti, inače korisnik i dalje ne vidi ništa. Ponovna obrada stavke
+    // koja je već bila na pregledu NE zvoni opet.
+    const enteredReview =
+      status === "na_pregledu" &&
+      (upserted.action === "inserted" ||
+        (upserted.action === "updated" && upserted.previousStatus !== "na_pregledu"));
+    if (upserted.id && enteredReview) {
       // Shema `notifications` NEMA title_key/body_key. Konvencija ostalih
       // notify-* funkcija: i18n ključ ide u title/message, varijable i ruta u data.
       const notifData = {
