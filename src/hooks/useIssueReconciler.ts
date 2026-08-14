@@ -110,10 +110,12 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
     user?.id,
     invoicesLoading,
     budgetsLoading,
+    incomingLoading,
     // Re-run when source data changes (count + first ids as cheap signature)
     projects.length,
     allExpenses.length,
     unpaid.length,
+    overdueIncoming.length,
     budgets.length,
   ]);
 };
