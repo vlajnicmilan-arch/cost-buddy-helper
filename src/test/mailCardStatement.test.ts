@@ -102,3 +102,32 @@ Stavka 26,00 EUR`;
     expect(res.needsHumanChoice).toBeUndefined();
   });
 });
+
+/**
+ * ČUVAR — ZAGLAVLJE KARTICE MORA BITI POPUNJENO.
+ * Prazne crtice čine red pregleda besmislenim; kriva vrijednost je gora od
+ * prazne (razdoblje je prije bilo 01.03.–01.04., a troškovi su veljača).
+ */
+describe('mini-ekstraktor charge dijalekta', () => {
+  const verdict = classifyAsStatement(OTP_CHARGE_CARD_STATEMENT);
+
+  it('svih pet polja iz doslovnog teksta privitka', () => {
+    expect(verdict.extraction).toMatchObject({
+      bank_name: 'OTP banka',
+      account_number: '514710744040',
+      statement_number: '214',
+      closing_balance: 1093.53,
+    });
+  });
+
+  it('razdoblje je veljača — nikad datum obavijesti/terećenja', () => {
+    expect(verdict.extraction.period_from?.slice(0, 7)).toBe('2026-02');
+    expect(verdict.extraction.period_to?.slice(0, 7)).toBe('2026-02');
+    expect(verdict.extraction.period_from).not.toBe('2026-03-01');
+    expect(verdict.extraction.period_to).not.toBe('2026-04-01');
+  });
+
+  it('IBAN namirenja NIJE identitet kartice', () => {
+    expect(verdict.extraction.account_iban).toBeNull();
+  });
+});

@@ -7,7 +7,9 @@ export {
   ISSUER_ZONE_FALLBACK,
   KNOWN_BANK_NAMES,
   CARD_STATEMENT_SIGNAL,
+  cardStatementExtraction,
   cardStatementSignals,
+
   carriesFinancialSubstance,
   classifyAsStatement,
   detectBankName,

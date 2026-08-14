@@ -6566,7 +6566,8 @@
       "number": "Statement number",
       "period": "Period",
       "closingBalance": "Closing balance",
-      "accountNumber": "Account number"
+      "accountNumber": "Account number",
+      "cardCharge": "Charged amount"
     },
     "sourceLabel": "Import into wallet",
     "sourcePlaceholder": "Choose a wallet",
