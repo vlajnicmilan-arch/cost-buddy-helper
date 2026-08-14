@@ -7,3 +7,4 @@
 - [Zona izdavatelja na izvodima](mem://features/mail-statement-issuer-zone) — banka/IBAN/razdoblje samo iz zaglavlja, prazno umjesto krivog, IBAN svih zemalja
 - [Import nerazlučivi kandidati](mem://features/import-indistinguishable-pairing) — 1:1 automatsko uparivanje + opis ulazi u odluku o spajanju
 - [Kartični izvod + pravilo tišine](mem://features/mail-card-statement-and-silence-rule) — charge-kartični izvod prolazi lijevak; niska sigurnost s IBAN+iznosima nikad ne završi u tihom nije_za_nas
+- [Obavijest o dokumentu — samogašenje](mem://features/mail-pending-notification-lifecycle) — dedup po item_id, DB okidač, izuzeta iz „Za pažnju"
