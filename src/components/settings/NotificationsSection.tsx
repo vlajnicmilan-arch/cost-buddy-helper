@@ -206,6 +206,31 @@ export const NotificationsSection = ({
         )}
       </div>
 
+      {/* Podsjetnici za dospijeće ulaznih računa (nula dodira za postavljanje) */}
+      <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <CalendarClock className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <Label htmlFor="invoice-due-reminders" className="text-sm font-medium cursor-pointer">
+              {t('settings.notifInvoiceDue', 'Podsjetnici za dospijeće računa')}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t('settings.notifInvoiceDueDesc', '3 dana prije dospijeća i na dan dospijeća.')}
+            </p>
+          </div>
+        </div>
+        <Switch
+          className="shrink-0"
+          id="invoice-due-reminders"
+          checked={prefs.invoice_due_enabled}
+          onCheckedChange={(v) => setFlag('invoice_due_enabled', v)}
+        />
+      </div>
+
+
+
       {/* Dnevni sažetak */}
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-3 min-w-0 p-3 bg-muted/30 rounded-xl">
