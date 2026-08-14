@@ -533,11 +533,17 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
         title: "notifications.mail.pending.title",
         message: "notifications.mail.pending.body",
         data: notifData,
+        // Dedup oznaka vezana uz stavku: ponovna obrada iste stavke ne stvara
+        // drugu obavijest, a okidac je moze ciljano ugasiti kad stavka ode
+        // iz reda "na pregledu".
+        dedup_key: `mail_document_pending:${upserted.id}`,
       });
       // Greška se NE guta — kvar je preživio mjesece jer nitko nije gledao.
-      if (notifError) {
+      // Iznimka: 23505 = vec postoji ziva obavijest za istu stavku (dedup).
+      if (notifError && notifError.code !== "23505") {
         console.error("[mail-process] upis obavijesti nije uspio", notifError.message, notifError);
       }
+
 
       // Push kroz POSTOJEĆI sustav (send-push + kategorija 'pending').
       try {

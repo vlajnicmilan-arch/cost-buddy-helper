@@ -47,6 +47,10 @@ export const useActiveIssues = (enabled: boolean) => {
         .select("id, type, title, message, severity, dedup_key, entity_type, entity_id, data, created_at, last_seen_at, recurrence_count")
         .eq("user_id", user.id)
         .eq("status", "active")
+        // BEZ DUPLE TRUBE: dokument na pregled vec ima jantarnu karticu u
+        // /dokumenti — ona JE poziv na radnju. Zvono/push pri dolasku ostaje,
+        // ali stavka ne visi trajno u "Za paznju".
+        .neq("type", "mail_document_pending")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
