@@ -175,6 +175,10 @@
       "cashflowRisk": {
         "title": "Possible cash shortfall",
         "message": "Next {{daysAhead}} days — shortage €{{shortage}}"
+      },
+      "overdueIncomingInvoices": {
+        "title": "{{count}} invoices past due",
+        "message": "{{amount}} outstanding in total. Review and record payments."
       }
     }
   },
@@ -1437,7 +1441,9 @@
     "notifKrugDesc": "Approvals, membership and Krug deletion",
     "notifKrugReminder": "Krug settlement reminders (weekly)",
     "notifKrugReminderDesc": "Every Monday 08:00 UTC: summary of outstanding items you owe.",
-    "localReceiptUsage": "{{count}} images · {{size}}"
+    "localReceiptUsage": "{{count}} images · {{size}}",
+    "notifInvoiceDue": "Invoice due date reminders",
+    "notifInvoiceDueDesc": "3 days before the due date and on the due date."
   },
   "bankMatch": {
     "pendingBank": "Awaiting bank confirmation",
@@ -2964,6 +2970,16 @@
       "pending": {
         "title": "A new document is waiting for review",
         "body": "A document arrived by e-mail. Open the review and confirm."
+      }
+    },
+    "invoice_due": {
+      "upcoming": {
+        "title": "Invoice due in 3 days",
+        "message": "{{supplier}} — {{amount}}, due {{date}}"
+      },
+      "today": {
+        "title": "Invoice due today",
+        "message": "{{supplier}} — {{amount}}, due {{date}}"
       }
     }
   },

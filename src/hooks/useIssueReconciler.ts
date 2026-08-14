@@ -14,12 +14,14 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   detectProjectLossZone,
   detectOverdueInvoices,
+  detectOverdueIncomingInvoices,
   detectBudgetBurn,
   reconcileIssues,
   type IssueType,
   type IssueCandidate,
 } from "@/lib/issueDetection";
 import { useUnpaidInvoices } from "@/hooks/useUnpaidInvoices";
+import { useOverdueIncomingInvoices } from "@/hooks/useOverdueIncomingInvoices";
 import { useBudgets } from "@/hooks/useBudgets";
 import type { Expense } from "@/types/expense";
 import type { ProjectWithOwnership } from "@/types/project";
@@ -35,13 +37,14 @@ const MIN_INTERVAL_MS = 30_000;
 export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) => {
   const { user } = useAuth();
   const { unpaid, loading: invoicesLoading } = useUnpaidInvoices();
+  const { invoices: overdueIncoming, loading: incomingLoading } = useOverdueIncomingInvoices(enabled);
   const { budgets, loading: budgetsLoading } = useBudgets();
   const lastRunRef = useRef<number>(0);
   const inFlightRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!enabled || !user) return;
-    if (invoicesLoading || budgetsLoading) return;
+    if (invoicesLoading || budgetsLoading || incomingLoading) return;
     if (inFlightRef.current) return;
     const now = Date.now();
     if (now - lastRunRef.current < MIN_INTERVAL_MS) return;
@@ -54,6 +57,7 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
         const detectedByType: Partial<Record<IssueType, IssueCandidate[]>> = {
           project_loss_zone: detectProjectLossZone(projects, allExpenses),
           overdue_invoice: detectOverdueInvoices(unpaid),
+          overdue_incoming_invoice: detectOverdueIncomingInvoices(overdueIncoming),
           budget_burn: detectBudgetBurn(
             budgets.map(b => ({
               id: b.id,
@@ -106,10 +110,12 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
     user?.id,
     invoicesLoading,
     budgetsLoading,
+    incomingLoading,
     // Re-run when source data changes (count + first ids as cheap signature)
     projects.length,
     allExpenses.length,
     unpaid.length,
+    overdueIncoming.length,
     budgets.length,
   ]);
 };

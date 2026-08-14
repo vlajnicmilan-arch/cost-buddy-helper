@@ -229,4 +229,8 @@ export default {
   "notifications.project_expense_review.rejected.message": "{{actor}} je odbio „{{description}}\" ({{amount}}) u projektu „{{project}}\". Razlog: {{reason}}",
   "notifications.mail.pending.title": "Novi dokument čeka pregled",
   "notifications.mail.pending.body": "Stigao je dokument e-poštom. Otvori pregled i potvrdi.",
+  "notifications.invoice_due.upcoming.title": "Račun dospijeva za 3 dana",
+  "notifications.invoice_due.upcoming.message": "{{supplier}} — {{amount}}, dospijeće {{date}}",
+  "notifications.invoice_due.today.title": "Račun dospijeva danas",
+  "notifications.invoice_due.today.message": "{{supplier}} — {{amount}}, dospijeće {{date}}",
 } as const;

@@ -175,6 +175,10 @@
       "cashflowRisk": {
         "title": "Möglicher Liquiditätsengpass",
         "message": "Nächste {{daysAhead}} Tage — Engpass {{shortage}} €"
+      },
+      "overdueIncomingInvoices": {
+        "title": "{{count}} Rechnungen überfällig",
+        "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen."
       }
     }
   },
@@ -1437,7 +1441,9 @@
     "notifKrugDesc": "Genehmigungen, Mitgliedschaft und Löschung des Krug",
     "notifKrugReminder": "Krug-Abrechnungserinnerungen (wöchentlich)",
     "notifKrugReminderDesc": "Montags 08:00 UTC: Übersicht offener Beträge, die du schuldest.",
-    "localReceiptUsage": "{{count}} Bilder · {{size}}"
+    "localReceiptUsage": "{{count}} Bilder · {{size}}",
+    "notifInvoiceDue": "Erinnerungen zur Rechnungsfälligkeit",
+    "notifInvoiceDueDesc": "3 Tage vor Fälligkeit und am Fälligkeitstag."
   },
   "bankMatch": {
     "pendingBank": "Warte auf Bankbestätigung",
@@ -2964,6 +2970,16 @@
       "pending": {
         "title": "Ein neues Dokument wartet auf Prüfung",
         "body": "Ein Dokument ist per E-Mail eingegangen. Öffne die Prüfung und bestätige."
+      }
+    },
+    "invoice_due": {
+      "upcoming": {
+        "title": "Rechnung in 3 Tagen fällig",
+        "message": "{{supplier}} — {{amount}}, fällig am {{date}}"
+      },
+      "today": {
+        "title": "Rechnung heute fällig",
+        "message": "{{supplier}} — {{amount}}, fällig am {{date}}"
       }
     }
   },

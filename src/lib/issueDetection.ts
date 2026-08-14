@@ -13,6 +13,7 @@ export type IssueSeverity = "info" | "warning" | "critical";
 export type IssueType =
   | "project_loss_zone"
   | "overdue_invoice"
+  | "overdue_incoming_invoice"
   | "budget_burn"
   | "cashflow_risk";
 
@@ -258,4 +259,48 @@ export const reconcileIssues = (
     });
   }
   return { toUpsert, resolveScopes };
+};
+
+// ============================================================
+// 5. Overdue INCOMING invoices (ulazni računi) — AGREGAT, ne po računu
+//
+// Prekoračeno dospijeće ulaznog računa je STANJE, ne događaj: nikakvo
+// dnevno zvocanje ni push. Jedna stavka u "Za pažnju" koja se sama gasi
+// (resolve_stale_issues) kad prekoračenih računa više nema.
+// ============================================================
+
+export interface OverdueIncomingInvoiceInput {
+  id: string;
+  due_date: string | null;
+  paid_at?: string | null;
+  total_amount: number | string;
+}
+
+export const detectOverdueIncomingInvoices = (
+  invoices: OverdueIncomingInvoiceInput[],
+  today: Date = new Date(),
+): IssueCandidate[] => {
+  const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  let count = 0;
+  let total = 0;
+  for (const inv of invoices ?? []) {
+    if (inv.paid_at) continue;
+    if (!inv.due_date) continue;
+    const due = new Date(`${inv.due_date.slice(0, 10)}T00:00:00Z`).getTime();
+    if (Number.isNaN(due) || due >= base) continue;
+    count += 1;
+    const amount = Number(inv.total_amount);
+    total += Number.isFinite(amount) ? Math.abs(amount) : 0;
+  }
+  if (count === 0) return [];
+  return [{
+    type: "overdue_incoming_invoice",
+    dedup_key: "overdue_incoming_invoices",
+    severity: "warning",
+    title_key: "attention.issues.overdueIncomingInvoices.title",
+    title_vars: { count },
+    message_key: "attention.issues.overdueIncomingInvoices.message",
+    message_vars: { count, amount: `${total.toFixed(2)} €` },
+    data: { count, total: Number(total.toFixed(2)) },
+  }];
 };
