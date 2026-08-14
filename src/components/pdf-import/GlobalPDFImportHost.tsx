@@ -556,6 +556,22 @@ export const GlobalPDFImportHost = () => {
       const qByIdx = new Map<number, { reason: 'merchant_mismatch' | 'no_merchant' | 'ambiguous'; candidateIds: string[] }>();
       classified.questions.forEach(q => qByIdx.set(q.importedIndex, { reason: q.reason, candidateIds: q.candidateIds }));
 
+      // SLJEDIVOST — jedan dijagnostički trag po pitanju (bez iznosa, samo
+      // izvedena imena). Ne dira klasifikaciju ni UI.
+      try {
+        emitQuestionTraces(
+          {
+            build: COMMIT_SHA,
+            questions: classified.questions,
+            imported: importedForClassifier,
+            manualCandidates: manualCandidatesForClassifier,
+            statementBankName: pdfImport.result.detected_bank,
+          },
+          (event, details) => logDiagnostic(event, details),
+        );
+      } catch { /* dijagnostika nikad ne smije srušiti uvoz */ }
+
+
 
       // --- Transfer rules pre-pass (KORAK 3 rule engine) --------------------
       //
