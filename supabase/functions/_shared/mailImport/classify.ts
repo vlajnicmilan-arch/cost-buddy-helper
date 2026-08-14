@@ -16,7 +16,10 @@ import { detectGmailVerification, type GmailVerificationResult } from './gmailVe
 import { isValidOib } from './oib.ts';
 import { deterministicExtract } from './deterministicExtract.ts';
 import { flattenUblExtraction, mergeDeterministic } from './extractionNormalize.ts';
-import { classifyAsStatement } from './statementSignals.ts';
+import { carriesFinancialSubstance, classifyAsStatement } from './statementSignals.ts';
+
+/** Tip dokumenta za mjesečni izvod charge/kreditne kartice. */
+export const CARD_STATEMENT_DOC_TYPE = 'izvod_kartica';
 
 export type Classification =
   | 'racun'
@@ -200,7 +203,8 @@ export async function classifyDocument(
   if (statement.isStatement) {
     return {
       classification: 'izvod',
-      docType: null,
+      // Kartični izvod se vodi zasebnim tipom — nije bankovni promet računa.
+      docType: statement.isCardStatement ? CARD_STATEMENT_DOC_TYPE : null,
       extraction: { ...statement.extraction, statement_signals: statement.signals },
       confidence: 'visoka',
       route: 'izvod',
