@@ -306,6 +306,24 @@ export async function classifyDocument(
   aiCalls += 1;
 
   if (ai.classification !== 'racun' && ai.classification !== 'ponuda') {
+    // PRAVILO TIŠINE: niska sigurnost NAD dokumentom s financijskom supstancom
+    // (IBAN + iznosi/tablica) ide u ljudski red, nikad u tiho odbacivanje.
+    // Visoka/srednja sigurnost i dalje smije odbaciti bez pitanja.
+    if (ai.confidence === 'niska' && carriesFinancialSubstance(statementText)) {
+      return {
+        classification: 'nepoznato',
+        docType: null,
+        extraction: null,
+        confidence: 'niska',
+        route: 'ai',
+        needsHumanChoice: true,
+        aiCalls,
+        consumesQuota: true,
+        priority: false,
+        warnings: [...warnings, 'mozda_izvod'],
+        verification: null,
+      };
+    }
     return {
       classification: 'nije_za_nas',
       docType: null,
