@@ -304,17 +304,17 @@ export const IncomingInvoicesPanel = () => {
           className="min-w-0 max-w-full flex-1 basis-full sm:basis-auto"
         >
           <TabsList className="h-9 w-full sm:w-auto">
-            <TabsTrigger value="unpaid" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">
+            <TabsTrigger value="unpaid" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">
               {direction === 'out'
                 ? t('eracun.list.uncollected', 'Nenaplaćeni')
                 : t('eracun.list.unpaid', 'Neplaćeni')} ({unpaid.length})
             </TabsTrigger>
-            <TabsTrigger value="paid" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">
+            <TabsTrigger value="paid" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">
               {direction === 'out'
                 ? t('eracun.list.collected', 'Naplaćeni')
                 : t('eracun.list.paid', 'Plaćeni')} ({paid.length})
             </TabsTrigger>
-            <TabsTrigger value="all" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">{t('eracun.list.all', 'Sve')}</TabsTrigger>
+            <TabsTrigger value="all" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">{t('eracun.list.all', 'Sve')}</TabsTrigger>
           </TabsList>
         </Tabs>
         {/* Biznis alati. U osobnom kontekstu nema izlaznih računa (nema

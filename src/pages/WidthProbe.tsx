@@ -33,9 +33,9 @@ const WidthProbe = () => {
                 <div className="flex flex-wrap items-center justify-between gap-2 w-full min-w-0" data-probe="toolbar">
                   <Tabs value="unpaid" className="min-w-0 max-w-full flex-1 basis-full sm:basis-auto">
                     <TabsList className="h-9 w-full sm:w-auto">
-                      <TabsTrigger value="unpaid" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">Nenaplaćeni (12)</TabsTrigger>
-                      <TabsTrigger value="paid" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">Naplaćeni (98)</TabsTrigger>
-                      <TabsTrigger value="all" className="text-xs flex-1 min-w-0 truncate px-2 sm:px-3">Sve</TabsTrigger>
+                      <TabsTrigger value="unpaid" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">Nenaplaćeni (12)</TabsTrigger>
+                      <TabsTrigger value="paid" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">Naplaćeni (98)</TabsTrigger>
+                      <TabsTrigger value="all" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">Sve</TabsTrigger>
                     </TabsList>
                   </Tabs>
                   <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
