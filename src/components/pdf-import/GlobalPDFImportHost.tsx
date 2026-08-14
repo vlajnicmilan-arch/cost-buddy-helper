@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 import { showError, showSuccess, showWarning } from '@/hooks/useStatusFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { classifyImport, type ClassifierImportedRow, type ClassifierManualCandidate } from '@/lib/importClassifier';
+import { emitQuestionTraces } from '@/lib/importReview/questionTrace';
+import { COMMIT_SHA } from '@/lib/version';
 import { computeImportFingerprint } from '@/lib/importFingerprint';
 import { savePayload as saveReviewPayload, hasResumableReview, clearDraft as clearReviewDraft, clearPayload as clearReviewPayload, saveStatementHint, clearStatementHint } from '@/lib/importReview/draft';
 import { findLateCardMatches } from '@/lib/importReview/lateCardMatch';
