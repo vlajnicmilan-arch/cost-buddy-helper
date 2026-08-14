@@ -9,3 +9,4 @@
 - [Kartični izvod + pravilo tišine](mem://features/mail-card-statement-and-silence-rule) — charge-kartični izvod prolazi lijevak; niska sigurnost s IBAN+iznosima nikad ne završi u tihom nije_za_nas
 - [Obavijest o dokumentu — samogašenje](mem://features/mail-pending-notification-lifecycle) — dedup po item_id, DB okidač, izuzeta iz „Za pažnju"
 - [Sva tri lock-a u istom commitu](mem://constraints/three-lockfiles-in-sync) — package.json + bun.lock + package-lock.json; resolved URL-ovi na registry.npmjs.org; npm ci --dry-run provjera
+- [Podsjetnici za dospijeće ulaznih računa](mem://features/invoice-due-reminders) — d3+d0, dedup, agregat prekoračenih, jedan prekidač
