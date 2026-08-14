@@ -6577,7 +6577,8 @@
       "number": "Broj izvoda",
       "period": "Razdoblje",
       "closingBalance": "Novo stanje",
-      "accountNumber": "Broj računa"
+      "accountNumber": "Broj računa",
+      "cardCharge": "Iznos terećenja"
     },
     "sourceLabel": "Uvezi u novčanik",
     "sourcePlaceholder": "Odaberi novčanik",

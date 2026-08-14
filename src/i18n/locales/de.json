@@ -6566,7 +6566,8 @@
       "number": "Auszugsnummer",
       "period": "Zeitraum",
       "closingBalance": "Neuer Saldo",
-      "accountNumber": "Kontonummer"
+      "accountNumber": "Kontonummer",
+      "cardCharge": "Belasteter Betrag"
     },
     "sourceLabel": "In Geldbörse importieren",
     "sourcePlaceholder": "Geldbörse wählen",
