@@ -386,7 +386,8 @@ function cardLabelValue(lines: readonly string[], labelRe: RegExp): string | nul
       values.push(lines[i].trim());
       i += 1;
     }
-    const idx = labels.findIndex((l) => labelRe.test(l));
+    const ci = new RegExp(labelRe.source, 'i');
+    const idx = labels.findIndex((l) => ci.test(l));
     if (idx >= 0 && idx < values.length) return values[idx];
   }
   return null;
