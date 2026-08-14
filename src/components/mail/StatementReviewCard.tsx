@@ -163,6 +163,8 @@ export const StatementReviewCard = ({ item, disabled, onDiscard, onLinked }: Pro
     selectedSource.isOwned !== false &&
     !String(selectedSource.account_identifier ?? '').trim();
 
+  const isCardStatement = item.doc_type === 'izvod_kartica';
+
   const rows: { label: string; value: string }[] = [
     { label: t('statements.field.bank', 'Banka'), value: bankName || '—' },
     iban || !accountNumber
