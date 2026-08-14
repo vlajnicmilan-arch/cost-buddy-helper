@@ -33,7 +33,7 @@ describe('eRacun panel — horizontal overflow guard', () => {
   it('tab triggers and action buttons may shrink', () => {
     const minW0 = panel.match(/min-w-0/g) ?? [];
     expect(minW0.length).toBeGreaterThanOrEqual(6);
-    expect(panel).toMatch(/flex-1 sm:flex-none min-w-0/);
+    expect(panel).toMatch(/basis-full sm:basis-auto sm:flex-none min-w-0/);
   });
 
   it('long button labels truncate instead of pushing width', () => {
@@ -42,5 +42,24 @@ describe('eRacun panel — horizontal overflow guard', () => {
 
   it('sheet wrapper clips horizontal overflow', () => {
     expect(widget).toMatch(/overflow-x-hidden/);
+  });
+
+  /**
+   * IMENOVANI UZROK AMPUTACIJE: `PageContainer` ima `mx-auto`. Unutar
+   * `SheetContent` (flex-col) automatska poprečna margina GASI `stretch`, pa se
+   * omotač dimenzionira na `max-content` (~400px) i desna strana ispada izvan
+   * ekrana; `overflow-x-hidden` je to samo tiho odrezao. Eksplicitna `w-full`
+   * vraća određenu širinu.
+   */
+  it('sheet content wrapper has explicit width (mx-auto must not disable stretch)', () => {
+    expect(widget).toMatch(/<PageContainer noVerticalPadding className="pt-2 w-full min-w-0">/);
+  });
+
+  it('bottom sheet uses tighter mobile padding', () => {
+    expect(widget).toMatch(/h-\[85vh\][^"]*p-4 sm:p-6/);
+  });
+
+  it('filter tabs shrink their padding on narrow screens', () => {
+    expect(panel).toMatch(/text-\[11px\] sm:text-xs flex-1 min-w-0 truncate px-1\.5 sm:px-3/);
   });
 });

@@ -68,7 +68,6 @@ const Krug = lazy(() => import("./pages/Krug"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Impressum = lazy(() => import("./pages/Impressum"));
-const WidthProbe = lazy(() => import("./pages/WidthProbe"));
 const Help = lazy(() => import("./pages/Help"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
@@ -238,7 +237,6 @@ const AppRoutes = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/impressum" element={<Impressum />} />
-          <Route path="/width-probe" element={<WidthProbe />} />
           <Route path="/help" element={<Help />} />
           
           <Route path="/admin" element={<Admin />} />
