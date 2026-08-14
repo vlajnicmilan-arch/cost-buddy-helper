@@ -348,6 +348,116 @@ export function cardStatementSignals(lines: readonly string[]): string[] {
 export const CARD_STATEMENT_SIGNAL = 'karticni_retci';
 
 /**
+ * MINI-EKSTRAKTOR CHARGE-KARTIČNOG IZVODA (nula AI).
+ *
+ * Charge izvod govori drugim dijalektom od bankovnog: nema „Izvod br.", nema
+ * salda, a datumi u zaglavlju („Datum obavijesti", „Datum terećenja") su
+ * MJESEC POSLIJE razdoblja troškova — pa je opći raspon svih datuma davao
+ * krivo razdoblje. Ovdje se svako polje čita iz svog izvora ili ostaje prazno.
+ */
+
+/** Podnožje s otiskom izdavatelja (MB/OIB/web) — nikad redak prometa. */
+const CARD_IMPRINT_RE = /\bMB\s*:|\bOIB\s*:|•/;
+
+/**
+ * Zaglavlje s vrijednostima u zasebnom bloku:
+ *   „Obavijest broj:" „Datum obavijesti:" … pa niz vrijednosti istim redom.
+ * Vraća vrijednost za traženu etiketu; podržava i inline oblik „Etiketa: x".
+ */
+function cardLabelValue(lines: readonly string[], labelRe: RegExp): string | null {
+  for (let i = 0; i < lines.length; i += 1) {
+    const inline = lines[i].match(new RegExp(`${labelRe.source}\\s*:\\s*(\\S.*)$`, 'i'));
+    if (inline && inline[1].trim() !== '') return inline[1].trim();
+  }
+  let i = 0;
+  while (i < lines.length) {
+    if (!/:\s*$/.test(lines[i])) {
+      i += 1;
+      continue;
+    }
+    const labels: string[] = [];
+    while (i < lines.length && /:\s*$/.test(lines[i])) {
+      labels.push(lines[i]);
+      i += 1;
+    }
+    const values: string[] = [];
+    while (i < lines.length && values.length < labels.length && lines[i].trim() !== '') {
+      if (/:\s*$/.test(lines[i])) break;
+      values.push(lines[i].trim());
+      i += 1;
+    }
+    const idx = labels.findIndex((l) => labelRe.test(l));
+    if (idx >= 0 && idx < values.length) return values[idx];
+  }
+  return null;
+}
+
+/** Datumi knjiženja iz redaka troška — jedini pošten izvor razdoblja. */
+function cardRowDates(lines: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    if (!CARD_TXN_ROW_RE.test(line)) continue;
+    for (const m of line.matchAll(/(\d{1,2})\.(\d{1,2})\.(\d{4})/g)) {
+      out.push(isoFrom(m[1], m[2], m[3]));
+    }
+  }
+  return out;
+}
+
+/** „1.093,53Ukupno po računu: 514710744040 EUR:" → 1093.53; inače prazno. */
+function cardTotalCharge(lines: readonly string[]): number | null {
+  const found = new Set<number>();
+  for (const line of lines) {
+    if (!/ukupno\s+po\s+ra[cč]unu/i.test(line)) continue;
+    const amounts = line.match(new RegExp(AMOUNT, 'g'));
+    if (!amounts || amounts.length === 0) continue;
+    const value = parseHrNumber(amounts[0]);
+    if (value !== null) found.add(value);
+  }
+  // Više različitih zbrojeva = nejednoznačno → prazno (nikad kriva vrijednost).
+  return found.size === 1 ? [...found][0] : null;
+}
+
+export function cardStatementExtraction(
+  lines: readonly string[],
+  subject?: string | null,
+): StatementExtraction {
+  const zone = issuerZone(lines);
+  const imprint = lines.filter((l) => CARD_IMPRINT_RE.test(l) && !CARD_TXN_ROW_RE.test(l));
+  const bankName = detectBankName([...zone, ...imprint].join('\n'), subject);
+
+  // Identitet kartice je BROJ RAČUNA KORIŠTENJA; IBAN namirenja je tekući
+  // račun s kojeg se dug pokriva i nikad ne smije postati identitet kartice.
+  const usage =
+    cardLabelValue(lines, /broj\s+ra[cč]una\s+kori[sš]tenja/) ??
+    (lines.find((l) => /ukupno\s+po\s+ra[cč]unu/i.test(l))?.match(/ra[cč]unu\s*:?\s*(\d{6,})/i)?.[1] ??
+      null);
+  const accountNumber = usage ? usage.replace(/[^0-9]/g, '') || null : null;
+
+  const notice = cardLabelValue(lines, /obavijest\s+broj/);
+  const statementNumber = notice ? (notice.match(/[0-9][0-9\/-]*/)?.[0] ?? null) : null;
+
+  const explicit = detectPeriodRange(zone.join('\n'));
+  const rowDates = [...new Set(cardRowDates(lines))].sort();
+  const period = explicit
+    ? { from: explicit.from, to: explicit.to }
+    : rowDates.length > 0
+      ? { from: rowDates[0], to: rowDates[rowDates.length - 1] }
+      : { from: null, to: null };
+
+  return {
+    bank_name: bankName,
+    account_iban: null,
+    account_number: accountNumber,
+    statement_number: statementNumber,
+    period_from: period.from,
+    period_to: period.to,
+    closing_balance: cardTotalCharge(lines),
+  };
+}
+
+
+/**
  * Sidreni signali (case-insensitive). Traži se ≥2 različita.
  */
 export function statementSignals(rawText: string): string[] {
