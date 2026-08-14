@@ -558,8 +558,20 @@ export function classifyAsStatement(
     };
   }
 
+  if (isCardStatement) {
+    // Charge dijalekt ima vlastiti mini-ekstraktor (drugi izvori za svako polje).
+    return {
+      isStatement: true,
+      needsHumanChoice: false,
+      isCardStatement: true,
+      signals,
+      extraction: cardStatementExtraction(lines, subject),
+    };
+  }
+
   const zone = issuerZone(lines);
   const zoneText = zone.join('\n');
+
   // Razdoblje: izričito napisan raspon (zona → cijeli tekst) pobjeđuje raspon
   // svih datuma, koji je zadnja linija obrane.
   const period =
