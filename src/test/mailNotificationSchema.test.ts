@@ -62,7 +62,11 @@ describe('mail-process → notifications insert', () => {
   });
 
   it('greška upisa obavijesti se logira vidljivo', () => {
-    expect(src).toMatch(/if \(notifError\) \{[\s\S]{0,200}console\.error/);
+    expect(src).toMatch(/if \(notifError[\s\S]{0,80}\) \{[\s\S]{0,200}console\.error/);
+  });
+
+  it('nosi dedup oznaku vezanu uz stavku (samogašenje + bez duplikata)', () => {
+    expect(insertBlock).toContain('dedup_key: `mail_document_pending:${upserted.id}`');
   });
 
   it('push ide kroz postojeći sendPushNotification uz kategoriju', () => {
