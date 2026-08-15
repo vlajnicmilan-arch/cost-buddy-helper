@@ -24,6 +24,8 @@ import { setPendingHighlight } from '@/lib/pendingHighlight';
 import { dispatchAttributionOpen, parseAttributionPayload } from '@/lib/attribution/events';
 import { useModuleGate } from '@/hooks/useModuleGate';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
+import { requestOpenIncomingInvoice } from '@/lib/eracun/openInvoiceRequest';
+import { useAppState } from '@/contexts/AppStateContext';
 
 /**
  * Izvuče project id iz route oblika `/projects?id=<UUID>`. Vraća null ako
@@ -46,6 +48,7 @@ export function useNotificationNavigation() {
   const qc = useQueryClient();
   const { t } = useTranslation();
   const { requestModule } = useModuleGate();
+  const { setActiveBusinessProfileId, setBusinessModeEnabled } = useAppState();
 
   const navigateFromPayload = useCallback(
     (payload: NormalizedPayload): boolean => {
@@ -129,6 +132,20 @@ export function useNotificationNavigation() {
         navigate('/home');
         return true;
       }
+      if (type === 'invoice_due' && data && typeof data === 'object') {
+        const d = data as Record<string, unknown>;
+        const invoiceId = typeof d.invoice_id === 'string' ? d.invoice_id : null;
+        if (invoiceId) {
+          const profileId = typeof d.business_profile_id === 'string' && d.business_profile_id !== 'null'
+            ? d.business_profile_id
+            : null;
+          setBusinessModeEnabled(profileId !== null);
+          setActiveBusinessProfileId(profileId);
+          requestOpenIncomingInvoice({ invoiceId, businessProfileId: profileId });
+          navigate('/home');
+          return true;
+        }
+      }
       const payload = normalizePayload(
         type ?? null,
         (data && typeof data === 'object') ? (data as Record<string, unknown>) : null,
@@ -139,7 +156,7 @@ export function useNotificationNavigation() {
       }
       return ok;
     },
-    [navigateFromPayload, navigate, t],
+    [navigateFromPayload, navigate, setActiveBusinessProfileId, setBusinessModeEnabled, t],
   );
 
   return { navigateFromPayload, navigateFromNotification };

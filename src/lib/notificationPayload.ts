@@ -186,6 +186,12 @@ function legacyResolve(type: string | null, d: Record<string, unknown>): {
         fallback_route: '/dokumenti',
         highlight: null,
       };
+    case 'invoice_due':
+      return {
+        route: '/home',
+        fallback_route: '/home',
+        highlight: invoiceId ? { type: 'invoice', id: invoiceId } : null,
+      };
     case 'decision_step':
       return {
         route: projectId ? `/projects?id=${projectId}` : '/projects',
