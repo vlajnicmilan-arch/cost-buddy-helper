@@ -6314,7 +6314,7 @@
       "all": "Sve",
       "due": "dospijeće",
       "noDue": "Bez dospijeća",
-      "overdue": "Kasni {{n}} d",
+      "overdue": "Prekoračeni",
       "dueIn": "Za {{n}} d",
       "paidOn": "Plaćeno {{date}}",
       "markPaid": "Plaćeno",
@@ -6410,9 +6410,6 @@
       "confidenceStrong": "Jak",
       "confidenceLikely": "Vjerojatan",
       "confidencePossible": "Moguć"
-    },
-    "filter": {
-      "overdue": "Prekoračeni"
     }
   },
   "mailImport": {

@@ -6304,7 +6304,7 @@
       "all": "Alle",
       "due": "fällig",
       "noDue": "Kein Fälligkeitsdatum",
-      "overdue": "{{n}} T überfällig",
+      "overdue": "Überfällig",
       "dueIn": "In {{n}} T",
       "paidOn": "Bezahlt {{date}}",
       "markPaid": "Bezahlt",
@@ -6400,9 +6400,6 @@
       "confidenceStrong": "Stark",
       "confidenceLikely": "Wahrscheinlich",
       "confidencePossible": "Möglich"
-    },
-    "filter": {
-      "overdue": "Überfällig"
     }
   },
   "mailImport": {

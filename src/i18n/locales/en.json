@@ -6304,7 +6304,7 @@
       "all": "All",
       "due": "due",
       "noDue": "No due date",
-      "overdue": "{{n}} d overdue",
+      "overdue": "Past due",
       "dueIn": "In {{n}} d",
       "paidOn": "Paid {{date}}",
       "markPaid": "Paid",
@@ -6400,9 +6400,6 @@
       "confidenceStrong": "Strong",
       "confidenceLikely": "Likely",
       "confidencePossible": "Possible"
-    },
-    "filter": {
-      "overdue": "Past due"
     }
   },
   "mailImport": {
