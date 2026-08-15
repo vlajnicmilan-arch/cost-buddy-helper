@@ -23,6 +23,8 @@ import {
 import { useUnpaidInvoices } from "@/hooks/useUnpaidInvoices";
 import { useOverdueIncomingInvoices } from "@/hooks/useOverdueIncomingInvoices";
 import { useBudgets } from "@/hooks/useBudgets";
+import { useBusinessProfiles } from "@/hooks/useBusinessProfiles";
+import i18n from "@/i18n";
 import type { Expense } from "@/types/expense";
 import type { ProjectWithOwnership } from "@/types/project";
 
@@ -39,6 +41,7 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
   const { unpaid, loading: invoicesLoading } = useUnpaidInvoices();
   const { invoices: overdueIncoming, loading: incomingLoading } = useOverdueIncomingInvoices(enabled);
   const { budgets, loading: budgetsLoading } = useBudgets();
+  const { profiles } = useBusinessProfiles();
   const lastRunRef = useRef<number>(0);
   const inFlightRef = useRef<boolean>(false);
 
@@ -57,7 +60,12 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
         const detectedByType: Partial<Record<IssueType, IssueCandidate[]>> = {
           project_loss_zone: detectProjectLossZone(projects, allExpenses),
           overdue_invoice: detectOverdueInvoices(unpaid),
-          overdue_incoming_invoice: detectOverdueIncomingInvoices(overdueIncoming),
+          overdue_incoming_invoice: detectOverdueIncomingInvoices(
+            overdueIncoming,
+            new Date(),
+            Object.fromEntries(profiles.map(p => [p.id, p.name])),
+            i18n.t("attention.issues.overdueIncomingInvoices.personal", "osobno"),
+          ),
           budget_burn: detectBudgetBurn(
             budgets.map(b => ({
               id: b.id,
@@ -116,6 +124,7 @@ export const useIssueReconciler = ({ enabled, projects, allExpenses }: Params) =
     allExpenses.length,
     unpaid.length,
     overdueIncoming.length,
+    profiles.length,
     budgets.length,
   ]);
 };

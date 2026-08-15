@@ -179,7 +179,8 @@
       "overdueIncomingInvoices": {
         "title": "{{count}} Rechnungen überfällig",
         "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen.",
-        "messageWithBreakdown": "Insgesamt {{amount}} offen · {{breakdown}}. Prüfen und Zahlungen erfassen."
+        "messageWithBreakdown": "Insgesamt {{amount}} offen · {{breakdown}}. Prüfen und Zahlungen erfassen.",
+        "personal": "privat"
       }
     }
   },

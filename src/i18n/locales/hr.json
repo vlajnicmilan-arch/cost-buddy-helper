@@ -179,7 +179,8 @@
       "overdueIncomingInvoices": {
         "title": "{{count}} računa prešlo dospijeće",
         "message": "Ukupno {{amount}} nepodmireno. Provjeri i zabilježi plaćanja.",
-        "messageWithBreakdown": "Ukupno {{amount}} nepodmireno · {{breakdown}}. Provjeri i zabilježi plaćanja."
+        "messageWithBreakdown": "Ukupno {{amount}} nepodmireno · {{breakdown}}. Provjeri i zabilježi plaćanja.",
+        "personal": "osobno"
       }
     }
   },

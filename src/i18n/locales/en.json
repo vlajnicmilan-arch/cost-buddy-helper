@@ -179,7 +179,8 @@
       "overdueIncomingInvoices": {
         "title": "{{count}} invoices past due",
         "message": "{{amount}} outstanding in total. Review and record payments.",
-        "messageWithBreakdown": "{{amount}} outstanding in total · {{breakdown}}. Review and record payments."
+        "messageWithBreakdown": "{{amount}} outstanding in total · {{breakdown}}. Review and record payments.",
+        "personal": "personal"
       }
     }
   },
