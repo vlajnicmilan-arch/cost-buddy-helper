@@ -6659,32 +6659,44 @@
   "briefGate": {
     "greeting": {
       "morning": "Dobro jutro!",
-      "morningNamed": "Dobro jutro, {{name}}!",
+      "morningNamed": "Dobro jutro, {{name}}.",
       "day": "Dobar dan!",
-      "dayNamed": "Dobar dan, {{name}}!",
+      "dayNamed": "Dobar dan, {{name}}.",
       "evening": "Dobra večer!",
-      "eveningNamed": "Dobra večer, {{name}}!"
+      "eveningNamed": "Dobra večer, {{name}}."
     },
-    "subtitle": "Evo što te čeka.",
-    "truths": {
-      "invoices_one": "{{count}} račun u dospijeću",
-      "invoices_few": "{{count}} računa u dospijeću",
-      "invoices_other": "{{count}} računa u dospijeću",
-      "invoicesDue": "Najbliže dospijeće: {{date}}",
-      "documents_one": "{{count}} dokument na pregledu",
-      "documents_few": "{{count}} dokumenta na pregledu",
-      "documents_other": "{{count}} dokumenata na pregledu",
-      "attention_one": "{{count}} stavka za pažnju",
-      "attention_few": "{{count}} stavke za pažnju",
-      "attention_other": "{{count}} stavki za pažnju",
-      "importDraft": "Nedovršen pregled uvoza"
+    "enter": "Uđi u Centar",
+    "dots": "Poruke",
+    "uncertainty": {
+      "new_one": "1 stavka treba tvoju odluku.",
+      "new_few": "{{count}} stavke trebaju tvoju odluku.",
+      "new_other": "{{count}} stavki treba tvoju odluku.",
+      "pending_one": "Još 1 stavka čeka tvoju odluku.",
+      "pending_few": "Još {{count}} stavke čekaju tvoju odluku.",
+      "pending_other": "Još {{count}} stavki čeka tvoju odluku.",
+      "resolved": "Ništa ne čeka tvoju odluku.",
+      "action": "Pregledaj stavke"
     },
-    "actions": {
-      "enter": "Uđi",
-      "invoices": "Računi",
-      "documents": "Dokumenti",
-      "attention": "Pogledaj",
-      "importDraft": "Nastavi"
+    "due": {
+      "newOne": "Račun {{issuer}} dospijeva {{when}}.",
+      "newMany": "{{count}} računa dospijeva u sljedećih 7 dana.",
+      "pendingOne": "Račun {{issuer}} i dalje dospijeva {{when}}.",
+      "pendingMany": "Još {{count}} računa čeka plaćanje.",
+      "resolved": "Nema računa pri dospijeću.",
+      "action": "Pogledaj račune",
+      "today": "danas",
+      "tomorrow": "sutra"
+    },
+    "mail": {
+      "new_one": "Obradio sam novi dokument.",
+      "new_few": "Obradio sam {{count}} nova dokumenta.",
+      "new_other": "Obradio sam {{count}} novih dokumenata.",
+      "action": "Otvori dokumente"
+    },
+    "calm": {
+      "sincePrevious": "Ništa novo od zadnjeg pregleda.",
+      "firstToday": "Trenutno nema ničega hitnog.",
+      "action": "Preskoči"
     },
     "settings": {
       "title": "Pozdravni ekran",
