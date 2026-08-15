@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronRight, FileInput, FileOutput } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -9,6 +9,10 @@ import { summarizeIncomingInvoices } from '@/lib/eracun/incomingSummary';
 import { clickableProps } from '@/lib/a11y';
 import { IncomingInvoicesPanel } from './IncomingInvoicesPanel';
 import { PageContainer } from '@/components/layout/PageContainer';
+import {
+  ERACUN_OPEN_OVERDUE_EVENT,
+  consumeOpenOverdueRequest,
+} from '@/lib/eracun/openOverdueRequest';
 
 interface IncomingInvoicesWidgetProps {
   /** Visual variant, mirrors UnpaidInvoicesWidget. */
@@ -32,6 +36,27 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
   /** Osobni kontekst: privatna osoba ne izdaje račune — nema strane „Duguju mi". */
   const isPersonal = !activeBusinessProfileId;
   const [open, setOpen] = useState(false);
+  /** Filtar s kojim se panel otvara — obavijest traži „Prekoračeni". */
+  const [panelFilter, setPanelFilter] = useState<'unpaid' | 'overdue'>('unpaid');
+
+  /**
+   * Meta klika iz obavijesti „X računa prešlo dospijeće": otvori policu s
+   * filterom prekoračenih. Radi i kad korisnik dolazi s druge rute (zahtjev
+   * preživi navigaciju kroz sessionStorage).
+   */
+  useEffect(() => {
+    const openOverdue = () => {
+      setPanelFilter('overdue');
+      setOpen(true);
+    };
+    if (consumeOpenOverdueRequest()) openOverdue();
+    const handler = () => {
+      consumeOpenOverdueRequest();
+      openOverdue();
+    };
+    window.addEventListener(ERACUN_OPEN_OVERDUE_EVENT, handler);
+    return () => window.removeEventListener(ERACUN_OPEN_OVERDUE_EVENT, handler);
+  }, []);
 
   const payable = useMemo(
     () => summarizeIncomingInvoices(invoices.filter((i) => (i.direction ?? 'in') === 'in')),
@@ -100,7 +125,7 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
   return (
     <>
       <div
-        {...clickableProps(() => setOpen(true))}
+        {...clickableProps(() => { setPanelFilter('unpaid'); setOpen(true); })}
         className={`${wrapperSpacing} p-3 rounded-2xl border border-border/50 hover:bg-muted/30 transition-colors`}
         style={{
           background: hasOverdue
@@ -134,7 +159,7 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
               </SheetTitle>
             </SheetHeader>
             <div className="mt-4">
-              <IncomingInvoicesPanel />
+              <IncomingInvoicesPanel initialFilter={panelFilter} key={panelFilter} />
             </div>
           </PageContainer>
         </SheetContent>
