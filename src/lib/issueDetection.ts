@@ -274,33 +274,93 @@ export interface OverdueIncomingInvoiceInput {
   due_date: string | null;
   paid_at?: string | null;
   total_amount: number | string;
+  /** `in` = obveza (dugujem). Izlazni (`out`) NIJE obveza i ne ulazi u agregat. */
+  direction?: string | null;
+  /** null = osobne knjige; inače poslovni profil korisnika. */
+  business_profile_id?: string | null;
 }
 
+export interface OverdueBreakdownEntry {
+  business_profile_id: string | null;
+  label: string;
+  count: number;
+  total: number;
+}
+
+/**
+ * PRAVILO „PREKORAČENA OBVEZA":
+ *   direction = 'in' (ulazni račun = obveza)
+ *   AND paid_at IS NULL
+ *   AND due_date < današnji datum
+ *   preko SVIH korisnikovih knjiga (osobno + svi poslovni profili).
+ *
+ * Izlazni računi (`direction = 'out'`, potraživanja) NISU obveza i namjerno
+ * nisu u zbroju — razlika prema sirovom `count(*)` nad tablicom.
+ */
 export const detectOverdueIncomingInvoices = (
   invoices: OverdueIncomingInvoiceInput[],
   today: Date = new Date(),
+  profileLabels: Record<string, string> = {},
+  personalLabel = "osobno",
 ): IssueCandidate[] => {
   const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   let count = 0;
   let total = 0;
+  const byProfile = new Map<string, { count: number; total: number }>();
   for (const inv of invoices ?? []) {
     if (inv.paid_at) continue;
     if (!inv.due_date) continue;
+    if ((inv.direction ?? "in") !== "in") continue;
     const due = new Date(`${inv.due_date.slice(0, 10)}T00:00:00Z`).getTime();
     if (Number.isNaN(due) || due >= base) continue;
-    count += 1;
     const amount = Number(inv.total_amount);
-    total += Number.isFinite(amount) ? Math.abs(amount) : 0;
+    const abs = Number.isFinite(amount) ? Math.abs(amount) : 0;
+    count += 1;
+    total += abs;
+    const key = inv.business_profile_id ?? "";
+    const bucket = byProfile.get(key) ?? { count: 0, total: 0 };
+    bucket.count += 1;
+    bucket.total += abs;
+    byProfile.set(key, bucket);
   }
   if (count === 0) return [];
+
+  const entries: OverdueBreakdownEntry[] = [...byProfile.entries()]
+    .map(([key, v]) => ({
+      business_profile_id: key === "" ? null : key,
+      label: key === "" ? personalLabel : (profileLabels[key] ?? key),
+      count: v.count,
+      total: Number(v.total.toFixed(2)),
+    }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+  // Razrada se prikazuje samo kad knjige nisu jedne jedine — korisnik s dva
+  // profila ne smije dobiti jedan mutni zbroj.
+  const breakdown = entries.length > 1
+    ? entries.map(e => `${e.label} ${e.count}`).join(" · ")
+    : "";
+
   return [{
     type: "overdue_incoming_invoice",
     dedup_key: "overdue_incoming_invoices",
     severity: "warning",
     title_key: "attention.issues.overdueIncomingInvoices.title",
     title_vars: { count },
-    message_key: "attention.issues.overdueIncomingInvoices.message",
-    message_vars: { count, amount: `${total.toFixed(2)} €` },
-    data: { count, total: Number(total.toFixed(2)) },
+    message_key: breakdown
+      ? "attention.issues.overdueIncomingInvoices.messageWithBreakdown"
+      : "attention.issues.overdueIncomingInvoices.message",
+    message_vars: breakdown
+      ? { count, amount: `${total.toFixed(2)} €`, breakdown }
+      : { count, amount: `${total.toFixed(2)} €` },
+    data: {
+      count,
+      total: Number(total.toFixed(2)),
+      by_profile: entries,
+      breakdown,
+      // Meta klika: postojeći routing mehanizam čita `route`.
+      route: "/home?eracun=overdue",
+      target: "eracun_overdue",
+    },
   }];
 };
+
