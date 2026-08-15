@@ -97,7 +97,9 @@ describe('BriefGate ekran', () => {
       error: null,
     });
     renderGate();
-    fireEvent.click(await screen.findByTestId('brief-gate-action'));
+    await screen.findByTestId('brief-gate-message');
+    fireEvent.pointerDown(screen.getByTestId('brief-gate'));
+    fireEvent.click(screen.getByTestId('brief-gate-action'));
     await screen.findByText('DOKUMENTI');
   });
 
@@ -107,7 +109,9 @@ describe('BriefGate ekran', () => {
       error: null,
     });
     renderGate();
-    fireEvent.click(await screen.findByTestId('brief-gate-enter'));
+    await screen.findByTestId('brief-gate-message');
+    fireEvent.pointerDown(screen.getByTestId('brief-gate'));
+    fireEvent.click(screen.getByTestId('brief-gate-enter'));
     await screen.findByText('HOME');
   });
 
