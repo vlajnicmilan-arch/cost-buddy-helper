@@ -1,12 +1,12 @@
 import { describe, it } from 'vitest';
 import i18n from '@/i18n';
+import { resolveNotificationText } from '@/lib/notificationI18n';
 describe('probe', () => {
   it('p', async () => {
-    for (const lng of ['hr','en','de']) {
+    for (const lng of ['hr-HR','en-US','en-GB','sr','it']) {
       await i18n.changeLanguage(lng);
-      for (const c of [1,2,83,100]) {
-        console.log(lng, c, JSON.stringify(i18n.t('attention.issues.overdueIncomingInvoices.title', { count: c })), JSON.stringify(i18n.t('attention.issues.overdueIncomingInvoices.message', { count: c, amount: '1 €' })));
-      }
+      console.log(lng, i18n.language, i18n.exists('attention.issues.overdueIncomingInvoices.title'),
+        JSON.stringify(resolveNotificationText('attention.issues.overdueIncomingInvoices.title', {count:83}, i18n.t.bind(i18n))));
     }
   });
 });
