@@ -28,6 +28,15 @@ export function readContinuity(storage?: StorageLike | null): BriefContinuity {
   }
 }
 
+/** Brise zapis kontinuiteta (tiho ne radi nista ako storage nije dostupan). */
+export function clearContinuity(storage?: StorageLike | null): void {
+  try {
+    safeStorage(storage)?.removeItem(BRIEF_CONTINUITY_KEY);
+  } catch {
+    /* private mode / quota — fail-open */
+  }
+}
+
 export function writeContinuity(value: BriefContinuity, storage?: StorageLike | null): void {
   try {
     safeStorage(storage)?.setItem(BRIEF_CONTINUITY_KEY, JSON.stringify(value));

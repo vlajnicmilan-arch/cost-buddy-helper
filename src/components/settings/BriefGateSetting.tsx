@@ -4,10 +4,11 @@
 import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { DoorOpen } from 'lucide-react';
+import { DoorOpen, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { isUserDisabled, setUserDisabled } from '@/lib/briefGate';
+import { isUserDisabled, setUserDisabled, resetBriefGateFrequency } from '@/lib/briefGate';
 import { BRIEF_GATE_ENABLED } from '@/lib/featureFlags';
+import { showSuccess } from '@/hooks/useStatusFeedback';
 
 export const BriefGateSetting = () => {
   const { t } = useTranslation();
@@ -20,20 +21,39 @@ export const BriefGateSetting = () => {
     setUserDisabled(!next);
   };
 
+  const onShowAgain = () => {
+    resetBriefGateFrequency();
+    showSuccess(t('briefGate.settings.showAgainDone'));
+  };
+
   return (
-    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-          <DoorOpen className="w-4 h-4 text-primary" />
+    <div className="p-3 bg-muted/30 rounded-xl space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <DoorOpen className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <Label htmlFor="brief-gate-toggle" className="text-sm font-medium cursor-pointer">
+              {t('briefGate.settings.title')}
+            </Label>
+            <p className="text-xs text-muted-foreground">{t('briefGate.settings.description')}</p>
+          </div>
         </div>
-        <div>
-          <Label htmlFor="brief-gate-toggle" className="text-sm font-medium cursor-pointer">
-            {t('briefGate.settings.title')}
-          </Label>
-          <p className="text-xs text-muted-foreground">{t('briefGate.settings.description')}</p>
-        </div>
+        <Switch id="brief-gate-toggle" checked={enabled} onCheckedChange={onChange} />
       </div>
-      <Switch id="brief-gate-toggle" checked={enabled} onCheckedChange={onChange} />
+
+      {enabled && (
+        <button
+          type="button"
+          data-testid="brief-gate-show-again"
+          onClick={onShowAgain}
+          className="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-primary hover:bg-primary/5"
+        >
+          <RotateCcw className="w-4 h-4 shrink-0" />
+          {t('briefGate.settings.showAgain')}
+        </button>
+      )}
     </div>
   );
 };

@@ -6686,7 +6686,9 @@
     },
     "settings": {
       "title": "Begrüßungsbildschirm",
-      "description": "Kurze Übersicht vor dem Einstieg"
+      "description": "Kurze Übersicht vor dem Einstieg",
+      "showAgain": "Beim nächsten Einstieg erneut anzeigen",
+      "showAgainDone": "Der Begrüßungsbildschirm erscheint beim nächsten Einstieg."
     }
   }
 }
