@@ -10,6 +10,7 @@ import { useMailPendingCount } from '@/hooks/useMailPendingCount';
 import { MailReviewList } from '@/components/mail/MailReviewList';
 import { DocumentsReceivedTab } from '@/components/mail/DocumentsReceivedTab';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { useGoBackOrHome } from '@/hooks/useGoBackOrHome';
 
 /**
  * DOM ZA DOKUMENTE (`/dokumenti`).
@@ -20,6 +21,8 @@ import { PageContainer } from '@/components/layout/PageContainer';
 export default function Documents() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Ekran zna biti PRVA stavka povijesti (ulaz kroz brief-vrata s `replace`).
+  const goBack = useGoBackOrHome();
   const { hasAccess, loading: accessLoading } = useMailImportAccess();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'received' ? 'received' : 'pending';
@@ -47,7 +50,7 @@ export default function Documents() {
             size="icon"
             className="min-h-[44px] min-w-[44px]"
             aria-label={t('common.back', 'Natrag')}
-            onClick={() => navigate(-1)}
+            onClick={goBack}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

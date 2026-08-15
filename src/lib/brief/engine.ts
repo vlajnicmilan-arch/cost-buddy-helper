@@ -21,6 +21,7 @@ import {
   type BriefMessage,
   type BriefSnapshot,
 } from './types';
+import { isProvableTarget } from './destinations';
 
 const time = (iso: string | null | undefined): number | null => {
   if (!iso) return null;
@@ -59,8 +60,9 @@ function messageForCategory(
   state: BriefCategoryState,
   prev: BriefContinuityEntry | undefined,
 ): BriefMessage | null {
-  // Dokaziva destinacija je uvjet postojanja poruke.
-  if (!facts.filter || !facts.filter.path) return null;
+  // Dokaziva destinacija je uvjet postojanja poruke: odrediste mora prikazati
+  // TOCNO brojani skup (vidi ./destinations.ts).
+  if (!isProvableTarget(id, facts.filter)) return null;
 
   // RESOLVED ima smisla samo ako je prethodno stvarno nesto stajalo.
   if (state === 'resolved' && !(prev && prev.count > 0)) return null;

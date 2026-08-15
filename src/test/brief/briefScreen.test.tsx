@@ -63,7 +63,7 @@ describe('BriefGate ekran', () => {
 
   it('nema istina => ekran se ne prikazuje kao vrata (MIRNO poruka bez akcije)', async () => {
     rpcMock.mockResolvedValue({
-      data: snapshot({ uncertainty: { count: 0, watermark: null, filter: { path: '/dokumenti' } } }),
+      data: snapshot({ uncertainty: { count: 0, watermark: null, filter: { path: '/dokumenti', tab: 'pending' } } }),
       error: null,
     });
     renderGate();
@@ -108,7 +108,7 @@ describe('BriefGate ekran', () => {
   it('vise poruka => tocke za listanje', async () => {
     rpcMock.mockResolvedValue({
       data: snapshot({
-        uncertainty: { count: 1, watermark: null, filter: { path: '/dokumenti' } },
+        uncertainty: { count: 1, watermark: null, filter: { path: '/dokumenti', tab: 'pending' } },
         due: { count: 2, watermark: null, filter: { path: '/home' } },
       }),
       error: null,
