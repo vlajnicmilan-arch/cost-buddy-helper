@@ -157,3 +157,11 @@ export function continuityFromSnapshot(snapshot: BriefSnapshot | null, now: Date
   }
   return next;
 }
+
+/**
+ * Spajanje, ne zamjena: kategorije kojih u snimci NEMA zadrzavaju stari zapis,
+ * inace bi se sljedeci put pojavile kao 'new' iako ih je korisnik vec vidio.
+ */
+export function mergeContinuity(prev: BriefContinuity, next: BriefContinuity): BriefContinuity {
+  return { ...prev, ...next };
+}

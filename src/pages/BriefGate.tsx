@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBriefSnapshot } from '@/hooks/useBriefSnapshot';
 import { greetingSlot, localDayKey, markShown, readLastShown } from '@/lib/briefGate';
-import { buildBriefMessages, continuityFromSnapshot } from '@/lib/brief/engine';
+import { buildBriefMessages, continuityFromSnapshot, mergeContinuity } from '@/lib/brief/engine';
 import { readContinuity, writeContinuity } from '@/lib/brief/continuity';
-import type { BriefFilterTarget, BriefMessage } from '@/lib/brief/types';
+import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 
 const isFirstDailyEntry = (lastShownIso: string | null, now: Date): boolean => {
@@ -36,32 +36,35 @@ const BriefGate = () => {
   const touchX = useRef<number | null>(null);
   const [index, setIndex] = useState(0);
 
+  // Jednom prikazana snimka se ZAMRZAVA za tu sesiju vrata: zakasnjeli RPC
+  // smije osvjeziti predmemoriju, ali ne i tekst pod korisnikovim prstom.
+  const frozen = useRef<BriefSnapshot | null>(null);
+  const shown = frozen.current ?? snapshot;
+
   // Prefetch Home chunka — ulaz iza vrata mora biti trenutan.
   useEffect(() => {
     void import('./Index');
   }, []);
 
   const messages = useMemo<BriefMessage[]>(
-    () =>
-      snapshot?.enabled
-        ? buildBriefMessages({ snapshot, continuity: continuityRef.current })
-        : [],
-    [snapshot],
+    () => (shown?.enabled ? buildBriefMessages({ snapshot: shown, continuity: continuityRef.current }) : []),
+    [shown],
   );
 
   // Zapis se azurira TEK kad su vrata stvarno prikazana.
   useEffect(() => {
     if (messages.length > 0 && !marked.current) {
       marked.current = true;
+      frozen.current = shown;
       const now = new Date();
       markShown(now);
-      writeContinuity(continuityFromSnapshot(snapshot, now));
+      writeContinuity(mergeContinuity(continuityRef.current, continuityFromSnapshot(shown, now)));
     }
-  }, [messages, snapshot]);
+  }, [messages, shown]);
 
-  if (!snapshot && timedOut) return <Navigate to="/home" replace />;
-  if (!snapshot) return null;
-  if (!snapshot.enabled || messages.length === 0) return <Navigate to="/home" replace />;
+  if (!shown && timedOut) return <Navigate to="/home" replace />;
+  if (!shown) return null;
+  if (!shown.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
   const enter = () => navigate('/home', { replace: true });
 
