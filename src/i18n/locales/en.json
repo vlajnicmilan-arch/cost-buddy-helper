@@ -6672,7 +6672,16 @@
       "resolved": "No invoices are due.",
       "action": "View invoices",
       "today": "today",
-      "tomorrow": "tomorrow"
+      "tomorrow": "tomorrow",
+      "weekday": {
+        "0": "on Sunday",
+        "1": "on Monday",
+        "2": "on Tuesday",
+        "3": "on Wednesday",
+        "4": "on Thursday",
+        "5": "on Friday",
+        "6": "on Saturday"
+      }
     },
     "mail": {
       "new_one": "I processed a new document.",

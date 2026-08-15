@@ -6672,7 +6672,16 @@
       "resolved": "Keine Rechnungen fällig.",
       "action": "Rechnungen ansehen",
       "today": "heute",
-      "tomorrow": "morgen"
+      "tomorrow": "morgen",
+      "weekday": {
+        "0": "am Sonntag",
+        "1": "am Montag",
+        "2": "am Dienstag",
+        "3": "am Mittwoch",
+        "4": "am Donnerstag",
+        "5": "am Freitag",
+        "6": "am Samstag"
+      }
     },
     "mail": {
       "new_one": "Ich habe ein neues Dokument verarbeitet.",
