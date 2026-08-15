@@ -24,5 +24,5 @@ export const MANUAL_MERGE_ENABLED = false;
  * Postavi na `false` da se vrata ugase globalno u sekundi (boot ostaje
  * bajt-identičan stanju prije vrata).
  */
-export const BRIEF_GATE_ENABLED = false;
+export const BRIEF_GATE_ENABLED = true;
 
