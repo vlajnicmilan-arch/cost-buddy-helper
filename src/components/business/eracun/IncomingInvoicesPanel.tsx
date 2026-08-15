@@ -108,7 +108,7 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid' }: IncomingInvo
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
   /** Prekoračeni = neplaćeni s dospijećem u prošlosti (isti pojam kao detektor). */
   const overdue = useMemo(
-    () => unpaid.filter((i) => !!i.due_date && daysUntilDue(i.due_date) < 0),
+    () => unpaid.filter((i) => !!i.due_date && daysUntilDue(i.due_date, new Date()) < 0),
     [unpaid],
   );
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
