@@ -395,6 +395,7 @@ const App = () => (
                                   <GlobalPDFImportHost />
                                   <GlobalDecisionCaptureHost />
                                   <MailRealtimeHost />
+                                  <BundleFreshnessHost />
 
                                   <CorrectionDeleteConfirmHost />
                                   <ReconciliationDialogHost />
