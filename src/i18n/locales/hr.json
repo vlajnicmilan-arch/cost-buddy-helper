@@ -6333,7 +6333,8 @@
       "placeNone": "Bez oznake",
       "placeEdit": "Uredi oznaku mjesta",
       "placeSaved": "Oznaka mjesta je spremljena",
-      "placeFailed": "Spremanje oznake mjesta nije uspjelo"
+      "placeFailed": "Spremanje oznake mjesta nije uspjelo",
+      "emptyOverdue": "Nema prekoračenih računa."
     },
     "match": {
       "open": "Poveži uplate",

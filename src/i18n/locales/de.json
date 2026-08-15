@@ -6323,7 +6323,8 @@
       "placeNone": "Ohne Bezeichnung",
       "placeEdit": "Ortsbezeichnung bearbeiten",
       "placeSaved": "Ortsbezeichnung gespeichert",
-      "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen"
+      "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen",
+      "emptyOverdue": "Keine überfälligen Rechnungen."
     },
     "match": {
       "open": "Zahlungen zuordnen",
