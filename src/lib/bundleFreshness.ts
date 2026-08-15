@@ -101,8 +101,9 @@ export const decideBundleAction = ({
 }: BundleDecisionInput): BundleAction => {
   if (!liveSha || !localSha) return 'none';
   if (liveSha === localSha) return 'none';
+  if (isBusy) return 'defer';
   if (documentHidden) return 'reload';
-  return isBusy ? 'defer' : 'reload';
+  return 'reload';
 };
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
