@@ -13,6 +13,10 @@ import {
   ERACUN_OPEN_OVERDUE_EVENT,
   consumeOpenOverdueRequest,
 } from '@/lib/eracun/openOverdueRequest';
+import {
+  ERACUN_OPEN_INVOICE_EVENT,
+  consumeOpenIncomingInvoiceRequest,
+} from '@/lib/eracun/openInvoiceRequest';
 
 interface IncomingInvoicesWidgetProps {
   /** Visual variant, mirrors UnpaidInvoicesWidget. */
@@ -38,6 +42,7 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
   const [open, setOpen] = useState(false);
   /** Filtar s kojim se panel otvara — obavijest traži „Prekoračeni". */
   const [panelFilter, setPanelFilter] = useState<'unpaid' | 'overdue'>('unpaid');
+  const [highlightInvoiceId, setHighlightInvoiceId] = useState<string | null>(null);
 
   /**
    * Meta klika iz obavijesti „X računa prešlo dospijeće": otvori policu s
@@ -56,6 +61,19 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
     };
     window.addEventListener(ERACUN_OPEN_OVERDUE_EVENT, handler);
     return () => window.removeEventListener(ERACUN_OPEN_OVERDUE_EVENT, handler);
+  }, []);
+
+  useEffect(() => {
+    const openInvoice = () => {
+      const request = consumeOpenIncomingInvoiceRequest();
+      if (!request) return;
+      setPanelFilter('unpaid');
+      setHighlightInvoiceId(request.invoiceId);
+      setOpen(true);
+    };
+    openInvoice();
+    window.addEventListener(ERACUN_OPEN_INVOICE_EVENT, openInvoice);
+    return () => window.removeEventListener(ERACUN_OPEN_INVOICE_EVENT, openInvoice);
   }, []);
 
   const payable = useMemo(
@@ -159,7 +177,11 @@ export const IncomingInvoicesWidget = ({ variant = 'default' }: IncomingInvoices
               </SheetTitle>
             </SheetHeader>
             <div className="mt-4">
-              <IncomingInvoicesPanel initialFilter={panelFilter} key={panelFilter} />
+              <IncomingInvoicesPanel
+                initialFilter={panelFilter}
+                initialHighlightInvoiceId={highlightInvoiceId}
+                key={`${panelFilter}:${highlightInvoiceId ?? ''}`}
+              />
             </div>
           </PageContainer>
         </SheetContent>

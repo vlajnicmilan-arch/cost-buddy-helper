@@ -12,9 +12,9 @@
 // in-app obavijest. Ta su stanja prikazana kao agregat u "Za pažnju".
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { translate } from "../_shared/i18n/index.ts";
 import { sendPushNotification } from "../_shared/sendPushNotification.ts";
 import { pickDueStage, invoiceDueDedupKey, invoiceDueI18nKeys } from "../_shared/invoiceDue.ts";
+import { buildI18nPushArgs } from "../_shared/pushPayload.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,10 +120,11 @@ Deno.serve(async (req) => {
           stage,
           due_date: inv.due_date,
           business_profile_id: inv.business_profile_id,
-          route: "/dokumenti",
           title_vars: vars,
           message_vars: vars,
         },
+        entity_type: "incoming_invoice",
+        entity_id: inv.id,
       });
       if (notifErr && notifErr.code !== "23505") {
         console.error("[invoice-due-reminders] upis obavijesti nije uspio", notifErr.message);
@@ -132,22 +133,21 @@ Deno.serve(async (req) => {
       created++;
 
       try {
-        await sendPushNotification({
-          user_id: inv.user_id,
-          title: translate("hr", titleKey, vars),
-          body: translate("hr", messageKey, vars),
+        await sendPushNotification(buildI18nPushArgs({
+          userId: inv.user_id,
+          titleKey,
+          bodyKey: messageKey,
+          titleVars: vars,
+          messageVars: vars,
+          source: "invoice-due-reminders",
           data: {
             type: "invoice_due",
             category: "reminders",
-            route: "/dokumenti",
             invoice_id: inv.id,
+            business_profile_id: inv.business_profile_id,
             stage,
-            i18n_title_key: titleKey,
-            i18n_body_key: messageKey,
-            i18n_vars: vars,
           },
-          source: "invoice-due-reminders",
-        });
+        }));
       } catch (pushErr) {
         console.error("[invoice-due-reminders] push nije poslan", pushErr);
       }

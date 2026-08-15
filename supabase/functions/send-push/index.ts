@@ -8,7 +8,8 @@
 // Legacy callers that pass pre-rendered strings continue to work unchanged.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { captureEdgeError } from "../_shared/sentry.ts";
-import { translate, resolveLang } from "../_shared/i18n/index.ts";
+import { resolveLang } from "../_shared/i18n/index.ts";
+import { resolvePushText } from "../_shared/pushPayload.ts";
 
 
 const corsHeaders = {
@@ -334,24 +335,28 @@ Deno.serve(async (req) => {
     // data.title_vars / data.message_vars hold interpolation vars. Recipient
     // language read from profiles.preferred_language (fallback 'hr'). Legacy
     // callers that pass pre-rendered title/body without i18n keys skip this.
-    const titleKey = data?.i18n_title_key ? String(data.i18n_title_key) : null;
-    const bodyKey = data?.i18n_body_key ? String(data.i18n_body_key) : null;
-    if (titleKey || bodyKey) {
-      let lang = "hr";
-      try {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("preferred_language")
-          .eq("id", user_id)
-          .maybeSingle();
-        lang = resolveLang(prof?.preferred_language ?? null);
-      } catch (e) {
-        console.warn("[send-push] preferred_language lookup failed, defaulting hr:", e);
-      }
-      const titleVars = (data?.title_vars ?? {}) as Record<string, unknown>;
-      const bodyVars = (data?.message_vars ?? {}) as Record<string, unknown>;
-      if (titleKey) title = translate(lang, titleKey, titleVars);
-      if (bodyKey) body = translate(lang, bodyKey, bodyVars);
+    let lang = "hr";
+    try {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("preferred_language")
+        .eq("id", user_id)
+        .maybeSingle();
+      lang = resolveLang(prof?.preferred_language ?? null);
+    } catch (e) {
+      console.warn("[send-push] preferred_language lookup failed, defaulting hr:", e);
+    }
+    try {
+      const resolved = resolvePushText({ lang, title, body, data });
+      title = resolved.title;
+      body = resolved.body;
+    } catch (translationError) {
+      const message = translationError instanceof Error ? translationError.message : String(translationError);
+      console.error("[send-push] blocked unsafe push text", message);
+      return new Response(
+        JSON.stringify({ error: "unsafe_push_text", detail: message }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
 

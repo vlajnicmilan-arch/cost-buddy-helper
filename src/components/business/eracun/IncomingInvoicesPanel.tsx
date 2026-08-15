@@ -56,9 +56,10 @@ type Direction = 'in' | 'out';
 interface IncomingInvoicesPanelProps {
   /** Početni filtar — obavijest o prekoračenim računima otvara `overdue`. */
   initialFilter?: Filter;
+  initialHighlightInvoiceId?: string | null;
 }
 
-export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid' }: IncomingInvoicesPanelProps = {}) => {
+export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid', initialHighlightInvoiceId = null }: IncomingInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
@@ -124,6 +125,12 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid' }: IncomingInvo
     if (placeFilter === 'all' || places.length < 2) return byStatus;
     return byStatus.filter((i) => (i.place_label ?? '').trim() === placeFilter);
   }, [filter, unpaid, overdue, paid, scoped, placeFilter, places.length]);
+
+  useEffect(() => {
+    if (loading || !initialHighlightInvoiceId) return;
+    const target = document.querySelector<HTMLElement>(`[data-incoming-invoice-id="${CSS.escape(initialHighlightInvoiceId)}"]`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [loading, initialHighlightInvoiceId, visible]);
 
 
   const sourceOptions = useMemo(
@@ -388,7 +395,11 @@ export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid' }: IncomingInvo
       ) : (
         <div className="space-y-2">
           {visible.map((inv) => (
-            <div key={inv.id} className="p-3 rounded-lg border bg-card">
+            <div
+              key={inv.id}
+              data-incoming-invoice-id={inv.id}
+              className={`p-3 rounded-lg border bg-card ${inv.id === initialHighlightInvoiceId ? 'ring-2 ring-primary' : ''}`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">
