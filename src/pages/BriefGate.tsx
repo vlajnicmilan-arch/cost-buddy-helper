@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useAppState } from '@/contexts/AppStateContext';
 import { useBriefSnapshot } from '@/hooks/useBriefSnapshot';
 import { greetingSlot, localDayKey, markShown, readLastShown } from '@/lib/briefGate';
-import { buildBriefMessages, continuityFromSnapshot } from '@/lib/brief/engine';
+import { buildBriefMessages, continuityFromSnapshot, mergeContinuity } from '@/lib/brief/engine';
 import { readContinuity, writeContinuity } from '@/lib/brief/continuity';
 import type { BriefFilterTarget, BriefMessage } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
