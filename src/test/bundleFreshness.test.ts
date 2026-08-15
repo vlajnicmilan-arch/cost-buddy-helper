@@ -17,20 +17,17 @@ describe('parseBuildSha', () => {
 });
 
 describe('decideBundleAction', () => {
-  it('reloads on mismatch when calm', () => {
-    expect(decideBundleAction({ ...base, liveSha: 'bbb' })).toBe('reload');
-  });
-
-  it('defers silently on mismatch while critical work is open', () => {
+  it('defers on mismatch while critical work is open, even if tab is hidden', () => {
     expect(decideBundleAction({ ...base, liveSha: 'bbb', isBusy: true })).toBe('defer');
+    expect(decideBundleAction({ ...base, liveSha: 'bbb', isBusy: true, documentHidden: true })).toBe('defer');
   });
 
-  it('reloads once work is done', () => {
+  it('reloads on mismatch when calm and visible', () => {
     expect(decideBundleAction({ ...base, liveSha: 'bbb', isBusy: false })).toBe('reload');
   });
 
-  it('reloads a hidden tab immediately', () => {
-    expect(decideBundleAction({ ...base, liveSha: 'bbb', isBusy: true, documentHidden: true })).toBe('reload');
+  it('reloads a hidden tab only when no critical work is open', () => {
+    expect(decideBundleAction({ ...base, liveSha: 'bbb', isBusy: false, documentHidden: true })).toBe('reload');
   });
 
   it('does nothing when markers are equal (anti-loop after reload)', () => {
