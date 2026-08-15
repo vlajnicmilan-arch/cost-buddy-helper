@@ -178,7 +178,8 @@
       },
       "overdueIncomingInvoices": {
         "title": "{{count}} invoices past due",
-        "message": "{{amount}} outstanding in total. Review and record payments."
+        "message": "{{amount}} outstanding in total. Review and record payments.",
+        "messageWithBreakdown": "{{amount}} outstanding in total · {{breakdown}}. Review and record payments."
       }
     }
   },
@@ -6399,6 +6400,9 @@
       "confidenceStrong": "Strong",
       "confidenceLikely": "Likely",
       "confidencePossible": "Possible"
+    },
+    "filter": {
+      "overdue": "Past due"
     }
   },
   "mailImport": {

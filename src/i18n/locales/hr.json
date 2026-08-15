@@ -178,7 +178,8 @@
       },
       "overdueIncomingInvoices": {
         "title": "{{count}} računa prešlo dospijeće",
-        "message": "Ukupno {{amount}} nepodmireno. Provjeri i zabilježi plaćanja."
+        "message": "Ukupno {{amount}} nepodmireno. Provjeri i zabilježi plaćanja.",
+        "messageWithBreakdown": "Ukupno {{amount}} nepodmireno · {{breakdown}}. Provjeri i zabilježi plaćanja."
       }
     }
   },
@@ -6409,6 +6410,9 @@
       "confidenceStrong": "Jak",
       "confidenceLikely": "Vjerojatan",
       "confidencePossible": "Moguć"
+    },
+    "filter": {
+      "overdue": "Prekoračeni"
     }
   },
   "mailImport": {

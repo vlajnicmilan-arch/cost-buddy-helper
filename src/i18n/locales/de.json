@@ -178,7 +178,8 @@
       },
       "overdueIncomingInvoices": {
         "title": "{{count}} Rechnungen überfällig",
-        "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen."
+        "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen.",
+        "messageWithBreakdown": "Insgesamt {{amount}} offen · {{breakdown}}. Prüfen und Zahlungen erfassen."
       }
     }
   },
@@ -6399,6 +6400,9 @@
       "confidenceStrong": "Stark",
       "confidenceLikely": "Wahrscheinlich",
       "confidencePossible": "Möglich"
+    },
+    "filter": {
+      "overdue": "Überfällig"
     }
   },
   "mailImport": {
