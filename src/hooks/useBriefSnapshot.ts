@@ -32,8 +32,8 @@ interface CachedBriefSnapshot {
 function readFreshSeed(now: number): BriefSnapshot | null {
   const cached = instantCache.read<CachedBriefSnapshot>(BRIEF_GATE_CACHE_KEY);
   if (!cached || typeof cached !== 'object') return null;
-  const cachedAt =
-    cached.cachedAt instanceof Date ? cached.cachedAt.getTime() : Number(cached.cachedAt);
+  const rawCachedAt: unknown = cached.cachedAt;
+  const cachedAt = rawCachedAt instanceof Date ? rawCachedAt.getTime() : Number(rawCachedAt);
   if (!Number.isFinite(cachedAt)) return null;
   if (now - cachedAt > BRIEF_GATE_CACHE_MAX_AGE_MS) return null;
   const snapshot = cached.snapshot;
