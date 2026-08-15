@@ -9,6 +9,8 @@ import { clickableProps } from "@/lib/a11y";
 import type { Expense } from "@/types/expense";
 import type { ProjectWithOwnership } from "@/types/project";
 import { useModuleGate } from "@/hooks/useModuleGate";
+import { resolveNotificationText } from "@/lib/notificationI18n";
+import { requestOpenOverdueInvoices } from "@/lib/eracun/openOverdueRequest";
 
 interface Props {
   enabled: boolean;
@@ -28,18 +30,19 @@ const iconFor = (issue: ActiveIssue) => {
   return Lightbulb;
 };
 
+/**
+ * JEDAN PREVODITELJ ZA SVE POVRŠINE.
+ *
+ * Ranije je ovdje živjela lokalna kopija razrješavanja ključeva — drugi
+ * display put koji zaobilazi `resolveNotificationText`. Sada obje površine
+ * (zvono i „Za pažnju") idu kroz isti prevoditelj, pa se sirovi i18n ključ
+ * ne može pojaviti u UI-u.
+ */
 const renderText = (
   raw: string,
   vars: Record<string, unknown> | undefined,
   t: (k: string, v?: Record<string, unknown>) => string,
-): string => {
-  // If `raw` looks like an i18n key (no spaces, contains dots), translate.
-  // Otherwise treat as legacy plain text.
-  if (raw && !raw.includes(" ") && raw.includes(".")) {
-    return t(raw, vars ?? {});
-  }
-  return raw;
-};
+): string => resolveNotificationText(raw, vars, t as never);
 
 const HARD_CAP = 5;
 
@@ -54,6 +57,12 @@ export const ActiveIssuesSection = ({ enabled, projects, allExpenses }: Props) =
   const { issues, loading, dismiss } = useActiveIssues(enabled);
 
   const handleAction = useCallback((issue: ActiveIssue) => {
+    // Prekoračeni ulazni računi: otvori eRačune s filterom „Prekoračeni".
+    if (issue.type === "overdue_incoming_invoice" || issue.data?.target === "eracun_overdue") {
+      requestOpenOverdueInvoices();
+      navigate("/home");
+      return;
+    }
     if (issue.entity_type === "project" && issue.entity_id) {
       requestModule('projects', {
         onGranted: () => navigate("/projects", { state: { openProjectId: issue.entity_id, from: "/home" } }),
