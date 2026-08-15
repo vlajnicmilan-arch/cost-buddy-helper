@@ -13,6 +13,9 @@ export interface OverdueIncomingInvoice {
   due_date: string | null;
   paid_at: string | null;
   total_amount: number;
+  /** `in` = obveza. Izlazni računi se dohvaćaju, ali ih detektor odbacuje. */
+  direction: string | null;
+  business_profile_id: string | null;
 }
 
 export const useOverdueIncomingInvoices = (enabled: boolean) => {
@@ -30,11 +33,12 @@ export const useOverdueIncomingInvoices = (enabled: boolean) => {
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await (supabase as any)
       .from('incoming_invoices')
-      .select('id, due_date, paid_at, total_amount')
+      .select('id, due_date, paid_at, total_amount, direction, business_profile_id')
       .eq('user_id', user.id)
       .eq('direction', 'in')
       .is('paid_at', null)
       .lt('due_date', today);
+
     if (error) {
       console.error('[useOverdueIncomingInvoices] fetch failed', error);
       setLoading(false);
