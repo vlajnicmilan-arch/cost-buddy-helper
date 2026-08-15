@@ -7021,6 +7021,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      brief_gate_snapshot: { Args: never; Returns: Json }
       can_log_own_work: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean

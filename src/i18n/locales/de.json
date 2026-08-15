@@ -6644,5 +6644,37 @@
     "dismiss": "Keine Erklärung nötig",
     "cleared": "Markierung entfernt",
     "clearFailed": "Markierung konnte nicht entfernt werden"
+  },
+  "briefGate": {
+    "greeting": {
+      "morning": "Guten Morgen!",
+      "morningNamed": "Guten Morgen, {{name}}!",
+      "day": "Guten Tag!",
+      "dayNamed": "Guten Tag, {{name}}!",
+      "evening": "Guten Abend!",
+      "eveningNamed": "Guten Abend, {{name}}!"
+    },
+    "subtitle": "Das erwartet dich.",
+    "truths": {
+      "invoices_one": "{{count}} fällige Rechnung",
+      "invoices_other": "{{count}} fällige Rechnungen",
+      "invoicesDue": "Nächste Fälligkeit: {{date}}",
+      "documents_one": "{{count}} Dokument zur Prüfung",
+      "documents_other": "{{count}} Dokumente zur Prüfung",
+      "attention_one": "{{count}} Punkt zur Beachtung",
+      "attention_other": "{{count}} Punkte zur Beachtung",
+      "importDraft": "Unfertige Importprüfung"
+    },
+    "actions": {
+      "enter": "Eintreten",
+      "invoices": "Rechnungen",
+      "documents": "Dokumente",
+      "attention": "Ansehen",
+      "importDraft": "Fortsetzen"
+    },
+    "settings": {
+      "title": "Begrüßungsbildschirm",
+      "description": "Kurzer Überblick vor dem Einstieg"
+    }
   }
 }

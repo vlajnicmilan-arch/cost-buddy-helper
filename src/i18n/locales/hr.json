@@ -6655,5 +6655,40 @@
     "dismiss": "Ne treba objašnjenje",
     "cleared": "Oznaka uklonjena",
     "clearFailed": "Uklanjanje oznake nije uspjelo"
+  },
+  "briefGate": {
+    "greeting": {
+      "morning": "Dobro jutro!",
+      "morningNamed": "Dobro jutro, {{name}}!",
+      "day": "Dobar dan!",
+      "dayNamed": "Dobar dan, {{name}}!",
+      "evening": "Dobra večer!",
+      "eveningNamed": "Dobra večer, {{name}}!"
+    },
+    "subtitle": "Evo što te čeka.",
+    "truths": {
+      "invoices_one": "{{count}} račun u dospijeću",
+      "invoices_few": "{{count}} računa u dospijeću",
+      "invoices_other": "{{count}} računa u dospijeću",
+      "invoicesDue": "Najbliže dospijeće: {{date}}",
+      "documents_one": "{{count}} dokument na pregledu",
+      "documents_few": "{{count}} dokumenta na pregledu",
+      "documents_other": "{{count}} dokumenata na pregledu",
+      "attention_one": "{{count}} stavka za pažnju",
+      "attention_few": "{{count}} stavke za pažnju",
+      "attention_other": "{{count}} stavki za pažnju",
+      "importDraft": "Nedovršen pregled uvoza"
+    },
+    "actions": {
+      "enter": "Uđi",
+      "invoices": "Računi",
+      "documents": "Dokumenti",
+      "attention": "Pogledaj",
+      "importDraft": "Nastavi"
+    },
+    "settings": {
+      "title": "Pozdravni ekran",
+      "description": "Kratki pregled prije ulaska u aplikaciju"
+    }
   }
 }

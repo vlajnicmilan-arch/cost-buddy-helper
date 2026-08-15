@@ -18,6 +18,8 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { RuntimeDiagnostics } from '@/components/update/RuntimeDiagnostics';
 import { ExportButton } from '@/components/ui/export-button';
 import type { ExportMode } from '@/lib/fileExport';
+import { BriefGateSetting } from '@/components/settings/BriefGateSetting';
+
 
 interface AdvancedSectionProps {
   onCheckForUpdates: () => void;
@@ -82,7 +84,9 @@ export const AdvancedSection = ({
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-4">
+        <BriefGateSetting />
         {/* Check for updates */}
+
         <Button
           variant="outline"
           className="w-full gap-2 rounded-xl"

@@ -37,6 +37,9 @@ import { DiagnosticRouteTracker } from "@/components/DiagnosticRouteTracker";
 import { CrispChat } from "@/components/CrispChat";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { isPublicRoute } from "@/lib/publicRoutes";
+import { BRIEF_GATE_ENABLED } from "@/lib/featureFlags";
+import { isGateCandidate, isUserDisabled, readLastShown } from "@/lib/briefGate";
+import { BriefGateBoundary } from "@/components/BriefGateBoundary";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from "react";
 import StatusFeedback from "@/components/StatusFeedback";
@@ -86,6 +89,7 @@ const PaywallAuthRedirect = lazy(() => import("./pages/PaywallAuthRedirect"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ImportReview = lazy(() => import("./pages/ImportReview"));
 const Documents = lazy(() => import("./pages/Documents"));
+const BriefGate = lazy(() => import("./pages/BriefGate"));
 
 
 
@@ -214,7 +218,19 @@ const AppRoutes = () => {
     return onboardingCompleted ? "/home" : "/onboarding";
   };
 
-  const appEntryRoute = getAppEntryRoute();
+  const rawAppEntryRoute = getAppEntryRoute();
+  // BRIEF-VRATA: sinkroni 0 ms filter (build flag + korisnikov prekidač +
+  // pravilo ucestalosti). Sve ostalo (tisina, RPC) odlucuje sam ekran.
+  const appEntryRoute =
+    rawAppEntryRoute === "/home" &&
+    isGateCandidate({
+      buildEnabled: BRIEF_GATE_ENABLED,
+      userDisabled: isUserDisabled(),
+      lastShownIso: readLastShown(),
+      now: new Date(),
+    })
+      ? "/brief"
+      : rawAppEntryRoute;
 
   // Phase 1: Wait for initialization
   if (!isInitialized) {
@@ -347,6 +363,7 @@ const AppRoutes = () => {
       <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
       <Route path="/trash" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Trash />)}</Suspense>} />
       <Route path="/import/review" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<ImportReview />)}</Suspense>} />
+      <Route path="/brief" element={<BriefGateBoundary><Suspense fallback={null}>{requireOnboarding(<BriefGate />)}</Suspense></BriefGateBoundary>} />
       <Route path="/dokumenti" element={<Suspense fallback={<PageLoader />}>{requireOnboarding(<Documents />)}</Suspense>} />
       
       <Route path="/admin" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
