@@ -82,7 +82,9 @@ export const AdvancedSection = ({
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-4">
+        <BriefGateSetting />
         {/* Check for updates */}
+
         <Button
           variant="outline"
           className="w-full gap-2 rounded-xl"
