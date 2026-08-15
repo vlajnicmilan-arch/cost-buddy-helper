@@ -14,7 +14,10 @@ const cacheRead = vi.fn();
 const cacheWrite = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => ({
-  supabase: { rpc: (...args: unknown[]) => rpcMock(...args) },
+  supabase: {
+    rpc: (...args: unknown[]) => rpcMock(...args),
+    auth: { getUser: () => Promise.resolve({ data: { user: null }, error: null }) },
+  },
 }));
 
 vi.mock('@/contexts/AppStateContext', () => ({
