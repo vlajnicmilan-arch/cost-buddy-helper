@@ -21,6 +21,12 @@ export const BRIEF_GATE_MIN_GAP_MS = 4 * 60 * 60 * 1000;
 /** Tvrdi rok za RPC revalidaciju; nakon njega vrata se preskaču. */
 export const BRIEF_GATE_RPC_TIMEOUT_MS = 400;
 
+/**
+ * Granica svježine sjemena iz predmemorije (15 min). Starije sjeme tretira se
+ * kao da ga NEMA — odluku preuzima tvrdi rok od 400 ms i fail-open.
+ */
+export const BRIEF_GATE_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+
 export interface BriefGateSnapshot {
   enabled: boolean;
   invoices?: { count: number; nextDue: string | null };
