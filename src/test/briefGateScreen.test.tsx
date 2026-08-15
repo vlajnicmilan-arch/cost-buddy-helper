@@ -2,8 +2,7 @@
  * Brief-vrata — ponašanje ekrana: tišina, timeout/pad RPC-a, "Uđi", ErrorBoundary.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 const mockGate = vi.fn();
@@ -54,15 +53,14 @@ describe('BriefGate screen', () => {
     expect(container.textContent).toBe('');
   });
 
-  it('istina postoji => vrata, "Uđi" vodi u /home', async () => {
+  it('istina postoji => vrata, "Uđi" vodi u /home', () => {
     mockGate.mockReturnValue({
       snapshot: { enabled: true, documents: { count: 2 } },
       hasImportDraft: false,
       giveUp: false,
     });
     renderGate();
-    const enter = screen.getByTestId('brief-gate-enter');
-    await userEvent.click(enter);
+    fireEvent.click(screen.getByTestId('brief-gate-enter'));
     expect(screen.getByText('HOME')).toBeInTheDocument();
   });
 
