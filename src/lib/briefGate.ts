@@ -11,6 +11,8 @@
  *  3. Fail-open: sve nepoznato/pokvareno => bez vrata, ravno u aplikaciju.
  */
 
+import { clearContinuity } from './brief/continuity';
+
 export const BRIEF_GATE_LAST_SHOWN_KEY = 'vmb-brief-gate:last-shown:v1';
 export const BRIEF_GATE_DISABLED_KEY = 'vmb-brief-gate:disabled:v1';
 export const BRIEF_GATE_CACHE_KEY = 'brief-gate:v1';
@@ -130,6 +132,19 @@ export function markShown(now: Date, storage?: StorageLike | null): void {
   } catch {
     /* private mode / quota — fail-open */
   }
+}
+
+/**
+ * Brise zig zadnjeg prikaza i zapis kontinuiteta, tako da se vrata prikazu pri
+ * sljedecem ulasku. Pravilo ucestalosti ostaje nepromijenjeno.
+ */
+export function resetBriefGateFrequency(storage?: StorageLike | null): void {
+  try {
+    safeStorage(storage)?.removeItem(BRIEF_GATE_LAST_SHOWN_KEY);
+  } catch {
+    /* private mode / quota — fail-open */
+  }
+  clearContinuity(storage);
 }
 
 export function isUserDisabled(storage?: StorageLike | null): boolean {

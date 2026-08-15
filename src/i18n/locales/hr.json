@@ -6700,7 +6700,9 @@
     },
     "settings": {
       "title": "Pozdravni ekran",
-      "description": "Kratki pregled prije ulaska u aplikaciju"
+      "description": "Kratki pregled prije ulaska u aplikaciju",
+      "showAgain": "Prikaži ponovno pri sljedećem ulasku",
+      "showAgainDone": "Pozdravni ekran će se prikazati pri sljedećem ulasku."
     }
   }
 }

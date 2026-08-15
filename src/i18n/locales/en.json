@@ -6686,7 +6686,9 @@
     },
     "settings": {
       "title": "Welcome screen",
-      "description": "A short overview before entering the app"
+      "description": "A short overview before entering the app",
+      "showAgain": "Show again on next entry",
+      "showAgainDone": "The welcome screen will show on your next entry."
     }
   }
 }

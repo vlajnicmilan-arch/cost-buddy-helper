@@ -7,7 +7,11 @@ import {
   truthsFromSnapshot,
   greetingSlot,
   localDayKey,
+  markShown,
+  readLastShown,
+  resetBriefGateFrequency,
 } from '../briefGate';
+import { readContinuity, writeContinuity } from '../brief/continuity';
 
 const now = new Date('2026-08-15T12:00:00');
 
@@ -89,5 +93,37 @@ describe('briefGate — pozdrav', () => {
     expect(greetingSlot(new Date('2026-08-15T07:00:00'))).toBe('morning');
     expect(greetingSlot(new Date('2026-08-15T13:00:00'))).toBe('day');
     expect(greetingSlot(new Date('2026-08-15T20:00:00'))).toBe('evening');
+  });
+});
+
+describe('briefGate — resetBriefGateFrequency', () => {
+  const makeStorage = () => {
+    const map = new Map<string, string>();
+    return {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => void map.set(k, v),
+      removeItem: (k: string) => void map.delete(k),
+    };
+  };
+
+  it('brise zig i kontinuitet', () => {
+    const s = makeStorage();
+    markShown(now, s);
+    writeContinuity({ uncertainty: { count: 3, watermark: 'x' } } as never, s);
+
+    resetBriefGateFrequency(s);
+
+    expect(readLastShown(s)).toBeNull();
+    expect(readContinuity(s)).toEqual({});
+  });
+
+  it('nakon resetiranja isGateCandidate je true', () => {
+    const s = makeStorage();
+    markShown(now, s);
+    expect(isGateCandidate({ buildEnabled: true, userDisabled: false, lastShownIso: readLastShown(s), now })).toBe(false);
+
+    resetBriefGateFrequency(s);
+
+    expect(isGateCandidate({ buildEnabled: true, userDisabled: false, lastShownIso: readLastShown(s), now })).toBe(true);
   });
 });
