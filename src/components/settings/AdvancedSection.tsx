@@ -18,6 +18,8 @@ import { showSuccess, showError } from '@/hooks/useStatusFeedback';
 import { RuntimeDiagnostics } from '@/components/update/RuntimeDiagnostics';
 import { ExportButton } from '@/components/ui/export-button';
 import type { ExportMode } from '@/lib/fileExport';
+import { BriefGateSetting } from '@/components/settings/BriefGateSetting';
+
 
 interface AdvancedSectionProps {
   onCheckForUpdates: () => void;
