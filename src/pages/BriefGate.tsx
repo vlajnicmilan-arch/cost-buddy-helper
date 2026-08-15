@@ -36,32 +36,35 @@ const BriefGate = () => {
   const touchX = useRef<number | null>(null);
   const [index, setIndex] = useState(0);
 
+  // Jednom prikazana snimka se ZAMRZAVA za tu sesiju vrata: zakasnjeli RPC
+  // smije osvjeziti predmemoriju, ali ne i tekst pod korisnikovim prstom.
+  const frozen = useRef<BriefSnapshot | null>(null);
+  const shown = frozen.current ?? snapshot;
+
   // Prefetch Home chunka — ulaz iza vrata mora biti trenutan.
   useEffect(() => {
     void import('./Index');
   }, []);
 
   const messages = useMemo<BriefMessage[]>(
-    () =>
-      snapshot?.enabled
-        ? buildBriefMessages({ snapshot, continuity: continuityRef.current })
-        : [],
-    [snapshot],
+    () => (shown?.enabled ? buildBriefMessages({ snapshot: shown, continuity: continuityRef.current }) : []),
+    [shown],
   );
 
   // Zapis se azurira TEK kad su vrata stvarno prikazana.
   useEffect(() => {
     if (messages.length > 0 && !marked.current) {
       marked.current = true;
+      frozen.current = shown;
       const now = new Date();
       markShown(now);
-      writeContinuity(continuityFromSnapshot(snapshot, now));
+      writeContinuity(mergeContinuity(continuityRef.current, continuityFromSnapshot(shown, now)));
     }
-  }, [messages, snapshot]);
+  }, [messages, shown]);
 
-  if (!snapshot && timedOut) return <Navigate to="/home" replace />;
-  if (!snapshot) return null;
-  if (!snapshot.enabled || messages.length === 0) return <Navigate to="/home" replace />;
+  if (!shown && timedOut) return <Navigate to="/home" replace />;
+  if (!shown) return null;
+  if (!shown.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
   const enter = () => navigate('/home', { replace: true });
 
