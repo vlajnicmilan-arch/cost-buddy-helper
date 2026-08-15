@@ -1,151 +1,174 @@
 /**
- * BRIEF-VRATA (V1) — pozdravni ekran s istinama i izborima prije ulaska.
+ * BRIEF-VRATA V1 — deterministicki briefing prije ulaska u Centar.
  *
- * Nikad nema vlastiti loading state: ili je snimka tu (instantCache) ili se
- * čeka do 400 ms, a onda se ide ravno u /home. Svaki kvar = običan ulazak.
+ * Nema loading ceremonije, nema automatskog prijelaza, nema tehnickih isprika.
+ * Svaka greska ili istek roka => ravno u /home (fail-open prema unutra).
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, FileText, Inbox, Bell, Upload } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppState } from '@/contexts/AppStateContext';
-import { useBriefGate } from '@/hooks/useBriefGate';
-import {
-  greetingSlot,
-  hasAnyTruth,
-  markShown,
-  truthsFromSnapshot,
-} from '@/lib/briefGate';
+import { useBriefSnapshot } from '@/hooks/useBriefSnapshot';
+import { greetingSlot, localDayKey, markShown, readLastShown } from '@/lib/briefGate';
+import { buildBriefMessages, continuityFromSnapshot } from '@/lib/brief/engine';
+import { readContinuity, writeContinuity } from '@/lib/brief/continuity';
+import type { BriefFilterTarget, BriefMessage } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
+
+const isFirstDailyEntry = (lastShownIso: string | null, now: Date): boolean => {
+  if (!lastShownIso) return true;
+  const last = new Date(lastShownIso);
+  if (Number.isNaN(last.getTime())) return true;
+  return localDayKey(last) !== localDayKey(now);
+};
 
 const BriefGate = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { displayName } = useAppState();
-  const { snapshot, hasImportDraft, giveUp } = useBriefGate(true);
-  const marked = useRef(false);
+  const { snapshot, timedOut } = useBriefSnapshot(true);
 
-  // Prefetch Home chunka — stvarna korist vrata.
+  const continuityRef = useRef(readContinuity());
+  const firstDailyRef = useRef(isFirstDailyEntry(readLastShown(), new Date()));
+  const marked = useRef(false);
+  const touchX = useRef<number | null>(null);
+  const [index, setIndex] = useState(0);
+
+  // Prefetch Home chunka — ulaz iza vrata mora biti trenutan.
   useEffect(() => {
     void import('./Index');
   }, []);
 
-  const truths = useMemo(
-    () => truthsFromSnapshot(snapshot, hasImportDraft),
-    [snapshot, hasImportDraft],
+  const messages = useMemo<BriefMessage[]>(
+    () =>
+      snapshot?.enabled
+        ? buildBriefMessages({ snapshot, continuity: continuityRef.current })
+        : [],
+    [snapshot],
   );
 
-  const show = !!snapshot?.enabled && hasAnyTruth(truths);
-
+  // Zapis se azurira TEK kad su vrata stvarno prikazana.
   useEffect(() => {
-    if (show && !marked.current) {
+    if (messages.length > 0 && !marked.current) {
       marked.current = true;
-      markShown(new Date());
+      const now = new Date();
+      markShown(now);
+      writeContinuity(continuityFromSnapshot(snapshot, now));
     }
-  }, [show]);
+  }, [messages, snapshot]);
 
-  if (!snapshot && giveUp) return <Navigate to="/home" replace />;
-  if (snapshot && !show) return <Navigate to="/home" replace />;
-  if (!snapshot) return null; // bez loading ceremonije
-
-  const name = (displayName || '').trim();
-  const slot = greetingSlot(new Date());
-  const greeting = name
-    ? t(`briefGate.greeting.${slot}Named`, { name })
-    : t(`briefGate.greeting.${slot}`);
+  if (!snapshot && timedOut) return <Navigate to="/home" replace />;
+  if (!snapshot) return null;
+  if (!snapshot.enabled || messages.length === 0) return <Navigate to="/home" replace />;
 
   const enter = () => navigate('/home', { replace: true });
 
+  const openTarget = (target: BriefFilterTarget | null) => {
+    if (!target) return enter();
+    if (target.path === '/home') {
+      navigate('/home', { replace: true });
+      if (target.view === 'overdue') requestOpenOverdueInvoices();
+      return;
+    }
+    const params = Object.entries(target)
+      .filter(([k]) => k !== 'path')
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      .join('&');
+    navigate(params ? `${target.path}?${params}` : target.path, { replace: true });
+  };
+
+  const formatWhen = (dueDate: string | null | undefined): string => {
+    if (!dueDate) return '';
+    const d = new Date(dueDate);
+    if (Number.isNaN(d.getTime())) return '';
+    const today = localDayKey(new Date());
+    const tomorrow = localDayKey(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const key = localDayKey(d);
+    if (key === today) return t('briefGate.due.today', 'danas');
+    if (key === tomorrow) return t('briefGate.due.tomorrow', 'sutra');
+    return d.toLocaleDateString();
+  };
+
+  const current = messages[Math.min(index, messages.length - 1)];
+  const name = (displayName || '').trim();
+  const greeting = firstDailyRef.current
+    ? name
+      ? t(`briefGate.greeting.${greetingSlot(new Date())}Named`, { name })
+      : t(`briefGate.greeting.${greetingSlot(new Date())}`)
+    : null;
+
+  const go = (delta: number) => {
+    setIndex((i) => Math.min(messages.length - 1, Math.max(0, i + delta)));
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center px-5 py-10">
+    <div
+      className="min-h-screen bg-background flex flex-col justify-center px-5 py-10"
+      onTouchStart={(e) => {
+        touchX.current = e.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(e) => {
+        const start = touchX.current;
+        touchX.current = null;
+        if (start === null) return;
+        const delta = (e.changedTouches[0]?.clientX ?? start) - start;
+        if (Math.abs(delta) < 48) return;
+        go(delta < 0 ? 1 : -1);
+      }}
+      data-testid="brief-gate"
+    >
       <div className="w-full max-w-md mx-auto space-y-8">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">{greeting}</h1>
-          <p className="text-sm text-muted-foreground">{t('briefGate.subtitle')}</p>
-        </header>
+        {greeting && <h1 className="text-2xl font-bold text-foreground">{greeting}</h1>}
 
-        <ul className="space-y-2">
-          {truths.invoiceCount > 0 && (
-            <TruthRow
-              icon={<FileText className="w-4 h-4 text-primary" />}
-              text={t('briefGate.truths.invoices', { count: truths.invoiceCount })}
-              hint={
-                truths.invoiceNextDue
-                  ? t('briefGate.truths.invoicesDue', {
-                      date: new Date(truths.invoiceNextDue).toLocaleDateString(),
-                    })
-                  : undefined
-              }
-              actionLabel={t('briefGate.actions.invoices')}
-              onAction={() => {
-                navigate('/home', { replace: true });
-                requestOpenOverdueInvoices();
-              }}
-            />
-          )}
-          {truths.documentCount > 0 && (
-            <TruthRow
-              icon={<Inbox className="w-4 h-4 text-primary" />}
-              text={t('briefGate.truths.documents', { count: truths.documentCount })}
-              actionLabel={t('briefGate.actions.documents')}
-              onAction={() => navigate('/dokumenti', { replace: true })}
-            />
-          )}
-          {truths.attentionCount > 0 && (
-            <TruthRow
-              icon={<Bell className="w-4 h-4 text-primary" />}
-              text={t('briefGate.truths.attention', { count: truths.attentionCount })}
-              actionLabel={t('briefGate.actions.attention')}
-              onAction={enter}
-            />
-          )}
-          {truths.hasImportDraft && (
-            <TruthRow
-              icon={<Upload className="w-4 h-4 text-primary" />}
-              text={t('briefGate.truths.importDraft')}
-              actionLabel={t('briefGate.actions.importDraft')}
-              onAction={() => navigate('/import/review', { replace: true })}
-            />
-          )}
-        </ul>
+        <p className="text-xl font-medium text-foreground" data-testid="brief-gate-message">
+          {t(current.textKey, {
+            count: current.textParams.count,
+            issuer: current.textParams.issuer,
+            when: formatWhen(current.textParams.dueDate),
+          })}
+        </p>
 
-        <Button
-          onClick={enter}
-          className="w-full h-14 text-base gap-2"
-          data-testid="brief-gate-enter"
-        >
-          {t('briefGate.actions.enter')}
-          <ArrowRight className="w-5 h-5" />
-        </Button>
+        {messages.length > 1 && (
+          <div className="flex items-center gap-2" role="tablist" aria-label={t('briefGate.dots', 'Poruke')}>
+            {messages.map((m, i) => (
+              <button
+                key={`${m.category}-${i}`}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                aria-label={`${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-2 rounded-full transition-all ${i === index ? 'w-6 bg-primary' : 'w-2 bg-muted-foreground/30'}`}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {current.target && (
+            <Button
+              className="w-full h-14 text-base"
+              onClick={() => openTarget(current.target)}
+              data-testid="brief-gate-action"
+            >
+              {t(current.actionKey)}
+            </Button>
+          )}
+          <Button
+            variant={current.target ? 'outline' : 'default'}
+            className="w-full h-14 text-base gap-2"
+            onClick={enter}
+            data-testid="brief-gate-enter"
+          >
+            {t('briefGate.enter', 'Uđi u Centar')}
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
-
-interface TruthRowProps {
-  icon: React.ReactNode;
-  text: string;
-  hint?: string;
-  actionLabel: string;
-  onAction: () => void;
-}
-
-const TruthRow = ({ icon, text, hint, actionLabel, onAction }: TruthRowProps) => (
-  <li className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{text}</p>
-        {hint && <p className="text-xs text-muted-foreground truncate">{hint}</p>}
-      </div>
-    </div>
-    <Button variant="outline" size="sm" className="shrink-0 min-h-[44px]" onClick={onAction}>
-      {actionLabel}
-    </Button>
-  </li>
-);
 
 export default BriefGate;
