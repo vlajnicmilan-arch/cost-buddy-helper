@@ -6685,7 +6685,16 @@
       "resolved": "Nema računa pri dospijeću.",
       "action": "Pogledaj račune",
       "today": "danas",
-      "tomorrow": "sutra"
+      "tomorrow": "sutra",
+      "weekday": {
+        "0": "u nedjelju",
+        "1": "u ponedjeljak",
+        "2": "u utorak",
+        "3": "u srijedu",
+        "4": "u četvrtak",
+        "5": "u petak",
+        "6": "u subotu"
+      }
     },
     "mail": {
       "new_one": "Obradio sam novi dokument.",
