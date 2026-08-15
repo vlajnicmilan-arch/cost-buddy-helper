@@ -10,7 +10,10 @@ const rpcMock = vi.fn();
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
-    auth: { getUser: () => Promise.resolve({ data: { user: null }, error: null }) },
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
+    },
   },
 }));
 
