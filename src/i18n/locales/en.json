@@ -6648,33 +6648,45 @@
   "briefGate": {
     "greeting": {
       "morning": "Good morning!",
-      "morningNamed": "Good morning, {{name}}!",
+      "morningNamed": "Good morning, {{name}}.",
       "day": "Good afternoon!",
-      "dayNamed": "Good afternoon, {{name}}!",
+      "dayNamed": "Good afternoon, {{name}}.",
       "evening": "Good evening!",
-      "eveningNamed": "Good evening, {{name}}!"
+      "eveningNamed": "Good evening, {{name}}."
     },
-    "subtitle": "Here's what's waiting for you.",
-    "truths": {
-      "invoices_one": "{{count}} invoice due",
-      "invoices_other": "{{count}} invoices due",
-      "invoicesDue": "Next due: {{date}}",
-      "documents_one": "{{count}} document to review",
-      "documents_other": "{{count}} documents to review",
-      "attention_one": "{{count}} item needs attention",
-      "attention_other": "{{count}} items need attention",
-      "importDraft": "Unfinished import review"
+    "enter": "Enter the Center",
+    "dots": "Messages",
+    "uncertainty": {
+      "new_one": "1 item needs your decision.",
+      "new_other": "{{count}} items need your decision.",
+      "pending_one": "1 item is still waiting for your decision.",
+      "pending_other": "{{count}} items are still waiting for your decision.",
+      "resolved": "Nothing is waiting for your decision.",
+      "action": "Review items"
     },
-    "actions": {
-      "enter": "Enter",
-      "invoices": "Invoices",
-      "documents": "Documents",
-      "attention": "View",
-      "importDraft": "Continue"
+    "due": {
+      "newOne": "Invoice from {{issuer}} is due {{when}}.",
+      "newMany": "{{count}} invoices are due within the next 7 days.",
+      "pendingOne": "Invoice from {{issuer}} is still due {{when}}.",
+      "pendingMany": "{{count}} invoices are still awaiting payment.",
+      "resolved": "No invoices are due.",
+      "action": "View invoices",
+      "today": "today",
+      "tomorrow": "tomorrow"
+    },
+    "mail": {
+      "new_one": "I processed a new document.",
+      "new_other": "I processed {{count}} new documents.",
+      "action": "Open documents"
+    },
+    "calm": {
+      "sincePrevious": "Nothing new since your last review.",
+      "firstToday": "Nothing urgent right now.",
+      "action": "Skip"
     },
     "settings": {
       "title": "Welcome screen",
-      "description": "A short brief before entering the app"
+      "description": "A short overview before entering the app"
     }
   }
 }

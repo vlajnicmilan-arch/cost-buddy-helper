@@ -1,20 +1,27 @@
 ---
-name: Brief-vrata V1
-description: Pozdravni ekran s istinama prije ulaska — flag, RPC brief_gate_snapshot, pravilo učestalosti i tišine
+name: Brief-vrata V1 (deterministički briefing)
+description: Pozdravni ekran prije Centra — RPC brief_gate_snapshot_v2, deterministički motor (NEIZVJESNOST > DOSPIJEĆE > MAIL > MIRNO), kontinuitet u localStorageu, zastavica default OFF
 type: feature
 ---
 
-Vrata = lazy ekran `/brief`, ulazi se preko `getAppEntryRoute` (samo kad bi inače išlo na `/home`).
+Vrata = lazy ekran `/brief`, ulazi se preko `getAppEntryRoute` (samo umjesto `/home`), poslije auth/onboarding provjera.
 
-Tri brave:
-1. Build flag `BRIEF_GATE_ENABLED` u `src/lib/featureFlags.ts` (kill switch).
-2. Po-korisnički popis: `app_settings.key='brief_gate_user_ids'` (jsonb array user id-jeva). RPC `brief_gate_snapshot()` vraća `{enabled:false}` svima izvan popisa.
+Tri brave (ne pregovara se):
+1. Build flag `BRIEF_GATE_ENABLED` u `src/lib/featureFlags.ts` — **default `false`**.
+2. Po-korisnički popis: `app_settings.key='brief_gate_user_ids'` (jsonb array). RPC vraća `{enabled:false}` svima izvan popisa.
 3. Korisnikov prekidač u Postavke → Napredno (`localStorage vmb-brief-gate:disabled:v1`).
 
-Pravila (u `src/lib/briefGate.ts`, testovi `src/lib/__tests__/briefGate.test.ts`):
-- Učestalost: prvi ulazak u lokalnom danu ILI ≥4 h od zadnjeg prikaza (`vmb-brief-gate:last-shown:v1`).
-- Tišina: nijedna istina (računi u dospijeću, dokumenti na pregledu, „Za pažnju", uvozna skica) → vrata se ne prikazuju.
-- Fail-open: nema instantCache snimke i RPC ne stigne u 400 ms → ravno `/home`. Vrata NEMAJU loading state. `BriefGateBoundary` hvata svaki kvar → `/home`.
+Izvor činjenica: JEDAN read-only RPC `brief_gate_snapshot_v2()` (SECURITY DEFINER, EXECUTE samo `authenticated`).
+Kategorije: `uncertainty` (document_ingest_items `na_pregledu`), `due` (incoming_invoices, neplaćeni, dospijeće ≤ +7 dana), `mail` (mail dokumenti `povezan`, 7 dana). Svaka vraća `count`, `watermark`, `filter` (dokaziva destinacija).
 
-Ekran prefetcha Home chunk (`import('./pages/Index')`).
-V1 opseg zaključan: samo 4 postojeće istine, nula novih izračuna.
+Motor `src/lib/brief/engine.ts` — NULA AI:
+- Fiksni prioritet NEIZVJESNOST > DOSPIJEĆE > MAIL, max 3 poruke; MIRNO je isključivo fallback.
+- Stanja: NEW / REMINDER / UNCHANGED / RESOLVED. **Watermark ima prednost pred brojem.**
+- Nema `filter` → nema poruke. RESOLVED se prikazuje samo ako je prije stvarno nešto stajalo. MAIL se javlja samo kao NEW.
+- Registar budućih kategorija (`liquidity`, `projectBudget`) postoji u `types.ts`, ali NIJE u prioritetu — ne izvršava se.
+
+Kontinuitet: `src/lib/brief/continuity.ts`, ključ `vmb-brief-gate:continuity:v1`. Zapis se ažurira TEK kad su vrata stvarno prikazana.
+
+Fail-open: tvrdi rok 400 ms (`useBriefSnapshot`), `BriefGateBoundary`, svaka greška/istek → `/home`. Ekran nema loading state ni automatski prijelaz.
+
+Testovi: `src/test/brief/briefEngine.test.ts`, `src/test/brief/briefScreen.test.tsx`, `src/lib/__tests__/briefGate.test.ts`.

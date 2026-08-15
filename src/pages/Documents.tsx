@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, FileClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,10 @@ export default function Documents() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasAccess, loading: accessLoading } = useMailImportAccess();
-  const [tab, setTab] = useState<'pending' | 'received'>('pending');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'received' ? 'received' : 'pending';
+  const [tab, setTab] = useState<'pending' | 'received'>(initialTab);
+
   const { count, refetch } = useMailPendingCount(hasAccess);
 
   if (accessLoading) {
