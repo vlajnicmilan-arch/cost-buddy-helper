@@ -111,7 +111,7 @@ describe('BriefGate ekran', () => {
     await screen.findByText('HOME');
   });
 
-  it('vise poruka => tocke za listanje', async () => {
+  it('vise poruka => svi reci su u istom bloku', async () => {
     rpcMock.mockResolvedValue({
       data: snapshot({
         uncertainty: { count: 1, watermark: null, filter: { path: '/dokumenti', tab: 'pending' } },
@@ -121,6 +121,6 @@ describe('BriefGate ekran', () => {
     });
     renderGate();
     await screen.findByTestId('brief-gate-message');
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getAllByTestId('brief-gate-line')).toHaveLength(1);
   });
 });
