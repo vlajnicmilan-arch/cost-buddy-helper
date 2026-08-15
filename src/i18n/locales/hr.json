@@ -178,7 +178,9 @@
       },
       "overdueIncomingInvoices": {
         "title": "{{count}} računa prešlo dospijeće",
-        "message": "Ukupno {{amount}} nepodmireno. Provjeri i zabilježi plaćanja."
+        "message": "Ukupno {{amount}} nepodmireno. Provjeri i zabilježi plaćanja.",
+        "messageWithBreakdown": "Ukupno {{amount}} nepodmireno · {{breakdown}}. Provjeri i zabilježi plaćanja.",
+        "personal": "osobno"
       }
     }
   },
@@ -6313,7 +6315,7 @@
       "all": "Sve",
       "due": "dospijeće",
       "noDue": "Bez dospijeća",
-      "overdue": "Kasni {{n}} d",
+      "overdue": "Prekoračeni",
       "dueIn": "Za {{n}} d",
       "paidOn": "Plaćeno {{date}}",
       "markPaid": "Plaćeno",
@@ -6332,7 +6334,8 @@
       "placeNone": "Bez oznake",
       "placeEdit": "Uredi oznaku mjesta",
       "placeSaved": "Oznaka mjesta je spremljena",
-      "placeFailed": "Spremanje oznake mjesta nije uspjelo"
+      "placeFailed": "Spremanje oznake mjesta nije uspjelo",
+      "emptyOverdue": "Nema prekoračenih računa."
     },
     "match": {
       "open": "Poveži uplate",

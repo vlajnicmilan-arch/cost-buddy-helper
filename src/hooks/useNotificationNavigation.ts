@@ -23,6 +23,7 @@ import { normalizePayload, type NormalizedPayload } from '@/lib/notificationPayl
 import { setPendingHighlight } from '@/lib/pendingHighlight';
 import { dispatchAttributionOpen, parseAttributionPayload } from '@/lib/attribution/events';
 import { useModuleGate } from '@/hooks/useModuleGate';
+import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 
 /**
  * Izvuče project id iz route oblika `/projects?id=<UUID>`. Vraća null ako
@@ -121,6 +122,13 @@ export function useNotificationNavigation() {
           return true;
         }
       }
+      // Prekoračeni ulazni računi: agregat nema jedan račun kao metu, pa klik
+      // otvara eRačune s filterom „Prekoračeni" u trenutnom kontekstu.
+      if (type === 'overdue_incoming_invoice') {
+        requestOpenOverdueInvoices();
+        navigate('/home');
+        return true;
+      }
       const payload = normalizePayload(
         type ?? null,
         (data && typeof data === 'object') ? (data as Record<string, unknown>) : null,
@@ -131,7 +139,7 @@ export function useNotificationNavigation() {
       }
       return ok;
     },
-    [navigateFromPayload, t],
+    [navigateFromPayload, navigate, t],
   );
 
   return { navigateFromPayload, navigateFromNotification };

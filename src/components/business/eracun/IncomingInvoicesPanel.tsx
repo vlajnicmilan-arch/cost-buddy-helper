@@ -43,7 +43,7 @@ import { PaymentMatchReview } from './PaymentMatchReview';
 import { LinkExistingExpenseDialog } from './LinkExistingExpenseDialog';
 import { useEracunExpenseMatch } from '@/hooks/useEracunExpenseMatch';
 
-type Filter = 'unpaid' | 'paid' | 'all';
+type Filter = 'unpaid' | 'overdue' | 'paid' | 'all';
 type Direction = 'in' | 'out';
 
 /**
@@ -53,7 +53,12 @@ type Direction = 'in' | 'out';
  * Unutar svake strane poredak dolazi iz `sortIncomingInvoices`: neplaćeni prvi,
  * po dospijeću uzlazno.
  */
-export const IncomingInvoicesPanel = () => {
+interface IncomingInvoicesPanelProps {
+  /** Početni filtar — obavijest o prekoračenim računima otvara `overdue`. */
+  initialFilter?: Filter;
+}
+
+export const IncomingInvoicesPanel = ({ initialFilter = 'unpaid' }: IncomingInvoicesPanelProps = {}) => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
@@ -76,7 +81,7 @@ export const IncomingInvoicesPanel = () => {
   const [directionState, setDirection] = useState<Direction>('in');
   const direction: Direction = isPersonal ? 'in' : directionState;
 
-  const [filter, setFilter] = useState<Filter>('unpaid');
+  const [filter, setFilter] = useState<Filter>(initialFilter);
   const [importOpen, setImportOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<IncomingInvoice | null>(null);
@@ -101,6 +106,11 @@ export const IncomingInvoicesPanel = () => {
   );
   const expenseMatch = useEracunExpenseMatch(incoming);
   const unpaid = useMemo(() => scoped.filter((i) => !i.paid_at), [scoped]);
+  /** Prekoračeni = neplaćeni s dospijećem u prošlosti (isti pojam kao detektor). */
+  const overdue = useMemo(
+    () => unpaid.filter((i) => !!i.due_date && daysUntilDue(i.due_date, new Date()) < 0),
+    [unpaid],
+  );
   const paid = useMemo(() => scoped.filter((i) => !!i.paid_at), [scoped]);
 
   /** Oznake mjesta koje stvarno postoje — filtar se nudi TEK kad ih ima ≥2. */
@@ -110,10 +120,10 @@ export const IncomingInvoicesPanel = () => {
   );
 
   const visible = useMemo(() => {
-    const byStatus = filter === 'unpaid' ? unpaid : filter === 'paid' ? paid : scoped;
+    const byStatus = filter === 'unpaid' ? unpaid : filter === 'overdue' ? overdue : filter === 'paid' ? paid : scoped;
     if (placeFilter === 'all' || places.length < 2) return byStatus;
     return byStatus.filter((i) => (i.place_label ?? '').trim() === placeFilter);
-  }, [filter, unpaid, paid, scoped, placeFilter, places.length]);
+  }, [filter, unpaid, overdue, paid, scoped, placeFilter, places.length]);
 
 
   const sourceOptions = useMemo(
@@ -309,6 +319,9 @@ export const IncomingInvoicesPanel = () => {
                 ? t('eracun.list.uncollected', 'Nenaplaćeni')
                 : t('eracun.list.unpaid', 'Neplaćeni')} ({unpaid.length})
             </TabsTrigger>
+            <TabsTrigger value="overdue" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">
+              {t('eracun.list.overdue', 'Prekoračeni')} ({overdue.length})
+            </TabsTrigger>
             <TabsTrigger value="paid" className="text-[11px] sm:text-xs flex-1 min-w-0 truncate px-1.5 sm:px-3">
               {direction === 'out'
                 ? t('eracun.list.collected', 'Naplaćeni')
@@ -364,7 +377,9 @@ export const IncomingInvoicesPanel = () => {
         </div>
       ) : visible.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">
-          {filter === 'unpaid'
+          {filter === 'overdue'
+            ? t('eracun.list.emptyOverdue', 'Nema prekoračenih računa.')
+            : filter === 'unpaid'
             ? direction === 'out'
               ? t('eracun.list.emptyUncollected', 'Nema nenaplaćenih izlaznih računa.')
               : t('eracun.list.emptyUnpaid', 'Nema neplaćenih ulaznih računa.')

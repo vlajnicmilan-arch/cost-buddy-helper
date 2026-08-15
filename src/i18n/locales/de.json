@@ -178,7 +178,9 @@
       },
       "overdueIncomingInvoices": {
         "title": "{{count}} Rechnungen überfällig",
-        "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen."
+        "message": "Insgesamt {{amount}} offen. Prüfen und Zahlungen erfassen.",
+        "messageWithBreakdown": "Insgesamt {{amount}} offen · {{breakdown}}. Prüfen und Zahlungen erfassen.",
+        "personal": "privat"
       }
     }
   },
@@ -6303,7 +6305,7 @@
       "all": "Alle",
       "due": "fällig",
       "noDue": "Kein Fälligkeitsdatum",
-      "overdue": "{{n}} T überfällig",
+      "overdue": "Überfällig",
       "dueIn": "In {{n}} T",
       "paidOn": "Bezahlt {{date}}",
       "markPaid": "Bezahlt",
@@ -6322,7 +6324,8 @@
       "placeNone": "Ohne Bezeichnung",
       "placeEdit": "Ortsbezeichnung bearbeiten",
       "placeSaved": "Ortsbezeichnung gespeichert",
-      "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen"
+      "placeFailed": "Speichern der Ortsbezeichnung fehlgeschlagen",
+      "emptyOverdue": "Keine überfälligen Rechnungen."
     },
     "match": {
       "open": "Zahlungen zuordnen",
