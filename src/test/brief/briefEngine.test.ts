@@ -3,6 +3,10 @@ import { buildBriefMessages, continuityFromSnapshot, deriveCategoryState } from 
 import type { BriefContinuity, BriefSnapshot } from '@/lib/brief/types';
 
 const filter = (path: string) => ({ path });
+/** Dokazive destinacije po kategoriji (vidi src/lib/brief/destinations.ts). */
+const pendingFilter = { path: '/dokumenti', tab: 'pending' };
+/** Mail postaje dokaziv tek kad ekran obradenih dokumenata postoji. */
+const processedFilter = { path: '/dokumenti', tab: 'processed' };
 
 const snap = (parts: Partial<BriefSnapshot['categories']>): BriefSnapshot => ({
   enabled: true,
@@ -13,8 +17,8 @@ describe('brief motor — prioritet', () => {
   it('sve tri kategorije => redoslijed neizvjesnost > dospijece > mail', () => {
     const s = snap({
       due: { count: 2, watermark: '2026-08-15T08:00:00Z', filter: filter('/home') },
-      mail: { count: 1, watermark: '2026-08-15T08:00:00Z', filter: filter('/dokumenti') },
-      uncertainty: { count: 3, watermark: '2026-08-15T08:00:00Z', filter: filter('/dokumenti') },
+      mail: { count: 1, watermark: '2026-08-15T08:00:00Z', filter: processedFilter },
+      uncertainty: { count: 3, watermark: '2026-08-15T08:00:00Z', filter: pendingFilter },
     });
     const msgs = buildBriefMessages({ snapshot: s, continuity: {} });
     expect(msgs.map((m) => m.category)).toEqual(['uncertainty', 'due', 'mail']);
@@ -22,9 +26,9 @@ describe('brief motor — prioritet', () => {
 
   it('najvise tri poruke', () => {
     const s = snap({
-      uncertainty: { count: 1, watermark: null, filter: filter('/dokumenti') },
+      uncertainty: { count: 1, watermark: null, filter: pendingFilter },
       due: { count: 1, watermark: null, filter: filter('/home') },
-      mail: { count: 1, watermark: null, filter: filter('/dokumenti') },
+      mail: { count: 1, watermark: null, filter: processedFilter },
     });
     expect(buildBriefMessages({ snapshot: s, continuity: {} }).length).toBeLessThanOrEqual(3);
   });
@@ -32,7 +36,7 @@ describe('brief motor — prioritet', () => {
 
 describe('brief motor — tisina i MIRNO', () => {
   it('sve prazno i nista prije => MIRNO (prvi put)', () => {
-    const s = snap({ uncertainty: { count: 0, watermark: null, filter: filter('/dokumenti') } });
+    const s = snap({ uncertainty: { count: 0, watermark: null, filter: pendingFilter } });
     const msgs = buildBriefMessages({ snapshot: s, continuity: {} });
     expect(msgs).toHaveLength(1);
     expect(msgs[0].category).toBe('calm');
@@ -40,7 +44,7 @@ describe('brief motor — tisina i MIRNO', () => {
   });
 
   it('MIRNO je fallback — nikad uz drugu poruku', () => {
-    const s = snap({ uncertainty: { count: 1, watermark: null, filter: filter('/dokumenti') } });
+    const s = snap({ uncertainty: { count: 1, watermark: null, filter: pendingFilter } });
     const msgs = buildBriefMessages({ snapshot: s, continuity: {} });
     expect(msgs.some((m) => m.category === 'calm')).toBe(false);
   });
@@ -74,7 +78,7 @@ describe('brief motor — stanja cinjenice', () => {
 
   it('nula => RESOLVED, i prikazuje se samo ako je prije nesto stajalo', () => {
     const continuity: BriefContinuity = { uncertainty: prev };
-    const s = snap({ uncertainty: { count: 0, watermark: prev.watermark, filter: filter('/dokumenti') } });
+    const s = snap({ uncertainty: { count: 0, watermark: prev.watermark, filter: pendingFilter } });
     const msgs = buildBriefMessages({ snapshot: s, continuity });
     expect(msgs[0].textKey).toBe('briefGate.uncertainty.resolved');
 
@@ -95,7 +99,7 @@ describe('brief motor — mail', () => {
     const continuity: BriefContinuity = {
       mail: { count: 2, watermark: '2026-08-15T08:00:00Z', shownAt: '2026-08-15T08:00:00Z' },
     };
-    const s = snap({ mail: { count: 2, watermark: '2026-08-15T08:00:00Z', filter: filter('/dokumenti') } });
+    const s = snap({ mail: { count: 2, watermark: '2026-08-15T08:00:00Z', filter: processedFilter } });
     expect(buildBriefMessages({ snapshot: s, continuity })[0].category).toBe('calm');
   });
 });
