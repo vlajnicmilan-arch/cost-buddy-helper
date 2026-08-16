@@ -15,6 +15,7 @@ import { evaluatePdfPages } from "../_shared/mailImport/pdfPages.ts";
 import { inspectXml } from "../_shared/mailImport/xmlSafety.ts";
 import { htmlToText, extractLinks } from "../_shared/mailImport/htmlToText.ts";
 import { evaluateTrust, isAuthenticatedGoogle } from "../_shared/mailImport/trustLevel.ts";
+import { extractAuthSignals } from "../_shared/mailImport/mailHeaders.ts";
 import { checkIbanAgainstHistory } from "../_shared/mailImport/ibanCheck.ts";
 import {
   classifyDocument,
@@ -199,12 +200,29 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
   // Sirovo tijelo — HTML u tekst BEZ ijednog mrežnog dohvata.
   let bodyText = "";
   let links: string[] = [];
+  // Signali autentičnosti iz SIROVIH zaglavlja — koriste se samo za ogradu
+  // Gmailove potvrde prosljeđivanja (vidi mailHeaders.ts).
+  let rawAuth = {
+    spf: msg.spf_result as string | null,
+    dkim: msg.dkim_result as string | null,
+    arc: msg.arc_result as string | null,
+    dmarc: msg.dmarc_result as string | null,
+    originalAuthResults: null as string | null,
+  };
   if (msg.body_storage_path) {
     const { data: blob } = await supabase.storage
       .from("inbound-mail")
       .download(msg.body_storage_path as string);
     if (blob) {
       const raw = JSON.parse(await blob.text()) as Record<string, string>;
+      const signals = extractAuthSignals(raw);
+      rawAuth = {
+        spf: (msg.spf_result as string | null) ?? signals.spf,
+        dkim: (msg.dkim_result as string | null) ?? signals.dkim,
+        arc: (msg.arc_result as string | null) ?? signals.arc,
+        dmarc: (msg.dmarc_result as string | null) ?? signals.dmarc,
+        originalAuthResults: signals.originalAuthResults,
+      };
       const html = raw["body-html"] ?? raw["stripped-html"] ?? "";
       const plain = raw["body-plain"] ?? raw["stripped-text"] ?? "";
       bodyText = plain || htmlToText(html);
@@ -371,8 +389,7 @@ async function processMessage(supabase: Supa, messageId: string): Promise<void> 
       pdfFilename,
       links,
       googleAuthenticated: isAuthenticatedGoogle({
-        spf: msg.spf_result,
-        dkim: msg.dkim_result,
+        ...rawAuth,
         fromHeader: msg.from_header as string | null,
       }),
       knownOibs: oibs,
