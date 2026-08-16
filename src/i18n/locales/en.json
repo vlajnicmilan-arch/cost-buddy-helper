@@ -6554,6 +6554,16 @@
       "warning": "Possible duplicate: an invoice {{number}} from the same issuer for the same amount already exists ({{amount}}, due {{due}})",
       "acknowledge": "Add anyway",
       "confirmAnyway": "Add anyway"
+    },
+    "verification": {
+      "badge": "Forwarding confirmation",
+      "title": "Gmail is asking you to confirm forwarding",
+      "body": "Google asks you to confirm that mail from {{address}} may be forwarded into the app.",
+      "bodyNoAddress": "Google asks you to confirm forwarding mail into the app.",
+      "code": "Confirmation code",
+      "noLink": "The link is not verifiably Google's, so we do not open it. Finish the confirmation in Gmail settings (Forwarding and POP/IMAP) by entering the code.",
+      "open": "Open confirmation",
+      "dismiss": "Dismiss"
     }
   },
   "documents": {
