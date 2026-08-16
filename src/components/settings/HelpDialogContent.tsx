@@ -205,7 +205,7 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
         <ScrollArea className="flex-1 max-h-[calc(100dvh-80px)] sm:max-h-[calc(85vh-80px)]">
           <div className="space-y-4 px-6 pb-6">
             <p className="text-muted-foreground text-sm">
-              {t('help.intro', 'Centar je aplikacija za praćenje osobnih financija. Evo kako ju koristiti:')}
+              {t('help.intro', 'Centar je aplikacija za osobne financije: unos prihoda i troškova, uvoz bankovnih izvoda, skeniranje računa, planovi smjera, projekti i dijeljenje s bliskima kroz Krug. Evo kako se koristi:')}
             </p>
 
             {/* Open full FAQ page */}
