@@ -49,13 +49,13 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
     },
     {
       icon: "👥",
-      title: t('help.sharedAccounts', 'Dijeljeni računi'),
+      title: t('help.sharedAccounts', 'Dijeljenje s drugima (Krug)'),
       content: [
-        t('help.sharedAccountsStep1', "Dijelite izvore plaćanja s drugim korisnicima"),
-        t('help.sharedAccountsStep2', "Kliknite na ikonu članova (👥) kod izvora plaćanja"),
-        t('help.sharedAccountsStep3', "Pozovite članove putem email adrese"),
-        t('help.sharedAccountsStep4', "Članovi mogu dodavati transakcije na dijeljeni račun"),
-        t('help.sharedAccountsStep5', "Komentirajte transakcije klikom na ikonu komentara (💬)")
+        t('help.sharedAccountsStep1', "Krug je zajednički prostor s bliskima — otvori ga u izborniku „Krug“"),
+        t('help.sharedAccountsStep2', "U kartici „Članovi“ klikni „Pozovi člana“ i unesi email osobe koja već ima račun"),
+        t('help.sharedAccountsStep3', "Osoba postaje član tek kad prihvati pozivnicu"),
+        t('help.sharedAccountsStep4', "U „Zajednički izvori“ poveži svoj izvor plaćanja s Krugom kako bi ga članovi vidjeli"),
+        t('help.sharedAccountsStep5', "Kod unosa troška biraš „Moje“ ili „Za Krug“; troškovi „Za Krug“ članovima stižu u „Za odlučivanje“ na potvrdu")
       ]
     },
     {
@@ -83,11 +83,11 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
       icon: "🎯",
       title: t('help.budgets', 'Budžeti'),
       content: [
-        t('help.budgetsStep1', "Postavite mjesečne ili tjedne budžete"),
-        t('help.budgetsStep2', "Definirajte limite potrošnje po kategorijama"),
-        t('help.budgetsStep3', "Pratite potrošnju u odnosu na postavljene limite"),
-        t('help.budgetsStep4', "Primajte obavijesti kada se približite ili premašite limit"),
-        t('help.budgetsStep5', "Dijelite budžete s drugim korisnicima")
+        t('help.budgetsStep1', "Otvori „Smjer“ i klikni „Novi plan smjera“"),
+        t('help.budgetsStep2', "Odaberi razdoblje (tjedno, mjesečno, godišnje…) i „Okvir“ — iznos koji usmjeravaš u tom razdoblju"),
+        t('help.budgetsStep3', "Rasporedi okvir po smjerovima i prati koliko je iskorišteno"),
+        t('help.budgetsStep4', "Obavijest stiže kad se približiš okviru ili ga prijeđeš"),
+        t('help.budgetsStep5', "Plan možeš dijeliti s drugima u kartici „Članovi“")
       ]
     },
     {
@@ -125,19 +125,21 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
       icon: "🧾",
       title: t('help.receiptScanning', 'Skeniranje računa'),
       content: [
-        t('help.receiptScanningStep1', "Prilikom dodavanja rashoda možete fotografirati račun"),
-        t('help.receiptScanningStep2', "AI automatski prepoznaje iznos i trgovinu"),
-        t('help.receiptScanningStep3', "Fotografija se sprema uz transakciju za kasniji pregled")
+        t('help.receiptScanningStep1', "Kod dodavanja troška odaberi „Skeniraj račun“, pa „Fotografiraj“ ili „Iz galerije“"),
+        t('help.receiptScanningStep2', "AI čita iznos, trgovinu, datum i stavke te sam popunjava transakciju"),
+        t('help.receiptScanningStep3', "Provjeri očitano i klikni „Prihvati i spremi“ — transakcija nastaje iz skena")
       ]
     },
     {
       icon: "📄",
-      title: t('help.bankImport', 'Import iz banke'),
+      title: t('help.bankImport', 'Uvoz izvoda'),
       content: [
-        t('help.bankImportStep1', "Podržan je import CSV izvoda iz većine banaka"),
-        t('help.bankImportStep2', "Kliknite na 'Bankovna poveznica' karticu na početnoj stranici"),
-        t('help.bankImportStep3', "Odaberite CSV datoteku i banku iz koje dolazi"),
-        t('help.bankImportStep4', "Transakcije će se automatski kategorizirati")
+        t('help.bankImportStep1', "Otvori „Novčanik“ → „Postavke novčanika“ → „Uvoz transakcija“"),
+        t('help.bankImportStep2', "Klikni „Uvezi iz PDF-a“ i odaberi PDF izvod dobiven od banke"),
+        t('help.bankImportStep3', "Otvara se „Pregled uvoza“: za svako pitanje odaberi „Spoji s postojećim“ ili „Ostavi kao novu“, pa klikni „Potvrdi uvoz“"),
+        t('help.bankImportStep4', "Ako se saldo razlikuje od stvarnog, poravnaj ga na izvoru plaćanja opcijom „Korigiraj saldo“"),
+        t('help.bankImportStep5', "Izvod možeš poslati i e-poštom: ako ti je uključen „Uvoz iz e-maila“, u Postavkama kopiraj svoju adresu za primanje i proslijedi izvod na nju"),
+        t('help.bankImportStep6', "Poslani dokument stiže u „Dokumenti“ → „Na pregled“; ništa se ne sprema dok ga ne potvrdiš")
       ]
     },
     {
@@ -172,10 +174,10 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
       icon: "⚙️",
       title: t('help.settings', 'Postavke'),
       content: [
-        t('help.settingsStep1', "Kliknite na ikonu zupčanika u zaglavlju"),
-        t('help.settingsStep2', "Promijenite ime, jezik, temu i valutu"),
-        t('help.settingsStep3', "Uključite/isključite AI asistenta i jednostavni način rada"),
-        t('help.settingsStep4', "Jednostavni način skriva projekte, budžete i rate")
+        t('help.settingsStep1', "Klikni ikonu zupčanika u zaglavlju"),
+        t('help.settingsStep2', "Postavke su podijeljene na: Profil, Izgled, Obavijesti, Pretplata, Podaci i sigurnost te Pomoć i podrška"),
+        t('help.settingsStep3', "U „Profil“ mijenjaš ime i jezik, u „Izgled“ temu i prikaz modula"),
+        t('help.settingsStep4', "U „Podaci i sigurnost“ izvoziš podatke, uključuješ zaključavanje i brišeš račun")
       ]
     },
     {

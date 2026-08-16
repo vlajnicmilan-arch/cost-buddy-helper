@@ -70,19 +70,21 @@ const HelpDialog = () => {
       icon: Receipt,
       title: t('help.receiptScanning', 'Skeniranje računa'),
       content: [
-        t('help.receiptScanningStep1', "Prilikom dodavanja rashoda možete fotografirati račun"),
-        t('help.receiptScanningStep2', "AI automatski prepoznaje iznos i trgovinu"),
-        t('help.receiptScanningStep3', "Fotografija se sprema uz transakciju za kasniji pregled")
+        t('help.receiptScanningStep1', "Kod dodavanja troška odaberi „Skeniraj račun“, pa „Fotografiraj“ ili „Iz galerije“"),
+        t('help.receiptScanningStep2', "AI čita iznos, trgovinu, datum i stavke te sam popunjava transakciju"),
+        t('help.receiptScanningStep3', "Provjeri očitano i klikni „Prihvati i spremi“ — transakcija nastaje iz skena")
       ]
     },
     {
       icon: FileText,
-      title: t('help.bankImport', 'Import iz banke'),
+      title: t('help.bankImport', 'Uvoz izvoda'),
       content: [
-        t('help.bankImportStep1', "Podržan je import CSV izvoda iz većine banaka"),
-        t('help.bankImportStep2', "Idite na 'Bankovna poveznica' u bočnoj traci"),
-        t('help.bankImportStep3', "Odaberite CSV datoteku i banku iz koje dolazi"),
-        t('help.bankImportStep4', "Transakcije će se automatski kategorizirati")
+        t('help.bankImportStep1', "Otvori „Novčanik“ → „Postavke novčanika“ → „Uvoz transakcija“"),
+        t('help.bankImportStep2', "Klikni „Uvezi iz PDF-a“ i odaberi PDF izvod dobiven od banke"),
+        t('help.bankImportStep3', "Otvara se „Pregled uvoza“: za svako pitanje odaberi „Spoji s postojećim“ ili „Ostavi kao novu“, pa klikni „Potvrdi uvoz“"),
+        t('help.bankImportStep4', "Ako se saldo razlikuje od stvarnog, poravnaj ga na izvoru plaćanja opcijom „Korigiraj saldo“"),
+        t('help.bankImportStep5', "Izvod možeš poslati i e-poštom: ako ti je uključen „Uvoz iz e-maila“, u Postavkama kopiraj svoju adresu za primanje i proslijedi izvod na nju"),
+        t('help.bankImportStep6', "Poslani dokument stiže u „Dokumenti“ → „Na pregled“; ništa se ne sprema dok ga ne potvrdiš")
       ]
     },
     {
