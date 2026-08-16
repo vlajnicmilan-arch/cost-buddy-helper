@@ -81,7 +81,7 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
     },
     {
       icon: "🎯",
-      title: t('help.budgets', 'Budžeti'),
+      title: t('help.budgets', 'Smjer (planovi potrošnje)'),
       content: [
         t('help.budgetsStep1', "Otvori „Smjer“ i klikni „Novi plan smjera“"),
         t('help.budgetsStep2', "Odaberi razdoblje (tjedno, mjesečno, godišnje…) i „Okvir“ — iznos koji usmjeravaš u tom razdoblju"),
@@ -156,7 +156,7 @@ export const HelpDialogContent = ({ open, onOpenChange }: HelpDialogContentProps
       title: t('help.notifications', 'Obavijesti'),
       content: [
         t('help.notificationsStep1', "Kliknite na ikonu zvona u zaglavlju za pregled obavijesti"),
-        t('help.notificationsStep2', "Primajte obavijesti o pozivnicama za dijeljene račune"),
+        t('help.notificationsStep2', "Primaj obavijesti o pozivnicama u Krug i na planove smjera"),
         t('help.notificationsStep3', "Prihvatite ili odbijte pozivnice izravno iz obavijesti"),
         t('help.notificationsStep4', "Budžetna upozorenja stižu kada se približite limitu")
       ]
