@@ -6554,6 +6554,16 @@
       "warning": "Möglicher Doppeleintrag: Es existiert bereits Rechnung {{number}} desselben Ausstellers über denselben Betrag ({{amount}}, fällig {{due}})",
       "acknowledge": "Trotzdem hinzufügen",
       "confirmAnyway": "Trotzdem hinzufügen"
+    },
+    "verification": {
+      "badge": "Weiterleitungsbestätigung",
+      "title": "Gmail bittet um Bestätigung der Weiterleitung",
+      "body": "Google bittet um Bestätigung, dass E-Mails von {{address}} an die App weitergeleitet werden dürfen.",
+      "bodyNoAddress": "Google bittet um Bestätigung der Weiterleitung von E-Mails an die App.",
+      "code": "Bestätigungscode",
+      "noLink": "Der Link stammt nicht nachweislich von Google, daher öffnen wir ihn nicht. Schließen Sie die Bestätigung in den Gmail-Einstellungen (Weiterleitung und POP/IMAP) mit dem Code ab.",
+      "open": "Bestätigung öffnen",
+      "dismiss": "Verwerfen"
     }
   },
   "documents": {

@@ -182,6 +182,7 @@ export async function classifyDocument(
         code: verification.code,
         confirmUrl: verification.safeConfirmUrl,
         linkWithheld: verification.linkWithheld,
+        forwardedAddress: verification.forwardedAddress,
       },
       confidence: verification.code ? 'visoka' : 'niska',
       route: 'verifikacija',

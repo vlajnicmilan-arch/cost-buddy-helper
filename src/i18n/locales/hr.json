@@ -6564,6 +6564,16 @@
       "warning": "Moguć duplikat: već postoji račun {{number}} istog izdavatelja na isti iznos ({{amount}}, dospijeće {{due}})",
       "acknowledge": "Svejedno unesi",
       "confirmAnyway": "Svejedno unesi"
+    },
+    "verification": {
+      "badge": "Potvrda prosljeđivanja",
+      "title": "Gmail traži potvrdu prosljeđivanja",
+      "body": "Google traži potvrdu da e-poštu s adrese {{address}} smije prosljeđivati u aplikaciju.",
+      "bodyNoAddress": "Google traži potvrdu prosljeđivanja e-pošte u aplikaciju.",
+      "code": "Kod za potvrdu",
+      "noLink": "Poveznica nije provjereno Googleova, pa je ne otvaramo. Potvrdu dovrši u Gmail postavkama (Prosljeđivanje i POP/IMAP) upisom koda.",
+      "open": "Otvori potvrdu",
+      "dismiss": "Odbaci"
     }
   },
   "documents": {
