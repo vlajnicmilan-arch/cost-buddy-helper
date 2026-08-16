@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Ovi cuvari skeniraju cijeli src/**; pod punim paralelnim opterecenjem
+// prelaze zadanih 5 s. Rok je lokalan za ovu datoteku.
+vi.setConfig({ testTimeout: 30000 });
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import {
