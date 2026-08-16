@@ -99,6 +99,9 @@ describe('BriefGate ekran', () => {
     renderGate();
     await screen.findByTestId('brief-gate-message');
     fireEvent.pointerDown(screen.getByTestId('brief-gate'));
+    await waitFor(() =>
+      expect(screen.getByTestId('brief-gate').getAttribute('data-complete')).toBe('true'),
+    );
     fireEvent.click(screen.getByTestId('brief-gate-action'));
     await screen.findByText('DOKUMENTI');
   });
