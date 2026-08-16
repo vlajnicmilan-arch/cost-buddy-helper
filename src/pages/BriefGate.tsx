@@ -63,17 +63,46 @@ const BriefGate = () => {
     [shown],
   );
 
+  const formatWhen = (dueDate: string | null | undefined): string => {
+    const when = describeDueWhen(dueDate, new Date());
+    if (!when) return '';
+    if (when.kind === 'today') return t('briefGate.due.today', 'danas');
+    if (when.kind === 'tomorrow') return t('briefGate.due.tomorrow', 'sutra');
+    if (when.kind === 'weekday') return t(`briefGate.due.weekday.${when.weekday}`);
+    return new Date(when.day).toLocaleDateString();
+  };
+
+  const name = (displayName || '').trim();
+  const greeting = name
+    ? t(`briefGate.greeting.${greetingSlot(new Date())}Named`, { name })
+    : t(`briefGate.greeting.${greetingSlot(new Date())}`);
+
+  // Razrijeseni tekstovi (i18n) — pauza se racuna nad njima, ne nad kljucem.
+  const lineTexts = messages.map((m) =>
+    String(
+      t(m.textKey, {
+        count: m.textParams.count,
+        issuer: m.textParams.issuer,
+        when: formatWhen(m.textParams.dueDate),
+      }),
+    ),
+  );
+
   const calm = messages.length === 1 && messages[0]?.category === 'calm';
+  const lineTextsKey = lineTexts.join('\u0000');
   const plan = useMemo(
     () =>
       planChoreography({
         firstDaily: firstDailyRef.current,
         reducedMotion: reducedMotionRef.current,
         calm,
-        lineCount: messages.length,
+        greetingText: greeting,
+        lineTexts: lineTextsKey ? lineTextsKey.split('\u0000') : [],
       }),
-    [calm, messages.length],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [calm, greeting, lineTextsKey],
   );
+
 
   // Zapis se azurira TEK kad su vrata stvarno prikazana.
   useEffect(() => {
