@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   detectGmailVerification,
   isGoogleConfirmUrl,
+  trimUrlBoundary,
 } from '../../supabase/functions/_shared/mailImport/gmailVerification.ts';
 import { extractAuthSignals } from '../../supabase/functions/_shared/mailImport/mailHeaders.ts';
 import { isAuthenticatedGoogle } from '../../supabase/functions/_shared/mailImport/trustLevel.ts';
@@ -43,6 +44,31 @@ describe('Gmail potvrda prosljeđivanja — prepoznavanje po jezicima', () => {
 });
 
 describe('Gmail potvrda — sigurnosne ograde', () => {
+  it('skida rečenične zagrade i točku, ali čuva enkodirane zagrade u tokenu', () => {
+    const wrapped = `(${GOOGLE_LINK}. )`;
+    expect(trimUrlBoundary(wrapped)).toBe(GOOGLE_LINK);
+
+    const res = detectGmailVerification({
+      fromHeader: 'forwarding-noreply@google.com',
+      subject: 'Gmail Potvrda o prosljeđivanju',
+      bodyText: `Potvrdite ovdje: (${GOOGLE_LINK}).`,
+      links: [],
+      googleAuthenticated: true,
+    });
+    expect(res.safeConfirmUrl).toBe(GOOGLE_LINK);
+  });
+
+  it('skida interpunkciju s oba ruba kandidata iz links', () => {
+    const res = detectGmailVerification({
+      fromHeader: 'forwarding-noreply@google.com',
+      subject: 'Gmail Forwarding Confirmation',
+      bodyText: '',
+      links: [`[${GOOGLE_LINK}.]`],
+      googleAuthenticated: true,
+    });
+    expect(res.safeConfirmUrl).toBe(GOOGLE_LINK);
+  });
+
   it('lažni pošiljatelj sličnog imena NE prolazi', () => {
     for (const from of [
       'forwarding-noreply@google.com.zlo.example',
