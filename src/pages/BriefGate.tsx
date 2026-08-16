@@ -17,7 +17,7 @@ import { greetingSlot, localDayKey, markShown, readLastShown } from '@/lib/brief
 import { buildBriefMessages, continuityFromSnapshot, mergeContinuity } from '@/lib/brief/engine';
 import { readContinuity, writeContinuity } from '@/lib/brief/continuity';
 import { describeDueWhen } from '@/lib/brief/dueWhen';
-import { BRIEF_FADE_MS, planChoreography } from '@/lib/brief/choreography';
+import { planChoreography } from '@/lib/brief/choreography';
 import type { BriefFilterTarget, BriefMessage, BriefSnapshot } from '@/lib/brief/types';
 import { requestOpenOverdueInvoices } from '@/lib/eracun/openOverdueRequest';
 
@@ -63,17 +63,46 @@ const BriefGate = () => {
     [shown],
   );
 
+  const formatWhen = (dueDate: string | null | undefined): string => {
+    const when = describeDueWhen(dueDate, new Date());
+    if (!when) return '';
+    if (when.kind === 'today') return t('briefGate.due.today', 'danas');
+    if (when.kind === 'tomorrow') return t('briefGate.due.tomorrow', 'sutra');
+    if (when.kind === 'weekday') return t(`briefGate.due.weekday.${when.weekday}`);
+    return new Date(when.day).toLocaleDateString();
+  };
+
+  const name = (displayName || '').trim();
+  const greeting = name
+    ? t(`briefGate.greeting.${greetingSlot(new Date())}Named`, { name })
+    : t(`briefGate.greeting.${greetingSlot(new Date())}`);
+
+  // Razrijeseni tekstovi (i18n) — pauza se racuna nad njima, ne nad kljucem.
+  const lineTexts = messages.map((m) =>
+    String(
+      t(m.textKey, {
+        count: m.textParams.count,
+        issuer: m.textParams.issuer,
+        when: formatWhen(m.textParams.dueDate),
+      }),
+    ),
+  );
+
   const calm = messages.length === 1 && messages[0]?.category === 'calm';
+  const lineTextsKey = lineTexts.join('\u0000');
   const plan = useMemo(
     () =>
       planChoreography({
         firstDaily: firstDailyRef.current,
         reducedMotion: reducedMotionRef.current,
         calm,
-        lineCount: messages.length,
+        greetingText: greeting,
+        lineTexts: lineTextsKey ? lineTextsKey.split('\u0000') : [],
       }),
-    [calm, messages.length],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [calm, greeting, lineTextsKey],
   );
+
 
   // Zapis se azurira TEK kad su vrata stvarno prikazana.
   useEffect(() => {
@@ -120,19 +149,6 @@ const BriefGate = () => {
     navigate(params ? `${target.path}?${params}` : target.path, { replace: true });
   };
 
-  const formatWhen = (dueDate: string | null | undefined): string => {
-    const when = describeDueWhen(dueDate, new Date());
-    if (!when) return '';
-    if (when.kind === 'today') return t('briefGate.due.today', 'danas');
-    if (when.kind === 'tomorrow') return t('briefGate.due.tomorrow', 'sutra');
-    if (when.kind === 'weekday') return t(`briefGate.due.weekday.${when.weekday}`);
-    return new Date(when.day).toLocaleDateString();
-  };
-
-  const name = (displayName || '').trim();
-  const greeting = name
-    ? t(`briefGate.greeting.${greetingSlot(new Date())}Named`, { name })
-    : t(`briefGate.greeting.${greetingSlot(new Date())}`);
 
   const primary = messages.find((m) => m.target);
   const isVisible = (step: number) => complete || revealed >= step;
@@ -158,11 +174,11 @@ const BriefGate = () => {
     >
       <div
         className="w-full max-w-[22rem] text-left -translate-y-[6vh]"
-        style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+        style={{ transitionDuration: `${plan.fadeMs}ms` }}
       >
         <p
           className={`text-lg text-muted-foreground ${fade(true)}`}
-          style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+          style={{ transitionDuration: `${plan.fadeMs}ms` }}
           data-testid="brief-gate-greeting"
         >
           {greeting}
@@ -173,22 +189,19 @@ const BriefGate = () => {
             <p
               key={`${m.category}-${i}`}
               className={`text-xl font-medium leading-snug text-foreground ${fade(isVisible(i + 1))}`}
-              style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+              style={{ transitionDuration: `${plan.fadeMs}ms` }}
               data-testid={i === 0 ? 'brief-gate-message' : 'brief-gate-line'}
               data-visible={isVisible(i + 1) ? 'true' : 'false'}
             >
-              {t(m.textKey, {
-                count: m.textParams.count,
-                issuer: m.textParams.issuer,
-                when: formatWhen(m.textParams.dueDate),
-              })}
+              {lineTexts[i]}
             </p>
           ))}
+
         </div>
 
         <div
           className={`mt-10 flex flex-col items-start gap-1 ${fade(complete)}`}
-          style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+          style={{ transitionDuration: `${plan.fadeMs}ms` }}
           data-testid="brief-gate-actions"
           aria-hidden={complete ? undefined : true}
         >

@@ -8,7 +8,13 @@ import BriefGate from '@/pages/BriefGate';
 import type { BriefSnapshot } from '@/lib/brief/types';
 import { BRIEF_GATE_LAST_SHOWN_KEY } from '@/lib/briefGate';
 import { describeDueWhen } from '@/lib/brief/dueWhen';
-import { planChoreography } from '@/lib/brief/choreography';
+import {
+  BRIEF_FADE_MS,
+  BRIEF_PAUSE_MAX_MS,
+  BRIEF_PAUSE_MIN_MS,
+  pauseAfter,
+  planChoreography,
+} from '@/lib/brief/choreography';
 
 const rpcMock = vi.fn();
 
@@ -128,16 +134,70 @@ describe('koreografija vrata', () => {
   });
 
   it('tiho stanje: pozdrav i rečenica u istom koraku', () => {
-    const plan = planChoreography({ firstDaily: true, reducedMotion: false, calm: true, lineCount: 1 });
+    const plan = planChoreography({
+      firstDaily: true,
+      reducedMotion: false,
+      calm: true,
+      greetingText: 'Dobro jutro, Milan.',
+      lineTexts: ['Nema ničega za odluku.'],
+    });
     expect(plan.greetingDelay).toBe(0);
     expect(plan.lineDelays).toEqual([0]);
-    expect(plan.actionsDelay).toBeGreaterThan(0);
+    expect(plan.actionsDelay).toBe(BRIEF_FADE_MS + pauseAfter('Dobro jutro, Milan. Nema ničega za odluku.'));
   });
 
-  it('puni briefing: reci dolaze redom, akcije zadnje', () => {
-    const plan = planChoreography({ firstDaily: true, reducedMotion: false, calm: false, lineCount: 3 });
-    expect(plan.lineDelays).toEqual([800, 1600, 2400]);
-    expect(plan.actionsDelay).toBe(3200);
+  it('pauza se mjeri od KRAJA fade-ina', () => {
+    const greeting = 'Dobro jutro, Milan.';
+    const lines = ['Dva dokumenta čekaju.', 'Najbliži račun dospijeva u ponedjeljak.'];
+    const plan = planChoreography({
+      firstDaily: true,
+      reducedMotion: false,
+      calm: false,
+      greetingText: greeting,
+      lineTexts: lines,
+    });
+    const t1 = BRIEF_FADE_MS + pauseAfter(greeting);
+    const t2 = t1 + BRIEF_FADE_MS + pauseAfter(lines[0]);
+    expect(plan.lineDelays).toEqual([t1, t2]);
+    expect(plan.actionsDelay).toBe(t2 + BRIEF_FADE_MS + pauseAfter(lines[1]));
+  });
+
+  it('duga recenica dobiva dulju pauzu od kratke, obje unutar granica', () => {
+    const kratka = pauseAfter('Dobro jutro.');
+    const duga = pauseAfter('Najbliži račun dospijeva u ponedjeljak i traži tvoju odluku danas.');
+    expect(duga).toBeGreaterThan(kratka);
+    for (const p of [kratka, duga]) {
+      expect(p).toBeGreaterThanOrEqual(BRIEF_PAUSE_MIN_MS);
+      expect(p).toBeLessThanOrEqual(BRIEF_PAUSE_MAX_MS);
+    }
+  });
+
+  it('gornja granica stvarno reze', () => {
+    expect(pauseAfter(Array.from({ length: 80 }, () => 'riječ').join(' '))).toBe(BRIEF_PAUSE_MAX_MS);
+  });
+
+  it('fade je 550 ms za sve elemente', () => {
+    expect(BRIEF_FADE_MS).toBe(550);
+    const plan = planChoreography({
+      firstDaily: true,
+      reducedMotion: false,
+      calm: false,
+      greetingText: 'Dobro jutro.',
+      lineTexts: ['Jedna rečenica.'],
+    });
+    expect(plan.fadeMs).toBe(550);
+  });
+
+  it('ponovni ulazak i reduced-motion => bez koreografije', () => {
+    const input = { greetingText: 'Dobro jutro.', lineTexts: ['A.', 'B.'] };
+    for (const plan of [
+      planChoreography({ firstDaily: false, reducedMotion: false, calm: false, ...input }),
+      planChoreography({ firstDaily: true, reducedMotion: true, calm: false, ...input }),
+    ]) {
+      expect(plan.animated).toBe(false);
+      expect(plan.lineDelays).toEqual([0, 0]);
+      expect(plan.actionsDelay).toBe(0);
+    }
   });
 });
 
