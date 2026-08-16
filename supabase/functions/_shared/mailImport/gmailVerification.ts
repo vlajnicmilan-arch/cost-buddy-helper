@@ -123,8 +123,9 @@ export function detectGmailVerification(
     };
   }
 
-  const candidate = links.find(looksLikeConfirmLink) ??
-    (looksLikeConfirmLink(bodyText) ? null : null);
+  // Poruka zna stići kao čisti tekst — tada linkova nema u `links`, nego u tijelu.
+  const bodyUrls = bodyText.match(/https?:\/\/[^\s<>"')]+/g) ?? [];
+  const candidate = [...links, ...bodyUrls].find(looksLikeConfirmLink) ?? null;
   const code = extractConfirmationCode(subject) ?? extractCodeFromBody(bodyText);
   const subjectMatches = SUBJECT_PATTERNS.some((re) => re.test(subject));
 
