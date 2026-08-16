@@ -111,8 +111,7 @@ export function trimUrlBoundary(value: string): string {
   return (value ?? '')
     .trim()
     .replace(/^[([{<]+/, '')
-    .replace(/[.,;:!?]+$/g, '')
-    .replace(/[\]}>]+$/g, '');
+    .replace(/[\s)\]}>.,;:!?]+$/g, '');
 }
 
 export function detectGmailVerification(
