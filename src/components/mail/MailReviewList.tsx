@@ -29,6 +29,7 @@ import { formatHrAmount, parseHrAmount } from '@/lib/money';
 import { docTypeLabelKey, resolveConfirmDocType } from '@/lib/mail/docType';
 import { normalizeExtractionDates } from '@/lib/mail/dateNormalize';
 import { StatementReviewCard } from '@/components/mail/StatementReviewCard';
+import { VerificationReviewCard } from '@/components/mail/VerificationReviewCard';
 import { useMailDuplicateCandidates } from '@/hooks/useMailDuplicateCandidates';
 import { PROBABLE_DUPLICATE_WARNING } from '@/lib/mail/invoiceNumberMatch';
 
@@ -271,6 +272,17 @@ export const MailReviewList = ({ active, onCountChange }: Props) => {
       )}
 
       {items.map((item) => {
+        // GMAILOVA POTVRDA PROSLJEĐIVANJA — nije dokument, ima svoju karticu.
+        if (item.classification === 'verifikacija_prosljedjivanja') {
+          return (
+            <VerificationReviewCard
+              key={item.id}
+              item={item}
+              disabled={working}
+              onDiscard={() => handleDiscard(item)}
+            />
+          );
+        }
         // BANKOVNI IZVOD ima svoju karticu — polja računa ovdje ne postoje.
         if (item.classification === 'izvod') {
           return (
