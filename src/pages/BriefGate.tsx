@@ -189,17 +189,14 @@ const BriefGate = () => {
             <p
               key={`${m.category}-${i}`}
               className={`text-xl font-medium leading-snug text-foreground ${fade(isVisible(i + 1))}`}
-              style={{ transitionDuration: `${BRIEF_FADE_MS}ms` }}
+              style={{ transitionDuration: `${plan.fadeMs}ms` }}
               data-testid={i === 0 ? 'brief-gate-message' : 'brief-gate-line'}
               data-visible={isVisible(i + 1) ? 'true' : 'false'}
             >
-              {t(m.textKey, {
-                count: m.textParams.count,
-                issuer: m.textParams.issuer,
-                when: formatWhen(m.textParams.dueDate),
-              })}
+              {lineTexts[i]}
             </p>
           ))}
+
         </div>
 
         <div
