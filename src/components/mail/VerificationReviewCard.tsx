@@ -63,7 +63,7 @@ export const VerificationReviewCard = ({ item, disabled, onDiscard }: Props) => 
         </p>
       )}
 
-      {!confirmUrl && (
+      {!confirmUrl && !code && (
         <div
           data-testid="mail-verification-no-link"
           className="flex items-start gap-2 rounded-md border border-document-pending bg-document-pending-surface p-2 text-xs text-document-pending-foreground"

@@ -103,6 +103,17 @@ export function isGoogleConfirmUrl(url: string): boolean {
 const looksLikeConfirmLink = (link: string): boolean =>
   /mail-settings\.google\.com/i.test(link) || /mail\.google\.com\/mail\/vf-/i.test(link);
 
+/**
+ * Skida samo interpunkciju koja okružuje URL u rečenici. URL-enkodirani znakovi
+ * (npr. `%5B...%5D` u Googleovu tokenu) ostaju bajt-za-bajt netaknuti.
+ */
+export function trimUrlBoundary(value: string): string {
+  return (value ?? '')
+    .trim()
+    .replace(/^[([{<]+/, '')
+    .replace(/[\s)\]}>.,;:!?]+$/g, '');
+}
+
 export function detectGmailVerification(
   input: GmailVerificationInput,
 ): GmailVerificationResult {
@@ -124,8 +135,10 @@ export function detectGmailVerification(
   }
 
   // Poruka zna stići kao čisti tekst — tada linkova nema u `links`, nego u tijelu.
-  const bodyUrls = bodyText.match(/https?:\/\/[^\s<>"')]+/g) ?? [];
-  const candidate = [...links, ...bodyUrls].find(looksLikeConfirmLink) ?? null;
+  const bodyUrls = bodyText.match(/https?:\/\/[^\s<>"']+/g) ?? [];
+  const candidate = [...links, ...bodyUrls]
+    .map(trimUrlBoundary)
+    .find(looksLikeConfirmLink) ?? null;
   const code = extractConfirmationCode(subject) ?? extractCodeFromBody(bodyText);
   const subjectMatches = SUBJECT_PATTERNS.some((re) => re.test(subject));
 
