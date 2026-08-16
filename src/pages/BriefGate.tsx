@@ -149,19 +149,6 @@ const BriefGate = () => {
     navigate(params ? `${target.path}?${params}` : target.path, { replace: true });
   };
 
-  const formatWhen = (dueDate: string | null | undefined): string => {
-    const when = describeDueWhen(dueDate, new Date());
-    if (!when) return '';
-    if (when.kind === 'today') return t('briefGate.due.today', 'danas');
-    if (when.kind === 'tomorrow') return t('briefGate.due.tomorrow', 'sutra');
-    if (when.kind === 'weekday') return t(`briefGate.due.weekday.${when.weekday}`);
-    return new Date(when.day).toLocaleDateString();
-  };
-
-  const name = (displayName || '').trim();
-  const greeting = name
-    ? t(`briefGate.greeting.${greetingSlot(new Date())}Named`, { name })
-    : t(`briefGate.greeting.${greetingSlot(new Date())}`);
 
   const primary = messages.find((m) => m.target);
   const isVisible = (step: number) => complete || revealed >= step;
