@@ -11,7 +11,13 @@
  */
 
 /** Trajanje pojedinog fade-ina (svi elementi). */
-export const BRIEF_FADE_MS = 550;
+export const BRIEF_FADE_MS = 750;
+
+/**
+ * Pauza koja se primjenjuje ISKLJUCIVO izmedu dvije akcije.
+ * Akcija se gleda, ne cita — zato ne vrijedi pravilo po duljini teksta.
+ */
+export const BRIEF_ACTION_PAUSE_MS = 500;
 
 /** Osnovica pauze nakon zavrsenog fade-ina. */
 export const BRIEF_PAUSE_BASE_MS = 750;
@@ -47,6 +53,8 @@ export interface ChoreographyInput {
   greetingText: string;
   /** Razrijeseni tekstovi redaka poruka (bez pozdrava, bez akcija). */
   lineTexts: string[];
+  /** Postoji li akcija "Pogledaj" (dokaziva destinacija). */
+  hasPrimaryAction?: boolean;
 }
 
 export interface ChoreographyPlan {
@@ -58,8 +66,12 @@ export interface ChoreographyPlan {
   greetingDelay: number;
   /** Kasnjenja pojedinih redaka poruka (ms). */
   lineDelays: number[];
-  /** Kasnjenje bloka akcija (ms). */
+  /** Kasnjenje prvog koraka akcija (ms) — "Pogledaj", ili "Udi" ako Pogledaj nema. */
   actionsDelay: number;
+  /** Kasnjenje akcije "Pogledaj" (ms); null kad je nema. */
+  primaryActionDelay: number | null;
+  /** Kasnjenje akcije "Udi u Centar" (ms). */
+  enterActionDelay: number;
   /** Ukupno trajanje do konacnog stanja (ms). */
   totalMs: number;
 }
@@ -70,6 +82,7 @@ export function planChoreography({
   calm,
   greetingText,
   lineTexts,
+  hasPrimaryAction = false,
 }: ChoreographyInput): ChoreographyPlan {
   const lines = lineTexts ?? [];
 
@@ -80,22 +93,35 @@ export function planChoreography({
       greetingDelay: 0,
       lineDelays: lines.map(() => 0),
       actionsDelay: 0,
+      primaryActionDelay: hasPrimaryAction ? 0 : null,
+      enterActionDelay: 0,
       totalMs: 0,
     };
   }
 
-  if (calm) {
-    // Bez stepenice: pozdrav i rečenica u istom koraku, pa akcije.
-    const step = `${greetingText} ${lines.join(' ')}`;
-    const actionsDelay = BRIEF_FADE_MS + pauseAfter(step);
+  const finish = (actionsDelay: number, lineDelays: number[]): ChoreographyPlan => {
+    // Prvi korak akcija dolazi prema zadnjoj recenici; druga akcija tek nakon prve,
+    // po vlastitom pravilu (fade + BRIEF_ACTION_PAUSE_MS), nikad po duljini teksta.
+    const primaryActionDelay = hasPrimaryAction ? actionsDelay : null;
+    const enterActionDelay = hasPrimaryAction
+      ? actionsDelay + BRIEF_FADE_MS + BRIEF_ACTION_PAUSE_MS
+      : actionsDelay;
     return {
       animated: true,
       fadeMs: BRIEF_FADE_MS,
       greetingDelay: 0,
-      lineDelays: lines.map(() => 0),
+      lineDelays,
       actionsDelay,
-      totalMs: actionsDelay + BRIEF_FADE_MS,
+      primaryActionDelay,
+      enterActionDelay,
+      totalMs: enterActionDelay + BRIEF_FADE_MS,
     };
+  };
+
+  if (calm) {
+    // Bez stepenice: pozdrav i rečenica u istom koraku, pa akcije.
+    const step = `${greetingText} ${lines.join(' ')}`;
+    return finish(BRIEF_FADE_MS + pauseAfter(step), lines.map(() => 0));
   }
 
   let cursor = 0;
@@ -106,14 +132,6 @@ export function planChoreography({
     lineDelays.push(cursor);
     previousText = text;
   }
-  const actionsDelay = cursor + BRIEF_FADE_MS + pauseAfter(previousText);
 
-  return {
-    animated: true,
-    fadeMs: BRIEF_FADE_MS,
-    greetingDelay: 0,
-    lineDelays,
-    actionsDelay,
-    totalMs: actionsDelay + BRIEF_FADE_MS,
-  };
+  return finish(cursor + BRIEF_FADE_MS + pauseAfter(previousText), lineDelays);
 }

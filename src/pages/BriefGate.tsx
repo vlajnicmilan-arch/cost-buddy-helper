@@ -47,6 +47,7 @@ const BriefGate = () => {
   const reducedMotionRef = useRef(prefersReducedMotion());
   const marked = useRef(false);
   const [revealed, setRevealed] = useState(0);
+  const [primaryShown, setPrimaryShown] = useState(false);
   const [complete, setComplete] = useState(false);
 
   // Jednom prikazana snimka se ZAMRZAVA za tu sesiju vrata.
@@ -89,6 +90,7 @@ const BriefGate = () => {
   );
 
   const calm = messages.length === 1 && messages[0]?.category === 'calm';
+  const hasPrimaryAction = messages.some((m) => m.target);
   const lineTextsKey = lineTexts.join('\u0000');
   const plan = useMemo(
     () =>
@@ -98,9 +100,10 @@ const BriefGate = () => {
         calm,
         greetingText: greeting,
         lineTexts: lineTextsKey ? lineTextsKey.split('\u0000') : [],
+        hasPrimaryAction,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [calm, greeting, lineTextsKey],
+    [calm, greeting, lineTextsKey, hasPrimaryAction],
   );
 
 
@@ -119,12 +122,16 @@ const BriefGate = () => {
   useEffect(() => {
     if (messages.length === 0) return;
     if (!plan.animated) {
+      setPrimaryShown(true);
       setComplete(true);
       return;
     }
     const timers = [
       ...plan.lineDelays.map((d, i) => window.setTimeout(() => setRevealed((r) => Math.max(r, i + 1)), d)),
-      window.setTimeout(() => setComplete(true), plan.actionsDelay),
+      ...(plan.primaryActionDelay !== null
+        ? [window.setTimeout(() => setPrimaryShown(true), plan.primaryActionDelay)]
+        : []),
+      window.setTimeout(() => setComplete(true), plan.enterActionDelay),
     ];
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, [plan, messages.length]);
@@ -159,6 +166,7 @@ const BriefGate = () => {
     e.preventDefault();
     e.stopPropagation();
     setRevealed(messages.length);
+    setPrimaryShown(true);
     setComplete(true);
   };
 
@@ -200,8 +208,7 @@ const BriefGate = () => {
         </div>
 
         <div
-          className={`mt-10 flex flex-col items-start gap-1 ${fade(complete)}`}
-          style={{ transitionDuration: `${plan.fadeMs}ms` }}
+          className="mt-10 flex flex-col items-start gap-1"
           data-testid="brief-gate-actions"
           aria-hidden={complete ? undefined : true}
         >
@@ -209,8 +216,9 @@ const BriefGate = () => {
             <button
               type="button"
               onClick={() => openTarget(primary.target)}
-              disabled={!complete}
-              className="min-h-[44px] py-2 text-base font-medium text-primary disabled:pointer-events-none"
+              disabled={!primaryShown}
+              className={`min-h-[44px] py-2 text-base font-medium text-primary disabled:pointer-events-none ${fade(primaryShown)}`}
+              style={{ transitionDuration: `${plan.fadeMs}ms` }}
               data-testid="brief-gate-action"
             >
               {t(primary.actionKey)} <span aria-hidden="true">→</span>
@@ -220,7 +228,8 @@ const BriefGate = () => {
             type="button"
             onClick={enter}
             disabled={!complete}
-            className="min-h-[44px] py-2 text-base text-muted-foreground disabled:pointer-events-none"
+            className={`min-h-[44px] py-2 text-base text-muted-foreground disabled:pointer-events-none ${fade(complete)}`}
+            style={{ transitionDuration: `${plan.fadeMs}ms` }}
             data-testid="brief-gate-enter"
           >
             {t('briefGate.enter', 'Uđi u Centar')} <span aria-hidden="true">→</span>
